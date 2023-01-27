@@ -296,6 +296,7 @@ env.OverrideFromArgument('BREATHE_APIDOC', default='breathe-apidoc')
 env.PrependFromArgument('CPPFLAGS')
 env.PrependFromArgument('CXXFLAGS')
 env.PrependFromArgument('CFLAGS')
+env.PrependFromArgument('DESTDIR', default='/')
 env.PrependFromArgument('LINKFLAGS', names=['LINKFLAGS', 'LDFLAGS'])
 env.PrependFromArgument('STRIPFLAGS')
 

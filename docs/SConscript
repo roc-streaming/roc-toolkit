@@ -77,5 +77,5 @@ if GetOption('enable_sphinx'):
 doc_env.AlwaysBuild(doc_env.Alias('docs', ['doxygen', 'sphinx']))
 
 for manpage in doc_env.GlobFiles('#docs/sphinx/manuals/*.rst'):
-    doc_env.AddDistFile(GetOption('mandir'), '#docs/man/%s.1' %
+    doc_env.AddDistFile(doc_env["DESTDIR"] + GetOption('mandir'), '#docs/man/%s.1' %
                         manpage.srcnode().name.replace('.rst', '').replace('_', '-'))
