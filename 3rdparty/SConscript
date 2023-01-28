@@ -240,9 +240,6 @@ if 'pulseaudio' in autobuild_dependencies:
 elif 'pulseaudio' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
-    if not conf.AddPkgConfigDependency('libpulse', '--cflags --libs'):
-        conf.env.AddPkgConfigLibs(['pulse'])
-
     if not conf.CheckLibWithHeaderExt(
             'pulse', 'pulse/pulseaudio.h', 'C', run=not is_crosscompiling):
         env.Die("libpulse not found (see 'config.log' for details)")
@@ -251,9 +248,6 @@ elif 'pulseaudio' in system_dependencies:
 
     if GetOption('enable_examples'):
         conf = Configure(subenvs.examples, custom_tests=env.CustomTests)
-
-        if not conf.AddPkgConfigDependency('libpulse-simple', '--cflags --libs'):
-            conf.env.AddPkgConfigLibs(['pulse-simple'])
 
         if not conf.CheckLibWithHeaderExt(
                 'pulse-simple', 'pulse/simple.h', 'C', run=not is_crosscompiling):
@@ -291,9 +285,6 @@ if 'sox' in autobuild_dependencies:
 
 elif 'sox' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
-
-    if not conf.AddPkgConfigDependency('sox', '--cflags --libs'):
-        conf.env.AddPkgConfigLibs(['sox'])
 
     if not is_crosscompiling:
         if not conf.CheckLibWithHeaderExt(
