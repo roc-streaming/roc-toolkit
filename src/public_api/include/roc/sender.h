@@ -61,7 +61,7 @@ extern "C" {
  * zero and are created automatically. In simple cases just use \c ROC_SLOT_DEFAULT.
  *
  * Each slot has its own set of *interfaces*, one per each type defined in \ref
- * roc_interface. The interface defines the type of the comminication with the remote peer
+ * roc_interface. The interface defines the type of the communication with the remote peer
  * and the set of the protocols supported by it.
  *
  * Supported actions with the interface:
@@ -181,7 +181,7 @@ ROC_API int roc_sender_open(roc_context* context,
  * before calling roc_sender_connect() for this slot and interface. It should not be
  * called when calling roc_sender_bind() for the interface.
  *
- * Automaticaly initializes slot with given index if it's used first time.
+ * Automatically initializes slot with given index if it's used first time.
  *
  * **Parameters**
  *  - \p sender should point to an opened sender
@@ -211,7 +211,7 @@ ROC_API int roc_sender_set_outgoing_address(roc_sender* sender,
  * Each slot's interface can be bound or connected only once.
  * May be called multiple times for different slots or interfaces.
  *
- * Automaticaly initializes slot with given index if it's used first time.
+ * Automatically initializes slot with given index if it's used first time.
  *
  * **Parameters**
  *  - \p sender should point to an opened sender
