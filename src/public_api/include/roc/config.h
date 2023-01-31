@@ -62,7 +62,7 @@ static const roc_slot ROC_SLOT_DEFAULT = 0;
  *
  * \c ROC_INTERFACE_CONSOLIDATED is mutually exclusive with lower-level interfaces.
  * In most cases, the user needs only \c ROC_INTERFACE_CONSOLIDATED. However, the
- * lower-level intarfaces may be useful if an external signaling mechanism is used or for
+ * lower-level interfaces may be useful if an external signaling mechanism is used or for
  * compatibility with third-party software.
  *
  * \c ROC_INTERFACE_AUDIO_SOURCE and \c ROC_INTERFACE_AUDIO_REPAIR are lower-level
