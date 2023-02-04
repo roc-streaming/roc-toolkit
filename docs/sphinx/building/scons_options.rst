@@ -99,6 +99,7 @@ Variables
 - PKG_CONFIG_PATH
 - CONFIG_GUESS
 - CLANG_FORMAT
+- DESTDIR
 
 Targets
 =======

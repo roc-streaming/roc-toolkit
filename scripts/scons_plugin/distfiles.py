@@ -2,7 +2,16 @@ import SCons.Script
 import os
 import shutil
 
-def AddDistFile(env, subdir, target, hooks=[]):
+def GetDistPath(env, instdir, *args):
+    if env.HasArgument('DESTDIR'):
+        seps = os.sep+os.altsep if os.altsep else os.sep
+        instdir = os.path.join(
+            env['DESTDIR'],
+            os.path.splitdrive(instdir)[1].lstrip(seps))
+
+    return os.path.join(*([instdir] + list(args)))
+
+def AddDistFile(env, instdir, target):
     if isinstance(target, list):
         target = target[0]
 
@@ -13,7 +22,7 @@ def AddDistFile(env, subdir, target, hooks=[]):
             target = env.File(target)
 
     src = target.path
-    dst = os.path.join(subdir, target.name)
+    dst = env.GetDistPath(instdir, target.name)
 
     def install(target, source, env):
         if os.path.isdir(src):
@@ -53,5 +62,6 @@ def AddDistAction(env, action):
 def init(env):
     env.AlwaysBuild(env.Alias('install', [], env.Action('')))
     env.AlwaysBuild(env.Alias('uninstall', [], env.Action('')))
+    env.AddMethod(GetDistPath, 'GetDistPath')
     env.AddMethod(AddDistFile, 'AddDistFile')
     env.AddMethod(AddDistAction, 'AddDistAction')

@@ -293,6 +293,8 @@ env.OverrideFromArgument('DOXYGEN', default='doxygen')
 env.OverrideFromArgument('SPHINX_BUILD', default='sphinx-build')
 env.OverrideFromArgument('BREATHE_APIDOC', default='breathe-apidoc')
 
+env.OverrideFromArgument('DESTDIR')
+
 env.PrependFromArgument('CPPFLAGS')
 env.PrependFromArgument('CXXFLAGS')
 env.PrependFromArgument('CFLAGS')
