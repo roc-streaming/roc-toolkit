@@ -35,10 +35,14 @@ void roc_log_set_level(roc_log_level level) {
 }
 
 void roc_log_set_handler(roc_log_handler handler, void* argument) {
-    void* args[2];
-    args[0] = reinterpret_cast<void*>(handler);
-    args[1] = argument;
+    if (handler != NULL) {
+        void* args[2];
+        args[0] = reinterpret_cast<void*>(handler);
+        args[1] = argument;
 
-    core::Logger::instance().set_handler(&log_handler_adapter, args,
-                                         ROC_ARRAY_SIZE(args));
+        core::Logger::instance().set_handler(&log_handler_adapter, args,
+                                             ROC_ARRAY_SIZE(args));
+    } else {
+        core::Logger::instance().set_handler(NULL, NULL, 0);
+    }
 }
