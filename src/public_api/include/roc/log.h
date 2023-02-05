@@ -119,6 +119,8 @@ ROC_API void roc_log_set_level(roc_log_level level);
  * If \p handler is not NULL, messages are passed to the handler. Otherwise, messages are
  * printed to stderr. By default the log handler is set to NULL.
  *
+ * \p argument will be passed to the handler each time it is invoked.
+ *
  * It's guaranteed that the previously set handler, if any, will not be used after this
  * function returns.
  *
