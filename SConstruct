@@ -535,20 +535,24 @@ if meta.compiler == 'clang':
 
     conf.FindTool('AR', allowed_toolchains,
                   [('llvm-ar', meta.compiler_ver), ('llvm-ar', None), ('ar', None)],
+                  compiler_dir=compiler_dir,
                   prepend_path=prepend_path)
 
     conf.FindTool('RANLIB', allowed_toolchains,
                   [('llvm-ranlib', meta.compiler_ver), ('llvm-ranlib', None), ('ranlib', None)],
+                  compiler_dir=compiler_dir,
                   prepend_path=prepend_path)
 
     conf.FindTool('STRIP', allowed_toolchains,
                   [('llvm-strip', meta.compiler_ver), ('llvm-strip', None), ('strip', None)],
+                  compiler_dir=compiler_dir,
                   prepend_path=prepend_path)
 
     conf.FindTool('OBJCOPY', allowed_toolchains,
                   [('llvm-objcopy', meta.compiler_ver),
                    ('llvm-objcopy', None),
                    ('objcopy', None)],
+                  compiler_dir=compiler_dir,
                   prepend_path=prepend_path,
                   required=False)
 

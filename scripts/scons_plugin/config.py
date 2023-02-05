@@ -142,7 +142,8 @@ def CheckCompilerOptionSupported(context, opt, language):
         context.Result('no')
         return False
 
-def FindTool(context, var, toolchains, commands, prepend_path=[], required=True):
+def FindTool(context, var, toolchains, commands,
+             compiler_dir=None, prepend_path=[], required=True):
     env = context.env
 
     context.Message("Searching %s executable... " % var)
@@ -168,6 +169,9 @@ def FindTool(context, var, toolchains, commands, prepend_path=[], required=True)
         toolchains.remove('')
         toolchains.append('')
 
+    if compiler_dir:
+        toolchains.append(compiler_dir)
+
     found = False
 
     for tool_prefix in toolchains:
@@ -181,6 +185,8 @@ def FindTool(context, var, toolchains, commands, prepend_path=[], required=True)
 
             if not tool_prefix:
                 tool = tool_name
+            elif tool_prefix == compiler_dir:
+                tool = os.path.join(compiler_dir, tool_name)
             else:
                 tool = '%s-%s' % (tool_prefix, tool_name)
 
@@ -211,7 +217,10 @@ def FindTool(context, var, toolchains, commands, prepend_path=[], required=True)
                 if actual_ver:
                     actual_ver = actual_ver[:len(tool_ver)]
 
-                if actual_ver != tool_ver:
+                actual_ver_short = actual_ver if len(actual_ver)<=2 else actual_ver[:2]
+                tool_ver_short = tool_ver if len(tool_ver)<=2 else tool_ver[:2]
+
+                if actual_ver_short != tool_ver_short:
                     env.Die(
                         ("problem detecting %s: "+
                         "found '%s', which reports version %s, but expected version %s") % (
