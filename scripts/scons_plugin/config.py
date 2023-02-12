@@ -445,8 +445,8 @@ def FindPkgConfigPath(context, prefix):
     context.Result(env['PKG_CONFIG_PATH'])
     return True
 
-def AddPkgConfigDependency(context, package, flags):
-    context.Message("Searching pkg-config package %s..." % package)
+def AddPkgConfigDependency(context, package, flags, config_path=None):
+    context.Message("Searching pkg-config package {} ...".format(package))
 
     env = context.env
     if 'PKG_CONFIG_DEPS' not in env.Dictionary():
@@ -457,7 +457,10 @@ def AddPkgConfigDependency(context, package, flags):
         context.Result('pkg-config not available')
         return False
 
-    cmd = '%s %s --silence-errors %s' % (quote(pkg_config), package, flags)
+    cmd = ''
+    if config_path and os.path.isdir(config_path):
+        cmd = 'env PKG_CONFIG_PATH={} '.format(quote(config_path))
+    cmd += '{} {} --silence-errors {}'.format(quote(pkg_config), package, flags)
     try:
         if env.ParseConfig(cmd):
             env.AppendUnique(PKG_CONFIG_DEPS=[package])

@@ -312,16 +312,22 @@ if 'openssl' in autobuild_dependencies:
     env.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
         meta.thirdparty_variant, thirdparty_versions, 'openssl')
 elif 'openssl' in system_dependencies:
+    pkg_config_path = None
+    # set custom PKG_CONFIG_PATH in MacOS
+    if meta.platform == 'darwin' and not is_crosscompiling:
+        pkg_config_path = env.FindBrewLibrary('openssl')
+
     conf = Configure(env, custom_tests=env.CustomTests)
 
-    if not conf.AddPkgConfigDependency('libssl', '--cflags --libs'):
+    if not conf.AddPkgConfigDependency(
+            'libssl', '--cflags --libs', config_path=pkg_config_path):
         conf.env.AddPkgConfigLibs(['libssl'])
 
     if not conf.CheckLibWithHeaderExt(
             'ssl', 'openssl/rand.h', 'C', run=not is_crosscompiling):
         env.Die("OpenSSL not found (see 'config.log' for details)")
 
-    env= conf.Finish()
+    env = conf.Finish()
 
 # dep: ragel
 if 'ragel' in autobuild_dependencies:
