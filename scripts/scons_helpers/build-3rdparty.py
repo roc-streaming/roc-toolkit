@@ -666,7 +666,7 @@ def splitenv(envlist):
 
 # Guess platform argument for OpenSSL's Configure script basing on toolchain string.
 # (see `./Configure LIST` for a list of all platforms and their format)
-# See also openssl/Configurations/10-main.conf
+# See also openssl/Configurations/[0-9]*.conf
 def openssl_get_platform(toolchain):
     """
     >>> openssl_get_platform('x86_64-pc-linux-gnu')
@@ -684,47 +684,41 @@ def openssl_get_platform(toolchain):
     >>> openssl_get_platform('arm-linux-androideabi')
     'android-arm'
     >>> openssl_get_platform('aarch64-linux-android')
-    'android64-aarch64'
+    'android-arm64'
+    >>> openssl_get_platform('aarch64-linux-android29')
+    'android-arm64'
     >>> openssl_get_platform('i686-linux-android')
     'android-x86'
     >>> openssl_get_platform('x86_64-linux-android')
-    'android64-x86_64'
+    'android-x86_64'
     >>> openssl_get_platform('i686-pc-linux-gnu')
     'linux-x86'
 
     # other edge cases
-    >>> openssl_get_platform('android64')
-    'android64'
+    >>> openssl_get_platform('mingw')
+    'mingw'
+    >>> openssl_get_platform('cygwin')
+    'Cygwin'
     >>> openssl_get_platform('')
     'cc'
     """
 
     # we assume that:
-    # - 'android' has more priority than 'linux'
+    # - 'android' has a higher priority than 'linux'
     # - if toolchain contains '64' and 'android' => we have android64 on 64-bit CPU
     # - if toolchain contains '64' and 'linux' => we have linux64 on 64-bit CPU
+    # - openssl architectures 'aout', 'elf', 'latomic' are meaningless (they cannot be found in
+    #   toolchain)
+    # - compiler suffixes '-cc', '-gcc', '-clang' are meaningless too
+    # - aix* OSes are never used :)
+    # - 'android64' are currently just aliases for 'android' architectures;
+    #   'android64-aarch64' is the same as 'android-arm64'
 
     bitness = 64 if '64' in toolchain else 32
 
-    # normalize os: make toolchain to have at most 3 components
-    toolchain = toolchain.\
-        replace('bcm2708hardfp-linux', 'linux').\
-        replace('openwrt-linux', 'linux').\
-        replace('pc-linux', 'linux')
-    # normalize arch: no suffix means 32 bit
-    toolchain = toolchain.replace('mips-', 'mips32-')
-
     ### corner cases
 
-    # 64 bit => explicitly prefer linux64 or android64 (concider libc and other libs
-    # to be 64 bit)
-    if bitness == 64:
-        if 'linux-' in toolchain:
-            toolchain = re.sub(r'\blinux\b', 'linux64', toolchain)
-        if 'android' in toolchain and 'android64' not in toolchain:
-            toolchain = re.sub(r'\bandroid\b', 'android64', toolchain)
-
-    # if android toolchain contains both 'arm and 'eabi' => 'arm' (32 bit)
+    # if android toolchain contains both 'arm' and 'eabi' => 'arm' (32 bit)
     # ('armeabi' doesn't work)
     if 'android' in toolchain and 'arm' in toolchain and 'eabi' in toolchain:
         return 'android-arm'
@@ -732,67 +726,61 @@ def openssl_get_platform(toolchain):
     if 'linux' in toolchain and 'arm' in toolchain and bitness == 32:
         return 'linux-generic32'
 
-    # android*: 'i[0-9]86' -> 'x86'
-    if ('android' in toolchain or 'linux' in toolchain) \
-        and '86' in toolchain and bitness == 32:
-        toolchain = re.sub(r'i\d86', 'x86', toolchain)
-
     ### generic detection
 
     # XXX: this is a dirty parser based on very simple heuristics and verified on a
     # limited set of platforms
 
-    # order is significant here as we search substrings in a whole toolchain string
+    # Order is significant here as we search substrings in a whole toolchain string.
+    #
+    # `arch` is an architecture that openssl accepts for a given `os`. arch in a toolchain may
+    # be the same but called differently, e.g. 'x86' vs 'i686'. To handle such cases,
+    # `arch_aliases` are used (see below): if `arch` is not in toolchain, we try to search all
+    # aliases (one by one) before moving to the next arch.
     platforms = [
-        # [(os,          [arch_compiler, ...]), ...]
-        ('BSD',          ['aarch64', 'generic32', 'generic64', 'ia64', 'riscv64',
-                          'sparc64', 'sparcv8', 'x86-elf', 'x86_64', 'x86']),
+        # [(os,          [arch, ...]), ...]
+        ('BSD',          ['aarch64', 'generic64', 'generic32', 'ia64', 'riscv64',
+                          'sparc64', 'sparcv8', 'x86_64', 'x86']),
         ('Cygwin',       ['i386', 'i486', 'i586', 'i686', 'x86_64', 'x86']),
-        ('UEFI',         ['x86_64', 'x86']),
-        ('UWIN',         []),
-        ('aix64',        ['gcc-as', 'gcc', 'cc']),
-        ('aix',          ['gcc', 'cc']),
-        ('android64',    ['aarch64', 'mips64', 'x86_64']),
+        #('android64',    ['aarch64', 'mips64', 'x86_64']),
         ('android',      ['arm64', 'armeabi', 'arm', 'mips64', 'mips', 'x86_64', 'x86']),
-        ('darwin64',     ['arm64-cc', 'arm64', 'ppc-cc', 'ppc', 'x86_64-cc', 'x86_64']),
-        ('darwin',       ['i386-cc', 'i386', 'ppc-cc', 'ppc']),
-        ('iossimulator', ['cross', 'xcrun']),
-        ('ios64',        ['cross', 'xcrun']),
-        ('ios',          ['cross', 'xcrun']),
-        ('linux32',      ['s390x']),
+        ('darwin64',     ['arm64', 'ppc', 'x86_64']),
+        ('darwin',       ['i386', 'ppc']),
         ('linux64',      ['loongarch64', 'mips64', 'riscv64', 's390x', 'sparcv9']),
-        ('linux',        ['aarch64', 'alpha-gcc', 'aout', 'arm64ilp32', 'armv4', 'c64xplus',
-                          'elf', 'generic32', 'generic64', 'ia64', 'latomic', 'mips32',
-                          'mips64', 'ppc64le', 'ppc64', 'ppc', 'sparcv8', 'sparcv9',
-                          'x86_64-clang', 'x86_64', 'x86-clang', 'x86', 'x32']),
+        ('linux32',      ['s390x']),
+        ('linux',        ['aarch64', 'arm64ilp32', 'armv4', 'generic64', 'generic32', 'ia64',
+                          'mips64', 'mips32', 'ppc64le', 'ppc64', 'ppc', 'sparcv8', 'sparcv9',
+                          'x86_64', 'x86', 'x32']),
         ('mingw64',      []),
         ('mingw',        []),
     ]
+    arch_aliases = {
+        'armv4':     ['arm32', 'arm'],
+        'generic32': ['generic'],
+        'mips32':    ['mips'],
+        'x86':       ['i386', 'i486', 'i586', 'i686'],
+        'arm64':     ['aarch64'], # fix for absent platform dirs in android NDK
+    }
 
     #~print('0: ', toolchain)
-    for os, archs_compilers in platforms:
-        if os in toolchain:
-            for ac in archs_compilers:
-                #~print('1: ', os, ac)
-                # corner case for BSD
-                if ac == 'x86-elf':
-                    return '-'.join([os, ac])
-                # general case: 'arch-compiler'
-                ac_arr = ac.split('-')
-                arch = ac_arr[0]
-                if arch not in toolchain:
-                    continue
-                if len(ac_arr) > 1:
-                    compiler = ac_arr[1]
-                    if compiler in toolchain:
-                        return '-'.join([os, arch, compiler])
-                #~print('2: ', os, arch)
-                return '-'.join([os, arch])
-            if os in ['mingw', 'mingw64', 'Cygwin', 'UEFI', 'UWIN', 'android64']:
-                return os
-    if 'gcc' in toolchain:
-        return 'gcc'
-    return 'cc'
+    for ossl_os, ossl_archs in platforms:
+        os = ossl_os.lower()
+        # when 64 bit, we explicitly prefer 'linux64' and similar (assuming libc and other
+        # libs to be 64 bit)
+        if os in toolchain or (bitness == 64 and os.endswith('64') and os[:-2] in toolchain):
+            for arch in ossl_archs:
+                #~print('1: ', os, arch)
+                if arch in toolchain:
+                    return '-'.join([ossl_os, arch])
+                # or any of the aliases in toolchain
+                for alias in arch_aliases.get(arch, []):
+                    if alias in toolchain:
+                        return '-'.join([ossl_os, arch])
+
+            # ignore 'android64' without generality restriction
+            if ossl_os in ['mingw', 'mingw64', 'Cygwin']:
+                return ossl_os
+    return 'cc' # just a fallback
 
 #
 # Main.

@@ -45,32 +45,6 @@ Cflags: -I${includedir}
 
     return env.File(target)
 
-# Find and return path to the pkgconfig directory of the latest version of `lib_name`
-# library installed by brew.
-#
-# When `required` = True error is raised unless the search was successful. Otherwise in
-# case of any error None is returned.
-def FindBrewLibrary(env, lib_name, required=True):
-    if not env.Which('brew'):
-        if required:
-            env.Die('brew not found')
-        else:
-            return None
-
-    # $(brew --prefix)/opt/some_lib should be a link to the latest version of some_lib,
-    # e.g. ../Cellar/some_lib@1.2/1.2.3/
-    pkg_config_path = os.path.join(
-        env.GetCommandOutput('brew --prefix'), 'opt', lib_name, 'lib', 'pkgconfig')
-
-    if not os.path.isdir(pkg_config_path):
-        if required:
-            env.Die('pkgconfig directory for library {} not found in {}'.
-                format(lib_name, pkg_config_path))
-        else:
-            return None
-    return pkg_config_path
-
 def init(env):
     env.AddMethod(AddPkgConfigLibs, 'AddPkgConfigLibs')
-    env.AddMethod(FindBrewLibrary, 'FindBrewLibrary')
     env.AddMethod(GeneratePkgConfig, 'GeneratePkgConfig')

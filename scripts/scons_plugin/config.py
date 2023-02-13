@@ -445,7 +445,7 @@ def FindPkgConfigPath(context, prefix):
     context.Result(env['PKG_CONFIG_PATH'])
     return True
 
-def AddPkgConfigDependency(context, package, flags, config_path=None):
+def AddPkgConfigDependency(context, package, flags, prefix=None):
     context.Message("Searching pkg-config package {} ...".format(package))
 
     env = context.env
@@ -457,9 +457,18 @@ def AddPkgConfigDependency(context, package, flags, config_path=None):
         context.Result('pkg-config not available')
         return False
 
+
     cmd = ''
-    if config_path and os.path.isdir(config_path):
-        cmd = 'env PKG_CONFIG_PATH={} '.format(quote(config_path))
+    if prefix:
+        pkg_config_path = os.path.join(prefix, 'lib', 'pkgconfig')
+        global_pkg_config_path = env.get('PKG_CONFIG_PATH', None)
+
+        # set user-defined $(prefix)/lib/pkgconfig path for pkg-config if needed (lowest
+        # priority); otherwise PKG_CONFIG_PATH is propagated implicitly
+        if os.path.isdir(pkg_config_path):
+            if global_pkg_config_path:
+                pkg_config_path = global_pkg_config_path + ':' + pkg_config_path
+            cmd = 'env PKG_CONFIG_PATH={} '.format(quote(pkg_config_path))
     cmd += '{} {} --silence-errors {}'.format(quote(pkg_config), package, flags)
     try:
         if env.ParseConfig(cmd):

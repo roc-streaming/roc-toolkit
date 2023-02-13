@@ -312,15 +312,14 @@ if 'openssl' in autobuild_dependencies:
     env.BuildThirdParty(thirdparty_build_dir, meta.toolchain,
         meta.thirdparty_variant, thirdparty_versions, 'openssl')
 elif 'openssl' in system_dependencies:
-    pkg_config_path = None
-    # set custom PKG_CONFIG_PATH in MacOS
+    ossl_prefix = None
+    # macOS: fallback to use a brew-installed openssl (via PKG_CONFIG_PATH)
     if meta.platform == 'darwin' and not is_crosscompiling:
-        pkg_config_path = env.FindBrewLibrary('openssl')
+        ossl_prefix = env.FindBrewPackage('openssl')
 
     conf = Configure(env, custom_tests=env.CustomTests)
 
-    if not conf.AddPkgConfigDependency(
-            'libssl', '--cflags --libs', config_path=pkg_config_path):
+    if not conf.AddPkgConfigDependency('libssl', '--cflags --libs', prefix=ossl_prefix):
         conf.env.AddPkgConfigLibs(['libssl'])
 
     if not conf.CheckLibWithHeaderExt(
