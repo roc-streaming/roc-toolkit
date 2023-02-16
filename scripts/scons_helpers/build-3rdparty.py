@@ -679,6 +679,8 @@ def openssl_get_platform(toolchain):
     'linux-generic32'
     >>> openssl_get_platform('arm-bcm2708hardfp-linux-gnueabi')
     'linux-generic32'
+    >>> openssl_get_platform('armv7a-linux-androideabi33')
+    'android-arm'
     >>> openssl_get_platform('mips64-linux-musl')
     'linux64-mips64'
     >>> openssl_get_platform('arm-linux-androideabi')
@@ -695,10 +697,10 @@ def openssl_get_platform(toolchain):
     'linux-x86'
 
     # other edge cases
-    >>> openssl_get_platform('mingw')
-    'mingw'
-    >>> openssl_get_platform('cygwin')
-    'Cygwin'
+    >>> openssl_get_platform('mingw-w64-x86_64')
+    'mingw64'
+    >>> openssl_get_platform('x86_64-pc-cygwin')
+    'Cygwin-x86_64'
     >>> openssl_get_platform('')
     'cc'
     """
@@ -716,50 +718,43 @@ def openssl_get_platform(toolchain):
 
     bitness = 64 if '64' in toolchain else 32
 
-    ### corner cases
-
-    # if android toolchain contains both 'arm' and 'eabi' => 'arm' (32 bit)
-    # ('armeabi' doesn't work)
-    if 'android' in toolchain and 'arm' in toolchain and 'eabi' in toolchain:
-        return 'android-arm'
-    # 32 bit ARM => linux-generic32; 'linux-armv4' fails :(
-    if 'linux' in toolchain and 'arm' in toolchain and bitness == 32:
-        return 'linux-generic32'
-
     ### generic detection
 
     # XXX: this is a dirty parser based on very simple heuristics and verified on a
     # limited set of platforms
 
-    # Order is significant here as we search substrings in a whole toolchain string.
+    # Set of platforms formatted as (OS, [arch1, ...]).
     #
     # `arch` is an architecture that openssl accepts for a given `os`. arch in a toolchain may
     # be the same but called differently, e.g. 'x86' vs 'i686'. To handle such cases,
     # `arch_aliases` are used (see below): if `arch` is not in toolchain, we try to search all
     # aliases (one by one) before moving to the next arch.
+    #
+    # Some tunings:
+    # - 'android-armeabi' is an alias of 'android-arm' => removed 'armeabi'
+    # - 'linux-armv4' fails on android toolchain; we use 'linux-generic32' => removed 'armv4'
+    # - 'android64' is an alias for 'android' => removed 'android64'
+    # - 'generic64' and 'generic32' never occur in toolchains => removed them
     platforms = [
-        # [(os,          [arch, ...]), ...]
-        ('BSD',          ['aarch64', 'generic64', 'generic32', 'ia64', 'riscv64',
-                          'sparc64', 'sparcv8', 'x86_64', 'x86']),
-        ('Cygwin',       ['i386', 'i486', 'i586', 'i686', 'x86_64', 'x86']),
-        #('android64',    ['aarch64', 'mips64', 'x86_64']),
-        ('android',      ['arm64', 'armeabi', 'arm', 'mips64', 'mips', 'x86_64', 'x86']),
-        ('darwin64',     ['arm64', 'ppc', 'x86_64']),
-        ('darwin',       ['i386', 'ppc']),
-        ('linux64',      ['loongarch64', 'mips64', 'riscv64', 's390x', 'sparcv9']),
-        ('linux32',      ['s390x']),
-        ('linux',        ['aarch64', 'arm64ilp32', 'armv4', 'generic64', 'generic32', 'ia64',
-                          'mips64', 'mips32', 'ppc64le', 'ppc64', 'ppc', 'sparcv8', 'sparcv9',
-                          'x86_64', 'x86', 'x32']),
-        ('mingw64',      []),
-        ('mingw',        []),
+        # order is significant here as we search substrings in a whole toolchain string!
+        # [(os,      [arch, ...]), ...]
+        ('BSD',      ['aarch64', 'ia64', 'riscv64',
+                      'sparc64', 'sparcv8', 'x86_64', 'x86']),
+        ('Cygwin',   ['i386', 'i486', 'i586', 'i686', 'x86_64', 'x86']),
+        ('android',  ['arm64', 'arm', 'mips64', 'mips', 'x86_64', 'x86']),
+        ('darwin64', ['arm64', 'ppc', 'x86_64']),
+        ('darwin',   ['i386', 'ppc']),
+        ('linux64',  ['loongarch64', 'mips64', 'riscv64', 's390x', 'sparcv9']),
+        ('linux32',  ['s390x']),
+        ('linux',    ['aarch64', 'arm64ilp32', 'ia64', 'mips64', 'mips32', 'ppc64le',
+                      'ppc64', 'ppc', 'sparcv8', 'sparcv9', 'x86_64', 'x86', 'x32']),
+        ('mingw64',  []),
+        ('mingw',    []),
     ]
     arch_aliases = {
-        'armv4':     ['arm32', 'arm'],
-        'generic32': ['generic'],
+        'arm64':     ['aarch64'],
         'mips32':    ['mips'],
         'x86':       ['i386', 'i486', 'i586', 'i686'],
-        'arm64':     ['aarch64'], # fix for absent platform dirs in android NDK
     }
 
     #~print('0: ', toolchain)
@@ -780,6 +775,10 @@ def openssl_get_platform(toolchain):
             # ignore 'android64' without generality restriction
             if ossl_os in ['mingw', 'mingw64', 'Cygwin']:
                 return ossl_os
+
+            # on 'linux' and 'BSD', unless arch was found, return '...-generic{32,64}'
+            if ossl_os in ['BSD', 'linux']:
+                return '-'.join([os, 'generic64' if bitness == 64 else 'generic32'])
     return 'cc' # just a fallback
 
 #
@@ -787,7 +786,6 @@ def openssl_get_platform(toolchain):
 #
 
 # for tests run `python scripts/scons_helpers/build-3rdparty.py run-tests`
-# (see docs for doctest module)
 if len(sys.argv) == 2 and sys.argv[1] == 'run-tests':
     import doctest
     doctest.testmod()

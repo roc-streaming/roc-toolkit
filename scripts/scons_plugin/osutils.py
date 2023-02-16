@@ -122,9 +122,13 @@ def FindBrewPackage(env, pkg_name, required=True):
     if not env.Which('brew'):
         return None
 
+    brew_prefix = env.GetCommandOutput('brew --prefix')
+    if not brew_prefix:
+        return None
+
     # $(brew --prefix)/opt/some_pkg should be a link to the latest version of some_pkg,
     # e.g. ../Cellar/some_pkg@1.2/1.2.3/
-    prefix = os.path.join(env.GetCommandOutput('brew --prefix'), 'opt', pkg_name)
+    prefix = os.path.join(brew_prefix, 'opt', pkg_name)
     if not os.path.isdir(prefix):
         return None
     return prefix
