@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 set -euxo pipefail
 
 repo="$1"
