@@ -91,7 +91,7 @@ elif 'libuv' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if not conf.AddPkgConfigDependency('libuv', '--cflags --libs'):
-        conf.env.AddPkgConfigLibs(['uv'])
+        conf.env.AddManualDependency(libs=['uv'])
 
     if not is_crosscompiling:
         if not conf.CheckLibWithHeaderExt(
@@ -113,7 +113,7 @@ elif 'libunwind' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if not conf.AddPkgConfigDependency('libunwind', '--cflags --libs'):
-        conf.env.AddPkgConfigLibs(['unwind'])
+        conf.env.AddManualDependency(libs=['unwind'])
 
     if not conf.CheckLibWithHeaderExt('unwind', 'libunwind.h', 'C', run=not is_crosscompiling):
         env.Die("libunwind not found (see 'config.log' for details)")
@@ -130,7 +130,7 @@ elif 'libatomic_ops' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if not conf.AddPkgConfigDependency('atomic_ops', '--cflags --libs'):
-        conf.env.AddPkgConfigLibs(['atomic_ops'])
+        conf.env.AddManualDependency(libs=['atomic_ops'])
 
     if not conf.CheckLibWithHeaderExt('atomic_ops', 'atomic_ops.h', 'C',
                                       run=not is_crosscompiling):
@@ -151,7 +151,7 @@ elif 'openfec' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if not conf.AddPkgConfigDependency('openfec', '--cflags --libs'):
-        conf.env.AddPkgConfigLibs(['openfec'])
+        conf.env.AddManualDependency(libs=['openfec'])
 
         if GetOption('with_openfec_includes'):
             openfec_includes = GetOption('with_openfec_includes')
@@ -199,7 +199,7 @@ elif 'speexdsp' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if not conf.AddPkgConfigDependency('speexdsp', '--cflags --libs'):
-        conf.env.AddPkgConfigLibs(['speexdsp'])
+        conf.env.AddManualDependency(libs=['speexdsp'])
 
     if not conf.CheckLibWithHeaderExt('speexdsp', 'speex/speex_resampler.h', 'C',
                                           run=not is_crosscompiling):
@@ -242,7 +242,7 @@ elif 'pulseaudio' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if not conf.AddPkgConfigDependency('libpulse', '--cflags --libs'):
-        conf.env.AddPkgConfigLibs(['pulse'])
+        conf.env.AddManualDependency(libs=['pulse'])
 
     if not conf.CheckLibWithHeaderExt(
             'pulse', 'pulse/pulseaudio.h', 'C', run=not is_crosscompiling):
@@ -254,7 +254,7 @@ elif 'pulseaudio' in system_dependencies:
         conf = Configure(subenvs.examples, custom_tests=env.CustomTests)
 
         if not conf.AddPkgConfigDependency('libpulse-simple', '--cflags --libs'):
-            conf.env.AddPkgConfigLibs(['pulse-simple'])
+            conf.env.AddManualDependency(libs=['pulse-simple'])
 
         if not conf.CheckLibWithHeaderExt(
                 'pulse-simple', 'pulse/simple.h', 'C', run=not is_crosscompiling):
@@ -294,7 +294,7 @@ elif 'sox' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if not conf.AddPkgConfigDependency('sox', '--cflags --libs'):
-        conf.env.AddPkgConfigLibs(['sox'])
+        conf.env.AddManualDependency(libs=['sox'])
 
     if not is_crosscompiling:
         if not conf.CheckLibWithHeaderExt(
@@ -320,7 +320,7 @@ elif 'openssl' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if not conf.AddPkgConfigDependency('libssl', '--cflags --libs', add_prefix=ossl_prefix):
-        conf.env.AddPkgConfigLibs(['libssl'])
+        conf.env.AddManualDependency(libs=['libssl'], prefix=ossl_prefix)
 
     if not conf.CheckLibWithHeaderExt('ssl', 'openssl/rand.h', 'C', run=not is_crosscompiling):
         env.Die("OpenSSL not found (see 'config.log' for details)")
@@ -378,7 +378,7 @@ elif 'cpputest' in system_dependencies:
     conf = Configure(subenvs.tests, custom_tests=env.CustomTests)
 
     if not conf.AddPkgConfigDependency('cpputest', '--cflags --libs'):
-        conf.env.AddPkgConfigLibs(['CppUTest'])
+        conf.env.AddManualDependency(libs=['CppUTest'])
 
     if not conf.CheckLibWithHeaderExt(
             'CppUTest', 'CppUTest/TestHarness.h', 'CXX', run=not is_crosscompiling):
@@ -398,7 +398,7 @@ elif 'google-benchmark' in system_dependencies:
     conf = Configure(subenvs.tests, custom_tests=env.CustomTests)
 
     if not conf.AddPkgConfigDependency('benchmark', '--cflags --libs'):
-        conf.env.AddPkgConfigLibs(['benchmark'])
+        conf.env.AddManualDependency(libs=['benchmark'])
 
     if not conf.CheckLibWithHeaderExt(
             'benchmark', 'benchmark/benchmark.h', 'CXX', run=not is_crosscompiling):
