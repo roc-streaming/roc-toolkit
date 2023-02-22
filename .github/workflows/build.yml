@@ -75,6 +75,11 @@ jobs:
         run: |
           scripts/ci_checks/docker.sh ${{ matrix.image }} scripts/ci_checks/${{ matrix.script }}.sh
 
+      - name: Handle failure
+        if: failure()
+        run: |
+          scripts/ci_checks/failure.sh
+
   linux-arm:
     runs-on: ubuntu-latest
 
@@ -104,6 +109,11 @@ jobs:
       - name: Build and test
         run: |
           scripts/ci_checks/docker.sh ${{ matrix.image }} scripts/ci_checks/${{ matrix.script }}.sh
+
+      - name: Handle failure
+        if: failure()
+        run: |
+          scripts/ci_checks/failure.sh
 
   linux-checks:
     runs-on: ubuntu-latest
@@ -147,6 +157,11 @@ jobs:
         run: |
           scripts/ci_checks/docker.sh ${{ matrix.image }} scripts/ci_checks/${{ matrix.script }}.sh
 
+      - name: Handle failure
+        if: failure()
+        run: |
+          scripts/ci_checks/failure.sh
+
   android-linux:
     strategy:
       fail-fast: false
@@ -184,6 +199,11 @@ jobs:
         run: |
           scripts/ci_checks/docker.sh ${{ matrix.image }} \
             scripts/ci_checks/android/linux.sh ${{ matrix.toolchain }}
+
+      - name: Handle failure
+        if: failure()
+        run: |
+          scripts/ci_checks/failure.sh
 
   android-macos:
     strategy:
@@ -240,6 +260,11 @@ jobs:
         run: |
           scripts/ci_checks/android/macos_build.sh
 
+      - name: Handle failure
+        if: failure()
+        run: |
+          scripts/ci_checks/failure.sh
+
   macos:
     strategy:
       fail-fast: false
@@ -266,6 +291,11 @@ jobs:
       - name: Build and test
         run: |
           scripts/ci_checks/macos/macos.sh
+
+      - name: Handle failure
+        if: failure()
+        run: |
+          scripts/ci_checks/failure.sh
 
   triggers:
     if: ${{ github.repository_owner == 'roc-streaming' && github.event_name == 'push' }}
