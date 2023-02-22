@@ -784,10 +784,10 @@ if 'target_posix' in env['ROC_TARGETS'] and meta.platform not in ['darwin', 'uni
     env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', '200809')])
 
 if meta.platform in ['linux', 'unix']:
-    env.AddPkgConfigLibs(['rt', 'dl', 'm'])
+    env.AddManualDependency(libs=['rt', 'dl', 'm'])
 
 if meta.platform in ['android']:
-    env.AddPkgConfigLibs(['log', 'android'])
+    env.AddManualDependency(libs=['log', 'android'])
 
 if meta.compiler in ['gcc', 'clang']:
     if not meta.platform in ['android']:
@@ -806,7 +806,7 @@ if meta.compiler in ['gcc', 'clang']:
         ]})
 
     if meta.platform in ['linux', 'darwin']:
-        env.AddPkgConfigLibs(['pthread'])
+        env.AddManualDependency(libs=['pthread'])
 
     if meta.platform in ['linux', 'android']:
         if not GetOption('disable_soversion'):
@@ -866,7 +866,7 @@ if meta.compiler in ['gcc', 'clang']:
             ]})
 
 if meta.compiler in ['cc']:
-    env.AddPkgConfigLibs(['pthread'])
+    env.AddManualDependency(libs=['pthread'])
 
     if meta.variant == 'debug':
         for var in ['CXXFLAGS', 'CFLAGS']:

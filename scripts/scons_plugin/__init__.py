@@ -6,9 +6,9 @@ import scons_plugin.distfiles
 import scons_plugin.osutils
 import scons_plugin.parallel
 import scons_plugin.parsers
-import scons_plugin.pkgconfig
 import scons_plugin.pretty
 import scons_plugin.sconsutils
+import scons_plugin.systemdeps
 import scons_plugin.tests
 import scons_plugin.thirdparty
 
@@ -29,9 +29,9 @@ def generate(env):
         scons_plugin.osutils,
         scons_plugin.parallel,
         scons_plugin.parsers,
-        scons_plugin.pkgconfig,
         scons_plugin.pretty,
         scons_plugin.sconsutils,
+        scons_plugin.systemdeps,
         scons_plugin.tests,
         scons_plugin.thirdparty,
     ]

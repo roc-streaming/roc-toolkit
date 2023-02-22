@@ -1,10 +1,10 @@
 import SCons.SConf
-
 import hashlib
 import os
 import os.path
 import re
 
+# Python 2 compatibility.
 try:
     from shlex import quote
 except:
@@ -467,8 +467,8 @@ def AddPkgConfigDependency(context, package, flags, add_prefix=None):
     context.Message("Searching pkg-config package {} ...".format(package))
 
     env = context.env
-    if 'PKG_CONFIG_DEPS' not in env.Dictionary():
-        env['PKG_CONFIG_DEPS'] = []
+    if '_DEPS_PCFILES' not in env.Dictionary():
+        env['_DEPS_PCFILES'] = []
 
     pkg_config = env.get('PKG_CONFIG', None)
     if not pkg_config:
@@ -483,7 +483,7 @@ def AddPkgConfigDependency(context, package, flags, add_prefix=None):
     cmd += [pkg_config, package, '--silence-errors'] + flags.split()
     try:
         env.ParseConfig(cmd)
-        env.AppendUnique(PKG_CONFIG_DEPS=[package])
+        env.AppendUnique(_DEPS_PCFILES=[package])
     except:
         context.Result('not found')
         return False

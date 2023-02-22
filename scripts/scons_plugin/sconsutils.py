@@ -1,7 +1,6 @@
 from __future__ import print_function
 import SCons.Script
 import SCons.Util
-
 import sys
 
 def Die(env, fmt, *args):
