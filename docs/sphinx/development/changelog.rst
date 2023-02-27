@@ -19,6 +19,32 @@ Changelog
     Tests
     Documentation
 
+Version 0.2.2 (Feb 27, 2023)
+============================
+
+C API
+-----
+
+* rename ``roc_get_version`` to ``roc_version_get``
+
+Bug fixes
+---------
+
+* fix crash in ``roc_log_set_handler`` when argument is NULL
+
+Build system
+------------
+
+* fix build on recent Android NDK
+* install ``.pc`` file to ``<libdir>/pkgconfig`` instead of ``PKG_CONFIG_PATH``
+* add support for ``DESTDIR``
+* strip symbols in release build
+
+Documentation
+-------------
+
+* minor updates
+
 Version 0.2.1 (Dec 26, 2022)
 ============================
 
