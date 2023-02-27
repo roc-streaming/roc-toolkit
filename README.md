@@ -89,6 +89,13 @@ Contributions in any form are always welcome! See [contribution guidelines](http
 
 Tasks needing help are [listed here](https://github.com/roc-streaming/roc-toolkit/labels/help%20wanted).
 
+Donating
+--------
+
+If you would like to support the project financially, see details on [this page](https://roc-streaming.org/toolkit/docs/about_project/sponsors.html).
+
+Thank you!
+
 Licensing
 ---------
 
