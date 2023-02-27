@@ -64,3 +64,5 @@ Contributors
 * Victor Westerhuis <victor@westerhu.is>
 * Nick Black <dankamongmen@gmail.com>
 * Jaroslav Škarvada <jskarvad@redhat.com>
+* Valeria Khomyakova <v.khomyakova.net@gmail.com>
+* Paulo Corona <PauPauCoronaP@gmail.com>
