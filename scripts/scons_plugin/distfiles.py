@@ -48,12 +48,12 @@ def AddDistFile(env, instdir, target):
 
     env.AlwaysBuild(env.Alias('install', [], [
         env.Action(install,
-                   env.PrettyCommand('INSTALL', dst, 'yellow', 'install(%s)' % dst))
+                   env.PrettyCommand('INSTALL', dst, 'yellow', 'install({})'.format(dst)))
     ]))
 
     env.AlwaysBuild(env.Alias('uninstall', [], [
         env.Action(uninstall,
-                   env.PrettyCommand('UNINSTALL', dst, 'red', 'uninstall(%s)' % dst))
+                   env.PrettyCommand('UNINSTALL', dst, 'red', 'uninstall({})'.format(dst)))
     ]))
 
 def AddDistAction(env, action):

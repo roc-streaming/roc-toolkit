@@ -3,6 +3,7 @@ import hashlib
 import os
 import os.path
 import re
+import textwrap
 
 # Python 2 compatibility.
 try:
@@ -46,7 +47,7 @@ def _get_llvm_dir(version):
         suffixes += ['']
         ret = []
         for s in suffixes:
-            ret.append('/usr/lib/llvm%s/bin' % s)
+            ret.append('/usr/lib/llvm{}/bin'.format(s))
         return ret
 
     for llvmdir in macos_dirs() + linux_dirs():
@@ -80,19 +81,18 @@ def CheckLibWithHeaderExt(context, libs, headers, language, expr='1', run=True):
     name = libs[0]
     libs = [l for l in libs if not l in context.env['LIBS']]
 
-    suffix = '.%s' % language.lower()
-    includes = '\n'.join(['#include <%s>' % h for h in ['stdio.h'] + headers])
-    src = """
-%s
+    suffix = '.{}'.format(language.lower())
+    includes = '\n'.join(['#include <{}>'.format(h) for h in ['stdio.h'] + headers])
+    src = textwrap.dedent("""
+        {}
 
-int main() {
-    printf("%%d\\n", (int)(%s));
-    return 0;
-}
-""" % (includes, expr)
+        int main() {{
+            printf("%d\\n", (int)({}));
+            return 0;
+        }}
+    """).format(includes, expr)
 
-    context.Message("Checking for %s library %s... " % (
-        language.upper(), name))
+    context.Message("Checking for {} library {} ... ".format(language.upper(), name))
 
     if run:
         err, out = _run_prog(context, src, suffix)
@@ -110,7 +110,7 @@ int main() {
         return False
 
 def CheckProg(context, prog):
-    context.Message("Checking for executable %s... " % prog)
+    context.Message("Checking for executable {} ... ".format(prog))
 
     path = context.env.Which(prog)
     if path:
@@ -121,13 +121,13 @@ def CheckProg(context, prog):
         return False
 
 def CheckCanRunProgs(context):
-    context.Message("Checking whether we can run compiled executables... ")
+    context.Message("Checking whether we can run compiled executables ... ")
 
-    src = """
-int main() {
-    return 0;
-}
-"""
+    src = textwrap.dedent("""
+        int main() {
+            return 0;
+        }
+    """)
 
     err, out = _run_prog(context, src, '.c')
 
@@ -139,9 +139,9 @@ int main() {
         return False
 
 def CheckCompilerOptionSupported(context, opt, language):
-    context.Message("Checking whether %s compiler supports %s... " % (language.upper(), opt))
+    context.Message("Checking whether {} compiler supports {} ... ".format(language.upper(), opt))
 
-    ext = '.%s' % language.lower()
+    ext = '.' + language.lower()
     src = "int main() { return 0; }"
 
     orig_env = context.env
@@ -164,7 +164,7 @@ def FindTool(context, var, toolchains, commands,
              compiler_dir=None, prepend_path=[], required=True):
     env = context.env
 
-    context.Message("Searching %s executable... " % var)
+    context.Message("Searching {} executable ... ".format(var))
 
     if env.HasArgument(var):
         context.Result(env[var])
@@ -206,7 +206,7 @@ def FindTool(context, var, toolchains, commands,
             elif tool_prefix == compiler_dir:
                 tool = os.path.join(compiler_dir, tool_name)
             else:
-                tool = '%s-%s' % (tool_prefix, tool_name)
+                tool = '{}-{}'.format(tool_prefix, tool_name)
 
             if tool_ver:
                 search_versions = [
@@ -221,7 +221,7 @@ def FindTool(context, var, toolchains, commands,
                     search_versions += [default_ver]
 
                 for ver in reversed(sorted(set(search_versions))):
-                    versioned_tool = '%s-%s' % (tool, '.'.join(map(str, ver)))
+                    versioned_tool = '{}-{}'.format(tool, '.'.join(map(str, ver)))
                     if env.Which(versioned_tool, prepend_path):
                         tool = versioned_tool
                         break
@@ -240,8 +240,8 @@ def FindTool(context, var, toolchains, commands,
 
                 if actual_ver_short != tool_ver_short:
                     env.Die(
-                        ("problem detecting %s: "+
-                        "found '%s', which reports version %s, but expected version %s") % (
+                        ("problem detecting {}: "
+                         "found '{}', which reports version {}, but expected version {}").format(
                             var,
                             tool_path[0],
                             '.'.join(map(str, actual_ver)) if actual_ver else '<unknown>',
@@ -249,7 +249,7 @@ def FindTool(context, var, toolchains, commands,
 
             env[var] = tool_path[0]
             if tool_flags:
-                env['%sFLAGS' % var] = ' '.join(tool_flags)
+                env[var + 'FLAGS'] = ' '.join(tool_flags)
 
             found = True
             break
@@ -259,7 +259,7 @@ def FindTool(context, var, toolchains, commands,
 
     if not found:
         if required:
-            env.Die("can't find %s executable" % var)
+            env.Die("can't find {} executable".format(var))
         else:
             env[var] = None
             context.Result('not found')
@@ -268,7 +268,7 @@ def FindTool(context, var, toolchains, commands,
     message = env[var]
     realpath = os.path.realpath(env[var])
     if realpath != env[var]:
-        message += ' (%s)' % realpath
+        message += ' ({})'.format(realpath)
 
     context.Result(message)
     return True
@@ -276,7 +276,7 @@ def FindTool(context, var, toolchains, commands,
 def FindClangFormat(context):
     env = context.env
 
-    context.Message("Searching for clang-format... ")
+    context.Message("Searching for clang-format ... ")
 
     if env.HasArgument('CLANG_FORMAT'):
         context.Result(env['CLANG_FORMAT'])
@@ -286,7 +286,7 @@ def FindClangFormat(context):
     max_ver = 99
 
     def checkver(exe):
-        ver_str = env.ParseToolVersion('%s --version' % exe)
+        ver_str = env.ParseToolVersion('{exe} --version'.format(exe=exe))
         try:
             ver = tuple(map(int, ver_str.split('.')))
             return (min_ver, 0, 0) <= ver <= (max_ver, 99, 99)
@@ -300,7 +300,7 @@ def FindClangFormat(context):
         return True
 
     for ver in range(min_ver,max_ver+1):
-        clang_format = env.Which('clang-format-%d' % ver)
+        clang_format = env.Which('clang-format-{}'.format(ver))
         if clang_format and checkver(clang_format[0]):
             env['CLANG_FORMAT'] = clang_format[0]
             context.Result(env['CLANG_FORMAT'])
@@ -314,11 +314,11 @@ def FindClangFormat(context):
                 context.Result(env['CLANG_FORMAT'])
                 return True
 
-    env.Die("can't find clang-format >= %s and <= %s" % (min_ver, max_ver))
+    env.Die("can't find clang-format >= {} and <= {}".format(min_ver, max_ver))
 
 def FindLLVMDir(context, version):
     context.Message(
-        "Searching PATH for llvm %s... " % '.'.join(map(str, version)))
+        "Searching PATH for llvm {} ... ".format('.'.join(map(str, version))))
 
     llvmdir = _get_llvm_dir(version)
     if llvmdir:
@@ -330,7 +330,7 @@ def FindLLVMDir(context, version):
     return True
 
 def FindLibDir(context, prefix, host):
-    context.Message("Searching for system library directory... ")
+    context.Message("Searching for system library directory ... ")
 
     def _libdirs(host):
         dirs = ['lib/' + host]
@@ -351,7 +351,7 @@ def FindLibDir(context, prefix, host):
     return True
 
 def FindConfigGuess(context):
-    context.Message('Searching CONFIG_GUESS script... ')
+    context.Message('Searching CONFIG_GUESS script ... ')
 
     if context.env.HasArgument('CONFIG_GUESS'):
         context.Result(context.env['CONFIG_GUESS'])
@@ -392,7 +392,7 @@ def FindConfigGuess(context):
 def FindPkgConfig(context, toolchain):
     env = context.env
 
-    context.Message('Searching PKG_CONFIG... ')
+    context.Message('Searching PKG_CONFIG ... ')
 
     if env.HasArgument('PKG_CONFIG'):
         context.Result(env['PKG_CONFIG'])
@@ -401,8 +401,9 @@ def FindPkgConfig(context, toolchain):
     # https://autotools.io/pkgconfig/cross-compiling.html
     # http://tiny.cc/lh6upz
     if toolchain:
-        if env.Which(toolchain + '-pkg-config'):
-            env['PKG_CONFIG'] = toolchain + '-pkg-config'
+        pkg_config_cmd = toolchain + '-pkg-config'
+        if env.Which(pkg_config_cmd):
+            env['PKG_CONFIG'] = pkg_config_cmd
             context.Result(env['PKG_CONFIG'])
             return True
 
@@ -431,7 +432,7 @@ def FindPkgConfigPath(context, prefix):
 
     env = context.env
 
-    context.Message("Searching PKG_CONFIG_PATH...")
+    context.Message("Searching PKG_CONFIG_PATH ...")
 
     if env.HasArgument('PKG_CONFIG_PATH'):
         context.Result(env['PKG_CONFIG_PATH'])
@@ -443,7 +444,8 @@ def FindPkgConfigPath(context, prefix):
     pkg_config = env.get('PKG_CONFIG', None)
     if pkg_config:
         pkg_config_paths = env.GetCommandOutput(
-            '%s --variable pc_path pkg-config' % quote(pkg_config))
+            '{pkg_config_cmd} --variable pc_path pkg-config'.format(
+                pkg_config_cmd=quote(pkg_config)))
         try:
             path_list = pkg_config_paths.split(':')
             def select_path():
@@ -477,7 +479,7 @@ def AddPkgConfigDependency(context, package, flags,
     cmd = []
     pkg_config_path = _compose_pkg_config_path(env, add_prefix)
     if pkg_config_path:
-        cmd = ['env', 'PKG_CONFIG_PATH='+pkg_config_path]
+        cmd = ['env', 'PKG_CONFIG_PATH={}'.format(pkg_config_path)]
 
     cmd += [pkg_config, package, '--silence-errors'] + flags.split()
     try:

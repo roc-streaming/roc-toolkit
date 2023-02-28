@@ -65,7 +65,7 @@ explicit_version = set()
 
 for name, version in env.ParseThirdPartyList(GetOption('build_3rdparty')):
     if name != 'all' and not name in thirdparty_versions:
-        env.Die("unknown thirdparty name '%s' in '--build-3rdparty', expected any of: %s",
+        env.Die("unknown thirdparty name '{}' in '--build-3rdparty', expected any of: {}",
                     name, ', '.join(['all'] + list(sorted(thirdparty_versions.keys()))))
     autobuild_dependencies.add(name)
     if version:
@@ -157,19 +157,19 @@ elif 'openfec' in system_dependencies:
             openfec_includes = GetOption('with_openfec_includes')
             conf.env.Append(CPPPATH=[
                 openfec_includes,
-                '%s/lib_common' % openfec_includes,
-                '%s/lib_stable' % openfec_includes,
+                openfec_includes + '/lib_common',
+                openfec_includes + '/lib_stable',
             ])
         elif not is_crosscompiling:
            for prefix in ['/usr/local', '/usr']:
-               if os.path.exists('%s/include/openfec' % prefix):
+               if os.path.exists(prefix + '/include/openfec'):
                    conf.env.Append(CPPPATH=[
-                       '%s/include/openfec' % prefix,
-                       '%s/include/openfec/lib_common' % prefix,
-                       '%s/include/openfec/lib_stable' % prefix,
+                       prefix + '/include/openfec',
+                       prefix + '/include/openfec/lib_common',
+                       prefix + '/include/openfec/lib_stable',
                    ])
                    conf.env.Append(LIBPATH=[
-                       '%s/lib' % prefix,
+                       prefix + '/lib',
                    ])
                    break
 
@@ -344,7 +344,7 @@ elif 'ragel' in system_dependencies:
         ragel = 'ragel'
 
     if not conf.CheckProg(ragel):
-        env.Die("ragel not found in PATH (looked for '%s')" % ragel)
+        env.Die("ragel not found in PATH (looked for '{}')", ragel)
 
     env = conf.Finish()
 
@@ -365,7 +365,7 @@ elif 'gengetopt' in system_dependencies:
         gengetopt = 'gengetopt'
 
     if not conf.CheckProg(gengetopt):
-        env.Die("gengetopt not found in PATH (looked for '%s')" % gengetopt)
+        env.Die("gengetopt not found in PATH (looked for '{}')", gengetopt)
 
     env = conf.Finish()
 

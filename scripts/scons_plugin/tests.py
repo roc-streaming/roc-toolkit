@@ -18,14 +18,14 @@ def _get_non_test_targets(env):
         yield env.Dir('#')
 
 def _run_with_timeout(env, cmd, timeout):
-    return '%s scripts/scons_helpers/run-with-timeout.py %s %s' % (
+    return '{} scripts/scons_helpers/run-with-timeout.py {} {}'.format(
         env.GetPythonExecutable(),
         timeout,
         cmd)
 
 def _add_test(env, kind, name, exe, cmd, timeout):
-    varname = '_%s_TARGETS' % kind.upper()
-    testname = '%s/%s' % (kind, name)
+    varname = '_{}_TARGETS'.format(kind.upper())
+    testname = '{}/{}'.format(kind, name)
 
     if not _is_test_enabled(kind, testname):
         return
