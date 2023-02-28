@@ -9,8 +9,8 @@ except:
 
 def _get_versioned_thirdparty(env, name, versions):
     if not name in versions:
-        env.Die("unknown 3rdparty '%s'" % name)
-    return name + '-' + versions[name]
+        env.Die("unknown 3rdparty '{}'", name)
+    return '{}-{}'.format(name, versions[name])
 
 def _build_thirdparty(env, build_root, toolchain, variant, versions, name, deps, includes, libs):
     versioned_name = _get_versioned_thirdparty(env, name, versions)
@@ -20,16 +20,16 @@ def _build_thirdparty(env, build_root, toolchain, variant, versions, name, deps,
         versioned_deps.append(_get_versioned_thirdparty(env, dep, versions))
 
     env_vars = [
-        'CXX=%s'    % quote(env['CXX']),
-        'CXXLD=%s'  % quote(env['CXXLD']),
-        'CC=%s'     % quote(env['CC']),
-        'CCLD=%s'   % quote(env['CCLD']),
-        'AR=%s'     % quote(env['AR']),
-        'RANLIB=%s' % quote(env['RANLIB']),
+        'CXX='    + quote(env['CXX']),
+        'CXXLD='  + quote(env['CXXLD']),
+        'CC='     + quote(env['CC']),
+        'CCLD='   + quote(env['CCLD']),
+        'AR='     + quote(env['AR']),
+        'RANLIB=' + quote(env['RANLIB']),
     ]
 
     if 'PKG_CONFIG' in env.Dictionary():
-        env_vars += ['PKG_CONFIG=%s' % quote(env['PKG_CONFIG'])]
+        env_vars += ['PKG_CONFIG={}'.format(quote(env['PKG_CONFIG']))]
 
     project_root = env.Dir('#').srcnode().abspath
     build_root = env.Dir(build_root).abspath
@@ -40,19 +40,20 @@ def _build_thirdparty(env, build_root, toolchain, variant, versions, name, deps,
         os.chdir(project_root)
 
         if env.Execute(
-            '%s scripts/scons_helpers/build-3rdparty.py %s 3rdparty/_distfiles %s %s %s %s %s' % (
-                quote(env.GetPythonExecutable()),
-                quote(os.path.relpath(build_root, project_root)),
-                quote(toolchain),
-                quote(variant),
-                quote(versioned_name),
-                quote(':'.join(versioned_deps)),
-                ' '.join(env_vars)),
+            '{python_cmd} scripts/scons_helpers/build-3rdparty.py '
+            '{work_dir} 3rdparty/_distfiles {toolchain} {variant} {pkg} {deps} {env}'.format(
+                python_cmd=quote(env.GetPythonExecutable()),
+                work_dir=quote(os.path.relpath(build_root, project_root)),
+                toolchain=quote(toolchain),
+                variant=quote(variant),
+                pkg=quote(versioned_name),
+                deps=quote(':'.join(versioned_deps)),
+                env=' '.join(env_vars)),
             cmdstr = env.PrettyCommand(
                 'BUILD', os.path.relpath(thirdparty_dir, project_root), 'yellow')):
 
             logfile = os.path.join(thirdparty_dir, 'build.log')
-            message = "can't make '%s', see '%s' for details" % (
+            message = "can't make '{}', see '{}' for details".format(
                 versioned_name, os.path.relpath(logfile, project_root))
 
             if os.environ.get('CI', '') in ['1', 'true']:
@@ -62,14 +63,14 @@ def _build_thirdparty(env, build_root, toolchain, variant, versions, name, deps,
                 except:
                     pass
 
-            env.Die('%s', message)
+            env.Die('{}', message)
 
         os.chdir(saved_cwd)
 
 def _import_thridparty(env, build_root, toolchain, variant, versions, name, deps, includes, libs):
     def needlib(lib):
         for name in libs:
-            if fnmatch.fnmatch(os.path.basename(lib), 'lib%s.*' % name):
+            if fnmatch.fnmatch(os.path.basename(lib), 'lib{}.*'.format(name)):
                 return True
         return False
 
@@ -79,22 +80,22 @@ def _import_thridparty(env, build_root, toolchain, variant, versions, name, deps
         includes = ['']
 
     for s in includes:
-        incdir  ='%s/%s/include' % (build_root, versioned_name)
+        incdir = '{}/{}/include'.format(build_root, versioned_name)
         if s:
             incdir += '/' + s
 
         if os.path.isdir(env.Dir(incdir).abspath):
             env.Prepend(CPPPATH=[incdir])
 
-    libdir = '%s/%s/lib' % (build_root, versioned_name)
-    rpathdir = '%s/%s/rpath' % (build_root, versioned_name)
+    libdir = '{}/{}/lib'.format(build_root, versioned_name)
+    rpathdir = '{}/{}/rpath'.format(build_root, versioned_name)
 
     if os.path.isdir(env.Dir(libdir).abspath):
         env.Prepend(LIBPATH=[libdir])
 
         if env['ROC_PLATFORM'] == 'linux':
             env.Prepend(LINKFLAGS=[
-                '-Wl,-rpath-link,%s' % env.Dir(rpathdir).path,
+                '-Wl,-rpath-link,{}'.format(env.Dir(rpathdir).path),
             ])
 
         for lib in env.GlobRecursive(env.Dir(libdir).abspath, 'lib*'):
@@ -127,7 +128,7 @@ def BuildThirdParty(
 
 def GetThirdPartyExecutable(env, build_root, versions, name, exe_name):
     return env.File(
-        '%s/%s/bin/%s%s' % (
+        '{}/{}/bin/{}{}'.format(
             build_root,
             _get_versioned_thirdparty(env, name, versions),
             exe_name,

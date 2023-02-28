@@ -7,7 +7,7 @@ import sys
 
 # Formats message, prints to stderr, and exits with error.
 def Die(env, fmt, *args):
-    print('error: ' + (fmt % args).strip() + '\n', file=sys.stderr)
+    print('error: {}\n'.format(fmt.format(*args).strip()), file=sys.stderr)
     SCons.Script.Exit(1)
 
 # Returns a deep clone of env.

@@ -65,7 +65,7 @@ def PrettyCommand(env, command, args, color, cmdline=None):
     global _Compact
 
     if _Compact:
-        return ' %s%8s%s   %s' % (_Colors[color], command, _Colors['end'], args)
+        return ' {}{:>8s}{}   {}'.format(_Colors[color], command, _Colors['end'], args)
     elif cmdline:
         return cmdline
     else:

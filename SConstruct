@@ -37,21 +37,21 @@ AddOption('--prefix',
           action='store',
           type='string',
           default=default_prefix,
-          help="installation prefix, '%s' by default" % default_prefix)
+          help="installation prefix, '{}' by default".format(default_prefix))
 
 AddOption('--bindir',
           dest='bindir',
           action='store',
           type='string',
           default=os.path.join(GetOption('prefix'), 'bin'),
-          help=("path to the binary installation directory (where to "+
+          help=("path to the binary installation directory (where to "
                 "install Roc command-line tools), '<prefix>/bin' by default"))
 
 AddOption('--libdir',
           dest='libdir',
           action='store',
           type='string',
-          help=("path to the library installation directory (where to "+
+          help=("path to the library installation directory (where to "
                 "install Roc library), auto-detect by default"))
 
 AddOption('--incdir',
@@ -59,7 +59,7 @@ AddOption('--incdir',
           action='store',
           type='string',
           default=os.path.join(GetOption('prefix'), 'include'),
-          help=("path to the headers installation directory (where to "+
+          help=("path to the headers installation directory (where to "
                 "install Roc headers), '<prefix>/include' by default"))
 
 AddOption('--mandir',
@@ -67,48 +67,48 @@ AddOption('--mandir',
           action='store',
           type='string',
           default=os.path.join(GetOption('prefix'), 'share/man/man1'),
-          help=("path to the manuals installation directory (where to "+
+          help=("path to the manuals installation directory (where to "
                 "install Roc manual pages), '<prefix>/share/man/man1' by default"))
 
 AddOption('--build',
           dest='build',
           action='store',
           type='string',
-          help=("system name where Roc is being compiled, "+
-                "e.g. 'x86_64-pc-linux-gnu', "+
+          help=("system name where Roc is being compiled, "
+                "e.g. 'x86_64-pc-linux-gnu', "
                 "auto-detect if empty"))
 
 AddOption('--host',
           dest='host',
           action='store',
           type='string',
-          help=("system name where Roc will run, "+
-                "e.g. 'arm-linux-gnueabihf', "+
+          help=("system name where Roc will run, "
+                "e.g. 'arm-linux-gnueabihf', "
                 "auto-detect if empty"))
 
 AddOption('--platform',
           dest='platform',
           action='store',
           choices=([''] + supported_platforms),
-          help=("platform name where Roc will run, "+
-            "supported values: empty (detect from host), %s" % (
-              ', '.join(["'%s'" % s for s in supported_platforms]))))
+          help=("platform name where Roc will run, "
+                "supported values: empty (detect from host), {}".format(
+                ', '.join(["'{}'".format(s) for s in supported_platforms]))))
 
 AddOption('--compiler',
           dest='compiler',
           action='store',
           type='string',
-          help=("compiler name and optional version, e.g. 'gcc-4.9', "+
-            "supported names: empty (detect what available), %s" % (
-              ', '.join(["'%s'" % s for s in supported_compilers]))))
+          help=("compiler name and optional version, e.g. 'gcc-4.9', "
+                "supported names: empty (detect what available), {}".format(
+                ', '.join(["'{}'".format(s) for s in supported_compilers]))))
 
 AddOption('--sanitizers',
           dest='sanitizers',
           action='store',
           type='string',
-          help="list of gcc/clang sanitizers, "+
-          "supported names: empty (no sanitizers), 'all', "+
-          ', '.join(["'%s'" % s for s in supported_sanitizers]))
+          help=("list of gcc/clang sanitizers, "
+                "supported names: empty (no sanitizers), 'all', " +
+                ', '.join(["'{}'".format(s) for s in supported_sanitizers])))
 
 AddOption('--enable-debug',
           dest='enable_debug',
@@ -173,8 +173,8 @@ AddOption('--disable-c11',
 AddOption('--disable-soversion',
           dest='disable_soversion',
           action='store_true',
-          help="don't write version into the shared library"+
-              " and don't create version symlinks")
+          help=("don't write version into the shared library"
+                " and don't create version symlinks"))
 
 AddOption('--disable-openfec',
           dest='disable_openfec',
@@ -215,7 +215,7 @@ AddOption('--with-openfec-includes',
           dest='with_openfec_includes',
           action='store',
           type='string',
-          help=("path to the directory with OpenFEC headers (it should contain "+
+          help=("path to the directory with OpenFEC headers (it should contain "
                 "lib_common and lib_stable subdirectories)"))
 
 AddOption('--with-includes',
@@ -234,16 +234,16 @@ AddOption('--build-3rdparty',
           dest='build_3rdparty',
           action='store',
           type='string',
-          help=("download and build specified 3rdparty libraries, "+
-                "pass a comma-separated list of library names and optional versions, "+
+          help=("download and build specified 3rdparty libraries, "
+                "pass a comma-separated list of library names and optional versions, "
                 "e.g. 'libuv:1.4.2,openfec'"))
 
 AddOption('--override-targets',
           dest='override_targets',
           action='store',
           type='string',
-          help=("override targets to use, "+
-                "pass a comma-separated list of target names, "+
+          help=("override targets to use, "
+                "pass a comma-separated list of target names, "
                 "e.g. 'pc,posix,posix_ext,gnu,libuv,openfec,...'"))
 
 # configure even in dry run mode
@@ -276,7 +276,7 @@ env.SetOption('implicit_cache', 1)
 # python versions can use different pickle protocols and switching from
 # a higher version to a lower one would cause exception
 env.SConsignFile(os.path.join(
-    env.Dir('#').abspath, '.sconsign%s%s.dblite' % sys.version_info[0:2]))
+    env.Dir('#').abspath, '.sconsign{}{}.dblite'.format(*sys.version_info[0:2])))
 
 # we always use -fPIC, so object files built for static and shared
 # libraries are no different
@@ -388,8 +388,8 @@ if set(COMMAND_LINE_TARGETS) \
 
 # meta-information about the build, used to generate env parameters
 meta = type('meta', (), {
-    field: '' for field in ('build host toolchain platform variant thirdparty_variant '+
-                            'compiler compiler_ver '+
+    field: '' for field in ('build host toolchain platform variant thirdparty_variant '
+                            'compiler compiler_ver '
                             'c11_support fpic_support').split()})
 
 # toolchain triple of the local system (where we're building), e.g. x86_64-pc-linux-gnu
@@ -425,11 +425,11 @@ else:
         elif os.path.basename(env['CXX']) in ['cc', 'c++']:
             meta.compiler = 'cc'
     elif meta.toolchain:
-        if env.Which('%s-clang++' % meta.toolchain):
+        if env.Which('{}-clang++'.format(meta.toolchain)):
             meta.compiler = 'clang'
-        elif env.Which('%s-g++' % meta.toolchain):
+        elif env.Which('{}-g++'.format(meta.toolchain)):
             meta.compiler = 'gcc'
-        elif env.Which('%s-c++' % meta.toolchain):
+        elif env.Which('{}-c++'.format(meta.toolchain)):
             meta.compiler = 'cc'
     else:
         if env.Which('clang++'):
@@ -440,22 +440,22 @@ else:
             meta.compiler = 'cc'
 
 if not meta.compiler:
-    env.Die("can't detect compiler name, please specify '--compiler={name}' manually,"+
-            " should be one of: %s'" % ', '.join(supported_compilers))
+    env.Die("can't detect compiler name, please specify '--compiler={name}' manually, "
+            "should be one of: {}", ', '.join(supported_compilers))
 
 if not meta.compiler in supported_compilers:
-    env.Die("unknown --compiler '%s', expected one of: %s",
+    env.Die("unknown --compiler '{}', expected one of: {}",
             meta.compiler, ', '.join(supported_compilers))
 
 if not meta.compiler_ver:
     if meta.toolchain:
-        meta.compiler_ver = env.ParseCompilerVersion('%s-%s' % (meta.toolchain, meta.compiler))
+        meta.compiler_ver = env.ParseCompilerVersion('{}-{}'.format(meta.toolchain, meta.compiler))
     else:
         meta.compiler_ver = env.ParseCompilerVersion(meta.compiler)
 
 if not meta.compiler_ver:
     if meta.compiler not in ['cc']:
-        env.Die("can't detect compiler version for compiler '%s'",
+        env.Die("can't detect compiler version for compiler '{}'",
                 '-'.join([s for s in [meta.toolchain, meta.compiler] if s]))
 
 conf = Configure(env, custom_tests=env.CustomTests)
@@ -489,7 +489,7 @@ if not meta.build:
         meta.build = env.ParseConfigGuess(conf.env['CONFIG_GUESS'])
 
 if not meta.build:
-    env.Die(("can't detect system type, please specify '--build={type}' manually, "+
+    env.Die(("can't detect system type, please specify '--build={type}' manually, "
              "e.g. '--build=x86_64-pc-linux-gnu'"))
 
 if not meta.host:
@@ -514,11 +514,11 @@ if not meta.platform and meta.host == meta.build:
         meta.platform = 'unix'
 
 if not meta.platform:
-    env.Die("can't detect platform name, please specify '--platform={name}' manually,"+
-            " should be one of: %s'" % ', '.join(supported_platforms))
+    env.Die("can't detect platform name, please specify '--platform={name}' manually, "
+            "should be one of: {}", ', '.join(supported_platforms))
 
 if meta.platform not in supported_platforms:
-    env.Die(("unknown --platform '%s', expected on of: %s"),
+    env.Die(("unknown --platform '{}', expected on of: {}"),
                 meta.platform, ', '.join(supported_platforms))
 
 allowed_toolchains = [meta.toolchain]
@@ -616,9 +616,9 @@ conf.FindPkgConfigPath(GetOption('prefix'))
 
 env = conf.Finish()
 
-env['ROC_BINDIR'] = '#bin/%s' % meta.host
+env['ROC_BINDIR'] = '#bin/{}'.format(meta.host)
 
-env['ROC_BUILDDIR'] = '#build/src/%s/%s' % (
+env['ROC_BUILDDIR'] = '#build/src/{}/{}'.format(
     meta.host,
     '-'.join(
         [s for s in [
@@ -628,7 +628,7 @@ env['ROC_BUILDDIR'] = '#build/src/%s/%s' % (
         ] if s])
     )
 
-env['ROC_THIRDPARTY_BUILDDIR'] = '#build/3rdparty/%s/%s' % (
+env['ROC_THIRDPARTY_BUILDDIR'] = '#build/3rdparty/{}/{}'.format(
     meta.host,
     '-'.join(
         [s for s in [
@@ -666,7 +666,7 @@ env['ROC_TARGETS'] = []
 
 if GetOption('override_targets'):
     for t in GetOption('override_targets').split(','):
-        env['ROC_TARGETS'] += ['target_%s' % t]
+        env['ROC_TARGETS'] += ['target_' + t]
 else:
     if meta.platform in ['linux', 'unix', 'darwin']:
         env.Append(ROC_TARGETS=[
@@ -810,30 +810,30 @@ if meta.compiler in ['gcc', 'clang']:
 
     if meta.platform in ['linux', 'android']:
         if not GetOption('disable_soversion'):
-            subenvs.public_libs['SHLIBSUFFIX'] = '%s.%s' % (
+            subenvs.public_libs['SHLIBSUFFIX'] = '{}.{}'.format(
                 subenvs.public_libs['SHLIBSUFFIX'], env['ROC_SOVER'])
 
         subenvs.public_libs.Append(LINKFLAGS=[
-            '-Wl,-soname,libroc%s' % subenvs.public_libs['SHLIBSUFFIX'],
+            '-Wl,-soname,libroc{}'.format(subenvs.public_libs['SHLIBSUFFIX']),
         ])
 
         if meta.variant == 'release':
             subenvs.public_libs.Append(LINKFLAGS=[
-                '-Wl,--version-script=%s' % env.File('#src/public_api/roc.version').path
+                '-Wl,--version-script={}'.format(env.File('#src/public_api/roc.version').path)
             ])
 
     if meta.platform in ['darwin']:
         if not GetOption('disable_soversion'):
-            subenvs.public_libs['SHLIBSUFFIX'] = '.%s%s' % (
+            subenvs.public_libs['SHLIBSUFFIX'] = '.{}{}'.format(
                 env['ROC_SOVER'], subenvs.public_libs['SHLIBSUFFIX'])
 
             subenvs.public_libs.Append(LINKFLAGS=[
-                '-Wl,-compatibility_version,%s' % env['ROC_SOVER'],
-                '-Wl,-current_version,%s' % env['ROC_VERSION'],
+                '-Wl,-compatibility_version,{}'.format(env['ROC_SOVER']),
+                '-Wl,-current_version,{}'.format(env['ROC_VERSION']),
             ])
 
         subenvs.public_libs.Append(LINKFLAGS=[
-            '-Wl,-install_name,%s/libroc%s' % (
+            '-Wl,-install_name,{}/libroc{}'.format(
                 env.Dir(env['ROC_BINDIR']).abspath, subenvs.public_libs['SHLIBSUFFIX']),
         ])
 
@@ -989,10 +989,10 @@ if meta.compiler in ['gcc', 'clang']:
 sanitizers = env.ParseList(GetOption('sanitizers'), supported_sanitizers)
 if sanitizers:
     if not meta.compiler in ['gcc', 'clang']:
-        env.Die("sanitizers are not supported for compiler '%s'" % meta.compiler)
+        env.Die("sanitizers are not supported for compiler '{}'", meta.compiler)
 
     for name in sanitizers:
-        flags = ['-fsanitize=%s' % name, '-fno-sanitize-recover=%s' % name]
+        flags = ['-fsanitize=' + name, '-fno-sanitize-recover=' + name]
         env.AppendUnique(CFLAGS=flags)
         env.AppendUnique(CXXFLAGS=flags)
         env.AppendUnique(LINKFLAGS=flags)
@@ -1010,8 +1010,8 @@ if meta.platform in ['darwin']:
     if not env['STRIPFLAGS']:
         env.Append(STRIPFLAGS=['-x'])
 
-env.Append(CPPPATH=['%s/tools' % env['ROC_BUILDDIR']])
-env.Append(LIBPATH=['%s' % env['ROC_BUILDDIR']])
+env.Append(CPPPATH=[env['ROC_BUILDDIR'] + '/tools'])
+env.Append(LIBPATH=[env['ROC_BUILDDIR']])
 
 # both env and subenvs have been modified after subenvs were cloned from env
 # here we propagate modifications from env to all subenvs
@@ -1024,7 +1024,7 @@ if meta.compiler in ['gcc', 'clang']:
         for var in ['CC', 'CXX']:
             senv[var] = env.GetClangDbWriter(senv[var], env['ROC_BUILDDIR'])
 
-    compile_commands = '%s/compile_commands.json' % env['ROC_BUILDDIR']
+    compile_commands = '{}/compile_commands.json'.format(env['ROC_BUILDDIR'])
 
     env.Artifact(compile_commands, '#src')
     env.Install('#', compile_commands)

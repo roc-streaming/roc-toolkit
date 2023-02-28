@@ -32,17 +32,17 @@ def GeneratePkgConfig(env, build_dir, filename, prefix, libdir, name, desc, url,
       env.get('_DEPS_CPPPATH', [])
 
     src = textwrap.dedent("""\
-    prefix={prefix}
-    exec_prefix=${{prefix}}
+        prefix={prefix}
+        exec_prefix=${{prefix}}
 
-    Name: {name}
-    Description: {desc}
-    URL: {url}
-    Version: {version}
-    Requires: {deps}
+        Name: {name}
+        Description: {desc}
+        URL: {url}
+        Version: {version}
+        Requires: {deps}
 
-    Libs: {libdirs} {libs}
-    Cflags: {incdirs}
+        Libs: {libdirs} {libs}
+        Cflags: {incdirs}
     """).format(
         prefix=prefix,
         name=name,
