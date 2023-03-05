@@ -12,7 +12,7 @@ thirdparty_versions = {
     'libuv':            '1.35.0',
     'ltdl':             '2.4.6',
     'openfec':          '1.4.2.7',
-    'openssl':          '3.0.7',
+    'openssl':          '3.0.8',
     'pulseaudio':       '12.2',
     'sndfile':          '1.0.28',
     'sox':              '14.4.2',
