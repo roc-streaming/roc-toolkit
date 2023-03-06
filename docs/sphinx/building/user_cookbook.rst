@@ -8,8 +8,8 @@ User cookbook
 Linux (native)
 ==============
 
-Ubuntu 16.04 and later
-----------------------
+Ubuntu / Debian
+---------------
 
 .. code::
 
@@ -30,30 +30,8 @@ Ubuntu 16.04 and later
     # install libraries and tools
     $ sudo scons -Q --build-3rdparty=openfec install
 
-Ubuntu 14.04 and later / Debian Jessie and later
-------------------------------------------------
-
-.. code::
-
-    # for Roc
-    $ sudo apt-get install g++ pkg-config scons ragel gengetopt \
-        libunwind8-dev libspeexdsp-dev libsox-dev libpulse-dev
-
-    # for 3rd-parties
-    $ sudo apt-get install libtool intltool autoconf automake make cmake
-
-    # clone repo
-    $ git clone https://github.com/roc-streaming/roc-toolkit.git
-    $ cd roc-toolkit
-
-    # build libraries and tools
-    $ scons -Q --build-3rdparty=libuv,libatomic_ops,openfec
-
-    # install libraries and tools
-    $ sudo scons -Q --build-3rdparty=libuv,libatomic_ops,openfec install
-
-Fedora 22 and later
--------------------
+Fedora
+------
 
 .. code::
 
@@ -74,8 +52,30 @@ Fedora 22 and later
     # install libraries and tools
     $ sudo scons -Q --build-3rdparty=openfec install
 
-Centos 7 and later
-------------------
+openSUSE
+--------
+
+.. code::
+
+    # for Roc
+    $ sudo zypper install gcc-c++ scons ragel gengetopt \
+        libuv-devel libunwind-devel speexdsp-devel sox-devel libpulse-devel
+
+    # for 3rd-parties
+    $ sudo zypper install pkg-config intltool libtool autoconf automake make cmake
+
+    # clone repo
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
+    $ cd roc-toolkit
+
+    # build libraries and tools
+    $ scons -Q --build-3rdparty=openfec
+
+    # install libraries and tools
+    $ sudo scons -Q --build-3rdparty=openfec install
+
+Centos
+------
 
 .. code::
 
@@ -99,35 +99,14 @@ Centos 7 and later
     # install libraries and tools
     $ sudo scons -Q --build-3rdparty=libuv,libatomic_ops,openfec install
 
-openSUSE Leap and later
------------------------
-
-.. code::
-
-    # for Roc
-    $ sudo zypper install gcc-c++ scons ragel gengetopt \
-         libuv-devel libunwind-devel speexdsp-devel sox-devel libpulse-devel
-
-    # for 3rd-parties
-    $ sudo zypper install pkg-config intltool libtool autoconf automake make cmake
-
-    # clone repo
-    $ git clone https://github.com/roc-streaming/roc-toolkit.git
-    $ cd roc-toolkit
-
-    # build libraries and tools
-    $ scons -Q --build-3rdparty=openfec
-
-    # install libraries and tools
-    $ sudo scons -Q --build-3rdparty=openfec install
-
 Arch Linux
 ----------
 
 .. code::
 
     # for Roc
-    $ sudo pacman -S gcc pkgconf scons ragel gengetopt libuv libunwind speexdsp sox gsm libpulse
+    $ sudo pacman -S gcc pkgconf scons ragel gengetopt \
+        libuv libunwind speexdsp sox gsm libpulse
 
     # for 3rd-parties
     $ sudo pacman -S grep gawk libtool intltool autoconf automake make cmake
@@ -262,13 +241,17 @@ Raspberry Pi 1 and Zero (32-bit)
 macOS
 =====
 
-macOS 10.12 and later
----------------------
+Prerequisites:
+
+* Install XCode Command Line Tools
+* Install `Homebrew <https://brew.sh/>`_
+
+Then you can run the following commands:
 
 .. code::
 
     # for Roc
-    $ brew install scons ragel gengetopt libuv speexdsp sox
+    $ brew install pkg-config scons ragel gengetopt libuv speexdsp sox
 
     # for 3rd-parties
     $ brew install libtool autoconf automake make cmake
@@ -282,27 +265,6 @@ macOS 10.12 and later
 
     # install libraries and tools
     $ sudo scons -Q --build-3rdparty=openfec install
-
-macOS 10.11 and later
----------------------
-
-.. code::
-
-    # for Roc
-    $ brew install scons ragel gengetopt speexdsp
-
-    # for 3rd-parties
-    $ brew install libtool autoconf automake make cmake
-
-    # clone repo
-    $ git clone https://github.com/roc-streaming/roc-toolkit.git
-    $ cd roc-toolkit
-
-    # build libraries and tools
-    $ scons -Q --build-3rdparty=libuv,openfec,sox
-
-    # install libraries and tools
-    $ sudo scons -Q --build-3rdparty=libuv,openfec,sox install
 
 Android
 =======
@@ -374,7 +336,7 @@ Then you can run the following commands:
 .. code::
 
     # install Android components (you can use higher versions)
-    $ sdkmanager 'platforms;android-24'
+    $ sdkmanager 'platforms;android-29'
     $ sdkmanager 'build-tools;28.0.3'
     $ sdkmanager 'ndk;21.4.7075529'
     $ sdkmanager 'cmake;3.10.2.4988404'
@@ -395,7 +357,7 @@ Then you can run the following commands:
           --disable-tools \
           --build-3rdparty=libuv,openfec,speexdsp \
           --compiler=clang \
-          --host=aarch64-linux-android24
+          --host=aarch64-linux-android29
 
     # build libroc.so for 32-bit ARM, API level 24
     $ scons -Q \
@@ -411,7 +373,7 @@ Then you can run the following commands:
           --disable-tools \
           --build-3rdparty=libuv,openfec,speexdsp \
           --compiler=clang \
-          --host=x86_64-linux-android24
+          --host=x86_64-linux-android29
 
     # build libroc.so for 32-bit Intel, API level 24
     $ scons -Q \
@@ -419,4 +381,4 @@ Then you can run the following commands:
           --disable-tools \
           --build-3rdparty=libuv,openfec,speexdsp \
           --compiler=clang \
-          --host=i686-linux-android24
+          --host=i686-linux-android29
