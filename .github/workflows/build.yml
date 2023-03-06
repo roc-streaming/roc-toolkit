@@ -211,21 +211,19 @@ jobs:
       matrix:
         include:
           - abi: x86_64
-            api: 24
-            ndk: 21.4.7075529
+            api: 29
+            ndk: 25.2.9519653
             build_tools: 28.0.3
             cmake: 3.10.2.4988404
             avd_abi: x86_64
-            avd_tgt: default
+            avd_img: default
 
-    runs-on: macos-12
-    if: false
+    runs-on: macos-latest
 
     env:
       CI_ABI: ${{ matrix.abi }}
       CI_API: ${{ matrix.api }}
       CI_NDK: ${{ matrix.ndk }}
-      CI_AVD: system-images;android-${{ matrix.api }};${{ matrix.avd_tgt }};${{ matrix.avd_abi }}
 
     name: android${{ matrix.api }}-${{ matrix.abi }}/macos
     steps:
@@ -243,22 +241,31 @@ jobs:
             build-tools;${{ matrix.build_tools }}
             ndk;${{ matrix.ndk }}
             cmake;${{ matrix.cmake }}
-            system-images;android-${{ matrix.api }};${{ matrix.avd_tgt }};${{ matrix.avd_abi }}
+            system-images;android-${{ matrix.api }};${{ matrix.avd_img }};${{ matrix.avd_abi }}
             emulator
-
-      - name: Install Android emulator
-        run: |
-          wget -O emulator.zip \
-            https://dl.google.com/android/repository/emulator-darwin_x64-7140946.zip
-          unzip emulator.zip
 
       - name: Install system dependencies
         run: |
-          scripts/ci_checks/android/macos_deps.sh
+          scripts/ci_checks/android/macos.sh --install
 
-      - name: Build and test
+      - name: Build
         run: |
-          scripts/ci_checks/android/macos_build.sh
+          scripts/ci_checks/android/macos.sh --build
+
+      - name: Run Tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          arch: ${{ matrix.avd_abi }}
+          target: ${{ matrix.avd_img }}
+          avd-name: roc_device
+          ndk: ${{ matrix.ndk }}
+          cmake: ${{ matrix.cmake }}
+          force-avd-creation: false
+          emulator-options: -no-audio -no-boot-anim -no-window
+          disable-animations: true
+          script: |
+            scripts/ci_checks/android/macos.sh --test
 
       - name: Handle failure
         if: failure()
