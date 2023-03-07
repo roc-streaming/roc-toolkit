@@ -146,7 +146,7 @@ def CheckCompilerOptionSupported(context, opt, language):
 
     orig_env = context.env
 
-    context.env = orig_env.Clone()
+    context.env = orig_env.DeepClone()
     context.env.Append(**{language.upper()+'FLAGS': [opt]})
 
     err = context.CompileProg(src, ext)

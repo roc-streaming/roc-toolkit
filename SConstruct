@@ -377,7 +377,7 @@ if 'fmt' in COMMAND_LINE_TARGETS:
         env.Alias('fmt', [], fmt_actions))
 
 # build documentation
-doc_env = env.Clone()
+doc_env = env.DeepClone()
 doc_env.SConscript('docs/SConscript',
                        duplicate=0, exports='doc_env')
 
@@ -766,7 +766,7 @@ else:
 # subenvs will hold settings specific to particular parts of code
 subenv_names = 'internal_modules public_libs examples tools tests generated_code'.split()
 
-subenv_attrs = {field: env.Clone() for field in subenv_names}
+subenv_attrs = {field: env.DeepClone() for field in subenv_names}
 subenv_attrs['all'] = list(subenv_attrs.values())
 
 subenvs = type('subenvs', (), subenv_attrs)
