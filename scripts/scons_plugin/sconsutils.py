@@ -3,11 +3,13 @@ import SCons.Script
 import SCons.Util
 import sys
 
+# Formats message, prints to stderr, and exits with error.
 def Die(env, fmt, *args):
     print('error: ' + (fmt % args).strip() + '\n', file=sys.stderr)
     SCons.Script.Exit(1)
 
-def AppendEnvUnique(dst_env, src_env, exclude=[]):
+# env.MergeFrom(other_env) merges configuration from other_env into env
+def MergeFrom(dst_env, src_env, exclude=[]):
     for key, src_val in src_env.Dictionary().items():
         if key in exclude:
             continue
@@ -24,4 +26,4 @@ def AppendEnvUnique(dst_env, src_env, exclude=[]):
 
 def init(env):
     env.AddMethod(Die, 'Die')
-    env.AddMethod(AppendEnvUnique, 'AppendEnvUnique')
+    env.AddMethod(MergeFrom, 'MergeFrom')

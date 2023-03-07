@@ -1000,7 +1000,7 @@ env.Append(LIBPATH=['%s' % env['ROC_BUILDDIR']])
 # both env and subenvs have been modified after subenvs were cloned from env
 # here we propagate modifications from env to all subenvs
 for senv in subenvs.all:
-    senv.AppendEnvUnique(env)
+    senv.MergeFrom(env)
 
 # enable generation of compile_commands.json (a.k.a. clangdb)
 if meta.compiler in ['gcc', 'clang']:
