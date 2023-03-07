@@ -466,6 +466,15 @@ int main(int argc, char** argv) {
             return 1;
         }
 
+        if (args.miface_given) {
+            if (!receiver.set_multicast_group(slot, address::Iface_AudioControl,
+                                              args.miface_arg[slot])) {
+                roc_log(LogError, "can't set multicast group for --control endpoint: %s",
+                        args.miface_arg[slot]);
+                return 1;
+            }
+        }
+
         if (args.reuseaddr_given) {
             if (!receiver.set_reuseaddr(slot, address::Iface_AudioControl, true)) {
                 roc_log(LogError, "can't set reuseaddr option for --control endpoint");
