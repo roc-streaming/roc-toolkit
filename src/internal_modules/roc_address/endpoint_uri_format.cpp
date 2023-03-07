@@ -31,7 +31,7 @@ bool format_endpoint_uri(const EndpointUri& u,
             return false;
         }
 
-        if (u.port() > 0) {
+        if (u.port() >= 0) {
             dst.append_str(":");
             dst.append_uint((uint64_t)u.port(), 10);
         }

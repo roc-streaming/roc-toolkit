@@ -365,6 +365,20 @@ TEST(endpoint_uri, omit_port) {
     CHECK(!parse_endpoint_uri("ldpc://host", EndpointUri::Subset_Full, u));
 }
 
+TEST(endpoint_uri, zero_port) {
+    EndpointUri u(allocator);
+    CHECK(parse_endpoint_uri("rtsp://host:0", EndpointUri::Subset_Full, u));
+    CHECK(u.verify(EndpointUri::Subset_Full));
+
+    LONGS_EQUAL(Proto_RTSP, u.proto());
+    STRCMP_EQUAL("host", u.host());
+    LONGS_EQUAL(0, u.port());
+    CHECK(!u.path());
+    CHECK(!u.encoded_query());
+
+    STRCMP_EQUAL("rtsp://host:0", endpoint_uri_to_str(u).c_str());
+}
+
 TEST(endpoint_uri, service) {
     {
         EndpointUri u(allocator);
