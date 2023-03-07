@@ -463,12 +463,11 @@ def FindPkgConfigPath(context, prefix):
     context.Result(env['PKG_CONFIG_PATH'])
     return True
 
-def AddPkgConfigDependency(context, package, flags, add_prefix=None):
+def AddPkgConfigDependency(context, package, flags,
+                           add_prefix=None, exclude_from_pc=False):
     context.Message("Searching pkg-config package {} ...".format(package))
 
     env = context.env
-    if '_DEPS_PCFILES' not in env.Dictionary():
-        env['_DEPS_PCFILES'] = []
 
     pkg_config = env.get('PKG_CONFIG', None)
     if not pkg_config:
@@ -483,7 +482,10 @@ def AddPkgConfigDependency(context, package, flags, add_prefix=None):
     cmd += [pkg_config, package, '--silence-errors'] + flags.split()
     try:
         env.ParseConfig(cmd)
-        env.AppendUnique(_DEPS_PCFILES=[package])
+        if not exclude_from_pc:
+            if '_DEPS_PCFILES' not in env.Dictionary():
+                env['_DEPS_PCFILES'] = []
+            env.AppendUnique(_DEPS_PCFILES=[package])
     except:
         context.Result('not found')
         return False

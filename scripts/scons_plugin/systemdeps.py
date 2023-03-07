@@ -72,7 +72,7 @@ def GeneratePkgConfig(env, build_dir, filename, prefix, libdir, name, desc, url,
 # those subdirs are added to the headers and library search paths.
 # This function also automatically informs GeneratePkgConfig that correspondings
 # paths and libs should be added to .pc file.
-def AddManualDependency(env, libs=[], prefix=None):
+def AddManualDependency(env, libs=[], prefix=None, exclude_from_pc=False):
     def append_var(var, values):
         if var not in env.Dictionary():
             env[var] = []
@@ -80,18 +80,21 @@ def AddManualDependency(env, libs=[], prefix=None):
 
     if libs:
         append_var('LIBS', libs)
-        append_var('_DEPS_LIBS', libs)
+        if not exclude_from_pc:
+            append_var('_DEPS_LIBS', libs)
 
     if prefix:
         lib_dir = os.path.join(prefix, 'lib')
         if os.path.isdir(lib_dir):
             append_var('LIBPATH', [lib_dir])
-            append_var('_DEPS_LIBPATH', [lib_dir])
+            if not exclude_from_pc:
+                append_var('_DEPS_LIBPATH', [lib_dir])
 
         inc_dir = os.path.join(prefix, 'include')
         if os.path.isdir(inc_dir):
             append_var('CPPPATH', [inc_dir])
-            append_var('_DEPS_CPPPATH', [inc_dir])
+            if not exclude_from_pc:
+                append_var('_DEPS_CPPPATH', [inc_dir])
 
 # Find and return path to the package (its install prefix directory) of the latest version
 # of `pkg_name` package installed by brew. If not found, None is returned.
