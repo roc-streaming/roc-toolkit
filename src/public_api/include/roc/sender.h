@@ -203,6 +203,42 @@ ROC_API int roc_sender_set_outgoing_address(roc_sender* sender,
                                             roc_interface iface,
                                             const char* ip);
 
+/** Set sender interface address reuse option.
+ *
+ * Optional.
+ *
+ * When set to true, SO_REUSEADDR is enabled for interface socket, regardless of socket
+ * type, unless binding to ephemeral port (port explicitly set to zero).
+ *
+ * When set to false, SO_REUSEADDR is enabled only for multicast sockets, unless binding
+ * to ephemeral port (port explicitly set to zero).
+ *
+ * By default set to false.
+ *
+ * For TCP-based protocols, SO_REUSEADDR allows immediate reuse of recently closed socket
+ * in TIME_WAIT state, which may be useful you want to be able to restart server quickly.
+ *
+ * For UDP-based protocols, SO_REUSEADDR allows multiple processes to bind to the same
+ * address, which may be useful if you're using socket activation mechanism.
+ *
+ * Automatically initializes slot with given index if it's used first time.
+ *
+ * **Parameters**
+ *  - \p sender should point to an opened sender
+ *  - \p slot specifies the sender slot
+ *  - \p iface specifies the sender interface
+ *  - \p enabled should be 0 or 1
+ *
+ * **Returns**
+ *  - returns zero if the multicast group was successfully set
+ *  - returns a negative value if the arguments are invalid
+ *  - returns a negative value if an error occurred
+ */
+ROC_API int roc_sender_set_reuseaddr(roc_sender* sender,
+                                     roc_slot slot,
+                                     roc_interface iface,
+                                     int enabled);
+
 /** Connect the sender interface to a remote receiver endpoint.
  *
  * Checks that the endpoint is valid and supported by the interface, allocates

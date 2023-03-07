@@ -406,7 +406,15 @@ int main(int argc, char** argv) {
         if (args.miface_given) {
             if (!receiver.set_multicast_group(slot, address::Iface_AudioSource,
                                               args.miface_arg[slot])) {
-                roc_log(LogError, "can't set multicast group: %s", args.miface_arg[slot]);
+                roc_log(LogError, "can't set multicast group for --source endpoint: %s",
+                        args.miface_arg[slot]);
+                return 1;
+            }
+        }
+
+        if (args.reuseaddr_given) {
+            if (!receiver.set_reuseaddr(slot, address::Iface_AudioSource, true)) {
+                roc_log(LogError, "can't set reuseaddr option for --source endpoint");
                 return 1;
             }
         }
@@ -429,7 +437,15 @@ int main(int argc, char** argv) {
         if (args.miface_given) {
             if (!receiver.set_multicast_group(slot, address::Iface_AudioRepair,
                                               args.miface_arg[slot])) {
-                roc_log(LogError, "can't set multicast group: %s", args.miface_arg[slot]);
+                roc_log(LogError, "can't set multicast group for --repair endpoint: %s",
+                        args.miface_arg[slot]);
+                return 1;
+            }
+        }
+
+        if (args.reuseaddr_given) {
+            if (!receiver.set_reuseaddr(slot, address::Iface_AudioRepair, true)) {
+                roc_log(LogError, "can't set reuseaddr option for --repair endpoint");
                 return 1;
             }
         }
@@ -448,6 +464,13 @@ int main(int argc, char** argv) {
             roc_log(LogError, "can't parse --control endpoint: %s",
                     args.control_arg[slot]);
             return 1;
+        }
+
+        if (args.reuseaddr_given) {
+            if (!receiver.set_reuseaddr(slot, address::Iface_AudioControl, true)) {
+                roc_log(LogError, "can't set reuseaddr option for --control endpoint");
+                return 1;
+            }
         }
 
         if (!receiver.bind(slot, address::Iface_AudioControl, endpoint)) {

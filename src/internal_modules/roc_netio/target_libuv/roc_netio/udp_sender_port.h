@@ -33,13 +33,18 @@ struct UdpSenderConfig {
     //! interfaces. If port is zero, a random free port is selected.
     address::SocketAddr bind_address;
 
+    //! If set, enable SO_REUSEADDR when binding socket to non-ephemeral port.
+    //! If not set, SO_REUSEADDR is not enabled.
+    bool reuseaddr;
+
     //! If true, allow non-blocking writes directly in write() method.
     //! If non-blocking write can't be performed, sender falls back to
     //! regular asynchronous write.
     bool non_blocking_enabled;
 
     UdpSenderConfig()
-        : non_blocking_enabled(true) {
+        : reuseaddr(false)
+        , non_blocking_enabled(true) {
     }
 
     //! Check two configs for equality.

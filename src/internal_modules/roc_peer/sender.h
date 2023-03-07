@@ -43,6 +43,9 @@ public:
     bool
     set_outgoing_address(size_t slot_index, address::Interface iface, const char* ip);
 
+    //! Set reuseaddr option for given endpoint type.
+    bool set_reuseaddr(size_t slot_index, address::Interface iface, bool enabled);
+
     //! Connect peer to remote endpoint.
     bool
     connect(size_t slot_index, address::Interface iface, const address::EndpointUri& uri);

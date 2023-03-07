@@ -66,6 +66,9 @@ Remote repair endpoint
 .BI \-c\fP,\fB  \-\-control\fB= ENDPOINT_URI
 Remote control endpoint
 .TP
+.B  \-\-reuseaddr
+enable SO_REUSEADDR when binding sockets
+.TP
 .BI \-\-nbsrc\fB= INT
 Number of source packets in FEC block
 .TP
@@ -213,6 +216,15 @@ For example, the file named \fB/foo/bar%/[baz]\fP may be specified using either 
 Multiple sets of endpoints can be specified to send media to multiple addresses.
 .sp
 Such endpoint sets are called slots. All slots should have the same set of endpoint types (source, repair, etc) and should use the same protocols for them.
+.SS SO_REUSEADDR
+.sp
+If \fB\-\-reuseaddr\fP option is provided, \fBSO_REUSEADDR\fP socket option will be enabled for all sockets.
+.sp
+For TCP, it allows immediately reusing recently closed socket in TIME_WAIT state, which may be useful you want to be able to restart server quickly.
+.sp
+For UDP, it allows multiple processes to bind to the same address, which may be useful if you\(aqre using systemd socket activation.
+.sp
+Regardless of the option, \fBSO_REUSEADDR\fP is always disabled when binding to ephemeral port.
 .SS Time units
 .INDENT 0.0
 .TP

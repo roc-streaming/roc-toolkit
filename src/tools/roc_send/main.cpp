@@ -296,6 +296,13 @@ int main(int argc, char** argv) {
             return 1;
         }
 
+        if (args.reuseaddr_given) {
+            if (!sender.set_reuseaddr(slot, address::Iface_AudioSource, true)) {
+                roc_log(LogError, "can't set reuseaddr option for --source endpoint");
+                return 1;
+            }
+        }
+
         if (!sender.connect(slot, address::Iface_AudioSource, source_endpoint)) {
             roc_log(LogError, "can't connect sender to source endpoint");
             return 1;
@@ -309,6 +316,13 @@ int main(int argc, char** argv) {
                                          repair_endpoint)) {
             roc_log(LogError, "can't parse --repair endpoint: %s", args.repair_arg[slot]);
             return 1;
+        }
+
+        if (args.reuseaddr_given) {
+            if (!sender.set_reuseaddr(slot, address::Iface_AudioRepair, true)) {
+                roc_log(LogError, "can't set reuseaddr option for --repair endpoint");
+                return 1;
+            }
         }
 
         if (!sender.connect(slot, address::Iface_AudioRepair, repair_endpoint)) {
@@ -325,6 +339,13 @@ int main(int argc, char** argv) {
             roc_log(LogError, "can't parse --control endpoint: %s",
                     args.control_arg[slot]);
             return 1;
+        }
+
+        if (args.reuseaddr_given) {
+            if (!sender.set_reuseaddr(slot, address::Iface_AudioControl, true)) {
+                roc_log(LogError, "can't set reuseaddr option for --control endpoint");
+                return 1;
+            }
         }
 
         if (!sender.connect(slot, address::Iface_AudioControl, control_endpoint)) {

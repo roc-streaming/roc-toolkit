@@ -331,6 +331,86 @@ TEST(receiver, multicast_group_errors) {
     }
 }
 
+TEST(receiver, reuseaddr) {
+    { // disable
+        roc_receiver* receiver = NULL;
+        CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
+        CHECK(receiver);
+
+        roc_endpoint* source_endpoint = NULL;
+        CHECK(roc_endpoint_allocate(&source_endpoint) == 0);
+
+        CHECK(roc_endpoint_set_protocol(source_endpoint, ROC_PROTO_RTP) == 0);
+        CHECK(roc_endpoint_set_host(source_endpoint, "127.0.0.1") == 0);
+        CHECK(roc_endpoint_set_port(source_endpoint, 0) == 0);
+
+        CHECK(roc_receiver_set_reuseaddr(receiver, ROC_SLOT_DEFAULT,
+                                         ROC_INTERFACE_AUDIO_SOURCE, 0)
+              == 0);
+        CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
+                                source_endpoint)
+              == 0);
+
+        CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
+        LONGS_EQUAL(0, roc_receiver_close(receiver));
+    }
+    { // enable
+        roc_receiver* receiver = NULL;
+        CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
+        CHECK(receiver);
+
+        roc_endpoint* source_endpoint = NULL;
+        CHECK(roc_endpoint_allocate(&source_endpoint) == 0);
+
+        CHECK(roc_endpoint_set_protocol(source_endpoint, ROC_PROTO_RTP) == 0);
+        CHECK(roc_endpoint_set_host(source_endpoint, "127.0.0.1") == 0);
+        CHECK(roc_endpoint_set_port(source_endpoint, 0) == 0);
+
+        CHECK(roc_receiver_set_reuseaddr(receiver, ROC_SLOT_DEFAULT,
+                                         ROC_INTERFACE_AUDIO_SOURCE, 1)
+              == 0);
+        CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
+                                source_endpoint)
+              == 0);
+
+        CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
+        LONGS_EQUAL(0, roc_receiver_close(receiver));
+    }
+}
+
+TEST(receiver, reuseaddr_slots) {
+    roc_receiver* receiver = NULL;
+    CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
+    CHECK(receiver);
+
+    roc_endpoint* source_endpoint1 = NULL;
+    CHECK(roc_endpoint_allocate(&source_endpoint1) == 0);
+
+    CHECK(roc_endpoint_set_protocol(source_endpoint1, ROC_PROTO_RTP) == 0);
+    CHECK(roc_endpoint_set_host(source_endpoint1, "127.0.0.1") == 0);
+    CHECK(roc_endpoint_set_port(source_endpoint1, 0) == 0);
+
+    roc_endpoint* source_endpoint2 = NULL;
+    CHECK(roc_endpoint_allocate(&source_endpoint2) == 0);
+
+    CHECK(roc_endpoint_set_protocol(source_endpoint2, ROC_PROTO_RTP) == 0);
+    CHECK(roc_endpoint_set_host(source_endpoint2, "127.0.0.1") == 0);
+    CHECK(roc_endpoint_set_port(source_endpoint2, 0) == 0);
+
+    CHECK(roc_receiver_set_reuseaddr(receiver, 0, ROC_INTERFACE_AUDIO_SOURCE, 1) == 0);
+    CHECK(roc_receiver_set_reuseaddr(receiver, 1, ROC_INTERFACE_AUDIO_SOURCE, 1) == 0);
+
+    CHECK(roc_receiver_bind(receiver, 0, ROC_INTERFACE_AUDIO_SOURCE, source_endpoint1)
+          == 0);
+    CHECK(roc_receiver_bind(receiver, 1, ROC_INTERFACE_AUDIO_SOURCE, source_endpoint2)
+          == 0);
+
+    CHECK(roc_endpoint_deallocate(source_endpoint1) == 0);
+    CHECK(roc_endpoint_deallocate(source_endpoint2) == 0);
+
+    LONGS_EQUAL(0, roc_receiver_close(receiver));
+}
+
 TEST(receiver, bad_args) {
     roc_receiver* receiver = NULL;
 
@@ -391,6 +471,23 @@ TEST(receiver, bad_args) {
               == -1);
         CHECK(roc_receiver_set_multicast_group(receiver, ROC_SLOT_DEFAULT,
                                                ROC_INTERFACE_AUDIO_SOURCE, "")
+              == -1);
+
+        LONGS_EQUAL(0, roc_receiver_close(receiver));
+    }
+    { // set reuseaddr
+        CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
+
+        CHECK(roc_receiver_set_reuseaddr(NULL, ROC_SLOT_DEFAULT,
+                                         ROC_INTERFACE_AUDIO_SOURCE, 0)
+              == -1);
+        CHECK(roc_receiver_set_reuseaddr(receiver, ROC_SLOT_DEFAULT, (roc_interface)-1, 0)
+              == -1);
+        CHECK(roc_receiver_set_reuseaddr(receiver, ROC_SLOT_DEFAULT,
+                                         ROC_INTERFACE_AUDIO_SOURCE, -1)
+              == -1);
+        CHECK(roc_receiver_set_reuseaddr(receiver, ROC_SLOT_DEFAULT,
+                                         ROC_INTERFACE_AUDIO_SOURCE, 2)
               == -1);
 
         LONGS_EQUAL(0, roc_receiver_close(receiver));

@@ -118,6 +118,42 @@ bool Sender::set_outgoing_address(size_t slot_index,
     return true;
 }
 
+bool Sender::set_reuseaddr(size_t slot_index, address::Interface iface, bool enabled) {
+    core::Mutex::Lock lock(mutex_);
+
+    roc_panic_if_not(valid());
+
+    roc_panic_if(iface < 0);
+    roc_panic_if(iface >= (int)address::Iface_Max);
+
+    roc_log(LogDebug,
+            "sender peer: setting reuseaddr option for %s interface of slot %lu to %d",
+            address::interface_to_str(iface), (unsigned long)slot_index, (int)enabled);
+
+    Slot* slot = get_slot_(slot_index);
+    if (!slot) {
+        roc_log(LogError,
+                "sender peer:"
+                " can't set reuseaddr option for %s interface of slot %lu:"
+                " can't create slot",
+                address::interface_to_str(iface), (unsigned long)slot_index);
+        return false;
+    }
+
+    if (slot->ports[iface].handle) {
+        roc_log(LogError,
+                "sender peer:"
+                " can't set reuseaddr option for %s interface of slot %lu:"
+                " interface is already bound",
+                address::interface_to_str(iface), (unsigned long)slot_index);
+        return false;
+    }
+
+    slot->ports[iface].config.reuseaddr = enabled;
+
+    return true;
+}
+
 bool Sender::connect(size_t slot_index,
                      address::Interface iface,
                      const address::EndpointUri& uri) {

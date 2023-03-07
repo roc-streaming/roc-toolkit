@@ -41,6 +41,9 @@ public:
     //! Set multicast interface address for given endpoint type.
     bool set_multicast_group(size_t slot_index, address::Interface iface, const char* ip);
 
+    //! Set reuseaddr option for given endpoint type.
+    bool set_reuseaddr(size_t slot_index, address::Interface iface, bool enabled);
+
     //! Bind peer to local endpoint.
     bool bind(size_t slot_index, address::Interface iface, address::EndpointUri& uri);
 

@@ -61,7 +61,8 @@ bool UdpReceiverPort::open() {
     handle_initialized_ = true;
 
     unsigned flags = 0;
-    if (config_.bind_address.multicast() && config_.bind_address.port() > 0) {
+    if ((config_.reuseaddr || config_.bind_address.multicast())
+        && config_.bind_address.port() > 0) {
         flags |= UV_UDP_REUSEADDR;
     }
 
