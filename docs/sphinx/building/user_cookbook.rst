@@ -15,7 +15,7 @@ Ubuntu / Debian
 
     # for Roc
     $ sudo apt-get install g++ pkg-config scons ragel gengetopt \
-        libuv1-dev libunwind-dev libspeexdsp-dev libsox-dev libpulse-dev
+        libuv1-dev libunwind-dev libspeexdsp-dev libsox-dev libssl-dev libpulse-dev
 
     # for 3rd-parties
     $ sudo apt-get install libtool intltool autoconf automake make cmake meson
@@ -37,7 +37,7 @@ Fedora
 
     # for Roc
     $ sudo dnf install gcc-c++ pkgconfig scons ragel gengetopt \
-        libuv-devel libunwind-devel speexdsp-devel sox-devel pulseaudio-libs-devel
+        libuv-devel libunwind-devel speexdsp-devel sox-devel openssl-devel pulseaudio-libs-devel
 
     # for 3rd-parties
     $ sudo dnf install libtool intltool autoconf automake make cmake
@@ -59,7 +59,7 @@ openSUSE
 
     # for Roc
     $ sudo zypper install gcc-c++ scons ragel gengetopt \
-        libuv-devel libunwind-devel speexdsp-devel sox-devel libpulse-devel
+        libuv-devel libunwind-devel speexdsp-devel sox-devel libopenssl-3-devel libpulse-devel
 
     # for 3rd-parties
     $ sudo zypper install pkg-config intltool libtool autoconf automake make cmake
@@ -84,7 +84,7 @@ Centos
 
     # for Roc
     $ sudo yum install gcc-c++ pkgconfig scons ragel gengetopt \
-        libunwind-devel speex-devel sox-devel pulseaudio-libs-devel
+        libunwind-devel speex-devel sox-devel openssl11-devel pulseaudio-libs-devel
 
     # for 3rd-parties
     $ sudo yum install libtool intltool autoconf automake make cmake
@@ -106,7 +106,7 @@ Arch Linux
 
     # for Roc
     $ sudo pacman -S gcc pkgconf scons ragel gengetopt \
-        libuv libunwind speexdsp sox gsm libpulse
+        libuv libunwind speexdsp sox openssl gsm libpulse
 
     # for 3rd-parties
     $ sudo pacman -S grep gawk libtool intltool autoconf automake make cmake
@@ -128,7 +128,7 @@ Alpine Linux
 
     # for Roc
     $ sudo apk add g++ pkgconf scons ragel gengetopt \
-        libuv-dev libunwind-dev speexdsp-dev sox-dev pulseaudio-dev
+        libuv-dev libunwind-dev speexdsp-dev sox-dev openssl-dev pulseaudio-dev
 
     # for 3rd-parties
     $ sudo apk add libtool autoconf automake make cmake
@@ -150,7 +150,7 @@ NixOS
 
     # for Roc and 3rd-parties
     $ nix-shell -p gcc autoconf automake cmake gengetopt gnumake intltool libpulseaudio \
-        libtool libunwind libuv meson pkg-config ragel scons sox speexdsp
+        libtool libunwind libuv meson pkg-config ragel scons sox openssl speexdsp
 
     # clone repo
     $ git clone https://github.com/roc-streaming/roc-toolkit.git
@@ -229,7 +229,7 @@ Raspberry Pi 1 and Zero (32-bit)
         rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi \
           scons -Q \
             --host=arm-bcm2708hardfp-linux-gnueabi \
-            --build-3rdparty=libuv,libunwind,libatomic_ops,openfec,alsa,pulseaudio:5.0,speexdsp,sox
+            --build-3rdparty=all
 
     # install Roc binaries
     $ scp ./bin/arm-bcm2708hardfp-linux-gnueabi/roc-{recv,send,conv} <address>:/usr/bin
@@ -251,7 +251,7 @@ Then you can run the following commands:
 .. code::
 
     # for Roc
-    $ brew install pkg-config scons ragel gengetopt libuv speexdsp sox
+    $ brew install pkg-config scons ragel gengetopt libuv speexdsp sox openssl@3
 
     # for 3rd-parties
     $ brew install libtool autoconf automake make cmake
@@ -291,7 +291,7 @@ Building C library for Android using Docker
             --disable-tools \
             --compiler=clang \
             --host=aarch64-linux-android28 \
-            --build-3rdparty=libuv,openfec,speexdsp
+            --build-3rdparty=all
 
     # build libroc.so for 32-bit ARM, API level 28
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
@@ -300,7 +300,7 @@ Building C library for Android using Docker
             --disable-tools \
             --compiler=clang \
             --host=armv7a-linux-androideabi28 \
-            --build-3rdparty=libuv,openfec,speexdsp
+            --build-3rdparty=all
 
     # build libroc.so for 64-bit Intel, API level 28
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
@@ -309,7 +309,7 @@ Building C library for Android using Docker
             --disable-tools \
             --compiler=clang \
             --host=x86_64-linux-android28 \
-            --build-3rdparty=libuv,openfec,speexdsp
+            --build-3rdparty=all
 
     # build libroc.so for 32-bit Intel, API level 28
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
@@ -318,7 +318,7 @@ Building C library for Android using Docker
             --disable-tools \
             --compiler=clang \
             --host=i686-linux-android28 \
-            --build-3rdparty=libuv,openfec,speexdsp
+            --build-3rdparty=all
 
 Building C library for Android on macOS
 ---------------------------------------
@@ -355,7 +355,7 @@ Then you can run the following commands:
     $ scons -Q \
           --disable-soversion \
           --disable-tools \
-          --build-3rdparty=libuv,openfec,speexdsp \
+          --build-3rdparty=all \
           --compiler=clang \
           --host=aarch64-linux-android29
 
@@ -363,7 +363,7 @@ Then you can run the following commands:
     $ scons -Q \
           --disable-soversion \
           --disable-tools \
-          --build-3rdparty=libuv,openfec,speexdsp \
+          --build-3rdparty=all \
           --compiler=clang \
           --host=armv7a-linux-androideabi24
 
@@ -371,7 +371,7 @@ Then you can run the following commands:
     $ scons -Q \
           --disable-soversion \
           --disable-tools \
-          --build-3rdparty=libuv,openfec,speexdsp \
+          --build-3rdparty=all \
           --compiler=clang \
           --host=x86_64-linux-android29
 
@@ -379,6 +379,6 @@ Then you can run the following commands:
     $ scons -Q \
           --disable-soversion \
           --disable-tools \
-          --build-3rdparty=libuv,openfec,speexdsp \
+          --build-3rdparty=all \
           --compiler=clang \
           --host=i686-linux-android29
