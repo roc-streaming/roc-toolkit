@@ -95,6 +95,37 @@ int roc_sender_set_outgoing_address(roc_sender* sender,
     return 0;
 }
 
+int roc_sender_set_reuseaddr(roc_sender* sender,
+                             roc_slot slot,
+                             roc_interface iface,
+                             int enabled) {
+    if (!sender) {
+        roc_log(LogError, "roc_sender_set_reuseaddr: invalid arguments: sender is null");
+        return -1;
+    }
+
+    peer::Sender* imp_sender = (peer::Sender*)sender;
+
+    address::Interface imp_iface;
+    if (!api::interface_from_user(imp_iface, iface)) {
+        roc_log(LogError, "roc_sender_set_reuseaddr: invalid arguments: bad interface");
+        return -1;
+    }
+
+    if (enabled != 0 && enabled != 1) {
+        roc_log(LogError,
+                "roc_sender_set_reuseaddr: invalid arguments: enabled should be 0 or 1");
+        return -1;
+    }
+
+    if (!imp_sender->set_reuseaddr(slot, imp_iface, (bool)enabled)) {
+        roc_log(LogError, "roc_sender_set_reuseaddr: operation failed");
+        return -1;
+    }
+
+    return 0;
+}
+
 int roc_sender_connect(roc_sender* sender,
                        roc_slot slot,
                        roc_interface iface,

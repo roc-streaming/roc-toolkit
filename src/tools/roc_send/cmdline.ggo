@@ -18,6 +18,8 @@ section "Options"
     option "control" c "Remote control endpoint" typestr="ENDPOINT_URI"
         string multiple optional
 
+    option "reuseaddr" - "enable SO_REUSEADDR when binding sockets" optional
+
     option "nbsrc" - "Number of source packets in FEC block"
         int optional
 

@@ -75,6 +75,9 @@ Local control endpoint
 .BI \-\-miface\fB= MIFACE
 IPv4 or IPv6 address of the network interface on which to join the multicast group
 .TP
+.B  \-\-reuseaddr
+enable SO_REUSEADDR when binding sockets
+.TP
 .BI \-\-sess\-latency\fB= STRING
 Session target latency, TIME units
 .TP
@@ -245,6 +248,15 @@ It\(aqs not possible to receive multicast traffic without joining a multicast gr
 Multiple sets of endpoints can be specified to retrieve media from multiple addresses.
 .sp
 Such endpoint sets are called slots. All slots should have the same set of endpoint types (source, repair, etc) and should use the same protocols for them. All slots should also have their own multicast interface option, if it\(aqs used.
+.SS SO_REUSEADDR
+.sp
+If \fB\-\-reuseaddr\fP option is provided, \fBSO_REUSEADDR\fP socket option will be enabled for all sockets (by default it\(aqs enabled only for multicast sockets).
+.sp
+For TCP, it allows immediately reusing recently closed socket in TIME_WAIT state, which may be useful you want to be able to restart server quickly.
+.sp
+For UDP, it allows multiple processes to bind to the same address, which may be useful if you\(aqre using systemd socket activation.
+.sp
+Regardless of the option, \fBSO_REUSEADDR\fP is always disabled when binding to ephemeral port.
 .SS Backup audio
 .sp
 If \fB\-\-backup\fP option is given, it defines input audio device or file which will be played when there are no connected sessions. If it\(aqs not given, silence is played instead.

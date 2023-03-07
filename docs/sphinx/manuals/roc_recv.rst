@@ -26,6 +26,7 @@ Options
 -r, --repair=ENDPOINT_URI    Local repair endpoint
 -c, --control=ENDPOINT_URI   Local control endpoint
 --miface=MIFACE              IPv4 or IPv6 address of the network interface on which to join the multicast group
+--reuseaddr                  enable SO_REUSEADDR when binding sockets
 --sess-latency=STRING        Session target latency, TIME units
 --min-latency=STRING         Session minimum latency, TIME units
 --max-latency=STRING         Session maximum latency, TIME units
@@ -136,6 +137,17 @@ Multiple slots
 Multiple sets of endpoints can be specified to retrieve media from multiple addresses.
 
 Such endpoint sets are called slots. All slots should have the same set of endpoint types (source, repair, etc) and should use the same protocols for them. All slots should also have their own multicast interface option, if it's used.
+
+SO_REUSEADDR
+------------
+
+If ``--reuseaddr`` option is provided, ``SO_REUSEADDR`` socket option will be enabled for all sockets (by default it's enabled only for multicast sockets).
+
+For TCP, it allows immediately reusing recently closed socket in TIME_WAIT state, which may be useful you want to be able to restart server quickly.
+
+For UDP, it allows multiple processes to bind to the same address, which may be useful if you're using systemd socket activation.
+
+Regardless of the option, ``SO_REUSEADDR`` is always disabled when binding to ephemeral port.
 
 Backup audio
 ------------

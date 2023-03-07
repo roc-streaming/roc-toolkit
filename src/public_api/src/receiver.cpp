@@ -95,6 +95,39 @@ int roc_receiver_set_multicast_group(roc_receiver* receiver,
     return 0;
 }
 
+int roc_receiver_set_reuseaddr(roc_receiver* receiver,
+                               roc_slot slot,
+                               roc_interface iface,
+                               int enabled) {
+    if (!receiver) {
+        roc_log(LogError,
+                "roc_receiver_set_reuseaddr: invalid arguments: receiver is null");
+        return -1;
+    }
+
+    peer::Receiver* imp_receiver = (peer::Receiver*)receiver;
+
+    address::Interface imp_iface;
+    if (!api::interface_from_user(imp_iface, iface)) {
+        roc_log(LogError, "roc_receiver_set_reuseaddr: invalid arguments: bad interface");
+        return -1;
+    }
+
+    if (enabled != 0 && enabled != 1) {
+        roc_log(
+            LogError,
+            "roc_receiver_set_reuseaddr: invalid arguments: enabled should be 0 or 1");
+        return -1;
+    }
+
+    if (!imp_receiver->set_reuseaddr(slot, imp_iface, (bool)enabled)) {
+        roc_log(LogError, "roc_receiver_set_reuseaddr: operation failed");
+        return -1;
+    }
+
+    return 0;
+}
+
 int roc_receiver_bind(roc_receiver* receiver,
                       roc_slot slot,
                       roc_interface iface,

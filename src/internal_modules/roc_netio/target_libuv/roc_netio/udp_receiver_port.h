@@ -38,7 +38,13 @@ struct UdpReceiverConfig {
     //! with given address. May be "0.0.0.0" or "[::]" to join on all interfaces.
     char multicast_interface[64];
 
-    UdpReceiverConfig() {
+    //! If set, enable SO_REUSEADDR when binding socket to non-ephemeral port.
+    //! If not set, SO_REUSEADDR is enabled only for multicast sockets when
+    //! binding to non-ephemeral port.
+    bool reuseaddr;
+
+    UdpReceiverConfig()
+        : reuseaddr(false) {
         multicast_interface[0] = '\0';
     }
 };

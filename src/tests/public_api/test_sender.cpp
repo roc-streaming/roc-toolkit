@@ -296,6 +296,72 @@ TEST(sender, outgoing_address_errors) {
     }
 }
 
+TEST(sender, reuseaddr) {
+    { // disable
+        roc_sender* sender = NULL;
+        CHECK(roc_sender_open(context, &sender_config, &sender) == 0);
+
+        roc_endpoint* source_endpoint = NULL;
+        CHECK(roc_endpoint_allocate(&source_endpoint) == 0);
+        CHECK(roc_endpoint_set_uri(source_endpoint, "rtp://127.0.0.1:123") == 0);
+
+        CHECK(roc_sender_set_reuseaddr(sender, ROC_SLOT_DEFAULT,
+                                       ROC_INTERFACE_AUDIO_SOURCE, 0)
+              == 0);
+        CHECK(roc_sender_connect(sender, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
+                                 source_endpoint)
+              == 0);
+
+        CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
+        LONGS_EQUAL(0, roc_sender_close(sender));
+    }
+    { // enable
+        roc_sender* sender = NULL;
+        CHECK(roc_sender_open(context, &sender_config, &sender) == 0);
+
+        roc_endpoint* source_endpoint = NULL;
+        CHECK(roc_endpoint_allocate(&source_endpoint) == 0);
+        CHECK(roc_endpoint_set_uri(source_endpoint, "rtp://127.0.0.1:123") == 0);
+
+        CHECK(roc_sender_set_reuseaddr(sender, ROC_SLOT_DEFAULT,
+                                       ROC_INTERFACE_AUDIO_SOURCE, 1)
+              == 0);
+        CHECK(roc_sender_connect(sender, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
+                                 source_endpoint)
+              == 0);
+
+        CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
+        LONGS_EQUAL(0, roc_sender_close(sender));
+    }
+}
+
+TEST(sender, reuseaddr_slots) {
+    roc_sender* sender = NULL;
+    CHECK(roc_sender_open(context, &sender_config, &sender) == 0);
+    CHECK(sender);
+
+    roc_endpoint* source_endpoint1 = NULL;
+    CHECK(roc_endpoint_allocate(&source_endpoint1) == 0);
+    CHECK(roc_endpoint_set_uri(source_endpoint1, "rtp://127.0.0.1:111") == 0);
+
+    roc_endpoint* source_endpoint2 = NULL;
+    CHECK(roc_endpoint_allocate(&source_endpoint2) == 0);
+    CHECK(roc_endpoint_set_uri(source_endpoint2, "rtp://127.0.0.1:222") == 0);
+
+    CHECK(roc_sender_set_reuseaddr(sender, 0, ROC_INTERFACE_AUDIO_SOURCE, 1) == 0);
+    CHECK(roc_sender_set_reuseaddr(sender, 1, ROC_INTERFACE_AUDIO_SOURCE, 1) == 0);
+
+    CHECK(roc_sender_connect(sender, 0, ROC_INTERFACE_AUDIO_SOURCE, source_endpoint1)
+          == 0);
+    CHECK(roc_sender_connect(sender, 1, ROC_INTERFACE_AUDIO_SOURCE, source_endpoint2)
+          == 0);
+
+    CHECK(roc_endpoint_deallocate(source_endpoint1) == 0);
+    CHECK(roc_endpoint_deallocate(source_endpoint2) == 0);
+
+    LONGS_EQUAL(0, roc_sender_close(sender));
+}
+
 TEST(sender, bad_args) {
     roc_sender* sender = NULL;
 
@@ -356,6 +422,23 @@ TEST(sender, bad_args) {
               == -1);
         CHECK(roc_sender_set_outgoing_address(sender, ROC_SLOT_DEFAULT,
                                               ROC_INTERFACE_AUDIO_SOURCE, "")
+              == -1);
+
+        LONGS_EQUAL(0, roc_sender_close(sender));
+    }
+    { // set reuseaddr
+        CHECK(roc_sender_open(context, &sender_config, &sender) == 0);
+
+        CHECK(roc_sender_set_reuseaddr(NULL, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
+                                       0)
+              == -1);
+        CHECK(roc_sender_set_reuseaddr(sender, ROC_SLOT_DEFAULT, (roc_interface)-1, 0)
+              == -1);
+        CHECK(roc_sender_set_reuseaddr(sender, ROC_SLOT_DEFAULT,
+                                       ROC_INTERFACE_AUDIO_SOURCE, -1)
+              == -1);
+        CHECK(roc_sender_set_reuseaddr(sender, ROC_SLOT_DEFAULT,
+                                       ROC_INTERFACE_AUDIO_SOURCE, 2)
               == -1);
 
         LONGS_EQUAL(0, roc_sender_close(sender));

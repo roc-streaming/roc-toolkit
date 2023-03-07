@@ -77,12 +77,18 @@ bool UdpSenderPort::open() {
     handle_.data = this;
     handle_initialized_ = true;
 
+    unsigned flags = 0;
+    if (config_.reuseaddr && config_.bind_address.port() > 0) {
+        flags |= UV_UDP_REUSEADDR;
+    }
+
     int bind_err = UV_EINVAL;
     if (address_.family() == address::Family_IPv6) {
-        bind_err = uv_udp_bind(&handle_, config_.bind_address.saddr(), UV_UDP_IPV6ONLY);
+        bind_err =
+            uv_udp_bind(&handle_, config_.bind_address.saddr(), flags | UV_UDP_IPV6ONLY);
     }
     if (bind_err == UV_EINVAL || bind_err == UV_ENOTSUP) {
-        bind_err = uv_udp_bind(&handle_, config_.bind_address.saddr(), 0);
+        bind_err = uv_udp_bind(&handle_, config_.bind_address.saddr(), flags);
     }
     if (bind_err != 0) {
         roc_log(LogError, "udp sender: %s: uv_udp_bind(): [%s] %s", descriptor(),

@@ -23,6 +23,7 @@ Options
 -s, --source=ENDPOINT_URI   Remote source endpoint
 -r, --repair=ENDPOINT_URI   Remote repair endpoint
 -c, --control=ENDPOINT_URI  Remote control endpoint
+--reuseaddr                 enable SO_REUSEADDR when binding sockets
 --nbsrc=INT                 Number of source packets in FEC block
 --nbrpr=INT                 Number of repair packets in FEC block
 --packet-length=STRING      Outgoing packet length, TIME units
@@ -118,6 +119,17 @@ Multiple slots
 Multiple sets of endpoints can be specified to send media to multiple addresses.
 
 Such endpoint sets are called slots. All slots should have the same set of endpoint types (source, repair, etc) and should use the same protocols for them.
+
+SO_REUSEADDR
+------------
+
+If ``--reuseaddr`` option is provided, ``SO_REUSEADDR`` socket option will be enabled for all sockets.
+
+For TCP, it allows immediately reusing recently closed socket in TIME_WAIT state, which may be useful you want to be able to restart server quickly.
+
+For UDP, it allows multiple processes to bind to the same address, which may be useful if you're using systemd socket activation.
+
+Regardless of the option, ``SO_REUSEADDR`` is always disabled when binding to ephemeral port.
 
 Time units
 ----------
