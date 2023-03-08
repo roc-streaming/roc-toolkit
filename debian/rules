@@ -1,7 +1,4 @@
 #!/usr/bin/make -f
-# See debhelper(7) (uncomment to enable)
-# output every command that modifies files on the build system.
-#export DH_VERBOSE = 1
 export DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 export DEB_BUILD_GNU_TYPE
 export DEB_BUILD_OPTIONS = nocheck
@@ -11,7 +8,14 @@ export DEB_DH_SHLIBDEPS_ARGS_ALL = -- --ignore-missing-info -l/usr/lib/${DEB_BUI
 	dh $@
 
 override_dh_auto_build:
-	scons -Q --host=${DEB_HOST_MULTIARCH}
+	scons --prefix=/usr --host=${DEB_HOST_MULTIARCH} --build-3rdparty=openfec
+
+override_dh_auto_install:
+	scons --prefix=/usr --host=${DEB_HOST_MULTIARCH} --build-3rdparty=openfec \
+		install DESTDIR=debian/tmp
 
 override_dh_shlibdeps:
 	dh_shlibdeps ${DEB_DH_SHLIBDEPS_ARGS_ALL}
+
+override_dh_builddeb:
+	dh_builddeb -- -Zgzip
