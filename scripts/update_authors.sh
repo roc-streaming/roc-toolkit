@@ -117,24 +117,50 @@ function add_contributors() {
     done
 }
 
+function update_sphinx() {
+    file="$1"
+    temp="$(mktemp)"
+
+    cat "${file}" > "${temp}"
+
+    add_contributors "${temp}" "$(basename "$(pwd)")"
+    add_contributors "${temp}" "$(basename "$(pwd)")/3rdparty/_distfiles"
+    add_contributors "${temp}" "rt-tests"
+    add_contributors "${temp}" "roc-pulse"
+    add_contributors "${temp}" "roc-coreaudio-plugin"
+    add_contributors "${temp}" "roc-go"
+    add_contributors "${temp}" "roc-java"
+    add_contributors "${temp}" "roc-droid"
+    add_contributors "${temp}" "openfec"
+    add_contributors "${temp}" "dockerfiles"
+    add_contributors "${temp}" "roc-streaming.github.io"
+
+    cat "$temp" > "${file}"
+    rm "${temp}"
+}
+
+function update_debian() {
+    from="$1"
+    to="$2"
+    temp="$(mktemp)"
+
+    cat "${to}" | sed '/^Copyright:/q' > "${temp}"
+    cat "${from}" | grep -F '* ' | sed -re 's,\*\s*,  ,' >> "${temp}"
+    cat "${to}" | sed -n '/^License:/,$p' >> "${temp}"
+
+    cat "${temp}" > "${to}"
+    rm "${temp}"
+}
+
 cd "$(dirname "$0")/.."
 
-file="docs/sphinx/about_project/authors.rst"
-temp="$(mktemp)"
+sphinx="docs/sphinx/about_project/authors.rst"
+debian="debian/copyright"
 
-cat "$file" > "$temp"
+echo "Updating ${sphinx}..."
+update_sphinx "${sphinx}"
 
-add_contributors "${temp}" "$(basename "$(pwd)")"
-add_contributors "${temp}" "$(basename "$(pwd)")/3rdparty/_distfiles"
-add_contributors "${temp}" "rt-tests"
-add_contributors "${temp}" "roc-pulse"
-add_contributors "${temp}" "roc-coreaudio-plugin"
-add_contributors "${temp}" "roc-go"
-add_contributors "${temp}" "roc-java"
-add_contributors "${temp}" "roc-droid"
-add_contributors "${temp}" "openfec"
-add_contributors "${temp}" "dockerfiles"
-add_contributors "${temp}" "roc-streaming.github.io"
+echo "Updating ${debian}..."
+update_debian "${sphinx}" "${debian}"
 
-cat "$temp" > "$file"
-rm "$temp"
+echo "Done."
