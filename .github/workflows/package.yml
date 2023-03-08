@@ -1,0 +1,45 @@
+name: "create packages"
+
+on:
+  push:
+    tags:
+      - v*
+
+  workflow_dispatch:
+
+jobs:
+  package:
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Version
+      id: ver
+      run: |
+        echo "GIT_TAG=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
+
+    - name: Debian package
+      id: deb
+      uses: gavv/debianise@HEAD
+      with:
+        image: debian:stable
+        package: roc-toolkit
+        create_changelog: true
+        install_build_depends: true
+
+    - name: Publish
+      uses: softprops/action-gh-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        files: ${{ steps.deb.outputs.files }}
+        name: ${{ steps.ver.outputs.GIT_TAG }}
+        tag_name: ${{ steps.ver.outputs.GIT_TAG }}
+        fail_on_unmatched_files: true
+        draft: true
+        prerelease: true

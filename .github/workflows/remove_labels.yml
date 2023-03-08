@@ -1,4 +1,4 @@
-name: remove labels
+name: "remove labels"
 
 on:
   pull_request:
