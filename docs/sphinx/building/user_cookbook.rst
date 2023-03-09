@@ -5,8 +5,41 @@ User cookbook
    :local:
    :depth: 2
 
-Linux (native)
-==============
+Linux (from packages)
+=====================
+
+Ubuntu / Debian
+---------------
+
+Download debian packages from `latest release <https://github.com/roc-streaming/roc-toolkit/releases/latest>`_, go to the download directory, and run:
+
+.. code::
+
+    $ sudo apt install ./roc_*.deb ./libroc_*.deb ./libroc-dev_*.deb
+
+Fedora
+------
+
+.. code::
+
+    $ sudo dnf install roc-toolkit roc-toolkit-utils roc-toolkit-devel
+
+Arch Linux
+----------
+
+.. code::
+
+    $ sudo pacman -S roc-toolkit libpulse sox
+
+Alpine Linux
+------------
+
+.. code::
+
+    $ sudo apk add roc-toolkit roc-toolkit-libs roc-toolkit-dev
+
+Linux (from sources)
+====================
 
 Ubuntu / Debian
 ---------------
