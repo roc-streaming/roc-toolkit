@@ -16,8 +16,46 @@ Changelog
     Security
     Internals
     Build system
+    Packaging
     Tests
     Documentation
+
+Version 0.2.3 (Mat 9, 2023)
+===========================
+
+C API
+-----
+
+* add ``roc_receiver_set_reuseaddr`` and ``roc_sender_set_reuseaddr``
+
+Command-line tools
+------------------
+
+* add ``--reuseaddr`` to ``roc-recv`` and ``roc-send``
+
+Bug fixes
+---------
+
+* fix formatting of endpoint URI with zero port
+* fix usage of multicast with RTCP in ``roc-recv``
+
+Build system
+------------
+
+* add new dependency OpenSSL
+* fix work with SCons 4.5
+* exclude sox and libpulse from .pc file for libroc
+
+Packaging
+---------
+
+* add debian packages and publish them on github
+* add rpm packages spec
+
+Documentation
+-------------
+
+* minor updates
 
 Version 0.2.2 (Feb 27, 2023)
 ============================
