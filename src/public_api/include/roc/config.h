@@ -502,7 +502,7 @@ typedef struct roc_receiver_config {
     /** Target latency, in nanoseconds.
      * The session will not start playing until it accumulates the requested latency.
      * Then, if resampler is enabled, the session will adjust its clock to keep actual
-     * latency as close as close as possible to the target latency.
+     * latency as close as possible to the target latency.
      * If zero, default value is used.
      */
     unsigned long long target_latency;
