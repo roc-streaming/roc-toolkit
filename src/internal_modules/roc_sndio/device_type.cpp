@@ -6,17 +6,17 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_sndio/terminal_type.h"
+#include "roc_sndio/device_type.h"
 
 namespace roc {
 namespace sndio {
 
-const char* terminal_type_to_str(TerminalType type) {
+const char* device_type_to_str(DeviceType type) {
     switch (type) {
-    case Terminal_Sink:
+    case Device_Sink:
         return "sink";
 
-    case Terminal_Source:
+    case Device_Source:
         return "source";
 
     default:

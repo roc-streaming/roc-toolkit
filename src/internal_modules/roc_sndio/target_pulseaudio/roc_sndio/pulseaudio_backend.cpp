@@ -30,12 +30,12 @@ void PulseaudioBackend::discover_drivers(
                                      this));
 }
 
-ITerminal* PulseaudioBackend::open_terminal(TerminalType terminal_type,
-                                            DriverType driver_type,
-                                            const char* driver,
-                                            const char* path,
-                                            const Config& config,
-                                            core::IAllocator& allocator) {
+IDevice* PulseaudioBackend::open_device(DeviceType device_type,
+                                        DriverType driver_type,
+                                        const char* driver,
+                                        const char* path,
+                                        const Config& config,
+                                        core::IAllocator& allocator) {
     if (driver_type != DriverType_Device) {
         return NULL;
     }
@@ -44,8 +44,8 @@ ITerminal* PulseaudioBackend::open_terminal(TerminalType terminal_type,
         return NULL;
     }
 
-    switch (terminal_type) {
-    case Terminal_Sink: {
+    switch (device_type) {
+    case Device_Sink: {
         core::ScopedPtr<PulseaudioSink> sink(new (allocator) PulseaudioSink(config),
                                              allocator);
         if (!sink) {
@@ -61,7 +61,7 @@ ITerminal* PulseaudioBackend::open_terminal(TerminalType terminal_type,
         return sink.release();
     } break;
 
-    case Terminal_Source: {
+    case Device_Source: {
         return NULL;
     } break;
 
@@ -69,7 +69,7 @@ ITerminal* PulseaudioBackend::open_terminal(TerminalType terminal_type,
         break;
     }
 
-    roc_panic("pulseaudio backend: invalid terminal type");
+    roc_panic("pulseaudio backend: invalid device type");
 }
 
 } // namespace sndio

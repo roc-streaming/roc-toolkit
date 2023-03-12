@@ -6,12 +6,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_sndio/iterminal.h"
+#include "roc_sndio/idevice.h"
 
 namespace roc {
 namespace sndio {
 
-ITerminal::~ITerminal() {
+IDevice::~IDevice() {
 }
 
 } // namespace sndio

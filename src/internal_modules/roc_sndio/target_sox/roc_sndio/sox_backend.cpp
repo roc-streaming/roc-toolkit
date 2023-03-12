@@ -227,12 +227,12 @@ void SoxBackend::discover_drivers(core::Array<DriverInfo, MaxDrivers>& driver_li
     }
 }
 
-ITerminal* SoxBackend::open_terminal(TerminalType terminal_type,
-                                     DriverType driver_type,
-                                     const char* driver,
-                                     const char* path,
-                                     const Config& config,
-                                     core::IAllocator& allocator) {
+IDevice* SoxBackend::open_device(DeviceType device_type,
+                                 DriverType driver_type,
+                                 const char* driver,
+                                 const char* path,
+                                 const Config& config,
+                                 core::IAllocator& allocator) {
     first_created_ = true;
 
     driver = map_to_sox_driver(driver);
@@ -256,8 +256,8 @@ ITerminal* SoxBackend::open_terminal(TerminalType terminal_type,
         return NULL;
     }
 
-    switch (terminal_type) {
-    case Terminal_Sink: {
+    switch (device_type) {
+    case Device_Sink: {
         core::ScopedPtr<SoxSink> sink(new (allocator) SoxSink(allocator, config),
                                       allocator);
         if (!sink || !sink->valid()) {
@@ -275,7 +275,7 @@ ITerminal* SoxBackend::open_terminal(TerminalType terminal_type,
         return sink.release();
     } break;
 
-    case Terminal_Source: {
+    case Device_Source: {
         core::ScopedPtr<SoxSource> source(new (allocator) SoxSource(allocator, config),
                                           allocator);
         if (!source || !source->valid()) {
@@ -297,7 +297,7 @@ ITerminal* SoxBackend::open_terminal(TerminalType terminal_type,
         break;
     }
 
-    roc_panic("sox backend: invalid terminal type");
+    roc_panic("sox backend: invalid device type");
 }
 
 } // namespace sndio

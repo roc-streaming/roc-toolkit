@@ -14,13 +14,13 @@
 
 #include "roc_audio/iframe_reader.h"
 #include "roc_packet/ntp.h"
-#include "roc_sndio/iterminal.h"
+#include "roc_sndio/idevice.h"
 
 namespace roc {
 namespace sndio {
 
 //! Source interface.
-class ISource : public ITerminal, public audio::IFrameReader {
+class ISource : public IDevice, public audio::IFrameReader {
 public:
     virtual ~ISource();
 

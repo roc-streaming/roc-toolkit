@@ -27,12 +27,12 @@ public:
     virtual void discover_drivers(core::Array<DriverInfo, MaxDrivers>& driver_list);
 
     //! Create and open a sink or source.
-    virtual ITerminal* open_terminal(TerminalType terminal_type,
-                                     DriverType driver_type,
-                                     const char* driver,
-                                     const char* path,
-                                     const Config& config,
-                                     core::IAllocator& allocator);
+    virtual IDevice* open_device(DeviceType device_type,
+                                 DriverType driver_type,
+                                 const char* driver,
+                                 const char* path,
+                                 const Config& config,
+                                 core::IAllocator& allocator);
 };
 
 } // namespace sndio

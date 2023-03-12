@@ -18,11 +18,11 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/singleton.h"
 #include "roc_core/string_list.h"
+#include "roc_sndio/device_type.h"
 #include "roc_sndio/driver.h"
 #include "roc_sndio/ibackend.h"
 #include "roc_sndio/isink.h"
 #include "roc_sndio/isource.h"
-#include "roc_sndio/terminal_type.h"
 
 namespace roc {
 namespace sndio {
@@ -58,16 +58,16 @@ public:
     bool get_supported_formats(core::StringList&);
 
 private:
-    ITerminal* open_default_terminal_(TerminalType terminal_type,
-                                      const Config& config,
-                                      core::IAllocator& allocator);
+    IDevice* open_default_device_(DeviceType device_type,
+                                  const Config& config,
+                                  core::IAllocator& allocator);
 
-    ITerminal* open_terminal_(TerminalType terminal_type,
-                              DriverType driver_type,
-                              const char* driver_name,
-                              const char* path,
-                              const Config& config,
-                              core::IAllocator& allocator);
+    IDevice* open_device_(DeviceType device_type,
+                          DriverType driver_type,
+                          const char* driver_name,
+                          const char* path,
+                          const Config& config,
+                          core::IAllocator& allocator);
 };
 
 } // namespace sndio

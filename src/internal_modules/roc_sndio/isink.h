@@ -13,13 +13,13 @@
 #define ROC_SNDIO_ISINK_H_
 
 #include "roc_audio/iframe_writer.h"
-#include "roc_sndio/iterminal.h"
+#include "roc_sndio/idevice.h"
 
 namespace roc {
 namespace sndio {
 
 //! Sink interface.
-class ISink : public ITerminal, public audio::IFrameWriter {
+class ISink : public IDevice, public audio::IFrameWriter {
 public:
     virtual ~ISink();
 };
