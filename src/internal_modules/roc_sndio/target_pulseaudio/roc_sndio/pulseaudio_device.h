@@ -21,6 +21,7 @@
 #include "roc_core/time.h"
 #include "roc_packet/units.h"
 #include "roc_sndio/config.h"
+#include "roc_sndio/device_state.h"
 #include "roc_sndio/device_type.h"
 
 namespace roc {
@@ -37,6 +38,18 @@ protected:
     PulseaudioDevice(const Config& config, DeviceType device_type);
     ~PulseaudioDevice();
 
+    //! Get device state.
+    DeviceState state() const;
+
+    //! Pause reading.
+    void pause();
+
+    //! Resume paused reading.
+    bool resume();
+
+    //! Restart reading from the beginning.
+    bool restart();
+
     //! Get sample specification of the sink.
     audio::SampleSpec sample_spec() const;
 
@@ -47,7 +60,7 @@ protected:
     bool has_clock() const;
 
     //! Process audio frame.
-    void request(audio::Frame& frame);
+    bool request(audio::Frame& frame);
 
 private:
     static void context_state_cb_(pa_context* context, void* userdata);
@@ -66,9 +79,7 @@ private:
 
     bool request_frame_(audio::Frame& frame);
 
-    void want_started_() const;
-    void want_opened_() const;
-
+    void want_mainloop_() const;
     bool start_mainloop_();
     void stop_mainloop_();
 
@@ -86,6 +97,7 @@ private:
     bool check_stream_params_() const;
     bool open_stream_();
     void close_stream_();
+    ssize_t request_stream_(audio::sample_t* data, size_t size);
     ssize_t write_stream_(const audio::sample_t* data, size_t size);
     ssize_t read_stream_(audio::sample_t* data, size_t size);
     ssize_t wait_stream_();

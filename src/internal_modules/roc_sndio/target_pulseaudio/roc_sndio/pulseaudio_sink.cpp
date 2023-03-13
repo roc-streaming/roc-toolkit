@@ -23,22 +23,19 @@ DeviceType PulseaudioSink::type() const {
 }
 
 DeviceState PulseaudioSink::state() const {
-    // TODO
-    return DeviceState_Active;
+    return PulseaudioDevice::state();
 }
 
 void PulseaudioSink::pause() {
-    // TODO
+    return PulseaudioDevice::pause();
 }
 
 bool PulseaudioSink::resume() {
-    // TODO
-    return true;
+    return PulseaudioDevice::resume();
 }
 
 bool PulseaudioSink::restart() {
-    // TODO
-    return true;
+    return PulseaudioDevice::restart();
 }
 
 audio::SampleSpec PulseaudioSink::sample_spec() const {
