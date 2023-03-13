@@ -18,21 +18,21 @@
 using namespace roc;
 
 int roc_context_open(const roc_context_config* config, roc_context** result) {
-    roc_log(LogInfo, "roc_context_open: opening context");
+    roc_log(LogInfo, "roc_context_open(): opening context");
 
     if (!result) {
-        roc_log(LogError, "roc_context_open: invalid arguments: result is null");
+        roc_log(LogError, "roc_context_open(): invalid arguments: result is null");
         return -1;
     }
 
     if (!config) {
-        roc_log(LogError, "roc_context_open: invalid arguments: config is null");
+        roc_log(LogError, "roc_context_open(): invalid arguments: config is null");
         return -1;
     }
 
     peer::ContextConfig imp_config;
     if (!api::context_config_from_user(imp_config, *config)) {
-        roc_log(LogError, "roc_context_open: invalid arguments: bad config");
+        roc_log(LogError, "roc_context_open(): invalid arguments: bad config");
         return -1;
     }
 
@@ -41,12 +41,12 @@ int roc_context_open(const roc_context_config* config, roc_context** result) {
         api::root_allocator);
 
     if (!imp_context) {
-        roc_log(LogError, "roc_context_open: can't allocate context");
+        roc_log(LogError, "roc_context_open(): can't allocate context");
         return -1;
     }
 
     if (!imp_context->valid()) {
-        roc_log(LogError, "roc_context_open: can't initialize context");
+        roc_log(LogError, "roc_context_open(): can't initialize context");
         return -1;
     }
 
@@ -56,20 +56,20 @@ int roc_context_open(const roc_context_config* config, roc_context** result) {
 
 int roc_context_close(roc_context* context) {
     if (!context) {
-        roc_log(LogError, "roc_context_close: invalid arguments: context is null");
+        roc_log(LogError, "roc_context_close(): invalid arguments: context is null");
         return -1;
     }
 
     peer::Context* imp_context = (peer::Context*)context;
 
     if (imp_context->is_used()) {
-        roc_log(LogError, "roc_context_close: context is still in use");
+        roc_log(LogError, "roc_context_close(): context is still in use");
         return -1;
     }
 
     api::root_allocator.destroy_object(*imp_context);
 
-    roc_log(LogInfo, "roc_context_close: closed context");
+    roc_log(LogInfo, "roc_context_close(): closed context");
 
     return 0;
 }

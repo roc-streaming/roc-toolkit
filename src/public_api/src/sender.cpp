@@ -19,28 +19,28 @@ using namespace roc;
 int roc_sender_open(roc_context* context,
                     const roc_sender_config* config,
                     roc_sender** result) {
-    roc_log(LogInfo, "roc_sender_open: opening sender");
+    roc_log(LogInfo, "roc_sender_open(): opening sender");
 
     if (!result) {
-        roc_log(LogError, "roc_sender_open: invalid arguments: result is null");
+        roc_log(LogError, "roc_sender_open(): invalid arguments: result is null");
         return -1;
     }
 
     if (!context) {
-        roc_log(LogError, "roc_sender_open: invalid arguments: context is null");
+        roc_log(LogError, "roc_sender_open(): invalid arguments: context is null");
         return -1;
     }
 
     peer::Context* imp_context = (peer::Context*)context;
 
     if (!config) {
-        roc_log(LogError, "roc_sender_open: invalid arguments: config is null");
+        roc_log(LogError, "roc_sender_open(): invalid arguments: config is null");
         return -1;
     }
 
     pipeline::SenderConfig imp_config;
     if (!api::sender_config_from_user(imp_config, *config)) {
-        roc_log(LogError, "roc_sender_open: invalid arguments: bad config");
+        roc_log(LogError, "roc_sender_open(): invalid arguments: bad config");
         return -1;
     }
 
@@ -49,12 +49,12 @@ int roc_sender_open(roc_context* context,
                                              imp_context->allocator());
 
     if (!imp_sender) {
-        roc_log(LogError, "roc_sender_open: can't allocate sender");
+        roc_log(LogError, "roc_sender_open(): can't allocate sender");
         return -1;
     }
 
     if (!imp_sender->valid()) {
-        roc_log(LogError, "roc_sender_open: can't initialize sender");
+        roc_log(LogError, "roc_sender_open(): can't initialize sender");
         return -1;
     }
 
@@ -68,7 +68,7 @@ int roc_sender_set_outgoing_address(roc_sender* sender,
                                     const char* ip) {
     if (!sender) {
         roc_log(LogError,
-                "roc_sender_set_outgoing_address: invalid arguments: sender is null");
+                "roc_sender_set_outgoing_address(): invalid arguments: sender is null");
         return -1;
     }
 
@@ -77,18 +77,18 @@ int roc_sender_set_outgoing_address(roc_sender* sender,
     address::Interface imp_iface;
     if (!api::interface_from_user(imp_iface, iface)) {
         roc_log(LogError,
-                "roc_sender_set_outgoing_address: invalid arguments: bad interface");
+                "roc_sender_set_outgoing_address(): invalid arguments: bad interface");
         return -1;
     }
 
     if (!ip) {
         roc_log(LogError,
-                "roc_sender_set_outgoing_address: invalid arguments: ip is null");
+                "roc_sender_set_outgoing_address(): invalid arguments: ip is null");
         return -1;
     }
 
     if (!imp_sender->set_outgoing_address(slot, imp_iface, ip)) {
-        roc_log(LogError, "roc_sender_set_outgoing_address: operation failed");
+        roc_log(LogError, "roc_sender_set_outgoing_address(): operation failed");
         return -1;
     }
 
@@ -100,7 +100,8 @@ int roc_sender_set_reuseaddr(roc_sender* sender,
                              roc_interface iface,
                              int enabled) {
     if (!sender) {
-        roc_log(LogError, "roc_sender_set_reuseaddr: invalid arguments: sender is null");
+        roc_log(LogError,
+                "roc_sender_set_reuseaddr(): invalid arguments: sender is null");
         return -1;
     }
 
@@ -108,18 +109,19 @@ int roc_sender_set_reuseaddr(roc_sender* sender,
 
     address::Interface imp_iface;
     if (!api::interface_from_user(imp_iface, iface)) {
-        roc_log(LogError, "roc_sender_set_reuseaddr: invalid arguments: bad interface");
+        roc_log(LogError, "roc_sender_set_reuseaddr(): invalid arguments: bad interface");
         return -1;
     }
 
     if (enabled != 0 && enabled != 1) {
-        roc_log(LogError,
-                "roc_sender_set_reuseaddr: invalid arguments: enabled should be 0 or 1");
+        roc_log(
+            LogError,
+            "roc_sender_set_reuseaddr(): invalid arguments: enabled should be 0 or 1");
         return -1;
     }
 
     if (!imp_sender->set_reuseaddr(slot, imp_iface, (bool)enabled)) {
-        roc_log(LogError, "roc_sender_set_reuseaddr: operation failed");
+        roc_log(LogError, "roc_sender_set_reuseaddr(): operation failed");
         return -1;
     }
 
@@ -131,14 +133,14 @@ int roc_sender_connect(roc_sender* sender,
                        roc_interface iface,
                        const roc_endpoint* endpoint) {
     if (!sender) {
-        roc_log(LogError, "roc_sender_connect: invalid arguments: sender is null");
+        roc_log(LogError, "roc_sender_connect(): invalid arguments: sender is null");
         return -1;
     }
 
     peer::Sender* imp_sender = (peer::Sender*)sender;
 
     if (!endpoint) {
-        roc_log(LogError, "roc_sender_connect: invalid arguments: endpoint is null");
+        roc_log(LogError, "roc_sender_connect(): invalid arguments: endpoint is null");
         return -1;
     }
 
@@ -146,12 +148,12 @@ int roc_sender_connect(roc_sender* sender,
 
     address::Interface imp_iface;
     if (!api::interface_from_user(imp_iface, iface)) {
-        roc_log(LogError, "roc_sender_connect: invalid arguments: bad interface");
+        roc_log(LogError, "roc_sender_connect(): invalid arguments: bad interface");
         return -1;
     }
 
     if (!imp_sender->connect(slot, imp_iface, imp_endpoint)) {
-        roc_log(LogError, "roc_sender_connect: operation failed");
+        roc_log(LogError, "roc_sender_connect(): operation failed");
         return -1;
     }
 
@@ -160,7 +162,7 @@ int roc_sender_connect(roc_sender* sender,
 
 int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
     if (!sender) {
-        roc_log(LogError, "roc_sender_write: invalid arguments: sender is null");
+        roc_log(LogError, "roc_sender_write(): invalid arguments: sender is null");
         return -1;
     }
 
@@ -169,7 +171,7 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
     sndio::ISink& imp_sink = imp_sender->sink();
 
     if (!frame) {
-        roc_log(LogError, "roc_sender_write: invalid arguments: frame is null");
+        roc_log(LogError, "roc_sender_write(): invalid arguments: frame is null");
         return -1;
     }
 
@@ -181,14 +183,14 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
 
     if (frame->samples_size % factor != 0) {
         roc_log(LogError,
-                "roc_sender_write: invalid arguments: # of samples should be "
+                "roc_sender_write(): invalid arguments: # of samples should be "
                 "multiple of # of %u",
                 (unsigned)factor);
         return -1;
     }
 
     if (!frame->samples) {
-        roc_log(LogError, "roc_sender_write: invalid arguments: samples is null");
+        roc_log(LogError, "roc_sender_write(): invalid arguments: samples is null");
         return -1;
     }
 
@@ -201,14 +203,14 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
 
 int roc_sender_close(roc_sender* sender) {
     if (!sender) {
-        roc_log(LogError, "roc_sender_close: invalid arguments: sender is null");
+        roc_log(LogError, "roc_sender_close(): invalid arguments: sender is null");
         return -1;
     }
 
     peer::Sender* imp_sender = (peer::Sender*)sender;
     imp_sender->context().allocator().destroy_object(*imp_sender);
 
-    roc_log(LogInfo, "roc_sender_close: closed sender");
+    roc_log(LogInfo, "roc_sender_close(): closed sender");
 
     return 0;
 }
