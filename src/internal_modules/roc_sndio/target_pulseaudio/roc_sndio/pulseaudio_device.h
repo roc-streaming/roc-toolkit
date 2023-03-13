@@ -111,8 +111,9 @@ private:
     Config config_;
     size_t frame_size_;
 
-    const audio::sample_t* record_frame_data_;
-    size_t record_frame_size_;
+    const audio::sample_t* record_frag_data_;
+    size_t record_frag_size_;
+    bool record_frag_flag_;
 
     core::nanoseconds_t latency_;
     core::nanoseconds_t timeout_;

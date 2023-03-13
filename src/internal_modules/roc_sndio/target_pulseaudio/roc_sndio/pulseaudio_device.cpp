@@ -30,8 +30,9 @@ PulseaudioDevice::PulseaudioDevice(const Config& config, DeviceType device_type)
     , device_(NULL)
     , config_(config)
     , frame_size_(0)
-    , record_frame_data_(NULL)
-    , record_frame_size_(0)
+    , record_frag_data_(NULL)
+    , record_frag_size_(0)
+    , record_frag_flag_(false)
     , open_done_(false)
     , opened_(false)
     , mainloop_(NULL)
@@ -578,34 +579,48 @@ ssize_t PulseaudioDevice::write_stream_(const audio::sample_t* data, size_t size
 }
 
 ssize_t PulseaudioDevice::read_stream_(audio::sample_t* data, size_t size) {
-    if (record_frame_size_ == 0) {
+    if (record_frag_size_ == 0) {
         wait_stream_();
 
-        const void* data = NULL;
-        size_t data_size = 0;
+        const void* fragment = NULL;
+        size_t fragment_size = 0;
 
-        const int err = pa_stream_peek(stream_, &data, &data_size);
+        const int err = pa_stream_peek(stream_, &fragment, &fragment_size);
         if (err != 0) {
             roc_log(LogError, "pulseaudio %s: pa_stream_peek(): %s",
                     device_type_to_str(device_type_), pa_strerror(err));
             return -1;
         }
 
-        record_frame_data_ = (const audio::sample_t*)data;
-        record_frame_size_ = data_size / sizeof(audio::sample_t);
+        roc_panic_if_not(fragment_size % sizeof(audio::sample_t) == 0);
+
+        record_frag_data_ = (const audio::sample_t*)fragment;
+        record_frag_size_ = fragment_size / sizeof(audio::sample_t);
+        record_frag_flag_ = fragment_size != 0; // whether we need to call drop
     }
 
-    if (size > record_frame_size_) {
-        size = record_frame_size_;
+    if (size > record_frag_size_) {
+        size = record_frag_size_;
     }
 
-    memcpy(data, record_frame_data_, size);
+    if (size > 0) {
+        if (record_frag_data_ != NULL) {
+            // data is non-null, size is non-zero, we got samples from buffer
+            memcpy(data, record_frag_data_, size * sizeof(audio::sample_t));
+        } else {
+            // data is null, size is non-zero, we got hole
+            memset(data, 0, size * sizeof(audio::sample_t));
+        }
+    }
 
-    record_frame_data_ += size;
-    record_frame_size_ -= size;
+    if (record_frag_data_ != NULL) {
+        record_frag_data_ += size;
+    }
+    record_frag_size_ -= size;
 
-    if (record_frame_size_ == 0) {
-        record_frame_data_ = NULL;
+    if (record_frag_size_ == 0 && record_frag_flag_) {
+        record_frag_data_ = NULL;
+        record_frag_flag_ = false;
 
         const int err = pa_stream_drop(stream_);
         if (err != 0) {

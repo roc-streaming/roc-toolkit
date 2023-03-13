@@ -10,7 +10,9 @@
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
+#include "roc_sndio/driver.h"
 #include "roc_sndio/pulseaudio_sink.h"
+#include "roc_sndio/pulseaudio_source.h"
 
 namespace roc {
 namespace sndio {
@@ -26,7 +28,8 @@ void PulseaudioBackend::discover_drivers(
     }
 
     driver_list.push_back(DriverInfo("pulse", DriverType_Device,
-                                     DriverFlag_IsDefault | DriverFlag_SupportsSink,
+                                     DriverFlag_IsDefault | DriverFlag_SupportsSink
+                                         | DriverFlag_SupportsSource,
                                      this));
 }
 
@@ -62,7 +65,20 @@ IDevice* PulseaudioBackend::open_device(DeviceType device_type,
     } break;
 
     case DeviceType_Source: {
-        return NULL;
+        core::ScopedPtr<PulseaudioSource> source(new (allocator) PulseaudioSource(config),
+                                                 allocator);
+        if (!source) {
+            roc_log(LogDebug, "pulseaudio backend: can't construct source: path=%s",
+                    path);
+            return NULL;
+        }
+
+        if (!source->open(path)) {
+            roc_log(LogDebug, "pulseaudio backend: can't open source: path=%s", path);
+            return NULL;
+        }
+
+        return source.release();
     } break;
 
     default:
