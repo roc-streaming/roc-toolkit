@@ -24,39 +24,6 @@ class ISource : public IDevice, public audio::IFrameReader {
 public:
     virtual ~ISource();
 
-    //! Source state.
-    enum State {
-        //! Source is running and active.
-        //! It is producing some sound.
-        Playing,
-
-        //! Source is running but is inactive.
-        //! It is producing silence. It may be safely paused.
-        Idle,
-
-        //! Source is paused.
-        //! It's not producing anything.
-        Paused
-    };
-
-    //! Get current source state.
-    virtual State state() const = 0;
-
-    //! Pause reading.
-    virtual void pause() = 0;
-
-    //! Resume paused reading.
-    //! @returns
-    //!  false if an error occured.
-    virtual bool resume() = 0;
-
-    //! Restart reading from the beginning.
-    //! @remarks
-    //!  If the reading is paused, it's automatically resumed.
-    //! @returns
-    //!  false if an error occured.
-    virtual bool restart() = 0;
-
     //! Adjust source clock to match consumer clock.
     //! @remarks
     //!  Invoked regularly after reading every or a several frames.

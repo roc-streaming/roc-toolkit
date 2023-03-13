@@ -28,6 +28,28 @@ public:
         , n_samples_(0) {
     }
 
+    virtual sndio::DeviceType type() const {
+        return sndio::DeviceType_Sink;
+    }
+
+    virtual sndio::DeviceState state() const {
+        return sndio::DeviceState_Active;
+    }
+
+    virtual void pause() {
+        FAIL("not implemented");
+    }
+
+    virtual bool resume() {
+        FAIL("not implemented");
+        return false;
+    }
+
+    virtual bool restart() {
+        FAIL("not implemented");
+        return false;
+    }
+
     virtual audio::SampleSpec sample_spec() const {
         return audio::SampleSpec();
     }

@@ -64,12 +64,12 @@ BackendDispatcher::BackendDispatcher() {
 
 ISink* BackendDispatcher::open_default_sink(const Config& config,
                                             core::IAllocator& allocator) {
-    return (ISink*)open_default_device_(Device_Sink, config, allocator);
+    return (ISink*)open_default_device_(DeviceType_Sink, config, allocator);
 }
 
 ISource* BackendDispatcher::open_default_source(const Config& config,
                                                 core::IAllocator& allocator) {
-    return (ISource*)open_default_device_(Device_Sink, config, allocator);
+    return (ISource*)open_default_device_(DeviceType_Sink, config, allocator);
 }
 
 ISink* BackendDispatcher::open_sink(const address::IoUri& uri,
@@ -83,8 +83,8 @@ ISink* BackendDispatcher::open_sink(const address::IoUri& uri,
     const DriverType driver_type = select_driver_type(uri);
     const char* driver_name = select_driver_name(uri, force_format);
 
-    return (ISink*)open_device_(Device_Sink, driver_type, driver_name, uri.path(), config,
-                                allocator);
+    return (ISink*)open_device_(DeviceType_Sink, driver_type, driver_name, uri.path(),
+                                config, allocator);
 }
 
 ISource* BackendDispatcher::open_source(const address::IoUri& uri,
@@ -98,7 +98,7 @@ ISource* BackendDispatcher::open_source(const address::IoUri& uri,
     const DriverType driver_type = select_driver_type(uri);
     const char* driver_name = select_driver_name(uri, force_format);
 
-    return (ISource*)open_device_(Device_Source, driver_type, driver_name, uri.path(),
+    return (ISource*)open_device_(DeviceType_Source, driver_type, driver_name, uri.path(),
                                   config, allocator);
 }
 
@@ -144,8 +144,8 @@ IDevice* BackendDispatcher::open_default_device_(DeviceType device_type,
                                                  const Config& config,
                                                  core::IAllocator& allocator) {
     const unsigned driver_flags = DriverFlag_IsDefault
-        | (device_type == Device_Sink ? DriverFlag_SupportsSink
-                                      : DriverFlag_SupportsSource);
+        | (device_type == DeviceType_Sink ? DriverFlag_SupportsSink
+                                          : DriverFlag_SupportsSource);
 
     for (size_t n = 0; n < BackendMap::instance().num_drivers(); n++) {
         const DriverInfo& driver_info = BackendMap::instance().nth_driver(n);
@@ -173,8 +173,8 @@ IDevice* BackendDispatcher::open_device_(DeviceType device_type,
                                          const Config& config,
                                          core::IAllocator& allocator) {
     const unsigned driver_flags =
-        (device_type == Device_Sink ? DriverFlag_SupportsSink
-                                    : DriverFlag_SupportsSource);
+        (device_type == DeviceType_Sink ? DriverFlag_SupportsSink
+                                        : DriverFlag_SupportsSource);
 
     if (driver_name != NULL) {
         for (size_t n = 0; n < BackendMap::instance().num_drivers(); n++) {

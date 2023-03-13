@@ -24,23 +24,15 @@ public:
         , size_(0) {
     }
 
-    virtual audio::SampleSpec sample_spec() const {
-        return audio::SampleSpec();
+    virtual DeviceType type() const {
+        return DeviceType_Source;
     }
 
-    virtual core::nanoseconds_t latency() const {
-        return 0;
-    }
-
-    virtual bool has_clock() const {
-        return false;
-    }
-
-    virtual State state() const {
+    virtual DeviceState state() const {
         if (pos_ >= size_) {
-            return Idle;
+            return DeviceState_Idle;
         } else {
-            return Playing;
+            return DeviceState_Active;
         }
     }
 
@@ -55,6 +47,18 @@ public:
 
     virtual bool restart() {
         FAIL("not implemented");
+        return false;
+    }
+
+    virtual audio::SampleSpec sample_spec() const {
+        return audio::SampleSpec();
+    }
+
+    virtual core::nanoseconds_t latency() const {
+        return 0;
+    }
+
+    virtual bool has_clock() const {
         return false;
     }
 

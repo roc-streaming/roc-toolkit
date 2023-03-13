@@ -156,11 +156,11 @@ TEST(sox_source, pause_resume) {
     audio::sample_t frame_data1[FrameSize * NumChans] = {};
     audio::Frame frame1(frame_data1, FrameSize * NumChans);
 
-    CHECK(sox_source.state() == ISource::Playing);
+    CHECK(sox_source.state() == DeviceState_Active);
     CHECK(sox_source.read(frame1));
 
     sox_source.pause();
-    CHECK(sox_source.state() == ISource::Paused);
+    CHECK(sox_source.state() == DeviceState_Paused);
 
     audio::sample_t frame_data2[FrameSize * NumChans] = {};
     audio::Frame frame2(frame_data2, FrameSize * NumChans);
@@ -168,7 +168,7 @@ TEST(sox_source, pause_resume) {
     CHECK(!sox_source.read(frame2));
 
     CHECK(sox_source.resume());
-    CHECK(sox_source.state() == ISource::Playing);
+    CHECK(sox_source.state() == DeviceState_Active);
 
     CHECK(sox_source.read(frame2));
 
@@ -200,11 +200,11 @@ TEST(sox_source, pause_restart) {
     audio::sample_t frame_data1[FrameSize * NumChans] = {};
     audio::Frame frame1(frame_data1, FrameSize * NumChans);
 
-    CHECK(sox_source.state() == ISource::Playing);
+    CHECK(sox_source.state() == DeviceState_Active);
     CHECK(sox_source.read(frame1));
 
     sox_source.pause();
-    CHECK(sox_source.state() == ISource::Paused);
+    CHECK(sox_source.state() == DeviceState_Paused);
 
     audio::sample_t frame_data2[FrameSize * NumChans] = {};
     audio::Frame frame2(frame_data2, FrameSize * NumChans);
@@ -212,7 +212,7 @@ TEST(sox_source, pause_restart) {
     CHECK(!sox_source.read(frame2));
 
     CHECK(sox_source.restart());
-    CHECK(sox_source.state() == ISource::Playing);
+    CHECK(sox_source.state() == DeviceState_Active);
 
     CHECK(sox_source.read(frame2));
 

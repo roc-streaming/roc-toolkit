@@ -43,17 +43,11 @@ public:
     //! Check if the pipeline was successfully constructed.
     bool valid();
 
-    //! Get sample specification of the source.
-    virtual audio::SampleSpec sample_spec() const;
+    //! Get device type.
+    virtual sndio::DeviceType type() const;
 
-    //! Get latency of the source.
-    virtual core::nanoseconds_t latency() const;
-
-    //! Check if the sink has own clock.
-    virtual bool has_clock() const;
-
-    //! Get current source state.
-    virtual State state() const;
+    //! Get device state.
+    virtual sndio::DeviceState state() const;
 
     //! Pause reading.
     virtual void pause();
@@ -63,6 +57,15 @@ public:
 
     //! Restart reading from the beginning.
     virtual bool restart();
+
+    //! Get sample specification of the source.
+    virtual audio::SampleSpec sample_spec() const;
+
+    //! Get latency of the source.
+    virtual core::nanoseconds_t latency() const;
+
+    //! Check if the sink has own clock.
+    virtual bool has_clock() const;
 
     //! Adjust source clock to match consumer clock.
     virtual void reclock(packet::ntp_timestamp_t timestamp);

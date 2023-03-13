@@ -15,6 +15,8 @@
 #include "roc_audio/sample_spec.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/time.h"
+#include "roc_sndio/device_state.h"
+#include "roc_sndio/device_type.h"
 
 namespace roc {
 namespace sndio {
@@ -23,6 +25,27 @@ namespace sndio {
 class IDevice {
 public:
     virtual ~IDevice();
+
+    //! Get device type.
+    virtual DeviceType type() const = 0;
+
+    //! Get device state.
+    virtual DeviceState state() const = 0;
+
+    //! Pause device.
+    virtual void pause() = 0;
+
+    //! Resume device after pause.
+    //! @returns
+    //!  false if an error occured.
+    virtual bool resume() = 0;
+
+    //! Restart device.
+    //! @remarks
+    //!  If device was paused, it's automatically resumed.
+    //! @returns
+    //!  false if an error occured.
+    virtual bool restart() = 0;
 
     //! Get sample specification of the device.
     virtual audio::SampleSpec sample_spec() const = 0;

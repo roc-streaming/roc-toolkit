@@ -76,6 +76,26 @@ bool SoxSink::open(const char* driver, const char* path) {
     return true;
 }
 
+DeviceType SoxSink::type() const {
+    return DeviceType_Sink;
+}
+
+DeviceState SoxSink::state() const {
+    return DeviceState_Active;
+}
+
+void SoxSink::pause() {
+    // no-op
+}
+
+bool SoxSink::resume() {
+    return true;
+}
+
+bool SoxSink::restart() {
+    return true;
+}
+
 audio::SampleSpec SoxSink::sample_spec() const {
     roc_panic_if(!valid_);
 

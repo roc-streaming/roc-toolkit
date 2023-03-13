@@ -105,25 +105,13 @@ sndio::ISource& ReceiverLoop::source() {
     return *this;
 }
 
-audio::SampleSpec ReceiverLoop::sample_spec() const {
-    roc_panic_if_not(valid());
-
-    return source_.sample_spec();
-}
-
-core::nanoseconds_t ReceiverLoop::latency() const {
-    roc_panic_if_not(valid());
-
-    return source_.latency();
-}
-
-bool ReceiverLoop::has_clock() const {
+sndio::DeviceType ReceiverLoop::type() const {
     roc_panic_if(!valid());
 
-    return source_.has_clock();
+    return source_.type();
 }
 
-sndio::ISource::State ReceiverLoop::state() const {
+sndio::DeviceState ReceiverLoop::state() const {
     roc_panic_if(!valid());
 
     return source_.state();
@@ -145,6 +133,24 @@ bool ReceiverLoop::restart() {
     roc_panic_if(!valid());
 
     return source_.restart();
+}
+
+audio::SampleSpec ReceiverLoop::sample_spec() const {
+    roc_panic_if_not(valid());
+
+    return source_.sample_spec();
+}
+
+core::nanoseconds_t ReceiverLoop::latency() const {
+    roc_panic_if_not(valid());
+
+    return source_.latency();
+}
+
+bool ReceiverLoop::has_clock() const {
+    roc_panic_if(!valid());
+
+    return source_.has_clock();
 }
 
 void ReceiverLoop::reclock(packet::ntp_timestamp_t timestamp) {

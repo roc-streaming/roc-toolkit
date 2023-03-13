@@ -257,7 +257,7 @@ IDevice* SoxBackend::open_device(DeviceType device_type,
     }
 
     switch (device_type) {
-    case Device_Sink: {
+    case DeviceType_Sink: {
         core::ScopedPtr<SoxSink> sink(new (allocator) SoxSink(allocator, config),
                                       allocator);
         if (!sink || !sink->valid()) {
@@ -275,7 +275,7 @@ IDevice* SoxBackend::open_device(DeviceType device_type,
         return sink.release();
     } break;
 
-    case Device_Source: {
+    case DeviceType_Source: {
         core::ScopedPtr<SoxSource> source(new (allocator) SoxSource(allocator, config),
                                           allocator);
         if (!source || !source->valid()) {

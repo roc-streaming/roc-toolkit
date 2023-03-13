@@ -45,7 +45,7 @@ IDevice* PulseaudioBackend::open_device(DeviceType device_type,
     }
 
     switch (device_type) {
-    case Device_Sink: {
+    case DeviceType_Sink: {
         core::ScopedPtr<PulseaudioSink> sink(new (allocator) PulseaudioSink(config),
                                              allocator);
         if (!sink) {
@@ -61,7 +61,7 @@ IDevice* PulseaudioBackend::open_device(DeviceType device_type,
         return sink.release();
     } break;
 
-    case Device_Source: {
+    case DeviceType_Source: {
         return NULL;
     } break;
 

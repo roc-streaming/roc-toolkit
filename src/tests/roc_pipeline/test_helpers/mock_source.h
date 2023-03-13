@@ -22,9 +22,35 @@ namespace test {
 class MockSource : public sndio::ISource {
 public:
     MockSource()
-        : state_(Playing)
+        : state_(sndio::DeviceState_Active)
         , pos_(0)
         , size_(0) {
+    }
+
+    virtual sndio::DeviceType type() const {
+        return sndio::DeviceType_Source;
+    }
+
+    void set_state(sndio::DeviceState st) {
+        state_ = st;
+    }
+
+    virtual sndio::DeviceState state() const {
+        return state_;
+    }
+
+    virtual void pause() {
+        state_ = sndio::DeviceState_Paused;
+    }
+
+    virtual bool resume() {
+        state_ = sndio::DeviceState_Active;
+        return true;
+    }
+
+    virtual bool restart() {
+        state_ = sndio::DeviceState_Active;
+        return true;
     }
 
     virtual audio::SampleSpec sample_spec() const {
@@ -37,28 +63,6 @@ public:
 
     virtual bool has_clock() const {
         return false;
-    }
-
-    void set_state(State st) {
-        state_ = st;
-    }
-
-    virtual State state() const {
-        return state_;
-    }
-
-    virtual void pause() {
-        state_ = Paused;
-    }
-
-    virtual bool resume() {
-        state_ = Playing;
-        return true;
-    }
-
-    virtual bool restart() {
-        state_ = Playing;
-        return true;
     }
 
     virtual void reclock(packet::ntp_timestamp_t) {
@@ -104,7 +108,7 @@ public:
 private:
     enum { MaxSz = 256 * 1024 };
 
-    State state_;
+    sndio::DeviceState state_;
 
     audio::sample_t samples_[MaxSz];
 

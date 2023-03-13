@@ -17,8 +17,8 @@ namespace sndio {
 
 //! Device type.
 enum DeviceType {
-    Device_Sink,  //!< Sink.
-    Device_Source //!< Source.
+    DeviceType_Sink,  //!< Sink.
+    DeviceType_Source //!< Source.
 };
 
 //! Convert device type to string.

@@ -120,13 +120,14 @@ public:
 
 private:
     // Methods of sndio::ISource
-    virtual audio::SampleSpec sample_spec() const;
-    virtual core::nanoseconds_t latency() const;
-    virtual bool has_clock() const;
-    virtual State state() const;
+    virtual sndio::DeviceType type() const;
+    virtual sndio::DeviceState state() const;
     virtual void pause();
     virtual bool resume();
     virtual bool restart();
+    virtual audio::SampleSpec sample_spec() const;
+    virtual core::nanoseconds_t latency() const;
+    virtual bool has_clock() const;
     virtual void reclock(packet::ntp_timestamp_t timestamp);
     virtual bool read(audio::Frame&);
 

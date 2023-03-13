@@ -96,19 +96,11 @@ bool ConverterSource::valid() {
     return audio_reader_;
 }
 
-audio::SampleSpec ConverterSource::sample_spec() const {
-    return config_.output_sample_spec;
+sndio::DeviceType ConverterSource::type() const {
+    return input_source_.type();
 }
 
-core::nanoseconds_t ConverterSource::latency() const {
-    return 0;
-}
-
-bool ConverterSource::has_clock() const {
-    return input_source_.has_clock();
-}
-
-sndio::ISource::State ConverterSource::state() const {
+sndio::DeviceState ConverterSource::state() const {
     return input_source_.state();
 }
 
@@ -122,6 +114,18 @@ bool ConverterSource::resume() {
 
 bool ConverterSource::restart() {
     return input_source_.restart();
+}
+
+audio::SampleSpec ConverterSource::sample_spec() const {
+    return config_.output_sample_spec;
+}
+
+core::nanoseconds_t ConverterSource::latency() const {
+    return 0;
+}
+
+bool ConverterSource::has_clock() const {
+    return input_source_.has_clock();
 }
 
 void ConverterSource::reclock(packet::ntp_timestamp_t timestamp) {

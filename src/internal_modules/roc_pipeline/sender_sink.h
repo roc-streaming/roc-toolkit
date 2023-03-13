@@ -67,6 +67,21 @@ public:
     //! Update pipeline.
     void update();
 
+    //! Get device type.
+    virtual sndio::DeviceType type() const;
+
+    //! Get current receiver state.
+    virtual sndio::DeviceState state() const;
+
+    //! Pause reading.
+    virtual void pause();
+
+    //! Resume paused reading.
+    virtual bool resume();
+
+    //! Restart reading from the beginning.
+    virtual bool restart();
+
     //! Get sample specification of the sink.
     virtual audio::SampleSpec sample_spec() const;
 

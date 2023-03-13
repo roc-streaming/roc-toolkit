@@ -6,18 +6,21 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_sndio/device_type.h"
+#include "roc_sndio/device_state.h"
 
 namespace roc {
 namespace sndio {
 
-const char* device_type_to_str(DeviceType type) {
-    switch (type) {
-    case DeviceType_Sink:
-        return "sink";
+const char* device_state_to_str(DeviceState state) {
+    switch (state) {
+    case DeviceState_Active:
+        return "active";
 
-    case DeviceType_Source:
-        return "source";
+    case DeviceState_Idle:
+        return "idle";
+
+    case DeviceState_Paused:
+        return "paused";
 
     default:
         break;

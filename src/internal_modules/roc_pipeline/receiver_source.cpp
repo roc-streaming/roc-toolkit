@@ -10,6 +10,7 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/shared_ptr.h"
+#include "roc_sndio/device_type.h"
 
 namespace roc {
 namespace pipeline {
@@ -78,33 +79,25 @@ size_t ReceiverSource::num_sessions() const {
     return state_.num_sessions();
 }
 
-audio::SampleSpec ReceiverSource::sample_spec() const {
-    return config_.common.output_sample_spec;
+sndio::DeviceType ReceiverSource::type() const {
+    return sndio::DeviceType_Source;
 }
 
-core::nanoseconds_t ReceiverSource::latency() const {
-    return 0;
-}
-
-bool ReceiverSource::has_clock() const {
-    return config_.common.timing;
-}
-
-sndio::ISource::State ReceiverSource::state() const {
+sndio::DeviceState ReceiverSource::state() const {
     roc_panic_if(!valid());
 
     if (state_.num_sessions() != 0) {
         // we have sessions and they're producing some sound
-        return Playing;
+        return sndio::DeviceState_Active;
     }
 
     if (state_.has_pending_packets()) {
         // we don't have sessions, but we have packets that may create sessions
-        return Playing;
+        return sndio::DeviceState_Active;
     }
 
     // no sessions and packets; we can sleep until there are some
-    return Idle;
+    return sndio::DeviceState_Idle;
 }
 
 void ReceiverSource::pause() {
@@ -117,6 +110,18 @@ bool ReceiverSource::resume() {
 
 bool ReceiverSource::restart() {
     return true;
+}
+
+audio::SampleSpec ReceiverSource::sample_spec() const {
+    return config_.common.output_sample_spec;
+}
+
+core::nanoseconds_t ReceiverSource::latency() const {
+    return 0;
+}
+
+bool ReceiverSource::has_clock() const {
+    return config_.common.timing;
 }
 
 void ReceiverSource::reclock(packet::ntp_timestamp_t timestamp) {

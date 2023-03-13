@@ -97,6 +97,26 @@ bool ConverterSink::valid() {
     return audio_writer_;
 }
 
+sndio::DeviceType ConverterSink::type() const {
+    return sndio::DeviceType_Sink;
+}
+
+sndio::DeviceState ConverterSink::state() const {
+    return sndio::DeviceState_Active;
+}
+
+void ConverterSink::pause() {
+    // no-op
+}
+
+bool ConverterSink::resume() {
+    return true;
+}
+
+bool ConverterSink::restart() {
+    return true;
+}
+
 audio::SampleSpec ConverterSink::sample_spec() const {
     return config_.output_sample_spec;
 }

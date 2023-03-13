@@ -12,10 +12,33 @@ namespace roc {
 namespace sndio {
 
 PulseaudioSink::PulseaudioSink(const Config& config)
-    : PulseaudioDevice(config, Device_Sink) {
+    : PulseaudioDevice(config, DeviceType_Sink) {
 }
 
 PulseaudioSink::~PulseaudioSink() {
+}
+
+DeviceType PulseaudioSink::type() const {
+    return DeviceType_Sink;
+}
+
+DeviceState PulseaudioSink::state() const {
+    // TODO
+    return DeviceState_Active;
+}
+
+void PulseaudioSink::pause() {
+    // TODO
+}
+
+bool PulseaudioSink::resume() {
+    // TODO
+    return true;
+}
+
+bool PulseaudioSink::restart() {
+    // TODO
+    return true;
 }
 
 audio::SampleSpec PulseaudioSink::sample_spec() const {

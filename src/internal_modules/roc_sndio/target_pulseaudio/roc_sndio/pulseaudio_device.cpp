@@ -126,11 +126,11 @@ void PulseaudioDevice::request(audio::Frame& frame) {
         ssize_t ret = 0;
 
         switch (device_type_) {
-        case Device_Sink:
+        case DeviceType_Sink:
             ret = write_stream_(data, size);
             break;
 
-        case Device_Source:
+        case DeviceType_Source:
             ret = read_stream_(data, size);
             break;
         }
@@ -348,12 +348,12 @@ bool PulseaudioDevice::start_device_info_op_() {
             device_type_to_str(device_type_));
 
     switch (device_type_) {
-    case Device_Sink:
+    case DeviceType_Sink:
         device_info_op_ = pa_context_get_sink_info_by_name(
             context_, device_, (pa_sink_info_cb_t)device_info_cb_, this);
         break;
 
-    case Device_Source:
+    case DeviceType_Source:
         device_info_op_ = pa_context_get_source_info_by_name(
             context_, device_, (pa_source_info_cb_t)device_info_cb_, this);
         break;
@@ -392,11 +392,11 @@ void PulseaudioDevice::device_info_cb_(pa_context*,
             device_type_to_str(self.device_type_));
 
     switch (self.device_type_) {
-    case Device_Sink:
+    case DeviceType_Sink:
         self.init_stream_params_((*(const pa_sink_info*)info).sample_spec);
         break;
 
-    case Device_Source:
+    case DeviceType_Source:
         self.init_stream_params_((*(const pa_source_info*)info).sample_spec);
         break;
     }
@@ -463,7 +463,7 @@ bool PulseaudioDevice::open_stream_() {
     pa_stream_set_latency_update_callback(stream_, stream_latency_cb_, this);
 
     switch (device_type_) {
-    case Device_Sink: {
+    case DeviceType_Sink: {
         pa_stream_set_write_callback(stream_, stream_request_cb_, this);
 
         const int err = pa_stream_connect_playback(stream_, device_, &buffer_attrs_,
@@ -475,7 +475,7 @@ bool PulseaudioDevice::open_stream_() {
         }
     } break;
 
-    case Device_Source: {
+    case DeviceType_Source: {
         pa_stream_set_read_callback(stream_, stream_request_cb_, this);
 
         const int err = pa_stream_connect_record(stream_, device_, &buffer_attrs_, flags);
@@ -578,7 +578,7 @@ ssize_t PulseaudioDevice::wait_stream_() {
     bool timer_expired = false;
 
     for (;;) {
-        const size_t avail_size = device_type_ == Device_Sink
+        const size_t avail_size = device_type_ == DeviceType_Sink
             ? pa_stream_writable_size(stream_)
             : pa_stream_readable_size(stream_);
 

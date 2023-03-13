@@ -11,6 +11,7 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
+#include "roc_sndio/device_state.h"
 
 namespace roc {
 namespace pipeline {
@@ -93,6 +94,26 @@ void SenderSink::update() {
     }
 
     invalidate_update_deadline_();
+}
+
+sndio::DeviceType SenderSink::type() const {
+    return sndio::DeviceType_Sink;
+}
+
+sndio::DeviceState SenderSink::state() const {
+    return sndio::DeviceState_Active;
+}
+
+void SenderSink::pause() {
+    // no-op
+}
+
+bool SenderSink::resume() {
+    return true;
+}
+
+bool SenderSink::restart() {
+    return true;
 }
 
 audio::SampleSpec SenderSink::sample_spec() const {

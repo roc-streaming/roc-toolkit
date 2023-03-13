@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_sndio/target_pulseaudio/roc_sndio/pulseaudio_sink.h
+//! @file roc_sndio/target_pulseaudio/roc_sndio/pulseaudio_device.h
 //! @brief PulseAudio device.
 
 #ifndef ROC_SNDIO_PULSEAUDIO_DEVICE_H_

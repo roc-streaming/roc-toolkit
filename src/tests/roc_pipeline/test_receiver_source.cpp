@@ -1292,7 +1292,7 @@ TEST(receiver_source, status) {
     CHECK(samples);
     samples.reslice(0, FramesPerPacket * NumCh);
 
-    CHECK(receiver.state() == sndio::ISource::Idle);
+    CHECK(receiver.state() == sndio::DeviceState_Idle);
 
     {
         audio::Frame frame(samples.data(), samples.size());
@@ -1302,7 +1302,7 @@ TEST(receiver_source, status) {
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
                                 SampleSpecs);
 
-    CHECK(receiver.state() == sndio::ISource::Playing);
+    CHECK(receiver.state() == sndio::DeviceState_Active);
 
     {
         audio::Frame frame(samples.data(), samples.size());
@@ -1313,7 +1313,7 @@ TEST(receiver_source, status) {
         audio::Frame frame(samples.data(), samples.size());
         receiver.read(frame);
 
-        if (receiver.state() == sndio::ISource::Idle) {
+        if (receiver.state() == sndio::DeviceState_Idle) {
             break;
         }
     }

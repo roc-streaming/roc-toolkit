@@ -26,6 +26,21 @@ public:
 
     ~PulseaudioSink();
 
+    //! Get device type.
+    virtual DeviceType type() const;
+
+    //! Get device state.
+    virtual DeviceState state() const;
+
+    //! Pause reading.
+    virtual void pause();
+
+    //! Resume paused reading.
+    virtual bool resume();
+
+    //! Restart reading from the beginning.
+    virtual bool restart();
+
     //! Get sample specification of the sink.
     virtual audio::SampleSpec sample_spec() const;
 

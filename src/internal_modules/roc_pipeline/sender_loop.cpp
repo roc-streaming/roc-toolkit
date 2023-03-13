@@ -123,6 +123,36 @@ sndio::ISink& SenderLoop::sink() {
     return *this;
 }
 
+sndio::DeviceType SenderLoop::type() const {
+    roc_panic_if(!valid());
+
+    return sink_.type();
+}
+
+sndio::DeviceState SenderLoop::state() const {
+    roc_panic_if(!valid());
+
+    return sink_.state();
+}
+
+void SenderLoop::pause() {
+    roc_panic_if(!valid());
+
+    sink_.pause();
+}
+
+bool SenderLoop::resume() {
+    roc_panic_if(!valid());
+
+    return sink_.resume();
+}
+
+bool SenderLoop::restart() {
+    roc_panic_if(!valid());
+
+    return sink_.restart();
+}
+
 audio::SampleSpec SenderLoop::sample_spec() const {
     roc_panic_if_not(valid());
 

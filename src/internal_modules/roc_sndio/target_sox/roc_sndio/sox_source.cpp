@@ -83,48 +83,17 @@ bool SoxSource::open(const char* driver, const char* path) {
     return true;
 }
 
-audio::SampleSpec SoxSource::sample_spec() const {
-    roc_panic_if(!valid_);
-
-    if (!input_) {
-        roc_panic("sox source: sample_rate(): non-open output file or device");
-    }
-
-    const size_t sample_rate = size_t(input_->signal.rate);
-
-    const packet::channel_mask_t chan_mask =
-        packet::channel_mask_t(1u << input_->signal.channels) - 1;
-
-    return audio::SampleSpec(sample_rate, chan_mask);
+DeviceType SoxSource::type() const {
+    return DeviceType_Source;
 }
 
-core::nanoseconds_t SoxSource::latency() const {
-    roc_panic_if(!valid_);
-
-    if (!input_) {
-        roc_panic("sox source: latency(): non-open output file or device");
-    }
-
-    return 0;
-}
-
-bool SoxSource::has_clock() const {
-    roc_panic_if(!valid_);
-
-    if (!input_) {
-        roc_panic("sox source: has_clock(): non-open input file or device");
-    }
-
-    return !is_file_;
-}
-
-ISource::State SoxSource::state() const {
+DeviceState SoxSource::state() const {
     roc_panic_if(!valid_);
 
     if (paused_) {
-        return Paused;
+        return DeviceState_Paused;
     } else {
-        return Playing;
+        return DeviceState_Active;
     }
 }
 
@@ -201,6 +170,41 @@ bool SoxSource::restart() {
     eof_ = false;
 
     return true;
+}
+
+audio::SampleSpec SoxSource::sample_spec() const {
+    roc_panic_if(!valid_);
+
+    if (!input_) {
+        roc_panic("sox source: sample_rate(): non-open output file or device");
+    }
+
+    const size_t sample_rate = size_t(input_->signal.rate);
+
+    const packet::channel_mask_t chan_mask =
+        packet::channel_mask_t(1u << input_->signal.channels) - 1;
+
+    return audio::SampleSpec(sample_rate, chan_mask);
+}
+
+core::nanoseconds_t SoxSource::latency() const {
+    roc_panic_if(!valid_);
+
+    if (!input_) {
+        roc_panic("sox source: latency(): non-open output file or device");
+    }
+
+    return 0;
+}
+
+bool SoxSource::has_clock() const {
+    roc_panic_if(!valid_);
+
+    if (!input_) {
+        roc_panic("sox source: has_clock(): non-open input file or device");
+    }
+
+    return !is_file_;
 }
 
 void SoxSource::reclock(packet::ntp_timestamp_t) {
