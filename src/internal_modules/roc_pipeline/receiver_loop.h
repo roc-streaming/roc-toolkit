@@ -146,7 +146,7 @@ private:
     core::Optional<core::Ticker> ticker_;
     packet::timestamp_t timestamp_;
 
-    core::Mutex read_mutex_;
+    core::Mutex source_mutex_;
 
     bool valid_;
 };

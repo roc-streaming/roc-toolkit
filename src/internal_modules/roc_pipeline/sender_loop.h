@@ -164,7 +164,7 @@ private:
     core::Optional<core::Ticker> ticker_;
     packet::timestamp_t timestamp_;
 
-    core::Mutex write_mutex_;
+    core::Mutex sink_mutex_;
 
     bool valid_;
 };

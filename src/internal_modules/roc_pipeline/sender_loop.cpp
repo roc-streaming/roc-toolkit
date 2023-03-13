@@ -126,11 +126,15 @@ sndio::ISink& SenderLoop::sink() {
 sndio::DeviceType SenderLoop::type() const {
     roc_panic_if(!valid());
 
+    core::Mutex::Lock lock(sink_mutex_);
+
     return sink_.type();
 }
 
 sndio::DeviceState SenderLoop::state() const {
     roc_panic_if(!valid());
+
+    core::Mutex::Lock lock(sink_mutex_);
 
     return sink_.state();
 }
@@ -138,11 +142,15 @@ sndio::DeviceState SenderLoop::state() const {
 void SenderLoop::pause() {
     roc_panic_if(!valid());
 
+    core::Mutex::Lock lock(sink_mutex_);
+
     sink_.pause();
 }
 
 bool SenderLoop::resume() {
     roc_panic_if(!valid());
+
+    core::Mutex::Lock lock(sink_mutex_);
 
     return sink_.resume();
 }
@@ -150,11 +158,15 @@ bool SenderLoop::resume() {
 bool SenderLoop::restart() {
     roc_panic_if(!valid());
 
+    core::Mutex::Lock lock(sink_mutex_);
+
     return sink_.restart();
 }
 
 audio::SampleSpec SenderLoop::sample_spec() const {
     roc_panic_if_not(valid());
+
+    core::Mutex::Lock lock(sink_mutex_);
 
     return sink_.sample_spec();
 }
@@ -162,11 +174,15 @@ audio::SampleSpec SenderLoop::sample_spec() const {
 core::nanoseconds_t SenderLoop::latency() const {
     roc_panic_if_not(valid());
 
+    core::Mutex::Lock lock(sink_mutex_);
+
     return sink_.latency();
 }
 
 bool SenderLoop::has_clock() const {
     roc_panic_if_not(valid());
+
+    core::Mutex::Lock lock(sink_mutex_);
 
     return sink_.has_clock();
 }
@@ -174,7 +190,7 @@ bool SenderLoop::has_clock() const {
 void SenderLoop::write(audio::Frame& frame) {
     roc_panic_if_not(valid());
 
-    core::Mutex::Lock lock(write_mutex_);
+    core::Mutex::Lock lock(sink_mutex_);
 
     if (ticker_) {
         ticker_->wait(timestamp_);

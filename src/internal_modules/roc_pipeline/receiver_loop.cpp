@@ -108,11 +108,15 @@ sndio::ISource& ReceiverLoop::source() {
 sndio::DeviceType ReceiverLoop::type() const {
     roc_panic_if(!valid());
 
+    core::Mutex::Lock lock(source_mutex_);
+
     return source_.type();
 }
 
 sndio::DeviceState ReceiverLoop::state() const {
     roc_panic_if(!valid());
+
+    core::Mutex::Lock lock(source_mutex_);
 
     return source_.state();
 }
@@ -120,11 +124,15 @@ sndio::DeviceState ReceiverLoop::state() const {
 void ReceiverLoop::pause() {
     roc_panic_if(!valid());
 
+    core::Mutex::Lock lock(source_mutex_);
+
     source_.pause();
 }
 
 bool ReceiverLoop::resume() {
     roc_panic_if(!valid());
+
+    core::Mutex::Lock lock(source_mutex_);
 
     return source_.resume();
 }
@@ -132,11 +140,15 @@ bool ReceiverLoop::resume() {
 bool ReceiverLoop::restart() {
     roc_panic_if(!valid());
 
+    core::Mutex::Lock lock(source_mutex_);
+
     return source_.restart();
 }
 
 audio::SampleSpec ReceiverLoop::sample_spec() const {
     roc_panic_if_not(valid());
+
+    core::Mutex::Lock lock(source_mutex_);
 
     return source_.sample_spec();
 }
@@ -144,11 +156,15 @@ audio::SampleSpec ReceiverLoop::sample_spec() const {
 core::nanoseconds_t ReceiverLoop::latency() const {
     roc_panic_if_not(valid());
 
+    core::Mutex::Lock lock(source_mutex_);
+
     return source_.latency();
 }
 
 bool ReceiverLoop::has_clock() const {
     roc_panic_if(!valid());
+
+    core::Mutex::Lock lock(source_mutex_);
 
     return source_.has_clock();
 }
@@ -156,7 +172,7 @@ bool ReceiverLoop::has_clock() const {
 void ReceiverLoop::reclock(packet::ntp_timestamp_t timestamp) {
     roc_panic_if(!valid());
 
-    core::Mutex::Lock lock(read_mutex_);
+    core::Mutex::Lock lock(source_mutex_);
 
     source_.reclock(timestamp);
 }
@@ -164,7 +180,7 @@ void ReceiverLoop::reclock(packet::ntp_timestamp_t timestamp) {
 bool ReceiverLoop::read(audio::Frame& frame) {
     roc_panic_if(!valid());
 
-    core::Mutex::Lock lock(read_mutex_);
+    core::Mutex::Lock lock(source_mutex_);
 
     if (ticker_) {
         ticker_->wait(timestamp_);
