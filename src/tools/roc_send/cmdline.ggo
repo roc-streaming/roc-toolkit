@@ -20,6 +20,9 @@ section "Options"
 
     option "reuseaddr" - "enable SO_REUSEADDR when binding sockets" optional
 
+    option "io-latency" - "Recording target latency, TIME units"
+        string optional
+
     option "nbsrc" - "Number of source packets in FEC block"
         int optional
 

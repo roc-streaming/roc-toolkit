@@ -206,6 +206,13 @@ int main(int argc, char** argv) {
         sender_config.input_sample_spec.channel_mask());
     io_config.frame_length = sender_config.internal_frame_length;
 
+    if (args.io_latency_given) {
+        if (!core::parse_duration(args.io_latency_arg, io_config.latency)) {
+            roc_log(LogError, "invalid --io-latency");
+            return 1;
+        }
+    }
+
     if (args.rate_given) {
         if (args.rate_arg <= 0) {
             roc_log(LogError, "invalid --rate: should be > 0");
