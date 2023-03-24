@@ -46,8 +46,11 @@ LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
     , output_sample_spec_(output_sample_spec)
     , valid_(false) {
     roc_log(LogDebug,
-            "latency monitor: initializing: target_latency=%lu in_rate=%lu out_rate=%lu",
+            "latency monitor: initializing:"
+            " target_latency=%lu(%.3fms) in_rate=%lu out_rate=%lu",
             (unsigned long)target_latency_,
+            (double)input_sample_spec_.rtp_timestamp_2_ns(target_latency_)
+                / core::Millisecond,
             (unsigned long)input_sample_spec_.sample_rate(),
             (unsigned long)output_sample_spec_.sample_rate());
 
@@ -60,8 +63,8 @@ LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
     if (target_latency < config.min_latency || target_latency > config.max_latency
         || target_latency <= 0) {
         roc_log(LogError,
-                "latency monitor: invalid_config: "
-                "target_latency=%ld min_latency=%ld max_latency=%ld",
+                "latency monitor: invalid_config:"
+                " target_latency=%ldns min_latency=%ldns max_latency=%ldns",
                 (long)target_latency, (long)config.min_latency, (long)config.max_latency);
         return;
     }
@@ -134,14 +137,26 @@ bool LatencyMonitor::get_latency_(packet::timestamp_diff_t& latency) const {
 
 bool LatencyMonitor::check_latency_(packet::timestamp_diff_t latency) const {
     if (latency < min_latency_) {
-        roc_log(LogDebug, "latency monitor: latency out of bounds: latency=%ld min=%ld",
-                (long)latency, (long)min_latency_);
+        roc_log(
+            LogDebug,
+            "latency monitor: latency out of bounds: latency=%ld(%.3fms) min=%ld(%.3fms)",
+            (long)latency,
+            (double)input_sample_spec_.rtp_timestamp_2_ns(latency) / core::Millisecond,
+            (long)min_latency_,
+            (double)input_sample_spec_.rtp_timestamp_2_ns(min_latency_)
+                / core::Millisecond);
         return false;
     }
 
     if (latency > max_latency_) {
-        roc_log(LogDebug, "latency monitor: latency out of bounds: latency=%ld max=%ld",
-                (long)latency, (long)max_latency_);
+        roc_log(
+            LogDebug,
+            "latency monitor: latency out of bounds: latency=%ld(%.3fms) max=%ld(%.3fms)",
+            (long)latency,
+            (double)input_sample_spec_.rtp_timestamp_2_ns(latency) / core::Millisecond,
+            (long)max_latency_,
+            (double)input_sample_spec_.rtp_timestamp_2_ns(max_latency_)
+                / core::Millisecond);
         return false;
     }
 
@@ -197,8 +212,15 @@ bool LatencyMonitor::update_resampler_(packet::timestamp_t pos,
     const float trimmed_coeff = trim_scaling_(freq_coeff);
 
     if (rate_limiter_.allow()) {
-        roc_log(LogDebug, "latency monitor: latency=%lu target=%lu fe=%.5f trim_fe=%.5f",
-                (unsigned long)latency, (unsigned long)target_latency_,
+        roc_log(LogDebug,
+                "latency monitor:"
+                " latency=%lu(%.3fms) target=%lu(%.3fms) fe=%.5f trim_fe=%.5f",
+                (unsigned long)latency,
+                (double)input_sample_spec_.rtp_timestamp_2_ns(latency)
+                    / core::Millisecond,
+                (unsigned long)target_latency_,
+                (double)input_sample_spec_.rtp_timestamp_2_ns(target_latency_)
+                    / core::Millisecond,
                 (double)freq_coeff, (double)trimmed_coeff);
     }
 
@@ -214,8 +236,13 @@ bool LatencyMonitor::update_resampler_(packet::timestamp_t pos,
 
 void LatencyMonitor::report_latency_(packet::timestamp_diff_t latency) {
     if (rate_limiter_.allow()) {
-        roc_log(LogDebug, "latency monitor: latency=%ld target=%lu", (long)latency,
-                (unsigned long)target_latency_);
+        roc_log(LogDebug, "latency monitor: latency=%ld(%.3fms) target=%lu(%.3fms)",
+                (long)latency,
+                (double)input_sample_spec_.rtp_timestamp_2_ns(latency)
+                    / core::Millisecond,
+                (unsigned long)target_latency_,
+                (double)input_sample_spec_.rtp_timestamp_2_ns(target_latency_)
+                    / core::Millisecond);
     }
 }
 
