@@ -22,6 +22,7 @@ BreakBeforeBraces: Attach
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 KeepEmptyLinesAtTheStartOfBlocks: false
 SpaceInEmptyBlock: false
+SpaceAfterCStyleCast: false
 
 BinPackArguments: true
 BinPackParameters: false
