@@ -9,7 +9,6 @@
 #include "roc_sndio/pulseaudio_device.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_sndio/device_state.h"
 
 namespace roc {
 namespace sndio {
@@ -649,10 +648,13 @@ ssize_t PulseaudioDevice::wait_stream_() {
 
         if (avail_size == 0 && timer_expired) {
             roc_log(LogInfo,
-                    "pulseaudio %s: stream timeout expired: latency=%ld timeout=%ld",
+                    "pulseaudio %s: stream timeout expired:"
+                    " latency=%ld(%.3fms) timeout=%ld(%.3fms)",
                     device_type_to_str(device_type_),
                     (long)config_.sample_spec.ns_2_rtp_timestamp(latency_),
-                    (long)config_.sample_spec.ns_2_rtp_timestamp(timeout_));
+                    (double)latency_ / core::Millisecond,
+                    (long)config_.sample_spec.ns_2_rtp_timestamp(timeout_),
+                    (double)timeout_ / core::Millisecond);
 
             if (timeout_ < MaxTimeout) {
                 timeout_ *= 2;
@@ -660,11 +662,13 @@ ssize_t PulseaudioDevice::wait_stream_() {
                     timeout_ = MaxTimeout;
                 }
                 roc_log(LogDebug,
-                        "pulseaudio %s: stream timeout increased: "
-                        "latency=%ld timeout=%ld",
+                        "pulseaudio %s: stream timeout increased:"
+                        " latency=%ld(%.3fms) timeout=%ld(%.3fms)",
                         device_type_to_str(device_type_),
                         (long)config_.sample_spec.ns_2_rtp_timestamp(latency_),
-                        (long)config_.sample_spec.ns_2_rtp_timestamp(timeout_));
+                        (double)latency_ / core::Millisecond,
+                        (long)config_.sample_spec.ns_2_rtp_timestamp(timeout_),
+                        (double)timeout_ / core::Millisecond);
             }
 
             return -1;
@@ -755,8 +759,10 @@ void PulseaudioDevice::stream_latency_cb_(pa_stream* stream, void* userdata) {
         latency = -latency;
     }
 
-    roc_log(LogDebug, "pulseaudio %s: stream_latency=%ld",
-            device_type_to_str(self.device_type_), (long)latency);
+    roc_log(LogDebug, "pulseaudio %s: stream_latency=%ld(%.3fms)",
+            device_type_to_str(self.device_type_), (long)latency,
+            (double)self.config_.sample_spec.samples_per_chan_2_ns((size_t)latency)
+                / core::Millisecond);
 }
 
 void PulseaudioDevice::start_timer_(core::nanoseconds_t timeout) {
