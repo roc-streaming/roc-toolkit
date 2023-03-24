@@ -464,11 +464,23 @@ void PulseaudioDevice::init_stream_params_(const pa_sample_spec& device_sample_s
     const size_t latency_bytes =
         config_.sample_spec.ns_2_samples_overall(latency_) * sizeof(audio::sample_t);
 
-    buffer_attrs_.maxlength = (uint32_t)-1;
-    buffer_attrs_.tlength = (uint32_t)latency_bytes;
-    buffer_attrs_.prebuf = (uint32_t)-1;
-    buffer_attrs_.minreq = (uint32_t)frame_size_bytes;
-    buffer_attrs_.fragsize = (uint32_t)-1;
+    switch (device_type_) {
+    case DeviceType_Sink:
+        buffer_attrs_.maxlength = (uint32_t)-1;
+        buffer_attrs_.tlength = (uint32_t)latency_bytes;
+        buffer_attrs_.prebuf = (uint32_t)-1;
+        buffer_attrs_.minreq = (uint32_t)frame_size_bytes;
+        buffer_attrs_.fragsize = 0;
+        break;
+
+    case DeviceType_Source:
+        buffer_attrs_.maxlength = (uint32_t)-1;
+        buffer_attrs_.tlength = 0;
+        buffer_attrs_.prebuf = 0;
+        buffer_attrs_.minreq = 0;
+        buffer_attrs_.fragsize = (uint32_t)latency_bytes;
+        break;
+    }
 }
 
 bool PulseaudioDevice::open_stream_() {
