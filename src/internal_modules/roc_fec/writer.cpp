@@ -156,7 +156,7 @@ void Writer::end_block_() {
 }
 
 void Writer::next_block_() {
-    cur_block_repair_sn_ += cur_rblen_;
+    cur_block_repair_sn_ += (packet::seqnum_t)cur_rblen_;
     cur_sbn_++;
     cur_packet_ = 0;
 }

@@ -49,7 +49,8 @@ LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
             "latency monitor: initializing:"
             " target_latency=%lu(%.3fms) in_rate=%lu out_rate=%lu",
             (unsigned long)target_latency_,
-            (double)input_sample_spec_.rtp_timestamp_2_ns(target_latency_)
+            (double)input_sample_spec_.rtp_timestamp_2_ns(
+                (packet::timestamp_diff_t)target_latency_)
                 / core::Millisecond,
             (unsigned long)input_sample_spec_.sample_rate(),
             (unsigned long)output_sample_spec_.sample_rate());
@@ -216,10 +217,12 @@ bool LatencyMonitor::update_resampler_(packet::timestamp_t pos,
                 "latency monitor:"
                 " latency=%lu(%.3fms) target=%lu(%.3fms) fe=%.5f trim_fe=%.5f",
                 (unsigned long)latency,
-                (double)input_sample_spec_.rtp_timestamp_2_ns(latency)
+                (double)input_sample_spec_.rtp_timestamp_2_ns(
+                    (packet::timestamp_diff_t)latency)
                     / core::Millisecond,
                 (unsigned long)target_latency_,
-                (double)input_sample_spec_.rtp_timestamp_2_ns(target_latency_)
+                (double)input_sample_spec_.rtp_timestamp_2_ns(
+                    (packet::timestamp_diff_t)target_latency_)
                     / core::Millisecond,
                 (double)freq_coeff, (double)trimmed_coeff);
     }
@@ -241,7 +244,8 @@ void LatencyMonitor::report_latency_(packet::timestamp_diff_t latency) {
                 (double)input_sample_spec_.rtp_timestamp_2_ns(latency)
                     / core::Millisecond,
                 (unsigned long)target_latency_,
-                (double)input_sample_spec_.rtp_timestamp_2_ns(target_latency_)
+                (double)input_sample_spec_.rtp_timestamp_2_ns(
+                    (packet::timestamp_diff_t)target_latency_)
                     / core::Millisecond);
     }
 }

@@ -28,8 +28,8 @@ enum { BufSize = 512, SampleRate = 44100, ChMask = 0x3 };
 
 const audio::SampleSpec SampleSpecs = audio::SampleSpec(SampleRate, ChMask);
 
-const core::nanoseconds_t BufDuration =
-    BufSize * core::Second / (SampleSpecs.sample_rate() * SampleSpecs.num_channels());
+const core::nanoseconds_t BufDuration = BufSize * core::Second
+    / core::nanoseconds_t(SampleSpecs.sample_rate() * SampleSpecs.num_channels());
 
 core::HeapAllocator allocator;
 core::BufferFactory<audio::sample_t> buffer_factory(allocator, BufSize, true);

@@ -895,60 +895,76 @@ if meta.compiler in ['gcc', 'clang']:
 if meta.compiler == 'gcc':
     for var in ['CXXFLAGS', 'CFLAGS']:
         env.Append(**{var: [
+            # generic
             '-Wall',
             '-Wextra',
 
+            # enable
             '-Wcast-qual',
             '-Wfloat-equal',
             '-Wformat-security',
             '-Wformat=2',
+            '-Wmissing-declarations',
             '-Wpointer-arith',
+            '-Wuninitialized',
+            '-Wunused',
 
+            # disable
+            '-Wno-array-bounds',
+            '-Wno-cast-function-type',
             '-Wno-psabi',
+            '-Wno-restrict',
+            '-Wno-stringop-overflow',
             '-Wno-system-headers',
         ]})
 
     env.Append(CXXFLAGS=[
+        # enable
         '-Wctor-dtor-privacy',
-        '-Wno-invalid-offsetof',
         '-Wnon-virtual-dtor',
         '-Wstrict-null-sentinel',
+
+        # disable
+        '-Wno-invalid-offsetof',
     ])
 
-    if meta.compiler_ver[:2] >= (4, 4):
-        for var in ['CXXFLAGS', 'CFLAGS']:
-            env.Append(**{var: [
-                '-Wlogical-op',
-                '-Wmissing-declarations',
-                '-Woverlength-strings',
-            ]})
-
-    if meta.compiler_ver[:2] >= (4, 8):
+    if meta.compiler_ver[:2] >= (10, 0):
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
                 '-Wdouble-promotion',
-            ]})
-
-    if meta.compiler_ver[:2] >= (8, 0):
-        for var in ['CXXFLAGS', 'CFLAGS']:
-            env.Append(**{var: [
-                '-Wno-array-bounds',
-                '-Wno-cast-function-type',
-                '-Wno-parentheses',
-                '-Wno-restrict',
-                '-Wno-stringop-overflow',
+                '-Wfloat-conversion',
+                '-Wlogical-op',
+                '-Woverlength-strings',
+                '-Wshadow',
+                '-Wsign-conversion',
             ]})
 
 if meta.compiler == 'clang':
     for var in ['CXXFLAGS', 'CFLAGS']:
         env.Append(**{var: [
+            # generic
             '-Wall',
             '-Wextra',
 
+            # enable
             '-Wcast-qual',
+            '-Wdouble-promotion',
+            '-Wfloat-conversion',
             '-Wfloat-equal',
+            '-Wfloat-equal',
+            '-Wformat-security',
+            '-Wformat=2',
+            '-Wnull-dereference',
             '-Woverlength-strings',
+            '-Woverloaded-virtual',
+            '-Wpointer-arith',
+            '-Wshadow',
+            '-Wsign-conversion',
+            '-Wuninitialized',
+            '-Wunused',
 
+            # disable
+            '-Wno-format-nonliteral',
             '-Wno-psabi',
             '-Wno-system-headers',
         ]})

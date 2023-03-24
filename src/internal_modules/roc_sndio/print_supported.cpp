@@ -27,7 +27,7 @@ void print_string_list(core::Printer& prn,
     while (str != NULL) {
         prn.writef(" ");
 
-        int size = 0;
+        size_t size = 0;
         while (size < LineSize) {
             size += prn.writef(" %s%s%s", prefix, str, suffix);
 

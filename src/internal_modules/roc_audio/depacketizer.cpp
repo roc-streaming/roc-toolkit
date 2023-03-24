@@ -126,7 +126,7 @@ sample_t* Depacketizer::read_packet_samples_(sample_t* buff_ptr, sample_t* buff_
     const size_t decoded_samples = payload_decoder_.read(buff_ptr, requested_samples);
 
     timestamp_ += packet::timestamp_t(decoded_samples);
-    packet_samples_ += decoded_samples;
+    packet_samples_ += (packet::timestamp_t)decoded_samples;
 
     if (decoded_samples < requested_samples) {
         payload_decoder_.end();
@@ -149,9 +149,9 @@ sample_t* Depacketizer::read_missing_samples_(sample_t* buff_ptr, sample_t* buff
     timestamp_ += packet::timestamp_t(num_samples);
 
     if (first_packet_) {
-        zero_samples_ += num_samples;
+        zero_samples_ += (packet::timestamp_t)num_samples;
     } else {
-        missing_samples_ += num_samples;
+        missing_samples_ += (packet::timestamp_t)num_samples;
     }
 
     return (buff_ptr + num_samples * sample_spec_.num_channels());

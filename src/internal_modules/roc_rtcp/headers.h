@@ -30,8 +30,8 @@ namespace header {
 //! @param mask The bitmask.
 template <typename T>
 void set_bitfield(T& v0, const T v1, const size_t shift, const size_t mask) {
-    v0 &= ~(mask << shift);
-    v0 |= (v1 << shift);
+    v0 &= T(~(mask << shift));
+    v0 |= T(v1 << shift);
 }
 
 //! Computes the value of RTCP packet header length field from input number.
@@ -132,8 +132,8 @@ public:
 
     //! Set NTP timestamp value.
     void set_value(const packet::ntp_timestamp_t t) {
-        high_ntp_ = core::hton32u((t >> NTP_HIGH_shift) & NTP_LOW_mask);
-        low_ntp_ = core::hton32u((t >> NTP_LOW_shift) & NTP_LOW_mask);
+        high_ntp_ = core::hton32u(uint32_t((t >> NTP_HIGH_shift) & NTP_LOW_mask));
+        low_ntp_ = core::hton32u(uint32_t((t >> NTP_LOW_shift) & NTP_LOW_mask));
     }
 } ROC_ATTR_PACKED_END;
 
@@ -186,7 +186,9 @@ public:
 
     //! Reset to initial state (all zeros).
     void reset(const PacketType t) {
-        count_ = type_ = length_ = 0;
+        count_ = 0;
+        type_ = 0;
+        length_ = 0;
 
         set_version(V2);
         set_type(t);

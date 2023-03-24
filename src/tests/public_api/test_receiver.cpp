@@ -501,12 +501,12 @@ TEST(receiver, bad_config) {
     // this will prevent correct pipeline construction
     context_config.max_frame_size = 1;
 
-    roc_context* context = NULL;
-    CHECK(roc_context_open(&context_config, &context) == 0);
-    CHECK(context);
+    roc_context* bad_context = NULL;
+    CHECK(roc_context_open(&context_config, &bad_context) == 0);
+    CHECK(bad_context);
 
     roc_receiver* receiver = NULL;
-    CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
+    CHECK(roc_receiver_open(bad_context, &receiver_config, &receiver) == 0);
     CHECK(receiver);
 
     roc_endpoint* source_endpoint = NULL;
@@ -519,7 +519,7 @@ TEST(receiver, bad_config) {
 
     CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
     LONGS_EQUAL(0, roc_receiver_close(receiver));
-    LONGS_EQUAL(0, roc_context_close(context));
+    LONGS_EQUAL(0, roc_context_close(bad_context));
 }
 
 } // namespace api

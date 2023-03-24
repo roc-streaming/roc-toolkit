@@ -41,7 +41,7 @@ SoxSink::SoxSink(core::IAllocator& allocator, const Config& config)
     }
 
     memset(&out_signal_, 0, sizeof(out_signal_));
-    out_signal_.rate = config.sample_spec.sample_rate();
+    out_signal_.rate = (sox_rate_t)config.sample_spec.sample_rate();
     out_signal_.channels = (unsigned)config.sample_spec.num_channels();
     out_signal_.precision = SOX_SAMPLE_PRECISION;
 

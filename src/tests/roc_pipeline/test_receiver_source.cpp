@@ -50,8 +50,8 @@ enum {
 
 const audio::SampleSpec SampleSpecs = audio::SampleSpec(SampleRate, ChMask);
 
-const core::nanoseconds_t MaxBufDuration =
-    MaxBufSize * core::Second / (SampleSpecs.sample_rate() * SampleSpecs.num_channels());
+const core::nanoseconds_t MaxBufDuration = MaxBufSize * core::Second
+    / core::nanoseconds_t(SampleSpecs.sample_rate() * SampleSpecs.num_channels());
 
 core::HeapAllocator allocator;
 core::BufferFactory<audio::sample_t> sample_buffer_factory(allocator, MaxBufSize, true);
@@ -428,7 +428,7 @@ TEST(receiver_source, two_sessions_overlapping) {
                                       format_map, packet_factory, byte_buffer_factory,
                                       PayloadType, src2, dst1);
 
-    packet_writer2.set_offset(packet_writer1.offset() - Latency * NumCh);
+    packet_writer2.set_offset(packet_writer1.offset() - size_t(Latency * NumCh));
     packet_writer2.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
                                  SampleSpecs);
 

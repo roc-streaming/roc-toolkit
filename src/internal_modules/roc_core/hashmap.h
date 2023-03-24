@@ -279,7 +279,7 @@ private:
 
         // how much buckets are embeded directly into Hashmap object
         NumEmbeddedBuckets =
-            (EmbeddedCapacity * LoafFactorDen + LoafFactorNum - 1) / LoafFactorNum
+            ((int)EmbeddedCapacity * LoafFactorDen + LoafFactorNum - 1) / LoafFactorNum
     };
 
     struct Bucket {

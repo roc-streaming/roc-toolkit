@@ -11198,7 +11198,7 @@ template <> struct pcm_packer<PcmEncoding_SInt18, PcmEndian_Big> {
 
         if (p.value & 0x20000) {
             // sign extension
-            p.value |= 0xfffc0000;
+            p.value |= (int32_t)0xfffc0000;
         }
 
         return p.value;
@@ -11232,7 +11232,7 @@ template <> struct pcm_packer<PcmEncoding_SInt18, PcmEndian_Little> {
 
         if (p.value & 0x20000) {
             // sign extension
-            p.value |= 0xfffc0000;
+            p.value |= (int32_t)0xfffc0000;
         }
 
         return p.value;
@@ -11330,7 +11330,7 @@ template <> struct pcm_packer<PcmEncoding_SInt18_3B, PcmEndian_Big> {
 
         if (p.value & 0x20000) {
             // sign extension
-            p.value |= 0xfffc0000;
+            p.value |= (int32_t)0xfffc0000;
         }
 
         return p.value;
@@ -11370,7 +11370,7 @@ template <> struct pcm_packer<PcmEncoding_SInt18_3B, PcmEndian_Little> {
 
         if (p.value & 0x20000) {
             // sign extension
-            p.value |= 0xfffc0000;
+            p.value |= (int32_t)0xfffc0000;
         }
 
         return p.value;
@@ -11481,7 +11481,7 @@ template <> struct pcm_packer<PcmEncoding_SInt18_4B, PcmEndian_Big> {
 
         if (p.value & 0x20000) {
             // sign extension
-            p.value |= 0xfffc0000;
+            p.value |= (int32_t)0xfffc0000;
         }
 
         return p.value;
@@ -11522,7 +11522,7 @@ template <> struct pcm_packer<PcmEncoding_SInt18_4B, PcmEndian_Little> {
 
         if (p.value & 0x20000) {
             // sign extension
-            p.value |= 0xfffc0000;
+            p.value |= (int32_t)0xfffc0000;
         }
 
         return p.value;
@@ -11628,7 +11628,7 @@ template <> struct pcm_packer<PcmEncoding_SInt20, PcmEndian_Big> {
 
         if (p.value & 0x80000) {
             // sign extension
-            p.value |= 0xfff00000;
+            p.value |= (int32_t)0xfff00000;
         }
 
         return p.value;
@@ -11662,7 +11662,7 @@ template <> struct pcm_packer<PcmEncoding_SInt20, PcmEndian_Little> {
 
         if (p.value & 0x80000) {
             // sign extension
-            p.value |= 0xfff00000;
+            p.value |= (int32_t)0xfff00000;
         }
 
         return p.value;
@@ -11760,7 +11760,7 @@ template <> struct pcm_packer<PcmEncoding_SInt20_3B, PcmEndian_Big> {
 
         if (p.value & 0x80000) {
             // sign extension
-            p.value |= 0xfff00000;
+            p.value |= (int32_t)0xfff00000;
         }
 
         return p.value;
@@ -11800,7 +11800,7 @@ template <> struct pcm_packer<PcmEncoding_SInt20_3B, PcmEndian_Little> {
 
         if (p.value & 0x80000) {
             // sign extension
-            p.value |= 0xfff00000;
+            p.value |= (int32_t)0xfff00000;
         }
 
         return p.value;
@@ -11911,7 +11911,7 @@ template <> struct pcm_packer<PcmEncoding_SInt20_4B, PcmEndian_Big> {
 
         if (p.value & 0x80000) {
             // sign extension
-            p.value |= 0xfff00000;
+            p.value |= (int32_t)0xfff00000;
         }
 
         return p.value;
@@ -11952,7 +11952,7 @@ template <> struct pcm_packer<PcmEncoding_SInt20_4B, PcmEndian_Little> {
 
         if (p.value & 0x80000) {
             // sign extension
-            p.value |= 0xfff00000;
+            p.value |= (int32_t)0xfff00000;
         }
 
         return p.value;
@@ -12058,7 +12058,7 @@ template <> struct pcm_packer<PcmEncoding_SInt24, PcmEndian_Big> {
 
         if (p.value & 0x800000) {
             // sign extension
-            p.value |= 0xff000000;
+            p.value |= (int32_t)0xff000000;
         }
 
         return p.value;
@@ -12092,7 +12092,7 @@ template <> struct pcm_packer<PcmEncoding_SInt24, PcmEndian_Little> {
 
         if (p.value & 0x800000) {
             // sign extension
-            p.value |= 0xff000000;
+            p.value |= (int32_t)0xff000000;
         }
 
         return p.value;
@@ -12191,7 +12191,7 @@ template <> struct pcm_packer<PcmEncoding_SInt24_4B, PcmEndian_Big> {
 
         if (p.value & 0x800000) {
             // sign extension
-            p.value |= 0xff000000;
+            p.value |= (int32_t)0xff000000;
         }
 
         return p.value;
@@ -12232,7 +12232,7 @@ template <> struct pcm_packer<PcmEncoding_SInt24_4B, PcmEndian_Little> {
 
         if (p.value & 0x800000) {
             // sign extension
-            p.value |= 0xff000000;
+            p.value |= (int32_t)0xff000000;
         }
 
         return p.value;

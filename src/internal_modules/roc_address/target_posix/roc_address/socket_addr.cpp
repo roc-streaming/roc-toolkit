@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 
 #include "roc_address/socket_addr.h"
+#include "roc_core/endian.h"
 
 namespace roc {
 namespace address {
@@ -60,7 +61,7 @@ bool SocketAddr::set_host_port_ipv4_(const char* ip_str, int port) {
 
     saddr_.addr4.sin_family = AF_INET;
     saddr_.addr4.sin_addr = addr;
-    saddr_.addr4.sin_port = htons(uint16_t(port));
+    saddr_.addr4.sin_port = (in_port_t)core::hton16u((uint16_t)port);
 
     return true;
 }
@@ -73,7 +74,7 @@ bool SocketAddr::set_host_port_ipv6_(const char* ip_str, int port) {
 
     saddr_.addr6.sin6_family = AF_INET6;
     saddr_.addr6.sin6_addr = addr;
-    saddr_.addr6.sin6_port = htons(uint16_t(port));
+    saddr_.addr6.sin6_port = (in_port_t)core::hton16u((uint16_t)port);
 
     return true;
 }
@@ -108,9 +109,9 @@ AddrFamily SocketAddr::family() const {
 int SocketAddr::port() const {
     switch (saddr_family_()) {
     case AF_INET:
-        return ntohs(saddr_.addr4.sin_port);
+        return core::ntoh16u((uint16_t)saddr_.addr4.sin_port);
     case AF_INET6:
-        return ntohs(saddr_.addr6.sin6_port);
+        return core::ntoh16u((uint16_t)saddr_.addr6.sin6_port);
     default:
         return -1;
     }
@@ -119,7 +120,7 @@ int SocketAddr::port() const {
 bool SocketAddr::multicast() const {
     switch (saddr_family_()) {
     case AF_INET:
-        return IN_MULTICAST(ntohl(saddr_.addr4.sin_addr.s_addr));
+        return IN_MULTICAST(core::ntoh32u(saddr_.addr4.sin_addr.s_addr));
     case AF_INET6:
         return IN6_IS_ADDR_MULTICAST(&saddr_.addr6.sin6_addr);
     default:

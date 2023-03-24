@@ -50,7 +50,7 @@ void PcmDecoder::begin(packet::timestamp_t frame_position,
 
     stream_pos_ = frame_position;
     stream_avail_ =
-        (packet::timestamp_t)pcm_mapper_.input_sample_count(frame_size) / n_chans_;
+        packet::timestamp_t(pcm_mapper_.input_sample_count(frame_size) / n_chans_);
 }
 
 size_t PcmDecoder::read(audio::sample_t* samples, size_t n_samples) {

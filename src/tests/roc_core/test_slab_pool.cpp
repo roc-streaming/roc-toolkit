@@ -38,17 +38,18 @@ struct TestAllocator : public HeapAllocator {
 
 TEST_GROUP(slab_pool) {
     enum { ObjectSize = 1000 };
-
-    TestAllocator allocator;
 };
 
 TEST(slab_pool, object_size) {
+    TestAllocator allocator;
     SlabPool pool(allocator, ObjectSize, true);
 
     LONGS_EQUAL(ObjectSize, pool.object_size());
 }
 
 TEST(slab_pool, allocate_deallocate) {
+    TestAllocator allocator;
+
     {
         SlabPool pool(allocator, ObjectSize, true);
 
@@ -68,6 +69,8 @@ TEST(slab_pool, allocate_deallocate) {
 }
 
 TEST(slab_pool, allocate_deallocate_many) {
+    TestAllocator allocator;
+
     {
         SlabPool pool(allocator, ObjectSize, true);
 
@@ -110,6 +113,8 @@ TEST(slab_pool, allocate_deallocate_many) {
 }
 
 TEST(slab_pool, reserve) {
+    TestAllocator allocator;
+
     {
         SlabPool pool(allocator, ObjectSize, true);
 
@@ -133,6 +138,8 @@ TEST(slab_pool, reserve) {
 }
 
 TEST(slab_pool, reserve_many) {
+    TestAllocator allocator;
+
     {
         SlabPool pool(allocator, ObjectSize, true);
 

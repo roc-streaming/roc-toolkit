@@ -698,7 +698,7 @@ template <> struct pcm_packer<PcmEncoding_{{ enc.encoding }}, PcmEndian_{{ endia
 {% if enc.is_signed and enc.width < enc.unpacked_width %}
         if (p.value & {{ enc.sign_mask }}) {
             // sign extension
-            p.value |= {{ enc.lsb_mask }};
+            p.value |= ({{ enc.type }}){{ enc.lsb_mask }};
         }
 
 {% endif %}

@@ -60,7 +60,7 @@ private:
     }
 
     static inline uint16_t reverse_octets_(uint16_t v) {
-        return uint16_t((v >> 8) & 0xffu) | uint16_t((v & 0xffu) << 8);
+        return uint16_t(uint16_t(v >> 8) & 0xffu) | uint16_t((v & 0xffu) << 8);
     }
 
     static inline int16_t reverse_octets_(int16_t v) {

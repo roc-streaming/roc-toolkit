@@ -145,7 +145,8 @@ bool ReceiverSource::read(audio::Frame& frame) {
         return false;
     }
 
-    timestamp_ += frame.num_samples() / config_.common.output_sample_spec.num_channels();
+    timestamp_ += packet::timestamp_t(frame.num_samples()
+                                      / config_.common.output_sample_spec.num_channels());
 
     return true;
 }

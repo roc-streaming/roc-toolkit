@@ -143,9 +143,10 @@ bool BackendDispatcher::get_supported_formats(core::StringList& list) {
 IDevice* BackendDispatcher::open_default_device_(DeviceType device_type,
                                                  const Config& config,
                                                  core::IAllocator& allocator) {
-    const unsigned driver_flags = DriverFlag_IsDefault
-        | (device_type == DeviceType_Sink ? DriverFlag_SupportsSink
-                                          : DriverFlag_SupportsSource);
+    const unsigned driver_flags =
+        unsigned(DriverFlag_IsDefault
+                 | (device_type == DeviceType_Sink ? DriverFlag_SupportsSink
+                                                   : DriverFlag_SupportsSource));
 
     for (size_t n = 0; n < BackendMap::instance().num_drivers(); n++) {
         const DriverInfo& driver_info = BackendMap::instance().nth_driver(n);

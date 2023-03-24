@@ -45,7 +45,7 @@ SoxSource::SoxSource(core::IAllocator& allocator, const Config& config)
     }
 
     memset(&in_signal_, 0, sizeof(in_signal_));
-    in_signal_.rate = config.sample_spec.sample_rate();
+    in_signal_.rate = (sox_rate_t)config.sample_spec.sample_rate();
     in_signal_.precision = SOX_SAMPLE_PRECISION;
 
     valid_ = true;
