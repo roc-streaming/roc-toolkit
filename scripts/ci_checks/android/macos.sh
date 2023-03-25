@@ -70,7 +70,8 @@ if [[ "${action}" == "--test" ]]; then
     tests=( $(find "bin/${host}${CI_API}" -name 'roc-test-*' \
                    -not -name 'roc-test-address' \
                    -not -name 'roc-test-ctl' \
-                   -not -name 'roc-test-netio') )
+                   -not -name 'roc-test-netio' \
+                   -not -name 'roc-test-public-api') )
 
     for t in "${tests[@]}"; do
         filename="$(basename "${t}")"
