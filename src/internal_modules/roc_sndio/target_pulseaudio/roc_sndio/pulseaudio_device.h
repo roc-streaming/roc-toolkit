@@ -27,7 +27,8 @@
 namespace roc {
 namespace sndio {
 
-//! PulseAudio sink,
+//! PulseAudio device.
+//! Base class for PulseAudio source and sink.
 class PulseaudioDevice : public core::NonCopyable<> {
 public:
     //! Open output device.
