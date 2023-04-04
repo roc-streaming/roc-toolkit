@@ -190,6 +190,12 @@ roc_log
 
 .. doxygenenum:: roc_log_level
 
+.. doxygentypedef:: roc_log_message
+   :outline:
+
+.. doxygenstruct:: roc_log_message
+   :members:
+
 .. doxygentypedef:: roc_log_handler
 
 .. doxygenfunction:: roc_log_set_level
