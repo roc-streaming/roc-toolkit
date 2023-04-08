@@ -27,12 +27,15 @@ There is also an `RSS feed <https://www.freelists.org/feed/roc>`_ for the list.
 
    Please use `bottom-posting <http://www.idallen.com/topposting.html>`_ on the mailing list.
 
-Matrix chat
-===========
+Matrix chats
+============
 
-We also have a Matrix room for more interactive discussion: ``#roc-streaming:matrix.org``.
+We also have matrix rooms for more interactive discussion:
 
-You can open the chat right in your browser by following `this link <https://app.element.io/#/room/#roc-streaming:matrix.org>`_. You can also `install Element <https://element.io/download>`_ (a popular matrix client) to desktop or mobile device. Except Element, there are plenty of other `matrix clients <https://matrix.org/clients/>`_.
+* ``#roc-streaming:matrix.org`` - user chat (`web link <https://app.element.io/#/room/#roc-streaming:matrix.org>`__)
+* ``#roc-streaming-dev:matrix.org`` - developer chat (`web link <https://app.element.io/#/room/#roc-streaming-dev:matrix.org>`__)
+
+You can open the chat right in your browser using web links above, or you can `install Element <https://element.io/download>`_ (a popular matrix client) to desktop or mobile device. Except Element, there are plenty of other `matrix clients <https://matrix.org/clients/>`_.
 
 .. note::
 
