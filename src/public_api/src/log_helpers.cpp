@@ -67,7 +67,7 @@ void log_message_to_user(const core::LogMessage& in, roc_log_message& out) {
     out.time = (unsigned long long)in.time;
     out.pid = (unsigned long long)in.pid;
     out.tid = (unsigned long long)in.tid;
-    out.text = in.message;
+    out.text = in.text;
 }
 
 } // namespace api

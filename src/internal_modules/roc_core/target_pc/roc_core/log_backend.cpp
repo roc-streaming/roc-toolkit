@@ -55,7 +55,7 @@ void LogBackend::handle(const LogMessage& msg) {
     }
 
     char location[64] = {};
-    if (msg.file != NULL) {
+    if (msg.location_mode == LocationEnabled && msg.file != NULL) {
         const char* file = msg.file;
         if (const char* filename = strrchr(msg.file, '/')) {
             file = filename + 1;
@@ -82,8 +82,7 @@ void LogBackend::handle(const LogMessage& msg) {
     }
 
     Console::instance().println(color, "%s.%s [%s] [%s] %s: %s%s", timestamp_hi,
-                                timestamp_lo, tid, level, msg.module, location,
-                                msg.message);
+                                timestamp_lo, tid, level, msg.module, location, msg.text);
 }
 
 } // namespace core

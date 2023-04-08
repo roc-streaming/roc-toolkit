@@ -40,7 +40,7 @@ LogBackend::LogBackend() {
 
 void LogBackend::handle(const LogMessage& msg) {
     __android_log_print(level_to_android(msg.level), "roc", "%s: %s", msg.module,
-                        msg.message);
+                        msg.text);
 }
 
 } // namespace core

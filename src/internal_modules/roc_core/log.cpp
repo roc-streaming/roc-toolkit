@@ -37,27 +37,22 @@ void Logger::set_verbosity(unsigned verb) {
     switch (verb) {
     case 0:
         set_level(LogError);
-        set_location(LocationDisabled);
         break;
 
     case 1:
         set_level(LogInfo);
-        set_location(LocationDisabled);
         break;
 
     case 2:
         set_level(LogDebug);
-        set_location(LocationDisabled);
         break;
 
     case 3:
         set_level(LogDebug);
-        set_location(LocationEnabled);
         break;
 
     default:
         set_level(LogTrace);
-        set_location(LocationEnabled);
         break;
     }
 }
@@ -73,13 +68,13 @@ void Logger::set_level(LogLevel level) {
         level = LogTrace;
     }
 
+    if ((int)level >= LogDebug) {
+        location_mode_ = LocationEnabled;
+    } else {
+        location_mode_ = LocationDisabled;
+    }
+
     AtomicOps::store_relaxed(level_, level);
-}
-
-void Logger::set_location(LocationMode mode) {
-    Mutex::Lock lock(mutex_);
-
-    location_mode_ = mode;
 }
 
 void Logger::set_colors(ColorsMode mode) {
@@ -119,25 +114,24 @@ void Logger::writef(LogLevel level,
         return;
     }
 
-    char message[256] = {};
+    char text[256] = {};
     va_list args;
     va_start(args, format);
-    if (vsnprintf(message, sizeof(message) - 1, format, args) < 0) {
-        message[0] = '\0';
+    if (vsnprintf(text, sizeof(text) - 1, format, args) < 0) {
+        text[0] = '\0';
     }
     va_end(args);
 
     LogMessage msg;
     msg.level = level;
     msg.module = module;
-    if (location_mode_ == LocationEnabled) {
-        msg.file = file;
-        msg.line = line;
-    }
+    msg.file = file;
+    msg.line = line;
     msg.time = timestamp(ClockUnix);
     msg.pid = Thread::get_pid();
     msg.tid = Thread::get_tid();
-    msg.message = message;
+    msg.text = text;
+    msg.location_mode = location_mode_;
     msg.colors_mode = colors_mode_;
 
     handler_(msg, handler_args_);

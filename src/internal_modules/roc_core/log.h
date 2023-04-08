@@ -75,8 +75,10 @@ struct LogMessage {
     uint64_t pid;       //!< Plaform-specific process ID.
     uint64_t tid;       //!< Plaform-specific thread ID.
 
-    const char* message;    //!< Message text.
-    ColorsMode colors_mode; //!< Whether to enable colors.
+    const char* text; //!< Message text.
+
+    LocationMode location_mode; //!< Whether to enable location.
+    ColorsMode colors_mode;     //!< Whether to enable colors.
 
     LogMessage()
         : level(LogNone)
@@ -86,7 +88,8 @@ struct LogMessage {
         , time(0)
         , pid(0)
         , tid(0)
-        , message(NULL)
+        , text(NULL)
+        , location_mode(LocationDisabled)
         , colors_mode(ColorsDisabled) {
     }
 };
@@ -118,7 +121,7 @@ public:
 
     //! Set verbosity level.
     //! @remarks
-    //!  Sets level and location according to requested verbosity level.
+    //!  Sets logging level according to requested verbosity level.
     void set_verbosity(unsigned);
 
     //! Set maximum log level.
@@ -127,11 +130,6 @@ public:
     //! @note
     //!  Other threads are not guaranteed to see the change immediately.
     void set_level(LogLevel);
-
-    //! Set location mode.
-    //! @note
-    //!  Other threads will see the change immediately.
-    void set_location(LocationMode);
 
     //! Set colors mode.
     //! @note
