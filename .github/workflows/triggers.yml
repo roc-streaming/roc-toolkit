@@ -1,0 +1,43 @@
+name: "triggers"
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+
+  triggers:
+    if: |
+      github.repository_owner == 'roc-streaming'
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - repo: roc-go
+            branch: main
+
+          - repo: roc-java
+            branch: main
+
+          - repo: roc-pulse
+            branch: main
+
+          - repo: roc-vad
+            branch: main
+
+          - repo: rt-tests
+            branch: main
+
+          - repo: roc-streaming.github.io
+            branch: source
+
+    name: ${{ matrix.repo }}
+
+    steps:
+      - name: Trigger
+        run: |
+          scripts/ci_checks/trigger.sh roc-streaming/${{ matrix.repo }} \
+            ${{ matrix.branch}} "${{ secrets.REPO_TRIGGERING }}"
