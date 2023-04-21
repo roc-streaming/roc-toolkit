@@ -146,5 +146,6 @@ run_cmd docker exec roc_toolkit_android su -Ppc "scripts/android_emu/run.sh buil
 if [[ "${action}" = test ]]
 then
     run_cmd docker exec roc_toolkit_android "scripts/android_emu/start.sh"
+    run_cmd docker exec roc_toolkit_android su -Ppc "scripts/android_emu/run.sh prep" user
     run_cmd docker exec roc_toolkit_android su -Ppc "scripts/android_emu/run.sh test" user
 fi

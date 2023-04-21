@@ -265,6 +265,7 @@ jobs:
           emulator-options: -no-audio -no-boot-anim -no-window
           disable-animations: true
           script: |
+            scripts/android_emu/run.sh prep
             scripts/android_emu/run.sh test
 
       - name: Handle failure
