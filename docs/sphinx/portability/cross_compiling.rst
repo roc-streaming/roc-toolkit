@@ -263,6 +263,60 @@ Building Roc with a standalone toolchain is similar to cross-compiling with any 
 
 Since standalone toolchains are obsolete, Roc doesn't provide prebuilt Docker images for them.
 
+.. _android_docker:
+
+Android Docker image
+====================
+
+There are scripts for building Roc for Android and running tests on Android emulator. Everything is built and run inside Docker, so you don't need to install anything on your system, besides Docker.
+
+To build Roc for Android, you can just run:
+
+.. code::
+
+   $ scripts/android_emu.sh build
+
+This command will pull ``rocstreaming/env-android`` Docker image, install necessary Android components inside it, and build Roc. Build results will be available in ``./bin``, as usual.
+
+To run Roc tests on Android emulator, use ``test`` command:
+
+.. code::
+
+   $ scripts/android_emu.sh test
+
+This command will additionally start Android emulator, and run Roc tests on it.
+
+.. warning::
+
+   This command will automatically employ KVM-based hardware acceleration. If you're using VirtualBox, you should temporary stop it and unload its kernel drivers, because they can't work with KVM side-by-side. You can do it using ``systemctl`` command.
+
+Subsequent runs will be much faster than the first one, because Docker container will remaing running in background, and downloaded Android components will be cached in Docker volume. You can remove Docker container and volume using ``purge`` command:
+
+.. code::
+
+   $ scripts/android_emu.sh purge
+
+Here is the full list of available commands:
+
+* ``build`` - build code
+* ``test`` - build code and run tests
+* ``clean`` - remove build artifacts
+* ``purge`` - remove build artifacts and docker container
+
+You can also configure build via environment variables:
+
+.. code::
+
+   $ export API=28
+   $ export ABI=x86_64
+   $ export NDK_VERSION=21.1.6352462
+   $ export BUILD_TOOLS_VERSION=28.0.3
+   $ export CMAKE_VERSION=3.10.2.4988404
+
+   $ scripts/android_emu.sh build
+
+For more details about ``rocstreaming/env-android`` image, see :doc:`/portability/android_environment`.
+
 Running cross-compiled binaries on target
 =========================================
 
@@ -287,6 +341,8 @@ If PulseAudio support is enabled, install libltdl and libpulse:
 .. code::
 
    $ apt-get install libltdl7 libpulse0
+
+.. _qemu:
 
 Running cross-compiled tests in QEMU
 ====================================

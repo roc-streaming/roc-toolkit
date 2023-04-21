@@ -12,9 +12,7 @@ GitHub Actions are configured to build ``master`` and ``develop`` branches and p
 
 GitHub Actions build Roc for Linux and macOS. Linux worker uses Docker to run builds on several Linux distros. Linux worker also uses QEMU to run cross-compiled tests.
 
-Docker images for continuous integration and cross-compilation are prepared using Docker Hub automated builds. They are based on official upstream images, adding pre-installed packages required for build. Dockerfiles for images are hosted in a separate GitHub repository. When a Dockerfile or an upstream image changes, Docker Hub automatically triggers rebuild.
-
-If images build have to be customized with build arguments it can be accomplished by using :ref:`build hooks <build_hooks>`.
+Docker images for continuous integration and cross-compilation are built using GitHub actions and pushed to Docker Hub. They are based on official upstream images, adding pre-installed packages required for our build. Dockerfiles for images are hosted in a separate GitHub repository.
 
 Links:
  * `GitHub Actions page <https://github.com/roc-streaming/roc-toolkit/actions>`_
@@ -77,37 +75,8 @@ rocstreaming/env-android:jdk11             openjdk:11.0.7-jdk-slim-buster
 rocstreaming/env-android:jdk8              openjdk:8u252-jdk-slim-buster
 ========================================== ===============================
 
-Running CI builds locally
-=========================
-
-It is possible to run Docker-based builds locally, in the same environment as they are run on CI.
-
-For example, this will run Fedora build:
-
-.. code::
-
-   $ scripts/ci_checks/docker.sh rocstreaming/env-fedora \
-       scripts/ci_checks/linux-x86_64/fedora.sh
-
-You can also invoke Docker manually:
-
-.. code::
-
-    $ docker run -t --rm --cap-add SYS_PTRACE -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocstreaming/env-fedora \
-          scons --build-3rdparty=openfec,cpputest --enable-debug test
-
-Explanation:
-
-* ``-t`` allocates a pseudo-TTY to enable color output
-* ``--rm`` removes the container when the command exits
-* ``--cap-add SYS_PTRACE`` enables ptracing which is needed for clang sanitizers
-* ``-u "${UID}"`` changes the UID inside the container from root to the current user
-* ``-v "${PWD}:${PWD}"`` mounts the current directory into the container at the same path
-* ``-w "${PWD}"`` chdirs into that directory
-
-Working with Docker images
-==========================
+How Docker images are built
+===========================
 
 `Docker images <https://github.com/roc-streaming/dockerfiles>`_ are built using `GitHub actions <https://github.com/roc-streaming/dockerfiles/blob/main/.github/workflows/build.yml>`_ and then pushed to Docker Hub.
 
@@ -132,154 +101,69 @@ Example:
 
 This file defines three tags: ``gcc-4.9``, ``gcc-7.4``, and ``latest``. Each tag uses the same ``Dockerfile`` and different arguments ``MAJOR``, ``MINOR``, and ``DATE``.
 
-You can build all docker images locally using:
+You can build an image locally using:
 
 .. code::
 
-   ./scripts/run_all.sh --build
+   ./make.sh images/<image_name>
 
-Or build specific image:
+Running CI steps locally
+========================
 
-.. code::
+Run Linux native tests locally
+------------------------------
 
-    cd images/<image_name>
-    ../../scripts/build.sh
+CI steps for various Linux distros are fully dockerized and don't depend on GitHub Actions environment. It's easy to run them locally in exactly same environment as on CI.
 
-Android environment
-===================
-
-The ``env-android`` images provide a full android environment.
-In particular the following packages are availables:
-
-* android platforms
-* android build tools
-* android ndk
-* android cmake
-* android emulator
-* adb and platform tools
-
-For reducing image size and have more granularity over various tools versions, those packages are installed only when container runs, i.e. at container entrypoint.
-
-The following environment variables can be passed at container run for choosing a specified version:
-
-* API
-* BUILD_TOOLS_VERSION
-* NDK_VERSION
-* CMAKE_VERSION
-
-Example:
+You can find specific commands to run in ``build.yml`` file. Look for images that are named ``rocstreaming/env-*``. For example, this command will run Fedora build:
 
 .. code::
 
-    $ docker run -t --rm -v "${PWD}:${PWD}" -w "${PWD}" -v android-sdk:/sdk --env API=28 \
-      --env NDK_VERSION=21.1.6352462 --env BUILD_TOOLS_VERSION=29.0.3 \
-        rocstreaming/env-android:jdk8 \
-          scons -Q --compiler=clang --host=aarch64-linux-android28 \
-            --disable-soversion \
-            --disable-tools \
-            --disable-examples \
-            --disable-tests \
-            --disable-pulseaudio \
-            --disable-sox \
-            --build-3rdparty=libuv,openfec
+   $ scripts/ci_checks/docker.sh rocstreaming/env-fedora \
+       scripts/ci_checks/linux-x86_64/fedora.sh
 
-Tools caching
--------------
-
-If a named volume is mounted at `/sdk` path in the container (for example by using `-v android-sdk:/sdk` option), next run of the image will not install again components already installed previously.
-
-If it's needed to mount the volume to a specific host location (the host location must exist) it can be achieved by adding the following options to the docker command:
+Under the hood, this command will run scons in docker:
 
 .. code::
 
-    --mount type=volume,dst=/sdk,volume-driver=local,volume-opt=type=none,volume-opt=o=bind,volume-opt=device=<host-path>
+    $ docker run -t --rm --cap-add SYS_PTRACE -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
+        rocstreaming/env-fedora \
+          scons --build-3rdparty=openfec,cpputest --enable-debug test
 
-Emulator
---------
+Explanation:
 
-The android emulator can use hardware acceleration features to improve performance, sometimes drastically.
+* ``-t`` allocates a pseudo-TTY to enable color output
+* ``--rm`` removes the container when the command exits
+* ``--cap-add SYS_PTRACE`` enables ptracing which is needed for clang sanitizers
+* ``-u "${UID}"`` changes the UID inside the container from root to the current user
+* ``-v "${PWD}:${PWD}"`` mounts the current directory into the container at the same path
+* ``-w "${PWD}"`` chdirs into that directory
 
-.. note::
-  According to `official emulator acceleration docs <https://developer.android.com/studio/run/emulator-acceleration>`_:
+Run Linux QEMU tests locally
+----------------------------
 
-  To use VM acceleration, your development environment must meet the following requirements:
+There are CI steps that do cross-compilation and then run tests in QEMU (in user space mode, i.e. on host kernel).
 
-    SDK Tools: minimum version 17; recommended version 26.1.1 or later
-    AVD with an x86-based system image, available for Android 2.3.3 (API level 10) and higher
+These steps are also fully dockerized and you can run them locally. They use docker images that have both cross-compilation toolchain and QEMU pre-installed.
 
-      Warning: AVDs that use ARM- or MIPS-based system images can't use the VM acceleration.
-
-  In addition to the development environment requirements, your computer's processor must support one of the following virtualization extensions technologies:
-
-    Intel Virtualization Technology (VT, VT-x, vmx) extensions
-    AMD Virtualization (AMD-V, SVM) extensions
-
-Linux-based systems support VM acceleration through the `KVM software package <https://www.linux-kvm.org/page/Main_Page>`_.
-
-For enabling hardware acceleration run the container in privileged mode, i.e. by using ``--privileged`` flag.
-
-.. warning::
-
-  Since CI runs jobs already on a virtual environment, if the emulator need to be run on CI, the ``env-android`` image must be run with ``--privileged`` option for allowing virtualization nesting.
-
-To see if acceleration is available use:
+You can find specific commands to run in ``build.yml`` file. Look for images that are named ``rocstreaming/toolchain-*``. For example, this command will run ARM64 build:
 
 .. code::
 
-    $ emulator -accel-check
-    accel:
-    0
-    KVM (version 12) is installed and usable.
+   $ scripts/ci_checks/docker.sh rocstreaming/toolchain-aarch64-linux-gnu:gcc-7.4 \
+       scripts/ci_checks/linux-arm/aarch64-linux-gnu-gcc-7.4.sh
 
-To create an Android Virtual Device (AVD) and run the emulator:
+For more details, see :ref:`qemu`.
 
-* download the emulator system image:
+Run Android tests locally
+-------------------------
 
-  .. code::
+CI steps for Android use emulator to run tests. You can do roughtly the same locally using ``android_emu.sh`` script:
 
-      $ yes | sdkmanager <system-image>
+.. code::
 
-  where ``<system-image>`` is in the list offered by ``sdkmanager --list``
+   $ scripts/android_emu.sh test
 
-* create the AVD:
+This command will pull ``rocstreaming/env-android`` Docker image, install necessary Android components inside it, build Roc, start Android emulator, and run Roc tests on emulator.
 
-  .. code::
-
-      $ echo no | avdmanager create avd --name <avd-name> --package <system-image>
-
-* launch emulator (use ``-accel on`` or ``-accel off`` depending of hardware acceleration availability):
-
-  .. code::
-
-      $ emulator -avd <avd-name> -no-audio -no-boot-anim -no-window -gpu off -accel [on/off] &
-
-* check the AVD status:
-
-  .. code::
-
-      $ adb devices
-      List of devices attached
-      emulator-xxxx device
-      # "device" indicates that boot is completed
-      # "offline" indicates that boot is still going on
-
-Device script
--------------
-
-The ``env-android`` image provides an helper script named ``device`` that takes care of creating and booting up AVDs.
-
-* create an AVD:
-
-  .. code::
-
-      $ device create --api=<API> --image=<IMAGE> --arch=<ARCH> --name=<AVD-NAME>
-
-  The string ``"system-images;android-<API>;<IMAGE>;<ARCH>"`` defines the emulator system image to be installed (it must be present in the list offered by ``sdkmanager --list``)
-
-* start device and wait until boot is completed
-
-  .. code::
-
-      $ device start --name=<AVD-NAME>
-
-.. _build_hooks:
+For more details, see :ref:`android_docker`.
