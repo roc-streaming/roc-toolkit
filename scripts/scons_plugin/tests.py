@@ -18,7 +18,7 @@ def _get_non_test_targets(env):
         yield env.Dir('#')
 
 def _run_with_timeout(env, cmd, timeout):
-    return '%s scripts/scons_helpers/run-with-timeout.py %s %s' % (
+    return '%s scripts/scons_helpers/timeout-run.py %s %s' % (
         env.GetPythonExecutable(),
         timeout,
         cmd)

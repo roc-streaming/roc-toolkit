@@ -22,7 +22,7 @@ do
         do
             LD_LIBRARY_PATH="/opt/sysroot/lib:$(echo \
               "${PWD}"/build/3rdparty/${toolchain}/${compiler}/*/rpath | tr ' ' ':')" \
-                python3 scripts/scons_helpers/run-with-timeout.py 300 \
+                python3 scripts/scons_helpers/timeout-run.py 300 \
                   qemu-aarch64 -L "/opt/sysroot" -cpu ${cpu} ${tst}
         done
 done

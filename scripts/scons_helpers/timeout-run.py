@@ -11,7 +11,7 @@ try:
     if len(cmd) == 0:
         raise ValueError()
 except:
-   print("usage: timeout.py TIMEOUT COMMAND...", file=sys.stderr)
+   print("usage: timeout-run.py TIMEOUT COMMAND...", file=sys.stderr)
    exit(1)
 
 proc = subprocess.Popen(cmd)

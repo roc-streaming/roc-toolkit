@@ -90,7 +90,7 @@ if [[ "${action}" == test ]]; then
 
         run_cmd adb push "$test_path" "${target_prefix}/${test_name}"
 
-        run_cmd python scripts/scons_helpers/run-with-timeout.py 300 \
+        run_cmd python scripts/scons_helpers/timeout-run.py 300 \
                 adb shell "LD_LIBRARY_PATH=${target_prefix}/lib" \
                 "${target_prefix}/${test_name}" </dev/null
     done
