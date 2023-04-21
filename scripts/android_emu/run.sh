@@ -2,6 +2,10 @@
 
 set -euo pipefail
 
+function color_msg() {
+    printf '%s \033[1;35m%s\033[0m\n' "---" "$1"
+}
+
 function run_cmd() {
     echo "+++ $*"
     "$@" || exit 1
@@ -59,6 +63,8 @@ export PATH="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${PATH}"
 export PATH="${toolchain_root}/bin:${PATH}"
 
 if [[ "${action}" == build ]]; then
+    color_msg "building project"
+
     run_cmd scons -Q \
           --compiler=clang \
           --host="${target_toolchain}" \
@@ -70,6 +76,8 @@ if [[ "${action}" == build ]]; then
 fi
 
 if [[ "${action}" == test ]]; then
+    color_msg "running tests"
+
     target_prefix="/data/local/tmp"
 
     run_cmd adb shell "su 0 mkdir -p ${target_prefix}/lib"
@@ -80,13 +88,14 @@ if [[ "${action}" == test ]]; then
     #  https://github.com/roc-streaming/roc-toolkit/issues/516
     #  https://github.com/roc-streaming/roc-toolkit/issues/518
     tests=( $(find "bin/${target_toolchain}" -name 'roc-test-*' \
-                   -not -name 'roc-test-address' \
                    -not -name 'roc-test-ctl' \
                    -not -name 'roc-test-netio' \
                    -not -name 'roc-test-public-api') )
 
     for test_path in "${tests[@]}"; do
         test_name="$(basename ${test_path})"
+
+        color_msg "running ${test_name}"
 
         run_cmd adb push "$test_path" "${target_prefix}/${test_name}"
 
