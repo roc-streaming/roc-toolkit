@@ -16,7 +16,7 @@ try:
     command = sys.argv[6:]
 except:
    print(
-    "usage: doc.py ROOT_DIR WORKING_DIR OUTPUT_DIRS TOUCH_FILE WERROR COMMAND [ARGS...]",
+    "usage: docfilt.py PROJ_DIR WORK_DIR OUTPUT_DIRS TOUCH_FILE WERROR COMMAND [ARGS...]",
         file=sys.stderr)
    exit(1)
 
@@ -49,6 +49,10 @@ for line in proc.stderr:
         continue
 
     if 'warnings.warn' in line:
+        was_warn = True
+        continue
+
+    if 'warning: Detected potential recursive class relation' in line:
         was_warn = True
         continue
 
