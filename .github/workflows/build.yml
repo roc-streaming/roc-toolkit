@@ -221,9 +221,9 @@ jobs:
     runs-on: macos-latest
 
     env:
-      CI_ABI: ${{ matrix.abi }}
-      CI_API: ${{ matrix.api }}
-      CI_NDK: ${{ matrix.ndk }}
+      ABI: ${{ matrix.abi }}
+      API: ${{ matrix.api }}
+      NDK_VERSION: ${{ matrix.ndk }}
 
     name: android${{ matrix.api }}-${{ matrix.abi }}/macos
     steps:
@@ -246,13 +246,13 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          scripts/ci_checks/android/macos.sh --install
+          scripts/ci_checks/android/macos.sh
 
       - name: Build
         run: |
-          scripts/ci_checks/android/macos.sh --build
+          scripts/android_emu/run.sh build
 
-      - name: Run Tests
+      - name: Run tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api }}
@@ -265,7 +265,7 @@ jobs:
           emulator-options: -no-audio -no-boot-anim -no-window
           disable-animations: true
           script: |
-            scripts/ci_checks/android/macos.sh --test
+            scripts/android_emu/run.sh test
 
       - name: Handle failure
         if: failure()
