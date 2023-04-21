@@ -67,3 +67,5 @@ Contributors
 * Valeria Khomyakova <v.khomyakova.net@gmail.com>
 * Paulo Corona <PauPauCoronaP@gmail.com>
 * Dhanu Saputra <https://github.com/dhanusaputra>
+* Piotr Lewandowski <lewandowski323@gmail.com>
+* Darrel Idiagbor <idiagbordarrel@gmail.com>

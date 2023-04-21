@@ -127,7 +127,7 @@ function update_sphinx() {
     add_contributors "${temp}" "$(basename "$(pwd)")/3rdparty/_distfiles"
     add_contributors "${temp}" "rt-tests"
     add_contributors "${temp}" "roc-pulse"
-    add_contributors "${temp}" "roc-coreaudio-plugin"
+    add_contributors "${temp}" "roc-vad"
     add_contributors "${temp}" "roc-go"
     add_contributors "${temp}" "roc-java"
     add_contributors "${temp}" "roc-droid"
