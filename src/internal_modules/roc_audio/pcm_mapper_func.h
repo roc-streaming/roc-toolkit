@@ -10781,7 +10781,7 @@ template <size_t N> struct pcm_octets;
 
 // 1-byte native-endian packed octet array
 template <> ROC_ATTR_PACKED_BEGIN struct pcm_octets<1> {
-#if ROC_CPU_BIG_ENDIAN
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
     uint8_t octet0;
 #else
     uint8_t octet0;
@@ -10790,7 +10790,7 @@ template <> ROC_ATTR_PACKED_BEGIN struct pcm_octets<1> {
 
 // 2-byte native-endian packed octet array
 template <> ROC_ATTR_PACKED_BEGIN struct pcm_octets<2> {
-#if ROC_CPU_BIG_ENDIAN
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
     uint8_t octet1;
     uint8_t octet0;
 #else
@@ -10801,7 +10801,7 @@ template <> ROC_ATTR_PACKED_BEGIN struct pcm_octets<2> {
 
 // 4-byte native-endian packed octet array
 template <> ROC_ATTR_PACKED_BEGIN struct pcm_octets<4> {
-#if ROC_CPU_BIG_ENDIAN
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
     uint8_t octet3;
     uint8_t octet2;
     uint8_t octet1;
@@ -10816,7 +10816,7 @@ template <> ROC_ATTR_PACKED_BEGIN struct pcm_octets<4> {
 
 // 8-byte native-endian packed octet array
 template <> ROC_ATTR_PACKED_BEGIN struct pcm_octets<8> {
-#if ROC_CPU_BIG_ENDIAN
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
     uint8_t octet7;
     uint8_t octet6;
     uint8_t octet5;
@@ -12755,7 +12755,7 @@ template <PcmEncoding InEnc, PcmEncoding OutEnc, PcmEndian InEnd>
 pcm_mapper_func_t pcm_mapper_func(PcmEndian out_endian) {
     switch (out_endian) {
     case PcmEndian_Native:
-#if ROC_CPU_BIG_ENDIAN
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
         return pcm_mapper_func<InEnc, OutEnc, InEnd, PcmEndian_Big>();
 #else
         return pcm_mapper_func<InEnc, OutEnc, InEnd, PcmEndian_Little>();
@@ -12773,7 +12773,7 @@ template <PcmEncoding InEnc, PcmEncoding OutEnc>
 pcm_mapper_func_t pcm_mapper_func(PcmEndian in_endian, PcmEndian out_endian) {
     switch (in_endian) {
     case PcmEndian_Native:
-#if ROC_CPU_BIG_ENDIAN
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
         return pcm_mapper_func<InEnc, OutEnc, PcmEndian_Big>(out_endian);
 #else
         return pcm_mapper_func<InEnc, OutEnc, PcmEndian_Little>(out_endian);

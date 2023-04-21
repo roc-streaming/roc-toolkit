@@ -62,7 +62,8 @@ export PATH="${ANDROID_SDK_ROOT}/tools/bin:${PATH}"
 export PATH="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${PATH}"
 export PATH="${toolchain_root}/bin:${PATH}"
 
-if [[ "${action}" == build ]]; then
+if [[ "${action}" == build ]]
+then
     color_msg "building project"
 
     run_cmd scons -Q \
@@ -75,7 +76,8 @@ if [[ "${action}" == build ]]; then
           --build-3rdparty=libuv,openfec,openssl,speexdsp,cpputest
 fi
 
-if [[ "${action}" == test ]]; then
+if [[ "${action}" == test ]]
+then
     color_msg "running tests"
 
     target_prefix="/data/local/tmp"
@@ -83,24 +85,17 @@ if [[ "${action}" == test ]]; then
     run_cmd adb shell "su 0 mkdir -p ${target_prefix}/lib"
     run_cmd adb push "${sysroot}/libc++_shared.so" "${target_prefix}/lib/libc++_shared.so"
 
-    # FIXME:
-    #  https://github.com/roc-streaming/roc-toolkit/issues/435
-    #  https://github.com/roc-streaming/roc-toolkit/issues/516
-    #  https://github.com/roc-streaming/roc-toolkit/issues/518
-    tests=( $(find "bin/${target_toolchain}" -name 'roc-test-*' \
-                   -not -name 'roc-test-ctl' \
-                   -not -name 'roc-test-netio' \
-                   -not -name 'roc-test-public-api') )
+    find "bin/${target_toolchain}" -name 'roc-test-*' | \
+        while read test_path
+        do
+            test_name="$(basename ${test_path})"
 
-    for test_path in "${tests[@]}"; do
-        test_name="$(basename ${test_path})"
+            color_msg "running ${test_name}"
 
-        color_msg "running ${test_name}"
+            run_cmd adb push "$test_path" "${target_prefix}/${test_name}"
 
-        run_cmd adb push "$test_path" "${target_prefix}/${test_name}"
-
-        run_cmd python scripts/scons_helpers/timeout-run.py 300 \
-                adb shell "LD_LIBRARY_PATH=${target_prefix}/lib" \
-                "${target_prefix}/${test_name}" </dev/null
-    done
+            run_cmd python scripts/scons_helpers/timeout-run.py 300 \
+                    adb shell "LD_LIBRARY_PATH=${target_prefix}/lib" \
+                    "${target_prefix}/${test_name}" </dev/null
+        done
 fi

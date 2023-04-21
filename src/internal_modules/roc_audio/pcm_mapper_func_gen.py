@@ -565,7 +565,7 @@ template <size_t N> struct pcm_octets;
 {% for size in [1, 2, 4, 8] %}
 // {{ size }}-byte native-endian packed octet array
 template <> ROC_ATTR_PACKED_BEGIN struct pcm_octets<{{ size }}> {
-#if ROC_CPU_BIG_ENDIAN
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
 {% for n in reversed(range(size)) %}
     uint8_t octet{{ n }};
 {% endfor %}
@@ -746,7 +746,7 @@ pcm_mapper_func_t pcm_mapper_func(PcmEndian out_endian) {
 {% for e in endians %}
     case PcmEndian_{{ e }}:
 {% if e == 'Native' %}
-#if ROC_CPU_BIG_ENDIAN
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
         return pcm_mapper_func<InEnc, OutEnc, InEnd, PcmEndian_Big>();
 #else
         return pcm_mapper_func<InEnc, OutEnc, InEnd, PcmEndian_Little>();
@@ -766,7 +766,7 @@ pcm_mapper_func_t pcm_mapper_func(PcmEndian in_endian, PcmEndian out_endian) {
 {% for e in endians %}
     case PcmEndian_{{ e }}:
 {% if e == 'Native' %}
-#if ROC_CPU_BIG_ENDIAN
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
         return pcm_mapper_func<InEnc, OutEnc, PcmEndian_Big>(out_endian);
 #else
         return pcm_mapper_func<InEnc, OutEnc, PcmEndian_Little>(out_endian);

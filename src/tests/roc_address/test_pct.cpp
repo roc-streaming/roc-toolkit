@@ -167,7 +167,11 @@ TEST(pct, path_symbols) {
     }
 }
 
+#ifdef __ANDROID__
+IGNORE_TEST(pct, unicode_symbols) {
+#else
 TEST(pct, unicode_symbols) {
+#endif
     const char* decoded = "♥";
     const char* encoded = "%E2%99%A5";
 

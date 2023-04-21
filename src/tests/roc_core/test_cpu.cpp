@@ -23,21 +23,15 @@ TEST(cpu, endianess) {
 
     const bool is_big = u.c[0] == 0x1;
 
-#if ROC_CPU_BIG_ENDIAN
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
     CHECK(is_big);
 #else
     CHECK(!is_big);
-#endif
-
-#if ROC_CPU_LITTLE_ENDIAN
-    CHECK(!is_big);
-#else
-    CHECK(is_big);
 #endif
 }
 
 TEST(cpu, bitness) {
-#if ROC_CPU_64BIT
+#if ROC_CPU_BITS == 64
     CHECK(sizeof(void*) == 8);
 #else
     CHECK(sizeof(void*) < 8);
