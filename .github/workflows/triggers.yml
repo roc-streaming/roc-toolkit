@@ -37,6 +37,9 @@ jobs:
     name: ${{ matrix.repo }}
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
       - name: Trigger
         run: |
           scripts/ci_checks/trigger.sh roc-streaming/${{ matrix.repo }} \
