@@ -1182,6 +1182,7 @@ elif name == 'sox':
             '--with-opus=no',
             '--with-pulseaudio=no',
             '--with-sndfile=no',
+            '--with-sndio=no',
             '--with-wavpack=no',
             '--without-ao',
             '--without-id3tag',
