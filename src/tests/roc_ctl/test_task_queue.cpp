@@ -676,9 +676,9 @@ TEST(task_queue, schedule_at_shuffled) {
     const core::nanoseconds_t now = core::timestamp(core::ClockMonotonic);
 
     queue.schedule_at(tasks[0], now + core::Millisecond, executor, &completer);
-    queue.schedule_at(tasks[1], now + core::Millisecond * 4, executor, &completer);
-    queue.schedule_at(tasks[2], now + core::Millisecond * 2, executor, &completer);
-    queue.schedule_at(tasks[3], now + core::Millisecond * 5, executor, &completer);
+    queue.schedule_at(tasks[1], now + core::Millisecond * 40, executor, &completer);
+    queue.schedule_at(tasks[2], now + core::Millisecond * 20, executor, &completer);
+    queue.schedule_at(tasks[3], now + core::Millisecond * 50, executor, &completer);
 
     executor.unblock_one();
     CHECK(completer.wait_called() == &tasks[0]);
@@ -728,9 +728,9 @@ TEST(task_queue, schedule_at_same_deadline) {
     const core::nanoseconds_t now = core::timestamp(core::ClockMonotonic);
 
     queue.schedule_at(tasks[0], now + core::Millisecond, executor, &completer);
-    queue.schedule_at(tasks[1], now + core::Millisecond * 4, executor, &completer);
-    queue.schedule_at(tasks[2], now + core::Millisecond * 4, executor, &completer);
-    queue.schedule_at(tasks[3], now + core::Millisecond * 2, executor, &completer);
+    queue.schedule_at(tasks[1], now + core::Millisecond * 40, executor, &completer);
+    queue.schedule_at(tasks[2], now + core::Millisecond * 40, executor, &completer);
+    queue.schedule_at(tasks[3], now + core::Millisecond * 20, executor, &completer);
 
     executor.unblock_one();
     CHECK(completer.wait_called() == &tasks[0]);
@@ -780,9 +780,9 @@ TEST(task_queue, schedule_at_and_schedule) {
     const core::nanoseconds_t now = core::timestamp(core::ClockMonotonic);
 
     queue.schedule(tasks[0], executor, &completer);
-    queue.schedule_at(tasks[1], now + core::Millisecond * 7, executor, &completer);
+    queue.schedule_at(tasks[1], now + core::Millisecond * 70, executor, &completer);
     queue.schedule(tasks[2], executor, &completer);
-    queue.schedule_at(tasks[3], now + core::Millisecond * 5, executor, &completer);
+    queue.schedule_at(tasks[3], now + core::Millisecond * 50, executor, &completer);
 
     executor.unblock_one();
     CHECK(completer.wait_called() == &tasks[0]);
@@ -917,9 +917,9 @@ TEST(task_queue, schedule_at_and_async_cancel) {
     const core::nanoseconds_t now = core::timestamp(core::ClockMonotonic);
 
     queue.schedule_at(tasks[0], now + core::Millisecond, executor, &completers[0]);
-    queue.schedule_at(tasks[1], now + core::Millisecond * 4, executor, &completers[1]);
-    queue.schedule_at(tasks[2], now + core::Millisecond * 2, executor, &completers[2]);
-    queue.schedule_at(tasks[3], now + core::Millisecond * 5, executor, &completers[3]);
+    queue.schedule_at(tasks[1], now + core::Millisecond * 40, executor, &completers[1]);
+    queue.schedule_at(tasks[2], now + core::Millisecond * 20, executor, &completers[2]);
+    queue.schedule_at(tasks[3], now + core::Millisecond * 50, executor, &completers[3]);
 
     executor.wait_blocked();
 
