@@ -886,12 +886,12 @@ elif name == 'libunwind':
         makeenv(envlist),
         makeflags(workdir, toolchain, env, deplist, cflags='-fcommon -fPIC', variant=variant),
         ' '.join([
-            '--enable-static',
-            '--disable-shared',
             '--disable-coredump',
+            '--disable-minidebuginfo',
             '--disable-ptrace',
             '--disable-setjmp',
-            '--disable-minidebuginfo',
+            '--disable-shared',
+            '--enable-static',
            ])), logfile)
     execute_make(logfile)
     install_files('include/*.h', inc_dir)
@@ -911,9 +911,9 @@ elif name == 'libatomic_ops':
         makeenv(envlist),
         makeflags(workdir, toolchain, env, deplist, cflags='-fPIC', variant=variant),
         ' '.join([
-            '--enable-static',
-            '--disable-shared',
             '--disable-docs',
+            '--disable-shared',
+            '--enable-static',
            ])), logfile)
     execute_make(logfile)
     install_tree('src', inc_dir, match=['*.h'])
@@ -959,9 +959,9 @@ elif name == 'speexdsp':
         makeenv(envlist),
         makeflags(workdir, toolchain, env, deplist, cflags='-fPIC', variant=variant),
         ' '.join([
-            '--enable-static',
-            '--disable-shared',
             '--disable-examples',
+            '--disable-shared',
+            '--enable-static',
            ])), logfile)
     execute_make(logfile)
     install_tree('include', inc_dir)
@@ -979,9 +979,9 @@ elif name == 'alsa':
         toolchain,
         makeenv(envlist),
         ' '.join([
-            '--enable-shared',
-            '--disable-static',
             '--disable-python',
+            '--disable-static',
+            '--enable-shared',
         ])), logfile)
     execute_make(logfile)
     install_tree('include/alsa',
@@ -1002,8 +1002,8 @@ elif name == 'ltdl':
         toolchain,
         makeenv(envlist),
         ' '.join([
-            '--enable-shared',
             '--disable-static',
+            '--enable-shared',
         ])), logfile)
     execute_make(logfile)
     install_files('libltdl/ltdl.h', inc_dir)
@@ -1060,9 +1060,9 @@ elif name == 'sndfile':
         # explicitly enable -pthread because libtool doesn't add it on some platforms
         makeflags(workdir, toolchain, env, [], cflags='-fPIC -fvisibility=hidden', pthread=True),
         ' '.join([
-            '--enable-static',
-            '--disable-shared',
             '--disable-external-libs',
+            '--disable-shared',
+            '--enable-static',
         ])), logfile)
     execute_make(logfile)
     install_files('src/sndfile.h', inc_dir)
@@ -1106,14 +1106,14 @@ elif name == 'pulseaudio':
                 'LIBSNDFILE_LIBS="-lsndfile"',
             ]),
             ' '.join([
-                '--enable-shared',
+                '--disable-manpages',
+                '--disable-neon-opt',
+                '--disable-openssl',
+                '--disable-orc',
                 '--disable-static',
                 '--disable-tests',
-                '--disable-manpages',
-                '--disable-orc',
                 '--disable-webrtc-aec',
-                '--disable-openssl',
-                '--disable-neon-opt',
+                '--enable-shared',
                 '--without-caps',
             ])), logfile)
         execute_make(logfile)
@@ -1138,8 +1138,8 @@ elif name == 'pulseaudio':
                 '--cross-file=crossfile.txt',
                 '-Ddaemon=false',
                 '-Ddoxygen=false',
-                '-Dman=false',
                 '-Dgcov=false',
+                '-Dman=false',
                 '-Dtests=false',
             ])), logfile)
         execute('ninja', logfile)
@@ -1168,31 +1168,31 @@ elif name == 'sox':
         makeenv(envlist),
         makeflags(workdir, toolchain, env, deplist, cflags='-fvisibility=hidden', variant=variant),
         ' '.join([
-            '--enable-static',
-            '--disable-shared',
             '--disable-openmp',
-            '--without-libltdl',
-            '--without-magic',
-            '--without-png',
-            '--without-ladspa',
-            '--without-mad',
-            '--without-id3tag',
-            '--without-lame',
-            '--without-twolame',
-            '--without-ao',
-            '--without-opus',
-            '--with-oggvorbis=no',
-            '--with-opus=no',
-            '--with-flac=no',
-            '--with-amrwb=no',
+            '--disable-shared',
+            '--enable-static',
             '--with-amrnb=no',
-            '--with-wavpack=no',
+            '--with-amrwb=no',
             '--with-ao=no',
-            '--with-pulseaudio=no',
-            '--with-sndfile=no',
-            '--with-mp3=no',
+            '--with-flac=no',
             '--with-gsm=no',
             '--with-lpc10=no',
+            '--with-mp3=no',
+            '--with-oggvorbis=no',
+            '--with-opus=no',
+            '--with-pulseaudio=no',
+            '--with-sndfile=no',
+            '--with-wavpack=no',
+            '--without-ao',
+            '--without-id3tag',
+            '--without-ladspa',
+            '--without-lame',
+            '--without-libltdl',
+            '--without-mad',
+            '--without-magic',
+            '--without-opus',
+            '--without-png',
+            '--without-twolame',
         ])), logfile)
     execute_make(logfile)
     install_files('src/sox.h', inc_dir)
