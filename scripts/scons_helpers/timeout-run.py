@@ -17,7 +17,7 @@ except:
 proc = subprocess.Popen(cmd)
 
 def trap():
-    print("timeout of %ss expired, aborting" % timeout, file=sys.stderr)
+    print("timeout of {}s expired, aborting".format(timeout), file=sys.stderr)
     try:
         proc.terminate()
     except:

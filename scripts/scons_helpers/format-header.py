@@ -1,20 +1,21 @@
+import datetime
+import fnmatch
 import os
 import re
-import sys
-import fnmatch
-import tempfile
 import shutil
-import datetime
+import sys
+import tempfile
+import textwrap
 
-copyright_str = '''
-/*
- * Copyright (c) %s Roc Streaming authors
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- */
-''' % datetime.datetime.now().year
+copyright_str = textwrap.dedent('''
+    /*
+     * Copyright (c) {} Roc Streaming authors
+     *
+     * This Source Code Form is subject to the terms of the Mozilla Public
+     * License, v. 2.0. If a copy of the MPL was not distributed with this
+     * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+     */
+''').format(datetime.datetime.now().year)
 
 def is_header(path):
     return re.search('\.h$', path)
@@ -51,12 +52,12 @@ def make_guard(path):
 def make_doxygen_path(path):
     path = '/'.join(path.split(os.sep))
     path = re.sub('^\.?/', '', path)
-    return '@file %s' % path
+    return '@file ' + path
 
 def make_doxygen_brief(text):
     if not text.endswith('.'):
         text += '.'
-    return '@brief %s' % text
+    return '@brief ' + text
 
 def format_file(output, path):
     def fprint(s):
@@ -140,7 +141,7 @@ def format_file(output, path):
                     continue
 
                 if re.match(r'^\s*//!\s*@file', line):
-                    fprint('//! %s' % make_doxygen_path(path))
+                    fprint('//! {}'.format(make_doxygen_path(path)))
                 else:
                     fprint(line)
 
@@ -152,8 +153,8 @@ def format_file(output, path):
                 else:
                     if not has_doxygen:
                         if is_header(path):
-                            fprint('//! %s' % make_doxygen_path(path))
-                            fprint('//! %s' % make_doxygen_brief(brief))
+                            fprint('//! {}'.format(make_doxygen_path(path)))
+                            fprint('//! {}'.format(make_doxygen_brief(brief)))
                             section = 'guard'
                         else:
                             section = 'body'
@@ -165,12 +166,12 @@ def format_file(output, path):
             m = re.match(r'#\s*(ifndef|define)', line)
             if m:
                 has_guard = True
-                fprint('#%s %s' % (m.group(1), make_guard(path)))
+                fprint('#{} {}'.format(m.group(1), make_guard(path)))
                 continue
             else:
                 if not has_guard:
-                    fprint('#ifndef %s' % make_guard(path))
-                    fprint('#define %s' % make_guard(path))
+                    fprint('#ifndef {}'.format_file(make_guard(path)))
+                    fprint('#define {}'.format_file(make_guard(path)))
                 fprint('')
                 section = 'body'
 
@@ -182,7 +183,7 @@ def format_file(output, path):
 
     if is_header(path):
         fprint('')
-        fprint('#endif // %s' % make_guard(path))
+        fprint('#endif // {}'.format(make_guard(path)))
 
 def walk_dir(directory, patterns):
     for root, dirs, files in os.walk(directory):

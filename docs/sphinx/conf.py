@@ -9,8 +9,8 @@ import sys
 def get_version():
     proc = subprocess.Popen(
         [sys.executable,
-         '%s/../../scripts/scons_helpers/parse-version.py' %
-         os.path.dirname(os.path.realpath(__file__))],
+         os.path.dirname(os.path.realpath(__file__)) +
+            '/../../scripts/scons_helpers/parse-version.py'],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT)
     return tuple(proc.stdout.read().decode().strip().split('.'))
@@ -32,13 +32,13 @@ exclude_patterns = []
 master_doc = 'index'
 
 project = u'Roc Toolkit'
-copyright = u'%s, Roc Streaming authors' % datetime.datetime.now().year
+copyright = u'{}, Roc Streaming authors'.format(datetime.datetime.now().year)
 author = u'Roc Streaming authors'
 
 version_tuple = get_version()
 
-version = 'Roc Toolkit %s' % '.'.join(version_tuple[:2])
-release = '%s' % '.'.join(version_tuple)
+version = 'Roc Toolkit {}'.format('.'.join(version_tuple[:2]))
+release = '.'.join(version_tuple)
 
 today_fmt = '%Y'
 
@@ -55,7 +55,7 @@ breathe_domain_by_extension = {'h': 'c'}
 
 # -- Options for HTML output ----------------------------------------------
 
-html_title = '%s %s' % (project, release)
+html_title = '{} {}'.format(project, release)
 
 html_theme = 'nature'
 
