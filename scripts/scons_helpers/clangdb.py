@@ -50,7 +50,7 @@ if source_file:
     db_path = os.path.join(build_dir, "compile_commands.json")
 
     cmd = {
-        "command": "%s %s" % (compiler, ' '.join(compiler_args)),
+        "command": "{} {}".format(compiler, ' '.join(compiler_args)),
         "directory": root_dir,
         "file": source_file,
     }
@@ -81,7 +81,7 @@ if source_file:
                 funlock(fp)
     except:
         e = sys.exc_info()[1]
-        print("error: unable to write clangdb to %s" % db_path, file=sys.stderr)
+        print("error: unable to write clangdb to " + db_path, file=sys.stderr)
         print(str(e), file=sys.stderr)
 
 cmd = shlex.split(compiler) + compiler_args
