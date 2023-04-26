@@ -11,6 +11,7 @@ build.log
 
 # clang
 compile_commands.json
+.cache
 
 # gdb
 .gdb_history
@@ -30,15 +31,17 @@ __pycache__/
 # emacs
 .#*
 .dir-locals.el
+TODO.org
 
 # vim
 *.sw[nop]
-
-# clangd
-.cache
 
 # clion
 .idea/
 
 # ctags
 /tags
+
+# other
+/Makefile
+.unisonignore

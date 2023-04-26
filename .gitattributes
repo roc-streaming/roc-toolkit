@@ -1,1 +1,1 @@
-src/modules/**/*.h linguist-language=C++
+src/internal_modules/**/*.h linguist-language=C++
