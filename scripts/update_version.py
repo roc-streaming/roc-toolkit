@@ -13,12 +13,12 @@ os.chdir(os.path.join(
 version = subprocess.check_output([
     sys.executable, 'scripts/scons_helpers/parse-version.py']).decode().strip()
 
-print(f'Updating to version {version}')
+print(("Updating to version {}").format(version))
 
 for line in fileinput.input(files=['rpm/roc-toolkit.spec'], inplace=True):
     m = re.match('^(Version:\s+).*$', line)
     if m:
-        line = m.group(1) + version + '\n'
+        line = ("{}{}\n").format(m.group(1),version)
     print(line, end='')
 
 print('Done.')
