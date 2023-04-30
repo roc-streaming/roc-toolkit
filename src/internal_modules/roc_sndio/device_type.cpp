@@ -12,7 +12,9 @@ namespace roc {
 namespace sndio {
 
 const char* device_type_to_str(DeviceType type) {
-    switch (type) {
+    switch (type) 
+    {
+    
     case DeviceType_Sink:
         return "sink";
 
