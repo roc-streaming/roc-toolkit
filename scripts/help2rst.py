@@ -21,7 +21,7 @@ def concat_options(inp):
             full_line = line
         else:
             if full_line:
-                full_line += ' ' + line
+                full_line = ("{} {}").format(full_line,line)
     yield full_line
 
 def format_options(inp):
@@ -38,7 +38,7 @@ def format_options(inp):
             col2.append(m.group(3))
 
     for c1, c2 in zip(col1, col2):
-        print(('%-'+str(maxlen+2)+'s%s') % (c1, c2))
+        print('{}-'.format(str(maxlen+2)+'{}%{}'.format(c1,c2))
 
 format_options(
     filter_options(
