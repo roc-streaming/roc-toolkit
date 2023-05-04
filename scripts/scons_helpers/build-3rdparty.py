@@ -1,17 +1,17 @@
 from __future__ import print_function
 
-import sys
+import fileinput
+import fnmatch
+import glob
+import multiprocessing
 import os
 import os.path
 import re
 import shutil
-import glob
-import fnmatch
 import ssl
-import tarfile
-import fileinput
 import subprocess
-import multiprocessing
+import sys
+import tarfile
 
 try:
     from shlex import quote
@@ -29,16 +29,22 @@ try:
 except:
     pass
 
-#
-# Variables for helpers.
-#
-
-printdir = os.path.abspath('.')
-devnull = open(os.devnull, 'w+')
+DEV_NULL = open(os.devnull, 'w+')
 
 #
 # Helpers.
 #
+
+def msg(text, *args):
+    if args:
+        text = text.format(*args)
+    print(text)
+
+def die(text, *args):
+    if args:
+        text = text.format(*args)
+    print('error: ' + text, file=sys.stderr)
+    exit(1)
 
 def mkpath(path):
     try:
@@ -61,41 +67,87 @@ def rm_emptydir(path):
     except:
         pass
 
-def fetch_vendored(url, path, log, vendordir):
-    for subdir, _, _ in os.walk(vendordir):
-        distfile = os.path.join(subdir, os.path.basename(path))
-        if os.path.exists(distfile):
-            print('[found vendored] %s' % os.path.basename(distfile))
-            with open(distfile, 'rb') as rp:
-                with open(path, 'wb') as wp:
-                    wp.write(rp.read())
-                    return
-    raise
+def touch(path):
+    open(path, 'w').close()
 
-def fetch_urlopen(url, path, log, vendordir):
-    rp = urlopen(url)
-    with open(path, 'wb') as wp:
-        wp.write(rp.read())
+def which(tool):
+    try:
+        path = shutil.which(tool)
+        if path:
+            return path
+    except:
+        pass
 
-def fetch_tool(url, path, log, vendordir, tool, cmd):
-    print('[trying %s] %s' % (tool, url))
-    with open(log, 'a+') as fp:
-        print('>>> %s' % cmd, file=fp)
-    if os.system(cmd) != 0:
+    out = run_command(['which', tool])
+    if out:
+        return out
+
+def find_file_upwards(path, search_file):
+    while True:
+        parent = os.path.dirname(path)
+        if parent == path:
+            break # root
+        path = parent
+        child_path = os.path.join(path, search_file)
+        if os.path.exists(child_path):
+            return child_path
+
+def run_command(cmd, stdin=DEV_NULL, stdout=subprocess.PIPE, stderr=DEV_NULL):
+    proc = subprocess.Popen(
+        cmd, shell=not isinstance(cmd, list),
+        stdin=stdin, stdout=stdout, stderr=stderr)
+    out = proc.stdout.read()
+    try:
+        out = out.decode()
+    except:
+        pass
+    try:
+        out = str(out)
+    except:
+        pass
+    try:
+        out = out.strip()
+    except:
+        pass
+    return out
+
+def download(url, name, log_file, vendor_dir):
+    def _fetch_vendored(url, path):
+        for subdir, _, _ in os.walk(vendor_dir):
+            distfile = os.path.join(subdir, os.path.basename(path))
+            if os.path.exists(distfile):
+                msg('[found vendored] {}', os.path.basename(distfile))
+                with open(distfile, 'rb') as rp:
+                    with open(path, 'wb') as wp:
+                        wp.write(rp.read())
+                        return
         raise
 
-def fetch_wget(url, path, log, vendordir):
-    fetch_tool(url, path, log, vendordir, 'wget', 'wget "%s" --quiet -O "%s"' % (url, path))
+    def _fetch_urlopen(url, path):
+        rp = urlopen(url)
+        with open(path, 'wb') as wp:
+            wp.write(rp.read())
 
-def fetch_curl(url, path, log, vendordir):
-    fetch_tool(url, path, log, vendordir, 'curl', 'curl -Ls "%s" -o "%s"' % (url, path))
+    def _fetch_tool(url, path, tool, cmd):
+        msg('[trying {}] {}', tool, url)
+        with open(log_file, 'a+') as fp:
+            print('>>> '+cmd, file=fp)
+        if os.system(cmd) != 0:
+            raise
 
-def download(url, name, log, vendordir):
+    def _fetch_wget(url, path):
+        _fetch_tool(url, path, 'wget',
+                    'wget "{}" --quiet -O "{}"'.format(url, path))
+
+    def _fetch_curl(url, path):
+        _fetch_tool(url, path, 'curl',
+                    'curl -Ls "{}" -o "{}"'.format(url, path))
+
     path_res = 'src/' + name
     path_tmp = 'tmp/' + name
 
     if os.path.exists(path_res):
-        print('[found downloaded] %s' % name)
+        msg('[found downloaded] {}', name)
         return
 
     rmpath(path_res)
@@ -103,30 +155,29 @@ def download(url, name, log, vendordir):
     mkpath('tmp')
 
     error = None
-    for fn in [fetch_vendored, fetch_urlopen, fetch_curl, fetch_wget]:
+    for fn in [_fetch_vendored, _fetch_urlopen, _fetch_curl, _fetch_wget]:
         try:
-            fn(url, path_tmp, log, vendordir)
+            fn(url, path_tmp)
             shutil.move(path_tmp, path_res)
             rm_emptydir('tmp')
             return
         except Exception as e:
-            if fn == fetch_vendored:
-                print('[download] %s' % url)
-            if fn == fetch_urlopen:
+            if fn == _fetch_vendored:
+                msg('[download] {}', url)
+            if fn == _fetch_urlopen:
                 error = e
 
-    print("error: can't download '%s': %s" % (url, error), file=sys.stderr)
-    exit(1)
+    die("can't download '{}': {}", url, error)
 
 def unpack(filename, dirname):
     dirname_res = 'src/' + dirname
     dirname_tmp = 'tmp/' + dirname
 
     if os.path.exists(dirname_res):
-        print('[found unpacked] %s' % dirname)
+        msg('[found unpacked] {}', dirname)
         return
 
-    print('[unpack] %s' % filename)
+    msg('[unpack] {}', filename)
 
     rmpath(dirname_res)
     rmpath(dirname_tmp)
@@ -139,35 +190,25 @@ def unpack(filename, dirname):
     shutil.move(dirname_tmp, dirname_res)
     rm_emptydir('tmp')
 
-def which(tool):
-    proc = subprocess.Popen(['which', tool], stdout=subprocess.PIPE, stderr=devnull)
-    out = read_stdout(proc).strip()
-    if out:
-        return out
+def execute(cmd, log_file, ignore_error=False, clear_env=False):
+    msg('[execute] {}', cmd)
 
-def try_execute(cmd):
-    return subprocess.call(
-        cmd, stdout=devnull, stderr=subprocess.STDOUT, shell=True) == 0
-
-def execute(cmd, log, ignore_error=False, clear_env=False):
-    print('[execute] %s' % cmd)
-
-    with open(log, 'a+') as fp:
-        print('>>> %s' % cmd, file=fp)
+    with open(log_file, 'a+') as fp:
+        print('>>> '+cmd, file=fp)
 
     env = None
     if clear_env:
         env = {'HOME': os.environ['HOME'], 'PATH': os.environ['PATH']}
 
-    code = subprocess.call('%s >>%s 2>&1' % (cmd, log), shell=True, env=env)
+    code = subprocess.call('{} >>{} 2>&1'.format(cmd, log_file), shell=True, env=env)
     if code != 0:
         if ignore_error:
-            with open(log, 'a+') as fp:
-                print('command exited with status %s' % code, file=fp)
+            with open(log_file, 'a+') as fp:
+                print('command exited with status {}'.format(code), file=fp)
         else:
             exit(1)
 
-def execute_make(log, cpu_count=None):
+def execute_make(log_file, cpu_count=None):
     if cpu_count is None:
         try:
             cpu_count = len(os.sched_getaffinity(0))
@@ -184,14 +225,19 @@ def execute_make(log, cpu_count=None):
     if cpu_count:
         cmd += ['-j' + str(cpu_count)]
 
-    execute(' '.join(cmd), log)
+    execute(' '.join(cmd), log_file)
 
-def execute_cmake(srcdir, variant, toolchain, env, log, args=None):
+def execute_cmake(srcdir, variant, toolchain, env, log_file, args=None):
+    def _getvar(var, default):
+        if var in env:
+            return env[var]
+        return '-'.join([s for s in [toolchain, default] if s])
+
     if not args:
         args = []
 
-    compiler = getvar(env, 'CC', toolchain, 'gcc')
-    sysroot = getsysroot(toolchain, compiler)
+    compiler = _getvar('CC', 'gcc')
+    sysroot = find_sysroot(toolchain, compiler)
 
     need_sysroot = bool(sysroot)
     need_tools = True
@@ -212,35 +258,35 @@ def execute_cmake(srcdir, variant, toolchain, env, log, args=None):
         if toolchain_file:
             need_sysroot = False
             need_tools = False
-            args += [quote('-DCMAKE_TOOLCHAIN_FILE=%s' % toolchain_file)]
+            args += [quote('-DCMAKE_TOOLCHAIN_FILE=' + toolchain_file)]
             if api:
-                args += ['-DANDROID_NATIVE_API_LEVEL=%s' % api]
+                args += ['-DANDROID_NATIVE_API_LEVEL=' + api]
             if abi:
-                args += ['-DANDROID_ABI=%s' % abi]
+                args += ['-DANDROID_ABI=' + abi]
         else:
             sysroot = find_android_sysroot(compiler)
             need_sysroot = bool(sysroot)
             need_tools = True
             if api:
-                args += ['-DCMAKE_SYSTEM_VERSION=%s' % api]
+                args += ['-DCMAKE_SYSTEM_VERSION=' + api]
             if abi:
-                args += ['-DCMAKE_ANDROID_ARCH_ABI=%s' % abi]
+                args += ['-DCMAKE_ANDROID_ARCH_ABI=' + abi]
 
     if need_sysroot:
         args += [
-            '-DCMAKE_FIND_ROOT_PATH=%s' % quote(sysroot),
-            '-DCMAKE_SYSROOT=%s'        % quote(sysroot),
+            '-DCMAKE_FIND_ROOT_PATH=' + quote(sysroot),
+            '-DCMAKE_SYSROOT='        + quote(sysroot),
         ]
 
     if need_tools:
         if not 'android' in toolchain:
             args += [
-                '-DCMAKE_C_COMPILER=%s' % quote(getpath(compiler)),
+                '-DCMAKE_C_COMPILER=' + quote(find_tool(compiler)),
             ]
         args += [
-            '-DCMAKE_LINKER=%s' % quote(getpath(getvar(env, 'CCLD', toolchain, 'gcc'))),
-            '-DCMAKE_AR=%s'     % quote(getpath(getvar(env, 'AR', toolchain, 'ar'))),
-            '-DCMAKE_RANLIB=%s' % quote(getpath(getvar(env, 'RANLIB', toolchain, 'ranlib'))),
+            '-DCMAKE_LINKER=' + quote(find_tool(_getvar('CCLD', 'gcc'))),
+            '-DCMAKE_AR='     + quote(find_tool(_getvar('AR', 'ar'))),
+            '-DCMAKE_RANLIB=' + quote(find_tool(_getvar('RANLIB', 'ranlib'))),
         ]
 
     cc_flags = [
@@ -254,64 +300,59 @@ def execute_cmake(srcdir, variant, toolchain, env, log, args=None):
         ]
         args += [
             '-DCMAKE_BUILD_TYPE=Debug',
-            '-DCMAKE_C_FLAGS_DEBUG:STRING=%s' % quote(' '.join(cc_flags)),
+            '-DCMAKE_C_FLAGS_DEBUG:STRING=' + quote(' '.join(cc_flags)),
         ]
     else:
         args += [
             '-DCMAKE_BUILD_TYPE=Release',
-            '-DCMAKE_C_FLAGS_RELEASE:STRING=%s' % quote(' '.join(cc_flags)),
+            '-DCMAKE_C_FLAGS_RELEASE:STRING=' + quote(' '.join(cc_flags)),
         ]
 
     args += [
         '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
     ]
 
-    execute('cmake ' + srcdir + ' ' + ' '.join(args), log)
+    execute('cmake ' + srcdir + ' ' + ' '.join(args), log_file)
 
-def install_tree(src, dst, match=None, ignore=None):
-    print('[install] %s' % os.path.relpath(dst, printdir))
+def install_tree(src, dst, root_dir, include=None, exclude=None):
+    msg('[install] {}', os.path.relpath(dst, root_dir))
 
-    def match_patterns(src, names):
-        ignorenames = []
+    def _match_patterns(src, names):
+        ignore_names = []
         for n in names:
             if os.path.isdir(os.path.join(src, n)):
                 continue
             matched = False
-            for m in match:
+            for m in include:
                 if fnmatch.fnmatch(n, m):
                     matched = True
                     break
             if not matched:
-                ignorenames.append(n)
-        return set(ignorenames)
+                ignore_names.append(n)
+        return set(ignore_names)
 
-    if match:
-        ignorefn = match_patterns
-    elif ignore:
-        ignorefn = shutil.ignore_patterns(*ignore)
+    if include:
+        ignore_fn = _match_patterns
+    elif exclude:
+        ignore_fn = shutil.ignore_patterns(*exclude)
     else:
-        ignorefn = None
+        ignore_fn = None
 
     mkpath(os.path.dirname(dst))
     rmpath(dst)
-    shutil.copytree(src, dst, ignore=ignorefn)
+    shutil.copytree(src, dst, ignore=ignore_fn)
 
-def install_files(src, dst):
-    print('[install] %s' % os.path.join(
-        os.path.relpath(dst, printdir),
+def install_files(src, dst, root_dir):
+    msg('[install] {}', os.path.join(
+        os.path.relpath(dst, root_dir),
         os.path.basename(src)))
 
     for f in glob.glob(src):
         mkpath(dst)
         shutil.copy(f, dst)
 
-def replace_files(path, from_, to):
-    print('[patch] %s' % path)
-    for line in fileinput.input(path, inplace=True):
-        print(line.replace(from_, to), end='')
-
-def replace_tree(dirpath, filepats, from_, to):
-    def match(path):
+def subst_tree(dirpath, filepats, from_, to):
+    def _match_path(path):
         try:
             with open(path) as fp:
                 for line in fp:
@@ -324,66 +365,44 @@ def replace_tree(dirpath, filepats, from_, to):
         for root, dirnames, filenames in os.walk(dirpath):
             for filename in fnmatch.filter(filenames, filepat):
                 filepath = os.path.join(root, filename)
-                if match(filepath):
-                    replace_files(filepath, from_, to)
+                if _match_path(filepath):
+                    subst_files(filepath, from_, to)
 
-def try_patch(dirname, patchurl, patchname, logfile, vendordir):
-    if not try_execute('patch --version'):
+def subst_files(path, from_, to):
+    msg('[patch] {}', path)
+
+    for line in fileinput.input(path, inplace=True):
+        print(line.replace(from_, to), end='')
+
+def apply_patch(dirname, patch_url, patch_name, log_file, vendor_dir):
+    if subprocess.call(
+        'patch --version', stdout=DEV_NULL, stderr=DEV_NULL, shell=True) != 0:
         return
-    download(patchurl, patchname, logfile, vendordir)
-    execute('patch -p1 -N -d %s -i %s' % (
+
+    download(patch_url, patch_name, log_file, vendor_dir)
+    execute('patch -p1 -N -d {} -i {}'.format(
         'src/' + dirname,
-        '../' + patchname), logfile, ignore_error=True)
+        '../' + patch_name), log_file, ignore_error=True)
 
-def touch(path):
-    open(path, 'w').close()
-
-def traverse_parents(path, search_file):
-    while True:
-        parent = os.path.dirname(path)
-        if parent == path:
-            break # root
-        path = parent
-        child_path = os.path.join(path, search_file)
-        if os.path.exists(child_path):
-            return child_path
-
-def read_stdout(proc):
-    out = proc.stdout.read()
-    try:
-        out = out.decode()
-    except:
-        pass
-    try:
-        out = str(out)
-    except:
-        pass
-    return out
-
-def getvar(env, var, toolchain, default):
-    if var in env:
-        return env[var]
-    return '-'.join([s for s in [toolchain, default] if s])
-
-def getpath(tool):
+def find_tool(tool):
     if '/' in tool:
         return tool
-    p = which(tool)
-    if not p:
-        return tool
-    return p
 
-def getsysroot(toolchain, compiler):
+    path = which(tool)
+    if not path:
+        return tool
+
+    return path
+
+def find_sysroot(toolchain, compiler):
     if not toolchain:
         return ""
 
     if not compiler:
-        compiler = '%s-gcc' % toolchain
+        compiler = '{}-gcc'.format(toolchain)
 
     try:
-        cmd = [compiler, '-print-sysroot']
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=devnull)
-        sysroot = read_stdout(proc).strip()
+        sysroot = run_command([compiler, '-print-sysroot'])
         if os.path.isdir(sysroot):
             return sysroot
     except:
@@ -391,15 +410,15 @@ def getsysroot(toolchain, compiler):
 
     return None
 
-def find_android_toolchain_file(compiler):
-    compiler_exe = which(compiler)
-    if compiler_exe:
-        return traverse_parents(compiler_exe, 'build/cmake/android.toolchain.cmake')
-
 def find_android_sysroot(compiler):
     compiler_exe = which(compiler)
     if compiler_exe:
-        return traverse_parents(compiler_exe, 'sysroot')
+        return find_file_upwards(compiler_exe, 'sysroot')
+
+def find_android_toolchain_file(compiler):
+    compiler_exe = which(compiler)
+    if compiler_exe:
+        return find_file_upwards(compiler_exe, 'build/cmake/android.toolchain.cmake')
 
 def detect_android_abi(toolchain):
     try:
@@ -418,28 +437,25 @@ def detect_android_abi(toolchain):
 
 def detect_android_api(compiler):
     try:
-        cmd = [compiler, '-dM', '-E', '-']
-        proc = subprocess.Popen(cmd, stdin=devnull, stdout=subprocess.PIPE, stderr=devnull)
-        for line in read_stdout(proc).splitlines():
+        for line in run_command([compiler, '-dM', '-E', '-']).splitlines():
             m = re.search(r'__ANDROID_API__\s+(\d+)', line)
             if m:
                 return m.group(1)
     except:
         pass
 
-def checkfamily(env, toolchain, family):
+def detect_compiler_family(env, toolchain, family):
     if family == 'gcc':
         keys = ['GNU', 'gnu', 'gcc', 'g++']
     elif family == 'clang':
         keys = ['clang']
 
-    def _checktool(toolchain, tool):
+    def _check_tool(toolchain, tool):
         if toolchain:
-            tool = '%s-%s' % (toolchain, tool)
+            tool = '{}-{}'.format(toolchain, tool)
         try:
-            proc = subprocess.Popen([tool, '-v'],
-                                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            out = str(read_stdout(proc).strip())
+            out = run_command([tool, '-v'],
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             for k in keys:
                 if k in out:
                     return True
@@ -449,49 +465,69 @@ def checkfamily(env, toolchain, family):
 
     for var in ['CC', 'CCLD', 'CXX', 'CXXLD']:
         if var in env:
-            if not _checktool('', env[var]):
+            if not _check_tool('', env[var]):
                 return False
 
     if not 'gnu' in toolchain:
         if 'CC' not in env:
             for tool in ['cc', 'gcc', 'clang']:
-                if _checktool(toolchain, tool):
+                if _check_tool(toolchain, tool):
                     break
             else:
                 return False
 
         if 'CCLD' not in env:
             for tool in ['ld', 'gcc', 'clang']:
-                if _checktool(toolchain, tool):
+                if _check_tool(toolchain, tool):
                     break
             else:
                 return False
 
         if 'CXX' not in env or 'CXXLD' not in env:
             for tool in ['g++', 'clang++']:
-                if _checktool(toolchain, tool):
+                if _check_tool(toolchain, tool):
                     break
             else:
                 return False
 
     return True
 
-def makeflags(workdir, toolchain, env, deplist, cflags='', ldflags='', variant='', pthread=False):
+def parse_env(unparsed_env):
+    env = dict()
+    for e in unparsed_env:
+        k, v = e.split('=', 1)
+        env[k] = v
+    return env
+
+def parse_dep(unparsed_dep):
+    m = re.match('^(.*?)-([0-9][a-z0-9.-]+)$', unparsed_dep)
+    if not m:
+        die("can't determine version of '{}'", unparsed_dep)
+    return m.group(1), m.group(2)
+
+def format_env(unparsed_env):
+    ret = []
+    for e in unparsed_env:
+        ret.append(quote(e))
+    return ' '.join(ret)
+
+def format_flags(
+    work_dir, toolchain, env, dep_list, cflags='', ldflags='', variant='', pthread=False):
     incdirs=[]
     libdirs=[]
     rpathdirs=[]
 
-    for dep in deplist:
-        incdirs += [os.path.join(workdir, dep, 'include')]
-        libdirs += [os.path.join(workdir, dep, 'lib')]
-        rpathdirs += [os.path.join(workdir, dep, 'rpath')]
+    for dep in dep_list:
+        incdirs += [os.path.join(work_dir, dep, 'include')]
+        libdirs += [os.path.join(work_dir, dep, 'lib')]
+        rpathdirs += [os.path.join(work_dir, dep, 'rpath')]
 
-    cflags = ([cflags] if cflags else []) + ['-I%s' % path for path in incdirs]
-    ldflags = ['-L%s' % path for path in libdirs] + ([ldflags] if ldflags else [])
+    cflags = ([cflags] if cflags else []) + ['-I' + path for path in incdirs]
+    ldflags = ['-L' + path for path in libdirs] + ([ldflags] if ldflags else [])
 
     is_android = 'android' in toolchain
-    is_gnu = checkfamily(env, toolchain, 'gcc')
-    is_clang = checkfamily(env, toolchain, 'clang')
+    is_gnu = detect_compiler_family(env, toolchain, 'gcc')
+    is_clang = detect_compiler_family(env, toolchain, 'clang')
 
     if variant == 'debug':
         if is_gnu or is_clang:
@@ -510,23 +546,17 @@ def makeflags(workdir, toolchain, env, deplist, cflags='', ldflags='', variant='
             ldflags += ['-lpthread']
 
     if is_gnu:
-        ldflags += ['-Wl,-rpath-link=%s' % path for path in rpathdirs]
+        ldflags += ['-Wl,-rpath-link=' + path for path in rpathdirs]
 
     return ' '.join([
-        'CXXFLAGS=%s' % quote(' '.join(cflags)),
-        'CFLAGS=%s'   % quote(' '.join(cflags)),
-        'LDFLAGS=%s'  % quote(' '.join(ldflags)),
+        'CXXFLAGS=' + quote(' '.join(cflags)),
+        'CFLAGS='   + quote(' '.join(cflags)),
+        'LDFLAGS='  + quote(' '.join(ldflags)),
     ])
 
-def makeenv(envlist):
-    ret = []
-    for e in envlist:
-        ret.append(quote(e))
-    return ' '.join(ret)
-
 # https://mesonbuild.com/Reference-tables.html
-def gen_crossfile(env, toolchain, pc_dir, cross_file):
-    print('[generate] %s' % cross_file)
+def generate_meson_crossfile(env, toolchain, pc_dir, cross_file):
+    msg('[generate] {}', cross_file)
 
     def meson_string(s):
         m = {
@@ -545,7 +575,7 @@ def gen_crossfile(env, toolchain, pc_dir, cross_file):
         return "'" + s + "'"
 
     def meson_flags(flags):
-        return '[%s]' % ', '.join(map(meson_string, flags))
+        return '[{}]'.format(', '.join(map(meson_string, flags)))
 
     if toolchain:
         system = 'linux'
@@ -593,9 +623,9 @@ def gen_crossfile(env, toolchain, pc_dir, cross_file):
     cflags = []
     ldflags = []
 
-    for dep in deplist:
-        cflags.append('-I%s' % os.path.join(workdir, dep, 'include'))
-        ldflags.append('-L%s' % os.path.join(workdir, dep, 'lib'))
+    for dep in dep_list:
+        cflags.append('-I' + os.path.join(work_dir, dep, 'include'))
+        ldflags.append('-L' + os.path.join(work_dir, dep, 'lib'))
 
     pkg_config = None
     if 'PKG_CONFIG' in env:
@@ -633,36 +663,23 @@ def gen_crossfile(env, toolchain, pc_dir, cross_file):
             fp.write("endian = %s\n" % meson_string(endian))
             fp.write("\n")
 
-def gen_pcfile(dep, pc_dir):
-    name, ver = splitver(dep)
+# Generate temporary .pc file for pkg-config.
+def generate_pc_file(dep, pc_dir):
+    name, ver = parse_dep(dep)
     pc_file = os.path.join(pc_dir, name) + '.pc'
     with open(pc_file, 'w') as fp:
-        print('[generate] %s' % pc_file)
+        msg('[generate] {}', pc_file)
         fp.write('Name: %s\n' % name)
         fp.write('Description: %s\n' % name)
         fp.write('Version: %s\n' % ver)
-        fp.write('Cflags: -I%s\n' % os.path.join(workdir, dep, 'include'))
-        fp.write('Libs: -L%s' % os.path.join(workdir, dep, 'lib'))
-        for lib in glob.glob(os.path.join(workdir, dep, 'lib', 'lib*')):
+        fp.write('Cflags: -I%s\n' % os.path.join(work_dir, dep, 'include'))
+        fp.write('Libs: -L%s' % os.path.join(work_dir, dep, 'lib'))
+        for lib in glob.glob(os.path.join(work_dir, dep, 'lib', 'lib*')):
             lib = os.path.basename(lib)
             lib = re.sub('^lib', '', lib)
             lib = re.sub('\.[a-z]+$', '', lib)
             fp.write(' -l%s' % lib)
         fp.write('\n')
-
-def splitver(dep):
-    m = re.match('^(.*?)-([0-9][a-z0-9.-]+)$', dep)
-    if not m:
-        print("error: can't determine version of '%s'" % dep, file=sys.stderr)
-        exit(1)
-    return m.group(1), m.group(2)
-
-def splitenv(envlist):
-    env = dict()
-    for e in envlist:
-        k, v = e.split('=', 1)
-        env[k] = v
-    return env
 
 # Guess platform argument for OpenSSL's Configure script basing on toolchain string.
 # (see `./Configure LIST` for a list of all platforms and their format)
@@ -792,12 +809,11 @@ if len(sys.argv) == 2 and sys.argv[1] == 'run-tests':
     exit(0)
 
 if len(sys.argv) < 7:
-    print("error: usage: 3rdparty.py workdir vendordir toolchain variant package deplist [env]",
-          file=sys.stderr)
-    exit(1)
+    die("usage: 3rdparty.py work_dir vendor_dir toolchain variant package dep_list [env]")
 
-workdir = os.path.abspath(sys.argv[1])
-vendordir = os.path.abspath(sys.argv[2])
+root_dir = os.path.abspath('.')
+work_dir = os.path.abspath(sys.argv[1])
+vendor_dir = os.path.abspath(sys.argv[2])
 
 # Build toolchain, e.g. 'x86_64-pc-linux-gnu'; may be empty string.
 #
@@ -808,29 +824,32 @@ vendordir = os.path.abspath(sys.argv[2])
 # - mips (without 'el') -- MIPS big endian
 toolchain = sys.argv[3]
 
-variant = sys.argv[4]            # 'debug' or 'release' variant should be built
-fullname = sys.argv[5]           # package's name and version, e.g. 'openssl-3.0.7-rc1'
-deplist = sys.argv[6].split(':') # list of 3rdparty dependencies names, e.g. 'ltdl:json-c'
-envlist = sys.argv[7:]           # build env variables, e.g. 'CC=gcc CXX=g++ LDFLAGS=...'
+variant = sys.argv[4]             # 'debug' or 'release' variant should be built
+fullname = sys.argv[5]            # package's name and version, e.g. 'openssl-3.0.7-rc1'
+dep_list = sys.argv[6].split(':') # list of 3rdparty dependencies names, e.g. 'ltdl:json-c'
+unparsed_env = sys.argv[7:]       # build env variables, e.g. 'CC=gcc CXX=g++ LDFLAGS=...'
 
 if variant not in ['debug', 'release']:
-    print("error: argument 'variant' should be 'debug' or 'release'")
-    exit(1)
+    die("argument 'variant' should be 'debug' or 'release'")
 
-env = splitenv(envlist)
-name, ver = splitver(fullname)
+env = parse_env(unparsed_env)
+name, ver = parse_dep(fullname)
 
-build_dir = os.path.join(workdir, fullname)
+build_dir = os.path.join(work_dir, fullname)
 src_dir = os.path.join(build_dir, 'src')
 bin_dir = os.path.join(build_dir, 'bin')
 lib_dir = os.path.join(build_dir, 'lib')
 inc_dir = os.path.join(build_dir, 'include')
 rpath_dir = os.path.join(build_dir, 'rpath')
 
-logfile = os.path.join(build_dir, 'build.log')
-commit_build_finished_file = os.path.join(build_dir, 'commit')
+log_file = os.path.join(build_dir, 'build.log')
+commit_file = os.path.join(build_dir, 'commit')
 
-rmpath(commit_build_finished_file)
+#
+# Setup directories.
+#
+
+rmpath(commit_file)
 mkpath(src_dir)
 
 os.chdir(build_dir)
@@ -842,49 +861,49 @@ os.chdir(build_dir)
 if name == 'libuv':
     download('https://dist.libuv.org/dist/v%s/libuv-v%s.tar.gz' % (ver, ver),
              'libuv-v%s.tar.gz' % ver,
-             logfile,
-             vendordir)
+             log_file,
+             vendor_dir)
     unpack('libuv-v%s.tar.gz' % ver,
             'libuv-v%s' % ver)
     os.chdir('src/libuv-v%s' % ver)
-    replace_files('include/uv.h', '__attribute__((visibility("default")))', '')
+    subst_files('include/uv.h', '__attribute__((visibility("default")))', '')
     if 'android' in toolchain:
         mkpath('build')
         os.chdir('build')
-        execute_cmake('..', variant, toolchain, env, logfile, args=[
+        execute_cmake('..', variant, toolchain, env, log_file, args=[
             '-DLIBUV_BUILD_TESTS=OFF',
             '-DANDROID_PLATFORM=android-21',
             ])
-        execute_make(logfile)
+        execute_make(log_file)
         shutil.copy('libuv_a.a', 'libuv.a')
         os.chdir('..')
-        install_files('build/libuv.a', lib_dir)
+        install_files('build/libuv.a', lib_dir, root_dir)
     else:
-        execute('./autogen.sh', logfile)
+        execute('./autogen.sh', log_file)
         execute('./configure --host=%s %s %s %s' % (
             toolchain,
-            makeenv(envlist),
-            makeflags(workdir, toolchain, env, [], cflags='-fvisibility=hidden'),
+            format_env(unparsed_env),
+            format_flags(work_dir, toolchain, env, [], cflags='-fvisibility=hidden'),
             ' '.join([
                 '--with-pic',
                 '--enable-static',
-            ])), logfile)
-        execute_make(logfile)
-        install_files('.libs/libuv.a', lib_dir)
-    install_tree('include', inc_dir)
+            ])), log_file)
+        execute_make(log_file)
+        install_files('.libs/libuv.a', lib_dir, root_dir)
+    install_tree('include', inc_dir, root_dir)
 elif name == 'libunwind':
     download(
         'http://download.savannah.nongnu.org/releases/libunwind/libunwind-%s.tar.gz' % ver,
         'libunwind-%s.tar.gz' % ver,
-        logfile,
-        vendordir)
+        log_file,
+        vendor_dir)
     unpack('libunwind-%s.tar.gz' % ver,
             'libunwind-%s' % ver)
     os.chdir('src/libunwind-%s' % ver)
     execute('./configure --host=%s %s %s %s' % (
         toolchain,
-        makeenv(envlist),
-        makeflags(workdir, toolchain, env, deplist, cflags='-fcommon -fPIC', variant=variant),
+        format_env(unparsed_env),
+        format_flags(work_dir, toolchain, env, dep_list, cflags='-fcommon -fPIC', variant=variant),
         ' '.join([
             '--disable-coredump',
             '--disable-minidebuginfo',
@@ -892,32 +911,32 @@ elif name == 'libunwind':
             '--disable-setjmp',
             '--disable-shared',
             '--enable-static',
-           ])), logfile)
-    execute_make(logfile)
-    install_files('include/*.h', inc_dir)
-    install_files('src/.libs/libunwind.a', lib_dir)
+           ])), log_file)
+    execute_make(log_file)
+    install_files('include/*.h', inc_dir, root_dir)
+    install_files('src/.libs/libunwind.a', lib_dir, root_dir)
 elif name == 'libatomic_ops':
     download(
         'https://github.com/ivmai/libatomic_ops/releases/download/v%s/libatomic_ops-%s.tar.gz' % (
             ver, ver),
         'libatomic_ops-%s.tar.gz' % ver,
-        logfile,
-        vendordir)
+        log_file,
+        vendor_dir)
     unpack('libatomic_ops-%s.tar.gz' % ver,
             'libatomic_ops-%s' % ver)
     os.chdir('src/libatomic_ops-%s' % ver)
     execute('./configure --host=%s %s %s %s' % (
         toolchain,
-        makeenv(envlist),
-        makeflags(workdir, toolchain, env, deplist, cflags='-fPIC', variant=variant),
+        format_env(unparsed_env),
+        format_flags(work_dir, toolchain, env, dep_list, cflags='-fPIC', variant=variant),
         ' '.join([
             '--disable-docs',
             '--disable-shared',
             '--enable-static',
-           ])), logfile)
-    execute_make(logfile)
-    install_tree('src', inc_dir, match=['*.h'])
-    install_files('src/.libs/libatomic_ops.a', lib_dir)
+           ])), log_file)
+    execute_make(log_file)
+    install_tree('src', inc_dir, root_dir, include=['*.h'])
+    install_files('src/.libs/libatomic_ops.a', lib_dir, root_dir)
 elif name == 'openfec':
     if variant == 'debug':
         dist = 'bin/Debug'
@@ -926,21 +945,21 @@ elif name == 'openfec':
     download(
       'https://github.com/roc-streaming/openfec/archive/v%s.tar.gz' % ver,
       'openfec_v%s.tar.gz' % ver,
-        logfile,
-        vendordir)
+        log_file,
+        vendor_dir)
     unpack('openfec_v%s.tar.gz' % ver,
             'openfec-%s' % ver)
     os.chdir('src/openfec-%s' % ver)
     mkpath('build')
     os.chdir('build')
-    execute_cmake('..', variant, toolchain, env, logfile, args=[
+    execute_cmake('..', variant, toolchain, env, log_file, args=[
         '-DBUILD_STATIC_LIBS=ON',
         '-DDEBUG:STRING=%s' % ('ON' if variant == 'debug' else 'OFF'),
         ])
-    execute_make(logfile)
+    execute_make(log_file)
     os.chdir('..')
-    install_tree('src', inc_dir, match=['*.h'])
-    install_files('%s/libopenfec.a' % dist, lib_dir)
+    install_tree('src', inc_dir, root_dir, include=['*.h'])
+    install_files('%s/libopenfec.a' % dist, lib_dir, root_dir)
 elif name == 'speexdsp':
     if ver.split('.', 1) > ['1', '2'] and (
             not re.match('^1.2[a-z]', ver) or ver == '1.2rc3'):
@@ -949,73 +968,74 @@ elif name == 'speexdsp':
         speex = 'speex'
     download('http://downloads.xiph.org/releases/speex/%s-%s.tar.gz' % (speex, ver),
             '%s-%s.tar.gz' % (speex, ver),
-            logfile,
-            vendordir)
+            log_file,
+            vendor_dir)
     unpack('%s-%s.tar.gz' % (speex, ver),
             '%s-%s' % (speex, ver))
     os.chdir('src/%s-%s' % (speex, ver))
     execute('./configure --host=%s %s %s %s' % (
         toolchain,
-        makeenv(envlist),
-        makeflags(workdir, toolchain, env, deplist, cflags='-fPIC', variant=variant),
+        format_env(unparsed_env),
+        format_flags(work_dir, toolchain, env, dep_list, cflags='-fPIC', variant=variant),
         ' '.join([
             '--disable-examples',
             '--disable-shared',
             '--enable-static',
-           ])), logfile)
-    execute_make(logfile)
-    install_tree('include', inc_dir)
-    install_files('lib%s/.libs/libspeexdsp.a' % speex, lib_dir)
+           ])), log_file)
+    execute_make(log_file)
+    install_tree('include', inc_dir, root_dir)
+    install_files('lib%s/.libs/libspeexdsp.a' % speex, lib_dir, root_dir)
 elif name == 'alsa':
     download(
       'ftp://ftp.alsa-project.org/pub/lib/alsa-lib-%s.tar.bz2' % ver,
         'alsa-lib-%s.tar.bz2' % ver,
-        logfile,
-        vendordir)
+        log_file,
+        vendor_dir)
     unpack('alsa-lib-%s.tar.bz2' % ver,
             'alsa-lib-%s' % ver)
     os.chdir('src/alsa-lib-%s' % ver)
     execute('./configure --host=%s %s %s' % (
         toolchain,
-        makeenv(envlist),
+        format_env(unparsed_env),
         ' '.join([
             '--disable-python',
             '--disable-static',
             '--enable-shared',
-        ])), logfile)
-    execute_make(logfile)
+        ])), log_file)
+    execute_make(log_file)
     install_tree('include/alsa',
             os.path.join(inc_dir, 'alsa'),
-            ignore=['alsa'])
-    install_files('src/.libs/libasound.so', lib_dir)
-    install_files('src/.libs/libasound.so.*', rpath_dir)
+            root_dir,
+            exclude=['alsa'])
+    install_files('src/.libs/libasound.so', lib_dir, root_dir)
+    install_files('src/.libs/libasound.so.*', rpath_dir, root_dir)
 elif name == 'ltdl':
     download(
       'ftp://ftp.gnu.org/gnu/libtool/libtool-%s.tar.gz' % ver,
         'libtool-%s.tar.gz' % ver,
-        logfile,
-        vendordir)
+        log_file,
+        vendor_dir)
     unpack('libtool-%s.tar.gz' % ver,
             'libtool-%s' % ver)
     os.chdir('src/libtool-%s' % ver)
     execute('./configure --host=%s %s %s' % (
         toolchain,
-        makeenv(envlist),
+        format_env(unparsed_env),
         ' '.join([
             '--disable-static',
             '--enable-shared',
-        ])), logfile)
-    execute_make(logfile)
-    install_files('libltdl/ltdl.h', inc_dir)
-    install_tree('libltdl/libltdl', os.path.join(inc_dir, 'libltdl'))
-    install_files('libltdl/.libs/libltdl.so', lib_dir)
-    install_files('libltdl/.libs/libltdl.so.*', rpath_dir)
+        ])), log_file)
+    execute_make(log_file)
+    install_files('libltdl/ltdl.h', inc_dir, root_dir)
+    install_tree('libltdl/libltdl', os.path.join(inc_dir, 'libltdl'), root_dir)
+    install_files('libltdl/.libs/libltdl.so', lib_dir, root_dir)
+    install_files('libltdl/.libs/libltdl.so.*', rpath_dir, root_dir)
 elif name == 'json-c':
     download(
       'https://github.com/json-c/json-c/archive/json-c-%s.tar.gz' % ver,
         'json-c-%s.tar.gz' % ver,
-        logfile,
-        vendordir)
+        log_file,
+        vendor_dir)
     unpack('json-c-%s.tar.gz' % ver,
             'json-c-json-c-%s' % ver)
     os.chdir('src/json-c-json-c-%s' % ver)
@@ -1030,21 +1050,21 @@ elif name == 'json-c':
             './configure',
         ])),
         toolchain,
-        makeenv(envlist),
-        makeflags(workdir, toolchain, env, [], cflags='-w -fPIC -fvisibility=hidden'),
+        format_env(unparsed_env),
+        format_flags(work_dir, toolchain, env, [], cflags='-w -fPIC -fvisibility=hidden'),
         ' '.join([
             '--enable-static',
             '--disable-shared',
-        ])), logfile)
-    execute_make(logfile, cpu_count=0) # -j is buggy for json-c
-    install_tree('.', inc_dir, match=['*.h'])
-    install_files('.libs/libjson-c.a', lib_dir)
+        ])), log_file)
+    execute_make(log_file, cpu_count=0) # -j is buggy for json-c
+    install_tree('.', inc_dir, root_dir, include=['*.h'])
+    install_files('.libs/libjson-c.a', lib_dir, root_dir)
 elif name == 'sndfile':
     download(
       'http://www.mega-nerd.com/libsndfile/files/libsndfile-%s.tar.gz' % ver,
         'libsndfile-%s.tar.gz' % ver,
-        logfile,
-        vendordir)
+        log_file,
+        vendor_dir)
     unpack('libsndfile-%s.tar.gz' % ver,
             'libsndfile-%s' % ver)
     os.chdir('src/libsndfile-%s' % ver)
@@ -1056,35 +1076,35 @@ elif name == 'sndfile':
             './configure',
         ])),
         toolchain,
-        makeenv(envlist),
+        format_env(unparsed_env),
         # explicitly enable -pthread because libtool doesn't add it on some platforms
-        makeflags(workdir, toolchain, env, [], cflags='-fPIC -fvisibility=hidden', pthread=True),
+        format_flags(work_dir, toolchain, env, [], cflags='-fPIC -fvisibility=hidden', pthread=True),
         ' '.join([
             '--disable-external-libs',
             '--disable-shared',
             '--enable-static',
-        ])), logfile)
-    execute_make(logfile)
-    install_files('src/sndfile.h', inc_dir)
-    install_files('src/.libs/libsndfile.a', lib_dir)
+        ])), log_file)
+    execute_make(log_file)
+    install_files('src/sndfile.h', inc_dir, root_dir)
+    install_files('src/.libs/libsndfile.a', lib_dir, root_dir)
 elif name == 'pulseaudio':
     download(
       'https://freedesktop.org/software/pulseaudio/releases/pulseaudio-%s.tar.gz' % ver,
         'pulseaudio-%s.tar.gz' % ver,
-        logfile,
-        vendordir)
+        log_file,
+        vendor_dir)
     unpack('pulseaudio-%s.tar.gz' % ver,
             'pulseaudio-%s' % ver)
     pa_ver = tuple(map(int, ver.split('.')))
     if (8, 99, 1) <= pa_ver < (11, 99, 1):
-        try_patch(
+        apply_patch(
             'pulseaudio-%s' % ver,
             'https://bugs.freedesktop.org/attachment.cgi?id=136927',
             '0001-memfd-wrappers-only-define-memfd_create-if-not-alrea.patch',
-            logfile,
-            vendordir)
+            log_file,
+            vendor_dir)
     if pa_ver < (12, 99, 1):
-        replace_tree('src/pulseaudio-%s' % ver, ['*.h', '*.c'],
+        subst_tree('src/pulseaudio-%s' % ver, ['*.h', '*.c'],
                       '#include <asoundlib.h>',
                       '#include <alsa/asoundlib.h>')
     os.chdir('src/pulseaudio-%s' % ver)
@@ -1093,12 +1113,12 @@ elif name == 'pulseaudio':
         # on some systems; since we're not modifying any autotools stuff, it's safe
         # to replace corresponding commands with "true" command
         if os.path.exists('Makefile.in'):
-            replace_files('Makefile.in', '@ACLOCAL@', 'true')
-            replace_files('Makefile.in', '@AUTOMAKE@', 'true')
+            subst_files('Makefile.in', '@ACLOCAL@', 'true')
+            subst_files('Makefile.in', '@AUTOMAKE@', 'true')
         execute('./configure --host=%s %s %s %s %s' % (
             toolchain,
-            makeenv(envlist),
-            makeflags(workdir, toolchain, env, deplist, cflags='-w -fomit-frame-pointer -O2'),
+            format_env(unparsed_env),
+            format_flags(work_dir, toolchain, env, dep_list, cflags='-w -fomit-frame-pointer -O2'),
             ' '.join([
                 'LIBJSON_CFLAGS=" "',
                 'LIBJSON_LIBS="-ljson-c"',
@@ -1115,24 +1135,24 @@ elif name == 'pulseaudio':
                 '--disable-webrtc-aec',
                 '--enable-shared',
                 '--without-caps',
-            ])), logfile)
-        execute_make(logfile)
-        install_files('config.h', inc_dir)
-        install_tree('src/pulse', os.path.join(inc_dir, 'pulse'),
-                     match=['*.h'])
-        install_files('src/.libs/libpulse.so', lib_dir)
-        install_files('src/.libs/libpulse.so.0', rpath_dir)
-        install_files('src/.libs/libpulse-simple.so', lib_dir)
-        install_files('src/.libs/libpulse-simple.so.0', rpath_dir)
-        install_files('src/.libs/libpulsecommon-*.so', lib_dir)
-        install_files('src/.libs/libpulsecommon-*.so', rpath_dir)
+            ])), log_file)
+        execute_make(log_file)
+        install_files('config.h', inc_dir, root_dir)
+        install_tree('src/pulse', os.path.join(inc_dir, 'pulse'), root_dir,
+                     include=['*.h'])
+        install_files('src/.libs/libpulse.so', lib_dir, root_dir)
+        install_files('src/.libs/libpulse.so.0', rpath_dir, root_dir)
+        install_files('src/.libs/libpulse-simple.so', lib_dir, root_dir)
+        install_files('src/.libs/libpulse-simple.so.0', rpath_dir, root_dir)
+        install_files('src/.libs/libpulsecommon-*.so', lib_dir, root_dir)
+        install_files('src/.libs/libpulsecommon-*.so', rpath_dir, root_dir)
     else:
         mkpath('builddir')
         os.chdir('builddir')
         mkpath('pc')
-        for dep in deplist:
-            gen_pcfile(dep, 'pc')
-        gen_crossfile(env, toolchain, 'pc', 'crossfile.txt')
+        for dep in dep_list:
+            generate_pc_file(dep, 'pc')
+        generate_meson_crossfile(env, toolchain, 'pc', 'crossfile.txt')
         execute('meson .. %s' % (
             ' '.join([
                 '--cross-file=crossfile.txt',
@@ -1141,32 +1161,33 @@ elif name == 'pulseaudio':
                 '-Dgcov=false',
                 '-Dman=false',
                 '-Dtests=false',
-            ])), logfile)
-        execute('ninja', logfile)
-        execute('DESTDIR=../instdir ninja install', logfile)
+            ])), log_file)
+        execute('ninja', log_file)
+        execute('DESTDIR=../instdir ninja install', log_file)
         os.chdir('..')
         install_tree('instdir/usr/local/include/pulse',
                      os.path.join(inc_dir, 'pulse'),
-                     match=['*.h'])
-        install_files('builddir/src/pulse/libpulse.so', lib_dir)
-        install_files('builddir/src/pulse/libpulse.so.0', rpath_dir)
-        install_files('builddir/src/pulse/libpulse-simple.so', lib_dir)
-        install_files('builddir/src/pulse/libpulse-simple.so.0', rpath_dir)
-        install_files('builddir/src/libpulsecommon-*.so', lib_dir)
-        install_files('builddir/src/libpulsecommon-*.so', rpath_dir)
+                     root_dir,
+                     include=['*.h'])
+        install_files('builddir/src/pulse/libpulse.so', lib_dir, root_dir)
+        install_files('builddir/src/pulse/libpulse.so.0', rpath_dir, root_dir)
+        install_files('builddir/src/pulse/libpulse-simple.so', lib_dir, root_dir)
+        install_files('builddir/src/pulse/libpulse-simple.so.0', rpath_dir, root_dir)
+        install_files('builddir/src/libpulsecommon-*.so', lib_dir, root_dir)
+        install_files('builddir/src/libpulsecommon-*.so', rpath_dir, root_dir)
 elif name == 'sox':
     download(
       'https://downloads.sourceforge.net/project/sox/sox/%s/sox-%s.tar.gz' % (ver, ver),
       'sox-%s.tar.gz' % ver,
-        logfile,
-        vendordir)
+        log_file,
+        vendor_dir)
     unpack('sox-%s.tar.gz' % ver,
             'sox-%s' % ver)
     os.chdir('src/sox-%s' % ver)
     execute('./configure --host=%s %s %s %s' % (
         toolchain,
-        makeenv(envlist),
-        makeflags(workdir, toolchain, env, deplist, cflags='-fvisibility=hidden', variant=variant),
+        format_env(unparsed_env),
+        format_flags(work_dir, toolchain, env, dep_list, cflags='-fvisibility=hidden', variant=variant),
         ' '.join([
             '--disable-openmp',
             '--disable-shared',
@@ -1194,10 +1215,10 @@ elif name == 'sox':
             '--without-opus',
             '--without-png',
             '--without-twolame',
-        ])), logfile)
-    execute_make(logfile)
-    install_files('src/sox.h', inc_dir)
-    install_files('src/.libs/libsox.a', lib_dir)
+        ])), log_file)
+    execute_make(log_file)
+    install_files('src/sox.h', inc_dir, root_dir)
+    install_files('src/.libs/libsox.a', lib_dir, root_dir)
 elif name == 'openssl':
     archive = 'openssl-{}.tar.gz'.format(ver)
     dir = 'openssl-' + ver
@@ -1230,89 +1251,88 @@ elif name == 'openssl':
     ]
 
     # build
-    download(url, archive, logfile, vendordir)
+    download(url, archive, log_file, vendor_dir)
     unpack(archive, dir)
     os.chdir('src/' + dir)
     # see https://github.com/openssl/openssl/blob/master/INSTALL.md#configuration-options
     # for more options:
     execute(
-        makeenv(envlist) +
-        ' ' + makeflags(workdir, toolchain, env, deplist, variant=variant) +
+        format_env(unparsed_env) +
+        ' ' + format_flags(work_dir, toolchain, env, dep_list, variant=variant) +
         ' ./Configure ' +
         ' '.join(opts),
-        logfile)
-    execute_make(logfile)
-    install_tree('include', inc_dir)
-    install_files('libssl.a', lib_dir)
-    install_files('libcrypto.a', lib_dir)
+        log_file)
+    execute_make(log_file)
+    install_tree('include', inc_dir, root_dir)
+    install_files('libssl.a', lib_dir, root_dir)
+    install_files('libcrypto.a', lib_dir, root_dir)
 elif name == 'gengetopt':
     download('ftp://ftp.gnu.org/gnu/gengetopt/gengetopt-%s.tar.gz' % ver,
              'gengetopt-%s.tar.gz' % ver,
-             logfile,
-             vendordir)
+             log_file,
+             vendor_dir)
     unpack('gengetopt-%s.tar.gz' % ver,
             'gengetopt-%s' % ver)
     os.chdir('src/gengetopt-%s' % ver)
-    execute('./configure', logfile, clear_env=True)
-    execute_make(logfile, cpu_count=0) # -j is buggy for gengetopt
-    install_files('src/gengetopt', bin_dir)
+    execute('./configure', log_file, clear_env=True)
+    execute_make(log_file, cpu_count=0) # -j is buggy for gengetopt
+    install_files('src/gengetopt', bin_dir, root_dir)
 elif name == 'ragel':
     download('https://www.colm.net/files/ragel/ragel-%s.tar.gz' % ver,
              'ragel-%s.tar.gz' % ver,
-             logfile,
-             vendordir)
+             log_file,
+             vendor_dir)
     unpack('ragel-%s.tar.gz' % ver,
             'ragel-%s' % ver)
     os.chdir('src/ragel-%s' % ver)
-    execute('./configure', logfile, clear_env=True)
-    execute_make(logfile)
-    install_files('ragel/ragel', bin_dir)
+    execute('./configure', log_file, clear_env=True)
+    execute_make(log_file)
+    install_files('ragel/ragel', bin_dir, root_dir)
 elif name == 'cpputest':
     download(
         'https://github.com/cpputest/cpputest/releases/download/v%s/cpputest-%s.tar.gz' % (
             ver, ver),
         'cpputest-%s.tar.gz' % ver,
-        logfile,
-        vendordir)
+        log_file,
+        vendor_dir)
     unpack('cpputest-%s.tar.gz' % ver,
             'cpputest-%s' % ver)
     os.chdir('src/cpputest-%s' % ver)
     execute('./configure --host=%s %s %s %s' % (
             toolchain,
-            makeenv(envlist),
+            format_env(unparsed_env),
             # disable warnings, since CppUTest uses -Werror and may fail to
             # build on old GCC versions
-            makeflags(workdir, toolchain, env, [], cflags='-w'),
+            format_flags(work_dir, toolchain, env, [], cflags='-w'),
             ' '.join([
                 '--enable-static',
                 # disable memory leak detection which is too hard to use properly
                 '--disable-memory-leak-detection',
-            ])), logfile)
-    execute_make(logfile)
-    install_tree('include', inc_dir)
-    install_files('lib/libCppUTest.a', lib_dir)
+            ])), log_file)
+    execute_make(log_file)
+    install_tree('include', inc_dir, root_dir)
+    install_files('lib/libCppUTest.a', lib_dir, root_dir)
 elif name == 'google-benchmark':
     download(
         'https://github.com/google/benchmark/archive/v%s.tar.gz' % ver,
         'benchmark_v%s.tar.gz' % ver,
-        logfile,
-        vendordir)
+        log_file,
+        vendor_dir)
     unpack('benchmark_v%s.tar.gz' % ver,
             'benchmark-%s' % ver)
     os.chdir('src/benchmark-%s' % ver)
     mkpath('build')
     os.chdir('build')
-    execute_cmake('..', variant, toolchain, env, logfile, args=[
+    execute_cmake('..', variant, toolchain, env, log_file, args=[
         '-DBENCHMARK_ENABLE_GTEST_TESTS=OFF',
         '-DCMAKE_CXX_FLAGS=-w',
         ])
-    execute_make(logfile)
+    execute_make(log_file)
     os.chdir('..')
-    install_tree('include', inc_dir, match=['*.h'])
-    install_files('build/src/libbenchmark.a', lib_dir)
+    install_tree('include', inc_dir, root_dir, include=['*.h'])
+    install_files('build/src/libbenchmark.a', lib_dir, root_dir)
 # end of deps
 else:
-    print("error: unknown 3rdparty '%s'" % fullname, file=sys.stderr)
-    exit(1)
+    die("unknown 3rdparty '{}'", fullname)
 
-touch(commit_build_finished_file)
+touch(commit_file)
