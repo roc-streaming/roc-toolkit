@@ -56,6 +56,9 @@ def _build_thirdparty(env, build_root, toolchain, variant, versions, name, deps,
         if env_vars:
             cmd += [' --vars', '{vars}']
 
+        if 'android' in env['ROC_PLATFORM']:
+            cmd += ['--platform-android', '{platform_android}']
+
         if env.Execute(
             ' '.join(cmd).format(
                 python_cmd=quote(env.GetPythonExecutable()),
@@ -66,7 +69,8 @@ def _build_thirdparty(env, build_root, toolchain, variant, versions, name, deps,
                 variant=quote(variant),
                 package=quote(versioned_name),
                 deps=' '.join(versioned_deps),
-                vars=' '.join(env_vars)),
+                vars=' '.join(env_vars),
+                platform_android=quote(env['ROC_PLATFORM_ANDROID'])),
             cmdstr = env.PrettyCommand(
                 'BUILD', os.path.relpath(thirdparty_dir, project_root), 'yellow')):
 

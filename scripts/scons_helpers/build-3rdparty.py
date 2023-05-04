@@ -229,7 +229,7 @@ def execute_make(log_file, cpu_count=None):
 
     execute(' '.join(cmd), log_file)
 
-def execute_cmake(srcdir, variant, toolchain, env, log_file, args=None):
+def execute_cmake(srcdir, variant, toolchain, android_platform, env, log_file, args=None):
     def _getvar(var, default):
         if var in env:
             return env[var]
@@ -251,6 +251,9 @@ def execute_cmake(srcdir, variant, toolchain, env, log_file, args=None):
     # cross-compiling for android
     if 'android' in toolchain:
         args += ['-DCMAKE_SYSTEM_NAME=Android']
+
+        if android_platform:
+            args += ['-DANDROID_PLATFORM=android-' + android_platform]
 
         api = detect_android_api(compiler)
         abi = detect_android_abi(toolchain)
@@ -842,6 +845,9 @@ parser.add_argument('--deps', metavar='deps', type=str, nargs='*',
 parser.add_argument('--vars', metavar='vars', type=str, nargs='*',
                     help='environment variables (e.g. CC=gcc CXX=g++ ...)')
 
+parser.add_argument('--platform-android', metavar='platform_android', type=str,
+                    help='android platform version to build against')
+
 args = parser.parse_args()
 
 #
@@ -889,10 +895,11 @@ if name == 'libuv':
     if 'android' in args.toolchain:
         mkpath('build')
         os.chdir('build')
-        execute_cmake('..', args.variant, args.toolchain, env, log_file, args=[
-            '-DLIBUV_BUILD_TESTS=OFF',
-            '-DANDROID_PLATFORM=android-21',
-            ])
+        execute_cmake(
+            '..', args.variant, args.toolchain, args.platform_android, env, log_file,
+            args=[
+                '-DLIBUV_BUILD_TESTS=OFF',
+                ])
         execute_make(log_file)
         shutil.copy('libuv_a.a', 'libuv.a')
         os.chdir('..')
@@ -973,10 +980,12 @@ elif name == 'openfec':
     os.chdir('src/openfec-%s' % ver)
     mkpath('build')
     os.chdir('build')
-    execute_cmake('..', args.variant, args.toolchain, env, log_file, args=[
-        '-DBUILD_STATIC_LIBS=ON',
-        '-DDEBUG:STRING=%s' % ('ON' if args.variant == 'debug' else 'OFF'),
-        ])
+    execute_cmake(
+        '..', args.variant, args.toolchain, args.platform_android, env, log_file,
+        args=[
+            '-DBUILD_STATIC_LIBS=ON',
+            '-DDEBUG:STRING=%s' % ('ON' if args.variant == 'debug' else 'OFF'),
+            ])
     execute_make(log_file)
     os.chdir('..')
     install_tree('src', inc_dir, args.root_dir, include=['*.h'])
@@ -1349,10 +1358,12 @@ elif name == 'google-benchmark':
     os.chdir('src/benchmark-%s' % ver)
     mkpath('build')
     os.chdir('build')
-    execute_cmake('..', args.variant, args.toolchain, env, log_file, args=[
-        '-DBENCHMARK_ENABLE_GTEST_TESTS=OFF',
-        '-DCMAKE_CXX_FLAGS=-w',
-        ])
+    execute_cmake(
+        '..', args.variant, args.toolchain, args.platform_android, env, log_file,
+        args=[
+            '-DBENCHMARK_ENABLE_GTEST_TESTS=OFF',
+            '-DCMAKE_CXX_FLAGS=-w',
+            ])
     execute_make(log_file)
     os.chdir('..')
     install_tree('include', inc_dir, args.root_dir, include=['*.h'])
