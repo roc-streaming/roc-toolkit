@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+import argparse
+import doctest
 import fileinput
 import fnmatch
 import glob
@@ -111,9 +113,9 @@ def run_command(cmd, stdin=DEV_NULL, stdout=subprocess.PIPE, stderr=DEV_NULL):
         pass
     return out
 
-def download(url, name, log_file, vendor_dir):
+def download(url, name, log_file, dist_dir):
     def _fetch_vendored(url, path):
-        for subdir, _, _ in os.walk(vendor_dir):
+        for subdir, _, _ in os.walk(dist_dir):
             distfile = os.path.join(subdir, os.path.basename(path))
             if os.path.exists(distfile):
                 msg('[found vendored] {}', os.path.basename(distfile))
@@ -374,12 +376,12 @@ def subst_files(path, from_, to):
     for line in fileinput.input(path, inplace=True):
         print(line.replace(from_, to), end='')
 
-def apply_patch(dirname, patch_url, patch_name, log_file, vendor_dir):
+def apply_patch(dirname, patch_url, patch_name, log_file, dist_dir):
     if subprocess.call(
         'patch --version', stdout=DEV_NULL, stderr=DEV_NULL, shell=True) != 0:
         return
 
-    download(patch_url, patch_name, log_file, vendor_dir)
+    download(patch_url, patch_name, log_file, dist_dir)
     execute('patch -p1 -N -d {} -i {}'.format(
         'src/' + dirname,
         '../' + patch_name), log_file, ignore_error=True)
@@ -396,7 +398,7 @@ def find_tool(tool):
 
 def find_sysroot(toolchain, compiler):
     if not toolchain:
-        return ""
+        return ''
 
     if not compiler:
         compiler = '{}-gcc'.format(toolchain)
@@ -422,18 +424,18 @@ def find_android_toolchain_file(compiler):
 
 def detect_android_abi(toolchain):
     try:
-        ta = toolchain.split('-')[0]
+        arch = toolchain.split('-')[0]
     except:
         return
-    if ta == 'arm' or ta == 'armv7a':
+    if arch == 'arm' or arch == 'armv7a':
         return 'armeabi-v7a'
-    if ta == 'aarch64':
+    if arch == 'aarch64':
         return 'arm64-v8a'
-    if ta == 'i686':
+    if arch == 'i686':
         return 'x86'
-    if ta == 'x86_64':
+    if arch == 'x86_64':
         return 'x86_64'
-    return ta
+    return arch
 
 def detect_android_api(compiler):
     try:
@@ -512,12 +514,12 @@ def format_env(unparsed_env):
     return ' '.join(ret)
 
 def format_flags(
-    work_dir, toolchain, env, dep_list, cflags='', ldflags='', variant='', pthread=False):
+    work_dir, toolchain, env, deps, cflags='', ldflags='', variant='', pthread=False):
     incdirs=[]
     libdirs=[]
     rpathdirs=[]
 
-    for dep in dep_list:
+    for dep in deps:
         incdirs += [os.path.join(work_dir, dep, 'include')]
         libdirs += [os.path.join(work_dir, dep, 'lib')]
         rpathdirs += [os.path.join(work_dir, dep, 'rpath')]
@@ -623,7 +625,7 @@ def generate_meson_crossfile(env, toolchain, pc_dir, cross_file):
     cflags = []
     ldflags = []
 
-    for dep in dep_list:
+    for dep in deps:
         cflags.append('-I' + os.path.join(work_dir, dep, 'include'))
         ldflags.append('-L' + os.path.join(work_dir, dep, 'lib'))
 
@@ -799,111 +801,129 @@ def openssl_get_platform(toolchain):
     return 'cc' # just a fallback
 
 #
-# Main.
+# Parse command-line.
 #
 
-# for tests run `python scripts/scons_helpers/build-3rdparty.py run-tests`
-if len(sys.argv) == 2 and sys.argv[1] == 'run-tests':
-    import doctest
-    doctest.testmod()
-    exit(0)
+if '--self-test' in sys.argv:
+    failures, total = doctest.testmod(report=True)
 
-if len(sys.argv) < 7:
-    die("usage: 3rdparty.py work_dir vendor_dir toolchain variant package dep_list [env]")
+    if failures == 0:
+        print('OK: {} tests passed'.format(total))
+        exit(0)
+    else:
+        exit(1)
 
-root_dir = os.path.abspath('.')
-work_dir = os.path.abspath(sys.argv[1])
-vendor_dir = os.path.abspath(sys.argv[2])
+parser = argparse.ArgumentParser(description='build third-party libs')
 
-# Build toolchain, e.g. 'x86_64-pc-linux-gnu'; may be empty string.
-#
-# Our agreements for arch component:
-# - aarch64             -- ARM 64 bit
-# - arm*                -- ARM 32 bit
-# - mipsel              -- MIPS little endian
-# - mips (without 'el') -- MIPS big endian
-toolchain = sys.argv[3]
+parser.add_argument('--self-test', action='store_true',
+                    help='run doctests and exit')
 
-variant = sys.argv[4]             # 'debug' or 'release' variant should be built
-fullname = sys.argv[5]            # package's name and version, e.g. 'openssl-3.0.7-rc1'
-dep_list = sys.argv[6].split(':') # list of 3rdparty dependencies names, e.g. 'ltdl:json-c'
-unparsed_env = sys.argv[7:]       # build env variables, e.g. 'CC=gcc CXX=g++ LDFLAGS=...'
+parser.add_argument('--root-dir', metavar='root_dir', type=str, required=True,
+                    help='path to project root')
 
-if variant not in ['debug', 'release']:
-    die("argument 'variant' should be 'debug' or 'release'")
+parser.add_argument('--work-dir', metavar='work_dir', type=str, required=True,
+                    help='path to working directory')
 
-env = parse_env(unparsed_env)
-name, ver = parse_dep(fullname)
+parser.add_argument('--dist-dir', metavar='dist_dir', type=str, required=True,
+                    help='path to vendored distfiles directory')
 
-build_dir = os.path.join(work_dir, fullname)
-src_dir = os.path.join(build_dir, 'src')
-bin_dir = os.path.join(build_dir, 'bin')
-lib_dir = os.path.join(build_dir, 'lib')
-inc_dir = os.path.join(build_dir, 'include')
-rpath_dir = os.path.join(build_dir, 'rpath')
+parser.add_argument('--toolchain', metavar='toolchain', type=str, required=True,
+                    help='toolchain prefix (e.g. aarch64-linux-gnu)')
 
-log_file = os.path.join(build_dir, 'build.log')
-commit_file = os.path.join(build_dir, 'commit')
+parser.add_argument('--variant', metavar='variant', type=str, required=True,
+                    help='build variant', choices=['debug', 'release'])
+
+parser.add_argument('--package', metavar='package', type=str, required=True,
+                    help='package name and version (e.g. openssl-3.0.7-rc1)')
+
+parser.add_argument('--deps', metavar='deps', type=str, nargs='*',
+                    help='package dependencies (should be built previously)')
+
+parser.add_argument('--vars', metavar='vars', type=str, nargs='*',
+                    help='environment variables (e.g. CC=gcc CXX=g++ ...)')
+
+args = parser.parse_args()
 
 #
-# Setup directories.
+# Setup paths and vars.
 #
+
+name, ver = parse_dep(args.package)
+env = parse_env(args.vars)
+
+os.chdir(args.root_dir)
+
+args.root_dir = os.path.abspath(args.root_dir)
+args.work_dir = os.path.abspath(args.work_dir)
+args.dist_dir = os.path.abspath(args.dist_dir)
+
+pkg_dir = os.path.join(args.work_dir, args.package)
+
+src_dir = os.path.join(pkg_dir, 'src')
+bin_dir = os.path.join(pkg_dir, 'bin')
+lib_dir = os.path.join(pkg_dir, 'lib')
+inc_dir = os.path.join(pkg_dir, 'include')
+rpath_dir = os.path.join(pkg_dir, 'rpath')
+
+log_file = os.path.join(pkg_dir, 'build.log')
+commit_file = os.path.join(pkg_dir, 'commit')
 
 rmpath(commit_file)
 mkpath(src_dir)
 
-os.chdir(build_dir)
+os.chdir(pkg_dir)
 
 #
-# Recipes for particular targets.
+# Recipes for particular packages.
 #
 
 if name == 'libuv':
     download('https://dist.libuv.org/dist/v%s/libuv-v%s.tar.gz' % (ver, ver),
              'libuv-v%s.tar.gz' % ver,
              log_file,
-             vendor_dir)
+             args.dist_dir)
     unpack('libuv-v%s.tar.gz' % ver,
-            'libuv-v%s' % ver)
+           'libuv-v%s' % ver)
     os.chdir('src/libuv-v%s' % ver)
     subst_files('include/uv.h', '__attribute__((visibility("default")))', '')
-    if 'android' in toolchain:
+    if 'android' in args.toolchain:
         mkpath('build')
         os.chdir('build')
-        execute_cmake('..', variant, toolchain, env, log_file, args=[
+        execute_cmake('..', args.variant, args.toolchain, env, log_file, args=[
             '-DLIBUV_BUILD_TESTS=OFF',
             '-DANDROID_PLATFORM=android-21',
             ])
         execute_make(log_file)
         shutil.copy('libuv_a.a', 'libuv.a')
         os.chdir('..')
-        install_files('build/libuv.a', lib_dir, root_dir)
+        install_files('build/libuv.a', lib_dir, args.root_dir)
     else:
         execute('./autogen.sh', log_file)
         execute('./configure --host=%s %s %s %s' % (
-            toolchain,
-            format_env(unparsed_env),
-            format_flags(work_dir, toolchain, env, [], cflags='-fvisibility=hidden'),
+            args.toolchain,
+            format_env(args.vars),
+            format_flags(args.work_dir, args.toolchain, env, [], cflags='-fvisibility=hidden'),
             ' '.join([
                 '--with-pic',
                 '--enable-static',
             ])), log_file)
         execute_make(log_file)
-        install_files('.libs/libuv.a', lib_dir, root_dir)
-    install_tree('include', inc_dir, root_dir)
+        install_files('.libs/libuv.a', lib_dir, args.root_dir)
+    install_tree('include', inc_dir, args.root_dir)
 elif name == 'libunwind':
     download(
         'http://download.savannah.nongnu.org/releases/libunwind/libunwind-%s.tar.gz' % ver,
         'libunwind-%s.tar.gz' % ver,
         log_file,
-        vendor_dir)
+        args.dist_dir)
     unpack('libunwind-%s.tar.gz' % ver,
             'libunwind-%s' % ver)
     os.chdir('src/libunwind-%s' % ver)
     execute('./configure --host=%s %s %s %s' % (
-        toolchain,
-        format_env(unparsed_env),
-        format_flags(work_dir, toolchain, env, dep_list, cflags='-fcommon -fPIC', variant=variant),
+        args.toolchain,
+        format_env(args.vars),
+        format_flags(args.work_dir, args.toolchain, env, args.deps, variant=args.variant,
+                     cflags='-fcommon -fPIC'),
         ' '.join([
             '--disable-coredump',
             '--disable-minidebuginfo',
@@ -913,32 +933,33 @@ elif name == 'libunwind':
             '--enable-static',
            ])), log_file)
     execute_make(log_file)
-    install_files('include/*.h', inc_dir, root_dir)
-    install_files('src/.libs/libunwind.a', lib_dir, root_dir)
+    install_files('include/*.h', inc_dir, args.root_dir)
+    install_files('src/.libs/libunwind.a', lib_dir, args.root_dir)
 elif name == 'libatomic_ops':
     download(
         'https://github.com/ivmai/libatomic_ops/releases/download/v%s/libatomic_ops-%s.tar.gz' % (
             ver, ver),
         'libatomic_ops-%s.tar.gz' % ver,
         log_file,
-        vendor_dir)
+        args.dist_dir)
     unpack('libatomic_ops-%s.tar.gz' % ver,
             'libatomic_ops-%s' % ver)
     os.chdir('src/libatomic_ops-%s' % ver)
     execute('./configure --host=%s %s %s %s' % (
-        toolchain,
-        format_env(unparsed_env),
-        format_flags(work_dir, toolchain, env, dep_list, cflags='-fPIC', variant=variant),
+        args.toolchain,
+        format_env(args.vars),
+        format_flags(args.work_dir, args.toolchain, env, args.deps, variant=args.variant,
+                     cflags='-fPIC'),
         ' '.join([
             '--disable-docs',
             '--disable-shared',
             '--enable-static',
            ])), log_file)
     execute_make(log_file)
-    install_tree('src', inc_dir, root_dir, include=['*.h'])
-    install_files('src/.libs/libatomic_ops.a', lib_dir, root_dir)
+    install_tree('src', inc_dir, args.root_dir, include=['*.h'])
+    install_files('src/.libs/libatomic_ops.a', lib_dir, args.root_dir)
 elif name == 'openfec':
-    if variant == 'debug':
+    if args.variant == 'debug':
         dist = 'bin/Debug'
     else:
         dist = 'bin/Release'
@@ -946,20 +967,20 @@ elif name == 'openfec':
       'https://github.com/roc-streaming/openfec/archive/v%s.tar.gz' % ver,
       'openfec_v%s.tar.gz' % ver,
         log_file,
-        vendor_dir)
+        args.dist_dir)
     unpack('openfec_v%s.tar.gz' % ver,
             'openfec-%s' % ver)
     os.chdir('src/openfec-%s' % ver)
     mkpath('build')
     os.chdir('build')
-    execute_cmake('..', variant, toolchain, env, log_file, args=[
+    execute_cmake('..', args.variant, args.toolchain, env, log_file, args=[
         '-DBUILD_STATIC_LIBS=ON',
-        '-DDEBUG:STRING=%s' % ('ON' if variant == 'debug' else 'OFF'),
+        '-DDEBUG:STRING=%s' % ('ON' if args.variant == 'debug' else 'OFF'),
         ])
     execute_make(log_file)
     os.chdir('..')
-    install_tree('src', inc_dir, root_dir, include=['*.h'])
-    install_files('%s/libopenfec.a' % dist, lib_dir, root_dir)
+    install_tree('src', inc_dir, args.root_dir, include=['*.h'])
+    install_files('%s/libopenfec.a' % dist, lib_dir, args.root_dir)
 elif name == 'speexdsp':
     if ver.split('.', 1) > ['1', '2'] and (
             not re.match('^1.2[a-z]', ver) or ver == '1.2rc3'):
@@ -969,34 +990,35 @@ elif name == 'speexdsp':
     download('http://downloads.xiph.org/releases/speex/%s-%s.tar.gz' % (speex, ver),
             '%s-%s.tar.gz' % (speex, ver),
             log_file,
-            vendor_dir)
+            args.dist_dir)
     unpack('%s-%s.tar.gz' % (speex, ver),
             '%s-%s' % (speex, ver))
     os.chdir('src/%s-%s' % (speex, ver))
     execute('./configure --host=%s %s %s %s' % (
-        toolchain,
-        format_env(unparsed_env),
-        format_flags(work_dir, toolchain, env, dep_list, cflags='-fPIC', variant=variant),
+        args.toolchain,
+        format_env(args.vars),
+        format_flags(args.work_dir, args.toolchain, env, args.deps, variant=args.variant,
+                     cflags='-fPIC'),
         ' '.join([
             '--disable-examples',
             '--disable-shared',
             '--enable-static',
            ])), log_file)
     execute_make(log_file)
-    install_tree('include', inc_dir, root_dir)
-    install_files('lib%s/.libs/libspeexdsp.a' % speex, lib_dir, root_dir)
+    install_tree('include', inc_dir, args.root_dir)
+    install_files('lib%s/.libs/libspeexdsp.a' % speex, lib_dir, args.root_dir)
 elif name == 'alsa':
     download(
       'ftp://ftp.alsa-project.org/pub/lib/alsa-lib-%s.tar.bz2' % ver,
         'alsa-lib-%s.tar.bz2' % ver,
         log_file,
-        vendor_dir)
+        args.dist_dir)
     unpack('alsa-lib-%s.tar.bz2' % ver,
             'alsa-lib-%s' % ver)
     os.chdir('src/alsa-lib-%s' % ver)
     execute('./configure --host=%s %s %s' % (
-        toolchain,
-        format_env(unparsed_env),
+        args.toolchain,
+        format_env(args.vars),
         ' '.join([
             '--disable-python',
             '--disable-static',
@@ -1005,94 +1027,96 @@ elif name == 'alsa':
     execute_make(log_file)
     install_tree('include/alsa',
             os.path.join(inc_dir, 'alsa'),
-            root_dir,
+            args.root_dir,
             exclude=['alsa'])
-    install_files('src/.libs/libasound.so', lib_dir, root_dir)
-    install_files('src/.libs/libasound.so.*', rpath_dir, root_dir)
+    install_files('src/.libs/libasound.so', lib_dir, args.root_dir)
+    install_files('src/.libs/libasound.so.*', rpath_dir, args.root_dir)
 elif name == 'ltdl':
     download(
       'ftp://ftp.gnu.org/gnu/libtool/libtool-%s.tar.gz' % ver,
         'libtool-%s.tar.gz' % ver,
         log_file,
-        vendor_dir)
+        args.dist_dir)
     unpack('libtool-%s.tar.gz' % ver,
             'libtool-%s' % ver)
     os.chdir('src/libtool-%s' % ver)
     execute('./configure --host=%s %s %s' % (
-        toolchain,
-        format_env(unparsed_env),
+        args.toolchain,
+        format_env(args.vars),
         ' '.join([
             '--disable-static',
             '--enable-shared',
         ])), log_file)
     execute_make(log_file)
-    install_files('libltdl/ltdl.h', inc_dir, root_dir)
-    install_tree('libltdl/libltdl', os.path.join(inc_dir, 'libltdl'), root_dir)
-    install_files('libltdl/.libs/libltdl.so', lib_dir, root_dir)
-    install_files('libltdl/.libs/libltdl.so.*', rpath_dir, root_dir)
+    install_files('libltdl/ltdl.h', inc_dir, args.root_dir)
+    install_tree('libltdl/libltdl', os.path.join(inc_dir, 'libltdl'), args.root_dir)
+    install_files('libltdl/.libs/libltdl.so', lib_dir, args.root_dir)
+    install_files('libltdl/.libs/libltdl.so.*', rpath_dir, args.root_dir)
 elif name == 'json-c':
     download(
       'https://github.com/json-c/json-c/archive/json-c-%s.tar.gz' % ver,
         'json-c-%s.tar.gz' % ver,
         log_file,
-        vendor_dir)
+        args.dist_dir)
     unpack('json-c-%s.tar.gz' % ver,
             'json-c-json-c-%s' % ver)
     os.chdir('src/json-c-json-c-%s' % ver)
     execute('%s --host=%s %s %s %s' % (
         ' '.join(filter(None, [
             # workaround for outdated config.sub
-            'ac_cv_host=%s' % toolchain if toolchain else '',
+            'ac_cv_host=%s' % args.toolchain if args.toolchain else '',
             # disable rpl_malloc and rpl_realloc
             'ac_cv_func_malloc_0_nonnull=yes',
             'ac_cv_func_realloc_0_nonnull=yes',
             # configure
             './configure',
         ])),
-        toolchain,
-        format_env(unparsed_env),
-        format_flags(work_dir, toolchain, env, [], cflags='-w -fPIC -fvisibility=hidden'),
+        args.toolchain,
+        format_env(args.vars),
+        format_flags(args.work_dir, args.toolchain, env, [],
+                     cflags='-w -fPIC -fvisibility=hidden'),
         ' '.join([
             '--enable-static',
             '--disable-shared',
         ])), log_file)
     execute_make(log_file, cpu_count=0) # -j is buggy for json-c
-    install_tree('.', inc_dir, root_dir, include=['*.h'])
-    install_files('.libs/libjson-c.a', lib_dir, root_dir)
+    install_tree('.', inc_dir, args.root_dir, include=['*.h'])
+    install_files('.libs/libjson-c.a', lib_dir, args.root_dir)
 elif name == 'sndfile':
     download(
       'http://www.mega-nerd.com/libsndfile/files/libsndfile-%s.tar.gz' % ver,
         'libsndfile-%s.tar.gz' % ver,
         log_file,
-        vendor_dir)
+        args.dist_dir)
     unpack('libsndfile-%s.tar.gz' % ver,
             'libsndfile-%s' % ver)
     os.chdir('src/libsndfile-%s' % ver)
     execute('%s --host=%s %s %s %s' % (
         ' '.join(filter(None, [
             # workaround for outdated config.sub
-            'ac_cv_host=%s' % toolchain if toolchain else '',
+            'ac_cv_host=%s' % args.toolchain if args.toolchain else '',
             # configure
             './configure',
         ])),
-        toolchain,
-        format_env(unparsed_env),
+        args.toolchain,
+        format_env(args.vars),
         # explicitly enable -pthread because libtool doesn't add it on some platforms
-        format_flags(work_dir, toolchain, env, [], cflags='-fPIC -fvisibility=hidden', pthread=True),
+        format_flags(args.work_dir, args.toolchain, env, [],
+                     cflags='-fPIC -fvisibility=hidden', pthread=True),
         ' '.join([
             '--disable-external-libs',
             '--disable-shared',
             '--enable-static',
         ])), log_file)
     execute_make(log_file)
-    install_files('src/sndfile.h', inc_dir, root_dir)
-    install_files('src/.libs/libsndfile.a', lib_dir, root_dir)
+    install_files('src/sndfile.h', inc_dir, args.root_dir)
+    install_files('src/.libs/libsndfile.a', lib_dir, args.root_dir)
 elif name == 'pulseaudio':
     download(
       'https://freedesktop.org/software/pulseaudio/releases/pulseaudio-%s.tar.gz' % ver,
         'pulseaudio-%s.tar.gz' % ver,
         log_file,
-        vendor_dir)
+        args.dist_dir)
     unpack('pulseaudio-%s.tar.gz' % ver,
             'pulseaudio-%s' % ver)
     pa_ver = tuple(map(int, ver.split('.')))
@@ -1102,7 +1126,7 @@ elif name == 'pulseaudio':
             'https://bugs.freedesktop.org/attachment.cgi?id=136927',
             '0001-memfd-wrappers-only-define-memfd_create-if-not-alrea.patch',
             log_file,
-            vendor_dir)
+            args.dist_dir)
     if pa_ver < (12, 99, 1):
         subst_tree('src/pulseaudio-%s' % ver, ['*.h', '*.c'],
                       '#include <asoundlib.h>',
@@ -1116,9 +1140,10 @@ elif name == 'pulseaudio':
             subst_files('Makefile.in', '@ACLOCAL@', 'true')
             subst_files('Makefile.in', '@AUTOMAKE@', 'true')
         execute('./configure --host=%s %s %s %s %s' % (
-            toolchain,
-            format_env(unparsed_env),
-            format_flags(work_dir, toolchain, env, dep_list, cflags='-w -fomit-frame-pointer -O2'),
+            args.toolchain,
+            format_env(args.vars),
+            format_flags(args.work_dir, args.toolchain, env, args.deps,
+                         cflags='-w -fomit-frame-pointer -O2'),
             ' '.join([
                 'LIBJSON_CFLAGS=" "',
                 'LIBJSON_LIBS="-ljson-c"',
@@ -1137,22 +1162,22 @@ elif name == 'pulseaudio':
                 '--without-caps',
             ])), log_file)
         execute_make(log_file)
-        install_files('config.h', inc_dir, root_dir)
-        install_tree('src/pulse', os.path.join(inc_dir, 'pulse'), root_dir,
+        install_files('config.h', inc_dir, args.root_dir)
+        install_tree('src/pulse', os.path.join(inc_dir, 'pulse'), args.root_dir,
                      include=['*.h'])
-        install_files('src/.libs/libpulse.so', lib_dir, root_dir)
-        install_files('src/.libs/libpulse.so.0', rpath_dir, root_dir)
-        install_files('src/.libs/libpulse-simple.so', lib_dir, root_dir)
-        install_files('src/.libs/libpulse-simple.so.0', rpath_dir, root_dir)
-        install_files('src/.libs/libpulsecommon-*.so', lib_dir, root_dir)
-        install_files('src/.libs/libpulsecommon-*.so', rpath_dir, root_dir)
+        install_files('src/.libs/libpulse.so', lib_dir, args.root_dir)
+        install_files('src/.libs/libpulse.so.0', rpath_dir, args.root_dir)
+        install_files('src/.libs/libpulse-simple.so', lib_dir, args.root_dir)
+        install_files('src/.libs/libpulse-simple.so.0', rpath_dir, args.root_dir)
+        install_files('src/.libs/libpulsecommon-*.so', lib_dir, args.root_dir)
+        install_files('src/.libs/libpulsecommon-*.so', rpath_dir, args.root_dir)
     else:
         mkpath('builddir')
         os.chdir('builddir')
         mkpath('pc')
-        for dep in dep_list:
+        for dep in args.deps:
             generate_pc_file(dep, 'pc')
-        generate_meson_crossfile(env, toolchain, 'pc', 'crossfile.txt')
+        generate_meson_crossfile(env, args.toolchain, 'pc', 'crossfile.txt')
         execute('meson .. %s' % (
             ' '.join([
                 '--cross-file=crossfile.txt',
@@ -1167,27 +1192,28 @@ elif name == 'pulseaudio':
         os.chdir('..')
         install_tree('instdir/usr/local/include/pulse',
                      os.path.join(inc_dir, 'pulse'),
-                     root_dir,
+                     args.root_dir,
                      include=['*.h'])
-        install_files('builddir/src/pulse/libpulse.so', lib_dir, root_dir)
-        install_files('builddir/src/pulse/libpulse.so.0', rpath_dir, root_dir)
-        install_files('builddir/src/pulse/libpulse-simple.so', lib_dir, root_dir)
-        install_files('builddir/src/pulse/libpulse-simple.so.0', rpath_dir, root_dir)
-        install_files('builddir/src/libpulsecommon-*.so', lib_dir, root_dir)
-        install_files('builddir/src/libpulsecommon-*.so', rpath_dir, root_dir)
+        install_files('builddir/src/pulse/libpulse.so', lib_dir, args.root_dir)
+        install_files('builddir/src/pulse/libpulse.so.0', rpath_dir, args.root_dir)
+        install_files('builddir/src/pulse/libpulse-simple.so', lib_dir, args.root_dir)
+        install_files('builddir/src/pulse/libpulse-simple.so.0', rpath_dir, args.root_dir)
+        install_files('builddir/src/libpulsecommon-*.so', lib_dir, args.root_dir)
+        install_files('builddir/src/libpulsecommon-*.so', rpath_dir, args.root_dir)
 elif name == 'sox':
     download(
       'https://downloads.sourceforge.net/project/sox/sox/%s/sox-%s.tar.gz' % (ver, ver),
       'sox-%s.tar.gz' % ver,
         log_file,
-        vendor_dir)
+        args.dist_dir)
     unpack('sox-%s.tar.gz' % ver,
             'sox-%s' % ver)
     os.chdir('src/sox-%s' % ver)
     execute('./configure --host=%s %s %s %s' % (
-        toolchain,
-        format_env(unparsed_env),
-        format_flags(work_dir, toolchain, env, dep_list, cflags='-fvisibility=hidden', variant=variant),
+        args.toolchain,
+        format_env(args.vars),
+        format_flags(args.work_dir, args.toolchain, env, args.deps,
+                     cflags='-fvisibility=hidden', variant=args.variant),
         ' '.join([
             '--disable-openmp',
             '--disable-shared',
@@ -1217,8 +1243,8 @@ elif name == 'sox':
             '--without-twolame',
         ])), log_file)
     execute_make(log_file)
-    install_files('src/sox.h', inc_dir, root_dir)
-    install_files('src/.libs/libsox.a', lib_dir, root_dir)
+    install_files('src/sox.h', inc_dir, args.root_dir)
+    install_files('src/.libs/libsox.a', lib_dir, args.root_dir)
 elif name == 'openssl':
     archive = 'openssl-{}.tar.gz'.format(ver)
     dir = 'openssl-' + ver
@@ -1228,10 +1254,10 @@ elif name == 'openssl':
     # (see https://github.com/openssl/openssl/blob/master/INSTALL.md for more details)
     opts = []
     # platform (should be the first argument)
-    platform = openssl_get_platform(toolchain)
+    platform = openssl_get_platform(args.toolchain)
     if platform:
         opts.append(platform)
-    if variant == 'debug':
+    if args.variant == 'debug':
         opts.append('--debug')
     else:
         opts.append('--release')
@@ -1251,88 +1277,88 @@ elif name == 'openssl':
     ]
 
     # build
-    download(url, archive, log_file, vendor_dir)
+    download(url, archive, log_file, args.dist_dir)
     unpack(archive, dir)
     os.chdir('src/' + dir)
     # see https://github.com/openssl/openssl/blob/master/INSTALL.md#configuration-options
     # for more options:
     execute(
-        format_env(unparsed_env) +
-        ' ' + format_flags(work_dir, toolchain, env, dep_list, variant=variant) +
+        format_env(args.vars) +
+        ' ' + format_flags(args.work_dir, args.toolchain, env, args.deps, variant=args.variant) +
         ' ./Configure ' +
         ' '.join(opts),
         log_file)
     execute_make(log_file)
-    install_tree('include', inc_dir, root_dir)
-    install_files('libssl.a', lib_dir, root_dir)
-    install_files('libcrypto.a', lib_dir, root_dir)
+    install_tree('include', inc_dir, args.root_dir)
+    install_files('libssl.a', lib_dir, args.root_dir)
+    install_files('libcrypto.a', lib_dir, args.root_dir)
 elif name == 'gengetopt':
     download('ftp://ftp.gnu.org/gnu/gengetopt/gengetopt-%s.tar.gz' % ver,
              'gengetopt-%s.tar.gz' % ver,
              log_file,
-             vendor_dir)
+             args.dist_dir)
     unpack('gengetopt-%s.tar.gz' % ver,
             'gengetopt-%s' % ver)
     os.chdir('src/gengetopt-%s' % ver)
     execute('./configure', log_file, clear_env=True)
     execute_make(log_file, cpu_count=0) # -j is buggy for gengetopt
-    install_files('src/gengetopt', bin_dir, root_dir)
+    install_files('src/gengetopt', bin_dir, args.root_dir)
 elif name == 'ragel':
     download('https://www.colm.net/files/ragel/ragel-%s.tar.gz' % ver,
              'ragel-%s.tar.gz' % ver,
              log_file,
-             vendor_dir)
+             args.dist_dir)
     unpack('ragel-%s.tar.gz' % ver,
             'ragel-%s' % ver)
     os.chdir('src/ragel-%s' % ver)
     execute('./configure', log_file, clear_env=True)
     execute_make(log_file)
-    install_files('ragel/ragel', bin_dir, root_dir)
+    install_files('ragel/ragel', bin_dir, args.root_dir)
 elif name == 'cpputest':
     download(
         'https://github.com/cpputest/cpputest/releases/download/v%s/cpputest-%s.tar.gz' % (
             ver, ver),
         'cpputest-%s.tar.gz' % ver,
         log_file,
-        vendor_dir)
+        args.dist_dir)
     unpack('cpputest-%s.tar.gz' % ver,
             'cpputest-%s' % ver)
     os.chdir('src/cpputest-%s' % ver)
     execute('./configure --host=%s %s %s %s' % (
-            toolchain,
-            format_env(unparsed_env),
+            args.toolchain,
+            format_env(args.vars),
             # disable warnings, since CppUTest uses -Werror and may fail to
             # build on old GCC versions
-            format_flags(work_dir, toolchain, env, [], cflags='-w'),
+            format_flags(args.work_dir, args.toolchain, env, [], cflags='-w'),
             ' '.join([
                 '--enable-static',
                 # disable memory leak detection which is too hard to use properly
                 '--disable-memory-leak-detection',
             ])), log_file)
     execute_make(log_file)
-    install_tree('include', inc_dir, root_dir)
-    install_files('lib/libCppUTest.a', lib_dir, root_dir)
+    install_tree('include', inc_dir, args.root_dir)
+    install_files('lib/libCppUTest.a', lib_dir, args.root_dir)
 elif name == 'google-benchmark':
     download(
         'https://github.com/google/benchmark/archive/v%s.tar.gz' % ver,
         'benchmark_v%s.tar.gz' % ver,
         log_file,
-        vendor_dir)
+        args.dist_dir)
     unpack('benchmark_v%s.tar.gz' % ver,
             'benchmark-%s' % ver)
     os.chdir('src/benchmark-%s' % ver)
     mkpath('build')
     os.chdir('build')
-    execute_cmake('..', variant, toolchain, env, log_file, args=[
+    execute_cmake('..', args.variant, args.toolchain, env, log_file, args=[
         '-DBENCHMARK_ENABLE_GTEST_TESTS=OFF',
         '-DCMAKE_CXX_FLAGS=-w',
         ])
     execute_make(log_file)
     os.chdir('..')
-    install_tree('include', inc_dir, root_dir, include=['*.h'])
-    install_files('build/src/libbenchmark.a', lib_dir, root_dir)
+    install_tree('include', inc_dir, args.root_dir, include=['*.h'])
+    install_files('build/src/libbenchmark.a', lib_dir, args.root_dir)
 # end of deps
 else:
-    die("unknown 3rdparty '{}'", fullname)
+    die("unknown 3rdparty '{}'", args.package)
 
 touch(commit_file)

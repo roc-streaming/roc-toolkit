@@ -34,31 +34,49 @@ def _build_thirdparty(env, build_root, toolchain, variant, versions, name, deps,
     project_root = env.Dir('#').srcnode().abspath
     build_root = env.Dir(build_root).abspath
     thirdparty_dir = os.path.join(build_root, versioned_name)
+    distfiles_dir = os.path.join('3rdparty', '_distfiles')
 
     if not os.path.exists(os.path.join(thirdparty_dir, 'commit')):
         saved_cwd = os.getcwd()
         os.chdir(project_root)
 
+        cmd = [
+            '{python_cmd}', 'scripts/scons_helpers/build-3rdparty.py',
+            '--root-dir',  '{root_dir}',
+            '--work-dir',  '{work_dir}',
+            '--dist-dir',  '{dist_dir}',
+            '--toolchain', '{toolchain}',
+            '--variant',   '{variant}',
+            '--package',   '{package}',
+            ]
+
+        if versioned_deps:
+            cmd += [' --deps', '{deps}']
+
+        if env_vars:
+            cmd += [' --vars', '{vars}']
+
         if env.Execute(
-            '{python_cmd} scripts/scons_helpers/build-3rdparty.py '
-            '{work_dir} 3rdparty/_distfiles {toolchain} {variant} {pkg} {deps} {env}'.format(
+            ' '.join(cmd).format(
                 python_cmd=quote(env.GetPythonExecutable()),
+                root_dir=quote(os.path.abspath(project_root)),
                 work_dir=quote(os.path.relpath(build_root, project_root)),
+                dist_dir=quote(os.path.relpath(distfiles_dir, project_root)),
                 toolchain=quote(toolchain),
                 variant=quote(variant),
-                pkg=quote(versioned_name),
-                deps=quote(':'.join(versioned_deps)),
-                env=' '.join(env_vars)),
+                package=quote(versioned_name),
+                deps=' '.join(versioned_deps),
+                vars=' '.join(env_vars)),
             cmdstr = env.PrettyCommand(
                 'BUILD', os.path.relpath(thirdparty_dir, project_root), 'yellow')):
 
-            logfile = os.path.join(thirdparty_dir, 'build.log')
+            log_file = os.path.join(thirdparty_dir, 'build.log')
             message = "can't make '{}', see '{}' for details".format(
-                versioned_name, os.path.relpath(logfile, project_root))
+                versioned_name, os.path.relpath(log_file, project_root))
 
             if os.environ.get('CI', '') in ['1', 'true']:
                 try:
-                    with open(logfile) as fp:
+                    with open(log_file) as fp:
                         message += "\n\n" + fp.read()
                 except:
                     pass
