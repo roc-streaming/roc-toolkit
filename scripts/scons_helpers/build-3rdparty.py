@@ -229,7 +229,9 @@ def execute_make(log_file, cpu_count=None):
 
     execute(' '.join(cmd), log_file)
 
-def execute_cmake(srcdir, variant, toolchain, android_platform, env, log_file, args=None):
+def execute_cmake(
+    srcdir, variant, toolchain, macos_platform, android_platform,
+    env, log_file, args=None):
     def _getvar(var, default):
         if var in env:
             return env[var]
@@ -247,6 +249,10 @@ def execute_cmake(srcdir, variant, toolchain, android_platform, env, log_file, a
     # cross-compiling for yocto linux
     if 'OE_CMAKE_TOOLCHAIN_FILE' in os.environ:
         need_tools = False
+
+    # building for macOS
+    if macos_platform:
+        args += ['-DCMAKE_OSX_DEPLOYMENT_TARGET=' + macos_platform]
 
     # cross-compiling for android
     if 'android' in toolchain:
@@ -845,6 +851,9 @@ parser.add_argument('--deps', metavar='deps', type=str, nargs='*',
 parser.add_argument('--vars', metavar='vars', type=str, nargs='*',
                     help='environment variables (e.g. CC=gcc CXX=g++ ...)')
 
+parser.add_argument('--platform-macos', metavar='platform_macos', type=str,
+                    help='macos platform version to build against')
+
 parser.add_argument('--platform-android', metavar='platform_android', type=str,
                     help='android platform version to build against')
 
@@ -896,7 +905,8 @@ if name == 'libuv':
         mkpath('build')
         os.chdir('build')
         execute_cmake(
-            '..', args.variant, args.toolchain, args.platform_android, env, log_file,
+            '..', args.variant, args.toolchain, args.platform_macos, args.platform_android,
+            env, log_file,
             args=[
                 '-DLIBUV_BUILD_TESTS=OFF',
                 ])
@@ -981,7 +991,8 @@ elif name == 'openfec':
     mkpath('build')
     os.chdir('build')
     execute_cmake(
-        '..', args.variant, args.toolchain, args.platform_android, env, log_file,
+        '..', args.variant, args.toolchain, args.platform_macos, args.platform_android,
+        env, log_file,
         args=[
             '-DBUILD_STATIC_LIBS=ON',
             '-DDEBUG:STRING=%s' % ('ON' if args.variant == 'debug' else 'OFF'),
@@ -1359,7 +1370,8 @@ elif name == 'google-benchmark':
     mkpath('build')
     os.chdir('build')
     execute_cmake(
-        '..', args.variant, args.toolchain, args.platform_android, env, log_file,
+        '..', args.variant, args.toolchain, args.platform_macos, args.platform_android,
+        env, log_file,
         args=[
             '-DBENCHMARK_ENABLE_GTEST_TESTS=OFF',
             '-DCMAKE_CXX_FLAGS=-w',

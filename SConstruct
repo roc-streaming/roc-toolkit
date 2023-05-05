@@ -664,6 +664,7 @@ env['ROC_PLATFORM'] = meta.platform
 
 # minimum required version for various platforms
 env['ROC_PLATFORM_POSIX']   = '200809'
+env['ROC_PLATFORM_MACOS']   = '10.12'
 env['ROC_PLATFORM_ANDROID'] = '21'
 
 env['ROC_TARGETS'] = []
@@ -786,6 +787,12 @@ env.Append(CPPDEFINES=[
 
 if 'target_posix' in env['ROC_TARGETS'] and meta.platform not in ['darwin', 'unix']:
     env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', env['ROC_PLATFORM_POSIX'])])
+
+if meta.platform in ['darwin']:
+    for var in ['CXXFLAGS', 'CFLAGS', 'LINKFLAGS']:
+        env.Append(**{var: [
+            '-mmacosx-version-min=' + env['ROC_PLATFORM_MACOS'],
+        ]})
 
 if meta.platform in ['linux', 'unix']:
     env.AddManualDependency(libs=['rt', 'dl', 'm'])
