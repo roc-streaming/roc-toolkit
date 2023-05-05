@@ -70,6 +70,7 @@ Options
 --with-openfec-includes=WITH_OPENFEC_INCLUDES  path to the directory with OpenFEC headers (it should contain lib_common and lib_stable subdirectories)
 --with-includes=WITH_INCLUDES                  additional include search path, may be used multiple times
 --with-libraries=WITH_LIBRARIES                additional library search path, may be used multiple times
+--macos-version=MACOS_VERSION                  macOS deployment target to build against, e.g. 10.12 (default is current OS version)
 --build-3rdparty=BUILD_3RDPARTY                download and build specified 3rdparty libraries, pass a comma-separated list of library names and optional versions, e.g. 'libuv:1.4.2,openfec'
 --override-targets=OVERRIDE_TARGETS            override targets to use, pass a comma-separated list of target names, e.g. 'pc,posix,posix_ext,gnu,libuv,openfec,...'
 

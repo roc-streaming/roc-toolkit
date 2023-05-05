@@ -1,5 +1,6 @@
-import re
 import os.path
+import platform
+import re
 
 def _fix_target(s):
     # on redhat and fedora, "system" and "os" parts are different
@@ -137,6 +138,21 @@ def ParseConfigGuess(env, cmd):
     text = _fix_target(text)
     return text
 
+def ParseMacosVersion(env):
+    if platform.system() != 'Darwin':
+        return None
+
+    text = env.GetCommandOutput('sw_vers')
+    if not text:
+        return None
+
+    for line in text.splitlines():
+        if 'ProductVersion' in line:
+            try:
+                return '.'.join(line.split()[-1].split('.')[:2])
+            except:
+                pass
+
 def ParseList(env, s, all):
     if not s:
         return []
@@ -160,4 +176,5 @@ def init(env):
     env.AddMethod(ParseCompilerDirectory, 'ParseCompilerDirectory')
     env.AddMethod(ParseLinkDirs, 'ParseLinkDirs')
     env.AddMethod(ParseConfigGuess, 'ParseConfigGuess')
+    env.AddMethod(ParseMacosVersion, 'ParseMacosVersion')
     env.AddMethod(ParseList, 'ParseList')

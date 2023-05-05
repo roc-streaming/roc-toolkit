@@ -230,6 +230,13 @@ AddOption('--with-libraries',
           type='string',
           help=("additional library search path, may be used multiple times"))
 
+AddOption('--macos-version',
+          dest='macos_version',
+          action='store',
+          type='string',
+          help=("macOS deployment target to build against, e.g. 10.12"
+              " (default is current OS version)"))
+
 AddOption('--build-3rdparty',
           dest='build_3rdparty',
           action='store',
@@ -664,8 +671,12 @@ env['ROC_PLATFORM'] = meta.platform
 
 # minimum required version for various platforms
 env['ROC_PLATFORM_POSIX']   = '200809'
-env['ROC_PLATFORM_MACOS']   = '10.12'
 env['ROC_PLATFORM_ANDROID'] = '21'
+
+if GetOption('macos_version'):
+    env['ROC_PLATFORM_MACOS'] = GetOption('macos_version')
+else:
+    env['ROC_PLATFORM_MACOS'] = env.ParseMacosVersion()
 
 env['ROC_TARGETS'] = []
 
@@ -788,7 +799,7 @@ env.Append(CPPDEFINES=[
 if 'target_posix' in env['ROC_TARGETS'] and meta.platform not in ['darwin', 'unix']:
     env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', env['ROC_PLATFORM_POSIX'])])
 
-if meta.platform in ['darwin']:
+if meta.platform in ['darwin'] and env['ROC_PLATFORM_MACOS']:
     for var in ['CXXFLAGS', 'CFLAGS', 'LINKFLAGS']:
         env.Append(**{var: [
             '-mmacosx-version-min=' + env['ROC_PLATFORM_MACOS'],
