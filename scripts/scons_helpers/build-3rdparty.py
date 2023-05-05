@@ -206,14 +206,16 @@ def execute_cmake(ctx, src_dir, args=None):
 
     # building for macOS
     if ctx.macos_platform:
-        args += ['-DCMAKE_OSX_DEPLOYMENT_TARGET=' + ctx.macos_platform]
+        args += [
+            '-DCMAKE_OSX_DEPLOYMENT_TARGET=' + ctx.macos_platform,
+        ]
 
-    # cross-compiling for android
-    if 'android' in ctx.toolchain:
-        args += ['-DCMAKE_SYSTEM_NAME=Android']
-
-        if ctx.android_platform:
-            args += ['-DANDROID_PLATFORM=android-' + ctx.android_platform]
+    # cross-compiling for Android
+    if ctx.android_platform:
+        args += [
+            '-DCMAKE_SYSTEM_NAME=Android',
+            '-DANDROID_PLATFORM=android-' + ctx.android_platform,
+        ]
 
         api = detect_android_api(compiler)
         abi = detect_android_abi(ctx.toolchain)
@@ -244,7 +246,7 @@ def execute_cmake(ctx, src_dir, args=None):
         ]
 
     if need_tools:
-        if not 'android' in ctx.toolchain:
+        if not ctx.android_platform:
             args += [
                 '-DCMAKE_C_COMPILER=' + quote(find_tool(compiler)),
             ]
@@ -385,7 +387,6 @@ def format_flags(ctx, cflags='', ldflags='', pthread=False):
     cflags = ([cflags] if cflags else []) + ['-I' + path for path in inc_dirs]
     ldflags = ['-L' + path for path in lib_dirs] + ([ldflags] if ldflags else [])
 
-    is_android = 'android' in ctx.toolchain
     is_gnu = detect_compiler_family(ctx.env, ctx.toolchain, 'gcc')
     is_clang = detect_compiler_family(ctx.env, ctx.toolchain, 'clang')
 
@@ -397,7 +398,7 @@ def format_flags(ctx, cflags='', ldflags='', pthread=False):
     elif ctx.variant == 'release':
         cflags += ['-O2']
 
-    if pthread and not is_android:
+    if pthread and not ctx.android_platform:
         if is_gnu or is_clang:
             cflags += ['-pthread']
         if is_gnu:
@@ -407,6 +408,10 @@ def format_flags(ctx, cflags='', ldflags='', pthread=False):
 
     if is_gnu:
         ldflags += ['-Wl,-rpath-link=' + path for path in rpath_dirs]
+
+    if ctx.macos_platform:
+        cflags += ['-mmacosx-version-min=' + ctx.macos_platform]
+        ldflags += ['-mmacosx-version-min=' + ctx.macos_platform]
 
     return ' '.join([
         'CXXFLAGS=' + quote(' '.join(cflags)),
