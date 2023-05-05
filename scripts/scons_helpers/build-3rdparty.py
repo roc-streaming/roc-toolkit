@@ -14,6 +14,7 @@ import ssl
 import subprocess
 import sys
 import tarfile
+import textwrap
 
 try:
     from shlex import quote
@@ -566,10 +567,8 @@ def format_flags(
     ])
 
 # https://mesonbuild.com/Reference-tables.html
-def generate_meson_crossfile(env, toolchain, pc_dir, cross_file):
-    msg('[generate] {}', cross_file)
-
-    def meson_string(s):
+def generate_meson_crossfile(env, deps, toolchain, pc_dir, cross_file):
+    def _meson_string(s):
         m = {
             "\\": "\\\\",
             "'":  "\\'",
@@ -585,8 +584,23 @@ def generate_meson_crossfile(env, toolchain, pc_dir, cross_file):
             s = s.replace(k, v)
         return "'" + s + "'"
 
-    def meson_flags(flags):
-        return '[{}]'.format(', '.join(map(meson_string, flags)))
+    def _meson_flags(flags):
+        return '[{}]'.format(', '.join(map(_meson_string, flags)))
+
+    msg('[generate] {}', cross_file)
+
+    pkg_config = None
+    if 'PKG_CONFIG' in env:
+        pkg_config = env['PKG_CONFIG']
+    elif which('pkg-config'):
+        pkg_config = 'pkg-config'
+
+    cflags = []
+    ldflags = []
+
+    for dep in deps:
+        cflags.append('-I' + os.path.join(work_dir, dep, 'include'))
+        ldflags.append('-L' + os.path.join(work_dir, dep, 'lib'))
 
     if toolchain:
         system = 'linux'
@@ -631,66 +645,86 @@ def generate_meson_crossfile(env, toolchain, pc_dir, cross_file):
 
                 break
 
-    cflags = []
-    ldflags = []
-
-    for dep in deps:
-        cflags.append('-I' + os.path.join(work_dir, dep, 'include'))
-        ldflags.append('-L' + os.path.join(work_dir, dep, 'lib'))
-
-    pkg_config = None
-    if 'PKG_CONFIG' in env:
-        pkg_config = env['PKG_CONFIG']
-    elif which('pkg-config'):
-        pkg_config = 'pkg-config'
-
     with open(cross_file, 'w') as fp:
-        fp.write("[binaries]\n")
-        fp.write("c = %s\n" % meson_string(env['CC']))
-        fp.write("cpp = %s\n" % meson_string(env['CXX']))
-        fp.write("ar = %s\n" % meson_string(env['AR']))
+        fp.write(textwrap.dedent("""\
+                [binaries]
+                c = {cc}
+                cpp = {cxx}
+                ar = {ar}
+        """).format(
+            cc=_meson_string(env['CC']),
+            cxx=_meson_string(env['CXX']),
+            ar=_meson_string(env['AR'])))
+
         if pkg_config:
-            fp.write("pkgconfig = %s\n" % meson_string(pkg_config))
-        fp.write("\n")
+            fp.write(textwrap.dedent("""\
+                pkgconfig = {pkg_config}
+            """).format(
+                pkg_config=_meson_string(pkg_config)))
 
         if pc_dir:
-            fp.write("[built-in options]\n")
-            fp.write("pkg_config_path = %s\n" % meson_string(os.path.abspath(pc_dir)))
-            fp.write("\n")
+            fp.write(textwrap.dedent("""\
+
+                [built-in options]
+                pkg_config_path = {pc_dir}
+            """).format(
+                pc_dir=_meson_string(os.path.abspath(pc_dir))))
 
         if cflags or ldflags:
-            fp.write("[properties]\n")
-            fp.write("c_args = %s\n" % meson_flags(cflags))
-            fp.write("c_link_args = %s\n" % meson_flags(ldflags))
-            fp.write("cpp_args = %s\n" % meson_flags(cflags))
-            fp.write("cpp_link_args = %s\n" % meson_flags(ldflags))
-            fp.write("\n")
+            fp.write(textwrap.dedent("""\
+
+                [properties]
+                c_args = {cflags}
+                c_link_args = {ldflags}
+                cpp_args = {cflags}
+                cpp_link_args = {ldflags}
+            """).format(
+                cflags=_meson_flags(cflags),
+                ldflags=_meson_flags(ldflags)))
 
         if toolchain:
-            fp.write("[host_machine]\n")
-            fp.write("system = %s\n" % meson_string(system))
-            fp.write("cpu_family = %s\n" % meson_string(cpu_family))
-            fp.write("cpu = %s\n" % meson_string(cpu))
-            fp.write("endian = %s\n" % meson_string(endian))
-            fp.write("\n")
+            fp.write(textwrap.dedent("""\
+
+                [host_machine]
+                system = {system}
+                cpu_family = {cpu_family}
+                cpu = {cpu}
+                endian = {endian}
+            """).format(
+                system=_meson_string(system),
+                cpu_family=_meson_string(cpu_family),
+                cpu=_meson_string(cpu),
+                endian=_meson_string(endian)))
 
 # Generate temporary .pc file for pkg-config.
 def generate_pc_file(dep, pc_dir):
     name, ver = parse_dep(dep)
     pc_file = os.path.join(pc_dir, name) + '.pc'
+
     with open(pc_file, 'w') as fp:
         msg('[generate] {}', pc_file)
-        fp.write('Name: %s\n' % name)
-        fp.write('Description: %s\n' % name)
-        fp.write('Version: %s\n' % ver)
-        fp.write('Cflags: -I%s\n' % os.path.join(work_dir, dep, 'include'))
-        fp.write('Libs: -L%s' % os.path.join(work_dir, dep, 'lib'))
+
+        cflags = '-I' + os.path.join(work_dir, dep, 'include')
+        ldflags = '-L' + os.path.join(work_dir, dep, 'lib')
+
         for lib in glob.glob(os.path.join(work_dir, dep, 'lib', 'lib*')):
             lib = os.path.basename(lib)
             lib = re.sub('^lib', '', lib)
             lib = re.sub('\.[a-z]+$', '', lib)
-            fp.write(' -l%s' % lib)
-        fp.write('\n')
+
+            ldflags += ' -l' + lib
+
+        fp.write(textwrap.dedent("""\
+            Name: {name}
+            Description: {name}
+            Version: {ver}
+            Cflags: {cflags}
+            Libs: {ldflags}
+        """).format(
+            name=name,
+            ver=ver,
+            cflags=cflags,
+            ldflags=ldflags))
 
 # Guess platform argument for OpenSSL's Configure script basing on toolchain string.
 # (see `./Configure LIST` for a list of all platforms and their format)
@@ -1197,7 +1231,7 @@ elif name == 'pulseaudio':
         mkpath('pc')
         for dep in args.deps:
             generate_pc_file(dep, 'pc')
-        generate_meson_crossfile(env, args.toolchain, 'pc', 'crossfile.txt')
+        generate_meson_crossfile(env, args.deps, args.toolchain, 'pc', 'crossfile.txt')
         execute('meson .. %s' % (
             ' '.join([
                 '--cross-file=crossfile.txt',
