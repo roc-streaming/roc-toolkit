@@ -42,7 +42,7 @@ Development dependencies
 ========================
 
 * `CppUTest <http://cpputest.github.io>`_ >= 4.0 (optional, install if you want to build tests)
-* `Google Benchmark <https://github.com/google/benchmark>`_ >= 1.6.0 (optional, install if you want to build benchmarks)
+* `Google Benchmark <https://github.com/google/benchmark>`_ >= 1.5.5 (optional, install if you want to build benchmarks)
 * `clang-format <https://clang.llvm.org/docs/ClangFormat.html>`_ >= 10 (optional, install if you want to format code)
 * `doxygen <https://www.doxygen.nl/>`_ >= 1.6, `graphviz <https://graphviz.gitlab.io/>`_ (optional, install if you want to build doxygen or sphinx documentation)
 * `sphinx <https://www.sphinx-doc.org/>`_, `breathe <https://github.com/michaeljones/breathe>`_ (optional, install if you want to build sphinx documentation)
