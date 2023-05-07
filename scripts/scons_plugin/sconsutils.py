@@ -51,7 +51,10 @@ def MergeFrom(dst_env, src_env, exclude=[]):
                 for item in src_val:
                     if item in dst_env[key]:
                         dst_env[key].remove(item)
-            dst_env.AppendUnique(**{key: src_val})
+            if 'FLAGS' in key:
+                dst_env.Append(**{key: src_val})
+            else:
+                dst_env.AppendUnique(**{key: src_val})
         else:
             if key not in dst_env.Dictionary():
                 dst_env[key] = src_val

@@ -104,6 +104,19 @@ or:
 
 The full list of the available options and variables is documented in :doc:`/building/scons_options`.
 
+macOS options
+=============
+
+There are a few macOS-specific build options:
+
+* ``--macos-platform`` - specify macOS target platform version, a.k.a. macOS deployment target, for example ``10.12``.
+
+  Resulting binaries will be compatible with all OS versions starting from the specified one, even if you're compiling on a different version. This requires all Roc dependencies to be built with the the same deployment target too. If you're using ``--build-3rdparty`` to build dependencies, deployment target will be automatically propagated to them.
+
+* ``--macos-arch`` - specify macOS target architecture(s), for example ``x86_64`` or ``arm64``.
+
+  You can specify multiple architectures (comma-separated) to produce universal binaries (a.k.a. fat binaries) that contain code for every architecture and can be executed on each of them. Use special architecture ``all`` to enable all supported architectures. 
+
 Building dependencies
 =====================
 
@@ -160,7 +173,7 @@ Run a single test:
 .. code::
 
    $ ./bin/x86_64-pc-linux-gnu/roc-test-pipeline -v -g receiver_source -n one_session_long_run
-   
+
 Enable trace logging:
 
 .. code::

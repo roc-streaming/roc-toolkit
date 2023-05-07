@@ -56,11 +56,14 @@ def _build_thirdparty(env, build_root, toolchain, variant, versions, name, deps,
         if env_vars:
             cmd += [' --vars', '{vars}']
 
-        if env['ROC_PLATFORM'] == 'darwin' and env['ROC_PLATFORM_MACOS']:
-            cmd += ['--platform-macos', '{platform_macos}']
+        if env['ROC_PLATFORM'] == 'android' and env['ROC_ANDROID_PLATFORM']:
+            cmd += ['--android-platform', '{android_platform}']
 
-        if env['ROC_PLATFORM'] == 'android' and env['ROC_PLATFORM_ANDROID']:
-            cmd += ['--platform-android', '{platform_android}']
+        if env['ROC_PLATFORM'] == 'darwin' and env['ROC_MACOS_PLATFORM']:
+            cmd += ['--macos-platform', '{macos_platform}']
+
+        if env['ROC_PLATFORM'] == 'darwin' and env['ROC_MACOS_ARCH']:
+            cmd += ['--macos-arch', '{macos_arch}']
 
         if env.Execute(
             ' '.join(cmd).format(
@@ -73,8 +76,9 @@ def _build_thirdparty(env, build_root, toolchain, variant, versions, name, deps,
                 package=quote(versioned_name),
                 deps=' '.join(versioned_deps),
                 vars=' '.join(env_vars),
-                platform_macos=quote(env['ROC_PLATFORM_MACOS']),
-                platform_android=quote(env['ROC_PLATFORM_ANDROID'])),
+                android_platform=quote(env['ROC_ANDROID_PLATFORM']),
+                macos_platform=quote(env['ROC_MACOS_PLATFORM']),
+                macos_arch=' '.join(env['ROC_MACOS_ARCH'])),
             cmdstr = env.PrettyCommand(
                 'BUILD', os.path.relpath(thirdparty_dir, project_root), 'yellow')):
 

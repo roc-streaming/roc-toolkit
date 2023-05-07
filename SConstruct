@@ -26,6 +26,13 @@ supported_sanitizers = [
     'address',
 ]
 
+# supported macOS architectures
+supported_macos_archs = [
+    'all',
+    'x86_64',
+    'arm64',
+]
+
 # default installation prefix
 if platform.system() == 'Darwin':
     default_prefix = '/usr/local'
@@ -44,70 +51,74 @@ AddOption('--bindir',
           action='store',
           type='string',
           default=os.path.join(GetOption('prefix'), 'bin'),
-          help=("path to the binary installation directory (where to "
-                "install Roc command-line tools), '<prefix>/bin' by default"))
+          help=("path to the binary installation directory"
+                " (where to install Roc command-line tools),"
+                " '<prefix>/bin' by default"))
 
 AddOption('--libdir',
           dest='libdir',
           action='store',
           type='string',
-          help=("path to the library installation directory (where to "
-                "install Roc library), auto-detect by default"))
+          help=("path to the library installation directory"
+                " (where to install Roc library),"
+                " auto-detected by default"))
 
 AddOption('--incdir',
           dest='incdir',
           action='store',
           type='string',
           default=os.path.join(GetOption('prefix'), 'include'),
-          help=("path to the headers installation directory (where to "
-                "install Roc headers), '<prefix>/include' by default"))
+          help=("path to the headers installation directory"
+                " (where to install Roc headers),"
+                " '<prefix>/include' by default"))
 
 AddOption('--mandir',
           dest='mandir',
           action='store',
           type='string',
           default=os.path.join(GetOption('prefix'), 'share/man/man1'),
-          help=("path to the manuals installation directory (where to "
-                "install Roc manual pages), '<prefix>/share/man/man1' by default"))
+          help=("path to the manuals installation directory"
+                " (where to install Roc manual pages),"
+                " '<prefix>/share/man/man1' by default"))
 
 AddOption('--build',
           dest='build',
           action='store',
           type='string',
-          help=("system name where Roc is being compiled, "
-                "e.g. 'x86_64-pc-linux-gnu', "
-                "auto-detect if empty"))
+          help=("system name where Roc is being compiled,"
+                " e.g. 'x86_64-pc-linux-gnu',"
+                " auto-detected by default"))
 
 AddOption('--host',
           dest='host',
           action='store',
           type='string',
-          help=("system name where Roc will run, "
-                "e.g. 'arm-linux-gnueabihf', "
-                "auto-detect if empty"))
+          help=("system name where Roc will run,"
+                " e.g. 'arm-linux-gnueabihf',"
+                " auto-detected by default"))
 
 AddOption('--platform',
           dest='platform',
           action='store',
           choices=([''] + supported_platforms),
-          help=("platform name where Roc will run, "
-                "supported values: empty (detect from host), {}".format(
+          help=("platform name where Roc will run,"
+                " supported values: empty (detect from host), {}".format(
                 ', '.join(["'{}'".format(s) for s in supported_platforms]))))
 
 AddOption('--compiler',
           dest='compiler',
           action='store',
           type='string',
-          help=("compiler name and optional version, e.g. 'gcc-4.9', "
-                "supported names: empty (detect what available), {}".format(
+          help=("compiler name and optional version, e.g. 'gcc-4.9',"
+                " supported names: empty (detect what available), {}".format(
                 ', '.join(["'{}'".format(s) for s in supported_compilers]))))
 
 AddOption('--sanitizers',
           dest='sanitizers',
           action='store',
           type='string',
-          help=("list of gcc/clang sanitizers, "
-                "supported names: empty (no sanitizers), 'all', " +
+          help=("list of gcc/clang sanitizers,"
+                " supported names: empty (no sanitizers), 'all', " +
                 ', '.join(["'{}'".format(s) for s in supported_sanitizers])))
 
 AddOption('--enable-debug',
@@ -215,8 +226,8 @@ AddOption('--with-openfec-includes',
           dest='with_openfec_includes',
           action='store',
           type='string',
-          help=("path to the directory with OpenFEC headers (it should contain "
-                "lib_common and lib_stable subdirectories)"))
+          help=("path to the directory with OpenFEC headers (it should contain"
+                " lib_common and lib_stable subdirectories)"))
 
 AddOption('--with-includes',
           dest='with_includes',
@@ -230,28 +241,38 @@ AddOption('--with-libraries',
           type='string',
           help=("additional library search path, may be used multiple times"))
 
-AddOption('--macos-version',
-          dest='macos_version',
+AddOption('--macos-platform',
+          dest='macos_platform',
           action='store',
           type='string',
-          help=("macOS deployment target to build against, e.g. 10.12"
-              " (default is current OS version)"))
+          help=("macOS target platform, e.g. 10.12,"
+                " (default is current OS version)"))
+
+AddOption('--macos-arch',
+          dest='macos_arch',
+          action='store',
+          type='string',
+          help=("macOS target architecture(s),"
+                " comma-separated list, supported values: {}".format(
+                    ', '.join(["'{}'".format(s) for s in supported_macos_archs])) +
+                " (default is current OS arch, pass multiple values"
+                " or 'all' for univeral binaries)"))
 
 AddOption('--build-3rdparty',
           dest='build_3rdparty',
           action='store',
           type='string',
-          help=("download and build specified 3rdparty libraries, "
-                "pass a comma-separated list of library names and optional versions, "
-                "e.g. 'libuv:1.4.2,openfec'"))
+          help=("download and build specified 3rdparty libraries,"
+                " comma-separated list of library names and optional"
+                " versions, e.g. 'libuv:1.4.2,openfec'"))
 
 AddOption('--override-targets',
           dest='override_targets',
           action='store',
           type='string',
-          help=("override targets to use, "
-                "pass a comma-separated list of target names, "
-                "e.g. 'pc,posix,posix_ext,gnu,libuv,openfec,...'"))
+          help=("override targets to use,"
+                " pass a comma-separated list of target names,"
+                " e.g. 'pc,posix,posix_ext,gnu,libuv,openfec,...'"))
 
 # configure even in dry run mode
 SCons.SConf.dryrun = 0
@@ -508,6 +529,9 @@ if not meta.host:
 if not meta.toolchain and meta.build != meta.host:
     meta.toolchain = meta.host
 
+if not meta.toolchain and meta.build == meta.host:
+    meta.build = meta.host = env.ParseMacosHost(meta.host, GetOption('macos_arch'))
+
 if not meta.platform:
     if 'android' in meta.host:
         meta.platform = 'android'
@@ -670,13 +694,17 @@ env['ROC_MODULES'] = [
 env['ROC_PLATFORM'] = meta.platform
 
 # minimum required version for various platforms
-env['ROC_PLATFORM_POSIX']   = '200809'
-env['ROC_PLATFORM_ANDROID'] = '21'
+env['ROC_POSIX_PLATFORM']   = '200809'
+env['ROC_ANDROID_PLATFORM'] = '21'
 
-if GetOption('macos_version'):
-    env['ROC_PLATFORM_MACOS'] = GetOption('macos_version')
+if GetOption('macos_platform'):
+    env['ROC_MACOS_PLATFORM'] = GetOption('macos_platform')
 else:
-    env['ROC_PLATFORM_MACOS'] = env.ParseMacosVersion()
+    env['ROC_MACOS_PLATFORM'] = env.ParseMacosPlatform(meta.host)
+
+env['ROC_MACOS_ARCH'] = env.ParseList(GetOption('macos_arch'), supported_macos_archs)
+if not env['ROC_MACOS_ARCH']:
+    env['ROC_MACOS_ARCH'] = env.ParseMacosArch(meta.host)
 
 env['ROC_TARGETS'] = []
 
@@ -797,13 +825,19 @@ env.Append(CPPDEFINES=[
 ])
 
 if 'target_posix' in env['ROC_TARGETS'] and meta.platform not in ['darwin', 'unix']:
-    env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', env['ROC_PLATFORM_POSIX'])])
+    env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', env['ROC_POSIX_PLATFORM'])])
 
-if meta.platform in ['darwin'] and env['ROC_PLATFORM_MACOS']:
-    for var in ['CXXFLAGS', 'CFLAGS', 'LINKFLAGS']:
-        env.Append(**{var: [
-            '-mmacosx-version-min=' + env['ROC_PLATFORM_MACOS'],
-        ]})
+if meta.platform in ['darwin']:
+    if env['ROC_MACOS_PLATFORM']:
+        for var in ['CXXFLAGS', 'CFLAGS', 'LINKFLAGS']:
+            env.Append(**{var: [
+                '-mmacosx-version-min=' + env['ROC_MACOS_PLATFORM'],
+            ]})
+    for arch in env['ROC_MACOS_ARCH']:
+        for var in ['CXXFLAGS', 'CFLAGS', 'LINKFLAGS']:
+            env.Append(**{var: [
+                '-arch', arch,
+            ]})
 
 if meta.platform in ['linux', 'unix']:
     env.AddManualDependency(libs=['rt', 'dl', 'm'])

@@ -40,11 +40,11 @@ Options
 
 --prefix=PREFIX                                installation prefix, '/usr' by default
 --bindir=BINDIR                                path to the binary installation directory (where to install Roc command-line tools), '<prefix>/bin' by default
---libdir=LIBDIR                                path to the library installation directory (where to install Roc library), auto-detect if empty
+--libdir=LIBDIR                                path to the library installation directory (where to install Roc library), auto-detected by default
 --incdir=INCDIR                                path to the headers installation directory (where to install Roc headers), '<prefix>/include' by default
 --mandir=MANDIR                                path to the manuals installation directory (where to install Roc manual pages), '<prefix>/share/man/man1' by default
---build=BUILD                                  system name where Roc is being compiled, e.g. 'x86_64-pc-linux-gnu', auto-detect if empty
---host=HOST                                    system name where Roc will run, e.g. 'arm-linux-gnueabihf', auto-detect if empty
+--build=BUILD                                  system name where Roc is being compiled, e.g. 'x86_64-pc-linux-gnu', auto-detected by default
+--host=HOST                                    system name where Roc will run, e.g. 'arm-linux-gnueabihf', auto-detected by default
 --platform=PLATFORM                            platform name where Roc will run, supported values: empty (detect from host), 'linux', 'unix', 'darwin', 'android'
 --compiler=COMPILER                            compiler name and optional version, e.g. 'gcc-4.9', supported names: empty (detect what available), 'clang', 'gcc', 'cc'
 --sanitizers=SANITIZERS                        list of gcc/clang sanitizers, supported names: empty (no sanitizers), 'all', 'undefined', 'address'
@@ -64,14 +64,16 @@ Options
 --disable-openfec                              disable OpenFEC support required for FEC codes
 --disable-speexdsp                             disable SpeexDSP support for resampling
 --disable-sox                                  disable SoX support in tools
+--disable-openssl                              disable OpenSSL support required for DTLS and SRTP
 --disable-libunwind                            disable libunwind support required for printing backtrace
 --disable-alsa                                 disable ALSA support in tools
 --disable-pulseaudio                           disable PulseAudio support in tools
 --with-openfec-includes=WITH_OPENFEC_INCLUDES  path to the directory with OpenFEC headers (it should contain lib_common and lib_stable subdirectories)
 --with-includes=WITH_INCLUDES                  additional include search path, may be used multiple times
 --with-libraries=WITH_LIBRARIES                additional library search path, may be used multiple times
---macos-version=MACOS_VERSION                  macOS deployment target to build against, e.g. 10.12 (default is current OS version)
---build-3rdparty=BUILD_3RDPARTY                download and build specified 3rdparty libraries, pass a comma-separated list of library names and optional versions, e.g. 'libuv:1.4.2,openfec'
+--macos-platform=MACOS_PLATFORM                macOS target platform, e.g. 10.12, (default is current OS version)
+--macos-arch=MACOS_ARCH                        macOS target architecture(s), comma-separated list, supported values: 'all', 'x86_64', 'arm64' (default is current OS arch, pass multiple values or 'all' for univeral binaries)
+--build-3rdparty=BUILD_3RDPARTY                download and build specified 3rdparty libraries, comma-separated list of library names and optional versions, e.g. 'libuv:1.4.2,openfec'
 --override-targets=OVERRIDE_TARGETS            override targets to use, pass a comma-separated list of target names, e.g. 'pc,posix,posix_ext,gnu,libuv,openfec,...'
 
 Variables

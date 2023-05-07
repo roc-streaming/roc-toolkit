@@ -138,9 +138,21 @@ def ParseConfigGuess(env, cmd):
     text = _fix_target(text)
     return text
 
-def ParseMacosVersion(env):
-    if platform.system() != 'Darwin':
-        return None
+def ParseMacosHost(env, host, arch):
+    if not 'darwin' in host:
+        return host
+
+    arch_list = arch.split(',') if arch else []
+
+    if 'all' in arch_list or len(set(arch_list)) > 1:
+        for a in ['arm64', 'x86_64']:
+            host = host.replace(a, 'universal')
+
+    return host
+
+def ParseMacosPlatform(env, host):
+    if not 'darwin' in host:
+        return host
 
     text = env.GetCommandOutput('sw_vers')
     if not text:
@@ -153,15 +165,31 @@ def ParseMacosVersion(env):
             except:
                 pass
 
+def ParseMacosArch(env, host):
+    if not 'darwin' in host:
+        return []
+
+    if 'universal' in host:
+        return ['arm64', 'x86_64']
+
+    for arch in ['arm64', 'x86_64']:
+        if arch in host:
+            return [arch]
+
+    if 'arm' in platform.processor():
+        return ['arm64']
+    else:
+        return ['x86_64']
+
 def ParseList(env, s, all):
     if not s:
         return []
     ret = []
     for name in s.split(','):
         if name == 'all':
-            for name in all:
-                if not name in ret:
-                    ret.append(name)
+            for other_name in all:
+                if not other_name in ret and other_name != 'all':
+                    ret.append(other_name)
         else:
             if not name in ret:
                 ret.append(name)
@@ -176,5 +204,7 @@ def init(env):
     env.AddMethod(ParseCompilerDirectory, 'ParseCompilerDirectory')
     env.AddMethod(ParseLinkDirs, 'ParseLinkDirs')
     env.AddMethod(ParseConfigGuess, 'ParseConfigGuess')
-    env.AddMethod(ParseMacosVersion, 'ParseMacosVersion')
+    env.AddMethod(ParseMacosHost, 'ParseMacosHost')
+    env.AddMethod(ParseMacosPlatform, 'ParseMacosPlatform')
+    env.AddMethod(ParseMacosArch, 'ParseMacosArch')
     env.AddMethod(ParseList, 'ParseList')

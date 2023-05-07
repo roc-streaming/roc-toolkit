@@ -41,7 +41,7 @@ Context = type(
             'root_dir work_dir dist_dir log_file commit_file'
             ' pkg_dir pkg_src_dir pkg_bin_dir pkg_lib_dir pkg_inc_dir pkg_rpath_dir'
             ' pkg pkg_name pkg_ver pkg_deps'
-            ' toolchain variant macos_platform android_platform'
+            ' toolchain variant android_platform macos_platform macos_arch'
             ' env unparsed_env').split()
     })
 
@@ -198,8 +198,13 @@ def execute_cmake(ctx, src_dir, args=None):
     # building for macOS
     if ctx.macos_platform:
         args += [
-            '-DCMAKE_OSX_DEPLOYMENT_TARGET=' + ctx.macos_platform,
+            '-DCMAKE_OSX_DEPLOYMENT_TARGET=' + quote(ctx.macos_platform),
         ]
+
+        if ctx.macos_arch:
+            args += [
+                '-DCMAKE_OSX_ARCHITECTURES=' + quote(';'.join(ctx.macos_arch)),
+            ]
 
     # cross-compiling for Android
     if ctx.android_platform:
@@ -414,6 +419,10 @@ def format_flags(ctx, cflags='', ldflags='', pthread=False):
     if ctx.macos_platform:
         cflags += ['-mmacosx-version-min=' + ctx.macos_platform]
         ldflags += ['-mmacosx-version-min=' + ctx.macos_platform]
+
+        for arch in ctx.macos_arch:
+            cflags += ['-arch', arch]
+            ldflags += ['-arch', arch]
 
     return ' '.join([
         'CXXFLAGS=' + quote(' '.join(cflags)),
@@ -960,11 +969,14 @@ parser.add_argument('--deps', metavar='deps', type=str, nargs='*',
 parser.add_argument('--vars', metavar='vars', type=str, nargs='*',
                     help='environment variables (e.g. CC=gcc CXX=g++ ...)')
 
-parser.add_argument('--platform-macos', metavar='platform_macos', type=str,
-                    help='macos platform version to build against')
+parser.add_argument('--android-platform', metavar='android_platform', type=str,
+                    help='android target platform')
 
-parser.add_argument('--platform-android', metavar='platform_android', type=str,
-                    help='android platform version to build against')
+parser.add_argument('--macos-platform', metavar='macos_platform', type=str,
+                    help='macos target platform')
+
+parser.add_argument('--macos-arch', metavar='macos_arch', type=str, nargs='*',
+                    help='macos target architecture(s)')
 
 args = parser.parse_args()
 
@@ -980,8 +992,9 @@ ctx.pkg_deps = args.deps or []
 
 ctx.toolchain = args.toolchain
 ctx.variant = args.variant
-ctx.macos_platform = args.platform_macos
-ctx.android_platform = args.platform_android
+ctx.android_platform = args.android_platform
+ctx.macos_platform = args.macos_platform
+ctx.macos_arch = args.macos_arch
 
 ctx.unparsed_env = args.vars or []
 ctx.env = parse_env(args.vars)
