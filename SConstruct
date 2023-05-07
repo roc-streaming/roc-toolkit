@@ -893,6 +893,11 @@ if meta.compiler in ['gcc', 'clang']:
                 env.Dir(env['ROC_BINDIR']).abspath, subenvs.public_libs['SHLIBSUFFIX']),
         ])
 
+        if meta.variant == 'release':
+            subenvs.public_libs.Append(LINKFLAGS=[
+                '-Wl,-exported_symbol,_roc_*',
+            ])
+
     if not(meta.compiler == 'clang' and meta.variant == 'debug'):
         env.Append(CXXFLAGS=[
             '-fno-rtti',
@@ -1062,9 +1067,8 @@ subenvs.tests.Append(
     CPPDEFINES=('CPPUTEST_USE_MEM_LEAK_DETECTION', '0')
     )
 
-if meta.platform in ['darwin']:
-    if not env['STRIPFLAGS']:
-        env.Append(STRIPFLAGS=['-x'])
+if not env['STRIPFLAGS']:
+    env.Append(STRIPFLAGS=['-x'])
 
 env.Append(CPPPATH=[env['ROC_BUILDDIR'] + '/tools'])
 env.Append(LIBPATH=[env['ROC_BUILDDIR']])

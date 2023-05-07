@@ -252,9 +252,14 @@ def execute_cmake(ctx, src_dir, args=None):
             '-DCMAKE_RANLIB=' + quote(find_tool(_getvar('RANLIB', 'ranlib'))),
         ]
 
+    args += [
+        '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
+    ]
+
     cc_flags = [
         '-fPIC', # -fPIC should be set explicitly in older cmake versions
         '-fvisibility=hidden', # hide private symbols
+        '-fvisibility-inlines-hidden',
     ]
 
     if ctx.variant == 'debug':
@@ -270,10 +275,6 @@ def execute_cmake(ctx, src_dir, args=None):
             '-DCMAKE_BUILD_TYPE=Release',
             '-DCMAKE_C_FLAGS_RELEASE:STRING=' + quote(' '.join(cc_flags)),
         ]
-
-    args += [
-        '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
-    ]
 
     execute(ctx, 'cmake ' + src_dir + ' ' + ' '.join(args))
 

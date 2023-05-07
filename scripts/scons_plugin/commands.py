@@ -220,11 +220,12 @@ def ComposeStaticLibraries(env, dst_lib, src_libs):
 
     action = SCons.Action.CommandAction(
         '{python_cmd} scripts/scons_helpers/compose-libs.py '
-        '{dst_lib} {src_libs} AR={ar_exe}'.format(
+        '{dst_lib} {src_libs} AR={ar_exe} OBJCOPY={objcopy_exe}'.format(
             python_cmd=env.GetPythonExecutable(),
             dst_lib=quote(env.File(dst_lib).path),
             src_libs=' '.join([quote(env.File(lib).path) for lib in src_libs]),
-            ar_exe=quote(env['AR'])),
+            ar_exe=quote(env['AR']),
+            objcopy_exe=quote(env['OBJCOPY'])),
         cmdstr=env.PrettyCommand('COMPOSE', env.File(dst_lib).path, 'red'))
 
     return env.Command(dst_lib, [src_libs[0]], [action])
