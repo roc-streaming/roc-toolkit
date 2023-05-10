@@ -42,6 +42,7 @@ Context = type(
             ' pkg_dir pkg_src_dir pkg_bin_dir pkg_lib_dir pkg_inc_dir pkg_rpath_dir'
             ' pkg pkg_name pkg_ver pkg_deps'
             ' build host toolchain variant android_platform macos_platform macos_arch'
+            ' prefer_cmake'
             ' env unparsed_env').split()
     })
 
@@ -1025,6 +1026,8 @@ ctx.pkg_rpath_dir = os.path.join(ctx.pkg_dir, 'rpath')
 ctx.log_file = os.path.join(ctx.pkg_dir, 'build.log')
 ctx.commit_file = os.path.join(ctx.pkg_dir, 'commit')
 
+ctx.prefer_cmake = bool(args.android_platform)
+
 #
 # Build package.
 #
@@ -1048,7 +1051,7 @@ if ctx.pkg_name == 'libuv':
         ctx,
         'include/uv.h',
         from_='__attribute__((visibility("default")))', to='')
-    if ctx.android_platform:
+    if ctx.prefer_cmake:
         mkpath('build')
         changedir(ctx, 'build')
         execute_cmake(ctx, '..', args=[
@@ -1477,17 +1480,33 @@ elif ctx.pkg_name == 'cpputest':
         'cpputest-{ctx.pkg_ver}.tar.gz',
         'cpputest-{ctx.pkg_ver}')
     changedir(ctx, 'src/cpputest-{ctx.pkg_ver}')
-    mkpath('build')
-    changedir(ctx, 'build')
-    execute_cmake(ctx, '..', args=[
-        '-DMEMORY_LEAK_DETECTION=OFF',
-        '-DTESTS=OFF',
-        '-DBUILD_SHARED_LIBS=OFF',
-        ])
-    execute_cmake_build(ctx)
-    changedir(ctx, '..')
+    if ctx.prefer_cmake:
+        mkpath('build')
+        changedir(ctx, 'build')
+        execute_cmake(ctx, '..', args=[
+            '-DMEMORY_LEAK_DETECTION=OFF',
+            '-DTESTS=OFF',
+            '-DBUILD_SHARED_LIBS=OFF',
+            ])
+        execute_cmake_build(ctx)
+        shutil.copy('src/CppUTest/libCppUTest.a', '../libCppUTest.a')
+        changedir(ctx, '..')
+    else:
+        execute(ctx, './configure --host={host} {vars} {flags} {opts}'.format(
+                host=ctx.toolchain,
+                vars=format_vars(ctx),
+                # disable warnings, since CppUTest uses -Werror and may fail to
+                # build on old GCC versions
+                flags=format_flags(ctx, cflags='-w'),
+                opts=' '.join([
+                    # disable memory leak detection which is too hard to use properly
+                    '--disable-memory-leak-detection',
+                    '--enable-static',
+                ])))
+        execute_make(ctx)
+        shutil.copy('lib/libCppUTest.a', 'libCppUTest.a')
     install_tree(ctx, 'include', ctx.pkg_inc_dir)
-    install_files(ctx, 'build/src/CppUTest/libCppUTest.a', ctx.pkg_lib_dir)
+    install_files(ctx, 'libCppUTest.a', ctx.pkg_lib_dir)
 elif ctx.pkg_name == 'google-benchmark':
     download(
         ctx,
