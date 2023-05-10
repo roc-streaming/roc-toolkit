@@ -138,36 +138,45 @@ def ParseConfigGuess(env, cmd):
     text = _fix_target(text)
     return text
 
-def ParseMacosHost(env, host, arch):
+def ParseMacosHost(env, host, macos_platform, macos_arch):
     if not 'darwin' in host:
         return host
 
-    arch_list = arch.split(',') if arch else []
+    arch_list = ParseList(env, macos_arch, ['arm64', 'x86_64'])
+    if len(arch_list) > 1:
+        for arch in ['arm64', 'x86_64']:
+            host = host.replace(arch, 'universal')
 
-    if 'all' in arch_list or len(set(arch_list)) > 1:
-        for a in ['arm64', 'x86_64']:
-            host = host.replace(a, 'universal')
+    host = host.replace('-pc-apple-', '-apple-macos{}-'.format(
+        ParseMacosPlatform(env, host, macos_platform)))
 
     return host
 
-def ParseMacosPlatform(env, host):
+def ParseMacosPlatform(env, host, macos_platform):
     if not 'darwin' in host:
-        return host
-
-    text = env.GetCommandOutput('sw_vers')
-    if not text:
         return None
 
-    for line in text.splitlines():
-        if 'ProductVersion' in line:
-            try:
-                return '.'.join(line.split()[-1].split('.')[:2])
-            except:
-                pass
+    if macos_platform:
+        return macos_platform
 
-def ParseMacosArch(env, host):
+    text = env.GetCommandOutput('sw_vers')
+    if text:
+        for line in text.splitlines():
+            if 'ProductVersion' in line:
+                try:
+                    return '.'.join(line.split()[-1].split('.')[:2])
+                except:
+                    pass
+
+    return None
+
+def ParseMacosArch(env, host, macos_arch):
     if not 'darwin' in host:
         return []
+
+    arch_list = ParseList(env, macos_arch, ['arm64', 'x86_64'])
+    if arch_list:
+        return arch_list
 
     if 'universal' in host:
         return ['arm64', 'x86_64']

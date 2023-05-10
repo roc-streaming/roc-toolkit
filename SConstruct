@@ -530,7 +530,8 @@ if not meta.toolchain and meta.build != meta.host:
     meta.toolchain = meta.host
 
 if not meta.toolchain and meta.build == meta.host:
-    meta.build = meta.host = env.ParseMacosHost(meta.host, GetOption('macos_arch'))
+    meta.build = meta.host = env.ParseMacosHost(
+        meta.host, GetOption('macos_platform'), GetOption('macos_arch'))
 
 if not meta.platform:
     if 'android' in meta.host:
@@ -707,14 +708,8 @@ env['ROC_PLATFORM'] = meta.platform
 env['ROC_POSIX_PLATFORM']   = '200809'
 env['ROC_ANDROID_PLATFORM'] = '21'
 
-if GetOption('macos_platform'):
-    env['ROC_MACOS_PLATFORM'] = GetOption('macos_platform')
-else:
-    env['ROC_MACOS_PLATFORM'] = env.ParseMacosPlatform(meta.host)
-
-env['ROC_MACOS_ARCH'] = env.ParseList(GetOption('macos_arch'), supported_macos_archs)
-if not env['ROC_MACOS_ARCH']:
-    env['ROC_MACOS_ARCH'] = env.ParseMacosArch(meta.host)
+env['ROC_MACOS_PLATFORM'] = env.ParseMacosPlatform(meta.host, GetOption('macos_platform'))
+env['ROC_MACOS_ARCH'] = env.ParseMacosArch(meta.host, GetOption('macos_arch'))
 
 env['ROC_TARGETS'] = []
 
