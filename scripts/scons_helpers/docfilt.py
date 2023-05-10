@@ -1,36 +1,58 @@
 from __future__ import print_function
 
-import subprocess
+import argparse
+import errno
 import os
 import os.path
-import sys
 import re
-import errno
+import subprocess
+import sys
 
-try:
-    project_dir = os.path.abspath(sys.argv[1])
-    working_dir = os.path.abspath(sys.argv[2])
-    output_dirs = sys.argv[3].split(':')
-    touch_file = sys.argv[4]
-    werror = int(sys.argv[5])
-    command = sys.argv[6:]
-except:
-   print(
-    "usage: docfilt.py PROJ_DIR WORK_DIR OUTPUT_DIRS TOUCH_FILE WERROR COMMAND [ARGS...]",
-        file=sys.stderr)
-   exit(1)
+parser = argparse.ArgumentParser(description='filter sphinx and doxygen console output')
 
-for output_dir in output_dirs:
+parser.add_argument('--root-dir', dest='root_dir', type=str, required=True,
+                    help='project directory')
+
+parser.add_argument('--work-dir', dest='work_dir', type=str, required=True,
+                    help='working directory')
+
+parser.add_argument('--out-dirs', dest='out_dirs', type=str, nargs='+', required=True,
+                    help='output directories')
+
+parser.add_argument('--touch-file', dest='touch_file', type=str, required=True,
+                    help='file to touch after everything is done')
+
+parser.add_argument('--werror', dest='werror', action='store_true',
+                    help='convert warnings to errors')
+
+parser.add_argument('command', nargs=argparse.REMAINDER,
+                    help='command to be executed')
+
+if '--' not in sys.argv or sys.argv.index('--') == len(sys.argv)-1:
+    parser.print_usage()
+    print("error: command is required", file=sys.stderr)
+    exit(1)
+
+options = sys.argv[1:sys.argv.index('--')]
+command = sys.argv[sys.argv.index('--')+1:]
+
+args = parser.parse_args(options)
+
+project_dir = os.path.abspath(args.root_dir)
+working_dir = os.path.abspath(args.work_dir)
+
+for out_dir in args.out_dirs:
     try:
-        os.makedirs(output_dir)
+        os.makedirs(out_dir)
     except OSError:
         e = sys.exc_info()[1]
         if e.errno != errno.EEXIST:
-            print("error: unable to create '%s' directory" % output_dir, file=sys.stderr)
+            print("error: unable to create '{}' directory".format(out_dir), file=sys.stderr)
             print(str(e), file=sys.stderr)
+            exit(1)
 
 try:
-    os.remove(touch_file)
+    os.remove(args.touch_file)
 except:
     pass
 
@@ -65,7 +87,7 @@ for line in proc.stderr:
     if m:
         line = (m.group(1) or '') + os.path.relpath(m.group(2), project_dir) + m.group(3)
 
-    if werror and re.search('warning:', line):
+    if args.werror and re.search('warning:', line):
         line = re.sub('warning:', 'error:', line)
         err = True
     elif 'error:' in line:
@@ -84,10 +106,11 @@ if err:
     exit(127)
 
 try:
-    open(touch_file, 'w').close()
+    open(args.touch_file, 'w').close()
 except:
     e = sys.exc_info()[1]
-    print("error: unable to touch '%s' file" % touch_file, file=sys.stderr)
+    print("error: unable to touch '{}' file".format(args.touch_file), file=sys.stderr)
     print(str(e), file=sys.stderr)
+    exit(1)
 
 exit(0)

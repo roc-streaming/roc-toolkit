@@ -10,69 +10,86 @@ try:
 except:
     from pipes import quote
 
-def ClangFormat(env, srcdir):
-    return env.Action(
-        '{} -i {}'.format(
-            env['CLANG_FORMAT'],
-            ' '.join(map(str,
-                env.GlobRecursive(
-                    srcdir, ['*.h', '*.cpp'],
-                    exclude=[
-                        os.path.relpath(env.File('#'+s).srcnode().abspath)
-                          for s in open(env.File('#.fmtignore').abspath).read().split()])
-        ))),
-        env.PrettyCommand('FMT', env.Dir(srcdir).path, 'yellow')
-    )
+def ClangFormat(env, src_dir):
+    exclude_files = [
+        os.path.relpath(env.File('#'+s).srcnode().abspath)
+            for s in open(env.File('#.fmtignore').abspath).read().split()
+        ]
 
-def HeaderFormat(env, srcdir):
+    files = env.GlobRecursive(
+        src_dir, ['*.h', '*.cpp'],
+        exclude=exclude_files)
+
     return env.Action(
-        '{python_cmd} scripts/scons_helpers/format-header.py {src_dir}'.format(
-            python_cmd=env.GetPythonExecutable(),
-            src_dir=env.Dir(srcdir).path),
-        env.PrettyCommand('FMT', env.Dir(srcdir).path, 'yellow')
-    )
+        '{clang_format} -i {files}'.format(
+            clang_format=quote(env['CLANG_FORMAT']),
+            files=' '.join(map(str, files))),
+        env.PrettyCommand('FMT', env.Dir(src_dir).path, 'yellow'))
+
+def HeaderFormat(env, src_dir):
+    return env.Action(
+        '{python} scripts/scons_helpers/format-header.py {src_dir}'.format(
+            python=quote(env.GetPythonExecutable()),
+            src_dir=quote(env.Dir(src_dir).path)),
+        env.PrettyCommand('FMT', env.Dir(src_dir).path, 'yellow'))
 
 def Doxygen(env, build_dir='', html_dir=None, config='', sources=[], werror=False):
-    target = os.path.join(build_dir, '.done')
+    target = os.path.join(build_dir, 'commit')
 
     dirs = [env.Dir(build_dir).path]
     if html_dir:
         dirs += [env.Dir(html_dir).path]
 
+    cmd = [
+        quote(env.GetPythonExecutable()), 'scripts/scons_helpers/docfilt.py',
+        '--root-dir', quote(env.Dir('#').path),
+        '--work-dir', quote(env.Dir(os.path.dirname(config)).path),
+        '--out-dirs', ' '.join(map(quote, dirs)),
+        '--touch-file', quote(env.File(target).path),
+        ]
+
+    if werror:
+        cmd += ['--werror']
+
+    cmd += [
+        '--',
+        quote(env['DOXYGEN']),
+        quote(env.File(config).name),
+        ]
+
     env.Command(target, sources + [config], SCons.Action.CommandAction(
-        ('{python_cmd} scripts/scons_helpers/docfilt.py {proj_dir} {work_dir} {out_dirs} '
-         '{touch_file} {werror} {cmd} {arg}').format(
-            python_cmd=env.GetPythonExecutable(),
-            proj_dir=env.Dir('#').path,
-            work_dir=env.Dir(os.path.dirname(config)).path,
-            out_dirs=':'.join(dirs),
-            touch_file=env.File(target).path,
-            werror=int(werror or 0),
-            cmd=env['DOXYGEN'],
-            arg=env.File(config).name),
+        ' '.join(cmd),
         cmdstr = env.PrettyCommand('DOXYGEN', env.Dir(build_dir).path, 'purple')))
 
     return target
 
 def Sphinx(env, output_type, build_dir, output_dir, source_dir, sources, werror=False):
-    target = os.path.join(build_dir, '.done')
+    target = os.path.join(build_dir, 'commit')
+
+    cmd = [
+        quote(env.GetPythonExecutable()), 'scripts/scons_helpers/docfilt.py',
+        '--root-dir', quote(env.Dir('#').path),
+        '--work-dir', quote(env.Dir('#').path),
+        '--out-dirs', quote(env.Dir(output_dir).path),
+        '--touch-file', quote(env.File(target).path),
+        ]
+
+    if werror:
+        cmd += ['--werror']
+
+    cmd += [
+        '--',
+        quote(env['SPHINX_BUILD']),
+        '-j', str(SCons.Script.GetOption('num_jobs')),
+        '-q',
+        '-b', output_type,
+        '-d', quote(env.Dir(build_dir).path),
+        quote(env.Dir(source_dir).path),
+        quote(env.Dir(output_dir).path),
+        ]
 
     env.Command(target, sources, SCons.Action.CommandAction(
-        ('{python_cmd} scripts/scons_helpers/docfilt.py {proj_dir} {work_dir} {out_dirs} '
-         '{touch_file} {werror} {cmd} -j {njobs} -q -b {builder} -d {cache_dir} {src_dir} '
-         '{out_dir}').format(
-            python_cmd=env.GetPythonExecutable(),
-            proj_dir=env.Dir('#').path,
-            work_dir=env.Dir('#').path,
-            out_dirs=env.Dir(output_dir).path,
-            touch_file=env.File(target).path,
-            werror=int(werror or 0),
-            cmd=env['SPHINX_BUILD'],
-            njobs=SCons.Script.GetOption('num_jobs'),
-            builder=output_type,
-            cache_dir=env.Dir(build_dir).path,
-            src_dir=env.Dir(source_dir).path,
-            out_dir=env.Dir(output_dir).path),
+        ' '.join(cmd),
         cmdstr = env.PrettyCommand('SPHINX', env.Dir(output_dir).path, 'purple')))
 
     return env.File(target)
@@ -80,7 +97,6 @@ def Sphinx(env, output_type, build_dir, output_dir, source_dir, sources, werror=
 def Ragel(env, source):
     if 'RAGEL' in env.Dictionary():
         ragel = env['RAGEL']
-
     else:
         ragel = 'ragel'
 
@@ -93,18 +109,17 @@ def Ragel(env, source):
     target = os.path.join(str(source.dir), target_name)
 
     env.Command(target, source, SCons.Action.CommandAction(
-        '{ragel_cmd} -o "{target}" "{source}"'.format(
-            ragel_cmd=ragel,
-            target=os.path.join(os.path.dirname(source.path), target_name),
-            source=source.srcnode().path),
+        '{ragel} -o {target} {source}'.format(
+            ragel=quote(ragel),
+            target=quote(os.path.join(os.path.dirname(source.path), target_name)),
+            source=quote(source.srcnode().path)),
         cmdstr = env.PrettyCommand('RAGEL', '$SOURCE', 'purple')))
 
     return [env.Object(target)]
 
-def GenGetOpt(env, source, ver):
+def GenGetOpt(env, source, version):
     if 'GENGETOPT' in env.Dictionary():
         gengetopt = env['GENGETOPT']
-
     else:
         gengetopt = 'gengetopt'
 
@@ -119,13 +134,13 @@ def GenGetOpt(env, source, ver):
     ]
 
     env.Command(target, source, SCons.Action.CommandAction(
-        ('{gengetopt_cmd} -i "{src}" -F "{file_name}" --output-dir "{out_dir}" '
-         '--set-version "{ver}"').format(
-            gengetopt_cmd=gengetopt,
-            src=source.srcnode().path,
-            file_name=source_name,
-            out_dir=os.path.dirname(source.path),
-            ver=ver),
+        ('{gengetopt} -i {source} -F {source_name} --output-dir {output_dir}'
+         ' --set-version {version}').format(
+            gengetopt=quote(gengetopt),
+            source=quote(source.srcnode().path),
+            source_name=quote(source_name),
+            output_dir=quote(os.path.dirname(source.path)),
+            version=quote(version)),
         cmdstr = env.PrettyCommand('GGO', '$SOURCE', 'purple')))
 
     return env.Object(target[0])
@@ -166,12 +181,12 @@ def SupportsStripSharedLibrary(env):
     return env.get('STRIP', None) is not None
 
 def StripSharedLibrary(env, dst, src):
-    def copy(target, source, env):
+    def _copy(target, source, env):
         shutil.copy(source[0].path, target[0].path)
 
     actions =  [
         env.Action(
-            copy,
+            _copy,
             env.PrettyCommand('CP', env.File(dst).path, 'yellow'),
             ),
         SCons.Action.CommandAction(
@@ -183,7 +198,7 @@ def StripSharedLibrary(env, dst, src):
     return env.Command(dst, src, actions)
 
 def SymlinkLibrary(env, src):
-    def symlink(target, source, env):
+    def _symlink(target, source, env):
         os.symlink(os.path.relpath(source[0].path, os.path.dirname(target[0].path)),
                    target[0].path)
 
@@ -201,7 +216,7 @@ def SymlinkLibrary(env, src):
         ret += [dst]
 
         env.Command(dst, src, env.Action(
-            symlink, env.PrettyCommand('LN', dst.path, 'yellow', 'ln({})'.format(dst.path))))
+            _symlink, env.PrettyCommand('LN', dst.path, 'yellow', 'ln({})'.format(dst.path))))
 
     return ret
 
@@ -211,7 +226,7 @@ def NeedsFixupSharedLibrary(env):
 def FixupSharedLibrary(env, path):
     return [
         SCons.Action.CommandAction(
-            '$INSTALL_NAME_TOOL -id "{0}" "{0}"'.format(path),
+            '$INSTALL_NAME_TOOL -id {0} {0}'.format(quote(path)),
             cmdstr=env.PrettyCommand('FIXUP', path, 'yellow')),
             ]
 
@@ -219,13 +234,13 @@ def ComposeStaticLibraries(env, dst_lib, src_libs):
     dst_lib = env['LIBPREFIX'] + dst_lib + env['LIBSUFFIX']
 
     cmd = [
-        '{python_cmd}', 'scripts/scons_helpers/compose-libs.py',
-        '--out', '{dst_lib}',
-        '--in',  '{src_libs}',
+        quote(env.GetPythonExecutable()), 'scripts/scons_helpers/compose-libs.py',
+        '--out', quote(env.File(dst_lib).path),
+        '--in', ' '.join([quote(env.File(lib).path) for lib in src_libs]),
         ]
 
     if env['ROC_PLATFORM'] == 'darwin' and env['ROC_MACOS_ARCH']:
-        cmd += ['--arch', '{macos_arch}']
+        cmd += ['--arch', ' '.join(env['ROC_MACOS_ARCH'])]
 
     cmd += ['--tools']
     for tool in ['AR', 'OBJCOPY', 'LIPO']:
@@ -235,11 +250,7 @@ def ComposeStaticLibraries(env, dst_lib, src_libs):
                 ]
 
     action = SCons.Action.CommandAction(
-        ' '.join(cmd).format(
-            python_cmd=quote(env.GetPythonExecutable()),
-            dst_lib=quote(env.File(dst_lib).path),
-            src_libs=' '.join([quote(env.File(lib).path) for lib in src_libs]),
-            macos_arch=' '.join(env['ROC_MACOS_ARCH'] or [])),
+        ' '.join(cmd),
         cmdstr=env.PrettyCommand('COMPOSE', env.File(dst_lib).path, 'red'))
 
     return env.Command(dst_lib, [src_libs[0]], [action])

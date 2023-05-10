@@ -29,7 +29,7 @@ def _build_thirdparty(env, versions, name, deps, is_native):
     ]
 
     if 'PKG_CONFIG' in env.Dictionary():
-        env_vars += ['PKG_CONFIG={}'.format(quote(env['PKG_CONFIG']))]
+        env_vars += ['PKG_CONFIG=' + quote(env['PKG_CONFIG'])]
 
     project_root = env.Dir('#').srcnode().abspath
     build_root = env.Dir(env['ROC_THIRDPARTY_BUILDDIR']).abspath
@@ -41,60 +41,46 @@ def _build_thirdparty(env, versions, name, deps, is_native):
         os.chdir(project_root)
 
         cmd = [
-            '{python_cmd}', 'scripts/scons_helpers/build-3rdparty.py',
-            '--root-dir',  '{root_dir}',
-            '--work-dir',  '{work_dir}',
-            '--dist-dir',  '{dist_dir}',
+            quote(env.GetPythonExecutable()), 'scripts/scons_helpers/build-3rdparty.py',
+            '--root-dir', quote(os.path.abspath(project_root)),
+            '--work-dir', quote(os.path.relpath(build_root, project_root)),
+            '--dist-dir', quote(os.path.relpath(distfiles_dir, project_root)),
             ]
 
         if not is_native:
             cmd += [
-                '--build',     '{build}',
-                '--host',      '{host}',
-                '--toolchain', '{toolchain}',
+                '--build',     quote(env['ROC_BUILD']),
+                '--host',      quote(env['ROC_HOST']),
+                '--toolchain', quote(env['ROC_TOOLCHAIN']),
             ]
         else:
             cmd += [
-                '--build',     '{build}',
-                '--host',      '{build}',
+                '--build', quote(env['ROC_BUILD']),
+                '--host',  quote(env['ROC_BUILD']),
             ]
 
         cmd += [
-            '--variant', '{variant}',
-            '--package', '{package}',
+            '--variant', quote(env['ROC_THIRDPARTY_VARIANT']),
+            '--package', quote(versioned_name),
         ]
 
         if versioned_deps:
-            cmd += ['--deps', '{deps}']
+            cmd += ['--deps', ' '.join(versioned_deps)]
 
         if env_vars:
-            cmd += ['--vars', '{vars}']
+            cmd += ['--vars', ' '.join(env_vars)]
 
         if env['ROC_PLATFORM'] == 'android' and env['ROC_ANDROID_PLATFORM']:
-            cmd += ['--android-platform', '{android_platform}']
+            cmd += ['--android-platform', env['ROC_ANDROID_PLATFORM']]
 
         if env['ROC_PLATFORM'] == 'darwin' and env['ROC_MACOS_PLATFORM']:
-            cmd += ['--macos-platform', '{macos_platform}']
+            cmd += ['--macos-platform', env['ROC_MACOS_PLATFORM']]
 
         if env['ROC_PLATFORM'] == 'darwin' and env['ROC_MACOS_ARCH']:
-            cmd += ['--macos-arch', '{macos_arch}']
+            cmd += ['--macos-arch', ' '.join(env['ROC_MACOS_ARCH'])]
 
         if env.Execute(
-            ' '.join(cmd).format(
-                python_cmd=quote(env.GetPythonExecutable()),
-                root_dir=quote(os.path.abspath(project_root)),
-                work_dir=quote(os.path.relpath(build_root, project_root)),
-                dist_dir=quote(os.path.relpath(distfiles_dir, project_root)),
-                build=quote(env['ROC_BUILD']),
-                host=quote(env['ROC_HOST']),
-                toolchain=quote(env['ROC_TOOLCHAIN']),
-                variant=quote(env['ROC_THIRDPARTY_VARIANT']),
-                package=quote(versioned_name),
-                deps=' '.join(versioned_deps),
-                vars=' '.join(env_vars),
-                android_platform=quote(env['ROC_ANDROID_PLATFORM'] or ''),
-                macos_platform=quote(env['ROC_MACOS_PLATFORM'] or ''),
-                macos_arch=' '.join(env['ROC_MACOS_ARCH'] or [])),
+            ' '.join(cmd),
             cmdstr = env.PrettyCommand(
                 'BUILD', os.path.relpath(thirdparty_dir, project_root), 'yellow')):
 
