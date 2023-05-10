@@ -13,7 +13,7 @@ scons -Q \
     --enable-tests \
     --enable-examples \
     --build-3rdparty=${third_party} \
-    --host="${toolchain}"
+    --host=${toolchain}
 
 find bin/${toolchain} -name 'roc-test-*' | \
     while read tst

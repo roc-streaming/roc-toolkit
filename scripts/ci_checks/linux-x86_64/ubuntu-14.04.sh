@@ -2,7 +2,7 @@
 
 set -euxo pipefail
 
-for c in gcc-4.4 clang-3.4
+for comp in gcc-4.4 clang-3.4
 do
     scons -Q \
           --enable-werror \
@@ -10,6 +10,6 @@ do
           --enable-examples \
           --enable-doxygen \
           --build-3rdparty=libuv,libatomic_ops,openfec,openssl,pulseaudio,cpputest \
-          --compiler="$c" \
+          --compiler=${comp} \
           test
 done

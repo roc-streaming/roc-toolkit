@@ -13,13 +13,13 @@ scons -Q \
       test
 
 find bin/x86_64-pc-linux-gnu -name 'roc-test-*' |\
-    while read t
+    while read tst
     do
         python3 scripts/scons_helpers/timeout-run.py 300 \
             valgrind \
                 --max-stackframe=10475520 \
                 --error-exitcode=1 --exit-on-first-error=yes \
-                $t
+                ${tst}
     done
 
 # release
@@ -32,11 +32,11 @@ scons -Q \
       test
 
 find bin/x86_64-pc-linux-gnu -name 'roc-test-*' |\
-    while read t
+    while read tst
     do
         python3 scripts/scons_helpers/timeout-run.py 300 \
             valgrind \
                 --max-stackframe=10475520 \
                 --error-exitcode=1 --exit-on-first-error=yes \
-                $t
+                ${tst}
     done

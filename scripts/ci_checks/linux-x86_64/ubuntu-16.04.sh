@@ -2,7 +2,7 @@
 
 set -euxo pipefail
 
-for c in gcc-4.8 clang-3.7
+for comp in gcc-4.8 clang-3.7
 do
     scons -Q \
           --enable-werror \
@@ -11,6 +11,6 @@ do
           --enable-examples \
           --enable-doxygen \
           --build-3rdparty=libatomic_ops,openfec,openssl,google-benchmark \
-          --compiler="$c" \
+          --compiler=${comp} \
           test
 done

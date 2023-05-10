@@ -2,7 +2,7 @@
 
 set -euxo pipefail
 
-for c in gcc-6 clang-6.0
+for comp in gcc-6 clang-6.0
 do
     scons -Q \
           --enable-werror \
@@ -11,6 +11,6 @@ do
           --enable-examples \
           --enable-doxygen \
           --build-3rdparty=openfec,google-benchmark \
-          --compiler=$c \
+          --compiler=${comp} \
           test
 done

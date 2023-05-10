@@ -18,7 +18,6 @@ export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:${PATH}"
 if ! avdmanager list avd -c | grep -qF roc_device
 then
     color_msg "creating avd"
-
     run_cmd device \
         --name roc_device --image "default" --arch "${ABI}" --api "${API}" \
         create
@@ -32,7 +31,6 @@ run_cmd avdmanager list avd
 if ! adb devices | grep -qF emulator
 then
     color_msg "starting device"
-
     run_cmd device --name roc_device start
 fi
 
