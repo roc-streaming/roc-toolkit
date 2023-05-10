@@ -31,7 +31,7 @@ extern "C" {
  *
  * In simple cases, just use \c ROC_SLOT_DEFAULT.
  *
- * Each slot has its own set of interfaces, dedicated to different kinds of endpoints.
+ * Inside each slot, there can be up to one endpoint for each interface type.
  * See \ref roc_interface for details.
  */
 typedef unsigned int roc_slot;
