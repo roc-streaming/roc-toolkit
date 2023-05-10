@@ -1158,7 +1158,7 @@ elif ctx.pkg_name == 'openssl':
     execute(ctx, '{vars} {flags} ./Configure {platform} {variant} {options}'.format(
         vars=format_vars(ctx),
         flags=format_flags(ctx),
-        platform=detect_openssl_platform(ctx.toolchain),
+        platform=detect_openssl_platform(ctx.host),
         variant='--debug' if ctx.variant == 'debug' else '--release',
         options=' '.join([
             'no-asan',
