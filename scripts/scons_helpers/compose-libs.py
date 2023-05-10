@@ -1,7 +1,8 @@
 from __future__ import print_function
 
+import argparse
+import glob
 import os.path
-import re
 import shutil
 import subprocess
 import sys
@@ -12,15 +13,13 @@ try:
 except:
     from pipes import quote
 
-def execute_command(cmd):
-    proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    out = proc.stdout.read()
-    code = proc.wait()
-    if code != 0:
-        print(cmd, file=sys.stderr)
-        print(out, file=sys.stderr)
-        print("command exited with code {}".format(code))
-        exit(1)
+VERBOSE = False
+
+def path_dirname(path):
+    return os.path.dirname(path)
+
+def path_basename(path):
+    return os.path.splitext(os.path.basename(path))[0]
 
 def is_gnu_tool(tool):
     try:
@@ -37,66 +36,163 @@ def is_gnu_tool(tool):
     except:
         return False
 
-def get_var_value(s):
-    return s.split('=', 2)[1]
+def execute_command(cmd):
+    if VERBOSE:
+        print(cmd, file=sys.stderr)
+    proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    out = proc.stdout.read()
+    code = proc.wait()
+    if code != 0:
+        print(cmd, file=sys.stderr)
+        print(out, file=sys.stderr)
+        print("command exited with code {}".format(code))
+        exit(1)
 
-if len(sys.argv) < 3:
-    print("usage: compose-libs.py DST_LIB SRC_LIBS... VARS...",
-          file=sys.stderr)
-    exit(1)
+parser = argparse.ArgumentParser(description='compose multiple static libs into one')
 
-ar_exe = 'ar'
-objcopy_exe = 'objcopy'
+parser.add_argument('--out', dest='output', type=str, required=True,
+                    help='output library')
 
-dst_lib = os.path.abspath(sys.argv[1])
-src_libs = []
+parser.add_argument('--in', dest='inputs', type=str, nargs='+', required=True,
+                    help='input libraries')
 
-for arg in sys.argv[2:]:
-    if arg.startswith('AR='):
-        ar_exe = get_var_value(arg)
-    elif arg.startswith('OBJCOPY='):
-        objcopy_exe = get_var_value(arg)
-    else:
-        src_libs.append(os.path.abspath(arg))
+parser.add_argument('--arch', dest='arch', type=str, nargs='*',
+                    help='binary achitecture(s)')
 
-is_gnu_objcopy = is_gnu_tool(objcopy_exe)
+parser.add_argument('--tools', dest='tools', type=str, nargs='*',
+                    help='paths to tools')
+
+parser.add_argument('--verbose', dest='verbose', action='store_true',
+                    help='enable verbose output')
+
+args = parser.parse_args()
+
+VERBOSE = args.verbose
+
+dst_lib = os.path.abspath(args.output)
+src_libs = [os.path.abspath(arg) for arg in args.inputs]
+
+archs = args.arch or [None]
+is_fat = len(archs) > 1
+
+tools = dict()
+for e in args.tools:
+    k, v = e.split('=', 1)
+    tools[k] = v
+
+for exe in ['ar', 'objcopy', 'lipo']:
+    if not tools.get(exe.upper(), None):
+        tools[exe.upper()] = exe
+
+have_gnu_objcopy = is_gnu_tool(tools['OBJCOPY'])
 
 try:
-    if src_libs:
-        shutil.copy(src_libs[0], dst_lib)
-
     temp_dir = tempfile.mkdtemp()
     os.chdir(temp_dir)
 
-    for src_lib in src_libs[1:]:
-        lib_name = os.path.splitext(os.path.basename(src_lib))[0]
+    # remove output lib(s)
+    for path in glob.glob(dst_lib+'*'):
+        os.remove(path)
 
-        # unpack objects fron static lib
-        execute_command('{ar_exe} x {src_lib}'.format(
-            ar_exe=quote(ar_exe), src_lib=quote(src_lib)))
+    for arch in archs:
+        dst_arch_lib = '{}/{}.{}.a'.format(
+            path_dirname(dst_lib),
+            path_basename(dst_lib),
+            arch)
 
-        for obj in list(os.listdir('.')):
-            new_obj = '_{lib_name}_{obj}'.format(lib_name=lib_name, obj=obj)
+        for path in glob.glob(dst_arch_lib+'*'):
+            os.remove(path)
 
-            # transform each object:
-            #  - prefix object name with lib name to prevent conflicts
-            #  - localize hidden symbols to unexport them from resulting static lib
-            if is_gnu_objcopy:
+    for src_lib in src_libs:
+        for arch in archs:
+            basename = path_basename(src_lib)
+
+            # unpack object files for given arch from input lib
+            if is_fat:
+                arch_lib = '{}.{}.a'.format(basename, arch)
+
                 execute_command(
-                    '{objcopy_exe} --localize-hidden --strip-unneeded {obj} {new_obj}'.format(
-                        objcopy_exe=quote(objcopy_exe), obj=obj, new_obj=new_obj))
+                    '{lipo} -extract_family {arch} -output {arch_lib} {src_lib}'.format(
+                        lipo=quote(tools['LIPO']),
+                        arch=quote(arch),
+                        arch_lib=quote(arch_lib),
+                        src_lib=quote(src_lib)))
+
+                execute_command(
+                    '{ar} x {arch_lib}'.format(
+                        ar=quote(tools['AR']),
+                        arch_lib=quote(arch_lib)))
+
+                os.remove(arch_lib)
             else:
-                os.rename(obj, new_obj)
+                execute_command(
+                    '{ar} x {src_lib}'.format(
+                        ar=quote(tools['AR']),
+                        src_lib=quote(src_lib)))
 
-            # add transformed object to resulting static lib
-            execute_command('{ar_exe} r {dst_lib} {new_obj}'.format(
-                ar_exe=quote(ar_exe), dst_lib=quote(dst_lib), new_obj=quote(new_obj)))
+            for obj in list(glob.glob('*.o')):
+                new_obj = '{}-{}'.format(basename, obj)
 
-            os.remove(new_obj)
+                # transform object file
+                if have_gnu_objcopy:
+                    execute_command(
+                        '{objcopy} --localize-hidden --strip-unneeded {obj} {new_obj}'.format(
+                            objcopy=quote(tools['OBJCOPY']),
+                            obj=quote(obj),
+                            new_obj=quote(new_obj)))
+                    os.remove(obj)
+                else:
+                    os.rename(obj, new_obj)
+
+                # add object file to resulting static lib for given arch
+                if is_fat:
+                    dst_arch_lib = '{}/{}.{}.a'.format(
+                        path_dirname(dst_lib),
+                        path_basename(dst_lib),
+                        arch)
+
+                    # quick mode (disable checks, disable symbol index)
+                    execute_command(
+                        '{ar} qS {dst_arch_lib} {new_obj}'.format(
+                            ar=quote(tools['AR']),
+                            dst_arch_lib=quote(dst_arch_lib),
+                            new_obj=quote(new_obj)))
+                else:
+                    execute_command(
+                        '{ar} r {dst_lib} {new_obj}'.format(
+                            ar=quote(tools['AR']),
+                            dst_lib=quote(dst_lib),
+                            new_obj=quote(new_obj)))
+
+                os.remove(new_obj)
+
+    # compose per-arch static libs into one
+    if is_fat:
+        dst_arch_libs = [
+            '{}/{}.{}.a'.format(
+                    path_dirname(dst_lib),
+                    path_basename(dst_lib),
+                    arch)
+            for arch in archs]
+
+        # build symbol index
+        for dst_arch_lib in dst_arch_libs:
+            execute_command(
+                '{ar} s {dst_arch_lib}'.format(
+                    ar=quote(tools['AR']),
+                    dst_arch_lib=quote(dst_arch_lib)))
+
+        execute_command(
+              '{lipo} -create -output {dst_lib} {dst_arch_libs}'.format(
+                  lipo=quote(tools['LIPO']),
+                  dst_lib=quote(dst_lib),
+                  dst_arch_libs=' '.join(map(quote, dst_arch_libs))))
 
 except:
-    os.remove(dst_lib)
+    if os.path.isfile(dst_lib):
+        os.remove(dst_lib)
     raise
 
 finally:
-    shutil.rmtree(temp_dir)
+    if os.path.isdir(temp_dir):
+        shutil.rmtree(temp_dir)

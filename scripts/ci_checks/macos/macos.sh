@@ -13,7 +13,6 @@ scons -Q \
       --enable-tests \
       --enable-benchmarks \
       --enable-examples \
-      --enable-static \
       --enable-debug \
       --sanitizers=all \
       --build-3rdparty=openfec \
@@ -25,11 +24,11 @@ scons -Q \
       --enable-tests \
       --enable-benchmarks \
       --enable-examples \
-      --enable-static \
       --build-3rdparty=openfec \
       test
 
-# normal release build + build all dependencies
+# + enable static lib
+# + build all dependencies
 scons -Q \
       --enable-werror \
       --enable-tests \
@@ -39,7 +38,8 @@ scons -Q \
       --build-3rdparty=all \
       test
 
-# deployment target abd universal binaries
+# + set deployment target
+# + enable universal binaries
 scons -Q \
       --enable-werror \
       --enable-tests \

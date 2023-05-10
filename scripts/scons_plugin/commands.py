@@ -218,14 +218,28 @@ def FixupSharedLibrary(env, path):
 def ComposeStaticLibraries(env, dst_lib, src_libs):
     dst_lib = env['LIBPREFIX'] + dst_lib + env['LIBSUFFIX']
 
+    cmd = [
+        '{python_cmd}', 'scripts/scons_helpers/compose-libs.py',
+        '--out', '{dst_lib}',
+        '--in',  '{src_libs}',
+        ]
+
+    if env['ROC_PLATFORM'] == 'darwin' and env['ROC_MACOS_ARCH']:
+        cmd += ['--arch', '{macos_arch}']
+
+    cmd += ['--tools']
+    for tool in ['AR', 'OBJCOPY', 'LIPO']:
+        if env.get(tool, None):
+            cmd += [
+                '{}={}'.format(tool, quote(env[tool])),
+                ]
+
     action = SCons.Action.CommandAction(
-        '{python_cmd} scripts/scons_helpers/compose-libs.py '
-        '{dst_lib} {src_libs} AR={ar_exe} OBJCOPY={objcopy_exe}'.format(
-            python_cmd=env.GetPythonExecutable(),
+        ' '.join(cmd).format(
+            python_cmd=quote(env.GetPythonExecutable()),
             dst_lib=quote(env.File(dst_lib).path),
             src_libs=' '.join([quote(env.File(lib).path) for lib in src_libs]),
-            ar_exe=quote(env['AR']),
-            objcopy_exe=quote(env['OBJCOPY'])),
+            macos_arch=' '.join(env['ROC_MACOS_ARCH'] or [])),
         cmdstr=env.PrettyCommand('COMPOSE', env.File(dst_lib).path, 'red'))
 
     return env.Command(dst_lib, [src_libs[0]], [action])
