@@ -7,17 +7,17 @@ try:
 except:
     from pipes import quote
 
-def _get_versioned_thirdparty(env, name, versions):
+def _versioned_thirdparty(env, name, versions):
     if not name in versions:
         env.Die("unknown 3rdparty '{}'", name)
     return '{}-{}'.format(name, versions[name])
 
-def _build_thirdparty(env, build_root, toolchain, variant, versions, name, deps, includes, libs):
-    versioned_name = _get_versioned_thirdparty(env, name, versions)
+def _build_thirdparty(env, versions, name, deps, is_native):
+    versioned_name = _versioned_thirdparty(env, name, versions)
 
     versioned_deps = []
     for dep in deps:
-        versioned_deps.append(_get_versioned_thirdparty(env, dep, versions))
+        versioned_deps.append(_versioned_thirdparty(env, dep, versions))
 
     env_vars = [
         'CXX='    + quote(env['CXX']),
@@ -32,7 +32,7 @@ def _build_thirdparty(env, build_root, toolchain, variant, versions, name, deps,
         env_vars += ['PKG_CONFIG={}'.format(quote(env['PKG_CONFIG']))]
 
     project_root = env.Dir('#').srcnode().abspath
-    build_root = env.Dir(build_root).abspath
+    build_root = env.Dir(env['ROC_THIRDPARTY_BUILDDIR']).abspath
     thirdparty_dir = os.path.join(build_root, versioned_name)
     distfiles_dir = os.path.join('3rdparty', '_distfiles')
 
@@ -45,16 +45,30 @@ def _build_thirdparty(env, build_root, toolchain, variant, versions, name, deps,
             '--root-dir',  '{root_dir}',
             '--work-dir',  '{work_dir}',
             '--dist-dir',  '{dist_dir}',
-            '--toolchain', '{toolchain}',
-            '--variant',   '{variant}',
-            '--package',   '{package}',
             ]
 
+        if not is_native:
+            cmd += [
+                '--build',     '{build}',
+                '--host',      '{host}',
+                '--toolchain', '{toolchain}',
+            ]
+        else:
+            cmd += [
+                '--build',     '{build}',
+                '--host',      '{build}',
+            ]
+
+        cmd += [
+            '--variant', '{variant}',
+            '--package', '{package}',
+        ]
+
         if versioned_deps:
-            cmd += [' --deps', '{deps}']
+            cmd += ['--deps', '{deps}']
 
         if env_vars:
-            cmd += [' --vars', '{vars}']
+            cmd += ['--vars', '{vars}']
 
         if env['ROC_PLATFORM'] == 'android' and env['ROC_ANDROID_PLATFORM']:
             cmd += ['--android-platform', '{android_platform}']
@@ -71,14 +85,16 @@ def _build_thirdparty(env, build_root, toolchain, variant, versions, name, deps,
                 root_dir=quote(os.path.abspath(project_root)),
                 work_dir=quote(os.path.relpath(build_root, project_root)),
                 dist_dir=quote(os.path.relpath(distfiles_dir, project_root)),
-                toolchain=quote(toolchain),
-                variant=quote(variant),
+                build=quote(env['ROC_BUILD']),
+                host=quote(env['ROC_HOST']),
+                toolchain=quote(env['ROC_TOOLCHAIN']),
+                variant=quote(env['ROC_THIRDPARTY_VARIANT']),
                 package=quote(versioned_name),
                 deps=' '.join(versioned_deps),
                 vars=' '.join(env_vars),
-                android_platform=quote(env['ROC_ANDROID_PLATFORM']),
-                macos_platform=quote(env['ROC_MACOS_PLATFORM']),
-                macos_arch=' '.join(env['ROC_MACOS_ARCH'])),
+                android_platform=quote(env['ROC_ANDROID_PLATFORM'] or ''),
+                macos_platform=quote(env['ROC_MACOS_PLATFORM'] or ''),
+                macos_arch=' '.join(env['ROC_MACOS_ARCH'] or [])),
             cmdstr = env.PrettyCommand(
                 'BUILD', os.path.relpath(thirdparty_dir, project_root), 'yellow')):
 
@@ -97,14 +113,16 @@ def _build_thirdparty(env, build_root, toolchain, variant, versions, name, deps,
 
         os.chdir(saved_cwd)
 
-def _import_thridparty(env, build_root, toolchain, variant, versions, name, deps, includes, libs):
-    def needlib(lib):
+def _import_thridparty(env, versions, name, includes, libs):
+    def _needlib(lib):
         for name in libs:
             if fnmatch.fnmatch(os.path.basename(lib), 'lib{}.*'.format(name)):
                 return True
         return False
 
-    versioned_name = _get_versioned_thirdparty(env, name, versions)
+    versioned_name = _versioned_thirdparty(env, name, versions)
+
+    build_root = env.Dir(env['ROC_THIRDPARTY_BUILDDIR']).abspath
 
     if not includes:
         includes = ['']
@@ -129,7 +147,7 @@ def _import_thridparty(env, build_root, toolchain, variant, versions, name, deps
             ])
 
         for lib in env.GlobRecursive(env.Dir(libdir).abspath, 'lib*'):
-            if needlib(lib.path):
+            if _needlib(lib.path):
                 env.Prepend(LIBS=[env.File(lib)])
                 env.Append(_THIRDPARTY_LIBS=[lib.abspath])
 
@@ -147,20 +165,18 @@ def ParseThirdPartyList(env, s):
             ret[name] = ver
     return ret.items()
 
-def BuildThirdParty(
-        env, build_root, toolchain, variant, versions, name,
-        deps=[], includes=[], libs=['*']):
+def BuildThirdParty(env, versions, name, deps=[], includes=[], libs=['*'], is_native=False):
     _build_thirdparty(
-        env, build_root, toolchain, variant, versions, name, deps, includes, libs)
+        env, versions, name, deps, is_native)
 
     _import_thridparty(
-        env, build_root, toolchain, variant, versions, name, deps, includes, libs)
+        env, versions, name, includes, libs)
 
-def GetThirdPartyExecutable(env, build_root, versions, name, exe_name):
+def GetThirdPartyExecutable(env, versions, name, exe_name):
     return env.File(
         '{}/{}/bin/{}{}'.format(
-            build_root,
-            _get_versioned_thirdparty(env, name, versions),
+            env['ROC_THIRDPARTY_BUILDDIR'],
+            _versioned_thirdparty(env, name, versions),
             exe_name,
             env['PROGSUFFIX']))
 

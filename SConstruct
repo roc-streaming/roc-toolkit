@@ -691,6 +691,16 @@ env['ROC_MODULES'] = [
     'roc_peer',
 ]
 
+# build variant for roc and dependencies (e.g. 'debug' or 'release')
+env['ROC_VARIANT'] = meta.variant
+env['ROC_THIRDPARTY_VARIANT'] = meta.thirdparty_variant
+
+# toolchain tuples (e.g. 'aarch64-linux-gnu')
+env['ROC_BUILD'] = meta.build
+env['ROC_HOST'] = meta.host
+env['ROC_TOOLCHAIN'] = meta.toolchain
+
+# platform identifier (e.g. 'linux', 'android')
 env['ROC_PLATFORM'] = meta.platform
 
 # minimum required version for various platforms

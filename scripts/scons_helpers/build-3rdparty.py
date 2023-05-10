@@ -41,7 +41,7 @@ Context = type(
             'root_dir work_dir dist_dir log_file commit_file'
             ' pkg_dir pkg_src_dir pkg_bin_dir pkg_lib_dir pkg_inc_dir pkg_rpath_dir'
             ' pkg pkg_name pkg_ver pkg_deps'
-            ' toolchain variant android_platform macos_platform macos_arch'
+            ' build host toolchain variant android_platform macos_platform macos_arch'
             ' env unparsed_env').split()
     })
 
@@ -946,37 +946,43 @@ parser = argparse.ArgumentParser(description='build third-party packages')
 parser.add_argument('--self-test', action='store_true',
                     help='run doctests and exit')
 
-parser.add_argument('--root-dir', metavar='root_dir', type=str, required=True,
+parser.add_argument('--root-dir', dest='root_dir', type=str, required=True,
                     help='path to project root')
 
-parser.add_argument('--work-dir', metavar='work_dir', type=str, required=True,
+parser.add_argument('--work-dir', dest='work_dir', type=str, required=True,
                     help='path to working directory')
 
-parser.add_argument('--dist-dir', metavar='dist_dir', type=str, required=True,
+parser.add_argument('--dist-dir', dest='dist_dir', type=str, required=True,
                     help='path to vendored distfiles directory')
 
-parser.add_argument('--toolchain', metavar='toolchain', type=str, required=True,
+parser.add_argument('--build', dest='build', type=str, required=True,
+                    help='system when package is built (e.g. x86_64-pc-linux-gnu)')
+
+parser.add_argument('--host', dest='host', type=str, required=True,
+                    help='system when package will run (e.g. aarch64-linux-gnu)')
+
+parser.add_argument('--toolchain', dest='toolchain', type=str,
                     help='toolchain prefix (e.g. aarch64-linux-gnu)')
 
-parser.add_argument('--variant', metavar='variant', type=str, required=True,
+parser.add_argument('--variant', dest='variant', type=str, required=True,
                     help='build variant', choices=['debug', 'release'])
 
-parser.add_argument('--package', metavar='package', type=str, required=True,
+parser.add_argument('--package', dest='package', type=str, required=True,
                     help='package name and version (e.g. openssl-3.0.7-rc1)')
 
-parser.add_argument('--deps', metavar='deps', type=str, nargs='*',
+parser.add_argument('--deps', dest='deps', type=str, nargs='*',
                     help='package dependencies (should be built previously)')
 
-parser.add_argument('--vars', metavar='vars', type=str, nargs='*',
+parser.add_argument('--vars', dest='vars', type=str, nargs='*',
                     help='environment variables (e.g. CC=gcc CXX=g++ ...)')
 
-parser.add_argument('--android-platform', metavar='android_platform', type=str,
-                    help='android target platform')
+parser.add_argument('--android-platform', dest='android_platform', type=str,
+                    help='android target platform version')
 
-parser.add_argument('--macos-platform', metavar='macos_platform', type=str,
-                    help='macos target platform')
+parser.add_argument('--macos-platform', dest='macos_platform', type=str,
+                    help='macos target platform version')
 
-parser.add_argument('--macos-arch', metavar='macos_arch', type=str, nargs='*',
+parser.add_argument('--macos-arch', dest='macos_arch', type=str, nargs='*',
                     help='macos target architecture(s)')
 
 args = parser.parse_args()
@@ -991,7 +997,9 @@ ctx.pkg = args.package
 ctx.pkg_name, ctx.pkg_ver = parse_dep(args.package)
 ctx.pkg_deps = args.deps or []
 
-ctx.toolchain = args.toolchain
+ctx.build = args.build
+ctx.host = args.host
+ctx.toolchain = args.toolchain or ''
 ctx.variant = args.variant
 ctx.android_platform = args.android_platform
 ctx.macos_platform = args.macos_platform
@@ -1320,8 +1328,8 @@ elif ctx.pkg_name == 'pulseaudio':
         # on some systems; since we're not modifying any autotools stuff, it's safe
         # to replace corresponding commands with "true" command
         if os.path.exists('Makefile.in'):
-            subst_files('Makefile.in', '@ACLOCAL@', 'true')
-            subst_files('Makefile.in', '@AUTOMAKE@', 'true')
+            subst_files(ctx, 'Makefile.in', '@ACLOCAL@', 'true')
+            subst_files(ctx, 'Makefile.in', '@AUTOMAKE@', 'true')
         execute(ctx, './configure --host={host} {vars} {flags} {deps} {opts}'.format(
             host=ctx.toolchain,
             vars=format_vars(ctx),
