@@ -7,6 +7,7 @@
  */
 
 #include "roc_core/log.h"
+#include "roc_core/global_destructor.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/thread.h"
@@ -111,6 +112,15 @@ void Logger::writef(LogLevel level,
     Mutex::Lock lock(mutex_);
 
     if (level > level_ || level == LogNone) {
+        return;
+    }
+
+    // If user installed custom log handler and did not uninstall it until process
+    // exit, it may happen that user's library will deinitialize before our
+    // library (if we're in different shared libraries). If this happened, attempt
+    // to invoke handler at this point may cause crashes. To reduce probability of
+    // this, we stop using user handler as soon as we have detected it.
+    if (handler_ != &backend_handler && GlobalDestructor::is_destroying()) {
         return;
     }
 
