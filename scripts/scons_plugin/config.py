@@ -403,7 +403,7 @@ def FindPkgConfig(context, toolchain):
     if toolchain:
         pkg_config_cmd = toolchain + '-pkg-config'
         if env.Which(pkg_config_cmd):
-            env['PKG_CONFIG'] = pkg_config_cmd
+            env['PKG_CONFIG'] = env.Which(pkg_config_cmd)[0]
             context.Result(env['PKG_CONFIG'])
             return True
 
@@ -411,7 +411,7 @@ def FindPkgConfig(context, toolchain):
             or 'PKG_CONFIG_LIBDIR' in os.environ \
             or 'PKG_CONFIG_SYSROOT_DIR' in os.environ:
             if env.Which('pkg-config'):
-                env['PKG_CONFIG'] = 'pkg-config'
+                env['PKG_CONFIG'] = env.Which('pkg-config')[0]
                 context.Result(env['PKG_CONFIG'])
                 return True
 
@@ -419,7 +419,7 @@ def FindPkgConfig(context, toolchain):
         return False
 
     if env.Which('pkg-config'):
-        env['PKG_CONFIG'] = 'pkg-config'
+        env['PKG_CONFIG'] = env.Which('pkg-config')[0]
         context.Result(env['PKG_CONFIG'])
         return True
 
