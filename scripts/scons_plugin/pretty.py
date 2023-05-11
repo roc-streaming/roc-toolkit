@@ -2,39 +2,39 @@ import SCons.Script
 import sys
 import re
 
-_Colors = {}
-_Compact = False
+_COLORS = {}
+_COMPACT = False
 
 def _init_colors():
-    global _Colors
+    global _COLORS
 
     if sys.stdout.isatty():
-        _Colors['cyan']   = '\033[0;36m'
-        _Colors['purple'] = '\033[0;35m'
-        _Colors['blue']   = '\033[0;34m'
-        _Colors['green']  = '\033[0;32m'
-        _Colors['yellow'] = '\033[0;33m'
-        _Colors['red']    = '\033[0;31m'
-        _Colors['end']    = '\033[0m'
+        _COLORS['cyan']   = '\033[0;36m'
+        _COLORS['purple'] = '\033[0;35m'
+        _COLORS['blue']   = '\033[0;34m'
+        _COLORS['green']  = '\033[0;32m'
+        _COLORS['yellow'] = '\033[0;33m'
+        _COLORS['red']    = '\033[0;31m'
+        _COLORS['end']    = '\033[0m'
     else:
         for k in ['cyan', 'purple', 'blue', 'green', 'yellow', 'red', 'end']:
-           _Colors[k] = ''
+           _COLORS[k] = ''
 
 def _init_compact():
-    global _Compact
+    global _COMPACT
 
     for arg in sys.argv:
         if re.match('^-([^-].*)?Q.*$', arg):
-            _Compact = True
+            _COMPACT = True
             break
 
 def _init_pretty(env):
-    global _Compact
+    global _COMPACT
 
-    if not _Compact:
+    if not _COMPACT:
         return
 
-    def subst(env, string, raw=1, target=None, source=None, conv=None, executor=None):
+    def _subst(env, string, raw=1, target=None, source=None, conv=None, executor=None):
         raw = 1
         gvars = env.gvars()
         lvars = env.lvars()
@@ -43,7 +43,7 @@ def _init_pretty(env):
             lvars.update(executor.get_lvars())
         return SCons.Subst.scons_subst(string, env, raw, target, source, gvars, lvars, conv)
 
-    env.AddMethod(subst, 'subst_target_source')
+    env.AddMethod(_subst, 'subst_target_source')
 
     env['CCCOMSTR']       = env.PrettyCommand('CC', '$SOURCE', 'blue')
     env['SHCCCOMSTR']     = env.PrettyCommand('CC', '$SOURCE', 'blue')
@@ -62,10 +62,10 @@ def _init_pretty(env):
     env['INSTALLSTR']     = env.PrettyCommand('INSTALL', '$TARGET', 'yellow')
 
 def PrettyCommand(env, command, args, color, cmdline=None):
-    global _Compact
+    global _COMPACT
 
-    if _Compact:
-        return ' {}{:>8s}{}   {}'.format(_Colors[color], command, _Colors['end'], args)
+    if _COMPACT:
+        return ' {}{:>8s}{}   {}'.format(_COLORS[color], command, _COLORS['end'], args)
     elif cmdline:
         return cmdline
     else:

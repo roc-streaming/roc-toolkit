@@ -24,7 +24,7 @@ def AddDistFile(env, instdir, target):
     src = target.path
     dst = env.GetDistPath(instdir, target.name)
 
-    def install(target, source, env):
+    def _install(target, source, env):
         if os.path.isdir(src):
             if os.path.isdir(dst):
                 shutil.rmtree(dst)
@@ -39,7 +39,7 @@ def AddDistFile(env, instdir, target):
                 os.makedirs(par)
             shutil.copy(src, dst)
 
-    def uninstall(target, source, env):
+    def _uninstall(target, source, env):
         if os.path.exists(dst):
             if os.path.isdir(dst):
                 shutil.rmtree(dst)
@@ -47,12 +47,12 @@ def AddDistFile(env, instdir, target):
                 os.remove(dst)
 
     env.AlwaysBuild(env.Alias('install', [], [
-        env.Action(install,
+        env.Action(_install,
                    env.PrettyCommand('INSTALL', dst, 'yellow', 'install({})'.format(dst)))
     ]))
 
     env.AlwaysBuild(env.Alias('uninstall', [], [
-        env.Action(uninstall,
+        env.Action(_uninstall,
                    env.PrettyCommand('UNINSTALL', dst, 'red', 'uninstall({})'.format(dst)))
     ]))
 

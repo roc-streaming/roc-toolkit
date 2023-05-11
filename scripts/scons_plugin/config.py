@@ -285,7 +285,7 @@ def FindClangFormat(context):
     min_ver = 10
     max_ver = 99
 
-    def checkver(exe):
+    def _checkver(exe):
         ver_str = env.ParseToolVersion('{exe} --version'.format(exe=exe))
         try:
             ver = tuple(map(int, ver_str.split('.')))
@@ -294,14 +294,14 @@ def FindClangFormat(context):
             return False
 
     clang_format = env.Which('clang-format')
-    if clang_format and checkver(clang_format[0]):
+    if clang_format and _checkver(clang_format[0]):
         env['CLANG_FORMAT'] = clang_format[0]
         context.Result(env['CLANG_FORMAT'])
         return True
 
     for ver in range(min_ver,max_ver+1):
         clang_format = env.Which('clang-format-{}'.format(ver))
-        if clang_format and checkver(clang_format[0]):
+        if clang_format and _checkver(clang_format[0]):
             env['CLANG_FORMAT'] = clang_format[0]
             context.Result(env['CLANG_FORMAT'])
             return True
@@ -309,7 +309,7 @@ def FindClangFormat(context):
         llvmdir = _get_llvm_dir((ver,))
         if llvmdir:
             clang_format = os.path.join(llvmdir, 'clang-format')
-            if checkver(clang_format):
+            if _checkver(clang_format):
                 env['CLANG_FORMAT'] = clang_format
                 context.Result(env['CLANG_FORMAT'])
                 return True
@@ -448,7 +448,7 @@ def FindPkgConfigPath(context, prefix):
                 pkg_config_cmd=quote(pkg_config)))
         try:
             path_list = pkg_config_paths.split(':')
-            def select_path():
+            def _select_path():
                 for path in path_list:
                     if path.startswith(prefix) and os.path.isdir(path):
                         return path
@@ -456,7 +456,7 @@ def FindPkgConfigPath(context, prefix):
                     if path.startswith(prefix):
                         return path
 
-            path = select_path()
+            path = _select_path()
             if path:
                 env['PKG_CONFIG_PATH'] = path
         except:
