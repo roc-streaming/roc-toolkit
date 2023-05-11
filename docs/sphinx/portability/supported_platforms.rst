@@ -46,9 +46,9 @@ Android versions:
 
 macOS versions:
 
+* macOS 13 (Ventura)
 * macOS 12 (Monterey)
 * macOS 11 (Big Sur)
-* macOS 10.15 (Catalina)
 
 Hardware architectures:
 

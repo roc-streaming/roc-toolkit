@@ -278,18 +278,29 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - arch: x86_64
-            ver: 12
+          - macos-arch: x86_64
+            macos-version: 11
+            script: standard-build
 
-          - arch: x86_64
-            ver: 11
+          - macos-arch: x86_64
+            macos-version: 12
+            script: standard-build
 
-          - arch: x86_64
-            ver: 10.15
+          - macos-arch: x86_64
+            macos-version: 13
+            script: standard-build
 
-    runs-on: macos-${{ matrix.ver }}
+          - macos-arch: x86_64
+            macos-version: 13
+            script: build-3rdparty
 
-    name: macos-${{ matrix.arch }}/${{ matrix.ver }}
+          - macos-arch: x86_64
+            macos-version: 13
+            script: universal-binaries
+
+    runs-on: macos-${{ matrix.macos-version }}
+
+    name: macos${{ matrix.macos-version }}-${{ matrix.macos-arch }}/${{ matrix.script }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -298,7 +309,7 @@ jobs:
 
       - name: Build and test
         run: |
-          scripts/ci_checks/macos/macos.sh
+          scripts/ci_checks/macos/${{ matrix.script }}.sh
 
       - name: Handle failure
         if: failure()
