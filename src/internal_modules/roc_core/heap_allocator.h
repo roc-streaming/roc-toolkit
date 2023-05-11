@@ -26,11 +26,11 @@ namespace core {
 //! The memory is always maximum aligned. Thread-safe.
 class HeapAllocator : public IAllocator, public NonCopyable<> {
 public:
-    //! Enable panic on leak in destructor, for all instances.
-    static void enable_panic_on_leak();
-
     HeapAllocator();
     ~HeapAllocator();
+
+    //! Enable panic on leak in destructor, for all instances.
+    static void enable_panic_on_leak();
 
     //! Get number of allocated blocks.
     size_t num_allocations() const;
