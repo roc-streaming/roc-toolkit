@@ -26,9 +26,9 @@ supported_sanitizers = [
     'address',
 ]
 
-# supported macOS architectures
+# supported macOS target architectures
 supported_macos_archs = [
-    'all',
+    'all', # for universal binaries, same as manually listing all archs
     'x86_64',
     'arm64',
 ]
@@ -310,6 +310,7 @@ env.SConsignFile(os.path.join(
 # libraries are no different
 env['STATIC_AND_SHARED_OBJECTS_ARE_THE_SAME'] = 1
 
+# fill vars from environment (CC=gcc scons ...) and arguments (scons CC=gcc ...)
 for var in ['CXX', 'CC', 'LD', 'AR', 'RANLIB', 'LIPO', 'INSTALL_NAME_TOOL',
             'RAGEL', 'GENGETOPT',
             'PKG_CONFIG', 'PKG_CONFIG_PATH', 'CONFIG_GUESS',
@@ -334,6 +335,7 @@ env.PrependFromArgument('CFLAGS')
 env.PrependFromArgument('LINKFLAGS', names=['LINKFLAGS', 'LDFLAGS'])
 env.PrependFromArgument('STRIPFLAGS')
 
+# ensure that these vars always exist
 env.Append(CXXFLAGS=[])
 env.Append(CPPDEFINES=[])
 env.Append(CPPPATH=[])
@@ -341,15 +343,18 @@ env.Append(LIBPATH=[])
 env.Append(LIBS=[])
 env.Append(STRIPFLAGS=[])
 
+# handle --with-*
 if GetOption('with_includes'):
     env.Append(CPPPATH=GetOption('with_includes'))
 
 if GetOption('with_libraries'):
     env.Append(LIBPATH=GetOption('with_libraries'))
 
+# handle --help
 if GetOption('help'):
     Return()
 
+# clean* targets
 cleanfiles = [
     env.DeleteFile('#compile_commands.json'),
     env.DeleteFile('#config.log'),
@@ -387,6 +392,7 @@ if set(COMMAND_LINE_TARGETS).intersection(['clean', 'cleanbuild', 'cleandocs']) 
         env.Execute(cleanall)
     Return()
 
+# fmt target
 if 'fmt' in COMMAND_LINE_TARGETS:
     conf = Configure(env, custom_tests=env.CustomTests)
     conf.FindClangFormat()
@@ -407,8 +413,9 @@ if 'fmt' in COMMAND_LINE_TARGETS:
 # build documentation
 doc_env = env.DeepClone()
 doc_env.SConscript('docs/SConscript',
-                       duplicate=0, exports='doc_env')
+                   duplicate=0, exports='doc_env')
 
+# exit early if there is nothing to build
 non_build_targets = ['fmt', 'docs', 'sphinx', 'doxygen']
 if set(COMMAND_LINE_TARGETS) \
   and set(COMMAND_LINE_TARGETS).intersection(non_build_targets) == set(COMMAND_LINE_TARGETS):
@@ -649,6 +656,7 @@ conf.FindPkgConfigPath(GetOption('prefix'))
 
 env = conf.Finish()
 
+# build directories
 env['ROC_BINDIR'] = '#bin/{}'.format(meta.host)
 
 env['ROC_BUILDDIR'] = '#build/src/{}/{}'.format(
@@ -671,11 +679,13 @@ env['ROC_THIRDPARTY_BUILDDIR'] = '#build/3rdparty/{}/{}'.format(
         ] if s])
     )
 
+# version info
 env['ROC_VERSION'] = env.ParseProjectVersion('src/public_api/include/roc/version.h')
 env['ROC_COMMIT'] = env.ParseGitHead()
 
 env['ROC_SOVER'] = '.'.join(env['ROC_VERSION'].split('.')[:2])
 
+# internal modules
 env['ROC_MODULES'] = [
     'roc_core',
     'roc_error',
@@ -705,13 +715,15 @@ env['ROC_TOOLCHAIN'] = meta.toolchain
 # platform identifier (e.g. 'linux', 'android')
 env['ROC_PLATFORM'] = meta.platform
 
-# minimum required version for various platforms
+# platform version that we build against
 env['ROC_POSIX_PLATFORM']   = '200809'
 env['ROC_ANDROID_PLATFORM'] = '21'
 
+# macOS target platform version and architecture(s)
 env['ROC_MACOS_PLATFORM'] = env.ParseMacosPlatform(meta.host, GetOption('macos_platform'))
 env['ROC_MACOS_ARCH'] = env.ParseMacosArch(meta.host, GetOption('macos_arch'))
 
+# enabled target directories
 env['ROC_TARGETS'] = []
 
 if GetOption('override_targets'):
