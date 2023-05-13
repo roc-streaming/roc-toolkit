@@ -20,7 +20,54 @@ Changelog
     Tests
     Documentation
 
-Version 0.2.3 (Mat 9, 2023)
+Version 0.2.4 (May 13, 2023)
+============================
+
+C API
+-----
+
+* always set ``file`` and ``line`` in ``roc_log_message``
+
+Command-line tools
+------------------
+
+* support PulseAudio sources in ``roc-send``
+* support ``--io-latency`` option in ``roc-send``
+
+Bug fixes
+---------
+
+* fix potential race
+* fix byte order detection on Android
+* do not write to log from shared library destructor
+* stop using user-provided log handler after entering shared library destructor
+
+Internals
+---------
+
+* improve logging
+* refactor scons scripts
+
+Build system
+------------
+
+* fix ``--build-3rdparty=sox`` when ``sndio`` is installed
+* fix ``--build-3rdparty=google-benchmark`` when there is ``python3``, but no ``python`` in PATH
+* fix OpenSSL platform detection in ``--build-3rdparty=openssl`` when not cross-compiling
+* set Android API level to ``21``
+* add ``--macos-platform`` and ``--macos-arch`` scons options
+* by default, set ``--macos-platform`` to current OS, to avoid linker warnings about incompatible macOS deployment targets
+* support building macOS universal binaries by providing multiple values for ``--macos-arch``
+* propagate Android platform, macOS platform, and macOS architectures to ``--build--3rdparty``
+* unexport all symbols except ``roc_*`` from ``libroc.so`` and ``libroc.a`` on Linux, and ``libroc.dylib`` on macOS
+* resolve ``pkg-config`` absolute path
+
+Documentation
+-------------
+
+* minor updates
+
+Version 0.2.3 (Mar 9, 2023)
 ===========================
 
 C API

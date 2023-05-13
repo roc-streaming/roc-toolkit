@@ -30,7 +30,7 @@ extern "C" {
 
 /** Patch version component.
  */
-#define ROC_VERSION_PATCH 3
+#define ROC_VERSION_PATCH 4
 
 /** Version components.
  */
