@@ -3,7 +3,7 @@ Authors
 
 Thanks to everybody who have contributed to the project!
 
-This page provides a (probably incomplete) list of people who have submitted changes to `our repositories <https://github.com/roc-streaming>`_, ordered by the date of the first submission. If you did so and is not listed, feel free to send a pull request.
+This page provides a (probably incomplete) list of people who have submitted changes to `our repositories <https://github.com/roc-streaming>`_, ordered by the date of the first submission. If you did so and are not listed, feel free to send a pull request.
 
 .. _maintainers:
 
@@ -22,6 +22,7 @@ Go team
 ~~~~~~~
 
 * Asal Mirzaieva <asalle.kim@gmail.com>
+* Andrey Bushmin <diskbu@yandex.ru>
 
 Java team
 ~~~~~~~~~
@@ -69,3 +70,7 @@ Contributors
 * Dhanu Saputra <https://github.com/dhanusaputra>
 * Piotr Lewandowski <lewandowski323@gmail.com>
 * Darrel Idiagbor <idiagbordarrel@gmail.com>
+* Sergio Vemic <https://github.com/fastbyte>
+* Paras Raba <parasgadhvi12345@gmail.com>
+* Wataru Ito <https://github.com/Wataru>
+* DieMass <diemass1908@gmail.com>
