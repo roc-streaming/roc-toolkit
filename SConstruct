@@ -453,12 +453,7 @@ if GetOption('compiler'):
         meta.compiler_ver = tuple(map(int, meta.compiler_ver.split('.')))
 else:
     if env.HasArgument('CXX'):
-        if 'clang' in env['CXX']:
-            meta.compiler = 'clang'
-        elif 'gcc' in env['CXX'] or 'g++' in env['CXX']:
-            meta.compiler = 'gcc'
-        elif os.path.basename(env['CXX']) in ['cc', 'c++']:
-            meta.compiler = 'cc'
+        meta.compiler = env.ParseCompilerType(env['CXX'])
     elif meta.toolchain:
         if env.Which('{}-clang++'.format(meta.toolchain)):
             meta.compiler = 'clang'

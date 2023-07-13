@@ -98,6 +98,25 @@ def ParseCompilerTarget(env, compiler):
 
     return None
 
+def ParseCompilerType(env, compiler):
+    cmds = [compiler + ' --version', compiler + ' -v -E -']
+    for cmd in cmds:
+        text = env.GetCommandOutput(cmd)
+        if 'clang version' in text:
+            return 'clang'
+        if 'gcc version' in text:
+            return 'gcc'
+
+    basename = os.path.basename(compiler)
+    if 'clang' in basename:
+        return 'clang'
+    if 'gcc' in basename or 'g++' in basename:
+        return 'gcc'
+    if basename in ['cc', 'c++']:
+        return 'cc'
+
+    return None
+
 def ParseCompilerDirectory(env, compiler):
     text = env.GetCommandOutput(compiler + ' --version')
     if not text:
@@ -210,6 +229,7 @@ def init(env):
     env.AddMethod(ParseToolVersion, 'ParseToolVersion')
     env.AddMethod(ParseCompilerVersion, 'ParseCompilerVersion')
     env.AddMethod(ParseCompilerTarget, 'ParseCompilerTarget')
+    env.AddMethod(ParseCompilerType, 'ParseCompilerType')
     env.AddMethod(ParseCompilerDirectory, 'ParseCompilerDirectory')
     env.AddMethod(ParseLinkDirs, 'ParseLinkDirs')
     env.AddMethod(ParseConfigGuess, 'ParseConfigGuess')
