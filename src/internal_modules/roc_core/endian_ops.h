@@ -77,9 +77,10 @@ private:
     }
 
     static inline uint64_t reverse_octets_(uint64_t v) {
-        return ((v & 0x00000000ffffffffu) << 32) | ((v & 0xffffffff00000000u) >> 32)
-            | ((v & 0x0000ffff0000ffffu) << 16) | ((v & 0xffff0000ffff0000u) >> 16)
-            | ((v & 0x00ff00ff00ff00ffu) << 8) | ((v & 0xff00ff00ff00ff00u) >> 8);
+        return ((v & 0xff00000000000000ull) >> 56) | ((v & 0x00ff000000000000ull) >> 40)
+            | ((v & 0x0000ff0000000000ull) >> 24) | ((v & 0x000000ff00000000ull) >> 8)
+            | ((v & 0x00000000ff000000ull) << 8) | ((v & 0x0000000000ff0000ull) << 24)
+            | ((v & 0x000000000000ff00ull) << 40) | ((v & 0x00000000000000ffull) << 56);
     }
 
     static inline int64_t reverse_octets_(int64_t v) {
@@ -96,7 +97,7 @@ private:
 
         u.value = v;
 
-        switch (NumOctets) {
+        switch ((int)NumOctets) {
         case 0:
         case 1:
             break;
