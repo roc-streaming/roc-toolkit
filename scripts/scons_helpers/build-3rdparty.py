@@ -259,8 +259,6 @@ def execute_cmake(ctx, src_dir, args=None):
 
     cc_flags = [
         '-fPIC', # -fPIC should be set explicitly in older cmake versions
-        '-fvisibility=hidden', # hide private symbols
-        '-fvisibility-inlines-hidden',
     ]
 
     if ctx.variant == 'debug':
@@ -1047,10 +1045,6 @@ if ctx.pkg_name == 'libuv':
         'libuv-v{ctx.pkg_ver}.tar.gz',
         'libuv-v{ctx.pkg_ver}')
     changedir(ctx, 'src/libuv-v{ctx.pkg_ver}')
-    subst_files(
-        ctx,
-        'include/uv.h',
-        from_='__attribute__((visibility("default")))', to='')
     if ctx.prefer_cmake:
         mkpath('build')
         changedir(ctx, 'build')
@@ -1068,7 +1062,7 @@ if ctx.pkg_name == 'libuv':
         execute(ctx, './configure --host={host} {vars} {flags} {opts}'.format(
             host=ctx.toolchain,
             vars=format_vars(ctx),
-            flags=format_flags(ctx, cflags='-fvisibility=hidden'),
+            flags=format_flags(ctx),
             opts=' '.join([
                 '--with-pic',
                 '--enable-static',
@@ -1226,7 +1220,7 @@ elif ctx.pkg_name == 'sndfile':
         host=ctx.toolchain,
         vars=format_vars(ctx),
         # explicitly enable -pthread because libtool doesn't add it on some platforms
-        flags=format_flags(ctx, cflags='-fPIC -fvisibility=hidden', pthread=True),
+        flags=format_flags(ctx, cflags='-fPIC', pthread=True),
         opts=' '.join([
             '--disable-external-libs',
             '--disable-shared',
@@ -1249,7 +1243,7 @@ elif ctx.pkg_name == 'sox':
     execute(ctx, './configure --host={host} {vars} {flags} {opts}'.format(
         host=ctx.toolchain,
         vars=format_vars(ctx),
-        flags=format_flags(ctx, cflags='-fvisibility=hidden'),
+        flags=format_flags(ctx),
         opts=' '.join([
             '--disable-openmp',
             '--disable-shared',
@@ -1435,7 +1429,7 @@ elif ctx.pkg_name == 'json-c':
         ])),
         host=ctx.toolchain,
         vars=format_vars(ctx),
-        flags=format_flags(ctx, cflags='-w -fPIC -fvisibility=hidden'),
+        flags=format_flags(ctx, cflags='-w -fPIC'),
         opts=' '.join([
             '--enable-static',
             '--disable-shared',
