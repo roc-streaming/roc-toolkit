@@ -41,9 +41,9 @@ TEST_GROUP(sender_receiver) {
 
     void init_config(unsigned flags) {
         memset(&sender_conf, 0, sizeof(sender_conf));
-        sender_conf.frame_sample_rate = test::SampleRate;
+        sender_conf.frame_format = ROC_FORMAT_PCM_FLOAT32;
         sender_conf.frame_channels = ROC_CHANNEL_SET_STEREO;
-        sender_conf.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
+        sender_conf.frame_sample_rate = test::SampleRate;
         sender_conf.clock_source = ROC_CLOCK_INTERNAL;
         sender_conf.resampler_profile = ROC_RESAMPLER_PROFILE_DISABLE;
         sender_conf.packet_length =
@@ -61,9 +61,9 @@ TEST_GROUP(sender_receiver) {
         }
 
         memset(&receiver_conf, 0, sizeof(receiver_conf));
-        receiver_conf.frame_sample_rate = test::SampleRate;
+        receiver_conf.frame_format = ROC_FORMAT_PCM_FLOAT32;
         receiver_conf.frame_channels = ROC_CHANNEL_SET_STEREO;
-        receiver_conf.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
+        receiver_conf.frame_sample_rate = test::SampleRate;
         receiver_conf.clock_source = ROC_CLOCK_INTERNAL;
         receiver_conf.resampler_profile = ROC_RESAMPLER_PROFILE_DISABLE;
         receiver_conf.target_latency = test::Latency * 1000000000ul / test::SampleRate;

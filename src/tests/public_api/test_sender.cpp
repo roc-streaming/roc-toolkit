@@ -29,9 +29,9 @@ TEST_GROUP(sender) {
 
         memset(&sender_config, 0, sizeof(sender_config));
         sender_config.fec_encoding = ROC_FEC_ENCODING_DISABLE;
-        sender_config.frame_sample_rate = 44100;
+        sender_config.frame_format = ROC_FORMAT_PCM_FLOAT32;
         sender_config.frame_channels = ROC_CHANNEL_SET_STEREO;
-        sender_config.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
+        sender_config.frame_sample_rate = 44100;
     }
 
     void teardown() {

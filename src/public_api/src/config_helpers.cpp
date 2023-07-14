@@ -28,10 +28,8 @@ bool context_config_from_user(peer::ContextConfig& out, const roc_context_config
 }
 
 bool sender_config_from_user(pipeline::SenderConfig& out, const roc_sender_config& in) {
-    if (in.frame_sample_rate != 0) {
-        out.input_sample_spec.set_sample_rate(in.frame_sample_rate);
-    } else {
-        roc_log(LogError, "bad configuration: invalid frame_sample_rate");
+    if (in.frame_format != ROC_FORMAT_PCM_FLOAT32) {
+        roc_log(LogError, "bad configuration: invalid frame_format");
         return false;
     }
 
@@ -40,20 +38,10 @@ bool sender_config_from_user(pipeline::SenderConfig& out, const roc_sender_confi
         return false;
     }
 
-    if (in.frame_encoding != ROC_FRAME_ENCODING_PCM_FLOAT) {
-        roc_log(LogError, "bad configuration: invalid frame_encoding");
-        return false;
-    }
-
-    if (in.packet_sample_rate != 0 && in.packet_sample_rate != 44100) {
-        roc_log(LogError,
-                "bad configuration:"
-                " invalid packet_sample_rate, only 44100 is currently supported");
-        return false;
-    }
-
-    if (in.packet_channels != 0 && in.packet_channels != ROC_CHANNEL_SET_STEREO) {
-        roc_log(LogError, "bad configuration: invalid packet_channels");
+    if (in.frame_sample_rate != 0) {
+        out.input_sample_spec.set_sample_rate(in.frame_sample_rate);
+    } else {
+        roc_log(LogError, "bad configuration: invalid frame_sample_rate");
         return false;
     }
 
@@ -130,10 +118,8 @@ bool sender_config_from_user(pipeline::SenderConfig& out, const roc_sender_confi
 
 bool receiver_config_from_user(pipeline::ReceiverConfig& out,
                                const roc_receiver_config& in) {
-    if (in.frame_sample_rate != 0) {
-        out.common.output_sample_spec.set_sample_rate(in.frame_sample_rate);
-    } else {
-        roc_log(LogError, "bad configuration: invalid frame_sample_rate");
+    if (in.frame_format != ROC_FORMAT_PCM_FLOAT32) {
+        roc_log(LogError, "bad configuration: invalid frame_format");
         return false;
     }
 
@@ -142,8 +128,10 @@ bool receiver_config_from_user(pipeline::ReceiverConfig& out,
         return false;
     }
 
-    if (in.frame_encoding != ROC_FRAME_ENCODING_PCM_FLOAT) {
-        roc_log(LogError, "bad configuration: invalid frame_encoding");
+    if (in.frame_sample_rate != 0) {
+        out.common.output_sample_spec.set_sample_rate(in.frame_sample_rate);
+    } else {
+        roc_log(LogError, "bad configuration: invalid frame_sample_rate");
         return false;
     }
 
