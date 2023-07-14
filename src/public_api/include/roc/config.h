@@ -224,7 +224,9 @@ typedef enum roc_protocol {
     ROC_PROTO_RTCP = 70
 } roc_protocol;
 
-/** Forward Error Correction encoding. */
+/** Forward Error Correction encoding.
+ * Each FEC encoding is caompatible with specific protocols.
+ */
 typedef enum roc_fec_encoding {
     /** No FEC encoding.
      * Compatible with \ref ROC_PROTO_RTP protocol.
@@ -251,17 +253,25 @@ typedef enum roc_fec_encoding {
     ROC_FEC_ENCODING_LDPC_STAIRCASE = 2
 } roc_fec_encoding;
 
-/** Packet encoding. */
+/** Packet encoding.
+ * Each packet encoding defines sample format, channel set, and rate.
+ * Each packet encoding is caompatible with specific protocols.
+ */
 typedef enum roc_packet_encoding {
-    /** PCM signed 16-bit.
-     * "L16" encoding from RTP A/V Profile (RFC 3551).
-     * Uncompressed samples coded as interleaved 16-bit signed big-endian
+    /** PCM signed 16-bit, 2 channels, 44100 rate.
+     * Represents L16 stereo encoding from RTP A/V Profile (RFC 3551).
+     * Used uncompressed samples coded as interleaved 16-bit signed big-endian
      * integers in two's complement notation.
+     * Compatible with \ref ROC_PROTO_RTP, \ref ROC_PROTO_RTP_RS8M_SOURCE,
+     * \ref ROC_PROTO_RTP_LDPC_SOURCE protocols for source endpoint.
      */
     ROC_PACKET_ENCODING_AVP_L16 = 2
 } roc_packet_encoding;
 
-/** Sample format. */
+/** Sample format.
+ * Defines how each sample is represented.
+ * Does not define channel set and sample rate.
+ */
 typedef enum roc_format {
     /** PCM floats.
      * Uncompressed samples coded as 32-bit native-endian floats in range [-1; 1].
@@ -489,7 +499,7 @@ typedef struct roc_receiver_config {
 
     /** Resampler profile to use.
      * If non-zero, the receiver employs resampler for two purposes:
-     *  - adjust the sender clock to the receiver clock, which may differ a bit
+     *  - adjust the sender clock to the receiver clock, to compensate clock drift
      *  - convert the packet sample rate to the frame sample rate if they are different
      */
     roc_resampler_profile resampler_profile;
@@ -502,45 +512,33 @@ typedef struct roc_receiver_config {
      */
     unsigned long long target_latency;
 
-    /** Maximum delta between current and target latency, in nanoseconds.
-     * If current latency becomes larger than the target latency plus this value, the
-     * session is terminated.
+    /** Maximum allowed delta between current and target latency, in nanoseconds.
+     * If session latency differs from the target latency by more than given value, the
+     * session is terminated (it can then automatically restart). Receiver itself is
+     * not terminated; if there are no sessions, it will produce zeros.
      * If zero, default value is used.
      */
-    unsigned long long max_latency_overrun;
-
-    /** Maximum delta between target and current latency, in nanoseconds.
-     * If current latency becomes smaller than the target latency minus this value, the
-     * session is terminated.
-     * May be larger than the target latency because current latency may be negative,
-     * which means that the playback run ahead of the last packet received from network.
-     * If zero, default value is used.
-     */
-    unsigned long long max_latency_underrun;
+    unsigned long long latency_tolerance;
 
     /** Timeout for the lack of playback, in nanoseconds.
-     * If there is no playback during this period, the session is terminated.
-     * This mechanism allows to detect dead, hanging, or broken clients
-     * generating invalid packets.
+     * If there is no playback during this period, the session is terminated (it can
+     * then automatically restart). Receiver itself is not terminated; if there are
+     * no sessions, it will produce zeros.
+     * This mechanism allows to detect dead, hanging, or incompatible clients that
+     * generate unparseable packets.
      * If zero, default value is used. If negative, the timeout is disabled.
      */
     long long no_playback_timeout;
 
-    /** Timeout for broken playback, in nanoseconds.
-     * If there the playback is considered broken during this period, the session
-     * is terminated. The playback is broken if there is a breakage detected at every
-     * \c breakage_detection_window during \c broken_playback_timeout.
-     * This mechanism allows to detect vicious circles like when all client packets
-     * are a bit late and receiver constantly drops them producing unpleasant noise.
+    /** Timeout for choppy playback, in nanoseconds.
+     * If there is constant shuttering during this period, the session is terminated (it
+     * can then automatically restart). Receiver itself is  not terminated; if there are
+     * no sessions, it will produce zeros.
+     * This mechanism allows to detect situations when playback continues but there
+     * are frequent glitches, for example because there is a high ratio of late packets.
      * If zero, default value is used. If negative, the timeout is disabled.
      */
-    long long broken_playback_timeout;
-
-    /** Breakage detection window, in nanoseconds.
-     * If zero, default value is used.
-     * \see broken_playback_timeout.
-     */
-    unsigned long long breakage_detection_window;
+    long long choppy_playback_timeout;
 } roc_receiver_config;
 
 #ifdef __cplusplus
