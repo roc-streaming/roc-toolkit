@@ -193,16 +193,14 @@ bool receiver_config_from_user(pipeline::ReceiverConfig& out,
         }
     }
 
-    if (in.max_latency_overrun != 0) {
+    if (in.latency_tolerance != 0) {
         out.default_session.latency_monitor.min_latency =
             out.default_session.target_latency
-            + (core::nanoseconds_t)in.max_latency_overrun;
-    }
+            + (core::nanoseconds_t)in.latency_tolerance;
 
-    if (in.max_latency_underrun != 0) {
         out.default_session.latency_monitor.max_latency =
             out.default_session.target_latency
-            - (core::nanoseconds_t)in.max_latency_underrun;
+            - (core::nanoseconds_t)in.latency_tolerance;
     }
 
     if (in.no_playback_timeout < 0) {
@@ -211,15 +209,16 @@ bool receiver_config_from_user(pipeline::ReceiverConfig& out,
         out.default_session.watchdog.no_playback_timeout = in.no_playback_timeout;
     }
 
-    if (in.broken_playback_timeout < 0) {
+    if (in.choppy_playback_timeout < 0) {
         out.default_session.watchdog.broken_playback_timeout = 0;
-    } else if (in.no_playback_timeout > 0) {
-        out.default_session.watchdog.broken_playback_timeout = in.broken_playback_timeout;
-    }
+    } else if (in.choppy_playback_timeout > 0) {
+        out.default_session.watchdog.broken_playback_timeout = in.choppy_playback_timeout;
 
-    if (in.breakage_detection_window != 0) {
-        out.default_session.watchdog.breakage_detection_window =
-            (core::nanoseconds_t)in.breakage_detection_window;
+        if (out.default_session.watchdog.breakage_detection_window
+            > in.choppy_playback_timeout / 4) {
+            out.default_session.watchdog.breakage_detection_window =
+                in.choppy_playback_timeout / 4;
+        }
     }
 
     return true;
