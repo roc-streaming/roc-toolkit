@@ -6,12 +6,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_error/error_to_string.h"
+#include "roc_error/error_code_to_str.h"
 
 namespace roc {
 namespace error {
 
-const char* error_to_string(ErrorCode err) {
+const char* error_code_to_str(ErrorCode err) {
     switch (err) {
     case ErrUnknown:
         return "unknown error";
