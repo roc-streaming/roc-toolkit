@@ -48,12 +48,6 @@ const core::nanoseconds_t DefaultLatency = 200 * core::Millisecond;
 //! Default internal frame length.
 const core::nanoseconds_t DefaultInternalFrameLength = 7 * core::Millisecond;
 
-//! Default minum latency relative to target latency.
-const int DefaultMinLatencyFactor = -1;
-
-//! Default maximum latency relative to target latency.
-const int DefaultMaxLatencyFactor = 2;
-
 //! Task processing parameters.
 struct TaskConfig {
     //! Enable precise task scheduling mode (default).
@@ -196,12 +190,11 @@ struct ReceiverSessionConfig {
 
     ReceiverSessionConfig()
         : target_latency(DefaultLatency)
-        , payload_type(0)
-        , freq_estimator_config()
+        , payload_type()
         , resampler_backend(audio::ResamplerBackend_Default)
         , resampler_profile(audio::ResamplerProfile_Medium) {
-        latency_monitor.min_latency = target_latency * DefaultMinLatencyFactor;
-        latency_monitor.max_latency = target_latency * DefaultMaxLatencyFactor;
+        latency_monitor.deduce_min_latency(DefaultLatency);
+        latency_monitor.deduce_max_latency(DefaultLatency);
     }
 };
 

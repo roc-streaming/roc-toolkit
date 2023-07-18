@@ -29,7 +29,7 @@ TEST_GROUP(receiver) {
 
         memset(&receiver_config, 0, sizeof(receiver_config));
         receiver_config.frame_format = ROC_FORMAT_PCM_FLOAT32;
-        receiver_config.frame_channels = ROC_CHANNEL_SET_STEREO;
+        receiver_config.frame_channels = ROC_CHANNEL_LAYOUT_STEREO;
         receiver_config.frame_sample_rate = 44100;
     }
 
@@ -506,20 +506,10 @@ TEST(receiver, bad_config) {
     CHECK(bad_context);
 
     roc_receiver* receiver = NULL;
-    CHECK(roc_receiver_open(bad_context, &receiver_config, &receiver) == 0);
-    CHECK(receiver);
+    CHECK(roc_receiver_open(bad_context, &receiver_config, &receiver) != 0);
+    CHECK(!receiver);
 
-    roc_endpoint* source_endpoint = NULL;
-    CHECK(roc_endpoint_allocate(&source_endpoint) == 0);
-    CHECK(roc_endpoint_set_uri(source_endpoint, "rtp://127.0.0.1:0") == 0);
-
-    CHECK(roc_receiver_bind(NULL, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
-                            source_endpoint)
-          == -1);
-
-    CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
-    LONGS_EQUAL(0, roc_receiver_close(receiver));
-    LONGS_EQUAL(0, roc_context_close(bad_context));
+    CHECK(roc_context_close(bad_context) == 0);
 }
 
 } // namespace api

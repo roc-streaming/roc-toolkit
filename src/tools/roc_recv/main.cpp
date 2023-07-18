@@ -136,9 +136,8 @@ int main(int argc, char** argv) {
             return 1;
         }
     } else {
-        receiver_config.default_session.latency_monitor.min_latency =
-            receiver_config.default_session.target_latency
-            * pipeline::DefaultMinLatencyFactor;
+        receiver_config.default_session.latency_monitor.deduce_min_latency(
+            receiver_config.default_session.target_latency);
     }
 
     if (args.max_latency_given) {
@@ -149,9 +148,8 @@ int main(int argc, char** argv) {
             return 1;
         }
     } else {
-        receiver_config.default_session.latency_monitor.max_latency =
-            receiver_config.default_session.target_latency
-            * pipeline::DefaultMaxLatencyFactor;
+        receiver_config.default_session.latency_monitor.deduce_max_latency(
+            receiver_config.default_session.target_latency);
     }
 
     if (args.np_timeout_given) {
@@ -179,6 +177,9 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --bp-window");
             return 1;
         }
+    } else {
+        receiver_config.default_session.watchdog.deduce_breakage_playback_window(
+            receiver_config.default_session.watchdog.broken_playback_timeout);
     }
 
     receiver_config.common.resampling = !args.no_resampling_flag;
