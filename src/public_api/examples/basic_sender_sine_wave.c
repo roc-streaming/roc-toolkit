@@ -80,7 +80,7 @@ int main() {
 
     /* Setup input frame format. */
     sender_config.frame_format = ROC_FORMAT_PCM_FLOAT32;
-    sender_config.frame_channels = ROC_CHANNEL_SET_STEREO;
+    sender_config.frame_channels = ROC_CHANNEL_LAYOUT_STEREO;
     sender_config.frame_sample_rate = MY_SAMPLE_RATE;
 
     /* Turn on internal CPU timer.

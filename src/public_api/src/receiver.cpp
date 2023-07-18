@@ -39,7 +39,7 @@ int roc_receiver_open(roc_context* context,
     }
 
     pipeline::ReceiverConfig imp_config;
-    if (!api::receiver_config_from_user(imp_config, *config)) {
+    if (!api::receiver_config_from_user(*imp_context, imp_config, *config)) {
         roc_log(LogError, "roc_receiver_open(): invalid arguments: bad config");
         return -1;
     }
