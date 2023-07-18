@@ -12,22 +12,33 @@
 #ifndef ROC_AUDIO_SAMPLE_SPEC_H_
 #define ROC_AUDIO_SAMPLE_SPEC_H_
 
+#include "roc_audio/channel_layout.h"
+#include "roc_audio/channel_set.h"
 #include "roc_audio/sample.h"
+#include "roc_core/stddefs.h"
 #include "roc_core/time.h"
 #include "roc_packet/units.h"
 
 namespace roc {
 namespace audio {
 
-//! Sample stream specification.
-//! Defines sample rate and channel layout.
+//! Sample specification.
+//! Describes sample rate and channels.
 class SampleSpec {
 public:
-    //! Default constructor.
+    //! Construct empty specification.
     SampleSpec();
 
-    //! Constructor with sample rate and channel mask.
-    SampleSpec(size_t sample_rate, packet::channel_mask_t channel_mask);
+    //! Construct specification with parameters.
+    SampleSpec(size_t sample_rate, const ChannelSet& channel_set);
+
+    //! Construct specification with parameters.
+    //! @remarks
+    //!  This is a convenient overload for the case when 32-bit mask is enough to
+    //!  describe channels. Otherwise, use overload that accepts ChannelSet.
+    SampleSpec(size_t sample_rate,
+               ChannelLayout channel_layout,
+               ChannelMask channel_mask);
 
     //! @name Equality
     //! @{
@@ -43,24 +54,36 @@ public:
     //! @name Getters and setters
     //! @{
 
+    //! Check if sample spec has non-zero rate and valid channel set.
+    bool is_valid() const;
+
     //! Get sample rate.
+    //! @remarks
+    //!  Defines sample frequency (number of samples per second).
     size_t sample_rate() const;
 
     //! Set sample rate.
     void set_sample_rate(size_t sample_rate);
 
-    //! Get channel mask.
-    packet::channel_mask_t channel_mask() const;
+    //! Get channel set.
+    //! @remarks
+    //!  Defines sample channels (layout and numbers).
+    const ChannelSet& channel_set() const;
 
-    //! Get number of channels.
+    //! Get mutable channel set.
+    ChannelSet& channel_set();
+
+    //! Set channel set.
+    void set_channel_set(const ChannelSet& channel_set);
+
+    //! Get number enabled channels in channel set.
+    //! @remarks
+    //!  Shorthand for channel_set().num_channels().
     size_t num_channels() const;
-
-    //! Set channel mask.
-    void set_channel_mask(packet::channel_mask_t channel_mask);
 
     // @}
 
-    //! @name Nanosecond duration
+    //! @name Nanosecond duration converters
     //! @{
 
     //! Convert nanoseconds duration to number of samples per channel.
@@ -77,7 +100,7 @@ public:
 
     // @}
 
-    //! @name RTP timestamp
+    //! @name RTP timestamp converters
     //! @{
 
     //! Convert nanoseconds delta to RTP timestamp delta.
@@ -94,8 +117,7 @@ public:
 
 private:
     size_t sample_rate_;
-    packet::channel_mask_t channel_mask_;
-    size_t num_channels_;
+    ChannelSet channel_set_;
 };
 
 } // namespace audio

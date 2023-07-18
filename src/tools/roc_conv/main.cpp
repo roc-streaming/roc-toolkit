@@ -93,8 +93,8 @@ int main(int argc, char** argv) {
         args.poisoning_flag);
 
     sndio::Config source_config;
-    source_config.sample_spec.set_channel_mask(
-        converter_config.input_sample_spec.channel_mask());
+    source_config.sample_spec.set_channel_set(
+        converter_config.input_sample_spec.channel_set());
     source_config.sample_spec.set_sample_rate(0);
     source_config.frame_length = converter_config.internal_frame_length;
 

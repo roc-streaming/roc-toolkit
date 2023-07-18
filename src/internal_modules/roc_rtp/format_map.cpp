@@ -7,6 +7,7 @@
  */
 
 #include "roc_rtp/format_map.h"
+#include "roc_audio/channel_layout.h"
 #include "roc_audio/pcm_decoder.h"
 #include "roc_audio/pcm_encoder.h"
 #include "roc_core/panic.h"
@@ -19,19 +20,23 @@ namespace {
 template <audio::PcmEncoding Encoding,
           audio::PcmEndian Endian,
           size_t SampleRate,
-          packet::channel_mask_t ChMask>
+          audio::ChannelLayout ChLayout,
+          audio::ChannelMask ChMask>
 audio::IFrameEncoder* new_encoder(core::IAllocator& allocator) {
-    return new (allocator) audio::PcmEncoder(audio::PcmFormat(Encoding, Endian),
-                                             audio::SampleSpec(SampleRate, ChMask));
+    return new (allocator)
+        audio::PcmEncoder(audio::PcmFormat(Encoding, Endian),
+                          audio::SampleSpec(SampleRate, ChLayout, ChMask));
 }
 
 template <audio::PcmEncoding Encoding,
           audio::PcmEndian Endian,
           size_t SampleRate,
-          packet::channel_mask_t ChMask>
+          audio::ChannelLayout ChLayout,
+          audio::ChannelMask ChMask>
 audio::IFrameDecoder* new_decoder(core::IAllocator& allocator) {
-    return new (allocator) audio::PcmDecoder(audio::PcmFormat(Encoding, Endian),
-                                             audio::SampleSpec(SampleRate, ChMask));
+    return new (allocator)
+        audio::PcmDecoder(audio::PcmFormat(Encoding, Endian),
+                          audio::SampleSpec(SampleRate, ChLayout, ChMask));
 }
 
 } // namespace
@@ -43,12 +48,15 @@ FormatMap::FormatMap()
         fmt.payload_type = PayloadType_L16_Mono;
         fmt.pcm_format =
             audio::PcmFormat(audio::PcmEncoding_SInt16, audio::PcmEndian_Big);
-        fmt.sample_spec = audio::SampleSpec(44100, 0x1);
+        fmt.sample_spec =
+            audio::SampleSpec(44100, audio::ChannelLayout_Mono, audio::ChannelMask_Mono);
         fmt.packet_flags = packet::Packet::FlagAudio;
         fmt.new_encoder =
-            &new_encoder<audio::PcmEncoding_SInt16, audio::PcmEndian_Big, 44100, 0x1>;
+            &new_encoder<audio::PcmEncoding_SInt16, audio::PcmEndian_Big, 44100,
+                         audio::ChannelLayout_Mono, audio::ChannelMask_Mono>;
         fmt.new_decoder =
-            &new_decoder<audio::PcmEncoding_SInt16, audio::PcmEndian_Big, 44100, 0x1>;
+            &new_decoder<audio::PcmEncoding_SInt16, audio::PcmEndian_Big, 44100,
+                         audio::ChannelLayout_Mono, audio::ChannelMask_Mono>;
         add_(fmt);
     }
     {
@@ -56,12 +64,15 @@ FormatMap::FormatMap()
         fmt.payload_type = PayloadType_L16_Stereo;
         fmt.pcm_format =
             audio::PcmFormat(audio::PcmEncoding_SInt16, audio::PcmEndian_Big);
-        fmt.sample_spec = audio::SampleSpec(44100, 0x3);
+        fmt.sample_spec = audio::SampleSpec(44100, audio::ChannelLayout_Surround,
+                                            audio::ChannelMask_Stereo);
         fmt.packet_flags = packet::Packet::FlagAudio;
         fmt.new_encoder =
-            &new_encoder<audio::PcmEncoding_SInt16, audio::PcmEndian_Big, 44100, 0x3>;
+            &new_encoder<audio::PcmEncoding_SInt16, audio::PcmEndian_Big, 44100,
+                         audio::ChannelLayout_Surround, audio::ChannelMask_Stereo>;
         fmt.new_decoder =
-            &new_decoder<audio::PcmEncoding_SInt16, audio::PcmEndian_Big, 44100, 0x3>;
+            &new_decoder<audio::PcmEncoding_SInt16, audio::PcmEndian_Big, 44100,
+                         audio::ChannelLayout_Surround, audio::ChannelMask_Stereo>;
         add_(fmt);
     }
 }

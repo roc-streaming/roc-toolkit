@@ -179,12 +179,14 @@ audio::SampleSpec SoxSource::sample_spec() const {
         roc_panic("sox source: sample_rate(): non-open output file or device");
     }
 
-    const size_t sample_rate = size_t(input_->signal.rate);
-
-    const packet::channel_mask_t chan_mask =
-        packet::channel_mask_t(1u << input_->signal.channels) - 1;
-
-    return audio::SampleSpec(sample_rate, chan_mask);
+    if (input_->signal.channels == 1) {
+        return audio::SampleSpec(size_t(input_->signal.rate), audio::ChannelLayout_Mono,
+                                 audio::ChannelMask_Mono);
+    } else {
+        return audio::SampleSpec(size_t(input_->signal.rate),
+                                 audio::ChannelLayout_Surround,
+                                 (1u << input_->signal.channels) - 1);
+    }
 }
 
 core::nanoseconds_t SoxSource::latency() const {

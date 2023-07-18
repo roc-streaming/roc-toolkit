@@ -27,7 +27,9 @@ TEST_GROUP(sox_sink) {
     Config sink_config;
 
     void setup() {
-        sink_config.sample_spec = audio::SampleSpec(SampleRate, ChMask);
+        sink_config.sample_spec =
+            audio::SampleSpec(SampleRate, audio::ChannelLayout_Surround, ChMask);
+
         sink_config.frame_length = FrameSize * core::Second
             / core::nanoseconds_t(sink_config.sample_spec.sample_rate()
                                   * sink_config.sample_spec.num_channels());

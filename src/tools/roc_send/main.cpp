@@ -202,8 +202,7 @@ int main(int argc, char** argv) {
     sender_config.profiling = args.profiling_flag;
 
     sndio::Config io_config;
-    io_config.sample_spec.set_channel_mask(
-        sender_config.input_sample_spec.channel_mask());
+    io_config.sample_spec.set_channel_set(sender_config.input_sample_spec.channel_set());
     io_config.frame_length = sender_config.internal_frame_length;
 
     if (args.io_latency_given) {
