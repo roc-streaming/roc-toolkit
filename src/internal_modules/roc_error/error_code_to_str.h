@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_error/error_to_string.h
-//! @brief Error codes.
+//! @file roc_error/error_code_to_str.h
+//! @brief Format error code to string.
 
-#ifndef ROC_ERROR_ERROR_TO_STRING_H_
-#define ROC_ERROR_ERROR_TO_STRING_H_
+#ifndef ROC_ERROR_ERROR_CODE_TO_STR_H_
+#define ROC_ERROR_ERROR_CODE_TO_STR_H_
 
 #include "roc_error/error_code.h"
 
@@ -18,9 +18,9 @@ namespace roc {
 namespace error {
 
 //! Get human-readable message for error code.
-const char* error_to_string(ErrorCode err);
+const char* error_code_to_str(ErrorCode err);
 
 } // namespace error
 } // namespace roc
 
-#endif // ROC_ERROR_ERROR_TO_STRING_H_
+#endif // ROC_ERROR_ERROR_CODE_TO_STR_H_
