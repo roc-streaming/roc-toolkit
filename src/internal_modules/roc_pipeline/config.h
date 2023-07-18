@@ -35,8 +35,9 @@ namespace pipeline {
 //! Default sample rate, number of samples per second.
 const size_t DefaultSampleRate = 44100;
 
-//! Default channel mask.
-const packet::channel_mask_t DefaultChannelMask = 0x3;
+static const audio::SampleSpec DefaultSampleSpec(DefaultSampleRate,
+                                                 audio::ChannelLayout_Surround,
+                                                 audio::ChannelMask_Stereo);
 
 //! Default packet length.
 const core::nanoseconds_t DefaultPacketLength = 7 * core::Millisecond;
@@ -147,7 +148,7 @@ struct SenderConfig {
     SenderConfig()
         : resampler_backend(audio::ResamplerBackend_Default)
         , resampler_profile(audio::ResamplerProfile_Medium)
-        , input_sample_spec(DefaultSampleRate, DefaultChannelMask)
+        , input_sample_spec(DefaultSampleSpec)
         , internal_frame_length(DefaultInternalFrameLength)
         , packet_length(DefaultPacketLength)
         , payload_type(rtp::PayloadType_L16_Stereo)
@@ -233,7 +234,7 @@ struct ReceiverCommonConfig {
     bool beeping;
 
     ReceiverCommonConfig()
-        : output_sample_spec(DefaultSampleRate, DefaultChannelMask)
+        : output_sample_spec(DefaultSampleSpec)
         , internal_frame_length(DefaultInternalFrameLength)
         , resampling(false)
         , timing(false)
@@ -287,8 +288,8 @@ struct ConverterConfig {
     ConverterConfig()
         : resampler_backend(audio::ResamplerBackend_Default)
         , resampler_profile(audio::ResamplerProfile_Medium)
-        , input_sample_spec(DefaultSampleRate, DefaultChannelMask)
-        , output_sample_spec(DefaultSampleRate, DefaultChannelMask)
+        , input_sample_spec(DefaultSampleSpec)
+        , output_sample_spec(DefaultSampleSpec)
         , internal_frame_length(DefaultInternalFrameLength)
         , resampling(false)
         , poisoning(false)

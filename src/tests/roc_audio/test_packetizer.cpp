@@ -41,7 +41,7 @@ enum {
 
 const core::nanoseconds_t PacketDuration = SamplesPerPacket * core::Second / SampleRate;
 
-const audio::SampleSpec SampleSpecs(SampleRate, ChMask);
+const audio::SampleSpec SampleSpecs(SampleRate, audio::ChannelLayout_Surround, ChMask);
 const audio::PcmFormat PcmFmt(audio::PcmEncoding_SInt16, audio::PcmEndian_Big);
 
 core::HeapAllocator allocator;

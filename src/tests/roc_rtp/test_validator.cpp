@@ -25,8 +25,8 @@ const PayloadType Pt2 = PayloadType_L16_Mono;
 
 enum { Src1 = 55, Src2 = 77, SampleRate = 10000, MaxSnJump = 100, MaxTsJump = 1000 };
 
-const audio::SampleSpec SampleSpecs =
-    audio::SampleSpec(SampleRate, pipeline::DefaultChannelMask);
+const audio::SampleSpec
+    SampleSpecs(SampleRate, audio::ChannelLayout_Surround, audio::ChannelMask_Stereo);
 
 core::HeapAllocator allocator;
 packet::PacketFactory packet_factory(allocator, true);

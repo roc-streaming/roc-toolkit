@@ -22,8 +22,8 @@ namespace {
 enum { SampleRate = 1000, NumSamples = 100, NumPackets = 30 };
 
 const core::nanoseconds_t NsPerSample = core::Second / SampleRate;
-const audio::SampleSpec SampleSpecs =
-    audio::SampleSpec(SampleRate, pipeline::DefaultChannelMask);
+const audio::SampleSpec
+    SampleSpecs(SampleRate, audio::ChannelLayout_Surround, audio::ChannelMask_Stereo);
 
 core::HeapAllocator allocator;
 PacketFactory packet_factory(allocator, true);

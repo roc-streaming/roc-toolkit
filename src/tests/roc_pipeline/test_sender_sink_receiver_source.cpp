@@ -46,7 +46,7 @@ enum {
     ManyFrames = Latency / SamplesPerFrame * 10
 };
 
-const audio::SampleSpec SampleSpecs = audio::SampleSpec(SampleRate, ChMask);
+const audio::SampleSpec SampleSpecs(SampleRate, audio::ChannelLayout_Surround, ChMask);
 
 const core::nanoseconds_t MaxBufDuration = MaxBufSize * core::Second
     / core::nanoseconds_t(SampleSpecs.sample_rate() * SampleSpecs.num_channels());
@@ -83,7 +83,9 @@ rtp::FormatMap format_map;
 SenderConfig sender_config(int flags) {
     SenderConfig config;
 
-    config.input_sample_spec = audio::SampleSpec(SampleRate, ChMask);
+    config.input_sample_spec =
+        audio::SampleSpec(SampleRate, audio::ChannelLayout_Surround, ChMask);
+
     config.packet_length = SamplesPerPacket * core::Second / SampleRate;
     config.internal_frame_length = MaxBufDuration;
 
@@ -109,7 +111,9 @@ SenderConfig sender_config(int flags) {
 ReceiverConfig receiver_config() {
     ReceiverConfig config;
 
-    config.common.output_sample_spec = audio::SampleSpec(SampleRate, ChMask);
+    config.common.output_sample_spec =
+        audio::SampleSpec(SampleRate, audio::ChannelLayout_Surround, ChMask);
+
     config.common.internal_frame_length = MaxBufDuration;
 
     config.common.resampling = false;
