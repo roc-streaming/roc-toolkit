@@ -7,6 +7,7 @@
  */
 
 #include "roc_audio/channel_mapper_reader.h"
+#include "roc_audio/channel_set_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 
@@ -20,8 +21,8 @@ ChannelMapperReader::ChannelMapperReader(IFrameReader& reader,
                                          const SampleSpec& out_spec)
     : input_reader_(reader)
     , input_buf_()
-    , mapper_(in_spec.channel_mask(), out_spec.channel_mask())
-    , mapper_enabled_(in_spec.channel_mask() != out_spec.channel_mask())
+    , mapper_(in_spec.channel_set(), out_spec.channel_set())
+    , mapper_enabled_(in_spec.channel_set() != out_spec.channel_set())
     , in_spec_(in_spec)
     , out_spec_(out_spec)
     , valid_(false) {
@@ -33,9 +34,10 @@ ChannelMapperReader::ChannelMapperReader(IFrameReader& reader,
         const size_t frame_size = in_spec.ns_2_samples_overall(frame_length);
         roc_log(LogDebug,
                 "channel mapper reader:"
-                " initializing: frame_size=%lu in_mask=0x%lx out_mask=%lx",
-                (unsigned long)frame_size, (unsigned long)in_spec.channel_mask(),
-                (unsigned long)out_spec.channel_mask());
+                " initializing: frame_size=%lu in_chans=%s out_chans=%s",
+                (unsigned long)frame_size,
+                channel_set_to_str(in_spec.channel_set()).c_str(),
+                channel_set_to_str(out_spec.channel_set()).c_str());
 
         if (frame_size == 0) {
             roc_log(LogError, "channel mapper reader: frame size cannot be 0");

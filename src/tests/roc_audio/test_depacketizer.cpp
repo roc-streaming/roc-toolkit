@@ -33,7 +33,7 @@ enum {
     SamplesSize = SamplesPerPacket * NumCh
 };
 
-const audio::SampleSpec SampleSpecs(SampleRate, ChMask);
+const audio::SampleSpec SampleSpecs(SampleRate, audio::ChannelLayout_Surround, ChMask);
 const audio::PcmFormat PcmFmt(audio::PcmEncoding_SInt16, audio::PcmEndian_Big);
 
 core::HeapAllocator allocator;

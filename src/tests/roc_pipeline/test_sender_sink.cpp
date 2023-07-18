@@ -43,7 +43,7 @@ enum {
     ManyFrames = FramesPerPacket * 20
 };
 
-const audio::SampleSpec SampleSpecs = audio::SampleSpec(SampleRate, ChMask);
+const audio::SampleSpec SampleSpecs(SampleRate, audio::ChannelLayout_Surround, ChMask);
 
 const core::nanoseconds_t MaxBufDuration = MaxBufSize * core::Second
     / core::nanoseconds_t(SampleSpecs.sample_rate() * SampleSpecs.num_channels());
@@ -65,7 +65,9 @@ TEST_GROUP(sender_sink) {
     address::SocketAddr dst_addr;
 
     void setup() {
-        config.input_sample_spec = audio::SampleSpec(SampleRate, ChMask);
+        config.input_sample_spec =
+            audio::SampleSpec(SampleRate, audio::ChannelLayout_Surround, ChMask);
+
         config.packet_length = SamplesPerPacket * core::Second / SampleRate;
         config.internal_frame_length = MaxBufDuration;
 

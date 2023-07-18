@@ -70,8 +70,7 @@ TEST(context, reference_counting) {
             memset(&receiver_config, 0, sizeof(receiver_config));
             receiver_config.frame_format = ROC_FORMAT_PCM_FLOAT32;
             receiver_config.frame_channels = ROC_CHANNEL_SET_STEREO;
-            receiver_config.frame_sample_rate = 44100
-;
+            receiver_config.frame_sample_rate = 44100;
             roc_receiver* receiver = NULL;
             CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
             CHECK(receiver);

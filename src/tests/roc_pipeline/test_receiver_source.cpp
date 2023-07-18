@@ -48,7 +48,7 @@ enum {
     MaxTsJump = ManyPackets * 7 * SamplesPerPacket
 };
 
-const audio::SampleSpec SampleSpecs = audio::SampleSpec(SampleRate, ChMask);
+const audio::SampleSpec SampleSpecs(SampleRate, audio::ChannelLayout_Surround, ChMask);
 
 const core::nanoseconds_t MaxBufDuration = MaxBufSize * core::Second
     / core::nanoseconds_t(SampleSpecs.sample_rate() * SampleSpecs.num_channels());
@@ -90,7 +90,9 @@ TEST_GROUP(receiver_source) {
     address::Protocol proto2;
 
     void setup() {
-        config.common.output_sample_spec = audio::SampleSpec(SampleRate, ChMask);
+        config.common.output_sample_spec =
+            audio::SampleSpec(SampleRate, audio::ChannelLayout_Surround, ChMask);
+
         config.common.internal_frame_length = MaxBufDuration;
 
         config.common.resampling = false;

@@ -31,7 +31,7 @@ enum {
     ManyFrames = 30
 };
 
-const audio::SampleSpec SampleSpecs = audio::SampleSpec(SampleRate, ChMask);
+const audio::SampleSpec SampleSpecs(SampleRate, audio::ChannelLayout_Surround, ChMask);
 
 const core::nanoseconds_t MaxBufDuration = MaxBufSize * core::Second
     / core::nanoseconds_t(SampleSpecs.sample_rate() * SampleSpecs.num_channels());
@@ -45,8 +45,11 @@ TEST_GROUP(converter_source) {
     ConverterConfig config;
 
     void setup() {
-        config.input_sample_spec = audio::SampleSpec(SampleRate, ChMask);
-        config.output_sample_spec = audio::SampleSpec(SampleRate, ChMask);
+        config.input_sample_spec =
+            audio::SampleSpec(SampleRate, audio::ChannelLayout_Surround, ChMask);
+
+        config.output_sample_spec =
+            audio::SampleSpec(SampleRate, audio::ChannelLayout_Surround, ChMask);
 
         config.internal_frame_length = MaxBufDuration;
 

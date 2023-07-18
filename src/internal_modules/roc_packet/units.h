@@ -90,20 +90,6 @@ inline bool blknum_le(blknum_t a, blknum_t b) {
 //!  NTP epoch starts from January 1, 1900.
 typedef uint64_t ntp_timestamp_t;
 
-//! Bitmask of channels present in audio packet.
-typedef uint32_t channel_mask_t;
-
-//! Compute number of channels in mask.
-inline size_t num_channels(channel_mask_t ch_mask) {
-    size_t n_ch = 0;
-    for (; ch_mask != 0; ch_mask >>= 1) {
-        if (ch_mask & 1) {
-            n_ch++;
-        }
-    }
-    return n_ch;
-}
-
 } // namespace packet
 } // namespace roc
 

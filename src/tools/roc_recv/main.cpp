@@ -223,8 +223,8 @@ int main(int argc, char** argv) {
 
     sndio::Config io_config;
     io_config.frame_length = receiver_config.common.internal_frame_length;
-    io_config.sample_spec.set_channel_mask(
-        receiver_config.common.output_sample_spec.channel_mask());
+    io_config.sample_spec.set_channel_set(
+        receiver_config.common.output_sample_spec.channel_set());
 
     if (args.io_latency_given) {
         if (!core::parse_duration(args.io_latency_arg, io_config.latency)) {
@@ -338,10 +338,10 @@ int main(int argc, char** argv) {
 
         converter_config.input_sample_spec =
             audio::SampleSpec(backup_source->sample_spec().sample_rate(),
-                              receiver_config.common.output_sample_spec.channel_mask());
+                              receiver_config.common.output_sample_spec.channel_set());
         converter_config.output_sample_spec =
             audio::SampleSpec(receiver_config.common.output_sample_spec.sample_rate(),
-                              receiver_config.common.output_sample_spec.channel_mask());
+                              receiver_config.common.output_sample_spec.channel_set());
 
         converter_config.internal_frame_length =
             receiver_config.common.internal_frame_length;

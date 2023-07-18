@@ -103,12 +103,14 @@ audio::SampleSpec SoxSink::sample_spec() const {
         roc_panic("sox sink: sample_rate(): non-open output file or device");
     }
 
-    const size_t sample_rate = size_t(output_->signal.rate);
-
-    const packet::channel_mask_t chan_mask =
-        packet::channel_mask_t(1u << output_->signal.channels) - 1;
-
-    return audio::SampleSpec(sample_rate, chan_mask);
+    if (output_->signal.channels == 1) {
+        return audio::SampleSpec(size_t(output_->signal.rate), audio::ChannelLayout_Mono,
+                                 audio::ChannelMask_Mono);
+    } else {
+        return audio::SampleSpec(size_t(output_->signal.rate),
+                                 audio::ChannelLayout_Surround,
+                                 (1u << output_->signal.channels) - 1);
+    }
 }
 
 core::nanoseconds_t SoxSink::latency() const {

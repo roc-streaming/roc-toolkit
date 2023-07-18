@@ -26,8 +26,8 @@ ResamplerWriter::ResamplerWriter(IFrameWriter& writer,
     , input_pos_(0)
     , output_pos_(0)
     , valid_(false) {
-    if (in_sample_spec_.channel_mask() != out_sample_spec_.channel_mask()) {
-        roc_panic("resampler writer: input and output channel mask should be equal");
+    if (in_sample_spec_.channel_set() != out_sample_spec_.channel_set()) {
+        roc_panic("resampler writer: input and output channel sets should be same");
     }
 
     if (!resampler_.valid()) {

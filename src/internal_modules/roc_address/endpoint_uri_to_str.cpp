@@ -7,6 +7,7 @@
  */
 
 #include "roc_address/endpoint_uri_to_str.h"
+#include "roc_core/string_builder.h"
 
 namespace roc {
 namespace address {

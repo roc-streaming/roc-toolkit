@@ -147,21 +147,5 @@ TEST(units, blknum_le) {
     CHECK(!blknum_le(v / 2 - 1, v));
 }
 
-TEST(units, num_channels) {
-    enum { Ch1 = 0x1, Ch2 = 0x2, Ch3 = 0x4 };
-
-    LONGS_EQUAL(0, num_channels(0));
-
-    LONGS_EQUAL(1, num_channels(Ch1));
-    LONGS_EQUAL(1, num_channels(Ch2));
-    LONGS_EQUAL(1, num_channels(Ch3));
-
-    LONGS_EQUAL(2, num_channels(Ch1 | Ch2));
-    LONGS_EQUAL(2, num_channels(Ch2 | Ch3));
-    LONGS_EQUAL(2, num_channels(Ch1 | Ch3));
-
-    LONGS_EQUAL(3, num_channels(Ch1 | Ch2 | Ch3));
-}
-
 } // namespace packet
 } // namespace roc
