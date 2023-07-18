@@ -48,7 +48,7 @@ static void* receiver_loop(void* arg) {
     memset(&receiver_config, 0, sizeof(receiver_config));
 
     receiver_config.frame_format = ROC_FORMAT_PCM_FLOAT32;
-    receiver_config.frame_channels = ROC_CHANNEL_SET_STEREO;
+    receiver_config.frame_channels = ROC_CHANNEL_LAYOUT_STEREO;
     receiver_config.frame_sample_rate = MY_SAMPLE_RATE;
 
     /* Receiver should clock itself. */
@@ -125,7 +125,7 @@ static void* sender_loop(void* arg) {
     memset(&sender_config, 0, sizeof(sender_config));
 
     sender_config.frame_format = ROC_FORMAT_PCM_FLOAT32;
-    sender_config.frame_channels = ROC_CHANNEL_SET_STEREO;
+    sender_config.frame_channels = ROC_CHANNEL_LAYOUT_STEREO;
     sender_config.frame_sample_rate = MY_SAMPLE_RATE;
 
     /* Sender should not use any FEC scheme. */

@@ -58,6 +58,11 @@ struct WatchdogConfig {
         , breakage_detection_window(300 * core::Millisecond)
         , frame_status_window(20) {
     }
+
+    //! Automatically deduce breakage_playback_window from broken_playback_timeout.
+    void deduce_breakage_playback_window(core::nanoseconds_t broken_timeout) {
+        breakage_detection_window = std::min(300 * core::Millisecond, broken_timeout / 4);
+    }
 };
 
 //! Watchdog.

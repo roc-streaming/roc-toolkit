@@ -50,6 +50,16 @@ struct LatencyMonitorConfig {
         , max_latency(0)
         , max_scaling_delta(0.005f) {
     }
+
+    //! Automatically deduce min_latency from target_latency.
+    void deduce_min_latency(core::nanoseconds_t target_latency) {
+        min_latency = -target_latency;
+    }
+
+    //! Automatically deduce max_latency from target_latency.
+    void deduce_max_latency(core::nanoseconds_t target_latency) {
+        max_latency = target_latency * 2;
+    }
 };
 
 //! Session latency monitor.

@@ -20,9 +20,22 @@ namespace api {
 
 bool context_config_from_user(peer::ContextConfig& out, const roc_context_config& in);
 
-bool sender_config_from_user(pipeline::SenderConfig& out, const roc_sender_config& in);
-bool receiver_config_from_user(pipeline::ReceiverConfig& out,
+bool sender_config_from_user(peer::Context& context,
+                             pipeline::SenderConfig& out,
+                             const roc_sender_config& in);
+
+bool receiver_config_from_user(peer::Context& context,
+                               pipeline::ReceiverConfig& out,
                                const roc_receiver_config& in);
+
+bool channel_set_from_user(audio::ChannelSet& out, roc_channel_layout in);
+bool clock_source_from_user(bool& timing, roc_clock_source in);
+
+bool resampler_backend_from_user(audio::ResamplerBackend& out, roc_resampler_backend in);
+bool resampler_profile_from_user(audio::ResamplerProfile& out, roc_resampler_profile in);
+
+bool packet_encoding_from_user(rtp::PayloadType& out, roc_packet_encoding in);
+bool fec_encoding_from_user(packet::FecScheme& out, roc_fec_encoding in);
 
 bool interface_from_user(address::Interface& out, const roc_interface& in);
 

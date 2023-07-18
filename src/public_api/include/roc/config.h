@@ -148,7 +148,8 @@ typedef enum roc_protocol {
      *  - UDP
      *
      * Audio encodings:
-     *   - \ref ROC_PACKET_ENCODING_AVP_L16
+     *   - \ref ROC_PACKET_ENCODING_AVP_L16_MONO
+     *   - \ref ROC_PACKET_ENCODING_AVP_L16_STEREO
      *
      * FEC encodings:
      *   - none
@@ -254,23 +255,40 @@ typedef enum roc_fec_encoding {
 } roc_fec_encoding;
 
 /** Packet encoding.
- * Each packet encoding defines sample format, channel set, and rate.
+ * Each packet encoding defines sample format, channel layout, and rate.
  * Each packet encoding is caompatible with specific protocols.
  */
 typedef enum roc_packet_encoding {
-    /** PCM signed 16-bit, 2 channels, 44100 rate.
-     * Represents L16 stereo encoding from RTP A/V Profile (RFC 3551).
-     * Used uncompressed samples coded as interleaved 16-bit signed big-endian
+    /** PCM signed 16-bit, 1 channel, 44100 rate.
+     *
+     * Represents 1-channel L16 stereo encoding from RTP A/V Profile (RFC 3551).
+     * Uses uncompressed samples coded as interleaved 16-bit signed big-endian
      * integers in two's complement notation.
-     * Compatible with \ref ROC_PROTO_RTP, \ref ROC_PROTO_RTP_RS8M_SOURCE,
-     * \ref ROC_PROTO_RTP_LDPC_SOURCE protocols for source endpoint.
+     *
+     * Supported by protocols:
+     *  - \ref ROC_PROTO_RTP
+     *  - \ref ROC_PROTO_RTP_RS8M_SOURCE
+     *  - \ref ROC_PROTO_RTP_LDPC_SOURCE
      */
-    ROC_PACKET_ENCODING_AVP_L16 = 2
+    ROC_PACKET_ENCODING_AVP_L16_MONO = 1,
+
+    /** PCM signed 16-bit, 2 channels, 44100 rate.
+     *
+     * Represents 2-channel L16 stereo encoding from RTP A/V Profile (RFC 3551).
+     * Uses uncompressed samples coded as interleaved 16-bit signed big-endian
+     * integers in two's complement notation.
+     *
+     * Supported by protocols:
+     *  - \ref ROC_PROTO_RTP
+     *  - \ref ROC_PROTO_RTP_RS8M_SOURCE
+     *  - \ref ROC_PROTO_RTP_LDPC_SOURCE
+     */
+    ROC_PACKET_ENCODING_AVP_L16_STEREO = 2
 } roc_packet_encoding;
 
 /** Sample format.
  * Defines how each sample is represented.
- * Does not define channel set and sample rate.
+ * Does not define channels layout and sample rate.
  */
 typedef enum roc_format {
     /** PCM floats.
@@ -280,13 +298,35 @@ typedef enum roc_format {
     ROC_FORMAT_PCM_FLOAT32 = 1
 } roc_format;
 
-/** Channel set. */
-typedef enum roc_channel_set {
+/** Channel layout.
+ * Defines number of channels and meaning of each channel.
+ */
+typedef enum roc_channel_layout {
+    /** Mono.
+     * One channel.
+     */
+    ROC_CHANNEL_LAYOUT_MONO = 1,
+
     /** Stereo.
      * Two channels: left and right.
      */
-    ROC_CHANNEL_SET_STEREO = 0x3
-} roc_channel_set;
+    ROC_CHANNEL_LAYOUT_STEREO = 2
+} roc_channel_layout;
+
+/** Clock source for sender or receiver. */
+typedef enum roc_clock_source {
+    /** Sender or receiver is clocked by external user-defined clock.
+     * Write and read operations are non-blocking. The user is responsible
+     * to call them in time, according to the external clock.
+     */
+    ROC_CLOCK_EXTERNAL = 0,
+
+    /** Sender or receiver is clocked by an internal clock.
+     * Write and read operations are blocking. They automatically wait until it's time
+     * to process the next bunch of samples according to the configured sample rate.
+     */
+    ROC_CLOCK_INTERNAL = 1
+} roc_clock_source;
 
 /** Resampler backend.
  * Affects speed and quality.
@@ -335,21 +375,6 @@ typedef enum roc_resampler_profile {
     ROC_RESAMPLER_PROFILE_LOW = 3
 } roc_resampler_profile;
 
-/** Clock source for sender or receiver. */
-typedef enum roc_clock_source {
-    /** Sender or receiver is clocked by external user-defined clock.
-     * Write and read operations are non-blocking. The user is responsible
-     * to call them in time, according to the external clock.
-     */
-    ROC_CLOCK_EXTERNAL = 0,
-
-    /** Sender or receiver is clocked by an internal clock.
-     * Write and read operations are blocking. They automatically wait until it's time
-     * to process the next bunch of samples according to the configured sample rate.
-     */
-    ROC_CLOCK_INTERNAL = 1
-} roc_clock_source;
-
 /** Context configuration.
  *
  * It is safe to memset() this struct with zeros to get a default config. It is also
@@ -387,10 +412,10 @@ typedef struct roc_sender_config {
      */
     roc_format frame_format;
 
-    /** The channel set in the frames passed to sender.
+    /** The channel layout in the frames passed to sender.
      * Should be set (zero value is invalid).
      */
-    roc_channel_set frame_channels;
+    roc_channel_layout frame_channels;
 
     /** The rate of the samples in the frames passed to sender.
      * Number of samples per channel per second (e.g. 44100).
@@ -399,11 +424,14 @@ typedef struct roc_sender_config {
     unsigned int frame_sample_rate;
 
     /** The encoding used for packets produced by sender.
-     * Encoding defines sample format, channel set, and sample rate in network
-     * packets, which may be different from frame format, channels, and rate.
-     * When necessary, conversion is performed automatically. If sample rates
-     * are different, resampling should be enabled via \c resampler_profile.
-     * If zero, default value is used.
+     * Packet encoding defines sample format, channel layout, and sample rate in network
+     * packets. If packet encoding differs from frame encoding, conversion is performed
+     * automatically. If sample rates are different, resampling should be enabled
+     * via \c resampler_profile.
+     * If zero, sender selects packet encoding automatically based on \c frame_encoding.
+     * This automatic selection matches only encodings that have exact same sample rate
+     * and channel layout, and hence don't require conversions. If you need conversions,
+     * you should set packet encoding explicitly.
      */
     roc_packet_encoding packet_encoding;
 
@@ -421,23 +449,6 @@ typedef struct roc_sender_config {
      * may increase robustness but also increases latency.
      */
     unsigned int packet_interleaving;
-
-    /** Clock source to use.
-     * Defines whether write operation will be blocking or non-blocking.
-     * If zero, default value is used (\c ROC_CLOCK_EXTERNAL).
-     */
-    roc_clock_source clock_source;
-
-    /** Resampler backend to use.
-     * If zero, default value is used.
-     */
-    roc_resampler_backend resampler_backend;
-
-    /** Resampler profile to use.
-     * If non-zero, the sender employs resampler if the frame sample rate differs
-     * from the packet sample rate.
-     */
-    roc_resampler_profile resampler_profile;
 
     /** FEC encoding to use.
      * If non-zero, the sender employs a FEC encoding to generate redundant packets
@@ -459,6 +470,23 @@ typedef struct roc_sender_config {
      * If zero, default value is used.
      */
     unsigned int fec_block_repair_packets;
+
+    /** Clock source to use.
+     * Defines whether write operation will be blocking or non-blocking.
+     * If zero, default value is used (\c ROC_CLOCK_EXTERNAL).
+     */
+    roc_clock_source clock_source;
+
+    /** Resampler backend to use.
+     * If zero, default value is used.
+     */
+    roc_resampler_backend resampler_backend;
+
+    /** Resampler profile to use.
+     * If non-zero, the sender employs resampler if the frame sample rate differs
+     * from the packet sample rate.
+     */
+    roc_resampler_profile resampler_profile;
 } roc_sender_config;
 
 /** Receiver configuration.
@@ -475,10 +503,10 @@ typedef struct roc_receiver_config {
      */
     roc_format frame_format;
 
-    /** The channel set in the frames returned by received.
+    /** The channel layout in the frames returned by received.
      * Should be set (zero value is invalid).
      */
-    roc_channel_set frame_channels;
+    roc_channel_layout frame_channels;
 
     /** The rate of the samples in the frames returned by received.
      * Number of samples per channel per second.
