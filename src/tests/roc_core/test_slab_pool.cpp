@@ -42,7 +42,7 @@ TEST_GROUP(slab_pool) {
 
 TEST(slab_pool, object_size) {
     TestAllocator allocator;
-    SlabPool pool(allocator, ObjectSize, true);
+    SlabPool<> pool(allocator, ObjectSize, true);
 
     LONGS_EQUAL(ObjectSize, pool.object_size());
 }
@@ -51,7 +51,7 @@ TEST(slab_pool, allocate_deallocate) {
     TestAllocator allocator;
 
     {
-        SlabPool pool(allocator, ObjectSize, true);
+        SlabPool<> pool(allocator, ObjectSize, true);
 
         LONGS_EQUAL(0, allocator.num_allocations());
 
@@ -72,7 +72,7 @@ TEST(slab_pool, allocate_deallocate_many) {
     TestAllocator allocator;
 
     {
-        SlabPool pool(allocator, ObjectSize, true);
+        SlabPool<> pool(allocator, ObjectSize, true);
 
         for (int i = 0; i < 10; i++) {
             void* pointers[1 + 2 + 4] = {};
@@ -116,7 +116,7 @@ TEST(slab_pool, reserve) {
     TestAllocator allocator;
 
     {
-        SlabPool pool(allocator, ObjectSize, true);
+        SlabPool<> pool(allocator, ObjectSize, true);
 
         LONGS_EQUAL(0, allocator.num_allocations());
 
@@ -141,7 +141,7 @@ TEST(slab_pool, reserve_many) {
     TestAllocator allocator;
 
     {
-        SlabPool pool(allocator, ObjectSize, true);
+        SlabPool<> pool(allocator, ObjectSize, true);
 
         for (int i = 0; i < 10; i++) {
             void* pointers[1 + 2 + 4] = {};
@@ -197,7 +197,7 @@ TEST(slab_pool, min_size_allocate) {
     // min_size=0
     {
         TestAllocator allocator;
-        SlabPool pool(allocator, ObjectSize, true, 0);
+        SlabPool<> pool(allocator, ObjectSize, true, 0);
 
         void* mem = pool.allocate();
         CHECK(mem);
@@ -211,7 +211,7 @@ TEST(slab_pool, min_size_allocate) {
     // min_size=ObjectSize
     {
         TestAllocator allocator;
-        SlabPool pool(allocator, ObjectSize, true, ObjectSize);
+        SlabPool<> pool(allocator, ObjectSize, true, ObjectSize);
 
         void* mem = pool.allocate();
         CHECK(mem);
@@ -225,7 +225,7 @@ TEST(slab_pool, min_size_allocate) {
     // min_size=ObjectSize*2
     {
         TestAllocator allocator;
-        SlabPool pool(allocator, ObjectSize, true, ObjectSize * 2);
+        SlabPool<> pool(allocator, ObjectSize, true, ObjectSize * 2);
 
         void* mem = pool.allocate();
         CHECK(mem);
@@ -242,7 +242,7 @@ TEST(slab_pool, min_size_reserve) {
     // min_size=0
     {
         TestAllocator allocator;
-        SlabPool pool(allocator, ObjectSize, true, 0);
+        SlabPool<> pool(allocator, ObjectSize, true, 0);
 
         CHECK(pool.reserve(1));
 
@@ -254,7 +254,7 @@ TEST(slab_pool, min_size_reserve) {
     // min_size=ObjectSize
     {
         TestAllocator allocator;
-        SlabPool pool(allocator, ObjectSize, true, ObjectSize);
+        SlabPool<> pool(allocator, ObjectSize, true, ObjectSize);
 
         CHECK(pool.reserve(1));
 
@@ -266,7 +266,7 @@ TEST(slab_pool, min_size_reserve) {
     // min_size=ObjectSize*2
     {
         TestAllocator allocator;
-        SlabPool pool(allocator, ObjectSize, true, ObjectSize * 2);
+        SlabPool<> pool(allocator, ObjectSize, true, ObjectSize * 2);
 
         CHECK(pool.reserve(1));
 
@@ -281,7 +281,7 @@ TEST(slab_pool, max_size_allocate) {
     // max_size=0
     {
         TestAllocator allocator;
-        SlabPool pool(allocator, ObjectSize, true, 0, 0);
+        SlabPool<> pool(allocator, ObjectSize, true, 0, 0);
 
         {
             void* pointers[10] = {};
@@ -301,7 +301,7 @@ TEST(slab_pool, max_size_allocate) {
     // max_size=ObjectSize*100
     {
         TestAllocator allocator;
-        SlabPool pool(allocator, ObjectSize, true, 0, ObjectSize * 100);
+        SlabPool<> pool(allocator, ObjectSize, true, 0, ObjectSize * 100);
 
         {
             void* pointers[10] = {};
@@ -321,7 +321,7 @@ TEST(slab_pool, max_size_allocate) {
     // max_size=ObjectSize*2
     {
         TestAllocator allocator;
-        SlabPool pool(allocator, ObjectSize, true, 0, ObjectSize * 2);
+        SlabPool<> pool(allocator, ObjectSize, true, 0, ObjectSize * 2);
 
         {
             void* pointers[10] = {};
@@ -344,7 +344,7 @@ TEST(slab_pool, max_size_reserve) {
     // max_size=0
     {
         TestAllocator allocator;
-        SlabPool pool(allocator, ObjectSize, true, 0, 0);
+        SlabPool<> pool(allocator, ObjectSize, true, 0, 0);
 
         pool.reserve(10);
 
@@ -353,7 +353,7 @@ TEST(slab_pool, max_size_reserve) {
     // max_size=ObjectSize*100
     {
         TestAllocator allocator;
-        SlabPool pool(allocator, ObjectSize, true, 0, ObjectSize * 100);
+        SlabPool<> pool(allocator, ObjectSize, true, 0, ObjectSize * 100);
 
         pool.reserve(10);
 
@@ -362,12 +362,71 @@ TEST(slab_pool, max_size_reserve) {
     // max_size=ObjectSize*2
     {
         TestAllocator allocator;
-        SlabPool pool(allocator, ObjectSize, true, 0, ObjectSize * 2);
+        SlabPool<> pool(allocator, ObjectSize, true, 0, ObjectSize * 2);
 
         pool.reserve(10);
 
         LONGS_EQUAL(10, allocator.num_allocations());
     }
+}
+
+TEST(slab_pool, embedded_capacity) {
+    TestAllocator allocator;
+
+    {
+        SlabPool<ObjectSize * 5> pool(allocator, ObjectSize, true);
+
+        LONGS_EQUAL(0, allocator.num_allocations());
+
+        void* pointers[10] = {};
+
+        for (int n = 0; n < 5; n++) {
+            pointers[n] = pool.allocate();
+            CHECK(pointers[n]);
+        }
+
+        LONGS_EQUAL(0, allocator.num_allocations());
+
+        for (int n = 5; n < 10; n++) {
+            pointers[n] = pool.allocate();
+            CHECK(pointers[n]);
+        }
+
+        LONGS_EQUAL(3, allocator.num_allocations());
+
+        for (int n = 0; n < 10; n++) {
+            pool.deallocate(pointers[n]);
+        }
+    }
+
+    LONGS_EQUAL(0, allocator.num_allocations());
+}
+
+TEST(slab_pool, embedded_capacity_reuse) {
+    TestAllocator allocator;
+
+    {
+        SlabPool<ObjectSize * 5> pool(allocator, ObjectSize, true);
+
+        for (int i = 0; i < 10; i++) {
+            LONGS_EQUAL(0, allocator.num_allocations());
+
+            void* pointers[5] = {};
+
+            for (int n = 0; n < 5; n++) {
+                pointers[n] = pool.allocate();
+                CHECK(pointers[n]);
+            }
+
+            LONGS_EQUAL(0, allocator.num_allocations());
+
+            for (int n = 0; n < 5; n++) {
+                pool.deallocate(pointers[n]);
+            }
+        }
+    }
+
+    LONGS_EQUAL(0, allocator.num_allocations());
 }
 
 } // namespace core

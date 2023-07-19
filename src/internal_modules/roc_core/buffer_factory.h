@@ -48,7 +48,7 @@ private:
         pool_.destroy_object(buffer);
     }
 
-    SlabPool pool_;
+    SlabPool<> pool_;
     size_t buff_size_;
 };
 
