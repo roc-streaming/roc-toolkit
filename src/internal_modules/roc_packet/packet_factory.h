@@ -36,7 +36,7 @@ private:
 
     void destroy(Packet&);
 
-    core::SlabPool pool_;
+    core::SlabPool<> pool_;
 };
 
 } // namespace packet
