@@ -36,7 +36,7 @@ public:
                  const address::SocketAddr& dst_addr)
         : reader_(reader)
         , parser_(parser)
-        , payload_decoder_(format_map.format(pt)->new_decoder(allocator), allocator)
+        , payload_decoder_(format_map.find_by_pt(pt)->new_decoder(allocator), allocator)
         , packet_factory_(packet_factory)
         , dst_addr_(dst_addr)
         , source_(0)

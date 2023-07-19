@@ -68,7 +68,7 @@ hashsum_t hashsum_str(const char* str) {
 }
 
 hashsum_t hashsum_mem(const void* data, size_t size) {
-    roc_panic_if(data == NULL || size == 0);
+    roc_panic_if(data == NULL);
 
     // DJB2
     // https://stackoverflow.com/a/2624218/3169754

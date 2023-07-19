@@ -21,7 +21,6 @@
 #include "roc_peer/context.h"
 #include "roc_pipeline/ipipeline_task_scheduler.h"
 #include "roc_pipeline/receiver_loop.h"
-#include "roc_rtp/format_map.h"
 
 namespace roc {
 namespace peer {
@@ -79,8 +78,6 @@ private:
     virtual void cancel_task_processing(pipeline::PipelineLoop&);
 
     core::Mutex mutex_;
-
-    rtp::FormatMap format_map_;
 
     pipeline::ReceiverLoop pipeline_;
     ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;

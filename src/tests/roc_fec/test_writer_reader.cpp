@@ -47,7 +47,7 @@ core::HeapAllocator allocator;
 core::BufferFactory<uint8_t> buffer_factory(allocator, MaxBuffSize, true);
 packet::PacketFactory packet_factory(allocator, true);
 
-rtp::FormatMap format_map;
+rtp::FormatMap format_map(allocator, true);
 rtp::Parser rtp_parser(format_map, NULL);
 
 Parser<RS8M_PayloadID, Source, Footer> rs8m_source_parser(&rtp_parser);

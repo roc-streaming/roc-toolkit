@@ -103,7 +103,7 @@ bool Parser::parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer) {
         rtp.padding = buffer.subslice(payload_end, payload_end + pad_size);
     }
 
-    if (const Format* format = format_map_.format(header.payload_type())) {
+    if (const Format* format = format_map_.find_by_pt(header.payload_type())) {
         packet.add_flags(format->packet_flags);
     }
 

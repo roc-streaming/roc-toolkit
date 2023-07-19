@@ -38,15 +38,12 @@ ChannelSet::ChannelSet(const ChannelLayout layout, const ChannelMask mask)
         break;
 
     case ChannelLayout_Surround:
+    case ChannelLayout_Multitrack:
         if (mask == 0) {
             roc_panic("channel set: invalid channel mask: layout=surround mask=0x%lx",
                       (unsigned long)mask);
         }
         break;
-
-    case ChannelLayout_Multitrack:
-        roc_panic("channel set:"
-                  " attempt to use channel mask with multitrack layout");
     }
 
     words_[0] = mask;

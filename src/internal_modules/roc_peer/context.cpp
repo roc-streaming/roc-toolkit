@@ -15,10 +15,11 @@ namespace peer {
 
 Context::Context(const ContextConfig& config, core::IAllocator& allocator)
     : allocator_(allocator)
-    , packet_factory_(allocator_, false)
+    , packet_factory_(allocator_, config.poisoning)
     , byte_buffer_factory_(allocator_, config.max_packet_size, config.poisoning)
     , sample_buffer_factory_(
           allocator_, config.max_frame_size / sizeof(audio::sample_t), config.poisoning)
+    , format_map_(allocator_, config.poisoning)
     , network_loop_(packet_factory_, byte_buffer_factory_, allocator_)
     , control_loop_(network_loop_, allocator_)
     , ref_counter_(0) {
@@ -70,6 +71,10 @@ core::BufferFactory<uint8_t>& Context::byte_buffer_factory() {
 
 core::BufferFactory<audio::sample_t>& Context::sample_buffer_factory() {
     return sample_buffer_factory_;
+}
+
+rtp::FormatMap& Context::format_map() {
+    return format_map_;
 }
 
 netio::NetworkLoop& Context::network_loop() {

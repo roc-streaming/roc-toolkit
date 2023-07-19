@@ -43,7 +43,7 @@ namespace core {
 //!     size growth is, the less overhead rehashing adds to each operation.
 //!
 //! Incremental rehashing technique is inspired by Go's map implementation, though
-//! there are differeces. Load factor value is from Java's Hashmap implementation.
+//! there are differences. Load factor value is from Java's Hashmap implementation.
 //! Prime numbers for sizes are from https://planetmath.org/goodhashtableprimes.
 //!
 //! @tparam T defines object type, it should inherit HashmapNode and additionally
