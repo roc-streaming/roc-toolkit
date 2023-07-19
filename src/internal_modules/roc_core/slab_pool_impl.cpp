@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/slab_pool.h"
+#include "roc_core/slab_pool_impl.h"
 #include "roc_core/align_ops.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
@@ -14,11 +14,13 @@
 namespace roc {
 namespace core {
 
-SlabPool::SlabPool(IAllocator& allocator,
-                   size_t object_size,
-                   bool poison,
-                   size_t min_alloc_bytes,
-                   size_t max_alloc_bytes)
+SlabPoolImpl::SlabPoolImpl(IAllocator& allocator,
+                           size_t object_size,
+                           bool poison,
+                           size_t min_alloc_bytes,
+                           size_t max_alloc_bytes,
+                           void* preallocated_data,
+                           size_t preallocated_size)
     : allocator_(allocator)
     , n_used_slots_(0)
     , slab_min_bytes_(min_alloc_bytes)
@@ -39,23 +41,27 @@ SlabPool::SlabPool(IAllocator& allocator,
 
     roc_panic_if_not(slab_cur_slots_ > 0);
     roc_panic_if_not(slab_cur_slots_ <= slab_max_slots_ || slab_max_slots_ == 0);
+
+    if (preallocated_size > 0) {
+        add_preallocated_memory_(preallocated_data, preallocated_size);
+    }
 }
 
-SlabPool::~SlabPool() {
+SlabPoolImpl::~SlabPoolImpl() {
     deallocate_everything_();
 }
 
-size_t SlabPool::object_size() const {
+size_t SlabPoolImpl::object_size() const {
     return object_size_;
 }
 
-bool SlabPool::reserve(size_t n_objects) {
+bool SlabPoolImpl::reserve(size_t n_objects) {
     Mutex::Lock lock(mutex_);
 
     return reserve_slots_(n_objects);
 }
 
-void* SlabPool::allocate() {
+void* SlabPoolImpl::allocate() {
     Slot* slot;
 
     {
@@ -71,7 +77,7 @@ void* SlabPool::allocate() {
     return give_slot_to_user_(slot);
 }
 
-void SlabPool::deallocate(void* memory) {
+void SlabPoolImpl::deallocate(void* memory) {
     if (memory == NULL) {
         roc_panic("slab pool: deallocating null pointer");
     }
@@ -85,7 +91,7 @@ void SlabPool::deallocate(void* memory) {
     }
 }
 
-void* SlabPool::give_slot_to_user_(Slot* slot) {
+void* SlabPoolImpl::give_slot_to_user_(Slot* slot) {
     slot->~Slot();
 
     void* memory = slot;
@@ -99,7 +105,7 @@ void* SlabPool::give_slot_to_user_(Slot* slot) {
     return memory;
 }
 
-SlabPool::Slot* SlabPool::take_slot_from_user_(void* memory) {
+SlabPoolImpl::Slot* SlabPoolImpl::take_slot_from_user_(void* memory) {
     if (poison_) {
         memset(memory, PoisonDeallocated, slot_size_);
     }
@@ -107,7 +113,7 @@ SlabPool::Slot* SlabPool::take_slot_from_user_(void* memory) {
     return new (memory) Slot;
 }
 
-SlabPool::Slot* SlabPool::acquire_slot_() {
+SlabPoolImpl::Slot* SlabPoolImpl::acquire_slot_() {
     if (free_slots_.size() == 0) {
         allocate_new_slab_();
     }
@@ -121,7 +127,7 @@ SlabPool::Slot* SlabPool::acquire_slot_() {
     return slot;
 }
 
-void SlabPool::release_slot_(Slot* slot) {
+void SlabPoolImpl::release_slot_(Slot* slot) {
     if (n_used_slots_ == 0) {
         roc_panic("slab pool: unpaired deallocation");
     }
@@ -130,7 +136,7 @@ void SlabPool::release_slot_(Slot* slot) {
     free_slots_.push_front(*slot);
 }
 
-bool SlabPool::reserve_slots_(size_t desired_slots) {
+bool SlabPoolImpl::reserve_slots_(size_t desired_slots) {
     if (desired_slots > free_slots_.size()) {
         increase_slab_size_(desired_slots - free_slots_.size());
 
@@ -144,7 +150,7 @@ bool SlabPool::reserve_slots_(size_t desired_slots) {
     return true;
 }
 
-void SlabPool::increase_slab_size_(size_t desired_slots) {
+void SlabPoolImpl::increase_slab_size_(size_t desired_slots) {
     if (desired_slots > slab_max_slots_ && slab_max_slots_ != 0) {
         desired_slots = slab_max_slots_;
     }
@@ -159,7 +165,7 @@ void SlabPool::increase_slab_size_(size_t desired_slots) {
     }
 }
 
-bool SlabPool::allocate_new_slab_() {
+bool SlabPoolImpl::allocate_new_slab_() {
     const size_t slab_size_bytes = slot_offset_(slab_cur_slots_);
 
     void* memory = allocator_.allocate(slab_size_bytes);
@@ -179,7 +185,7 @@ bool SlabPool::allocate_new_slab_() {
     return true;
 }
 
-void SlabPool::deallocate_everything_() {
+void SlabPoolImpl::deallocate_everything_() {
     if (n_used_slots_ != 0) {
         roc_panic("slab pool: detected leak: used=%lu free=%lu",
                   (unsigned long)n_used_slots_, (unsigned long)free_slots_.size());
@@ -195,7 +201,20 @@ void SlabPool::deallocate_everything_() {
     }
 }
 
-size_t SlabPool::slots_per_slab_(size_t slab_size, bool round_up) const {
+void SlabPoolImpl::add_preallocated_memory_(void* memory, size_t memory_size) {
+    if (memory == NULL) {
+        roc_panic("slab pool: preallocated memory is NULL");
+    }
+
+    const size_t n_slots = memory_size / slot_size_;
+
+    for (size_t n = 0; n < n_slots; n++) {
+        Slot* slot = new ((char*)memory + n * slot_size_) Slot;
+        free_slots_.push_back(*slot);
+    }
+}
+
+size_t SlabPoolImpl::slots_per_slab_(size_t slab_size, bool round_up) const {
     roc_panic_if(slot_size_ == 0);
 
     if (slab_size < slab_hdr_size_) {
@@ -210,7 +229,7 @@ size_t SlabPool::slots_per_slab_(size_t slab_size, bool round_up) const {
         / slot_size_;
 }
 
-size_t SlabPool::slot_offset_(size_t slot_index) const {
+size_t SlabPoolImpl::slot_offset_(size_t slot_index) const {
     return slab_hdr_size_ + slot_index * slot_size_;
 }
 
