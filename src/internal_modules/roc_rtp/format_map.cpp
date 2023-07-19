@@ -41,8 +41,9 @@ audio::IFrameDecoder* new_decoder(core::IAllocator& allocator) {
 
 } // namespace
 
-FormatMap::FormatMap()
-    : n_formats_(0) {
+FormatMap::FormatMap(core::IAllocator& allocator, bool poison)
+    : node_pool_(allocator, sizeof(Node), poison)
+    , node_map_(allocator) {
     {
         Format fmt;
         fmt.payload_type = PayloadType_L16_Mono;
@@ -57,7 +58,7 @@ FormatMap::FormatMap()
         fmt.new_decoder =
             &new_decoder<audio::PcmEncoding_SInt16, audio::PcmEndian_Big, 44100,
                          audio::ChannelLayout_Mono, audio::ChannelMask_Mono>;
-        add_(fmt);
+        add_builtin_(fmt);
     }
     {
         Format fmt;
@@ -73,23 +74,76 @@ FormatMap::FormatMap()
         fmt.new_decoder =
             &new_decoder<audio::PcmEncoding_SInt16, audio::PcmEndian_Big, 44100,
                          audio::ChannelLayout_Surround, audio::ChannelMask_Stereo>;
-        add_(fmt);
+        add_builtin_(fmt);
     }
 }
 
-const Format* FormatMap::format(unsigned int pt) const {
-    for (size_t n = 0; n < n_formats_; n++) {
-        if ((unsigned int)formats_[n].payload_type == pt) {
-            return &formats_[n];
+FormatMap::~FormatMap() {
+    while (Node* node = node_list_.front()) {
+        node_list_.remove(*node);
+        node_map_.remove(*node);
+        node_pool_.destroy_object(*node);
+    }
+}
+
+const Format* FormatMap::find_by_pt(unsigned int pt) const {
+    core::Mutex::Lock lock(mutex_);
+
+    if (Node* node = node_map_.find(pt)) {
+        return &node->format;
+    }
+
+    return NULL;
+}
+
+const Format* FormatMap::find_by_spec(const audio::SampleSpec& spec) const {
+    core::Mutex::Lock lock(mutex_);
+
+    for (Node* node = node_list_.front(); node != NULL; node = node_list_.nextof(*node)) {
+        if (node->format.sample_spec == spec) {
+            return &node->format;
         }
     }
 
     return NULL;
 }
 
-void FormatMap::add_(const Format& fmt) {
-    roc_panic_if(n_formats_ == MaxFormats);
-    formats_[n_formats_++] = fmt;
+bool FormatMap::add_format(const Format& fmt) {
+    core::Mutex::Lock lock(mutex_);
+
+    if (fmt.payload_type == 0) {
+        roc_panic("format map: bad format: invalid payload type");
+    }
+
+    if (!fmt.sample_spec.is_valid()) {
+        roc_panic("format map: bad format: invalid sample spec");
+    }
+
+    if (!fmt.new_encoder || !fmt.new_decoder) {
+        roc_panic("format map: bad format: invalid codec functions");
+    }
+
+    if (node_map_.find(fmt.payload_type)) {
+        return false;
+    }
+
+    Node* node = new (node_pool_) Node();
+    if (!node) {
+        return false;
+    }
+
+    node->format = fmt;
+
+    node_map_.insert(*node);
+    node_list_.push_back(*node);
+
+    return true;
+}
+
+void FormatMap::add_builtin_(const Format& fmt) {
+    if (!add_format(fmt)) {
+        roc_panic("format map: can't add builtin format");
+    }
 }
 
 } // namespace rtp

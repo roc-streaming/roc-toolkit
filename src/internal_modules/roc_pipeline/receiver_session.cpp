@@ -27,7 +27,7 @@ ReceiverSession::ReceiverSession(
     : RefCounted(allocator)
     , src_address_(src_address)
     , audio_reader_(NULL) {
-    const rtp::Format* format = format_map.format(session_config.payload_type);
+    const rtp::Format* format = format_map.find_by_pt(session_config.payload_type);
     if (!format) {
         return;
     }

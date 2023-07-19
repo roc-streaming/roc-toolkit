@@ -43,7 +43,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         num_sources_++;
     }
 
-    const rtp::Format* format = format_map_.format(config_.payload_type);
+    const rtp::Format* format = format_map_.find_by_pt(config_.payload_type);
     if (!format) {
         return false;
     }

@@ -31,7 +31,7 @@ core::BufferFactory<audio::sample_t> sample_buffer_factory(allocator, MaxBufSize
 core::BufferFactory<uint8_t> byte_buffer_factory(allocator, MaxBufSize, true);
 packet::PacketFactory packet_factory(allocator, true);
 
-rtp::FormatMap format_map;
+rtp::FormatMap format_map(allocator, true);
 
 class TaskIssuer : public IPipelineTaskCompleter {
 public:
