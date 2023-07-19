@@ -78,7 +78,7 @@ core::HeapAllocator allocator;
 core::BufferFactory<audio::sample_t> sample_buffer_factory(allocator, MaxBufSize, true);
 core::BufferFactory<uint8_t> byte_buffer_factory(allocator, MaxBufSize, true);
 packet::PacketFactory packet_factory(allocator, true);
-rtp::FormatMap format_map;
+rtp::FormatMap format_map(allocator, true);
 
 SenderConfig sender_config(int flags) {
     SenderConfig config;

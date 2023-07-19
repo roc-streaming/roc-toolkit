@@ -167,7 +167,7 @@ TEST(channel_set, set_channel_mask) {
     UNSIGNED_LONGS_EQUAL(22, ch_set.last_channel());
 }
 
-TEST(channel_set, overwrite_channel_mask) {
+TEST(channel_set, overwrite_with_channel_mask) {
     ChannelSet ch_set;
 
     ch_set.set_channel(12, true);
@@ -193,7 +193,7 @@ TEST(channel_set, overwrite_channel_mask) {
     UNSIGNED_LONGS_EQUAL(22, ch_set.last_channel());
 }
 
-TEST(channel_set, construct_channel_mask) {
+TEST(channel_set, construct_from_channel_mask) {
     ChannelSet ch_set(ChannelLayout_Surround, (1 << 11) | (1 << 22));
 
     LONGS_EQUAL(ChannelLayout_Surround, ch_set.layout());

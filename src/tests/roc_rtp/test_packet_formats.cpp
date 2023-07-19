@@ -158,7 +158,7 @@ void encode_samples(audio::IFrameEncoder& encoder,
 }
 
 void check_parse_decode(const test::PacketInfo& pi) {
-    FormatMap format_map;
+    FormatMap format_map(allocator, true);
 
     core::Slice<uint8_t> buffer = new_buffer(pi.raw_data, pi.packet_size);
     CHECK(buffer);
@@ -171,7 +171,7 @@ void check_parse_decode(const test::PacketInfo& pi) {
     Parser parser(format_map, NULL);
     CHECK(parser.parse(*packet, packet->data()));
 
-    const Format* format = format_map.format(packet->rtp()->payload_type);
+    const Format* format = format_map.find_by_pt(packet->rtp()->payload_type);
     CHECK(format);
 
     core::ScopedPtr<audio::IFrameDecoder> decoder(format->new_decoder(allocator),
@@ -186,7 +186,7 @@ void check_parse_decode(const test::PacketInfo& pi) {
 }
 
 void check_compose_encode(const test::PacketInfo& pi) {
-    FormatMap format_map;
+    FormatMap format_map(allocator, true);
 
     core::Slice<uint8_t> buffer = new_buffer(NULL, 0);
     CHECK(buffer);
@@ -196,7 +196,7 @@ void check_compose_encode(const test::PacketInfo& pi) {
 
     packet->add_flags(packet::Packet::FlagAudio);
 
-    const Format* format = format_map.format(pi.pt);
+    const Format* format = format_map.find_by_pt(pi.pt);
     CHECK(format);
 
     core::ScopedPtr<audio::IFrameEncoder> encoder(format->new_encoder(allocator),

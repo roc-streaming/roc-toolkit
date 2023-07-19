@@ -21,7 +21,7 @@ Receiver::Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_co
     : BasicPeer(context)
     , pipeline_(*this,
                 pipeline_config,
-                format_map_,
+                context.format_map(),
                 context.packet_factory(),
                 context.byte_buffer_factory(),
                 context.sample_buffer_factory(),

@@ -12,30 +12,74 @@
 #ifndef ROC_RTP_FORMAT_MAP_H_
 #define ROC_RTP_FORMAT_MAP_H_
 
+#include "roc_audio/sample_spec.h"
+#include "roc_core/hashmap.h"
+#include "roc_core/iallocator.h"
+#include "roc_core/list.h"
+#include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/slab_pool.h"
 #include "roc_rtp/format.h"
 
 namespace roc {
 namespace rtp {
 
 //! RTP payload format map.
+//! Thread-safe.
+//! Returned formats are immutable and can be safely used from
+//! any thread.
 class FormatMap : public core::NonCopyable<> {
 public:
-    FormatMap();
+    //! Initialize.
+    FormatMap(core::IAllocator& allocator, bool poison);
 
-    //! Get format by payload type.
+    //! Destroy.
+    ~FormatMap();
+
+    //! Find format by payload type.
     //! @returns
     //!  pointer to the format structure or null if there is no format
     //!  registered for this payload type.
-    const Format* format(unsigned int pt) const;
+    const Format* find_by_pt(unsigned int pt) const;
+
+    //! Find format by sample specification.
+    //! @returns
+    //!  pointer to the format structure or null if there is no format
+    //!  with matching specification.
+    const Format* find_by_spec(const audio::SampleSpec& spec) const;
+
+    //! Add format to the map.
+    //! @returns
+    //!  true if successfully added or false if another format with the same
+    //!  payload type already exists.
+    bool add_format(const Format& fmt);
 
 private:
-    enum { MaxFormats = 2 };
+    enum { PreallocatedNodes = 16 };
 
-    Format formats_[MaxFormats];
-    size_t n_formats_;
+    struct Node : core::HashmapNode, core::ListNode {
+        Format format;
 
-    void add_(const Format& fmt);
+        static core::hashsum_t key_hash(unsigned int pt) {
+            return core::hashsum_int(pt);
+        }
+
+        static bool key_equal(unsigned int pt1, unsigned int pt2) {
+            return pt1 == pt2;
+        }
+
+        unsigned int key() const {
+            return format.payload_type;
+        }
+    };
+
+    void add_builtin_(const Format& fmt);
+
+    core::Mutex mutex_;
+
+    core::SlabPool<PreallocatedNodes * sizeof(Node)> node_pool_;
+    core::Hashmap<Node, PreallocatedNodes, core::NoOwnership> node_map_;
+    core::List<Node, core::NoOwnership> node_list_;
 };
 
 } // namespace rtp

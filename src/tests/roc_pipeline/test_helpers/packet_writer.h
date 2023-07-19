@@ -39,7 +39,7 @@ public:
                  const address::SocketAddr& dst_addr)
         : writer_(writer)
         , composer_(composer)
-        , payload_encoder_(format_map.format(pt)->new_encoder(allocator), allocator)
+        , payload_encoder_(format_map.find_by_pt(pt)->new_encoder(allocator), allocator)
         , packet_factory_(packet_factory)
         , buffer_factory_(buffer_factory)
         , src_addr_(src_addr)

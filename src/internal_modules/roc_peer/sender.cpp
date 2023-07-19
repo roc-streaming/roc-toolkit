@@ -20,7 +20,7 @@ Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
     : BasicPeer(context)
     , pipeline_(*this,
                 pipeline_config,
-                format_map_,
+                context.format_map(),
                 context.packet_factory(),
                 context.byte_buffer_factory(),
                 context.sample_buffer_factory(),
