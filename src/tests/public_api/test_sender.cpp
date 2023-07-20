@@ -10,6 +10,7 @@
 
 #include "roc_core/stddefs.h"
 
+#include "roc/config.h"
 #include "roc/sender.h"
 
 namespace roc {
@@ -442,6 +443,124 @@ TEST(sender, bad_args) {
               == -1);
 
         LONGS_EQUAL(0, roc_sender_close(sender));
+    }
+}
+
+TEST(sender, bad_config) {
+    { // frame_encoding.rate == 0
+        roc_sender_config sender_config_copy = sender_config;
+        sender_config_copy.frame_encoding.rate = 0;
+
+        roc_sender* sender = NULL;
+        CHECK(roc_sender_open(context, &sender_config_copy, &sender) != 0);
+        CHECK(!sender);
+    }
+    { // frame_encoding.format == 0
+        roc_sender_config sender_config_copy = sender_config;
+        sender_config_copy.frame_encoding.format = (roc_format)0;
+
+        roc_sender* sender = NULL;
+        CHECK(roc_sender_open(context, &sender_config_copy, &sender) != 0);
+        CHECK(!sender);
+    }
+    { // frame_encoding.format == 99999
+        roc_sender_config sender_config_copy = sender_config;
+        sender_config_copy.frame_encoding.format = (roc_format)99999;
+
+        roc_sender* sender = NULL;
+        CHECK(roc_sender_open(context, &sender_config_copy, &sender) != 0);
+        CHECK(!sender);
+    }
+    { // frame_encoding.channels = 0
+        roc_sender_config sender_config_copy = sender_config;
+        sender_config_copy.frame_encoding.channels = (roc_channel_layout)0;
+
+        roc_sender* sender = NULL;
+        CHECK(roc_sender_open(context, &sender_config_copy, &sender) != 0);
+        CHECK(!sender);
+    }
+    { // frame_encoding.channels == 99999
+        roc_sender_config sender_config_copy = sender_config;
+        sender_config_copy.frame_encoding.channels = (roc_channel_layout)99999;
+
+        roc_sender* sender = NULL;
+        CHECK(roc_sender_open(context, &sender_config_copy, &sender) != 0);
+        CHECK(!sender);
+    }
+    { // frame_encoding.tracks != 0 (non-multitrack)
+        roc_sender_config sender_config_copy = sender_config;
+        sender_config_copy.frame_encoding.tracks = 1;
+
+        roc_sender* sender = NULL;
+        CHECK(roc_sender_open(context, &sender_config_copy, &sender) != 0);
+        CHECK(!sender);
+    }
+    { // frame_encoding.tracks == 0 (multitrack)
+        roc_sender_config sender_config_copy = sender_config;
+        sender_config_copy.frame_encoding.channels = ROC_CHANNEL_LAYOUT_MULTITRACK;
+        sender_config_copy.frame_encoding.tracks = 0;
+
+        roc_sender* sender = NULL;
+        CHECK(roc_sender_open(context, &sender_config_copy, &sender) != 0);
+        CHECK(!sender);
+    }
+    { // frame_encoding.tracks == 99999 (multitrack)
+        roc_sender_config sender_config_copy = sender_config;
+        sender_config_copy.frame_encoding.channels = ROC_CHANNEL_LAYOUT_MULTITRACK;
+        sender_config_copy.frame_encoding.tracks = 99999;
+
+        roc_sender* sender = NULL;
+        CHECK(roc_sender_open(context, &sender_config_copy, &sender) != 0);
+        CHECK(!sender);
+    }
+    { // packet_encoding == 0 (can't select)
+        roc_sender_config sender_config_copy = sender_config;
+        sender_config_copy.frame_encoding.rate = 96000;
+        sender_config_copy.packet_encoding = (roc_packet_encoding)0;
+
+        roc_sender* sender = NULL;
+        CHECK(roc_sender_open(context, &sender_config_copy, &sender) != 0);
+        CHECK(!sender);
+    }
+    { // packet_encoding == 99999
+        roc_sender_config sender_config_copy = sender_config;
+        sender_config_copy.packet_encoding = (roc_packet_encoding)99999;
+
+        roc_sender* sender = NULL;
+        CHECK(roc_sender_open(context, &sender_config_copy, &sender) != 0);
+        CHECK(!sender);
+    }
+    { // fec_encoding == 99999
+        roc_sender_config sender_config_copy = sender_config;
+        sender_config_copy.fec_encoding = (roc_fec_encoding)99999;
+
+        roc_sender* sender = NULL;
+        CHECK(roc_sender_open(context, &sender_config_copy, &sender) != 0);
+        CHECK(!sender);
+    }
+    { // clock_source == 99999
+        roc_sender_config sender_config_copy = sender_config;
+        sender_config_copy.clock_source = (roc_clock_source)99999;
+
+        roc_sender* sender = NULL;
+        CHECK(roc_sender_open(context, &sender_config_copy, &sender) != 0);
+        CHECK(!sender);
+    }
+    { // resampler_backend == 99999
+        roc_sender_config sender_config_copy = sender_config;
+        sender_config_copy.resampler_backend = (roc_resampler_backend)99999;
+
+        roc_sender* sender = NULL;
+        CHECK(roc_sender_open(context, &sender_config_copy, &sender) != 0);
+        CHECK(!sender);
+    }
+    { // resampler_profile == 99999
+        roc_sender_config sender_config_copy = sender_config;
+        sender_config_copy.resampler_profile = (roc_resampler_profile)99999;
+
+        roc_sender* sender = NULL;
+        CHECK(roc_sender_open(context, &sender_config_copy, &sender) != 0);
+        CHECK(!sender);
     }
 }
 
