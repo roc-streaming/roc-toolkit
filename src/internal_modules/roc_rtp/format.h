@@ -37,10 +37,14 @@ struct Format {
     unsigned packet_flags;
 
     //! Create frame encoder.
-    audio::IFrameEncoder* (*new_encoder)(core::IAllocator& allocator);
+    audio::IFrameEncoder* (*new_encoder)(core::IAllocator& allocator,
+                                         const audio::PcmFormat& pcm_format,
+                                         const audio::SampleSpec& sample_spec);
 
     //! Create frame decoder.
-    audio::IFrameDecoder* (*new_decoder)(core::IAllocator& allocator);
+    audio::IFrameDecoder* (*new_decoder)(core::IAllocator& allocator,
+                                         const audio::PcmFormat& pcm_format,
+                                         const audio::SampleSpec& sample_spec);
 
     //! Initialize.
     Format()

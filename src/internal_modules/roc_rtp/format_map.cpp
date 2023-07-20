@@ -15,32 +15,6 @@
 namespace roc {
 namespace rtp {
 
-namespace {
-
-template <audio::PcmEncoding Encoding,
-          audio::PcmEndian Endian,
-          size_t SampleRate,
-          audio::ChannelLayout ChLayout,
-          audio::ChannelMask ChMask>
-audio::IFrameEncoder* new_encoder(core::IAllocator& allocator) {
-    return new (allocator)
-        audio::PcmEncoder(audio::PcmFormat(Encoding, Endian),
-                          audio::SampleSpec(SampleRate, ChLayout, ChMask));
-}
-
-template <audio::PcmEncoding Encoding,
-          audio::PcmEndian Endian,
-          size_t SampleRate,
-          audio::ChannelLayout ChLayout,
-          audio::ChannelMask ChMask>
-audio::IFrameDecoder* new_decoder(core::IAllocator& allocator) {
-    return new (allocator)
-        audio::PcmDecoder(audio::PcmFormat(Encoding, Endian),
-                          audio::SampleSpec(SampleRate, ChLayout, ChMask));
-}
-
-} // namespace
-
 FormatMap::FormatMap(core::IAllocator& allocator, bool poison)
     : node_pool_(allocator, sizeof(Node), poison)
     , node_map_(allocator) {
@@ -52,12 +26,9 @@ FormatMap::FormatMap(core::IAllocator& allocator, bool poison)
         fmt.sample_spec =
             audio::SampleSpec(44100, audio::ChannelLayout_Mono, audio::ChannelMask_Mono);
         fmt.packet_flags = packet::Packet::FlagAudio;
-        fmt.new_encoder =
-            &new_encoder<audio::PcmEncoding_SInt16, audio::PcmEndian_Big, 44100,
-                         audio::ChannelLayout_Mono, audio::ChannelMask_Mono>;
-        fmt.new_decoder =
-            &new_decoder<audio::PcmEncoding_SInt16, audio::PcmEndian_Big, 44100,
-                         audio::ChannelLayout_Mono, audio::ChannelMask_Mono>;
+        fmt.new_encoder = &audio::PcmEncoder::construct;
+        fmt.new_decoder = &audio::PcmDecoder::construct;
+
         add_builtin_(fmt);
     }
     {
@@ -68,12 +39,9 @@ FormatMap::FormatMap(core::IAllocator& allocator, bool poison)
         fmt.sample_spec = audio::SampleSpec(44100, audio::ChannelLayout_Surround,
                                             audio::ChannelMask_Stereo);
         fmt.packet_flags = packet::Packet::FlagAudio;
-        fmt.new_encoder =
-            &new_encoder<audio::PcmEncoding_SInt16, audio::PcmEndian_Big, 44100,
-                         audio::ChannelLayout_Surround, audio::ChannelMask_Stereo>;
-        fmt.new_decoder =
-            &new_decoder<audio::PcmEncoding_SInt16, audio::PcmEndian_Big, 44100,
-                         audio::ChannelLayout_Surround, audio::ChannelMask_Stereo>;
+        fmt.new_encoder = &audio::PcmEncoder::construct;
+        fmt.new_decoder = &audio::PcmDecoder::construct;
+
         add_builtin_(fmt);
     }
 }
@@ -124,11 +92,15 @@ bool FormatMap::add_format(const Format& fmt) {
     }
 
     if (node_map_.find(fmt.payload_type)) {
+        roc_log(LogError,
+                "format map: failed to register format: payload type %u already exists",
+                fmt.payload_type);
         return false;
     }
 
     Node* node = new (node_pool_) Node();
     if (!node) {
+        roc_log(LogError, "format map: failed to register format: allocation failed");
         return false;
     }
 

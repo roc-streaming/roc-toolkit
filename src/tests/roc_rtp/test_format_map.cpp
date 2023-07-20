@@ -9,6 +9,8 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_audio/channel_layout.h"
+#include "roc_audio/pcm_decoder.h"
+#include "roc_audio/pcm_encoder.h"
 #include "roc_audio/pcm_format.h"
 #include "roc_core/heap_allocator.h"
 #include "roc_rtp/format_map.h"
@@ -104,13 +106,13 @@ TEST(format_map, add_format) {
     {
         Format fmt;
         fmt.payload_type = (PayloadType)100;
+        fmt.packet_flags = packet::Packet::FlagAudio;
         fmt.pcm_format =
             audio::PcmFormat(audio::PcmEncoding_Float32, audio::PcmEndian_Native);
         fmt.sample_spec = audio::SampleSpec(48000, audio::ChannelLayout_Surround,
                                             audio::ChannelMask_Stereo);
-        fmt.packet_flags = packet::Packet::FlagAudio;
-        fmt.new_encoder = (audio::IFrameEncoder * (*)(core::IAllocator&))0xffffffff;
-        fmt.new_decoder = (audio::IFrameDecoder * (*)(core::IAllocator&))0xffffffff;
+        fmt.new_encoder = &audio::PcmEncoder::construct;
+        fmt.new_decoder = &audio::PcmDecoder::construct;
 
         CHECK(fmt_map.add_format(fmt));
     }

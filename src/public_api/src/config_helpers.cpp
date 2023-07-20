@@ -32,54 +32,8 @@ bool context_config_from_user(peer::ContextConfig& out, const roc_context_config
 bool sender_config_from_user(peer::Context& context,
                              pipeline::SenderConfig& out,
                              const roc_sender_config& in) {
-    if (in.frame_encoding.format != ROC_FORMAT_PCM_FLOAT32) {
-        roc_log(LogError,
-                "bad configuration: invalid roc_sender_config.frame_encoding.format:"
-                " should be valid enum value");
-        return false;
-    }
-
-    if (in.frame_encoding.channels != 0) {
-        if (in.frame_encoding.channels == ROC_CHANNEL_LAYOUT_MULTITRACK) {
-            if (in.frame_encoding.tracks == 0) {
-                roc_log(LogError,
-                        "bad configuration: invalid roc_sender_config.frame_encoding:"
-                        " if frame_encoding.channels is ROC_CHANNEL_LAYOUT_MULTITRACK,"
-                        " then frame_encoding.tracks should be non-zero");
-                return false;
-            }
-        } else {
-            if (in.frame_encoding.tracks != 0) {
-                roc_log(
-                    LogError,
-                    "bad configuration: invalid roc_sender_config.frame_encoding:"
-                    " if frame_encoding.channels is not ROC_CHANNEL_LAYOUT_MULTITRACK,"
-                    " then frame_encoding.tracks should be zero");
-                return false;
-            }
-        }
-        if (!channel_set_from_user(out.input_sample_spec.channel_set(),
-                                   in.frame_encoding.channels,
-                                   in.frame_encoding.tracks)) {
-            roc_log(
-                LogError,
-                "bad configuration: invalid roc_sender_config.frame_encoding.channels:"
-                " should be valid enum value");
-            return false;
-        }
-    } else {
-        roc_log(LogError,
-                "bad configuration: invalid roc_sender_config.frame_encoding.channels:"
-                " should be non-zero");
-        return false;
-    }
-
-    if (in.frame_encoding.rate != 0) {
-        out.input_sample_spec.set_sample_rate(in.frame_encoding.rate);
-    } else {
-        roc_log(LogError,
-                "bad configuration: invalid roc_sender_config.frame_encoding.rate:"
-                " should be non-zero");
+    if (!sample_spec_from_user(out.input_sample_spec, in.frame_encoding)) {
+        roc_log(LogError, "bad configuration: invalid roc_sender_config.frame_encoding");
         return false;
     }
 
@@ -87,7 +41,15 @@ bool sender_config_from_user(peer::Context& context,
         if (!packet_encoding_from_user(out.payload_type, in.packet_encoding)) {
             roc_log(LogError,
                     "bad configuration: invalid roc_sender_config.packet_encoding:"
-                    " should be zero or valid enum value");
+                    " should be zero or valid encoding id");
+            return false;
+        }
+        const rtp::Format* format = context.format_map().find_by_pt(out.payload_type);
+        if (!format) {
+            roc_log(LogError,
+                    "bad configuration: invalid roc_sender_config.packet_encoding:"
+                    " no built-in or registered encoding found with id %u",
+                    (unsigned)out.payload_type);
             return false;
         }
     } else {
@@ -150,53 +112,9 @@ bool sender_config_from_user(peer::Context& context,
 bool receiver_config_from_user(peer::Context&,
                                pipeline::ReceiverConfig& out,
                                const roc_receiver_config& in) {
-    if (in.frame_encoding.format != ROC_FORMAT_PCM_FLOAT32) {
+    if (!sample_spec_from_user(out.common.output_sample_spec, in.frame_encoding)) {
         roc_log(LogError,
-                "bad configuration: invalid roc_receiver_config.frame_format:"
-                " should be valid enum value");
-        return false;
-    }
-
-    if (in.frame_encoding.channels != 0) {
-        if (in.frame_encoding.channels == ROC_CHANNEL_LAYOUT_MULTITRACK) {
-            if (in.frame_encoding.tracks == 0) {
-                roc_log(LogError,
-                        "bad configuration: invalid roc_receiver_config.frame_encoding:"
-                        " if frame_encoding.channels is ROC_CHANNEL_LAYOUT_MULTITRACK,"
-                        " then frame_encoding.tracks should be non-zero");
-                return false;
-            }
-        } else {
-            if (in.frame_encoding.tracks != 0) {
-                roc_log(
-                    LogError,
-                    "bad configuration: invalid roc_receiver_config.frame_encoding:"
-                    " if frame_encoding.channels is not ROC_CHANNEL_LAYOUT_MULTITRACK,"
-                    " then frame_encoding.tracks should be zero");
-                return false;
-            }
-        }
-        if (!channel_set_from_user(out.common.output_sample_spec.channel_set(),
-                                   in.frame_encoding.channels,
-                                   in.frame_encoding.tracks)) {
-            roc_log(LogError,
-                    "bad configuration: invalid roc_receiver_config.frame_channels:"
-                    " should be valid enum value");
-            return false;
-        }
-    } else {
-        roc_log(LogError,
-                "bad configuration: invalid roc_receiver_config.frame_channels:"
-                " should be non-zero");
-        return false;
-    }
-
-    if (in.frame_encoding.rate != 0) {
-        out.common.output_sample_spec.set_sample_rate(in.frame_encoding.rate);
-    } else {
-        roc_log(LogError,
-                "bad configuration: invalid roc_receiver_config.frame_sample_rate:"
-                " should be non-zero");
+                "bad configuration: invalid roc_receiver_config.frame_encoding");
         return false;
     }
 
@@ -263,6 +181,57 @@ bool receiver_config_from_user(peer::Context&,
     return true;
 }
 
+bool sample_spec_from_user(audio::SampleSpec& out, const roc_media_encoding& in) {
+    if (in.rate != 0) {
+        out.set_sample_rate(in.rate);
+    } else {
+        roc_log(LogError,
+                "bad configuration: invalid roc_media_encoding.rate:"
+                " should be non-zero");
+        return false;
+    }
+
+    if (in.format != ROC_FORMAT_PCM_FLOAT32) {
+        roc_log(LogError,
+                "bad configuration: invalid roc_media_encoding.format:"
+                " should be valid enum value");
+        return false;
+    }
+
+    if (in.channels != 0) {
+        if (in.channels == ROC_CHANNEL_LAYOUT_MULTITRACK) {
+            if (in.tracks == 0) {
+                roc_log(LogError,
+                        "bad configuration: invalid roc_media_encoding:"
+                        " if channels is ROC_CHANNEL_LAYOUT_MULTITRACK,"
+                        " then tracks should be non-zero");
+                return false;
+            }
+        } else {
+            if (in.tracks != 0) {
+                roc_log(LogError,
+                        "bad configuration: invalid roc_media_encoding:"
+                        " if channels is not ROC_CHANNEL_LAYOUT_MULTITRACK,"
+                        " then tracks should be zero");
+                return false;
+            }
+        }
+        if (!channel_set_from_user(out.channel_set(), in.channels, in.tracks)) {
+            roc_log(LogError,
+                    "bad configuration: invalid roc_media_encoding.channels:"
+                    " should be valid enum value");
+            return false;
+        }
+    } else {
+        roc_log(LogError,
+                "bad configuration: invalid roc_media_encoding.channels:"
+                " should be non-zero");
+        return false;
+    }
+
+    return true;
+}
+
 ROC_ATTR_NO_SANITIZE_UB
 bool channel_set_from_user(audio::ChannelSet& out,
                            roc_channel_layout in,
@@ -288,14 +257,14 @@ bool channel_set_from_user(audio::ChannelSet& out,
 }
 
 ROC_ATTR_NO_SANITIZE_UB
-bool clock_source_from_user(bool& timing, roc_clock_source in) {
+bool clock_source_from_user(bool& out_timing, roc_clock_source in) {
     switch (in) {
     case ROC_CLOCK_EXTERNAL:
-        timing = false;
+        out_timing = false;
         return true;
 
     case ROC_CLOCK_INTERNAL:
-        timing = true;
+        out_timing = true;
         return true;
     }
 
@@ -356,7 +325,8 @@ bool packet_encoding_from_user(rtp::PayloadType& out, roc_packet_encoding in) {
         return true;
     }
 
-    return false;
+    out = (rtp::PayloadType)in;
+    return true;
 }
 
 ROC_ATTR_NO_SANITIZE_UB

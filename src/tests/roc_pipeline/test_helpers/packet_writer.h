@@ -39,7 +39,7 @@ public:
                  const address::SocketAddr& dst_addr)
         : writer_(writer)
         , composer_(composer)
-        , payload_encoder_(format_map.find_by_pt(pt)->new_encoder(allocator), allocator)
+        , payload_encoder_(new_encoder_(allocator, format_map, pt), allocator)
         , packet_factory_(packet_factory)
         , buffer_factory_(buffer_factory)
         , src_addr_(src_addr)
@@ -100,6 +100,15 @@ public:
 
 private:
     enum { MaxSamples = 4096 };
+
+    static audio::IFrameEncoder* new_encoder_(core::IAllocator& allocator,
+                                              rtp::FormatMap& format_map,
+                                              rtp::PayloadType pt) {
+        const rtp::Format* fmt = format_map.find_by_pt(pt);
+        CHECK(fmt);
+
+        return fmt->new_encoder(allocator, fmt->pcm_format, fmt->sample_spec);
+    }
 
     packet::PacketPtr new_packet_(size_t samples_per_packet,
                                   audio::SampleSpec sample_spec) {

@@ -241,7 +241,7 @@ typedef enum roc_packet_encoding {
      *  - \ref ROC_PROTO_RTP_RS8M_SOURCE
      *  - \ref ROC_PROTO_RTP_LDPC_SOURCE
      */
-    ROC_PACKET_ENCODING_AVP_L16_MONO = 1,
+    ROC_PACKET_ENCODING_AVP_L16_MONO = 11,
 
     /** PCM signed 16-bit, 2 channels, 44100 rate.
      *
@@ -254,7 +254,7 @@ typedef enum roc_packet_encoding {
      *  - \ref ROC_PROTO_RTP_RS8M_SOURCE
      *  - \ref ROC_PROTO_RTP_LDPC_SOURCE
      */
-    ROC_PACKET_ENCODING_AVP_L16_STEREO = 2
+    ROC_PACKET_ENCODING_AVP_L16_STEREO = 10,
 } roc_packet_encoding;
 
 /** Forward Error Correction encoding.
@@ -451,14 +451,22 @@ typedef struct roc_sender_config {
     roc_media_encoding frame_encoding;
 
     /** The encoding used for packets produced by sender.
+     *
      * Packet encoding defines sample format, channel layout, and sample rate in network
      * packets. If packet encoding differs from frame encoding, conversion is performed
      * automatically. If sample rates are different, resampling should be enabled
      * via \c resampler_profile.
+     *
      * If zero, sender selects packet encoding automatically based on \c frame_encoding.
      * This automatic selection matches only encodings that have exact same sample rate
      * and channel layout, and hence don't require conversions. If you need conversions,
      * you should set packet encoding explicitly.
+     *
+     * If you want to force specific packet encoding, and built-in set of encodings is
+     * not enough, you can use \ref roc_context_register_encoding() to register custom
+     * encoding, set \c packet_encoding to registered identifier. If you use signaling
+     * protocol like RTSP, it's enough to register in just on sender; otherwise, you
+     * need to do the same on receiver as well.
      */
     roc_packet_encoding packet_encoding;
 
