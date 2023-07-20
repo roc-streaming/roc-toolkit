@@ -118,7 +118,7 @@ ReceiverSession::ReceiverSession(
 
     depacketizer_.reset(new (depacketizer_) audio::Depacketizer(
         *preader, *payload_decoder_, format->sample_spec, common_config.beeping));
-    if (!depacketizer_) {
+    if (!depacketizer_ || !depacketizer_->is_valid()) {
         return;
     }
 

@@ -42,13 +42,20 @@ Depacketizer::Depacketizer(packet::IReader& reader,
     , missing_samples_(0)
     , packet_samples_(0)
     , rate_limiter_(LogInterval)
+    , beep_(beep)
     , first_packet_(true)
-    , beep_(beep) {
+    , valid_(false) {
     roc_log(LogDebug, "depacketizer: initializing: n_channels=%lu",
             (unsigned long)sample_spec_.num_channels());
+
+    valid_ = true;
 }
 
-bool Depacketizer::started() const {
+bool Depacketizer::is_valid() const {
+    return valid_;
+}
+
+bool Depacketizer::is_started() const {
     return !first_packet_;
 }
 
