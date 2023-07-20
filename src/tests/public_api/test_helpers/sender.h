@@ -30,10 +30,12 @@ public:
     Sender(Context& context,
            roc_sender_config& config,
            float sample_step,
+           size_t num_chans,
            size_t frame_size)
         : sndr_(NULL)
         , sample_step_(sample_step)
-        , frame_size_(frame_size)
+        , num_chans_(num_chans)
+        , frame_samples_(frame_size * num_chans)
         , stopped_(false) {
         CHECK(roc_sender_open(context.get(), &config, &sndr_) == 0);
         CHECK(sndr_);
@@ -67,35 +69,31 @@ public:
 
 private:
     virtual void run() {
+        float send_buf[MaxBufSize];
         float sample_value = sample_step_;
-        float samples[TotalSamples];
 
         while (!stopped_) {
-            for (size_t i = 0; i < TotalSamples; ++i) {
-                samples[i] = sample_value;
+            for (size_t ns = 0; ns < frame_samples_; ns += num_chans_) {
+                for (size_t nc = 0; nc < num_chans_; ++nc) {
+                    send_buf[ns + nc] = sample_value;
+                }
                 sample_value = increment_sample_value(sample_value, sample_step_);
             }
 
-            for (size_t off = 0; off < TotalSamples; off += frame_size_) {
-                if (off + frame_size_ > TotalSamples) {
-                    off = TotalSamples - frame_size_;
-                }
+            roc_frame frame;
+            memset(&frame, 0, sizeof(frame));
+            frame.samples = send_buf;
+            frame.samples_size = frame_samples_ * sizeof(float);
 
-                roc_frame frame;
-                memset(&frame, 0, sizeof(frame));
-
-                frame.samples = samples + off;
-                frame.samples_size = frame_size_ * sizeof(float);
-
-                const int ret = roc_sender_write(sndr_, &frame);
-                roc_panic_if_not(ret == 0);
-            }
+            const int ret = roc_sender_write(sndr_, &frame);
+            roc_panic_if_not(ret == 0);
         }
     }
 
     roc_sender* sndr_;
     const float sample_step_;
-    const size_t frame_size_;
+    const size_t num_chans_;
+    const size_t frame_samples_;
     core::Atomic<int> stopped_;
 };
 

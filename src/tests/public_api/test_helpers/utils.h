@@ -19,16 +19,15 @@ enum {
     MaxBufSize = 500,
 
     SampleRate = 44100,
-    NumChans = 2,
 
     SourcePackets = 10,
     RepairPackets = 7,
 
-    PacketSamples = 100,
+    PacketSamples = 50,
     FrameSamples = PacketSamples * 2,
     TotalSamples = PacketSamples * SourcePackets * 3,
 
-    Latency = TotalSamples / NumChans,
+    Latency = TotalSamples,
     Timeout = TotalSamples * 10
 };
 
