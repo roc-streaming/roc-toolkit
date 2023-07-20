@@ -302,15 +302,24 @@ typedef enum roc_format {
  * Defines number of channels and meaning of each channel.
  */
 typedef enum roc_channel_layout {
-    /** Mono.
-     * One channel.
+    /** Multi-track audio.
+     * In multitrack layout, stream contains multiple channels which represent
+     * independent "tracks" without any special meaning (unlike stereo or surround)
+     * and hence without any special processing or mapping.
+     * The number of channels is arbitrary and is defined by \c tracks field of
+     * \ref roc_media_encoding struct.
      */
-    ROC_CHANNEL_LAYOUT_MONO = 1,
+    ROC_CHANNEL_LAYOUT_MULTITRACK = 1,
+
+    /** Mono.
+     * One channel with monophonic sound.
+     */
+    ROC_CHANNEL_LAYOUT_MONO = 2,
 
     /** Stereo.
-     * Two channels: left and right.
+     * Two channels: left, right.
      */
-    ROC_CHANNEL_LAYOUT_STEREO = 2
+    ROC_CHANNEL_LAYOUT_STEREO = 3,
 } roc_channel_layout;
 
 /** Media encoding.
@@ -333,7 +342,7 @@ typedef struct roc_media_encoding {
     roc_channel_layout channels;
 
     /** Multi-track channel count.
-     * If \c channels is \c ROC_CHANNEL_LAYOUT_MULTITRACK, defines
+     * If \c channels is \ref ROC_CHANNEL_LAYOUT_MULTITRACK, defines
      * number of channels (which represent independent "tracks").
      * For other channel layouts should be zero.
      */

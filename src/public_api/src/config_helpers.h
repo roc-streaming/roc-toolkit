@@ -28,7 +28,10 @@ bool receiver_config_from_user(peer::Context& context,
                                pipeline::ReceiverConfig& out,
                                const roc_receiver_config& in);
 
-bool channel_set_from_user(audio::ChannelSet& out, roc_channel_layout in);
+bool channel_set_from_user(audio::ChannelSet& out,
+                           roc_channel_layout in,
+                           unsigned int in_tracks);
+
 bool clock_source_from_user(bool& timing, roc_clock_source in);
 
 bool resampler_backend_from_user(audio::ResamplerBackend& out, roc_resampler_backend in);
