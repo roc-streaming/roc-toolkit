@@ -103,7 +103,7 @@ ReceiverSession::ReceiverSession(
         fec_reader_.reset(new (fec_reader_) fec::Reader(
             session_config.fec_reader, session_config.fec_decoder.scheme, *fec_decoder_,
             *preader, *repair_queue_, *fec_parser_, packet_factory, allocator));
-        if (!fec_reader_ || !fec_reader_->valid()) {
+        if (!fec_reader_ || !fec_reader_->is_valid()) {
             return;
         }
         preader = fec_reader_.get();
@@ -129,7 +129,7 @@ ReceiverSession::ReceiverSession(
         || session_config.watchdog.frame_status_window != 0) {
         watchdog_.reset(new (watchdog_) audio::Watchdog(
             *areader, format->sample_spec, session_config.watchdog, allocator));
-        if (!watchdog_ || !watchdog_->valid()) {
+        if (!watchdog_ || !watchdog_->is_valid()) {
             return;
         }
         areader = watchdog_.get();
@@ -143,7 +143,7 @@ ReceiverSession::ReceiverSession(
                 format->sample_spec,
                 audio::SampleSpec(format->sample_spec.sample_rate(),
                                   common_config.output_sample_spec.channel_set())));
-        if (!channel_mapper_reader_ || !channel_mapper_reader_->valid()) {
+        if (!channel_mapper_reader_ || !channel_mapper_reader_->is_valid()) {
             return;
         }
         areader = channel_mapper_reader_.get();
@@ -177,7 +177,7 @@ ReceiverSession::ReceiverSession(
                               common_config.output_sample_spec.channel_set()),
             common_config.output_sample_spec));
 
-        if (!resampler_reader_ || !resampler_reader_->valid()) {
+        if (!resampler_reader_ || !resampler_reader_->is_valid()) {
             return;
         }
         areader = resampler_reader_.get();
@@ -196,19 +196,19 @@ ReceiverSession::ReceiverSession(
         session_config.latency_monitor, session_config.target_latency,
         format->sample_spec, common_config.output_sample_spec,
         session_config.freq_estimator_config));
-    if (!latency_monitor_ || !latency_monitor_->valid()) {
+    if (!latency_monitor_ || !latency_monitor_->is_valid()) {
         return;
     }
 
     audio_reader_ = areader;
 }
 
-bool ReceiverSession::valid() const {
+bool ReceiverSession::is_valid() const {
     return audio_reader_;
 }
 
 bool ReceiverSession::handle(const packet::PacketPtr& packet) {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     packet::UDP* udp = packet->udp();
     if (!udp) {
@@ -224,7 +224,7 @@ bool ReceiverSession::handle(const packet::PacketPtr& packet) {
 }
 
 bool ReceiverSession::advance(packet::timestamp_t timestamp) {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     if (watchdog_) {
         if (!watchdog_->update()) {
@@ -242,14 +242,14 @@ bool ReceiverSession::advance(packet::timestamp_t timestamp) {
 }
 
 bool ReceiverSession::reclock(packet::ntp_timestamp_t) {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     // no-op
     return true;
 }
 
 audio::IFrameReader& ReceiverSession::reader() {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     return *audio_reader_;
 }

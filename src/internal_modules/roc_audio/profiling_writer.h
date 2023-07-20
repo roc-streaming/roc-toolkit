@@ -31,11 +31,11 @@ public:
                     const audio::SampleSpec& sample_spec,
                     ProfilerConfig profiler_config);
 
+    //! Check if the profiler was succefully constructed.
+    bool is_valid() const;
+
     //! Write audio frame.
     virtual void write(Frame& frame);
-
-    //! Check if the profiler was succefully constructed.
-    bool valid() const;
 
 private:
     core::nanoseconds_t write_(Frame& frame);

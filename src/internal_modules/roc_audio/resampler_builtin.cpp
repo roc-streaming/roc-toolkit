@@ -153,7 +153,7 @@ BuiltinResampler::BuiltinResampler(core::IAllocator& allocator,
 BuiltinResampler::~BuiltinResampler() {
 }
 
-bool BuiltinResampler::valid() const {
+bool BuiltinResampler::is_valid() const {
     return valid_;
 }
 

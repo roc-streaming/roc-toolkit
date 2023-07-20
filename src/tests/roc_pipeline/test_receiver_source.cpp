@@ -129,7 +129,7 @@ TEST(receiver_source, no_sessions) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
@@ -144,7 +144,7 @@ TEST(receiver_source, one_session) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -179,7 +179,7 @@ TEST(receiver_source, one_session_long_run) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -214,7 +214,7 @@ TEST(receiver_source, initial_latency) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -254,7 +254,7 @@ TEST(receiver_source, initial_latency_timeout) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -288,7 +288,7 @@ TEST(receiver_source, timeout) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -323,7 +323,7 @@ TEST(receiver_source, initial_trim) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -358,7 +358,7 @@ TEST(receiver_source, two_sessions_synchronous) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -398,7 +398,7 @@ TEST(receiver_source, two_sessions_overlapping) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -450,7 +450,7 @@ TEST(receiver_source, two_sessions_two_endpoints) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot1 = create_slot(receiver);
     CHECK(slot1);
@@ -497,7 +497,7 @@ TEST(receiver_source, two_sessions_same_address_same_stream) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -542,7 +542,7 @@ TEST(receiver_source, two_sessions_same_address_different_streams) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -589,7 +589,7 @@ TEST(receiver_source, seqnum_overflow) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -622,7 +622,7 @@ TEST(receiver_source, seqnum_small_jump) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -661,7 +661,7 @@ TEST(receiver_source, seqnum_large_jump) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -706,7 +706,7 @@ TEST(receiver_source, seqnum_reorder) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -745,7 +745,7 @@ TEST(receiver_source, seqnum_late) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -801,7 +801,7 @@ TEST(receiver_source, timestamp_overflow) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -836,7 +836,7 @@ TEST(receiver_source, timestamp_small_jump) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -883,7 +883,7 @@ TEST(receiver_source, timestamp_large_jump) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -922,7 +922,7 @@ TEST(receiver_source, timestamp_overlap) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -955,7 +955,7 @@ TEST(receiver_source, timestamp_reorder) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1010,7 +1010,7 @@ TEST(receiver_source, timestamp_late) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1075,7 +1075,7 @@ TEST(receiver_source, packet_size_small) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1111,7 +1111,7 @@ TEST(receiver_source, packet_size_large) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1153,7 +1153,7 @@ TEST(receiver_source, packet_size_variable) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1186,7 +1186,7 @@ TEST(receiver_source, corrupted_packets_new_session) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1221,7 +1221,7 @@ TEST(receiver_source, corrupted_packets_existing_session) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1277,7 +1277,7 @@ TEST(receiver_source, status) {
     ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
                             sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);

@@ -35,7 +35,7 @@ public:
                         const SampleSpec& out_spec);
 
     //! Check if the object was succefully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Read audio frame.
     virtual bool read(Frame& frame);

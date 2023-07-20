@@ -86,7 +86,7 @@ TEST(sender_sink, write) {
 
     SenderSink sender(config, format_map, packet_factory, byte_buffer_factory,
                       sample_buffer_factory, allocator);
-    CHECK(sender.valid());
+    CHECK(sender.is_valid());
 
     SenderSlot* slot = sender.create_slot();
     CHECK(slot);
@@ -125,7 +125,7 @@ TEST(sender_sink, frame_size_small) {
 
     SenderSink sender(config, format_map, packet_factory, byte_buffer_factory,
                       sample_buffer_factory, allocator);
-    CHECK(sender.valid());
+    CHECK(sender.is_valid());
 
     SenderSlot* slot = sender.create_slot();
     CHECK(slot);
@@ -164,7 +164,7 @@ TEST(sender_sink, frame_size_large) {
 
     SenderSink sender(config, format_map, packet_factory, byte_buffer_factory,
                       sample_buffer_factory, allocator);
-    CHECK(sender.valid());
+    CHECK(sender.is_valid());
 
     SenderSlot* slot = sender.create_slot();
     CHECK(slot);

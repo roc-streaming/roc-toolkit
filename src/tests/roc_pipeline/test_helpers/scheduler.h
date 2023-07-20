@@ -39,7 +39,7 @@ class Scheduler : public pipeline::IPipelineTaskScheduler,
 public:
     Scheduler()
         : task_(NULL) {
-        CHECK(queue_.valid());
+        CHECK(queue_.is_valid());
     }
 
     ~Scheduler() {

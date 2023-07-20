@@ -52,7 +52,7 @@ SoxSink::~SoxSink() {
     close_();
 }
 
-bool SoxSink::valid() const {
+bool SoxSink::is_valid() const {
     return valid_;
 }
 

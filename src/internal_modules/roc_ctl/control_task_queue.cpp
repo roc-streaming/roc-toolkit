@@ -26,14 +26,14 @@ ControlTaskQueue::~ControlTaskQueue() {
     stop_thread_();
 }
 
-bool ControlTaskQueue::valid() const {
+bool ControlTaskQueue::is_valid() const {
     return started_;
 }
 
 void ControlTaskQueue::schedule(ControlTask& task,
                                 IControlTaskExecutor& executor,
                                 IControlTaskCompleter* completer) {
-    if (!valid()) {
+    if (!is_valid()) {
         roc_panic("control task queue: attempt to use invalid queue");
     }
 
@@ -50,7 +50,7 @@ void ControlTaskQueue::schedule_at(ControlTask& task,
                                    core::nanoseconds_t deadline,
                                    IControlTaskExecutor& executor,
                                    IControlTaskCompleter* completer) {
-    if (!valid()) {
+    if (!is_valid()) {
         roc_panic("control task queue: attempt to use invalid queue");
     }
 
@@ -68,7 +68,7 @@ void ControlTaskQueue::schedule_at(ControlTask& task,
 }
 
 void ControlTaskQueue::resume(ControlTask& task) {
-    if (!valid()) {
+    if (!is_valid()) {
         roc_panic("control task queue: attempt to use invalid queue");
     }
 
@@ -76,7 +76,7 @@ void ControlTaskQueue::resume(ControlTask& task) {
 }
 
 void ControlTaskQueue::async_cancel(ControlTask& task) {
-    if (!valid()) {
+    if (!is_valid()) {
         roc_panic("control task queue: attempt to use invalid queue");
     }
 
@@ -84,7 +84,7 @@ void ControlTaskQueue::async_cancel(ControlTask& task) {
 }
 
 void ControlTaskQueue::wait(ControlTask& task) {
-    if (!valid()) {
+    if (!is_valid()) {
         roc_panic("control task queue: attempt to use invalid queue");
     }
 

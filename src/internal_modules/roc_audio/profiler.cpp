@@ -48,7 +48,7 @@ Profiler::Profiler(core::IAllocator& allocator,
     valid_ = true;
 }
 
-bool Profiler::valid() const {
+bool Profiler::is_valid() const {
     return valid_;
 }
 

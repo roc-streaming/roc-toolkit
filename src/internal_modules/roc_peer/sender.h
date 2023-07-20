@@ -36,7 +36,7 @@ public:
     ~Sender();
 
     //! Check if successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Set outgoing interface address.
     bool

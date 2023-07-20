@@ -133,7 +133,7 @@ TEST_GROUP(tasks) {};
 
 TEST(tasks, synchronous_add) {
     NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
-    CHECK(net_loop.valid());
+    CHECK(net_loop.is_valid());
 
     UdpReceiverConfig config = make_receiver_config("127.0.0.1", 0);
     packet::ConcurrentQueue queue;
@@ -151,7 +151,7 @@ TEST(tasks, synchronous_add) {
 
 TEST(tasks, asynchronous_add) {
     NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
-    CHECK(net_loop.valid());
+    CHECK(net_loop.is_valid());
 
     UdpReceiverConfig config = make_receiver_config("127.0.0.1", 0);
     packet::ConcurrentQueue queue;
@@ -173,7 +173,7 @@ TEST(tasks, asynchronous_add) {
 
 TEST(tasks, asynchronous_add_remove) {
     NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
-    CHECK(net_loop.valid());
+    CHECK(net_loop.is_valid());
 
     UdpReceiverConfig config = make_receiver_config("127.0.0.1", 0);
     packet::ConcurrentQueue queue;

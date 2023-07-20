@@ -41,7 +41,7 @@ TEST(interleaver, read_write) {
     Queue queue;
     Interleaver intrlvr(queue, allocator, 10);
 
-    CHECK(intrlvr.valid());
+    CHECK(intrlvr.is_valid());
 
     const size_t num_packets = intrlvr.block_size() * 5;
 
@@ -96,7 +96,7 @@ TEST(interleaver, flush) {
     Queue queue;
     Interleaver intrlvr(queue, allocator, 10);
 
-    CHECK(intrlvr.valid());
+    CHECK(intrlvr.is_valid());
 
     const size_t num_packets = intrlvr.block_size() * 5;
 

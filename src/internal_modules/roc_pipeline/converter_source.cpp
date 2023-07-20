@@ -31,7 +31,7 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
                 config.input_sample_spec,
                 audio::SampleSpec(config.input_sample_spec.sample_rate(),
                                   config.output_sample_spec.channel_set())));
-        if (!channel_mapper_reader_ || !channel_mapper_reader_->valid()) {
+        if (!channel_mapper_reader_ || !channel_mapper_reader_->is_valid()) {
             return;
         }
         areader = channel_mapper_reader_.get();
@@ -66,7 +66,7 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
                               config.output_sample_spec.channel_set()),
             config.output_sample_spec));
 
-        if (!resampler_reader_ || !resampler_reader_->valid()) {
+        if (!resampler_reader_ || !resampler_reader_->is_valid()) {
             return;
         }
         areader = resampler_reader_.get();
@@ -83,7 +83,7 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
     if (config.profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingReader(
             *areader, allocator, config.output_sample_spec, config.profiler_config));
-        if (!profiler_ || !profiler_->valid()) {
+        if (!profiler_ || !profiler_->is_valid()) {
             return;
         }
         areader = profiler_.get();
@@ -92,7 +92,7 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
     audio_reader_ = areader;
 }
 
-bool ConverterSource::valid() {
+bool ConverterSource::is_valid() {
     return audio_reader_;
 }
 
@@ -133,7 +133,7 @@ void ConverterSource::reclock(packet::ntp_timestamp_t timestamp) {
 }
 
 bool ConverterSource::read(audio::Frame& frame) {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     return audio_reader_->read(frame);
 }

@@ -35,7 +35,7 @@ public:
                         const SampleSpec& out_spec);
 
     //! Check if the object was succefully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Write audio frame.
     virtual void write(Frame& frame);

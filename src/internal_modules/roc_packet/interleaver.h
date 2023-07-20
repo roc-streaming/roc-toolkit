@@ -31,7 +31,7 @@ public:
     Interleaver(IWriter& writer, core::IAllocator& allocator, size_t block_size);
 
     //! Check if object is successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Write next packet.
     //! @remarks

@@ -43,7 +43,7 @@ Packetizer::Packetizer(packet::IWriter& writer,
             (unsigned long)samples_per_packet_);
 }
 
-bool Packetizer::valid() const {
+bool Packetizer::is_valid() const {
     return valid_;
 }
 

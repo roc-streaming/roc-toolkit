@@ -33,7 +33,7 @@ Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
     memset(used_interfaces_, 0, sizeof(used_interfaces_));
     memset(used_protocols_, 0, sizeof(used_protocols_));
 
-    if (!pipeline_.valid()) {
+    if (!pipeline_.is_valid()) {
         return;
     }
 
@@ -63,7 +63,7 @@ Sender::~Sender() {
     }
 }
 
-bool Sender::valid() const {
+bool Sender::is_valid() const {
     return valid_;
 }
 
@@ -72,7 +72,7 @@ bool Sender::set_outgoing_address(size_t slot_index,
                                   const char* ip) {
     core::Mutex::Lock lock(mutex_);
 
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     roc_panic_if(!ip);
     roc_panic_if(iface < 0);
@@ -121,7 +121,7 @@ bool Sender::set_outgoing_address(size_t slot_index,
 bool Sender::set_reuseaddr(size_t slot_index, address::Interface iface, bool enabled) {
     core::Mutex::Lock lock(mutex_);
 
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     roc_panic_if(iface < 0);
     roc_panic_if(iface >= (int)address::Iface_Max);
@@ -159,7 +159,7 @@ bool Sender::connect(size_t slot_index,
                      const address::EndpointUri& uri) {
     core::Mutex::Lock lock(mutex_);
 
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     roc_panic_if(iface < 0);
     roc_panic_if(iface >= (int)address::Iface_Max);
@@ -261,7 +261,7 @@ bool Sender::connect(size_t slot_index,
 bool Sender::is_ready() {
     core::Mutex::Lock lock(mutex_);
 
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     if (slots_.size() == 0) {
         return false;
@@ -282,7 +282,7 @@ bool Sender::is_ready() {
 }
 
 sndio::ISink& Sender::sink() {
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     return pipeline_.sink();
 }

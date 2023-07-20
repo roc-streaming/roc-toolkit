@@ -64,7 +64,7 @@ ChannelMapperWriter::ChannelMapperWriter(IFrameWriter& writer,
     valid_ = true;
 }
 
-bool ChannelMapperWriter::valid() const {
+bool ChannelMapperWriter::is_valid() const {
     return valid_;
 }
 

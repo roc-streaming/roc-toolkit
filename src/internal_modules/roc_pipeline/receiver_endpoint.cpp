@@ -102,24 +102,24 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
     parser_ = parser;
 }
 
-bool ReceiverEndpoint::valid() const {
+bool ReceiverEndpoint::is_valid() const {
     return parser_;
 }
 
 address::Protocol ReceiverEndpoint::proto() const {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     return proto_;
 }
 
 packet::IWriter& ReceiverEndpoint::writer() {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     return *this;
 }
 
 void ReceiverEndpoint::pull_packets() {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     // Using try_pop_front_exclusive() makes this method lock-free and wait-free.
     // It may return NULL either if the queue is empty or if the packets in the
@@ -138,7 +138,7 @@ void ReceiverEndpoint::pull_packets() {
 }
 
 void ReceiverEndpoint::write(const packet::PacketPtr& packet) {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     if (!packet) {
         roc_panic("receiver endpoint: packet is null");

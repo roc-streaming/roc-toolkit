@@ -38,7 +38,7 @@ public:
                     const SampleSpec& out_sample_spec);
 
     //! Check if object is successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Set new resample factor.
     bool set_scaling(float multiplier);

@@ -80,7 +80,7 @@ ReceiverLoop::ReceiverLoop(IPipelineTaskScheduler& scheduler,
               allocator)
     , timestamp_(0)
     , valid_(false) {
-    if (!source_.valid()) {
+    if (!source_.is_valid()) {
         return;
     }
 
@@ -95,18 +95,18 @@ ReceiverLoop::ReceiverLoop(IPipelineTaskScheduler& scheduler,
     valid_ = true;
 }
 
-bool ReceiverLoop::valid() const {
+bool ReceiverLoop::is_valid() const {
     return valid_;
 }
 
 sndio::ISource& ReceiverLoop::source() {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     return *this;
 }
 
 sndio::DeviceType ReceiverLoop::type() const {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -114,7 +114,7 @@ sndio::DeviceType ReceiverLoop::type() const {
 }
 
 sndio::DeviceState ReceiverLoop::state() const {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -122,7 +122,7 @@ sndio::DeviceState ReceiverLoop::state() const {
 }
 
 void ReceiverLoop::pause() {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -130,7 +130,7 @@ void ReceiverLoop::pause() {
 }
 
 bool ReceiverLoop::resume() {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -138,7 +138,7 @@ bool ReceiverLoop::resume() {
 }
 
 bool ReceiverLoop::restart() {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -146,7 +146,7 @@ bool ReceiverLoop::restart() {
 }
 
 audio::SampleSpec ReceiverLoop::sample_spec() const {
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -154,7 +154,7 @@ audio::SampleSpec ReceiverLoop::sample_spec() const {
 }
 
 core::nanoseconds_t ReceiverLoop::latency() const {
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -162,7 +162,7 @@ core::nanoseconds_t ReceiverLoop::latency() const {
 }
 
 bool ReceiverLoop::has_clock() const {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -170,7 +170,7 @@ bool ReceiverLoop::has_clock() const {
 }
 
 void ReceiverLoop::reclock(packet::ntp_timestamp_t timestamp) {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -178,7 +178,7 @@ void ReceiverLoop::reclock(packet::ntp_timestamp_t timestamp) {
 }
 
 bool ReceiverLoop::read(audio::Frame& frame) {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     core::Mutex::Lock lock(source_mutex_);
 

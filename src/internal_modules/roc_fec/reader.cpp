@@ -47,20 +47,20 @@ Reader::Reader(const ReaderConfig& config,
     valid_ = true;
 }
 
-bool Reader::valid() const {
+bool Reader::is_valid() const {
     return valid_;
 }
 
-bool Reader::started() const {
+bool Reader::is_started() const {
     return started_;
 }
 
-bool Reader::alive() const {
+bool Reader::is_alive() const {
     return alive_;
 }
 
 packet::PacketPtr Reader::read() {
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
     if (!alive_) {
         return NULL;
     }

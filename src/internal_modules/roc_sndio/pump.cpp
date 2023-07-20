@@ -47,7 +47,7 @@ Pump::Pump(core::BufferFactory<audio::sample_t>& buffer_factory,
     frame_buffer_.reslice(0, frame_size);
 }
 
-bool Pump::valid() const {
+bool Pump::is_valid() const {
     return frame_buffer_;
 }
 

@@ -33,7 +33,7 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
                 audio::SampleSpec(config.output_sample_spec.sample_rate(),
                                   config.input_sample_spec.channel_set()),
                 config.output_sample_spec));
-        if (!channel_mapper_writer_ || !channel_mapper_writer_->valid()) {
+        if (!channel_mapper_writer_ || !channel_mapper_writer_->is_valid()) {
             return;
         }
         awriter = channel_mapper_writer_.get();
@@ -67,7 +67,7 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
             audio::SampleSpec(config.output_sample_spec.sample_rate(),
                               config.input_sample_spec.channel_set())));
 
-        if (!resampler_writer_ || !resampler_writer_->valid()) {
+        if (!resampler_writer_ || !resampler_writer_->is_valid()) {
             return;
         }
         awriter = resampler_writer_.get();
@@ -84,7 +84,7 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
     if (config.profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingWriter(
             *awriter, allocator, config.input_sample_spec, config.profiler_config));
-        if (!profiler_ || !profiler_->valid()) {
+        if (!profiler_ || !profiler_->is_valid()) {
             return;
         }
         awriter = profiler_.get();
@@ -93,7 +93,7 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
     audio_writer_ = awriter;
 }
 
-bool ConverterSink::valid() {
+bool ConverterSink::is_valid() {
     return audio_writer_;
 }
 
@@ -130,7 +130,7 @@ bool ConverterSink::has_clock() const {
 }
 
 void ConverterSink::write(audio::Frame& frame) {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     audio_writer_->write(frame);
 }

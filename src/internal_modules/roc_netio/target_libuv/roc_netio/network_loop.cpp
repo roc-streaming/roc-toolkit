@@ -173,7 +173,7 @@ NetworkLoop::~NetworkLoop() {
     roc_panic_if(stop_sem_initialized_);
 }
 
-bool NetworkLoop::valid() const {
+bool NetworkLoop::is_valid() const {
     return started_;
 }
 
@@ -182,7 +182,7 @@ size_t NetworkLoop::num_ports() const {
 }
 
 void NetworkLoop::schedule(NetworkTask& task, INetworkTaskCompleter& completer) {
-    if (!valid()) {
+    if (!is_valid()) {
         roc_panic("network loop: can't use invalid loop");
     }
 
@@ -202,7 +202,7 @@ void NetworkLoop::schedule(NetworkTask& task, INetworkTaskCompleter& completer) 
 }
 
 bool NetworkLoop::schedule_and_wait(NetworkTask& task) {
-    if (!valid()) {
+    if (!is_valid()) {
         roc_panic("network loop: can't use invalid loop");
     }
 

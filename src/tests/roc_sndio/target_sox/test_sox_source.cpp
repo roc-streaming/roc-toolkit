@@ -78,7 +78,7 @@ TEST(sox_source, has_clock) {
 
         Pump pump(buffer_factory, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
                   Pump::ModeOneshot);
-        CHECK(pump.valid());
+        CHECK(pump.is_valid());
         CHECK(pump.run());
     }
 
@@ -100,7 +100,7 @@ TEST(sox_source, sample_rate_auto) {
 
         Pump pump(buffer_factory, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
                   Pump::ModeOneshot);
-        CHECK(pump.valid());
+        CHECK(pump.is_valid());
         CHECK(pump.run());
     }
 
@@ -124,7 +124,7 @@ TEST(sox_source, sample_rate_mismatch) {
 
         Pump pump(buffer_factory, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
                   Pump::ModeOneshot);
-        CHECK(pump.valid());
+        CHECK(pump.is_valid());
         CHECK(pump.run());
     }
 
@@ -147,7 +147,7 @@ TEST(sox_source, pause_resume) {
 
         Pump pump(buffer_factory, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
                   Pump::ModeOneshot);
-        CHECK(pump.valid());
+        CHECK(pump.is_valid());
         CHECK(pump.run());
     }
 
@@ -191,7 +191,7 @@ TEST(sox_source, pause_restart) {
 
         Pump pump(buffer_factory, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
                   Pump::ModeOneshot);
-        CHECK(pump.valid());
+        CHECK(pump.is_valid());
         CHECK(pump.run());
     }
 
@@ -235,7 +235,7 @@ TEST(sox_source, eof_restart) {
 
         Pump pump(buffer_factory, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
                   Pump::ModeOneshot);
-        CHECK(pump.valid());
+        CHECK(pump.is_valid());
         CHECK(pump.run());
     }
 

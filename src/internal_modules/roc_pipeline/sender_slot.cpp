@@ -134,7 +134,7 @@ SenderEndpoint* SenderSlot::create_source_endpoint_(address::Protocol proto) {
     }
 
     source_endpoint_.reset(new (source_endpoint_) SenderEndpoint(proto, allocator()));
-    if (!source_endpoint_ || !source_endpoint_->valid()) {
+    if (!source_endpoint_ || !source_endpoint_->is_valid()) {
         roc_log(LogError, "sender slot: can't create source endpoint");
         source_endpoint_.reset(NULL);
         return NULL;
@@ -165,7 +165,7 @@ SenderEndpoint* SenderSlot::create_repair_endpoint_(address::Protocol proto) {
     }
 
     repair_endpoint_.reset(new (repair_endpoint_) SenderEndpoint(proto, allocator()));
-    if (!repair_endpoint_ || !repair_endpoint_->valid()) {
+    if (!repair_endpoint_ || !repair_endpoint_->is_valid()) {
         roc_log(LogError, "sender slot: can't create repair endpoint");
         repair_endpoint_.reset(NULL);
         return NULL;
@@ -185,7 +185,7 @@ SenderEndpoint* SenderSlot::create_control_endpoint_(address::Protocol proto) {
     }
 
     control_endpoint_.reset(new (control_endpoint_) SenderEndpoint(proto, allocator()));
-    if (!control_endpoint_ || !control_endpoint_->valid()) {
+    if (!control_endpoint_ || !control_endpoint_->is_valid()) {
         roc_log(LogError, "sender slot: can't create control endpoint");
         control_endpoint_.reset(NULL);
         return NULL;

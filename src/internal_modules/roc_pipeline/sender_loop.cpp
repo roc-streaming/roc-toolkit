@@ -99,7 +99,7 @@ SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
             allocator)
     , timestamp_(0)
     , valid_(false) {
-    if (!sink_.valid()) {
+    if (!sink_.is_valid()) {
         return;
     }
 
@@ -113,18 +113,18 @@ SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
     valid_ = true;
 }
 
-bool SenderLoop::valid() const {
+bool SenderLoop::is_valid() const {
     return valid_;
 }
 
 sndio::ISink& SenderLoop::sink() {
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     return *this;
 }
 
 sndio::DeviceType SenderLoop::type() const {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     core::Mutex::Lock lock(sink_mutex_);
 
@@ -132,7 +132,7 @@ sndio::DeviceType SenderLoop::type() const {
 }
 
 sndio::DeviceState SenderLoop::state() const {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     core::Mutex::Lock lock(sink_mutex_);
 
@@ -140,7 +140,7 @@ sndio::DeviceState SenderLoop::state() const {
 }
 
 void SenderLoop::pause() {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     core::Mutex::Lock lock(sink_mutex_);
 
@@ -148,7 +148,7 @@ void SenderLoop::pause() {
 }
 
 bool SenderLoop::resume() {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     core::Mutex::Lock lock(sink_mutex_);
 
@@ -156,7 +156,7 @@ bool SenderLoop::resume() {
 }
 
 bool SenderLoop::restart() {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     core::Mutex::Lock lock(sink_mutex_);
 
@@ -164,7 +164,7 @@ bool SenderLoop::restart() {
 }
 
 audio::SampleSpec SenderLoop::sample_spec() const {
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     core::Mutex::Lock lock(sink_mutex_);
 
@@ -172,7 +172,7 @@ audio::SampleSpec SenderLoop::sample_spec() const {
 }
 
 core::nanoseconds_t SenderLoop::latency() const {
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     core::Mutex::Lock lock(sink_mutex_);
 
@@ -180,7 +180,7 @@ core::nanoseconds_t SenderLoop::latency() const {
 }
 
 bool SenderLoop::has_clock() const {
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     core::Mutex::Lock lock(sink_mutex_);
 
@@ -188,7 +188,7 @@ bool SenderLoop::has_clock() const {
 }
 
 void SenderLoop::write(audio::Frame& frame) {
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     core::Mutex::Lock lock(sink_mutex_);
 

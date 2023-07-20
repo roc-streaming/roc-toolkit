@@ -49,11 +49,11 @@ Writer::Writer(const WriterConfig& config,
     valid_ = true;
 }
 
-bool Writer::valid() const {
+bool Writer::is_valid() const {
     return valid_;
 }
 
-bool Writer::alive() const {
+bool Writer::is_alive() const {
     return alive_;
 }
 
@@ -92,7 +92,7 @@ bool Writer::resize(size_t sblen, size_t rblen) {
 }
 
 void Writer::write(const packet::PacketPtr& pp) {
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
     roc_panic_if_not(pp);
 
     if (!alive_) {

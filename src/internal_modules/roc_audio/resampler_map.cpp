@@ -96,7 +96,7 @@ IResampler* ResamplerMap::new_resampler(ResamplerBackend backend_id,
         backend->ctor(allocator, buffer_factory, profile, frame_length, sample_spec),
         allocator);
 
-    if (!resampler || !resampler->valid()) {
+    if (!resampler || !resampler->is_valid()) {
         return NULL;
     }
 

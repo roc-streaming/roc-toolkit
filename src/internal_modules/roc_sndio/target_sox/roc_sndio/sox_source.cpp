@@ -55,7 +55,7 @@ SoxSource::~SoxSource() {
     close_();
 }
 
-bool SoxSource::valid() const {
+bool SoxSource::is_valid() const {
     return valid_;
 }
 

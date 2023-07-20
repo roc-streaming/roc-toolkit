@@ -47,7 +47,7 @@ public:
     virtual ~OpenfecEncoder();
 
     //! Check if object is successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Get buffer alignment requirement.
     virtual size_t alignment() const;

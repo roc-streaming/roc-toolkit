@@ -33,7 +33,7 @@ Receiver::Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_co
     memset(used_interfaces_, 0, sizeof(used_interfaces_));
     memset(used_protocols_, 0, sizeof(used_protocols_));
 
-    if (!pipeline_.valid()) {
+    if (!pipeline_.is_valid()) {
         return;
     }
 
@@ -63,7 +63,7 @@ Receiver::~Receiver() {
     }
 }
 
-bool Receiver::valid() {
+bool Receiver::is_valid() {
     return valid_;
 }
 
@@ -72,7 +72,7 @@ bool Receiver::set_multicast_group(size_t slot_index,
                                    const char* ip) {
     core::Mutex::Lock lock(mutex_);
 
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     roc_panic_if(!ip);
     roc_panic_if(iface < 0);
@@ -132,7 +132,7 @@ bool Receiver::set_multicast_group(size_t slot_index,
 bool Receiver::set_reuseaddr(size_t slot_index, address::Interface iface, bool enabled) {
     core::Mutex::Lock lock(mutex_);
 
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     roc_panic_if(iface < 0);
     roc_panic_if(iface >= (int)address::Iface_Max);
@@ -170,7 +170,7 @@ bool Receiver::bind(size_t slot_index,
                     address::EndpointUri& uri) {
     core::Mutex::Lock lock(mutex_);
 
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     roc_panic_if(iface < 0);
     roc_panic_if(iface >= (int)address::Iface_Max);

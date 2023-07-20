@@ -35,10 +35,10 @@ TEST_GROUP(sender) {
 
 TEST(sender, sink) {
     Context context(context_config, allocator);
-    CHECK(context.valid());
+    CHECK(context.is_valid());
 
     Sender sender(context, sender_config);
-    CHECK(sender.valid());
+    CHECK(sender.is_valid());
 
     UNSIGNED_LONGS_EQUAL(sender.sink().sample_spec().sample_rate(),
                          sender_config.input_sample_spec.sample_rate());
@@ -46,13 +46,13 @@ TEST(sender, sink) {
 
 TEST(sender, connect) {
     Context context(context_config, allocator);
-    CHECK(context.valid());
+    CHECK(context.is_valid());
 
     UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
 
     {
         Sender sender(context, sender_config);
-        CHECK(sender.valid());
+        CHECK(sender.is_valid());
 
         address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp://127.0.0.1:123");
@@ -67,13 +67,13 @@ TEST(sender, connect) {
 
 TEST(sender, connect_slots) {
     Context context(context_config, allocator);
-    CHECK(context.valid());
+    CHECK(context.is_valid());
 
     UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
 
     {
         Sender sender(context, sender_config);
-        CHECK(sender.valid());
+        CHECK(sender.is_valid());
 
         address::EndpointUri source_endp1(allocator);
         parse_uri(source_endp1, "rtp://127.0.0.1:111");
@@ -93,13 +93,13 @@ TEST(sender, connect_slots) {
 
 TEST(sender, endpoints_no_fec) {
     Context context(context_config, allocator);
-    CHECK(context.valid());
+    CHECK(context.is_valid());
 
     {
         sender_config.fec_encoder.scheme = packet::FEC_None;
 
         Sender sender(context, sender_config);
-        CHECK(sender.valid());
+        CHECK(sender.is_valid());
 
         address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp://127.0.0.1:123");
@@ -113,7 +113,7 @@ TEST(sender, endpoints_no_fec) {
         sender_config.fec_encoder.scheme = packet::FEC_None;
 
         Sender sender(context, sender_config);
-        CHECK(sender.valid());
+        CHECK(sender.is_valid());
 
         // source port not provided
         CHECK(!sender.is_ready());
@@ -122,13 +122,13 @@ TEST(sender, endpoints_no_fec) {
 
 TEST(sender, endpoints_fec) {
     Context context(context_config, allocator);
-    CHECK(context.valid());
+    CHECK(context.is_valid());
 
     if (!fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
         sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
 
         Sender sender(context, sender_config);
-        CHECK(sender.valid());
+        CHECK(sender.is_valid());
 
         address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
@@ -151,7 +151,7 @@ TEST(sender, endpoints_fec) {
         sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
 
         Sender sender(context, sender_config);
-        CHECK(sender.valid());
+        CHECK(sender.is_valid());
 
         address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
@@ -169,7 +169,7 @@ TEST(sender, endpoints_fec) {
         sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
 
         Sender sender(context, sender_config);
-        CHECK(sender.valid());
+        CHECK(sender.is_valid());
 
         address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp+ldpc://127.0.0.1:123");
@@ -183,7 +183,7 @@ TEST(sender, endpoints_fec) {
         sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
 
         Sender sender(context, sender_config);
-        CHECK(sender.valid());
+        CHECK(sender.is_valid());
 
         address::EndpointUri repair_endp(allocator);
         parse_uri(repair_endp, "ldpc://127.0.0.1:123");
@@ -197,7 +197,7 @@ TEST(sender, endpoints_fec) {
         sender_config.fec_encoder.scheme = packet::FEC_None;
 
         Sender sender(context, sender_config);
-        CHECK(sender.valid());
+        CHECK(sender.is_valid());
 
         address::EndpointUri repair_endp(allocator);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
@@ -211,7 +211,7 @@ TEST(sender, endpoints_fec) {
         sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
 
         Sender sender(context, sender_config);
-        CHECK(sender.valid());
+        CHECK(sender.is_valid());
 
         address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
@@ -225,7 +225,7 @@ TEST(sender, endpoints_fec) {
         sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
 
         Sender sender(context, sender_config);
-        CHECK(sender.valid());
+        CHECK(sender.is_valid());
 
         address::EndpointUri repair_endp(allocator);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
@@ -238,7 +238,7 @@ TEST(sender, endpoints_fec) {
 
 TEST(sender, endpoints_fec_slots) {
     Context context(context_config, allocator);
-    CHECK(context.valid());
+    CHECK(context.is_valid());
 
     if (!fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
         return;
@@ -247,7 +247,7 @@ TEST(sender, endpoints_fec_slots) {
     sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
 
     Sender sender(context, sender_config);
-    CHECK(sender.valid());
+    CHECK(sender.is_valid());
 
     address::EndpointUri source_endp1(allocator);
     parse_uri(source_endp1, "rtp+rs8m://127.0.0.1:1001");
@@ -276,7 +276,7 @@ TEST(sender, endpoints_fec_slots) {
 
 TEST(sender, port_sharing) {
     Context context(context_config, allocator);
-    CHECK(context.valid());
+    CHECK(context.is_valid());
 
     UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
 
@@ -288,7 +288,7 @@ TEST(sender, port_sharing) {
 
     { // source and repair shared: same empty config
         Sender sender(context, sender_config);
-        CHECK(sender.valid());
+        CHECK(sender.is_valid());
 
         address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
@@ -303,7 +303,7 @@ TEST(sender, port_sharing) {
     }
     { // source and repair shared: same non-empty config
         Sender sender(context, sender_config);
-        CHECK(sender.valid());
+        CHECK(sender.is_valid());
 
         address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
@@ -323,7 +323,7 @@ TEST(sender, port_sharing) {
     }
     { // source and repair not shared: different families
         Sender sender(context, sender_config);
-        CHECK(sender.valid());
+        CHECK(sender.is_valid());
 
         address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
@@ -340,7 +340,7 @@ TEST(sender, port_sharing) {
     }
     { // source and repair not shared: different addresses
         Sender sender(context, sender_config);
-        CHECK(sender.valid());
+        CHECK(sender.is_valid());
 
         address::EndpointUri source_endp(allocator);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");

@@ -233,8 +233,8 @@ TEST(writer_reader, no_losses) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         fill_all_packets(0);
 
@@ -282,8 +282,8 @@ TEST(writer_reader, 1_loss) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         fill_all_packets(0);
 
@@ -333,8 +333,8 @@ TEST(writer_reader, lost_first_packet_in_first_block) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         // Sending first block except first packet.
         fill_all_packets(0);
@@ -355,9 +355,9 @@ TEST(writer_reader, lost_first_packet_in_first_block) {
         for (size_t i = 1; i < NumSourcePackets * 2; ++i) {
             packet::PacketPtr p = reader.read();
             if (i < NumSourcePackets) {
-                CHECK(!reader.started());
+                CHECK(!reader.is_started());
             } else {
-                CHECK(reader.started());
+                CHECK(reader.is_started());
             }
             check_audio_packet(p, i);
             check_restored(p, false);
@@ -393,8 +393,8 @@ TEST(writer_reader, lost_one_source_and_all_repair_packets) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         // Send first block without one source and all repair packets.
         dispatcher.lose(3);
@@ -466,8 +466,8 @@ TEST(writer_reader, multiple_blocks_1_loss) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         for (size_t block_num = 0; block_num < NumBlocks; ++block_num) {
             size_t lost_sq = size_t(-1);
@@ -542,8 +542,8 @@ TEST(writer_reader, multiple_blocks_in_queue) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         for (size_t block_num = 0; block_num < NumBlocks; ++block_num) {
             fill_all_packets(NumSourcePackets * block_num);
@@ -593,7 +593,7 @@ TEST(writer_reader, interleaved_packets) {
 
         packet::Interleaver intrlvr(dispatcher, allocator, 10);
 
-        CHECK(intrlvr.valid());
+        CHECK(intrlvr.is_valid());
 
         Writer writer(writer_config, codec_config.scheme, *encoder, intrlvr,
                       source_composer(), repair_composer(), packet_factory,
@@ -603,8 +603,8 @@ TEST(writer_reader, interleaved_packets) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         packet::PacketPtr many_packets[NumPackets];
 
@@ -657,8 +657,8 @@ TEST(writer_reader, delayed_packets) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         fill_all_packets(0);
 
@@ -730,8 +730,8 @@ TEST(writer_reader, late_out_of_order_packets) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         fill_all_packets(0);
 
@@ -811,8 +811,8 @@ TEST(writer_reader, repair_packets_before_source_packets) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         packet::seqnum_t wr_sn = 0;
         packet::seqnum_t rd_sn = 0;
@@ -899,8 +899,8 @@ TEST(writer_reader, repair_packets_mixed_with_source_packets) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         packet::seqnum_t wr_sn = 0;
         packet::seqnum_t rd_sn = 0;
@@ -999,8 +999,8 @@ TEST(writer_reader, multiple_repair_attempts) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         fill_all_packets(0);
 
@@ -1080,8 +1080,8 @@ TEST(writer_reader, drop_outdated_block) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         // Send first block.
         fill_all_packets(NumSourcePackets);
@@ -1153,8 +1153,8 @@ TEST(writer_reader, repaired_block_numbering) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         const size_t lost_packet_n = 7;
 
@@ -1243,8 +1243,8 @@ TEST(writer_reader, invalid_esi) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
             fill_all_packets(0);
@@ -1288,7 +1288,7 @@ TEST(writer_reader, invalid_esi) {
                 check_restored(p, i == 5);
             }
 
-            CHECK(reader.alive());
+            CHECK(reader.is_alive());
             CHECK(dispatcher.source_size() == 0);
             CHECK(dispatcher.repair_size() == 0);
         }
@@ -1326,8 +1326,8 @@ TEST(writer_reader, invalid_sbl) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
             fill_all_packets(0);
@@ -1366,7 +1366,7 @@ TEST(writer_reader, invalid_sbl) {
                 check_restored(p, i == 5);
             }
 
-            CHECK(reader.alive());
+            CHECK(reader.is_alive());
             CHECK(dispatcher.source_size() == 0);
             CHECK(dispatcher.repair_size() == 0);
         }
@@ -1404,8 +1404,8 @@ TEST(writer_reader, invalid_nes) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
             fill_all_packets(0);
@@ -1443,7 +1443,7 @@ TEST(writer_reader, invalid_nes) {
                 check_restored(p, false);
             }
 
-            CHECK(reader.alive());
+            CHECK(reader.is_alive());
             CHECK(dispatcher.source_size() == 0);
             CHECK(dispatcher.repair_size() == 0);
         }
@@ -1478,8 +1478,8 @@ TEST(writer_reader, invalid_payload_size) {
         Reader reader(reader_config, codec_config.scheme, *decoder, source_queue,
                       repair_queue, rtp_parser, packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
             fill_all_packets(0);
@@ -1530,7 +1530,7 @@ TEST(writer_reader, invalid_payload_size) {
                 check_restored(p, i == 5 || (n_block == 3 && i == 0));
             }
 
-            CHECK(reader.alive());
+            CHECK(reader.is_alive());
             CHECK(source_queue.size() == 0);
             CHECK(repair_queue.size() == 0);
         }
@@ -1568,8 +1568,8 @@ TEST(writer_reader, zero_source_packets) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
             fill_all_packets(0);
@@ -1615,7 +1615,7 @@ TEST(writer_reader, zero_source_packets) {
                 }
             }
 
-            CHECK(reader.alive());
+            CHECK(reader.is_alive());
             CHECK(dispatcher.source_size() == 0);
             CHECK(dispatcher.repair_size() == 0);
         }
@@ -1653,8 +1653,8 @@ TEST(writer_reader, zero_repair_packets) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
             // encode packets and write to queue
@@ -1697,7 +1697,7 @@ TEST(writer_reader, zero_repair_packets) {
                 }
             }
 
-            CHECK(reader.alive());
+            CHECK(reader.is_alive());
             CHECK(dispatcher.source_size() == 0);
             CHECK(dispatcher.repair_size() == 0);
         }
@@ -1732,8 +1732,8 @@ TEST(writer_reader, zero_payload_size) {
         Reader reader(reader_config, codec_config.scheme, *decoder, source_queue,
                       repair_queue, rtp_parser, packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
             fill_all_packets(0);
@@ -1782,7 +1782,7 @@ TEST(writer_reader, zero_payload_size) {
                 }
             }
 
-            CHECK(reader.alive());
+            CHECK(reader.is_alive());
             CHECK(source_queue.size() == 0);
             CHECK(repair_queue.size() == 0);
         }
@@ -1822,8 +1822,8 @@ TEST(writer_reader, sbn_jump) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         // write three blocks to the queue
         for (size_t n = 0; n < 3; n++) {
@@ -1852,7 +1852,7 @@ TEST(writer_reader, sbn_jump) {
             check_restored(p, false);
         }
 
-        CHECK(reader.alive());
+        CHECK(reader.is_alive());
 
         // write second block to the dispatcher
         // shift it ahead but in the allowed range
@@ -1877,7 +1877,7 @@ TEST(writer_reader, sbn_jump) {
             check_restored(p, false);
         }
 
-        CHECK(reader.alive());
+        CHECK(reader.is_alive());
 
         // write third block to the dispatcher
         // shift it ahead too far
@@ -1896,7 +1896,7 @@ TEST(writer_reader, sbn_jump) {
 
         // the reader should detect sbn jump and shutdown
         CHECK(!reader.read());
-        CHECK(!reader.alive());
+        CHECK(!reader.is_alive());
 
         CHECK(dispatcher.source_size() == 0);
         CHECK(dispatcher.repair_size() == 0);
@@ -1926,7 +1926,7 @@ TEST(writer_reader, writer_encode_blocks) {
                           source_composer(), repair_composer(), packet_factory,
                           buffer_factory, allocator);
 
-            CHECK(writer.valid());
+            CHECK(writer.is_valid());
 
             packet::blknum_t fec_sbn = 0;
 
@@ -2012,7 +2012,7 @@ TEST(writer_reader, writer_resize_blocks) {
                       source_composer(), repair_composer(), packet_factory,
                       buffer_factory, allocator);
 
-        CHECK(writer.valid());
+        CHECK(writer.is_valid());
 
         const size_t source_sizes[] = {
             15, 25, 35, 43, 33, 23, 13, 255 - NumRepairPackets
@@ -2082,8 +2082,8 @@ TEST(writer_reader, resize_block_begin) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(reader.valid());
-        CHECK(writer.valid());
+        CHECK(reader.is_valid());
+        CHECK(writer.is_valid());
 
         const size_t source_sizes[] = {
             15, 25, 35, 43, 33, 23, 13, 255 - NumRepairPackets
@@ -2157,8 +2157,8 @@ TEST(writer_reader, resize_block_middle) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(reader.valid());
-        CHECK(writer.valid());
+        CHECK(reader.is_valid());
+        CHECK(writer.is_valid());
 
         const size_t source_sizes[] = {
             15, 25, 35, 43, 33, 23, 13, 255 - NumRepairPackets
@@ -2253,8 +2253,8 @@ TEST(writer_reader, resize_block_losses) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(reader.valid());
-        CHECK(writer.valid());
+        CHECK(reader.is_valid());
+        CHECK(writer.is_valid());
 
         const size_t source_sizes[] = {
             15, 25, 35, 43, 33, 23, 13, 255 - NumRepairPackets
@@ -2331,8 +2331,8 @@ TEST(writer_reader, resize_block_repair_first) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         packet::seqnum_t wr_sn = 0;
         packet::seqnum_t rd_sn = 0;
@@ -2414,7 +2414,7 @@ TEST(writer_reader, error_writer_resize_block) {
                       source_composer(), repair_composer(), packet_factory,
                       buffer_factory, mock_allocator);
 
-        CHECK(writer.valid());
+        CHECK(writer.is_valid());
 
         size_t sn = 0;
 
@@ -2424,7 +2424,7 @@ TEST(writer_reader, error_writer_resize_block) {
             writer.write(fill_one_packet(sn++));
         }
 
-        CHECK(writer.alive());
+        CHECK(writer.is_alive());
         CHECK(dispatcher.source_size() == NumSourcePackets);
         CHECK(dispatcher.repair_size() == BlockSize1);
 
@@ -2437,7 +2437,7 @@ TEST(writer_reader, error_writer_resize_block) {
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             writer.write(fill_one_packet(sn++));
-            CHECK(!writer.alive());
+            CHECK(!writer.is_alive());
         }
 
         CHECK(dispatcher.source_size() == 0);
@@ -2467,7 +2467,7 @@ TEST(writer_reader, error_writer_encode_packet) {
                       source_composer(), repair_composer(), packet_factory,
                       buffer_factory, allocator);
 
-        CHECK(writer.valid());
+        CHECK(writer.is_valid());
 
         size_t sn = 0;
 
@@ -2477,7 +2477,7 @@ TEST(writer_reader, error_writer_encode_packet) {
             writer.write(fill_one_packet(sn++));
         }
 
-        CHECK(writer.alive());
+        CHECK(writer.is_alive());
         CHECK(dispatcher.source_size() == BlockSize1);
         CHECK(dispatcher.repair_size() == NumRepairPackets);
 
@@ -2488,7 +2488,7 @@ TEST(writer_reader, error_writer_encode_packet) {
             writer.write(fill_one_packet(sn++));
         }
 
-        CHECK(!writer.alive());
+        CHECK(!writer.is_alive());
         CHECK(dispatcher.source_size() == BlockSize1);
         CHECK(dispatcher.repair_size() == NumRepairPackets);
     }
@@ -2525,8 +2525,8 @@ TEST(writer_reader, error_reader_resize_block) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, mock_allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         size_t sn = 0;
 
@@ -2562,7 +2562,7 @@ TEST(writer_reader, error_reader_resize_block) {
         // reader should get an error from allocator when trying
         // to resize the block and shut down
         CHECK(!reader.read());
-        CHECK(!reader.alive());
+        CHECK(!reader.is_alive());
     }
 }
 
@@ -2597,8 +2597,8 @@ TEST(writer_reader, error_reader_decode_packet) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         size_t sn = 0;
 
@@ -2646,7 +2646,7 @@ TEST(writer_reader, error_reader_decode_packet) {
         // reader should get an error from allocator when trying
         // to repair lost packet and shut down
         CHECK(!reader.read());
-        CHECK(!reader.alive());
+        CHECK(!reader.is_alive());
     }
 }
 
@@ -2680,8 +2680,8 @@ TEST(writer_reader, writer_oversized_block) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         // try to resize writer with an invalid value
         CHECK(!writer.resize(encoder->max_block_length() + 1, NumRepairPackets));
@@ -2712,7 +2712,7 @@ TEST(writer_reader, writer_oversized_block) {
                 UNSIGNED_LONGS_EQUAL(NumSourcePackets, p->fec()->source_block_length);
             }
 
-            CHECK(reader.alive());
+            CHECK(reader.is_alive());
             CHECK(dispatcher.source_size() == 0);
             CHECK(dispatcher.repair_size() == 0);
         }
@@ -2753,8 +2753,8 @@ TEST(writer_reader, reader_oversized_source_block) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         // encode packets and write to queue
         for (size_t i = 0; i < NumSourcePackets; ++i) {
@@ -2784,7 +2784,7 @@ TEST(writer_reader, reader_oversized_source_block) {
 
         // reader should get an error because maximum block size was exceeded
         CHECK(!reader.read());
-        CHECK(!reader.alive());
+        CHECK(!reader.is_alive());
     }
 }
 
@@ -2822,8 +2822,8 @@ TEST(writer_reader, reader_oversized_repair_block) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         // encode packets and write to queue
         for (size_t i = 0; i < NumSourcePackets; ++i) {
@@ -2853,7 +2853,7 @@ TEST(writer_reader, reader_oversized_repair_block) {
 
         // reader should get an error because maximum block size was exceeded
         CHECK(!reader.read());
-        CHECK(!reader.alive());
+        CHECK(!reader.is_alive());
     }
 }
 
@@ -2873,7 +2873,7 @@ TEST(writer_reader, writer_invalid_payload_size_change) {
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_factory,
                       buffer_factory, allocator);
-        CHECK(writer.valid());
+        CHECK(writer.is_valid());
 
         size_t sn = 0;
 
@@ -2882,7 +2882,7 @@ TEST(writer_reader, writer_invalid_payload_size_change) {
             writer.write(fill_one_packet(sn++, FECPayloadSize));
         }
 
-        CHECK(writer.alive());
+        CHECK(writer.is_alive());
         UNSIGNED_LONGS_EQUAL(NumSourcePackets, dispatcher.source_size());
         UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
 
@@ -2891,7 +2891,7 @@ TEST(writer_reader, writer_invalid_payload_size_change) {
             writer.write(fill_one_packet(sn++, FECPayloadSize - 1));
         }
 
-        CHECK(writer.alive());
+        CHECK(writer.is_alive());
         UNSIGNED_LONGS_EQUAL(NumSourcePackets + NumSourcePackets / 2,
                              dispatcher.source_size());
         UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
@@ -2900,7 +2900,7 @@ TEST(writer_reader, writer_invalid_payload_size_change) {
         writer.write(fill_one_packet(sn, FECPayloadSize));
 
         // writer should be terminated
-        CHECK(!writer.alive());
+        CHECK(!writer.is_alive());
         UNSIGNED_LONGS_EQUAL(NumSourcePackets + NumSourcePackets / 2,
                              dispatcher.source_size());
         UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
@@ -2933,8 +2933,8 @@ TEST(writer_reader, reader_invalid_fec_scheme_source_packet) {
         Reader reader(reader_config, codec_config.scheme, *decoder, source_queue,
                       repair_queue, rtp_parser, packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         // encode packets and write to queue
         for (size_t i = 0; i < NumSourcePackets; ++i) {
@@ -2954,7 +2954,7 @@ TEST(writer_reader, reader_invalid_fec_scheme_source_packet) {
         // read delivered packets
         for (size_t i = 0; i < NumSourcePackets / 2; ++i) {
             CHECK(reader.read());
-            CHECK(reader.alive());
+            CHECK(reader.is_alive());
         }
         UNSIGNED_LONGS_EQUAL(0, source_queue.size());
 
@@ -2971,7 +2971,7 @@ TEST(writer_reader, reader_invalid_fec_scheme_source_packet) {
 
         // reader should shut down
         CHECK(!reader.read());
-        CHECK(!reader.alive());
+        CHECK(!reader.is_alive());
         UNSIGNED_LONGS_EQUAL(0, source_queue.size());
     }
 }
@@ -3002,8 +3002,8 @@ TEST(writer_reader, reader_invalid_fec_scheme_repair_packet) {
         Reader reader(reader_config, codec_config.scheme, *decoder, source_queue,
                       repair_queue, rtp_parser, packet_factory, allocator);
 
-        CHECK(writer.valid());
-        CHECK(reader.valid());
+        CHECK(writer.is_valid());
+        CHECK(reader.is_valid());
 
         // encode packets and write to queue
         for (size_t i = 0; i < NumSourcePackets * 2; ++i) {
@@ -3033,7 +3033,7 @@ TEST(writer_reader, reader_invalid_fec_scheme_repair_packet) {
         // read delivered packets
         for (size_t i = 0; i < NumSourcePackets / 2; ++i) {
             CHECK(reader.read());
-            CHECK(reader.alive());
+            CHECK(reader.is_alive());
         }
         UNSIGNED_LONGS_EQUAL(0, source_queue.size());
         UNSIGNED_LONGS_EQUAL(0, repair_queue.size());
@@ -3067,7 +3067,7 @@ TEST(writer_reader, reader_invalid_fec_scheme_repair_packet) {
 
         // reader should shut down
         CHECK(!reader.read());
-        CHECK(!reader.alive());
+        CHECK(!reader.is_alive());
         UNSIGNED_LONGS_EQUAL(0, source_queue.size());
         UNSIGNED_LONGS_EQUAL(0, repair_queue.size());
     }

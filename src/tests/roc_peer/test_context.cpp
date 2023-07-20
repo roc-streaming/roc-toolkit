@@ -28,7 +28,7 @@ TEST(context, reference_counting) {
     ContextConfig context_config;
     Context context(context_config, allocator);
 
-    CHECK(context.valid());
+    CHECK(context.is_valid());
     CHECK(!context.is_used());
 
     {
