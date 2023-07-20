@@ -26,7 +26,8 @@ Receiver::Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_co
                 context.byte_buffer_factory(),
                 context.sample_buffer_factory(),
                 context.allocator())
-    , processing_task_(pipeline_) {
+    , processing_task_(pipeline_)
+    , valid_(false) {
     roc_log(LogDebug, "receiver peer: initializing");
 
     memset(used_interfaces_, 0, sizeof(used_interfaces_));

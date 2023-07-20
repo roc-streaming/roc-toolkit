@@ -1025,7 +1025,6 @@ if meta.compiler == 'clang':
             '-Wdouble-promotion',
             '-Wfloat-conversion',
             '-Wfloat-equal',
-            '-Wfloat-equal',
             '-Wformat-security',
             '-Wformat=2',
             '-Wnull-dereference',
