@@ -21,6 +21,22 @@ namespace api {
 // want sanitizers to fail us when enums contain arbitrary values; we correctly handle
 // all these cases.
 
+#ifdef __clang__
+// On clang, we use switches with original enum value. This allows compiler to warn us
+// if we forget to list a value.
+template <class T> ROC_ATTR_NO_SANITIZE_UB T enum_from_user(T t) {
+    return t;
+}
+#else
+// On other compilers, we use switches with enum value casted to int. This prevents
+// some broken compiler versions (e.g. older gcc) to optimize out the code after switch
+// which corresponds to unmatched value. Clang does not have this problem, so we don't
+// use this hack on it to benefit from the warnings.
+template <class T> ROC_ATTR_NO_SANITIZE_UB int enum_from_user(T t) {
+    return t;
+}
+#endif
+
 ROC_ATTR_NO_SANITIZE_UB
 bool context_config_from_user(peer::ContextConfig& out, const roc_context_config& in) {
     if (in.max_packet_size != 0) {
@@ -218,8 +234,8 @@ bool sample_spec_from_user(audio::SampleSpec& out, const roc_media_encoding& in)
             if (in.tracks > audio::ChannelSet::max_channels()) {
                 roc_log(LogError,
                         "bad configuration: invalid roc_media_encoding:"
-                        " invalid tracks count: got=%u expected=[1;256]",
-                        (unsigned)in.tracks);
+                        " invalid tracks count: got=%u expected=[1;%u]",
+                        (unsigned)in.tracks, (unsigned)audio::ChannelSet::max_channels());
                 return false;
             }
         } else {
@@ -251,7 +267,7 @@ ROC_ATTR_NO_SANITIZE_UB
 bool channel_set_from_user(audio::ChannelSet& out,
                            roc_channel_layout in,
                            unsigned int in_tracks) {
-    switch (in) {
+    switch (enum_from_user(in)) {
     case ROC_CHANNEL_LAYOUT_MULTITRACK:
         out.set_layout(audio::ChannelLayout_Multitrack);
         out.set_channel_range(0, in_tracks - 1, true);
@@ -273,7 +289,7 @@ bool channel_set_from_user(audio::ChannelSet& out,
 
 ROC_ATTR_NO_SANITIZE_UB
 bool clock_source_from_user(bool& out_timing, roc_clock_source in) {
-    switch (in) {
+    switch (enum_from_user(in)) {
     case ROC_CLOCK_EXTERNAL:
         out_timing = false;
         return true;
@@ -288,7 +304,7 @@ bool clock_source_from_user(bool& out_timing, roc_clock_source in) {
 
 ROC_ATTR_NO_SANITIZE_UB
 bool resampler_backend_from_user(audio::ResamplerBackend& out, roc_resampler_backend in) {
-    switch (in) {
+    switch (enum_from_user(in)) {
     case ROC_RESAMPLER_BACKEND_DEFAULT:
         out = audio::ResamplerBackend_Default;
         return true;
@@ -307,7 +323,7 @@ bool resampler_backend_from_user(audio::ResamplerBackend& out, roc_resampler_bac
 
 ROC_ATTR_NO_SANITIZE_UB
 bool resampler_profile_from_user(audio::ResamplerProfile& out, roc_resampler_profile in) {
-    switch (in) {
+    switch (enum_from_user(in)) {
     case ROC_RESAMPLER_PROFILE_DISABLE:
         return true;
 
@@ -330,7 +346,7 @@ bool resampler_profile_from_user(audio::ResamplerProfile& out, roc_resampler_pro
 
 ROC_ATTR_NO_SANITIZE_UB
 bool packet_encoding_from_user(unsigned& out_pt, roc_packet_encoding in) {
-    switch (in) {
+    switch (enum_from_user(in)) {
     case ROC_PACKET_ENCODING_AVP_L16_MONO:
         out_pt = rtp::PayloadType_L16_Mono;
         return true;
@@ -346,7 +362,7 @@ bool packet_encoding_from_user(unsigned& out_pt, roc_packet_encoding in) {
 
 ROC_ATTR_NO_SANITIZE_UB
 bool fec_encoding_from_user(packet::FecScheme& out, roc_fec_encoding in) {
-    switch (in) {
+    switch (enum_from_user(in)) {
     case ROC_FEC_ENCODING_DISABLE:
         out = packet::FEC_None;
         return true;
@@ -366,7 +382,7 @@ bool fec_encoding_from_user(packet::FecScheme& out, roc_fec_encoding in) {
 
 ROC_ATTR_NO_SANITIZE_UB
 bool interface_from_user(address::Interface& out, const roc_interface& in) {
-    switch (in) {
+    switch (enum_from_user(in)) {
     case ROC_INTERFACE_CONSOLIDATED:
         out = address::Iface_Consolidated;
         return true;
@@ -389,7 +405,7 @@ bool interface_from_user(address::Interface& out, const roc_interface& in) {
 
 ROC_ATTR_NO_SANITIZE_UB
 bool proto_from_user(address::Protocol& out, const roc_protocol& in) {
-    switch (in) {
+    switch (enum_from_user(in)) {
     case ROC_PROTO_RTSP:
         out = address::Proto_RTSP;
         return true;
@@ -423,7 +439,7 @@ bool proto_from_user(address::Protocol& out, const roc_protocol& in) {
 }
 
 bool proto_to_user(roc_protocol& out, address::Protocol in) {
-    switch (in) {
+    switch (enum_from_user(in)) {
     case address::Proto_RTSP:
         out = ROC_PROTO_RTSP;
         return true;
@@ -460,8 +476,8 @@ bool proto_to_user(roc_protocol& out, address::Protocol in) {
 }
 
 ROC_ATTR_NO_SANITIZE_UB
-LogLevel log_level_from_user(roc_log_level level) {
-    switch (level) {
+LogLevel log_level_from_user(roc_log_level in) {
+    switch (enum_from_user(in)) {
     case ROC_LOG_NONE:
         return LogNone;
 
@@ -476,16 +492,13 @@ LogLevel log_level_from_user(roc_log_level level) {
 
     case ROC_LOG_TRACE:
         return LogTrace;
-
-    default:
-        break;
     }
 
     return LogError;
 }
 
-roc_log_level log_level_to_user(LogLevel level) {
-    switch (level) {
+roc_log_level log_level_to_user(LogLevel in) {
+    switch (in) {
     case LogNone:
         return ROC_LOG_NONE;
 
@@ -500,15 +513,12 @@ roc_log_level log_level_to_user(LogLevel level) {
 
     case LogTrace:
         return ROC_LOG_TRACE;
-
-    default:
-        break;
     }
 
     return ROC_LOG_ERROR;
 }
 
-void log_message_to_user(const core::LogMessage& in, roc_log_message& out) {
+void log_message_to_user(roc_log_message& out, const core::LogMessage& in) {
     out.level = log_level_to_user(in.level);
     out.module = in.module;
     out.file = in.file;
