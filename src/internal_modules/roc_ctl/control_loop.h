@@ -178,7 +178,7 @@ public:
     virtual ~ControlLoop();
 
     //! Check if the object was successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Enqueue a task for asynchronous execution as soon as possible.
     //! @p completer will be invoked on control thread when the task completes.

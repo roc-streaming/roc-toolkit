@@ -39,7 +39,7 @@ public:
     virtual ~SoxSource();
 
     //! Check if the object was successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Open input file or device.
     //!

@@ -119,7 +119,7 @@ TEST(receiver_loop, endpoints_sync) {
     ReceiverLoop receiver(scheduler, config, format_map, packet_factory,
                           byte_buffer_factory, sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverLoop::SlotHandle slot = NULL;
 
@@ -151,7 +151,7 @@ TEST(receiver_loop, endpoints_async) {
     ReceiverLoop receiver(scheduler, config, format_map, packet_factory,
                           byte_buffer_factory, sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     TaskIssuer ti(receiver);
 

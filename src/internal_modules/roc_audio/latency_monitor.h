@@ -89,7 +89,7 @@ public:
                    const FreqEstimatorConfig& fe_config);
 
     //! Check if the object was initialized successfully.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Update latency.
     //! @returns

@@ -44,7 +44,7 @@ SenderSink::SenderSink(const SenderConfig& config,
     if (config_.profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingWriter(
             *awriter, allocator, config_.input_sample_spec, config_.profiler_config));
-        if (!profiler_ || !profiler_->valid()) {
+        if (!profiler_ || !profiler_->is_valid()) {
             return;
         }
         awriter = profiler_.get();
@@ -53,12 +53,12 @@ SenderSink::SenderSink(const SenderConfig& config,
     audio_writer_ = awriter;
 }
 
-bool SenderSink::valid() const {
+bool SenderSink::is_valid() const {
     return audio_writer_;
 }
 
 SenderSlot* SenderSink::create_slot() {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     roc_log(LogInfo, "sender sink: adding slot");
 
@@ -129,7 +129,7 @@ bool SenderSink::has_clock() const {
 }
 
 void SenderSink::write(audio::Frame& frame) {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     audio_writer_->write(frame);
 }

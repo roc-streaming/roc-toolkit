@@ -99,7 +99,7 @@ TEST_GROUP(sender_loop) {
 TEST(sender_loop, endpoints_sync) {
     SenderLoop sender(scheduler, config, format_map, packet_factory, byte_buffer_factory,
                       sample_buffer_factory, allocator);
-    CHECK(sender.valid());
+    CHECK(sender.is_valid());
 
     SenderLoop::SlotHandle slot = NULL;
 
@@ -124,7 +124,7 @@ TEST(sender_loop, endpoints_sync) {
 TEST(sender_loop, endpoints_async) {
     SenderLoop sender(scheduler, config, format_map, packet_factory, byte_buffer_factory,
                       sample_buffer_factory, allocator);
-    CHECK(sender.valid());
+    CHECK(sender.is_valid());
 
     TaskIssuer ti(sender);
 

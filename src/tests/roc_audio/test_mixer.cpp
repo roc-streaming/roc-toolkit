@@ -57,7 +57,7 @@ TEST_GROUP(mixer) {};
 
 TEST(mixer, no_readers) {
     Mixer mixer(buffer_factory, MaxBufDuration, SampleSpecs);
-    CHECK(mixer.valid());
+    CHECK(mixer.is_valid());
 
     expect_output(mixer, BufSz, 0);
 }
@@ -66,7 +66,7 @@ TEST(mixer, one_reader) {
     test::MockReader reader;
 
     Mixer mixer(buffer_factory, MaxBufDuration, SampleSpecs);
-    CHECK(mixer.valid());
+    CHECK(mixer.is_valid());
 
     mixer.add_input(reader);
 
@@ -80,7 +80,7 @@ TEST(mixer, one_reader_large) {
     test::MockReader reader;
 
     Mixer mixer(buffer_factory, MaxBufDuration, SampleSpecs);
-    CHECK(mixer.valid());
+    CHECK(mixer.is_valid());
 
     mixer.add_input(reader);
 
@@ -95,7 +95,7 @@ TEST(mixer, two_readers) {
     test::MockReader reader2;
 
     Mixer mixer(buffer_factory, MaxBufDuration, SampleSpecs);
-    CHECK(mixer.valid());
+    CHECK(mixer.is_valid());
 
     mixer.add_input(reader1);
     mixer.add_input(reader2);
@@ -114,7 +114,7 @@ TEST(mixer, remove_reader) {
     test::MockReader reader2;
 
     Mixer mixer(buffer_factory, MaxBufDuration, SampleSpecs);
-    CHECK(mixer.valid());
+    CHECK(mixer.is_valid());
 
     mixer.add_input(reader1);
     mixer.add_input(reader2);
@@ -144,7 +144,7 @@ TEST(mixer, clamp) {
     test::MockReader reader2;
 
     Mixer mixer(buffer_factory, MaxBufDuration, SampleSpecs);
-    CHECK(mixer.valid());
+    CHECK(mixer.is_valid());
 
     mixer.add_input(reader1);
     mixer.add_input(reader2);
@@ -175,7 +175,7 @@ TEST(mixer, flags) {
     test::MockReader reader2;
 
     Mixer mixer(buffer_factory, MaxBufDuration, SampleSpecs);
-    CHECK(mixer.valid());
+    CHECK(mixer.is_valid());
 
     mixer.add_input(reader1);
     mixer.add_input(reader2);

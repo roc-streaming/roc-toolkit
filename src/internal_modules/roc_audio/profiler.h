@@ -70,7 +70,7 @@ public:
              ProfilerConfig profiler_config);
 
     //! Check if the profiler was succefully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Profile frame speed
     void add_frame(size_t frame_size, core::nanoseconds_t elapsed);

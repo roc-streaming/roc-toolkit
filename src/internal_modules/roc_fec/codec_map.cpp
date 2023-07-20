@@ -29,7 +29,7 @@ ROC_ATTR_UNUSED I* ctor_func(const CodecConfig& config,
                              core::IAllocator& allocator) {
     core::ScopedPtr<T> codec(new (allocator) T(config, buffer_factory, allocator),
                              allocator);
-    if (!codec || !codec->valid()) {
+    if (!codec || !codec->is_valid()) {
         return NULL;
     }
     return codec.release();

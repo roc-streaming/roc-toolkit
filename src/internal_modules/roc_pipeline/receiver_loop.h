@@ -111,7 +111,7 @@ public:
                  core::IAllocator& allocator);
 
     //! Check if the pipeline was successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Get receiver sources.
     //! @remarks

@@ -89,7 +89,7 @@ SpeexResampler::~SpeexResampler() {
     }
 }
 
-bool SpeexResampler::valid() const {
+bool SpeexResampler::is_valid() const {
     return valid_;
 }
 

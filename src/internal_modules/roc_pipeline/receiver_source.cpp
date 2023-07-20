@@ -33,7 +33,7 @@ ReceiverSource::ReceiverSource(
     mixer_.reset(new (mixer_) audio::Mixer(sample_buffer_factory,
                                            config.common.internal_frame_length,
                                            config.common.output_sample_spec));
-    if (!mixer_ || !mixer_->valid()) {
+    if (!mixer_ || !mixer_->is_valid()) {
         return;
     }
     audio::IFrameReader* areader = mixer_.get();
@@ -50,7 +50,7 @@ ReceiverSource::ReceiverSource(
         profiler_.reset(new (profiler_) audio::ProfilingReader(
             *areader, allocator, config.common.output_sample_spec,
             config.common.profiler_config));
-        if (!profiler_ || !profiler_->valid()) {
+        if (!profiler_ || !profiler_->is_valid()) {
             return;
         }
         areader = profiler_.get();
@@ -59,7 +59,7 @@ ReceiverSource::ReceiverSource(
     audio_reader_ = areader;
 }
 
-bool ReceiverSource::valid() const {
+bool ReceiverSource::is_valid() const {
     return audio_reader_;
 }
 
@@ -84,7 +84,7 @@ sndio::DeviceType ReceiverSource::type() const {
 }
 
 sndio::DeviceState ReceiverSource::state() const {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     if (state_.num_sessions() != 0) {
         // we have sessions and they're producing some sound
@@ -125,7 +125,7 @@ bool ReceiverSource::has_clock() const {
 }
 
 void ReceiverSource::reclock(packet::ntp_timestamp_t timestamp) {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     for (core::SharedPtr<ReceiverSlot> slot = slots_.front(); slot;
          slot = slots_.nextof(*slot)) {
@@ -134,7 +134,7 @@ void ReceiverSource::reclock(packet::ntp_timestamp_t timestamp) {
 }
 
 bool ReceiverSource::read(audio::Frame& frame) {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     for (core::SharedPtr<ReceiverSlot> slot = slots_.front(); slot;
          slot = slots_.nextof(*slot)) {

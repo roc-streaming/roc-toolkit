@@ -191,7 +191,7 @@ void send_receive(int flags, size_t num_sessions) {
     SenderSink sender(sender_config(flags), format_map, packet_factory,
                       byte_buffer_factory, sample_buffer_factory, allocator);
 
-    CHECK(sender.valid());
+    CHECK(sender.is_valid());
 
     SenderSlot* sender_slot = sender.create_slot();
     CHECK(sender_slot);
@@ -218,7 +218,7 @@ void send_receive(int flags, size_t num_sessions) {
     ReceiverSource receiver(receiver_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverSlot* receiver_slot = receiver.create_slot();
     CHECK(receiver_slot);

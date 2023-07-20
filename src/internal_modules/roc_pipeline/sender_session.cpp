@@ -68,7 +68,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
                 *pwriter, allocator_,
                 config_.fec_writer.n_source_packets
                     + config_.fec_writer.n_repair_packets));
-            if (!interleaver_ || !interleaver_->valid()) {
+            if (!interleaver_ || !interleaver_->is_valid()) {
                 return false;
             }
             pwriter = interleaver_.get();
@@ -85,7 +85,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
             config_.fec_writer, config_.fec_encoder.scheme, *fec_encoder_, *pwriter,
             source_endpoint->composer(), repair_endpoint->composer(), packet_factory_,
             byte_buffer_factory_, allocator_));
-        if (!fec_writer_ || !fec_writer_->valid()) {
+        if (!fec_writer_ || !fec_writer_->is_valid()) {
             return false;
         }
         pwriter = fec_writer_.get();
@@ -102,7 +102,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         *pwriter, source_endpoint->composer(), *payload_encoder_, packet_factory_,
         byte_buffer_factory_, config_.packet_length, format->sample_spec,
         config_.payload_type));
-    if (!packetizer_ || !packetizer_->valid()) {
+    if (!packetizer_ || !packetizer_->is_valid()) {
         return false;
     }
 
@@ -115,7 +115,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
                 audio::SampleSpec(format->sample_spec.sample_rate(),
                                   config_.input_sample_spec.channel_set()),
                 format->sample_spec));
-        if (!channel_mapper_writer_ || !channel_mapper_writer_->valid()) {
+        if (!channel_mapper_writer_ || !channel_mapper_writer_->is_valid()) {
             return false;
         }
         awriter = channel_mapper_writer_.get();
@@ -148,7 +148,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
             audio::SampleSpec(format->sample_spec.sample_rate(),
                               config_.input_sample_spec.channel_set())));
 
-        if (!resampler_writer_ || !resampler_writer_->valid()) {
+        if (!resampler_writer_ || !resampler_writer_->is_valid()) {
             return false;
         }
         awriter = resampler_writer_.get();
@@ -171,7 +171,7 @@ bool SenderSession::create_control_pipeline(SenderEndpoint* control_endpoint) {
     rtcp_session_.reset(new (rtcp_session_) rtcp::Session(
         NULL, this, &control_endpoint->writer(), *rtcp_composer_, packet_factory_,
         byte_buffer_factory_));
-    if (!rtcp_session_ || !rtcp_session_->valid()) {
+    if (!rtcp_session_ || !rtcp_session_->is_valid()) {
         return false;
     }
 

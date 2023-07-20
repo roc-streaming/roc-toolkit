@@ -118,7 +118,7 @@ void resample_reader(IResampler& resampler,
     input_reader.pad_zeros();
 
     ResamplerReader rr(input_reader, resampler, sample_spec, sample_spec);
-    CHECK(rr.valid());
+    CHECK(rr.is_valid());
     CHECK(rr.set_scaling(scaling));
 
     for (size_t pos = 0; pos < num_samples;) {
@@ -141,7 +141,7 @@ void resample_writer(IResampler& resampler,
 
     ResamplerWriter rw(output_writer, resampler, buffer_factory, frame_duration,
                        sample_spec, sample_spec);
-    CHECK(rw.valid());
+    CHECK(rw.is_valid());
     CHECK(rw.set_scaling(scaling));
 
     for (size_t pos = 0; pos < num_samples;) {
@@ -176,7 +176,7 @@ void resample(ResamplerBackend backend,
                                                sample_spec),
         allocator);
     CHECK(resampler);
-    CHECK(resampler->valid());
+    CHECK(resampler->is_valid());
 
     if (method == Reader) {
         resample_reader(*resampler, in, out, num_samples, sample_spec, scaling);
@@ -217,14 +217,14 @@ TEST(resampler, supported_scalings) {
                                     in_sample_specs),
                                 allocator);
                             CHECK(resampler);
-                            CHECK(resampler->valid());
+                            CHECK(resampler->is_valid());
 
                             test::MockReader input_reader;
                             input_reader.pad_zeros();
 
                             ResamplerReader rr(input_reader, *resampler, in_sample_specs,
                                                out_sample_specs);
-                            CHECK(rr.valid());
+                            CHECK(rr.is_valid());
 
                             for (int iter = 0; iter < NumIters; iter++) {
                                 if (!rr.set_scaling(scalings[sn])) {
@@ -261,7 +261,7 @@ TEST(resampler, invalid_scalings) {
                 SampleSpecs.samples_overall_2_ns(InFrameSize), SampleSpecs),
             allocator);
         CHECK(resampler);
-        CHECK(resampler->valid());
+        CHECK(resampler->is_valid());
 
         CHECK(!resampler->set_scaling(0, SampleRate, 1.0f));
         CHECK(!resampler->set_scaling(SampleRate, 0, 1.0f));

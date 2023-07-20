@@ -219,7 +219,7 @@ int main(int argc, char** argv) {
 
     pipeline::ConverterSink converter(converter_config, output_writer, buffer_factory,
                                       allocator);
-    if (!converter.valid()) {
+    if (!converter.is_valid()) {
         roc_log(LogError, "can't create converter pipeline");
         return 1;
     }
@@ -227,7 +227,7 @@ int main(int argc, char** argv) {
     sndio::Pump pump(buffer_factory, *input_source, NULL, converter,
                      converter_config.internal_frame_length,
                      converter_config.input_sample_spec, sndio::Pump::ModePermanent);
-    if (!pump.valid()) {
+    if (!pump.is_valid()) {
         roc_log(LogError, "can't create audio pump");
         return 1;
     }

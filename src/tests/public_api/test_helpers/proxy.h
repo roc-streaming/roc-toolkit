@@ -38,7 +38,7 @@ public:
         , n_source_packets_(n_source_packets)
         , n_repair_packets_(n_repair_packets)
         , pos_(0) {
-        CHECK(net_loop_.valid());
+        CHECK(net_loop_.is_valid());
 
         roc_protocol source_proto;
         CHECK(roc_endpoint_get_protocol(receiver_source_endp, &source_proto) == 0);

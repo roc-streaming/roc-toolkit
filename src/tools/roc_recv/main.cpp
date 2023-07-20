@@ -86,7 +86,7 @@ int main(int argc, char** argv) {
     core::HeapAllocator heap_allocator;
 
     peer::Context context(context_config, heap_allocator);
-    if (!context.valid()) {
+    if (!context.is_valid()) {
         roc_log(LogError, "can't initialize peer context");
         return 1;
     }
@@ -361,7 +361,7 @@ int main(int argc, char** argv) {
     }
 
     peer::Receiver receiver(context, receiver_config);
-    if (!receiver.valid()) {
+    if (!receiver.is_valid()) {
         roc_log(LogError, "can't create receiver peer");
         return 1;
     }
@@ -495,7 +495,7 @@ int main(int argc, char** argv) {
         *output_sink, receiver_config.common.internal_frame_length,
         receiver_config.common.output_sample_spec,
         args.oneshot_flag ? sndio::Pump::ModeOneshot : sndio::Pump::ModePermanent);
-    if (!pump.valid()) {
+    if (!pump.is_valid()) {
         roc_log(LogError, "can't create pump");
         return 1;
     }

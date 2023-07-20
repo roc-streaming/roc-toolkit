@@ -69,7 +69,7 @@ public:
                     core::IAllocator& allocator);
 
     //! Check if the session pipeline was succefully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Try to route a packet to this session.
     //! @returns

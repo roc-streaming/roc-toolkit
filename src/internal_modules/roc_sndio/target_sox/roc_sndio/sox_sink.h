@@ -38,7 +38,7 @@ public:
     virtual ~SoxSink();
 
     //! Check if the object was successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Open output file or device.
     //!

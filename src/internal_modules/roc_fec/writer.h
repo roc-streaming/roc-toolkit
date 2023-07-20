@@ -65,10 +65,10 @@ public:
            core::IAllocator& allocator);
 
     //! Check if object is successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Check if writer is still working.
-    bool alive() const;
+    bool is_alive() const;
 
     //! Set number of source packets per block.
     bool resize(size_t sblen, size_t rblen);

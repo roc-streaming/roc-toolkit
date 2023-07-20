@@ -25,7 +25,7 @@ public:
     virtual ~IResampler();
 
     //! Check if object is successfully constructed.
-    virtual bool valid() const = 0;
+    virtual bool is_valid() const = 0;
 
     //! Set new resample factor.
     //! @remarks

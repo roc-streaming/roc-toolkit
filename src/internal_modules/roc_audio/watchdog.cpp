@@ -70,7 +70,7 @@ Watchdog::Watchdog(IFrameReader& reader,
     valid_ = true;
 }
 
-bool Watchdog::valid() const {
+bool Watchdog::is_valid() const {
     return valid_;
 }
 

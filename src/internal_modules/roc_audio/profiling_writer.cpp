@@ -22,6 +22,10 @@ ProfilingWriter::ProfilingWriter(IFrameWriter& writer,
     , writer_(writer) {
 }
 
+bool ProfilingWriter::is_valid() const {
+    return profiler_.is_valid();
+}
+
 void ProfilingWriter::write(Frame& frame) {
     const core::nanoseconds_t elapsed = write_(frame);
 
@@ -34,10 +38,6 @@ core::nanoseconds_t ProfilingWriter::write_(Frame& frame) {
     writer_.write(frame);
 
     return core::timestamp(core::ClockMonotonic) - start;
-}
-
-bool ProfilingWriter::valid() const {
-    return profiler_.valid();
 }
 
 } // namespace audio
