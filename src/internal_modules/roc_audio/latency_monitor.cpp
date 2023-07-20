@@ -119,7 +119,7 @@ bool LatencyMonitor::update(packet::timestamp_t pos) {
 }
 
 bool LatencyMonitor::get_latency_(packet::timestamp_diff_t& latency) const {
-    if (!depacketizer_.started()) {
+    if (!depacketizer_.is_started()) {
         return false;
     }
 
