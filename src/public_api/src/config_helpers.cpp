@@ -215,6 +215,13 @@ bool sample_spec_from_user(audio::SampleSpec& out, const roc_media_encoding& in)
                         " then tracks should be non-zero");
                 return false;
             }
+            if (in.tracks > audio::ChannelSet::max_channels()) {
+                roc_log(LogError,
+                        "bad configuration: invalid roc_media_encoding:"
+                        " invalid tracks count: got=%u expected=[1;256]",
+                        (unsigned)in.tracks);
+                return false;
+            }
         } else {
             if (in.tracks != 0) {
                 roc_log(LogError,
