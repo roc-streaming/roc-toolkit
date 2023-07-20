@@ -12,6 +12,12 @@
 namespace roc {
 namespace audio {
 
+IFrameDecoder* PcmDecoder::construct(core::IAllocator& allocator,
+                                     const PcmFormat& pcm_format,
+                                     const SampleSpec& sample_spec) {
+    return new (allocator) PcmDecoder(pcm_format, sample_spec);
+}
+
 PcmDecoder::PcmDecoder(const PcmFormat& pcm_format, const SampleSpec& sample_spec)
     : pcm_mapper_(pcm_format, SampleFormat)
     , n_chans_(sample_spec.num_channels())

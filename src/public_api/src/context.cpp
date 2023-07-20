@@ -11,6 +11,8 @@
 #include "config_helpers.h"
 #include "root_allocator.h"
 
+#include "roc_audio/pcm_decoder.h"
+#include "roc_audio/pcm_encoder.h"
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_peer/context.h"
@@ -51,6 +53,58 @@ int roc_context_open(const roc_context_config* config, roc_context** result) {
     }
 
     *result = (roc_context*)imp_context.release();
+    return 0;
+}
+
+int roc_context_register_encoding(roc_context* context,
+                                  int encoding_id,
+                                  const roc_media_encoding* encoding) {
+    if (!context) {
+        roc_log(LogError,
+                "roc_context_register_encoding(): invalid arguments: context is null");
+        return -1;
+    }
+
+    if (encoding_id < 1 || encoding_id > 127) {
+        roc_log(
+            LogError,
+            "roc_context_register_encoding(): invalid arguments: encoding_id is invalid:"
+            " got=%d expected=[1; 127]",
+            encoding_id);
+        return -1;
+    }
+
+    if (!encoding) {
+        roc_log(LogError,
+                "roc_context_register_encoding(): invalid arguments: encoding is null");
+        return -1;
+    }
+
+    peer::Context* imp_context = (peer::Context*)context;
+
+    rtp::Format fmt;
+
+    fmt.payload_type = (unsigned)encoding_id;
+    fmt.packet_flags = packet::Packet::FlagAudio;
+
+    fmt.pcm_format.encoding = audio::PcmEncoding_SInt16;
+    fmt.pcm_format.endian = audio::PcmEndian_Big;
+
+    if (!api::sample_spec_from_user(fmt.sample_spec, *encoding)) {
+        roc_log(
+            LogError,
+            "roc_context_register_encoding(): invalid arguments: encoding is invalid");
+        return -1;
+    }
+
+    fmt.new_encoder = &audio::PcmEncoder::construct;
+    fmt.new_decoder = &audio::PcmDecoder::construct;
+
+    if (!imp_context->format_map().add_format(fmt)) {
+        roc_log(LogError, "roc_context_register_encoding(): failed to register encoding");
+        return -1;
+    }
+
     return 0;
 }
 

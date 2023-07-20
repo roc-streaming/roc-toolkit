@@ -91,7 +91,9 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         pwriter = fec_writer_.get();
     }
 
-    payload_encoder_.reset(format->new_encoder(allocator_), allocator_);
+    payload_encoder_.reset(
+        format->new_encoder(allocator_, format->pcm_format, format->sample_spec),
+        allocator_);
     if (!payload_encoder_) {
         return false;
     }

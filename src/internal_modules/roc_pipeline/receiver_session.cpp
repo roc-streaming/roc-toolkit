@@ -50,7 +50,9 @@ ReceiverSession::ReceiverSession(
 
     packet::IReader* preader = source_queue_.get();
 
-    payload_decoder_.reset(format->new_decoder(allocator), allocator);
+    payload_decoder_.reset(
+        format->new_decoder(allocator, format->pcm_format, format->sample_spec),
+        allocator);
     if (!payload_decoder_) {
         return;
     }
