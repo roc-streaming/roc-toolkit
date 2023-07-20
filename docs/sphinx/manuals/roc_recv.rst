@@ -32,8 +32,8 @@ Options
 --max-latency=STRING         Session maximum latency, TIME units
 --io-latency=STRING          Playback target latency, TIME units
 --np-timeout=STRING          Session no playback timeout, TIME units
---bp-timeout=STRING          Session broken playback timeout, TIME units
---bp-window=STRING           Session breakage detection window, TIME units
+--cp-timeout=STRING          Session choppy playback timeout, TIME units
+--cp-window=STRING           Session choppy playback detection window, TIME units
 --packet-limit=INT           Maximum packet size, in bytes
 --frame-limit=INT            Maximum internal frame size, in bytes
 --frame-length=TIME          Duration of the internal frames, TIME units

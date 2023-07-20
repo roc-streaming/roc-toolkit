@@ -211,12 +211,12 @@ bool receiver_config_from_user(peer::Context&,
     }
 
     if (in.choppy_playback_timeout < 0) {
-        out.default_session.watchdog.broken_playback_timeout = 0;
+        out.default_session.watchdog.choppy_playback_timeout = 0;
     } else if (in.choppy_playback_timeout > 0) {
-        out.default_session.watchdog.broken_playback_timeout = in.choppy_playback_timeout;
+        out.default_session.watchdog.choppy_playback_timeout = in.choppy_playback_timeout;
 
-        out.default_session.watchdog.deduce_breakage_playback_window(
-            out.default_session.watchdog.broken_playback_timeout);
+        out.default_session.watchdog.deduce_choppy_playback_window(
+            out.default_session.watchdog.choppy_playback_timeout);
     }
 
     return true;
