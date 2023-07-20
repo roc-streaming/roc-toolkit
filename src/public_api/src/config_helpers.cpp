@@ -8,6 +8,8 @@
 
 #include "config_helpers.h"
 
+#include "roc_address/interface.h"
+#include "roc_audio/channel_layout.h"
 #include "roc_audio/resampler_profile.h"
 #include "roc_core/attributes.h"
 #include "roc_core/log.h"
@@ -38,8 +40,27 @@ bool sender_config_from_user(peer::Context& context,
     }
 
     if (in.frame_encoding.channels != 0) {
+        if (in.frame_encoding.channels == ROC_CHANNEL_LAYOUT_MULTITRACK) {
+            if (in.frame_encoding.tracks == 0) {
+                roc_log(LogError,
+                        "bad configuration: invalid roc_sender_config.frame_encoding:"
+                        " if frame_encoding.channels is ROC_CHANNEL_LAYOUT_MULTITRACK,"
+                        " then frame_encoding.tracks should be non-zero");
+                return false;
+            }
+        } else {
+            if (in.frame_encoding.tracks != 0) {
+                roc_log(
+                    LogError,
+                    "bad configuration: invalid roc_sender_config.frame_encoding:"
+                    " if frame_encoding.channels is not ROC_CHANNEL_LAYOUT_MULTITRACK,"
+                    " then frame_encoding.tracks should be zero");
+                return false;
+            }
+        }
         if (!channel_set_from_user(out.input_sample_spec.channel_set(),
-                                   in.frame_encoding.channels)) {
+                                   in.frame_encoding.channels,
+                                   in.frame_encoding.tracks)) {
             roc_log(
                 LogError,
                 "bad configuration: invalid roc_sender_config.frame_encoding.channels:"
@@ -137,8 +158,27 @@ bool receiver_config_from_user(peer::Context&,
     }
 
     if (in.frame_encoding.channels != 0) {
+        if (in.frame_encoding.channels == ROC_CHANNEL_LAYOUT_MULTITRACK) {
+            if (in.frame_encoding.tracks == 0) {
+                roc_log(LogError,
+                        "bad configuration: invalid roc_receiver_config.frame_encoding:"
+                        " if frame_encoding.channels is ROC_CHANNEL_LAYOUT_MULTITRACK,"
+                        " then frame_encoding.tracks should be non-zero");
+                return false;
+            }
+        } else {
+            if (in.frame_encoding.tracks != 0) {
+                roc_log(
+                    LogError,
+                    "bad configuration: invalid roc_receiver_config.frame_encoding:"
+                    " if frame_encoding.channels is not ROC_CHANNEL_LAYOUT_MULTITRACK,"
+                    " then frame_encoding.tracks should be zero");
+                return false;
+            }
+        }
         if (!channel_set_from_user(out.common.output_sample_spec.channel_set(),
-                                   in.frame_encoding.channels)) {
+                                   in.frame_encoding.channels,
+                                   in.frame_encoding.tracks)) {
             roc_log(LogError,
                     "bad configuration: invalid roc_receiver_config.frame_channels:"
                     " should be valid enum value");
@@ -224,8 +264,15 @@ bool receiver_config_from_user(peer::Context&,
 }
 
 ROC_ATTR_NO_SANITIZE_UB
-bool channel_set_from_user(audio::ChannelSet& out, roc_channel_layout in) {
+bool channel_set_from_user(audio::ChannelSet& out,
+                           roc_channel_layout in,
+                           unsigned int in_tracks) {
     switch (in) {
+    case ROC_CHANNEL_LAYOUT_MULTITRACK:
+        out.set_layout(audio::ChannelLayout_Multitrack);
+        out.set_channel_range(0, in_tracks - 1, true);
+        return true;
+
     case ROC_CHANNEL_LAYOUT_MONO:
         out.set_layout(audio::ChannelLayout_Mono);
         out.set_channel_mask(audio::ChannelMask_Mono);
@@ -235,9 +282,6 @@ bool channel_set_from_user(audio::ChannelSet& out, roc_channel_layout in) {
         out.set_layout(audio::ChannelLayout_Surround);
         out.set_channel_mask(audio::ChannelMask_Stereo);
         return true;
-
-    default:
-        break;
     }
 
     return false;
@@ -253,9 +297,6 @@ bool clock_source_from_user(bool& timing, roc_clock_source in) {
     case ROC_CLOCK_INTERNAL:
         timing = true;
         return true;
-
-    default:
-        break;
     }
 
     return false;
@@ -275,9 +316,6 @@ bool resampler_backend_from_user(audio::ResamplerBackend& out, roc_resampler_bac
     case ROC_RESAMPLER_BACKEND_SPEEX:
         out = audio::ResamplerBackend_Speex;
         return true;
-
-    default:
-        break;
     }
 
     return false;
@@ -301,9 +339,6 @@ bool resampler_profile_from_user(audio::ResamplerProfile& out, roc_resampler_pro
     case ROC_RESAMPLER_PROFILE_HIGH:
         out = audio::ResamplerProfile_High;
         return true;
-
-    default:
-        break;
     }
 
     return false;
@@ -319,9 +354,6 @@ bool packet_encoding_from_user(rtp::PayloadType& out, roc_packet_encoding in) {
     case ROC_PACKET_ENCODING_AVP_L16_STEREO:
         out = rtp::PayloadType_L16_Stereo;
         return true;
-
-    default:
-        break;
     }
 
     return false;
@@ -342,9 +374,6 @@ bool fec_encoding_from_user(packet::FecScheme& out, roc_fec_encoding in) {
     case ROC_FEC_ENCODING_LDPC_STAIRCASE:
         out = packet::FEC_LDPC_Staircase;
         return true;
-
-    default:
-        break;
     }
 
     return false;
@@ -353,6 +382,10 @@ bool fec_encoding_from_user(packet::FecScheme& out, roc_fec_encoding in) {
 ROC_ATTR_NO_SANITIZE_UB
 bool interface_from_user(address::Interface& out, const roc_interface& in) {
     switch (in) {
+    case ROC_INTERFACE_CONSOLIDATED:
+        out = address::Iface_Consolidated;
+        return true;
+
     case ROC_INTERFACE_AUDIO_SOURCE:
         out = address::Iface_AudioSource;
         return true;
@@ -364,9 +397,6 @@ bool interface_from_user(address::Interface& out, const roc_interface& in) {
     case ROC_INTERFACE_AUDIO_CONTROL:
         out = address::Iface_AudioControl;
         return true;
-
-    default:
-        break;
     }
 
     return false;
@@ -402,9 +432,6 @@ bool proto_from_user(address::Protocol& out, const roc_protocol& in) {
     case ROC_PROTO_RTCP:
         out = address::Proto_RTCP;
         return true;
-
-    default:
-        break;
     }
 
     return false;
@@ -440,7 +467,7 @@ bool proto_to_user(roc_protocol& out, address::Protocol in) {
         out = ROC_PROTO_RTCP;
         return true;
 
-    default:
+    case address::Proto_None:
         break;
     }
 
