@@ -13,6 +13,7 @@
 #define ROC_PACKET_ROUTER_H_
 
 #include "roc_core/array.h"
+#include "roc_core/attributes.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
@@ -31,7 +32,7 @@ public:
     //! Add route.
     //! @remarks
     //!  Packets that has given @p flags set will be routed to @p writer.
-    bool add_route(IWriter& writer, unsigned flags);
+    ROC_ATTR_NODISCARD bool add_route(IWriter& writer, unsigned flags);
 
     //! Write next packet.
     //! @remarks

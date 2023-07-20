@@ -13,6 +13,7 @@
 #define ROC_RTP_FORMAT_MAP_H_
 
 #include "roc_audio/sample_spec.h"
+#include "roc_core/attributes.h"
 #include "roc_core/hashmap.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
@@ -52,7 +53,7 @@ public:
     //! @returns
     //!  true if successfully added or false if another format with the same
     //!  payload type already exists.
-    bool add_format(const Format& fmt);
+    ROC_ATTR_NODISCARD bool add_format(const Format& fmt);
 
 private:
     enum { PreallocatedNodes = 16 };

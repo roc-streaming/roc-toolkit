@@ -255,7 +255,9 @@ bool Receiver::bind(size_t slot_index,
 
     if (uri.port() == 0) {
         // Report back the port number we've selected.
-        uri.set_port(slot->ports[iface].config.bind_address.port());
+        if (!uri.set_port(slot->ports[iface].config.bind_address.port())) {
+            roc_panic("receiver peer: can't set endpoint port");
+        }
     }
 
     update_compatibility_(iface, uri);

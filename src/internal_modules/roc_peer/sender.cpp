@@ -386,10 +386,17 @@ bool Sender::setup_outgoing_port_(Port& port,
 
         if (!port.config.bind_address.has_host_port()) {
             if (family == address::Family_IPv4) {
-                port.config.bind_address.set_host_port(address::Family_IPv4, "0.0.0.0",
-                                                       0);
+                if (!port.config.bind_address.set_host_port(address::Family_IPv4,
+                                                            "0.0.0.0", 0)) {
+                    roc_panic("sender peer: can't set reset %s interface ipv4 address",
+                              address::interface_to_str(iface));
+                }
             } else {
-                port.config.bind_address.set_host_port(address::Family_IPv6, "::", 0);
+                if (!port.config.bind_address.set_host_port(address::Family_IPv6,
+                                                            "::", 0)) {
+                    roc_panic("sender peer: can't set reset %s interface ipv6 address",
+                              address::interface_to_str(iface));
+                }
             }
         }
 

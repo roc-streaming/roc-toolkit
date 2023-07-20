@@ -166,7 +166,7 @@ NetworkLoop::~NetworkLoop() {
         }
     }
 
-    roc_panic_if(joinable());
+    roc_panic_if(is_joinable());
     roc_panic_if(open_ports_.size());
     roc_panic_if(closing_ports_.size());
     roc_panic_if(task_sem_initialized_);

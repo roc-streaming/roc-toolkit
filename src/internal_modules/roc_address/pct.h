@@ -12,6 +12,7 @@
 #ifndef ROC_ADDRESS_PCT_H_
 #define ROC_ADDRESS_PCT_H_
 
+#include "roc_core/attributes.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/string_builder.h"
 
@@ -41,7 +42,8 @@ enum PctMode {
 //! @remarks
 //!  The source string should NOT be null-terminated.
 //!  The source string size should NOT include the terminating zero byte.
-bool pct_encode(core::StringBuilder& dst, const char* src, size_t src_sz, PctMode mode);
+ROC_ATTR_NODISCARD bool
+pct_encode(core::StringBuilder& dst, const char* src, size_t src_sz, PctMode mode);
 
 //! Percent-decode an UTF-8 string.
 //
@@ -53,7 +55,8 @@ bool pct_encode(core::StringBuilder& dst, const char* src, size_t src_sz, PctMod
 //! @remarks
 //!  The source string should NOT be null-terminated.
 //!  The source string size should NOT include the terminating zero byte.
-bool pct_decode(core::StringBuilder& dst, const char* src, size_t src_sz);
+ROC_ATTR_NODISCARD bool
+pct_decode(core::StringBuilder& dst, const char* src, size_t src_sz);
 
 } // namespace address
 } // namespace roc

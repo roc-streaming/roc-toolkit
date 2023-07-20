@@ -13,6 +13,7 @@
 #define ROC_CORE_STRING_BUFFER_H_
 
 #include "roc_core/array.h"
+#include "roc_core/attributes.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
@@ -51,23 +52,31 @@ public:
 
     //! Set buffer to empty string.
     void clear() {
-        data_.resize(1);
+        if (!data_.resize(1)) {
+            roc_panic("string buffer: allocation failed");
+        }
         data_[0] = '\0';
     }
 
     //! Copy given string into buffer.
     //! @p str should be zero-terminated.
-    bool assign(const char* str) {
-        roc_panic_if_not(str);
+    ROC_ATTR_NODISCARD bool assign(const char* str) {
+        if (!str) {
+            roc_panic("string buffer: null pointer");
+        }
 
         return assign(str, str + strlen(str));
     }
 
     //! Copy given range into buffer.
     //! Buffer will be automatically zero-terminated.
-    bool assign(const char* str_begin, const char* str_end) {
-        roc_panic_if_not(str_begin);
-        roc_panic_if_not(str_begin <= str_end);
+    ROC_ATTR_NODISCARD bool assign(const char* str_begin, const char* str_end) {
+        if (!str_begin || !str_end) {
+            roc_panic("string buffer: null pointer");
+        }
+        if (str_begin > str_end) {
+            roc_panic("string buffer: invalid range");
+        }
 
         const size_t str_sz = size_t(str_end - str_begin);
 
@@ -89,13 +98,13 @@ public:
     //!  Characters are appended to the buffer and filled with zeros.
     //!  It's the caller responsibility to fill them.
     char* extend(size_t n_chars) {
-        roc_panic_if_not(n_chars > 0);
-
         const size_t orig_sz = data_.size();
 
-        if (!data_.resize(orig_sz + n_chars)) {
-            clear();
-            return NULL;
+        if (n_chars > 0) {
+            if (!data_.resize(orig_sz + n_chars)) {
+                clear();
+                return NULL;
+            }
         }
 
         return data_.data() + orig_sz - 1;
@@ -103,18 +112,18 @@ public:
 
     //! Grow capacity to be able to hold desired number of characters.
     //! Capacity is increased linearly.
-    bool grow(size_t desired_len) {
+    ROC_ATTR_NODISCARD bool grow(size_t desired_len) {
         return data_.grow(desired_len + 1);
     }
 
     //! Grow capacity to be able to hold desired number of characters.
     //! Capacity is increased exponentionally.
-    bool grow_exp(size_t desired_len) {
+    ROC_ATTR_NODISCARD bool grow_exp(size_t desired_len) {
         return data_.grow_exp(desired_len + 1);
     }
 
 private:
-    Array<char, EmbeddedCapacity> data_;
+    Array<char, EmbeddedCapacity ? EmbeddedCapacity : 1> data_;
 };
 
 } // namespace core

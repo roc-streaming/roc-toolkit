@@ -51,7 +51,7 @@ void Timer::wait_deadline() {
 
         if (deadline > 0) {
             next_wakeup_.exclusive_store(deadline);
-            sem_.timed_wait(deadline);
+            (void)sem_.timed_wait(deadline);
         } else {
             sem_.wait();
         }

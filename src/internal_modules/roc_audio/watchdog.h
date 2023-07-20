@@ -15,6 +15,7 @@
 #include "roc_audio/iframe_reader.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/array.h"
+#include "roc_core/attributes.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
@@ -90,7 +91,7 @@ public:
     //!  false if during the session timeout each frame has an empty flag or the maximum
     //!  allowed number of consecutive windows that can contain frames that aren't fully
     //!  filled and contain dropped packets was exceeded.
-    bool update();
+    ROC_ATTR_NODISCARD bool update();
 
 private:
     void update_blank_timeout_(const Frame& frame, packet::timestamp_t next_read_pos);
