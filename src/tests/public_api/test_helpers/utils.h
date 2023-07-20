@@ -16,7 +16,7 @@ namespace test {
 namespace {
 
 enum {
-    MaxBufSize = 500,
+    MaxBufSize = 5120,
 
     SampleRate = 44100,
 
@@ -31,7 +31,7 @@ enum {
     Timeout = TotalSamples * 10
 };
 
-enum { FlagRS8M = (1 << 0), FlagLDPC = (1 << 1) };
+enum { FlagRS8M = (1 << 0), FlagLDPC = (1 << 1), FlagMultitrack = (1 << 2) };
 
 inline float increment_sample_value(float sample_value, float sample_step) {
     sample_value += sample_step;

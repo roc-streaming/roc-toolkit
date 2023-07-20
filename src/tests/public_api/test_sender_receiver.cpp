@@ -42,19 +42,46 @@ TEST_GROUP(sender_receiver) {
         sample_step = 1. / 32768.;
     }
 
-    void init_config(unsigned flags, unsigned frame_chans, unsigned packet_chans) {
+    void init_config(unsigned flags, unsigned frame_chans, unsigned packet_chans,
+                     int encoding_id = 0) {
         memset(&sender_conf, 0, sizeof(sender_conf));
         sender_conf.frame_encoding.rate = test::SampleRate;
         sender_conf.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
-        sender_conf.frame_encoding.channels = frame_chans == 1 ? ROC_CHANNEL_LAYOUT_MONO
-            : frame_chans == 2                                 ? ROC_CHANNEL_LAYOUT_STEREO
-                                                               : (roc_channel_layout)0;
-        sender_conf.packet_encoding = packet_chans == 1 ? ROC_PACKET_ENCODING_AVP_L16_MONO
-            : packet_chans == 2 ? ROC_PACKET_ENCODING_AVP_L16_STEREO
-                                : (roc_packet_encoding)0;
+
+        if (flags & test::FlagMultitrack) {
+            sender_conf.frame_encoding.channels = ROC_CHANNEL_LAYOUT_MULTITRACK;
+            sender_conf.frame_encoding.tracks = frame_chans;
+        } else {
+            switch (frame_chans) {
+            case 1:
+                sender_conf.frame_encoding.channels = ROC_CHANNEL_LAYOUT_MONO;
+                break;
+            case 2:
+                sender_conf.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
+                break;
+            default:
+                FAIL("unexpected frame_chans");
+            }
+            switch (packet_chans) {
+            case 1:
+                sender_conf.packet_encoding = ROC_PACKET_ENCODING_AVP_L16_MONO;
+                break;
+            case 2:
+                sender_conf.packet_encoding = ROC_PACKET_ENCODING_AVP_L16_STEREO;
+                break;
+            default:
+                FAIL("unexpected packet_chans");
+            }
+        }
+
+        if (encoding_id != 0) {
+            sender_conf.packet_encoding = (roc_packet_encoding)encoding_id;
+        }
+
         sender_conf.packet_length = test::PacketSamples * 1000000000ul / test::SampleRate;
         sender_conf.clock_source = ROC_CLOCK_INTERNAL;
         sender_conf.resampler_profile = ROC_RESAMPLER_PROFILE_DISABLE;
+
         if (flags & test::FlagRS8M) {
             sender_conf.fec_encoding = ROC_FEC_ENCODING_RS8M;
             sender_conf.fec_block_source_packets = test::SourcePackets;
@@ -70,9 +97,23 @@ TEST_GROUP(sender_receiver) {
         memset(&receiver_conf, 0, sizeof(receiver_conf));
         receiver_conf.frame_encoding.rate = test::SampleRate;
         receiver_conf.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
-        receiver_conf.frame_encoding.channels = frame_chans == 1 ? ROC_CHANNEL_LAYOUT_MONO
-            : frame_chans == 2 ? ROC_CHANNEL_LAYOUT_STEREO
-                               : (roc_channel_layout)0;
+
+        if (flags & test::FlagMultitrack) {
+            receiver_conf.frame_encoding.channels = ROC_CHANNEL_LAYOUT_MULTITRACK;
+            receiver_conf.frame_encoding.tracks = frame_chans;
+        } else {
+            switch (frame_chans) {
+            case 1:
+                receiver_conf.frame_encoding.channels = ROC_CHANNEL_LAYOUT_MONO;
+                break;
+            case 2:
+                receiver_conf.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
+                break;
+            default:
+                FAIL("unexpected frame_chans");
+            }
+        }
+
         receiver_conf.clock_source = ROC_CLOCK_INTERNAL;
         receiver_conf.resampler_profile = ROC_RESAMPLER_PROFILE_DISABLE;
         receiver_conf.target_latency = test::Latency * 1000000000ul / test::SampleRate;
@@ -415,6 +456,67 @@ TEST(sender_receiver, mono_stereo_mono) {
     receiver.bind(Flags);
 
     test::Sender sender(context, sender_conf, sample_step, FrameChans,
+                        test::FrameSamples);
+
+    sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
+
+    sender.start();
+    receiver.receive();
+    sender.stop();
+    sender.join();
+}
+
+TEST(sender_receiver, multitrack) {
+    enum {
+        Flags = test::FlagMultitrack,
+        FrameChans = 4,
+        PacketChans = 4,
+        EncodingID = 100
+    };
+
+    init_config(Flags, FrameChans, PacketChans, EncodingID);
+
+    test::Context context;
+
+    context.register_multitrack_encoding(EncodingID, PacketChans);
+
+    test::Receiver receiver(context, receiver_conf, sample_step, FrameChans,
+                            test::FrameSamples);
+
+    receiver.bind(Flags);
+
+    test::Sender sender(context, sender_conf, sample_step, FrameChans,
+                        test::FrameSamples);
+
+    sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
+
+    sender.start();
+    receiver.receive();
+    sender.stop();
+    sender.join();
+}
+
+TEST(sender_receiver, multitrack_separate_contexts) {
+    enum {
+        Flags = test::FlagMultitrack,
+        FrameChans = 4,
+        PacketChans = 4,
+        EncodingID = 100
+    };
+
+    init_config(Flags, FrameChans, PacketChans, EncodingID);
+
+    test::Context recv_context, send_context;
+
+    recv_context.register_multitrack_encoding(EncodingID, PacketChans);
+    send_context.register_multitrack_encoding(EncodingID, PacketChans);
+
+    test::Receiver receiver(recv_context, receiver_conf, sample_step, FrameChans,
+                            test::FrameSamples);
+
+    receiver.bind(Flags);
+
+    test::Sender sender(send_context, sender_conf, sample_step, FrameChans,
                         test::FrameSamples);
 
     sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
