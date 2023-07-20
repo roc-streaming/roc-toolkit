@@ -161,25 +161,25 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (args.bp_timeout_given) {
+    if (args.cp_timeout_given) {
         if (!core::parse_duration(
-                args.bp_timeout_arg,
-                receiver_config.default_session.watchdog.broken_playback_timeout)) {
-            roc_log(LogError, "invalid --bp-timeout");
+                args.cp_timeout_arg,
+                receiver_config.default_session.watchdog.choppy_playback_timeout)) {
+            roc_log(LogError, "invalid --cp-timeout");
             return 1;
         }
     }
 
-    if (args.bp_window_given) {
+    if (args.cp_window_given) {
         if (!core::parse_duration(
-                args.bp_window_arg,
-                receiver_config.default_session.watchdog.breakage_detection_window)) {
-            roc_log(LogError, "invalid --bp-window");
+                args.cp_window_arg,
+                receiver_config.default_session.watchdog.choppy_playback_window)) {
+            roc_log(LogError, "invalid --cp-window");
             return 1;
         }
     } else {
-        receiver_config.default_session.watchdog.deduce_breakage_playback_window(
-            receiver_config.default_session.watchdog.broken_playback_timeout);
+        receiver_config.default_session.watchdog.deduce_choppy_playback_window(
+            receiver_config.default_session.watchdog.choppy_playback_timeout);
     }
 
     receiver_config.common.resampling = !args.no_resampling_flag;
