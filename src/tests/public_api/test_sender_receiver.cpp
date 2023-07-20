@@ -44,11 +44,11 @@ TEST_GROUP(sender_receiver) {
 
     void init_config(unsigned flags, unsigned frame_chans, unsigned packet_chans) {
         memset(&sender_conf, 0, sizeof(sender_conf));
-        sender_conf.frame_format = ROC_FORMAT_PCM_FLOAT32;
-        sender_conf.frame_channels = frame_chans == 1 ? ROC_CHANNEL_LAYOUT_MONO
-            : frame_chans == 2                        ? ROC_CHANNEL_LAYOUT_STEREO
-                                                      : (roc_channel_layout)0;
-        sender_conf.frame_sample_rate = test::SampleRate;
+        sender_conf.frame_encoding.rate = test::SampleRate;
+        sender_conf.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
+        sender_conf.frame_encoding.channels = frame_chans == 1 ? ROC_CHANNEL_LAYOUT_MONO
+            : frame_chans == 2                                 ? ROC_CHANNEL_LAYOUT_STEREO
+                                                               : (roc_channel_layout)0;
         sender_conf.packet_encoding = packet_chans == 1 ? ROC_PACKET_ENCODING_AVP_L16_MONO
             : packet_chans == 2 ? ROC_PACKET_ENCODING_AVP_L16_STEREO
                                 : (roc_packet_encoding)0;
@@ -68,11 +68,11 @@ TEST_GROUP(sender_receiver) {
         }
 
         memset(&receiver_conf, 0, sizeof(receiver_conf));
-        receiver_conf.frame_format = ROC_FORMAT_PCM_FLOAT32;
-        receiver_conf.frame_channels = frame_chans == 1 ? ROC_CHANNEL_LAYOUT_MONO
-            : frame_chans == 2                          ? ROC_CHANNEL_LAYOUT_STEREO
-                                                        : (roc_channel_layout)0;
-        receiver_conf.frame_sample_rate = test::SampleRate;
+        receiver_conf.frame_encoding.rate = test::SampleRate;
+        receiver_conf.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
+        receiver_conf.frame_encoding.channels = frame_chans == 1 ? ROC_CHANNEL_LAYOUT_MONO
+            : frame_chans == 2 ? ROC_CHANNEL_LAYOUT_STEREO
+                               : (roc_channel_layout)0;
         receiver_conf.clock_source = ROC_CLOCK_INTERNAL;
         receiver_conf.resampler_profile = ROC_RESAMPLER_PROFILE_DISABLE;
         receiver_conf.target_latency = test::Latency * 1000000000ul / test::SampleRate;

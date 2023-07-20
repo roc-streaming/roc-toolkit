@@ -225,35 +225,6 @@ typedef enum roc_protocol {
     ROC_PROTO_RTCP = 70
 } roc_protocol;
 
-/** Forward Error Correction encoding.
- * Each FEC encoding is caompatible with specific protocols.
- */
-typedef enum roc_fec_encoding {
-    /** No FEC encoding.
-     * Compatible with \ref ROC_PROTO_RTP protocol.
-     */
-    ROC_FEC_ENCODING_DISABLE = -1,
-
-    /** Default FEC encoding.
-     * Current default is \ref ROC_FEC_ENCODING_RS8M.
-     */
-    ROC_FEC_ENCODING_DEFAULT = 0,
-
-    /** Reed-Solomon FEC encoding (RFC 6865) with m=8.
-     * Good for small block sizes (below 256 packets).
-     * Compatible with \ref ROC_PROTO_RTP_RS8M_SOURCE and \ref ROC_PROTO_RS8M_REPAIR
-     * protocols for source and repair endpoints.
-     */
-    ROC_FEC_ENCODING_RS8M = 1,
-
-    /** LDPC-Staircase FEC encoding (RFC 6816).
-     * Good for large block sizes (above 1024 packets).
-     * Compatible with \ref ROC_PROTO_RTP_LDPC_SOURCE and \ref ROC_PROTO_LDPC_REPAIR
-     * protocols for source and repair endpoints.
-     */
-    ROC_FEC_ENCODING_LDPC_STAIRCASE = 2
-} roc_fec_encoding;
-
 /** Packet encoding.
  * Each packet encoding defines sample format, channel layout, and rate.
  * Each packet encoding is caompatible with specific protocols.
@@ -286,6 +257,35 @@ typedef enum roc_packet_encoding {
     ROC_PACKET_ENCODING_AVP_L16_STEREO = 2
 } roc_packet_encoding;
 
+/** Forward Error Correction encoding.
+ * Each FEC encoding is caompatible with specific protocols.
+ */
+typedef enum roc_fec_encoding {
+    /** No FEC encoding.
+     * Compatible with \ref ROC_PROTO_RTP protocol.
+     */
+    ROC_FEC_ENCODING_DISABLE = -1,
+
+    /** Default FEC encoding.
+     * Current default is \ref ROC_FEC_ENCODING_RS8M.
+     */
+    ROC_FEC_ENCODING_DEFAULT = 0,
+
+    /** Reed-Solomon FEC encoding (RFC 6865) with m=8.
+     * Good for small block sizes (below 256 packets).
+     * Compatible with \ref ROC_PROTO_RTP_RS8M_SOURCE and \ref ROC_PROTO_RS8M_REPAIR
+     * protocols for source and repair endpoints.
+     */
+    ROC_FEC_ENCODING_RS8M = 1,
+
+    /** LDPC-Staircase FEC encoding (RFC 6816).
+     * Good for large block sizes (above 1024 packets).
+     * Compatible with \ref ROC_PROTO_RTP_LDPC_SOURCE and \ref ROC_PROTO_LDPC_REPAIR
+     * protocols for source and repair endpoints.
+     */
+    ROC_FEC_ENCODING_LDPC_STAIRCASE = 2
+} roc_fec_encoding;
+
 /** Sample format.
  * Defines how each sample is represented.
  * Does not define channels layout and sample rate.
@@ -312,6 +312,33 @@ typedef enum roc_channel_layout {
      */
     ROC_CHANNEL_LAYOUT_STEREO = 2
 } roc_channel_layout;
+
+/** Media encoding.
+ * Defines format and parameters of samples encoded in frames or packets.
+ */
+typedef struct roc_media_encoding {
+    /** Sample frequency.
+     * Defines number of samples per channel per second (e.g. 44100).
+     */
+    unsigned int rate;
+
+    /** Sample format.
+     * Defines sample precision and encoding.
+     */
+    roc_format format;
+
+    /** Channel layout.
+     * Defines number of channels and meaning of each channel.
+     */
+    roc_channel_layout channels;
+
+    /** Multi-track channel count.
+     * If \c channels is \c ROC_CHANNEL_LAYOUT_MULTITRACK, defines
+     * number of channels (which represent independent "tracks").
+     * For other channel layouts should be zero.
+     */
+    unsigned int tracks;
+} roc_media_encoding;
 
 /** Clock source for sender or receiver. */
 typedef enum roc_clock_source {
@@ -407,21 +434,12 @@ typedef struct roc_context_config {
  * \see roc_sender
  */
 typedef struct roc_sender_config {
-    /** The sample format in the frames passed to sender.
+    /** The encoding used in frames passed to sender.
+     * Frame encoding defines sample format, channel layout, and sample rate in local
+     * frames created by user and passed to sender.
      * Should be set (zero value is invalid).
      */
-    roc_format frame_format;
-
-    /** The channel layout in the frames passed to sender.
-     * Should be set (zero value is invalid).
-     */
-    roc_channel_layout frame_channels;
-
-    /** The rate of the samples in the frames passed to sender.
-     * Number of samples per channel per second (e.g. 44100).
-     * Should be set (zero value is invalid).
-     */
-    unsigned int frame_sample_rate;
+    roc_media_encoding frame_encoding;
 
     /** The encoding used for packets produced by sender.
      * Packet encoding defines sample format, channel layout, and sample rate in network
@@ -498,21 +516,12 @@ typedef struct roc_sender_config {
  * \see roc_receiver
  */
 typedef struct roc_receiver_config {
-    /** The sample format in the frames returned by received.
+    /** The encoding used in frames returned by receiver.
+     * Frame encoding defines sample format, channel layout, and sample rate in local
+     * frames returned by receiver to user.
      * Should be set (zero value is invalid).
      */
-    roc_format frame_format;
-
-    /** The channel layout in the frames returned by received.
-     * Should be set (zero value is invalid).
-     */
-    roc_channel_layout frame_channels;
-
-    /** The rate of the samples in the frames returned by received.
-     * Number of samples per channel per second.
-     * Should be set (zero value is invalid).
-     */
-    unsigned int frame_sample_rate;
+    roc_media_encoding frame_encoding;
 
     /** Clock source to use.
      * Defines whether read operation will be blocking or non-blocking.
