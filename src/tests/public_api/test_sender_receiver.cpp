@@ -8,6 +8,7 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc/config.h"
 #include "test_helpers/context.h"
 #include "test_helpers/proxy.h"
 #include "test_helpers/receiver.h"
@@ -35,19 +36,25 @@ TEST_GROUP(sender_receiver) {
     float sample_step;
 
     void setup() {
-        roc_log_set_level((roc_log_level)core::Logger::instance().get_level());
+        roc_log_set_level(core::Logger::instance().get_level() == LogNone
+                              ? ROC_LOG_NONE
+                              : ROC_LOG_DEBUG);
         sample_step = 1. / 32768.;
     }
 
-    void init_config(unsigned flags) {
+    void init_config(unsigned flags, unsigned frame_chans, unsigned packet_chans) {
         memset(&sender_conf, 0, sizeof(sender_conf));
         sender_conf.frame_format = ROC_FORMAT_PCM_FLOAT32;
-        sender_conf.frame_channels = ROC_CHANNEL_LAYOUT_STEREO;
+        sender_conf.frame_channels = frame_chans == 1 ? ROC_CHANNEL_LAYOUT_MONO
+            : frame_chans == 2                        ? ROC_CHANNEL_LAYOUT_STEREO
+                                                      : (roc_channel_layout)0;
         sender_conf.frame_sample_rate = test::SampleRate;
+        sender_conf.packet_encoding = packet_chans == 1 ? ROC_PACKET_ENCODING_AVP_L16_MONO
+            : packet_chans == 2 ? ROC_PACKET_ENCODING_AVP_L16_STEREO
+                                : (roc_packet_encoding)0;
+        sender_conf.packet_length = test::PacketSamples * 1000000000ul / test::SampleRate;
         sender_conf.clock_source = ROC_CLOCK_INTERNAL;
         sender_conf.resampler_profile = ROC_RESAMPLER_PROFILE_DISABLE;
-        sender_conf.packet_length =
-            test::PacketSamples * 1000000000ul / (test::SampleRate * test::NumChans);
         if (flags & test::FlagRS8M) {
             sender_conf.fec_encoding = ROC_FEC_ENCODING_RS8M;
             sender_conf.fec_block_source_packets = test::SourcePackets;
@@ -62,7 +69,9 @@ TEST_GROUP(sender_receiver) {
 
         memset(&receiver_conf, 0, sizeof(receiver_conf));
         receiver_conf.frame_format = ROC_FORMAT_PCM_FLOAT32;
-        receiver_conf.frame_channels = ROC_CHANNEL_LAYOUT_STEREO;
+        receiver_conf.frame_channels = frame_chans == 1 ? ROC_CHANNEL_LAYOUT_MONO
+            : frame_chans == 2                          ? ROC_CHANNEL_LAYOUT_STEREO
+                                                        : (roc_channel_layout)0;
         receiver_conf.frame_sample_rate = test::SampleRate;
         receiver_conf.clock_source = ROC_CLOCK_INTERNAL;
         receiver_conf.resampler_profile = ROC_RESAMPLER_PROFILE_DISABLE;
@@ -81,17 +90,19 @@ TEST_GROUP(sender_receiver) {
 };
 
 TEST(sender_receiver, bare_rtp) {
-    enum { Flags = 0 };
+    enum { Flags = 0, FrameChans = 2, PacketChans = 2 };
 
-    init_config(Flags);
+    init_config(Flags, FrameChans, PacketChans);
 
     test::Context context;
 
-    test::Receiver receiver(context, receiver_conf, sample_step, test::FrameSamples);
+    test::Receiver receiver(context, receiver_conf, sample_step, FrameChans,
+                            test::FrameSamples);
 
     receiver.bind(Flags);
 
-    test::Sender sender(context, sender_conf, sample_step, test::FrameSamples);
+    test::Sender sender(context, sender_conf, sample_step, FrameChans,
+                        test::FrameSamples);
 
     sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
 
@@ -106,17 +117,19 @@ TEST(sender_receiver, rs8m_without_losses) {
         return;
     }
 
-    enum { Flags = test::FlagRS8M };
+    enum { Flags = test::FlagRS8M, FrameChans = 2, PacketChans = 2 };
 
-    init_config(Flags);
+    init_config(Flags, FrameChans, PacketChans);
 
     test::Context context;
 
-    test::Receiver receiver(context, receiver_conf, sample_step, test::FrameSamples);
+    test::Receiver receiver(context, receiver_conf, sample_step, FrameChans,
+                            test::FrameSamples);
 
     receiver.bind(Flags);
 
-    test::Sender sender(context, sender_conf, sample_step, test::FrameSamples);
+    test::Sender sender(context, sender_conf, sample_step, FrameChans,
+                        test::FrameSamples);
 
     sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
 
@@ -131,13 +144,14 @@ TEST(sender_receiver, rs8m_with_losses) {
         return;
     }
 
-    enum { Flags = test::FlagRS8M };
+    enum { Flags = test::FlagRS8M, FrameChans = 2, PacketChans = 2 };
 
-    init_config(Flags);
+    init_config(Flags, FrameChans, PacketChans);
 
     test::Context context;
 
-    test::Receiver receiver(context, receiver_conf, sample_step, test::FrameSamples);
+    test::Receiver receiver(context, receiver_conf, sample_step, FrameChans,
+                            test::FrameSamples);
 
     receiver.bind(Flags);
 
@@ -145,7 +159,8 @@ TEST(sender_receiver, rs8m_with_losses) {
                       test::SourcePackets, test::RepairPackets, allocator, packet_factory,
                       byte_buffer_factory);
 
-    test::Sender sender(context, sender_conf, sample_step, test::FrameSamples);
+    test::Sender sender(context, sender_conf, sample_step, FrameChans,
+                        test::FrameSamples);
 
     sender.connect(proxy.source_endpoint(), proxy.repair_endpoint(), Flags);
 
@@ -160,17 +175,19 @@ TEST(sender_receiver, ldpc_without_losses) {
         return;
     }
 
-    enum { Flags = test::FlagLDPC };
+    enum { Flags = test::FlagLDPC, FrameChans = 2, PacketChans = 2 };
 
-    init_config(Flags);
+    init_config(Flags, FrameChans, PacketChans);
 
     test::Context context;
 
-    test::Receiver receiver(context, receiver_conf, sample_step, test::FrameSamples);
+    test::Receiver receiver(context, receiver_conf, sample_step, FrameChans,
+                            test::FrameSamples);
 
     receiver.bind(Flags);
 
-    test::Sender sender(context, sender_conf, sample_step, test::FrameSamples);
+    test::Sender sender(context, sender_conf, sample_step, FrameChans,
+                        test::FrameSamples);
 
     sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
 
@@ -185,13 +202,14 @@ TEST(sender_receiver, ldpc_with_losses) {
         return;
     }
 
-    enum { Flags = test::FlagLDPC };
+    enum { Flags = test::FlagLDPC, FrameChans = 2, PacketChans = 2 };
 
-    init_config(Flags);
+    init_config(Flags, FrameChans, PacketChans);
 
     test::Context context;
 
-    test::Receiver receiver(context, receiver_conf, sample_step, test::FrameSamples);
+    test::Receiver receiver(context, receiver_conf, sample_step, FrameChans,
+                            test::FrameSamples);
 
     receiver.bind(Flags);
 
@@ -199,7 +217,8 @@ TEST(sender_receiver, ldpc_with_losses) {
                       test::SourcePackets, test::RepairPackets, allocator, packet_factory,
                       byte_buffer_factory);
 
-    test::Sender sender(context, sender_conf, sample_step, test::FrameSamples);
+    test::Sender sender(context, sender_conf, sample_step, FrameChans,
+                        test::FrameSamples);
 
     sender.connect(proxy.source_endpoint(), proxy.repair_endpoint(), Flags);
 
@@ -210,17 +229,19 @@ TEST(sender_receiver, ldpc_with_losses) {
 }
 
 TEST(sender_receiver, separate_context) {
-    enum { Flags = 0 };
+    enum { Flags = 0, FrameChans = 2, PacketChans = 2 };
 
-    init_config(Flags);
+    init_config(Flags, FrameChans, PacketChans);
 
     test::Context recv_context, send_context;
 
-    test::Receiver receiver(recv_context, receiver_conf, sample_step, test::FrameSamples);
+    test::Receiver receiver(recv_context, receiver_conf, sample_step, FrameChans,
+                            test::FrameSamples);
 
     receiver.bind(Flags);
 
-    test::Sender sender(send_context, sender_conf, sample_step, test::FrameSamples);
+    test::Sender sender(send_context, sender_conf, sample_step, FrameChans,
+                        test::FrameSamples);
 
     sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
 
@@ -231,17 +252,19 @@ TEST(sender_receiver, separate_context) {
 }
 
 TEST(sender_receiver, multiple_senders_one_receiver_sequential) {
-    enum { Flags = 0 };
+    enum { Flags = 0, FrameChans = 2, PacketChans = 2 };
 
-    init_config(Flags);
+    init_config(Flags, FrameChans, PacketChans);
 
     test::Context context;
 
-    test::Receiver receiver(context, receiver_conf, sample_step, test::FrameSamples);
+    test::Receiver receiver(context, receiver_conf, sample_step, FrameChans,
+                            test::FrameSamples);
 
     receiver.bind(Flags);
 
-    test::Sender sender_1(context, sender_conf, sample_step, test::FrameSamples);
+    test::Sender sender_1(context, sender_conf, sample_step, FrameChans,
+                          test::FrameSamples);
 
     sender_1.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
 
@@ -252,7 +275,8 @@ TEST(sender_receiver, multiple_senders_one_receiver_sequential) {
 
     receiver.wait_zeros(test::TotalSamples / 2);
 
-    test::Sender sender_2(context, sender_conf, sample_step, test::FrameSamples);
+    test::Sender sender_2(context, sender_conf, sample_step, FrameChans,
+                          test::FrameSamples);
 
     sender_2.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
 
@@ -263,21 +287,24 @@ TEST(sender_receiver, multiple_senders_one_receiver_sequential) {
 }
 
 TEST(sender_receiver, sender_slots) {
-    enum { Flags = 0 };
+    enum { Flags = 0, FrameChans = 2, PacketChans = 2 };
 
-    init_config(Flags);
+    init_config(Flags, FrameChans, PacketChans);
 
     test::Context context;
 
-    test::Receiver receiver_1(context, receiver_conf, sample_step, test::FrameSamples);
+    test::Receiver receiver_1(context, receiver_conf, sample_step, FrameChans,
+                              test::FrameSamples);
 
     receiver_1.bind(Flags);
 
-    test::Receiver receiver_2(context, receiver_conf, sample_step, test::FrameSamples);
+    test::Receiver receiver_2(context, receiver_conf, sample_step, FrameChans,
+                              test::FrameSamples);
 
     receiver_2.bind(Flags);
 
-    test::Sender sender(context, sender_conf, sample_step, test::FrameSamples);
+    test::Sender sender(context, sender_conf, sample_step, FrameChans,
+                        test::FrameSamples);
 
     sender.connect(receiver_1.source_endpoint(), receiver_1.repair_endpoint(), Flags, 0);
     sender.connect(receiver_2.source_endpoint(), receiver_2.repair_endpoint(), Flags, 1);
@@ -294,18 +321,20 @@ TEST(sender_receiver, sender_slots) {
 }
 
 TEST(sender_receiver, receiver_slots_sequential) {
-    enum { Flags = 0 };
+    enum { Flags = 0, FrameChans = 2, PacketChans = 2 };
 
-    init_config(Flags);
+    init_config(Flags, FrameChans, PacketChans);
 
     test::Context context;
 
-    test::Receiver receiver(context, receiver_conf, sample_step, test::FrameSamples);
+    test::Receiver receiver(context, receiver_conf, sample_step, FrameChans,
+                            test::FrameSamples);
 
     receiver.bind(Flags, 0);
     receiver.bind(Flags, 1);
 
-    test::Sender sender_1(context, sender_conf, sample_step, test::FrameSamples);
+    test::Sender sender_1(context, sender_conf, sample_step, FrameChans,
+                          test::FrameSamples);
 
     sender_1.connect(receiver.source_endpoint(0), receiver.repair_endpoint(0), Flags);
 
@@ -316,7 +345,8 @@ TEST(sender_receiver, receiver_slots_sequential) {
 
     receiver.wait_zeros(test::TotalSamples / 2);
 
-    test::Sender sender_2(context, sender_conf, sample_step, test::FrameSamples);
+    test::Sender sender_2(context, sender_conf, sample_step, FrameChans,
+                          test::FrameSamples);
 
     sender_2.connect(receiver.source_endpoint(1), receiver.repair_endpoint(1), Flags);
 
@@ -324,6 +354,75 @@ TEST(sender_receiver, receiver_slots_sequential) {
     receiver.receive();
     sender_2.stop();
     sender_2.join();
+}
+
+TEST(sender_receiver, mono) {
+    enum { Flags = 0, FrameChans = 1, PacketChans = 1 };
+
+    init_config(Flags, FrameChans, PacketChans);
+
+    test::Context context;
+
+    test::Receiver receiver(context, receiver_conf, sample_step, FrameChans,
+                            test::FrameSamples);
+
+    receiver.bind(Flags);
+
+    test::Sender sender(context, sender_conf, sample_step, FrameChans,
+                        test::FrameSamples);
+
+    sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
+
+    sender.start();
+    receiver.receive();
+    sender.stop();
+    sender.join();
+}
+
+TEST(sender_receiver, stereo_mono_stereo) {
+    enum { Flags = 0, FrameChans = 2, PacketChans = 1 };
+
+    init_config(Flags, FrameChans, PacketChans);
+
+    test::Context context;
+
+    test::Receiver receiver(context, receiver_conf, sample_step, FrameChans,
+                            test::FrameSamples);
+
+    receiver.bind(Flags);
+
+    test::Sender sender(context, sender_conf, sample_step, FrameChans,
+                        test::FrameSamples);
+
+    sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
+
+    sender.start();
+    receiver.receive();
+    sender.stop();
+    sender.join();
+}
+
+TEST(sender_receiver, mono_stereo_mono) {
+    enum { Flags = 0, FrameChans = 1, PacketChans = 2 };
+
+    init_config(Flags, FrameChans, PacketChans);
+
+    test::Context context;
+
+    test::Receiver receiver(context, receiver_conf, sample_step, FrameChans,
+                            test::FrameSamples);
+
+    receiver.bind(Flags);
+
+    test::Sender sender(context, sender_conf, sample_step, FrameChans,
+                        test::FrameSamples);
+
+    sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
+
+    sender.start();
+    receiver.receive();
+    sender.stop();
+    sender.join();
 }
 
 } // namespace api

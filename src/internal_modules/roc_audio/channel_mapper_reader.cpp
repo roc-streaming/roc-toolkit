@@ -83,7 +83,7 @@ bool ChannelMapperReader::read(Frame& out_frame) {
     unsigned flags = 0;
 
     while (n_samples != 0) {
-        const size_t n_read = std::max(n_samples, max_batch);
+        const size_t n_read = std::min(n_samples, max_batch);
 
         if (!read_(out_samples, n_read, flags)) {
             return false;
