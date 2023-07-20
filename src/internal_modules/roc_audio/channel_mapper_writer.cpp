@@ -83,7 +83,7 @@ void ChannelMapperWriter::write(Frame& in_frame) {
     const unsigned flags = in_frame.flags();
 
     while (n_samples != 0) {
-        const size_t n_write = std::max(n_samples, max_batch);
+        const size_t n_write = std::min(n_samples, max_batch);
 
         write_(in_samples, n_write, flags);
 
