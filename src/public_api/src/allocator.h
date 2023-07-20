@@ -6,12 +6,17 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "root_allocator.h"
+#ifndef ROC_PUBLIC_API_ALLOCATOR_H_
+#define ROC_PUBLIC_API_ALLOCATOR_H_
+
+#include "roc_core/heap_allocator.h"
 
 namespace roc {
 namespace api {
 
-core::HeapAllocator root_allocator;
+extern core::HeapAllocator default_allocator;
 
 } // namespace api
 } // namespace roc
+
+#endif // ROC_PUBLIC_API_ALLOCATOR_H_
