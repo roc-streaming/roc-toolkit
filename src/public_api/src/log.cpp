@@ -8,7 +8,7 @@
 
 #include "roc/log.h"
 
-#include "log_helpers.h"
+#include "adapters.h"
 
 #include "roc_core/log.h"
 #include "roc_core/macro_helpers.h"

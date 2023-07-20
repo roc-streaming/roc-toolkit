@@ -6,11 +6,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_PUBLIC_API_CONFIG_HELPERS_H_
-#define ROC_PUBLIC_API_CONFIG_HELPERS_H_
+#ifndef ROC_PUBLIC_API_ADAPTERS_H_
+#define ROC_PUBLIC_API_ADAPTERS_H_
 
 #include "roc/config.h"
+#include "roc/log.h"
 
+#include "roc_core/log.h"
 #include "roc_peer/context.h"
 #include "roc_peer/receiver.h"
 #include "roc_peer/sender.h"
@@ -47,7 +49,12 @@ bool interface_from_user(address::Interface& out, const roc_interface& in);
 bool proto_from_user(address::Protocol& out, const roc_protocol& in);
 bool proto_to_user(roc_protocol& out, address::Protocol in);
 
+LogLevel log_level_from_user(roc_log_level level);
+roc_log_level log_level_to_user(LogLevel level);
+
+void log_message_to_user(const core::LogMessage& in, roc_log_message& out);
+
 } // namespace api
 } // namespace roc
 
-#endif // ROC_PUBLIC_API_CONFIG_HELPERS_H_
+#endif // ROC_PUBLIC_API_ADAPTERS_H_
