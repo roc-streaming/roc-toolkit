@@ -116,6 +116,7 @@ TEST(depacketizer, one_packet_one_read) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
+    CHECK(dp.is_valid());
 
     queue.write(new_packet(encoder, 0, 0.11f));
 
@@ -128,6 +129,7 @@ TEST(depacketizer, one_packet_multiple_reads) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
+    CHECK(dp.is_valid());
 
     queue.write(new_packet(encoder, 0, 0.11f));
 
@@ -144,6 +146,7 @@ TEST(depacketizer, multiple_packets_one_read) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
+    CHECK(dp.is_valid());
 
     for (packet::timestamp_t n = 0; n < NumPackets; n++) {
         queue.write(new_packet(encoder, n * SamplesPerPacket, 0.11f));
@@ -162,6 +165,7 @@ TEST(depacketizer, multiple_packets_multiple_reads) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
+    CHECK(dp.is_valid());
 
     queue.write(new_packet(encoder, 1 * SamplesPerPacket, 0.11f));
     queue.write(new_packet(encoder, 2 * SamplesPerPacket, 0.22f));
@@ -186,6 +190,7 @@ TEST(depacketizer, timestamp_overflow) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
+    CHECK(dp.is_valid());
 
     const packet::timestamp_t ts2 = 0;
     const packet::timestamp_t ts1 = ts2 - SamplesPerPacket;
@@ -206,6 +211,7 @@ TEST(depacketizer, drop_late_packets) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
+    CHECK(dp.is_valid());
 
     const packet::timestamp_t ts1 = SamplesPerPacket * 2;
     const packet::timestamp_t ts2 = SamplesPerPacket * 1;
@@ -225,6 +231,7 @@ TEST(depacketizer, drop_late_packets_timestamp_overflow) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
+    CHECK(dp.is_valid());
 
     const packet::timestamp_t ts1 = 0;
     const packet::timestamp_t ts2 = ts1 - SamplesPerPacket;
@@ -244,6 +251,7 @@ TEST(depacketizer, zeros_no_packets) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
+    CHECK(dp.is_valid());
 
     expect_output(dp, SamplesPerPacket, 0.00f);
 }
@@ -254,6 +262,7 @@ TEST(depacketizer, zeros_no_next_packet) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
+    CHECK(dp.is_valid());
 
     queue.write(new_packet(encoder, 0, 0.11f));
 
@@ -267,6 +276,7 @@ TEST(depacketizer, zeros_between_packets) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
+    CHECK(dp.is_valid());
 
     queue.write(new_packet(encoder, 1 * SamplesPerPacket, 0.11f));
     queue.write(new_packet(encoder, 3 * SamplesPerPacket, 0.33f));
@@ -282,6 +292,7 @@ TEST(depacketizer, zeros_between_packets_timestamp_overflow) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
+    CHECK(dp.is_valid());
 
     const packet::timestamp_t ts2 = 0;
     const packet::timestamp_t ts1 = ts2 - SamplesPerPacket;
@@ -303,6 +314,7 @@ TEST(depacketizer, zeros_after_packet) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
+    CHECK(dp.is_valid());
 
     queue.write(new_packet(encoder, 0, 0.11f));
 
@@ -327,6 +339,7 @@ TEST(depacketizer, packet_after_zeros) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
+    CHECK(dp.is_valid());
 
     expect_output(dp, SamplesPerPacket, 0.00f);
 
@@ -343,6 +356,7 @@ TEST(depacketizer, overlapping_packets) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
+    CHECK(dp.is_valid());
 
     packet::timestamp_t ts1 = 0;
     packet::timestamp_t ts2 = SamplesPerPacket / 2;
@@ -365,6 +379,7 @@ TEST(depacketizer, frame_flags_incompltete_blank) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
+    CHECK(dp.is_valid());
 
     packet::PacketPtr packets[][PacketsPerFrame] = {
         {
@@ -439,6 +454,7 @@ TEST(depacketizer, frame_flags_drops) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
+    CHECK(dp.is_valid());
 
     packet::PacketPtr packets[] = {
         new_packet(encoder, SamplesPerPacket * 4, 0.11f),
@@ -482,11 +498,12 @@ TEST(depacketizer, timestamp) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, SampleSpecs, false);
+    CHECK(dp.is_valid());
 
     for (size_t n = 0; n < NumPackets * FramesPerPacket; n++) {
         expect_output(dp, SamplesPerFrame, 0.0f);
 
-        CHECK(!dp.started());
+        CHECK(!dp.is_started());
         UNSIGNED_LONGS_EQUAL(0, dp.timestamp());
     }
 
@@ -502,7 +519,7 @@ TEST(depacketizer, timestamp) {
 
         ts += SamplesPerFrame;
 
-        CHECK(dp.started());
+        CHECK(dp.is_started());
         UNSIGNED_LONGS_EQUAL(ts, dp.timestamp());
     }
 
@@ -511,7 +528,7 @@ TEST(depacketizer, timestamp) {
 
         ts += SamplesPerFrame;
 
-        CHECK(dp.started());
+        CHECK(dp.is_started());
         UNSIGNED_LONGS_EQUAL(ts, dp.timestamp());
     }
 }

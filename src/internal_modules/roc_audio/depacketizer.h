@@ -41,11 +41,14 @@ public:
                  const audio::SampleSpec& sample_spec,
                  bool beep);
 
-    //! Read audio frame.
-    virtual bool read(Frame& frame);
+    //! Was depacketizer constructed without errors?
+    bool is_valid() const;
 
     //! Did depacketizer catch first packet?
-    bool started() const;
+    bool is_started() const;
+
+    //! Read audio frame.
+    virtual bool read(Frame& frame);
 
     //! Get next timestamp to be rendered.
     //! @pre
@@ -95,8 +98,10 @@ private:
 
     core::RateLimiter rate_limiter_;
 
+    const bool beep_;
+
     bool first_packet_;
-    bool beep_;
+    bool valid_;
 };
 
 } // namespace audio
