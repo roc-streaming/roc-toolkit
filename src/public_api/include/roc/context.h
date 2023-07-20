@@ -62,6 +62,40 @@ typedef struct roc_context roc_context;
  */
 ROC_API int roc_context_open(const roc_context_config* config, roc_context** result);
 
+/** Register custom encoding.
+ *
+ * Registers \p encoding with given \p encoding_id. Registered encodings complement
+ * built-in encodings defined by \ref roc_packet_encoding enum. Whenever you need to
+ * specify packet encoding, you can use both built-in and registered encodings.
+ *
+ * On sender, you should register custom encoding and set to \c packet_encoding field
+ * of \c roc_sender_config, if you need to force specific encoding of packets, but
+ * built-in set of encodings is not enough.
+ *
+ * On receiver, you should register custom encoding with same id and specification,
+ * if you did so on sender, and you're not using any signaling protocol (like RTSP)
+ * that is capable of automatic exchange of encoding information.
+ *
+ * In case of RTP, encoding id is mapped directly to payload type field (PT).
+ *
+ * **Parameters**
+ *  - \p context should point to an opened context
+ *  - \p encoding_id should be encoding identifier in range [1; 127]
+ *  - \p encoding should point to valid encoding specification
+ *
+ * **Returns**
+ *  - returns zero if encoding was successfully registered
+ *  - returns a negative value if the arguments are invalid
+ *  - returns a negative value if encoding with given identifier already exists
+ *
+ * **Ownership**
+ *  - doesn't take or share the ownership of \p encoding; copies its contents
+ *    to internal encodings table
+ */
+ROC_API int roc_context_register_encoding(roc_context* context,
+                                          int encoding_id,
+                                          const roc_media_encoding* encoding);
+
 /** Close the context.
  *
  * Stops any started background threads, deinitializes and deallocates the context.

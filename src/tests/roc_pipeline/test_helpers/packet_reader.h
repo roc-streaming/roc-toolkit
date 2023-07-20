@@ -36,7 +36,7 @@ public:
                  const address::SocketAddr& dst_addr)
         : reader_(reader)
         , parser_(parser)
-        , payload_decoder_(format_map.find_by_pt(pt)->new_decoder(allocator), allocator)
+        , payload_decoder_(new_decoder_(allocator, format_map, pt), allocator)
         , packet_factory_(packet_factory)
         , dst_addr_(dst_addr)
         , source_(0)
@@ -60,6 +60,15 @@ public:
 
 private:
     enum { MaxSamples = 4096 };
+
+    static audio::IFrameDecoder* new_decoder_(core::IAllocator& allocator,
+                                              rtp::FormatMap& format_map,
+                                              rtp::PayloadType pt) {
+        const rtp::Format* fmt = format_map.find_by_pt(pt);
+        CHECK(fmt);
+
+        return fmt->new_decoder(allocator, fmt->pcm_format, fmt->sample_spec);
+    }
 
     void check_buffer_(const core::Slice<uint8_t> bp,
                        size_t samples_per_packet,

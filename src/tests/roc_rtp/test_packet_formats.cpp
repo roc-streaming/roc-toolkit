@@ -174,8 +174,9 @@ void check_parse_decode(const test::PacketInfo& pi) {
     const Format* format = format_map.find_by_pt(packet->rtp()->payload_type);
     CHECK(format);
 
-    core::ScopedPtr<audio::IFrameDecoder> decoder(format->new_decoder(allocator),
-                                                  allocator);
+    core::ScopedPtr<audio::IFrameDecoder> decoder(
+        format->new_decoder(allocator, format->pcm_format, format->sample_spec),
+        allocator);
     CHECK(decoder);
 
     check_format_info(*format, pi);
@@ -199,8 +200,9 @@ void check_compose_encode(const test::PacketInfo& pi) {
     const Format* format = format_map.find_by_pt(pi.pt);
     CHECK(format);
 
-    core::ScopedPtr<audio::IFrameEncoder> encoder(format->new_encoder(allocator),
-                                                  allocator);
+    core::ScopedPtr<audio::IFrameEncoder> encoder(
+        format->new_encoder(allocator, format->pcm_format, format->sample_spec),
+        allocator);
     CHECK(encoder);
 
     Composer composer(NULL);
