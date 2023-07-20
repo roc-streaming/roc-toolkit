@@ -17,6 +17,11 @@
 namespace roc {
 namespace api {
 
+// Note: ROC_ATTR_NO_SANITIZE_UB is used from *_from_user() functions because we don't
+// want sanitizers to fail us when enums contain arbitrary values; we correctly handle
+// all these cases.
+
+ROC_ATTR_NO_SANITIZE_UB
 bool context_config_from_user(peer::ContextConfig& out, const roc_context_config& in) {
     if (in.max_packet_size != 0) {
         out.max_packet_size = in.max_packet_size;
@@ -29,6 +34,7 @@ bool context_config_from_user(peer::ContextConfig& out, const roc_context_config
     return true;
 }
 
+ROC_ATTR_NO_SANITIZE_UB
 bool sender_config_from_user(peer::Context& context,
                              pipeline::SenderConfig& out,
                              const roc_sender_config& in) {
@@ -62,7 +68,7 @@ bool sender_config_from_user(peer::Context& context,
                     " set roc_sender_config.packet_encoding manually");
             return false;
         }
-        out.payload_type = (rtp::PayloadType)format->payload_type;
+        out.payload_type = format->payload_type;
     }
 
     if (in.packet_length != 0) {
@@ -109,6 +115,7 @@ bool sender_config_from_user(peer::Context& context,
     return true;
 }
 
+ROC_ATTR_NO_SANITIZE_UB
 bool receiver_config_from_user(peer::Context&,
                                pipeline::ReceiverConfig& out,
                                const roc_receiver_config& in) {
@@ -181,6 +188,7 @@ bool receiver_config_from_user(peer::Context&,
     return true;
 }
 
+ROC_ATTR_NO_SANITIZE_UB
 bool sample_spec_from_user(audio::SampleSpec& out, const roc_media_encoding& in) {
     if (in.rate != 0) {
         out.set_sample_rate(in.rate);
@@ -314,18 +322,18 @@ bool resampler_profile_from_user(audio::ResamplerProfile& out, roc_resampler_pro
 }
 
 ROC_ATTR_NO_SANITIZE_UB
-bool packet_encoding_from_user(rtp::PayloadType& out, roc_packet_encoding in) {
+bool packet_encoding_from_user(unsigned& out_pt, roc_packet_encoding in) {
     switch (in) {
     case ROC_PACKET_ENCODING_AVP_L16_MONO:
-        out = rtp::PayloadType_L16_Mono;
+        out_pt = rtp::PayloadType_L16_Mono;
         return true;
 
     case ROC_PACKET_ENCODING_AVP_L16_STEREO:
-        out = rtp::PayloadType_L16_Stereo;
+        out_pt = rtp::PayloadType_L16_Stereo;
         return true;
     }
 
-    out = (rtp::PayloadType)in;
+    out_pt = in;
     return true;
 }
 

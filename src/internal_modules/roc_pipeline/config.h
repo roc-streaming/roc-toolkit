@@ -119,7 +119,7 @@ struct SenderConfig {
     core::nanoseconds_t packet_length;
 
     //! RTP payload type for audio packets.
-    rtp::PayloadType payload_type;
+    unsigned payload_type;
 
     //! Resample frames with a constant ratio.
     bool resampling;
