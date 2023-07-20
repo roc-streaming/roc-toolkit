@@ -76,9 +76,9 @@ TEST_GROUP(watchdog) {
                                packet::timestamp_t broken_playback_timeout) {
         WatchdogConfig config;
         config.no_playback_timeout = no_playback_timeout * core::Second / SampleRate;
-        config.broken_playback_timeout =
+        config.choppy_playback_timeout =
             broken_playback_timeout * core::Second / SampleRate;
-        config.breakage_detection_window = BreakageWindow * core::Second / SampleRate;
+        config.choppy_playback_window = BreakageWindow * core::Second / SampleRate;
         return config;
     }
 

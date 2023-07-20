@@ -45,10 +45,10 @@ section "Options"
     option "np-timeout" - "Session no playback timeout, TIME units"
         string optional
 
-    option "bp-timeout" - "Session broken playback timeout, TIME units"
+    option "cp-timeout" - "Session choppy playback timeout, TIME units"
         string optional
 
-    option "bp-window" - "Session breakage detection window, TIME units"
+    option "cp-window" - "Session choppy playback detection window, TIME units"
         string optional
 
     option "packet-limit" - "Maximum packet size, in bytes"

@@ -32,7 +32,7 @@ struct WatchdogConfig {
     //!  broken clients. Set to zero to disable.
     core::nanoseconds_t no_playback_timeout;
 
-    //! Timeout for frequent breakages, nanoseconds.
+    //! Timeout for frequent shuttering, nanoseconds.
     //! @remarks
     //!  Maximum allowed period during which every drop detection window overlaps with
     //!  at least one frame which caused packet drops and with at least one frame which
@@ -40,11 +40,12 @@ struct WatchdogConfig {
     //!  terminated. This mechanism allows to detect the vicious circle when all client
     //!  packets are a bit late and we are constantly dropping them producing unpleasant
     //!  noise. Set to zero to disable.
-    core::nanoseconds_t broken_playback_timeout;
+    core::nanoseconds_t choppy_playback_timeout;
 
-    //! Breakage detection window, nanoseconds.
-    //! @see broken_playback_timeout.
-    core::nanoseconds_t breakage_detection_window;
+    //! Window size of detecting shuttering, nanoseconds.
+    //! @see
+    //!  choppy_playback_timeout
+    core::nanoseconds_t choppy_playback_window;
 
     //! Frame status window size for logging, number of frames.
     //! @remarks
@@ -54,14 +55,14 @@ struct WatchdogConfig {
     //! Initialize config with default values.
     WatchdogConfig()
         : no_playback_timeout(2 * core::Second)
-        , broken_playback_timeout(2 * core::Second)
-        , breakage_detection_window(300 * core::Millisecond)
+        , choppy_playback_timeout(2 * core::Second)
+        , choppy_playback_window(300 * core::Millisecond)
         , frame_status_window(20) {
     }
 
-    //! Automatically deduce breakage_playback_window from broken_playback_timeout.
-    void deduce_breakage_playback_window(core::nanoseconds_t broken_timeout) {
-        breakage_detection_window = std::min(300 * core::Millisecond, broken_timeout / 4);
+    //! Automatically deduce choppy_playback_window from choppy_playback_timeout.
+    void deduce_choppy_playback_window(core::nanoseconds_t timeout) {
+        choppy_playback_window = std::min(300 * core::Millisecond, timeout / 4);
     }
 };
 
