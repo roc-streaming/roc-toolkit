@@ -65,7 +65,7 @@ const char* StringList::nextof(const char* str) const {
 }
 
 void StringList::clear() {
-    data_.resize(0);
+    data_.clear();
     back_ = NULL;
     size_ = 0;
 }

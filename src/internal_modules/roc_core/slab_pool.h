@@ -13,6 +13,7 @@
 #define ROC_CORE_SLAB_POOL_H_
 
 #include "roc_core/aligned_storage.h"
+#include "roc_core/attributes.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slab_pool_impl.h"
@@ -72,7 +73,7 @@ public:
     //! Reserve memory for given number of objects.
     //! @returns
     //!  false if allocation failed.
-    bool reserve(size_t n_objects) {
+    ROC_ATTR_NODISCARD bool reserve(size_t n_objects) {
         return impl_.reserve(n_objects);
     }
 

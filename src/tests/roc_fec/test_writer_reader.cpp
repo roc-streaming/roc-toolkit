@@ -2180,7 +2180,9 @@ TEST(writer_reader, resize_block_middle) {
 
         for (size_t n = 0; n < ROC_ARRAY_SIZE(source_sizes); ++n) {
             core::Array<packet::PacketPtr> packets(allocator);
-            packets.resize(prev_sblen);
+            if (!packets.resize(prev_sblen)) {
+                FAIL("resize failed");
+            }
 
             for (size_t i = 0; i < prev_sblen; ++i) {
                 packets[i] = fill_one_packet(wr_sn, prev_psize);

@@ -13,6 +13,7 @@
 #define ROC_CORE_ARRAY_H_
 
 #include "roc_core/aligned_storage.h"
+#include "roc_core/attributes.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/log.h"
 #include "roc_core/noncopyable.h"
@@ -56,7 +57,7 @@ public:
     }
 
     ~Array() {
-        resize(0);
+        clear();
 
         if (data_) {
             deallocate_(data_);
@@ -131,7 +132,7 @@ public:
     //!  Calls grow() to ensure that there is enough space in array.
     //! @returns
     //!  false if the allocation failed
-    bool resize(size_t sz) {
+    ROC_ATTR_NODISCARD bool resize(size_t sz) {
         // Move objects to a new memory region if necessary.
         if (!grow(sz)) {
             return false;
@@ -152,13 +153,20 @@ public:
         return true;
     }
 
+    //! Set array size to zero.
+    //! @remarks
+    //!  Never fails.
+    void clear() {
+        (void)resize(0);
+    }
+
     //! Increase array capacity.
     //! @remarks
     //!  If @p max_sz is greater than the current maximum size, a larger memory
     //!  region is allocated and the array elements are copied there.
     //! @returns
     //!  false if the allocation failed
-    bool grow(size_t max_sz) {
+    ROC_ATTR_NODISCARD bool grow(size_t max_sz) {
         if (max_sz <= max_size_) {
             return true;
         }
@@ -201,7 +209,7 @@ public:
     //!  it reaches some threshold, and then starts growing linearly.
     //! @returns
     //!  false if the allocation failed
-    bool grow_exp(size_t min_size) {
+    ROC_ATTR_NODISCARD bool grow_exp(size_t min_size) {
         if (min_size <= max_size_) {
             return true;
         }

@@ -19,8 +19,8 @@ MediaDescription::MediaDescription(core::IAllocator& allocator)
 }
 
 void MediaDescription::clear() {
-    payload_ids_.resize(0);
-    connection_data_.resize(0);
+    payload_ids_.clear();
+    connection_data_.clear();
     type_ = MediaType_None;
     port_ = 0;
     nb_ports_ = 0;

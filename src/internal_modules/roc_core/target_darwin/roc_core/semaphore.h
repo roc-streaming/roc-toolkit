@@ -14,6 +14,7 @@
 
 #include <mach/semaphore.h>
 
+#include "roc_core/attributes.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
 
@@ -31,7 +32,7 @@ public:
     //! Wait until the counter becomes non-zero, decrement it, and return true.
     //! If deadline expires before the counter becomes non-zero, returns false.
     //! Deadline should be in the same time domain as core::timestamp().
-    bool timed_wait(nanoseconds_t deadline);
+    ROC_ATTR_NODISCARD bool timed_wait(nanoseconds_t deadline);
 
     //! Wait until the counter becomes non-zero, decrement it, and return.
     void wait();

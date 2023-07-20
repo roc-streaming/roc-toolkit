@@ -13,6 +13,7 @@
 #define ROC_CORE_HASHMAP_H_
 
 #include "roc_core/aligned_storage.h"
+#include "roc_core/attributes.h"
 #include "roc_core/hashmap_node.h"
 #include "roc_core/hashsum.h"
 #include "roc_core/iallocator.h"
@@ -250,7 +251,7 @@ public:
     //!  - doesn't computes key hashes
     //!  - makes allocations and deallocations
     //!  - doesn't proceed lazy rehashing
-    bool grow() {
+    ROC_ATTR_NODISCARD bool grow() {
         const size_t cap = buckets_capacity_(n_curr_buckets_);
         roc_panic_if_not(size_ <= cap);
 

@@ -12,6 +12,7 @@
 #ifndef ROC_CORE_SLAB_POOL_IMPL_H_
 #define ROC_CORE_SLAB_POOL_IMPL_H_
 
+#include "roc_core/attributes.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
 #include "roc_core/mutex.h"
@@ -41,7 +42,7 @@ public:
     size_t object_size() const;
 
     //! Reserve memory for given number of objects.
-    bool reserve(size_t n_objects);
+    ROC_ATTR_NODISCARD bool reserve(size_t n_objects);
 
     //! Allocate memory for an object.
     void* allocate();

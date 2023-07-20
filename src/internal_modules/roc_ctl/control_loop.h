@@ -14,6 +14,7 @@
 
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
+#include "roc_core/attributes.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/shared_ptr.h"
@@ -197,7 +198,7 @@ public:
     //! Combines schedule() and wait() calls.
     //! @returns
     //!  true if the task succeeded or false if it failed.
-    bool schedule_and_wait(ControlTask& task);
+    ROC_ATTR_NODISCARD bool schedule_and_wait(ControlTask& task);
 
     //! Try to cancel scheduled task execution, if it's not executed yet.
     //! @see ControlTaskQueue::async_cancel for details.

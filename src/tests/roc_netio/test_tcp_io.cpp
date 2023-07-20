@@ -119,8 +119,8 @@ TEST(tcp_io, one_server_one_client_one_direction) {
     test::ConnReader reader(client_conn_handler, *client_conn, TotalBytes);
     test::ConnWriter writer(server_conn_handler, *server_conn, TotalBytes);
 
-    reader.start();
-    writer.start();
+    CHECK(reader.start());
+    CHECK(writer.start());
 
     reader.join();
     writer.join();
@@ -161,11 +161,11 @@ TEST(tcp_io, one_server_one_client_both_directions) {
     test::ConnReader server_reader(server_conn_handler, *server_conn, TotalBytes);
     test::ConnWriter server_writer(server_conn_handler, *server_conn, TotalBytes);
 
-    client_reader.start();
-    server_reader.start();
+    CHECK(client_reader.start());
+    CHECK(server_reader.start());
 
-    client_writer.start();
-    server_writer.start();
+    CHECK(client_writer.start());
+    CHECK(server_writer.start());
 
     client_writer.join();
     server_writer.join();
@@ -209,8 +209,8 @@ TEST(tcp_io, one_server_one_client_separate_loops) {
     test::ConnReader reader(client_conn_handler, *client_conn, TotalBytes);
     test::ConnWriter writer(server_conn_handler, *server_conn, TotalBytes);
 
-    reader.start();
-    writer.start();
+    CHECK(reader.start());
+    CHECK(writer.start());
 
     reader.join();
     writer.join();
@@ -265,11 +265,11 @@ TEST(tcp_io, one_server_many_clients) {
     test::ConnReader reader2(client_conn_handler2, *client_conn2, TotalBytes);
     test::ConnWriter writer2(server_conn_handler2, *server_conn2, TotalBytes);
 
-    reader1.start();
-    writer1.start();
+    CHECK(reader1.start());
+    CHECK(writer1.start());
 
-    reader2.start();
-    writer2.start();
+    CHECK(reader2.start());
+    CHECK(writer2.start());
 
     reader1.join();
     writer1.join();

@@ -60,11 +60,15 @@ public:
 
     void bind(unsigned flags, roc_slot slot = ROC_SLOT_DEFAULT) {
         if (source_endp_.size() < slot + 1) {
-            source_endp_.resize(slot + 1);
+            if (!source_endp_.resize(slot + 1)) {
+                FAIL("resize failed");
+            }
         }
 
         if (repair_endp_.size() < slot + 1) {
-            repair_endp_.resize(slot + 1);
+            if (!repair_endp_.resize(slot + 1)) {
+                FAIL("resize failed");
+            }
         }
 
         if (flags & FlagRS8M) {
