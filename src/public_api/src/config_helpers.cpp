@@ -78,7 +78,7 @@ bool sender_config_from_user(peer::Context& context,
                     " set roc_sender_config.packet_encoding manually");
             return false;
         }
-        out.payload_type = format->payload_type;
+        out.payload_type = (rtp::PayloadType)format->payload_type;
     }
 
     if (in.packet_length != 0) {

@@ -25,7 +25,7 @@ namespace rtp {
 //! RTP payload format.
 struct Format {
     //! Payload type.
-    PayloadType payload_type;
+    unsigned int payload_type;
 
     //! Sample encoding and endian.
     audio::PcmFormat pcm_format;
@@ -44,10 +44,10 @@ struct Format {
 
     //! Initialize.
     Format()
-        : payload_type()
-        , packet_flags()
-        , new_encoder()
-        , new_decoder() {
+        : payload_type(0)
+        , packet_flags(0)
+        , new_encoder(NULL)
+        , new_decoder(NULL) {
     }
 };
 
