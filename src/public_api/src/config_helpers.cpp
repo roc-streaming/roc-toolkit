@@ -30,33 +30,34 @@ bool context_config_from_user(peer::ContextConfig& out, const roc_context_config
 bool sender_config_from_user(peer::Context& context,
                              pipeline::SenderConfig& out,
                              const roc_sender_config& in) {
-    if (in.frame_format != ROC_FORMAT_PCM_FLOAT32) {
+    if (in.frame_encoding.format != ROC_FORMAT_PCM_FLOAT32) {
         roc_log(LogError,
-                "bad configuration: invalid roc_sender_config.frame_format:"
+                "bad configuration: invalid roc_sender_config.frame_encoding.format:"
                 " should be valid enum value");
         return false;
     }
 
-    if (in.frame_channels != 0) {
+    if (in.frame_encoding.channels != 0) {
         if (!channel_set_from_user(out.input_sample_spec.channel_set(),
-                                   in.frame_channels)) {
-            roc_log(LogError,
-                    "bad configuration: invalid roc_sender_config.frame_channels:"
-                    " should be valid enum value");
+                                   in.frame_encoding.channels)) {
+            roc_log(
+                LogError,
+                "bad configuration: invalid roc_sender_config.frame_encoding.channels:"
+                " should be valid enum value");
             return false;
         }
     } else {
         roc_log(LogError,
-                "bad configuration: invalid roc_sender_config.frame_channels:"
+                "bad configuration: invalid roc_sender_config.frame_encoding.channels:"
                 " should be non-zero");
         return false;
     }
 
-    if (in.frame_sample_rate != 0) {
-        out.input_sample_spec.set_sample_rate(in.frame_sample_rate);
+    if (in.frame_encoding.rate != 0) {
+        out.input_sample_spec.set_sample_rate(in.frame_encoding.rate);
     } else {
         roc_log(LogError,
-                "bad configuration: invalid roc_sender_config.frame_sample_rate:"
+                "bad configuration: invalid roc_sender_config.frame_encoding.rate:"
                 " should be non-zero");
         return false;
     }
@@ -128,16 +129,16 @@ bool sender_config_from_user(peer::Context& context,
 bool receiver_config_from_user(peer::Context&,
                                pipeline::ReceiverConfig& out,
                                const roc_receiver_config& in) {
-    if (in.frame_format != ROC_FORMAT_PCM_FLOAT32) {
+    if (in.frame_encoding.format != ROC_FORMAT_PCM_FLOAT32) {
         roc_log(LogError,
                 "bad configuration: invalid roc_receiver_config.frame_format:"
                 " should be valid enum value");
         return false;
     }
 
-    if (in.frame_channels != 0) {
+    if (in.frame_encoding.channels != 0) {
         if (!channel_set_from_user(out.common.output_sample_spec.channel_set(),
-                                   in.frame_channels)) {
+                                   in.frame_encoding.channels)) {
             roc_log(LogError,
                     "bad configuration: invalid roc_receiver_config.frame_channels:"
                     " should be valid enum value");
@@ -150,8 +151,8 @@ bool receiver_config_from_user(peer::Context&,
         return false;
     }
 
-    if (in.frame_sample_rate != 0) {
-        out.common.output_sample_spec.set_sample_rate(in.frame_sample_rate);
+    if (in.frame_encoding.rate != 0) {
+        out.common.output_sample_spec.set_sample_rate(in.frame_encoding.rate);
     } else {
         roc_log(LogError,
                 "bad configuration: invalid roc_receiver_config.frame_sample_rate:"
