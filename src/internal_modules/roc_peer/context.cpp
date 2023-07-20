@@ -35,19 +35,19 @@ Context::~Context() {
     }
 }
 
-bool Context::valid() {
-    return network_loop_.valid() && control_loop_.valid();
+bool Context::is_valid() {
+    return network_loop_.is_valid() && control_loop_.is_valid();
 }
 
 void Context::incref() {
-    if (!valid()) {
+    if (!is_valid()) {
         roc_panic("context: can't use invalid context");
     }
     ++ref_counter_;
 }
 
 void Context::decref() {
-    if (!valid()) {
+    if (!is_valid()) {
         roc_panic("context: can't use invalid context");
     }
     --ref_counter_;

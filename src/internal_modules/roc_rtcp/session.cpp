@@ -43,7 +43,7 @@ Session::Session(IReceiverHooks* recv_hooks,
     valid_ = true;
 }
 
-bool Session::valid() const {
+bool Session::is_valid() const {
     return valid_;
 }
 

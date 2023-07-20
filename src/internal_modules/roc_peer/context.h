@@ -52,7 +52,7 @@ public:
     ~Context();
 
     //! Check if successfully constructed.
-    bool valid();
+    bool is_valid();
 
     //! Increment context reference counter.
     void incref();

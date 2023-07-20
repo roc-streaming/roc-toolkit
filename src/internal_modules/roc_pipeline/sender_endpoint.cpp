@@ -97,36 +97,36 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto, core::IAllocator& alloca
     composer_ = composer;
 }
 
-bool SenderEndpoint::valid() const {
+bool SenderEndpoint::is_valid() const {
     return composer_;
 }
 
 address::Protocol SenderEndpoint::proto() const {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     return proto_;
 }
 
 packet::IComposer& SenderEndpoint::composer() {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     return *composer_;
 }
 
 packet::IWriter& SenderEndpoint::writer() {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     return *this;
 }
 
 bool SenderEndpoint::has_destination_writer() const {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     return dst_writer_;
 }
 
 void SenderEndpoint::set_destination_writer(packet::IWriter& writer) {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     if (dst_writer_) {
         roc_panic("sender endpoint: attempt to set destination writer twice");
@@ -136,7 +136,7 @@ void SenderEndpoint::set_destination_writer(packet::IWriter& writer) {
 }
 
 void SenderEndpoint::set_destination_address(const address::SocketAddr& addr) {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     if (dst_address_.has_host_port()) {
         roc_panic("sender endpoint: attempt to set destination address twice");
@@ -146,7 +146,7 @@ void SenderEndpoint::set_destination_address(const address::SocketAddr& addr) {
 }
 
 void SenderEndpoint::write(const packet::PacketPtr& packet) {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     if (!dst_writer_) {
         return;

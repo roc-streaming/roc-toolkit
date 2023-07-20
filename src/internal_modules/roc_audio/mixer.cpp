@@ -55,7 +55,7 @@ Mixer::Mixer(core::BufferFactory<sample_t>& buffer_factory,
     valid_ = true;
 }
 
-bool Mixer::valid() const {
+bool Mixer::is_valid() const {
     return valid_;
 }
 

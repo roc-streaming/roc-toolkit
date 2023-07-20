@@ -53,6 +53,9 @@ public:
                const audio::SampleSpec& sample_spec,
                unsigned int payload_type);
 
+    //! Check if object is successfully constructed.
+    bool is_valid() const;
+
     //! Write audio frame.
     virtual void write(Frame& frame);
 
@@ -60,9 +63,6 @@ public:
     //! @remarks
     //!  Packet is padded to match fixed size.
     void flush();
-
-    //! Check if object is successfully constructed.
-    bool valid() const;
 
 private:
     bool begin_packet_();

@@ -58,13 +58,13 @@ public:
            core::IAllocator& allocator);
 
     //! Check if object is successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Did decoder catch block beginning?
-    bool started() const;
+    bool is_started() const;
 
     //! Is decoder alive?
-    bool alive() const;
+    bool is_alive() const;
 
     //! Read packet.
     //! @remarks

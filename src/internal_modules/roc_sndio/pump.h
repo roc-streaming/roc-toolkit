@@ -50,7 +50,7 @@ public:
          Mode mode);
 
     //! Check if the object was successfulyl constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Run the pump.
     //! @remarks

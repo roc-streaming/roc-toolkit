@@ -86,7 +86,7 @@ int main(int argc, char** argv) {
     core::HeapAllocator heap_allocator;
 
     peer::Context context(context_config, heap_allocator);
-    if (!context.valid()) {
+    if (!context.is_valid()) {
         roc_log(LogError, "can't initialize peer context");
         return 1;
     }
@@ -267,7 +267,7 @@ int main(int argc, char** argv) {
         input_source->sample_spec().sample_rate());
 
     peer::Sender sender(context, sender_config);
-    if (!sender.valid()) {
+    if (!sender.is_valid()) {
         roc_log(LogError, "can't create sender peer");
         return 1;
     }
@@ -363,7 +363,7 @@ int main(int argc, char** argv) {
     sndio::Pump pump(context.sample_buffer_factory(), *input_source, NULL, sender.sink(),
                      sender_config.internal_frame_length, sender_config.input_sample_spec,
                      sndio::Pump::ModePermanent);
-    if (!pump.valid()) {
+    if (!pump.is_valid()) {
         roc_log(LogError, "can't create audio pump");
         return 1;
     }

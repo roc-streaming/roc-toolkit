@@ -41,7 +41,7 @@ public:
     ~BuiltinResampler();
 
     //! Check if object is successfully constructed.
-    virtual bool valid() const;
+    virtual bool is_valid() const;
 
     //! Set new resample factor.
     //! @remarks

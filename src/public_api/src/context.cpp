@@ -47,7 +47,7 @@ int roc_context_open(const roc_context_config* config, roc_context** result) {
         return -1;
     }
 
-    if (!imp_context->valid()) {
+    if (!imp_context->is_valid()) {
         roc_log(LogError, "roc_context_open(): can't initialize context");
         return -1;
     }

@@ -35,7 +35,7 @@ public:
     ~Receiver();
 
     //! Check if successfully constructed.
-    bool valid();
+    bool is_valid();
 
     //! Set multicast interface address for given endpoint type.
     bool set_multicast_group(size_t slot_index, address::Interface iface, const char* ip);

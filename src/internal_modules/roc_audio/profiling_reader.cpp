@@ -22,6 +22,10 @@ ProfilingReader::ProfilingReader(IFrameReader& reader,
     , reader_(reader) {
 }
 
+bool ProfilingReader::is_valid() const {
+    return profiler_.is_valid();
+}
+
 bool ProfilingReader::read(Frame& frame) {
     bool ret;
     const core::nanoseconds_t elapsed = read_(frame, ret);
@@ -38,10 +42,6 @@ core::nanoseconds_t ProfilingReader::read_(Frame& frame, bool& ret) {
     ret = reader_.read(frame);
 
     return core::timestamp(core::ClockMonotonic) - start;
-}
-
-bool ProfilingReader::valid() const {
-    return profiler_.valid();
 }
 
 } // namespace audio

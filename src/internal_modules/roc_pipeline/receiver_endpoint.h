@@ -51,7 +51,7 @@ public:
                      core::IAllocator& allocator);
 
     //! Check if the port pipeline was succefully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Get protocol.
     address::Protocol proto() const;

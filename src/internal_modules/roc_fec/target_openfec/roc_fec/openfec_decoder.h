@@ -47,7 +47,7 @@ public:
     virtual ~OpenfecDecoder();
 
     //! Check if object is successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Get the maximum number of encoding symbols for the scheme being used.
     virtual size_t max_block_length() const;

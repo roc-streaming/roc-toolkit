@@ -60,7 +60,7 @@ TEST(pump, write_read) {
 
         Pump pump(buffer_factory, mock_source, NULL, sox_sink, BufDuration, SampleSpecs,
                   Pump::ModeOneshot);
-        CHECK(pump.valid());
+        CHECK(pump.is_valid());
         CHECK(pump.run());
 
         CHECK(mock_source.num_returned() >= NumSamples - BufSize);
@@ -73,7 +73,7 @@ TEST(pump, write_read) {
 
     Pump pump(buffer_factory, sox_source, NULL, mock_writer, BufDuration, SampleSpecs,
               Pump::ModePermanent);
-    CHECK(pump.valid());
+    CHECK(pump.is_valid());
     CHECK(pump.run());
 
     mock_writer.check(0, mock_source.num_returned());
@@ -93,7 +93,7 @@ TEST(pump, write_overwrite_read) {
 
         Pump pump(buffer_factory, mock_source, NULL, sox_sink, BufDuration, SampleSpecs,
                   Pump::ModeOneshot);
-        CHECK(pump.valid());
+        CHECK(pump.is_valid());
         CHECK(pump.run());
     }
 
@@ -108,7 +108,7 @@ TEST(pump, write_overwrite_read) {
 
         Pump pump(buffer_factory, mock_source, NULL, sox_sink, BufDuration, SampleSpecs,
                   Pump::ModeOneshot);
-        CHECK(pump.valid());
+        CHECK(pump.is_valid());
         CHECK(pump.run());
     }
 
@@ -122,7 +122,7 @@ TEST(pump, write_overwrite_read) {
 
     Pump pump(buffer_factory, sox_source, NULL, mock_writer, BufDuration, SampleSpecs,
               Pump::ModePermanent);
-    CHECK(pump.valid());
+    CHECK(pump.is_valid());
     CHECK(pump.run());
 
     mock_writer.check(num_returned1, num_returned2);

@@ -30,7 +30,7 @@ ResamplerWriter::ResamplerWriter(IFrameWriter& writer,
         roc_panic("resampler writer: input and output channel sets should be same");
     }
 
-    if (!resampler_.valid()) {
+    if (!resampler_.is_valid()) {
         return;
     }
 
@@ -54,19 +54,19 @@ ResamplerWriter::ResamplerWriter(IFrameWriter& writer,
     valid_ = true;
 }
 
-bool ResamplerWriter::valid() const {
+bool ResamplerWriter::is_valid() const {
     return valid_;
 }
 
 bool ResamplerWriter::set_scaling(float multiplier) {
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     return resampler_.set_scaling(in_sample_spec_.sample_rate(),
                                   out_sample_spec_.sample_rate(), multiplier);
 }
 
 void ResamplerWriter::write(Frame& frame) {
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     size_t frame_pos = 0;
 

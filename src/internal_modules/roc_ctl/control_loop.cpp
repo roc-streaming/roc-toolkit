@@ -98,8 +98,8 @@ ControlLoop::ControlLoop(netio::NetworkLoop& network_loop, core::IAllocator& all
 ControlLoop::~ControlLoop() {
 }
 
-bool ControlLoop::valid() const {
-    return task_queue_.valid();
+bool ControlLoop::is_valid() const {
+    return task_queue_.is_valid();
 }
 
 void ControlLoop::schedule(ControlTask& task, IControlTaskCompleter* completer) {

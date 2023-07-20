@@ -195,7 +195,7 @@ public:
     virtual ~NetworkLoop();
 
     //! Check if the object was successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Get number of receiver and sender ports.
     size_t num_ports() const;

@@ -64,7 +64,7 @@ ChannelMapperReader::ChannelMapperReader(IFrameReader& reader,
     valid_ = true;
 }
 
-bool ChannelMapperReader::valid() const {
+bool ChannelMapperReader::is_valid() const {
     return valid_;
 }
 

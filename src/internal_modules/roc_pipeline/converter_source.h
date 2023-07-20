@@ -41,7 +41,7 @@ public:
                     core::IAllocator& allocator);
 
     //! Check if the pipeline was successfully constructed.
-    bool valid();
+    bool is_valid();
 
     //! Get device type.
     virtual sndio::DeviceType type() const;

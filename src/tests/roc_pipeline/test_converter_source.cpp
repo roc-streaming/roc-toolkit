@@ -63,7 +63,7 @@ TEST(converter_source, state) {
     test::MockSource mock_source;
 
     ConverterSource converter(config, mock_source, sample_buffer_factory, allocator);
-    CHECK(converter.valid());
+    CHECK(converter.is_valid());
 
     mock_source.set_state(sndio::DeviceState_Active);
     CHECK(converter.state() == sndio::DeviceState_Active);
@@ -76,7 +76,7 @@ TEST(converter_source, pause_resume) {
     test::MockSource mock_source;
 
     ConverterSource converter(config, mock_source, sample_buffer_factory, allocator);
-    CHECK(converter.valid());
+    CHECK(converter.is_valid());
 
     converter.pause();
     CHECK(converter.state() == sndio::DeviceState_Paused);
@@ -91,7 +91,7 @@ TEST(converter_source, pause_restart) {
     test::MockSource mock_source;
 
     ConverterSource converter(config, mock_source, sample_buffer_factory, allocator);
-    CHECK(converter.valid());
+    CHECK(converter.is_valid());
 
     converter.pause();
     CHECK(converter.state() == sndio::DeviceState_Paused);
@@ -107,7 +107,7 @@ TEST(converter_source, read) {
     mock_source.add(ManyFrames * SamplesPerFrame * NumCh);
 
     ConverterSource converter(config, mock_source, sample_buffer_factory, allocator);
-    CHECK(converter.valid());
+    CHECK(converter.is_valid());
 
     test::FrameReader frame_reader(converter, sample_buffer_factory);
 
@@ -122,7 +122,7 @@ TEST(converter_source, eof) {
     test::MockSource mock_source;
 
     ConverterSource converter(config, mock_source, sample_buffer_factory, allocator);
-    CHECK(converter.valid());
+    CHECK(converter.is_valid());
 
     core::Slice<audio::sample_t> samples = sample_buffer_factory.new_buffer();
     samples.reslice(0, SamplesPerFrame * NumCh);
@@ -141,7 +141,7 @@ TEST(converter_source, frame_size_small) {
     mock_source.add(ManyFrames * SamplesPerSmallFrame * NumCh);
 
     ConverterSource converter(config, mock_source, sample_buffer_factory, allocator);
-    CHECK(converter.valid());
+    CHECK(converter.is_valid());
 
     test::FrameReader frame_reader(converter, sample_buffer_factory);
 
@@ -159,7 +159,7 @@ TEST(converter_source, frame_size_large) {
     mock_source.add(ManyFrames * SamplesPerLargeFrame * NumCh);
 
     ConverterSource converter(config, mock_source, sample_buffer_factory, allocator);
-    CHECK(converter.valid());
+    CHECK(converter.is_valid());
 
     test::FrameReader frame_reader(converter, sample_buffer_factory);
 

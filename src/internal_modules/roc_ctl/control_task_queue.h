@@ -135,7 +135,7 @@ public:
     virtual ~ControlTaskQueue();
 
     //! Check if the object was successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Enqueue a task for asynchronous execution as soon as possible.
     //!

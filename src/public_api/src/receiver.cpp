@@ -53,7 +53,7 @@ int roc_receiver_open(roc_context* context,
         return -1;
     }
 
-    if (!imp_receiver->valid()) {
+    if (!imp_receiver->is_valid()) {
         roc_log(LogError, "roc_receiver_open(): can't initialize receiver");
         return -1;
     }

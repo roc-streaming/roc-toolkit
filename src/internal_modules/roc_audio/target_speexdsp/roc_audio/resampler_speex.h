@@ -44,7 +44,7 @@ public:
     ~SpeexResampler();
 
     //! Check if object is successfully constructed.
-    virtual bool valid() const;
+    virtual bool is_valid() const;
 
     //! Set new resample factor.
     virtual bool set_scaling(size_t input_rate, size_t output_rate, float multiplier);

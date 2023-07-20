@@ -53,7 +53,7 @@ int roc_sender_open(roc_context* context,
         return -1;
     }
 
-    if (!imp_sender->valid()) {
+    if (!imp_sender->is_valid()) {
         roc_log(LogError, "roc_sender_open(): can't initialize sender");
         return -1;
     }

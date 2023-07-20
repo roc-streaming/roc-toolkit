@@ -89,7 +89,7 @@ LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
     valid_ = true;
 }
 
-bool LatencyMonitor::valid() const {
+bool LatencyMonitor::is_valid() const {
     return valid_;
 }
 

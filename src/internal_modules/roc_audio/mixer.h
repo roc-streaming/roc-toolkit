@@ -52,7 +52,7 @@ public:
           const audio::SampleSpec& sample_spec);
 
     //! Check if the mixer was succefully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Add input reader.
     void add_input(IFrameReader&);

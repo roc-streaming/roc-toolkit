@@ -36,7 +36,7 @@ public:
     SenderEndpoint(address::Protocol proto, core::IAllocator& allocator);
 
     //! Check if pipeline was succefully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Get protocol.
     address::Protocol proto() const;

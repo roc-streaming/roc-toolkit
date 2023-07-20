@@ -134,7 +134,7 @@ void ReceiverSessionGroup::route_control_packet_(const packet::PacketPtr& packet
             this, NULL, NULL, *rtcp_composer_, packet_factory_, byte_buffer_factory_));
     }
 
-    if (!rtcp_session_->valid()) {
+    if (!rtcp_session_->is_valid()) {
         return;
     }
 
@@ -177,7 +177,7 @@ void ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
         sess_config, receiver_config_.common, src_address, format_map_, packet_factory_,
         byte_buffer_factory_, sample_buffer_factory_, allocator_);
 
-    if (!sess || !sess->valid()) {
+    if (!sess || !sess->is_valid()) {
         roc_log(LogError, "session group: can't create session, initialization failed");
         return;
     }

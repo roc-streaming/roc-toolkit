@@ -78,7 +78,7 @@ public:
              core::IAllocator& allocator);
 
     //! Check if object is successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Read audio frame.
     //! @remarks

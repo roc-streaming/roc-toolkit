@@ -61,7 +61,7 @@ TEST_GROUP(converter_sink) {
 
 TEST(converter_sink, null) {
     ConverterSink converter(config, NULL, sample_buffer_factory, allocator);
-    CHECK(converter.valid());
+    CHECK(converter.is_valid());
 
     test::FrameWriter frame_writer(converter, sample_buffer_factory);
 
@@ -74,7 +74,7 @@ TEST(converter_sink, write) {
     test::FrameChecker frame_checker;
 
     ConverterSink converter(config, &frame_checker, sample_buffer_factory, allocator);
-    CHECK(converter.valid());
+    CHECK(converter.is_valid());
 
     test::FrameWriter frame_writer(converter, sample_buffer_factory);
 
@@ -92,7 +92,7 @@ TEST(converter_sink, frame_size_small) {
     test::FrameChecker frame_checker;
 
     ConverterSink converter(config, &frame_checker, sample_buffer_factory, allocator);
-    CHECK(converter.valid());
+    CHECK(converter.is_valid());
 
     test::FrameWriter frame_writer(converter, sample_buffer_factory);
 
@@ -110,7 +110,7 @@ TEST(converter_sink, frame_size_large) {
     test::FrameChecker frame_checker;
 
     ConverterSink converter(config, &frame_checker, sample_buffer_factory, allocator);
-    CHECK(converter.valid());
+    CHECK(converter.is_valid());
 
     test::FrameWriter frame_writer(converter, sample_buffer_factory);
 
