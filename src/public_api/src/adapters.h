@@ -52,7 +52,7 @@ bool proto_to_user(roc_protocol& out, address::Protocol in);
 LogLevel log_level_from_user(roc_log_level level);
 roc_log_level log_level_to_user(LogLevel level);
 
-void log_message_to_user(const core::LogMessage& in, roc_log_message& out);
+void log_message_to_user(roc_log_message& out, const core::LogMessage& in);
 
 } // namespace api
 } // namespace roc
