@@ -8,7 +8,7 @@
 
 #include "roc/sender.h"
 
-#include "config_helpers.h"
+#include "adapters.h"
 
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"

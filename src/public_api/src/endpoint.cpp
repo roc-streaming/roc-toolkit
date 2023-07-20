@@ -8,8 +8,8 @@
 
 #include "roc/endpoint.h"
 
-#include "config_helpers.h"
-#include "root_allocator.h"
+#include "adapters.h"
+#include "allocator.h"
 
 #include "roc_address/endpoint_uri.h"
 #include "roc_core/log.h"
@@ -23,7 +23,7 @@ int roc_endpoint_allocate(roc_endpoint** result) {
     }
 
     address::EndpointUri* imp_endpoint =
-        new (api::root_allocator) address::EndpointUri(api::root_allocator);
+        new (api::default_allocator) address::EndpointUri(api::default_allocator);
 
     if (!imp_endpoint) {
         roc_log(LogError, "roc_endpoint_allocate(): can't allocate endpoint");
@@ -289,7 +289,7 @@ int roc_endpoint_deallocate(roc_endpoint* endpoint) {
     }
 
     address::EndpointUri& imp_endpoint = *(address::EndpointUri*)endpoint;
-    api::root_allocator.destroy_object(imp_endpoint);
+    api::default_allocator.destroy_object(imp_endpoint);
 
     return 0;
 }

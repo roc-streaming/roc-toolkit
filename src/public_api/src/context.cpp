@@ -8,8 +8,8 @@
 
 #include "roc/context.h"
 
-#include "config_helpers.h"
-#include "root_allocator.h"
+#include "adapters.h"
+#include "allocator.h"
 
 #include "roc_audio/pcm_decoder.h"
 #include "roc_audio/pcm_encoder.h"
@@ -39,8 +39,8 @@ int roc_context_open(const roc_context_config* config, roc_context** result) {
     }
 
     core::ScopedPtr<peer::Context> imp_context(
-        new (api::root_allocator) peer::Context(imp_config, api::root_allocator),
-        api::root_allocator);
+        new (api::default_allocator) peer::Context(imp_config, api::default_allocator),
+        api::default_allocator);
 
     if (!imp_context) {
         roc_log(LogError, "roc_context_open(): can't allocate context");
@@ -121,7 +121,7 @@ int roc_context_close(roc_context* context) {
         return -1;
     }
 
-    api::root_allocator.destroy_object(*imp_context);
+    api::default_allocator.destroy_object(*imp_context);
 
     roc_log(LogInfo, "roc_context_close(): closed context");
 
