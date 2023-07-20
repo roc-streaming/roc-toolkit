@@ -16,6 +16,7 @@
 
 #include "roc_address/socket_addr.h"
 #include "roc_core/atomic.h"
+#include "roc_core/attributes.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/list.h"
@@ -211,7 +212,7 @@ public:
     //! Should not be called from schedule() callback.
     //! @returns
     //!  true if the task succeeded or false if it failed.
-    bool schedule_and_wait(NetworkTask& task);
+    ROC_ATTR_NODISCARD bool schedule_and_wait(NetworkTask& task);
 
 private:
     static void task_sem_cb_(uv_async_t* handle);

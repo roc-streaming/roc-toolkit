@@ -669,7 +669,7 @@ TEST(task_pipeline, schedule_when_another_schedule_is_running_then_process_tasks
     // AsyncTaskScheduler will call schedule() from another thread
     // it will call process_task_imp() and block
     AsyncTaskScheduler ts(pipeline, task1, &completer);
-    ts.start();
+    CHECK(ts.start());
 
     // wait until background schedule() is blocked
     pipeline.wait_blocked();
@@ -751,7 +751,7 @@ TEST(task_pipeline, schedule_when_process_tasks_is_running) {
     // AsyncTaskScheduler will call schedule() from another thread
     // it will call process_task_imp() and block
     AsyncTaskScheduler ts(pipeline, task1, &completer1);
-    ts.start();
+    CHECK(ts.start());
 
     // wait until background schedule() is blocked
     pipeline.wait_blocked();
@@ -800,7 +800,7 @@ TEST(task_pipeline, schedule_when_process_tasks_is_running) {
     // AsyncTaskProcessor will call process_tasks() from another thread
     // it will call process_task_imp() and block
     AsyncTaskProcessor tp(pipeline);
-    tp.start();
+    CHECK(tp.start());
 
     // wait until background process_tasks() is blocked
     pipeline.wait_blocked();
@@ -857,7 +857,7 @@ TEST(task_pipeline, schedule_when_processing_frame) {
 
     // AsyncFrameWriter will call process_subframes_and_tasks() from background thread
     AsyncFrameWriter fw(pipeline, frame);
-    fw.start();
+    CHECK(fw.start());
 
     // wait until background process_subframes_and_tasks() is blocked
     pipeline.wait_blocked();
@@ -917,7 +917,7 @@ TEST(task_pipeline, process_tasks_when_schedule_is_running) {
     // AsyncTaskScheduler will call schedule() from another thread
     // it will call process_task_imp() and block
     AsyncTaskScheduler ts(pipeline, task, &completer);
-    ts.start();
+    CHECK(ts.start());
 
     // wait until background schedule() is blocked
     pipeline.wait_blocked();
@@ -969,7 +969,7 @@ TEST(task_pipeline, process_tasks_when_another_process_tasks_is_running) {
     // AsyncTaskScheduler will call schedule() from another thread
     // it will call process_task_imp() and block
     AsyncTaskScheduler ts(pipeline, task1, &completer1);
-    ts.start();
+    CHECK(ts.start());
 
     // wait until background schedule() is blocked
     pipeline.wait_blocked();
@@ -1018,7 +1018,7 @@ TEST(task_pipeline, process_tasks_when_another_process_tasks_is_running) {
     // AsyncTaskProcessor will call process_tasks() from another thread
     // it will call process_task_imp() and block
     AsyncTaskProcessor tp(pipeline);
-    tp.start();
+    CHECK(tp.start());
 
     // wait until background process_tasks() is blocked
     pipeline.wait_blocked();
@@ -1069,7 +1069,7 @@ TEST(task_pipeline, process_tasks_when_processing_frame) {
 
     // AsyncFrameWriter will call process_subframes_and_tasks() from background thread
     AsyncFrameWriter fw(pipeline, frame);
-    fw.start();
+    CHECK(fw.start());
 
     // wait until background process_subframes_and_tasks() is blocked
     pipeline.wait_blocked();
@@ -1141,7 +1141,7 @@ TEST(task_pipeline, process_tasks_interframe_deadline) {
     // AsyncTaskScheduler will call schedule() from another thread
     // it will call process_task_imp() and block
     AsyncTaskScheduler ts(pipeline, task1, &completer1);
-    ts.start();
+    CHECK(ts.start());
 
     // wait until background schedule() is blocked
     pipeline.wait_blocked();
@@ -1193,7 +1193,7 @@ TEST(task_pipeline, process_tasks_interframe_deadline) {
     // AsyncTaskProcessor will call process_tasks() from another thread
     // it will call process_task_imp() and block
     AsyncTaskProcessor tp(pipeline);
-    tp.start();
+    CHECK(tp.start());
 
     // wait until background process_tasks() is blocked
     pipeline.wait_blocked();
@@ -1285,7 +1285,7 @@ TEST(task_pipeline, process_frame_when_schedule_is_running) {
     // AsyncTaskScheduler will call schedule() from another thread
     // it will call process_task_imp() and block
     AsyncTaskScheduler ts(pipeline, task1, &completer);
-    ts.start();
+    CHECK(ts.start());
 
     // wait until background schedule() is blocked
     pipeline.wait_blocked();
@@ -1323,7 +1323,7 @@ TEST(task_pipeline, process_frame_when_schedule_is_running) {
     // AsyncFrameWriter will call process_subframes_and_tasks() from background thread
     // it will be blocked until process_task_imp() and schedule() return
     AsyncFrameWriter fw(pipeline, frame);
-    fw.start();
+    CHECK(fw.start());
 
     // wait until background process_subframes_and_tasks() marks that a frame is pending
     while (pipeline.num_pending_frames() == 0) {
@@ -1396,7 +1396,7 @@ TEST(task_pipeline, process_frame_when_process_tasks_is_running) {
     // AsyncTaskScheduler will call schedule() from another thread
     // it will call process_task_imp() and block
     AsyncTaskScheduler ts(pipeline, task1, &completer1);
-    ts.start();
+    CHECK(ts.start());
 
     // wait until background schedule() is blocked
     pipeline.wait_blocked();
@@ -1445,7 +1445,7 @@ TEST(task_pipeline, process_frame_when_process_tasks_is_running) {
     // AsyncTaskProcessor will call process_tasks() from another thread
     // it will call process_task_imp() and block
     AsyncTaskProcessor tp(pipeline);
-    tp.start();
+    CHECK(tp.start());
 
     // wait until background process_tasks() is blocked
     pipeline.wait_blocked();
@@ -1475,7 +1475,7 @@ TEST(task_pipeline, process_frame_when_process_tasks_is_running) {
 
     // AsyncFrameWriter will call process_subframes_and_tasks() from background thread
     AsyncFrameWriter fw(pipeline, frame);
-    fw.start();
+    CHECK(fw.start());
 
     // wait until background process_subframes_and_tasks() marks that a frame is pending
     while (pipeline.num_pending_frames() == 0) {
@@ -1547,7 +1547,7 @@ TEST(task_pipeline, process_frame_max_samples_between_frames) {
 
     // AsyncFrameWriter will call process_subframes_and_tasks() from background thread
     AsyncFrameWriter fw(pipeline, frame);
-    fw.start();
+    CHECK(fw.start());
 
     // wait until background process_subframes_and_tasks() is blocked
     pipeline.wait_blocked();
@@ -1708,7 +1708,7 @@ TEST(task_pipeline, process_frame_min_samples_between_frames) {
 
     // call process_subframes_and_tasks(frame1) from background thread
     AsyncFrameWriter fw(pipeline, frame1);
-    fw.start();
+    CHECK(fw.start());
 
     // wait until background process_subframes_and_tasks() is blocked
     pipeline.wait_blocked();
@@ -1844,7 +1844,7 @@ TEST(task_pipeline, schedule_from_completion_completer_called_from_process_tasks
     // AsyncTaskScheduler will call schedule() from another thread
     // it will call process_task_imp() and block
     AsyncTaskScheduler ts(pipeline, task1, &completer1);
-    ts.start();
+    CHECK(ts.start());
 
     // wait until background schedule() is blocked
     pipeline.wait_blocked();
@@ -1917,7 +1917,7 @@ TEST(task_pipeline, schedule_from_completion_completer_called_from_process_frame
     // AsyncTaskScheduler will call schedule() from another thread
     // it will call process_task_imp() and block
     AsyncTaskScheduler ts(pipeline, task1, &completer1);
-    ts.start();
+    CHECK(ts.start());
 
     // wait until background schedule() is blocked
     pipeline.wait_blocked();
@@ -1995,7 +1995,7 @@ TEST(task_pipeline, schedule_and_wait_until_process_tasks_called) {
     // AsyncTaskScheduler will call schedule() from another thread
     // it will call process_task_imp() and block
     AsyncTaskScheduler ts1(pipeline, task1, &completer);
-    ts1.start();
+    CHECK(ts1.start());
 
     // wait until background schedule() is blocked
     pipeline.wait_blocked();
@@ -2044,12 +2044,12 @@ TEST(task_pipeline, schedule_and_wait_until_process_tasks_called) {
     // it shouldn't call schedule_task_processing() because it's already called
     TestPipeline::Task task3a;
     AsyncTaskScheduler ts3a(pipeline, task3a, NULL);
-    ts3a.start();
+    CHECK(ts3a.start());
 
     // another concurrent schedule_and_wait()
     TestPipeline::Task task3b;
     AsyncTaskScheduler ts3b(pipeline, task3b, NULL);
-    ts3b.start();
+    CHECK(ts3b.start());
 
     while (pipeline.num_pending_tasks() != 3) {
         core::sleep_for(core::ClockMonotonic, core::Microsecond * 10);
@@ -2103,7 +2103,7 @@ TEST(task_pipeline, schedule_and_wait_until_process_frame_called) {
     // AsyncTaskScheduler will call schedule() from another thread
     // it will call process_task_imp() and block
     AsyncTaskScheduler ts1(pipeline, task1, &completer);
-    ts1.start();
+    CHECK(ts1.start());
 
     // wait until background schedule() is blocked
     pipeline.wait_blocked();
@@ -2152,12 +2152,12 @@ TEST(task_pipeline, schedule_and_wait_until_process_frame_called) {
     // it shouldn't call schedule_task_processing() because it's already called
     TestPipeline::Task task3a;
     AsyncTaskScheduler ts3a(pipeline, task3a, NULL);
-    ts3a.start();
+    CHECK(ts3a.start());
 
     // another concurrent schedule_and_wait()
     TestPipeline::Task task3b;
     AsyncTaskScheduler ts3b(pipeline, task3b, NULL);
-    ts3b.start();
+    CHECK(ts3b.start());
 
     while (pipeline.num_pending_tasks() != 3) {
         core::sleep_for(core::ClockMonotonic, core::Microsecond * 10);

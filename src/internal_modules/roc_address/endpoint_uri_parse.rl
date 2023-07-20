@@ -56,7 +56,7 @@ bool parse_endpoint_uri_imp(const char* str, EndpointUri::Subset subset, Endpoin
             }
             strncpy(scheme, start_p, p - start_p);
 
-            const ProtocolAttrs* attrs = ProtocolMap::instance().find_proto_by_scheme(scheme);
+            const ProtocolAttrs* attrs = ProtocolMap::instance().find_by_scheme(scheme);
             if (!attrs) {
                 roc_log(LogError, "parse endpoint uri: invalid protocol");
                 return false;

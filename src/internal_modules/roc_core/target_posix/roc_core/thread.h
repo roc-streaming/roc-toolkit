@@ -15,6 +15,7 @@
 #include <pthread.h>
 
 #include "roc_core/atomic.h"
+#include "roc_core/attributes.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
@@ -32,17 +33,17 @@ public:
     static uint64_t get_tid();
 
     //! Raise current thread priority to realtime.
-    static bool set_realtime();
+    ROC_ATTR_NODISCARD static bool enable_realtime();
 
     //! Check if thread was started and can be joined.
     //! @returns
     //!  true if start() was called and join() was not called yet.
-    bool joinable() const;
+    bool is_joinable() const;
 
     //! Start thread.
     //! @remarks
     //!  Executes run() in new thread.
-    bool start();
+    ROC_ATTR_NODISCARD bool start();
 
     //! Join thread.
     //! @remarks

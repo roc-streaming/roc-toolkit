@@ -85,7 +85,7 @@ ProtocolMap::ProtocolMap() {
     }
 }
 
-const ProtocolAttrs* ProtocolMap::find_proto_by_id(Protocol proto) const {
+const ProtocolAttrs* ProtocolMap::find_by_id(Protocol proto) const {
     if ((int)proto < 0 || (int)proto >= MaxProtos) {
         return NULL;
     }
@@ -101,7 +101,7 @@ const ProtocolAttrs* ProtocolMap::find_proto_by_id(Protocol proto) const {
     return &protos_[proto];
 }
 
-const ProtocolAttrs* ProtocolMap::find_proto_by_scheme(const char* scheme) const {
+const ProtocolAttrs* ProtocolMap::find_by_scheme(const char* scheme) const {
     for (int proto = 0; proto < MaxProtos; proto++) {
         if (protos_[proto].protocol == Proto_None) {
             continue;

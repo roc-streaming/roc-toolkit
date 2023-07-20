@@ -134,7 +134,7 @@ int main(int argc, char** argv) {
         }
 
         const address::ProtocolAttrs* source_attrs =
-            address::ProtocolMap::instance().find_proto_by_id(source_endpoint.proto());
+            address::ProtocolMap::instance().find_by_id(source_endpoint.proto());
         if (source_attrs) {
             sender_config.fec_encoder.scheme = source_attrs->fec_scheme;
         }

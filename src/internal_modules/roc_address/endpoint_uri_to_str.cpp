@@ -20,7 +20,10 @@ endpoint_uri_to_str::endpoint_uri_to_str(const EndpointUri& u) {
         return;
     }
 
-    format_endpoint_uri(u, EndpointUri::Subset_Full, b);
+    if (!format_endpoint_uri(u, EndpointUri::Subset_Full, b)) {
+        b.assign_str("<bad>");
+        return;
+    }
 }
 
 } // namespace address

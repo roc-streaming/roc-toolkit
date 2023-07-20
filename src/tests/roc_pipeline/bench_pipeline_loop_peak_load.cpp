@@ -466,7 +466,7 @@ void BM_PipelinePeakLoad_PreciseSchedOff(benchmark::State& state) {
 
     FrameWriter frame_wr(pipeline, stats, state);
 
-    task_thr.start();
+    (void)task_thr.start();
 
     frame_wr.run();
 
@@ -496,7 +496,7 @@ void BM_PipelinePeakLoad_PreciseSchedOn(benchmark::State& state) {
 
     FrameWriter frame_wr(pipeline, stats, state);
 
-    task_thr.start();
+    (void)task_thr.start();
 
     frame_wr.run();
 

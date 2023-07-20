@@ -12,6 +12,7 @@
 #ifndef ROC_CORE_PARSE_DURATION_H_
 #define ROC_CORE_PARSE_DURATION_H_
 
+#include "roc_core/attributes.h"
 #include "roc_core/time.h"
 
 namespace roc {
@@ -30,7 +31,7 @@ namespace core {
 //!
 //! @returns
 //!  false if string can't be parsed.
-bool parse_duration(const char* string, nanoseconds_t& result);
+ROC_ATTR_NODISCARD bool parse_duration(const char* string, nanoseconds_t& result);
 
 } // namespace core
 } // namespace roc

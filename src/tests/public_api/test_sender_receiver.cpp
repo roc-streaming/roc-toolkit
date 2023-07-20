@@ -147,7 +147,7 @@ TEST(sender_receiver, bare_rtp) {
 
     sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
 
-    sender.start();
+    CHECK(sender.start());
     receiver.receive();
     sender.stop();
     sender.join();
@@ -174,7 +174,7 @@ TEST(sender_receiver, rs8m_without_losses) {
 
     sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
 
-    sender.start();
+    CHECK(sender.start());
     receiver.receive();
     sender.stop();
     sender.join();
@@ -205,7 +205,7 @@ TEST(sender_receiver, rs8m_with_losses) {
 
     sender.connect(proxy.source_endpoint(), proxy.repair_endpoint(), Flags);
 
-    sender.start();
+    CHECK(sender.start());
     receiver.receive();
     sender.stop();
     sender.join();
@@ -232,7 +232,7 @@ TEST(sender_receiver, ldpc_without_losses) {
 
     sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
 
-    sender.start();
+    CHECK(sender.start());
     receiver.receive();
     sender.stop();
     sender.join();
@@ -263,7 +263,7 @@ TEST(sender_receiver, ldpc_with_losses) {
 
     sender.connect(proxy.source_endpoint(), proxy.repair_endpoint(), Flags);
 
-    sender.start();
+    CHECK(sender.start());
     receiver.receive();
     sender.stop();
     sender.join();
@@ -286,7 +286,7 @@ TEST(sender_receiver, separate_context) {
 
     sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
 
-    sender.start();
+    CHECK(sender.start());
     receiver.receive();
     sender.stop();
     sender.join();
@@ -309,7 +309,7 @@ TEST(sender_receiver, multiple_senders_one_receiver_sequential) {
 
     sender_1.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
 
-    sender_1.start();
+    CHECK(sender_1.start());
     receiver.receive();
     sender_1.stop();
     sender_1.join();
@@ -321,7 +321,7 @@ TEST(sender_receiver, multiple_senders_one_receiver_sequential) {
 
     sender_2.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
 
-    sender_2.start();
+    CHECK(sender_2.start());
     receiver.receive();
     sender_2.stop();
     sender_2.join();
@@ -350,10 +350,10 @@ TEST(sender_receiver, sender_slots) {
     sender.connect(receiver_1.source_endpoint(), receiver_1.repair_endpoint(), Flags, 0);
     sender.connect(receiver_2.source_endpoint(), receiver_2.repair_endpoint(), Flags, 1);
 
-    sender.start();
+    CHECK(sender.start());
 
-    receiver_1.start();
-    receiver_2.start();
+    CHECK(receiver_1.start());
+    CHECK(receiver_2.start());
     receiver_2.join();
     receiver_1.join();
 
@@ -379,7 +379,7 @@ TEST(sender_receiver, receiver_slots_sequential) {
 
     sender_1.connect(receiver.source_endpoint(0), receiver.repair_endpoint(0), Flags);
 
-    sender_1.start();
+    CHECK(sender_1.start());
     receiver.receive();
     sender_1.stop();
     sender_1.join();
@@ -391,7 +391,7 @@ TEST(sender_receiver, receiver_slots_sequential) {
 
     sender_2.connect(receiver.source_endpoint(1), receiver.repair_endpoint(1), Flags);
 
-    sender_2.start();
+    CHECK(sender_2.start());
     receiver.receive();
     sender_2.stop();
     sender_2.join();
@@ -414,7 +414,7 @@ TEST(sender_receiver, mono) {
 
     sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
 
-    sender.start();
+    CHECK(sender.start());
     receiver.receive();
     sender.stop();
     sender.join();
@@ -437,7 +437,7 @@ TEST(sender_receiver, stereo_mono_stereo) {
 
     sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
 
-    sender.start();
+    CHECK(sender.start());
     receiver.receive();
     sender.stop();
     sender.join();
@@ -460,7 +460,7 @@ TEST(sender_receiver, mono_stereo_mono) {
 
     sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
 
-    sender.start();
+    CHECK(sender.start());
     receiver.receive();
     sender.stop();
     sender.join();
@@ -490,7 +490,7 @@ TEST(sender_receiver, multitrack) {
 
     sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
 
-    sender.start();
+    CHECK(sender.start());
     receiver.receive();
     sender.stop();
     sender.join();
@@ -521,7 +521,7 @@ TEST(sender_receiver, multitrack_separate_contexts) {
 
     sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), Flags);
 
-    sender.start();
+    CHECK(sender.start());
     receiver.receive();
     sender.stop();
     sender.join();

@@ -13,6 +13,7 @@
 #define ROC_SDP_CONNECTION_DATA_H_
 
 #include "roc_address/socket_addr.h"
+#include "roc_core/attributes.h"
 #include "roc_core/list_node.h"
 #include "roc_core/log.h"
 #include "roc_core/string_buffer.h"
@@ -31,7 +32,7 @@ public:
     void clear();
 
     //! Check and set connection address from a string.
-    bool
+    ROC_ATTR_NODISCARD bool
     set_connection_address(address::AddrFamily addrtype, const char* str, size_t str_len);
 
     //! The SocketAddr of the ConnectionData.

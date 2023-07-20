@@ -16,6 +16,7 @@
 #include <pthread.h>
 
 #include "roc_core/atomic.h"
+#include "roc_core/attributes.h"
 #include "roc_core/errno_to_str.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
@@ -39,7 +40,7 @@ public:
     ~Mutex();
 
     //! Try to lock the mutex.
-    inline bool try_lock() const {
+    ROC_ATTR_NODISCARD inline bool try_lock() const {
         const int err = pthread_mutex_trylock(&mutex_);
 
         if (err != 0 && err != EBUSY && err != EAGAIN) {

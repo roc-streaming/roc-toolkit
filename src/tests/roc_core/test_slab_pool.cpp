@@ -346,7 +346,7 @@ TEST(slab_pool, max_size_reserve) {
         TestAllocator allocator;
         SlabPool<> pool(allocator, ObjectSize, true, 0, 0);
 
-        pool.reserve(10);
+        CHECK(pool.reserve(10));
 
         LONGS_EQUAL(1, allocator.num_allocations());
     }
@@ -355,7 +355,7 @@ TEST(slab_pool, max_size_reserve) {
         TestAllocator allocator;
         SlabPool<> pool(allocator, ObjectSize, true, 0, ObjectSize * 100);
 
-        pool.reserve(10);
+        CHECK(pool.reserve(10));
 
         LONGS_EQUAL(1, allocator.num_allocations());
     }
@@ -364,7 +364,7 @@ TEST(slab_pool, max_size_reserve) {
         TestAllocator allocator;
         SlabPool<> pool(allocator, ObjectSize, true, 0, ObjectSize * 2);
 
-        pool.reserve(10);
+        CHECK(pool.reserve(10));
 
         LONGS_EQUAL(10, allocator.num_allocations());
     }

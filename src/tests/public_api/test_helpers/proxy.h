@@ -52,17 +52,18 @@ public:
         int repair_port = 0;
         CHECK(roc_endpoint_get_port(receiver_repair_endp, &repair_port) == 0);
 
-        receiver_source_endp_.set_host_port(address::Family_IPv4, "127.0.0.1",
-                                            source_port);
-        receiver_repair_endp_.set_host_port(address::Family_IPv4, "127.0.0.1",
-                                            repair_port);
+        CHECK(receiver_source_endp_.set_host_port(address::Family_IPv4, "127.0.0.1",
+                                                  source_port));
+        CHECK(receiver_repair_endp_.set_host_port(address::Family_IPv4, "127.0.0.1",
+                                                  repair_port));
 
-        send_config_.bind_address.set_host_port(address::Family_IPv4, "127.0.0.1", 0);
+        CHECK(send_config_.bind_address.set_host_port(address::Family_IPv4, "127.0.0.1",
+                                                      0));
 
-        recv_source_config_.bind_address.set_host_port(address::Family_IPv4, "127.0.0.1",
-                                                       0);
-        recv_repair_config_.bind_address.set_host_port(address::Family_IPv4, "127.0.0.1",
-                                                       0);
+        CHECK(recv_source_config_.bind_address.set_host_port(address::Family_IPv4,
+                                                             "127.0.0.1", 0));
+        CHECK(recv_repair_config_.bind_address.set_host_port(address::Family_IPv4,
+                                                             "127.0.0.1", 0));
 
         netio::NetworkLoop::PortHandle send_port = NULL;
 

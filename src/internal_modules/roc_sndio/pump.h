@@ -15,6 +15,7 @@
 #include "roc_audio/sample.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/atomic.h"
+#include "roc_core/attributes.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
@@ -56,7 +57,7 @@ public:
     //! @remarks
     //!  Run until the stop() is called or, if oneshot mode is enabled,
     //!  the source becomes inactive.
-    bool run();
+    ROC_ATTR_NODISCARD bool run();
 
     //! Stop the pump.
     //! @remarks

@@ -128,7 +128,7 @@ BENCHMARK_DEFINE_F(BM_MpscQueue, TryPopFront)(benchmark::State& state) {
 
     for (int n = 0; n < num_push_threads_arg; n++) {
         push_threads[n].init(*this, n);
-        push_threads[n].start();
+        (void)push_threads[n].start();
     }
 
     MpscQueue<Object, NoOwnership>& queue = get_queue();
@@ -162,7 +162,7 @@ BENCHMARK_DEFINE_F(BM_MpscQueue, PopFront)(benchmark::State& state) {
 
     for (int n = 0; n < num_push_threads_arg; n++) {
         push_threads[n].init(*this, n);
-        push_threads[n].start();
+        (void)push_threads[n].start();
     }
 
     MpscQueue<Object, NoOwnership>& queue = get_queue();

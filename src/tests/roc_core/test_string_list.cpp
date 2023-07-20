@@ -76,8 +76,8 @@ TEST(string_list, copy) {
 
     const char* src = "foo";
 
-    sl.push_back(src);
-    sl.push_back(src);
+    CHECK(sl.push_back(src));
+    CHECK(sl.push_back(src));
 
     LONGS_EQUAL(2, sl.size());
 

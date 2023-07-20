@@ -16,6 +16,7 @@
 #include "roc_audio/freq_estimator.h"
 #include "roc_audio/resampler_reader.h"
 #include "roc_audio/sample_spec.h"
+#include "roc_core/attributes.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/rate_limiter.h"
 #include "roc_core/time.h"
@@ -94,7 +95,7 @@ public:
     //! Update latency.
     //! @returns
     //!  false if the session should be terminated.
-    bool update(packet::timestamp_t time);
+    ROC_ATTR_NODISCARD bool update(packet::timestamp_t time);
 
 private:
     bool get_latency_(packet::timestamp_diff_t& latency) const;

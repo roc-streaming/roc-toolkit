@@ -16,6 +16,7 @@
 #include <pthread.h>
 
 #include "roc_core/atomic.h"
+#include "roc_core/attributes.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
@@ -34,7 +35,7 @@ public:
 
     //! Wait with timeout.
     //! @returns false if timeout expired.
-    bool timed_wait(nanoseconds_t timeout) const;
+    ROC_ATTR_NODISCARD bool timed_wait(nanoseconds_t timeout) const;
 
     //! Wait.
     void wait() const;

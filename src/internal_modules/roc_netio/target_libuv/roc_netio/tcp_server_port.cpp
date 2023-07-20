@@ -268,7 +268,9 @@ AsyncOperationStatus TcpServerPort::async_close_server_() {
 
 void TcpServerPort::finish_closing_server_() {
     if (socket_ != SocketInvalid) {
-        socket_close(socket_);
+        if (!socket_close(socket_)) {
+            roc_log(LogError, "tcp server: %s: failed to close socket", descriptor());
+        }
         socket_ = SocketInvalid;
     }
 }

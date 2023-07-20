@@ -13,6 +13,7 @@
 #define ROC_CORE_STRING_LIST_H_
 
 #include "roc_core/array.h"
+#include "roc_core/attributes.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
@@ -55,28 +56,28 @@ public:
     //!  Reallocates memory if necessary.
     //! @returns
     //!  false if allocation failed.
-    bool push_back(const char* str);
+    ROC_ATTR_NODISCARD bool push_back(const char* str);
 
     //! Append string from a range to the list.
     //! @remarks
     //!  Reallocates memory if necessary.
     //! @returns
     //!  false if allocation failed.
-    bool push_back(const char* str_begin, const char* str_end);
+    ROC_ATTR_NODISCARD bool push_back(const char* str_begin, const char* str_end);
 
     //! Append string to the list if it's not in the list already.
     //! @remarks
     //!  Reallocates memory if necessary.
     //! @returns
     //!  false if allocation failed.
-    bool push_unique(const char* str);
+    ROC_ATTR_NODISCARD bool push_unique(const char* str);
 
     //! Append string from a range to the list if it's not in the list already.
     //! @remarks
     //!  Reallocates memory if necessary.
     //! @returns
     //!  false if allocation failed.
-    bool push_unique(const char* str_begin, const char* str_end);
+    ROC_ATTR_NODISCARD bool push_unique(const char* str_begin, const char* str_end);
 
 private:
     enum { MinCapacity = 128 };

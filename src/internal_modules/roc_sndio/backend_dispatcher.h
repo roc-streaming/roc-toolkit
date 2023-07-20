@@ -14,6 +14,7 @@
 
 #include "roc_address/io_uri.h"
 #include "roc_audio/sample_spec.h"
+#include "roc_core/attributes.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/singleton.h"
@@ -52,10 +53,10 @@ public:
                          core::IAllocator& allocator);
 
     //! Get all supported URI schemes.
-    bool get_supported_schemes(core::StringList&);
+    ROC_ATTR_NODISCARD bool get_supported_schemes(core::StringList&);
 
     //! Get all supported file formats.
-    bool get_supported_formats(core::StringList&);
+    ROC_ATTR_NODISCARD bool get_supported_formats(core::StringList&);
 
 private:
     IDevice* open_default_device_(DeviceType device_type,

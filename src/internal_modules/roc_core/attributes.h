@@ -23,6 +23,14 @@
 //! Function never returns.
 #define ROC_ATTR_NORETURN HEDLEY_NO_RETURN
 
+#ifdef HEDLEY_GCC_VERSION
+//! Emit warning if function result is not checked.
+#define ROC_ATTR_NODISCARD // GCC is too aggressive for this attribute.
+#else
+//! Emit warning if function result is not checked.
+#define ROC_ATTR_NODISCARD HEDLEY_WARN_UNUSED_RESULT
+#endif
+
 //! Function gets printf-like arguments.
 #define ROC_ATTR_PRINTF(fmt_pos, args_pos) HEDLEY_PRINTF_FORMAT(fmt_pos, args_pos)
 
