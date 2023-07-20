@@ -10,6 +10,7 @@
 
 #include "roc_core/stddefs.h"
 
+#include "roc/config.h"
 #include "roc/receiver.h"
 
 namespace roc {
@@ -495,14 +496,106 @@ TEST(receiver, bad_args) {
 }
 
 TEST(receiver, bad_config) {
-    roc_context_config context_config;
-    memset(&context_config, 0, sizeof(context_config));
+    { // frame_encoding.rate == 0
+        roc_receiver_config receiver_config_copy = receiver_config;
+        receiver_config_copy.frame_encoding.rate = 0;
 
-    // this will prevent correct pipeline construction
-    context_config.max_frame_size = 1;
+        roc_receiver* receiver = NULL;
+        CHECK(roc_receiver_open(context, &receiver_config_copy, &receiver) != 0);
+        CHECK(!receiver);
+    }
+    { // frame_encoding.format == 0
+        roc_receiver_config receiver_config_copy = receiver_config;
+        receiver_config_copy.frame_encoding.format = (roc_format)0;
+
+        roc_receiver* receiver = NULL;
+        CHECK(roc_receiver_open(context, &receiver_config_copy, &receiver) != 0);
+        CHECK(!receiver);
+    }
+    { // frame_encoding.format == 99999
+        roc_receiver_config receiver_config_copy = receiver_config;
+        receiver_config_copy.frame_encoding.format = (roc_format)99999;
+
+        roc_receiver* receiver = NULL;
+        CHECK(roc_receiver_open(context, &receiver_config_copy, &receiver) != 0);
+        CHECK(!receiver);
+    }
+    { // frame_encoding.channels == 0
+        roc_receiver_config receiver_config_copy = receiver_config;
+        receiver_config_copy.frame_encoding.channels = (roc_channel_layout)0;
+
+        roc_receiver* receiver = NULL;
+        CHECK(roc_receiver_open(context, &receiver_config_copy, &receiver) != 0);
+        CHECK(!receiver);
+    }
+    { // frame_encoding.channels == 99999
+        roc_receiver_config receiver_config_copy = receiver_config;
+        receiver_config_copy.frame_encoding.channels = (roc_channel_layout)99999;
+
+        roc_receiver* receiver = NULL;
+        CHECK(roc_receiver_open(context, &receiver_config_copy, &receiver) != 0);
+        CHECK(!receiver);
+    }
+    { // frame_encoding.tracks != 0 (non-multitrack)
+        roc_receiver_config receiver_config_copy = receiver_config;
+        receiver_config_copy.frame_encoding.tracks = 1;
+
+        roc_receiver* receiver = NULL;
+        CHECK(roc_receiver_open(context, &receiver_config_copy, &receiver) != 0);
+        CHECK(!receiver);
+    }
+    { // frame_encoding.tracks == 0 (multitrack)
+        roc_receiver_config receiver_config_copy = receiver_config;
+        receiver_config_copy.frame_encoding.channels = ROC_CHANNEL_LAYOUT_MULTITRACK;
+        receiver_config_copy.frame_encoding.tracks = 0;
+
+        roc_receiver* receiver = NULL;
+        CHECK(roc_receiver_open(context, &receiver_config_copy, &receiver) != 0);
+        CHECK(!receiver);
+    }
+    { // frame_encoding.tracks == 99999 (multitrack)
+        roc_receiver_config receiver_config_copy = receiver_config;
+        receiver_config_copy.frame_encoding.channels = ROC_CHANNEL_LAYOUT_MULTITRACK;
+        receiver_config_copy.frame_encoding.tracks = 99999;
+
+        roc_receiver* receiver = NULL;
+        CHECK(roc_receiver_open(context, &receiver_config_copy, &receiver) != 0);
+        CHECK(!receiver);
+    }
+    { // clock_source == 99999
+        roc_receiver_config receiver_config_copy = receiver_config;
+        receiver_config_copy.clock_source = (roc_clock_source)99999;
+
+        roc_receiver* receiver = NULL;
+        CHECK(roc_receiver_open(context, &receiver_config_copy, &receiver) != 0);
+        CHECK(!receiver);
+    }
+    { // resampler_backend == 99999
+        roc_receiver_config receiver_config_copy = receiver_config;
+        receiver_config_copy.resampler_backend = (roc_resampler_backend)99999;
+
+        roc_receiver* receiver = NULL;
+        CHECK(roc_receiver_open(context, &receiver_config_copy, &receiver) != 0);
+        CHECK(!receiver);
+    }
+    { // resampler_profile == 99999
+        roc_receiver_config receiver_config_copy = receiver_config;
+        receiver_config_copy.resampler_profile = (roc_resampler_profile)99999;
+
+        roc_receiver* receiver = NULL;
+        CHECK(roc_receiver_open(context, &receiver_config_copy, &receiver) != 0);
+        CHECK(!receiver);
+    }
+}
+
+TEST(receiver, bad_context) {
+    // this config will prevent correct pipeline construction
+    roc_context_config bad_context_config;
+    memset(&bad_context_config, 0, sizeof(bad_context_config));
+    bad_context_config.max_frame_size = 1;
 
     roc_context* bad_context = NULL;
-    CHECK(roc_context_open(&context_config, &bad_context) == 0);
+    CHECK(roc_context_open(&bad_context_config, &bad_context) == 0);
     CHECK(bad_context);
 
     roc_receiver* receiver = NULL;
