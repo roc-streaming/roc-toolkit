@@ -14,6 +14,20 @@
 namespace roc {
 namespace core {
 
+namespace {
+
+size_t clamp(size_t value, size_t lower_limit, size_t upper_limit) {
+    if (value < lower_limit && lower_limit != 0) {
+        value = lower_limit;
+    }
+    if (value > upper_limit && upper_limit != 0) {
+        value = upper_limit;
+    }
+    return value;
+}
+
+} // namespace
+
 SlabPoolImpl::SlabPoolImpl(IAllocator& allocator,
                            size_t object_size,
                            bool poison,
@@ -23,9 +37,8 @@ SlabPoolImpl::SlabPoolImpl(IAllocator& allocator,
                            size_t preallocated_size)
     : allocator_(allocator)
     , n_used_slots_(0)
-    , slab_min_bytes_(min_alloc_bytes)
-    , slab_max_bytes_(max_alloc_bytes == 0 ? 0
-                                           : std::max(min_alloc_bytes, max_alloc_bytes))
+    , slab_min_bytes_(clamp(min_alloc_bytes, preallocated_size, max_alloc_bytes))
+    , slab_max_bytes_(max_alloc_bytes)
     , slot_size_(AlignOps::align_max(std::max(sizeof(Slot), object_size)))
     , slab_hdr_size_(AlignOps::align_max(sizeof(Slab)))
     , slab_cur_slots_(slab_min_bytes_ == 0 ? 1 : slots_per_slab_(slab_min_bytes_, true))

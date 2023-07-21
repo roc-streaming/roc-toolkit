@@ -392,7 +392,7 @@ TEST(slab_pool, embedded_capacity) {
             CHECK(pointers[n]);
         }
 
-        LONGS_EQUAL(3, allocator.num_allocations());
+        LONGS_EQUAL(1, allocator.num_allocations());
 
         for (int n = 0; n < 10; n++) {
             pool.deallocate(pointers[n]);
