@@ -22,10 +22,11 @@ namespace test {
 
 class FrameChecker : public sndio::ISink, public core::NonCopyable<> {
 public:
-    FrameChecker()
+    FrameChecker(const audio::SampleSpec& sample_spec)
         : off_(0)
         , n_frames_(0)
-        , n_samples_(0) {
+        , n_samples_(0)
+        , n_chans_(sample_spec.num_channels()) {
     }
 
     virtual sndio::DeviceType type() const {
@@ -63,10 +64,14 @@ public:
     }
 
     virtual void write(audio::Frame& frame) {
-        for (size_t n = 0; n < frame.num_samples(); n++) {
-            DOUBLES_EQUAL((double)frame.samples()[n], (double)nth_sample(off_), Epsilon);
+        CHECK(frame.num_samples() % n_chans_ == 0);
+        for (size_t ns = 0; ns < frame.num_samples() / n_chans_; ns++) {
+            for (size_t nc = 0; nc < n_chans_; nc++) {
+                DOUBLES_EQUAL((double)frame.samples()[ns * n_chans_ + nc],
+                              (double)nth_sample(off_), Epsilon);
+                n_samples_++;
+            }
             off_++;
-            n_samples_++;
         }
         n_frames_++;
     }
@@ -76,7 +81,7 @@ public:
     }
 
     void expect_samples(size_t total) {
-        UNSIGNED_LONGS_EQUAL(total, n_samples_);
+        UNSIGNED_LONGS_EQUAL(total * n_chans_, n_samples_);
     }
 
 private:
@@ -84,6 +89,7 @@ private:
 
     size_t n_frames_;
     size_t n_samples_;
+    size_t n_chans_;
 };
 
 } // namespace test

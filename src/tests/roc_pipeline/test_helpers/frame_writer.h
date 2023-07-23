@@ -30,13 +30,16 @@ public:
         , offset_(0) {
     }
 
-    void write_samples(size_t num_samples) {
+    void write_samples(size_t num_samples, const audio::SampleSpec& sample_spec) {
         core::Slice<audio::sample_t> samples = buffer_factory_.new_buffer();
         CHECK(samples);
-        samples.reslice(0, num_samples);
+        samples.reslice(0, num_samples * sample_spec.num_channels());
 
-        for (size_t n = 0; n < num_samples; n++) {
-            samples.data()[n] = nth_sample(offset_);
+        for (size_t ns = 0; ns < num_samples; ns++) {
+            for (size_t nc = 0; nc < sample_spec.num_channels(); nc++) {
+                samples.data()[ns * sample_spec.num_channels() + nc] =
+                    nth_sample(offset_);
+            }
             offset_++;
         }
 

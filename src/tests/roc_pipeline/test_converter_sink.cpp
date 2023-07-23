@@ -24,17 +24,10 @@ enum {
     MaxBufSize = 1000,
 
     SampleRate = 44100,
-    ChMask = 0x3,
-    NumCh = 2,
 
     SamplesPerFrame = 20,
     ManyFrames = 30
 };
-
-const audio::SampleSpec SampleSpecs(SampleRate, audio::ChannelLayout_Surround, ChMask);
-
-const core::nanoseconds_t MaxBufDuration = MaxBufSize * core::Second
-    / core::nanoseconds_t(SampleSpecs.sample_rate() * SampleSpecs.num_channels());
 
 core::HeapAllocator allocator;
 core::BufferFactory<audio::sample_t> sample_buffer_factory(allocator, MaxBufSize, true);
@@ -42,84 +35,160 @@ core::BufferFactory<audio::sample_t> sample_buffer_factory(allocator, MaxBufSize
 } // namespace
 
 TEST_GROUP(converter_sink) {
-    ConverterConfig config;
+    audio::SampleSpec input_sample_spec;
+    audio::SampleSpec output_sample_spec;
 
-    void setup() {
-        config.input_sample_spec =
-            audio::SampleSpec(SampleRate, audio::ChannelLayout_Surround, ChMask);
+    ConverterConfig make_config() {
+        ConverterConfig config;
 
-        config.output_sample_spec =
-            audio::SampleSpec(SampleRate, audio::ChannelLayout_Surround, ChMask);
+        config.input_sample_spec = input_sample_spec;
+        config.output_sample_spec = output_sample_spec;
 
-        config.internal_frame_length = MaxBufDuration;
+        config.internal_frame_length = MaxBufSize * core::Second
+            / core::nanoseconds_t(SampleRate
+                                  * std::max(input_sample_spec.num_channels(),
+                                             output_sample_spec.num_channels()));
 
         config.resampling = false;
         config.poisoning = true;
         config.profiling = true;
+
+        return config;
+    }
+
+    void init(size_t input_channels, size_t output_channels) {
+        input_sample_spec.set_sample_rate(SampleRate);
+        input_sample_spec.channel_set().set_layout(input_channels == 1
+                                                       ? audio::ChannelLayout_Mono
+                                                       : audio::ChannelLayout_Surround);
+        input_sample_spec.channel_set().set_channel_range(0, input_channels - 1, true);
+
+        output_sample_spec.set_sample_rate(SampleRate);
+        output_sample_spec.channel_set().set_layout(output_channels == 1
+                                                        ? audio::ChannelLayout_Mono
+                                                        : audio::ChannelLayout_Surround);
+        output_sample_spec.channel_set().set_channel_range(0, output_channels - 1, true);
     }
 };
 
 TEST(converter_sink, null) {
-    ConverterSink converter(config, NULL, sample_buffer_factory, allocator);
+    enum { NumCh = 2 };
+
+    init(NumCh, NumCh);
+
+    ConverterSink converter(make_config(), NULL, sample_buffer_factory, allocator);
     CHECK(converter.is_valid());
 
     test::FrameWriter frame_writer(converter, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
-        frame_writer.write_samples(SamplesPerFrame * NumCh);
+        frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
     }
 }
 
 TEST(converter_sink, write) {
-    test::FrameChecker frame_checker;
+    enum { NumCh = 2 };
 
-    ConverterSink converter(config, &frame_checker, sample_buffer_factory, allocator);
+    init(NumCh, NumCh);
+
+    test::FrameChecker frame_checker(output_sample_spec);
+
+    ConverterSink converter(make_config(), &frame_checker, sample_buffer_factory,
+                            allocator);
     CHECK(converter.is_valid());
 
     test::FrameWriter frame_writer(converter, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
-        frame_writer.write_samples(SamplesPerFrame * NumCh);
+        frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
     }
 
     frame_checker.expect_frames(ManyFrames);
-    frame_checker.expect_samples(ManyFrames * SamplesPerFrame * NumCh);
+    frame_checker.expect_samples(ManyFrames * SamplesPerFrame);
 }
 
 TEST(converter_sink, frame_size_small) {
-    enum { SamplesPerSmallFrame = SamplesPerFrame / 2 - 3 };
+    enum { NumCh = 2, SamplesPerSmallFrame = SamplesPerFrame / 2 - 3 };
 
-    test::FrameChecker frame_checker;
+    init(NumCh, NumCh);
 
-    ConverterSink converter(config, &frame_checker, sample_buffer_factory, allocator);
+    test::FrameChecker frame_checker(output_sample_spec);
+
+    ConverterSink converter(make_config(), &frame_checker, sample_buffer_factory,
+                            allocator);
     CHECK(converter.is_valid());
 
     test::FrameWriter frame_writer(converter, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
-        frame_writer.write_samples(SamplesPerSmallFrame * NumCh);
+        frame_writer.write_samples(SamplesPerSmallFrame, input_sample_spec);
     }
 
     frame_checker.expect_frames(ManyFrames);
-    frame_checker.expect_samples(ManyFrames * SamplesPerSmallFrame * NumCh);
+    frame_checker.expect_samples(ManyFrames * SamplesPerSmallFrame);
 }
 
 TEST(converter_sink, frame_size_large) {
-    enum { SamplesPerLargeFrame = SamplesPerFrame * 2 + 3 };
+    enum { NumCh = 2, SamplesPerLargeFrame = SamplesPerFrame * 2 + 3 };
 
-    test::FrameChecker frame_checker;
+    init(NumCh, NumCh);
 
-    ConverterSink converter(config, &frame_checker, sample_buffer_factory, allocator);
+    test::FrameChecker frame_checker(output_sample_spec);
+
+    ConverterSink converter(make_config(), &frame_checker, sample_buffer_factory,
+                            allocator);
     CHECK(converter.is_valid());
 
     test::FrameWriter frame_writer(converter, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
-        frame_writer.write_samples(SamplesPerLargeFrame * NumCh);
+        frame_writer.write_samples(SamplesPerLargeFrame, input_sample_spec);
     }
 
     frame_checker.expect_frames(ManyFrames);
-    frame_checker.expect_samples(ManyFrames * SamplesPerLargeFrame * NumCh);
+    frame_checker.expect_samples(ManyFrames * SamplesPerLargeFrame);
+}
+
+TEST(converter_sink, channels_stereo_to_mono) {
+    enum { InputCh = 2, OutputCh = 1 };
+
+    init(InputCh, OutputCh);
+
+    test::FrameChecker frame_checker(output_sample_spec);
+
+    ConverterSink converter(make_config(), &frame_checker, sample_buffer_factory,
+                            allocator);
+    CHECK(converter.is_valid());
+
+    test::FrameWriter frame_writer(converter, sample_buffer_factory);
+
+    for (size_t nf = 0; nf < ManyFrames; nf++) {
+        frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
+    }
+
+    frame_checker.expect_frames(ManyFrames);
+    frame_checker.expect_samples(ManyFrames * SamplesPerFrame);
+}
+
+TEST(converter_sink, channels_mono_to_stereo) {
+    enum { InputCh = 1, OutputCh = 2 };
+
+    init(InputCh, OutputCh);
+
+    test::FrameChecker frame_checker(output_sample_spec);
+
+    ConverterSink converter(make_config(), &frame_checker, sample_buffer_factory,
+                            allocator);
+    CHECK(converter.is_valid());
+
+    test::FrameWriter frame_writer(converter, sample_buffer_factory);
+
+    for (size_t nf = 0; nf < ManyFrames; nf++) {
+        frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
+    }
+
+    frame_checker.expect_frames(ManyFrames);
+    frame_checker.expect_samples(ManyFrames * SamplesPerFrame);
 }
 
 } // namespace pipeline
