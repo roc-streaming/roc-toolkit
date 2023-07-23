@@ -114,7 +114,7 @@ public:
 
 private:
     enum {
-        MaxChannels = 256,
+        MaxChannels = 1024,
         WordBytes = 8,
         WordBits = 64,
         NumWords = MaxChannels / WordBits
