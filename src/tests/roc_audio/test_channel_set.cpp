@@ -8,6 +8,7 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_audio/channel_layout.h"
 #include "roc_audio/channel_set.h"
 #include "roc_audio/channel_set_to_str.h"
 
@@ -212,6 +213,74 @@ TEST(channel_set, construct_from_channel_mask) {
 
     UNSIGNED_LONGS_EQUAL(11, ch_set.first_channel());
     UNSIGNED_LONGS_EQUAL(22, ch_set.last_channel());
+}
+
+TEST(channel_set, clear_channels) {
+    ChannelSet ch_set;
+
+    ch_set.set_channel(11, true);
+    ch_set.set_channel(101, true);
+
+    UNSIGNED_LONGS_EQUAL(2, ch_set.num_channels());
+
+    ch_set.clear_channels();
+
+    UNSIGNED_LONGS_EQUAL(0, ch_set.num_channels());
+
+    for (size_t n = 0; n < ch_set.max_channels(); n++) {
+        CHECK(!ch_set.has_channel(n));
+    }
+}
+
+TEST(channel_set, is_valid) {
+    { // empty (invalid)
+        ChannelSet ch_set;
+        CHECK(!ch_set.is_valid());
+    }
+    { // only layout (invalid)
+        ChannelSet ch_set;
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_layout(ChannelLayout_Surround);
+        CHECK(!ch_set.is_valid());
+    }
+    { // only channels (invalid)
+        ChannelSet ch_set;
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_channel(11, true);
+        CHECK(!ch_set.is_valid());
+    }
+    { // layout and channels (valid)
+        ChannelSet ch_set;
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_layout(ChannelLayout_Surround);
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_channel(11, true);
+        CHECK(ch_set.is_valid());
+    }
+    { // mono (valid)
+        ChannelSet ch_set;
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_layout(ChannelLayout_Mono);
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_channel(0, true);
+        CHECK(ch_set.is_valid());
+    }
+    { // mono (invalid)
+        ChannelSet ch_set;
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_layout(ChannelLayout_Mono);
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_channel(1, true);
+        CHECK(!ch_set.is_valid());
+    }
 }
 
 TEST(channel_set, bitwise_and) {
