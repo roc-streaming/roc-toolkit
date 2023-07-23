@@ -345,7 +345,7 @@ typedef struct roc_media_encoding {
      * If \c channels is \ref ROC_CHANNEL_LAYOUT_MULTITRACK, defines
      * number of channels (which represent independent "tracks").
      * For other channel layouts should be zero.
-     * Should be in range [1; 256].
+     * Should be in range [1; 1024].
      */
     unsigned int tracks;
 } roc_media_encoding;
