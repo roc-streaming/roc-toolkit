@@ -88,6 +88,9 @@ public:
     //!  range will be disabled.
     void set_channel_mask(ChannelMask mask);
 
+    //! Set all channels to disables.
+    void clear_channels();
+
     //! Set channel set to result of bitwise AND operation with another set.
     //! @remarks
     //!  Similar to "&=".

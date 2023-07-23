@@ -63,7 +63,19 @@ bool ChannelSet::operator!=(const ChannelSet& other) const {
 }
 
 bool ChannelSet::is_valid() const {
-    return layout_ != ChannelLayout_Invalid && num_chans_ != 0;
+    switch (layout_) {
+    case ChannelLayout_Invalid:
+        break;
+
+    case ChannelLayout_Mono:
+        return num_chans_ == 1 && first_chan_ == 0 && last_chan_ == 0;
+
+    case ChannelLayout_Surround:
+    case ChannelLayout_Multitrack:
+        return num_chans_ != 0;
+    }
+
+    return false;
 }
 
 ChannelLayout ChannelSet::layout() const {
@@ -173,6 +185,12 @@ void ChannelSet::set_channel_mask(const ChannelMask mask) {
     for (size_t n = 1; n < NumWords; n++) {
         words_[n] = 0;
     }
+
+    update_();
+}
+
+void ChannelSet::clear_channels() {
+    memset(words_, 0, sizeof(words_));
 
     update_();
 }

@@ -205,7 +205,7 @@ ChannelMapper::ChannelMapper(const ChannelSet& in_chans, const ChannelSet& out_c
 
     if (!out_chans_.is_valid()) {
         roc_panic("channel mapper: invalid output channel set: %s",
-                  channel_set_to_str(in_chans).c_str());
+                  channel_set_to_str(out_chans).c_str());
     }
 
     inout_chans_ = in_chans;
