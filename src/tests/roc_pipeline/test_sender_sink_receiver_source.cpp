@@ -26,12 +26,13 @@ namespace pipeline {
 
 namespace {
 
+const rtp::PayloadType PayloadType_Ch1 = rtp::PayloadType_L16_Mono;
+const rtp::PayloadType PayloadType_Ch2 = rtp::PayloadType_L16_Stereo;
+
 enum {
     MaxBufSize = 500,
 
     SampleRate = 44100,
-    ChMask = 0x3,
-    NumCh = 2,
 
     SamplesPerFrame = 10,
     SamplesPerPacket = 40,
@@ -45,11 +46,6 @@ enum {
 
     ManyFrames = Latency / SamplesPerFrame * 10
 };
-
-const audio::SampleSpec SampleSpecs(SampleRate, audio::ChannelLayout_Surround, ChMask);
-
-const core::nanoseconds_t MaxBufDuration = MaxBufSize * core::Second
-    / core::nanoseconds_t(SampleSpecs.sample_rate() * SampleSpecs.num_channels());
 
 enum {
     // default flags
@@ -80,20 +76,34 @@ core::BufferFactory<uint8_t> byte_buffer_factory(allocator, MaxBufSize, true);
 packet::PacketFactory packet_factory(allocator, true);
 rtp::FormatMap format_map(allocator, true);
 
-SenderConfig sender_config(int flags) {
+SenderConfig
+make_sender_config(int flags, size_t frame_channels, size_t packet_channels) {
     SenderConfig config;
 
-    config.input_sample_spec =
-        audio::SampleSpec(SampleRate, audio::ChannelLayout_Surround, ChMask);
+    config.input_sample_spec.set_sample_rate(SampleRate);
+    config.input_sample_spec.channel_set().clear_channels();
+    config.input_sample_spec.channel_set().set_layout(
+        frame_channels == 1 ? audio::ChannelLayout_Mono : audio::ChannelLayout_Surround);
+    config.input_sample_spec.channel_set().set_channel_range(0, frame_channels - 1, true);
+
+    switch (packet_channels) {
+    case 1:
+        config.payload_type = PayloadType_Ch1;
+        break;
+    case 2:
+        config.payload_type = PayloadType_Ch2;
+        break;
+    default:
+        FAIL("unsupported packet_sample_spec");
+    }
 
     config.packet_length = SamplesPerPacket * core::Second / SampleRate;
-    config.internal_frame_length = MaxBufDuration;
+    config.internal_frame_length = MaxBufSize * core::Second
+        / core::nanoseconds_t(SampleRate * std::max(frame_channels, packet_channels));
 
     if (flags & FlagReedSolomon) {
         config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
-    }
-
-    if (flags & FlagLDPC) {
+    } else if (flags & FlagLDPC) {
         config.fec_encoder.scheme = packet::FEC_LDPC_Staircase;
     }
 
@@ -108,13 +118,18 @@ SenderConfig sender_config(int flags) {
     return config;
 }
 
-ReceiverConfig receiver_config() {
+ReceiverConfig make_receiver_config(size_t frame_channels, size_t packet_channels) {
     ReceiverConfig config;
 
-    config.common.output_sample_spec =
-        audio::SampleSpec(SampleRate, audio::ChannelLayout_Surround, ChMask);
+    config.common.output_sample_spec.set_sample_rate(SampleRate);
+    config.common.output_sample_spec.channel_set().clear_channels();
+    config.common.output_sample_spec.channel_set().set_layout(
+        frame_channels == 1 ? audio::ChannelLayout_Mono : audio::ChannelLayout_Surround);
+    config.common.output_sample_spec.channel_set().set_channel_range(
+        0, frame_channels - 1, true);
 
-    config.common.internal_frame_length = MaxBufDuration;
+    config.common.internal_frame_length = MaxBufSize * core::Second
+        / core::nanoseconds_t(SampleRate * std::max(frame_channels, packet_channels));
 
     config.common.resampling = false;
     config.common.timing = false;
@@ -179,7 +194,10 @@ void filter_packets(int flags, packet::IReader& reader, packet::IWriter& writer)
     }
 }
 
-void send_receive(int flags, size_t num_sessions) {
+void send_receive(int flags,
+                  size_t num_sessions,
+                  size_t frame_channels,
+                  size_t packet_channels) {
     packet::Queue queue;
 
     address::Protocol source_proto = select_source_proto(flags);
@@ -188,8 +206,11 @@ void send_receive(int flags, size_t num_sessions) {
     address::SocketAddr receiver_source_addr = test::new_address(11);
     address::SocketAddr receiver_repair_addr = test::new_address(22);
 
-    SenderSink sender(sender_config(flags), format_map, packet_factory,
-                      byte_buffer_factory, sample_buffer_factory, allocator);
+    SenderConfig sender_config =
+        make_sender_config(flags, frame_channels, packet_channels);
+
+    SenderSink sender(sender_config, format_map, packet_factory, byte_buffer_factory,
+                      sample_buffer_factory, allocator);
 
     CHECK(sender.is_valid());
 
@@ -215,7 +236,10 @@ void send_receive(int flags, size_t num_sessions) {
         sender_repair_endpoint->set_destination_address(receiver_repair_addr);
     }
 
-    ReceiverSource receiver(receiver_config(), format_map, packet_factory,
+    ReceiverConfig receiver_config =
+        make_receiver_config(frame_channels, packet_channels);
+
+    ReceiverSource receiver(receiver_config, format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
 
     CHECK(receiver.is_valid());
@@ -244,7 +268,7 @@ void send_receive(int flags, size_t num_sessions) {
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
-        frame_writer.write_samples(SamplesPerFrame * NumCh);
+        frame_writer.write_samples(SamplesPerFrame, sender_config.input_sample_spec);
     }
 
     test::PacketSender packet_sender(packet_factory, receiver_source_endpoint_writer,
@@ -258,7 +282,8 @@ void send_receive(int flags, size_t num_sessions) {
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
-            frame_reader.read_samples(SamplesPerFrame * NumCh, num_sessions);
+            frame_reader.read_samples(SamplesPerFrame, num_sessions,
+                                      receiver_config.common.output_sample_spec);
 
             UNSIGNED_LONGS_EQUAL(num_sessions, receiver.num_sessions());
         }
@@ -272,47 +297,75 @@ void send_receive(int flags, size_t num_sessions) {
 TEST_GROUP(sender_sink_receiver_source) {};
 
 TEST(sender_sink_receiver_source, bare) {
-    send_receive(FlagNone, 1);
+    enum { NumSess = 1, NumCh = 2 };
+
+    send_receive(FlagNone, NumSess, NumCh, NumCh);
 }
 
 TEST(sender_sink_receiver_source, interleaving) {
-    send_receive(FlagInterleaving, 1);
+    enum { NumSess = 1, NumCh = 2 };
+
+    send_receive(FlagInterleaving, NumSess, NumCh, NumCh);
 }
 
 TEST(sender_sink_receiver_source, fec_rs) {
+    enum { NumSess = 1, NumCh = 2 };
+
     if (is_fec_supported(FlagReedSolomon)) {
-        send_receive(FlagReedSolomon, 1);
+        send_receive(FlagReedSolomon, NumSess, NumCh, NumCh);
     }
 }
 
 TEST(sender_sink_receiver_source, fec_ldpc) {
+    enum { NumSess = 1, NumCh = 2 };
+
     if (is_fec_supported(FlagLDPC)) {
-        send_receive(FlagLDPC, 1);
+        send_receive(FlagLDPC, NumSess, NumCh, NumCh);
     }
 }
 
 TEST(sender_sink_receiver_source, fec_interleaving) {
+    enum { NumSess = 1, NumCh = 2 };
+
     if (is_fec_supported(FlagReedSolomon)) {
-        send_receive(FlagReedSolomon | FlagInterleaving, 1);
+        send_receive(FlagReedSolomon | FlagInterleaving, NumSess, NumCh, NumCh);
     }
 }
 
 TEST(sender_sink_receiver_source, fec_loss) {
+    enum { NumSess = 1, NumCh = 2 };
+
     if (is_fec_supported(FlagReedSolomon)) {
-        send_receive(FlagReedSolomon | FlagLosses, 1);
+        send_receive(FlagReedSolomon | FlagLosses, NumSess, NumCh, NumCh);
     }
 }
 
 TEST(sender_sink_receiver_source, fec_drop_source) {
+    enum { NumSess = 0, NumCh = 2 };
+
     if (is_fec_supported(FlagReedSolomon)) {
-        send_receive(FlagReedSolomon | FlagDropSource, 0);
+        send_receive(FlagReedSolomon | FlagDropSource, NumSess, NumCh, NumCh);
     }
 }
 
 TEST(sender_sink_receiver_source, fec_drop_repair) {
+    enum { NumSess = 1, NumCh = 2 };
+
     if (is_fec_supported(FlagReedSolomon)) {
-        send_receive(FlagReedSolomon | FlagDropRepair, 1);
+        send_receive(FlagReedSolomon | FlagDropRepair, NumSess, NumCh, NumCh);
     }
+}
+
+TEST(sender_sink_receiver_source, channels_stereo_to_mono) {
+    enum { NumSess = 1, FrameCh = 2, PacketCh = 1 };
+
+    send_receive(FlagNone, NumSess, FrameCh, PacketCh);
+}
+
+TEST(sender_sink_receiver_source, channels_mono_to_stereo) {
+    enum { NumSess = 1, FrameCh = 1, PacketCh = 2 };
+
+    send_receive(FlagNone, NumSess, FrameCh, PacketCh);
 }
 
 } // namespace pipeline

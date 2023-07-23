@@ -47,7 +47,7 @@ public:
         , first_(true) {
     }
 
-    void read_packet(size_t samples_per_packet, audio::SampleSpec sample_spec) {
+    void read_packet(size_t samples_per_packet, const audio::SampleSpec& sample_spec) {
         packet::PacketPtr pp = reader_.read();
         CHECK(pp);
 
@@ -72,7 +72,7 @@ private:
 
     void check_buffer_(const core::Slice<uint8_t> bp,
                        size_t samples_per_packet,
-                       audio::SampleSpec sample_spec) {
+                       const audio::SampleSpec& sample_spec) {
         packet::PacketPtr pp = packet_factory_.new_packet();
         CHECK(pp);
 
@@ -104,8 +104,12 @@ private:
 
         payload_decoder_->end();
 
-        for (size_t n = 0; n < samples_per_packet * sample_spec.num_channels(); n++) {
-            DOUBLES_EQUAL((double)nth_sample(offset_), (double)samples[n], Epsilon);
+        for (size_t ns = 0; ns < samples_per_packet; ns++) {
+            for (size_t nc = 0; nc < sample_spec.num_channels(); nc++) {
+                DOUBLES_EQUAL((double)nth_sample(offset_),
+                              (double)samples[ns * sample_spec.num_channels() + nc],
+                              Epsilon);
+            }
             offset_++;
         }
     }
