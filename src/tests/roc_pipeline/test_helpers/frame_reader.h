@@ -31,32 +31,38 @@ public:
         , offset_(0) {
     }
 
-    void read_samples(size_t num_samples, size_t num_sessions) {
+    void read_samples(size_t num_samples,
+                      size_t num_sessions,
+                      const audio::SampleSpec& sample_spec) {
         core::Slice<audio::sample_t> samples = buffer_factory_.new_buffer();
         CHECK(samples);
-        samples.reslice(0, num_samples);
+        samples.reslice(0, num_samples * sample_spec.num_channels());
 
         audio::Frame frame(samples.data(), samples.size());
         CHECK(source_.read(frame));
 
-        for (size_t n = 0; n < num_samples; n++) {
-            DOUBLES_EQUAL((double)nth_sample(offset_) * num_sessions,
-                          (double)frame.samples()[n], Epsilon);
+        for (size_t ns = 0; ns < num_samples; ns++) {
+            for (size_t nc = 0; nc < sample_spec.num_channels(); nc++) {
+                DOUBLES_EQUAL(
+                    (double)nth_sample(offset_) * num_sessions,
+                    (double)frame.samples()[ns * sample_spec.num_channels() + nc],
+                    Epsilon);
+            }
             offset_++;
         }
     }
 
-    void skip_zeros(size_t num_samples) {
+    void skip_zeros(size_t num_samples, const audio::SampleSpec& sample_spec) {
         core::Slice<audio::sample_t> samples = buffer_factory_.new_buffer();
         CHECK(samples);
 
-        samples.reslice(0, num_samples);
+        samples.reslice(0, num_samples * sample_spec.num_channels());
         memset(samples.data(), 0, samples.size() * sizeof(audio::sample_t));
 
         audio::Frame frame(samples.data(), samples.size());
         CHECK(source_.read(frame));
 
-        for (size_t n = 0; n < num_samples; n++) {
+        for (size_t n = 0; n < num_samples * sample_spec.num_channels(); n++) {
             DOUBLES_EQUAL(0.0, (double)frame.samples()[n], Epsilon);
         }
     }

@@ -13,6 +13,7 @@
 
 #include "test_helpers/utils.h"
 
+#include "roc_audio/sample_spec.h"
 #include "roc_sndio/isource.h"
 
 namespace roc {
@@ -24,7 +25,8 @@ public:
     MockSource()
         : state_(sndio::DeviceState_Active)
         , pos_(0)
-        , size_(0) {
+        , size_(0)
+        , value_(0) {
     }
 
     virtual sndio::DeviceType type() const {
@@ -92,12 +94,15 @@ public:
         return true;
     }
 
-    void add(size_t sz) {
-        CHECK(size_ + sz <= MaxSz);
+    void add(size_t num_samples, const audio::SampleSpec& sample_spec) {
+        CHECK(size_ + num_samples * sample_spec.num_channels() <= MaxSz);
 
-        for (size_t n = 0; n < sz; n++) {
-            samples_[size_] = nth_sample((uint8_t)size_);
-            size_++;
+        for (size_t ns = 0; ns < num_samples; ns++) {
+            for (size_t nc = 0; nc < sample_spec.num_channels(); nc++) {
+                samples_[size_] = nth_sample((uint8_t)value_);
+                size_++;
+            }
+            value_++;
         }
     }
 
@@ -114,6 +119,7 @@ private:
 
     size_t pos_;
     size_t size_;
+    size_t value_;
 };
 
 } // namespace test
