@@ -14,38 +14,37 @@ Receive audio streams from remote senders and write them to an audio device or f
 Options
 -------
 
--h, --help                   Print help and exit
--V, --version                Print version and exit
--v, --verbose                Increase verbosity level (may be used multiple times)
--L, --list-supported         list supported schemes and formats
--o, --output=IO_URI          Output file or device URI
---output-format=FILE_FORMAT  Force output file format
---backup=IO_URI              Backup file or device URI (if set, used when there are no sessions)
---backup-format=FILE_FORMAT  Force backup file format
--s, --source=ENDPOINT_URI    Local source endpoint
--r, --repair=ENDPOINT_URI    Local repair endpoint
--c, --control=ENDPOINT_URI   Local control endpoint
---miface=MIFACE              IPv4 or IPv6 address of the network interface on which to join the multicast group
---reuseaddr                  enable SO_REUSEADDR when binding sockets
---sess-latency=STRING        Session target latency, TIME units
---min-latency=STRING         Session minimum latency, TIME units
---max-latency=STRING         Session maximum latency, TIME units
---io-latency=STRING          Playback target latency, TIME units
---np-timeout=STRING          Session no playback timeout, TIME units
---cp-timeout=STRING          Session choppy playback timeout, TIME units
---cp-window=STRING           Session choppy playback detection window, TIME units
---packet-limit=INT           Maximum packet size, in bytes
---frame-limit=INT            Maximum internal frame size, in bytes
---frame-length=TIME          Duration of the internal frames, TIME units
---rate=INT                   Override output sample rate, Hz
---no-resampling              Disable resampling  (default=off)
---resampler-backend=ENUM     Resampler backend  (possible values="default", "builtin", "speex" default=`default')
---resampler-profile=ENUM     Resampler profile  (possible values="low", "medium", "high" default=`medium')
--1, --oneshot                Exit when last connected client disconnects (default=off)
---poisoning                  Enable uninitialized memory poisoning (default=off)
---profiling                  Enable self profiling  (default=off)
---beeping                    Enable beeping on packet loss  (default=off)
---color=ENUM                 Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
+-h, --help                    Print help and exit
+-V, --version                 Print version and exit
+-v, --verbose                 Increase verbosity level (may be used multiple times)
+-L, --list-supported          list supported schemes and formats
+-o, --output=IO_URI           Output file or device URI
+--output-format=FILE_FORMAT   Force output file format
+--backup=IO_URI               Backup file or device URI (if set, used when there are no sessions)
+--backup-format=FILE_FORMAT   Force backup file format
+-s, --source=ENDPOINT_URI     Local source endpoint
+-r, --repair=ENDPOINT_URI     Local repair endpoint
+-c, --control=ENDPOINT_URI    Local control endpoint
+--miface=MIFACE               IPv4 or IPv6 address of the network interface on which to join the multicast group
+--reuseaddr                   enable SO_REUSEADDR when binding sockets
+--sess-latency=STRING         Session target latency, TIME units
+--io-latency=STRING           Playback target latency, TIME units
+--latency-tolerance=STRING    Maximum latency deviation, TIME units
+--no-play-timeout=STRING      No playback timeout, TIME units
+--choppy-play-timeout=STRING  Choppy playback timeout, TIME units
+--packet-limit=INT            Maximum packet size, in bytes
+--frame-limit=INT             Maximum internal frame size, in bytes
+--frame-length=TIME           Duration of the internal frames, TIME units
+--rate=INT                    Override output sample rate, Hz
+--clock-backend=ENUM          Clock synchronization backend  (possible values="disable", "niq" default=`niq')
+--clock-profile=ENUM          Clock synchronization profile  (possible values="default", "responsive", "gradual" default=`default')
+--resampler-backend=ENUM      Resampler backend  (possible values="default", "builtin", "speex" default=`default')
+--resampler-profile=ENUM      Resampler profile  (possible values="low", "medium", "high" default=`medium')
+-1, --oneshot                 Exit when last connected client disconnects (default=off)
+--poisoning                   Enable uninitialized memory poisoning (default=off)
+--profiling                   Enable self-profiling  (default=off)
+--beep                        Enable beeping on packet loss  (default=off)
+--color=ENUM                  Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
 
 Endpoint URI
 ------------
