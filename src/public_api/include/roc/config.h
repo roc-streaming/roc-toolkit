@@ -262,7 +262,13 @@ typedef enum roc_packet_encoding {
  */
 typedef enum roc_fec_encoding {
     /** No FEC encoding.
+     *
      * Compatible with \ref ROC_PROTO_RTP protocol.
+     *
+     * Pros:
+     *  - compatible with third-party software that does not support FECFRAME
+     * Cons:
+     *  - no packet recovery
      */
     ROC_FEC_ENCODING_DISABLE = -1,
 
@@ -272,16 +278,28 @@ typedef enum roc_fec_encoding {
     ROC_FEC_ENCODING_DEFAULT = 0,
 
     /** Reed-Solomon FEC encoding (RFC 6865) with m=8.
+     *
      * Good for small block sizes (below 256 packets).
      * Compatible with \ref ROC_PROTO_RTP_RS8M_SOURCE and \ref ROC_PROTO_RS8M_REPAIR
      * protocols for source and repair endpoints.
+     *
+     * Pros:
+     *  - good repair capabilities even on small block sizes
+     * Cons:
+     *  - high CPU usage on large block sizes
      */
     ROC_FEC_ENCODING_RS8M = 1,
 
     /** LDPC-Staircase FEC encoding (RFC 6816).
+     *
      * Good for large block sizes (above 1024 packets).
      * Compatible with \ref ROC_PROTO_RTP_LDPC_SOURCE and \ref ROC_PROTO_LDPC_REPAIR
      * protocols for source and repair endpoints.
+     *
+     * Pros:
+     *  - low CPU usage even on large block sizes
+     * Cons:
+     *  - low repair capabilities on small block sizes
      */
     ROC_FEC_ENCODING_LDPC_STAIRCASE = 2
 } roc_fec_encoding;
@@ -303,9 +321,11 @@ typedef enum roc_format {
  */
 typedef enum roc_channel_layout {
     /** Multi-track audio.
+     *
      * In multitrack layout, stream contains multiple channels which represent
      * independent "tracks" without any special meaning (unlike stereo or surround)
      * and hence without any special processing or mapping.
+     *
      * The number of channels is arbitrary and is defined by \c tracks field of
      * \ref roc_media_encoding struct.
      */
@@ -342,9 +362,11 @@ typedef struct roc_media_encoding {
     roc_channel_layout channels;
 
     /** Multi-track channel count.
+     *
      * If \c channels is \ref ROC_CHANNEL_LAYOUT_MULTITRACK, defines
      * number of channels (which represent independent "tracks").
      * For other channel layouts should be zero.
+     *
      * Should be in range [1; 1024].
      */
     unsigned int tracks;
@@ -353,62 +375,162 @@ typedef struct roc_media_encoding {
 /** Clock source for sender or receiver. */
 typedef enum roc_clock_source {
     /** Sender or receiver is clocked by external user-defined clock.
+     *
      * Write and read operations are non-blocking. The user is responsible
      * to call them in time, according to the external clock.
+     *
+     * Use when samples source (from where you read them to pass to receiver)
+     * or destination (to where you write them after obtaining from sender)
+     * is active and has its own clock, e.g. it is a sound card.
      */
     ROC_CLOCK_EXTERNAL = 0,
 
-    /** Sender or receiver is clocked by an internal clock.
+    /** Sender or receiver is clocked by an internal pipeline clock.
+     *
      * Write and read operations are blocking. They automatically wait until it's time
-     * to process the next bunch of samples according to the configured sample rate.
+     * to process the next bunch of samples according to the configured sample rate,
+     * based on a CPU timer.
+     *
+     * Use when samples source (from where you read them to pass to receiver)
+     * or destination (to where you write them after obtaining from sender)
+     * is passive and does now have clock, e.g. it is a file on disk.
      */
     ROC_CLOCK_INTERNAL = 1
 } roc_clock_source;
 
+/** Clock synchronization algorithm.
+ * Defines how sender and receiver clocks are synchronized.
+ */
+typedef enum roc_clock_sync_backend {
+    /** Disable clock synchronization.
+     *
+     * In this mode, sender and receiver clocks are not synchronized. This mode is
+     * generally not recommended, since clock drift will lead to periodic playback
+     * disruptions caused by underruns and overruns.
+     */
+    ROC_CLOCK_SYNC_BACKEND_DISABLE = -1,
+
+    /** Default backend.
+     * Current default is \c ROC_CLOCK_SYNC_BACKEND_NIQ.
+     */
+    ROC_CLOCK_SYNC_BACKEND_DEFAULT = 0,
+
+    /** Clock synchronization based on network incoming queue size.
+     *
+     * In this mode, receiver monitors incoming queue size and adjusts playback clock
+     * speed to match the estimated capture clock speed.
+     *
+     * Pros:
+     *  - works with any protocol (does not require RTCP or NTP)
+     * Cons:
+     *  - synchronizes only clock speed, but not position; different receivers will
+     *    have different (constant) delays
+     *  - affected by network jitter; spikes in packet delivery will cause slow
+     *    oscillations in clock speed
+     */
+    ROC_CLOCK_SYNC_BACKEND_NIQ = 2
+} roc_clock_sync_backend;
+
+/** Clock synchronization profile.
+ * Defines what latency and jitter are tolerated by clock synchronization algorithm.
+ */
+typedef enum roc_clock_sync_profile {
+    /** Default profile.
+     *
+     * When \ref ROC_CLOCK_SYNC_BACKEND_NIQ is used, selects \ref
+     * ROC_CLOCK_SYNC_PROFILE_RESPONSIVE if target latency is low, and \ref
+     * ROC_CLOCK_SYNC_PROFILE_GRADUAL if target latency is high.
+     */
+    ROC_CLOCK_SYNC_PROFILE_DEFAULT = 0,
+
+    /** Responsive clock adjustment.
+     *
+     * Clock speed is adjusted quickly and accurately.
+     *
+     * Requires high precision clock adjustment, hence recommended for use with
+     * \ref ROC_RESAMPLER_BACKEND_BUILTIN.
+     *
+     * Pros:
+     *  - allows very low latency or synchronization error
+     * Cons:
+     *  - does not work well with some resampler backends
+     *  - does not work well with \ref ROC_CLOCK_SYNC_BACKEND_NIQ
+     *    if network jitter is high
+     */
+    ROC_CLOCK_SYNC_PROFILE_RESPONSIVE = 1,
+
+    /** Gradual clock adjustment.
+     *
+     * Clock speed is adjusted slowly and smoothly.
+     *
+     * Pros:
+     *  - works well even with high network jitter
+     *  - works well with any resampler backend
+     * Cons:
+     *  - does not allow very low latency or synchronization error
+     */
+    ROC_CLOCK_SYNC_PROFILE_GRADUAL = 2
+} roc_clock_sync_profile;
+
 /** Resampler backend.
- * Affects speed and quality.
+ * Affects CPU usage, quality, and clock synchronization precision.
  * Some backends may be disabled at build time.
  */
 typedef enum roc_resampler_backend {
     /** Default backend.
-     * Depends on what was enabled at build time.
+     *
+     * Selects \ref ROC_RESAMPLER_BACKEND_BUILTIN when using \ref
+     * ROC_CLOCK_SYNC_PROFILE_RESPONSIVE, or when SpeexDSP is disabled.
+     *
+     * Otherwise, selects \ref ROC_RESAMPLER_BACKEND_SPEEX.
      */
     ROC_RESAMPLER_BACKEND_DEFAULT = 0,
 
-    /** Slow built-in resampler.
-     * Always available.
+    /** Slow good-quality high-precision built-in resampler.
+     *
+     * Backend controls clock speed with high precision, and hence is useful when
+     * latency or synchronization error should be very low.
+     *
+     * Backend has high CPU usage, especially on high resampling quality and on
+     * CPUs with small caches.
+     *
+     * This backend is always available.
+     *
+     * Recommended for \ref ROC_CLOCK_SYNC_PROFILE_RESPONSIVE and on good CPUs.
      */
     ROC_RESAMPLER_BACKEND_BUILTIN = 1,
 
-    /** Fast good-quality resampler from SpeexDSP.
-     * May be disabled at build time.
+    /** Fast good-quality low-precision resampler based on SpeexDSP.
+     *
+     * Backend has low CPU usage even on high resampler quality and cheap CPUs.
+     *
+     * Backend controls clock speed with lower precision, and is not so good when
+     * latency or synchronization error should be very low.
+     *
+     * This backend is available if SpeexDSP was enabled at build time.
+     *
+     * Recommended for \ref ROC_CLOCK_SYNC_PROFILE_GRADUAL and on cheap CPUs.
      */
     ROC_RESAMPLER_BACKEND_SPEEX = 2
 } roc_resampler_backend;
 
 /** Resampler profile.
- * Affects speed and quality.
+ * Affects CPU usage and quality.
  * Each resampler backend treats profile in its own way.
  */
 typedef enum roc_resampler_profile {
-    /** Do not perform resampling.
-     * Clock drift compensation will be disabled in this case.
-     * If in doubt, do not disable resampling.
-     */
-    ROC_RESAMPLER_PROFILE_DISABLE = -1,
-
     /** Default profile.
      * Current default is \c ROC_RESAMPLER_PROFILE_MEDIUM.
      */
     ROC_RESAMPLER_PROFILE_DEFAULT = 0,
 
-    /** High quality, low speed. */
+    /** High quality, higher CPU usage. */
     ROC_RESAMPLER_PROFILE_HIGH = 1,
 
-    /** Medium quality, medium speed. */
+    /** Medium quality, medium CPU usage. */
     ROC_RESAMPLER_PROFILE_MEDIUM = 2,
 
-    /** Low quality, high speed. */
+    /** Low quality, lower CPU usage. */
     ROC_RESAMPLER_PROFILE_LOW = 3
 } roc_resampler_profile;
 
@@ -541,28 +663,40 @@ typedef struct roc_receiver_config {
      */
     roc_media_encoding frame_encoding;
 
-    /** Clock source to use.
+    /** Clock source.
      * Defines whether read operation will be blocking or non-blocking.
-     * If zero, default value is used (\c ROC_CLOCK_EXTERNAL).
+     * If zero, \ref ROC_CLOCK_EXTERNAL is used.
      */
     roc_clock_source clock_source;
 
-    /** Resampler backend to use.
+    /** Clock synchronization backend.
+     * Defines how sender and receiver clocks are synchronized.
+     * If zero, default value is used.
+     */
+    roc_clock_sync_backend clock_sync_backend;
+
+    /**  Clock synchronization profile.
+     * Defines what latency and network jitter are tolerated.
+     * If zero, default value is used.
+     */
+    roc_clock_sync_profile clock_sync_profile;
+
+    /** Resampler backend.
+     * Affects CPU usage, quality, and clock synchronization precision.
      * If zero, default value is used.
      */
     roc_resampler_backend resampler_backend;
 
-    /** Resampler profile to use.
-     * If non-zero, the receiver employs resampler for two purposes:
-     *  - adjust the sender clock to the receiver clock, to compensate clock drift
-     *  - convert the packet sample rate to the frame sample rate if they are different
+    /** Resampler profile.
+     * Affects CPU usage and quality.
+     * If zero, default value is used.
      */
     roc_resampler_profile resampler_profile;
 
     /** Target latency, in nanoseconds.
      * The session will not start playing until it accumulates the requested latency.
-     * Then, if resampler is enabled, the session will adjust its clock to keep actual
-     * latency as close as possible to the target latency.
+     * Then, if clock synchronization is enabled, the session will adjust its clock to
+     * keep actual latency as close as possible to the target latency.
      * If zero, default value is used.
      */
     unsigned long long target_latency;

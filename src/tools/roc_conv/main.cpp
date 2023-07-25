@@ -171,7 +171,6 @@ int main(int argc, char** argv) {
         break;
     }
 
-    converter_config.enable_resampling = !args.no_resampling_flag;
     converter_config.enable_poisoning = args.poisoning_flag;
     converter_config.enable_profiling = args.profiling_flag;
 

@@ -18,12 +18,17 @@ namespace audio {
 //! Resampler backends.
 enum ResamplerBackend {
     //! Default backend.
+    //! Resolved to some of other backends, depending
+    //! on what is supported.
     ResamplerBackend_Default,
 
-    //! Roc built-in resampler.
+    //! Built-in resampler.
+    //! High precision, slow.
     ResamplerBackend_Builtin,
 
     //! SpeexDSP resampler.
+    //! Lower precision, fast.
+    //! May be disabled at build time.
     ResamplerBackend_Speex
 };
 

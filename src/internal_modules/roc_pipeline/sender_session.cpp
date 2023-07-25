@@ -121,8 +121,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         awriter = channel_mapper_writer_.get();
     }
 
-    if (config_.enable_resampling
-        && format->sample_spec.sample_rate() != config_.input_sample_spec.sample_rate()) {
+    if (format->sample_spec.sample_rate() != config_.input_sample_spec.sample_rate()) {
         if (config_.enable_poisoning) {
             resampler_poisoner_.reset(new (resampler_poisoner_)
                                           audio::PoisonWriter(*awriter));

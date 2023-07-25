@@ -10,6 +10,8 @@
 
 #include "roc_address/interface.h"
 #include "roc_audio/channel_layout.h"
+#include "roc_audio/freq_estimator.h"
+#include "roc_audio/resampler_backend.h"
 #include "roc_audio/resampler_profile.h"
 #include "roc_core/attributes.h"
 #include "roc_core/log.h"
@@ -126,8 +128,6 @@ bool sender_config_from_user(peer::Context& context,
         return false;
     }
 
-    out.enable_resampling = (in.resampler_profile != ROC_RESAMPLER_PROFILE_DISABLE);
-
     return true;
 }
 
@@ -135,38 +135,6 @@ ROC_ATTR_NO_SANITIZE_UB
 bool receiver_config_from_user(peer::Context&,
                                pipeline::ReceiverConfig& out,
                                const roc_receiver_config& in) {
-    if (!sample_spec_from_user(out.common.output_sample_spec, in.frame_encoding)) {
-        roc_log(LogError,
-                "bad configuration: invalid roc_receiver_config.frame_encoding");
-        return false;
-    }
-
-    if (!clock_source_from_user(out.common.enable_timing, in.clock_source)) {
-        roc_log(LogError,
-                "bad configuration: invalid roc_receiver_config.clock_source:"
-                " should be valid enum value");
-        return false;
-    }
-
-    if (!resampler_backend_from_user(out.default_session.resampler_backend,
-                                     in.resampler_backend)) {
-        roc_log(LogError,
-                "bad configuration: invalid roc_receiver_config.resampler_backend:"
-                " should be valid enum value");
-        return false;
-    }
-
-    if (!resampler_profile_from_user(out.default_session.resampler_profile,
-                                     in.resampler_profile)) {
-        roc_log(LogError,
-                "bad configuration: invalid roc_receiver_config.resampler_profile:"
-                " should be valid enum value");
-        return false;
-    }
-
-    out.common.enable_resampling =
-        (in.resampler_profile != ROC_RESAMPLER_PROFILE_DISABLE);
-
     if (in.target_latency != 0) {
         out.default_session.target_latency = (core::nanoseconds_t)in.target_latency;
     }
@@ -200,6 +168,62 @@ bool receiver_config_from_user(peer::Context&,
 
         out.default_session.watchdog.deduce_choppy_playback_window(
             out.default_session.watchdog.choppy_playback_timeout);
+    }
+
+    if (!sample_spec_from_user(out.common.output_sample_spec, in.frame_encoding)) {
+        roc_log(LogError,
+                "bad configuration: invalid roc_receiver_config.frame_encoding");
+        return false;
+    }
+
+    if (!clock_source_from_user(out.common.enable_timing, in.clock_source)) {
+        roc_log(LogError,
+                "bad configuration: invalid roc_receiver_config.clock_source:"
+                " should be valid enum value");
+        return false;
+    }
+
+    if (!clock_sync_backend_from_user(out.default_session.latency_monitor.fe_enable,
+                                      in.clock_sync_backend)) {
+        roc_log(LogError,
+                "bad configuration: invalid roc_receiver_config.clock_sync_backend:"
+                " should be valid enum value");
+        return false;
+    }
+
+    if (in.clock_sync_profile != ROC_CLOCK_SYNC_PROFILE_DEFAULT) {
+        if (!clock_sync_profile_from_user(out.default_session.latency_monitor.fe_profile,
+                                          in.clock_sync_profile)) {
+            roc_log(LogError,
+                    "bad configuration: invalid roc_receiver_config.clock_sync_profile:"
+                    " should be valid enum value");
+            return false;
+        }
+    } else {
+        if (out.default_session.latency_monitor.fe_enable) {
+            out.default_session.latency_monitor.deduce_fe_profile(
+                out.default_session.target_latency);
+        }
+    }
+
+    if (in.resampler_backend != ROC_RESAMPLER_BACKEND_DEFAULT) {
+        if (!resampler_backend_from_user(out.default_session.resampler_backend,
+                                         in.resampler_backend)) {
+            roc_log(LogError,
+                    "bad configuration: invalid roc_receiver_config.resampler_backend:"
+                    " should be valid enum value");
+            return false;
+        }
+    } else {
+        out.default_session.deduce_resampler_backend();
+    }
+
+    if (!resampler_profile_from_user(out.default_session.resampler_profile,
+                                     in.resampler_profile)) {
+        roc_log(LogError,
+                "bad configuration: invalid roc_receiver_config.resampler_profile:"
+                " should be valid enum value");
+        return false;
     }
 
     return true;
@@ -307,6 +331,39 @@ bool clock_source_from_user(bool& out_timing, roc_clock_source in) {
 }
 
 ROC_ATTR_NO_SANITIZE_UB
+bool clock_sync_backend_from_user(bool& out_fe, roc_clock_sync_backend in) {
+    switch (enum_from_user(in)) {
+    case ROC_CLOCK_SYNC_BACKEND_DISABLE:
+        out_fe = false;
+        return true;
+
+    case ROC_CLOCK_SYNC_BACKEND_DEFAULT:
+    case ROC_CLOCK_SYNC_BACKEND_NIQ:
+        out_fe = true;
+        return true;
+    }
+
+    return false;
+}
+
+ROC_ATTR_NO_SANITIZE_UB
+bool clock_sync_profile_from_user(audio::FreqEstimatorProfile& out,
+                                  roc_clock_sync_profile in) {
+    switch (enum_from_user(in)) {
+    case ROC_CLOCK_SYNC_PROFILE_DEFAULT:
+    case ROC_CLOCK_SYNC_PROFILE_RESPONSIVE:
+        out = audio::FreqEstimatorProfile_Responsive;
+        return true;
+
+    case ROC_CLOCK_SYNC_PROFILE_GRADUAL:
+        out = audio::FreqEstimatorProfile_Gradual;
+        return true;
+    }
+
+    return false;
+}
+
+ROC_ATTR_NO_SANITIZE_UB
 bool resampler_backend_from_user(audio::ResamplerBackend& out, roc_resampler_backend in) {
     switch (enum_from_user(in)) {
     case ROC_RESAMPLER_BACKEND_DEFAULT:
@@ -328,9 +385,6 @@ bool resampler_backend_from_user(audio::ResamplerBackend& out, roc_resampler_bac
 ROC_ATTR_NO_SANITIZE_UB
 bool resampler_profile_from_user(audio::ResamplerProfile& out, roc_resampler_profile in) {
     switch (enum_from_user(in)) {
-    case ROC_RESAMPLER_PROFILE_DISABLE:
-        return true;
-
     case ROC_RESAMPLER_PROFILE_LOW:
         out = audio::ResamplerProfile_Low;
         return true;
