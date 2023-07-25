@@ -22,13 +22,13 @@ namespace audio {
 
 //! FreqEstimator paremeter preset.
 enum FreqEstimatorProfile {
-    //! Slow and smooth tuning.
-    //! Got for higher network latency and jitter.
-    FreqEstimatorProfile_Smooth,
-
     //! Fast and responsive tuning.
-    //! Got for lower network latency and jitter.
+    //! Good for lower network latency and jitter.
     FreqEstimatorProfile_Responsive,
+
+    //! Slow and smooth tuning.
+    //! Good for higher network latency and jitter.
+    FreqEstimatorProfile_Gradual
 };
 
 //! FreqEstimator tunable parameters.

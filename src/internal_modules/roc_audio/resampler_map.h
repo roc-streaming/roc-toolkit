@@ -39,8 +39,11 @@ public:
     //! Get backend ID by number.
     ResamplerBackend nth_backend(size_t n) const;
 
+    //! Check if given backend is supported.
+    bool is_supported(ResamplerBackend backend_id) const;
+
     //! Method to instantiate and return a pointer to a IResampler object.
-    IResampler* new_resampler(ResamplerBackend resampler_backend,
+    IResampler* new_resampler(ResamplerBackend backend_id,
                               core::IAllocator& allocator,
                               core::BufferFactory<sample_t>& buffer_factory,
                               ResamplerProfile profile,

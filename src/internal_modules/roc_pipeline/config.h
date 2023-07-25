@@ -17,6 +17,7 @@
 #include "roc_audio/latency_monitor.h"
 #include "roc_audio/profiler.h"
 #include "roc_audio/resampler_backend.h"
+#include "roc_audio/resampler_map.h"
 #include "roc_audio/resampler_profile.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_audio/watchdog.h"
@@ -121,9 +122,6 @@ struct SenderConfig {
     //! RTP payload type for audio packets.
     unsigned payload_type;
 
-    //! Resample frames with a constant ratio.
-    bool enable_resampling;
-
     //! Interleave packets.
     bool enable_interleaving;
 
@@ -146,7 +144,6 @@ struct SenderConfig {
         , internal_frame_length(DefaultInternalFrameLength)
         , packet_length(DefaultPacketLength)
         , payload_type(rtp::PayloadType_L16_Stereo)
-        , enable_resampling(false)
         , enable_interleaving(false)
         , enable_timing(false)
         , enable_poisoning(false)
@@ -173,9 +170,6 @@ struct ReceiverSessionConfig {
     //! RTP validator parameters.
     rtp::ValidatorConfig rtp_validator;
 
-    //! FreqEstimator profile.
-    audio::FreqEstimatorProfile freq_estimator_profile;
-
     //! LatencyMonitor parameters.
     audio::LatencyMonitorConfig latency_monitor;
 
@@ -190,12 +184,21 @@ struct ReceiverSessionConfig {
 
     ReceiverSessionConfig()
         : target_latency(DefaultLatency)
-        , payload_type()
-        , freq_estimator_profile(audio::FreqEstimatorProfile_Smooth)
+        , payload_type(0)
         , resampler_backend(audio::ResamplerBackend_Default)
         , resampler_profile(audio::ResamplerProfile_Medium) {
         latency_monitor.deduce_min_latency(DefaultLatency);
         latency_monitor.deduce_max_latency(DefaultLatency);
+    }
+
+    //! Automatically deduce resampler backend from FreqEstimator config.
+    void deduce_resampler_backend() {
+        if (latency_monitor.fe_enable
+            && latency_monitor.fe_profile == audio::FreqEstimatorProfile_Responsive) {
+            resampler_backend = audio::ResamplerBackend_Builtin;
+        } else {
+            resampler_backend = audio::ResamplerBackend_Default;
+        }
     }
 };
 
@@ -208,9 +211,6 @@ struct ReceiverCommonConfig {
 
     //! Duration of the internal frames, in nanoseconds.
     core::nanoseconds_t internal_frame_length;
-
-    //! Perform resampling to compensate sender and receiver frequency difference.
-    bool enable_resampling;
 
     //! Constrain receiver speed using a CPU timer according to the sample rate.
     bool enable_timing;
@@ -230,7 +230,6 @@ struct ReceiverCommonConfig {
     ReceiverCommonConfig()
         : output_sample_spec(DefaultSampleSpec)
         , internal_frame_length(DefaultInternalFrameLength)
-        , enable_resampling(false)
         , enable_timing(false)
         , enable_poisoning(false)
         , enable_profiling(false)
@@ -267,9 +266,6 @@ struct ConverterConfig {
     //! Duration of the internal frames, in nanoseconds.
     core::nanoseconds_t internal_frame_length;
 
-    //! Resample frames with a constant ratio.
-    bool enable_resampling;
-
     //! Fill unitialized data with large values to make them more noticable.
     bool enable_poisoning;
 
@@ -285,7 +281,6 @@ struct ConverterConfig {
         , input_sample_spec(DefaultSampleSpec)
         , output_sample_spec(DefaultSampleSpec)
         , internal_frame_length(DefaultInternalFrameLength)
-        , enable_resampling(false)
         , enable_poisoning(false)
         , enable_profiling(false) {
     }

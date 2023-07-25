@@ -149,7 +149,9 @@ ReceiverSession::ReceiverSession(
         areader = channel_mapper_reader_.get();
     }
 
-    if (common_config.enable_resampling) {
+    if (session_config.latency_monitor.fe_enable
+        || format->sample_spec.sample_rate()
+            != common_config.output_sample_spec.sample_rate()) {
         if (common_config.enable_poisoning) {
             resampler_poisoner_.reset(new (resampler_poisoner_)
                                           audio::PoisonReader(*areader));
@@ -194,8 +196,7 @@ ReceiverSession::ReceiverSession(
     latency_monitor_.reset(new (latency_monitor_) audio::LatencyMonitor(
         *source_queue_, *depacketizer_, resampler_reader_.get(),
         session_config.latency_monitor, session_config.target_latency,
-        format->sample_spec, common_config.output_sample_spec,
-        session_config.freq_estimator_profile));
+        format->sample_spec, common_config.output_sample_spec));
     if (!latency_monitor_ || !latency_monitor_->is_valid()) {
         return;
     }

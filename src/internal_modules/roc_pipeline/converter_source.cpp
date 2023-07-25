@@ -37,9 +37,8 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
         areader = channel_mapper_reader_.get();
     }
 
-    if (config.enable_resampling
-        && config.input_sample_spec.sample_rate()
-            != config.output_sample_spec.sample_rate()) {
+    if (config.input_sample_spec.sample_rate()
+        != config.output_sample_spec.sample_rate()) {
         if (config.enable_poisoning) {
             resampler_poisoner_.reset(new (resampler_poisoner_)
                                           audio::PoisonReader(*areader));

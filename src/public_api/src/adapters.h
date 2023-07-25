@@ -12,7 +12,6 @@
 #include "roc/config.h"
 #include "roc/log.h"
 
-#include "roc_core/log.h"
 #include "roc_peer/context.h"
 #include "roc_peer/receiver.h"
 #include "roc_peer/sender.h"
@@ -37,6 +36,10 @@ bool channel_set_from_user(audio::ChannelSet& out,
                            unsigned int in_tracks);
 
 bool clock_source_from_user(bool& out_timing, roc_clock_source in);
+
+bool clock_sync_backend_from_user(bool& out_fe, roc_clock_sync_backend in);
+bool clock_sync_profile_from_user(audio::FreqEstimatorProfile& out,
+                                  roc_clock_sync_profile in);
 
 bool resampler_backend_from_user(audio::ResamplerBackend& out, roc_resampler_backend in);
 bool resampler_profile_from_user(audio::ResamplerProfile& out, roc_resampler_profile in);

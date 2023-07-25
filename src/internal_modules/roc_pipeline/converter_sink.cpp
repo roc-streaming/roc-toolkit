@@ -39,9 +39,8 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
         awriter = channel_mapper_writer_.get();
     }
 
-    if (config.enable_resampling
-        && config.input_sample_spec.sample_rate()
-            != config.output_sample_spec.sample_rate()) {
+    if (config.input_sample_spec.sample_rate()
+        != config.output_sample_spec.sample_rate()) {
         if (config.enable_poisoning) {
             resampler_poisoner_.reset(new (resampler_poisoner_)
                                           audio::PoisonWriter(*awriter));

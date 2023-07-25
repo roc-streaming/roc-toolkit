@@ -109,9 +109,8 @@ TEST_GROUP(receiver_loop) {
 
     void setup() {
         config.common.internal_frame_length = MaxBufDuration;
-
-        config.common.enable_resampling = false;
         config.common.enable_timing = false;
+        config.default_session.latency_monitor.fe_enable = false;
     }
 };
 

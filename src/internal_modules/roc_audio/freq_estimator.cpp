@@ -20,18 +20,18 @@ FreqEstimatorConfig make_config(FreqEstimatorProfile profile) {
     FreqEstimatorConfig config;
 
     switch (profile) {
-    case FreqEstimatorProfile_Smooth:
-        config.P = 1e-6;
-        config.I = 5e-9;
-        config.decimation_factor1 = fe_decim_factor_max;
-        config.decimation_factor2 = fe_decim_factor_max;
-        break;
-
     case FreqEstimatorProfile_Responsive:
         config.P = 1e-6;
         config.I = 1e-10;
         config.decimation_factor1 = fe_decim_factor_max;
         config.decimation_factor2 = 0;
+        break;
+
+    case FreqEstimatorProfile_Gradual:
+        config.P = 1e-6;
+        config.I = 5e-9;
+        config.decimation_factor1 = fe_decim_factor_max;
+        config.decimation_factor2 = fe_decim_factor_max;
         break;
     }
 

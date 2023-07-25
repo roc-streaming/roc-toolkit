@@ -60,23 +60,8 @@ ResamplerBackend ResamplerMap::nth_backend(size_t n) const {
     return backends_[n].id;
 }
 
-void ResamplerMap::add_backend_(const Backend& backend) {
-    roc_panic_if(n_backends_ == MaxBackends);
-    backends_[n_backends_++] = backend;
-}
-
-const ResamplerMap::Backend*
-ResamplerMap::find_backend_(ResamplerBackend backend_id) const {
-    if (backend_id == ResamplerBackend_Default) {
-        roc_panic_if(n_backends_ == 0);
-        return &backends_[0];
-    }
-    for (size_t n = 0; n < n_backends_; n++) {
-        if (backends_[n].id == backend_id) {
-            return &backends_[n];
-        }
-    }
-    return NULL;
+bool ResamplerMap::is_supported(ResamplerBackend backend_id) const {
+    return find_backend_(backend_id) != NULL;
 }
 
 IResampler* ResamplerMap::new_resampler(ResamplerBackend backend_id,
@@ -101,6 +86,25 @@ IResampler* ResamplerMap::new_resampler(ResamplerBackend backend_id,
     }
 
     return resampler.release();
+}
+
+void ResamplerMap::add_backend_(const Backend& backend) {
+    roc_panic_if(n_backends_ == MaxBackends);
+    backends_[n_backends_++] = backend;
+}
+
+const ResamplerMap::Backend*
+ResamplerMap::find_backend_(ResamplerBackend backend_id) const {
+    if (backend_id == ResamplerBackend_Default) {
+        roc_panic_if(n_backends_ == 0);
+        return &backends_[0];
+    }
+    for (size_t n = 0; n < n_backends_; n++) {
+        if (backends_[n].id == backend_id) {
+            return &backends_[n];
+        }
+    }
+    return NULL;
 }
 
 } // namespace audio

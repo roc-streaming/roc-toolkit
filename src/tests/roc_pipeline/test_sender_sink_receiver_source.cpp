@@ -131,10 +131,10 @@ ReceiverConfig make_receiver_config(size_t frame_channels, size_t packet_channel
     config.common.internal_frame_length = MaxBufSize * core::Second
         / core::nanoseconds_t(SampleRate * std::max(frame_channels, packet_channels));
 
-    config.common.enable_resampling = false;
     config.common.enable_timing = false;
     config.common.enable_poisoning = true;
 
+    config.default_session.latency_monitor.fe_enable = false;
     config.default_session.target_latency = Latency * core::Second / SampleRate;
     config.default_session.watchdog.no_playback_timeout =
         Timeout * core::Second / SampleRate;
