@@ -182,7 +182,7 @@ int main(int argc, char** argv) {
             receiver_config.default_session.watchdog.choppy_playback_timeout);
     }
 
-    receiver_config.common.resampling = !args.no_resampling_flag;
+    receiver_config.common.enable_resampling = !args.no_resampling_flag;
 
     switch (args.resampler_backend_arg) {
     case resampler_backend_arg_default:
@@ -218,9 +218,9 @@ int main(int argc, char** argv) {
         break;
     }
 
-    receiver_config.common.poisoning = args.poisoning_flag;
-    receiver_config.common.profiling = args.profiling_flag;
-    receiver_config.common.beeping = args.beeping_flag;
+    receiver_config.common.enable_poisoning = args.poisoning_flag;
+    receiver_config.common.enable_profiling = args.profiling_flag;
+    receiver_config.common.enable_beeping = args.beeping_flag;
 
     sndio::Config io_config;
     io_config.frame_length = receiver_config.common.internal_frame_length;
@@ -241,7 +241,7 @@ int main(int argc, char** argv) {
         }
         io_config.sample_spec.set_sample_rate((size_t)args.rate_arg);
     } else {
-        if (!receiver_config.common.resampling) {
+        if (!receiver_config.common.enable_resampling) {
             io_config.sample_spec.set_sample_rate(pipeline::DefaultSampleRate);
         }
     }
@@ -283,7 +283,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    receiver_config.common.timing = !output_sink->has_clock();
+    receiver_config.common.enable_timing = !output_sink->has_clock();
     receiver_config.common.output_sample_spec.set_sample_rate(
         output_sink->sample_spec().sample_rate());
 
@@ -347,8 +347,8 @@ int main(int argc, char** argv) {
         converter_config.internal_frame_length =
             receiver_config.common.internal_frame_length;
 
-        converter_config.resampling = receiver_config.common.resampling;
-        converter_config.poisoning = receiver_config.common.poisoning;
+        converter_config.enable_resampling = receiver_config.common.enable_resampling;
+        converter_config.enable_poisoning = receiver_config.common.enable_poisoning;
 
         backup_pipeline.reset(new (context.allocator()) pipeline::ConverterSource(
                                   converter_config, *backup_source,

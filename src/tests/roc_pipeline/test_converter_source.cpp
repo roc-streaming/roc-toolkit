@@ -49,9 +49,9 @@ TEST_GROUP(converter_source) {
                                   * std::max(input_sample_spec.num_channels(),
                                              output_sample_spec.num_channels()));
 
-        config.resampling = false;
-        config.poisoning = true;
-        config.profiling = true;
+        config.enable_resampling = false;
+        config.enable_poisoning = true;
+        config.enable_profiling = true;
 
         return config;
     }

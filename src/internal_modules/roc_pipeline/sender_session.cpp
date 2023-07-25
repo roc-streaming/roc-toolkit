@@ -63,7 +63,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
             return false;
         }
 
-        if (config_.interleaving) {
+        if (config_.enable_interleaving) {
             interleaver_.reset(new (interleaver_) packet::Interleaver(
                 *pwriter, allocator_,
                 config_.fec_writer.n_source_packets
@@ -121,9 +121,9 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         awriter = channel_mapper_writer_.get();
     }
 
-    if (config_.resampling
+    if (config_.enable_resampling
         && format->sample_spec.sample_rate() != config_.input_sample_spec.sample_rate()) {
-        if (config_.poisoning) {
+        if (config_.enable_poisoning) {
             resampler_poisoner_.reset(new (resampler_poisoner_)
                                           audio::PoisonWriter(*awriter));
             if (!resampler_poisoner_) {

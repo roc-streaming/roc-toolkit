@@ -164,7 +164,7 @@ int main(int argc, char** argv) {
         sender_config.fec_writer.n_repair_packets = (size_t)args.nbrpr_arg;
     }
 
-    sender_config.resampling = !args.no_resampling_flag;
+    sender_config.enable_resampling = !args.no_resampling_flag;
 
     switch (args.resampler_backend_arg) {
     case resampler_backend_arg_default:
@@ -197,9 +197,9 @@ int main(int argc, char** argv) {
         roc_panic("unexpected resampler profile");
     }
 
-    sender_config.interleaving = args.interleaving_flag;
-    sender_config.poisoning = args.poisoning_flag;
-    sender_config.profiling = args.profiling_flag;
+    sender_config.enable_interleaving = args.interleaving_flag;
+    sender_config.enable_poisoning = args.poisoning_flag;
+    sender_config.enable_profiling = args.profiling_flag;
 
     sndio::Config io_config;
     io_config.sample_spec.set_channel_set(sender_config.input_sample_spec.channel_set());
@@ -219,7 +219,7 @@ int main(int argc, char** argv) {
         }
         io_config.sample_spec.set_sample_rate((size_t)args.rate_arg);
     } else {
-        if (!sender_config.resampling) {
+        if (!sender_config.enable_resampling) {
             io_config.sample_spec.set_sample_rate(pipeline::DefaultSampleRate);
         }
     }
@@ -262,7 +262,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    sender_config.timing = !input_source->has_clock();
+    sender_config.enable_timing = !input_source->has_clock();
     sender_config.input_sample_spec.set_sample_rate(
         input_source->sample_spec().sample_rate());
 

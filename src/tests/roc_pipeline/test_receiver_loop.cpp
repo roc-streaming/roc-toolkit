@@ -110,8 +110,8 @@ TEST_GROUP(receiver_loop) {
     void setup() {
         config.common.internal_frame_length = MaxBufDuration;
 
-        config.common.resampling = false;
-        config.common.timing = false;
+        config.common.enable_resampling = false;
+        config.common.enable_timing = false;
     }
 };
 

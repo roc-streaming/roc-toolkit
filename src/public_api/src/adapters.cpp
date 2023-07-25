@@ -91,7 +91,7 @@ bool sender_config_from_user(peer::Context& context,
         out.packet_length = (core::nanoseconds_t)in.packet_length;
     }
 
-    out.interleaving = in.packet_interleaving;
+    out.enable_interleaving = in.packet_interleaving;
 
     if (!fec_encoding_from_user(out.fec_encoder.scheme, in.fec_encoding)) {
         roc_log(LogError,
@@ -105,7 +105,7 @@ bool sender_config_from_user(peer::Context& context,
         out.fec_writer.n_repair_packets = in.fec_block_repair_packets;
     }
 
-    if (!clock_source_from_user(out.timing, in.clock_source)) {
+    if (!clock_source_from_user(out.enable_timing, in.clock_source)) {
         roc_log(LogError,
                 "bad configuration: invalid roc_sender_config.clock_source:"
                 " should be valid enum value");
@@ -126,7 +126,7 @@ bool sender_config_from_user(peer::Context& context,
         return false;
     }
 
-    out.resampling = (in.resampler_profile != ROC_RESAMPLER_PROFILE_DISABLE);
+    out.enable_resampling = (in.resampler_profile != ROC_RESAMPLER_PROFILE_DISABLE);
 
     return true;
 }
@@ -141,7 +141,7 @@ bool receiver_config_from_user(peer::Context&,
         return false;
     }
 
-    if (!clock_source_from_user(out.common.timing, in.clock_source)) {
+    if (!clock_source_from_user(out.common.enable_timing, in.clock_source)) {
         roc_log(LogError,
                 "bad configuration: invalid roc_receiver_config.clock_source:"
                 " should be valid enum value");
@@ -164,7 +164,8 @@ bool receiver_config_from_user(peer::Context&,
         return false;
     }
 
-    out.common.resampling = (in.resampler_profile != ROC_RESAMPLER_PROFILE_DISABLE);
+    out.common.enable_resampling =
+        (in.resampler_profile != ROC_RESAMPLER_PROFILE_DISABLE);
 
     if (in.target_latency != 0) {
         out.default_session.target_latency = (core::nanoseconds_t)in.target_latency;

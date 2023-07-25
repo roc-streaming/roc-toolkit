@@ -80,10 +80,10 @@ TEST_GROUP(sender_sink) {
         config.internal_frame_length = MaxBufSize * core::Second
             / core::nanoseconds_t(SampleRate * packet_sample_spec.num_channels());
 
-        config.interleaving = false;
-        config.timing = false;
-        config.poisoning = true;
-        config.profiling = true;
+        config.enable_interleaving = false;
+        config.enable_timing = false;
+        config.enable_poisoning = true;
+        config.enable_profiling = true;
 
         return config;
     }

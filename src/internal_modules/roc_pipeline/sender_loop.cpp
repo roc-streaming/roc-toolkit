@@ -103,7 +103,7 @@ SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
         return;
     }
 
-    if (config.timing) {
+    if (config.enable_timing) {
         ticker_.reset(new (ticker_) core::Ticker(config.input_sample_spec.sample_rate()));
         if (!ticker_) {
             return;
