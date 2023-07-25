@@ -94,10 +94,10 @@ TEST_GROUP(receiver_source) {
                                   * std::max(output_sample_spec.num_channels(),
                                              packet_sample_spec.num_channels()));
 
-        config.common.resampling = false;
-        config.common.timing = false;
-        config.common.poisoning = true;
-        config.common.profiling = true;
+        config.common.enable_resampling = false;
+        config.common.enable_timing = false;
+        config.common.enable_poisoning = true;
+        config.common.enable_profiling = true;
 
         config.default_session.target_latency = Latency * core::Second / SampleRate;
 

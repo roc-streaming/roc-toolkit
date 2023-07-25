@@ -38,7 +38,7 @@ ReceiverSource::ReceiverSource(
     }
     audio::IFrameReader* areader = mixer_.get();
 
-    if (config.common.poisoning) {
+    if (config.common.enable_poisoning) {
         poisoner_.reset(new (poisoner_) audio::PoisonReader(*areader));
         if (!poisoner_) {
             return;
@@ -46,7 +46,7 @@ ReceiverSource::ReceiverSource(
         areader = poisoner_.get();
     }
 
-    if (config.common.profiling) {
+    if (config.common.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingReader(
             *areader, allocator, config.common.output_sample_spec,
             config.common.profiler_config));
@@ -121,7 +121,7 @@ core::nanoseconds_t ReceiverSource::latency() const {
 }
 
 bool ReceiverSource::has_clock() const {
-    return config_.common.timing;
+    return config_.common.enable_timing;
 }
 
 void ReceiverSource::reclock(packet::ntp_timestamp_t timestamp) {

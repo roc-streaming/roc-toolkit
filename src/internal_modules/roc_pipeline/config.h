@@ -122,19 +122,19 @@ struct SenderConfig {
     unsigned payload_type;
 
     //! Resample frames with a constant ratio.
-    bool resampling;
+    bool enable_resampling;
 
     //! Interleave packets.
-    bool interleaving;
+    bool enable_interleaving;
 
     //! Constrain receiver speed using a CPU timer according to the sample rate.
-    bool timing;
+    bool enable_timing;
 
     //! Fill unitialized data with large values to make them more noticable.
-    bool poisoning;
+    bool enable_poisoning;
 
     //! Profile moving average of frames being written.
-    bool profiling;
+    bool enable_profiling;
 
     //! Profiler configuration.
     audio::ProfilerConfig profiler_config;
@@ -146,11 +146,11 @@ struct SenderConfig {
         , internal_frame_length(DefaultInternalFrameLength)
         , packet_length(DefaultPacketLength)
         , payload_type(rtp::PayloadType_L16_Stereo)
-        , resampling(false)
-        , interleaving(false)
-        , timing(false)
-        , poisoning(false)
-        , profiling(false) {
+        , enable_resampling(false)
+        , enable_interleaving(false)
+        , enable_timing(false)
+        , enable_poisoning(false)
+        , enable_profiling(false) {
     }
 };
 
@@ -210,31 +210,31 @@ struct ReceiverCommonConfig {
     core::nanoseconds_t internal_frame_length;
 
     //! Perform resampling to compensate sender and receiver frequency difference.
-    bool resampling;
+    bool enable_resampling;
 
     //! Constrain receiver speed using a CPU timer according to the sample rate.
-    bool timing;
+    bool enable_timing;
 
     //! Fill uninitialized data with large values to make them more noticeable.
-    bool poisoning;
+    bool enable_poisoning;
 
     //! Profile moving average of frames being written.
-    bool profiling;
+    bool enable_profiling;
 
     //! Profiler configuration.
     audio::ProfilerConfig profiler_config;
 
     //! Insert weird beeps instead of silence on packet loss.
-    bool beeping;
+    bool enable_beeping;
 
     ReceiverCommonConfig()
         : output_sample_spec(DefaultSampleSpec)
         , internal_frame_length(DefaultInternalFrameLength)
-        , resampling(false)
-        , timing(false)
-        , poisoning(false)
-        , profiling(false)
-        , beeping(false) {
+        , enable_resampling(false)
+        , enable_timing(false)
+        , enable_poisoning(false)
+        , enable_profiling(false)
+        , enable_beeping(false) {
     }
 };
 
@@ -268,13 +268,13 @@ struct ConverterConfig {
     core::nanoseconds_t internal_frame_length;
 
     //! Resample frames with a constant ratio.
-    bool resampling;
+    bool enable_resampling;
 
     //! Fill unitialized data with large values to make them more noticable.
-    bool poisoning;
+    bool enable_poisoning;
 
     //! Profile moving average of frames being written.
-    bool profiling;
+    bool enable_profiling;
 
     //! Profiler configuration.
     audio::ProfilerConfig profiler_config;
@@ -285,9 +285,9 @@ struct ConverterConfig {
         , input_sample_spec(DefaultSampleSpec)
         , output_sample_spec(DefaultSampleSpec)
         , internal_frame_length(DefaultInternalFrameLength)
-        , resampling(false)
-        , poisoning(false)
-        , profiling(false) {
+        , enable_resampling(false)
+        , enable_poisoning(false)
+        , enable_profiling(false) {
     }
 };
 

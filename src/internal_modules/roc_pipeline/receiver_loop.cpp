@@ -84,7 +84,7 @@ ReceiverLoop::ReceiverLoop(IPipelineTaskScheduler& scheduler,
         return;
     }
 
-    if (config.common.timing) {
+    if (config.common.enable_timing) {
         ticker_.reset(new (ticker_)
                           core::Ticker(config.common.output_sample_spec.sample_rate()));
         if (!ticker_) {
