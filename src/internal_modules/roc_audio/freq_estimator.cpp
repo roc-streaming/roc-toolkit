@@ -21,18 +21,18 @@ namespace {
 // - @p sample_ind index in input array to start from.
 // - @p len How many samples do we need at output.
 // - @p len_mask Bit mask of input array length.
-float dot_prod(const float* coeff,
-               const float* samples,
-               const size_t sample_ind,
-               const size_t len,
-               const size_t len_mask) {
+double dot_prod(const double* coeff,
+                const double* samples,
+                const size_t sample_ind,
+                const size_t len,
+                const size_t len_mask) {
     double accum = 0;
 
     for (size_t i = sample_ind, j = 0; j < len; i = (i - 1) & len_mask, ++j) {
-        accum += (double)coeff[j] * (double)samples[i];
+        accum += coeff[j] * samples[i];
     }
 
-    return (float)accum;
+    return accum;
 }
 
 } // namespace
@@ -46,18 +46,19 @@ FreqEstimator::FreqEstimator(FreqEstimatorConfig config,
     , samples_counter_(0)
     , accum_(0)
     , coeff_(1) {
-    roc_panic_if_msg(config_.decimation_factor1 == 0,
-                     "freq_estimator: decimation "
-                     "factor 1 must not be zero");
+    roc_panic_if_msg(
+        config_.decimation_factor1 < 1
+            || config_.decimation_factor1 > fe_decim_factor_max,
+        "freq estimator: invalid decimation factor 1: got=%lu expected=[1; %lu]",
+        (unsigned long)config_.decimation_factor1, (unsigned long)fe_decim_factor_max);
 
-    roc_panic_if_msg(config_.decimation_factor1 > fe_decim_factor_max
-                         || config_.decimation_factor2 > fe_decim_factor_max,
-                     "freq_estimator: decimation factor must be less or equal to %lu",
-                     (unsigned long)fe_decim_factor_max);
+    roc_panic_if_msg(
+        config_.decimation_factor2 > fe_decim_factor_max,
+        "freq estimator: invalid decimation factor 2: got=%lu expected=[0; %lu]",
+        (unsigned long)config_.decimation_factor2, (unsigned long)fe_decim_factor_max);
 
-    if (fe_decim_len % 2 != 0) {
-        roc_panic("freq estimator: decim_len should be power of two");
-    }
+    roc_panic_if_msg(fe_decim_len % 2 != 0,
+                     "freq estimator: decim_len should be power of two");
 
     memset(dec1_casc_buff_, 0, sizeof(dec1_casc_buff_));
     memset(dec2_casc_buff_, 0, sizeof(dec2_casc_buff_));
@@ -69,21 +70,21 @@ FreqEstimator::FreqEstimator(FreqEstimatorConfig config,
 }
 
 float FreqEstimator::freq_coeff() const {
-    return coeff_;
+    return (float)coeff_;
 }
 
 void FreqEstimator::update(packet::timestamp_t current) {
-    float filtered;
+    double filtered;
 
     if (run_decimators_(current, filtered)) {
         coeff_ = run_controller_(filtered);
     }
 }
 
-bool FreqEstimator::run_decimators_(packet::timestamp_t current, float& filtered) {
+bool FreqEstimator::run_decimators_(packet::timestamp_t current, double& filtered) {
     samples_counter_++;
 
-    dec1_casc_buff_[dec1_ind_] = (float)current;
+    dec1_casc_buff_[dec1_ind_] = current;
 
     if ((samples_counter_ % config_.decimation_factor1) == 0) {
         // Time to calculate first decimator's samples.
@@ -116,8 +117,8 @@ bool FreqEstimator::run_decimators_(packet::timestamp_t current, float& filtered
     return false;
 }
 
-float FreqEstimator::run_controller_(float current) {
-    const float error = (current - target_);
+double FreqEstimator::run_controller_(double current) {
+    const double error = (current - target_);
 
     accum_ = accum_ + error;
     return 1 + config_.P * error + config_.I * accum_;
