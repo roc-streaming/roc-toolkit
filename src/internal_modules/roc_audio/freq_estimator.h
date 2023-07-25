@@ -20,6 +20,17 @@
 namespace roc {
 namespace audio {
 
+//! FreqEstimator paremeter preset.
+enum FreqEstimatorProfile {
+    //! Slow and smooth tuning.
+    //! Got for higher network latency and jitter.
+    FreqEstimatorProfile_Smooth,
+
+    //! Fast and responsive tuning.
+    //! Got for lower network latency and jitter.
+    FreqEstimatorProfile_Responsive,
+};
+
 //! FreqEstimator tunable parameters.
 struct FreqEstimatorConfig {
     double P; //!< Proportional gain of PI-controller.
@@ -34,10 +45,10 @@ struct FreqEstimatorConfig {
     size_t decimation_factor2;
 
     FreqEstimatorConfig()
-        : P(1e-6)
-        , I(5e-9)
-        , decimation_factor1(fe_decim_factor_max)
-        , decimation_factor2(fe_decim_factor_max) {
+        : P(0)
+        , I(0)
+        , decimation_factor1(0)
+        , decimation_factor2(0) {
     }
 };
 
@@ -53,8 +64,9 @@ public:
     //! Initialize.
     //!
     //! @b Parameters
+    //!  - @p profile defines configuration preset.
     //!  - @p target_latency defines latency we want to archive.
-    explicit FreqEstimator(FreqEstimatorConfig config,
+    explicit FreqEstimator(FreqEstimatorProfile profile,
                            packet::timestamp_t target_latency);
 
     //! Get current frequecy coefficient.

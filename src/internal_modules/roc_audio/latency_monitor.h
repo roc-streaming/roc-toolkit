@@ -80,6 +80,7 @@ public:
     //!  - @p target_latency defines FreqEstimator target latency, in samples
     //!  - @p input_sample_spec is the sample spec of the input packets
     //!  - @p output_sample_spec is the sample spec of the output frames
+    //!  - @p fe_profile define frequency estimator configuration preset
     LatencyMonitor(const packet::SortedQueue& queue,
                    const Depacketizer& depacketizer,
                    ResamplerReader* resampler,
@@ -87,7 +88,7 @@ public:
                    core::nanoseconds_t target_latency,
                    const audio::SampleSpec& input_sample_spec,
                    const audio::SampleSpec& output_sample_spec,
-                   const FreqEstimatorConfig& fe_config);
+                   FreqEstimatorProfile fe_profile);
 
     //! Check if the object was initialized successfully.
     bool is_valid() const;
