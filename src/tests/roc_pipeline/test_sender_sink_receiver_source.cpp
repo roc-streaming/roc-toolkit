@@ -110,10 +110,10 @@ make_sender_config(int flags, size_t frame_channels, size_t packet_channels) {
     config.fec_writer.n_source_packets = SourcePackets;
     config.fec_writer.n_repair_packets = RepairPackets;
 
-    config.interleaving = (flags & FlagInterleaving);
-    config.timing = false;
-    config.poisoning = true;
-    config.profiling = true;
+    config.enable_interleaving = (flags & FlagInterleaving);
+    config.enable_timing = false;
+    config.enable_poisoning = true;
+    config.enable_profiling = true;
 
     return config;
 }
@@ -131,9 +131,9 @@ ReceiverConfig make_receiver_config(size_t frame_channels, size_t packet_channel
     config.common.internal_frame_length = MaxBufSize * core::Second
         / core::nanoseconds_t(SampleRate * std::max(frame_channels, packet_channels));
 
-    config.common.resampling = false;
-    config.common.timing = false;
-    config.common.poisoning = true;
+    config.common.enable_resampling = false;
+    config.common.enable_timing = false;
+    config.common.enable_poisoning = true;
 
     config.default_session.target_latency = Latency * core::Second / SampleRate;
     config.default_session.watchdog.no_playback_timeout =

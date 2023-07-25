@@ -117,7 +117,7 @@ ReceiverSession::ReceiverSession(
     }
 
     depacketizer_.reset(new (depacketizer_) audio::Depacketizer(
-        *preader, *payload_decoder_, format->sample_spec, common_config.beeping));
+        *preader, *payload_decoder_, format->sample_spec, common_config.enable_beeping));
     if (!depacketizer_ || !depacketizer_->is_valid()) {
         return;
     }
@@ -149,8 +149,8 @@ ReceiverSession::ReceiverSession(
         areader = channel_mapper_reader_.get();
     }
 
-    if (common_config.resampling) {
-        if (common_config.poisoning) {
+    if (common_config.enable_resampling) {
+        if (common_config.enable_poisoning) {
             resampler_poisoner_.reset(new (resampler_poisoner_)
                                           audio::PoisonReader(*areader));
             if (!resampler_poisoner_) {
@@ -183,7 +183,7 @@ ReceiverSession::ReceiverSession(
         areader = resampler_reader_.get();
     }
 
-    if (common_config.poisoning) {
+    if (common_config.enable_poisoning) {
         session_poisoner_.reset(new (session_poisoner_) audio::PoisonReader(*areader));
         if (!session_poisoner_) {
             return;

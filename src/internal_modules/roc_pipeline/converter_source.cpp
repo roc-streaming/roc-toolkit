@@ -37,10 +37,10 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
         areader = channel_mapper_reader_.get();
     }
 
-    if (config.resampling
+    if (config.enable_resampling
         && config.input_sample_spec.sample_rate()
             != config.output_sample_spec.sample_rate()) {
-        if (config.poisoning) {
+        if (config.enable_poisoning) {
             resampler_poisoner_.reset(new (resampler_poisoner_)
                                           audio::PoisonReader(*areader));
             if (!resampler_poisoner_) {
@@ -72,7 +72,7 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
         areader = resampler_reader_.get();
     }
 
-    if (config.poisoning) {
+    if (config.enable_poisoning) {
         pipeline_poisoner_.reset(new (pipeline_poisoner_) audio::PoisonReader(*areader));
         if (!pipeline_poisoner_) {
             return;
@@ -80,7 +80,7 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
         areader = pipeline_poisoner_.get();
     }
 
-    if (config.profiling) {
+    if (config.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingReader(
             *areader, allocator, config.output_sample_spec, config.profiler_config));
         if (!profiler_ || !profiler_->is_valid()) {
