@@ -9,6 +9,7 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_audio/freq_estimator.h"
+#include "roc_core/macro_helpers.h"
 
 namespace roc {
 namespace audio {
@@ -16,6 +17,9 @@ namespace audio {
 namespace {
 
 enum { Target = 10000 };
+
+const FreqEstimatorProfile Profiles[] = { FreqEstimatorProfile_Smooth,
+                                          FreqEstimatorProfile_Responsive };
 
 const double Epsilon = 0.0001;
 
@@ -26,35 +30,43 @@ TEST_GROUP(freq_estimator) {
 };
 
 TEST(freq_estimator, initial) {
-    FreqEstimator fe(fe_config, Target);
+    for (size_t p = 0; p < ROC_ARRAY_SIZE(Profiles); p++) {
+        FreqEstimator fe(Profiles[p], Target);
 
-    DOUBLES_EQUAL(1.0, (double)fe.freq_coeff(), Epsilon);
+        DOUBLES_EQUAL(1.0, (double)fe.freq_coeff(), Epsilon);
+    }
 }
 
 TEST(freq_estimator, aim_queue_size) {
-    FreqEstimator fe(fe_config, Target);
+    for (size_t p = 0; p < ROC_ARRAY_SIZE(Profiles); p++) {
+        FreqEstimator fe(Profiles[p], Target);
 
-    for (size_t n = 0; n < 1000; n++) {
-        fe.update(Target);
+        for (size_t n = 0; n < 1000; n++) {
+            fe.update(Target);
+        }
+
+        DOUBLES_EQUAL(1.0, (double)fe.freq_coeff(), Epsilon);
     }
-
-    DOUBLES_EQUAL(1.0, (double)fe.freq_coeff(), Epsilon);
 }
 
 TEST(freq_estimator, large_queue_size) {
-    FreqEstimator fe(fe_config, Target);
+    for (size_t p = 0; p < ROC_ARRAY_SIZE(Profiles); p++) {
+        FreqEstimator fe(Profiles[p], Target);
 
-    do {
-        fe.update(Target * 2);
-    } while (fe.freq_coeff() < 1.01f);
+        do {
+            fe.update(Target * 2);
+        } while (fe.freq_coeff() < 1.01f);
+    }
 }
 
 TEST(freq_estimator, small_queue_size) {
-    FreqEstimator fe(fe_config, Target);
+    for (size_t p = 0; p < ROC_ARRAY_SIZE(Profiles); p++) {
+        FreqEstimator fe(Profiles[p], Target);
 
-    do {
-        fe.update(Target / 2);
-    } while (fe.freq_coeff() > 0.99f);
+        do {
+            fe.update(Target / 2);
+        } while (fe.freq_coeff() > 0.99f);
+    }
 }
 
 } // namespace audio

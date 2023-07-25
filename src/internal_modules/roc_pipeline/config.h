@@ -173,8 +173,8 @@ struct ReceiverSessionConfig {
     //! RTP validator parameters.
     rtp::ValidatorConfig rtp_validator;
 
-    //! FreqEstimator config.
-    audio::FreqEstimatorConfig freq_estimator_config;
+    //! FreqEstimator profile.
+    audio::FreqEstimatorProfile freq_estimator_profile;
 
     //! LatencyMonitor parameters.
     audio::LatencyMonitorConfig latency_monitor;
@@ -191,6 +191,7 @@ struct ReceiverSessionConfig {
     ReceiverSessionConfig()
         : target_latency(DefaultLatency)
         , payload_type()
+        , freq_estimator_profile(audio::FreqEstimatorProfile_Smooth)
         , resampler_backend(audio::ResamplerBackend_Default)
         , resampler_profile(audio::ResamplerProfile_Medium) {
         latency_monitor.deduce_min_latency(DefaultLatency);

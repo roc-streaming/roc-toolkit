@@ -7,6 +7,7 @@
  */
 
 #include "roc_audio/freq_estimator.h"
+#include "roc_core/log.h"
 #include "roc_core/panic.h"
 
 namespace roc {
@@ -14,13 +15,36 @@ namespace audio {
 
 namespace {
 
-// Calculates dot product of arrays IR of filter (@p coeff) and input array (@p samples).
+// Make config from profile.
+FreqEstimatorConfig make_config(FreqEstimatorProfile profile) {
+    FreqEstimatorConfig config;
+
+    switch (profile) {
+    case FreqEstimatorProfile_Smooth:
+        config.P = 1e-6;
+        config.I = 5e-9;
+        config.decimation_factor1 = fe_decim_factor_max;
+        config.decimation_factor2 = fe_decim_factor_max;
+        break;
+
+    case FreqEstimatorProfile_Responsive:
+        config.P = 1e-6;
+        config.I = 1e-10;
+        config.decimation_factor1 = fe_decim_factor_max;
+        config.decimation_factor2 = 0;
+        break;
+    }
+
+    return config;
+}
+
+// Calculate dot product of arrays IR of filter (coeff) and input array (samples).
 //
-// - @p coeff Filter impulse response.
-// - @p samples Array with sample values.
-// - @p sample_ind index in input array to start from.
-// - @p len How many samples do we need at output.
-// - @p len_mask Bit mask of input array length.
+// - coeff: Filter impulse response.
+// - samples: Array with sample values.
+// - sample_ind: index in input array to start from.
+// - len: How many samples do we need at output.
+// - len_mask: Bit mask of input array length.
 double dot_prod(const double* coeff,
                 const double* samples,
                 const size_t sample_ind,
@@ -37,15 +61,19 @@ double dot_prod(const double* coeff,
 
 } // namespace
 
-FreqEstimator::FreqEstimator(FreqEstimatorConfig config,
+FreqEstimator::FreqEstimator(FreqEstimatorProfile profile,
                              packet::timestamp_t target_latency)
-    : config_(config)
+    : config_(make_config(profile))
     , target_(target_latency)
     , dec1_ind_(0)
     , dec2_ind_(0)
     , samples_counter_(0)
     , accum_(0)
     , coeff_(1) {
+    roc_log(LogDebug, "freq estimator: initializing: P=%e I=%e dc1=%lu dc2=%lu",
+            config_.P, config_.I, (unsigned long)config_.decimation_factor1,
+            (unsigned long)config_.decimation_factor2);
+
     roc_panic_if_msg(
         config_.decimation_factor1 < 1
             || config_.decimation_factor1 > fe_decim_factor_max,
