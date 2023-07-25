@@ -44,15 +44,12 @@ int main(int argc, char** argv) {
     case color_arg_auto:
         core::Logger::instance().set_colors(core::ColorsAuto);
         break;
-
     case color_arg_always:
         core::Logger::instance().set_colors(core::ColorsEnabled);
         break;
-
     case color_arg_never:
         core::Logger::instance().set_colors(core::ColorsDisabled);
         break;
-
     default:
         break;
     }
@@ -158,15 +155,12 @@ int main(int argc, char** argv) {
     case resampler_profile_arg_low:
         converter_config.resampler_profile = audio::ResamplerProfile_Low;
         break;
-
     case resampler_profile_arg_medium:
         converter_config.resampler_profile = audio::ResamplerProfile_Medium;
         break;
-
     case resampler_profile_arg_high:
         converter_config.resampler_profile = audio::ResamplerProfile_High;
         break;
-
     default:
         break;
     }

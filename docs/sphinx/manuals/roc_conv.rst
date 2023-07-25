@@ -24,11 +24,10 @@ Options
 --output-format=FILE_FORMAT  Force output file format
 --frame-length=TIME          Duration of the internal frames, TIME units
 -r, --rate=INT               Output sample rate, Hz
---no-resampling              Disable resampling  (default=off)
---resampler-backend=ENUM     Resampler backend  (possible values="builtin" default=`builtin')
+--resampler-backend=ENUM     Resampler backend  (possible values="default", "builtin", "speex" default=`default')
 --resampler-profile=ENUM     Resampler profile  (possible values="low", "medium", "high" default=`medium')
 --poisoning                  Enable uninitialized memory poisoning (default=off)
---profiling                  Enable self profiling (default=off)
+--profiling                  Enable self profiling  (default=off)
 --color=ENUM                 Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
 
 File URI

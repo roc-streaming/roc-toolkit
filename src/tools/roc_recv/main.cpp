@@ -8,6 +8,7 @@
 
 #include "roc_address/endpoint_uri.h"
 #include "roc_address/io_uri.h"
+#include "roc_audio/freq_estimator.h"
 #include "roc_audio/resampler_profile.h"
 #include "roc_core/array.h"
 #include "roc_core/crash_handler.h"
@@ -50,15 +51,12 @@ int main(int argc, char** argv) {
     case color_arg_auto:
         core::Logger::instance().set_colors(core::ColorsAuto);
         break;
-
     case color_arg_always:
         core::Logger::instance().set_colors(core::ColorsEnabled);
         break;
-
     case color_arg_never:
         core::Logger::instance().set_colors(core::ColorsDisabled);
         break;
-
     default:
         break;
     }
@@ -128,64 +126,76 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (args.min_latency_given) {
-        if (!core::parse_duration(
-                args.min_latency_arg,
-                receiver_config.default_session.latency_monitor.min_latency)) {
-            roc_log(LogError, "invalid --min-latency");
+    if (args.latency_tolerance_given) {
+        core::nanoseconds_t latency_tolerance = 0;
+        if (!core::parse_duration(args.latency_tolerance_arg, latency_tolerance)) {
+            roc_log(LogError, "invalid --latency-tolerance");
             return 1;
         }
+        receiver_config.default_session.latency_monitor.min_latency =
+            receiver_config.default_session.target_latency
+            - (core::nanoseconds_t)latency_tolerance;
+        receiver_config.default_session.latency_monitor.max_latency =
+            receiver_config.default_session.target_latency
+            + (core::nanoseconds_t)latency_tolerance;
     } else {
         receiver_config.default_session.latency_monitor.deduce_min_latency(
             receiver_config.default_session.target_latency);
-    }
-
-    if (args.max_latency_given) {
-        if (!core::parse_duration(
-                args.max_latency_arg,
-                receiver_config.default_session.latency_monitor.max_latency)) {
-            roc_log(LogError, "invalid --max-latency");
-            return 1;
-        }
-    } else {
         receiver_config.default_session.latency_monitor.deduce_max_latency(
             receiver_config.default_session.target_latency);
     }
 
-    if (args.np_timeout_given) {
+    if (args.no_play_timeout_given) {
         if (!core::parse_duration(
-                args.np_timeout_arg,
+                args.no_play_timeout_arg,
                 receiver_config.default_session.watchdog.no_playback_timeout)) {
-            roc_log(LogError, "invalid --np-timeout");
+            roc_log(LogError, "invalid --no-play-timeout");
             return 1;
         }
     }
 
-    if (args.cp_timeout_given) {
+    if (args.choppy_play_timeout_given) {
         if (!core::parse_duration(
-                args.cp_timeout_arg,
+                args.choppy_play_timeout_arg,
                 receiver_config.default_session.watchdog.choppy_playback_timeout)) {
-            roc_log(LogError, "invalid --cp-timeout");
+            roc_log(LogError, "invalid --choppy-play-timeout");
             return 1;
         }
-    }
-
-    if (args.cp_window_given) {
-        if (!core::parse_duration(
-                args.cp_window_arg,
-                receiver_config.default_session.watchdog.choppy_playback_window)) {
-            roc_log(LogError, "invalid --cp-window");
-            return 1;
-        }
-    } else {
         receiver_config.default_session.watchdog.deduce_choppy_playback_window(
             receiver_config.default_session.watchdog.choppy_playback_timeout);
     }
 
+    switch (args.clock_backend_arg) {
+    case clock_backend_arg_disable:
+        receiver_config.default_session.latency_monitor.fe_enable = false;
+        break;
+    case clock_backend_arg_niq:
+        receiver_config.default_session.latency_monitor.fe_enable = true;
+        break;
+    default:
+        break;
+    }
+
+    switch (args.clock_profile_arg) {
+    case clock_profile_arg_default:
+        receiver_config.default_session.latency_monitor.deduce_fe_profile(
+            receiver_config.default_session.target_latency);
+        break;
+    case clock_profile_arg_responsive:
+        receiver_config.default_session.latency_monitor.fe_profile =
+            audio::FreqEstimatorProfile_Responsive;
+        break;
+    case clock_profile_arg_gradual:
+        receiver_config.default_session.latency_monitor.fe_profile =
+            audio::FreqEstimatorProfile_Gradual;
+        break;
+    default:
+        break;
+    }
+
     switch (args.resampler_backend_arg) {
     case resampler_backend_arg_default:
-        receiver_config.default_session.resampler_backend =
-            audio::ResamplerBackend_Default;
+        receiver_config.default_session.deduce_resampler_backend();
         break;
     case resampler_backend_arg_builtin:
         receiver_config.default_session.resampler_backend =
@@ -202,12 +212,10 @@ int main(int argc, char** argv) {
     case resampler_profile_arg_low:
         receiver_config.default_session.resampler_profile = audio::ResamplerProfile_Low;
         break;
-
     case resampler_profile_arg_medium:
         receiver_config.default_session.resampler_profile =
             audio::ResamplerProfile_Medium;
         break;
-
     case resampler_profile_arg_high:
         receiver_config.default_session.resampler_profile = audio::ResamplerProfile_High;
         break;
@@ -218,7 +226,7 @@ int main(int argc, char** argv) {
 
     receiver_config.common.enable_poisoning = args.poisoning_flag;
     receiver_config.common.enable_profiling = args.profiling_flag;
-    receiver_config.common.enable_beeping = args.beeping_flag;
+    receiver_config.common.enable_beeping = args.beep_flag;
 
     sndio::Config io_config;
     io_config.frame_length = receiver_config.common.internal_frame_length;

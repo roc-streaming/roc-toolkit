@@ -81,23 +81,17 @@ enable SO_REUSEADDR when binding sockets
 .BI \-\-sess\-latency\fB= STRING
 Session target latency, TIME units
 .TP
-.BI \-\-min\-latency\fB= STRING
-Session minimum latency, TIME units
-.TP
-.BI \-\-max\-latency\fB= STRING
-Session maximum latency, TIME units
-.TP
 .BI \-\-io\-latency\fB= STRING
 Playback target latency, TIME units
 .TP
-.BI \-\-np\-timeout\fB= STRING
-Session no playback timeout, TIME units
+.BI \-\-latency\-tolerance\fB= STRING
+Maximum latency deviation, TIME units
 .TP
-.BI \-\-cp\-timeout\fB= STRING
-Session choppy playback timeout, TIME units
+.BI \-\-no\-play\-timeout\fB= STRING
+No playback timeout, TIME units
 .TP
-.BI \-\-cp\-window\fB= STRING
-Session choppy playback detection window, TIME units
+.BI \-\-choppy\-play\-timeout\fB= STRING
+Choppy playback timeout, TIME units
 .TP
 .BI \-\-packet\-limit\fB= INT
 Maximum packet size, in bytes
@@ -111,8 +105,11 @@ Duration of the internal frames, TIME units
 .BI \-\-rate\fB= INT
 Override output sample rate, Hz
 .TP
-.B  \-\-no\-resampling
-Disable resampling  (default=off)
+.BI \-\-clock\-backend\fB= ENUM
+Clock synchronization backend  (possible values="disable", "niq" default=\(ganiq\(aq)
+.TP
+.BI \-\-clock\-profile\fB= ENUM
+Clock synchronization profile  (possible values="default", "responsive", "gradual" default=\(gadefault\(aq)
 .TP
 .BI \-\-resampler\-backend\fB= ENUM
 Resampler backend  (possible values="default", "builtin", "speex" default=\(gadefault\(aq)
@@ -127,9 +124,9 @@ Exit when last connected client disconnects (default=off)
 Enable uninitialized memory poisoning (default=off)
 .TP
 .B  \-\-profiling
-Enable self profiling  (default=off)
+Enable self\-profiling  (default=off)
 .TP
-.B  \-\-beeping
+.B  \-\-beep
 Enable beeping on packet loss  (default=off)
 .TP
 .BI \-\-color\fB= ENUM
