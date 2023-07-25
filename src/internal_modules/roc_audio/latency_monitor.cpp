@@ -207,7 +207,7 @@ bool LatencyMonitor::update_scaling_(packet::timestamp_t pos,
     if (rate_limiter_.allow()) {
         roc_log(LogDebug,
                 "latency monitor:"
-                " latency=%lu(%.3fms) target=%lu(%.3fms) fe=%.5f trim_fe=%.5f",
+                " latency=%lu(%.3fms) target=%lu(%.3fms) fe=%.6f trim_fe=%.6f",
                 (unsigned long)latency,
                 (double)input_sample_spec_.rtp_timestamp_2_ns(
                     (packet::timestamp_diff_t)latency)
@@ -221,7 +221,7 @@ bool LatencyMonitor::update_scaling_(packet::timestamp_t pos,
 
     if (!resampler_->set_scaling(trimmed_coeff)) {
         roc_log(LogDebug,
-                "latency monitor: scaling factor out of bounds: fe=%.5f trim_fe=%.5f",
+                "latency monitor: scaling factor out of bounds: fe=%.6f trim_fe=%.6f",
                 (double)freq_coeff, (double)trimmed_coeff);
         return false;
     }
