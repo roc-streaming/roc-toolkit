@@ -50,15 +50,12 @@ int main(int argc, char** argv) {
     case color_arg_auto:
         core::Logger::instance().set_colors(core::ColorsAuto);
         break;
-
     case color_arg_always:
         core::Logger::instance().set_colors(core::ColorsEnabled);
         break;
-
     case color_arg_never:
         core::Logger::instance().set_colors(core::ColorsDisabled);
         break;
-
     default:
         break;
     }
@@ -182,17 +179,14 @@ int main(int argc, char** argv) {
     case resampler_profile_arg_low:
         sender_config.resampler_profile = audio::ResamplerProfile_Low;
         break;
-
     case resampler_profile_arg_medium:
         sender_config.resampler_profile = audio::ResamplerProfile_Medium;
         break;
-
     case resampler_profile_arg_high:
         sender_config.resampler_profile = audio::ResamplerProfile_High;
         break;
-
     default:
-        roc_panic("unexpected resampler profile");
+        break;
     }
 
     sender_config.enable_interleaving = args.interleaving_flag;

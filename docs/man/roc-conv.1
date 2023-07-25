@@ -69,11 +69,8 @@ Duration of the internal frames, TIME units
 .BI \-r\fP,\fB  \-\-rate\fB= INT
 Output sample rate, Hz
 .TP
-.B  \-\-no\-resampling
-Disable resampling  (default=off)
-.TP
 .BI \-\-resampler\-backend\fB= ENUM
-Resampler backend  (possible values="builtin" default=\(gabuiltin\(aq)
+Resampler backend  (possible values="default", "builtin", "speex" default=\(gadefault\(aq)
 .TP
 .BI \-\-resampler\-profile\fB= ENUM
 Resampler profile  (possible values="low", "medium", "high" default=\(gamedium\(aq)
@@ -82,7 +79,7 @@ Resampler profile  (possible values="low", "medium", "high" default=\(gamedium\(
 Enable uninitialized memory poisoning (default=off)
 .TP
 .B  \-\-profiling
-Enable self profiling (default=off)
+Enable self profiling  (default=off)
 .TP
 .BI \-\-color\fB= ENUM
 Set colored logging mode for stderr output (possible values="auto", "always", "never" default=\(gaauto\(aq)
