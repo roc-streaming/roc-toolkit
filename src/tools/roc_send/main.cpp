@@ -164,8 +164,6 @@ int main(int argc, char** argv) {
         sender_config.fec_writer.n_repair_packets = (size_t)args.nbrpr_arg;
     }
 
-    sender_config.enable_resampling = !args.no_resampling_flag;
-
     switch (args.resampler_backend_arg) {
     case resampler_backend_arg_default:
         sender_config.resampler_backend = audio::ResamplerBackend_Default;
@@ -218,10 +216,6 @@ int main(int argc, char** argv) {
             return 1;
         }
         io_config.sample_spec.set_sample_rate((size_t)args.rate_arg);
-    } else {
-        if (!sender_config.enable_resampling) {
-            io_config.sample_spec.set_sample_rate(pipeline::DefaultSampleRate);
-        }
     }
 
     address::IoUri input_uri(context.allocator());

@@ -63,8 +63,6 @@ section "Options"
     option "rate" - "Override output sample rate, Hz"
         int optional
 
-    option "no-resampling" - "Disable resampling" flag off
-
     option "resampler-backend" - "Resampler backend"
         values="default","builtin","speex" default="default" enum optional
 

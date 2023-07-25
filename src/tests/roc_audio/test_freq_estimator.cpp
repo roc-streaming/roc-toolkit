@@ -18,8 +18,8 @@ namespace {
 
 enum { Target = 10000 };
 
-const FreqEstimatorProfile Profiles[] = { FreqEstimatorProfile_Smooth,
-                                          FreqEstimatorProfile_Responsive };
+const FreqEstimatorProfile Profiles[] = { FreqEstimatorProfile_Responsive,
+                                          FreqEstimatorProfile_Gradual };
 
 const double Epsilon = 0.0001;
 

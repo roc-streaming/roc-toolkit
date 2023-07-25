@@ -182,8 +182,6 @@ int main(int argc, char** argv) {
             receiver_config.default_session.watchdog.choppy_playback_timeout);
     }
 
-    receiver_config.common.enable_resampling = !args.no_resampling_flag;
-
     switch (args.resampler_backend_arg) {
     case resampler_backend_arg_default:
         receiver_config.default_session.resampler_backend =
@@ -240,10 +238,6 @@ int main(int argc, char** argv) {
             return 1;
         }
         io_config.sample_spec.set_sample_rate((size_t)args.rate_arg);
-    } else {
-        if (!receiver_config.common.enable_resampling) {
-            io_config.sample_spec.set_sample_rate(pipeline::DefaultSampleRate);
-        }
     }
 
     address::IoUri output_uri(context.allocator());
@@ -347,7 +341,6 @@ int main(int argc, char** argv) {
         converter_config.internal_frame_length =
             receiver_config.common.internal_frame_length;
 
-        converter_config.enable_resampling = receiver_config.common.enable_resampling;
         converter_config.enable_poisoning = receiver_config.common.enable_poisoning;
 
         backup_pipeline.reset(new (context.allocator()) pipeline::ConverterSource(

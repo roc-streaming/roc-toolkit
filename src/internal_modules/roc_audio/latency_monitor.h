@@ -18,6 +18,7 @@
 #include "roc_audio/sample_spec.h"
 #include "roc_core/attributes.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/optional.h"
 #include "roc_core/rate_limiter.h"
 #include "roc_core/time.h"
 #include "roc_packet/sorted_queue.h"
@@ -28,6 +29,12 @@ namespace audio {
 
 //! Parameters for latency monitor.
 struct LatencyMonitorConfig {
+    //! Enable FreqEstimator.
+    bool fe_enable;
+
+    //! FreqEstimator profile.
+    audio::FreqEstimatorProfile fe_profile;
+
     //! FreqEstimator update interval, nanoseconds.
     //! How often to run FreqEstimator and update Resampler scaling.
     core::nanoseconds_t fe_update_interval;
@@ -46,10 +53,19 @@ struct LatencyMonitorConfig {
     float max_scaling_delta;
 
     LatencyMonitorConfig()
-        : fe_update_interval(5 * core::Millisecond)
+        : fe_enable(true)
+        , fe_profile(FreqEstimatorProfile_Responsive)
+        , fe_update_interval(5 * core::Millisecond)
         , min_latency(0)
         , max_latency(0)
         , max_scaling_delta(0.005f) {
+    }
+
+    //! Automatically deduce FreqEstimator profile from target latency.
+    void deduce_fe_profile(core::nanoseconds_t target_latency) {
+        fe_profile = target_latency < 20 * core::Millisecond
+            ? FreqEstimatorProfile_Responsive
+            : FreqEstimatorProfile_Gradual;
     }
 
     //! Automatically deduce min_latency from target_latency.
@@ -80,15 +96,13 @@ public:
     //!  - @p target_latency defines FreqEstimator target latency, in samples
     //!  - @p input_sample_spec is the sample spec of the input packets
     //!  - @p output_sample_spec is the sample spec of the output frames
-    //!  - @p fe_profile define frequency estimator configuration preset
     LatencyMonitor(const packet::SortedQueue& queue,
                    const Depacketizer& depacketizer,
                    ResamplerReader* resampler,
                    const LatencyMonitorConfig& config,
                    core::nanoseconds_t target_latency,
                    const audio::SampleSpec& input_sample_spec,
-                   const audio::SampleSpec& output_sample_spec,
-                   FreqEstimatorProfile fe_profile);
+                   const audio::SampleSpec& output_sample_spec);
 
     //! Check if the object was initialized successfully.
     bool is_valid() const;
@@ -102,17 +116,17 @@ private:
     bool get_latency_(packet::timestamp_diff_t& latency) const;
     bool check_latency_(packet::timestamp_diff_t latency) const;
 
+    bool init_scaling_(size_t input_sample_rate, size_t output_sample_rate);
+    bool update_scaling_(packet::timestamp_t time, packet::timestamp_t latency);
     float trim_scaling_(float scaling) const;
-
-    bool init_resampler_(size_t input_sample_rate, size_t output_sample_rate);
-    bool update_resampler_(packet::timestamp_t time, packet::timestamp_t latency);
 
     void report_latency_(packet::timestamp_diff_t latency);
 
     const packet::SortedQueue& queue_;
     const Depacketizer& depacketizer_;
+
     ResamplerReader* resampler_;
-    FreqEstimator fe_;
+    core::Optional<FreqEstimator> fe_;
 
     core::RateLimiter rate_limiter_;
 
