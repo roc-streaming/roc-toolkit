@@ -22,26 +22,32 @@ namespace audio {
 
 //! FreqEstimator tunable parameters.
 struct FreqEstimatorConfig {
-    float P; //!< Proportional gain of PI-controller.
-    float I; //!< Integral gain of PI-controller.
+    double P; //!< Proportional gain of PI-controller.
+    double I; //!< Integral gain of PI-controller.
 
-    //! How much downsample input value (latency buffer size) on the first stage. Must be
-    //! less or equal to fe_decim_factor_max and must be greater than zero.
+    //! How much downsample input value (latency buffer size) on the first stage.
+    //! Must be less or equal to fe_decim_factor_max and must be greater than zero.
     size_t decimation_factor1;
-    //! How much downsample input value on the second stage. Must be
-    //! less or equal to fe_decim_factor_max. Could be zero to disable the second
-    //! decimation stage.
+
+    //! How much downsample input value on the second stage. Must be less or equal
+    //! to fe_decim_factor_max. Could be zero to disable the second decimation stage.
     size_t decimation_factor2;
 
     FreqEstimatorConfig()
-        : P(100e-8f)
-        , I(0.5e-8f)
+        : P(1e-6)
+        , I(5e-9)
         , decimation_factor1(fe_decim_factor_max)
         , decimation_factor2(fe_decim_factor_max) {
     }
 };
 
 //! Evaluates sender's frequency to receivers's frequency ratio.
+//! @remarks
+//!  We provide FreqEstimator with traget latency and periodically update it with
+//!  the actual latency. In response, FreqEstimator computes frequency coefficient,
+//!  the ratio of sender to receiver frequency. This coefficient is then set as
+//!  the scaling factor of the resampler, which in result compensates the frequency
+//!  difference and moves the latency closer to its target value.
 class FreqEstimator : public core::NonCopyable<> {
 public:
     //! Initialize.
@@ -50,6 +56,7 @@ public:
     //!  - @p target_latency defines latency we want to archive.
     explicit FreqEstimator(FreqEstimatorConfig config,
                            packet::timestamp_t target_latency);
+
     //! Get current frequecy coefficient.
     float freq_coeff() const;
 
@@ -57,22 +64,22 @@ public:
     void update(packet::timestamp_t current_latency);
 
 private:
-    bool run_decimators_(packet::timestamp_t current, float& filtered);
-    float run_controller_(float current);
+    bool run_decimators_(packet::timestamp_t current, double& filtered);
+    double run_controller_(double current);
 
     const FreqEstimatorConfig config_;
-    const float target_; // Target latency.
+    const double target_; // Target latency.
 
-    float dec1_casc_buff_[fe_decim_len];
+    double dec1_casc_buff_[fe_decim_len];
     size_t dec1_ind_;
 
-    float dec2_casc_buff_[fe_decim_len];
+    double dec2_casc_buff_[fe_decim_len];
     size_t dec2_ind_;
 
     size_t samples_counter_; // Input samples counter.
-    float accum_;            // Integrator value.
+    double accum_;           // Integrator value.
 
-    float coeff_; // Current frequency coefficient value.
+    double coeff_; // Current frequency coefficient value.
 };
 
 } // namespace audio
