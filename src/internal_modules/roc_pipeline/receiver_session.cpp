@@ -195,7 +195,7 @@ ReceiverSession::ReceiverSession(
         *source_queue_, *depacketizer_, resampler_reader_.get(),
         session_config.latency_monitor, session_config.target_latency,
         format->sample_spec, common_config.output_sample_spec,
-        session_config.freq_estimator_config));
+        session_config.freq_estimator_profile));
     if (!latency_monitor_ || !latency_monitor_->is_valid()) {
         return;
     }
