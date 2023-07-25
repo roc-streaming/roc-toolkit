@@ -63,19 +63,23 @@ struct LatencyMonitorConfig {
 
     //! Automatically deduce FreqEstimator profile from target latency.
     void deduce_fe_profile(core::nanoseconds_t target_latency) {
-        fe_profile = target_latency < 20 * core::Millisecond
+        fe_profile = target_latency < 30 * core::Millisecond
+            // prefer responsive profile on low latencies, because gradual profile
+            // won't do it at all
             ? FreqEstimatorProfile_Responsive
+            // prefer gradual profile for higher latencies, because it can handle
+            // higher network jitter
             : FreqEstimatorProfile_Gradual;
     }
 
     //! Automatically deduce min_latency from target_latency.
     void deduce_min_latency(core::nanoseconds_t target_latency) {
-        min_latency = -target_latency;
+        min_latency = target_latency - target_latency;
     }
 
     //! Automatically deduce max_latency from target_latency.
     void deduce_max_latency(core::nanoseconds_t target_latency) {
-        max_latency = target_latency * 2;
+        max_latency = target_latency + target_latency;
     }
 };
 
