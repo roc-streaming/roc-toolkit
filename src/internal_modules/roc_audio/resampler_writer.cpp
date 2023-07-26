@@ -16,7 +16,6 @@ namespace audio {
 ResamplerWriter::ResamplerWriter(IFrameWriter& writer,
                                  IResampler& resampler,
                                  core::BufferFactory<sample_t>& buffer_factory,
-                                 core::nanoseconds_t frame_length,
                                  const SampleSpec& in_sample_spec,
                                  const SampleSpec& out_sample_spec)
     : resampler_(resampler)
@@ -39,17 +38,11 @@ ResamplerWriter::ResamplerWriter(IFrameWriter& writer,
         return;
     }
 
-    const size_t out_frame_size = out_sample_spec_.ns_2_samples_overall(frame_length);
-    if (out_frame_size == 0) {
-        roc_log(LogError, "resampler writer: frame size can't be zero");
-        return;
-    }
-
     if (!(output_ = buffer_factory.new_buffer())) {
         roc_log(LogError, "resampler writer: can't allocate buffer for output frame");
         return;
     }
-    output_.reslice(0, out_frame_size);
+    output_.reslice(0, output_.capacity());
 
     valid_ = true;
 }
@@ -82,11 +75,18 @@ void ResamplerWriter::write(Frame& frame) {
         output_pos_ += num_popped;
 
         if (output_pos_ == output_.size()) {
-            output_pos_ = 0;
-
             Frame out_frame(output_.data(), output_.size());
             writer_.write(out_frame);
+
+            output_pos_ = 0;
         }
+    }
+
+    if (output_pos_ != 0) {
+        Frame out_frame(output_.data(), output_pos_);
+        writer_.write(out_frame);
+
+        output_pos_ = 0;
     }
 }
 

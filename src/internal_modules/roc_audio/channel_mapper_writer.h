@@ -30,7 +30,6 @@ public:
     //! Initialize.
     ChannelMapperWriter(IFrameWriter& writer,
                         core::BufferFactory<sample_t>& buffer_factory,
-                        core::nanoseconds_t frame_length,
                         const SampleSpec& in_spec,
                         const SampleSpec& out_spec);
 
@@ -47,7 +46,6 @@ private:
     core::Slice<sample_t> output_buf_;
 
     ChannelMapper mapper_;
-    const bool mapper_enabled_;
 
     const SampleSpec in_spec_;
     const SampleSpec out_spec_;

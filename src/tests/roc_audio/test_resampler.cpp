@@ -135,12 +135,11 @@ void resample_writer(IResampler& resampler,
                      sample_t* out,
                      size_t num_samples,
                      const audio::SampleSpec& sample_spec,
-                     core::nanoseconds_t frame_duration,
                      float scaling) {
     test::MockWriter output_writer;
 
-    ResamplerWriter rw(output_writer, resampler, buffer_factory, frame_duration,
-                       sample_spec, sample_spec);
+    ResamplerWriter rw(output_writer, resampler, buffer_factory, sample_spec,
+                       sample_spec);
     CHECK(rw.is_valid());
     CHECK(rw.set_scaling(scaling));
 
@@ -167,12 +166,9 @@ void resample(ResamplerBackend backend,
               size_t num_samples,
               const audio::SampleSpec& sample_spec,
               float scaling) {
-    const core::nanoseconds_t frame_duration =
-        sample_spec.samples_overall_2_ns(InFrameSize * sample_spec.num_channels());
-
     core::ScopedPtr<IResampler> resampler(
         ResamplerMap::instance().new_resampler(backend, allocator, buffer_factory,
-                                               ResamplerProfile_High, frame_duration,
+                                               ResamplerProfile_High, sample_spec,
                                                sample_spec),
         allocator);
     CHECK(resampler);
@@ -181,8 +177,7 @@ void resample(ResamplerBackend backend,
     if (method == Reader) {
         resample_reader(*resampler, in, out, num_samples, sample_spec, scaling);
     } else {
-        resample_writer(*resampler, in, out, num_samples, sample_spec, frame_duration,
-                        scaling);
+        resample_writer(*resampler, in, out, num_samples, sample_spec, scaling);
     }
 }
 
@@ -195,51 +190,47 @@ TEST(resampler, supported_scalings) {
 
     ResamplerProfile profiles[] = { ResamplerProfile_Low, ResamplerProfile_Medium,
                                     ResamplerProfile_High };
-    size_t frame_sizes[] = { 128, 256, 512 };
     size_t rates[] = { 44100, 48000 };
     float scalings[] = { 0.95f, 0.99f, 1.00f, 1.01f, 1.05f };
 
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
         for (size_t pn = 0; pn < ROC_ARRAY_SIZE(profiles); pn++) {
-            for (size_t fn = 0; fn < ROC_ARRAY_SIZE(frame_sizes); fn++) {
-                for (size_t irate = 0; irate < ROC_ARRAY_SIZE(rates); irate++) {
-                    const audio::SampleSpec in_sample_specs =
-                        SampleSpec(rates[irate], audio::ChannelLayout_Surround, ChMask);
-                    for (size_t orate = 0; orate < ROC_ARRAY_SIZE(rates); orate++) {
-                        const audio::SampleSpec out_sample_specs = SampleSpec(
-                            rates[orate], audio::ChannelLayout_Surround, ChMask);
-                        for (size_t sn = 0; sn < ROC_ARRAY_SIZE(scalings); sn++) {
-                            core::ScopedPtr<IResampler> resampler(
-                                ResamplerMap::instance().new_resampler(
-                                    backend, allocator, buffer_factory, profiles[pn],
-                                    in_sample_specs.samples_overall_2_ns(frame_sizes[fn]),
-                                    in_sample_specs),
-                                allocator);
-                            CHECK(resampler);
-                            CHECK(resampler->is_valid());
+            for (size_t irate = 0; irate < ROC_ARRAY_SIZE(rates); irate++) {
+                const audio::SampleSpec in_sample_specs =
+                    SampleSpec(rates[irate], audio::ChannelLayout_Surround, ChMask);
+                for (size_t orate = 0; orate < ROC_ARRAY_SIZE(rates); orate++) {
+                    const audio::SampleSpec out_sample_specs =
+                        SampleSpec(rates[orate], audio::ChannelLayout_Surround, ChMask);
+                    for (size_t sn = 0; sn < ROC_ARRAY_SIZE(scalings); sn++) {
+                        core::ScopedPtr<IResampler> resampler(
+                            ResamplerMap::instance().new_resampler(
+                                backend, allocator, buffer_factory, profiles[pn],
+                                in_sample_specs, out_sample_specs),
+                            allocator);
+                        CHECK(resampler);
+                        CHECK(resampler->is_valid());
 
-                            test::MockReader input_reader;
-                            input_reader.pad_zeros();
+                        test::MockReader input_reader;
+                        input_reader.pad_zeros();
 
-                            ResamplerReader rr(input_reader, *resampler, in_sample_specs,
-                                               out_sample_specs);
-                            CHECK(rr.is_valid());
+                        ResamplerReader rr(input_reader, *resampler, in_sample_specs,
+                                           out_sample_specs);
+                        CHECK(rr.is_valid());
 
-                            for (int iter = 0; iter < NumIters; iter++) {
-                                if (!rr.set_scaling(scalings[sn])) {
-                                    roc_panic("set_scaling() failed:"
-                                              " irate=%d orate=%d scaling=%f frame=%d"
-                                              " profile=%d backend=%d iteration=%d",
-                                              (int)rates[irate], (int)rates[orate],
-                                              (double)scalings[sn], (int)frame_sizes[fn],
-                                              (int)profiles[pn], (int)backend, iter);
-                                }
-
-                                sample_t samples[32];
-                                Frame frame(samples, ROC_ARRAY_SIZE(samples));
-                                CHECK(rr.read(frame));
+                        for (int iter = 0; iter < NumIters; iter++) {
+                            if (!rr.set_scaling(scalings[sn])) {
+                                roc_panic("set_scaling() failed:"
+                                          " irate=%d orate=%d scaling=%f"
+                                          " profile=%d backend=%d iteration=%d",
+                                          (int)rates[irate], (int)rates[orate],
+                                          (double)scalings[sn], (int)profiles[pn],
+                                          (int)backend, iter);
                             }
+
+                            sample_t samples[32];
+                            Frame frame(samples, ROC_ARRAY_SIZE(samples));
+                            CHECK(rr.read(frame));
                         }
                     }
                 }
@@ -256,9 +247,9 @@ TEST(resampler, invalid_scalings) {
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
         core::ScopedPtr<IResampler> resampler(
-            ResamplerMap::instance().new_resampler(
-                backend, allocator, buffer_factory, ResamplerProfile_High,
-                SampleSpecs.samples_overall_2_ns(InFrameSize), SampleSpecs),
+            ResamplerMap::instance().new_resampler(backend, allocator, buffer_factory,
+                                                   ResamplerProfile_High, SampleSpecs,
+                                                   SampleSpecs),
             allocator);
         CHECK(resampler);
         CHECK(resampler->is_valid());
