@@ -36,6 +36,7 @@ namespace pipeline {
 //! Default sample rate, number of samples per second.
 const size_t DefaultSampleRate = 44100;
 
+//! Default sample specification.
 static const audio::SampleSpec DefaultSampleSpec(DefaultSampleRate,
                                                  audio::ChannelLayout_Surround,
                                                  audio::ChannelMask_Stereo);
@@ -45,9 +46,6 @@ const core::nanoseconds_t DefaultPacketLength = 7 * core::Millisecond;
 
 //! Default latency.
 const core::nanoseconds_t DefaultLatency = 200 * core::Millisecond;
-
-//! Default internal frame length.
-const core::nanoseconds_t DefaultInternalFrameLength = 7 * core::Millisecond;
 
 //! Task processing parameters.
 struct TaskConfig {
@@ -87,7 +85,7 @@ struct TaskConfig {
     TaskConfig()
         : enable_precise_task_scheduling(true)
         , min_frame_length_between_tasks(200 * core::Microsecond)
-        , max_frame_length_between_tasks(DefaultInternalFrameLength)
+        , max_frame_length_between_tasks(1 * core::Millisecond)
         , max_inframe_task_processing(20 * core::Microsecond)
         , task_processing_prohibited_interval(200 * core::Microsecond) {
     }
@@ -112,9 +110,6 @@ struct SenderConfig {
 
     //! Input sample spec
     audio::SampleSpec input_sample_spec;
-
-    //! Duration of the internal frames, in nanoseconds.
-    core::nanoseconds_t internal_frame_length;
 
     //! Packet length, in nanoseconds.
     core::nanoseconds_t packet_length;
@@ -141,7 +136,6 @@ struct SenderConfig {
         : resampler_backend(audio::ResamplerBackend_Default)
         , resampler_profile(audio::ResamplerProfile_Medium)
         , input_sample_spec(DefaultSampleSpec)
-        , internal_frame_length(DefaultInternalFrameLength)
         , packet_length(DefaultPacketLength)
         , payload_type(rtp::PayloadType_L16_Stereo)
         , enable_interleaving(false)
@@ -209,9 +203,6 @@ struct ReceiverCommonConfig {
     //! Output sample spec
     audio::SampleSpec output_sample_spec;
 
-    //! Duration of the internal frames, in nanoseconds.
-    core::nanoseconds_t internal_frame_length;
-
     //! Constrain receiver speed using a CPU timer according to the sample rate.
     bool enable_timing;
 
@@ -229,7 +220,6 @@ struct ReceiverCommonConfig {
 
     ReceiverCommonConfig()
         : output_sample_spec(DefaultSampleSpec)
-        , internal_frame_length(DefaultInternalFrameLength)
         , enable_timing(false)
         , enable_poisoning(false)
         , enable_profiling(false)
@@ -263,9 +253,6 @@ struct ConverterConfig {
     //! Output sample spec
     audio::SampleSpec output_sample_spec;
 
-    //! Duration of the internal frames, in nanoseconds.
-    core::nanoseconds_t internal_frame_length;
-
     //! Fill unitialized data with large values to make them more noticable.
     bool enable_poisoning;
 
@@ -280,7 +267,6 @@ struct ConverterConfig {
         , resampler_profile(audio::ResamplerProfile_Medium)
         , input_sample_spec(DefaultSampleSpec)
         , output_sample_spec(DefaultSampleSpec)
-        , internal_frame_length(DefaultInternalFrameLength)
         , enable_poisoning(false)
         , enable_profiling(false) {
     }
