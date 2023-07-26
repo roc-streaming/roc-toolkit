@@ -577,8 +577,7 @@ typedef struct roc_sender_config {
      *
      * Packet encoding defines sample format, channel layout, and sample rate in network
      * packets. If packet encoding differs from frame encoding, conversion is performed
-     * automatically. If sample rates are different, resampling should be enabled
-     * via \c resampler_profile.
+     * automatically.
      *
      * If zero, sender selects packet encoding automatically based on \c frame_encoding.
      * This automatic selection matches only encodings that have exact same sample rate
@@ -617,14 +616,29 @@ typedef struct roc_sender_config {
 
     /** Number of source packets per FEC block.
      * Used if some FEC encoding is selected.
-     * Larger number increases robustness but also increases latency.
+     *
+     * Sender divides stream into blocks of N source (media) packets, and adds M repair
+     * (redundancy) packets to each block, where N is \c fec_block_source_packets and M
+     * is \c fec_block_repair_packets.
+     *
+     * Larger number of source packets in block increases robustness (repair ratio), but
+     * also increases latency.
+     *
      * If zero, default value is used.
      */
     unsigned int fec_block_source_packets;
 
     /** Number of repair packets per FEC block.
      * Used if some FEC encoding is selected.
-     * Larger number increases robustness but also increases traffic.
+     *
+     * Sender divides stream into blocks of N source (media) packets, and adds M repair
+     * (redundancy) packets to each block, where N is \c fec_block_source_packets and M
+     * is \c fec_block_repair_packets.
+     *
+     * Larger number of repair packets in block increases robustness (repair ratio), but
+     * also increases traffic. Number of repair packets usually should be 1/2 or 2/3 of
+     * the number of source packets.
+     *
      * If zero, default value is used.
      */
     unsigned int fec_block_repair_packets;
