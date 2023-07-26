@@ -17,13 +17,11 @@ namespace audio {
 
 ChannelMapperWriter::ChannelMapperWriter(IFrameWriter& writer,
                                          core::BufferFactory<sample_t>& buffer_factory,
-                                         core::nanoseconds_t frame_length,
                                          const SampleSpec& in_spec,
                                          const SampleSpec& out_spec)
     : output_writer_(writer)
     , output_buf_()
     , mapper_(in_spec.channel_set(), out_spec.channel_set())
-    , mapper_enabled_(in_spec.channel_set() != out_spec.channel_set())
     , in_spec_(in_spec)
     , out_spec_(out_spec)
     , valid_(false) {
@@ -34,32 +32,13 @@ ChannelMapperWriter::ChannelMapperWriter(IFrameWriter& writer,
                   sample_spec_to_str(out_spec).c_str());
     }
 
-    if (mapper_enabled_) {
-        const size_t frame_size = out_spec.ns_2_samples_overall(frame_length);
-        roc_log(LogDebug,
-                "channel mapper writer:"
-                " initializing: frame_size=%lu in_chans=%s out_chans=%s",
-                (unsigned long)frame_size,
-                channel_set_to_str(in_spec.channel_set()).c_str(),
-                channel_set_to_str(out_spec.channel_set()).c_str());
-
-        if (frame_size == 0) {
-            roc_log(LogError, "channel mapper writer: frame size cannot be 0");
-            return;
-        }
-
-        output_buf_ = buffer_factory.new_buffer();
-        if (!output_buf_) {
-            roc_log(LogError, "channel mapper writer: can't allocate temporary buffer");
-            return;
-        }
-
-        if (output_buf_.capacity() < frame_size) {
-            roc_log(LogError, "channel mapper writer: allocated buffer is too small");
-            return;
-        }
-        output_buf_.reslice(0, frame_size);
+    output_buf_ = buffer_factory.new_buffer();
+    if (!output_buf_) {
+        roc_log(LogError, "channel mapper writer: can't allocate temporary buffer");
+        return;
     }
+
+    output_buf_.reslice(0, output_buf_.capacity());
 
     valid_ = true;
 }
@@ -73,10 +52,6 @@ void ChannelMapperWriter::write(Frame& in_frame) {
 
     if (in_frame.num_samples() % in_spec_.num_channels() != 0) {
         roc_panic("channel mapper writer: unexpected frame size");
-    }
-
-    if (!mapper_enabled_) {
-        return output_writer_.write(in_frame);
     }
 
     const size_t max_batch = output_buf_.size() / out_spec_.num_channels();

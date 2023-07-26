@@ -28,29 +28,15 @@ sample_t clamp(const sample_t x) {
 
 } // namespace
 
-Mixer::Mixer(core::BufferFactory<sample_t>& buffer_factory,
-             core::nanoseconds_t frame_length,
-             const audio::SampleSpec& sample_spec)
+Mixer::Mixer(core::BufferFactory<sample_t>& buffer_factory)
     : valid_(false) {
-    size_t frame_size = sample_spec.ns_2_samples_overall(frame_length);
-    roc_log(LogDebug, "mixer: initializing: frame_size=%lu", (unsigned long)frame_size);
-
-    if (frame_size == 0) {
-        roc_log(LogError, "mixer: frame size cannot be 0");
-        return;
-    }
-
     temp_buf_ = buffer_factory.new_buffer();
     if (!temp_buf_) {
         roc_log(LogError, "mixer: can't allocate temporary buffer");
         return;
     }
 
-    if (temp_buf_.capacity() < frame_size) {
-        roc_log(LogError, "mixer: allocated buffer is too small");
-        return;
-    }
-    temp_buf_.reslice(0, frame_size);
+    temp_buf_.reslice(0, temp_buf_.capacity());
 
     valid_ = true;
 }

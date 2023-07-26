@@ -139,8 +139,7 @@ ReceiverSession::ReceiverSession(
         != common_config.output_sample_spec.channel_set()) {
         channel_mapper_reader_.reset(
             new (channel_mapper_reader_) audio::ChannelMapperReader(
-                *areader, sample_buffer_factory, common_config.internal_frame_length,
-                format->sample_spec,
+                *areader, sample_buffer_factory, format->sample_spec,
                 audio::SampleSpec(format->sample_spec.sample_rate(),
                                   common_config.output_sample_spec.channel_set())));
         if (!channel_mapper_reader_ || !channel_mapper_reader_->is_valid()) {
@@ -164,9 +163,10 @@ ReceiverSession::ReceiverSession(
         resampler_.reset(
             audio::ResamplerMap::instance().new_resampler(
                 session_config.resampler_backend, allocator, sample_buffer_factory,
-                session_config.resampler_profile, common_config.internal_frame_length,
+                session_config.resampler_profile,
                 audio::SampleSpec(format->sample_spec.sample_rate(),
-                                  common_config.output_sample_spec.channel_set())),
+                                  common_config.output_sample_spec.channel_set()),
+                common_config.output_sample_spec),
             allocator);
 
         if (!resampler_) {
