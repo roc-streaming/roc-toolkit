@@ -100,14 +100,17 @@ int main(int argc, char** argv) {
 
     pipeline::ReceiverConfig receiver_config;
 
+    sndio::Config io_config;
+    io_config.sample_spec.set_channel_set(
+        receiver_config.common.output_sample_spec.channel_set());
+
     if (args.frame_length_given) {
-        if (!core::parse_duration(args.frame_length_arg,
-                                  receiver_config.common.internal_frame_length)) {
+        if (!core::parse_duration(args.frame_length_arg, io_config.frame_length)) {
             roc_log(LogError, "invalid --frame-length: bad format");
             return 1;
         }
         if (receiver_config.common.output_sample_spec.ns_2_samples_overall(
-                receiver_config.common.internal_frame_length)
+                io_config.frame_length)
             <= 0) {
             roc_log(LogError, "invalid --frame-length: should be > 0");
             return 1;
@@ -115,8 +118,7 @@ int main(int argc, char** argv) {
     }
 
     sndio::BackendMap::instance().set_frame_size(
-        receiver_config.common.internal_frame_length,
-        receiver_config.common.output_sample_spec);
+        io_config.frame_length, receiver_config.common.output_sample_spec);
 
     if (args.sess_latency_given) {
         if (!core::parse_duration(args.sess_latency_arg,
@@ -227,11 +229,6 @@ int main(int argc, char** argv) {
     receiver_config.common.enable_poisoning = args.poisoning_flag;
     receiver_config.common.enable_profiling = args.profiling_flag;
     receiver_config.common.enable_beeping = args.beep_flag;
-
-    sndio::Config io_config;
-    io_config.frame_length = receiver_config.common.internal_frame_length;
-    io_config.sample_spec.set_channel_set(
-        receiver_config.common.output_sample_spec.channel_set());
 
     if (args.io_latency_given) {
         if (!core::parse_duration(args.io_latency_arg, io_config.latency)) {
@@ -345,9 +342,6 @@ int main(int argc, char** argv) {
         converter_config.output_sample_spec =
             audio::SampleSpec(receiver_config.common.output_sample_spec.sample_rate(),
                               receiver_config.common.output_sample_spec.channel_set());
-
-        converter_config.internal_frame_length =
-            receiver_config.common.internal_frame_length;
 
         converter_config.enable_poisoning = receiver_config.common.enable_poisoning;
 
@@ -493,8 +487,7 @@ int main(int argc, char** argv) {
 
     sndio::Pump pump(
         context.sample_buffer_factory(), receiver.source(), backup_pipeline.get(),
-        *output_sink, receiver_config.common.internal_frame_length,
-        receiver_config.common.output_sample_spec,
+        *output_sink, io_config.frame_length, receiver_config.common.output_sample_spec,
         args.oneshot_flag ? sndio::Pump::ModeOneshot : sndio::Pump::ModePermanent);
     if (!pump.is_valid()) {
         roc_log(LogError, "can't create pump");

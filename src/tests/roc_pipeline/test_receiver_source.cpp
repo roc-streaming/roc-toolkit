@@ -89,11 +89,6 @@ TEST_GROUP(receiver_source) {
 
         config.common.output_sample_spec = output_sample_spec;
 
-        config.common.internal_frame_length = MaxBufSize * core::Second
-            / core::nanoseconds_t(SampleRate
-                                  * std::max(output_sample_spec.num_channels(),
-                                             packet_sample_spec.num_channels()));
-
         config.common.enable_timing = false;
         config.common.enable_poisoning = true;
         config.common.enable_profiling = true;

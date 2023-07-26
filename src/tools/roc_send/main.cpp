@@ -98,6 +98,9 @@ int main(int argc, char** argv) {
 
     pipeline::SenderConfig sender_config;
 
+    sndio::Config io_config;
+    io_config.sample_spec.set_channel_set(sender_config.input_sample_spec.channel_set());
+
     if (args.packet_length_given) {
         if (!core::parse_duration(args.packet_length_arg, sender_config.packet_length)) {
             roc_log(LogError, "invalid --packet-length");
@@ -106,20 +109,18 @@ int main(int argc, char** argv) {
     }
 
     if (args.frame_length_given) {
-        if (!core::parse_duration(args.frame_length_arg,
-                                  sender_config.internal_frame_length)) {
+        if (!core::parse_duration(args.frame_length_arg, io_config.frame_length)) {
             roc_log(LogError, "invalid --frame-length: bad format");
             return 1;
         }
-        if (sender_config.input_sample_spec.ns_2_samples_overall(
-                sender_config.internal_frame_length)
+        if (sender_config.input_sample_spec.ns_2_samples_overall(io_config.frame_length)
             <= 0) {
             roc_log(LogError, "invalid --frame-length: should be > 0");
             return 1;
         }
     }
 
-    sndio::BackendMap::instance().set_frame_size(sender_config.internal_frame_length,
+    sndio::BackendMap::instance().set_frame_size(io_config.frame_length,
                                                  sender_config.input_sample_spec);
 
     if (args.source_given) {
@@ -192,10 +193,6 @@ int main(int argc, char** argv) {
     sender_config.enable_interleaving = args.interleaving_flag;
     sender_config.enable_poisoning = args.poisoning_flag;
     sender_config.enable_profiling = args.profiling_flag;
-
-    sndio::Config io_config;
-    io_config.sample_spec.set_channel_set(sender_config.input_sample_spec.channel_set());
-    io_config.frame_length = sender_config.internal_frame_length;
 
     if (args.io_latency_given) {
         if (!core::parse_duration(args.io_latency_arg, io_config.latency)) {
@@ -349,7 +346,7 @@ int main(int argc, char** argv) {
     }
 
     sndio::Pump pump(context.sample_buffer_factory(), *input_source, NULL, sender.sink(),
-                     sender_config.internal_frame_length, sender_config.input_sample_spec,
+                     io_config.frame_length, sender_config.input_sample_spec,
                      sndio::Pump::ModePermanent);
     if (!pump.is_valid()) {
         roc_log(LogError, "can't create audio pump");

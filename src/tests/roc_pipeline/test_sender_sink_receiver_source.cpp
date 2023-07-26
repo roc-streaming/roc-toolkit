@@ -98,8 +98,6 @@ make_sender_config(int flags, size_t frame_channels, size_t packet_channels) {
     }
 
     config.packet_length = SamplesPerPacket * core::Second / SampleRate;
-    config.internal_frame_length = MaxBufSize * core::Second
-        / core::nanoseconds_t(SampleRate * std::max(frame_channels, packet_channels));
 
     if (flags & FlagReedSolomon) {
         config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
@@ -128,9 +126,6 @@ ReceiverConfig make_receiver_config(size_t frame_channels, size_t packet_channel
     config.common.output_sample_spec.channel_set().set_channel_range(
         0, frame_channels - 1, true);
 
-    config.common.internal_frame_length = MaxBufSize * core::Second
-        / core::nanoseconds_t(SampleRate * std::max(frame_channels, packet_channels));
-
     config.common.enable_timing = false;
     config.common.enable_poisoning = true;
 
@@ -138,6 +133,8 @@ ReceiverConfig make_receiver_config(size_t frame_channels, size_t packet_channel
     config.default_session.target_latency = Latency * core::Second / SampleRate;
     config.default_session.watchdog.no_playback_timeout =
         Timeout * core::Second / SampleRate;
+
+    (void)packet_channels;
 
     return config;
 }

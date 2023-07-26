@@ -14,10 +14,14 @@
 
 #include "roc_audio/sample_spec.h"
 #include "roc_core/stddefs.h"
+#include "roc_core/time.h"
 #include "roc_packet/units.h"
 
 namespace roc {
 namespace sndio {
+
+//! Default frame length.
+const core::nanoseconds_t DefaultFrameLength = 1 * core::Millisecond;
 
 //! Sink and source config.
 struct Config {
@@ -32,8 +36,7 @@ struct Config {
 
     //! Initialize.
     Config()
-        : sample_spec()
-        , frame_length(0)
+        : frame_length(DefaultFrameLength)
         , latency(0) {
     }
 };
