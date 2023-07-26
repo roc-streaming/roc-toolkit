@@ -59,7 +59,7 @@ env.AlwaysBuild('internal_modules')
 
 if not GetOption('disable_shared') or GetOption('enable_static') or GetOption('enable_examples'):
     libs_env = subenvs.public_libs.DeepClone()
-    libs_env.Append(CPPDEFINES=('ROC_MODULE', 'libroc'))
+    libs_env.Append(CPPDEFINES=('ROC_MODULE', 'roc_api'))
     libs_env.Append(CPPPATH=['public_api/include'])
 
     public_api_objects = [libs_env.Object(s) for s in env.GlobFiles('public_api/src/*.cpp')]
