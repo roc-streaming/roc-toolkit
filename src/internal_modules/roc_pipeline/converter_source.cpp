@@ -27,8 +27,7 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
         != config.output_sample_spec.channel_set()) {
         channel_mapper_reader_.reset(
             new (channel_mapper_reader_) audio::ChannelMapperReader(
-                *areader, buffer_factory, config.internal_frame_length,
-                config.input_sample_spec,
+                *areader, buffer_factory, config.input_sample_spec,
                 audio::SampleSpec(config.input_sample_spec.sample_rate(),
                                   config.output_sample_spec.channel_set())));
         if (!channel_mapper_reader_ || !channel_mapper_reader_->is_valid()) {
@@ -50,9 +49,10 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
 
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
                              config.resampler_backend, allocator, buffer_factory,
-                             config.resampler_profile, config.internal_frame_length,
+                             config.resampler_profile,
                              audio::SampleSpec(config.input_sample_spec.sample_rate(),
-                                               config.output_sample_spec.channel_set())),
+                                               config.output_sample_spec.channel_set()),
+                             config.output_sample_spec),
                          allocator);
 
         if (!resampler_) {

@@ -588,22 +588,5 @@ TEST(receiver, bad_config) {
     }
 }
 
-TEST(receiver, bad_context) {
-    // this config will prevent correct pipeline construction
-    roc_context_config bad_context_config;
-    memset(&bad_context_config, 0, sizeof(bad_context_config));
-    bad_context_config.max_frame_size = 1;
-
-    roc_context* bad_context = NULL;
-    CHECK(roc_context_open(&bad_context_config, &bad_context) == 0);
-    CHECK(bad_context);
-
-    roc_receiver* receiver = NULL;
-    CHECK(roc_receiver_open(bad_context, &receiver_config, &receiver) != 0);
-    CHECK(!receiver);
-
-    CHECK(roc_context_close(bad_context) == 0);
-}
-
 } // namespace api
 } // namespace roc

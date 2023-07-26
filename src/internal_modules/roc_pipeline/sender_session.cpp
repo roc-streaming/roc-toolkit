@@ -111,7 +111,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
     if (format->sample_spec.channel_set() != config_.input_sample_spec.channel_set()) {
         channel_mapper_writer_.reset(
             new (channel_mapper_writer_) audio::ChannelMapperWriter(
-                *awriter, sample_buffer_factory_, config_.internal_frame_length,
+                *awriter, sample_buffer_factory_,
                 audio::SampleSpec(format->sample_spec.sample_rate(),
                                   config_.input_sample_spec.channel_set()),
                 format->sample_spec));
@@ -134,7 +134,9 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
                              config_.resampler_backend, allocator_,
                              sample_buffer_factory_, config_.resampler_profile,
-                             config_.internal_frame_length, config_.input_sample_spec),
+                             config_.input_sample_spec,
+                             audio::SampleSpec(format->sample_spec.sample_rate(),
+                                               config_.input_sample_spec.channel_set())),
                          allocator_);
 
         if (!resampler_) {
@@ -142,8 +144,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         }
 
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
-            *awriter, *resampler_, sample_buffer_factory_, config_.internal_frame_length,
-            config_.input_sample_spec,
+            *awriter, *resampler_, sample_buffer_factory_, config_.input_sample_spec,
             audio::SampleSpec(format->sample_spec.sample_rate(),
                               config_.input_sample_spec.channel_set())));
 

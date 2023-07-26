@@ -7,6 +7,7 @@
  */
 
 #include "roc_audio/resampler_speex.h"
+#include "roc_audio/sample_spec_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
@@ -17,6 +18,8 @@ namespace audio {
 namespace {
 
 const core::nanoseconds_t LogReportInterval = 20 * core::Second;
+
+const spx_uint32_t InputFrameSize = 32;
 
 inline const char* get_error_msg(int err) {
     if (err == 5) {
@@ -45,15 +48,29 @@ inline int get_quality(ResamplerProfile profile) {
 SpeexResampler::SpeexResampler(core::IAllocator&,
                                core::BufferFactory<sample_t>& buffer_factory,
                                ResamplerProfile profile,
-                               core::nanoseconds_t frame_length,
-                               const audio::SampleSpec& sample_spec)
+                               const audio::SampleSpec& in_spec,
+                               const audio::SampleSpec& out_spec)
     : speex_state_(NULL)
-    , in_frame_size_((spx_uint32_t)sample_spec.ns_2_samples_overall(frame_length))
+    , in_frame_size_(InputFrameSize)
     , in_frame_pos_(in_frame_size_)
-    , num_ch_((spx_uint32_t)sample_spec.num_channels())
+    , num_ch_((spx_uint32_t)in_spec.num_channels())
     , rate_limiter_(LogReportInterval)
     , valid_(false) {
-    if (num_ch_ == 0 || in_frame_size_ == 0) {
+    if (!in_spec.is_valid() || !out_spec.is_valid()) {
+        roc_log(LogError,
+                "speex resampler: invalid sample spec:"
+                " in_spec=%s out_spec=%s",
+                sample_spec_to_str(in_spec).c_str(),
+                sample_spec_to_str(out_spec).c_str());
+        return;
+    }
+
+    if (in_spec.channel_set() != out_spec.channel_set()) {
+        roc_log(LogError,
+                "speex resampler: input and output channel sets should be equal:"
+                " in_spec=%s out_spec=%s",
+                sample_spec_to_str(in_spec).c_str(),
+                sample_spec_to_str(out_spec).c_str());
         return;
     }
 
@@ -72,8 +89,8 @@ SpeexResampler::SpeexResampler(core::IAllocator&,
 
     int err = 0;
     speex_state_ =
-        speex_resampler_init(num_ch_, (spx_uint32_t)sample_spec.sample_rate(),
-                             (spx_uint32_t)sample_spec.sample_rate(), quality, &err);
+        speex_resampler_init(num_ch_, (spx_uint32_t)in_spec.sample_rate(),
+                             (spx_uint32_t)in_spec.sample_rate(), quality, &err);
     if (err != RESAMPLER_ERR_SUCCESS || !speex_state_) {
         roc_log(LogError, "speex resampler: speex_resampler_init(): [%d] %s", err,
                 get_error_msg(err));
@@ -103,7 +120,7 @@ bool SpeexResampler::set_scaling(size_t input_rate, size_t output_rate, float mu
         return false;
     }
 
-    if (mult <= 0 || mult > (0xffffffff / Precision)) {
+    if (mult <= 0 || mult > ((float)0xffffffff / Precision)) {
         roc_log(LogError, "speex resampler: invalid scaling");
         return false;
     }

@@ -17,13 +17,11 @@ namespace audio {
 
 ChannelMapperReader::ChannelMapperReader(IFrameReader& reader,
                                          core::BufferFactory<sample_t>& buffer_factory,
-                                         core::nanoseconds_t frame_length,
                                          const SampleSpec& in_spec,
                                          const SampleSpec& out_spec)
     : input_reader_(reader)
     , input_buf_()
     , mapper_(in_spec.channel_set(), out_spec.channel_set())
-    , mapper_enabled_(in_spec.channel_set() != out_spec.channel_set())
     , in_spec_(in_spec)
     , out_spec_(out_spec)
     , valid_(false) {
@@ -34,32 +32,13 @@ ChannelMapperReader::ChannelMapperReader(IFrameReader& reader,
                   sample_spec_to_str(out_spec).c_str());
     }
 
-    if (mapper_enabled_) {
-        const size_t frame_size = in_spec.ns_2_samples_overall(frame_length);
-        roc_log(LogDebug,
-                "channel mapper reader:"
-                " initializing: frame_size=%lu in_chans=%s out_chans=%s",
-                (unsigned long)frame_size,
-                channel_set_to_str(in_spec.channel_set()).c_str(),
-                channel_set_to_str(out_spec.channel_set()).c_str());
-
-        if (frame_size == 0) {
-            roc_log(LogError, "channel mapper reader: frame size cannot be 0");
-            return;
-        }
-
-        input_buf_ = buffer_factory.new_buffer();
-        if (!input_buf_) {
-            roc_log(LogError, "channel mapper reader: can't allocate temporary buffer");
-            return;
-        }
-
-        if (input_buf_.capacity() < frame_size) {
-            roc_log(LogError, "channel mapper reader: allocated buffer is too small");
-            return;
-        }
-        input_buf_.reslice(0, frame_size);
+    input_buf_ = buffer_factory.new_buffer();
+    if (!input_buf_) {
+        roc_log(LogError, "channel mapper reader: can't allocate temporary buffer");
+        return;
     }
+
+    input_buf_.reslice(0, input_buf_.capacity());
 
     valid_ = true;
 }
@@ -73,10 +52,6 @@ bool ChannelMapperReader::read(Frame& out_frame) {
 
     if (out_frame.num_samples() % out_spec_.num_channels() != 0) {
         roc_panic("channel mapper reader: unexpected frame size");
-    }
-
-    if (!mapper_enabled_) {
-        return input_reader_.read(out_frame);
     }
 
     const size_t max_batch = input_buf_.size() / in_spec_.num_channels();

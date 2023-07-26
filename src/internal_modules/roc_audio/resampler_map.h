@@ -47,8 +47,8 @@ public:
                               core::IAllocator& allocator,
                               core::BufferFactory<sample_t>& buffer_factory,
                               ResamplerProfile profile,
-                              core::nanoseconds_t frame_length,
-                              const audio::SampleSpec& sample_spec);
+                              const audio::SampleSpec& in_spec,
+                              const audio::SampleSpec& out_spec);
 
 private:
     friend class core::Singleton<ResamplerMap>;
@@ -65,8 +65,8 @@ private:
         IResampler* (*ctor)(core::IAllocator& allocator,
                             core::BufferFactory<sample_t>& buffer_factory,
                             ResamplerProfile profile,
-                            core::nanoseconds_t frame_length,
-                            const audio::SampleSpec& sample_spec);
+                            const audio::SampleSpec& in_spec,
+                            const audio::SampleSpec& out_spec);
     };
 
     ResamplerMap();
