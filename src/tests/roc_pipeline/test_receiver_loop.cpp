@@ -24,8 +24,6 @@ namespace {
 
 enum { MaxBufSize = 1000 };
 
-const core::nanoseconds_t MaxBufDuration = core::Millisecond * 10;
-
 core::HeapAllocator allocator;
 core::BufferFactory<audio::sample_t> sample_buffer_factory(allocator, MaxBufSize, true);
 core::BufferFactory<uint8_t> byte_buffer_factory(allocator, MaxBufSize, true);
@@ -108,7 +106,6 @@ TEST_GROUP(receiver_loop) {
     ReceiverConfig config;
 
     void setup() {
-        config.common.internal_frame_length = MaxBufDuration;
         config.common.enable_timing = false;
         config.default_session.latency_monitor.fe_enable = false;
     }

@@ -77,8 +77,6 @@ TEST_GROUP(sender_sink) {
         }
 
         config.packet_length = SamplesPerPacket * core::Second / SampleRate;
-        config.internal_frame_length = MaxBufSize * core::Second
-            / core::nanoseconds_t(SampleRate * packet_sample_spec.num_channels());
 
         config.enable_interleaving = false;
         config.enable_timing = false;

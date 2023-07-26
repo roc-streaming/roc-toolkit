@@ -44,11 +44,6 @@ TEST_GROUP(converter_source) {
         config.input_sample_spec = input_sample_spec;
         config.output_sample_spec = output_sample_spec;
 
-        config.internal_frame_length = MaxBufSize * core::Second
-            / core::nanoseconds_t(SampleRate
-                                  * std::max(input_sample_spec.num_channels(),
-                                             output_sample_spec.num_channels()));
-
         config.enable_poisoning = true;
         config.enable_profiling = true;
 
