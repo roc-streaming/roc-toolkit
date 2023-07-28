@@ -1,10 +1,10 @@
-roc-conv
+roc-copy
 ********
 
 SYNOPSIS
 ========
 
-**roc-conv** *OPTIONS*
+**roc-copy** *OPTIONS*
 
 DESCRIPTION
 ===========
@@ -67,19 +67,19 @@ Convert sample rate to 48k:
 
 .. code::
 
-    $ roc-conv -vv --rate=48000 -i file:input.wav -o file:output.wav
+    $ roc-copy -vv --rate=48000 -i file:input.wav -o file:output.wav
 
 Drop output results (useful for benchmarking):
 
 .. code::
 
-    $ roc-conv -vv --rate=48000 -i file:input.wav
+    $ roc-copy -vv --rate=48000 -i file:input.wav
 
 Input from stdin, output to stdout:
 
 .. code::
 
-    $ roc-conv -vv --input-format=wav -i file:- --output-format=wav -o file:- >./output.wav <./input.wav
+    $ roc-copy -vv --input-format=wav -i file:- --output-format=wav -o file:- >./output.wav <./input.wav
 
 SEE ALSO
 ========

@@ -1,5 +1,5 @@
-package "roc-conv"
-usage "roc-conv OPTIONS"
+package "roc-copy"
+usage "roc-copy OPTIONS"
 
 section "Options"
 
@@ -48,4 +48,4 @@ Use --list-supported option to print the list of the supported
 URI schemes and file formats.
 
 See further details in roc-recv(1) manual page locally or online:
-https://roc-streaming.org/toolkit/docs/manuals/roc_recv.html"
+https://roc-streaming.org/toolkit/docs/manuals/roc_copy.html"
