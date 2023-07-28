@@ -97,10 +97,10 @@ Override input sample rate, Hz
 Disable resampling  (default=off)
 .TP
 .BI \-\-resampler\-backend\fB= ENUM
-Resampler backend  (possible values="default", "builtin", "speex" default=\(gadefault\(aq)
+Resampler backend  (possible values=\(dqdefault\(dq, \(dqbuiltin\(dq, \(dqspeex\(dq default=\(gadefault\(aq)
 .TP
 .BI \-\-resampler\-profile\fB= ENUM
-Resampler profile  (possible values="low", "medium", "high" default=\(gamedium\(aq)
+Resampler profile  (possible values=\(dqlow\(dq, \(dqmedium\(dq, \(dqhigh\(dq default=\(gamedium\(aq)
 .TP
 .B  \-\-interleaving
 Enable packet interleaving  (default=off)
@@ -112,7 +112,7 @@ Enable uninitialized memory poisoning (default=off)
 Enable self profiling  (default=off)
 .TP
 .BI \-\-color\fB= ENUM
-Set colored logging mode for stderr output (possible values="auto", "always", "never" default=\(gaauto\(aq)
+Set colored logging mode for stderr output (possible values=\(dqauto\(dq, \(dqalways\(dq, \(dqnever\(dq default=\(gaauto\(aq)
 .UNINDENT
 .SS Endpoint URI
 .sp
@@ -174,7 +174,7 @@ Supported control protocols:
 .IP \(bu 2
 \fBfile:///ABS/PATH\fP \-\- absolute file path
 .IP \(bu 2
-\fBfile://localhost/ABS/PATH\fP \-\- absolute file path (alternative form; only "localhost" host is supported)
+\fBfile://localhost/ABS/PATH\fP \-\- absolute file path (alternative form; only \(dqlocalhost\(dq host is supported)
 .IP \(bu 2
 \fBfile:/ABS/PATH\fP \-\- absolute file path (alternative form)
 .IP \(bu 2
