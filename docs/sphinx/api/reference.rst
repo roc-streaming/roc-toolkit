@@ -24,6 +24,8 @@ roc_context
 
 .. doxygenfunction:: roc_context_open
 
+.. doxygenfunction:: roc_context_register_encoding
+
 .. doxygenfunction:: roc_context_close
 
 roc_sender
@@ -135,25 +137,51 @@ roc_config
 
 .. doxygenenum:: roc_protocol
 
-.. doxygentypedef:: roc_fec_encoding
-   :outline:
-
-.. doxygenenum:: roc_fec_encoding
-
 .. doxygentypedef:: roc_packet_encoding
    :outline:
 
 .. doxygenenum:: roc_packet_encoding
 
-.. doxygentypedef:: roc_frame_encoding
+.. doxygentypedef:: roc_fec_encoding
    :outline:
 
-.. doxygenenum:: roc_frame_encoding
+.. doxygenenum:: roc_fec_encoding
 
-.. doxygentypedef:: roc_channel_set
+.. doxygentypedef:: roc_format
    :outline:
 
-.. doxygenenum:: roc_channel_set
+.. doxygenenum:: roc_format
+
+.. doxygentypedef:: roc_channel_layout
+   :outline:
+
+.. doxygenenum:: roc_channel_layout
+
+.. doxygentypedef:: roc_media_encoding
+   :outline:
+
+.. doxygenstruct:: roc_media_encoding
+   :members:
+
+.. doxygentypedef:: roc_clock_source
+   :outline:
+
+.. doxygenenum:: roc_clock_source
+
+.. doxygentypedef:: roc_clock_sync_backend
+   :outline:
+
+.. doxygenenum:: roc_clock_sync_backend
+
+.. doxygentypedef:: roc_clock_sync_profile
+   :outline:
+
+.. doxygenenum:: roc_clock_sync_profile
+
+.. doxygentypedef:: roc_resampler_backend
+   :outline:
+
+.. doxygenenum:: roc_resampler_backend
 
 .. doxygentypedef:: roc_resampler_profile
    :outline:
