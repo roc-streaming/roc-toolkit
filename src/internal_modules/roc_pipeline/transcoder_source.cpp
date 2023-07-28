@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_pipeline/converter_source.h"
+#include "roc_pipeline/transcoder_source.h"
 #include "roc_audio/resampler_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
@@ -14,10 +14,10 @@
 namespace roc {
 namespace pipeline {
 
-ConverterSource::ConverterSource(const ConverterConfig& config,
-                                 sndio::ISource& input_source,
-                                 core::BufferFactory<audio::sample_t>& buffer_factory,
-                                 core::IAllocator& allocator)
+TranscoderSource::TranscoderSource(const TranscoderConfig& config,
+                                   sndio::ISource& input_source,
+                                   core::BufferFactory<audio::sample_t>& buffer_factory,
+                                   core::IAllocator& allocator)
     : input_source_(input_source)
     , audio_reader_(NULL)
     , config_(config) {
@@ -91,47 +91,47 @@ ConverterSource::ConverterSource(const ConverterConfig& config,
     audio_reader_ = areader;
 }
 
-bool ConverterSource::is_valid() {
+bool TranscoderSource::is_valid() {
     return audio_reader_;
 }
 
-sndio::DeviceType ConverterSource::type() const {
+sndio::DeviceType TranscoderSource::type() const {
     return input_source_.type();
 }
 
-sndio::DeviceState ConverterSource::state() const {
+sndio::DeviceState TranscoderSource::state() const {
     return input_source_.state();
 }
 
-void ConverterSource::pause() {
+void TranscoderSource::pause() {
     input_source_.pause();
 }
 
-bool ConverterSource::resume() {
+bool TranscoderSource::resume() {
     return input_source_.resume();
 }
 
-bool ConverterSource::restart() {
+bool TranscoderSource::restart() {
     return input_source_.restart();
 }
 
-audio::SampleSpec ConverterSource::sample_spec() const {
+audio::SampleSpec TranscoderSource::sample_spec() const {
     return config_.output_sample_spec;
 }
 
-core::nanoseconds_t ConverterSource::latency() const {
+core::nanoseconds_t TranscoderSource::latency() const {
     return 0;
 }
 
-bool ConverterSource::has_clock() const {
+bool TranscoderSource::has_clock() const {
     return input_source_.has_clock();
 }
 
-void ConverterSource::reclock(packet::ntp_timestamp_t timestamp) {
+void TranscoderSource::reclock(packet::ntp_timestamp_t timestamp) {
     input_source_.reclock(timestamp);
 }
 
-bool ConverterSource::read(audio::Frame& frame) {
+bool TranscoderSource::read(audio::Frame& frame) {
     roc_panic_if(!is_valid());
 
     return audio_reader_->read(frame);

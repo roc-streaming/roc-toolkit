@@ -13,7 +13,7 @@
 
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
-#include "roc_pipeline/converter_source.h"
+#include "roc_pipeline/transcoder_source.h"
 
 namespace roc {
 namespace pipeline {
@@ -34,12 +34,12 @@ core::BufferFactory<audio::sample_t> sample_buffer_factory(allocator, MaxBufSize
 
 } // namespace
 
-TEST_GROUP(converter_source) {
+TEST_GROUP(transcoder_source) {
     audio::SampleSpec input_sample_spec;
     audio::SampleSpec output_sample_spec;
 
-    ConverterConfig make_config() {
-        ConverterConfig config;
+    TranscoderConfig make_config() {
+        TranscoderConfig config;
 
         config.input_sample_spec = input_sample_spec;
         config.output_sample_spec = output_sample_spec;
@@ -65,65 +65,65 @@ TEST_GROUP(converter_source) {
     }
 };
 
-TEST(converter_source, state) {
+TEST(transcoder_source, state) {
     enum { NumCh = 2 };
 
     init(NumCh, NumCh);
 
     test::MockSource mock_source;
 
-    ConverterSource converter(make_config(), mock_source, sample_buffer_factory,
-                              allocator);
-    CHECK(converter.is_valid());
+    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory,
+                                allocator);
+    CHECK(transcoder.is_valid());
 
     mock_source.set_state(sndio::DeviceState_Active);
-    CHECK(converter.state() == sndio::DeviceState_Active);
+    CHECK(transcoder.state() == sndio::DeviceState_Active);
 
     mock_source.set_state(sndio::DeviceState_Idle);
-    CHECK(converter.state() == sndio::DeviceState_Idle);
+    CHECK(transcoder.state() == sndio::DeviceState_Idle);
 }
 
-TEST(converter_source, pause_resume) {
+TEST(transcoder_source, pause_resume) {
     enum { NumCh = 2 };
 
     init(NumCh, NumCh);
 
     test::MockSource mock_source;
 
-    ConverterSource converter(make_config(), mock_source, sample_buffer_factory,
-                              allocator);
-    CHECK(converter.is_valid());
+    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory,
+                                allocator);
+    CHECK(transcoder.is_valid());
 
-    converter.pause();
-    CHECK(converter.state() == sndio::DeviceState_Paused);
+    transcoder.pause();
+    CHECK(transcoder.state() == sndio::DeviceState_Paused);
     CHECK(mock_source.state() == sndio::DeviceState_Paused);
 
-    CHECK(converter.resume());
-    CHECK(converter.state() == sndio::DeviceState_Active);
+    CHECK(transcoder.resume());
+    CHECK(transcoder.state() == sndio::DeviceState_Active);
     CHECK(mock_source.state() == sndio::DeviceState_Active);
 }
 
-TEST(converter_source, pause_restart) {
+TEST(transcoder_source, pause_restart) {
     enum { NumCh = 2 };
 
     init(NumCh, NumCh);
 
     test::MockSource mock_source;
 
-    ConverterSource converter(make_config(), mock_source, sample_buffer_factory,
-                              allocator);
-    CHECK(converter.is_valid());
+    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory,
+                                allocator);
+    CHECK(transcoder.is_valid());
 
-    converter.pause();
-    CHECK(converter.state() == sndio::DeviceState_Paused);
+    transcoder.pause();
+    CHECK(transcoder.state() == sndio::DeviceState_Paused);
     CHECK(mock_source.state() == sndio::DeviceState_Paused);
 
-    CHECK(converter.restart());
-    CHECK(converter.state() == sndio::DeviceState_Active);
+    CHECK(transcoder.restart());
+    CHECK(transcoder.state() == sndio::DeviceState_Active);
     CHECK(mock_source.state() == sndio::DeviceState_Active);
 }
 
-TEST(converter_source, read) {
+TEST(transcoder_source, read) {
     enum { NumCh = 2 };
 
     init(NumCh, NumCh);
@@ -131,11 +131,11 @@ TEST(converter_source, read) {
     test::MockSource mock_source;
     mock_source.add(ManyFrames * SamplesPerFrame, input_sample_spec);
 
-    ConverterSource converter(make_config(), mock_source, sample_buffer_factory,
-                              allocator);
-    CHECK(converter.is_valid());
+    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory,
+                                allocator);
+    CHECK(transcoder.is_valid());
 
-    test::FrameReader frame_reader(converter, sample_buffer_factory);
+    test::FrameReader frame_reader(transcoder, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
@@ -144,16 +144,16 @@ TEST(converter_source, read) {
     UNSIGNED_LONGS_EQUAL(mock_source.num_remaining(), 0);
 }
 
-TEST(converter_source, eof) {
+TEST(transcoder_source, eof) {
     enum { NumCh = 2 };
 
     init(NumCh, NumCh);
 
     test::MockSource mock_source;
 
-    ConverterSource converter(make_config(), mock_source, sample_buffer_factory,
-                              allocator);
-    CHECK(converter.is_valid());
+    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory,
+                                allocator);
+    CHECK(transcoder.is_valid());
 
     core::Slice<audio::sample_t> samples = sample_buffer_factory.new_buffer();
     samples.reslice(0, SamplesPerFrame * NumCh);
@@ -161,11 +161,11 @@ TEST(converter_source, eof) {
     audio::Frame frame(samples.data(), samples.size());
 
     mock_source.add(SamplesPerFrame, input_sample_spec);
-    CHECK(converter.read(frame));
-    CHECK(!converter.read(frame));
+    CHECK(transcoder.read(frame));
+    CHECK(!transcoder.read(frame));
 }
 
-TEST(converter_source, frame_size_small) {
+TEST(transcoder_source, frame_size_small) {
     enum { NumCh = 2, SamplesPerSmallFrame = SamplesPerFrame / 2 - 3 };
 
     init(NumCh, NumCh);
@@ -173,11 +173,11 @@ TEST(converter_source, frame_size_small) {
     test::MockSource mock_source;
     mock_source.add(ManyFrames * SamplesPerSmallFrame, input_sample_spec);
 
-    ConverterSource converter(make_config(), mock_source, sample_buffer_factory,
-                              allocator);
-    CHECK(converter.is_valid());
+    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory,
+                                allocator);
+    CHECK(transcoder.is_valid());
 
-    test::FrameReader frame_reader(converter, sample_buffer_factory);
+    test::FrameReader frame_reader(transcoder, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_reader.read_samples(SamplesPerSmallFrame, 1, output_sample_spec);
@@ -186,7 +186,7 @@ TEST(converter_source, frame_size_small) {
     UNSIGNED_LONGS_EQUAL(mock_source.num_remaining(), 0);
 }
 
-TEST(converter_source, frame_size_large) {
+TEST(transcoder_source, frame_size_large) {
     enum { NumCh = 2, SamplesPerLargeFrame = SamplesPerFrame * 2 + 3 };
 
     init(NumCh, NumCh);
@@ -194,11 +194,11 @@ TEST(converter_source, frame_size_large) {
     test::MockSource mock_source;
     mock_source.add(ManyFrames * SamplesPerLargeFrame, input_sample_spec);
 
-    ConverterSource converter(make_config(), mock_source, sample_buffer_factory,
-                              allocator);
-    CHECK(converter.is_valid());
+    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory,
+                                allocator);
+    CHECK(transcoder.is_valid());
 
-    test::FrameReader frame_reader(converter, sample_buffer_factory);
+    test::FrameReader frame_reader(transcoder, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_reader.read_samples(SamplesPerLargeFrame, 1, output_sample_spec);
@@ -207,7 +207,7 @@ TEST(converter_source, frame_size_large) {
     UNSIGNED_LONGS_EQUAL(mock_source.num_remaining(), 0);
 }
 
-TEST(converter_source, channels_stereo_to_mono) {
+TEST(transcoder_source, channels_stereo_to_mono) {
     enum { InputCh = 2, OutputCh = 1 };
 
     init(InputCh, OutputCh);
@@ -215,11 +215,11 @@ TEST(converter_source, channels_stereo_to_mono) {
     test::MockSource mock_source;
     mock_source.add(ManyFrames * SamplesPerFrame, input_sample_spec);
 
-    ConverterSource converter(make_config(), mock_source, sample_buffer_factory,
-                              allocator);
-    CHECK(converter.is_valid());
+    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory,
+                                allocator);
+    CHECK(transcoder.is_valid());
 
-    test::FrameReader frame_reader(converter, sample_buffer_factory);
+    test::FrameReader frame_reader(transcoder, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
@@ -228,7 +228,7 @@ TEST(converter_source, channels_stereo_to_mono) {
     UNSIGNED_LONGS_EQUAL(mock_source.num_remaining(), 0);
 }
 
-TEST(converter_source, channels_mono_to_stereo) {
+TEST(transcoder_source, channels_mono_to_stereo) {
     enum { InputCh = 1, OutputCh = 2 };
 
     init(InputCh, OutputCh);
@@ -236,11 +236,11 @@ TEST(converter_source, channels_mono_to_stereo) {
     test::MockSource mock_source;
     mock_source.add(ManyFrames * SamplesPerFrame, input_sample_spec);
 
-    ConverterSource converter(make_config(), mock_source, sample_buffer_factory,
-                              allocator);
-    CHECK(converter.is_valid());
+    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory,
+                                allocator);
+    CHECK(transcoder.is_valid());
 
-    test::FrameReader frame_reader(converter, sample_buffer_factory);
+    test::FrameReader frame_reader(transcoder, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);

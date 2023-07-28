@@ -13,7 +13,7 @@
 
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_allocator.h"
-#include "roc_pipeline/converter_sink.h"
+#include "roc_pipeline/transcoder_sink.h"
 
 namespace roc {
 namespace pipeline {
@@ -34,12 +34,12 @@ core::BufferFactory<audio::sample_t> sample_buffer_factory(allocator, MaxBufSize
 
 } // namespace
 
-TEST_GROUP(converter_sink) {
+TEST_GROUP(transcoder_sink) {
     audio::SampleSpec input_sample_spec;
     audio::SampleSpec output_sample_spec;
 
-    ConverterConfig make_config() {
-        ConverterConfig config;
+    TranscoderConfig make_config() {
+        TranscoderConfig config;
 
         config.input_sample_spec = input_sample_spec;
         config.output_sample_spec = output_sample_spec;
@@ -65,33 +65,33 @@ TEST_GROUP(converter_sink) {
     }
 };
 
-TEST(converter_sink, null) {
+TEST(transcoder_sink, null) {
     enum { NumCh = 2 };
 
     init(NumCh, NumCh);
 
-    ConverterSink converter(make_config(), NULL, sample_buffer_factory, allocator);
-    CHECK(converter.is_valid());
+    TranscoderSink transcoder(make_config(), NULL, sample_buffer_factory, allocator);
+    CHECK(transcoder.is_valid());
 
-    test::FrameWriter frame_writer(converter, sample_buffer_factory);
+    test::FrameWriter frame_writer(transcoder, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
     }
 }
 
-TEST(converter_sink, write) {
+TEST(transcoder_sink, write) {
     enum { NumCh = 2 };
 
     init(NumCh, NumCh);
 
     test::FrameChecker frame_checker(output_sample_spec);
 
-    ConverterSink converter(make_config(), &frame_checker, sample_buffer_factory,
-                            allocator);
-    CHECK(converter.is_valid());
+    TranscoderSink transcoder(make_config(), &frame_checker, sample_buffer_factory,
+                              allocator);
+    CHECK(transcoder.is_valid());
 
-    test::FrameWriter frame_writer(converter, sample_buffer_factory);
+    test::FrameWriter frame_writer(transcoder, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
@@ -101,18 +101,18 @@ TEST(converter_sink, write) {
     frame_checker.expect_samples(ManyFrames * SamplesPerFrame);
 }
 
-TEST(converter_sink, frame_size_small) {
+TEST(transcoder_sink, frame_size_small) {
     enum { NumCh = 2, SamplesPerSmallFrame = SamplesPerFrame / 2 - 3 };
 
     init(NumCh, NumCh);
 
     test::FrameChecker frame_checker(output_sample_spec);
 
-    ConverterSink converter(make_config(), &frame_checker, sample_buffer_factory,
-                            allocator);
-    CHECK(converter.is_valid());
+    TranscoderSink transcoder(make_config(), &frame_checker, sample_buffer_factory,
+                              allocator);
+    CHECK(transcoder.is_valid());
 
-    test::FrameWriter frame_writer(converter, sample_buffer_factory);
+    test::FrameWriter frame_writer(transcoder, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerSmallFrame, input_sample_spec);
@@ -122,18 +122,18 @@ TEST(converter_sink, frame_size_small) {
     frame_checker.expect_samples(ManyFrames * SamplesPerSmallFrame);
 }
 
-TEST(converter_sink, frame_size_large) {
+TEST(transcoder_sink, frame_size_large) {
     enum { NumCh = 2, SamplesPerLargeFrame = SamplesPerFrame * 2 + 3 };
 
     init(NumCh, NumCh);
 
     test::FrameChecker frame_checker(output_sample_spec);
 
-    ConverterSink converter(make_config(), &frame_checker, sample_buffer_factory,
-                            allocator);
-    CHECK(converter.is_valid());
+    TranscoderSink transcoder(make_config(), &frame_checker, sample_buffer_factory,
+                              allocator);
+    CHECK(transcoder.is_valid());
 
-    test::FrameWriter frame_writer(converter, sample_buffer_factory);
+    test::FrameWriter frame_writer(transcoder, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerLargeFrame, input_sample_spec);
@@ -143,18 +143,18 @@ TEST(converter_sink, frame_size_large) {
     frame_checker.expect_samples(ManyFrames * SamplesPerLargeFrame);
 }
 
-TEST(converter_sink, channels_stereo_to_mono) {
+TEST(transcoder_sink, channels_stereo_to_mono) {
     enum { InputCh = 2, OutputCh = 1 };
 
     init(InputCh, OutputCh);
 
     test::FrameChecker frame_checker(output_sample_spec);
 
-    ConverterSink converter(make_config(), &frame_checker, sample_buffer_factory,
-                            allocator);
-    CHECK(converter.is_valid());
+    TranscoderSink transcoder(make_config(), &frame_checker, sample_buffer_factory,
+                              allocator);
+    CHECK(transcoder.is_valid());
 
-    test::FrameWriter frame_writer(converter, sample_buffer_factory);
+    test::FrameWriter frame_writer(transcoder, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
@@ -164,18 +164,18 @@ TEST(converter_sink, channels_stereo_to_mono) {
     frame_checker.expect_samples(ManyFrames * SamplesPerFrame);
 }
 
-TEST(converter_sink, channels_mono_to_stereo) {
+TEST(transcoder_sink, channels_mono_to_stereo) {
     enum { InputCh = 1, OutputCh = 2 };
 
     init(InputCh, OutputCh);
 
     test::FrameChecker frame_checker(output_sample_spec);
 
-    ConverterSink converter(make_config(), &frame_checker, sample_buffer_factory,
-                            allocator);
-    CHECK(converter.is_valid());
+    TranscoderSink transcoder(make_config(), &frame_checker, sample_buffer_factory,
+                              allocator);
+    CHECK(transcoder.is_valid());
 
-    test::FrameWriter frame_writer(converter, sample_buffer_factory);
+    test::FrameWriter frame_writer(transcoder, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec);

@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_pipeline/converter_sink.h"
+#include "roc_pipeline/transcoder_sink.h"
 #include "roc_audio/resampler_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
@@ -14,10 +14,10 @@
 namespace roc {
 namespace pipeline {
 
-ConverterSink::ConverterSink(const ConverterConfig& config,
-                             audio::IFrameWriter* output_writer,
-                             core::BufferFactory<audio::sample_t>& buffer_factory,
-                             core::IAllocator& allocator)
+TranscoderSink::TranscoderSink(const TranscoderConfig& config,
+                               audio::IFrameWriter* output_writer,
+                               core::BufferFactory<audio::sample_t>& buffer_factory,
+                               core::IAllocator& allocator)
     : audio_writer_(NULL)
     , config_(config) {
     audio::IFrameWriter* awriter = output_writer;
@@ -91,43 +91,43 @@ ConverterSink::ConverterSink(const ConverterConfig& config,
     audio_writer_ = awriter;
 }
 
-bool ConverterSink::is_valid() {
+bool TranscoderSink::is_valid() {
     return audio_writer_;
 }
 
-sndio::DeviceType ConverterSink::type() const {
+sndio::DeviceType TranscoderSink::type() const {
     return sndio::DeviceType_Sink;
 }
 
-sndio::DeviceState ConverterSink::state() const {
+sndio::DeviceState TranscoderSink::state() const {
     return sndio::DeviceState_Active;
 }
 
-void ConverterSink::pause() {
+void TranscoderSink::pause() {
     // no-op
 }
 
-bool ConverterSink::resume() {
+bool TranscoderSink::resume() {
     return true;
 }
 
-bool ConverterSink::restart() {
+bool TranscoderSink::restart() {
     return true;
 }
 
-audio::SampleSpec ConverterSink::sample_spec() const {
+audio::SampleSpec TranscoderSink::sample_spec() const {
     return config_.output_sample_spec;
 }
 
-core::nanoseconds_t ConverterSink::latency() const {
+core::nanoseconds_t TranscoderSink::latency() const {
     return 0;
 }
 
-bool ConverterSink::has_clock() const {
+bool TranscoderSink::has_clock() const {
     return false;
 }
 
-void ConverterSink::write(audio::Frame& frame) {
+void TranscoderSink::write(audio::Frame& frame) {
     roc_panic_if(!is_valid());
 
     audio_writer_->write(frame);
