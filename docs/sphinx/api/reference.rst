@@ -24,6 +24,8 @@ roc_context
 
 .. doxygenfunction:: roc_context_open
 
+.. doxygenfunction:: roc_context_register_encoding
+
 .. doxygenfunction:: roc_context_close
 
 roc_sender
@@ -75,6 +77,9 @@ roc_frame
 
    #include <roc/frame.h>
 
+.. doxygentypedef:: roc_frame
+   :outline:
+
 .. doxygenstruct:: roc_frame
    :members:
 
@@ -122,29 +127,81 @@ roc_config
 
 .. doxygenvariable:: ROC_SLOT_DEFAULT
 
+.. doxygentypedef:: roc_interface
+   :outline:
+
 .. doxygenenum:: roc_interface
+
+.. doxygentypedef:: roc_protocol
+   :outline:
 
 .. doxygenenum:: roc_protocol
 
+.. doxygentypedef:: roc_packet_encoding
+   :outline:
+
 .. doxygenenum:: roc_packet_encoding
+
+.. doxygentypedef:: roc_fec_encoding
+   :outline:
 
 .. doxygenenum:: roc_fec_encoding
 
-.. doxygenenum:: roc_channel_set
+.. doxygentypedef:: roc_format
+   :outline:
 
-.. doxygenenum:: roc_frame_encoding
+.. doxygenenum:: roc_format
+
+.. doxygentypedef:: roc_channel_layout
+   :outline:
+
+.. doxygenenum:: roc_channel_layout
+
+.. doxygentypedef:: roc_media_encoding
+   :outline:
+
+.. doxygenstruct:: roc_media_encoding
+   :members:
+
+.. doxygentypedef:: roc_clock_source
+   :outline:
 
 .. doxygenenum:: roc_clock_source
 
+.. doxygentypedef:: roc_clock_sync_backend
+   :outline:
+
+.. doxygenenum:: roc_clock_sync_backend
+
+.. doxygentypedef:: roc_clock_sync_profile
+   :outline:
+
+.. doxygenenum:: roc_clock_sync_profile
+
+.. doxygentypedef:: roc_resampler_backend
+   :outline:
+
 .. doxygenenum:: roc_resampler_backend
 
+.. doxygentypedef:: roc_resampler_profile
+   :outline:
+
 .. doxygenenum:: roc_resampler_profile
+
+.. doxygentypedef:: roc_context_config
+   :outline:
 
 .. doxygenstruct:: roc_context_config
    :members:
 
+.. doxygentypedef:: roc_sender_config
+   :outline:
+
 .. doxygenstruct:: roc_sender_config
    :members:
+
+.. doxygentypedef:: roc_receiver_config
+   :outline:
 
 .. doxygenstruct:: roc_receiver_config
    :members:
@@ -156,7 +213,13 @@ roc_log
 
    #include <roc/log.h>
 
+.. doxygentypedef:: roc_log_level
+   :outline:
+
 .. doxygenenum:: roc_log_level
+
+.. doxygentypedef:: roc_log_message
+   :outline:
 
 .. doxygenstruct:: roc_log_message
    :members:
@@ -179,6 +242,9 @@ roc_version
 .. doxygendefine:: ROC_VERSION_MINOR
 
 .. doxygendefine:: ROC_VERSION_PATCH
+
+.. doxygentypedef:: roc_version
+   :outline:
 
 .. doxygenstruct:: roc_version
    :members:

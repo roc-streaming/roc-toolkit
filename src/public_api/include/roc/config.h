@@ -267,6 +267,7 @@ typedef enum roc_fec_encoding {
      *
      * Pros:
      *  - compatible with third-party software that does not support FECFRAME
+     *
      * Cons:
      *  - no packet recovery
      */
@@ -285,6 +286,7 @@ typedef enum roc_fec_encoding {
      *
      * Pros:
      *  - good repair capabilities even on small block sizes
+     *
      * Cons:
      *  - high CPU usage on large block sizes
      */
@@ -298,6 +300,7 @@ typedef enum roc_fec_encoding {
      *
      * Pros:
      *  - low CPU usage even on large block sizes
+     *
      * Cons:
      *  - low repair capabilities on small block sizes
      */
@@ -422,6 +425,7 @@ typedef enum roc_clock_sync_backend {
      *
      * Pros:
      *  - works with any protocol (does not require RTCP or NTP)
+     *
      * Cons:
      *  - synchronizes only clock speed, but not position; different receivers will
      *    have different (constant) delays
@@ -452,6 +456,7 @@ typedef enum roc_clock_sync_profile {
      *
      * Pros:
      *  - allows very low latency or synchronization error
+     *
      * Cons:
      *  - does not work well with some resampler backends
      *  - does not work well with \ref ROC_CLOCK_SYNC_BACKEND_NIQ
@@ -466,6 +471,7 @@ typedef enum roc_clock_sync_profile {
      * Pros:
      *  - works well even with high network jitter
      *  - works well with any resampler backend
+     *
      * Cons:
      *  - does not allow very low latency or synchronization error
      */
