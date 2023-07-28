@@ -66,7 +66,7 @@ API and tools
 
   * roc-send --- read audio stream from audio device or file and send to receiver
   * roc-recv --- receive and mix audio streams from senders and write to audio device or file
-  * roc-conv --- run Roc resampler from command-line
+  * roc-copy --- copy audio between local audio devices or files
 
 * PulseAudio modules
 

@@ -20,7 +20,7 @@
 #include "roc_sndio/print_supported.h"
 #include "roc_sndio/pump.h"
 
-#include "roc_conv/cmdline.h"
+#include "roc_copy/cmdline.h"
 
 using namespace roc;
 
