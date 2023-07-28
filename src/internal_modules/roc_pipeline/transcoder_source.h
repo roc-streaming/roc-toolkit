@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_pipeline/converter_source.h
-//! @brief Converter source pipeline.
+//! @file roc_pipeline/transcoder_source.h
+//! @brief Transcoder source pipeline.
 
-#ifndef ROC_PIPELINE_CONVERTER_SOURCE_H_
-#define ROC_PIPELINE_CONVERTER_SOURCE_H_
+#ifndef ROC_PIPELINE_TRANSCODER_SOURCE_H_
+#define ROC_PIPELINE_TRANSCODER_SOURCE_H_
 
 #include "roc_audio/channel_mapper_reader.h"
 #include "roc_audio/iresampler.h"
@@ -28,17 +28,17 @@
 namespace roc {
 namespace pipeline {
 
-//! Converter source pipeline.
+//! Transcoder source pipeline.
 //! @remarks
 //!  - input: frames
 //!  - output: frames
-class ConverterSource : public sndio::ISource, public core::NonCopyable<> {
+class TranscoderSource : public sndio::ISource, public core::NonCopyable<> {
 public:
     //! Initialize.
-    ConverterSource(const ConverterConfig& config,
-                    sndio::ISource& input_source,
-                    core::BufferFactory<audio::sample_t>& buffer_factory,
-                    core::IAllocator& allocator);
+    TranscoderSource(const TranscoderConfig& config,
+                     sndio::ISource& input_source,
+                     core::BufferFactory<audio::sample_t>& buffer_factory,
+                     core::IAllocator& allocator);
 
     //! Check if the pipeline was successfully constructed.
     bool is_valid();
@@ -86,10 +86,10 @@ private:
     sndio::ISource& input_source_;
     audio::IFrameReader* audio_reader_;
 
-    ConverterConfig config_;
+    TranscoderConfig config_;
 };
 
 } // namespace pipeline
 } // namespace roc
 
-#endif // ROC_PIPELINE_CONVERTER_SOURCE_H_
+#endif // ROC_PIPELINE_TRANSCODER_SOURCE_H_

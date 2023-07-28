@@ -13,7 +13,7 @@
 #include "roc_core/log.h"
 #include "roc_core/parse_duration.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_pipeline/converter_sink.h"
+#include "roc_pipeline/transcoder_sink.h"
 #include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/backend_map.h"
 #include "roc_sndio/config.h"
@@ -65,11 +65,11 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    pipeline::ConverterConfig converter_config;
+    pipeline::TranscoderConfig transcoder_config;
 
     sndio::Config source_config;
     source_config.sample_spec.set_channel_set(
-        converter_config.input_sample_spec.channel_set());
+        transcoder_config.input_sample_spec.channel_set());
     source_config.sample_spec.set_sample_rate(0);
 
     if (args.frame_length_given) {
@@ -77,7 +77,7 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --frame-length: bad format");
             return 1;
         }
-        if (converter_config.input_sample_spec.ns_2_samples_overall(
+        if (transcoder_config.input_sample_spec.ns_2_samples_overall(
                 source_config.frame_length)
             <= 0) {
             roc_log(LogError, "invalid --frame-length: should be > 0");
@@ -86,11 +86,11 @@ int main(int argc, char** argv) {
     }
 
     sndio::BackendMap::instance().set_frame_size(source_config.frame_length,
-                                                 converter_config.input_sample_spec);
+                                                 transcoder_config.input_sample_spec);
 
     core::BufferFactory<audio::sample_t> buffer_factory(
         allocator,
-        converter_config.input_sample_spec.ns_2_samples_overall(
+        transcoder_config.input_sample_spec.ns_2_samples_overall(
             source_config.frame_length),
         args.poisoning_flag);
 
@@ -126,25 +126,25 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    converter_config.input_sample_spec.set_sample_rate(
+    transcoder_config.input_sample_spec.set_sample_rate(
         input_source->sample_spec().sample_rate());
 
     if (args.rate_given) {
-        converter_config.output_sample_spec.set_sample_rate((size_t)args.rate_arg);
+        transcoder_config.output_sample_spec.set_sample_rate((size_t)args.rate_arg);
     } else {
-        converter_config.output_sample_spec.set_sample_rate(
-            converter_config.input_sample_spec.sample_rate());
+        transcoder_config.output_sample_spec.set_sample_rate(
+            transcoder_config.input_sample_spec.sample_rate());
     }
 
     switch (args.resampler_backend_arg) {
     case resampler_backend_arg_default:
-        converter_config.resampler_backend = audio::ResamplerBackend_Default;
+        transcoder_config.resampler_backend = audio::ResamplerBackend_Default;
         break;
     case resampler_backend_arg_builtin:
-        converter_config.resampler_backend = audio::ResamplerBackend_Builtin;
+        transcoder_config.resampler_backend = audio::ResamplerBackend_Builtin;
         break;
     case resampler_backend_arg_speex:
-        converter_config.resampler_backend = audio::ResamplerBackend_Speex;
+        transcoder_config.resampler_backend = audio::ResamplerBackend_Speex;
         break;
     default:
         break;
@@ -152,25 +152,25 @@ int main(int argc, char** argv) {
 
     switch (args.resampler_profile_arg) {
     case resampler_profile_arg_low:
-        converter_config.resampler_profile = audio::ResamplerProfile_Low;
+        transcoder_config.resampler_profile = audio::ResamplerProfile_Low;
         break;
     case resampler_profile_arg_medium:
-        converter_config.resampler_profile = audio::ResamplerProfile_Medium;
+        transcoder_config.resampler_profile = audio::ResamplerProfile_Medium;
         break;
     case resampler_profile_arg_high:
-        converter_config.resampler_profile = audio::ResamplerProfile_High;
+        transcoder_config.resampler_profile = audio::ResamplerProfile_High;
         break;
     default:
         break;
     }
 
-    converter_config.enable_poisoning = args.poisoning_flag;
-    converter_config.enable_profiling = args.profiling_flag;
+    transcoder_config.enable_poisoning = args.poisoning_flag;
+    transcoder_config.enable_profiling = args.profiling_flag;
 
     audio::IFrameWriter* output_writer = NULL;
 
     sndio::Config sink_config;
-    sink_config.sample_spec = converter_config.output_sample_spec;
+    sink_config.sample_spec = transcoder_config.output_sample_spec;
     sink_config.frame_length = source_config.frame_length;
 
     address::IoUri output_uri(allocator);
@@ -209,15 +209,15 @@ int main(int argc, char** argv) {
         output_writer = output_sink.get();
     }
 
-    pipeline::ConverterSink converter(converter_config, output_writer, buffer_factory,
-                                      allocator);
-    if (!converter.is_valid()) {
-        roc_log(LogError, "can't create converter pipeline");
+    pipeline::TranscoderSink transcoder(transcoder_config, output_writer, buffer_factory,
+                                        allocator);
+    if (!transcoder.is_valid()) {
+        roc_log(LogError, "can't create transcoder pipeline");
         return 1;
     }
 
-    sndio::Pump pump(buffer_factory, *input_source, NULL, converter,
-                     source_config.frame_length, converter_config.input_sample_spec,
+    sndio::Pump pump(buffer_factory, *input_source, NULL, transcoder,
+                     source_config.frame_length, transcoder_config.input_sample_spec,
                      sndio::Pump::ModePermanent);
     if (!pump.is_valid()) {
         roc_log(LogError, "can't create audio pump");

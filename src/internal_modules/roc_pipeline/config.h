@@ -249,7 +249,7 @@ struct ReceiverConfig {
 };
 
 //! Converter parameters.
-struct ConverterConfig {
+struct TranscoderConfig {
     //! To specify which resampling backend will be used.
     audio::ResamplerBackend resampler_backend;
 
@@ -271,7 +271,7 @@ struct ConverterConfig {
     //! Profiler configuration.
     audio::ProfilerConfig profiler_config;
 
-    ConverterConfig()
+    TranscoderConfig()
         : resampler_backend(audio::ResamplerBackend_Default)
         , resampler_profile(audio::ResamplerProfile_Medium)
         , input_sample_spec(DefaultSampleSpec)
