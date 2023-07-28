@@ -9,7 +9,7 @@ div.related {
     color: #FFFDAB;
 }
 
-div.topic, div.note, div.seealso {
+div.topic, div.note, div.seealso, div.highlight, nav.contents {
     background-color: #d0dcdf36;
     border: 1px solid #c3d5e2;
 }
@@ -54,20 +54,12 @@ dl.function > dt {
     padding: 4px 4px 4px 10px;
 }
 
-li > p:first-child {
-    margin-bottom: 0px;
-}
-
-li > p:last-child {
-    margin-bottom: 1.5em;
-}
-
 p.topic-title {
     margin-top: 0px;
 }
 
 pre {
-    font-size: 98%;
+    border: 0px;
     box-shadow: none;
     -webkit-box-shadow: none;
     -moz-box-shadow: none;

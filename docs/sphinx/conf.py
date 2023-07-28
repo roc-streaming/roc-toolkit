@@ -65,14 +65,15 @@ html_sidebars = {
    '**': ['globaltoc.html', 'searchbox.html'],
 }
 
-html_context = {
-    'css_files': ['_static/roc.css'],
-    'script_files': ['/analytics.js'],
-}
-
 html_static_path = ['_static']
 
-html4_writer = True
+html_css_files = [
+    'roc.css',
+]
+
+html_js_files = [
+    'analytics.js',
+]
 
 # -- Options for manual page output ---------------------------------------
 
