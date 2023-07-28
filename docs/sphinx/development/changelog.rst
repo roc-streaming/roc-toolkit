@@ -20,6 +20,20 @@ Changelog
     Tests
     Documentation
 
+Version 0.2.5 (Jul 28, 2023)
+============================
+
+Bug fixes
+---------
+
+* fix byte order conversion
+
+Build system
+------------
+
+* fix compiler type detection when compiler is specified via ``CC`` or ``CXX`` variable
+* export symbols of dependencies built by ``--build-3rdparty`` when building static library (``libroc.a``), to avoid linker errors when using it
+
 Version 0.2.4 (May 13, 2023)
 ============================
 
