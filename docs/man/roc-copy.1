@@ -27,12 +27,12 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "ROC-CONV" "1" "2023" "Roc Toolkit 0.2" "Roc Toolkit"
+.TH "ROC-COPY" "1" "2023" "Roc Toolkit 0.2" "Roc Toolkit"
 .SH NAME
-roc-conv \- convert audio
+roc-copy \- copy local audio
 .SH SYNOPSIS
 .sp
-\fBroc\-conv\fP \fIOPTIONS\fP
+\fBroc\-copy\fP \fIOPTIONS\fP
 .SH DESCRIPTION
 .sp
 Read audio stream from a file, transform it, and and write it to a another file.
@@ -133,7 +133,7 @@ Convert sample rate to 48k:
 .sp
 .nf
 .ft C
-$ roc\-conv \-vv \-\-rate=48000 \-i file:input.wav \-o file:output.wav
+$ roc\-copy \-vv \-\-rate=48000 \-i file:input.wav \-o file:output.wav
 .ft P
 .fi
 .UNINDENT
@@ -145,7 +145,7 @@ Drop output results (useful for benchmarking):
 .sp
 .nf
 .ft C
-$ roc\-conv \-vv \-\-rate=48000 \-i file:input.wav
+$ roc\-copy \-vv \-\-rate=48000 \-i file:input.wav
 .ft P
 .fi
 .UNINDENT
@@ -157,7 +157,7 @@ Input from stdin, output to stdout:
 .sp
 .nf
 .ft C
-$ roc\-conv \-vv \-\-input\-format=wav \-i file:\- \-\-output\-format=wav \-o file:\- >./output.wav <./input.wav
+$ roc\-copy \-vv \-\-input\-format=wav \-i file:\- \-\-output\-format=wav \-o file:\- >./output.wav <./input.wav
 .ft P
 .fi
 .UNINDENT

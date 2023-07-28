@@ -81,5 +81,5 @@ html_js_files = [
 man_pages = [
     ('manuals/roc_send', 'roc-send', u'send real-time audio', [], 1),
     ('manuals/roc_recv', 'roc-recv', u'receive real-time audio', [], 1),
-    ('manuals/roc_conv', 'roc-conv', u'convert audio', [], 1),
+    ('manuals/roc_copy', 'roc-copy', u'copy local audio', [], 1),
 ]
