@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_pipeline/converter_sink.h
-//! @brief Converter sink pipeline.
+//! @file roc_pipeline/transcoder_sink.h
+//! @brief Transcoder sink pipeline.
 
-#ifndef ROC_PIPELINE_CONVERTER_SINK_H_
-#define ROC_PIPELINE_CONVERTER_SINK_H_
+#ifndef ROC_PIPELINE_TRANSCODER_SINK_H_
+#define ROC_PIPELINE_TRANSCODER_SINK_H_
 
 #include "roc_audio/channel_mapper_writer.h"
 #include "roc_audio/iresampler.h"
@@ -29,17 +29,17 @@
 namespace roc {
 namespace pipeline {
 
-//! Converter sink pipeline.
+//! Transcoder sink pipeline.
 //! @remarks
 //!  - input: frames
 //!  - output: frames
-class ConverterSink : public sndio::ISink, public core::NonCopyable<> {
+class TranscoderSink : public sndio::ISink, public core::NonCopyable<> {
 public:
     //! Initialize.
-    ConverterSink(const ConverterConfig& config,
-                  audio::IFrameWriter* output_writer,
-                  core::BufferFactory<audio::sample_t>& buffer_factory,
-                  core::IAllocator& allocator);
+    TranscoderSink(const TranscoderConfig& config,
+                   audio::IFrameWriter* output_writer,
+                   core::BufferFactory<audio::sample_t>& buffer_factory,
+                   core::IAllocator& allocator);
 
     //! Check if the pipeline was successfully constructed.
     bool is_valid();
@@ -86,10 +86,10 @@ private:
 
     audio::IFrameWriter* audio_writer_;
 
-    const ConverterConfig config_;
+    const TranscoderConfig config_;
 };
 
 } // namespace pipeline
 } // namespace roc
 
-#endif // ROC_PIPELINE_CONVERTER_SINK_H_
+#endif // ROC_PIPELINE_TRANSCODER_SINK_H_

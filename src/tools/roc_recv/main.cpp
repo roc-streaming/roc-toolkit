@@ -19,8 +19,8 @@
 #include "roc_netio/network_loop.h"
 #include "roc_peer/context.h"
 #include "roc_peer/receiver.h"
-#include "roc_pipeline/converter_source.h"
 #include "roc_pipeline/receiver_source.h"
+#include "roc_pipeline/transcoder_source.h"
 #include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/backend_map.h"
 #include "roc_sndio/print_supported.h"
@@ -294,7 +294,7 @@ int main(int argc, char** argv) {
     }
 
     core::ScopedPtr<sndio::ISource> backup_source;
-    core::ScopedPtr<pipeline::ConverterSource> backup_pipeline;
+    core::ScopedPtr<pipeline::TranscoderSource> backup_pipeline;
 
     if (args.backup_given) {
         address::IoUri backup_uri(context.allocator());
@@ -329,24 +329,24 @@ int main(int argc, char** argv) {
             return 1;
         }
 
-        pipeline::ConverterConfig converter_config;
+        pipeline::TranscoderConfig transcoder_config;
 
-        converter_config.resampler_backend =
+        transcoder_config.resampler_backend =
             receiver_config.default_session.resampler_backend;
-        converter_config.resampler_profile =
+        transcoder_config.resampler_profile =
             receiver_config.default_session.resampler_profile;
 
-        converter_config.input_sample_spec =
+        transcoder_config.input_sample_spec =
             audio::SampleSpec(backup_source->sample_spec().sample_rate(),
                               receiver_config.common.output_sample_spec.channel_set());
-        converter_config.output_sample_spec =
+        transcoder_config.output_sample_spec =
             audio::SampleSpec(receiver_config.common.output_sample_spec.sample_rate(),
                               receiver_config.common.output_sample_spec.channel_set());
 
-        converter_config.enable_poisoning = receiver_config.common.enable_poisoning;
+        transcoder_config.enable_poisoning = receiver_config.common.enable_poisoning;
 
-        backup_pipeline.reset(new (context.allocator()) pipeline::ConverterSource(
-                                  converter_config, *backup_source,
+        backup_pipeline.reset(new (context.allocator()) pipeline::TranscoderSource(
+                                  transcoder_config, *backup_source,
                                   context.sample_buffer_factory(), context.allocator()),
                               context.allocator());
         if (!backup_pipeline) {
