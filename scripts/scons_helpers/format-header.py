@@ -170,8 +170,8 @@ def format_file(output, path):
                 continue
             else:
                 if not has_guard:
-                    fprint('#ifndef {}'.format_file(make_guard(path)))
-                    fprint('#define {}'.format_file(make_guard(path)))
+                    fprint('#ifndef {}'.format(make_guard(path)))
+                    fprint('#define {}'.format(make_guard(path)))
                 fprint('')
                 section = 'body'
 
