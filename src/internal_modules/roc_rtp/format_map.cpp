@@ -23,8 +23,8 @@ FormatMap::FormatMap(core::IAllocator& allocator, bool poison)
         fmt.payload_type = PayloadType_L16_Mono;
         fmt.pcm_format =
             audio::PcmFormat(audio::PcmEncoding_SInt16, audio::PcmEndian_Big);
-        fmt.sample_spec =
-            audio::SampleSpec(44100, audio::ChannelLayout_Mono, audio::ChannelMask_Mono);
+        fmt.sample_spec = audio::SampleSpec(44100, audio::ChanLayout_Surround,
+                                            audio::ChanMask_Surround_Mono);
         fmt.packet_flags = packet::Packet::FlagAudio;
         fmt.new_encoder = &audio::PcmEncoder::construct;
         fmt.new_decoder = &audio::PcmDecoder::construct;
@@ -36,8 +36,8 @@ FormatMap::FormatMap(core::IAllocator& allocator, bool poison)
         fmt.payload_type = PayloadType_L16_Stereo;
         fmt.pcm_format =
             audio::PcmFormat(audio::PcmEncoding_SInt16, audio::PcmEndian_Big);
-        fmt.sample_spec = audio::SampleSpec(44100, audio::ChannelLayout_Surround,
-                                            audio::ChannelMask_Stereo);
+        fmt.sample_spec = audio::SampleSpec(44100, audio::ChanLayout_Surround,
+                                            audio::ChanMask_Surround_Stereo);
         fmt.packet_flags = packet::Packet::FlagAudio;
         fmt.new_encoder = &audio::PcmEncoder::construct;
         fmt.new_decoder = &audio::PcmDecoder::construct;

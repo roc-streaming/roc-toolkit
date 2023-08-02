@@ -32,7 +32,7 @@ enum {
     BreakageWindow = SamplesPerFrame,
     BreakageWindowsPerTimeout = BrokenPlaybackTimeout / BreakageWindow
 };
-const audio::SampleSpec SampleSpecs(SampleRate, audio::ChannelLayout_Surround, ChMask);
+const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, ChMask);
 
 core::HeapAllocator allocator;
 core::BufferFactory<sample_t> sample_buffer_factory(allocator, MaxBufSize, true);

@@ -13,16 +13,13 @@ namespace audio {
 
 const char* channel_layout_to_str(ChannelLayout layout) {
     switch (layout) {
-    case ChannelLayout_Invalid:
+    case ChanLayout_Invalid:
         break;
 
-    case ChannelLayout_Mono:
-        return "mono";
-
-    case ChannelLayout_Surround:
+    case ChanLayout_Surround:
         return "surround";
 
-    case ChannelLayout_Multitrack:
+    case ChanLayout_Multitrack:
         return "multitrack";
     }
 
@@ -31,11 +28,53 @@ const char* channel_layout_to_str(ChannelLayout layout) {
 
 const char* channel_position_to_str(ChannelPosition position) {
     switch (position) {
-    case ChannelPos_Left:
-        return "L";
+    case ChanPos_FrontLeft:
+        return "FL";
 
-    case ChannelPos_Right:
-        return "R";
+    case ChanPos_FrontCenter:
+        return "FC";
+
+    case ChanPos_FrontRight:
+        return "FR";
+
+    case ChanPos_SurroundLeft:
+        return "SL";
+
+    case ChanPos_SurroundCenter:
+        return "SC";
+
+    case ChanPos_SurroundRight:
+        return "SR";
+
+    case ChanPos_BackLeft:
+        return "BL";
+
+    case ChanPos_BackRight:
+        return "BR";
+
+    case ChanPos_TopFrontLeft:
+        return "TFL";
+
+    case ChanPos_TopFrontRight:
+        return "TFR";
+
+    case ChanPos_TopMidLeft:
+        return "TML";
+
+    case ChanPos_TopMidRight:
+        return "TMR";
+
+    case ChanPos_TopBackLeft:
+        return "TBL";
+
+    case ChanPos_TopBackRight:
+        return "TBR";
+
+    case ChanPos_LowFrequency:
+        return "LFE";
+
+    case ChanPos_Max:
+        break;
     }
 
     return "?";

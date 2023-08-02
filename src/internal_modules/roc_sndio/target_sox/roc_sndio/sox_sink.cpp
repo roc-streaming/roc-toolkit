@@ -7,6 +7,7 @@
  */
 
 #include "roc_sndio/sox_sink.h"
+#include "roc_audio/channel_layout.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_sndio/backend_map.h"
@@ -104,13 +105,16 @@ audio::SampleSpec SoxSink::sample_spec() const {
     }
 
     if (output_->signal.channels == 1) {
-        return audio::SampleSpec(size_t(output_->signal.rate), audio::ChannelLayout_Mono,
-                                 audio::ChannelMask_Mono);
-    } else {
-        return audio::SampleSpec(size_t(output_->signal.rate),
-                                 audio::ChannelLayout_Surround,
-                                 (1u << output_->signal.channels) - 1);
+        return audio::SampleSpec(size_t(output_->signal.rate), audio::ChanLayout_Surround,
+                                 audio::ChanMask_Surround_Mono);
     }
+
+    if (output_->signal.channels == 2) {
+        return audio::SampleSpec(size_t(output_->signal.rate), audio::ChanLayout_Surround,
+                                 audio::ChanMask_Surround_Stereo);
+    }
+
+    roc_panic("sox sink: unsupported channel count");
 }
 
 core::nanoseconds_t SoxSink::latency() const {

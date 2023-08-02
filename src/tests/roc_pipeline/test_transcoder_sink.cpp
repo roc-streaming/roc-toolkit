@@ -20,6 +20,9 @@ namespace pipeline {
 
 namespace {
 
+const audio::ChannelMask Chans_Mono = audio::ChanMask_Surround_Mono;
+const audio::ChannelMask Chans_Stereo = audio::ChanMask_Surround_Stereo;
+
 enum {
     MaxBufSize = 1000,
 
@@ -50,25 +53,21 @@ TEST_GROUP(transcoder_sink) {
         return config;
     }
 
-    void init(size_t input_channels, size_t output_channels) {
+    void init(audio::ChannelMask input_channels, audio::ChannelMask output_channels) {
         input_sample_spec.set_sample_rate(SampleRate);
-        input_sample_spec.channel_set().set_layout(input_channels == 1
-                                                       ? audio::ChannelLayout_Mono
-                                                       : audio::ChannelLayout_Surround);
-        input_sample_spec.channel_set().set_channel_range(0, input_channels - 1, true);
+        input_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
+        input_sample_spec.channel_set().set_channel_mask(input_channels);
 
         output_sample_spec.set_sample_rate(SampleRate);
-        output_sample_spec.channel_set().set_layout(output_channels == 1
-                                                        ? audio::ChannelLayout_Mono
-                                                        : audio::ChannelLayout_Surround);
-        output_sample_spec.channel_set().set_channel_range(0, output_channels - 1, true);
+        output_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
+        output_sample_spec.channel_set().set_channel_mask(output_channels);
     }
 };
 
 TEST(transcoder_sink, null) {
-    enum { NumCh = 2 };
+    enum { Chans = Chans_Stereo };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     TranscoderSink transcoder(make_config(), NULL, sample_buffer_factory, allocator);
     CHECK(transcoder.is_valid());
@@ -81,9 +80,9 @@ TEST(transcoder_sink, null) {
 }
 
 TEST(transcoder_sink, write) {
-    enum { NumCh = 2 };
+    enum { Chans = Chans_Stereo };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     test::FrameChecker frame_checker(output_sample_spec);
 
@@ -102,9 +101,9 @@ TEST(transcoder_sink, write) {
 }
 
 TEST(transcoder_sink, frame_size_small) {
-    enum { NumCh = 2, SamplesPerSmallFrame = SamplesPerFrame / 2 - 3 };
+    enum { Chans = Chans_Stereo, SamplesPerSmallFrame = SamplesPerFrame / 2 - 3 };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     test::FrameChecker frame_checker(output_sample_spec);
 
@@ -123,9 +122,9 @@ TEST(transcoder_sink, frame_size_small) {
 }
 
 TEST(transcoder_sink, frame_size_large) {
-    enum { NumCh = 2, SamplesPerLargeFrame = SamplesPerFrame * 2 + 3 };
+    enum { Chans = Chans_Stereo, SamplesPerLargeFrame = SamplesPerFrame * 2 + 3 };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     test::FrameChecker frame_checker(output_sample_spec);
 
@@ -144,9 +143,9 @@ TEST(transcoder_sink, frame_size_large) {
 }
 
 TEST(transcoder_sink, channels_stereo_to_mono) {
-    enum { InputCh = 2, OutputCh = 1 };
+    enum { InputChans = Chans_Stereo, OutputChans = Chans_Mono };
 
-    init(InputCh, OutputCh);
+    init(InputChans, OutputChans);
 
     test::FrameChecker frame_checker(output_sample_spec);
 
@@ -165,9 +164,9 @@ TEST(transcoder_sink, channels_stereo_to_mono) {
 }
 
 TEST(transcoder_sink, channels_mono_to_stereo) {
-    enum { InputCh = 1, OutputCh = 2 };
+    enum { InputChans = Chans_Mono, OutputChans = Chans_Stereo };
 
-    init(InputCh, OutputCh);
+    init(InputChans, OutputChans);
 
     test::FrameChecker frame_checker(output_sample_spec);
 

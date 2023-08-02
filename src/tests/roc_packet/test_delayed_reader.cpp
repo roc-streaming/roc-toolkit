@@ -23,7 +23,7 @@ enum { SampleRate = 1000, NumSamples = 100, NumPackets = 30 };
 
 const core::nanoseconds_t NsPerSample = core::Second / SampleRate;
 const audio::SampleSpec
-    SampleSpecs(SampleRate, audio::ChannelLayout_Surround, audio::ChannelMask_Stereo);
+    SampleSpecs(SampleRate, audio::ChanLayout_Surround, audio::ChanMask_Surround_Stereo);
 
 core::HeapAllocator allocator;
 PacketFactory packet_factory(allocator, true);

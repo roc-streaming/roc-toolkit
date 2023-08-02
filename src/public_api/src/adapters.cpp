@@ -295,20 +295,20 @@ bool channel_set_from_user(audio::ChannelSet& out,
     switch (enum_from_user(in)) {
     case ROC_CHANNEL_LAYOUT_MULTITRACK:
         out.clear_channels();
-        out.set_layout(audio::ChannelLayout_Multitrack);
+        out.set_layout(audio::ChanLayout_Multitrack);
         out.set_channel_range(0, in_tracks - 1, true);
         return true;
 
     case ROC_CHANNEL_LAYOUT_MONO:
         out.clear_channels();
-        out.set_layout(audio::ChannelLayout_Mono);
-        out.set_channel_mask(audio::ChannelMask_Mono);
+        out.set_layout(audio::ChanLayout_Surround);
+        out.set_channel_mask(audio::ChanMask_Surround_Mono);
         return true;
 
     case ROC_CHANNEL_LAYOUT_STEREO:
         out.clear_channels();
-        out.set_layout(audio::ChannelLayout_Surround);
-        out.set_channel_mask(audio::ChannelMask_Stereo);
+        out.set_layout(audio::ChanLayout_Surround);
+        out.set_channel_mask(audio::ChanMask_Surround_Stereo);
         return true;
     }
 

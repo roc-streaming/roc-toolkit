@@ -198,10 +198,10 @@ TEST(resampler, supported_scalings) {
         for (size_t pn = 0; pn < ROC_ARRAY_SIZE(profiles); pn++) {
             for (size_t irate = 0; irate < ROC_ARRAY_SIZE(rates); irate++) {
                 const audio::SampleSpec in_sample_specs =
-                    SampleSpec(rates[irate], audio::ChannelLayout_Surround, ChMask);
+                    SampleSpec(rates[irate], audio::ChanLayout_Surround, ChMask);
                 for (size_t orate = 0; orate < ROC_ARRAY_SIZE(rates); orate++) {
                     const audio::SampleSpec out_sample_specs =
-                        SampleSpec(rates[orate], audio::ChannelLayout_Surround, ChMask);
+                        SampleSpec(rates[orate], audio::ChanLayout_Surround, ChMask);
                     for (size_t sn = 0; sn < ROC_ARRAY_SIZE(scalings); sn++) {
                         core::ScopedPtr<IResampler> resampler(
                             ResamplerMap::instance().new_resampler(
@@ -241,8 +241,7 @@ TEST(resampler, supported_scalings) {
 
 TEST(resampler, invalid_scalings) {
     enum { SampleRate = 44100, ChMask = 0x1 };
-    const audio::SampleSpec SampleSpecs(SampleRate, audio::ChannelLayout_Surround,
-                                        ChMask);
+    const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, ChMask);
 
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
@@ -273,8 +272,7 @@ TEST(resampler, upscale_downscale_mono) {
         NumTruncate = 8 * OutFrameSize,
         NumSamples = 50 * OutFrameSize
     };
-    const audio::SampleSpec SampleSpecs(SampleRate, audio::ChannelLayout_Surround,
-                                        ChMask);
+    const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, ChMask);
 
     const float Scaling = 0.97f;
     const float Threshold = 0.06f;
@@ -337,8 +335,7 @@ TEST(resampler, upscale_downscale_stereo) {
         NumTruncate = 8 * OutFrameSize,
         NumSamples = 50 * OutFrameSize
     };
-    const audio::SampleSpec SampleSpecs(SampleRate, audio::ChannelLayout_Surround,
-                                        ChMask);
+    const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, ChMask);
 
     const float Scaling = 0.97f;
     const float Threshold = 0.06f;
