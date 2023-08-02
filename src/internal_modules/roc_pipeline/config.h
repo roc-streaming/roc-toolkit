@@ -38,8 +38,8 @@ const size_t DefaultSampleRate = 44100;
 
 //! Default sample specification.
 static const audio::SampleSpec DefaultSampleSpec(DefaultSampleRate,
-                                                 audio::ChannelLayout_Surround,
-                                                 audio::ChannelMask_Stereo);
+                                                 audio::ChanLayout_Surround,
+                                                 audio::ChanMask_Surround_Stereo);
 
 //! Default packet length.
 //! @remarks

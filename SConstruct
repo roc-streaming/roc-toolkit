@@ -975,7 +975,6 @@ if meta.compiler == 'gcc':
 
             # enable
             '-Wcast-qual',
-            '-Wfloat-equal',
             '-Wformat-security',
             '-Wformat=2',
             '-Wmissing-declarations',
@@ -1024,7 +1023,6 @@ if meta.compiler == 'clang':
             '-Wcast-qual',
             '-Wdouble-promotion',
             '-Wfloat-conversion',
-            '-Wfloat-equal',
             '-Wformat-security',
             '-Wformat=2',
             '-Wnull-dereference',

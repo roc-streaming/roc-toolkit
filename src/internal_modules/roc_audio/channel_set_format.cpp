@@ -18,7 +18,7 @@ void format_channel_set(const ChannelSet& ch_set, core::StringBuilder& bld) {
     bld.append_uint(ch_set.num_channels(), 10);
 
     if (ch_set.num_channels() != 0) {
-        if (ch_set.layout() == ChannelLayout_Surround) {
+        if (ch_set.layout() == ChanLayout_Surround) {
             bld.append_str(" ch=");
 
             for (size_t ch = ch_set.first_channel(); ch <= ch_set.last_channel(); ch++) {

@@ -60,12 +60,6 @@ public:
     //! Check if specific channel is enabled.
     bool has_channel(size_t n) const;
 
-    //! Check if enabled channels are only those specified by mask.
-    //! @remarks
-    //!  The mask defines only first 32 channels. If any channels outside of 0-31
-    //!  range are enabled, the method fails.
-    bool has_channel_mask(ChannelMask mask) const;
-
     //! Get index of first enabled channel.
     //! @remarks
     //!  Panics if there are no enabled channels.
@@ -75,6 +69,18 @@ public:
     //! @remarks
     //!  Panics if there are no enabled channels.
     size_t last_channel() const;
+
+    //! Check if channel set is sub-set of given mask, or equal to it.
+    //! @remarks
+    //!  The mask defines only first 32 channels. If any channels outside of 0-31
+    //!  range are enabled in channel set, the method will fail.
+    bool is_subset(ChannelMask mask) const;
+
+    //! Check if channel set is super-set of given mask, or equal to it.
+    //! @remarks
+    //!  The mask defines only first 32 channels. If any channels outside of 0-31
+    //!  range are enabled in channel set, the method will succeed.
+    bool is_superset(ChannelMask mask) const;
 
     //! Set given channel to be enabled or disabled.
     void set_channel(size_t n, bool enabled);

@@ -28,6 +28,9 @@ namespace pipeline {
 
 namespace {
 
+const audio::ChannelMask Chans_Mono = audio::ChanMask_Surround_Mono;
+const audio::ChannelMask Chans_Stereo = audio::ChanMask_Surround_Stereo;
+
 const rtp::PayloadType PayloadType_Ch1 = rtp::PayloadType_L16_Mono;
 const rtp::PayloadType PayloadType_Ch2 = rtp::PayloadType_L16_Stereo;
 
@@ -86,18 +89,14 @@ TEST_GROUP(sender_sink) {
         return config;
     }
 
-    void init(size_t input_channels, size_t packet_channels) {
+    void init(audio::ChannelMask input_channels, audio::ChannelMask packet_channels) {
         input_sample_spec.set_sample_rate(SampleRate);
-        input_sample_spec.channel_set().set_layout(input_channels == 1
-                                                       ? audio::ChannelLayout_Mono
-                                                       : audio::ChannelLayout_Surround);
-        input_sample_spec.channel_set().set_channel_range(0, input_channels - 1, true);
+        input_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
+        input_sample_spec.channel_set().set_channel_mask(input_channels);
 
         packet_sample_spec.set_sample_rate(SampleRate);
-        packet_sample_spec.channel_set().set_layout(packet_channels == 1
-                                                        ? audio::ChannelLayout_Mono
-                                                        : audio::ChannelLayout_Surround);
-        packet_sample_spec.channel_set().set_channel_range(0, packet_channels - 1, true);
+        packet_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
+        packet_sample_spec.channel_set().set_channel_mask(packet_channels);
 
         source_proto = address::Proto_RTP;
         dst_addr = test::new_address(123);
@@ -105,9 +104,9 @@ TEST_GROUP(sender_sink) {
 };
 
 TEST(sender_sink, write) {
-    enum { NumCh = 2 };
+    enum { Chans = Chans_Stereo };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     packet::Queue queue;
 
@@ -143,13 +142,13 @@ TEST(sender_sink, write) {
 
 TEST(sender_sink, frame_size_small) {
     enum {
-        NumCh = 2,
+        Chans = Chans_Stereo,
         SamplesPerSmallFrame = SamplesPerFrame / 2,
         SmallFramesPerPacket = SamplesPerPacket / SamplesPerSmallFrame,
         ManySmallFrames = SmallFramesPerPacket * 20
     };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     packet::Queue queue;
 
@@ -185,13 +184,13 @@ TEST(sender_sink, frame_size_small) {
 
 TEST(sender_sink, frame_size_large) {
     enum {
-        NumCh = 2,
+        Chans = Chans_Stereo,
         SamplesPerLargeFrame = SamplesPerPacket * 4,
         PacketsPerLargeFrame = SamplesPerLargeFrame / SamplesPerPacket,
         ManyLargeFrames = 20
     };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     packet::Queue queue;
 
@@ -226,9 +225,9 @@ TEST(sender_sink, frame_size_large) {
 }
 
 TEST(sender_sink, channels_stereo_to_mono) {
-    enum { InputCh = 2, PacketCh = 1 };
+    enum { InputChans = Chans_Stereo, PacketChans = Chans_Mono };
 
-    init(InputCh, PacketCh);
+    init(InputChans, PacketChans);
 
     packet::Queue queue;
 
@@ -263,9 +262,9 @@ TEST(sender_sink, channels_stereo_to_mono) {
 }
 
 TEST(sender_sink, channels_mono_to_stereo) {
-    enum { InputCh = 1, PacketCh = 2 };
+    enum { InputChans = Chans_Mono, PacketChans = Chans_Stereo };
 
-    init(InputCh, PacketCh);
+    init(InputChans, PacketChans);
 
     packet::Queue queue;
 

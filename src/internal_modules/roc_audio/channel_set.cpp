@@ -7,6 +7,7 @@
  */
 
 #include "roc_audio/channel_set.h"
+#include "roc_audio/channel_layout.h"
 #include "roc_core/panic.h"
 
 namespace roc {
@@ -16,7 +17,7 @@ ChannelSet::ChannelSet()
     : num_chans_(0)
     , first_chan_(0)
     , last_chan_(0)
-    , layout_(ChannelLayout_Invalid) {
+    , layout_(ChanLayout_Invalid) {
     memset(words_, 0, sizeof(words_));
 }
 
@@ -25,25 +26,13 @@ ChannelSet::ChannelSet(const ChannelLayout layout, const ChannelMask mask)
     , first_chan_(0)
     , last_chan_(0)
     , layout_(layout) {
-    switch (layout) {
-    case ChannelLayout_Invalid:
+    if (layout == ChanLayout_Invalid) {
         roc_panic("channel set: invalid channel layout");
-        break;
+    }
 
-    case ChannelLayout_Mono:
-        if (mask != ChannelMask_Mono) {
-            roc_panic("channel set: invalid channel mask: layout=mono mask=0x%lx",
-                      (unsigned long)mask);
-        }
-        break;
-
-    case ChannelLayout_Surround:
-    case ChannelLayout_Multitrack:
-        if (mask == 0) {
-            roc_panic("channel set: invalid channel mask: layout=surround mask=0x%lx",
-                      (unsigned long)mask);
-        }
-        break;
+    if (mask == 0) {
+        roc_panic("channel set: invalid channel mask: layout=%s mask=0x%lx",
+                  channel_layout_to_str(layout), (unsigned long)mask);
     }
 
     words_[0] = mask;
@@ -64,14 +53,11 @@ bool ChannelSet::operator!=(const ChannelSet& other) const {
 
 bool ChannelSet::is_valid() const {
     switch (layout_) {
-    case ChannelLayout_Invalid:
+    case ChanLayout_Invalid:
         break;
 
-    case ChannelLayout_Mono:
-        return num_chans_ == 1 && first_chan_ == 0 && last_chan_ == 0;
-
-    case ChannelLayout_Surround:
-    case ChannelLayout_Multitrack:
+    case ChanLayout_Surround:
+    case ChanLayout_Multitrack:
         return num_chans_ != 0;
     }
 
@@ -83,7 +69,7 @@ ChannelLayout ChannelSet::layout() const {
 }
 
 void ChannelSet::set_layout(const ChannelLayout layout) {
-    if (layout == ChannelLayout_Invalid) {
+    if (layout == ChanLayout_Invalid) {
         roc_panic("channel set: invalid channel layout");
     }
 
@@ -107,20 +93,6 @@ bool ChannelSet::has_channel(const size_t n) const {
     return words_[n / WordBits] & (word_t(1) << (n % WordBits));
 }
 
-bool ChannelSet::has_channel_mask(const ChannelMask mask) const {
-    if (words_[0] != mask) {
-        return false;
-    }
-
-    for (size_t n = 1; n < NumWords; n++) {
-        if (words_[n] != 0) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
 size_t ChannelSet::first_channel() const {
     if (num_chans_ == 0) {
         roc_panic("channel set: attempt to access empty set");
@@ -131,10 +103,26 @@ size_t ChannelSet::first_channel() const {
 
 size_t ChannelSet::last_channel() const {
     if (num_chans_ == 0) {
-        roc_panic("channel set: attempt to access of empty set");
+        roc_panic("channel set: attempt to access empty set");
     }
 
     return last_chan_;
+}
+
+bool ChannelSet::is_subset(ChannelMask mask) const {
+    if (last_chan_ >= WordBits) {
+        return false;
+    }
+
+    return ((words_[0] & mask) == words_[0]);
+}
+
+bool ChannelSet::is_superset(ChannelMask mask) const {
+    if (last_chan_ >= WordBits) {
+        return true;
+    }
+
+    return ((words_[0] & mask) == mask);
 }
 
 void ChannelSet::set_channel(const size_t n, const bool enabled) {
