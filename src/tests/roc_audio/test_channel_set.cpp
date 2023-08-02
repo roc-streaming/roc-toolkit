@@ -20,11 +20,11 @@ TEST_GROUP(channel_set) {};
 TEST(channel_set, layout) {
     ChannelSet ch_set;
 
-    LONGS_EQUAL(ChannelLayout_Invalid, ch_set.layout());
+    LONGS_EQUAL(ChanLayout_Invalid, ch_set.layout());
 
-    ch_set.set_layout(ChannelLayout_Surround);
+    ch_set.set_layout(ChanLayout_Surround);
 
-    LONGS_EQUAL(ChannelLayout_Surround, ch_set.layout());
+    LONGS_EQUAL(ChanLayout_Surround, ch_set.layout());
 }
 
 TEST(channel_set, empty) {
@@ -152,8 +152,6 @@ TEST(channel_set, set_channel_mask) {
 
     ch_set.set_channel_mask((ChannelMask(1) << 11) | (ChannelMask(1) << 22));
 
-    CHECK(ch_set.has_channel_mask((ChannelMask(1) << 11) | (ChannelMask(1) << 22)));
-
     UNSIGNED_LONGS_EQUAL(2, ch_set.num_channels());
 
     for (size_t n = 0; n < ch_set.max_channels(); n++) {
@@ -174,11 +172,17 @@ TEST(channel_set, overwrite_with_channel_mask) {
     ch_set.set_channel(12, true);
     ch_set.set_channel(100, true);
 
-    CHECK(!ch_set.has_channel_mask(ChannelMask(1) << 11));
+    UNSIGNED_LONGS_EQUAL(2, ch_set.num_channels());
+
+    for (size_t n = 0; n < ch_set.max_channels(); n++) {
+        if (n == 12 || n == 100) {
+            CHECK(ch_set.has_channel(n));
+        } else {
+            CHECK(!ch_set.has_channel(n));
+        }
+    }
 
     ch_set.set_channel_mask((ChannelMask(1) << 11) | (ChannelMask(1) << 22));
-
-    CHECK(ch_set.has_channel_mask((ChannelMask(1) << 11) | (ChannelMask(1) << 22)));
 
     UNSIGNED_LONGS_EQUAL(2, ch_set.num_channels());
 
@@ -195,11 +199,9 @@ TEST(channel_set, overwrite_with_channel_mask) {
 }
 
 TEST(channel_set, construct_from_channel_mask) {
-    ChannelSet ch_set(ChannelLayout_Surround, (1 << 11) | (1 << 22));
+    ChannelSet ch_set(ChanLayout_Surround, (1 << 11) | (1 << 22));
 
-    LONGS_EQUAL(ChannelLayout_Surround, ch_set.layout());
-
-    CHECK(ch_set.has_channel_mask((ChannelMask(1) << 11) | (ChannelMask(1) << 22)));
+    LONGS_EQUAL(ChanLayout_Surround, ch_set.layout());
 
     UNSIGNED_LONGS_EQUAL(2, ch_set.num_channels());
 
@@ -233,53 +235,100 @@ TEST(channel_set, clear_channels) {
 }
 
 TEST(channel_set, is_valid) {
-    { // empty (invalid)
+    { // no layout, no channels (invalid)
         ChannelSet ch_set;
         CHECK(!ch_set.is_valid());
     }
-    { // only layout (invalid)
-        ChannelSet ch_set;
-        CHECK(!ch_set.is_valid());
-
-        ch_set.set_layout(ChannelLayout_Surround);
-        CHECK(!ch_set.is_valid());
-    }
-    { // only channels (invalid)
+    { // no layout, only channels (invalid)
         ChannelSet ch_set;
         CHECK(!ch_set.is_valid());
 
         ch_set.set_channel(11, true);
         CHECK(!ch_set.is_valid());
     }
-    { // layout and channels (valid)
+    { // surround, no channels (invalid)
         ChannelSet ch_set;
         CHECK(!ch_set.is_valid());
 
-        ch_set.set_layout(ChannelLayout_Surround);
+        ch_set.set_layout(ChanLayout_Surround);
+        CHECK(!ch_set.is_valid());
+    }
+    { // multitrack, no channels (invalid)
+        ChannelSet ch_set;
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_layout(ChanLayout_Multitrack);
+        CHECK(!ch_set.is_valid());
+    }
+    { // surround and 1 channel (valid)
+        ChannelSet ch_set;
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_layout(ChanLayout_Surround);
         CHECK(!ch_set.is_valid());
 
         ch_set.set_channel(11, true);
         CHECK(ch_set.is_valid());
     }
-    { // mono (valid)
+    { // multitrack and 1 channel (valid)
         ChannelSet ch_set;
         CHECK(!ch_set.is_valid());
 
-        ch_set.set_layout(ChannelLayout_Mono);
+        ch_set.set_layout(ChanLayout_Multitrack);
         CHECK(!ch_set.is_valid());
 
-        ch_set.set_channel(0, true);
+        ch_set.set_channel(11, true);
         CHECK(ch_set.is_valid());
     }
-    { // mono (invalid)
+}
+
+TEST(channel_set, subset_superset) {
+    { // empty
         ChannelSet ch_set;
-        CHECK(!ch_set.is_valid());
 
-        ch_set.set_layout(ChannelLayout_Mono);
-        CHECK(!ch_set.is_valid());
+        ch_set.set_layout(ChanLayout_Surround);
 
-        ch_set.set_channel(1, true);
-        CHECK(!ch_set.is_valid());
+        CHECK(ch_set.is_subset(0x0));
+        CHECK(ch_set.is_superset(0x0));
+
+        CHECK(ch_set.is_subset(0xffffffff));
+        CHECK(!ch_set.is_superset(0xffffffff));
+    }
+    { // normal
+        ChannelSet ch_set;
+
+        ch_set.set_layout(ChanLayout_Surround);
+        ch_set.set_channel_mask(0x5);
+
+        CHECK(ch_set.is_subset(0x5));
+        CHECK(ch_set.is_superset(0x5));
+
+        CHECK(ch_set.is_subset(0x7));
+        CHECK(!ch_set.is_superset(0x7));
+
+        CHECK(!ch_set.is_subset(0x4));
+        CHECK(ch_set.is_superset(0x4));
+
+        CHECK(!ch_set.is_subset(0x0));
+        CHECK(ch_set.is_superset(0x0));
+
+        CHECK(ch_set.is_subset(0xffffffff));
+        CHECK(!ch_set.is_superset(0xffffffff));
+    }
+    { // large
+        ChannelSet ch_set;
+
+        ch_set.set_channel(2, true);
+        ch_set.set_channel(101, true);
+
+        CHECK(!ch_set.is_subset(0x2));
+        CHECK(ch_set.is_superset(0x2));
+
+        CHECK(!ch_set.is_subset(0x0));
+        CHECK(ch_set.is_superset(0x0));
+
+        CHECK(!ch_set.is_subset(0xffffffff));
+        CHECK(ch_set.is_superset(0xffffffff));
     }
 }
 
@@ -377,19 +426,19 @@ TEST(channel_set, to_string) {
         STRCMP_EQUAL("<invalid n_ch=0>", channel_set_to_str(ch_set).c_str());
     }
     {
-        ChannelSet ch_set(ChannelLayout_Mono, ChannelMask_Mono);
+        ChannelSet ch_set(ChanLayout_Surround, ChanMask_Surround_Mono);
 
-        STRCMP_EQUAL("<mono n_ch=1 ch=0x1>", channel_set_to_str(ch_set).c_str());
+        STRCMP_EQUAL("<surround n_ch=1 ch=FC>", channel_set_to_str(ch_set).c_str());
     }
     {
-        ChannelSet ch_set(ChannelLayout_Surround, ChannelMask_Stereo);
+        ChannelSet ch_set(ChanLayout_Surround, ChanMask_Surround_Stereo);
 
-        STRCMP_EQUAL("<surround n_ch=2 ch=L,R>", channel_set_to_str(ch_set).c_str());
+        STRCMP_EQUAL("<surround n_ch=2 ch=FL,FR>", channel_set_to_str(ch_set).c_str());
     }
     {
         ChannelSet ch_set;
 
-        ch_set.set_layout(ChannelLayout_Multitrack);
+        ch_set.set_layout(ChanLayout_Multitrack);
         ch_set.set_channel_range(0, 7, true);
 
         STRCMP_EQUAL("<multitrack n_ch=8 ch=0xff>", channel_set_to_str(ch_set).c_str());
@@ -397,7 +446,7 @@ TEST(channel_set, to_string) {
     {
         ChannelSet ch_set;
 
-        ch_set.set_layout(ChannelLayout_Multitrack);
+        ch_set.set_layout(ChanLayout_Multitrack);
         ch_set.set_channel(4, true);
         ch_set.set_channel(7, true);
         ch_set.set_channel_range(8, 11, true);
@@ -414,7 +463,7 @@ TEST(channel_set, to_string) {
     {
         ChannelSet ch_set;
 
-        ch_set.set_layout(ChannelLayout_Multitrack);
+        ch_set.set_layout(ChanLayout_Multitrack);
         ch_set.set_channel_range(68, 70, true);
 
         STRCMP_EQUAL("<multitrack n_ch=3 ch=0x000000000000000007>",

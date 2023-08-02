@@ -14,20 +14,6 @@
 namespace roc {
 namespace audio {
 
-namespace {
-
-sample_t clamp(const sample_t x) {
-    if (x > SampleMax) {
-        return SampleMax;
-    } else if (x < SampleMin) {
-        return SampleMin;
-    } else {
-        return x;
-    }
-}
-
-} // namespace
-
 Mixer::Mixer(core::BufferFactory<sample_t>& buffer_factory)
     : valid_(false) {
     temp_buf_ = buffer_factory.new_buffer();
@@ -104,7 +90,10 @@ void Mixer::read_(sample_t* data, size_t size, unsigned& flags) {
         }
 
         for (size_t n = 0; n < size; n++) {
-            data[n] = clamp(data[n] + temp_data[n]);
+            data[n] += temp_data[n];
+
+            data[n] = std::min(data[n], SampleMax);
+            data[n] = std::max(data[n], SampleMin);
         }
 
         flags |= temp_frame.flags();

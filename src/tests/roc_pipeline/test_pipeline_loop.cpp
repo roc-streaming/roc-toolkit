@@ -46,10 +46,9 @@ public:
     };
 
     TestPipeline(const TaskConfig& config)
-        : PipelineLoop(
-            *this,
-            config,
-            audio::SampleSpec(SampleRate, audio::ChannelLayout_Surround, Chans))
+        : PipelineLoop(*this,
+                       config,
+                       audio::SampleSpec(SampleRate, audio::ChanLayout_Surround, Chans))
         , blocked_cond_(mutex_)
         , unblocked_cond_(mutex_)
         , blocked_counter_(0)

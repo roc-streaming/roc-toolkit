@@ -26,6 +26,9 @@ namespace pipeline {
 
 namespace {
 
+const audio::ChannelMask Chans_Mono = audio::ChanMask_Surround_Mono;
+const audio::ChannelMask Chans_Stereo = audio::ChanMask_Surround_Stereo;
+
 const rtp::PayloadType PayloadType_Ch1 = rtp::PayloadType_L16_Mono;
 const rtp::PayloadType PayloadType_Ch2 = rtp::PayloadType_L16_Stereo;
 
@@ -111,18 +114,14 @@ TEST_GROUP(receiver_source) {
         return config;
     }
 
-    void init(size_t output_channels, size_t packet_channels) {
+    void init(audio::ChannelMask output_channels, audio::ChannelMask packet_channels) {
         output_sample_spec.set_sample_rate(SampleRate);
-        output_sample_spec.channel_set().set_layout(output_channels == 1
-                                                        ? audio::ChannelLayout_Mono
-                                                        : audio::ChannelLayout_Surround);
-        output_sample_spec.channel_set().set_channel_range(0, output_channels - 1, true);
+        output_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
+        output_sample_spec.channel_set().set_channel_mask(output_channels);
 
         packet_sample_spec.set_sample_rate(SampleRate);
-        packet_sample_spec.channel_set().set_layout(packet_channels == 1
-                                                        ? audio::ChannelLayout_Mono
-                                                        : audio::ChannelLayout_Surround);
-        packet_sample_spec.channel_set().set_channel_range(0, packet_channels - 1, true);
+        packet_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
+        packet_sample_spec.channel_set().set_channel_mask(packet_channels);
 
         src1 = test::new_address(1);
         src2 = test::new_address(2);
@@ -136,9 +135,9 @@ TEST_GROUP(receiver_source) {
 };
 
 TEST(receiver_source, no_sessions) {
-    enum { NumCh = 2 };
+    enum { Chans = Chans_Stereo };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -155,9 +154,9 @@ TEST(receiver_source, no_sessions) {
 }
 
 TEST(receiver_source, one_session) {
-    enum { NumCh = 2 };
+    enum { Chans = Chans_Stereo };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -192,9 +191,9 @@ TEST(receiver_source, one_session) {
 }
 
 TEST(receiver_source, one_session_long_run) {
-    enum { NumCh = 2, NumIterations = 10 };
+    enum { Chans = Chans_Stereo, NumIterations = 10 };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -231,9 +230,9 @@ TEST(receiver_source, one_session_long_run) {
 }
 
 TEST(receiver_source, initial_latency) {
-    enum { NumCh = 2 };
+    enum { Chans = Chans_Stereo };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -275,9 +274,9 @@ TEST(receiver_source, initial_latency) {
 }
 
 TEST(receiver_source, initial_latency_timeout) {
-    enum { NumCh = 2 };
+    enum { Chans = Chans_Stereo };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -313,9 +312,9 @@ TEST(receiver_source, initial_latency_timeout) {
 }
 
 TEST(receiver_source, timeout) {
-    enum { NumCh = 2 };
+    enum { Chans = Chans_Stereo };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -352,9 +351,9 @@ TEST(receiver_source, timeout) {
 }
 
 TEST(receiver_source, initial_trim) {
-    enum { NumCh = 2 };
+    enum { Chans = Chans_Stereo };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -391,9 +390,9 @@ TEST(receiver_source, initial_trim) {
 }
 
 TEST(receiver_source, two_sessions_synchronous) {
-    enum { NumCh = 2 };
+    enum { Chans = Chans_Stereo };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -435,9 +434,9 @@ TEST(receiver_source, two_sessions_synchronous) {
 }
 
 TEST(receiver_source, two_sessions_overlapping) {
-    enum { NumCh = 2 };
+    enum { Chans = Chans_Stereo };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -491,9 +490,9 @@ TEST(receiver_source, two_sessions_overlapping) {
 }
 
 TEST(receiver_source, two_sessions_two_endpoints) {
-    enum { NumCh = 2 };
+    enum { Chans = Chans_Stereo };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -542,9 +541,9 @@ TEST(receiver_source, two_sessions_two_endpoints) {
 }
 
 TEST(receiver_source, two_sessions_same_address_same_stream) {
-    enum { NumCh = 2 };
+    enum { Chans = Chans_Stereo };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -591,9 +590,9 @@ TEST(receiver_source, two_sessions_same_address_same_stream) {
 }
 
 TEST(receiver_source, two_sessions_same_address_different_streams) {
-    enum { NumCh = 2 };
+    enum { Chans = Chans_Stereo };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -642,9 +641,9 @@ TEST(receiver_source, two_sessions_same_address_different_streams) {
 }
 
 TEST(receiver_source, seqnum_overflow) {
-    enum { NumCh = 2 };
+    enum { Chans = Chans_Stereo };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -677,9 +676,9 @@ TEST(receiver_source, seqnum_overflow) {
 }
 
 TEST(receiver_source, seqnum_small_jump) {
-    enum { NumCh = 2, SmallJump = 5 };
+    enum { Chans = Chans_Stereo, SmallJump = 5 };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -720,9 +719,9 @@ TEST(receiver_source, seqnum_small_jump) {
 }
 
 TEST(receiver_source, seqnum_large_jump) {
-    enum { NumCh = 2 };
+    enum { Chans = Chans_Stereo };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -767,9 +766,9 @@ TEST(receiver_source, seqnum_large_jump) {
 }
 
 TEST(receiver_source, seqnum_reorder) {
-    enum { NumCh = 2, ReorderWindow = Latency / SamplesPerPacket };
+    enum { Chans = Chans_Stereo, ReorderWindow = Latency / SamplesPerPacket };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -808,9 +807,9 @@ TEST(receiver_source, seqnum_reorder) {
 }
 
 TEST(receiver_source, seqnum_late) {
-    enum { NumCh = 2, DelayedPackets = 5 };
+    enum { Chans = Chans_Stereo, DelayedPackets = 5 };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -867,9 +866,9 @@ TEST(receiver_source, seqnum_late) {
 }
 
 TEST(receiver_source, timestamp_overflow) {
-    enum { NumCh = 2 };
+    enum { Chans = Chans_Stereo };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -904,9 +903,9 @@ TEST(receiver_source, timestamp_overflow) {
 }
 
 TEST(receiver_source, timestamp_small_jump) {
-    enum { NumCh = 2, ShiftedPackets = 5 };
+    enum { Chans = Chans_Stereo, ShiftedPackets = 5 };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -955,9 +954,9 @@ TEST(receiver_source, timestamp_small_jump) {
 }
 
 TEST(receiver_source, timestamp_large_jump) {
-    enum { NumCh = 2 };
+    enum { Chans = Chans_Stereo };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -996,9 +995,9 @@ TEST(receiver_source, timestamp_large_jump) {
 }
 
 TEST(receiver_source, timestamp_overlap) {
-    enum { NumCh = 2, OverlappedSamples = SamplesPerPacket / 2 };
+    enum { Chans = Chans_Stereo, OverlappedSamples = SamplesPerPacket / 2 };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -1033,9 +1032,9 @@ TEST(receiver_source, timestamp_overlap) {
 }
 
 TEST(receiver_source, timestamp_reorder) {
-    enum { NumCh = 2 };
+    enum { Chans = Chans_Stereo };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -1090,9 +1089,9 @@ TEST(receiver_source, timestamp_reorder) {
 }
 
 TEST(receiver_source, timestamp_late) {
-    enum { NumCh = 2, DelayedPackets = 5 };
+    enum { Chans = Chans_Stereo, DelayedPackets = 5 };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -1154,13 +1153,13 @@ TEST(receiver_source, timestamp_late) {
 
 TEST(receiver_source, packet_size_small) {
     enum {
-        NumCh = 2,
+        Chans = Chans_Stereo,
         SmallPacketsPerFrame = 2,
         SamplesPerSmallPacket = SamplesPerFrame / SmallPacketsPerFrame,
         ManySmallPackets = Latency / SamplesPerSmallPacket * 10
     };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -1193,13 +1192,13 @@ TEST(receiver_source, packet_size_small) {
 
 TEST(receiver_source, packet_size_large) {
     enum {
-        NumCh = 2,
+        Chans = Chans_Stereo,
         FramesPerLargePacket = 2,
         SamplesPerLargePacket = SamplesPerFrame * FramesPerLargePacket,
         ManyLargePackets = Latency / SamplesPerLargePacket * 10
     };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -1232,7 +1231,7 @@ TEST(receiver_source, packet_size_large) {
 
 TEST(receiver_source, packet_size_variable) {
     enum {
-        NumCh = 2,
+        Chans = Chans_Stereo,
 
         SmallPacketsPerFrame = 2,
         SamplesPerSmallPacket = SamplesPerFrame / SmallPacketsPerFrame,
@@ -1245,7 +1244,7 @@ TEST(receiver_source, packet_size_variable) {
         NumIterations = Latency / SamplesPerTwoPackets * 10
     };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -1280,9 +1279,9 @@ TEST(receiver_source, packet_size_variable) {
 }
 
 TEST(receiver_source, corrupted_packets_new_session) {
-    enum { NumCh = 2 };
+    enum { Chans = Chans_Stereo };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -1319,9 +1318,9 @@ TEST(receiver_source, corrupted_packets_new_session) {
 }
 
 TEST(receiver_source, corrupted_packets_existing_session) {
-    enum { NumCh = 2 };
+    enum { Chans = Chans_Stereo };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -1379,9 +1378,9 @@ TEST(receiver_source, corrupted_packets_existing_session) {
 }
 
 TEST(receiver_source, channels_stereo_to_mono) {
-    enum { OutputCh = 1, PacketCh = 2 };
+    enum { OutputChans = Chans_Mono, PacketChans = Chans_Stereo };
 
-    init(OutputCh, PacketCh);
+    init(OutputChans, PacketChans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -1416,9 +1415,9 @@ TEST(receiver_source, channels_stereo_to_mono) {
 }
 
 TEST(receiver_source, channels_mono_to_stereo) {
-    enum { OutputCh = 2, PacketCh = 1 };
+    enum { OutputChans = Chans_Stereo, PacketChans = Chans_Mono };
 
-    init(OutputCh, PacketCh);
+    init(OutputChans, PacketChans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -1453,9 +1452,9 @@ TEST(receiver_source, channels_mono_to_stereo) {
 }
 
 TEST(receiver_source, state) {
-    enum { NumCh = 2 };
+    enum { Chans = Chans_Stereo };
 
-    init(NumCh, NumCh);
+    init(Chans, Chans);
 
     ReceiverSource receiver(make_config(), format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, allocator);
@@ -1475,7 +1474,7 @@ TEST(receiver_source, state) {
 
     core::Slice<audio::sample_t> samples = sample_buffer_factory.new_buffer();
     CHECK(samples);
-    samples.reslice(0, FramesPerPacket * NumCh);
+    samples.reslice(0, FramesPerPacket * output_sample_spec.num_channels());
 
     CHECK(receiver.state() == sndio::DeviceState_Idle);
 

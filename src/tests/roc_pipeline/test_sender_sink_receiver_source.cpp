@@ -26,6 +26,9 @@ namespace pipeline {
 
 namespace {
 
+const audio::ChannelMask Chans_Mono = audio::ChanMask_Surround_Mono;
+const audio::ChannelMask Chans_Stereo = audio::ChanMask_Surround_Stereo;
+
 const rtp::PayloadType PayloadType_Ch1 = rtp::PayloadType_L16_Mono;
 const rtp::PayloadType PayloadType_Ch2 = rtp::PayloadType_L16_Stereo;
 
@@ -76,21 +79,21 @@ core::BufferFactory<uint8_t> byte_buffer_factory(allocator, MaxBufSize, true);
 packet::PacketFactory packet_factory(allocator, true);
 rtp::FormatMap format_map(allocator, true);
 
-SenderConfig
-make_sender_config(int flags, size_t frame_channels, size_t packet_channels) {
+SenderConfig make_sender_config(int flags,
+                                audio::ChannelMask frame_channels,
+                                audio::ChannelMask packet_channels) {
     SenderConfig config;
 
     config.input_sample_spec.set_sample_rate(SampleRate);
     config.input_sample_spec.channel_set().clear_channels();
-    config.input_sample_spec.channel_set().set_layout(
-        frame_channels == 1 ? audio::ChannelLayout_Mono : audio::ChannelLayout_Surround);
-    config.input_sample_spec.channel_set().set_channel_range(0, frame_channels - 1, true);
+    config.input_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
+    config.input_sample_spec.channel_set().set_channel_mask(frame_channels);
 
     switch (packet_channels) {
-    case 1:
+    case Chans_Mono:
         config.payload_type = PayloadType_Ch1;
         break;
-    case 2:
+    case Chans_Stereo:
         config.payload_type = PayloadType_Ch2;
         break;
     default:
@@ -116,15 +119,14 @@ make_sender_config(int flags, size_t frame_channels, size_t packet_channels) {
     return config;
 }
 
-ReceiverConfig make_receiver_config(size_t frame_channels, size_t packet_channels) {
+ReceiverConfig make_receiver_config(audio::ChannelMask frame_channels,
+                                    audio::ChannelMask packet_channels) {
     ReceiverConfig config;
 
     config.common.output_sample_spec.set_sample_rate(SampleRate);
     config.common.output_sample_spec.channel_set().clear_channels();
-    config.common.output_sample_spec.channel_set().set_layout(
-        frame_channels == 1 ? audio::ChannelLayout_Mono : audio::ChannelLayout_Surround);
-    config.common.output_sample_spec.channel_set().set_channel_range(
-        0, frame_channels - 1, true);
+    config.common.output_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
+    config.common.output_sample_spec.channel_set().set_channel_mask(frame_channels);
 
     config.common.enable_timing = false;
     config.common.enable_poisoning = true;
@@ -193,8 +195,8 @@ void filter_packets(int flags, packet::IReader& reader, packet::IWriter& writer)
 
 void send_receive(int flags,
                   size_t num_sessions,
-                  size_t frame_channels,
-                  size_t packet_channels) {
+                  audio::ChannelMask frame_channels,
+                  audio::ChannelMask packet_channels) {
     packet::Queue queue;
 
     address::Protocol source_proto = select_source_proto(flags);
@@ -294,75 +296,75 @@ void send_receive(int flags,
 TEST_GROUP(sender_sink_receiver_source) {};
 
 TEST(sender_sink_receiver_source, bare) {
-    enum { NumSess = 1, NumCh = 2 };
+    enum { Chans = Chans_Stereo, NumSess = 1 };
 
-    send_receive(FlagNone, NumSess, NumCh, NumCh);
+    send_receive(FlagNone, NumSess, Chans, Chans);
 }
 
 TEST(sender_sink_receiver_source, interleaving) {
-    enum { NumSess = 1, NumCh = 2 };
+    enum { Chans = Chans_Stereo, NumSess = 1 };
 
-    send_receive(FlagInterleaving, NumSess, NumCh, NumCh);
+    send_receive(FlagInterleaving, NumSess, Chans, Chans);
 }
 
 TEST(sender_sink_receiver_source, fec_rs) {
-    enum { NumSess = 1, NumCh = 2 };
+    enum { Chans = Chans_Stereo, NumSess = 1 };
 
     if (is_fec_supported(FlagReedSolomon)) {
-        send_receive(FlagReedSolomon, NumSess, NumCh, NumCh);
+        send_receive(FlagReedSolomon, NumSess, Chans, Chans);
     }
 }
 
 TEST(sender_sink_receiver_source, fec_ldpc) {
-    enum { NumSess = 1, NumCh = 2 };
+    enum { Chans = Chans_Stereo, NumSess = 1 };
 
     if (is_fec_supported(FlagLDPC)) {
-        send_receive(FlagLDPC, NumSess, NumCh, NumCh);
+        send_receive(FlagLDPC, NumSess, Chans, Chans);
     }
 }
 
 TEST(sender_sink_receiver_source, fec_interleaving) {
-    enum { NumSess = 1, NumCh = 2 };
+    enum { Chans = Chans_Stereo, NumSess = 1 };
 
     if (is_fec_supported(FlagReedSolomon)) {
-        send_receive(FlagReedSolomon | FlagInterleaving, NumSess, NumCh, NumCh);
+        send_receive(FlagReedSolomon | FlagInterleaving, NumSess, Chans, Chans);
     }
 }
 
 TEST(sender_sink_receiver_source, fec_loss) {
-    enum { NumSess = 1, NumCh = 2 };
+    enum { Chans = Chans_Stereo, NumSess = 1 };
 
     if (is_fec_supported(FlagReedSolomon)) {
-        send_receive(FlagReedSolomon | FlagLosses, NumSess, NumCh, NumCh);
+        send_receive(FlagReedSolomon | FlagLosses, NumSess, Chans, Chans);
     }
 }
 
 TEST(sender_sink_receiver_source, fec_drop_source) {
-    enum { NumSess = 0, NumCh = 2 };
+    enum { Chans = Chans_Stereo, NumSess = 0 };
 
     if (is_fec_supported(FlagReedSolomon)) {
-        send_receive(FlagReedSolomon | FlagDropSource, NumSess, NumCh, NumCh);
+        send_receive(FlagReedSolomon | FlagDropSource, NumSess, Chans, Chans);
     }
 }
 
 TEST(sender_sink_receiver_source, fec_drop_repair) {
-    enum { NumSess = 1, NumCh = 2 };
+    enum { Chans = Chans_Stereo, NumSess = 1 };
 
     if (is_fec_supported(FlagReedSolomon)) {
-        send_receive(FlagReedSolomon | FlagDropRepair, NumSess, NumCh, NumCh);
+        send_receive(FlagReedSolomon | FlagDropRepair, NumSess, Chans, Chans);
     }
 }
 
 TEST(sender_sink_receiver_source, channels_stereo_to_mono) {
-    enum { NumSess = 1, FrameCh = 2, PacketCh = 1 };
+    enum { FrameChans = Chans_Stereo, PacketChans = Chans_Mono, NumSess = 1 };
 
-    send_receive(FlagNone, NumSess, FrameCh, PacketCh);
+    send_receive(FlagNone, NumSess, FrameChans, PacketChans);
 }
 
 TEST(sender_sink_receiver_source, channels_mono_to_stereo) {
-    enum { NumSess = 1, FrameCh = 1, PacketCh = 2 };
+    enum { FrameChans = Chans_Mono, PacketChans = Chans_Stereo, NumSess = 1 };
 
-    send_receive(FlagNone, NumSess, FrameCh, PacketCh);
+    send_receive(FlagNone, NumSess, FrameChans, PacketChans);
 }
 
 } // namespace pipeline

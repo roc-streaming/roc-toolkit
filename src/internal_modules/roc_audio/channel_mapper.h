@@ -31,20 +31,28 @@ public:
     void map(const Frame& in_frame, Frame& out_frame);
 
 private:
-    typedef void (*map_func_t)(const ChannelSet& in_chans,
-                               const ChannelSet& out_chans,
-                               const ChannelSet& inout_chans,
-                               const sample_t* in_samples,
-                               sample_t* out_samples,
-                               size_t n_samples);
+    typedef void (ChannelMapper::*map_func_t)(const sample_t* in_samples,
+                                              sample_t* out_samples,
+                                              size_t n_samples);
 
-    map_func_t select_func_();
+    void map_surround_surround_(const sample_t* in_samples,
+                                sample_t* out_samples,
+                                size_t n_samples);
+    void map_multitrack_surround_(const sample_t* in_samples,
+                                  sample_t* out_samples,
+                                  size_t n_samples);
+    void map_multitrack_multitrack_(const sample_t* in_samples,
+                                    sample_t* out_samples,
+                                    size_t n_samples);
+
+    void setup_map_matrix_();
+    void setup_map_func_();
 
     const ChannelSet in_chans_;
     const ChannelSet out_chans_;
-
     ChannelSet inout_chans_;
 
+    sample_t map_matrix_[ChanPos_Max][ChanPos_Max];
     map_func_t map_func_;
 };
 

@@ -26,7 +26,7 @@ namespace {
 
 enum { BufSize = 512, SampleRate = 44100, ChMask = 0x3 };
 
-const audio::SampleSpec SampleSpecs(SampleRate, audio::ChannelLayout_Surround, ChMask);
+const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, ChMask);
 
 const core::nanoseconds_t BufDuration = BufSize * core::Second
     / core::nanoseconds_t(SampleSpecs.sample_rate() * SampleSpecs.num_channels());
@@ -41,7 +41,7 @@ TEST_GROUP(pump) {
 
     void setup() {
         config.sample_spec =
-            audio::SampleSpec(SampleRate, audio::ChannelLayout_Surround, ChMask);
+            audio::SampleSpec(SampleRate, audio::ChanLayout_Surround, ChMask);
         config.frame_length = BufDuration;
     }
 };

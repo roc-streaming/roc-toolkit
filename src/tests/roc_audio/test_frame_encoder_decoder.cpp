@@ -29,10 +29,10 @@ enum {
 };
 
 const ChannelMask Codec_channels[NumCodecs] = {
-    ChannelMask_Mono,
-    ChannelMask_Stereo,
-    ChannelMask_Mono,
-    ChannelMask_Stereo,
+    ChanMask_Surround_Mono,
+    ChanMask_Surround_Stereo,
+    ChanMask_Surround_Mono,
+    ChanMask_Surround_Stereo,
 };
 
 enum { SampleRate = 44100, MaxChans = 8, MaxBufSize = 2000 };
@@ -49,24 +49,24 @@ sample_t nth_sample(uint8_t n) {
 IFrameEncoder* new_encoder(size_t id) {
     switch (id) {
     case Codec_PCM_SInt16_1ch:
-        return new (allocator)
-            PcmEncoder(PcmFormat(PcmEncoding_SInt16, PcmEndian_Big),
-                       SampleSpec(SampleRate, ChannelLayout_Mono, ChannelMask_Mono));
+        return new (allocator) PcmEncoder(
+            PcmFormat(PcmEncoding_SInt16, PcmEndian_Big),
+            SampleSpec(SampleRate, ChanLayout_Surround, ChanMask_Surround_Mono));
 
     case Codec_PCM_SInt16_2ch:
         return new (allocator) PcmEncoder(
             PcmFormat(PcmEncoding_SInt16, PcmEndian_Big),
-            SampleSpec(SampleRate, ChannelLayout_Surround, ChannelMask_Stereo));
+            SampleSpec(SampleRate, ChanLayout_Surround, ChanMask_Surround_Stereo));
 
     case Codec_PCM_SInt24_1ch:
-        return new (allocator)
-            PcmEncoder(PcmFormat(PcmEncoding_SInt24, PcmEndian_Big),
-                       SampleSpec(SampleRate, ChannelLayout_Mono, ChannelMask_Mono));
+        return new (allocator) PcmEncoder(
+            PcmFormat(PcmEncoding_SInt24, PcmEndian_Big),
+            SampleSpec(SampleRate, ChanLayout_Surround, ChanMask_Surround_Mono));
 
     case Codec_PCM_SInt24_2ch:
         return new (allocator) PcmEncoder(
             PcmFormat(PcmEncoding_SInt24, PcmEndian_Big),
-            SampleSpec(SampleRate, ChannelLayout_Surround, ChannelMask_Stereo));
+            SampleSpec(SampleRate, ChanLayout_Surround, ChanMask_Surround_Stereo));
 
     default:
         FAIL("bad codec id");
@@ -78,24 +78,24 @@ IFrameEncoder* new_encoder(size_t id) {
 IFrameDecoder* new_decoder(size_t id) {
     switch (id) {
     case Codec_PCM_SInt16_1ch:
-        return new (allocator)
-            PcmDecoder(PcmFormat(PcmEncoding_SInt16, PcmEndian_Big),
-                       SampleSpec(SampleRate, ChannelLayout_Mono, ChannelMask_Mono));
+        return new (allocator) PcmDecoder(
+            PcmFormat(PcmEncoding_SInt16, PcmEndian_Big),
+            SampleSpec(SampleRate, ChanLayout_Surround, ChanMask_Surround_Mono));
 
     case Codec_PCM_SInt16_2ch:
         return new (allocator) PcmDecoder(
             PcmFormat(PcmEncoding_SInt16, PcmEndian_Big),
-            SampleSpec(SampleRate, ChannelLayout_Surround, ChannelMask_Stereo));
+            SampleSpec(SampleRate, ChanLayout_Surround, ChanMask_Surround_Stereo));
 
     case Codec_PCM_SInt24_1ch:
-        return new (allocator)
-            PcmDecoder(PcmFormat(PcmEncoding_SInt24, PcmEndian_Big),
-                       SampleSpec(SampleRate, ChannelLayout_Mono, ChannelMask_Mono));
+        return new (allocator) PcmDecoder(
+            PcmFormat(PcmEncoding_SInt24, PcmEndian_Big),
+            SampleSpec(SampleRate, ChanLayout_Surround, ChanMask_Surround_Mono));
 
     case Codec_PCM_SInt24_2ch:
         return new (allocator) PcmDecoder(
             PcmFormat(PcmEncoding_SInt24, PcmEndian_Big),
-            SampleSpec(SampleRate, ChannelLayout_Surround, ChannelMask_Stereo));
+            SampleSpec(SampleRate, ChanLayout_Surround, ChanMask_Surround_Stereo));
 
     default:
         FAIL("bad codec id");

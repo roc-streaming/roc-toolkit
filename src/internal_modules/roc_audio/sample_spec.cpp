@@ -21,7 +21,7 @@ SampleSpec::SampleSpec(const size_t sample_rate, const ChannelSet& channel_set)
     : sample_rate_(sample_rate)
     , channel_set_(channel_set) {
     roc_panic_if_msg(sample_rate_ == 0, "sample spec: invalid sample rate");
-    roc_panic_if_msg(channel_set_.layout() == ChannelLayout_Invalid,
+    roc_panic_if_msg(channel_set_.layout() == ChanLayout_Invalid,
                      "sample spec: invalid channel layout");
     roc_panic_if_msg(channel_set_.num_channels() == 0,
                      "sample spec: invalid channel count");
