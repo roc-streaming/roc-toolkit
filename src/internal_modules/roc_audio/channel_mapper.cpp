@@ -190,7 +190,7 @@ void ChannelMapper::setup_map_matrix_() {
 
     // Mapping matrix is used only when mapping surround to surround.
     if (in_chans_.layout() != ChanLayout_Surround
-        || out_chans_.layout() != ChanLayout_Surround) {
+        && out_chans_.layout() != ChanLayout_Surround) {
         return;
     }
 
@@ -223,19 +223,16 @@ void ChannelMapper::setup_map_matrix_() {
     bool is_reverse = false;
 
     if (in_chans_ != out_chans_) {
-        for (size_t n = 0; n < ROC_ARRAY_SIZE(chan_maps); n++) {
+        for (size_t n = 0; !ch_map && n < ROC_ARRAY_SIZE(chan_maps); n++) {
             if (out_chans_.is_subset(chan_maps[n].out_mask)
                 && in_chans_.is_subset(chan_maps[n].in_mask)) {
                 ch_map = &chan_maps[n];
                 is_reverse = false;
-                break;
-            }
-            if (in_chans_.is_subset(chan_maps[n].out_mask)
+            } else if (in_chans_.is_subset(chan_maps[n].out_mask)
                 && out_chans_.is_subset(chan_maps[n].in_mask)) {
                 // This channel map describes reversed transformation.
                 ch_map = &chan_maps[n];
                 is_reverse = true;
-                break;
             }
         }
     }
