@@ -124,7 +124,7 @@ private:
     enum {
         MaxChannels = 1024,
         WordBytes = sizeof(word_t),
-        WordBits = WordBytes*8,
+        WordBits = WordBytes * 8,
         NumWords = MaxChannels / WordBits
     };
 

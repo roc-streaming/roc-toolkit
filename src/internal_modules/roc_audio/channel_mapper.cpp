@@ -190,7 +190,7 @@ void ChannelMapper::setup_map_matrix_() {
 
     // Mapping matrix is used only when mapping surround to surround.
     if (in_chans_.layout() != ChanLayout_Surround
-        && out_chans_.layout() != ChanLayout_Surround) {
+        || out_chans_.layout() != ChanLayout_Surround) {
         return;
     }
 
