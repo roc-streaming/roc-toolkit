@@ -181,7 +181,7 @@ int roc_receiver_read(roc_receiver* receiver, roc_frame* frame) {
         return -1;
     }
 
-    audio::Frame imp_frame((float*)frame->samples, frame->samples_size / sizeof(float));
+    audio::Frame imp_frame((float *) frame->samples, frame->samples_size / sizeof(float), imp_source.sample_spec());
 
     if (!imp_source.read(imp_frame)) {
         roc_log(LogError, "roc_receiver_read(): got unexpected eof from source");

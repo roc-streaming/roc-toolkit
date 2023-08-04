@@ -59,6 +59,7 @@ void ChannelMapper::map(const Frame& in_frame, Frame& out_frame) {
                   (unsigned long)out_frame.num_samples());
     }
 
+    out_frame.ntp_timestamp() = in_frame.ntp_timestamp();
     const size_t n_samples = in_frame.num_samples() / in_chans_.num_channels();
 
     const sample_t* in_samples = in_frame.samples();

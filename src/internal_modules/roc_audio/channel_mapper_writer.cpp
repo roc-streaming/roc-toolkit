@@ -11,6 +11,7 @@
 #include "roc_audio/sample_spec_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_packet/ntp.h"
 
 namespace roc {
 namespace audio {
@@ -72,13 +73,14 @@ void ChannelMapperWriter::write(Frame& in_frame) {
 }
 
 void ChannelMapperWriter::write_(sample_t* in_samples, size_t n_samples, unsigned flags) {
-    Frame in_frame(in_samples, n_samples * in_spec_.num_channels());
+    Frame in_frame(in_samples, n_samples * in_spec_.num_channels(), in_spec_);
 
-    Frame out_frame(output_buf_.data(), n_samples * out_spec_.num_channels());
+    Frame out_frame(output_buf_.data(), n_samples * out_spec_.num_channels(), out_spec_);
 
     out_frame.set_flags(flags);
 
     mapper_.map(in_frame, out_frame);
+    out_frame.ntp_timestamp() = packet::ntp_timestamp();
 
     output_writer_.write(out_frame);
 }

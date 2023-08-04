@@ -275,7 +275,7 @@ private:
     void cancel_async_task_processing_();
 
     void process_task_(PipelineTask& task, bool notify);
-    bool process_next_subframe_(audio::Frame& frame, size_t* frame_pos);
+    bool process_next_subframe_(audio::Frame& frame, core::nanoseconds_t *frame_pos);
 
     bool start_subframe_task_processing_();
     bool subframe_task_processing_allowed_(core::nanoseconds_t next_frame_deadline) const;

@@ -66,6 +66,7 @@ private:
     core::Slice<sample_t> temp_buf_;
 
     bool valid_;
+    const audio::SampleSpec samplespec_;
 };
 
 } // namespace audio

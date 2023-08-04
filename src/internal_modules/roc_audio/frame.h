@@ -13,7 +13,10 @@
 #define ROC_AUDIO_FRAME_H_
 
 #include "roc_audio/sample.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/time.h"
+#include "roc_packet/units.h"
 
 namespace roc {
 namespace audio {
@@ -24,7 +27,10 @@ public:
     //! Construct frame from samples.
     //! @remarks
     //!  The pointer is saved in the frame, no copying is performed.
-    Frame(sample_t* samples, size_t num_samples);
+Frame(sample_t *samples, size_t num_samples, const SampleSpec &spec, packet::ntp_timestamp_t ts = 0);
+
+    //! Sub-frame copy constructor.
+    Frame(Frame &frame, const core::nanoseconds_t offset, const core::nanoseconds_t max_duration = 0);
 
     //! Frame flags.
     enum {
@@ -56,10 +62,23 @@ public:
     //! Print frame to stderr.
     void print() const;
 
+    //! Get ntp timestamp of the 1st sample.
+    packet::ntp_timestamp_t ntp_timestamp() const;
+
+    //! Get/set ntp timestamp of the 1st sample.
+    packet::ntp_timestamp_t& ntp_timestamp();
+
+    //! Get SampleSpec of the frame.
+    const SampleSpec &samplespec() const;
+
+    core::nanoseconds_t duration() const;
+
 private:
     sample_t* samples_;
     size_t num_samples_;
     unsigned flags_;
+    packet::ntp_timestamp_t ntp_timestamp_;
+    SampleSpec sample_spec_;
 };
 
 } // namespace audio

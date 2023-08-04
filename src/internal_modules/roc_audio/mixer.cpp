@@ -15,7 +15,8 @@ namespace roc {
 namespace audio {
 
 Mixer::Mixer(core::BufferFactory<sample_t>& buffer_factory)
-    : valid_(false) {
+    : valid_(false)
+    , samplespec_(sample_spec){
     temp_buf_ = buffer_factory.new_buffer();
     if (!temp_buf_) {
         roc_log(LogError, "mixer: can't allocate temporary buffer");
@@ -84,7 +85,7 @@ void Mixer::read_(sample_t* data, size_t size, unsigned& flags) {
     for (IFrameReader* rp = readers_.front(); rp; rp = readers_.nextof(*rp)) {
         sample_t* temp_data = temp_buf_.data();
 
-        Frame temp_frame(temp_data, size);
+        Frame temp_frame(temp_data, size, samplespec_);
         if (!rp->read(temp_frame)) {
             continue;
         }

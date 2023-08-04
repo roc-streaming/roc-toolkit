@@ -57,7 +57,7 @@ bool ResamplerReader::read(Frame& out) {
     size_t out_pos = 0;
 
     while (out_pos < out.num_samples()) {
-        Frame out_part(out.samples() + out_pos, out.num_samples() - out_pos);
+        Frame out_part(out.samples() + out_pos, out.num_samples() - out_pos, out_sample_spec_);
 
         const size_t num_popped = resampler_.pop_output(out_part);
 
@@ -76,7 +76,7 @@ bool ResamplerReader::read(Frame& out) {
 bool ResamplerReader::push_input_() {
     const core::Slice<sample_t>& buff = resampler_.begin_push_input();
 
-    Frame frame(buff.data(), buff.size());
+    Frame frame(buff.data(), buff.size(), SampleSpec(), in_sample_spec_);
 
     if (!reader_.read(frame)) {
         return false;
