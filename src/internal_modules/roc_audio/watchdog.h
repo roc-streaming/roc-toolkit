@@ -33,7 +33,7 @@ struct WatchdogConfig {
     //!  broken clients. Set to zero to disable.
     core::nanoseconds_t no_playback_timeout;
 
-    //! Timeout for frequent shuttering, nanoseconds.
+    //! Timeout for frequent stuttering, nanoseconds.
     //! @remarks
     //!  Maximum allowed period during which every drop detection window overlaps with
     //!  at least one frame which caused packet drops and with at least one frame which
@@ -43,7 +43,7 @@ struct WatchdogConfig {
     //!  noise. Set to zero to disable.
     core::nanoseconds_t choppy_playback_timeout;
 
-    //! Window size of detecting shuttering, nanoseconds.
+    //! Window size of detecting stuttering, nanoseconds.
     //! @see
     //!  choppy_playback_timeout
     core::nanoseconds_t choppy_playback_window;
