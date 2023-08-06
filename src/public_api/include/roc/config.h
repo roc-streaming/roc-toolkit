@@ -740,8 +740,8 @@ typedef struct roc_receiver_config {
     long long no_playback_timeout;
 
     /** Timeout for choppy playback, in nanoseconds.
-     * If there is constant shuttering during this period, the session is terminated (it
-     * can then automatically restart). Receiver itself is  not terminated; if there are
+     * If there is constant stuttering during this period, the session is terminated (it
+     * can then automatically restart). Receiver itself is not terminated; if there are
      * no sessions, it will produce zeros.
      * This mechanism allows to detect situations when playback continues but there
      * are frequent glitches, for example because there is a high ratio of late packets.
