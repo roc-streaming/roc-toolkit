@@ -117,16 +117,16 @@ extern "C" {
  * Sender should encode samples at a constant rate that is configured when the sender
  * is created. There are two ways to accomplish this:
  *
- *  - If the user enabled internal clock (\c ROC_CLOCK_INTERNAL), the sender employs a
- *    CPU timer to block writes until it's time to encode the next bunch of samples
- *    according to the configured sample rate.
+ *  - If the user enabled internal clock (\c ROC_CLOCK_SOURCE_INTERNAL), the sender
+ *    employs a CPU timer to block writes until it's time to encode the next bunch of
+ *    samples according to the configured sample rate.
 
  *    This mode is useful when the user gets samples from a non-realtime source, e.g.
  *    from an audio file.
  *
- *  - If the user enabled external clock (\c ROC_CLOCK_EXTERNAL), the samples written to
- *    the sender are encoded and sent immediately, and hence the user is responsible to
- *    call write operation according to the sample rate.
+ *  - If the user enabled external clock (\c ROC_CLOCK_SOURCE_EXTERNAL), the samples
+ *    written to the sender are encoded and sent immediately, and hence the user is
+ *    responsible to call write operation according to the sample rate.
  *
  *    This mode is useful when the user gets samples from a realtime source with its own
  *    clock, e.g. from an audio device. Internal clock should not be used in this case
@@ -226,9 +226,10 @@ ROC_API int roc_sender_connect(roc_sender* sender,
  * Encodes samples to packets and enqueues them for transmission by the network worker
  * thread of the context.
  *
- * If \c ROC_CLOCK_INTERNAL is used, the function blocks until it's time to transmit the
- * samples according to the configured sample rate. The function returns after encoding
- * and enqueuing the packets, without waiting when the packets are actually transmitted.
+ * If \c ROC_CLOCK_SOURCE_INTERNAL is used, the function blocks until it's time to
+ * transmit the samples according to the configured sample rate. The function returns
+ * after encoding and enqueuing the packets, without waiting when the packets are actually
+ * transmitted.
  *
  * Until the sender is connected to at least one receiver, the stream is just dropped.
  * If the sender is connected to multiple receivers, the stream is duplicated to

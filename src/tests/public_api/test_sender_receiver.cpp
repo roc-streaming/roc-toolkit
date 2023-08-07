@@ -79,7 +79,7 @@ TEST_GROUP(sender_receiver) {
         }
 
         sender_conf.packet_length = test::PacketSamples * 1000000000ul / test::SampleRate;
-        sender_conf.clock_source = ROC_CLOCK_INTERNAL;
+        sender_conf.clock_source = ROC_CLOCK_SOURCE_INTERNAL;
 
         if (flags & test::FlagRS8M) {
             sender_conf.fec_encoding = ROC_FEC_ENCODING_RS8M;
@@ -113,7 +113,7 @@ TEST_GROUP(sender_receiver) {
             }
         }
 
-        receiver_conf.clock_source = ROC_CLOCK_INTERNAL;
+        receiver_conf.clock_source = ROC_CLOCK_SOURCE_INTERNAL;
         receiver_conf.clock_sync_backend = ROC_CLOCK_SYNC_BACKEND_DISABLE;
         receiver_conf.target_latency = test::Latency * 1000000000ul / test::SampleRate;
         receiver_conf.no_playback_timeout =

@@ -72,7 +72,7 @@ int main() {
     /* Use user-provided clock.
      * Sender will be clocked by PulseAudio source. Writer operation will be non-blocking.
      */
-    sender_config.clock_source = ROC_CLOCK_EXTERNAL;
+    sender_config.clock_source = ROC_CLOCK_SOURCE_EXTERNAL;
 
     /* Create sender. */
     roc_sender* sender = NULL;

@@ -375,7 +375,9 @@ typedef struct roc_media_encoding {
     unsigned int tracks;
 } roc_media_encoding;
 
-/** Clock source for sender or receiver. */
+/** Clock source for sender or receiver.
+ * Defines wo is responsible to invoke read or write in proper time.
+ */
 typedef enum roc_clock_source {
     /** Sender or receiver is clocked by external user-defined clock.
      *
@@ -386,7 +388,7 @@ typedef enum roc_clock_source {
      * or destination (to where you write them after obtaining from sender)
      * is active and has its own clock, e.g. it is a sound card.
      */
-    ROC_CLOCK_EXTERNAL = 0,
+    ROC_CLOCK_SOURCE_EXTERNAL = 0,
 
     /** Sender or receiver is clocked by an internal pipeline clock.
      *
@@ -398,7 +400,7 @@ typedef enum roc_clock_source {
      * or destination (to where you write them after obtaining from sender)
      * is passive and does now have clock, e.g. it is a file on disk.
      */
-    ROC_CLOCK_INTERNAL = 1
+    ROC_CLOCK_SOURCE_INTERNAL = 1
 } roc_clock_source;
 
 /** Clock synchronization algorithm.
@@ -651,7 +653,7 @@ typedef struct roc_sender_config {
 
     /** Clock source to use.
      * Defines whether write operation will be blocking or non-blocking.
-     * If zero, default value is used (\c ROC_CLOCK_EXTERNAL).
+     * If zero, default value is used (\c ROC_CLOCK_SOURCE_EXTERNAL).
      */
     roc_clock_source clock_source;
 
@@ -685,7 +687,7 @@ typedef struct roc_receiver_config {
 
     /** Clock source.
      * Defines whether read operation will be blocking or non-blocking.
-     * If zero, \ref ROC_CLOCK_EXTERNAL is used.
+     * If zero, \ref ROC_CLOCK_SOURCE_EXTERNAL is used.
      */
     roc_clock_source clock_source;
 

@@ -86,7 +86,7 @@ int main() {
     /* Turn on internal CPU timer.
      * Sender must send packets with steady rate, so we should either implement
      * clocking or ask the library to do so. We choose the second here. */
-    sender_config.clock_source = ROC_CLOCK_INTERNAL;
+    sender_config.clock_source = ROC_CLOCK_SOURCE_INTERNAL;
 
     /* Create sender. */
     roc_sender* sender = NULL;
