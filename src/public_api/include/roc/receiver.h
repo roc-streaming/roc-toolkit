@@ -148,15 +148,15 @@ extern "C" {
  * Receiver should decode samples at a constant rate that is configured when the receiver
  * is created. There are two ways to accomplish this:
  *
- *  - If the user enabled internal clock (\c ROC_CLOCK_INTERNAL), the receiver employs a
- *    CPU timer to block reads until it's time to decode the next bunch of samples
- *    according to the configured sample rate.
+ *  - If the user enabled internal clock (\c ROC_CLOCK_SOURCE_INTERNAL), the receiver
+ *    employs a CPU timer to block reads until it's time to decode the next bunch of
+ *    samples according to the configured sample rate.
  *
  *    This mode is useful when the user passes samples to a non-realtime destination,
  *    e.g. to an audio file.
  *
- *  - If the user enabled external clock (\c ROC_CLOCK_EXTERNAL), the samples read from
- *    the receiver are decoded immediately and hence the user is responsible to call
+ *  - If the user enabled external clock (\c ROC_CLOCK_SOURCE_EXTERNAL), the samples read
+ *    from the receiver are decoded immediately and hence the user is responsible to call
  *    read operation according to the sample rate.
  *
  *    This mode is useful when the user passes samples to a realtime destination with its
@@ -263,8 +263,8 @@ ROC_API int roc_receiver_bind(roc_receiver* receiver,
  * packets, decodes samples, resamples and mixes them, and finally stores samples into the
  * provided frame.
  *
- * If \c ROC_CLOCK_INTERNAL is used, the function blocks until it's time to decode the
- * samples according to the configured sample rate.
+ * If \c ROC_CLOCK_SOURCE_INTERNAL is used, the function blocks until it's time to decode
+ * the samples according to the configured sample rate.
  *
  * Until the receiver is connected to at least one sender, it produces silence.
  * If the receiver is connected to multiple senders, it mixes their streams into one.
