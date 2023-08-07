@@ -702,7 +702,7 @@ void TcpConnectionPort::report_state_(ConnectionState state) {
         return;
     }
 
-    roc_panic_if_not(conn_handler_->is_used());
+    roc_panic_if(conn_handler_->getref() == 0);
 
     switch (state) {
     case State_Refused:
@@ -734,12 +734,12 @@ void TcpConnectionPort::set_conn_handler_(IConnHandler& handler) {
     }
 
     conn_handler_ = &handler;
-    conn_handler_->acquire_usage();
+    conn_handler_->incref();
 }
 
 void TcpConnectionPort::unset_conn_handler_() {
     if (conn_handler_) {
-        conn_handler_->release_usage();
+        conn_handler_->decref();
         conn_handler_ = NULL;
     }
 }
