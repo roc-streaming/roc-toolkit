@@ -42,6 +42,9 @@ namespace core {
 //!  5) Incremental rehashing. After hash table growth, rehashing is performed
 //!     incrementally when inserting and removing elements. The slower hash table
 //!     size growth is, the less overhead rehashing adds to each operation.
+//!  6) Allows to iterate elements in insertion order. Implements safe iteration with
+//!     regards to element insertion and deletion. Elements deleted during iteration
+//!     won't be visited. Elements inserted during iteration will be visited.
 //!
 //! Incremental rehashing technique is inspired by Go's map implementation, though
 //! there are differences. Load factor value is from Java's Hashmap implementation.
@@ -93,6 +96,9 @@ public:
         , rehash_pos_(0)
         , rehash_remain_nodes_(0)
         , allocator_(allocator) {
+        all_head_.all_prev = &all_head_;
+        all_head_.all_next = &all_head_;
+
         if (EmbeddedCapacity != 0) {
             if (!realloc_buckets_(NumEmbeddedBuckets)) {
                 roc_panic("hashmap: initialization failed");
@@ -155,6 +161,52 @@ public:
         return find_node_(hash, key);
     }
 
+    //! Get first element in hashmap.
+    //! Elements are ordered by insertion.
+    //! @returns
+    //!  first element or NULL if hashmap is empty.
+    Pointer front() const {
+        if (size_ == 0) {
+            return NULL;
+        }
+        return container_of_(all_head_.all_next);
+    }
+
+    //! Get last element in hashmap.
+    //! Elements are ordered by insertion.
+    //! @returns
+    //!  last element or NULL if hashmap is empty.
+    Pointer back() const {
+        if (size_ == 0) {
+            return NULL;
+        }
+        return container_of_(all_head_.all_prev);
+    }
+
+    //! Get hashmap element next to given one.
+    //! Elements are ordered by insertion.
+    //!
+    //! @returns
+    //!  hashmap element following @p element if @p element is not
+    //!  last, or NULL otherwise.
+    //!
+    //! @pre
+    //!  @p element should be member of this hashmap.
+    Pointer nextof(T& element) const {
+        HashmapNode::HashmapNodeData* node = element.hashmap_node_data();
+
+        if (!contains(element)) {
+            roc_panic("hashmap:"
+                      " attempt to use an element which is not a member of %s hashmap",
+                      node->bucket == NULL ? "any" : "this");
+        }
+
+        if (node->all_next == &all_head_) {
+            return NULL;
+        }
+        return container_of_(node->all_next);
+    }
+
     //! Insert element into hashmap.
     //!
     //! @remarks
@@ -199,7 +251,9 @@ public:
         Bucket& bucket = select_bucket_(hash);
 
         node->hash = hash;
-        insert_node_(bucket, node);
+        bucket_insert_(bucket, node);
+        all_list_insert_(node);
+        size_++;
 
         proceed_rehash_(true);
 
@@ -228,7 +282,9 @@ public:
                       node->bucket == NULL ? "any" : "this");
         }
 
-        remove_node_(node);
+        bucket_remove_(node);
+        all_list_remove_(node);
+        size_--;
 
         proceed_rehash_(false);
 
@@ -274,18 +330,22 @@ public:
 
 private:
     enum {
-        // rehash happens when n_elements >= n_buckets * LoafFactorNum / LoafFactorDen
-        LoafFactorNum = 75,
-        LoafFactorDen = 100,
+        // rehash happens when n_elements >= n_buckets * LoadFactorNum / LoadFactorDen
+        LoadFactorNum = 75,
+        LoadFactorDen = 100,
 
         // how much buckets are embeded directly into Hashmap object
         NumEmbeddedBuckets =
-            ((int)EmbeddedCapacity * LoafFactorDen + LoafFactorNum - 1) / LoafFactorNum
+            ((int)EmbeddedCapacity * LoadFactorDen + LoadFactorNum - 1) / LoadFactorNum
     };
 
     struct Bucket {
         HashmapNode::HashmapNodeData* head;
     };
+
+    static T* container_of_(HashmapNode::HashmapNodeData* data) {
+        return static_cast<T*>(data->container_of());
+    }
 
     bool realloc_buckets_(size_t n_buckets) {
         roc_panic_if_not(n_buckets > 0);
@@ -356,11 +416,11 @@ private:
             HashmapNode::HashmapNodeData* node = buckets[n].head;
 
             while (node) {
-                T* elem = static_cast<T*>(node->container_of());
+                T* elem = container_of_(node);
 
                 node->bucket = NULL;
 
-                node = node->next;
+                node = node->bucket_next;
                 if (node == buckets[n].head) {
                     node = NULL;
                 }
@@ -395,14 +455,14 @@ private:
         if (node != NULL) {
             do {
                 if (node->hash == hash) {
-                    T* elem = static_cast<T*>(node->container_of());
+                    T* elem = container_of_(node);
 
                     if (T::key_equal(elem->key(), key)) {
                         return elem;
                     }
                 }
 
-                node = node->next;
+                node = node->bucket_next;
             } while (node != bucket.head);
         }
 
@@ -410,7 +470,7 @@ private:
     }
 
     size_t buckets_capacity_(size_t n_buckets) const {
-        return n_buckets * LoafFactorNum / LoafFactorDen;
+        return n_buckets * LoadFactorNum / LoadFactorDen;
     }
 
     Bucket& select_bucket_(hashsum_t hash) const {
@@ -419,38 +479,36 @@ private:
         return curr_buckets_[hash % n_curr_buckets_];
     }
 
-    void insert_node_(Bucket& bucket, HashmapNode::HashmapNodeData* node) {
+    void bucket_insert_(Bucket& bucket, HashmapNode::HashmapNodeData* node) {
         if (HashmapNode::HashmapNodeData* head = bucket.head) {
-            node->next = head;
-            node->prev = head->prev;
+            node->bucket_next = head;
+            node->bucket_prev = head->bucket_prev;
 
-            head->prev->next = node;
-            head->prev = node;
+            head->bucket_prev->bucket_next = node;
+            head->bucket_prev = node;
         } else {
             bucket.head = node;
 
-            node->next = node;
-            node->prev = node;
+            node->bucket_next = node;
+            node->bucket_prev = node;
         }
 
         node->bucket = (void*)&bucket;
-
-        size_++;
     }
 
-    void remove_node_(HashmapNode::HashmapNodeData* node) {
+    void bucket_remove_(HashmapNode::HashmapNodeData* node) {
         Bucket& bucket = *(Bucket*)node->bucket;
 
         if (bucket.head == node) {
-            if (node->next != node) {
-                bucket.head = node->next;
+            if (node->bucket_next != node) {
+                bucket.head = node->bucket_next;
             } else {
                 bucket.head = NULL;
             }
         }
 
-        node->prev->next = node->next;
-        node->next->prev = node->prev;
+        node->bucket_prev->bucket_next = node->bucket_next;
+        node->bucket_next->bucket_prev = node->bucket_prev;
 
         if (member_of_bucket_array_(prev_buckets_, n_prev_buckets_, node)) {
             roc_panic_if_not(rehash_remain_nodes_ > 0);
@@ -458,8 +516,19 @@ private:
         }
 
         node->bucket = NULL;
+    }
 
-        size_--;
+    void all_list_insert_(HashmapNode::HashmapNodeData* node) {
+        node->all_next = &all_head_;
+        node->all_prev = all_head_.all_prev;
+
+        all_head_.all_prev->all_next = node;
+        all_head_.all_prev = node;
+    }
+
+    void all_list_remove_(HashmapNode::HashmapNodeData* node) {
+        node->all_prev->all_next = node->all_next;
+        node->all_next->all_prev = node->all_prev;
     }
 
     void proceed_rehash_(bool in_insert) {
@@ -512,11 +581,11 @@ private:
     }
 
     void migrate_node_(HashmapNode::HashmapNodeData* node) {
-        remove_node_(node);
+        bucket_remove_(node);
 
         Bucket& bucket = select_bucket_(node->hash);
 
-        insert_node_(bucket, node);
+        bucket_insert_(bucket, node);
     }
 
     size_t get_prime_larger_than_(size_t min) {
@@ -547,6 +616,9 @@ private:
 
     size_t rehash_pos_;
     size_t rehash_remain_nodes_;
+
+    // head of list of all nodes
+    HashmapNode::HashmapNodeData all_head_;
 
     IAllocator& allocator_;
 

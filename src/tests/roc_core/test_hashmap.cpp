@@ -313,5 +313,93 @@ TEST(hashmap, refcounting) {
     UNSIGNED_LONGS_EQUAL(1, obj2->getref());
 }
 
+TEST(hashmap, iterate) {
+    enum { NumElements = 200 };
+
+    Hashmap<Object> hashmap(allocator);
+
+    SharedPtr<Object> objects[NumElements];
+
+    CHECK(!hashmap.front());
+    CHECK(!hashmap.back());
+
+    for (size_t n = 0; n < NumElements; n++) {
+        char key[64];
+        format_key(key, sizeof(key), n);
+
+        SharedPtr<Object> obj = new Object(key);
+
+        CHECK(hashmap.grow());
+        hashmap.insert(*obj);
+
+        objects[n] = obj;
+
+        CHECK(hashmap.front() == objects[0]);
+        CHECK(hashmap.back() == objects[n]);
+    }
+
+    size_t pos = 0;
+
+    for (SharedPtr<Object> obj = hashmap.front(); obj; obj = hashmap.nextof(*obj)) {
+        CHECK(obj == objects[pos]);
+        pos++;
+    }
+
+    UNSIGNED_LONGS_EQUAL(NumElements, pos);
+}
+
+TEST(hashmap, iterate_modify) {
+    enum { NumElements = 200 };
+
+    Hashmap<Object> hashmap(allocator);
+
+    SharedPtr<Object> objects[NumElements];
+
+    CHECK(!hashmap.front());
+    CHECK(!hashmap.back());
+
+    for (size_t n = 0; n < NumElements - 1; n++) {
+        char key[64];
+        format_key(key, sizeof(key), n);
+
+        SharedPtr<Object> obj = new Object(key);
+
+        CHECK(hashmap.grow());
+        hashmap.insert(*obj);
+
+        objects[n] = obj;
+
+        CHECK(hashmap.front() == objects[0]);
+        CHECK(hashmap.back() == objects[n]);
+    }
+
+    size_t pos = 0;
+
+    for (SharedPtr<Object> obj = hashmap.front(); obj; obj = hashmap.nextof(*obj)) {
+        if (pos == 2) {
+            // remove already visited element during iteration
+            hashmap.remove(*objects[1]);
+        }
+
+        if (pos == 3) {
+            // insert new element during iteration
+            char key[64];
+            format_key(key, sizeof(key), NumElements - 1);
+
+            SharedPtr<Object> new_obj = new Object(key);
+
+            CHECK(hashmap.grow());
+            hashmap.insert(*new_obj);
+
+            objects[NumElements - 1] = new_obj;
+        }
+
+        CHECK(obj == objects[pos]);
+        pos++;
+    }
+
+    UNSIGNED_LONGS_EQUAL(NumElements, pos);
+}
+
 } // namespace core
 } // namespace roc

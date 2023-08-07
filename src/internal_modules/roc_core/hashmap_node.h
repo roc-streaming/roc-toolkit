@@ -29,10 +29,16 @@ public:
     //! Hashmap node data.
     struct HashmapNodeData {
         //! Previous node in bucket.
-        HashmapNodeData* prev;
+        HashmapNodeData* bucket_prev;
 
         //! Next node in bucket.
-        HashmapNodeData* next;
+        HashmapNodeData* bucket_next;
+
+        //! Previous node in list of all nodes.
+        HashmapNodeData* all_prev;
+
+        //! Next node in in list of all nodes.
+        HashmapNodeData* all_next;
 
         //! Cached node hash.
         hashsum_t hash;
@@ -43,8 +49,10 @@ public:
         void* bucket;
 
         HashmapNodeData()
-            : prev(NULL)
-            , next(NULL)
+            : bucket_prev(NULL)
+            , bucket_next(NULL)
+            , all_prev(NULL)
+            , all_next(NULL)
             , hash(0)
             , bucket(NULL) {
         }
