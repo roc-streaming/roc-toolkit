@@ -42,7 +42,7 @@
     } while (0)
 
 static void gensine(float* samples, size_t batch_num, size_t num_samples) {
-    double t = batch_num * num_samples / 2;
+    double t = batch_num * num_samples / 2.0;
     size_t i;
     for (i = 0; i < num_samples / 2; i++) {
         const float s =
