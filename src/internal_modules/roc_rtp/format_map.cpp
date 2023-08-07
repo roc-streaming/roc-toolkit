@@ -47,8 +47,7 @@ FormatMap::FormatMap(core::IAllocator& allocator, bool poison)
 }
 
 FormatMap::~FormatMap() {
-    while (Node* node = node_list_.front()) {
-        node_list_.remove(*node);
+    while (Node* node = node_map_.front()) {
         node_map_.remove(*node);
         node_pool_.destroy_object(*node);
     }
@@ -67,7 +66,7 @@ const Format* FormatMap::find_by_pt(unsigned int pt) const {
 const Format* FormatMap::find_by_spec(const audio::SampleSpec& spec) const {
     core::Mutex::Lock lock(mutex_);
 
-    for (Node* node = node_list_.front(); node != NULL; node = node_list_.nextof(*node)) {
+    for (Node* node = node_map_.front(); node != NULL; node = node_map_.nextof(*node)) {
         if (node->format.sample_spec == spec) {
             return &node->format;
         }
@@ -91,6 +90,12 @@ bool FormatMap::add_format(const Format& fmt) {
         roc_panic("format map: bad format: invalid codec functions");
     }
 
+    if (!node_map_.grow()) {
+        roc_log(LogError,
+                "format map: failed to register format: hashmap allocation failed");
+        return false;
+    }
+
     if (node_map_.find(fmt.payload_type)) {
         roc_log(LogError,
                 "format map: failed to register format: payload type %u already exists",
@@ -100,14 +105,14 @@ bool FormatMap::add_format(const Format& fmt) {
 
     Node* node = new (node_pool_) Node();
     if (!node) {
-        roc_log(LogError, "format map: failed to register format: allocation failed");
+        roc_log(LogError,
+                "format map: failed to register format: pool allocation failed");
         return false;
     }
 
     node->format = fmt;
 
     node_map_.insert(*node);
-    node_list_.push_back(*node);
 
     return true;
 }

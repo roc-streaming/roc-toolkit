@@ -16,7 +16,6 @@
 #include "roc_core/attributes.h"
 #include "roc_core/hashmap.h"
 #include "roc_core/iallocator.h"
-#include "roc_core/list.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slab_pool.h"
@@ -58,7 +57,7 @@ public:
 private:
     enum { PreallocatedNodes = 16 };
 
-    struct Node : core::HashmapNode, core::ListNode {
+    struct Node : core::HashmapNode {
         Format format;
 
         static core::hashsum_t key_hash(unsigned int pt) {
@@ -80,7 +79,6 @@ private:
 
     core::SlabPool<PreallocatedNodes * sizeof(Node)> node_pool_;
     core::Hashmap<Node, PreallocatedNodes, core::NoOwnership> node_map_;
-    core::List<Node, core::NoOwnership> node_list_;
 };
 
 } // namespace rtp
