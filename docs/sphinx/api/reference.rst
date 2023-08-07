@@ -39,9 +39,7 @@ roc_sender
 
 .. doxygenfunction:: roc_sender_open
 
-.. doxygenfunction:: roc_sender_set_outgoing_address
-
-.. doxygenfunction:: roc_sender_set_reuseaddr
+.. doxygenfunction:: roc_sender_configure
 
 .. doxygenfunction:: roc_sender_connect
 
@@ -60,9 +58,7 @@ roc_receiver
 
 .. doxygenfunction:: roc_receiver_open
 
-.. doxygenfunction:: roc_receiver_set_multicast_group
-
-.. doxygenfunction:: roc_receiver_set_reuseaddr
+.. doxygenfunction:: roc_receiver_configure
 
 .. doxygenfunction:: roc_receiver_bind
 

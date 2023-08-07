@@ -46,7 +46,7 @@ Sender::~Sender() {
     context().control_loop().wait(processing_task_);
 
     for (size_t s = 0; s < slots_.size(); s++) {
-        if (!slots_[s].slot) {
+        if (!slots_[s].handle) {
             continue;
         }
 
@@ -67,26 +67,24 @@ bool Sender::is_valid() const {
     return valid_;
 }
 
-bool Sender::set_outgoing_address(size_t slot_index,
-                                  address::Interface iface,
-                                  const char* ip) {
+bool Sender::configure(size_t slot_index,
+                       address::Interface iface,
+                       const netio::UdpSenderConfig& config) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(is_valid());
 
-    roc_panic_if(!ip);
     roc_panic_if(iface < 0);
     roc_panic_if(iface >= (int)address::Iface_Max);
 
-    roc_log(LogDebug,
-            "sender peer: setting outgoing address for %s interface of slot %lu to %s",
-            address::interface_to_str(iface), (unsigned long)slot_index, ip);
+    roc_log(LogDebug, "sender peer: configuring %s interface of slot %lu",
+            address::interface_to_str(iface), (unsigned long)slot_index);
 
-    Slot* slot = get_slot_(slot_index);
+    Slot* slot = get_slot_(slot_index, true);
     if (!slot) {
         roc_log(LogError,
                 "sender peer:"
-                " can't set outgoing address for %s interface of slot %lu:"
+                " can't configure %s interface of slot %lu:"
                 " can't create slot",
                 address::interface_to_str(iface), (unsigned long)slot_index);
         return false;
@@ -95,61 +93,13 @@ bool Sender::set_outgoing_address(size_t slot_index,
     if (slot->ports[iface].handle) {
         roc_log(LogError,
                 "sender peer:"
-                " can't set outgoing address for %s interface of slot %lu:"
-                " interface is already bound",
+                " can't configure %s interface of slot %lu:"
+                " interface is already bound or connected",
                 address::interface_to_str(iface), (unsigned long)slot_index);
         return false;
     }
 
-    int port = 0;
-    if (slot->ports[iface].config.bind_address.has_host_port()) {
-        port = slot->ports[iface].config.bind_address.port();
-    }
-
-    if (!slot->ports[iface].config.bind_address.set_host_port_auto(ip, port)) {
-        roc_log(LogError,
-                "sender peer:"
-                " can't set outgoing address for %s interface of slot %lu to '%s':"
-                " invalid IPv4 or IPv6 address",
-                address::interface_to_str(iface), (unsigned long)slot_index, ip);
-        return false;
-    }
-
-    return true;
-}
-
-bool Sender::set_reuseaddr(size_t slot_index, address::Interface iface, bool enabled) {
-    core::Mutex::Lock lock(mutex_);
-
-    roc_panic_if_not(is_valid());
-
-    roc_panic_if(iface < 0);
-    roc_panic_if(iface >= (int)address::Iface_Max);
-
-    roc_log(LogDebug,
-            "sender peer: setting reuseaddr option for %s interface of slot %lu to %d",
-            address::interface_to_str(iface), (unsigned long)slot_index, (int)enabled);
-
-    Slot* slot = get_slot_(slot_index);
-    if (!slot) {
-        roc_log(LogError,
-                "sender peer:"
-                " can't set reuseaddr option for %s interface of slot %lu:"
-                " can't create slot",
-                address::interface_to_str(iface), (unsigned long)slot_index);
-        return false;
-    }
-
-    if (slot->ports[iface].handle) {
-        roc_log(LogError,
-                "sender peer:"
-                " can't set reuseaddr option for %s interface of slot %lu:"
-                " interface is already bound",
-                address::interface_to_str(iface), (unsigned long)slot_index);
-        return false;
-    }
-
-    slot->ports[iface].config.reuseaddr = enabled;
+    slot->ports[iface].config = config;
 
     return true;
 }
@@ -184,7 +134,7 @@ bool Sender::connect(size_t slot_index,
         return false;
     }
 
-    Slot* slot = get_slot_(slot_index);
+    Slot* slot = get_slot_(slot_index, true);
     if (!slot) {
         roc_log(LogError,
                 "sender peer:"
@@ -218,7 +168,7 @@ bool Sender::connect(size_t slot_index,
         return false;
     }
 
-    pipeline::SenderLoop::Tasks::CreateEndpoint endpoint_task(slot->slot, iface,
+    pipeline::SenderLoop::Tasks::CreateEndpoint endpoint_task(slot->handle, iface,
                                                               uri.proto());
     if (!pipeline_.schedule_and_wait(endpoint_task)) {
         roc_log(LogError,
@@ -268,11 +218,11 @@ bool Sender::is_ready() {
     }
 
     for (size_t s = 0; s < slots_.size(); s++) {
-        if (!slots_[s].slot) {
+        if (!slots_[s].handle) {
             continue;
         }
 
-        pipeline::SenderLoop::Tasks::CheckSlotIsReady task(slots_[s].slot);
+        pipeline::SenderLoop::Tasks::CheckSlotIsReady task(slots_[s].handle);
         if (!pipeline_.schedule_and_wait(task)) {
             return false;
         }
@@ -307,21 +257,31 @@ void Sender::update_compatibility_(address::Interface iface,
     used_protocols_[iface] = uri.proto();
 }
 
-Sender::Slot* Sender::get_slot_(size_t slot_index) {
+Sender::Slot* Sender::get_slot_(size_t slot_index, bool auto_create) {
     if (slots_.size() <= slot_index) {
+        if (!auto_create) {
+            roc_log(LogError, "sender peer: failed to find slot %lu",
+                    (unsigned long)slot_index);
+            return NULL;
+        }
         if (!slots_.resize(slot_index + 1)) {
             roc_log(LogError, "sender peer: failed to allocate slot");
             return NULL;
         }
     }
 
-    if (!slots_[slot_index].slot) {
+    if (!slots_[slot_index].handle) {
+        if (!auto_create) {
+            roc_log(LogError, "sender peer: failed to find slot %lu",
+                    (unsigned long)slot_index);
+            return NULL;
+        }
         pipeline::SenderLoop::Tasks::CreateSlot task;
         if (!pipeline_.schedule_and_wait(task)) {
             roc_log(LogError, "sender peer: failed to create slot");
             return NULL;
         }
-        slots_[slot_index].slot = task.get_handle();
+        slots_[slot_index].handle = task.get_handle();
     }
 
     return &slots_[slot_index];

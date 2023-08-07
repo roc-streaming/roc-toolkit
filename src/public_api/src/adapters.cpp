@@ -229,6 +229,67 @@ bool receiver_config_from_user(peer::Context&,
     return true;
 }
 
+ROC_ATTR_NO_SANITIZE_UB bool
+sender_interface_config_from_user(netio::UdpSenderConfig& out,
+                                  const roc_interface_config& in) {
+    if (in.outgoing_address[0] != '\0') {
+        if (!out.bind_address.set_host_port_auto(in.outgoing_address, 0)) {
+            roc_log(LogError,
+                    "bad configuration: invalid roc_interface_config.outgoing_address:"
+                    " should be either empty or valid IPv4/IPv6 address");
+            return false;
+        }
+    }
+
+    if (in.multicast_group[0] != '\0') {
+        roc_log(LogError,
+                "bad configuration: invalid roc_interface_config.multicast_group:"
+                " should be empty for sender");
+        return false;
+    }
+
+    out.reuseaddr = (in.reuse_address != 0);
+
+    return true;
+}
+
+ROC_ATTR_NO_SANITIZE_UB bool
+receiver_interface_config_from_user(netio::UdpReceiverConfig& out,
+                                    const roc_interface_config& in) {
+    if (in.outgoing_address[0] != '\0') {
+        if (!out.bind_address.set_host_port_auto(in.outgoing_address, 0)) {
+            roc_log(LogError,
+                    "bad configuration: invalid roc_interface_config.outgoing_address:"
+                    " should be either empty or valid IPv4/IPv6 address");
+            return false;
+        }
+    }
+
+    if (in.multicast_group[0] != '\0') {
+        if (strlen(in.multicast_group) >= sizeof(out.multicast_interface)) {
+            roc_log(LogError,
+                    "bad configuration: invalid roc_interface_config.multicast_group:"
+                    " should be no longer than %d characters",
+                    (int)sizeof(out.multicast_interface) - 1);
+            return false;
+        }
+
+        address::SocketAddr addr;
+        if (!addr.set_host_port_auto(in.multicast_group, 0)) {
+            roc_log(LogError,
+                    "bad configuration: invalid roc_interface_config.multicast_group:"
+                    " should be either empty or valid IPv4/IPv6 address");
+            return false;
+        }
+
+        strcpy(out.multicast_interface, in.multicast_group);
+    }
+
+    out.reuseaddr = (in.reuse_address != 0);
+
+    return true;
+}
+
 ROC_ATTR_NO_SANITIZE_UB
 bool sample_spec_from_user(audio::SampleSpec& out, const roc_media_encoding& in) {
     if (in.rate != 0) {
