@@ -39,6 +39,7 @@ public:
         , task_create_slot_(NULL)
         , task_create_endpoint_(NULL)
         , task_delete_endpoint_(NULL)
+        , task_delete_slot_(NULL)
         , done_(false) {
     }
 
@@ -46,6 +47,7 @@ public:
         delete task_create_slot_;
         delete task_create_endpoint_;
         delete task_delete_endpoint_;
+        delete task_delete_slot_;
     }
 
     void start() {
@@ -79,6 +81,12 @@ public:
         }
 
         if (&task == task_delete_endpoint_) {
+            task_delete_slot_ = new ReceiverLoop::Tasks::DeleteSlot(slot_);
+            pipeline_.schedule(*task_delete_slot_, *this);
+            return;
+        }
+
+        if (&task == task_delete_slot_) {
             done_ = true;
             return;
         }
@@ -94,6 +102,7 @@ private:
     ReceiverLoop::Tasks::CreateSlot* task_create_slot_;
     ReceiverLoop::Tasks::CreateEndpoint* task_create_endpoint_;
     ReceiverLoop::Tasks::DeleteEndpoint* task_delete_endpoint_;
+    ReceiverLoop::Tasks::DeleteSlot* task_delete_slot_;
 
     core::Atomic<int> done_;
 };
@@ -138,6 +147,12 @@ TEST(receiver_loop, endpoints_sync) {
 
     {
         ReceiverLoop::Tasks::DeleteEndpoint task(slot, address::Iface_AudioSource);
+        CHECK(receiver.schedule_and_wait(task));
+        CHECK(task.success());
+    }
+
+    {
+        ReceiverLoop::Tasks::DeleteSlot task(slot);
         CHECK(receiver.schedule_and_wait(task));
         CHECK(task.success());
     }

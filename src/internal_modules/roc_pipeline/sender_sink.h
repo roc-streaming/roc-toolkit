@@ -61,6 +61,9 @@ public:
     //! Create slot.
     SenderSlot* create_slot();
 
+    //! Delete slot.
+    void delete_slot(SenderSlot* slot);
+
     //! Get deadline when the pipeline should be updated.
     core::nanoseconds_t get_update_deadline();
 
@@ -108,9 +111,9 @@ private:
 
     core::IAllocator& allocator_;
 
-    core::List<SenderSlot> slots_;
-
     audio::Fanout fanout_;
+
+    core::List<SenderSlot> slots_;
 
     core::Optional<audio::PoisonWriter> pipeline_poisoner_;
     core::Optional<audio::ProfilingWriter> profiler_;

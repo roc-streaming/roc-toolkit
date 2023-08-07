@@ -62,15 +62,28 @@ bool ReceiverSource::is_valid() const {
 }
 
 ReceiverSlot* ReceiverSource::create_slot() {
+    roc_panic_if(!is_valid());
+
+    roc_log(LogInfo, "receiver source: adding slot");
+
     core::SharedPtr<ReceiverSlot> slot = new (allocator_)
         ReceiverSlot(config_, state_, *mixer_, format_map_, packet_factory_,
                      byte_buffer_factory_, sample_buffer_factory_, allocator_);
+
     if (!slot) {
         return NULL;
     }
 
     slots_.push_back(*slot);
     return slot.get();
+}
+
+void ReceiverSource::delete_slot(ReceiverSlot* slot) {
+    roc_panic_if(!is_valid());
+
+    roc_log(LogInfo, "receiver source: removing slot");
+
+    slots_.remove(*slot);
 }
 
 size_t ReceiverSource::num_sessions() const {

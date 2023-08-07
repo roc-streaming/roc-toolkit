@@ -40,6 +40,8 @@ public:
                          core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                          core::IAllocator& allocator);
 
+    ~ReceiverSessionGroup();
+
     //! Route packet to session.
     void route_packet(const packet::PacketPtr& packet);
 
@@ -69,6 +71,7 @@ private:
 
     void create_session_(const packet::PacketPtr& packet);
     void remove_session_(ReceiverSession& sess);
+    void remove_all_sessions_();
 
     ReceiverSessionConfig make_session_config_(const packet::PacketPtr& packet) const;
 

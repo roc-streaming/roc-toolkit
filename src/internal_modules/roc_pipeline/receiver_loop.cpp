@@ -34,12 +34,20 @@ ReceiverLoop::SlotHandle ReceiverLoop::Tasks::CreateSlot::get_handle() const {
     return (SlotHandle)slot_;
 }
 
+ReceiverLoop::Tasks::DeleteSlot::DeleteSlot(SlotHandle slot) {
+    func_ = &ReceiverLoop::task_delete_slot_;
+    if (!slot) {
+        roc_panic("receiver loop: slot handle is null");
+    }
+    slot_ = (ReceiverSlot*)slot;
+}
+
 ReceiverLoop::Tasks::CreateEndpoint::CreateEndpoint(SlotHandle slot,
                                                     address::Interface iface,
                                                     address::Protocol proto) {
     func_ = &ReceiverLoop::task_create_endpoint_;
     if (!slot) {
-        roc_panic("receiver source: slot handle is null");
+        roc_panic("receiver loop: slot handle is null");
     }
     slot_ = (ReceiverSlot*)slot;
     iface_ = iface;
@@ -58,7 +66,7 @@ ReceiverLoop::Tasks::DeleteEndpoint::DeleteEndpoint(SlotHandle slot,
                                                     address::Interface iface) {
     func_ = &ReceiverLoop::task_delete_endpoint_;
     if (!slot) {
-        roc_panic("receiver source: slot handle is null");
+        roc_panic("receiver loop: slot handle is null");
     }
     slot_ = (ReceiverSlot*)slot;
     iface_ = iface;
@@ -217,7 +225,16 @@ bool ReceiverLoop::task_create_slot_(Task& task) {
     return (bool)task.slot_;
 }
 
+bool ReceiverLoop::task_delete_slot_(Task& task) {
+    roc_panic_if(!task.slot_);
+
+    source_.delete_slot(task.slot_);
+    return true;
+}
+
 bool ReceiverLoop::task_create_endpoint_(Task& task) {
+    roc_panic_if(!task.slot_);
+
     ReceiverEndpoint* endpoint = task.slot_->create_endpoint(task.iface_, task.proto_);
     if (!endpoint) {
         return false;
