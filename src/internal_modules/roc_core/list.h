@@ -178,13 +178,13 @@ public:
     }
 
 private:
-    static inline T* container_of_(ListNode::ListNodeData* data) {
+    static T* container_of_(ListNode::ListNodeData* data) {
         return static_cast<T*>(data->container_of());
     }
 
     static void check_is_member_(const ListNode::ListNodeData* data, const List* list) {
         if (data->list != list) {
-            roc_panic("list element is member of wrong list: expected %p, got %p",
+            roc_panic("list: element is member of wrong list: expected %p, got %p",
                       (const void*)list, (const void*)data->list);
         }
     }
