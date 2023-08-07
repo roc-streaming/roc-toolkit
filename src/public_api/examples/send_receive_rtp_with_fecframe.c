@@ -55,7 +55,7 @@ static void* receiver_loop(void* arg) {
     receiver_config.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
 
     /* Receiver should clock itself. */
-    receiver_config.clock_source = ROC_CLOCK_INTERNAL;
+    receiver_config.clock_source = ROC_CLOCK_SOURCE_INTERNAL;
 
     roc_receiver* receiver = NULL;
     if (roc_receiver_open(context, &receiver_config, &receiver) != 0) {
@@ -158,7 +158,7 @@ static void* sender_loop(void* arg) {
     sender_config.fec_encoding = ROC_FEC_ENCODING_RS8M;
 
     /* Sender should clock itself. */
-    sender_config.clock_source = ROC_CLOCK_INTERNAL;
+    sender_config.clock_source = ROC_CLOCK_SOURCE_INTERNAL;
 
     roc_sender* sender = NULL;
     if (roc_sender_open(context, &sender_config, &sender) != 0) {

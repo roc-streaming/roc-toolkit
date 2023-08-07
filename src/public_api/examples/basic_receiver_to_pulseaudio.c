@@ -71,7 +71,7 @@ int main() {
     /* Use user-provided clock.
      * Receiver will be clocked by PulseAudio sink. Read operation will be non-blocking.
      */
-    receiver_config.clock_source = ROC_CLOCK_EXTERNAL;
+    receiver_config.clock_source = ROC_CLOCK_SOURCE_EXTERNAL;
 
     /* Create receiver. */
     roc_receiver* receiver = NULL;
