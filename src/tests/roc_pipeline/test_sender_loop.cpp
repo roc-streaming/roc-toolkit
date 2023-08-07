@@ -37,12 +37,14 @@ public:
         , slot_(NULL)
         , task_create_slot_(NULL)
         , task_create_endpoint_(NULL)
+        , task_delete_slot_(NULL)
         , done_(false) {
     }
 
     ~TaskIssuer() {
         delete task_create_slot_;
         delete task_create_endpoint_;
+        delete task_delete_slot_;
     }
 
     void start() {
@@ -70,6 +72,12 @@ public:
 
         if (&task == task_create_endpoint_) {
             roc_panic_if_not(task_create_endpoint_->get_handle());
+            task_delete_slot_ = new SenderLoop::Tasks::DeleteSlot(slot_);
+            pipeline_.schedule(*task_delete_slot_, *this);
+            return;
+        }
+
+        if (&task == task_delete_slot_) {
             done_ = true;
             return;
         }
@@ -84,6 +92,7 @@ private:
 
     SenderLoop::Tasks::CreateSlot* task_create_slot_;
     SenderLoop::Tasks::CreateEndpoint* task_create_endpoint_;
+    SenderLoop::Tasks::DeleteSlot* task_delete_slot_;
 
     core::Atomic<int> done_;
 };
@@ -118,6 +127,12 @@ TEST(sender_loop, endpoints_sync) {
         CHECK(sender.schedule_and_wait(task));
         CHECK(task.success());
         CHECK(task.get_handle());
+    }
+
+    {
+        SenderLoop::Tasks::DeleteSlot task(slot);
+        CHECK(sender.schedule_and_wait(task));
+        CHECK(task.success());
     }
 }
 

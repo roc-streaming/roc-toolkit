@@ -68,7 +68,7 @@ public:
     //! Subclasses for specific tasks.
     class Tasks {
     public:
-        //! Add new slot.
+        //! Create new slot.
         class CreateSlot : public Task {
         public:
             //! Set task parameters.
@@ -76,6 +76,13 @@ public:
 
             //! Get created slot handle.
             SlotHandle get_handle() const;
+        };
+
+        //! Delete existing slot.
+        class DeleteSlot : public Task {
+        public:
+            //! Set task parameters.
+            DeleteSlot(SlotHandle slot);
         };
 
         //! Create endpoint on given interface of the slot.
@@ -154,6 +161,7 @@ private:
 
     // Methods for tasks
     bool task_create_slot_(Task&);
+    bool task_delete_slot_(Task&);
     bool task_create_endpoint_(Task&);
     bool task_set_endpoint_destination_writer_(Task&);
     bool task_set_endpoint_destination_address_(Task&);

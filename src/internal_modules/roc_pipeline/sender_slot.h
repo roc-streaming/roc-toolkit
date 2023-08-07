@@ -47,6 +47,8 @@ public:
                core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                core::IAllocator& allocator);
 
+    ~SenderSlot();
+
     //! Add endpoint.
     SenderEndpoint* create_endpoint(address::Interface iface, address::Protocol proto);
 

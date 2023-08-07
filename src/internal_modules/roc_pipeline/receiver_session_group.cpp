@@ -32,6 +32,10 @@ ReceiverSessionGroup::ReceiverSessionGroup(
     , receiver_config_(receiver_config) {
 }
 
+ReceiverSessionGroup::~ReceiverSessionGroup() {
+    remove_all_sessions_();
+}
+
 void ReceiverSessionGroup::route_packet(const packet::PacketPtr& packet) {
     if (packet->rtcp()) {
         route_control_packet_(packet);
@@ -201,6 +205,14 @@ void ReceiverSessionGroup::remove_session_(ReceiverSession& sess) {
     sessions_.remove(sess);
 
     receiver_state_.add_sessions(-1);
+}
+
+void ReceiverSessionGroup::remove_all_sessions_() {
+    roc_log(LogDebug, "session group: removing all sessions");
+
+    while (sessions_.size() != 0) {
+        remove_session_(*sessions_.back());
+    }
 }
 
 ReceiverSessionConfig
