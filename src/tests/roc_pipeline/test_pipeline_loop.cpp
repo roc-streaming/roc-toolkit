@@ -2200,10 +2200,5 @@ TEST(task_pipeline, schedule_and_wait_until_process_frame_called) {
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_sched_cancellations());
 }
 
-TEST(task_pipeline, frame_subframe) {
-    // TODO: test frame sub-frame copy constructor.
-    CHECK(false);
-}
-
 } // namespace pipeline
 } // namespace roc

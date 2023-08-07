@@ -80,13 +80,14 @@ bool ChannelMapperReader::read(Frame& out_frame) {
 bool ChannelMapperReader::read_(sample_t* out_samples,
                                 size_t n_samples,
                                 unsigned& flags) {
-    Frame in_frame(input_buf_.data(), n_samples * in_spec_.num_channels(), in_spec_);
+    Frame in_frame(input_buf_.data(), n_samples * in_spec_.num_channels());
 
     if (!input_reader_.read(in_frame)) {
         return false;
     }
 
-    Frame out_frame(out_samples, n_samples * out_spec_.num_channels(), out_spec_, in_frame.ntp_timestamp());
+    Frame out_frame(out_samples, n_samples * out_spec_.num_channels(),
+                    in_frame.capture_timestamp());
     mapper_.map(in_frame, out_frame);
 
     flags |= in_frame.flags();

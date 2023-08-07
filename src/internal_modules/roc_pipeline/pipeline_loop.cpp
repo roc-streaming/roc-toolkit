@@ -227,7 +227,7 @@ bool PipelineLoop::process_subframes_and_tasks_precise_(audio::Frame& frame) {
 
     core::nanoseconds_t next_frame_deadline = 0;
 
-    core::nanoseconds_t frame_pos = 0;
+    size_t frame_pos = 0;
     bool frame_res = false;
 
     for (;;) {
@@ -254,7 +254,7 @@ bool PipelineLoop::process_subframes_and_tasks_precise_(audio::Frame& frame) {
             }
         }
 
-        if (!frame_res || frame_pos >= frame.duration()) {
+        if (!frame_res || frame_pos == frame.num_samples()) {
             break;
         }
     }
@@ -336,16 +336,23 @@ void PipelineLoop::process_task_(PipelineTask& task, bool notify) {
     }
 }
 
-bool PipelineLoop::process_next_subframe_(audio::Frame& frame, core::nanoseconds_t *frame_pos) {
-    audio::Frame sub_frame(frame, *frame_pos, config_.max_frame_length_between_tasks);
+bool PipelineLoop::process_next_subframe_(audio::Frame& frame, size_t* frame_pos) {
+    const size_t subframe_size = max_samples_between_tasks_
+        ? std::min(frame.num_samples() - *frame_pos, max_samples_between_tasks_)
+        : frame.num_samples();
+
+    audio::Frame sub_frame(frame.samples() + *frame_pos, subframe_size,
+                           frame.capture_timestamp()
+                               + sample_spec_.samples_overall_2_ns(*frame_pos));
+
     const bool ret = process_subframe_imp(sub_frame);
 
     subframe_tasks_deadline_ = timestamp_imp() + config_.max_inframe_task_processing;
 
-    *frame_pos += sub_frame.duration();
+    *frame_pos += subframe_size;
 
     if (!enough_samples_to_process_tasks_) {
-        samples_processed_ += sub_frame.num_samples();
+        samples_processed_ += subframe_size;
         if (samples_processed_ >= min_samples_between_tasks_) {
             enough_samples_to_process_tasks_ = true;
         }

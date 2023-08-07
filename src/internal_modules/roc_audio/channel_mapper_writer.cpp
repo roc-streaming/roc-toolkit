@@ -73,14 +73,14 @@ void ChannelMapperWriter::write(Frame& in_frame) {
 }
 
 void ChannelMapperWriter::write_(sample_t* in_samples, size_t n_samples, unsigned flags) {
-    Frame in_frame(in_samples, n_samples * in_spec_.num_channels(), in_spec_);
+    Frame in_frame(in_samples, n_samples * in_spec_.num_channels());
 
-    Frame out_frame(output_buf_.data(), n_samples * out_spec_.num_channels(), out_spec_);
+    Frame out_frame(output_buf_.data(), n_samples * out_spec_.num_channels());
 
     out_frame.set_flags(flags);
 
     mapper_.map(in_frame, out_frame);
-    out_frame.ntp_timestamp() = packet::ntp_timestamp();
+    out_frame.capture_timestamp() = core::timestamp(core::ClockUnix);
 
     output_writer_.write(out_frame);
 }

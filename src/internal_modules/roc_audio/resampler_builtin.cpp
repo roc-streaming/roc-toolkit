@@ -501,5 +501,9 @@ sample_t BuiltinResampler::resample_(const size_t channel_offset) {
     return accumulator;
 }
 
+size_t BuiltinResampler::n_left_to_process() const {
+    return fixedpoint_to_size(2 * qt_frame_size_ - qt_sample_);
+}
+
 } // namespace audio
 } // namespace roc

@@ -58,6 +58,9 @@ public:
     //! Read samples from input frame and fill output frame.
     virtual size_t pop_output(Frame& out);
 
+    //! How many samples were pushed but not processed yet.
+    virtual size_t n_left_to_process() const;
+
 private:
     void report_stats_();
 

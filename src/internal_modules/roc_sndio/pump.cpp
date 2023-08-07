@@ -86,7 +86,7 @@ bool Pump::run() {
             }
         }
 
-        audio::Frame frame(frame_buffer_.data(), frame_buffer_.size(), current_source->sample_spec());
+        audio::Frame frame(frame_buffer_.data(), frame_buffer_.size());
 
         if (!current_source->read(frame)) {
             roc_log(LogDebug, "pump: got eof from source");

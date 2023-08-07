@@ -7,39 +7,20 @@
  */
 
 #include "roc_audio/frame.h"
-#include "roc_packet/ntp.h"
 #include "roc_core/panic.h"
 #include "roc_core/print_buffer.h"
 
 namespace roc {
 namespace audio {
 
-Frame::Frame(sample_t *samples, size_t num_samples, const SampleSpec &spec, packet::ntp_timestamp_t ts)
+Frame::Frame(sample_t* samples, size_t num_samples, core::nanoseconds_t ts)
     : samples_(samples)
     , num_samples_(num_samples)
     , flags_(0)
-    , ntp_timestamp_(ts)
-    , sample_spec_(spec){
+    , capture_timestamp_(ts) {
     if (!samples) {
         roc_panic("frame: can't create frame with null samples");
     }
-}
-
-Frame::Frame(Frame &frame, const core::nanoseconds_t offset, const core::nanoseconds_t max_duration)
-{
-    core::nanoseconds_t dur = max_duration;
-    if (!dur || dur + offset > duration()) {
-        dur = duration() - offset;
-    }
-    const size_t size = frame.sample_spec_.ns_2_samples_overall(dur);
-    const size_t noffset = frame.sample_spec_.ns_2_samples_overall(offset);
-    roc_panic_if(noffset + size > frame.num_samples_);
-
-    samples_ = frame.samples_ + noffset;
-    num_samples_ = frame.num_samples_ - size;
-    flags_ = frame.flags_;
-    ntp_timestamp_ = frame.ntp_timestamp_ + packet::nanoseconds_2_ntp(offset);
-    sample_spec_ = frame.sample_spec_;
 }
 
 void Frame::set_flags(unsigned fl) {
@@ -65,20 +46,12 @@ void Frame::print() const {
     core::print_buffer(samples_, num_samples_);
 }
 
-packet::ntp_timestamp_t Frame::ntp_timestamp() const {
-    return ntp_timestamp_;
+core::nanoseconds_t Frame::capture_timestamp() const {
+    return capture_timestamp_;
 }
 
-packet::ntp_timestamp_t& Frame::ntp_timestamp() {
-    return ntp_timestamp_;
-}
-
-const SampleSpec &Frame::samplespec() const {
-    return sample_spec_;
-}
-
-core::nanoseconds_t Frame::duration() const {
-    return sample_spec_.samples_overall_2_ns(num_samples_);
+core::nanoseconds_t& Frame::capture_timestamp() {
+    return capture_timestamp_;
 }
 
 } // namespace audio

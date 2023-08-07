@@ -21,7 +21,8 @@ ResamplerReader::ResamplerReader(IFrameReader& reader,
     , in_sample_spec_(in_sample_spec)
     , out_sample_spec_(out_sample_spec)
     , scaling_(1.0f)
-    , valid_(false) {
+    , valid_(false)
+    , last_in_ts_(0) {
     if (in_sample_spec_.channel_set() != out_sample_spec_.channel_set()) {
         roc_panic("resampler reader: input and output channel sets should be same");
     }
@@ -57,7 +58,7 @@ bool ResamplerReader::read(Frame& out) {
     size_t out_pos = 0;
 
     while (out_pos < out.num_samples()) {
-        Frame out_part(out.samples() + out_pos, out.num_samples() - out_pos, out_sample_spec_);
+        Frame out_part(out.samples() + out_pos, out.num_samples() - out_pos);
 
         const size_t num_popped = resampler_.pop_output(out_part);
 
@@ -70,19 +71,26 @@ bool ResamplerReader::read(Frame& out) {
         out_pos += num_popped;
     }
 
+    out.capture_timestamp() = last_in_ts_
+        - in_sample_spec_.samples_overall_2_ns(resampler_.n_left_to_process());
+    out.capture_timestamp() -= core::nanoseconds_t(
+        out_sample_spec_.samples_overall_2_ns(out.num_samples()) * scaling_);
+
     return true;
 }
 
 bool ResamplerReader::push_input_() {
     const core::Slice<sample_t>& buff = resampler_.begin_push_input();
 
-    Frame frame(buff.data(), buff.size(), SampleSpec(), in_sample_spec_);
+    Frame frame(buff.data(), buff.size());
 
     if (!reader_.read(frame)) {
         return false;
     }
 
     resampler_.end_push_input();
+    last_in_ts_ = frame.capture_timestamp()
+        + in_sample_spec_.samples_overall_2_ns(frame.num_samples());
     return true;
 }
 

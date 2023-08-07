@@ -402,5 +402,51 @@ TEST(resampler, upscale_downscale_stereo) {
     }
 }
 
+TEST(resampler, one_sampler_perframe) {
+    enum { InSampleRate = 44100, OutSampleRate = 48000, NumCh = 2, ChMask = 0x3, FrameLen = 2000 };
+
+    const audio::SampleSpec in_sample_spec = SampleSpec(InSampleRate, audio::ChanLayout_Surround, ChMask);
+    const audio::SampleSpec out_sample_spec = SampleSpec(OutSampleRate, audio::ChanLayout_Surround, ChMask);
+    core::ScopedPtr<IResampler> resampler(
+        ResamplerMap::instance().new_resampler(
+            ResamplerBackend_Builtin, allocator, buffer_factory, ResamplerProfile_High,
+            in_sample_spec, out_sample_spec),
+        allocator);
+
+    const core::nanoseconds_t start_ts = core::timestamp(core::ClockUnix);
+    core::nanoseconds_t cur_ntp_ts = start_ts;
+    core::nanoseconds_t ts_step =
+        core::nanoseconds_t(FrameLen / (double)InSampleRate / NumCh * 1e9);
+    const core::nanoseconds_t epsilon = core::nanoseconds_t(0.1 / InSampleRate * core::Second);
+
+    test::MockReader input_reader(InSampleSpecs, start_ts);
+    input_reader.pad_zeros();
+
+    audio::ResamplerReader rreader(input_reader, *resampler, InSampleSpecs, OutSampleSpecs);
+    float scale = 1.0f;
+    CHECK(rreader.set_scaling(scale));
+
+    sample_t samples[FrameLen];
+
+    {
+        Frame frame(samples, ROC_ARRAY_SIZE(samples));
+        CHECK(rreader.read(frame));
+        // The first frame is thrown away by the resampler
+        cur_ntp_ts += ts_step;
+        CHECK(packet::ntp_equal(frame.ntp_timestamp(), cur_ntp_ts, epsilon));
+    }
+
+    // Make every output sample span over `scale` of input samples.
+    scale = 1.05f;
+    rreader.set_scaling(scale);
+
+    {
+        Frame frame(samples, ROC_ARRAY_SIZE(samples));
+        CHECK(rreader.read(frame));
+        cur_ntp_ts += ts_step;
+        CHECK(packet::ntp_equal(frame.ntp_timestamp(), cur_ntp_ts, epsilon));
+    }
+}
+
 } // namespace audio
 } // namespace roc

@@ -27,10 +27,7 @@ public:
     //! Construct frame from samples.
     //! @remarks
     //!  The pointer is saved in the frame, no copying is performed.
-Frame(sample_t *samples, size_t num_samples, const SampleSpec &spec, packet::ntp_timestamp_t ts = 0);
-
-    //! Sub-frame copy constructor.
-    Frame(Frame &frame, const core::nanoseconds_t offset, const core::nanoseconds_t max_duration = 0);
+    Frame(sample_t* samples, size_t num_samples, core::nanoseconds_t ts = 0);
 
     //! Frame flags.
     enum {
@@ -63,21 +60,16 @@ Frame(sample_t *samples, size_t num_samples, const SampleSpec &spec, packet::ntp
     void print() const;
 
     //! Get ntp timestamp of the 1st sample.
-    packet::ntp_timestamp_t ntp_timestamp() const;
+    core::nanoseconds_t capture_timestamp() const;
 
     //! Get/set ntp timestamp of the 1st sample.
-    packet::ntp_timestamp_t& ntp_timestamp();
-
-    //! Get SampleSpec of the frame.
-    const SampleSpec &samplespec() const;
-
-    core::nanoseconds_t duration() const;
+    core::nanoseconds_t& capture_timestamp();
 
 private:
     sample_t* samples_;
     size_t num_samples_;
     unsigned flags_;
-    packet::ntp_timestamp_t ntp_timestamp_;
+    core::nanoseconds_t capture_timestamp_;
     SampleSpec sample_spec_;
 };
 
