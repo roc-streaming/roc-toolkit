@@ -24,30 +24,13 @@ public:
     //! Initialize rate limiter.
     //! @remarks
     //!  @p period is tick duration in nanoseconds.
-    explicit RateLimiter(nanoseconds_t period)
-        : period_(Ticker::ticks_t(period))
-        , pos_(0)
-        , ticker_(Second / Nanosecond) {
-        if (period <= 0) {
-            roc_panic("rate limiter: expected positive period, got %ld", (long)period);
-        }
-    }
+    explicit RateLimiter(nanoseconds_t period);
 
     //! Check whether allow() would succeed.
-    bool would_allow() {
-        return ticker_.elapsed() >= pos_;
-    }
+    bool would_allow();
 
     //! Check whether an event is allowed to occur now, and if yes, mark it as occurred.
-    bool allow() {
-        const Ticker::ticks_t elapsed = ticker_.elapsed();
-        if (elapsed >= pos_) {
-            pos_ = (elapsed / period_ + 1) * period_;
-            return true;
-        } else {
-            return false;
-        }
-    }
+    bool allow();
 
 private:
     const Ticker::ticks_t period_;
