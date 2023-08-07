@@ -59,6 +59,9 @@ public:
     //! Create slot.
     ReceiverSlot* create_slot();
 
+    //! Delete slot.
+    void delete_slot(ReceiverSlot* slot);
+
     //! Get number of connected sessions.
     size_t num_sessions() const;
 
@@ -101,11 +104,12 @@ private:
     core::IAllocator& allocator_;
 
     ReceiverState state_;
-    core::List<ReceiverSlot> slots_;
 
     core::Optional<audio::Mixer> mixer_;
     core::Optional<audio::PoisonReader> poisoner_;
     core::Optional<audio::ProfilingReader> profiler_;
+
+    core::List<ReceiverSlot> slots_;
 
     audio::IFrameReader* audio_reader_;
 

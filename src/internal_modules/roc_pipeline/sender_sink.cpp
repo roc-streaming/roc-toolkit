@@ -78,6 +78,16 @@ SenderSlot* SenderSink::create_slot() {
     return slot.get();
 }
 
+void SenderSink::delete_slot(SenderSlot* slot) {
+    roc_panic_if(!is_valid());
+
+    roc_log(LogInfo, "sender sink: removing slot");
+
+    slots_.remove(*slot);
+
+    invalidate_update_deadline_();
+}
+
 core::nanoseconds_t SenderSink::get_update_deadline() {
     if (!update_deadline_valid_) {
         compute_update_deadline_();

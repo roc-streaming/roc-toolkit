@@ -32,6 +32,12 @@ SenderSlot::SenderSlot(const SenderConfig& config,
                allocator) {
 }
 
+SenderSlot::~SenderSlot() {
+    if (session_.writer() && fanout_.has_output(*session_.writer())) {
+        fanout_.remove_output(*session_.writer());
+    }
+}
+
 SenderEndpoint* SenderSlot::create_endpoint(address::Interface iface,
                                             address::Protocol proto) {
     roc_log(LogDebug, "sender slot: adding %s endpoint %s",
