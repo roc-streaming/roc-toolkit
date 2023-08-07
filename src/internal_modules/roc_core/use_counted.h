@@ -6,8 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/usage_counter.h
-//! @brief Base class for object with usage counter.
+//! @file roc_core/use_counted.h
+//! @brief Base class for object with use counter.
 
 #ifndef ROC_CORE_USAGE_COUNTER_H_
 #define ROC_CORE_USAGE_COUNTER_H_
@@ -19,56 +19,58 @@
 namespace roc {
 namespace core {
 
-//! Base class for object with usage counter.
+//! Base class for object with use counter.
 //!
-//! Allows to increment and descrement usage counter of the object. Checks the
+//! Allows to increment and descrement use counter of the object. Checks the
 //! counter in destructor and panics if it's non-zero.
 //!
 //! Thread-safe.
-class UsageCounter : public NonCopyable<UsageCounter> {
+class UseCounted : public NonCopyable<UseCounted> {
 public:
-    UsageCounter()
+    UseCounted()
         : counter_(0) {
     }
 
-    ~UsageCounter() {
+    ~UseCounted() {
         if (!counter_.compare_exchange(0, -1)) {
-            roc_panic("usage counter: attempt to destroy object that is still in use: "
-                      "usage_counter=%d",
+            roc_panic("use counter: attempt to destroy object that is still in use:"
+                      " counter=%d",
                       (int)counter_);
         }
     }
 
-    //! Check whether usage counter is non-zero.
-    bool is_used() const {
+    //! Get reference counter.
+    int getref() const {
         const int current_counter = counter_;
 
         if (current_counter < 0) {
-            roc_panic("usage counter: attempt to access destroyed object");
+            roc_panic("use counter: attempt to access destroyed object");
         }
 
-        return current_counter > 0;
+        return current_counter;
     }
 
-    //! Increment usage counter.
-    void acquire_usage() const {
+    //! Increment use counter.
+    void incref() const {
         const int previous_counter = counter_++;
 
         if (previous_counter < 0) {
-            roc_panic("usage counter: attempt to call acquire on destroyed object");
+            roc_panic("use counter: attempt to call acquire on destroyed object");
         }
     }
 
-    //! Decrement usage counter.
-    void release_usage() const {
+    //! Decrement use counter.
+    //! @remarks
+    //!  There is no special action when the counter becomes zero.
+    void decref() const {
         const int previous_counter = counter_--;
 
         if (previous_counter < 0) {
-            roc_panic("usage counter: attempt to call release on destroyed object");
+            roc_panic("use counter: attempt to call release on destroyed object");
         }
 
         if (previous_counter == 0) {
-            roc_panic("usage counter: attempt to call release without acquire");
+            roc_panic("use counter: attempt to call release without acquire");
         }
     }
 

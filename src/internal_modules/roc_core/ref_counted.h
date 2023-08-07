@@ -52,15 +52,21 @@ public:
 
     ~RefCounted() {
         if (!counter_.compare_exchange(0, -1)) {
-            roc_panic("ref counter: attempt to destroy object that is still in use: "
-                      "counter=%d",
+            roc_panic("ref counter: attempt to destroy object that is still in use:"
+                      " counter=%d",
                       (int)counter_);
         }
     }
 
     //! Get reference counter.
-    long getref() const {
-        return counter_;
+    int getref() const {
+        const int current_counter = counter_;
+
+        if (current_counter < 0) {
+            roc_panic("use counter: attempt to access destroyed object");
+        }
+
+        return current_counter;
     }
 
     //! Increment reference counter.

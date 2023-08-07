@@ -180,7 +180,7 @@ void TcpServerPort::poll_cb_(uv_poll_t* handle, int status, int events) {
     }
 
     // release_usage will be called in handle_terminate_completed()
-    conn_handler->acquire_usage();
+    conn_handler->incref();
 
     self.open_conns_.push_back(*conn);
 
@@ -222,7 +222,7 @@ void TcpServerPort::handle_terminate_completed(IConn& conn, void* arg) {
         roc_log(LogDebug, "tcp server: %s: removing connection: %s", descriptor(),
                 tcp_conn->descriptor());
 
-        conn_handler->release_usage();
+        conn_handler->decref();
         conn_acceptor_.remove_connection(*conn_handler);
     }
 }
