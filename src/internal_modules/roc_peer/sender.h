@@ -38,12 +38,10 @@ public:
     //! Check if successfully constructed.
     bool is_valid() const;
 
-    //! Set outgoing interface address.
-    bool
-    set_outgoing_address(size_t slot_index, address::Interface iface, const char* ip);
-
-    //! Set reuseaddr option for given endpoint type.
-    bool set_reuseaddr(size_t slot_index, address::Interface iface, bool enabled);
+    //! Set interface config.
+    bool configure(size_t slot_index,
+                   address::Interface iface,
+                   const netio::UdpSenderConfig& config);
 
     //! Connect peer to remote endpoint.
     bool
@@ -69,18 +67,18 @@ private:
     };
 
     struct Slot {
-        pipeline::SenderLoop::SlotHandle slot;
+        pipeline::SenderLoop::SlotHandle handle;
         Port ports[address::Iface_Max];
 
         Slot()
-            : slot(NULL) {
+            : handle(NULL) {
         }
     };
 
     bool check_compatibility_(address::Interface iface, const address::EndpointUri& uri);
     void update_compatibility_(address::Interface iface, const address::EndpointUri& uri);
 
-    Slot* get_slot_(size_t slot_index);
+    Slot* get_slot_(size_t slot_index, bool auto_create);
     Port&
     select_outgoing_port_(Slot& slot, address::Interface, address::AddrFamily family);
     bool setup_outgoing_port_(Port& port,

@@ -97,6 +97,70 @@ TEST(receiver, bind_slots) {
     UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
 }
 
+TEST(receiver, configure) {
+    Context context(context_config, allocator);
+    CHECK(context.is_valid());
+
+    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
+
+    {
+        Receiver receiver(context, receiver_config);
+        CHECK(receiver.is_valid());
+
+        netio::UdpReceiverConfig config;
+        CHECK(receiver.configure(DefaultSlot, address::Iface_AudioSource, config));
+
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
+
+        address::EndpointUri source_endp(allocator);
+        parse_uri(source_endp, "rtp://127.0.0.1:0");
+
+        CHECK(source_endp.port() == 0);
+        CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
+        CHECK(source_endp.port() != 0);
+
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 1);
+    }
+
+    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
+}
+
+TEST(receiver, configure_slots) {
+    Context context(context_config, allocator);
+    CHECK(context.is_valid());
+
+    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
+
+    {
+        Receiver receiver(context, receiver_config);
+        CHECK(receiver.is_valid());
+
+        netio::UdpReceiverConfig config;
+        CHECK(receiver.configure(0, address::Iface_AudioSource, config));
+        CHECK(receiver.configure(1, address::Iface_AudioSource, config));
+
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
+
+        address::EndpointUri source_endp1(allocator);
+        parse_uri(source_endp1, "rtp://127.0.0.1:0");
+
+        CHECK(source_endp1.port() == 0);
+        CHECK(receiver.bind(0, address::Iface_AudioSource, source_endp1));
+        CHECK(source_endp1.port() != 0);
+
+        address::EndpointUri source_endp2(allocator);
+        parse_uri(source_endp2, "rtp://127.0.0.1:0");
+
+        CHECK(source_endp2.port() == 0);
+        CHECK(receiver.bind(1, address::Iface_AudioSource, source_endp2));
+        CHECK(source_endp2.port() != 0);
+
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 2);
+    }
+
+    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
+}
+
 TEST(receiver, endpoints_no_fec) {
     Context context(context_config, allocator);
     CHECK(context.is_valid());

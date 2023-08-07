@@ -163,23 +163,11 @@ ROC_API int roc_sender_open(roc_context* context,
                             const roc_sender_config* config,
                             roc_sender** result);
 
-/** Set sender interface outgoing address.
+/** Set sender interface configuration.
  *
- * Optional. Should be used only when connecting an interface to a remote endpoint.
- *
- * If set, explicitly defines the IP address of the OS network interface from which to
- * send the outgoing packets. If not set, the outgoing interface is selected automatically
- * by the OS, depending on the remote endpoint address.
- *
- * It is allowed to set outgoing address to `0.0.0.0` (for IPv4) or to `::` (for IPv6),
- * to achieve the same behavior as if it wasn't set, i.e. to let the OS to select the
- * outgoing interface automatically.
- *
- * By default, the outgoing address is not set.
- *
- * Each slot's interface can have only one outgoing address. The function should be called
- * before calling roc_sender_connect() for this slot and interface. It should not be
- * called when calling roc_sender_bind() for the interface.
+ * Updates configuration of specified interface of specified slot. If called, the
+ * call should be done before calling roc_sender_bind() or roc_sender_connect()
+ * for the same interface.
  *
  * Automatically initializes slot with given index if it's used first time.
  *
@@ -187,57 +175,21 @@ ROC_API int roc_sender_open(roc_context* context,
  *  - \p sender should point to an opened sender
  *  - \p slot specifies the sender slot
  *  - \p iface specifies the sender interface
- *  - \p ip should be IPv4 or IPv6 address
+ *  - \p config should be point to an initialized config
  *
  * **Returns**
- *  - returns zero if the outgoing interface was successfully set
+ *  - returns zero if config was successfully updated
  *  - returns a negative value if the arguments are invalid
- *  - returns a negative value if an error occurred
+ *  - returns a negative value if slot is already bound or connected
  *
  * **Ownership**
- *  - doesn't take or share the ownership of \p ip; it may be safely deallocated
+ *  - doesn't take or share the ownership of \p config; it may be safely deallocated
  *    after the function returns
  */
-ROC_API int roc_sender_set_outgoing_address(roc_sender* sender,
-                                            roc_slot slot,
-                                            roc_interface iface,
-                                            const char* ip);
-
-/** Set sender interface address reuse option.
- *
- * Optional.
- *
- * When set to true, SO_REUSEADDR is enabled for interface socket, regardless of socket
- * type, unless binding to ephemeral port (port explicitly set to zero).
- *
- * When set to false, SO_REUSEADDR is enabled only for multicast sockets, unless binding
- * to ephemeral port (port explicitly set to zero).
- *
- * By default set to false.
- *
- * For TCP-based protocols, SO_REUSEADDR allows immediate reuse of recently closed socket
- * in TIME_WAIT state, which may be useful you want to be able to restart server quickly.
- *
- * For UDP-based protocols, SO_REUSEADDR allows multiple processes to bind to the same
- * address, which may be useful if you're using socket activation mechanism.
- *
- * Automatically initializes slot with given index if it's used first time.
- *
- * **Parameters**
- *  - \p sender should point to an opened sender
- *  - \p slot specifies the sender slot
- *  - \p iface specifies the sender interface
- *  - \p enabled should be 0 or 1
- *
- * **Returns**
- *  - returns zero if the multicast group was successfully set
- *  - returns a negative value if the arguments are invalid
- *  - returns a negative value if an error occurred
- */
-ROC_API int roc_sender_set_reuseaddr(roc_sender* sender,
-                                     roc_slot slot,
-                                     roc_interface iface,
-                                     int enabled);
+ROC_API int roc_sender_configure(roc_sender* sender,
+                                 roc_slot slot,
+                                 roc_interface iface,
+                                 const roc_interface_config* config);
 
 /** Connect the sender interface to a remote receiver endpoint.
  *

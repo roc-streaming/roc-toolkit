@@ -194,25 +194,11 @@ ROC_API int roc_receiver_open(roc_context* context,
                               const roc_receiver_config* config,
                               roc_receiver** result);
 
-/** Set receiver interface multicast group.
+/** Set receiver interface configuration.
  *
- * Optional.
- *
- * Multicast group should be set only when binding receiver interface to an endpoint with
- * multicast IP address. If present, it defines an IP address of the OS network interface
- * on which to join the multicast group. If not present, no multicast group is joined.
- *
- * It's possible to receive multicast traffic from only those OS network interfaces, on
- * which the process has joined the multicast group. When using multicast, the user should
- * either call this function, or join multicast group manually using OS-specific API.
- *
- * It is allowed to set multicast group to `0.0.0.0` (for IPv4) or to `::` (for IPv6),
- * to be able to receive multicast traffic from all available interfaces. However, this
- * may not be desirable for security reasons.
- *
- * Each slot's interface can have only one multicast group. The function should be called
- * before calling roc_receiver_bind() for the interface. It should not be called when
- * calling roc_receiver_connect() for the interface.
+ * Updates configuration of specified interface of specified slot. If called, the
+ * call should be done before calling roc_receiver_bind() or roc_receiver_connect()
+ * for the same interface.
  *
  * Automatically initializes slot with given index if it's used first time.
  *
@@ -220,57 +206,21 @@ ROC_API int roc_receiver_open(roc_context* context,
  *  - \p receiver should point to an opened receiver
  *  - \p slot specifies the receiver slot
  *  - \p iface specifies the receiver interface
- *  - \p ip should be IPv4 or IPv6 address
+ *  - \p config should be point to an initialized config
  *
  * **Returns**
- *  - returns zero if the multicast group was successfully set
+ *  - returns zero if config was successfully updated
  *  - returns a negative value if the arguments are invalid
- *  - returns a negative value if an error occurred
+ *  - returns a negative value if slot is already bound or connected
  *
  * **Ownership**
- *  - doesn't take or share the ownership of \p ip; it may be safely deallocated
+ *  - doesn't take or share the ownership of \p config; it may be safely deallocated
  *    after the function returns
  */
-ROC_API int roc_receiver_set_multicast_group(roc_receiver* receiver,
-                                             roc_slot slot,
-                                             roc_interface iface,
-                                             const char* ip);
-
-/** Set receiver interface address reuse option.
- *
- * Optional.
- *
- * When set to true, SO_REUSEADDR is enabled for interface socket, regardless of socket
- * type, unless binding to ephemeral port (port explicitly set to zero).
- *
- * When set to false, SO_REUSEADDR is enabled only for multicast sockets, unless binding
- * to ephemeral port (port explicitly set to zero).
- *
- * By default set to false.
- *
- * For TCP-based protocols, SO_REUSEADDR allows immediate reuse of recently closed socket
- * in TIME_WAIT state, which may be useful you want to be able to restart server quickly.
- *
- * For UDP-based protocols, SO_REUSEADDR allows multiple processes to bind to the same
- * address, which may be useful if you're using socket activation mechanism.
- *
- * Automatically initializes slot with given index if it's used first time.
- *
- * **Parameters**
- *  - \p receiver should point to an opened receiver
- *  - \p slot specifies the receiver slot
- *  - \p iface specifies the receiver interface
- *  - \p enabled should be 0 or 1
- *
- * **Returns**
- *  - returns zero if the multicast group was successfully set
- *  - returns a negative value if the arguments are invalid
- *  - returns a negative value if an error occurred
- */
-ROC_API int roc_receiver_set_reuseaddr(roc_receiver* receiver,
-                                       roc_slot slot,
-                                       roc_interface iface,
-                                       int enabled);
+ROC_API int roc_receiver_configure(roc_receiver* receiver,
+                                   roc_slot slot,
+                                   roc_interface iface,
+                                   const roc_interface_config* config);
 
 /** Bind the receiver interface to a local endpoint.
  *

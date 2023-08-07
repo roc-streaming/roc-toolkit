@@ -37,11 +37,10 @@ public:
     //! Check if successfully constructed.
     bool is_valid();
 
-    //! Set multicast interface address for given endpoint type.
-    bool set_multicast_group(size_t slot_index, address::Interface iface, const char* ip);
-
-    //! Set reuseaddr option for given endpoint type.
-    bool set_reuseaddr(size_t slot_index, address::Interface iface, bool enabled);
+    //! Set interface config.
+    bool configure(size_t slot_index,
+                   address::Interface iface,
+                   const netio::UdpReceiverConfig& config);
 
     //! Bind peer to local endpoint.
     bool bind(size_t slot_index, address::Interface iface, address::EndpointUri& uri);
@@ -71,7 +70,7 @@ private:
     bool check_compatibility_(address::Interface iface, const address::EndpointUri& uri);
     void update_compatibility_(address::Interface iface, const address::EndpointUri& uri);
 
-    Slot* get_slot_(size_t slot_index);
+    Slot* get_slot_(size_t slot_index, bool auto_create);
 
     virtual void schedule_task_processing(pipeline::PipelineLoop&,
                                           core::nanoseconds_t delay);

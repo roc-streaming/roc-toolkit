@@ -29,6 +29,12 @@ bool receiver_config_from_user(peer::Context& context,
                                pipeline::ReceiverConfig& out,
                                const roc_receiver_config& in);
 
+bool sender_interface_config_from_user(netio::UdpSenderConfig& out,
+                                       const roc_interface_config& in);
+
+bool receiver_interface_config_from_user(netio::UdpReceiverConfig& out,
+                                         const roc_interface_config& in);
+
 bool sample_spec_from_user(audio::SampleSpec& out, const roc_media_encoding& in);
 
 bool channel_set_from_user(audio::ChannelSet& out,
