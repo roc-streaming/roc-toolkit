@@ -128,7 +128,6 @@ private:
         NumWords = MaxChannels / WordBits
     };
 
-
     void update_();
 
     word_t words_[NumWords];
