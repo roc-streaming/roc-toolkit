@@ -119,14 +119,14 @@ public:
     uint8_t byte_at(size_t n) const;
 
 private:
+    typedef uint64_t word_t;
+
     enum {
         MaxChannels = 1024,
-        WordBytes = 8,
-        WordBits = 64,
+        WordBytes = sizeof(word_t),
+        WordBits = WordBytes * 8,
         NumWords = MaxChannels / WordBits
     };
-
-    typedef uint64_t word_t;
 
     void update_();
 
