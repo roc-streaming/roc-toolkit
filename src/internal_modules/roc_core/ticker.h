@@ -28,40 +28,18 @@ public:
     //! Initialize.
     //! @remarks
     //!  @p freq defines the number of ticks per second.
-    explicit Ticker(ticks_t freq)
-        : ratio_(double(freq) / Second)
-        , start_(0)
-        , started_(false) {
-    }
+    explicit Ticker(ticks_t freq);
 
     //! Start ticker.
-    void start() {
-        if (started_) {
-            roc_panic("ticker: can't start ticker twice");
-        }
-        start_ = timestamp(ClockMonotonic);
-        started_ = true;
-    }
+    void start();
 
     //! Returns number of ticks elapsed since start.
     //! If ticker is not started yet, it is started automatically.
-    ticks_t elapsed() {
-        if (!started_) {
-            start();
-            return 0;
-        } else {
-            return ticks_t(double(timestamp(ClockMonotonic) - start_) * ratio_);
-        }
-    }
+    ticks_t elapsed();
 
     //! Wait until the given number of ticks elapses since start.
     //! If ticker is not started yet, it is started automatically.
-    void wait(ticks_t ticks) {
-        if (!started_) {
-            start();
-        }
-        sleep_until(ClockMonotonic, start_ + nanoseconds_t(ticks / ratio_));
-    }
+    void wait(ticks_t ticks);
 
 private:
     const double ratio_;
