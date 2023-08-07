@@ -399,20 +399,22 @@ int main(int argc, char** argv) {
             return 1;
         }
 
+        netio::UdpReceiverConfig iface_config;
+        iface_config.reuseaddr = args.reuseaddr_given;
+
         if (args.miface_given) {
-            if (!receiver.set_multicast_group(slot, address::Iface_AudioSource,
-                                              args.miface_arg[slot])) {
-                roc_log(LogError, "can't set multicast group for --source endpoint: %s",
+            if (strlen(args.miface_arg[slot])
+                >= sizeof(iface_config.multicast_interface)) {
+                roc_log(LogError, "invalid --miface \"%s\": string too long",
                         args.miface_arg[slot]);
                 return 1;
             }
+            strcpy(iface_config.multicast_interface, args.miface_arg[slot]);
         }
 
-        if (args.reuseaddr_given) {
-            if (!receiver.set_reuseaddr(slot, address::Iface_AudioSource, true)) {
-                roc_log(LogError, "can't set reuseaddr option for --source endpoint");
-                return 1;
-            }
+        if (!receiver.configure(slot, address::Iface_AudioSource, iface_config)) {
+            roc_log(LogError, "can't configure --source endpoint");
+            return 1;
         }
 
         if (!receiver.bind(slot, address::Iface_AudioSource, endpoint)) {
@@ -430,20 +432,22 @@ int main(int argc, char** argv) {
             return 1;
         }
 
+        netio::UdpReceiverConfig iface_config;
+        iface_config.reuseaddr = args.reuseaddr_given;
+
         if (args.miface_given) {
-            if (!receiver.set_multicast_group(slot, address::Iface_AudioRepair,
-                                              args.miface_arg[slot])) {
-                roc_log(LogError, "can't set multicast group for --repair endpoint: %s",
+            if (strlen(args.miface_arg[slot])
+                >= sizeof(iface_config.multicast_interface)) {
+                roc_log(LogError, "invalid --miface \"%s\": string too long",
                         args.miface_arg[slot]);
                 return 1;
             }
+            strcpy(iface_config.multicast_interface, args.miface_arg[slot]);
         }
 
-        if (args.reuseaddr_given) {
-            if (!receiver.set_reuseaddr(slot, address::Iface_AudioRepair, true)) {
-                roc_log(LogError, "can't set reuseaddr option for --repair endpoint");
-                return 1;
-            }
+        if (!receiver.configure(slot, address::Iface_AudioRepair, iface_config)) {
+            roc_log(LogError, "can't configure --repair endpoint");
+            return 1;
         }
 
         if (!receiver.bind(slot, address::Iface_AudioRepair, endpoint)) {
@@ -462,20 +466,22 @@ int main(int argc, char** argv) {
             return 1;
         }
 
+        netio::UdpReceiverConfig iface_config;
+        iface_config.reuseaddr = args.reuseaddr_given;
+
         if (args.miface_given) {
-            if (!receiver.set_multicast_group(slot, address::Iface_AudioControl,
-                                              args.miface_arg[slot])) {
-                roc_log(LogError, "can't set multicast group for --control endpoint: %s",
+            if (strlen(args.miface_arg[slot])
+                >= sizeof(iface_config.multicast_interface)) {
+                roc_log(LogError, "invalid --miface \"%s\": string too long",
                         args.miface_arg[slot]);
                 return 1;
             }
+            strcpy(iface_config.multicast_interface, args.miface_arg[slot]);
         }
 
-        if (args.reuseaddr_given) {
-            if (!receiver.set_reuseaddr(slot, address::Iface_AudioControl, true)) {
-                roc_log(LogError, "can't set reuseaddr option for --control endpoint");
-                return 1;
-            }
+        if (!receiver.configure(slot, address::Iface_AudioControl, iface_config)) {
+            roc_log(LogError, "can't configure --control endpoint");
+            return 1;
         }
 
         if (!receiver.bind(slot, address::Iface_AudioControl, endpoint)) {

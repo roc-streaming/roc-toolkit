@@ -62,13 +62,12 @@ int roc_sender_open(roc_context* context,
     return 0;
 }
 
-int roc_sender_set_outgoing_address(roc_sender* sender,
-                                    roc_slot slot,
-                                    roc_interface iface,
-                                    const char* ip) {
+int roc_sender_configure(roc_sender* sender,
+                         roc_slot slot,
+                         roc_interface iface,
+                         const roc_interface_config* config) {
     if (!sender) {
-        roc_log(LogError,
-                "roc_sender_set_outgoing_address(): invalid arguments: sender is null");
+        roc_log(LogError, "roc_sender_configure(): invalid arguments: sender is null");
         return -1;
     }
 
@@ -76,52 +75,23 @@ int roc_sender_set_outgoing_address(roc_sender* sender,
 
     address::Interface imp_iface;
     if (!api::interface_from_user(imp_iface, iface)) {
-        roc_log(LogError,
-                "roc_sender_set_outgoing_address(): invalid arguments: bad interface");
+        roc_log(LogError, "roc_sender_configure(): invalid arguments: bad interface");
         return -1;
     }
 
-    if (!ip) {
-        roc_log(LogError,
-                "roc_sender_set_outgoing_address(): invalid arguments: ip is null");
+    if (!config) {
+        roc_log(LogError, "roc_sender_configure(): invalid arguments: config is null");
         return -1;
     }
 
-    if (!imp_sender->set_outgoing_address(slot, imp_iface, ip)) {
-        roc_log(LogError, "roc_sender_set_outgoing_address(): operation failed");
+    netio::UdpSenderConfig imp_config;
+    if (!api::sender_interface_config_from_user(imp_config, *config)) {
+        roc_log(LogError, "roc_sender_configure(): invalid arguments: bad config");
         return -1;
     }
 
-    return 0;
-}
-
-int roc_sender_set_reuseaddr(roc_sender* sender,
-                             roc_slot slot,
-                             roc_interface iface,
-                             int enabled) {
-    if (!sender) {
-        roc_log(LogError,
-                "roc_sender_set_reuseaddr(): invalid arguments: sender is null");
-        return -1;
-    }
-
-    peer::Sender* imp_sender = (peer::Sender*)sender;
-
-    address::Interface imp_iface;
-    if (!api::interface_from_user(imp_iface, iface)) {
-        roc_log(LogError, "roc_sender_set_reuseaddr(): invalid arguments: bad interface");
-        return -1;
-    }
-
-    if (enabled != 0 && enabled != 1) {
-        roc_log(
-            LogError,
-            "roc_sender_set_reuseaddr(): invalid arguments: enabled should be 0 or 1");
-        return -1;
-    }
-
-    if (!imp_sender->set_reuseaddr(slot, imp_iface, (bool)enabled)) {
-        roc_log(LogError, "roc_sender_set_reuseaddr(): operation failed");
+    if (!imp_sender->configure(slot, imp_iface, imp_config)) {
+        roc_log(LogError, "roc_sender_configure(): operation failed");
         return -1;
     }
 

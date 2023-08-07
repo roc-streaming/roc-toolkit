@@ -62,14 +62,13 @@ int roc_receiver_open(roc_context* context,
     return 0;
 }
 
-int roc_receiver_set_multicast_group(roc_receiver* receiver,
-                                     roc_slot slot,
-                                     roc_interface iface,
-                                     const char* ip) {
+int roc_receiver_configure(roc_receiver* receiver,
+                           roc_slot slot,
+                           roc_interface iface,
+                           const roc_interface_config* config) {
     if (!receiver) {
-        roc_log(
-            LogError,
-            "roc_receiver_set_multicast_group(): invalid arguments: receiver is null");
+        roc_log(LogError,
+                "roc_receiver_configure(): invalid arguments: receiver is null");
         return -1;
     }
 
@@ -77,53 +76,23 @@ int roc_receiver_set_multicast_group(roc_receiver* receiver,
 
     address::Interface imp_iface;
     if (!api::interface_from_user(imp_iface, iface)) {
-        roc_log(LogError,
-                "roc_receiver_set_multicast_group(): invalid arguments: bad interface");
+        roc_log(LogError, "roc_receiver_configure(): invalid arguments: bad interface");
         return -1;
     }
 
-    if (!ip) {
-        roc_log(LogError,
-                "roc_receiver_set_multicast_group(): invalid arguments: ip is null");
+    if (!config) {
+        roc_log(LogError, "roc_receiver_configure(): invalid arguments: config is null");
         return -1;
     }
 
-    if (!imp_receiver->set_multicast_group(slot, imp_iface, ip)) {
-        roc_log(LogError, "roc_receiver_set_multicast_group(): operation failed");
+    netio::UdpReceiverConfig imp_config;
+    if (!api::receiver_interface_config_from_user(imp_config, *config)) {
+        roc_log(LogError, "roc_receiver_configure(): invalid arguments: bad config");
         return -1;
     }
 
-    return 0;
-}
-
-int roc_receiver_set_reuseaddr(roc_receiver* receiver,
-                               roc_slot slot,
-                               roc_interface iface,
-                               int enabled) {
-    if (!receiver) {
-        roc_log(LogError,
-                "roc_receiver_set_reuseaddr(): invalid arguments: receiver is null");
-        return -1;
-    }
-
-    peer::Receiver* imp_receiver = (peer::Receiver*)receiver;
-
-    address::Interface imp_iface;
-    if (!api::interface_from_user(imp_iface, iface)) {
-        roc_log(LogError,
-                "roc_receiver_set_reuseaddr(): invalid arguments: bad interface");
-        return -1;
-    }
-
-    if (enabled != 0 && enabled != 1) {
-        roc_log(
-            LogError,
-            "roc_receiver_set_reuseaddr(): invalid arguments: enabled should be 0 or 1");
-        return -1;
-    }
-
-    if (!imp_receiver->set_reuseaddr(slot, imp_iface, (bool)enabled)) {
-        roc_log(LogError, "roc_receiver_set_reuseaddr(): operation failed");
+    if (!imp_receiver->configure(slot, imp_iface, imp_config)) {
+        roc_log(LogError, "roc_receiver_configure(): operation failed");
         return -1;
     }
 

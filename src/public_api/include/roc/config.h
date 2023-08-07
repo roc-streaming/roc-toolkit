@@ -750,6 +750,75 @@ typedef struct roc_receiver_config {
     long long choppy_playback_timeout;
 } roc_receiver_config;
 
+/** Interface configuration.
+ *
+ * Sender and receiver can have multiple slots (\ref roc_slot), and each slot can
+ * be bound or connected to multiple interfaces (\ref roc_interface).
+ *
+ * Each such interface has its own configuration, defined by this struct.
+ *
+ * For all fields, zero value means "use default". If you want to set all options
+ * to default values, you can memset() this struct with zeros.
+ *
+ * \see roc_sender_configure(), roc_receiver_configure().
+ */
+typedef struct roc_interface_config {
+    /** Outgoing IP address.
+     *
+     * If non-empty, explicitly identifies the OS network interface, by its IP address,
+     * from which to send outgoing packets. If NULL, the network interface is selected
+     * automatically by the OS, depending on the address of remote endpoint.
+     *
+     * For example, if eth0 has IP address "192.168.0.1", then setting outgoing address
+     * to "192.168.0.1" will force usage of eth0 interface.
+     *
+     * Setting it to `0.0.0.0` (for IPv4) or to `::` (for IPv6) gives the same effect
+     * as if it was NULL.
+     *
+     * By default, empty.
+     */
+    char outgoing_address[48];
+
+    /** Multicast group IP address.
+     *
+     * Multicast group should be set only when binding interface to an endpoint with
+     * multicast IP address. If present, it defines an IP address of the OS network
+     * interface on which to join the multicast group. If not present, no multicast
+     * group is joined.
+     *
+     * It's possible to receive multicast traffic from only those OS network interfaces,
+     * on which the process has joined the multicast group. When using multicast, the
+     * user should either set this field, or join multicast group manually using
+     * OS-specific API.
+     *
+     * It is allowed to set multicast group to `0.0.0.0` (for IPv4) or to `::` (for IPv6),
+     * to be able to receive multicast traffic from all available interfaces. However,
+     * this may not be desirable for security reasons.
+     *
+     * By default, empty.
+     */
+    char multicast_group[48];
+
+    /** Socket address reuse flag.
+     *
+     * When true (non-zero), SO_REUSEADDR is enabled for socket, regardless of socket
+     * type, unless binding to ephemeral port (when port is set to zero).
+     *
+     * When false (zero), SO_REUSEADDR is enabled for socket only if it has multicast
+     * type, unless binding to ephemeral port (when port is set to zero).
+     *
+     * For TCP-based protocols, SO_REUSEADDR allows immediate reuse of recently closed
+     * socket in TIME_WAIT state, which may be useful you want to be able to restart
+     * server quickly.
+     *
+     * For UDP-based protocols, SO_REUSEADDR allows multiple processes to bind to the
+     * same address, which may be useful if you're using socket activation mechanism.
+     *
+     * By default, false.
+     */
+    int reuse_address;
+} roc_interface_config;
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

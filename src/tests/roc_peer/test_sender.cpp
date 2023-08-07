@@ -91,6 +91,64 @@ TEST(sender, connect_slots) {
     UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
 }
 
+TEST(sender, configure) {
+    Context context(context_config, allocator);
+    CHECK(context.is_valid());
+
+    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
+
+    {
+        Sender sender(context, sender_config);
+        CHECK(sender.is_valid());
+
+        netio::UdpSenderConfig config;
+        CHECK(sender.configure(DefaultSlot, address::Iface_AudioSource, config));
+
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
+
+        address::EndpointUri source_endp(allocator);
+        parse_uri(source_endp, "rtp://127.0.0.1:123");
+
+        CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
+
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 1);
+    }
+
+    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
+}
+
+TEST(sender, configure_slots) {
+    Context context(context_config, allocator);
+    CHECK(context.is_valid());
+
+    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
+
+    {
+        Sender sender(context, sender_config);
+        CHECK(sender.is_valid());
+
+        netio::UdpSenderConfig config;
+        CHECK(sender.configure(0, address::Iface_AudioSource, config));
+        CHECK(sender.configure(1, address::Iface_AudioSource, config));
+
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
+
+        address::EndpointUri source_endp1(allocator);
+        parse_uri(source_endp1, "rtp://127.0.0.1:111");
+        CHECK(sender.connect(0, address::Iface_AudioSource, source_endp1));
+
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 1);
+
+        address::EndpointUri source_endp2(allocator);
+        parse_uri(source_endp2, "rtp://127.0.0.1:222");
+        CHECK(sender.connect(1, address::Iface_AudioSource, source_endp2));
+
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 2);
+    }
+
+    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
+}
+
 TEST(sender, endpoints_no_fec) {
     Context context(context_config, allocator);
     CHECK(context.is_valid());
@@ -311,10 +369,11 @@ TEST(sender, port_sharing) {
         address::EndpointUri repair_endp(allocator);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
 
-        CHECK(sender.set_outgoing_address(DefaultSlot, address::Iface_AudioSource,
-                                          "127.0.0.1"));
-        CHECK(sender.set_outgoing_address(DefaultSlot, address::Iface_AudioRepair,
-                                          "127.0.0.1"));
+        netio::UdpSenderConfig config;
+        CHECK(config.bind_address.set_host_port_auto("127.0.0.1", 0));
+
+        CHECK(sender.configure(DefaultSlot, address::Iface_AudioSource, config));
+        CHECK(sender.configure(DefaultSlot, address::Iface_AudioRepair, config));
 
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioRepair, repair_endp));
@@ -348,10 +407,14 @@ TEST(sender, port_sharing) {
         address::EndpointUri repair_endp(allocator);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
 
-        CHECK(sender.set_outgoing_address(DefaultSlot, address::Iface_AudioSource,
-                                          "127.0.0.1"));
-        CHECK(sender.set_outgoing_address(DefaultSlot, address::Iface_AudioRepair,
-                                          "127.0.0.2"));
+        netio::UdpSenderConfig config1;
+        CHECK(config1.bind_address.set_host_port_auto("127.0.0.1", 0));
+
+        netio::UdpSenderConfig config2;
+        CHECK(config2.bind_address.set_host_port_auto("127.0.0.2", 0));
+
+        CHECK(sender.configure(DefaultSlot, address::Iface_AudioSource, config1));
+        CHECK(sender.configure(DefaultSlot, address::Iface_AudioRepair, config2));
 
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
 

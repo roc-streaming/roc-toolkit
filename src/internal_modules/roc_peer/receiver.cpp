@@ -67,26 +67,24 @@ bool Receiver::is_valid() {
     return valid_;
 }
 
-bool Receiver::set_multicast_group(size_t slot_index,
-                                   address::Interface iface,
-                                   const char* ip) {
+bool Receiver::configure(size_t slot_index,
+                         address::Interface iface,
+                         const netio::UdpReceiverConfig& config) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(is_valid());
 
-    roc_panic_if(!ip);
     roc_panic_if(iface < 0);
     roc_panic_if(iface >= (int)address::Iface_Max);
 
-    roc_log(LogDebug,
-            "receiver peer: setting multicast group for %s interface of slot %lu to %s",
-            address::interface_to_str(iface), (unsigned long)slot_index, ip);
+    roc_log(LogDebug, "receiver peer: configuring %s interface of slot %lu",
+            address::interface_to_str(iface), (unsigned long)slot_index);
 
-    Slot* slot = get_slot_(slot_index);
+    Slot* slot = get_slot_(slot_index, true);
     if (!slot) {
         roc_log(LogError,
                 "receiver peer:"
-                " can't set multicast group for %s interface of slot %lu:"
+                " can't configure %s interface of slot %lu:"
                 " can't create slot",
                 address::interface_to_str(iface), (unsigned long)slot_index);
         return false;
@@ -95,72 +93,13 @@ bool Receiver::set_multicast_group(size_t slot_index,
     if (slot->ports[iface].handle) {
         roc_log(LogError,
                 "receiver peer:"
-                " can't set multicast group for %s interface of slot %lu:"
-                " interface is already bound",
+                " can't configure %s interface of slot %lu:"
+                " interface is already bound or connected",
                 address::interface_to_str(iface), (unsigned long)slot_index);
         return false;
     }
 
-    {
-        // validation
-        address::SocketAddr addr;
-        if (!addr.set_host_port_auto(ip, 0)) {
-            roc_log(LogError,
-                    "receiver peer:"
-                    " can't set multicast group for %s interface of slot %lu:"
-                    " invalid IPv4 or IPv6 address",
-                    address::interface_to_str(iface), (unsigned long)slot_index);
-            return false;
-        }
-    }
-
-    core::StringBuilder b(slot->ports[iface].config.multicast_interface,
-                          sizeof(slot->ports[iface].config.multicast_interface));
-
-    if (!b.assign_str(ip)) {
-        roc_log(LogError,
-                "receiver peer:"
-                " can't set multicast group for %s interface of slot %lu:"
-                " invalid IPv4 or IPv6 address",
-                address::interface_to_str(iface), (unsigned long)slot_index);
-        return false;
-    }
-
-    return true;
-}
-
-bool Receiver::set_reuseaddr(size_t slot_index, address::Interface iface, bool enabled) {
-    core::Mutex::Lock lock(mutex_);
-
-    roc_panic_if_not(is_valid());
-
-    roc_panic_if(iface < 0);
-    roc_panic_if(iface >= (int)address::Iface_Max);
-
-    roc_log(LogDebug,
-            "receiver peer: setting reuseaddr option for %s interface of slot %lu to %d",
-            address::interface_to_str(iface), (unsigned long)slot_index, (int)enabled);
-
-    Slot* slot = get_slot_(slot_index);
-    if (!slot) {
-        roc_log(LogError,
-                "receiver peer:"
-                " can't set reuseaddr option for %s interface of slot %lu:"
-                " can't create slot",
-                address::interface_to_str(iface), (unsigned long)slot_index);
-        return false;
-    }
-
-    if (slot->ports[iface].handle) {
-        roc_log(LogError,
-                "receiver peer:"
-                " can't set reuseaddr option for %s interface of slot %lu:"
-                " interface is already bound",
-                address::interface_to_str(iface), (unsigned long)slot_index);
-        return false;
-    }
-
-    slot->ports[iface].config.reuseaddr = enabled;
+    slot->ports[iface].config = config;
 
     return true;
 }
@@ -197,7 +136,7 @@ bool Receiver::bind(size_t slot_index,
         return false;
     }
 
-    Slot* slot = get_slot_(slot_index);
+    Slot* slot = get_slot_(slot_index, true);
     if (!slot) {
         roc_log(LogError,
                 "receiver peer:"
@@ -289,8 +228,13 @@ void Receiver::update_compatibility_(address::Interface iface,
     used_protocols_[iface] = uri.proto();
 }
 
-Receiver::Slot* Receiver::get_slot_(size_t slot_index) {
+Receiver::Slot* Receiver::get_slot_(size_t slot_index, bool auto_create) {
     if (slots_.size() <= slot_index) {
+        if (!auto_create) {
+            roc_log(LogError, "receiver peer: failed to find slot %lu",
+                    (unsigned long)slot_index);
+            return NULL;
+        }
         if (!slots_.resize(slot_index + 1)) {
             roc_log(LogError, "receiver peer: failed to allocate slot");
             return NULL;
@@ -298,6 +242,11 @@ Receiver::Slot* Receiver::get_slot_(size_t slot_index) {
     }
 
     if (!slots_[slot_index].slot) {
+        if (!auto_create) {
+            roc_log(LogError, "receiver peer: failed to find slot %lu",
+                    (unsigned long)slot_index);
+            return NULL;
+        }
         pipeline::ReceiverLoop::Tasks::CreateSlot task;
         if (!pipeline_.schedule_and_wait(task)) {
             roc_log(LogError, "receiver peer: failed to create slot");
