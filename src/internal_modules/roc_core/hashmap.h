@@ -54,17 +54,17 @@ namespace core {
 //! implement three methods:
 //!
 //! @code
+//!   // get object key
+//!   Key key() const;
+//!
 //!   // compute key hash
 //!   static core::hashsum_t key_hash(Key key);
 //!
 //!   // compare two keys for equality
 //!   static bool key_equal(Key key1, Key key2);
-//!
-//!   // get object key
-//!   Key key() const;
 //! @endcode
 //!
-//! "Key" can be any type. Hashmap doesn't use it directly. It is never copied and
+//! "Key" can be any type. Hashmap doesn't use it directly. It is never stored and
 //! is always accessed via the three methods above. The hash is computed for a key
 //! only once when an object is inserted into hash table.
 //!

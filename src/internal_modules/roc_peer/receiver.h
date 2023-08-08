@@ -15,7 +15,10 @@
 #include "roc_address/endpoint_uri.h"
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
+#include "roc_core/hashmap.h"
 #include "roc_core/mutex.h"
+#include "roc_core/pool.h"
+#include "roc_core/ref_counted.h"
 #include "roc_ctl/control_loop.h"
 #include "roc_peer/basic_peer.h"
 #include "roc_peer/context.h"
@@ -58,19 +61,34 @@ private:
         }
     };
 
-    struct Slot {
-        pipeline::ReceiverLoop::SlotHandle slot;
+    struct Slot : core::RefCounted<Slot, core::PoolAllocation>, core::HashmapNode {
+        const size_t index;
+        const pipeline::ReceiverLoop::SlotHandle handle;
         Port ports[address::Iface_Max];
 
-        Slot()
-            : slot(NULL) {
+        Slot(core::IPool& pool, size_t index, pipeline::SenderLoop::SlotHandle handle)
+            : core::RefCounted<Slot, core::PoolAllocation>(pool)
+            , index(index)
+            , handle(handle) {
+        }
+
+        size_t key() const {
+            return index;
+        }
+
+        static core::hashsum_t key_hash(size_t index) {
+            return core::hashsum_int(index);
+        }
+
+        static bool key_equal(size_t index1, size_t index2) {
+            return index1 == index2;
         }
     };
 
     bool check_compatibility_(address::Interface iface, const address::EndpointUri& uri);
     void update_compatibility_(address::Interface iface, const address::EndpointUri& uri);
 
-    Slot* get_slot_(size_t slot_index, bool auto_create);
+    core::SharedPtr<Slot> get_slot_(size_t slot_index, bool auto_create);
 
     virtual void schedule_task_processing(pipeline::PipelineLoop&,
                                           core::nanoseconds_t delay);
@@ -81,7 +99,8 @@ private:
     pipeline::ReceiverLoop pipeline_;
     ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
 
-    core::Array<Slot, 8> slots_;
+    core::Pool<Slot> slot_pool_;
+    core::Hashmap<Slot> slot_map_;
 
     bool used_interfaces_[address::Iface_Max];
     address::Protocol used_protocols_[address::Iface_Max];

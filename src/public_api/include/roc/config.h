@@ -23,13 +23,13 @@ extern "C" {
  * A peer (sender or receiver) may have multiple slots, which may be independently
  * bound or connected. You can use multiple slots on sender to connect it to multiple
  * receiver addresses, and you can use multiple slots on receiver to bind it to
- * multiple receiver address.
+ * multiple receiver addresses.
  *
  * Slots are numbered from zero and are created implicitly. Just specify slot index
  * when binding or connecting endpoint, and slot will be automatically created if it
- * was not created yet.
+ * was not created yet. Numbers does not need to be continuous and can be arbitrary.
  *
- * In simple cases, just use \c ROC_SLOT_DEFAULT.
+ * In simple cases, when one slot is enough, just use \c ROC_SLOT_DEFAULT.
  *
  * Inside each slot, there can be up to one endpoint for each interface type.
  * See \ref roc_interface for details.
@@ -37,6 +37,7 @@ extern "C" {
 typedef unsigned int roc_slot;
 
 /** Alias for the slot with index zero.
+ * Has no special meaning, exists just for convenience.
  * \see roc_slot
  */
 static const roc_slot ROC_SLOT_DEFAULT = 0;
