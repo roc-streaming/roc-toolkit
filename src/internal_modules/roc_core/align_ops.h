@@ -12,18 +12,24 @@
 #ifndef ROC_CORE_ALIGN_OPS_H_
 #define ROC_CORE_ALIGN_OPS_H_
 
-#include "roc_core/aligned_storage.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
 namespace core {
+
+//! Maximum aligned data unit.
+union AlignMax {
+    uint64_t u;  //!< 8-byte integer.
+    double d;    //!< 8-byte floating point.
+    void (*p)(); //!< 4-, 8- or 16-byte function pointer.
+};
 
 //! Alignment operations.
 class AlignOps {
 public:
     //! Get maximum alignment for current platform.
     static inline size_t max_alignment() {
-        return AlignedStorage<0>::size();
+        return sizeof(AlignMax);
     }
 
     //! Return size aligned to maximum alignment.

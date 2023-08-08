@@ -12,6 +12,7 @@
 #ifndef ROC_CORE_ALIGNED_STORAGE_H_
 #define ROC_CORE_ALIGNED_STORAGE_H_
 
+#include "roc_core/align_ops.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
@@ -37,8 +38,7 @@ public:
 
 private:
     union Memory {
-        double d;
-        void (*fp)();
+        AlignMax alignment;
         char payload[Size != 0 ? Size : 1];
     };
 
