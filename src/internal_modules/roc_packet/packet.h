@@ -15,10 +15,10 @@
 #include "roc_core/list_node.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/mpsc_queue_node.h"
+#include "roc_core/pool.h"
 #include "roc_core/ref_counted.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_packet/fec.h"
-#include "roc_packet/packet_factory.h"
 #include "roc_packet/print_packet.h"
 #include "roc_packet/rtcp.h"
 #include "roc_packet/rtp.h"
@@ -33,14 +33,12 @@ class Packet;
 typedef core::SharedPtr<Packet> PacketPtr;
 
 //! Packet.
-class Packet : public core::RefCounted<Packet, core::FactoryAllocation<PacketFactory> >,
+class Packet : public core::RefCounted<Packet, core::PoolAllocation>,
                public core::ListNode,
                public core::MpscQueueNode {
-    typedef core::RefCounted<Packet, core::FactoryAllocation<PacketFactory> > RefCounted;
-
 public:
     //! Constructor.
-    explicit Packet(PacketFactory&);
+    explicit Packet(core::IPool& packet_pool);
 
     //! Packet flags.
     enum {

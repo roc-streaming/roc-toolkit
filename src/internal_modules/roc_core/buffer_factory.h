@@ -13,43 +13,40 @@
 #define ROC_CORE_BUFFER_FACTORY_H_
 
 #include "roc_core/allocation_policy.h"
+#include "roc_core/buffer.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/pool.h"
 #include "roc_core/shared_ptr.h"
-#include "roc_core/slab_pool.h"
 
 namespace roc {
 namespace core {
 
-template <class T> class Buffer;
-
 //! Buffer factory.
+//! Allows to instantiate fixed-size buffers.
+//! @tparam T define buffer element type.
 template <class T> class BufferFactory : public core::NonCopyable<> {
 public:
     //! Initialization.
-    BufferFactory(IAllocator& allocator, size_t buff_size, bool poison)
-        : pool_(allocator, sizeof(Buffer<T>) + sizeof(T) * buff_size, poison)
-        , buff_size_(buff_size) {
+    //! @p buffer_size defines number of elements in buffer.
+    //! @p poison enables memory poisoning.
+    BufferFactory(IAllocator& allocator, size_t buffer_size, bool poison)
+        : buffer_pool_(allocator, poison, sizeof(Buffer<T>) + sizeof(T) * buffer_size)
+        , buffer_size_(buffer_size) {
     }
 
-    //! Get buffer size (number of elements in buffer).
+    //! Get number of elements in buffer.
     size_t buffer_size() const {
-        return buff_size_;
+        return buffer_size_;
     }
 
     //! Allocate new buffer.
     SharedPtr<Buffer<T> > new_buffer() {
-        return new (pool_) Buffer<T>(*this);
+        return new (buffer_pool_) Buffer<T>(buffer_pool_, buffer_size_);
     }
 
 private:
-    friend class FactoryAllocation<BufferFactory>;
-
-    void destroy(Buffer<T>& buffer) {
-        pool_.destroy_object(buffer);
-    }
-
-    SlabPool<> pool_;
-    size_t buff_size_;
+    Pool<Buffer<T> > buffer_pool_;
+    const size_t buffer_size_;
 };
 
 } // namespace core
