@@ -33,7 +33,7 @@ namespace rtp {
 class FormatMap : public core::NonCopyable<> {
 public:
     //! Initialize.
-    FormatMap(core::IArena& arena, bool poison);
+    FormatMap(core::IArena& arena);
 
     //! Find format by payload type.
     //! @returns

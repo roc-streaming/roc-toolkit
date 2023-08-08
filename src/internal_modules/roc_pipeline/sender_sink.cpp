@@ -33,14 +33,6 @@ SenderSink::SenderSink(const SenderConfig& config,
     , update_deadline_(0) {
     audio::IFrameWriter* awriter = &fanout_;
 
-    if (config_.enable_poisoning) {
-        pipeline_poisoner_.reset(new (pipeline_poisoner_) audio::PoisonWriter(*awriter));
-        if (!pipeline_poisoner_) {
-            return;
-        }
-        awriter = pipeline_poisoner_.get();
-    }
-
     if (config_.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingWriter(
             *awriter, arena, config_.input_sample_spec, config_.profiler_config));

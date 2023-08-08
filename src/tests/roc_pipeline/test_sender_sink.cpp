@@ -47,11 +47,11 @@ enum {
 };
 
 core::HeapArena arena;
-core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, MaxBufSize, true);
-core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize, true);
-packet::PacketFactory packet_factory(arena, true);
+core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, MaxBufSize);
+core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize);
+packet::PacketFactory packet_factory(arena);
 
-rtp::FormatMap format_map(arena, true);
+rtp::FormatMap format_map(arena);
 rtp::Parser rtp_parser(format_map, NULL);
 
 } // namespace
@@ -83,7 +83,6 @@ TEST_GROUP(sender_sink) {
 
         config.enable_interleaving = false;
         config.enable_timing = false;
-        config.enable_poisoning = true;
         config.enable_profiling = true;
 
         return config;

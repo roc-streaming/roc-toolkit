@@ -23,8 +23,8 @@ namespace {
 enum { NumIterations = 20, NumPackets = 10, BufferSize = 125 };
 
 core::HeapArena arena;
-core::BufferFactory<uint8_t> buffer_factory(arena, BufferSize, true);
-packet::PacketFactory packet_factory(arena, true);
+core::BufferFactory<uint8_t> buffer_factory(arena, BufferSize);
+packet::PacketFactory packet_factory(arena);
 
 UdpSenderConfig make_sender_config() {
     UdpSenderConfig config;

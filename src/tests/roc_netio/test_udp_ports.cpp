@@ -23,8 +23,8 @@ namespace {
 enum { MaxBufSize = 500 };
 
 core::HeapArena arena;
-core::BufferFactory<uint8_t> buffer_factory(arena, MaxBufSize, true);
-packet::PacketFactory packet_factory(arena, true);
+core::BufferFactory<uint8_t> buffer_factory(arena, MaxBufSize);
+packet::PacketFactory packet_factory(arena);
 
 UdpSenderConfig make_sender_config(const char* ip, int port) {
     UdpSenderConfig config;

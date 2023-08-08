@@ -63,8 +63,6 @@ int main(int argc, char** argv) {
 
     peer::ContextConfig context_config;
 
-    context_config.poisoning = args.poisoning_flag;
-
     if (args.packet_limit_given) {
         if (args.packet_limit_arg <= 0) {
             roc_log(LogError, "invalid --packet-limit: should be > 0");
@@ -226,7 +224,6 @@ int main(int argc, char** argv) {
         break;
     }
 
-    receiver_config.common.enable_poisoning = args.poisoning_flag;
     receiver_config.common.enable_profiling = args.profiling_flag;
     receiver_config.common.enable_beeping = args.beep_flag;
 
@@ -342,8 +339,6 @@ int main(int argc, char** argv) {
         transcoder_config.output_sample_spec =
             audio::SampleSpec(receiver_config.common.output_sample_spec.sample_rate(),
                               receiver_config.common.output_sample_spec.channel_set());
-
-        transcoder_config.enable_poisoning = receiver_config.common.enable_poisoning;
 
         backup_pipeline.reset(new (context.arena()) pipeline::TranscoderSource(
                                   transcoder_config, *backup_source,

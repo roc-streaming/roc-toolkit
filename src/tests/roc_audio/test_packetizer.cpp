@@ -45,9 +45,9 @@ const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, ChMa
 const audio::PcmFormat PcmFmt(audio::PcmEncoding_SInt16, audio::PcmEndian_Big);
 
 core::HeapArena arena;
-core::BufferFactory<sample_t> sample_buffer_factory(arena, MaxBufSize, true);
-core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize, true);
-packet::PacketFactory packet_factory(arena, true);
+core::BufferFactory<sample_t> sample_buffer_factory(arena, MaxBufSize);
+core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize);
+packet::PacketFactory packet_factory(arena);
 
 rtp::Composer rtp_composer(NULL);
 

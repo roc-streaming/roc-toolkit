@@ -63,8 +63,6 @@ int main(int argc, char** argv) {
 
     peer::ContextConfig context_config;
 
-    context_config.poisoning = args.poisoning_flag;
-
     if (args.packet_limit_given) {
         if (args.packet_limit_arg <= 0) {
             roc_log(LogError, "invalid --packet-limit: should be > 0");
@@ -192,7 +190,6 @@ int main(int argc, char** argv) {
     }
 
     sender_config.enable_interleaving = args.interleaving_flag;
-    sender_config.enable_poisoning = args.poisoning_flag;
     sender_config.enable_profiling = args.profiling_flag;
 
     if (args.io_latency_given) {

@@ -132,9 +132,6 @@ struct SenderConfig {
     //! Constrain receiver speed using a CPU timer according to the sample rate.
     bool enable_timing;
 
-    //! Fill unitialized data with large values to make them more noticable.
-    bool enable_poisoning;
-
     //! Profile moving average of frames being written.
     bool enable_profiling;
 
@@ -149,7 +146,6 @@ struct SenderConfig {
         , payload_type(rtp::PayloadType_L16_Stereo)
         , enable_interleaving(false)
         , enable_timing(false)
-        , enable_poisoning(false)
         , enable_profiling(false) {
     }
 };
@@ -215,9 +211,6 @@ struct ReceiverCommonConfig {
     //! Constrain receiver speed using a CPU timer according to the sample rate.
     bool enable_timing;
 
-    //! Fill uninitialized data with large values to make them more noticeable.
-    bool enable_poisoning;
-
     //! Profile moving average of frames being written.
     bool enable_profiling;
 
@@ -230,7 +223,6 @@ struct ReceiverCommonConfig {
     ReceiverCommonConfig()
         : output_sample_spec(DefaultSampleSpec)
         , enable_timing(false)
-        , enable_poisoning(false)
         , enable_profiling(false)
         , enable_beeping(false) {
     }
@@ -262,9 +254,6 @@ struct TranscoderConfig {
     //! Output sample spec
     audio::SampleSpec output_sample_spec;
 
-    //! Fill unitialized data with large values to make them more noticable.
-    bool enable_poisoning;
-
     //! Profile moving average of frames being written.
     bool enable_profiling;
 
@@ -276,7 +265,6 @@ struct TranscoderConfig {
         , resampler_profile(audio::ResamplerProfile_Medium)
         , input_sample_spec(DefaultSampleSpec)
         , output_sample_spec(DefaultSampleSpec)
-        , enable_poisoning(false)
         , enable_profiling(false) {
     }
 };

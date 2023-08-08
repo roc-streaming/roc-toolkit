@@ -32,13 +32,9 @@ struct ContextConfig {
     //! Maximum size in bytes of an audio frame.
     size_t max_frame_size;
 
-    //! Enable memory poisoning.
-    bool poisoning;
-
     ContextConfig()
         : max_packet_size(2048)
-        , max_frame_size(4096)
-        , poisoning(false) {
+        , max_frame_size(4096) {
     }
 };
 

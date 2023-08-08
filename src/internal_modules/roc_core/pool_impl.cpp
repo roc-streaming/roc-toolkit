@@ -10,6 +10,7 @@
 #include "roc_core/align_ops.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_core/poisoner.h"
 
 namespace roc {
 namespace core {
@@ -30,7 +31,6 @@ size_t clamp(size_t value, size_t lower_limit, size_t upper_limit) {
 
 PoolImpl::PoolImpl(IArena& arena,
                    size_t object_size,
-                   bool poison,
                    size_t min_alloc_bytes,
                    size_t max_alloc_bytes,
                    void* preallocated_data,
@@ -43,14 +43,13 @@ PoolImpl::PoolImpl(IArena& arena,
     , slab_hdr_size_(AlignOps::align_max(sizeof(Slab)))
     , slab_cur_slots_(slab_min_bytes_ == 0 ? 1 : slots_per_slab_(slab_min_bytes_, true))
     , slab_max_slots_(slab_max_bytes_ == 0 ? 0 : slots_per_slab_(slab_max_bytes_, false))
-    , object_size_(object_size)
-    , poison_(poison) {
+    , object_size_(object_size) {
     roc_log(LogDebug,
-            "slab pool: initializing: object_size=%lu min_slab=%luB(%luS) "
-            "max_slab=%luB(%luS) poison=%d",
+            "pool: initializing:"
+            " object_size=%lu min_slab=%luB(%luS) max_slab=%luB(%luS)",
             (unsigned long)slot_size_, (unsigned long)slab_min_bytes_,
             (unsigned long)slab_cur_slots_, (unsigned long)slab_max_bytes_,
-            (unsigned long)slab_max_slots_, (int)poison);
+            (unsigned long)slab_max_slots_);
 
     roc_panic_if_not(slab_cur_slots_ > 0);
     roc_panic_if_not(slab_cur_slots_ <= slab_max_slots_ || slab_max_slots_ == 0);
@@ -92,7 +91,7 @@ void* PoolImpl::allocate() {
 
 void PoolImpl::deallocate(void* memory) {
     if (memory == NULL) {
-        roc_panic("slab pool: deallocating null pointer");
+        roc_panic("pool: deallocating null pointer");
     }
 
     Slot* slot = take_slot_from_user_(memory);
@@ -109,19 +108,13 @@ void* PoolImpl::give_slot_to_user_(Slot* slot) {
 
     void* memory = slot;
 
-    if (poison_) {
-        memset(memory, PoisonAllocated, slot_size_);
-    } else {
-        memset(memory, 0, slot_size_);
-    }
+    Poisoner::before_use(memory, slot_size_);
 
     return memory;
 }
 
 PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
-    if (poison_) {
-        memset(memory, PoisonDeallocated, slot_size_);
-    }
+    Poisoner::after_use(memory, slot_size_);
 
     return new (memory) Slot;
 }
@@ -142,7 +135,7 @@ PoolImpl::Slot* PoolImpl::acquire_slot_() {
 
 void PoolImpl::release_slot_(Slot* slot) {
     if (n_used_slots_ == 0) {
-        roc_panic("slab pool: unpaired deallocation");
+        roc_panic("pool: unpaired deallocation");
     }
 
     n_used_slots_--;
@@ -200,8 +193,8 @@ bool PoolImpl::allocate_new_slab_() {
 
 void PoolImpl::deallocate_everything_() {
     if (n_used_slots_ != 0) {
-        roc_panic("slab pool: detected leak: used=%lu free=%lu",
-                  (unsigned long)n_used_slots_, (unsigned long)free_slots_.size());
+        roc_panic("pool: detected leak: used=%lu free=%lu", (unsigned long)n_used_slots_,
+                  (unsigned long)free_slots_.size());
     }
 
     while (Slot* slot = free_slots_.front()) {
@@ -216,7 +209,7 @@ void PoolImpl::deallocate_everything_() {
 
 void PoolImpl::add_preallocated_memory_(void* memory, size_t memory_size) {
     if (memory == NULL) {
-        roc_panic("slab pool: preallocated memory is NULL");
+        roc_panic("pool: preallocated memory is null");
     }
 
     const size_t n_slots = memory_size / slot_size_;

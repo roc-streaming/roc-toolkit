@@ -41,15 +41,6 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
 
     if (config.input_sample_spec.sample_rate()
         != config.output_sample_spec.sample_rate()) {
-        if (config.enable_poisoning) {
-            resampler_poisoner_.reset(new (resampler_poisoner_)
-                                          audio::PoisonWriter(*awriter));
-            if (!resampler_poisoner_) {
-                return;
-            }
-            awriter = resampler_poisoner_.get();
-        }
-
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
                              config.resampler_backend, arena, buffer_factory,
                              config.resampler_profile, config.input_sample_spec,
@@ -69,14 +60,6 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
             return;
         }
         awriter = resampler_writer_.get();
-    }
-
-    if (config.enable_poisoning) {
-        pipeline_poisoner_.reset(new (pipeline_poisoner_) audio::PoisonWriter(*awriter));
-        if (!pipeline_poisoner_) {
-            return;
-        }
-        awriter = pipeline_poisoner_.get();
     }
 
     if (config.enable_profiling) {

@@ -36,13 +36,11 @@ ReceiverSource::ReceiverSource(
     }
     audio::IFrameReader* areader = mixer_.get();
 
-    if (config.common.enable_poisoning) {
-        poisoner_.reset(new (poisoner_) audio::PoisonReader(*areader));
-        if (!poisoner_) {
-            return;
-        }
-        areader = poisoner_.get();
+    poisoner_.reset(new (poisoner_) audio::PoisonReader(*areader));
+    if (!poisoner_) {
+        return;
     }
+    areader = poisoner_.get();
 
     if (config.common.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingReader(

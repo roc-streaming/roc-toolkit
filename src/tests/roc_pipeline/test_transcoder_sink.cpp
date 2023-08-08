@@ -33,7 +33,7 @@ enum {
 };
 
 core::HeapArena arena;
-core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, MaxBufSize, true);
+core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, MaxBufSize);
 
 } // namespace
 
@@ -47,7 +47,6 @@ TEST_GROUP(transcoder_sink) {
         config.input_sample_spec = input_sample_spec;
         config.output_sample_spec = output_sample_spec;
 
-        config.enable_poisoning = true;
         config.enable_profiling = true;
 
         return config;

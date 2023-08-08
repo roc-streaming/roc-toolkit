@@ -149,14 +149,12 @@ ReceiverSession::ReceiverSession(
     if (session_config.latency_monitor.fe_enable
         || format->sample_spec.sample_rate()
             != common_config.output_sample_spec.sample_rate()) {
-        if (common_config.enable_poisoning) {
-            resampler_poisoner_.reset(new (resampler_poisoner_)
-                                          audio::PoisonReader(*areader));
-            if (!resampler_poisoner_) {
-                return;
-            }
-            areader = resampler_poisoner_.get();
+        resampler_poisoner_.reset(new (resampler_poisoner_)
+                                      audio::PoisonReader(*areader));
+        if (!resampler_poisoner_) {
+            return;
         }
+        areader = resampler_poisoner_.get();
 
         resampler_.reset(
             audio::ResamplerMap::instance().new_resampler(
@@ -183,13 +181,11 @@ ReceiverSession::ReceiverSession(
         areader = resampler_reader_.get();
     }
 
-    if (common_config.enable_poisoning) {
-        session_poisoner_.reset(new (session_poisoner_) audio::PoisonReader(*areader));
-        if (!session_poisoner_) {
-            return;
-        }
-        areader = session_poisoner_.get();
+    session_poisoner_.reset(new (session_poisoner_) audio::PoisonReader(*areader));
+    if (!session_poisoner_) {
+        return;
     }
+    areader = session_poisoner_.get();
 
     latency_monitor_.reset(new (latency_monitor_) audio::LatencyMonitor(
         *source_queue_, *depacketizer_, resampler_reader_.get(),

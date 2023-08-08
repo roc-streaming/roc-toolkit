@@ -8,7 +8,10 @@
 
 #include "roc_core/heap_arena.h"
 #include "roc_core/atomic_ops.h"
+#include "roc_core/macro_helpers.h"
 #include "roc_core/panic.h"
+#include "roc_core/poisoner.h"
+#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace core {
@@ -37,19 +40,33 @@ size_t HeapArena::num_allocations() const {
 }
 
 void* HeapArena::allocate(size_t size) {
-    ++num_allocations_;
-    return new char[size];
+    num_allocations_++;
+
+    Chunk* chunk = (Chunk*)malloc(sizeof(Chunk) + size);
+
+    chunk->size = size;
+
+    Poisoner::before_use(chunk->data, size);
+
+    return chunk->data;
 }
 
 void HeapArena::deallocate(void* ptr) {
     if (!ptr) {
         roc_panic("heap arena: null pointer");
     }
-    if (num_allocations_ <= 0) {
+
+    const int n = num_allocations_--;
+
+    if (n == 0) {
         roc_panic("heap arena: unpaired deallocate");
     }
-    --num_allocations_;
-    delete[](char*) ptr;
+
+    Chunk* chunk = ROC_CONTAINER_OF(ptr, Chunk, data);
+
+    Poisoner::after_use(chunk->data, chunk->size);
+
+    free(chunk);
 }
 
 } // namespace core
