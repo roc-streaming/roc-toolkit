@@ -25,7 +25,7 @@ namespace packet {
 class PacketFactory : public core::NonCopyable<> {
 public:
     //! Constructor.
-    PacketFactory(core::IArena& arena, bool poison);
+    PacketFactory(core::IArena& arena);
 
     //! Create new packet;
     core::SharedPtr<Packet> new_packet();

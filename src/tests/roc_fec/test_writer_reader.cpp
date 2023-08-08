@@ -44,10 +44,10 @@ const size_t FECPayloadSize = 193;
 const size_t MaxBuffSize = 500;
 
 core::HeapArena arena;
-core::BufferFactory<uint8_t> buffer_factory(arena, MaxBuffSize, true);
-packet::PacketFactory packet_factory(arena, true);
+core::BufferFactory<uint8_t> buffer_factory(arena, MaxBuffSize);
+packet::PacketFactory packet_factory(arena);
 
-rtp::FormatMap format_map(arena, true);
+rtp::FormatMap format_map(arena);
 rtp::Parser rtp_parser(format_map, NULL);
 
 Parser<RS8M_PayloadID, Source, Footer> rs8m_source_parser(&rtp_parser);

@@ -24,11 +24,11 @@ namespace {
 enum { MaxBufSize = 1000 };
 
 core::HeapArena arena;
-core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, MaxBufSize, true);
-core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize, true);
-packet::PacketFactory packet_factory(arena, true);
+core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, MaxBufSize);
+core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize);
+packet::PacketFactory packet_factory(arena);
 
-rtp::FormatMap format_map(arena, true);
+rtp::FormatMap format_map(arena);
 
 class TaskIssuer : public IPipelineTaskCompleter {
 public:

@@ -51,11 +51,11 @@ enum {
 };
 
 core::HeapArena arena;
-core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, MaxBufSize, true);
-core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize, true);
-packet::PacketFactory packet_factory(arena, true);
+core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, MaxBufSize);
+core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize);
+packet::PacketFactory packet_factory(arena);
 
-rtp::FormatMap format_map(arena, true);
+rtp::FormatMap format_map(arena);
 rtp::Composer rtp_composer(NULL);
 
 ReceiverSlot* create_slot(ReceiverSource& source) {
@@ -93,7 +93,6 @@ TEST_GROUP(receiver_source) {
         config.common.output_sample_spec = output_sample_spec;
 
         config.common.enable_timing = false;
-        config.common.enable_poisoning = true;
         config.common.enable_profiling = true;
 
         config.default_session.latency_monitor.fe_enable = false;

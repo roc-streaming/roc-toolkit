@@ -95,8 +95,8 @@ struct PacketTest {
 };
 
 core::HeapArena arena;
-core::BufferFactory<uint8_t> buffer_factory(arena, 1000, true);
-packet::PacketFactory packet_factory(arena, true);
+core::BufferFactory<uint8_t> buffer_factory(arena, 1000);
+packet::PacketFactory packet_factory(arena);
 
 void fill_packet(packet::Packet& packet, bool is_rtp) {
     if (is_rtp) {
@@ -239,7 +239,7 @@ TEST(composer_parser, rtp_ldpc_source) {
     rtp::Composer rtp_composer(NULL);
     Composer<LDPC_Source_PayloadID, Source, Footer> ldpc_composer(&rtp_composer);
 
-    rtp::FormatMap rtp_format_map(arena, true);
+    rtp::FormatMap rtp_format_map(arena);
     rtp::Parser rtp_parser(rtp_format_map, NULL);
     Parser<LDPC_Source_PayloadID, Source, Footer> ldpc_parser(&rtp_parser);
 
@@ -275,7 +275,7 @@ TEST(composer_parser, rtp_rs8m_source) {
     rtp::Composer rtp_composer(NULL);
     Composer<RS8M_PayloadID, Source, Footer> rs8m_composer(&rtp_composer);
 
-    rtp::FormatMap rtp_format_map(arena, true);
+    rtp::FormatMap rtp_format_map(arena);
     rtp::Parser rtp_parser(rtp_format_map, NULL);
     Parser<RS8M_PayloadID, Source, Footer> rs8m_parser(&rtp_parser);
 

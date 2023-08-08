@@ -32,8 +32,8 @@ enum { MaxBufSize = test::PacketInfo::MaxData };
 enum { CanParse = (1 << 0), CanCompose = (1 << 1) };
 
 core::HeapArena arena;
-core::BufferFactory<uint8_t> buffer_factory(arena, MaxBufSize, true);
-packet::PacketFactory packet_factory(arena, true);
+core::BufferFactory<uint8_t> buffer_factory(arena, MaxBufSize);
+packet::PacketFactory packet_factory(arena);
 
 core::Slice<uint8_t> new_buffer(const uint8_t* data, size_t datasz) {
     core::Slice<uint8_t> buf = buffer_factory.new_buffer();
@@ -158,7 +158,7 @@ void encode_samples(audio::IFrameEncoder& encoder,
 }
 
 void check_parse_decode(const test::PacketInfo& pi) {
-    FormatMap format_map(arena, true);
+    FormatMap format_map(arena);
 
     core::Slice<uint8_t> buffer = new_buffer(pi.raw_data, pi.packet_size);
     CHECK(buffer);
@@ -186,7 +186,7 @@ void check_parse_decode(const test::PacketInfo& pi) {
 }
 
 void check_compose_encode(const test::PacketInfo& pi) {
-    FormatMap format_map(arena, true);
+    FormatMap format_map(arena);
 
     core::Slice<uint8_t> buffer = new_buffer(NULL, 0);
     CHECK(buffer);

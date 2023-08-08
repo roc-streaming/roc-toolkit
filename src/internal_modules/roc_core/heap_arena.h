@@ -12,6 +12,7 @@
 #ifndef ROC_CORE_HEAP_ARENA_H_
 #define ROC_CORE_HEAP_ARENA_H_
 
+#include "roc_core/align_ops.h"
 #include "roc_core/atomic.h"
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
@@ -21,7 +22,10 @@ namespace core {
 
 //! Heap arena implementation.
 //!
-//! Uses global operator new[] and operator delete[].
+//! Uses malloc() and free().
+//!
+//! Supports memory "poisoning" to make memory-related bugs (out of bound writes, use
+//! after free, etc) more noticeable.
 //!
 //! The memory is always maximum aligned. Thread-safe.
 class HeapArena : public IArena, public NonCopyable<> {
@@ -42,6 +46,11 @@ public:
     virtual void deallocate(void*);
 
 private:
+    struct Chunk {
+        size_t size;
+        AlignMax data[];
+    };
+
     static int enable_leak_detection_;
 
     Atomic<int> num_allocations_;

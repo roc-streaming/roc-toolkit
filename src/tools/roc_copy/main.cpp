@@ -91,8 +91,7 @@ int main(int argc, char** argv) {
     core::BufferFactory<audio::sample_t> buffer_factory(
         arena,
         transcoder_config.input_sample_spec.ns_2_samples_overall(
-            source_config.frame_length),
-        args.poisoning_flag);
+            source_config.frame_length));
 
     address::IoUri input_uri(arena);
     if (args.input_given) {
@@ -163,7 +162,6 @@ int main(int argc, char** argv) {
         break;
     }
 
-    transcoder_config.enable_poisoning = args.poisoning_flag;
     transcoder_config.enable_profiling = args.profiling_flag;
 
     audio::IFrameWriter* output_writer = NULL;

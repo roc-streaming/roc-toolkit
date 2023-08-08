@@ -23,7 +23,7 @@ core::HeapArena arena;
 TEST_GROUP(format_map) {};
 
 TEST(format_map, find_by_pt) {
-    FormatMap fmt_map(arena, true);
+    FormatMap fmt_map(arena);
 
     {
         const Format* fmt = fmt_map.find_by_pt(99);
@@ -72,7 +72,7 @@ TEST(format_map, find_by_pt) {
 }
 
 TEST(format_map, find_by_spec) {
-    FormatMap fmt_map(arena, true);
+    FormatMap fmt_map(arena);
 
     {
         const Format* fmt = fmt_map.find_by_spec(audio::SampleSpec(
@@ -101,7 +101,7 @@ TEST(format_map, find_by_spec) {
 }
 
 TEST(format_map, add_format) {
-    FormatMap fmt_map(arena, true);
+    FormatMap fmt_map(arena);
 
     {
         Format fmt;

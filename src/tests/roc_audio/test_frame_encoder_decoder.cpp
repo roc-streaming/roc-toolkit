@@ -40,7 +40,7 @@ enum { SampleRate = 44100, MaxChans = 8, MaxBufSize = 2000 };
 const double Epsilon = 0.00001;
 
 core::HeapArena arena;
-core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize, true);
+core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize);
 
 sample_t nth_sample(uint8_t n) {
     return sample_t(n) / sample_t(1 << 8);

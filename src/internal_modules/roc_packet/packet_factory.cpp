@@ -12,8 +12,8 @@
 namespace roc {
 namespace packet {
 
-PacketFactory::PacketFactory(core::IArena& arena, bool poison)
-    : pool_(arena, poison) {
+PacketFactory::PacketFactory(core::IArena& arena)
+    : pool_(arena) {
 }
 
 core::SharedPtr<Packet> PacketFactory::new_packet() {

@@ -16,7 +16,6 @@
 #include "roc_audio/iframe_encoder.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/packetizer.h"
-#include "roc_audio/poison_writer.h"
 #include "roc_audio/profiling_writer.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/iarena.h"
@@ -115,7 +114,6 @@ private:
 
     core::List<SenderSlot> slots_;
 
-    core::Optional<audio::PoisonWriter> pipeline_poisoner_;
     core::Optional<audio::ProfilingWriter> profiler_;
 
     audio::IFrameWriter* audio_writer_;

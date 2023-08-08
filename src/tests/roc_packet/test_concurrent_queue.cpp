@@ -18,7 +18,7 @@ namespace packet {
 namespace {
 
 core::HeapArena arena;
-PacketFactory packet_factory(arena, true);
+PacketFactory packet_factory(arena);
 
 PacketPtr new_packet() {
     PacketPtr packet = packet_factory.new_packet();

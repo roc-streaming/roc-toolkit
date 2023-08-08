@@ -121,15 +121,6 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
     }
 
     if (format->sample_spec.sample_rate() != config_.input_sample_spec.sample_rate()) {
-        if (config_.enable_poisoning) {
-            resampler_poisoner_.reset(new (resampler_poisoner_)
-                                          audio::PoisonWriter(*awriter));
-            if (!resampler_poisoner_) {
-                return false;
-            }
-            awriter = resampler_poisoner_.get();
-        }
-
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
                              config_.resampler_backend, arena_, sample_buffer_factory_,
                              config_.resampler_profile, config_.input_sample_spec,

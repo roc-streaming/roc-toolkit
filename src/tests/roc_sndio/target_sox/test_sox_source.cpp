@@ -37,7 +37,7 @@ const core::nanoseconds_t FrameDuration = FrameSize * core::Second
     / core::nanoseconds_t(SampleSpecs.sample_rate() * SampleSpecs.num_channels());
 
 core::HeapArena arena;
-core::BufferFactory<audio::sample_t> buffer_factory(arena, MaxBufSize, true);
+core::BufferFactory<audio::sample_t> buffer_factory(arena, MaxBufSize);
 
 } // namespace
 

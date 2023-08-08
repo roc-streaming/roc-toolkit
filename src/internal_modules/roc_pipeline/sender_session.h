@@ -16,7 +16,6 @@
 #include "roc_audio/iframe_encoder.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/packetizer.h"
-#include "roc_audio/poison_writer.h"
 #include "roc_audio/resampler_map.h"
 #include "roc_audio/resampler_writer.h"
 #include "roc_core/buffer_factory.h"
@@ -101,7 +100,6 @@ private:
 
     core::Optional<audio::ChannelMapperWriter> channel_mapper_writer_;
 
-    core::Optional<audio::PoisonWriter> resampler_poisoner_;
     core::Optional<audio::ResamplerWriter> resampler_writer_;
     core::ScopedPtr<audio::IResampler> resampler_;
 
