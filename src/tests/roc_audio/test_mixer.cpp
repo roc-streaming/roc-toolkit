@@ -12,7 +12,7 @@
 
 #include "roc_audio/mixer.h"
 #include "roc_core/buffer_factory.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
@@ -22,9 +22,9 @@ namespace {
 
 enum { BufSz = 100, SampleRate = 44100, ChannelMask = 0x1, MaxBufSz = 500 };
 
-core::HeapAllocator allocator;
-core::BufferFactory<sample_t> buffer_factory(allocator, MaxBufSz, true);
-core::BufferFactory<sample_t> large_buffer_factory(allocator, MaxBufSz * 10, true);
+core::HeapArena arena;
+core::BufferFactory<sample_t> buffer_factory(arena, MaxBufSz, true);
+core::BufferFactory<sample_t> large_buffer_factory(arena, MaxBufSz * 10, true);
 
 core::Slice<sample_t> new_buffer(size_t sz) {
     core::Slice<sample_t> buf = large_buffer_factory.new_buffer();

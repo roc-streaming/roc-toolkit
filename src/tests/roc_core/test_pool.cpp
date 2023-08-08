@@ -8,7 +8,7 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/pool.h"
 
@@ -17,15 +17,15 @@ namespace core {
 
 namespace {
 
-struct TestAllocator : public HeapAllocator {
+struct TestArena : public HeapArena {
     size_t cumulative_allocated_bytes;
 
-    TestAllocator()
+    TestArena()
         : cumulative_allocated_bytes(0) {
     }
 
     virtual void* allocate(size_t size) {
-        void* ptr = HeapAllocator::allocate(size);
+        void* ptr = HeapArena::allocate(size);
         if (ptr) {
             cumulative_allocated_bytes += size;
         }
@@ -43,43 +43,43 @@ struct TestObject {
 TEST_GROUP(pool) {};
 
 TEST(pool, object_size) {
-    TestAllocator allocator;
-    Pool<TestObject> pool(allocator, true);
+    TestArena arena;
+    Pool<TestObject> pool(arena, true);
 
     LONGS_EQUAL(sizeof(TestObject), pool.object_size());
 }
 
 TEST(pool, allocate_deallocate) {
-    TestAllocator allocator;
+    TestArena arena;
 
     {
-        Pool<TestObject> pool(allocator, true);
+        Pool<TestObject> pool(arena, true);
 
-        LONGS_EQUAL(0, allocator.num_allocations());
+        LONGS_EQUAL(0, arena.num_allocations());
 
         void* memory = pool.allocate();
         CHECK(memory);
 
-        LONGS_EQUAL(1, allocator.num_allocations());
+        LONGS_EQUAL(1, arena.num_allocations());
 
         pool.deallocate(memory);
 
-        LONGS_EQUAL(1, allocator.num_allocations());
+        LONGS_EQUAL(1, arena.num_allocations());
     }
 
-    LONGS_EQUAL(0, allocator.num_allocations());
+    LONGS_EQUAL(0, arena.num_allocations());
 }
 
 TEST(pool, allocate_deallocate_many) {
-    TestAllocator allocator;
+    TestArena arena;
 
     {
-        Pool<TestObject> pool(allocator, true);
+        Pool<TestObject> pool(arena, true);
 
         for (int i = 0; i < 10; i++) {
             void* pointers[1 + 2 + 4] = {};
 
-            LONGS_EQUAL(i == 0 ? 0 : 3, allocator.num_allocations());
+            LONGS_EQUAL(i == 0 ? 0 : 3, arena.num_allocations());
 
             size_t n_pointers = 0;
 
@@ -88,118 +88,118 @@ TEST(pool, allocate_deallocate_many) {
                 CHECK(pointers[n_pointers]);
             }
 
-            LONGS_EQUAL(i == 0 ? 1 : 3, allocator.num_allocations());
+            LONGS_EQUAL(i == 0 ? 1 : 3, arena.num_allocations());
 
             for (; n_pointers < 1 + 2; n_pointers++) {
                 pointers[n_pointers] = pool.allocate();
                 CHECK(pointers[n_pointers]);
             }
 
-            LONGS_EQUAL(i == 0 ? 2 : 3, allocator.num_allocations());
+            LONGS_EQUAL(i == 0 ? 2 : 3, arena.num_allocations());
 
             for (; n_pointers < 1 + 2 + 4; n_pointers++) {
                 pointers[n_pointers] = pool.allocate();
             }
 
-            LONGS_EQUAL(3, allocator.num_allocations());
+            LONGS_EQUAL(3, arena.num_allocations());
 
             for (size_t n = 0; n < n_pointers; n++) {
                 pool.deallocate(pointers[n]);
             }
 
-            LONGS_EQUAL(3, allocator.num_allocations());
+            LONGS_EQUAL(3, arena.num_allocations());
         }
     }
 
-    LONGS_EQUAL(0, allocator.num_allocations());
+    LONGS_EQUAL(0, arena.num_allocations());
 }
 
 TEST(pool, reserve) {
-    TestAllocator allocator;
+    TestArena arena;
 
     {
-        Pool<TestObject> pool(allocator, true);
+        Pool<TestObject> pool(arena, true);
 
-        LONGS_EQUAL(0, allocator.num_allocations());
+        LONGS_EQUAL(0, arena.num_allocations());
 
         CHECK(pool.reserve(1));
 
-        LONGS_EQUAL(1, allocator.num_allocations());
+        LONGS_EQUAL(1, arena.num_allocations());
 
         void* memory = pool.allocate();
         CHECK(memory);
 
-        LONGS_EQUAL(1, allocator.num_allocations());
+        LONGS_EQUAL(1, arena.num_allocations());
 
         pool.deallocate(memory);
 
-        LONGS_EQUAL(1, allocator.num_allocations());
+        LONGS_EQUAL(1, arena.num_allocations());
     }
 
-    LONGS_EQUAL(0, allocator.num_allocations());
+    LONGS_EQUAL(0, arena.num_allocations());
 }
 
 TEST(pool, reserve_many) {
-    TestAllocator allocator;
+    TestArena arena;
 
     {
-        Pool<TestObject> pool(allocator, true);
+        Pool<TestObject> pool(arena, true);
 
         for (int i = 0; i < 10; i++) {
             void* pointers[1 + 2 + 4] = {};
 
-            LONGS_EQUAL(i == 0 ? 0 : 3, allocator.num_allocations());
+            LONGS_EQUAL(i == 0 ? 0 : 3, arena.num_allocations());
 
             size_t n_pointers = 0;
 
             CHECK(pool.reserve(1));
 
-            LONGS_EQUAL(i == 0 ? 1 : 3, allocator.num_allocations());
+            LONGS_EQUAL(i == 0 ? 1 : 3, arena.num_allocations());
 
             for (; n_pointers < 1; n_pointers++) {
                 pointers[n_pointers] = pool.allocate();
                 CHECK(pointers[n_pointers]);
             }
 
-            LONGS_EQUAL(i == 0 ? 1 : 3, allocator.num_allocations());
+            LONGS_EQUAL(i == 0 ? 1 : 3, arena.num_allocations());
 
             CHECK(pool.reserve(2));
 
-            LONGS_EQUAL(i == 0 ? 2 : 3, allocator.num_allocations());
+            LONGS_EQUAL(i == 0 ? 2 : 3, arena.num_allocations());
 
             for (; n_pointers < 1 + 2; n_pointers++) {
                 pointers[n_pointers] = pool.allocate();
                 CHECK(pointers[n_pointers]);
             }
 
-            LONGS_EQUAL(i == 0 ? 2 : 3, allocator.num_allocations());
+            LONGS_EQUAL(i == 0 ? 2 : 3, arena.num_allocations());
 
             CHECK(pool.reserve(4));
 
-            LONGS_EQUAL(3, allocator.num_allocations());
+            LONGS_EQUAL(3, arena.num_allocations());
 
             for (; n_pointers < 1 + 2 + 4; n_pointers++) {
                 pointers[n_pointers] = pool.allocate();
             }
 
-            LONGS_EQUAL(3, allocator.num_allocations());
+            LONGS_EQUAL(3, arena.num_allocations());
 
             for (size_t n = 0; n < n_pointers; n++) {
                 pool.deallocate(pointers[n]);
             }
 
-            LONGS_EQUAL(3, allocator.num_allocations());
+            LONGS_EQUAL(3, arena.num_allocations());
         }
     }
 
-    LONGS_EQUAL(0, allocator.num_allocations());
+    LONGS_EQUAL(0, arena.num_allocations());
 }
 
 TEST(pool, min_size_allocate) {
     // min_size=0
     {
-        TestAllocator allocator;
-        Pool<TestObject> pool(allocator, true,
+        TestArena arena;
+        Pool<TestObject> pool(arena, true,
                               sizeof(TestObject), // object_size
                               0,                  // min_size
                               0                   // max_size
@@ -209,15 +209,15 @@ TEST(pool, min_size_allocate) {
         CHECK(mem);
         pool.deallocate(mem);
 
-        LONGS_EQUAL(1, allocator.num_allocations());
+        LONGS_EQUAL(1, arena.num_allocations());
 
-        CHECK(allocator.cumulative_allocated_bytes > sizeof(TestObject));
-        CHECK(allocator.cumulative_allocated_bytes < sizeof(TestObject) * 2);
+        CHECK(arena.cumulative_allocated_bytes > sizeof(TestObject));
+        CHECK(arena.cumulative_allocated_bytes < sizeof(TestObject) * 2);
     }
     // min_size=sizeof(TestObject)
     {
-        TestAllocator allocator;
-        Pool<TestObject> pool(allocator, true,
+        TestArena arena;
+        Pool<TestObject> pool(arena, true,
                               sizeof(TestObject), // object_size
                               sizeof(TestObject), // min_size
                               0                   // max_size
@@ -227,15 +227,15 @@ TEST(pool, min_size_allocate) {
         CHECK(mem);
         pool.deallocate(mem);
 
-        LONGS_EQUAL(1, allocator.num_allocations());
+        LONGS_EQUAL(1, arena.num_allocations());
 
-        CHECK(allocator.cumulative_allocated_bytes > sizeof(TestObject));
-        CHECK(allocator.cumulative_allocated_bytes < sizeof(TestObject) * 2);
+        CHECK(arena.cumulative_allocated_bytes > sizeof(TestObject));
+        CHECK(arena.cumulative_allocated_bytes < sizeof(TestObject) * 2);
     }
     // min_size=sizeof(TestObject)*2
     {
-        TestAllocator allocator;
-        Pool<TestObject> pool(allocator, true,
+        TestArena arena;
+        Pool<TestObject> pool(arena, true,
                               sizeof(TestObject),     // object_size
                               sizeof(TestObject) * 2, // min_size
                               0                       // max_size
@@ -245,18 +245,18 @@ TEST(pool, min_size_allocate) {
         CHECK(mem);
         pool.deallocate(mem);
 
-        LONGS_EQUAL(1, allocator.num_allocations());
+        LONGS_EQUAL(1, arena.num_allocations());
 
-        CHECK(allocator.cumulative_allocated_bytes > sizeof(TestObject) * 2);
-        CHECK(allocator.cumulative_allocated_bytes < sizeof(TestObject) * 3);
+        CHECK(arena.cumulative_allocated_bytes > sizeof(TestObject) * 2);
+        CHECK(arena.cumulative_allocated_bytes < sizeof(TestObject) * 3);
     }
 }
 
 TEST(pool, min_size_reserve) {
     // min_size=0
     {
-        TestAllocator allocator;
-        Pool<TestObject> pool(allocator, true,
+        TestArena arena;
+        Pool<TestObject> pool(arena, true,
                               sizeof(TestObject), // object_size
                               0,                  // min_size
                               0                   // max_size
@@ -264,15 +264,15 @@ TEST(pool, min_size_reserve) {
 
         CHECK(pool.reserve(1));
 
-        LONGS_EQUAL(1, allocator.num_allocations());
+        LONGS_EQUAL(1, arena.num_allocations());
 
-        CHECK(allocator.cumulative_allocated_bytes > sizeof(TestObject));
-        CHECK(allocator.cumulative_allocated_bytes < sizeof(TestObject) * 2);
+        CHECK(arena.cumulative_allocated_bytes > sizeof(TestObject));
+        CHECK(arena.cumulative_allocated_bytes < sizeof(TestObject) * 2);
     }
     // min_size=sizeof(TestObject)
     {
-        TestAllocator allocator;
-        Pool<TestObject> pool(allocator, true,
+        TestArena arena;
+        Pool<TestObject> pool(arena, true,
                               sizeof(TestObject), // object_size
                               sizeof(TestObject), // min_size
                               0                   // max_size
@@ -280,15 +280,15 @@ TEST(pool, min_size_reserve) {
 
         CHECK(pool.reserve(1));
 
-        LONGS_EQUAL(1, allocator.num_allocations());
+        LONGS_EQUAL(1, arena.num_allocations());
 
-        CHECK(allocator.cumulative_allocated_bytes > sizeof(TestObject));
-        CHECK(allocator.cumulative_allocated_bytes < sizeof(TestObject) * 2);
+        CHECK(arena.cumulative_allocated_bytes > sizeof(TestObject));
+        CHECK(arena.cumulative_allocated_bytes < sizeof(TestObject) * 2);
     }
     // min_size=sizeof(TestObject)*2
     {
-        TestAllocator allocator;
-        Pool<TestObject> pool(allocator, true,
+        TestArena arena;
+        Pool<TestObject> pool(arena, true,
                               sizeof(TestObject),     // object_size
                               sizeof(TestObject) * 2, // min_size
                               0                       // max_size
@@ -296,18 +296,18 @@ TEST(pool, min_size_reserve) {
 
         CHECK(pool.reserve(1));
 
-        LONGS_EQUAL(1, allocator.num_allocations());
+        LONGS_EQUAL(1, arena.num_allocations());
 
-        CHECK(allocator.cumulative_allocated_bytes > sizeof(TestObject) * 2);
-        CHECK(allocator.cumulative_allocated_bytes < sizeof(TestObject) * 3);
+        CHECK(arena.cumulative_allocated_bytes > sizeof(TestObject) * 2);
+        CHECK(arena.cumulative_allocated_bytes < sizeof(TestObject) * 3);
     }
 }
 
 TEST(pool, max_size_allocate) {
     // max_size=0
     {
-        TestAllocator allocator;
-        Pool<TestObject> pool(allocator, true,
+        TestArena arena;
+        Pool<TestObject> pool(arena, true,
                               sizeof(TestObject), // object_size
                               0,                  // min_size
                               0                   // max_size
@@ -326,12 +326,12 @@ TEST(pool, max_size_allocate) {
             }
         }
 
-        LONGS_EQUAL(4, allocator.num_allocations());
+        LONGS_EQUAL(4, arena.num_allocations());
     }
     // max_size=sizeof(TestObject)*100
     {
-        TestAllocator allocator;
-        Pool<TestObject> pool(allocator, true,
+        TestArena arena;
+        Pool<TestObject> pool(arena, true,
                               sizeof(TestObject),      // object_size
                               0,                       // min_size
                               sizeof(TestObject) * 100 // max_size
@@ -350,12 +350,12 @@ TEST(pool, max_size_allocate) {
             }
         }
 
-        LONGS_EQUAL(4, allocator.num_allocations());
+        LONGS_EQUAL(4, arena.num_allocations());
     }
     // max_size=sizeof(TestObject)*2
     {
-        TestAllocator allocator;
-        Pool<TestObject> pool(allocator, true,
+        TestArena arena;
+        Pool<TestObject> pool(arena, true,
                               sizeof(TestObject),    // object_size
                               0,                     // min_size
                               sizeof(TestObject) * 2 // max_size
@@ -374,15 +374,15 @@ TEST(pool, max_size_allocate) {
             }
         }
 
-        LONGS_EQUAL(10, allocator.num_allocations());
+        LONGS_EQUAL(10, arena.num_allocations());
     }
 }
 
 TEST(pool, max_size_reserve) {
     // max_size=0
     {
-        TestAllocator allocator;
-        Pool<TestObject> pool(allocator, true,
+        TestArena arena;
+        Pool<TestObject> pool(arena, true,
                               sizeof(TestObject), // object_size
                               0,                  // min_size
                               0                   // max_size
@@ -390,12 +390,12 @@ TEST(pool, max_size_reserve) {
 
         CHECK(pool.reserve(10));
 
-        LONGS_EQUAL(1, allocator.num_allocations());
+        LONGS_EQUAL(1, arena.num_allocations());
     }
     // max_size=sizeof(TestObject)*100
     {
-        TestAllocator allocator;
-        Pool<TestObject> pool(allocator, true,
+        TestArena arena;
+        Pool<TestObject> pool(arena, true,
                               sizeof(TestObject),      // object_size
                               0,                       // min_size
                               sizeof(TestObject) * 100 // max_size
@@ -403,12 +403,12 @@ TEST(pool, max_size_reserve) {
 
         CHECK(pool.reserve(10));
 
-        LONGS_EQUAL(1, allocator.num_allocations());
+        LONGS_EQUAL(1, arena.num_allocations());
     }
     // max_size=sizeof(TestObject)*2
     {
-        TestAllocator allocator;
-        Pool<TestObject> pool(allocator, true,
+        TestArena arena;
+        Pool<TestObject> pool(arena, true,
                               sizeof(TestObject),    // object_size
                               0,                     // min_size
                               sizeof(TestObject) * 2 // max_size
@@ -416,17 +416,17 @@ TEST(pool, max_size_reserve) {
 
         CHECK(pool.reserve(10));
 
-        LONGS_EQUAL(10, allocator.num_allocations());
+        LONGS_EQUAL(10, arena.num_allocations());
     }
 }
 
 TEST(pool, embedded_capacity) {
-    TestAllocator allocator;
+    TestArena arena;
 
     {
-        Pool<TestObject, 5> pool(allocator, true);
+        Pool<TestObject, 5> pool(arena, true);
 
-        LONGS_EQUAL(0, allocator.num_allocations());
+        LONGS_EQUAL(0, arena.num_allocations());
 
         void* pointers[10] = {};
 
@@ -435,31 +435,31 @@ TEST(pool, embedded_capacity) {
             CHECK(pointers[n]);
         }
 
-        LONGS_EQUAL(0, allocator.num_allocations());
+        LONGS_EQUAL(0, arena.num_allocations());
 
         for (int n = 5; n < 10; n++) {
             pointers[n] = pool.allocate();
             CHECK(pointers[n]);
         }
 
-        LONGS_EQUAL(1, allocator.num_allocations());
+        LONGS_EQUAL(1, arena.num_allocations());
 
         for (int n = 0; n < 10; n++) {
             pool.deallocate(pointers[n]);
         }
     }
 
-    LONGS_EQUAL(0, allocator.num_allocations());
+    LONGS_EQUAL(0, arena.num_allocations());
 }
 
 TEST(pool, embedded_capacity_reuse) {
-    TestAllocator allocator;
+    TestArena arena;
 
     {
-        Pool<TestObject, 5> pool(allocator, true);
+        Pool<TestObject, 5> pool(arena, true);
 
         for (int i = 0; i < 10; i++) {
-            LONGS_EQUAL(0, allocator.num_allocations());
+            LONGS_EQUAL(0, arena.num_allocations());
 
             void* pointers[5] = {};
 
@@ -468,7 +468,7 @@ TEST(pool, embedded_capacity_reuse) {
                 CHECK(pointers[n]);
             }
 
-            LONGS_EQUAL(0, allocator.num_allocations());
+            LONGS_EQUAL(0, arena.num_allocations());
 
             for (int n = 0; n < 5; n++) {
                 pool.deallocate(pointers[n]);
@@ -476,7 +476,7 @@ TEST(pool, embedded_capacity_reuse) {
         }
     }
 
-    LONGS_EQUAL(0, allocator.num_allocations());
+    LONGS_EQUAL(0, arena.num_allocations());
 }
 
 } // namespace core

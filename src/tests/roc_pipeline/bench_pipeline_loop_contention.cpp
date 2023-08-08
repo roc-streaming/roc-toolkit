@@ -9,7 +9,7 @@
 #include <benchmark/benchmark.h>
 
 #include "roc_core/fast_random.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_ctl/control_task_executor.h"
 #include "roc_ctl/control_task_queue.h"
 #include "roc_pipeline/pipeline_loop.h"
@@ -36,7 +36,7 @@ enum {
     BatchSize = 10000
 };
 
-core::HeapAllocator allocator;
+core::HeapArena arena;
 
 class NoopPipeline : public PipelineLoop,
                      private IPipelineTaskScheduler,

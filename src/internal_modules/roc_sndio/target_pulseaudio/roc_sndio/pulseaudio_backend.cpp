@@ -38,7 +38,7 @@ IDevice* PulseaudioBackend::open_device(DeviceType device_type,
                                         const char* driver,
                                         const char* path,
                                         const Config& config,
-                                        core::IAllocator& allocator) {
+                                        core::IArena& arena) {
     if (driver_type != DriverType_Device) {
         return NULL;
     }
@@ -49,8 +49,7 @@ IDevice* PulseaudioBackend::open_device(DeviceType device_type,
 
     switch (device_type) {
     case DeviceType_Sink: {
-        core::ScopedPtr<PulseaudioSink> sink(new (allocator) PulseaudioSink(config),
-                                             allocator);
+        core::ScopedPtr<PulseaudioSink> sink(new (arena) PulseaudioSink(config), arena);
         if (!sink) {
             roc_log(LogDebug, "pulseaudio backend: can't construct sink: path=%s", path);
             return NULL;
@@ -65,8 +64,8 @@ IDevice* PulseaudioBackend::open_device(DeviceType device_type,
     } break;
 
     case DeviceType_Source: {
-        core::ScopedPtr<PulseaudioSource> source(new (allocator) PulseaudioSource(config),
-                                                 allocator);
+        core::ScopedPtr<PulseaudioSource> source(new (arena) PulseaudioSource(config),
+                                                 arena);
         if (!source) {
             roc_log(LogDebug, "pulseaudio backend: can't construct source: path=%s",
                     path);

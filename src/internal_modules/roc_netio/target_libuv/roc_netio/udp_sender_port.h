@@ -16,7 +16,7 @@
 
 #include "roc_address/socket_addr.h"
 #include "roc_core/atomic.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/mpsc_queue.h"
 #include "roc_core/rate_limiter.h"
 #include "roc_netio/basic_port.h"
@@ -60,7 +60,7 @@ public:
     //! Initialize.
     UdpSenderPort(const UdpSenderConfig& config,
                   uv_loop_t& event_loop,
-                  core::IAllocator& allocator);
+                  core::IArena& arena);
 
     //! Destroy.
     ~UdpSenderPort();

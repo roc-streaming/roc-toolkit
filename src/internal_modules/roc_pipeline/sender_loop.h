@@ -13,7 +13,7 @@
 #define ROC_PIPELINE_SENDER_LOOP_H_
 
 #include "roc_core/buffer_factory.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/mutex.h"
 #include "roc_core/ticker.h"
 #include "roc_pipeline/config.h"
@@ -132,7 +132,7 @@ public:
                packet::PacketFactory& packet_factory,
                core::BufferFactory<uint8_t>& byte_buffer_factory,
                core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-               core::IAllocator& allocator);
+               core::IArena& arena);
 
     //! Check if the pipeline was successfully constructed.
     bool is_valid() const;

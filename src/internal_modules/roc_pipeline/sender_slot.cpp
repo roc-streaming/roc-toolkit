@@ -20,8 +20,8 @@ SenderSlot::SenderSlot(const SenderConfig& config,
                        packet::PacketFactory& packet_factory,
                        core::BufferFactory<uint8_t>& byte_buffer_factory,
                        core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-                       core::IAllocator& allocator)
-    : RefCounted(allocator)
+                       core::IArena& arena)
+    : core::RefCounted<SenderSlot, core::ArenaAllocation>(arena)
     , config_(config)
     , fanout_(fanout)
     , session_(config,
@@ -29,7 +29,7 @@ SenderSlot::SenderSlot(const SenderConfig& config,
                packet_factory,
                byte_buffer_factory,
                sample_buffer_factory,
-               allocator) {
+               arena) {
 }
 
 SenderSlot::~SenderSlot() {
@@ -139,7 +139,7 @@ SenderEndpoint* SenderSlot::create_source_endpoint_(address::Protocol proto) {
         return NULL;
     }
 
-    source_endpoint_.reset(new (source_endpoint_) SenderEndpoint(proto, allocator()));
+    source_endpoint_.reset(new (source_endpoint_) SenderEndpoint(proto, arena()));
     if (!source_endpoint_ || !source_endpoint_->is_valid()) {
         roc_log(LogError, "sender slot: can't create source endpoint");
         source_endpoint_.reset(NULL);
@@ -170,7 +170,7 @@ SenderEndpoint* SenderSlot::create_repair_endpoint_(address::Protocol proto) {
         return NULL;
     }
 
-    repair_endpoint_.reset(new (repair_endpoint_) SenderEndpoint(proto, allocator()));
+    repair_endpoint_.reset(new (repair_endpoint_) SenderEndpoint(proto, arena()));
     if (!repair_endpoint_ || !repair_endpoint_->is_valid()) {
         roc_log(LogError, "sender slot: can't create repair endpoint");
         repair_endpoint_.reset(NULL);
@@ -190,7 +190,7 @@ SenderEndpoint* SenderSlot::create_control_endpoint_(address::Protocol proto) {
         return NULL;
     }
 
-    control_endpoint_.reset(new (control_endpoint_) SenderEndpoint(proto, allocator()));
+    control_endpoint_.reset(new (control_endpoint_) SenderEndpoint(proto, arena()));
     if (!control_endpoint_ || !control_endpoint_->is_valid()) {
         roc_log(LogError, "sender slot: can't create control endpoint");
         control_endpoint_.reset(NULL);

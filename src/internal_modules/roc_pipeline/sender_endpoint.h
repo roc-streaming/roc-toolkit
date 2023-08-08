@@ -12,7 +12,7 @@
 #ifndef ROC_PIPELINE_SENDER_ENDPOINT_H_
 #define ROC_PIPELINE_SENDER_ENDPOINT_H_
 
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
@@ -33,7 +33,7 @@ namespace pipeline {
 class SenderEndpoint : public core::NonCopyable<>, private packet::IWriter {
 public:
     //! Initialize.
-    SenderEndpoint(address::Protocol proto, core::IAllocator& allocator);
+    SenderEndpoint(address::Protocol proto, core::IArena& arena);
 
     //! Check if pipeline was succefully constructed.
     bool is_valid() const;

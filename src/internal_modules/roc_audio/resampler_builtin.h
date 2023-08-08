@@ -32,7 +32,7 @@ namespace audio {
 class BuiltinResampler : public IResampler, public core::NonCopyable<> {
 public:
     //! Initialize.
-    BuiltinResampler(core::IAllocator& allocator,
+    BuiltinResampler(core::IArena& arena,
                      core::BufferFactory<sample_t>& buffer_factory,
                      ResamplerProfile profile,
                      const audio::SampleSpec& in_spec,

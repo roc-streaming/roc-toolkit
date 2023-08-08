@@ -12,18 +12,18 @@
 #include "roc_audio/pcm_decoder.h"
 #include "roc_audio/pcm_encoder.h"
 #include "roc_audio/pcm_format.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_rtp/format_map.h"
 
 namespace roc {
 namespace rtp {
 
-core::HeapAllocator allocator;
+core::HeapArena arena;
 
 TEST_GROUP(format_map) {};
 
 TEST(format_map, find_by_pt) {
-    FormatMap fmt_map(allocator, true);
+    FormatMap fmt_map(arena, true);
 
     {
         const Format* fmt = fmt_map.find_by_pt(99);
@@ -72,7 +72,7 @@ TEST(format_map, find_by_pt) {
 }
 
 TEST(format_map, find_by_spec) {
-    FormatMap fmt_map(allocator, true);
+    FormatMap fmt_map(arena, true);
 
     {
         const Format* fmt = fmt_map.find_by_spec(audio::SampleSpec(
@@ -101,7 +101,7 @@ TEST(format_map, find_by_spec) {
 }
 
 TEST(format_map, add_format) {
-    FormatMap fmt_map(allocator, true);
+    FormatMap fmt_map(arena, true);
 
     {
         Format fmt;

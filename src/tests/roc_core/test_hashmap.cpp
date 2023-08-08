@@ -10,7 +10,7 @@
 
 #include "roc_core/hashmap.h"
 #include "roc_core/hashsum.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_core/ref_counted.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_core/string_builder.h"
@@ -61,7 +61,7 @@ private:
 } // namespace
 
 TEST_GROUP(hashmap) {
-    HeapAllocator allocator;
+    HeapArena arena;
 
     void format_key(char* key, size_t keysz, size_t n) {
         StringBuilder b(key, keysz);
@@ -72,18 +72,18 @@ TEST_GROUP(hashmap) {
 };
 
 TEST(hashmap, empty) {
-    Hashmap<Object> hashmap(allocator);
+    Hashmap<Object> hashmap(arena);
 
     UNSIGNED_LONGS_EQUAL(0, hashmap.size());
     UNSIGNED_LONGS_EQUAL(0, hashmap.capacity());
 
-    UNSIGNED_LONGS_EQUAL(0, allocator.num_allocations());
+    UNSIGNED_LONGS_EQUAL(0, arena.num_allocations());
 }
 
 TEST(hashmap, insert) {
     SharedPtr<Object> obj = new Object("foo");
 
-    Hashmap<Object> hashmap(allocator);
+    Hashmap<Object> hashmap(arena);
     UNSIGNED_LONGS_EQUAL(0, hashmap.size());
 
     CHECK(!hashmap.find("foo"));
@@ -99,7 +99,7 @@ TEST(hashmap, insert) {
 TEST(hashmap, remove) {
     SharedPtr<Object> obj = new Object("foo");
 
-    Hashmap<Object> hashmap(allocator);
+    Hashmap<Object> hashmap(arena);
     UNSIGNED_LONGS_EQUAL(0, hashmap.size());
 
     CHECK(!hashmap.find("foo"));
@@ -120,7 +120,7 @@ TEST(hashmap, remove) {
 TEST(hashmap, insert_remove_many) {
     enum { NumIterations = 10, NumElements = 200 };
 
-    Hashmap<Object> hashmap(allocator);
+    Hashmap<Object> hashmap(arena);
 
     for (size_t i = 0; i < NumIterations; i++) {
         UNSIGNED_LONGS_EQUAL(0, hashmap.size());
@@ -158,11 +158,11 @@ TEST(hashmap, insert_remove_many) {
 TEST(hashmap, grow_rapidly) {
     enum { NumIterations = 5 };
 
-    Hashmap<Object> hashmap(allocator);
+    Hashmap<Object> hashmap(arena);
 
     UNSIGNED_LONGS_EQUAL(0, hashmap.size());
     UNSIGNED_LONGS_EQUAL(0, hashmap.capacity());
-    UNSIGNED_LONGS_EQUAL(0, allocator.num_allocations());
+    UNSIGNED_LONGS_EQUAL(0, arena.num_allocations());
 
     size_t n_elems = 0;
 
@@ -179,9 +179,9 @@ TEST(hashmap, grow_rapidly) {
         CHECK(n_elems < new_cap);
 
         if (i == 0) {
-            UNSIGNED_LONGS_EQUAL(1, allocator.num_allocations());
+            UNSIGNED_LONGS_EQUAL(1, arena.num_allocations());
         } else {
-            UNSIGNED_LONGS_EQUAL(2, allocator.num_allocations());
+            UNSIGNED_LONGS_EQUAL(2, arena.num_allocations());
         }
 
         for (size_t n = old_cap; n < new_cap; n++) {
@@ -199,10 +199,10 @@ TEST(hashmap, grow_rapidly) {
 TEST(hashmap, grow_rapidly_embedding) {
     enum { NumIterations = 5 };
 
-    Hashmap<Object, 50> hashmap(allocator);
+    Hashmap<Object, 50> hashmap(arena);
 
     UNSIGNED_LONGS_EQUAL(0, hashmap.size());
-    UNSIGNED_LONGS_EQUAL(0, allocator.num_allocations());
+    UNSIGNED_LONGS_EQUAL(0, arena.num_allocations());
 
     CHECK(hashmap.capacity() > 0);
 
@@ -222,11 +222,11 @@ TEST(hashmap, grow_rapidly_embedding) {
         UNSIGNED_LONGS_EQUAL(n_elems, hashmap.size());
 
         if (i == 0) {
-            UNSIGNED_LONGS_EQUAL(0, allocator.num_allocations());
+            UNSIGNED_LONGS_EQUAL(0, arena.num_allocations());
         } else if (i == 1) {
-            UNSIGNED_LONGS_EQUAL(1, allocator.num_allocations());
+            UNSIGNED_LONGS_EQUAL(1, arena.num_allocations());
         } else {
-            UNSIGNED_LONGS_EQUAL(2, allocator.num_allocations());
+            UNSIGNED_LONGS_EQUAL(2, arena.num_allocations());
         }
 
         CHECK(hashmap.grow());
@@ -244,7 +244,7 @@ TEST(hashmap, grow_slowly) {
         GrowthRatio = 5 // keep every 5th element
     };
 
-    Hashmap<Object> hashmap(allocator);
+    Hashmap<Object> hashmap(arena);
 
     for (size_t n = 0; n < NumElements; n++) {
         {
@@ -283,7 +283,7 @@ TEST(hashmap, refcounting) {
     UNSIGNED_LONGS_EQUAL(1, obj2->getref());
 
     {
-        Hashmap<Object> hashmap(allocator);
+        Hashmap<Object> hashmap(arena);
 
         CHECK(hashmap.grow());
 
@@ -316,7 +316,7 @@ TEST(hashmap, refcounting) {
 TEST(hashmap, iterate) {
     enum { NumElements = 200 };
 
-    Hashmap<Object> hashmap(allocator);
+    Hashmap<Object> hashmap(arena);
 
     SharedPtr<Object> objects[NumElements];
 
@@ -351,7 +351,7 @@ TEST(hashmap, iterate) {
 TEST(hashmap, iterate_modify) {
     enum { NumElements = 200 };
 
-    Hashmap<Object> hashmap(allocator);
+    Hashmap<Object> hashmap(arena);
 
     SharedPtr<Object> objects[NumElements];
 

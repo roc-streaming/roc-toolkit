@@ -45,7 +45,7 @@ inline int get_quality(ResamplerProfile profile) {
 
 } // namespace
 
-SpeexResampler::SpeexResampler(core::IAllocator&,
+SpeexResampler::SpeexResampler(core::IArena&,
                                core::BufferFactory<sample_t>& buffer_factory,
                                ResamplerProfile profile,
                                const audio::SampleSpec& in_spec,

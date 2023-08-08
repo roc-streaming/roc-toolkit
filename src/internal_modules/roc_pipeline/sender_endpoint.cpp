@@ -15,7 +15,7 @@
 namespace roc {
 namespace pipeline {
 
-SenderEndpoint::SenderEndpoint(address::Protocol proto, core::IAllocator& allocator)
+SenderEndpoint::SenderEndpoint(address::Protocol proto, core::IArena& arena)
     : proto_(proto)
     , dst_writer_(NULL)
     , composer_(NULL) {
@@ -38,10 +38,10 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto, core::IAllocator& alloca
     switch (proto) {
     case address::Proto_RTP_LDPC_Source:
         fec_composer_.reset(
-            new (allocator)
+            new (arena)
                 fec::Composer<fec::LDPC_Source_PayloadID, fec::Source, fec::Footer>(
                     composer),
-            allocator);
+            arena);
         if (!fec_composer_) {
             return;
         }
@@ -49,10 +49,10 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto, core::IAllocator& alloca
         break;
     case address::Proto_LDPC_Repair:
         fec_composer_.reset(
-            new (allocator)
+            new (arena)
                 fec::Composer<fec::LDPC_Repair_PayloadID, fec::Repair, fec::Header>(
                     composer),
-            allocator);
+            arena);
         if (!fec_composer_) {
             return;
         }
@@ -60,9 +60,9 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto, core::IAllocator& alloca
         break;
     case address::Proto_RTP_RS8M_Source:
         fec_composer_.reset(
-            new (allocator)
+            new (arena)
                 fec::Composer<fec::RS8M_PayloadID, fec::Source, fec::Footer>(composer),
-            allocator);
+            arena);
         if (!fec_composer_) {
             return;
         }
@@ -70,9 +70,9 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto, core::IAllocator& alloca
         break;
     case address::Proto_RS8M_Repair:
         fec_composer_.reset(
-            new (allocator)
+            new (arena)
                 fec::Composer<fec::RS8M_PayloadID, fec::Repair, fec::Header>(composer),
-            allocator);
+            arena);
         if (!fec_composer_) {
             return;
         }

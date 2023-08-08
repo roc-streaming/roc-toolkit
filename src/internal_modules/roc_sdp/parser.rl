@@ -9,7 +9,6 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/array.h"
-#include "roc_core/heap_allocator.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_sdp/session_description.h"
 #include "roc_sdp/media_type.h"

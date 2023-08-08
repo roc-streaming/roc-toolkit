@@ -15,7 +15,7 @@
 #include "roc_audio/sample.h"
 #include "roc_core/atomic.h"
 #include "roc_core/buffer_factory.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_ctl/control_loop.h"
 #include "roc_netio/network_loop.h"
 #include "roc_packet/packet_factory.h"
@@ -46,7 +46,7 @@ struct ContextConfig {
 class Context : public core::NonCopyable<> {
 public:
     //! Initialize.
-    explicit Context(const ContextConfig& config, core::IAllocator& allocator);
+    explicit Context(const ContextConfig& config, core::IArena& arena);
 
     //! Deinitialize.
     ~Context();
@@ -63,8 +63,8 @@ public:
     //! Check if context is still in use.
     bool is_used();
 
-    //! Get allocator.
-    core::IAllocator& allocator();
+    //! Get arena.
+    core::IArena& arena();
 
     //! Get packet factory.
     packet::PacketFactory& packet_factory();
@@ -85,7 +85,7 @@ public:
     ctl::ControlLoop& control_loop();
 
 private:
-    core::IAllocator& allocator_;
+    core::IArena& arena_;
 
     packet::PacketFactory packet_factory_;
     core::BufferFactory<uint8_t> byte_buffer_factory_;

@@ -15,9 +15,9 @@
 namespace roc {
 namespace sndio {
 
-SoxSink::SoxSink(core::IAllocator& allocator, const Config& config)
+SoxSink::SoxSink(core::IArena& arena, const Config& config)
     : output_(NULL)
-    , buffer_(allocator)
+    , buffer_(arena)
     , buffer_size_(0)
     , is_file_(false)
     , valid_(false) {

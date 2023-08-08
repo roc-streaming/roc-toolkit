@@ -122,9 +122,7 @@ enum TcpConnectionType {
 class TcpConnectionPort : public BasicPort, public IConn {
 public:
     //! Initialize.
-    TcpConnectionPort(TcpConnectionType type,
-                      uv_loop_t& loop,
-                      core::IAllocator& allocator);
+    TcpConnectionPort(TcpConnectionType type, uv_loop_t& loop, core::IArena& arena);
 
     //! Destroy.
     virtual ~TcpConnectionPort();

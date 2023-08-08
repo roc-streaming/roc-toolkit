@@ -14,7 +14,7 @@
 
 #include "roc_core/array.h"
 #include "roc_core/attributes.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/iwriter.h"
@@ -27,7 +27,7 @@ namespace packet {
 class Router : public IWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
-    Router(core::IAllocator& allocator);
+    Router(core::IArena& arena);
 
     //! Add route.
     //! @remarks

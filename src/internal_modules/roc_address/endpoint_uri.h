@@ -33,7 +33,7 @@ public:
     };
 
     //! Initialize empty URI.
-    explicit EndpointUri(core::IAllocator&);
+    explicit EndpointUri(core::IArena&);
 
     //! Check if URI is equivalent to another URI.
     bool is_equal(const EndpointUri& other) const;

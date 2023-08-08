@@ -20,8 +20,8 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
                                    ReceiverState& receiver_state,
                                    ReceiverSessionGroup& session_group,
                                    const rtp::FormatMap& format_map,
-                                   core::IAllocator& allocator)
-    : RefCounted(allocator)
+                                   core::IArena& arena)
+    : core::RefCounted<ReceiverEndpoint, core::ArenaAllocation>(arena)
     , proto_(proto)
     , receiver_state_(receiver_state)
     , session_group_(session_group)
@@ -45,9 +45,9 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
     switch (proto) {
     case address::Proto_RTP_LDPC_Source:
         fec_parser_.reset(
-            new (allocator)
+            new (arena)
                 fec::Parser<fec::LDPC_Source_PayloadID, fec::Source, fec::Footer>(parser),
-            allocator);
+            arena);
         if (!fec_parser_) {
             return;
         }
@@ -55,9 +55,9 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
         break;
     case address::Proto_LDPC_Repair:
         fec_parser_.reset(
-            new (allocator)
+            new (arena)
                 fec::Parser<fec::LDPC_Repair_PayloadID, fec::Repair, fec::Header>(parser),
-            allocator);
+            arena);
         if (!fec_parser_) {
             return;
         }
@@ -65,9 +65,9 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
         break;
     case address::Proto_RTP_RS8M_Source:
         fec_parser_.reset(
-            new (allocator)
+            new (arena)
                 fec::Parser<fec::RS8M_PayloadID, fec::Source, fec::Footer>(parser),
-            allocator);
+            arena);
         if (!fec_parser_) {
             return;
         }
@@ -75,9 +75,9 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
         break;
     case address::Proto_RS8M_Repair:
         fec_parser_.reset(
-            new (allocator)
+            new (arena)
                 fec::Parser<fec::RS8M_PayloadID, fec::Repair, fec::Header>(parser),
-            allocator);
+            arena);
         if (!fec_parser_) {
             return;
         }

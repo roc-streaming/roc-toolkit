@@ -9,8 +9,8 @@
 //! @file roc_core/use_counted.h
 //! @brief Base class for object with use counter.
 
-#ifndef ROC_CORE_USAGE_COUNTER_H_
-#define ROC_CORE_USAGE_COUNTER_H_
+#ifndef ROC_CORE_USE_COUNTED_H_
+#define ROC_CORE_USE_COUNTED_H_
 
 #include "roc_core/atomic.h"
 #include "roc_core/noncopyable.h"
@@ -81,4 +81,4 @@ private:
 } // namespace core
 } // namespace roc
 
-#endif // ROC_CORE_USAGE_COUNTER_H_
+#endif // ROC_CORE_USE_COUNTED_H_

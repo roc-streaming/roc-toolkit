@@ -12,7 +12,7 @@
 #include "roc_audio/resampler_profile.h"
 #include "roc_core/array.h"
 #include "roc_core/crash_handler.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_core/log.h"
 #include "roc_core/parse_duration.h"
 #include "roc_core/scoped_ptr.h"
@@ -31,7 +31,7 @@
 using namespace roc;
 
 int main(int argc, char** argv) {
-    core::HeapAllocator::enable_panic_on_leak();
+    core::HeapArena::enable_panic_on_leak();
 
     core::CrashHandler crash_handler;
 
@@ -81,9 +81,9 @@ int main(int argc, char** argv) {
         context_config.max_frame_size = (size_t)args.frame_limit_arg;
     }
 
-    core::HeapAllocator heap_allocator;
+    core::HeapArena heap_arena;
 
-    peer::Context context(context_config, heap_allocator);
+    peer::Context context(context_config, heap_arena);
     if (!context.is_valid()) {
         roc_log(LogError, "can't initialize peer context");
         return 1;
@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
 
     sndio::BackendDispatcher backend_dispatcher;
     if (args.list_supported_given) {
-        if (!sndio::print_supported(backend_dispatcher, context.allocator())) {
+        if (!sndio::print_supported(backend_dispatcher, context.arena())) {
             return 1;
         }
         return 0;
@@ -125,7 +125,7 @@ int main(int argc, char** argv) {
                                                  sender_config.input_sample_spec);
 
     if (args.source_given) {
-        address::EndpointUri source_endpoint(context.allocator());
+        address::EndpointUri source_endpoint(context.arena());
         if (!address::parse_endpoint_uri(
                 args.source_arg[0], address::EndpointUri::Subset_Full, source_endpoint)) {
             roc_log(LogError, "can't parse --source endpoint: %s", args.source_arg[0]);
@@ -210,7 +210,7 @@ int main(int argc, char** argv) {
         io_config.sample_spec.set_sample_rate((size_t)args.rate_arg);
     }
 
-    address::IoUri input_uri(context.allocator());
+    address::IoUri input_uri(context.arena());
     if (args.input_given) {
         if (!address::parse_io_uri(args.input_arg, input_uri)) {
             roc_log(LogError, "invalid --input file or device URI");
@@ -235,12 +235,12 @@ int main(int argc, char** argv) {
     if (input_uri.is_valid()) {
         input_source.reset(backend_dispatcher.open_source(input_uri,
                                                           args.input_format_arg,
-                                                          io_config, context.allocator()),
-                           context.allocator());
+                                                          io_config, context.arena()),
+                           context.arena());
     } else {
         input_source.reset(
-            backend_dispatcher.open_default_source(io_config, context.allocator()),
-            context.allocator());
+            backend_dispatcher.open_default_source(io_config, context.arena()),
+            context.arena());
     }
     if (!input_source) {
         roc_log(LogError, "can't open input file or device: uri=%s format=%s",
@@ -280,7 +280,7 @@ int main(int argc, char** argv) {
     }
 
     for (size_t slot = 0; slot < (size_t)args.source_given; slot++) {
-        address::EndpointUri source_endpoint(context.allocator());
+        address::EndpointUri source_endpoint(context.arena());
         if (!address::parse_endpoint_uri(args.source_arg[slot],
                                          address::EndpointUri::Subset_Full,
                                          source_endpoint)) {
@@ -303,7 +303,7 @@ int main(int argc, char** argv) {
     }
 
     for (size_t slot = 0; slot < (size_t)args.repair_given; slot++) {
-        address::EndpointUri repair_endpoint(context.allocator());
+        address::EndpointUri repair_endpoint(context.arena());
         if (!address::parse_endpoint_uri(args.repair_arg[slot],
                                          address::EndpointUri::Subset_Full,
                                          repair_endpoint)) {
@@ -326,7 +326,7 @@ int main(int argc, char** argv) {
     }
 
     for (size_t slot = 0; slot < (size_t)args.control_given; slot++) {
-        address::EndpointUri control_endpoint(context.allocator());
+        address::EndpointUri control_endpoint(context.arena());
         if (!address::parse_endpoint_uri(args.control_arg[slot],
                                          address::EndpointUri::Subset_Full,
                                          control_endpoint)) {

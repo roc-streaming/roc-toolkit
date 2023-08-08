@@ -21,8 +21,8 @@ ReceiverSessionGroup::ReceiverSessionGroup(
     packet::PacketFactory& packet_factory,
     core::BufferFactory<uint8_t>& byte_buffer_factory,
     core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-    core::IAllocator& allocator)
-    : allocator_(allocator)
+    core::IArena& arena)
+    : arena_(arena)
     , packet_factory_(packet_factory)
     , byte_buffer_factory_(byte_buffer_factory)
     , sample_buffer_factory_(sample_buffer_factory)
@@ -177,9 +177,9 @@ void ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
             address::socket_addr_to_str(src_address).c_str(),
             address::socket_addr_to_str(dst_address).c_str());
 
-    core::SharedPtr<ReceiverSession> sess = new (allocator_) ReceiverSession(
+    core::SharedPtr<ReceiverSession> sess = new (arena_) ReceiverSession(
         sess_config, receiver_config_.common, src_address, format_map_, packet_factory_,
-        byte_buffer_factory_, sample_buffer_factory_, allocator_);
+        byte_buffer_factory_, sample_buffer_factory_, arena_);
 
     if (!sess || !sess->is_valid()) {
         roc_log(LogError, "session group: can't create session, initialization failed");

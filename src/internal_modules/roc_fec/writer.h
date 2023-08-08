@@ -14,7 +14,7 @@
 
 #include "roc_core/array.h"
 #include "roc_core/buffer_factory.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
 #include "roc_fec/iblock_encoder.h"
@@ -53,7 +53,7 @@ public:
     //!  - @p repair_composer is used to format repair packets
     //!  - @p packet_factory is used to allocate repair packets
     //!  - @p buffer_factory is used to allocate buffers for repair packets
-    //!  - @p allocator is used to initialize a packet array
+    //!  - @p arena is used to initialize a packet array
     Writer(const WriterConfig& config,
            packet::FecScheme fec_scheme,
            IBlockEncoder& encoder,
@@ -62,7 +62,7 @@ public:
            packet::IComposer& repair_composer,
            packet::PacketFactory& packet_factory,
            core::BufferFactory<uint8_t>& buffer_factory,
-           core::IAllocator& allocator);
+           core::IArena& arena);
 
     //! Check if object is successfully constructed.
     bool is_valid() const;

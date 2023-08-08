@@ -21,7 +21,7 @@ Reader::Reader(const ReaderConfig& config,
                packet::IReader& repair_reader,
                packet::IParser& parser,
                packet::PacketFactory& packet_factory,
-               core::IAllocator& allocator)
+               core::IArena& arena)
     : decoder_(decoder)
     , source_reader_(source_reader)
     , repair_reader_(repair_reader)
@@ -29,8 +29,8 @@ Reader::Reader(const ReaderConfig& config,
     , packet_factory_(packet_factory)
     , source_queue_(0)
     , repair_queue_(0)
-    , source_block_(allocator)
-    , repair_block_(allocator)
+    , source_block_(arena)
+    , repair_block_(arena)
     , valid_(false)
     , alive_(true)
     , started_(false)

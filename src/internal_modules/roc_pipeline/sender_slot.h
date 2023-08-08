@@ -16,7 +16,7 @@
 #include "roc_address/protocol.h"
 #include "roc_audio/fanout.h"
 #include "roc_core/buffer_factory.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
 #include "roc_core/ref_counted.h"
@@ -33,10 +33,8 @@ namespace pipeline {
 //! Contains:
 //!  - one or more related sender endpoints, one per each type
 //!  - one session associated with those endpoints
-class SenderSlot : public core::RefCounted<SenderSlot, core::StandardAllocation>,
+class SenderSlot : public core::RefCounted<SenderSlot, core::ArenaAllocation>,
                    public core::ListNode {
-    typedef core::RefCounted<SenderSlot, core::StandardAllocation> RefCounted;
-
 public:
     //! Initialize.
     SenderSlot(const SenderConfig& config,
@@ -45,7 +43,7 @@ public:
                packet::PacketFactory& packet_factory,
                core::BufferFactory<uint8_t>& byte_buffer_factory,
                core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-               core::IAllocator& allocator);
+               core::IArena& arena);
 
     ~SenderSlot();
 

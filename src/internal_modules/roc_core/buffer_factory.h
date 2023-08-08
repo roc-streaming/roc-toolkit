@@ -29,8 +29,8 @@ public:
     //! Initialization.
     //! @p buffer_size defines number of elements in buffer.
     //! @p poison enables memory poisoning.
-    BufferFactory(IAllocator& allocator, size_t buffer_size, bool poison)
-        : buffer_pool_(allocator, poison, sizeof(Buffer<T>) + sizeof(T) * buffer_size)
+    BufferFactory(IArena& arena, size_t buffer_size, bool poison)
+        : buffer_pool_(arena, poison, sizeof(Buffer<T>) + sizeof(T) * buffer_size)
         , buffer_size_(buffer_size) {
     }
 

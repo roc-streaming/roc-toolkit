@@ -9,7 +9,7 @@
 #include "roc_address/io_uri.h"
 #include "roc_audio/resampler_profile.h"
 #include "roc_core/crash_handler.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_core/log.h"
 #include "roc_core/parse_duration.h"
 #include "roc_core/scoped_ptr.h"
@@ -25,7 +25,7 @@
 using namespace roc;
 
 int main(int argc, char** argv) {
-    core::HeapAllocator::enable_panic_on_leak();
+    core::HeapArena::enable_panic_on_leak();
 
     core::CrashHandler crash_handler;
 
@@ -55,11 +55,11 @@ int main(int argc, char** argv) {
         break;
     }
 
-    core::HeapAllocator allocator;
+    core::HeapArena arena;
     sndio::BackendDispatcher backend_dispatcher;
 
     if (args.list_supported_given) {
-        if (!sndio::print_supported(backend_dispatcher, allocator)) {
+        if (!sndio::print_supported(backend_dispatcher, arena)) {
             return 1;
         }
         return 0;
@@ -89,12 +89,12 @@ int main(int argc, char** argv) {
                                                  transcoder_config.input_sample_spec);
 
     core::BufferFactory<audio::sample_t> buffer_factory(
-        allocator,
+        arena,
         transcoder_config.input_sample_spec.ns_2_samples_overall(
             source_config.frame_length),
         args.poisoning_flag);
 
-    address::IoUri input_uri(allocator);
+    address::IoUri input_uri(arena);
     if (args.input_given) {
         if (!address::parse_io_uri(args.input_arg, input_uri) || !input_uri.is_file()) {
             roc_log(LogError, "invalid --input file URI");
@@ -109,13 +109,12 @@ int main(int argc, char** argv) {
 
     core::ScopedPtr<sndio::ISource> input_source;
     if (input_uri.is_valid()) {
-        input_source.reset(backend_dispatcher.open_source(input_uri,
-                                                          args.input_format_arg,
-                                                          source_config, allocator),
-                           allocator);
+        input_source.reset(backend_dispatcher.open_source(
+                               input_uri, args.input_format_arg, source_config, arena),
+                           arena);
     } else {
-        input_source.reset(
-            backend_dispatcher.open_default_source(source_config, allocator), allocator);
+        input_source.reset(backend_dispatcher.open_default_source(source_config, arena),
+                           arena);
     }
     if (!input_source) {
         roc_log(LogError, "can't open input: %s", args.input_arg);
@@ -173,7 +172,7 @@ int main(int argc, char** argv) {
     sink_config.sample_spec = transcoder_config.output_sample_spec;
     sink_config.frame_length = source_config.frame_length;
 
-    address::IoUri output_uri(allocator);
+    address::IoUri output_uri(arena);
     if (args.output_given) {
         if (!address::parse_io_uri(args.output_arg, output_uri)
             || !output_uri.is_file()) {
@@ -190,13 +189,12 @@ int main(int argc, char** argv) {
     core::ScopedPtr<sndio::ISink> output_sink;
     if (args.output_given) {
         if (output_uri.is_valid()) {
-            output_sink.reset(backend_dispatcher.open_sink(output_uri,
-                                                           args.output_format_arg,
-                                                           sink_config, allocator),
-                              allocator);
+            output_sink.reset(backend_dispatcher.open_sink(
+                                  output_uri, args.output_format_arg, sink_config, arena),
+                              arena);
         } else {
-            output_sink.reset(
-                backend_dispatcher.open_default_sink(sink_config, allocator), allocator);
+            output_sink.reset(backend_dispatcher.open_default_sink(sink_config, arena),
+                              arena);
         }
         if (!output_sink) {
             roc_log(LogError, "can't open output: %s", args.output_arg);
@@ -210,7 +208,7 @@ int main(int argc, char** argv) {
     }
 
     pipeline::TranscoderSink transcoder(transcoder_config, output_writer, buffer_factory,
-                                        allocator);
+                                        arena);
     if (!transcoder.is_valid()) {
         roc_log(LogError, "can't create transcoder pipeline");
         return 1;

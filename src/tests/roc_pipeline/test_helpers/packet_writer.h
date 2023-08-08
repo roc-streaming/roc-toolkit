@@ -28,7 +28,7 @@ namespace test {
 
 class PacketWriter : public core::NonCopyable<> {
 public:
-    PacketWriter(core::IAllocator& allocator,
+    PacketWriter(core::IArena& arena,
                  packet::IWriter& writer,
                  packet::IComposer& composer,
                  rtp::FormatMap& format_map,
@@ -39,7 +39,7 @@ public:
                  const address::SocketAddr& dst_addr)
         : writer_(writer)
         , composer_(composer)
-        , payload_encoder_(new_encoder_(allocator, format_map, pt), allocator)
+        , payload_encoder_(new_encoder_(arena, format_map, pt), arena)
         , packet_factory_(packet_factory)
         , buffer_factory_(buffer_factory)
         , src_addr_(src_addr)
@@ -99,13 +99,12 @@ public:
 private:
     enum { MaxSamples = 4096 };
 
-    static audio::IFrameEncoder* new_encoder_(core::IAllocator& allocator,
-                                              rtp::FormatMap& format_map,
-                                              rtp::PayloadType pt) {
+    static audio::IFrameEncoder*
+    new_encoder_(core::IArena& arena, rtp::FormatMap& format_map, rtp::PayloadType pt) {
         const rtp::Format* fmt = format_map.find_by_pt(pt);
         CHECK(fmt);
 
-        return fmt->new_encoder(allocator, fmt->pcm_format, fmt->sample_spec);
+        return fmt->new_encoder(arena, fmt->pcm_format, fmt->sample_spec);
     }
 
     packet::PacketPtr new_packet_(size_t samples_per_packet,

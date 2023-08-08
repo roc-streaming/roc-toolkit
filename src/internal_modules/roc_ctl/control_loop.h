@@ -174,7 +174,7 @@ public:
     };
 
     //! Initialize.
-    ControlLoop(netio::NetworkLoop& network_loop, core::IAllocator& allocator);
+    ControlLoop(netio::NetworkLoop& network_loop, core::IArena& arena);
 
     virtual ~ControlLoop();
 
@@ -220,7 +220,7 @@ private:
     ControlTaskResult task_pipeline_processing_(ControlTask&);
 
     netio::NetworkLoop& network_loop_;
-    core::IAllocator& allocator_;
+    core::IArena& arena_;
 
     ControlTaskQueue task_queue_;
 

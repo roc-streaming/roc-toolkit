@@ -11,10 +11,10 @@
 namespace roc {
 namespace sdp {
 
-MediaDescription::MediaDescription(core::IAllocator& allocator)
-    : RefCounted(allocator)
-    , payload_ids_(allocator)
-    , connection_data_(allocator) {
+MediaDescription::MediaDescription(core::IArena& arena)
+    : core::RefCounted<MediaDescription, core::ArenaAllocation>(arena)
+    , payload_ids_(arena)
+    , connection_data_(arena) {
     clear();
 }
 

@@ -16,7 +16,7 @@
 #include "roc_audio/iframe_encoder.h"
 #include "roc_audio/pcm_format.h"
 #include "roc_audio/sample_spec.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_rtp/headers.h"
 
 namespace roc {
@@ -37,12 +37,12 @@ struct Format {
     unsigned packet_flags;
 
     //! Create frame encoder.
-    audio::IFrameEncoder* (*new_encoder)(core::IAllocator& allocator,
+    audio::IFrameEncoder* (*new_encoder)(core::IArena& arena,
                                          const audio::PcmFormat& pcm_format,
                                          const audio::SampleSpec& sample_spec);
 
     //! Create frame decoder.
-    audio::IFrameDecoder* (*new_decoder)(core::IAllocator& allocator,
+    audio::IFrameDecoder* (*new_decoder)(core::IArena& arena,
                                          const audio::PcmFormat& pcm_format,
                                          const audio::SampleSpec& sample_spec);
 

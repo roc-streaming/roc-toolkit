@@ -112,7 +112,7 @@ inline size_t get_frame_size(size_t window_size,
 
 } // namespace
 
-BuiltinResampler::BuiltinResampler(core::IAllocator& allocator,
+BuiltinResampler::BuiltinResampler(core::IArena& arena,
                                    core::BufferFactory<sample_t>& buffer_factory,
                                    ResamplerProfile profile,
                                    const audio::SampleSpec& in_spec,
@@ -130,7 +130,7 @@ BuiltinResampler::BuiltinResampler(core::IAllocator& allocator,
     , window_interp_bits_(calc_bits(window_interp_))
     , frame_size_ch_(get_frame_size(window_size_, in_spec, out_spec))
     , frame_size_(frame_size_ch_ * in_spec.num_channels())
-    , sinc_table_(allocator)
+    , sinc_table_(arena)
     , sinc_table_ptr_(NULL)
     , qt_half_window_size_(float_to_fixedpoint((float)window_size_ / scaling_))
     , qt_epsilon_(float_to_fixedpoint(5e-8f))

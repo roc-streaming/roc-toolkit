@@ -13,11 +13,11 @@
 namespace roc {
 namespace packet {
 
-Interleaver::Interleaver(IWriter& writer, core::IAllocator& allocator, size_t block_sz)
+Interleaver::Interleaver(IWriter& writer, core::IArena& arena, size_t block_sz)
     : writer_(writer)
     , block_size_(block_sz)
-    , send_seq_(allocator)
-    , packets_(allocator)
+    , send_seq_(arena)
+    , packets_(arena)
     , next_2_put_(0)
     , next_2_send_(0)
     , valid_(false) {

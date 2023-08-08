@@ -28,14 +28,14 @@ size_t clamp(size_t value, size_t lower_limit, size_t upper_limit) {
 
 } // namespace
 
-PoolImpl::PoolImpl(IAllocator& allocator,
+PoolImpl::PoolImpl(IArena& arena,
                    size_t object_size,
                    bool poison,
                    size_t min_alloc_bytes,
                    size_t max_alloc_bytes,
                    void* preallocated_data,
                    size_t preallocated_size)
-    : allocator_(allocator)
+    : arena_(arena)
     , n_used_slots_(0)
     , slab_min_bytes_(clamp(min_alloc_bytes, preallocated_size, max_alloc_bytes))
     , slab_max_bytes_(max_alloc_bytes)
@@ -181,7 +181,7 @@ void PoolImpl::increase_slab_size_(size_t desired_slots) {
 bool PoolImpl::allocate_new_slab_() {
     const size_t slab_size_bytes = slot_offset_(slab_cur_slots_);
 
-    void* memory = allocator_.allocate(slab_size_bytes);
+    void* memory = arena_.allocate(slab_size_bytes);
     if (memory == NULL) {
         return false;
     }
@@ -210,7 +210,7 @@ void PoolImpl::deallocate_everything_() {
 
     while (Slab* slab = slabs_.front()) {
         slabs_.remove(*slab);
-        allocator_.deallocate(slab);
+        arena_.deallocate(slab);
     }
 }
 

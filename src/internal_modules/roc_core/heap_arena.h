@@ -6,28 +6,28 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/heap_allocator.h
-//! @brief Heap allocator implementation.
+//! @file roc_core/heap_arena.h
+//! @brief Heap arena implementation.
 
-#ifndef ROC_CORE_HEAP_ALLOCATOR_H_
-#define ROC_CORE_HEAP_ALLOCATOR_H_
+#ifndef ROC_CORE_HEAP_ARENA_H_
+#define ROC_CORE_HEAP_ARENA_H_
 
 #include "roc_core/atomic.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 
 namespace roc {
 namespace core {
 
-//! Heap allocator implementation.
+//! Heap arena implementation.
 //!
 //! Uses global operator new[] and operator delete[].
 //!
 //! The memory is always maximum aligned. Thread-safe.
-class HeapAllocator : public IAllocator, public NonCopyable<> {
+class HeapArena : public IArena, public NonCopyable<> {
 public:
-    HeapAllocator();
-    ~HeapAllocator();
+    HeapArena();
+    ~HeapArena();
 
     //! Enable panic on leak in destructor, for all instances.
     static void enable_panic_on_leak();
@@ -50,4 +50,4 @@ private:
 } // namespace core
 } // namespace roc
 
-#endif // ROC_CORE_HEAP_ALLOCATOR_H_
+#endif // ROC_CORE_HEAP_ARENA_H_

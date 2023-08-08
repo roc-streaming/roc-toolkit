@@ -26,9 +26,8 @@ namespace {
 template <class I, class T>
 ROC_ATTR_UNUSED I* ctor_func(const CodecConfig& config,
                              core::BufferFactory<uint8_t>& buffer_factory,
-                             core::IAllocator& allocator) {
-    core::ScopedPtr<T> codec(new (allocator) T(config, buffer_factory, allocator),
-                             allocator);
+                             core::IArena& arena) {
+    core::ScopedPtr<T> codec(new (arena) T(config, buffer_factory, arena), arena);
     if (!codec || !codec->is_valid()) {
         return NULL;
     }
@@ -69,22 +68,22 @@ packet::FecScheme CodecMap::nth_scheme(size_t n) const {
 
 IBlockEncoder* CodecMap::new_encoder(const CodecConfig& config,
                                      core::BufferFactory<uint8_t>& buffer_factory,
-                                     core::IAllocator& allocator) const {
+                                     core::IArena& arena) const {
     const Codec* codec = find_codec_(config.scheme);
     if (!codec) {
         return NULL;
     }
-    return codec->encoder_ctor(config, buffer_factory, allocator);
+    return codec->encoder_ctor(config, buffer_factory, arena);
 }
 
 IBlockDecoder* CodecMap::new_decoder(const CodecConfig& config,
                                      core::BufferFactory<uint8_t>& buffer_factory,
-                                     core::IAllocator& allocator) const {
+                                     core::IArena& arena) const {
     const Codec* codec = find_codec_(config.scheme);
     if (!codec) {
         return NULL;
     }
-    return codec->decoder_ctor(config, buffer_factory, allocator);
+    return codec->decoder_ctor(config, buffer_factory, arena);
 }
 
 void CodecMap::add_codec_(const Codec& codec) {

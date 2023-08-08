@@ -8,7 +8,7 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_fec/codec_map.h"
 #include "roc_peer/context.h"
 #include "roc_peer/sender.h"
@@ -20,7 +20,7 @@ namespace {
 
 enum { DefaultSlot = 0 };
 
-core::HeapAllocator allocator;
+core::HeapArena arena;
 
 void parse_uri(address::EndpointUri& uri, const char* str) {
     CHECK(address::parse_endpoint_uri(str, address::EndpointUri::Subset_Full, uri));
@@ -34,7 +34,7 @@ TEST_GROUP(sender) {
 };
 
 TEST(sender, sink) {
-    Context context(context_config, allocator);
+    Context context(context_config, arena);
     CHECK(context.is_valid());
 
     Sender sender(context, sender_config);
@@ -45,7 +45,7 @@ TEST(sender, sink) {
 }
 
 TEST(sender, connect) {
-    Context context(context_config, allocator);
+    Context context(context_config, arena);
     CHECK(context.is_valid());
 
     UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
@@ -54,7 +54,7 @@ TEST(sender, connect) {
         Sender sender(context, sender_config);
         CHECK(sender.is_valid());
 
-        address::EndpointUri source_endp(allocator);
+        address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:123");
 
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
@@ -66,7 +66,7 @@ TEST(sender, connect) {
 }
 
 TEST(sender, connect_slots) {
-    Context context(context_config, allocator);
+    Context context(context_config, arena);
     CHECK(context.is_valid());
 
     UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
@@ -75,13 +75,13 @@ TEST(sender, connect_slots) {
         Sender sender(context, sender_config);
         CHECK(sender.is_valid());
 
-        address::EndpointUri source_endp1(allocator);
+        address::EndpointUri source_endp1(arena);
         parse_uri(source_endp1, "rtp://127.0.0.1:111");
         CHECK(sender.connect(0, address::Iface_AudioSource, source_endp1));
 
         UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 1);
 
-        address::EndpointUri source_endp2(allocator);
+        address::EndpointUri source_endp2(arena);
         parse_uri(source_endp2, "rtp://127.0.0.1:222");
         CHECK(sender.connect(1, address::Iface_AudioSource, source_endp2));
 
@@ -92,7 +92,7 @@ TEST(sender, connect_slots) {
 }
 
 TEST(sender, configure) {
-    Context context(context_config, allocator);
+    Context context(context_config, arena);
     CHECK(context.is_valid());
 
     UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
@@ -106,7 +106,7 @@ TEST(sender, configure) {
 
         UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
 
-        address::EndpointUri source_endp(allocator);
+        address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:123");
 
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
@@ -118,7 +118,7 @@ TEST(sender, configure) {
 }
 
 TEST(sender, configure_slots) {
-    Context context(context_config, allocator);
+    Context context(context_config, arena);
     CHECK(context.is_valid());
 
     UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
@@ -133,13 +133,13 @@ TEST(sender, configure_slots) {
 
         UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
 
-        address::EndpointUri source_endp1(allocator);
+        address::EndpointUri source_endp1(arena);
         parse_uri(source_endp1, "rtp://127.0.0.1:111");
         CHECK(sender.connect(0, address::Iface_AudioSource, source_endp1));
 
         UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 1);
 
-        address::EndpointUri source_endp2(allocator);
+        address::EndpointUri source_endp2(arena);
         parse_uri(source_endp2, "rtp://127.0.0.1:222");
         CHECK(sender.connect(1, address::Iface_AudioSource, source_endp2));
 
@@ -150,7 +150,7 @@ TEST(sender, configure_slots) {
 }
 
 TEST(sender, endpoints_no_fec) {
-    Context context(context_config, allocator);
+    Context context(context_config, arena);
     CHECK(context.is_valid());
 
     {
@@ -159,7 +159,7 @@ TEST(sender, endpoints_no_fec) {
         Sender sender(context, sender_config);
         CHECK(sender.is_valid());
 
-        address::EndpointUri source_endp(allocator);
+        address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:123");
 
         // everything is ok
@@ -179,7 +179,7 @@ TEST(sender, endpoints_no_fec) {
 }
 
 TEST(sender, endpoints_fec) {
-    Context context(context_config, allocator);
+    Context context(context_config, arena);
     CHECK(context.is_valid());
 
     if (!fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
@@ -188,14 +188,14 @@ TEST(sender, endpoints_fec) {
         Sender sender(context, sender_config);
         CHECK(sender.is_valid());
 
-        address::EndpointUri source_endp(allocator);
+        address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
 
         // fec is not supported
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
         CHECK(!sender.is_ready());
 
-        address::EndpointUri repair_endp(allocator);
+        address::EndpointUri repair_endp(arena);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
 
         // fec is not supported
@@ -211,10 +211,10 @@ TEST(sender, endpoints_fec) {
         Sender sender(context, sender_config);
         CHECK(sender.is_valid());
 
-        address::EndpointUri source_endp(allocator);
+        address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
 
-        address::EndpointUri repair_endp(allocator);
+        address::EndpointUri repair_endp(arena);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
 
         // everything is ok
@@ -229,7 +229,7 @@ TEST(sender, endpoints_fec) {
         Sender sender(context, sender_config);
         CHECK(sender.is_valid());
 
-        address::EndpointUri source_endp(allocator);
+        address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+ldpc://127.0.0.1:123");
 
         // source port fec scheme mismatch
@@ -243,7 +243,7 @@ TEST(sender, endpoints_fec) {
         Sender sender(context, sender_config);
         CHECK(sender.is_valid());
 
-        address::EndpointUri repair_endp(allocator);
+        address::EndpointUri repair_endp(arena);
         parse_uri(repair_endp, "ldpc://127.0.0.1:123");
 
         // repair port fec scheme mismatch
@@ -257,7 +257,7 @@ TEST(sender, endpoints_fec) {
         Sender sender(context, sender_config);
         CHECK(sender.is_valid());
 
-        address::EndpointUri repair_endp(allocator);
+        address::EndpointUri repair_endp(arena);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
 
         // repair port provided when fec is disabled
@@ -271,7 +271,7 @@ TEST(sender, endpoints_fec) {
         Sender sender(context, sender_config);
         CHECK(sender.is_valid());
 
-        address::EndpointUri source_endp(allocator);
+        address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
 
         // repair port not provided when fec is enabled
@@ -285,7 +285,7 @@ TEST(sender, endpoints_fec) {
         Sender sender(context, sender_config);
         CHECK(sender.is_valid());
 
-        address::EndpointUri repair_endp(allocator);
+        address::EndpointUri repair_endp(arena);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
 
         // source port not provided when fec is enabled
@@ -295,7 +295,7 @@ TEST(sender, endpoints_fec) {
 }
 
 TEST(sender, endpoints_fec_slots) {
-    Context context(context_config, allocator);
+    Context context(context_config, arena);
     CHECK(context.is_valid());
 
     if (!fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
@@ -307,16 +307,16 @@ TEST(sender, endpoints_fec_slots) {
     Sender sender(context, sender_config);
     CHECK(sender.is_valid());
 
-    address::EndpointUri source_endp1(allocator);
+    address::EndpointUri source_endp1(arena);
     parse_uri(source_endp1, "rtp+rs8m://127.0.0.1:1001");
 
-    address::EndpointUri repair_endp1(allocator);
+    address::EndpointUri repair_endp1(arena);
     parse_uri(repair_endp1, "rs8m://127.0.0.1:1002");
 
-    address::EndpointUri source_endp2(allocator);
+    address::EndpointUri source_endp2(arena);
     parse_uri(source_endp2, "rtp+rs8m://127.0.0.1:2001");
 
-    address::EndpointUri repair_endp2(allocator);
+    address::EndpointUri repair_endp2(arena);
     parse_uri(repair_endp2, "rs8m://127.0.0.1:2002");
 
     CHECK(!sender.is_ready());
@@ -333,7 +333,7 @@ TEST(sender, endpoints_fec_slots) {
 }
 
 TEST(sender, port_sharing) {
-    Context context(context_config, allocator);
+    Context context(context_config, arena);
     CHECK(context.is_valid());
 
     UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
@@ -348,10 +348,10 @@ TEST(sender, port_sharing) {
         Sender sender(context, sender_config);
         CHECK(sender.is_valid());
 
-        address::EndpointUri source_endp(allocator);
+        address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
 
-        address::EndpointUri repair_endp(allocator);
+        address::EndpointUri repair_endp(arena);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
 
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
@@ -363,10 +363,10 @@ TEST(sender, port_sharing) {
         Sender sender(context, sender_config);
         CHECK(sender.is_valid());
 
-        address::EndpointUri source_endp(allocator);
+        address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
 
-        address::EndpointUri repair_endp(allocator);
+        address::EndpointUri repair_endp(arena);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
 
         netio::UdpSenderConfig config;
@@ -384,10 +384,10 @@ TEST(sender, port_sharing) {
         Sender sender(context, sender_config);
         CHECK(sender.is_valid());
 
-        address::EndpointUri source_endp(allocator);
+        address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
 
-        address::EndpointUri repair_endp(allocator);
+        address::EndpointUri repair_endp(arena);
         parse_uri(repair_endp, "rs8m://[::1]:123");
 
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
@@ -401,10 +401,10 @@ TEST(sender, port_sharing) {
         Sender sender(context, sender_config);
         CHECK(sender.is_valid());
 
-        address::EndpointUri source_endp(allocator);
+        address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:123");
 
-        address::EndpointUri repair_endp(allocator);
+        address::EndpointUri repair_endp(arena);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
 
         netio::UdpSenderConfig config1;

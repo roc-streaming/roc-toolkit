@@ -14,7 +14,7 @@
 
 #include "roc_core/array.h"
 #include "roc_core/attributes.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
 
@@ -25,7 +25,7 @@ namespace core {
 class StringList : public NonCopyable<> {
 public:
     //! Initialize empty string list.
-    explicit StringList(IAllocator& allocator);
+    explicit StringList(IArena& arena);
 
     //! Get number of elements.
     size_t size() const;

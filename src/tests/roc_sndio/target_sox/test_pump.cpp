@@ -12,7 +12,7 @@
 #include "test_helpers/mock_source.h"
 
 #include "roc_core/buffer_factory.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/temp_file.h"
 #include "roc_sndio/pump.h"
@@ -31,8 +31,8 @@ const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, ChMa
 const core::nanoseconds_t BufDuration = BufSize * core::Second
     / core::nanoseconds_t(SampleSpecs.sample_rate() * SampleSpecs.num_channels());
 
-core::HeapAllocator allocator;
-core::BufferFactory<audio::sample_t> buffer_factory(allocator, BufSize, true);
+core::HeapArena arena;
+core::BufferFactory<audio::sample_t> buffer_factory(arena, BufSize, true);
 
 } // namespace
 
@@ -55,7 +55,7 @@ TEST(pump, write_read) {
     core::TempFile file("test.wav");
 
     {
-        SoxSink sox_sink(allocator, config);
+        SoxSink sox_sink(arena, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
         Pump pump(buffer_factory, mock_source, NULL, sox_sink, BufDuration, SampleSpecs,
@@ -66,7 +66,7 @@ TEST(pump, write_read) {
         CHECK(mock_source.num_returned() >= NumSamples - BufSize);
     }
 
-    SoxSource sox_source(allocator, config);
+    SoxSource sox_source(arena, config);
     CHECK(sox_source.open(NULL, file.path()));
 
     test::MockSink mock_writer;
@@ -88,7 +88,7 @@ TEST(pump, write_overwrite_read) {
     core::TempFile file("test.wav");
 
     {
-        SoxSink sox_sink(allocator, config);
+        SoxSink sox_sink(arena, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
         Pump pump(buffer_factory, mock_source, NULL, sox_sink, BufDuration, SampleSpecs,
@@ -103,7 +103,7 @@ TEST(pump, write_overwrite_read) {
     CHECK(num_returned1 >= NumSamples - BufSize);
 
     {
-        SoxSink sox_sink(allocator, config);
+        SoxSink sox_sink(arena, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
         Pump pump(buffer_factory, mock_source, NULL, sox_sink, BufDuration, SampleSpecs,
@@ -115,7 +115,7 @@ TEST(pump, write_overwrite_read) {
     size_t num_returned2 = mock_source.num_returned() - num_returned1;
     CHECK(num_returned1 >= NumSamples - BufSize);
 
-    SoxSource sox_source(allocator, config);
+    SoxSource sox_source(arena, config);
     CHECK(sox_source.open(NULL, file.path()));
 
     test::MockSink mock_writer;

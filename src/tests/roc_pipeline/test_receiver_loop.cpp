@@ -11,7 +11,7 @@
 #include "test_helpers/scheduler.h"
 
 #include "roc_core/buffer_factory.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_fec/codec_map.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_pipeline/receiver_loop.h"
@@ -24,12 +24,12 @@ namespace {
 
 enum { MaxBufSize = 1000 };
 
-core::HeapAllocator allocator;
-core::BufferFactory<audio::sample_t> sample_buffer_factory(allocator, MaxBufSize, true);
-core::BufferFactory<uint8_t> byte_buffer_factory(allocator, MaxBufSize, true);
-packet::PacketFactory packet_factory(allocator, true);
+core::HeapArena arena;
+core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, MaxBufSize, true);
+core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize, true);
+packet::PacketFactory packet_factory(arena, true);
 
-rtp::FormatMap format_map(allocator, true);
+rtp::FormatMap format_map(arena, true);
 
 class TaskIssuer : public IPipelineTaskCompleter {
 public:
@@ -122,7 +122,7 @@ TEST_GROUP(receiver_loop) {
 
 TEST(receiver_loop, endpoints_sync) {
     ReceiverLoop receiver(scheduler, config, format_map, packet_factory,
-                          byte_buffer_factory, sample_buffer_factory, allocator);
+                          byte_buffer_factory, sample_buffer_factory, arena);
 
     CHECK(receiver.is_valid());
 
@@ -160,7 +160,7 @@ TEST(receiver_loop, endpoints_sync) {
 
 TEST(receiver_loop, endpoints_async) {
     ReceiverLoop receiver(scheduler, config, format_map, packet_factory,
-                          byte_buffer_factory, sample_buffer_factory, allocator);
+                          byte_buffer_factory, sample_buffer_factory, arena);
 
     CHECK(receiver.is_valid());
 
