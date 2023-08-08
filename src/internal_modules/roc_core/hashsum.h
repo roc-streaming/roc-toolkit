@@ -20,28 +20,43 @@ namespace core {
 //! Hash type.
 typedef size_t hashsum_t;
 
-//! Compute hash for 16-bit integer.
+//! Compute hash of 16-bit integer.
 hashsum_t hashsum_int(int16_t);
 
-//! Compute hash for 16-bit integer.
+//! Compute hash of 16-bit integer.
 hashsum_t hashsum_int(uint16_t);
 
-//! Compute hash for 32-bit integer.
+//! Compute hash of 32-bit integer.
 hashsum_t hashsum_int(int32_t);
 
-//! Compute hash for 32-bit integer.
+//! Compute hash of 32-bit integer.
 hashsum_t hashsum_int(uint32_t);
 
-//! Compute hash for 64-bit integer.
+//! Compute hash of 64-bit integer.
 hashsum_t hashsum_int(int64_t);
 
-//! Compute hash for 64-bit integer.
+//! Compute hash of 64-bit integer.
 hashsum_t hashsum_int(uint64_t);
 
-//! Compute hash for zero-terminated string.
+//! Compute hash of an integer.
+//! This fallback is needed for the cases when the overloads above
+//! do not cover all builtin types. E.g. if none of the overloads
+//! above covers unsigned long or unsigned long long.
+template <class T> hashsum_t hashsum_int(T t) {
+    switch (sizeof(T)) {
+    case 2:
+        return hashsum_int((uint16_t)t);
+    case 4:
+        return hashsum_int((uint32_t)t);
+    case 8:
+        return hashsum_int((uint64_t)t);
+    }
+}
+
+//! Compute hash of zero-terminated string.
 hashsum_t hashsum_str(const char* str);
 
-//! Compute hash for byte range.
+//! Compute hash of byte range.
 hashsum_t hashsum_mem(const void* data, size_t size);
 
 } // namespace core
