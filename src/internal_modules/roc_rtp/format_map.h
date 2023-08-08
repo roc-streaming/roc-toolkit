@@ -13,12 +13,14 @@
 #define ROC_RTP_FORMAT_MAP_H_
 
 #include "roc_audio/sample_spec.h"
+#include "roc_core/allocation_policy.h"
 #include "roc_core/attributes.h"
 #include "roc_core/hashmap.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/pool.h"
+#include "roc_core/ref_counted.h"
 #include "roc_rtp/format.h"
 
 namespace roc {
@@ -32,9 +34,6 @@ class FormatMap : public core::NonCopyable<> {
 public:
     //! Initialize.
     FormatMap(core::IAllocator& allocator, bool poison);
-
-    //! Destroy.
-    ~FormatMap();
 
     //! Find format by payload type.
     //! @returns
@@ -57,7 +56,12 @@ public:
 private:
     enum { PreallocatedNodes = 16 };
 
-    struct Node : core::HashmapNode {
+    struct Node : core::RefCounted<Node, core::PoolAllocation>, core::HashmapNode {
+        Node(core::IPool& pool, const Format& format)
+            : core::RefCounted<Node, core::PoolAllocation>(pool)
+            , format(format) {
+        }
+
         Format format;
 
         static core::hashsum_t key_hash(unsigned int pt) {
@@ -78,7 +82,7 @@ private:
     core::Mutex mutex_;
 
     core::Pool<Node, PreallocatedNodes> node_pool_;
-    core::Hashmap<Node, PreallocatedNodes, core::NoOwnership> node_map_;
+    core::Hashmap<Node, PreallocatedNodes> node_map_;
 };
 
 } // namespace rtp
