@@ -29,7 +29,7 @@ const audio::SampleSpec
     SampleSpecs(SampleRate, audio::ChanLayout_Surround, audio::ChanMask_Surround_Stereo);
 
 core::HeapArena arena;
-packet::PacketFactory packet_factory(arena, true);
+packet::PacketFactory packet_factory(arena);
 
 } // namespace
 

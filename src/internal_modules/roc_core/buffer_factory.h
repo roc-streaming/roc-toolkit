@@ -28,9 +28,8 @@ template <class T> class BufferFactory : public core::NonCopyable<> {
 public:
     //! Initialization.
     //! @p buffer_size defines number of elements in buffer.
-    //! @p poison enables memory poisoning.
-    BufferFactory(IArena& arena, size_t buffer_size, bool poison)
-        : buffer_pool_(arena, poison, sizeof(Buffer<T>) + sizeof(T) * buffer_size)
+    BufferFactory(IArena& arena, size_t buffer_size)
+        : buffer_pool_(arena, sizeof(Buffer<T>) + sizeof(T) * buffer_size)
         , buffer_size_(buffer_size) {
     }
 

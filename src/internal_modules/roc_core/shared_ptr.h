@@ -92,7 +92,7 @@ public:
     //! Get underlying pointer.
     T* operator->() const {
         if (ptr_ == NULL) {
-            roc_panic("shared ptr: attempting to dereference null shared pointer");
+            roc_panic("shared ptr: attempt to dereference null pointer");
         }
         return ptr_;
     }
@@ -100,7 +100,7 @@ public:
     //! Get underlying reference.
     T& operator*() const {
         if (ptr_ == NULL) {
-            roc_panic("shared ptr: attempting to dereference null shared pointer");
+            roc_panic("shared ptr: attempt to dereference null pointer");
         }
         return *ptr_;
     }
@@ -129,7 +129,13 @@ private:
 //! Equality check.
 template <class T1, class T2>
 inline bool operator==(const SharedPtr<T1>& a, const SharedPtr<T2>& b) {
-    return (a.get() == b.get());
+    return a.get() == b.get();
+}
+
+//! Equality check.
+template <class T1, class T2>
+inline bool operator!=(const SharedPtr<T1>& a, const SharedPtr<T2>& b) {
+    return a.get() != b.get();
 }
 
 } // namespace core

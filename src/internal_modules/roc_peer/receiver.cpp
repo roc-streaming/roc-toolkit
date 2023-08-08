@@ -27,7 +27,7 @@ Receiver::Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_co
                 context.sample_buffer_factory(),
                 context.arena())
     , processing_task_(pipeline_)
-    , slot_pool_(context.arena(), pipeline_config.common.enable_poisoning)
+    , slot_pool_(context.arena())
     , slot_map_(context.arena())
     , valid_(false) {
     roc_log(LogDebug, "receiver peer: initializing");

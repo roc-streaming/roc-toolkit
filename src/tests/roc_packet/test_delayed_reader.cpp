@@ -26,7 +26,7 @@ const audio::SampleSpec
     SampleSpecs(SampleRate, audio::ChanLayout_Surround, audio::ChanMask_Surround_Stereo);
 
 core::HeapArena arena;
-PacketFactory packet_factory(arena, true);
+PacketFactory packet_factory(arena);
 
 PacketPtr new_packet(seqnum_t sn) {
     PacketPtr packet = packet_factory.new_packet();

@@ -15,11 +15,10 @@ namespace peer {
 
 Context::Context(const ContextConfig& config, core::IArena& arena)
     : arena_(arena)
-    , packet_factory_(arena_, config.poisoning)
-    , byte_buffer_factory_(arena_, config.max_packet_size, config.poisoning)
-    , sample_buffer_factory_(
-          arena_, config.max_frame_size / sizeof(audio::sample_t), config.poisoning)
-    , format_map_(arena_, config.poisoning)
+    , packet_factory_(arena_)
+    , byte_buffer_factory_(arena_, config.max_packet_size)
+    , sample_buffer_factory_(arena_, config.max_frame_size / sizeof(audio::sample_t))
+    , format_map_(arena_)
     , network_loop_(packet_factory_, byte_buffer_factory_, arena_)
     , control_loop_(network_loop_, arena_)
     , ref_counter_(0) {

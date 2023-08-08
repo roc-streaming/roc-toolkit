@@ -28,8 +28,8 @@ namespace {
 enum { MaxBufSize = 500, TotalBytes = 107701 };
 
 core::HeapArena arena;
-core::BufferFactory<uint8_t> buffer_factory(arena, MaxBufSize, true);
-packet::PacketFactory packet_factory(arena, true);
+core::BufferFactory<uint8_t> buffer_factory(arena, MaxBufSize);
+packet::PacketFactory packet_factory(arena);
 
 TcpServerConfig make_server_config(const char* ip, int port) {
     TcpServerConfig config;

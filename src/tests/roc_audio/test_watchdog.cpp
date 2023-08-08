@@ -35,7 +35,7 @@ enum {
 const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, ChMask);
 
 core::HeapArena arena;
-core::BufferFactory<sample_t> sample_buffer_factory(arena, MaxBufSize, true);
+core::BufferFactory<sample_t> sample_buffer_factory(arena, MaxBufSize);
 
 class TestFrameReader : public IFrameReader, public core::NonCopyable<> {
 public:

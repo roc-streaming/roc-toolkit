@@ -15,8 +15,8 @@
 namespace roc {
 namespace rtp {
 
-FormatMap::FormatMap(core::IArena& arena, bool poison)
-    : node_pool_(arena, poison)
+FormatMap::FormatMap(core::IArena& arena)
+    : node_pool_(arena)
     , node_map_(arena) {
     {
         Format fmt;

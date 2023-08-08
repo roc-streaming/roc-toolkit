@@ -41,7 +41,6 @@ Options
 --resampler-backend=ENUM      Resampler backend  (possible values="default", "builtin", "speex" default=`default')
 --resampler-profile=ENUM      Resampler profile  (possible values="low", "medium", "high" default=`medium')
 -1, --oneshot                 Exit when last connected client disconnects (default=off)
---poisoning                   Enable uninitialized memory poisoning (default=off)
 --profiling                   Enable self-profiling  (default=off)
 --beep                        Enable beeping on packet loss  (default=off)
 --color=ENUM                  Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')

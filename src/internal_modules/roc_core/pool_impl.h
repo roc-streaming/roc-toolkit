@@ -33,7 +33,6 @@ public:
     //! Initialize.
     PoolImpl(IArena& arena,
              size_t object_size,
-             bool poison,
              size_t min_alloc_bytes,
              size_t max_alloc_bytes,
              void* preallocated_data,
@@ -55,12 +54,6 @@ public:
     void deallocate(void* memory);
 
 private:
-    // Some good fillers for unused memory.
-    // If we fill memory with these values and interpret it as 16-bit or 32-bit
-    // integers, or as floats, the values will be rather high and will sound
-    // loudly when trying to play them on sound card.
-    enum { PoisonAllocated = 0x7a, PoisonDeallocated = 0x7d };
-
     struct Slab : ListNode {};
     struct Slot : ListNode {};
 
@@ -98,7 +91,6 @@ private:
     const size_t slab_max_slots_;
 
     const size_t object_size_;
-    const bool poison_;
 };
 
 } // namespace core

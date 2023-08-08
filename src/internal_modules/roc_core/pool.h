@@ -54,18 +54,15 @@ public:
     //!
     //! @b Parameters
     //!  - @p arena is used to allocate slabs
-    //!  - @p poison enables memory poisoning for debugging
     //!  - @p object_size defines size of single object in bytes
     //!  - @p min_alloc_bytes defines minimum size in bytes per request to arena
     //!  - @p max_alloc_bytes defines maximum size in bytes per request to arena
     Pool(IArena& arena,
-         bool poison,
          size_t object_size = sizeof(T),
          size_t min_alloc_bytes = 0,
          size_t max_alloc_bytes = 0)
         : impl_(arena,
                 object_size,
-                poison,
                 min_alloc_bytes,
                 max_alloc_bytes,
                 embedded_data_.memory(),

@@ -74,10 +74,10 @@ enum {
 };
 
 core::HeapArena arena;
-core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, MaxBufSize, true);
-core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize, true);
-packet::PacketFactory packet_factory(arena, true);
-rtp::FormatMap format_map(arena, true);
+core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, MaxBufSize);
+core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize);
+packet::PacketFactory packet_factory(arena);
+rtp::FormatMap format_map(arena);
 
 SenderConfig make_sender_config(int flags,
                                 audio::ChannelMask frame_channels,
@@ -113,7 +113,6 @@ SenderConfig make_sender_config(int flags,
 
     config.enable_interleaving = (flags & FlagInterleaving);
     config.enable_timing = false;
-    config.enable_poisoning = true;
     config.enable_profiling = true;
 
     return config;
@@ -129,7 +128,6 @@ ReceiverConfig make_receiver_config(audio::ChannelMask frame_channels,
     config.common.output_sample_spec.channel_set().set_channel_mask(frame_channels);
 
     config.common.enable_timing = false;
-    config.common.enable_poisoning = true;
 
     config.default_session.latency_monitor.fe_enable = false;
     config.default_session.target_latency = Latency * core::Second / SampleRate;

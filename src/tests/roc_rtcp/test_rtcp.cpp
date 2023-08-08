@@ -25,8 +25,8 @@ namespace {
 enum { MaxBufSize = 1492 };
 
 core::HeapArena arena;
-core::BufferFactory<uint8_t> buffer_factory(arena, MaxBufSize, true);
-packet::PacketFactory packet_factory(arena, true);
+core::BufferFactory<uint8_t> buffer_factory(arena, MaxBufSize);
+packet::PacketFactory packet_factory(arena);
 
 core::Slice<uint8_t> new_buffer(const uint8_t* data, size_t datasz) {
     core::Slice<uint8_t> buf = buffer_factory.new_buffer();

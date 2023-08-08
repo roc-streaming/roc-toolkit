@@ -23,7 +23,7 @@ namespace {
 enum { BufSz = 100, MaxSz = 500 };
 
 core::HeapArena arena;
-core::BufferFactory<sample_t> buffer_factory(arena, MaxSz, true);
+core::BufferFactory<sample_t> buffer_factory(arena, MaxSz);
 
 core::Slice<sample_t> new_buffer(size_t sz) {
     core::Slice<sample_t> buf = buffer_factory.new_buffer();

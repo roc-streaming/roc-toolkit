@@ -15,7 +15,6 @@
 #include "roc_audio/channel_mapper_writer.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/null_writer.h"
-#include "roc_audio/poison_writer.h"
 #include "roc_audio/profiling_writer.h"
 #include "roc_audio/resampler_map.h"
 #include "roc_audio/resampler_profile.h"
@@ -76,11 +75,8 @@ private:
 
     core::Optional<audio::ChannelMapperWriter> channel_mapper_writer_;
 
-    core::Optional<audio::PoisonWriter> resampler_poisoner_;
     core::Optional<audio::ResamplerWriter> resampler_writer_;
     core::ScopedPtr<audio::IResampler> resampler_;
-
-    core::Optional<audio::PoisonWriter> pipeline_poisoner_;
 
     core::Optional<audio::ProfilingWriter> profiler_;
 

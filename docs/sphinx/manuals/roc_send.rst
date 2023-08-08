@@ -36,7 +36,6 @@ Options
 --resampler-backend=ENUM    Resampler backend  (possible values="default", "builtin", "speex" default=`default')
 --resampler-profile=ENUM    Resampler profile  (possible values="low", "medium", "high" default=`medium')
 --interleaving              Enable packet interleaving  (default=off)
---poisoning                 Enable uninitialized memory poisoning (default=off)
 --profiling                 Enable self profiling  (default=off)
 --color=ENUM                Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
 

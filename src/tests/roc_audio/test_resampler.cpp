@@ -33,7 +33,7 @@ enum ResamplerMethod { Reader, Writer };
 const ResamplerMethod resampler_methods[] = { Reader, Writer };
 
 core::HeapArena arena;
-core::BufferFactory<sample_t> buffer_factory(arena, MaxFrameSize, true);
+core::BufferFactory<sample_t> buffer_factory(arena, MaxFrameSize);
 
 void generate_sine(sample_t* out, size_t num_samples, size_t num_padding) {
     for (size_t n = 0; n < num_samples; n++) {
