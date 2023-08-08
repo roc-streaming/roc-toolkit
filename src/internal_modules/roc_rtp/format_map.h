@@ -18,7 +18,7 @@
 #include "roc_core/iallocator.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/slab_pool.h"
+#include "roc_core/pool.h"
 #include "roc_rtp/format.h"
 
 namespace roc {
@@ -77,7 +77,7 @@ private:
 
     core::Mutex mutex_;
 
-    core::SlabPool<PreallocatedNodes * sizeof(Node)> node_pool_;
+    core::Pool<Node, PreallocatedNodes> node_pool_;
     core::Hashmap<Node, PreallocatedNodes, core::NoOwnership> node_map_;
 };
 

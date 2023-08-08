@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/slab_pool_impl.h
-//! @brief Slab pool implementation class.
+//! @file roc_core/pool_impl.h
+//! @brief Memory pool implementation class.
 
-#ifndef ROC_CORE_SLAB_POOL_IMPL_H_
-#define ROC_CORE_SLAB_POOL_IMPL_H_
+#ifndef ROC_CORE_POOL_IMPL_H_
+#define ROC_CORE_POOL_IMPL_H_
 
 #include "roc_core/attributes.h"
 #include "roc_core/iallocator.h"
@@ -22,21 +22,25 @@
 namespace roc {
 namespace core {
 
-//! Slab pool implementation class.
-//! @see SlabPool.
-class SlabPoolImpl : public NonCopyable<> {
+//! Memory pool implementation class.
+//!
+//! This is non-template class that implements all pool logic, to avoid
+//! polluting header file.
+//!
+//! @see Pool.
+class PoolImpl : public NonCopyable<> {
 public:
     //! Initialize.
-    SlabPoolImpl(IAllocator& allocator,
-                 size_t object_size,
-                 bool poison,
-                 size_t min_alloc_bytes,
-                 size_t max_alloc_bytes,
-                 void* preallocated_data,
-                 size_t preallocated_size);
+    PoolImpl(IAllocator& allocator,
+             size_t object_size,
+             bool poison,
+             size_t min_alloc_bytes,
+             size_t max_alloc_bytes,
+             void* preallocated_data,
+             size_t preallocated_size);
 
     //! Deinitialize.
-    ~SlabPoolImpl();
+    ~PoolImpl();
 
     //! Get size of objects in pool.
     size_t object_size() const;
@@ -100,4 +104,4 @@ private:
 } // namespace core
 } // namespace roc
 
-#endif // ROC_CORE_SLAB_POOL_IMPL_H_
+#endif // ROC_CORE_POOL_IMPL_H_

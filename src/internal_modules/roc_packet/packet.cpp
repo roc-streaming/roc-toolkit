@@ -7,12 +7,13 @@
  */
 
 #include "roc_packet/packet.h"
+#include "roc_packet/packet_factory.h"
 
 namespace roc {
 namespace packet {
 
-Packet::Packet(PacketFactory& factory)
-    : RefCounted(factory)
+Packet::Packet(core::IPool& packet_pool)
+    : core::RefCounted<Packet, core::PoolAllocation>(packet_pool)
     , flags_(0) {
 }
 
