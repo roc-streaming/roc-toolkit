@@ -18,7 +18,7 @@
 using namespace roc;
 
 int main(int argc, const char** argv) {
-    core::HeapArena::enable_panic_on_leak();
+    core::HeapArena::enable_leak_detection();
 
     core::CrashHandler crash_handler;
 

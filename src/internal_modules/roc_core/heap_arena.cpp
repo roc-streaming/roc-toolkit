@@ -13,7 +13,7 @@
 namespace roc {
 namespace core {
 
-int HeapArena::panic_on_leak_;
+int HeapArena::enable_leak_detection_ = false;
 
 HeapArena::HeapArena()
     : num_allocations_(0) {
@@ -21,15 +21,15 @@ HeapArena::HeapArena()
 
 HeapArena::~HeapArena() {
     if (num_allocations_ != 0) {
-        if (AtomicOps::load_seq_cst(panic_on_leak_)) {
+        if (AtomicOps::load_seq_cst(enable_leak_detection_)) {
             roc_panic("heap arena: detected leak(s): %d objects was not freed",
                       (int)num_allocations_);
         }
     }
 }
 
-void HeapArena::enable_panic_on_leak() {
-    AtomicOps::store_seq_cst(panic_on_leak_, true);
+void HeapArena::enable_leak_detection() {
+    AtomicOps::store_seq_cst(enable_leak_detection_, true);
 }
 
 size_t HeapArena::num_allocations() const {
@@ -42,6 +42,9 @@ void* HeapArena::allocate(size_t size) {
 }
 
 void HeapArena::deallocate(void* ptr) {
+    if (!ptr) {
+        roc_panic("heap arena: null pointer");
+    }
     if (num_allocations_ <= 0) {
         roc_panic("heap arena: unpaired deallocate");
     }
