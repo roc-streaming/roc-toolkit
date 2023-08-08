@@ -16,6 +16,7 @@
 #include "roc_audio/resampler_backend.h"
 #include "roc_audio/resampler_profile.h"
 #include "roc_audio/sample_spec.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/singleton.h"

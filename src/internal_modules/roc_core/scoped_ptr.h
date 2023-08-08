@@ -15,6 +15,7 @@
 #include "roc_core/allocation_policy.h"
 #include "roc_core/iallocator.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/optional.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
 
@@ -33,33 +34,36 @@ class ScopedPtr : public NonCopyable<> {
 public:
     //! Initialize null pointer.
     ScopedPtr()
-        : ptr_(NULL)
-        , policy_() {
+        : ptr_(NULL) {
     }
 
     //! Initialize from a raw pointer.
     ScopedPtr(T* ptr, const AllocationPolicy& policy)
-        : ptr_(ptr)
-        , policy_(policy) {
+        : ptr_(ptr) {
+        policy_.reset(new (policy_) AllocationPolicy(policy));
     }
 
     //! Destroy object.
     ~ScopedPtr() {
-        destroy_();
+        reset();
     }
 
     //! Reset pointer to null.
     void reset() {
-        destroy_();
-        ptr_ = NULL;
+        if (ptr_ != NULL) {
+            policy_->destroy(*ptr_);
+            policy_.reset();
+            ptr_ = NULL;
+        }
     }
 
     //! Reset pointer to a new value.
     void reset(T* new_ptr, const AllocationPolicy& new_policy) {
         if (new_ptr != ptr_) {
-            destroy_();
+            reset();
+
             ptr_ = new_ptr;
-            policy_ = new_policy;
+            policy_.reset(new (policy_) AllocationPolicy(new_policy));
         }
     }
 
@@ -69,7 +73,10 @@ public:
         if (ret == NULL) {
             roc_panic("uniqueptr: attempting to release a null pointer");
         }
+
         ptr_ = NULL;
+        policy_.reset();
+
         return ret;
     }
 
@@ -97,14 +104,8 @@ public:
     }
 
 private:
-    void destroy_() {
-        if (ptr_ != NULL) {
-            policy_.destroy(*ptr_);
-        }
-    }
-
     T* ptr_;
-    AllocationPolicy policy_;
+    Optional<AllocationPolicy> policy_;
 };
 
 } // namespace core

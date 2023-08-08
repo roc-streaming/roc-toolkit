@@ -16,7 +16,7 @@ namespace roc {
 namespace rtp {
 
 FormatMap::FormatMap(core::IAllocator& allocator, bool poison)
-    : node_pool_(allocator, sizeof(Node), poison)
+    : node_pool_(allocator, poison)
     , node_map_(allocator) {
     {
         Format fmt;
