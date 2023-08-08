@@ -15,7 +15,7 @@
 #include <uv.h>
 
 #include "roc_address/socket_addr.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/list.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_core/stddefs.h"
@@ -51,7 +51,7 @@ public:
     TcpServerPort(const TcpServerConfig& config,
                   IConnAcceptor& conn_acceptor,
                   uv_loop_t& loop,
-                  core::IAllocator& allocator);
+                  core::IArena& arena);
 
     //! Destroy.
     virtual ~TcpServerPort();

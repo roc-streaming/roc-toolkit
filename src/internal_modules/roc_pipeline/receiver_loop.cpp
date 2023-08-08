@@ -78,14 +78,14 @@ ReceiverLoop::ReceiverLoop(IPipelineTaskScheduler& scheduler,
                            packet::PacketFactory& packet_factory,
                            core::BufferFactory<uint8_t>& byte_buffer_factory,
                            core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-                           core::IAllocator& allocator)
+                           core::IArena& arena)
     : PipelineLoop(scheduler, config.tasks, config.common.output_sample_spec)
     , source_(config,
               format_map,
               packet_factory,
               byte_buffer_factory,
               sample_buffer_factory,
-              allocator)
+              arena)
     , timestamp_(0)
     , valid_(false) {
     if (!source_.is_valid()) {

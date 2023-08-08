@@ -11,7 +11,7 @@
 #include "test_helpers/mock_source.h"
 
 #include "roc_core/buffer_factory.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/temp_file.h"
 #include "roc_sndio/pump.h"
@@ -36,8 +36,8 @@ const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, ChMa
 const core::nanoseconds_t FrameDuration = FrameSize * core::Second
     / core::nanoseconds_t(SampleSpecs.sample_rate() * SampleSpecs.num_channels());
 
-core::HeapAllocator allocator;
-core::BufferFactory<audio::sample_t> buffer_factory(allocator, MaxBufSize, true);
+core::HeapArena arena;
+core::BufferFactory<audio::sample_t> buffer_factory(arena, MaxBufSize, true);
 
 } // namespace
 
@@ -57,11 +57,11 @@ TEST_GROUP(sox_source) {
 };
 
 TEST(sox_source, noop) {
-    SoxSource sox_source(allocator, source_config);
+    SoxSource sox_source(arena, source_config);
 }
 
 TEST(sox_source, error) {
-    SoxSource sox_source(allocator, source_config);
+    SoxSource sox_source(arena, source_config);
 
     CHECK(!sox_source.open(NULL, "/bad/file"));
 }
@@ -73,7 +73,7 @@ TEST(sox_source, has_clock) {
         test::MockSource mock_source;
         mock_source.add(MaxBufSize * 10);
 
-        SoxSink sox_sink(allocator, sink_config);
+        SoxSink sox_sink(arena, sink_config);
         CHECK(sox_sink.open(NULL, file.path()));
 
         Pump pump(buffer_factory, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
@@ -82,7 +82,7 @@ TEST(sox_source, has_clock) {
         CHECK(pump.run());
     }
 
-    SoxSource sox_source(allocator, source_config);
+    SoxSource sox_source(arena, source_config);
 
     CHECK(sox_source.open(NULL, file.path()));
     CHECK(!sox_source.has_clock());
@@ -95,7 +95,7 @@ TEST(sox_source, sample_rate_auto) {
         test::MockSource mock_source;
         mock_source.add(MaxBufSize * 10);
 
-        SoxSink sox_sink(allocator, sink_config);
+        SoxSink sox_sink(arena, sink_config);
         CHECK(sox_sink.open(NULL, file.path()));
 
         Pump pump(buffer_factory, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
@@ -106,7 +106,7 @@ TEST(sox_source, sample_rate_auto) {
 
     source_config.sample_spec.set_sample_rate(0);
     source_config.frame_length = FrameDuration;
-    SoxSource sox_source(allocator, source_config);
+    SoxSource sox_source(arena, source_config);
 
     CHECK(sox_source.open(NULL, file.path()));
     CHECK(sox_source.sample_spec().sample_rate() == SampleRate);
@@ -119,7 +119,7 @@ TEST(sox_source, sample_rate_mismatch) {
         test::MockSource mock_source;
         mock_source.add(MaxBufSize * 10);
 
-        SoxSink sox_sink(allocator, sink_config);
+        SoxSink sox_sink(arena, sink_config);
         CHECK(sox_sink.open(NULL, file.path()));
 
         Pump pump(buffer_factory, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
@@ -129,7 +129,7 @@ TEST(sox_source, sample_rate_mismatch) {
     }
 
     source_config.sample_spec.set_sample_rate(SampleRate * 2);
-    SoxSource sox_source(allocator, source_config);
+    SoxSource sox_source(arena, source_config);
 
     CHECK(sox_source.open(NULL, file.path()));
     CHECK(sox_source.sample_spec().sample_rate() == SampleRate * 2);
@@ -142,7 +142,7 @@ TEST(sox_source, pause_resume) {
         test::MockSource mock_source;
         mock_source.add(FrameSize * NumChans * 2);
 
-        SoxSink sox_sink(allocator, sink_config);
+        SoxSink sox_sink(arena, sink_config);
         CHECK(sox_sink.open(NULL, file.path()));
 
         Pump pump(buffer_factory, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
@@ -151,7 +151,7 @@ TEST(sox_source, pause_resume) {
         CHECK(pump.run());
     }
 
-    SoxSource sox_source(allocator, source_config);
+    SoxSource sox_source(arena, source_config);
 
     CHECK(sox_source.open(NULL, file.path()));
 
@@ -186,7 +186,7 @@ TEST(sox_source, pause_restart) {
         test::MockSource mock_source;
         mock_source.add(FrameSize * NumChans * 2);
 
-        SoxSink sox_sink(allocator, sink_config);
+        SoxSink sox_sink(arena, sink_config);
         CHECK(sox_sink.open(NULL, file.path()));
 
         Pump pump(buffer_factory, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
@@ -195,7 +195,7 @@ TEST(sox_source, pause_restart) {
         CHECK(pump.run());
     }
 
-    SoxSource sox_source(allocator, source_config);
+    SoxSource sox_source(arena, source_config);
 
     CHECK(sox_source.open(NULL, file.path()));
 
@@ -230,7 +230,7 @@ TEST(sox_source, eof_restart) {
         test::MockSource mock_source;
         mock_source.add(FrameSize * NumChans * 2);
 
-        SoxSink sox_sink(allocator, sink_config);
+        SoxSink sox_sink(arena, sink_config);
         CHECK(sox_sink.open(NULL, file.path()));
 
         Pump pump(buffer_factory, mock_source, NULL, sox_sink, FrameDuration, SampleSpecs,
@@ -239,7 +239,7 @@ TEST(sox_source, eof_restart) {
         CHECK(pump.run());
     }
 
-    SoxSource sox_source(allocator, source_config);
+    SoxSource sox_source(arena, source_config);
 
     CHECK(sox_source.open(NULL, file.path()));
 

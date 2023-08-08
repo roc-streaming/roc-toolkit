@@ -17,7 +17,7 @@
 #include "roc_audio/poison_reader.h"
 #include "roc_audio/profiling_reader.h"
 #include "roc_core/buffer_factory.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/mutex.h"
 #include "roc_core/optional.h"
 #include "roc_core/stddefs.h"
@@ -51,7 +51,7 @@ public:
                    packet::PacketFactory& packet_factory,
                    core::BufferFactory<uint8_t>& byte_buffer_factory,
                    core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-                   core::IAllocator& allocator);
+                   core::IArena& arena);
 
     //! Check if the pipeline was successfully constructed.
     bool is_valid() const;
@@ -101,7 +101,7 @@ private:
     packet::PacketFactory& packet_factory_;
     core::BufferFactory<uint8_t>& byte_buffer_factory_;
     core::BufferFactory<audio::sample_t>& sample_buffer_factory_;
-    core::IAllocator& allocator_;
+    core::IArena& arena_;
 
     ReceiverState state_;
 

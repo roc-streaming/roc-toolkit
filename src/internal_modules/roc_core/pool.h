@@ -14,7 +14,7 @@
 
 #include "roc_core/aligned_storage.h"
 #include "roc_core/attributes.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/ipool.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/pool_impl.h"
@@ -26,7 +26,7 @@ namespace core {
 //! Memory pool.
 //!
 //! Implements slab allocator algorithm. Allocates large chunks of memory ("slabs") from
-//! given allocator, and uses them for multiple smaller fixed-sized objects ("slots").
+//! given arena, and uses them for multiple smaller fixed-sized objects ("slots").
 //!
 //! Keeps track of free slots and uses them when possible. Automatically allocates new
 //! slabs when there are no free slots available.
@@ -44,7 +44,7 @@ namespace core {
 //!
 //! @tparam EmbeddedCapacity defines number of slots embedded directly into Pool
 //! instance. If non-zero, this memory will be used for first allocations, before
-//! using actual allocator.
+//! using memory arena.
 //!
 //! Thread-safe.
 template <class T, size_t EmbeddedCapacity = 0>
@@ -53,17 +53,17 @@ public:
     //! Initialize.
     //!
     //! @b Parameters
-    //!  - @p allocator is used to allocate slabs
+    //!  - @p arena is used to allocate slabs
     //!  - @p poison enables memory poisoning for debugging
     //!  - @p object_size defines size of single object in bytes
-    //!  - @p min_alloc_bytes defines minimum size in bytes per request to allocator
-    //!  - @p max_alloc_bytes defines maximum size in bytes per request to allocator
-    Pool(IAllocator& allocator,
+    //!  - @p min_alloc_bytes defines minimum size in bytes per request to arena
+    //!  - @p max_alloc_bytes defines maximum size in bytes per request to arena
+    Pool(IArena& arena,
          bool poison,
          size_t object_size = sizeof(T),
          size_t min_alloc_bytes = 0,
          size_t max_alloc_bytes = 0)
-        : impl_(allocator,
+        : impl_(arena,
                 object_size,
                 poison,
                 min_alloc_bytes,

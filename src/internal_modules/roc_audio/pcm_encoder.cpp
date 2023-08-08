@@ -12,10 +12,10 @@
 namespace roc {
 namespace audio {
 
-IFrameEncoder* PcmEncoder::construct(core::IAllocator& allocator,
+IFrameEncoder* PcmEncoder::construct(core::IArena& arena,
                                      const PcmFormat& pcm_format,
                                      const SampleSpec& sample_spec) {
-    return new (allocator) PcmEncoder(pcm_format, sample_spec);
+    return new (arena) PcmEncoder(pcm_format, sample_spec);
 }
 
 PcmEncoder::PcmEncoder(const PcmFormat& pcm_format, const SampleSpec& sample_spec)

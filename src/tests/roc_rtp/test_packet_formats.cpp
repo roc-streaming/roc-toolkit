@@ -14,7 +14,7 @@
 #include "test_packets/rtp_l16_2ch_320s.h"
 
 #include "roc_core/buffer_factory.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/packet_factory.h"
@@ -31,9 +31,9 @@ enum { MaxBufSize = test::PacketInfo::MaxData };
 
 enum { CanParse = (1 << 0), CanCompose = (1 << 1) };
 
-core::HeapAllocator allocator;
-core::BufferFactory<uint8_t> buffer_factory(allocator, MaxBufSize, true);
-packet::PacketFactory packet_factory(allocator, true);
+core::HeapArena arena;
+core::BufferFactory<uint8_t> buffer_factory(arena, MaxBufSize, true);
+packet::PacketFactory packet_factory(arena, true);
 
 core::Slice<uint8_t> new_buffer(const uint8_t* data, size_t datasz) {
     core::Slice<uint8_t> buf = buffer_factory.new_buffer();
@@ -158,7 +158,7 @@ void encode_samples(audio::IFrameEncoder& encoder,
 }
 
 void check_parse_decode(const test::PacketInfo& pi) {
-    FormatMap format_map(allocator, true);
+    FormatMap format_map(arena, true);
 
     core::Slice<uint8_t> buffer = new_buffer(pi.raw_data, pi.packet_size);
     CHECK(buffer);
@@ -175,8 +175,7 @@ void check_parse_decode(const test::PacketInfo& pi) {
     CHECK(format);
 
     core::ScopedPtr<audio::IFrameDecoder> decoder(
-        format->new_decoder(allocator, format->pcm_format, format->sample_spec),
-        allocator);
+        format->new_decoder(arena, format->pcm_format, format->sample_spec), arena);
     CHECK(decoder);
 
     check_format_info(*format, pi);
@@ -187,7 +186,7 @@ void check_parse_decode(const test::PacketInfo& pi) {
 }
 
 void check_compose_encode(const test::PacketInfo& pi) {
-    FormatMap format_map(allocator, true);
+    FormatMap format_map(arena, true);
 
     core::Slice<uint8_t> buffer = new_buffer(NULL, 0);
     CHECK(buffer);
@@ -201,8 +200,7 @@ void check_compose_encode(const test::PacketInfo& pi) {
     CHECK(format);
 
     core::ScopedPtr<audio::IFrameEncoder> encoder(
-        format->new_encoder(allocator, format->pcm_format, format->sample_spec),
-        allocator);
+        format->new_encoder(arena, format->pcm_format, format->sample_spec), arena);
     CHECK(encoder);
 
     Composer composer(NULL);

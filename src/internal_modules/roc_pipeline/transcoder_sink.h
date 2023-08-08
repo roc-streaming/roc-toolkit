@@ -39,7 +39,7 @@ public:
     TranscoderSink(const TranscoderConfig& config,
                    audio::IFrameWriter* output_writer,
                    core::BufferFactory<audio::sample_t>& buffer_factory,
-                   core::IAllocator& allocator);
+                   core::IArena& arena);
 
     //! Check if the pipeline was successfully constructed.
     bool is_valid();

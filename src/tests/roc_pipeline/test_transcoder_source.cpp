@@ -12,7 +12,7 @@
 #include "test_helpers/mock_source.h"
 
 #include "roc_core/buffer_factory.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_pipeline/transcoder_source.h"
 
 namespace roc {
@@ -32,8 +32,8 @@ enum {
     ManyFrames = 30
 };
 
-core::HeapAllocator allocator;
-core::BufferFactory<audio::sample_t> sample_buffer_factory(allocator, MaxBufSize, true);
+core::HeapArena arena;
+core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, MaxBufSize, true);
 
 } // namespace
 
@@ -71,8 +71,7 @@ TEST(transcoder_source, state) {
 
     test::MockSource mock_source;
 
-    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory,
-                                allocator);
+    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory, arena);
     CHECK(transcoder.is_valid());
 
     mock_source.set_state(sndio::DeviceState_Active);
@@ -89,8 +88,7 @@ TEST(transcoder_source, pause_resume) {
 
     test::MockSource mock_source;
 
-    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory,
-                                allocator);
+    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory, arena);
     CHECK(transcoder.is_valid());
 
     transcoder.pause();
@@ -109,8 +107,7 @@ TEST(transcoder_source, pause_restart) {
 
     test::MockSource mock_source;
 
-    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory,
-                                allocator);
+    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory, arena);
     CHECK(transcoder.is_valid());
 
     transcoder.pause();
@@ -130,8 +127,7 @@ TEST(transcoder_source, read) {
     test::MockSource mock_source;
     mock_source.add(ManyFrames * SamplesPerFrame, input_sample_spec);
 
-    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory,
-                                allocator);
+    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory, arena);
     CHECK(transcoder.is_valid());
 
     test::FrameReader frame_reader(transcoder, sample_buffer_factory);
@@ -150,8 +146,7 @@ TEST(transcoder_source, eof) {
 
     test::MockSource mock_source;
 
-    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory,
-                                allocator);
+    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory, arena);
     CHECK(transcoder.is_valid());
 
     core::Slice<audio::sample_t> samples = sample_buffer_factory.new_buffer();
@@ -172,8 +167,7 @@ TEST(transcoder_source, frame_size_small) {
     test::MockSource mock_source;
     mock_source.add(ManyFrames * SamplesPerSmallFrame, input_sample_spec);
 
-    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory,
-                                allocator);
+    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory, arena);
     CHECK(transcoder.is_valid());
 
     test::FrameReader frame_reader(transcoder, sample_buffer_factory);
@@ -193,8 +187,7 @@ TEST(transcoder_source, frame_size_large) {
     test::MockSource mock_source;
     mock_source.add(ManyFrames * SamplesPerLargeFrame, input_sample_spec);
 
-    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory,
-                                allocator);
+    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory, arena);
     CHECK(transcoder.is_valid());
 
     test::FrameReader frame_reader(transcoder, sample_buffer_factory);
@@ -214,8 +207,7 @@ TEST(transcoder_source, channels_stereo_to_mono) {
     test::MockSource mock_source;
     mock_source.add(ManyFrames * SamplesPerFrame, input_sample_spec);
 
-    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory,
-                                allocator);
+    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory, arena);
     CHECK(transcoder.is_valid());
 
     test::FrameReader frame_reader(transcoder, sample_buffer_factory);
@@ -235,8 +227,7 @@ TEST(transcoder_source, channels_mono_to_stereo) {
     test::MockSource mock_source;
     mock_source.add(ManyFrames * SamplesPerFrame, input_sample_spec);
 
-    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory,
-                                allocator);
+    TranscoderSource transcoder(make_config(), mock_source, sample_buffer_factory, arena);
     CHECK(transcoder.is_valid());
 
     test::FrameReader frame_reader(transcoder, sample_buffer_factory);

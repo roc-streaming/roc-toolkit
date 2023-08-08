@@ -6,20 +6,20 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_FEC_TEST_HELPERS_MOCK_ALLOCATOR_H_
-#define ROC_FEC_TEST_HELPERS_MOCK_ALLOCATOR_H_
+#ifndef ROC_FEC_TEST_HELPERS_MOCK_ARENA_H_
+#define ROC_FEC_TEST_HELPERS_MOCK_ARENA_H_
 
-#include "roc_core/heap_allocator.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/heap_arena.h"
+#include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 
 namespace roc {
 namespace fec {
 namespace test {
 
-class MockAllocator : public core::IAllocator, public core::NonCopyable<> {
+class MockArena : public core::IArena, public core::NonCopyable<> {
 public:
-    MockAllocator()
+    MockArena()
         : fail_(false) {
     }
 
@@ -39,7 +39,7 @@ public:
     }
 
 private:
-    core::HeapAllocator ha_;
+    core::HeapArena ha_;
     bool fail_;
 };
 
@@ -47,4 +47,4 @@ private:
 } // namespace fec
 } // namespace roc
 
-#endif // ROC_FEC_TEST_HELPERS_MOCK_ALLOCATOR_H_
+#endif // ROC_FEC_TEST_HELPERS_MOCK_ARENA_H_

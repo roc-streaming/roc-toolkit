@@ -19,8 +19,8 @@ SenderSession::SenderSession(const SenderConfig& config,
                              packet::PacketFactory& packet_factory,
                              core::BufferFactory<uint8_t>& byte_buffer_factory,
                              core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-                             core::IAllocator& allocator)
-    : allocator_(allocator)
+                             core::IArena& arena)
+    : arena_(arena)
     , config_(config)
     , format_map_(format_map)
     , packet_factory_(packet_factory)
@@ -48,7 +48,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         return false;
     }
 
-    router_.reset(new (router_) packet::Router(allocator_));
+    router_.reset(new (router_) packet::Router(arena_));
     if (!router_) {
         return false;
     }
@@ -65,7 +65,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
 
         if (config_.enable_interleaving) {
             interleaver_.reset(new (interleaver_) packet::Interleaver(
-                *pwriter, allocator_,
+                *pwriter, arena_,
                 config_.fec_writer.n_source_packets
                     + config_.fec_writer.n_repair_packets));
             if (!interleaver_ || !interleaver_->is_valid()) {
@@ -75,8 +75,8 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         }
 
         fec_encoder_.reset(fec::CodecMap::instance().new_encoder(
-                               config_.fec_encoder, byte_buffer_factory_, allocator_),
-                           allocator_);
+                               config_.fec_encoder, byte_buffer_factory_, arena_),
+                           arena_);
         if (!fec_encoder_) {
             return false;
         }
@@ -84,7 +84,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         fec_writer_.reset(new (fec_writer_) fec::Writer(
             config_.fec_writer, config_.fec_encoder.scheme, *fec_encoder_, *pwriter,
             source_endpoint->composer(), repair_endpoint->composer(), packet_factory_,
-            byte_buffer_factory_, allocator_));
+            byte_buffer_factory_, arena_));
         if (!fec_writer_ || !fec_writer_->is_valid()) {
             return false;
         }
@@ -92,8 +92,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
     }
 
     payload_encoder_.reset(
-        format->new_encoder(allocator_, format->pcm_format, format->sample_spec),
-        allocator_);
+        format->new_encoder(arena_, format->pcm_format, format->sample_spec), arena_);
     if (!payload_encoder_) {
         return false;
     }
@@ -132,12 +131,11 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         }
 
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-                             config_.resampler_backend, allocator_,
-                             sample_buffer_factory_, config_.resampler_profile,
-                             config_.input_sample_spec,
+                             config_.resampler_backend, arena_, sample_buffer_factory_,
+                             config_.resampler_profile, config_.input_sample_spec,
                              audio::SampleSpec(format->sample_spec.sample_rate(),
                                                config_.input_sample_spec.channel_set())),
-                         allocator_);
+                         arena_);
 
         if (!resampler_) {
             return false;

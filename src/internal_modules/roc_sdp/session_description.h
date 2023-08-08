@@ -15,7 +15,7 @@
 #include "roc_address/socket_addr.h"
 #include "roc_core/array.h"
 #include "roc_core/attributes.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/list.h"
 #include "roc_core/log.h"
 #include "roc_core/shared_ptr.h"
@@ -31,7 +31,7 @@ namespace sdp {
 class SessionDescription : public core::NonCopyable<> {
 public:
     //! Initialize empty session description
-    SessionDescription(core::IAllocator& allocator);
+    SessionDescription(core::IArena& arena);
 
     //! Clear all fields.
     void clear();
@@ -98,7 +98,7 @@ private:
 
     core::List<MediaDescription> media_descriptions_;
 
-    core::IAllocator& allocator_;
+    core::IArena& arena_;
 };
 
 //! Parse SDP session description from string.

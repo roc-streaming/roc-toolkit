@@ -16,7 +16,7 @@
 #include "roc_core/attributes.h"
 #include "roc_core/hashmap_node.h"
 #include "roc_core/hashsum.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/ownership_policy.h"
@@ -30,13 +30,13 @@ namespace core {
 //!
 //! Characteristics:
 //!  1) Intrusive. Hash table nodes are stored directly in elements. No allocations
-//!     are needed to insert a node. Allocator is used only to allocate an array
+//!     are needed to insert a node. Arena is used only to allocate an array
 //!     of buckets.
 //!  2) Collision-chaining. Implemented as an array of buckets, where a bucket is
 //!     the head of a doubly-linked lists of bucket elements.
 //!  3) Controllable allocations. Allocations and deallocations are performed only
 //!     when the hash table is explicitly growed. All other operations don't touch
-//!     allocator.
+//!     arena.
 //!  4) Zero allocations for small hash tables. A fixed number of buckets can be
 //!     embedded directly into hash table object.
 //!  5) Incremental rehashing. After hash table growth, rehashing is performed
@@ -87,7 +87,7 @@ public:
     typedef typename OwnershipPolicy<T>::Pointer Pointer;
 
     //! Initialize empty hashmap.
-    Hashmap(IAllocator& allocator)
+    Hashmap(IArena& arena)
         : curr_buckets_(NULL)
         , n_curr_buckets_(0)
         , prev_buckets_(NULL)
@@ -95,7 +95,7 @@ public:
         , size_(0)
         , rehash_pos_(0)
         , rehash_remain_nodes_(0)
-        , allocator_(allocator) {
+        , arena_(arena) {
         all_head_.all_prev = &all_head_;
         all_head_.all_next = &all_head_;
 
@@ -358,7 +358,7 @@ private:
             && curr_buckets_ != (Bucket*)embedded_buckets_.memory()) {
             buckets = (Bucket*)embedded_buckets_.memory();
         } else {
-            buckets = (Bucket*)allocator_.allocate(n_buckets * sizeof(Bucket));
+            buckets = (Bucket*)arena_.allocate(n_buckets * sizeof(Bucket));
             if (buckets == NULL) {
                 return false;
             }
@@ -367,7 +367,7 @@ private:
         memset(buckets, 0, n_buckets * sizeof(Bucket));
 
         if (prev_buckets_ && prev_buckets_ != (Bucket*)embedded_buckets_.memory()) {
-            allocator_.deallocate(prev_buckets_);
+            arena_.deallocate(prev_buckets_);
             prev_buckets_ = NULL;
         }
 
@@ -387,11 +387,11 @@ private:
 
     void dealloc_buckets_() {
         if (curr_buckets_ && curr_buckets_ != (Bucket*)embedded_buckets_.memory()) {
-            allocator_.deallocate(curr_buckets_);
+            arena_.deallocate(curr_buckets_);
         }
 
         if (prev_buckets_ && prev_buckets_ != (Bucket*)embedded_buckets_.memory()) {
-            allocator_.deallocate(prev_buckets_);
+            arena_.deallocate(prev_buckets_);
         }
     }
 
@@ -620,7 +620,7 @@ private:
     // head of list of all nodes
     HashmapNode::HashmapNodeData all_head_;
 
-    IAllocator& allocator_;
+    IArena& arena_;
 
     AlignedStorage<NumEmbeddedBuckets * sizeof(Bucket)> embedded_buckets_;
 };

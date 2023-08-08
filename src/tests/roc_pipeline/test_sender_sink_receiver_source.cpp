@@ -13,7 +13,7 @@
 #include "test_helpers/packet_sender.h"
 
 #include "roc_core/buffer_factory.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_fec/codec_map.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
@@ -73,11 +73,11 @@ enum {
     FlagLDPC = (1 << 5)
 };
 
-core::HeapAllocator allocator;
-core::BufferFactory<audio::sample_t> sample_buffer_factory(allocator, MaxBufSize, true);
-core::BufferFactory<uint8_t> byte_buffer_factory(allocator, MaxBufSize, true);
-packet::PacketFactory packet_factory(allocator, true);
-rtp::FormatMap format_map(allocator, true);
+core::HeapArena arena;
+core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, MaxBufSize, true);
+core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize, true);
+packet::PacketFactory packet_factory(arena, true);
+rtp::FormatMap format_map(arena, true);
 
 SenderConfig make_sender_config(int flags,
                                 audio::ChannelMask frame_channels,
@@ -209,7 +209,7 @@ void send_receive(int flags,
         make_sender_config(flags, frame_channels, packet_channels);
 
     SenderSink sender(sender_config, format_map, packet_factory, byte_buffer_factory,
-                      sample_buffer_factory, allocator);
+                      sample_buffer_factory, arena);
 
     CHECK(sender.is_valid());
 
@@ -239,7 +239,7 @@ void send_receive(int flags,
         make_receiver_config(frame_channels, packet_channels);
 
     ReceiverSource receiver(receiver_config, format_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, allocator);
+                            byte_buffer_factory, sample_buffer_factory, arena);
 
     CHECK(receiver.is_valid());
 

@@ -15,7 +15,7 @@ namespace audio {
 Watchdog::Watchdog(IFrameReader& reader,
                    const audio::SampleSpec& sample_spec,
                    const WatchdogConfig& config,
-                   core::IAllocator& allocator)
+                   core::IArena& arena)
     : reader_(reader)
     , sample_spec_(sample_spec)
     , max_blank_duration_(
@@ -28,7 +28,7 @@ Watchdog::Watchdog(IFrameReader& reader,
     , last_pos_before_blank_(0)
     , last_pos_before_drops_(0)
     , curr_window_flags_(0)
-    , status_(allocator)
+    , status_(arena)
     , status_pos_(0)
     , status_show_(false)
     , alive_(true)

@@ -14,7 +14,7 @@
 #include "roc_audio/pcm_decoder.h"
 #include "roc_core/atomic.h"
 #include "roc_core/buffer_factory.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_core/time.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
@@ -46,12 +46,12 @@ enum {
     ManyFrames = FramesPerPacket * 20
 };
 
-core::HeapAllocator allocator;
-core::BufferFactory<audio::sample_t> sample_buffer_factory(allocator, MaxBufSize, true);
-core::BufferFactory<uint8_t> byte_buffer_factory(allocator, MaxBufSize, true);
-packet::PacketFactory packet_factory(allocator, true);
+core::HeapArena arena;
+core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, MaxBufSize, true);
+core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize, true);
+packet::PacketFactory packet_factory(arena, true);
 
-rtp::FormatMap format_map(allocator, true);
+rtp::FormatMap format_map(arena, true);
 rtp::Parser rtp_parser(format_map, NULL);
 
 } // namespace
@@ -111,7 +111,7 @@ TEST(sender_sink, write) {
     packet::Queue queue;
 
     SenderSink sender(make_config(), format_map, packet_factory, byte_buffer_factory,
-                      sample_buffer_factory, allocator);
+                      sample_buffer_factory, arena);
     CHECK(sender.is_valid());
 
     SenderSlot* slot = sender.create_slot();
@@ -130,8 +130,8 @@ TEST(sender_sink, write) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
     }
 
-    test::PacketReader packet_reader(allocator, queue, rtp_parser, format_map,
-                                     packet_factory, PayloadType_Ch2, dst_addr);
+    test::PacketReader packet_reader(arena, queue, rtp_parser, format_map, packet_factory,
+                                     PayloadType_Ch2, dst_addr);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
@@ -153,7 +153,7 @@ TEST(sender_sink, frame_size_small) {
     packet::Queue queue;
 
     SenderSink sender(make_config(), format_map, packet_factory, byte_buffer_factory,
-                      sample_buffer_factory, allocator);
+                      sample_buffer_factory, arena);
     CHECK(sender.is_valid());
 
     SenderSlot* slot = sender.create_slot();
@@ -172,8 +172,8 @@ TEST(sender_sink, frame_size_small) {
         frame_writer.write_samples(SamplesPerSmallFrame, input_sample_spec);
     }
 
-    test::PacketReader packet_reader(allocator, queue, rtp_parser, format_map,
-                                     packet_factory, PayloadType_Ch2, dst_addr);
+    test::PacketReader packet_reader(arena, queue, rtp_parser, format_map, packet_factory,
+                                     PayloadType_Ch2, dst_addr);
 
     for (size_t np = 0; np < ManySmallFrames / SmallFramesPerPacket; np++) {
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
@@ -195,7 +195,7 @@ TEST(sender_sink, frame_size_large) {
     packet::Queue queue;
 
     SenderSink sender(make_config(), format_map, packet_factory, byte_buffer_factory,
-                      sample_buffer_factory, allocator);
+                      sample_buffer_factory, arena);
     CHECK(sender.is_valid());
 
     SenderSlot* slot = sender.create_slot();
@@ -214,8 +214,8 @@ TEST(sender_sink, frame_size_large) {
         frame_writer.write_samples(SamplesPerLargeFrame, input_sample_spec);
     }
 
-    test::PacketReader packet_reader(allocator, queue, rtp_parser, format_map,
-                                     packet_factory, PayloadType_Ch2, dst_addr);
+    test::PacketReader packet_reader(arena, queue, rtp_parser, format_map, packet_factory,
+                                     PayloadType_Ch2, dst_addr);
 
     for (size_t np = 0; np < ManyLargeFrames * PacketsPerLargeFrame; np++) {
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
@@ -232,7 +232,7 @@ TEST(sender_sink, channels_stereo_to_mono) {
     packet::Queue queue;
 
     SenderSink sender(make_config(), format_map, packet_factory, byte_buffer_factory,
-                      sample_buffer_factory, allocator);
+                      sample_buffer_factory, arena);
     CHECK(sender.is_valid());
 
     SenderSlot* slot = sender.create_slot();
@@ -251,8 +251,8 @@ TEST(sender_sink, channels_stereo_to_mono) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
     }
 
-    test::PacketReader packet_reader(allocator, queue, rtp_parser, format_map,
-                                     packet_factory, PayloadType_Ch1, dst_addr);
+    test::PacketReader packet_reader(arena, queue, rtp_parser, format_map, packet_factory,
+                                     PayloadType_Ch1, dst_addr);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
@@ -269,7 +269,7 @@ TEST(sender_sink, channels_mono_to_stereo) {
     packet::Queue queue;
 
     SenderSink sender(make_config(), format_map, packet_factory, byte_buffer_factory,
-                      sample_buffer_factory, allocator);
+                      sample_buffer_factory, arena);
     CHECK(sender.is_valid());
 
     SenderSlot* slot = sender.create_slot();
@@ -288,8 +288,8 @@ TEST(sender_sink, channels_mono_to_stereo) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
     }
 
-    test::PacketReader packet_reader(allocator, queue, rtp_parser, format_map,
-                                     packet_factory, PayloadType_Ch2, dst_addr);
+    test::PacketReader packet_reader(arena, queue, rtp_parser, format_map, packet_factory,
+                                     PayloadType_Ch2, dst_addr);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);

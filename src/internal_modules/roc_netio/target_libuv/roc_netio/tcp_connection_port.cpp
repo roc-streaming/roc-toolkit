@@ -23,8 +23,8 @@ const core::nanoseconds_t StatsReportInterval = 60 * core::Second;
 
 TcpConnectionPort::TcpConnectionPort(TcpConnectionType type,
                                      uv_loop_t& loop,
-                                     core::IAllocator& allocator)
-    : BasicPort(allocator)
+                                     core::IArena& arena)
+    : BasicPort(arena)
     , loop_(loop)
     , poll_handle_initialized_(false)
     , poll_handle_started_(false)

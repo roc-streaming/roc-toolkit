@@ -18,7 +18,7 @@
 #include "roc_core/atomic.h"
 #include "roc_core/attributes.h"
 #include "roc_core/buffer_factory.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/list.h"
 #include "roc_core/mpsc_queue.h"
 #include "roc_core/mpsc_queue_node.h"
@@ -188,7 +188,7 @@ public:
     //!  Start background thread if the object was successfully constructed.
     NetworkLoop(packet::PacketFactory& packet_factory,
                 core::BufferFactory<uint8_t>& buffer_factory,
-                core::IAllocator& allocator);
+                core::IArena& arena);
 
     //! Destroy. Stop all receivers and senders.
     //! @remarks
@@ -247,7 +247,7 @@ private:
 
     packet::PacketFactory& packet_factory_;
     core::BufferFactory<uint8_t>& buffer_factory_;
-    core::IAllocator& allocator_;
+    core::IArena& arena_;
 
     bool started_;
 

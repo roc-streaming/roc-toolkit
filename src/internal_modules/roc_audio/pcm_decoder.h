@@ -24,7 +24,7 @@ namespace audio {
 class PcmDecoder : public IFrameDecoder, public core::NonCopyable<> {
 public:
     //! Construction function.
-    static IFrameDecoder* construct(core::IAllocator& allocator,
+    static IFrameDecoder* construct(core::IArena& arena,
                                     const PcmFormat& pcm_format,
                                     const SampleSpec& sample_spec);
 

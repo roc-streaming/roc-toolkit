@@ -9,7 +9,7 @@
 #include "roc/endpoint.h"
 
 #include "adapters.h"
-#include "allocator.h"
+#include "arena.h"
 
 #include "roc_address/endpoint_uri.h"
 #include "roc_core/log.h"
@@ -23,7 +23,7 @@ int roc_endpoint_allocate(roc_endpoint** result) {
     }
 
     address::EndpointUri* imp_endpoint =
-        new (api::default_allocator) address::EndpointUri(api::default_allocator);
+        new (api::default_arena) address::EndpointUri(api::default_arena);
 
     if (!imp_endpoint) {
         roc_log(LogError, "roc_endpoint_allocate(): can't allocate endpoint");
@@ -289,7 +289,7 @@ int roc_endpoint_deallocate(roc_endpoint* endpoint) {
     }
 
     address::EndpointUri& imp_endpoint = *(address::EndpointUri*)endpoint;
-    api::default_allocator.destroy_object(imp_endpoint);
+    api::default_arena.destroy_object(imp_endpoint);
 
     return 0;
 }

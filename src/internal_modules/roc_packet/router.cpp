@@ -13,8 +13,8 @@
 namespace roc {
 namespace packet {
 
-Router::Router(core::IAllocator& allocator)
-    : routes_(allocator) {
+Router::Router(core::IArena& arena)
+    : routes_(arena) {
 }
 
 bool Router::add_route(IWriter& writer, unsigned flags) {

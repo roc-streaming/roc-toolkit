@@ -31,20 +31,21 @@ namespace core {
 //! When reference counter becomes zero, AllocationPolicy::destroy() is invoked
 //! by RefCounted to destroy itself.
 //!
-//! Inherits AllocationPolicy to make its methods available in the derived class.
+//! Inherits AllocationPolicy to make its methods and state available in the
+//! derived class.
 //!
 //! Thread-safe.
 template <class T, class AllocationPolicy>
 class RefCounted : public NonCopyable<RefCounted<T, AllocationPolicy> >,
                    protected AllocationPolicy {
 public:
-    //! Initialization with default allocation policy.
+    //! Initialize.
     RefCounted()
         : AllocationPolicy()
         , counter_(0) {
     }
 
-    //! Initialization with arbitrary allocation policy.
+    //! Initialize.
     explicit RefCounted(const AllocationPolicy& policy)
         : AllocationPolicy(policy)
         , counter_(0) {

@@ -15,10 +15,10 @@ namespace roc {
 namespace audio {
 
 ProfilingWriter::ProfilingWriter(IFrameWriter& writer,
-                                 core::IAllocator& allocator,
+                                 core::IArena& arena,
                                  const audio::SampleSpec& sample_spec,
                                  ProfilerConfig profiler_config)
-    : profiler_(allocator, sample_spec, profiler_config)
+    : profiler_(arena, sample_spec, profiler_config)
     , writer_(writer) {
 }
 

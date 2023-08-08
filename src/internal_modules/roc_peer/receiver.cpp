@@ -25,7 +25,7 @@ Receiver::Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_co
                 context.packet_factory(),
                 context.byte_buffer_factory(),
                 context.sample_buffer_factory(),
-                context.allocator())
+                context.arena())
     , processing_task_(pipeline_)
     , valid_(false) {
     roc_log(LogDebug, "receiver peer: initializing");

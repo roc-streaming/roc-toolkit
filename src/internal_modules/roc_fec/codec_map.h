@@ -13,7 +13,7 @@
 #define ROC_FEC_CODEC_MAP_H_
 
 #include "roc_core/buffer_factory.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/singleton.h"
 #include "roc_fec/codec_config.h"
@@ -49,7 +49,7 @@ public:
     //!  NULL if parameters are invalid or given codec support is not enabled.
     IBlockEncoder* new_encoder(const CodecConfig& config,
                                core::BufferFactory<uint8_t>& buffer_factory,
-                               core::IAllocator& allocator) const;
+                               core::IArena& arena) const;
 
     //! Create a new block decoder.
     //!
@@ -60,7 +60,7 @@ public:
     //!  NULL if parameters are invalid or given codec support is not enabled.
     IBlockDecoder* new_decoder(const CodecConfig& config,
                                core::BufferFactory<uint8_t>& buffer_factory,
-                               core::IAllocator& allocator) const;
+                               core::IArena& arena) const;
 
 private:
     friend class core::Singleton<CodecMap>;
@@ -72,11 +72,11 @@ private:
 
         IBlockEncoder* (*encoder_ctor)(const CodecConfig& config,
                                        core::BufferFactory<uint8_t>& buffer_factory,
-                                       core::IAllocator& allocator);
+                                       core::IArena& arena);
 
         IBlockDecoder* (*decoder_ctor)(const CodecConfig& config,
                                        core::BufferFactory<uint8_t>& buffer_factory,
-                                       core::IAllocator& allocator);
+                                       core::IArena& arena);
     };
 
     CodecMap();

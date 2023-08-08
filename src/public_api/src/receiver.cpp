@@ -45,8 +45,8 @@ int roc_receiver_open(roc_context* context,
     }
 
     core::ScopedPtr<peer::Receiver> imp_receiver(
-        new (imp_context->allocator()) peer::Receiver(*imp_context, imp_config),
-        imp_context->allocator());
+        new (imp_context->arena()) peer::Receiver(*imp_context, imp_config),
+        imp_context->arena());
 
     if (!imp_receiver) {
         roc_log(LogError, "roc_receiver_open(): can't allocate receiver");
@@ -184,7 +184,7 @@ int roc_receiver_close(roc_receiver* receiver) {
     }
 
     peer::Receiver* imp_receiver = (peer::Receiver*)receiver;
-    imp_receiver->context().allocator().destroy_object(*imp_receiver);
+    imp_receiver->context().arena().destroy_object(*imp_receiver);
 
     roc_log(LogInfo, "roc_receiver_close(): closed receiver");
 

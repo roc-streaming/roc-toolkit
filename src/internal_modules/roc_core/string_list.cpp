@@ -12,8 +12,8 @@
 namespace roc {
 namespace core {
 
-StringList::StringList(IAllocator& allocator)
-    : data_(allocator)
+StringList::StringList(IArena& arena)
+    : data_(arena)
     , back_(NULL)
     , size_(0) {
 }

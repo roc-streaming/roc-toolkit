@@ -9,7 +9,7 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/array.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_packet/interleaver.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
@@ -19,8 +19,8 @@ namespace packet {
 
 namespace {
 
-core::HeapAllocator allocator;
-PacketFactory packet_factory(allocator, true);
+core::HeapArena arena;
+PacketFactory packet_factory(arena, true);
 
 PacketPtr new_packet(seqnum_t sn) {
     PacketPtr packet = packet_factory.new_packet();
@@ -39,18 +39,18 @@ TEST_GROUP(interleaver) {};
 // Fill Interleaver with multiple of its internal memory size.
 TEST(interleaver, read_write) {
     Queue queue;
-    Interleaver intrlvr(queue, allocator, 10);
+    Interleaver intrlvr(queue, arena, 10);
 
     CHECK(intrlvr.is_valid());
 
     const size_t num_packets = intrlvr.block_size() * 5;
 
     // Packets to push to Interleaver.
-    core::Array<PacketPtr> packets(allocator);
+    core::Array<PacketPtr> packets(arena);
     CHECK(packets.resize(num_packets));
 
     // Checks for received packets.
-    core::Array<bool> packets_ctr(allocator);
+    core::Array<bool> packets_ctr(arena);
     CHECK(packets_ctr.resize(num_packets));
 
     for (size_t i = 0; i < num_packets; i++) {
@@ -94,7 +94,7 @@ TEST(interleaver, read_write) {
 
 TEST(interleaver, flush) {
     Queue queue;
-    Interleaver intrlvr(queue, allocator, 10);
+    Interleaver intrlvr(queue, arena, 10);
 
     CHECK(intrlvr.is_valid());
 

@@ -17,8 +17,8 @@ namespace netio {
 TcpServerPort::TcpServerPort(const TcpServerConfig& config,
                              IConnAcceptor& conn_acceptor,
                              uv_loop_t& loop,
-                             core::IAllocator& allocator)
-    : BasicPort(allocator)
+                             core::IArena& arena)
+    : BasicPort(arena)
     , config_(config)
     , conn_acceptor_(conn_acceptor)
     , close_handler_(NULL)
@@ -146,8 +146,8 @@ void TcpServerPort::poll_cb_(uv_poll_t* handle, int status, int events) {
     roc_log(LogDebug, "tcp server: %s: trying to accept incoming connection",
             self.descriptor());
 
-    core::SharedPtr<TcpConnectionPort> conn = new (self.allocator())
-        TcpConnectionPort(TcpConn_Server, self.loop_, self.allocator());
+    core::SharedPtr<TcpConnectionPort> conn =
+        new (self.arena()) TcpConnectionPort(TcpConn_Server, self.loop_, self.arena());
     if (!conn) {
         roc_log(LogError, "tcp server: %s: can't allocate connection", self.descriptor());
         return;

@@ -14,7 +14,7 @@
 
 #include "roc_core/array.h"
 #include "roc_core/attributes.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
 
@@ -30,8 +30,8 @@ namespace core {
 template <size_t EmbeddedCapacity = 0> class StringBuffer : public NonCopyable<> {
 public:
     //! Initialize empty buffer.
-    explicit StringBuffer(IAllocator& allocator)
-        : data_(allocator) {
+    explicit StringBuffer(IArena& arena)
+        : data_(arena) {
         clear();
     }
 

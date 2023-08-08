@@ -12,7 +12,7 @@
 #include "roc_audio/resampler_profile.h"
 #include "roc_core/array.h"
 #include "roc_core/crash_handler.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_core/log.h"
 #include "roc_core/parse_duration.h"
 #include "roc_core/scoped_ptr.h"
@@ -31,7 +31,7 @@
 using namespace roc;
 
 int main(int argc, char** argv) {
-    core::HeapAllocator::enable_panic_on_leak();
+    core::HeapArena::enable_panic_on_leak();
 
     core::CrashHandler crash_handler;
 
@@ -81,9 +81,9 @@ int main(int argc, char** argv) {
         context_config.max_frame_size = (size_t)args.frame_limit_arg;
     }
 
-    core::HeapAllocator heap_allocator;
+    core::HeapArena heap_arena;
 
-    peer::Context context(context_config, heap_allocator);
+    peer::Context context(context_config, heap_arena);
     if (!context.is_valid()) {
         roc_log(LogError, "can't initialize peer context");
         return 1;
@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
     sndio::BackendDispatcher backend_dispatcher;
 
     if (args.list_supported_given) {
-        if (!sndio::print_supported(backend_dispatcher, context.allocator())) {
+        if (!sndio::print_supported(backend_dispatcher, context.arena())) {
             return 1;
         }
         return 0;
@@ -245,7 +245,7 @@ int main(int argc, char** argv) {
         io_config.sample_spec.set_sample_rate((size_t)args.rate_arg);
     }
 
-    address::IoUri output_uri(context.allocator());
+    address::IoUri output_uri(context.arena());
     if (args.output_given) {
         if (!address::parse_io_uri(args.output_arg, output_uri)) {
             roc_log(LogError, "invalid --output file or device URI");
@@ -269,12 +269,12 @@ int main(int argc, char** argv) {
     core::ScopedPtr<sndio::ISink> output_sink;
     if (output_uri.is_valid()) {
         output_sink.reset(backend_dispatcher.open_sink(output_uri, args.output_format_arg,
-                                                       io_config, context.allocator()),
-                          context.allocator());
+                                                       io_config, context.arena()),
+                          context.arena());
     } else {
         output_sink.reset(
-            backend_dispatcher.open_default_sink(io_config, context.allocator()),
-            context.allocator());
+            backend_dispatcher.open_default_sink(io_config, context.arena()),
+            context.arena());
     }
     if (!output_sink) {
         roc_log(LogError, "can't open output file or device: uri=%s format=%s",
@@ -297,7 +297,7 @@ int main(int argc, char** argv) {
     core::ScopedPtr<pipeline::TranscoderSource> backup_pipeline;
 
     if (args.backup_given) {
-        address::IoUri backup_uri(context.allocator());
+        address::IoUri backup_uri(context.arena());
 
         if (!address::parse_io_uri(args.backup_arg, backup_uri)) {
             roc_log(LogError, "invalid --backup file or device URI");
@@ -318,10 +318,10 @@ int main(int argc, char** argv) {
             }
         }
 
-        backup_source.reset(
-            backend_dispatcher.open_source(backup_uri, args.backup_format_arg, io_config,
-                                           context.allocator()),
-            context.allocator());
+        backup_source.reset(backend_dispatcher.open_source(backup_uri,
+                                                           args.backup_format_arg,
+                                                           io_config, context.arena()),
+                            context.arena());
 
         if (!backup_source) {
             roc_log(LogError, "can't open backup file or device: uri=%s format=%s",
@@ -345,10 +345,10 @@ int main(int argc, char** argv) {
 
         transcoder_config.enable_poisoning = receiver_config.common.enable_poisoning;
 
-        backup_pipeline.reset(new (context.allocator()) pipeline::TranscoderSource(
+        backup_pipeline.reset(new (context.arena()) pipeline::TranscoderSource(
                                   transcoder_config, *backup_source,
-                                  context.sample_buffer_factory(), context.allocator()),
-                              context.allocator());
+                                  context.sample_buffer_factory(), context.arena()),
+                              context.arena());
         if (!backup_pipeline) {
             roc_log(LogError, "can't create backup pipeline");
             return 1;
@@ -391,7 +391,7 @@ int main(int argc, char** argv) {
     }
 
     for (size_t slot = 0; slot < (size_t)args.source_given; slot++) {
-        address::EndpointUri endpoint(context.allocator());
+        address::EndpointUri endpoint(context.arena());
 
         if (!address::parse_endpoint_uri(args.source_arg[slot],
                                          address::EndpointUri::Subset_Full, endpoint)) {
@@ -424,7 +424,7 @@ int main(int argc, char** argv) {
     }
 
     for (size_t slot = 0; slot < (size_t)args.repair_given; slot++) {
-        address::EndpointUri endpoint(context.allocator());
+        address::EndpointUri endpoint(context.arena());
 
         if (!address::parse_endpoint_uri(args.repair_arg[slot],
                                          address::EndpointUri::Subset_Full, endpoint)) {
@@ -457,7 +457,7 @@ int main(int argc, char** argv) {
     }
 
     for (size_t slot = 0; slot < (size_t)args.control_given; slot++) {
-        address::EndpointUri endpoint(context.allocator());
+        address::EndpointUri endpoint(context.arena());
 
         if (!address::parse_endpoint_uri(args.control_arg[slot],
                                          address::EndpointUri::Subset_Full, endpoint)) {

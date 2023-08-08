@@ -15,10 +15,10 @@
 namespace roc {
 namespace sndio {
 
-SoxSource::SoxSource(core::IAllocator& allocator, const Config& config)
-    : driver_name_(allocator)
-    , input_name_(allocator)
-    , buffer_(allocator)
+SoxSource::SoxSource(core::IArena& arena, const Config& config)
+    : driver_name_(arena)
+    , input_name_(arena)
+    , buffer_(arena)
     , buffer_size_(0)
     , input_(NULL)
     , is_file_(false)

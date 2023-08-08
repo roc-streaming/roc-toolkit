@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/iallocator.h
-//! @brief Memory allocator interface.
+//! @file roc_core/iarena.h
+//! @brief Memory arena interface.
 
-#ifndef ROC_CORE_IALLOCATOR_H_
-#define ROC_CORE_IALLOCATOR_H_
+#ifndef ROC_CORE_IARENA_H_
+#define ROC_CORE_IARENA_H_
 
 #include "roc_core/attributes.h"
 #include "roc_core/panic.h"
@@ -19,10 +19,10 @@
 namespace roc {
 namespace core {
 
-//! Memory allocator interface.
-class IAllocator {
+//! Memory arena interface.
+class IArena {
 public:
-    virtual ~IAllocator();
+    virtual ~IArena();
 
     //! Allocate memory.
     //! @returns
@@ -43,34 +43,34 @@ public:
 } // namespace core
 } // namespace roc
 
-//! Placement new for core::IAllocator.
+//! Placement new for core::IArena.
 //! @note
 //!  nothrow forces compiler to check for NULL return value before calling ctor.
-inline void* operator new(size_t size, roc::core::IAllocator& allocator) throw() {
-    return allocator.allocate(size);
+inline void* operator new(size_t size, roc::core::IArena& arena) throw() {
+    return arena.allocate(size);
 }
 
-//! Placement new[] for core::IAllocator.
+//! Placement new[] for core::IArena.
 //! @note
 //!  nothrow forces compiler to check for NULL return value before calling ctor.
-inline void* operator new[](size_t size, roc::core::IAllocator& allocator) throw() {
-    return allocator.allocate(size);
+inline void* operator new[](size_t size, roc::core::IArena& arena) throw() {
+    return arena.allocate(size);
 }
 
-//! Placement delete for core::IAllocator.
+//! Placement delete for core::IArena.
 //! @note
 //!  Compiler calls this if ctor throws in a placement new expression.
 template <class T>
-inline void operator delete(void* ptr, roc::core::IAllocator& allocator) throw() {
-    allocator.deallocate(ptr);
+inline void operator delete(void* ptr, roc::core::IArena& arena) throw() {
+    arena.deallocate(ptr);
 }
 
-//! Placement delete[] for core::IAllocator.
+//! Placement delete[] for core::IArena.
 //! @note
 //!  Compiler calls this if ctor throws in a placement new[] expression.
 template <class T>
-inline void operator delete[](void* ptr, roc::core::IAllocator& allocator) throw() {
-    allocator.deallocate(ptr);
+inline void operator delete[](void* ptr, roc::core::IArena& arena) throw() {
+    arena.deallocate(ptr);
 }
 
-#endif // ROC_CORE_IALLOCATOR_H_
+#endif // ROC_CORE_IARENA_H_

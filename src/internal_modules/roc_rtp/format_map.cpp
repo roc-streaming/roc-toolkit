@@ -15,9 +15,9 @@
 namespace roc {
 namespace rtp {
 
-FormatMap::FormatMap(core::IAllocator& allocator, bool poison)
-    : node_pool_(allocator, poison)
-    , node_map_(allocator) {
+FormatMap::FormatMap(core::IArena& arena, bool poison)
+    : node_pool_(arena, poison)
+    , node_map_(arena) {
     {
         Format fmt;
         fmt.payload_type = PayloadType_L16_Mono;

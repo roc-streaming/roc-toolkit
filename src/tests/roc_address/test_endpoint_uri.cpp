@@ -10,21 +10,21 @@
 
 #include "roc_address/endpoint_uri.h"
 #include "roc_address/endpoint_uri_to_str.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 
 namespace roc {
 namespace address {
 
 namespace {
 
-core::HeapAllocator allocator;
+core::HeapArena arena;
 
 } // namespace
 
 TEST_GROUP(endpoint_uri) {};
 
 TEST(endpoint_uri, empty) {
-    EndpointUri u(allocator);
+    EndpointUri u(arena);
 
     CHECK(!u.verify(EndpointUri::Subset_Full));
 
@@ -39,7 +39,7 @@ TEST(endpoint_uri, empty) {
 
 TEST(endpoint_uri, fields) {
     {
-        EndpointUri u(allocator);
+        EndpointUri u(arena);
         CHECK(parse_endpoint_uri("rtsp://host", EndpointUri::Subset_Full, u));
         CHECK(u.verify(EndpointUri::Subset_Full));
 
@@ -52,7 +52,7 @@ TEST(endpoint_uri, fields) {
         STRCMP_EQUAL("rtsp://host", endpoint_uri_to_str(u).c_str());
     }
     {
-        EndpointUri u(allocator);
+        EndpointUri u(arena);
         CHECK(parse_endpoint_uri("rtsp://host:123", EndpointUri::Subset_Full, u));
         CHECK(u.verify(EndpointUri::Subset_Full));
 
@@ -65,7 +65,7 @@ TEST(endpoint_uri, fields) {
         STRCMP_EQUAL("rtsp://host:123", endpoint_uri_to_str(u).c_str());
     }
     {
-        EndpointUri u(allocator);
+        EndpointUri u(arena);
         CHECK(parse_endpoint_uri("rtsp://host:123/path", EndpointUri::Subset_Full, u));
         CHECK(u.verify(EndpointUri::Subset_Full));
 
@@ -78,7 +78,7 @@ TEST(endpoint_uri, fields) {
         STRCMP_EQUAL("rtsp://host:123/path", endpoint_uri_to_str(u).c_str());
     }
     {
-        EndpointUri u(allocator);
+        EndpointUri u(arena);
         CHECK(parse_endpoint_uri("rtsp://host:123/", EndpointUri::Subset_Full, u));
         CHECK(u.verify(EndpointUri::Subset_Full));
 
@@ -91,7 +91,7 @@ TEST(endpoint_uri, fields) {
         STRCMP_EQUAL("rtsp://host:123/", endpoint_uri_to_str(u).c_str());
     }
     {
-        EndpointUri u(allocator);
+        EndpointUri u(arena);
         CHECK(parse_endpoint_uri("rtsp://host:123/path?query", EndpointUri::Subset_Full,
                                  u));
         CHECK(u.verify(EndpointUri::Subset_Full));
@@ -105,7 +105,7 @@ TEST(endpoint_uri, fields) {
         STRCMP_EQUAL("rtsp://host:123/path?query", endpoint_uri_to_str(u).c_str());
     }
     {
-        EndpointUri u(allocator);
+        EndpointUri u(arena);
         CHECK(parse_endpoint_uri("rtsp://host:123?query", EndpointUri::Subset_Full, u));
         CHECK(u.verify(EndpointUri::Subset_Full));
 
@@ -118,7 +118,7 @@ TEST(endpoint_uri, fields) {
         STRCMP_EQUAL("rtsp://host:123?query", endpoint_uri_to_str(u).c_str());
     }
     {
-        EndpointUri u(allocator);
+        EndpointUri u(arena);
         CHECK(parse_endpoint_uri("rtsp://host:123/?", EndpointUri::Subset_Full, u));
         CHECK(u.verify(EndpointUri::Subset_Full));
 
@@ -131,7 +131,7 @@ TEST(endpoint_uri, fields) {
         STRCMP_EQUAL("rtsp://host:123/", endpoint_uri_to_str(u).c_str());
     }
     {
-        EndpointUri u(allocator);
+        EndpointUri u(arena);
         CHECK(parse_endpoint_uri("rtsp://host:123?", EndpointUri::Subset_Full, u));
         CHECK(u.verify(EndpointUri::Subset_Full));
 
@@ -147,7 +147,7 @@ TEST(endpoint_uri, fields) {
 
 TEST(endpoint_uri, protocols) {
     {
-        EndpointUri u(allocator);
+        EndpointUri u(arena);
         CHECK(parse_endpoint_uri("rtsp://host:123", EndpointUri::Subset_Full, u));
         CHECK(u.verify(EndpointUri::Subset_Full));
 
@@ -160,7 +160,7 @@ TEST(endpoint_uri, protocols) {
         STRCMP_EQUAL("rtsp://host:123", endpoint_uri_to_str(u).c_str());
     }
     {
-        EndpointUri u(allocator);
+        EndpointUri u(arena);
         CHECK(parse_endpoint_uri("rtp://host:123", EndpointUri::Subset_Full, u));
         CHECK(u.verify(EndpointUri::Subset_Full));
 
@@ -173,7 +173,7 @@ TEST(endpoint_uri, protocols) {
         STRCMP_EQUAL("rtp://host:123", endpoint_uri_to_str(u).c_str());
     }
     {
-        EndpointUri u(allocator);
+        EndpointUri u(arena);
         CHECK(parse_endpoint_uri("rtp+rs8m://host:123", EndpointUri::Subset_Full, u));
         CHECK(u.verify(EndpointUri::Subset_Full));
 
@@ -186,7 +186,7 @@ TEST(endpoint_uri, protocols) {
         STRCMP_EQUAL("rtp+rs8m://host:123", endpoint_uri_to_str(u).c_str());
     }
     {
-        EndpointUri u(allocator);
+        EndpointUri u(arena);
         CHECK(parse_endpoint_uri("rs8m://host:123", EndpointUri::Subset_Full, u));
         CHECK(u.verify(EndpointUri::Subset_Full));
 
@@ -199,7 +199,7 @@ TEST(endpoint_uri, protocols) {
         STRCMP_EQUAL("rs8m://host:123", endpoint_uri_to_str(u).c_str());
     }
     {
-        EndpointUri u(allocator);
+        EndpointUri u(arena);
         CHECK(parse_endpoint_uri("rtp+ldpc://host:123", EndpointUri::Subset_Full, u));
         CHECK(u.verify(EndpointUri::Subset_Full));
 
@@ -212,7 +212,7 @@ TEST(endpoint_uri, protocols) {
         STRCMP_EQUAL("rtp+ldpc://host:123", endpoint_uri_to_str(u).c_str());
     }
     {
-        EndpointUri u(allocator);
+        EndpointUri u(arena);
         CHECK(parse_endpoint_uri("ldpc://host:123", EndpointUri::Subset_Full, u));
         CHECK(u.verify(EndpointUri::Subset_Full));
 
@@ -225,7 +225,7 @@ TEST(endpoint_uri, protocols) {
         STRCMP_EQUAL("ldpc://host:123", endpoint_uri_to_str(u).c_str());
     }
     {
-        EndpointUri u(allocator);
+        EndpointUri u(arena);
         CHECK(parse_endpoint_uri("rtcp://host:123", EndpointUri::Subset_Full, u));
         CHECK(u.verify(EndpointUri::Subset_Full));
 
@@ -241,7 +241,7 @@ TEST(endpoint_uri, protocols) {
 
 TEST(endpoint_uri, addresses) {
     {
-        EndpointUri u(allocator);
+        EndpointUri u(arena);
         CHECK(parse_endpoint_uri("rtsp://127.0.0.1:123", EndpointUri::Subset_Full, u));
         CHECK(u.verify(EndpointUri::Subset_Full));
 
@@ -254,7 +254,7 @@ TEST(endpoint_uri, addresses) {
         STRCMP_EQUAL("rtsp://127.0.0.1:123", endpoint_uri_to_str(u).c_str());
     }
     {
-        EndpointUri u(allocator);
+        EndpointUri u(arena);
         CHECK(parse_endpoint_uri("rtsp://[::1]:123", EndpointUri::Subset_Full, u));
         CHECK(u.verify(EndpointUri::Subset_Full));
 
@@ -269,8 +269,8 @@ TEST(endpoint_uri, addresses) {
 }
 
 TEST(endpoint_uri, assign) {
-    EndpointUri u1(allocator);
-    EndpointUri u2(allocator);
+    EndpointUri u1(arena);
+    EndpointUri u2(arena);
 
     CHECK(parse_endpoint_uri("rtsp://127.0.0.1:123/path?query", EndpointUri::Subset_Full,
                              u1));
@@ -288,17 +288,17 @@ TEST(endpoint_uri, assign) {
 }
 
 TEST(endpoint_uri, is_equal) {
-    EndpointUri a1(allocator);
-    EndpointUri a2(allocator);
+    EndpointUri a1(arena);
+    EndpointUri a2(arena);
     CHECK(parse_endpoint_uri("rtsp://127.0.0.1:123/path?query", EndpointUri::Subset_Full,
                              a1));
     CHECK(parse_endpoint_uri("rtsp://127.0.0.1:123/path?query", EndpointUri::Subset_Full,
                              a2));
 
-    EndpointUri b1(allocator);
-    EndpointUri b2(allocator);
-    EndpointUri b3(allocator);
-    EndpointUri b4(allocator);
+    EndpointUri b1(arena);
+    EndpointUri b2(arena);
+    EndpointUri b3(arena);
+    EndpointUri b4(arena);
     CHECK(parse_endpoint_uri("rtsp://127.0.0.2:123/path?query", EndpointUri::Subset_Full,
                              b1));
     CHECK(parse_endpoint_uri("rtsp://127.0.0.1:124/path?query", EndpointUri::Subset_Full,
@@ -308,10 +308,10 @@ TEST(endpoint_uri, is_equal) {
     CHECK(parse_endpoint_uri("rtsp://127.0.0.1:123/path?querY", EndpointUri::Subset_Full,
                              b4));
 
-    EndpointUri c1(allocator);
-    EndpointUri c2(allocator);
-    EndpointUri c3(allocator);
-    EndpointUri c4(allocator);
+    EndpointUri c1(arena);
+    EndpointUri c2(arena);
+    EndpointUri c3(arena);
+    EndpointUri c4(arena);
     CHECK(parse_endpoint_uri("rtp://127.0.0.1:123", EndpointUri::Subset_Full, c1));
     CHECK(
         parse_endpoint_uri("rtsp://127.0.0.1/path?query", EndpointUri::Subset_Full, c2));
@@ -344,7 +344,7 @@ TEST(endpoint_uri, is_equal) {
 }
 
 TEST(endpoint_uri, omit_port) {
-    EndpointUri u(allocator);
+    EndpointUri u(arena);
 
     CHECK(parse_endpoint_uri("rtsp://host:123", EndpointUri::Subset_Full, u));
     CHECK(parse_endpoint_uri("rtsp://host", EndpointUri::Subset_Full, u));
@@ -366,7 +366,7 @@ TEST(endpoint_uri, omit_port) {
 }
 
 TEST(endpoint_uri, zero_port) {
-    EndpointUri u(allocator);
+    EndpointUri u(arena);
     CHECK(parse_endpoint_uri("rtsp://host:0", EndpointUri::Subset_Full, u));
     CHECK(u.verify(EndpointUri::Subset_Full));
 
@@ -381,7 +381,7 @@ TEST(endpoint_uri, zero_port) {
 
 TEST(endpoint_uri, service) {
     {
-        EndpointUri u(allocator);
+        EndpointUri u(arena);
         CHECK(parse_endpoint_uri("rtsp://127.0.0.1:123", EndpointUri::Subset_Full, u));
         CHECK(u.verify(EndpointUri::Subset_Full));
 
@@ -393,7 +393,7 @@ TEST(endpoint_uri, service) {
         STRCMP_EQUAL("rtsp://127.0.0.1:123", endpoint_uri_to_str(u).c_str());
     }
     {
-        EndpointUri u(allocator);
+        EndpointUri u(arena);
         CHECK(parse_endpoint_uri("rtsp://127.0.0.1", EndpointUri::Subset_Full, u));
         CHECK(u.verify(EndpointUri::Subset_Full));
 
@@ -407,7 +407,7 @@ TEST(endpoint_uri, service) {
 }
 
 TEST(endpoint_uri, non_empty_path) {
-    EndpointUri u(allocator);
+    EndpointUri u(arena);
 
     CHECK(parse_endpoint_uri("rtsp://host:123", EndpointUri::Subset_Full, u));
     CHECK(parse_endpoint_uri("rtsp://host:123/path", EndpointUri::Subset_Full, u));
@@ -435,7 +435,7 @@ TEST(endpoint_uri, non_empty_path) {
 }
 
 TEST(endpoint_uri, percent_encoding) {
-    EndpointUri u(allocator);
+    EndpointUri u(arena);
     CHECK(parse_endpoint_uri("rtsp://"
                              "foo-bar"
                              ":123"
@@ -459,7 +459,7 @@ TEST(endpoint_uri, percent_encoding) {
 }
 
 TEST(endpoint_uri, small_buffer) {
-    EndpointUri u(allocator);
+    EndpointUri u(arena);
     CHECK(parse_endpoint_uri("rtsp://host:123/path?query", EndpointUri::Subset_Full, u));
 
     char buf[sizeof("rtsp://host:123/path?query")];
@@ -480,7 +480,7 @@ TEST(endpoint_uri, small_buffer) {
 }
 
 TEST(endpoint_uri, bad_syntax) {
-    EndpointUri u(allocator);
+    EndpointUri u(arena);
 
     CHECK(parse_endpoint_uri("rtsp://host:123", EndpointUri::Subset_Full, u));
     CHECK(!parse_endpoint_uri("bad://host:123", EndpointUri::Subset_Full, u));

@@ -23,9 +23,9 @@ namespace api {
 
 namespace {
 
-core::HeapAllocator allocator;
-packet::PacketFactory packet_factory(allocator, true);
-core::BufferFactory<uint8_t> byte_buffer_factory(allocator, test::MaxBufSize, true);
+core::HeapArena arena;
+packet::PacketFactory packet_factory(arena, true);
+core::BufferFactory<uint8_t> byte_buffer_factory(arena, test::MaxBufSize, true);
 
 } // namespace
 
@@ -196,7 +196,7 @@ TEST(sender_receiver, rs8m_with_losses) {
     receiver.bind(Flags);
 
     test::Proxy proxy(receiver.source_endpoint(), receiver.repair_endpoint(),
-                      test::SourcePackets, test::RepairPackets, allocator, packet_factory,
+                      test::SourcePackets, test::RepairPackets, arena, packet_factory,
                       byte_buffer_factory);
 
     test::Sender sender(context, sender_conf, sample_step, FrameChans,
@@ -254,7 +254,7 @@ TEST(sender_receiver, ldpc_with_losses) {
     receiver.bind(Flags);
 
     test::Proxy proxy(receiver.source_endpoint(), receiver.repair_endpoint(),
-                      test::SourcePackets, test::RepairPackets, allocator, packet_factory,
+                      test::SourcePackets, test::RepairPackets, arena, packet_factory,
                       byte_buffer_factory);
 
     test::Sender sender(context, sender_conf, sample_step, FrameChans,

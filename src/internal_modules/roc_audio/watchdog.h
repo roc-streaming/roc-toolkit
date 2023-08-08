@@ -16,7 +16,7 @@
 #include "roc_audio/sample_spec.h"
 #include "roc_core/array.h"
 #include "roc_core/attributes.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
 #include "roc_packet/units.h"
@@ -76,7 +76,7 @@ public:
     Watchdog(IFrameReader& reader,
              const audio::SampleSpec& sample_spec,
              const WatchdogConfig& config,
-             core::IAllocator& allocator);
+             core::IArena& arena);
 
     //! Check if object is successfully constructed.
     bool is_valid() const;

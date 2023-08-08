@@ -12,34 +12,34 @@
 #ifndef ROC_CORE_ALLOCATION_POLICY_H_
 #define ROC_CORE_ALLOCATION_POLICY_H_
 
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/ipool.h"
 #include "roc_core/panic.h"
 
 namespace roc {
 namespace core {
 
-//! Allocation policy for objects allocated using IAllocator.
-class StandardAllocation {
+//! Allocation policy for objects allocated using IArena.
+class ArenaAllocation {
 public:
     //! Initialize.
-    StandardAllocation(IAllocator& allocator)
-        : allocator_(&allocator) {
+    ArenaAllocation(IArena& arena)
+        : arena_(&arena) {
     }
 
     //! Destroy object and deallocate its memory.
     template <class T> void destroy(T& object) {
-        allocator_->destroy_object(object);
+        arena_->destroy_object(object);
     }
 
 protected:
-    //! Get allocator.
-    IAllocator& allocator() const {
-        return *allocator_;
+    //! Get arena.
+    IArena& arena() const {
+        return *arena_;
     }
 
 private:
-    IAllocator* allocator_;
+    IArena* arena_;
 };
 
 //! Allocation policy for objects allocated using IPool.

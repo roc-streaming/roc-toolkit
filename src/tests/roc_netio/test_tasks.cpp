@@ -11,7 +11,7 @@
 #include "roc_address/socket_addr.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/cond.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_core/mutex.h"
 #include "roc_netio/network_loop.h"
 #include "roc_packet/concurrent_queue.h"
@@ -24,9 +24,9 @@ namespace {
 
 enum { MaxBufSize = 500 };
 
-core::HeapAllocator allocator;
-core::BufferFactory<uint8_t> buffer_factory(allocator, MaxBufSize, true);
-packet::PacketFactory packet_factory(allocator, true);
+core::HeapArena arena;
+core::BufferFactory<uint8_t> buffer_factory(arena, MaxBufSize, true);
+packet::PacketFactory packet_factory(arena, true);
 
 UdpReceiverConfig make_receiver_config(const char* ip, int port) {
     UdpReceiverConfig config;
@@ -132,7 +132,7 @@ private:
 TEST_GROUP(tasks) {};
 
 TEST(tasks, synchronous_add) {
-    NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
     CHECK(net_loop.is_valid());
 
     UdpReceiverConfig config = make_receiver_config("127.0.0.1", 0);
@@ -150,7 +150,7 @@ TEST(tasks, synchronous_add) {
 }
 
 TEST(tasks, asynchronous_add) {
-    NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
     CHECK(net_loop.is_valid());
 
     UdpReceiverConfig config = make_receiver_config("127.0.0.1", 0);
@@ -172,7 +172,7 @@ TEST(tasks, asynchronous_add) {
 }
 
 TEST(tasks, asynchronous_add_remove) {
-    NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
     CHECK(net_loop.is_valid());
 
     UdpReceiverConfig config = make_receiver_config("127.0.0.1", 0);

@@ -41,7 +41,7 @@ public:
                                  const char* driver,
                                  const char* path,
                                  const Config& config,
-                                 core::IAllocator& allocator);
+                                 core::IArena& arena);
 
 private:
     bool first_created_;

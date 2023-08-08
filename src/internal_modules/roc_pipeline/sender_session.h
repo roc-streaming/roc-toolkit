@@ -20,7 +20,7 @@
 #include "roc_audio/resampler_map.h"
 #include "roc_audio/resampler_writer.h"
 #include "roc_core/buffer_factory.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
 #include "roc_core/scoped_ptr.h"
@@ -51,7 +51,7 @@ public:
                   packet::PacketFactory& packet_factory,
                   core::BufferFactory<uint8_t>& byte_buffer_factory,
                   core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-                  core::IAllocator& allocator);
+                  core::IArena& arena);
 
     //! Create transport sub-pipeline.
     bool create_transport_pipeline(SenderEndpoint* source_endpoint,
@@ -79,7 +79,7 @@ private:
     virtual void on_add_reception_metrics(const rtcp::ReceptionMetrics& metrics);
     virtual void on_add_link_metrics(const rtcp::LinkMetrics& metrics);
 
-    core::IAllocator& allocator_;
+    core::IArena& arena_;
 
     const SenderConfig& config_;
 

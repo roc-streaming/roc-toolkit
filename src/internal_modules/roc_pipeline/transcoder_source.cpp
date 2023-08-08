@@ -17,7 +17,7 @@ namespace pipeline {
 TranscoderSource::TranscoderSource(const TranscoderConfig& config,
                                    sndio::ISource& input_source,
                                    core::BufferFactory<audio::sample_t>& buffer_factory,
-                                   core::IAllocator& allocator)
+                                   core::IArena& arena)
     : input_source_(input_source)
     , audio_reader_(NULL)
     , config_(config) {
@@ -48,12 +48,12 @@ TranscoderSource::TranscoderSource(const TranscoderConfig& config,
         }
 
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-                             config.resampler_backend, allocator, buffer_factory,
+                             config.resampler_backend, arena, buffer_factory,
                              config.resampler_profile,
                              audio::SampleSpec(config.input_sample_spec.sample_rate(),
                                                config.output_sample_spec.channel_set()),
                              config.output_sample_spec),
-                         allocator);
+                         arena);
 
         if (!resampler_) {
             return;
@@ -81,7 +81,7 @@ TranscoderSource::TranscoderSource(const TranscoderConfig& config,
 
     if (config.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingReader(
-            *areader, allocator, config.output_sample_spec, config.profiler_config));
+            *areader, arena, config.output_sample_spec, config.profiler_config));
         if (!profiler_ || !profiler_->is_valid()) {
             return;
         }
