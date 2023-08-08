@@ -46,17 +46,10 @@ FormatMap::FormatMap(core::IAllocator& allocator, bool poison)
     }
 }
 
-FormatMap::~FormatMap() {
-    while (Node* node = node_map_.front()) {
-        node_map_.remove(*node);
-        node_pool_.destroy_object(*node);
-    }
-}
-
 const Format* FormatMap::find_by_pt(unsigned int pt) const {
     core::Mutex::Lock lock(mutex_);
 
-    if (Node* node = node_map_.find(pt)) {
+    if (core::SharedPtr<Node> node = node_map_.find(pt)) {
         return &node->format;
     }
 
@@ -66,7 +59,8 @@ const Format* FormatMap::find_by_pt(unsigned int pt) const {
 const Format* FormatMap::find_by_spec(const audio::SampleSpec& spec) const {
     core::Mutex::Lock lock(mutex_);
 
-    for (Node* node = node_map_.front(); node != NULL; node = node_map_.nextof(*node)) {
+    for (core::SharedPtr<Node> node = node_map_.front(); node != NULL;
+         node = node_map_.nextof(*node)) {
         if (node->format.sample_spec == spec) {
             return &node->format;
         }
@@ -103,14 +97,13 @@ bool FormatMap::add_format(const Format& fmt) {
         return false;
     }
 
-    Node* node = new (node_pool_) Node();
+    core::SharedPtr<Node> node = new (node_pool_) Node(node_pool_, fmt);
+
     if (!node) {
         roc_log(LogError,
                 "format map: failed to register format: pool allocation failed");
         return false;
     }
-
-    node->format = fmt;
 
     node_map_.insert(*node);
 
