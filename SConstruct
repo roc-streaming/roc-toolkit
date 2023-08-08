@@ -987,6 +987,7 @@ if meta.compiler == 'gcc':
             '-Wno-cast-function-type',
             '-Wno-psabi',
             '-Wno-restrict',
+            '-Wno-shadow',
             '-Wno-stringop-overflow',
             '-Wno-system-headers',
         ]})
@@ -1008,7 +1009,6 @@ if meta.compiler == 'gcc':
                 '-Wfloat-conversion',
                 '-Wlogical-op',
                 '-Woverlength-strings',
-                '-Wshadow',
                 '-Wsign-conversion',
             ]})
 
@@ -1037,6 +1037,7 @@ if meta.compiler == 'clang':
             # disable
             '-Wno-format-nonliteral',
             '-Wno-psabi',
+            '-Wno-shadow',
             '-Wno-system-headers',
         ]})
 

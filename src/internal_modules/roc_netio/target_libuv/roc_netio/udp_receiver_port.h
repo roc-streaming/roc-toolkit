@@ -16,7 +16,7 @@
 
 #include "roc_address/socket_addr.h"
 #include "roc_core/buffer_factory.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/list.h"
 #include "roc_core/list_node.h"
 #include "roc_netio/basic_port.h"
@@ -58,7 +58,7 @@ public:
                     uv_loop_t& event_loop,
                     packet::PacketFactory& packet_factory,
                     core::BufferFactory<uint8_t>& buffer_factory,
-                    core::IAllocator& allocator);
+                    core::IArena& arena);
 
     //! Destroy.
     virtual ~UdpReceiverPort();

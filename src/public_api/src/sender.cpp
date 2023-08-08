@@ -44,9 +44,9 @@ int roc_sender_open(roc_context* context,
         return -1;
     }
 
-    core::ScopedPtr<peer::Sender> imp_sender(new (imp_context->allocator())
+    core::ScopedPtr<peer::Sender> imp_sender(new (imp_context->arena())
                                                  peer::Sender(*imp_context, imp_config),
-                                             imp_context->allocator());
+                                             imp_context->arena());
 
     if (!imp_sender) {
         roc_log(LogError, "roc_sender_open(): can't allocate sender");
@@ -178,7 +178,7 @@ int roc_sender_close(roc_sender* sender) {
     }
 
     peer::Sender* imp_sender = (peer::Sender*)sender;
-    imp_sender->context().allocator().destroy_object(*imp_sender);
+    imp_sender->context().arena().destroy_object(*imp_sender);
 
     roc_log(LogInfo, "roc_sender_close(): closed sender");
 

@@ -27,7 +27,7 @@ class ProfilingWriter : public IFrameWriter, public core::NonCopyable<> {
 public:
     //! Initialization.
     ProfilingWriter(IFrameWriter& writer,
-                    core::IAllocator& allocator,
+                    core::IArena& arena,
                     const audio::SampleSpec& sample_spec,
                     ProfilerConfig profiler_config);
 

@@ -14,7 +14,7 @@
 
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_core/singleton.h"
 #include "roc_ctl/basic_control_endpoint.h"
@@ -37,7 +37,7 @@ public:
                                                        address::Protocol proto,
                                                        ControlTaskQueue& task_queue,
                                                        netio::NetworkLoop& network_loop,
-                                                       core::IAllocator& allocator);
+                                                       core::IArena& arena);
 
 private:
     friend class core::Singleton<ControlInterfaceMap>;

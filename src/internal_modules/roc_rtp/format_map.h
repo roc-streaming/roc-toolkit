@@ -16,7 +16,7 @@
 #include "roc_core/allocation_policy.h"
 #include "roc_core/attributes.h"
 #include "roc_core/hashmap.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/pool.h"
@@ -33,7 +33,7 @@ namespace rtp {
 class FormatMap : public core::NonCopyable<> {
 public:
     //! Initialize.
-    FormatMap(core::IAllocator& allocator, bool poison);
+    FormatMap(core::IArena& arena, bool poison);
 
     //! Find format by payload type.
     //! @returns

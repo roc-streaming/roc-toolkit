@@ -20,7 +20,7 @@ ControlInterfaceMap::new_endpoint(address::Interface iface,
                                   address::Protocol proto,
                                   ControlTaskQueue& task_queue,
                                   netio::NetworkLoop& network_loop,
-                                  core::IAllocator& allocator) {
+                                  core::IArena& arena) {
     switch (iface) {
     case address::Iface_AudioControl:
         switch (proto) {
@@ -30,7 +30,7 @@ ControlInterfaceMap::new_endpoint(address::Interface iface,
 
         (void)task_queue;
         (void)network_loop;
-        (void)allocator;
+        (void)arena;
 
         roc_log(LogError,
                 "control endpoint map: unsupported protocol %s for interface %s",

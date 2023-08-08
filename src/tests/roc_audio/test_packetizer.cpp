@@ -14,7 +14,7 @@
 #include "roc_audio/pcm_decoder.h"
 #include "roc_audio/pcm_encoder.h"
 #include "roc_core/buffer_factory.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_rtp/composer.h"
@@ -44,10 +44,10 @@ const core::nanoseconds_t PacketDuration = SamplesPerPacket * core::Second / Sam
 const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, ChMask);
 const audio::PcmFormat PcmFmt(audio::PcmEncoding_SInt16, audio::PcmEndian_Big);
 
-core::HeapAllocator allocator;
-core::BufferFactory<sample_t> sample_buffer_factory(allocator, MaxBufSize, true);
-core::BufferFactory<uint8_t> byte_buffer_factory(allocator, MaxBufSize, true);
-packet::PacketFactory packet_factory(allocator, true);
+core::HeapArena arena;
+core::BufferFactory<sample_t> sample_buffer_factory(arena, MaxBufSize, true);
+core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize, true);
+packet::PacketFactory packet_factory(arena, true);
 
 rtp::Composer rtp_composer(NULL);
 

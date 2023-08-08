@@ -14,7 +14,7 @@
 #include "test_helpers/utils.h"
 
 #include "roc_address/socket_addr.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_netio/network_loop.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
@@ -31,10 +31,10 @@ public:
           const roc_endpoint* receiver_repair_endp,
           size_t n_source_packets,
           size_t n_repair_packets,
-          core::HeapAllocator& allocator,
+          core::HeapArena& arena,
           packet::PacketFactory& packet_factory,
           core::BufferFactory<uint8_t>& byte_buffer_factory)
-        : net_loop_(packet_factory, byte_buffer_factory, allocator)
+        : net_loop_(packet_factory, byte_buffer_factory, arena)
         , n_source_packets_(n_source_packets)
         , n_repair_packets_(n_repair_packets)
         , pos_(0) {

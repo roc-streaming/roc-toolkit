@@ -104,10 +104,10 @@ NetworkLoop::Tasks::ResolveEndpointAddress::get_address() const {
 
 NetworkLoop::NetworkLoop(packet::PacketFactory& packet_factory,
                          core::BufferFactory<uint8_t>& buffer_factory,
-                         core::IAllocator& allocator)
+                         core::IArena& arena)
     : packet_factory_(packet_factory)
     , buffer_factory_(buffer_factory)
-    , allocator_(allocator)
+    , arena_(arena)
     , started_(false)
     , loop_initialized_(false)
     , stop_sem_initialized_(false)
@@ -386,9 +386,8 @@ void NetworkLoop::close_all_sems_() {
 void NetworkLoop::task_add_udp_receiver_(NetworkTask& base_task) {
     Tasks::AddUdpReceiverPort& task = (Tasks::AddUdpReceiverPort&)base_task;
 
-    core::SharedPtr<UdpReceiverPort> port =
-        new (allocator_) UdpReceiverPort(*task.config_, *task.writer_, loop_,
-                                         packet_factory_, buffer_factory_, allocator_);
+    core::SharedPtr<UdpReceiverPort> port = new (arena_) UdpReceiverPort(
+        *task.config_, *task.writer_, loop_, packet_factory_, buffer_factory_, arena_);
     if (!port) {
         roc_log(
             LogError,
@@ -428,7 +427,7 @@ void NetworkLoop::task_add_udp_sender_(NetworkTask& base_task) {
     Tasks::AddUdpSenderPort& task = (Tasks::AddUdpSenderPort&)base_task;
 
     core::SharedPtr<UdpSenderPort> port =
-        new (allocator_) UdpSenderPort(*task.config_, loop_, allocator_);
+        new (arena_) UdpSenderPort(*task.config_, loop_, arena_);
     if (!port) {
         roc_log(LogError,
                 "network loop: can't add udp sender port %s: can't allocate udp sender",
@@ -467,8 +466,8 @@ void NetworkLoop::task_add_udp_sender_(NetworkTask& base_task) {
 void NetworkLoop::task_add_tcp_server_(NetworkTask& base_task) {
     Tasks::AddTcpServerPort& task = (Tasks::AddTcpServerPort&)base_task;
 
-    core::SharedPtr<TcpServerPort> port = new (allocator_)
-        TcpServerPort(*task.config_, *task.conn_acceptor_, loop_, allocator_);
+    core::SharedPtr<TcpServerPort> port =
+        new (arena_) TcpServerPort(*task.config_, *task.conn_acceptor_, loop_, arena_);
     if (!port) {
         roc_log(LogError,
                 "network loop: can't add tcp server port %s: can't allocate tcp server",
@@ -507,7 +506,7 @@ void NetworkLoop::task_add_tcp_client_(NetworkTask& base_task) {
     Tasks::AddTcpClientPort& task = (Tasks::AddTcpClientPort&)base_task;
 
     core::SharedPtr<TcpConnectionPort> port =
-        new (allocator_) TcpConnectionPort(TcpConn_Client, loop_, allocator_);
+        new (arena_) TcpConnectionPort(TcpConn_Client, loop_, arena_);
     if (!port) {
         roc_log(LogError,
                 "network loop: can't add tcp client port %s: can't allocate tcp client",

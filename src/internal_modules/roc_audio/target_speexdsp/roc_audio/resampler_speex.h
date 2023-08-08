@@ -35,7 +35,7 @@ namespace audio {
 class SpeexResampler : public IResampler, public core::NonCopyable<> {
 public:
     //! Initialize.
-    SpeexResampler(core::IAllocator& allocator,
+    SpeexResampler(core::IArena& arena,
                    core::BufferFactory<sample_t>& buffer_factory,
                    ResamplerProfile profile,
                    const audio::SampleSpec& in_spec,

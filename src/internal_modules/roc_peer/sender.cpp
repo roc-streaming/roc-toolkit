@@ -24,9 +24,9 @@ Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
                 context.packet_factory(),
                 context.byte_buffer_factory(),
                 context.sample_buffer_factory(),
-                context.allocator())
+                context.arena())
     , processing_task_(pipeline_)
-    , slots_(context.allocator())
+    , slots_(context.arena())
     , valid_(false) {
     roc_log(LogDebug, "sender peer: initializing");
 

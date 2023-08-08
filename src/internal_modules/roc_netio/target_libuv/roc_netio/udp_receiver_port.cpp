@@ -21,8 +21,8 @@ UdpReceiverPort::UdpReceiverPort(const UdpReceiverConfig& config,
                                  uv_loop_t& event_loop,
                                  packet::PacketFactory& packet_factory,
                                  core::BufferFactory<uint8_t>& buffer_factory,
-                                 core::IAllocator& allocator)
-    : BasicPort(allocator)
+                                 core::IArena& arena)
+    : BasicPort(arena)
     , config_(config)
     , writer_(writer)
     , close_handler_(NULL)

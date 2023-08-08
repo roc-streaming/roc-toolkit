@@ -27,7 +27,7 @@ namespace test {
 
 class PacketReader : public core::NonCopyable<> {
 public:
-    PacketReader(core::IAllocator& allocator,
+    PacketReader(core::IArena& arena,
                  packet::IReader& reader,
                  packet::IParser& parser,
                  rtp::FormatMap& format_map,
@@ -36,7 +36,7 @@ public:
                  const address::SocketAddr& dst_addr)
         : reader_(reader)
         , parser_(parser)
-        , payload_decoder_(new_decoder_(allocator, format_map, pt), allocator)
+        , payload_decoder_(new_decoder_(arena, format_map, pt), arena)
         , packet_factory_(packet_factory)
         , dst_addr_(dst_addr)
         , source_(0)
@@ -61,13 +61,12 @@ public:
 private:
     enum { MaxSamples = 4096 };
 
-    static audio::IFrameDecoder* new_decoder_(core::IAllocator& allocator,
-                                              rtp::FormatMap& format_map,
-                                              rtp::PayloadType pt) {
+    static audio::IFrameDecoder*
+    new_decoder_(core::IArena& arena, rtp::FormatMap& format_map, rtp::PayloadType pt) {
         const rtp::Format* fmt = format_map.find_by_pt(pt);
         CHECK(fmt);
 
-        return fmt->new_decoder(allocator, fmt->pcm_format, fmt->sample_spec);
+        return fmt->new_decoder(arena, fmt->pcm_format, fmt->sample_spec);
     }
 
     void check_buffer_(const core::Slice<uint8_t> bp,

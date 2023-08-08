@@ -27,7 +27,7 @@ class ProfilingReader : public IFrameReader, public core::NonCopyable<> {
 public:
     //! Initialization.
     ProfilingReader(IFrameReader& reader,
-                    core::IAllocator& allocator,
+                    core::IArena& arena,
                     const audio::SampleSpec& sample_spec,
                     ProfilerConfig profiler_config);
 

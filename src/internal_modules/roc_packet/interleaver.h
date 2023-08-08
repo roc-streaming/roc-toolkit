@@ -13,7 +13,7 @@
 #define ROC_PACKET_INTERLEAVER_H_
 
 #include "roc_core/array.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet.h"
@@ -28,7 +28,7 @@ public:
     //! @remarks
     //!  Interleaver reorders packets passed to write() and writes
     //!  them to @p output.
-    Interleaver(IWriter& writer, core::IAllocator& allocator, size_t block_size);
+    Interleaver(IWriter& writer, core::IArena& arena, size_t block_size);
 
     //! Check if object is successfully constructed.
     bool is_valid() const;

@@ -10,7 +10,7 @@
 
 #include "roc_core/atomic.h"
 #include "roc_core/fast_random.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/thread.h"
 #include "roc_core/ticker.h"
@@ -120,7 +120,7 @@ const core::nanoseconds_t MaxTaskDelay = core::Millisecond;
 const size_t MinTaskBurst = 1;
 const size_t MaxTaskBurst = 10;
 
-core::HeapAllocator allocator;
+core::HeapArena arena;
 
 double round_digits(double x, unsigned int digits) {
     double fac = pow(10, digits);

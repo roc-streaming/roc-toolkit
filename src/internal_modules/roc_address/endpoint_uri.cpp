@@ -25,11 +25,11 @@ bool safe_strcmp(const char* a, const char* b) {
 
 } // namespace
 
-EndpointUri::EndpointUri(core::IAllocator& allocator)
+EndpointUri::EndpointUri(core::IArena& arena)
     : invalid_parts_(0)
-    , host_(allocator)
-    , path_(allocator)
-    , query_(allocator) {
+    , host_(arena)
+    , path_(arena)
+    , query_(arena) {
     clear(Subset_Full);
 }
 

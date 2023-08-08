@@ -23,8 +23,8 @@ ReceiverSession::ReceiverSession(
     packet::PacketFactory& packet_factory,
     core::BufferFactory<uint8_t>& byte_buffer_factory,
     core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-    core::IAllocator& allocator)
-    : RefCounted(allocator)
+    core::IArena& arena)
+    : core::RefCounted<ReceiverSession, core::ArenaAllocation>(arena)
     , src_address_(src_address)
     , audio_reader_(NULL) {
     const rtp::Format* format = format_map.find_by_pt(session_config.payload_type);
@@ -32,7 +32,7 @@ ReceiverSession::ReceiverSession(
         return;
     }
 
-    queue_router_.reset(new (queue_router_) packet::Router(allocator));
+    queue_router_.reset(new (queue_router_) packet::Router(arena));
     if (!queue_router_) {
         return;
     }
@@ -51,8 +51,7 @@ ReceiverSession::ReceiverSession(
     packet::IReader* preader = source_queue_.get();
 
     payload_decoder_.reset(
-        format->new_decoder(allocator, format->pcm_format, format->sample_spec),
-        allocator);
+        format->new_decoder(arena, format->pcm_format, format->sample_spec), arena);
     if (!payload_decoder_) {
         return;
     }
@@ -87,10 +86,9 @@ ReceiverSession::ReceiverSession(
             return;
         }
 
-        fec_decoder_.reset(
-            fec::CodecMap::instance().new_decoder(session_config.fec_decoder,
-                                                  byte_buffer_factory, allocator),
-            allocator);
+        fec_decoder_.reset(fec::CodecMap::instance().new_decoder(
+                               session_config.fec_decoder, byte_buffer_factory, arena),
+                           arena);
         if (!fec_decoder_) {
             return;
         }
@@ -102,7 +100,7 @@ ReceiverSession::ReceiverSession(
 
         fec_reader_.reset(new (fec_reader_) fec::Reader(
             session_config.fec_reader, session_config.fec_decoder.scheme, *fec_decoder_,
-            *preader, *repair_queue_, *fec_parser_, packet_factory, allocator));
+            *preader, *repair_queue_, *fec_parser_, packet_factory, arena));
         if (!fec_reader_ || !fec_reader_->is_valid()) {
             return;
         }
@@ -127,8 +125,8 @@ ReceiverSession::ReceiverSession(
     if (session_config.watchdog.no_playback_timeout != 0
         || session_config.watchdog.choppy_playback_timeout != 0
         || session_config.watchdog.frame_status_window != 0) {
-        watchdog_.reset(new (watchdog_) audio::Watchdog(
-            *areader, format->sample_spec, session_config.watchdog, allocator));
+        watchdog_.reset(new (watchdog_) audio::Watchdog(*areader, format->sample_spec,
+                                                        session_config.watchdog, arena));
         if (!watchdog_ || !watchdog_->is_valid()) {
             return;
         }
@@ -162,12 +160,12 @@ ReceiverSession::ReceiverSession(
 
         resampler_.reset(
             audio::ResamplerMap::instance().new_resampler(
-                session_config.resampler_backend, allocator, sample_buffer_factory,
+                session_config.resampler_backend, arena, sample_buffer_factory,
                 session_config.resampler_profile,
                 audio::SampleSpec(format->sample_spec.sample_rate(),
                                   common_config.output_sample_spec.channel_set()),
                 common_config.output_sample_spec),
-            allocator);
+            arena);
 
         if (!resampler_) {
             return;

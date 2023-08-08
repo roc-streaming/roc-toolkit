@@ -8,7 +8,7 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_packet/concurrent_queue.h"
 #include "roc_packet/packet_factory.h"
 
@@ -17,8 +17,8 @@ namespace packet {
 
 namespace {
 
-core::HeapAllocator allocator;
-PacketFactory packet_factory(allocator, true);
+core::HeapArena arena;
+PacketFactory packet_factory(arena, true);
 
 PacketPtr new_packet() {
     PacketPtr packet = packet_factory.new_packet();

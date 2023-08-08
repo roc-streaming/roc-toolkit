@@ -13,7 +13,7 @@
 #define ROC_NETIO_BASIC_PORT_H_
 
 #include "roc_address/socket_addr.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/list_node.h"
 #include "roc_core/ref_counted.h"
 #include "roc_core/string_builder.h"
@@ -36,13 +36,11 @@ namespace netio {
 //!    immediately, and you can now destroy it
 //!  - if async_close() returned AsyncOp_Started, you should wait until
 //!    close handler callback is invoked before destroying port
-class BasicPort : public core::RefCounted<BasicPort, core::StandardAllocation>,
+class BasicPort : public core::RefCounted<BasicPort, core::ArenaAllocation>,
                   public core::ListNode {
-    typedef core::RefCounted<BasicPort, core::StandardAllocation> RefCounted;
-
 public:
     //! Initialize.
-    explicit BasicPort(core::IAllocator&);
+    explicit BasicPort(core::IArena&);
 
     //! Destroy.
     virtual ~BasicPort();

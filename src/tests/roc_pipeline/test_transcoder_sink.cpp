@@ -12,7 +12,7 @@
 #include "test_helpers/frame_writer.h"
 
 #include "roc_core/buffer_factory.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_pipeline/transcoder_sink.h"
 
 namespace roc {
@@ -32,8 +32,8 @@ enum {
     ManyFrames = 30
 };
 
-core::HeapAllocator allocator;
-core::BufferFactory<audio::sample_t> sample_buffer_factory(allocator, MaxBufSize, true);
+core::HeapArena arena;
+core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, MaxBufSize, true);
 
 } // namespace
 
@@ -69,7 +69,7 @@ TEST(transcoder_sink, null) {
 
     init(Chans, Chans);
 
-    TranscoderSink transcoder(make_config(), NULL, sample_buffer_factory, allocator);
+    TranscoderSink transcoder(make_config(), NULL, sample_buffer_factory, arena);
     CHECK(transcoder.is_valid());
 
     test::FrameWriter frame_writer(transcoder, sample_buffer_factory);
@@ -87,7 +87,7 @@ TEST(transcoder_sink, write) {
     test::FrameChecker frame_checker(output_sample_spec);
 
     TranscoderSink transcoder(make_config(), &frame_checker, sample_buffer_factory,
-                              allocator);
+                              arena);
     CHECK(transcoder.is_valid());
 
     test::FrameWriter frame_writer(transcoder, sample_buffer_factory);
@@ -108,7 +108,7 @@ TEST(transcoder_sink, frame_size_small) {
     test::FrameChecker frame_checker(output_sample_spec);
 
     TranscoderSink transcoder(make_config(), &frame_checker, sample_buffer_factory,
-                              allocator);
+                              arena);
     CHECK(transcoder.is_valid());
 
     test::FrameWriter frame_writer(transcoder, sample_buffer_factory);
@@ -129,7 +129,7 @@ TEST(transcoder_sink, frame_size_large) {
     test::FrameChecker frame_checker(output_sample_spec);
 
     TranscoderSink transcoder(make_config(), &frame_checker, sample_buffer_factory,
-                              allocator);
+                              arena);
     CHECK(transcoder.is_valid());
 
     test::FrameWriter frame_writer(transcoder, sample_buffer_factory);
@@ -150,7 +150,7 @@ TEST(transcoder_sink, channels_stereo_to_mono) {
     test::FrameChecker frame_checker(output_sample_spec);
 
     TranscoderSink transcoder(make_config(), &frame_checker, sample_buffer_factory,
-                              allocator);
+                              arena);
     CHECK(transcoder.is_valid());
 
     test::FrameWriter frame_writer(transcoder, sample_buffer_factory);
@@ -171,7 +171,7 @@ TEST(transcoder_sink, channels_mono_to_stereo) {
     test::FrameChecker frame_checker(output_sample_spec);
 
     TranscoderSink transcoder(make_config(), &frame_checker, sample_buffer_factory,
-                              allocator);
+                              arena);
     CHECK(transcoder.is_valid());
 
     test::FrameWriter frame_writer(transcoder, sample_buffer_factory);

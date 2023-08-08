@@ -23,7 +23,7 @@ Writer::Writer(const WriterConfig& config,
                packet::IComposer& repair_composer,
                packet::PacketFactory& packet_factory,
                core::BufferFactory<uint8_t>& buffer_factory,
-               core::IAllocator& allocator)
+               core::IArena& arena)
     : cur_sblen_(0)
     , next_sblen_(0)
     , cur_rblen_(0)
@@ -35,7 +35,7 @@ Writer::Writer(const WriterConfig& config,
     , repair_composer_(repair_composer)
     , packet_factory_(packet_factory)
     , buffer_factory_(buffer_factory)
-    , repair_block_(allocator)
+    , repair_block_(arena)
     , first_packet_(true)
     , cur_packet_(0)
     , fec_scheme_(fec_scheme)

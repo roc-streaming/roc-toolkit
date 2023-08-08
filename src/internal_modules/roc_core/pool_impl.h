@@ -13,7 +13,7 @@
 #define ROC_CORE_POOL_IMPL_H_
 
 #include "roc_core/attributes.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/list.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
@@ -31,7 +31,7 @@ namespace core {
 class PoolImpl : public NonCopyable<> {
 public:
     //! Initialize.
-    PoolImpl(IAllocator& allocator,
+    PoolImpl(IArena& arena,
              size_t object_size,
              bool poison,
              size_t min_alloc_bytes,
@@ -82,7 +82,7 @@ private:
 
     Mutex mutex_;
 
-    IAllocator& allocator_;
+    IArena& arena_;
 
     List<Slab, NoOwnership> slabs_;
     List<Slot, NoOwnership> free_slots_;

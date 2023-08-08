@@ -23,7 +23,7 @@
 #include "roc_audio/resampler_reader.h"
 #include "roc_audio/watchdog.h"
 #include "roc_core/buffer_factory.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/list_node.h"
 #include "roc_core/optional.h"
 #include "roc_core/ref_counted.h"
@@ -52,11 +52,8 @@ namespace pipeline {
 //! Contains:
 //!  - a pipeline for processing packets from single sender and converting
 //!    them into audio frames
-class ReceiverSession
-    : public core::RefCounted<ReceiverSession, core::StandardAllocation>,
-      public core::ListNode {
-    typedef core::RefCounted<ReceiverSession, core::StandardAllocation> RefCounted;
-
+class ReceiverSession : public core::RefCounted<ReceiverSession, core::ArenaAllocation>,
+                        public core::ListNode {
 public:
     //! Initialize.
     ReceiverSession(const ReceiverSessionConfig& session_config,
@@ -66,7 +63,7 @@ public:
                     packet::PacketFactory& packet_factory,
                     core::BufferFactory<uint8_t>& byte_buffer_factory,
                     core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-                    core::IAllocator& allocator);
+                    core::IArena& arena);
 
     //! Check if the session pipeline was succefully constructed.
     bool is_valid() const;

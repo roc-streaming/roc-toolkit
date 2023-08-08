@@ -21,12 +21,12 @@ ReceiverSource::ReceiverSource(
     packet::PacketFactory& packet_factory,
     core::BufferFactory<uint8_t>& byte_buffer_factory,
     core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-    core::IAllocator& allocator)
+    core::IArena& arena)
     : format_map_(format_map)
     , packet_factory_(packet_factory)
     , byte_buffer_factory_(byte_buffer_factory)
     , sample_buffer_factory_(sample_buffer_factory)
-    , allocator_(allocator)
+    , arena_(arena)
     , audio_reader_(NULL)
     , config_(config)
     , timestamp_(0) {
@@ -46,7 +46,7 @@ ReceiverSource::ReceiverSource(
 
     if (config.common.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingReader(
-            *areader, allocator, config.common.output_sample_spec,
+            *areader, arena, config.common.output_sample_spec,
             config.common.profiler_config));
         if (!profiler_ || !profiler_->is_valid()) {
             return;
@@ -66,9 +66,9 @@ ReceiverSlot* ReceiverSource::create_slot() {
 
     roc_log(LogInfo, "receiver source: adding slot");
 
-    core::SharedPtr<ReceiverSlot> slot = new (allocator_)
-        ReceiverSlot(config_, state_, *mixer_, format_map_, packet_factory_,
-                     byte_buffer_factory_, sample_buffer_factory_, allocator_);
+    core::SharedPtr<ReceiverSlot> slot =
+        new (arena_) ReceiverSlot(config_, state_, *mixer_, format_map_, packet_factory_,
+                                  byte_buffer_factory_, sample_buffer_factory_, arena_);
 
     if (!slot) {
         return NULL;

@@ -13,7 +13,7 @@
 #define ROC_CORE_SCOPED_PTR_H_
 
 #include "roc_core/allocation_policy.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
 #include "roc_core/panic.h"
@@ -29,7 +29,7 @@ namespace core {
 //!
 //! When ScopedPtr is destroyed or reset, it invokes AllocationPolicy::destroy()
 //! to destroy the owned object.
-template <class T, class AllocationPolicy = StandardAllocation>
+template <class T, class AllocationPolicy = ArenaAllocation>
 class ScopedPtr : public NonCopyable<> {
 public:
     //! Initialize null pointer.

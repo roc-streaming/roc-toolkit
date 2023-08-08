@@ -32,7 +32,7 @@ public:
                                  const char* driver,
                                  const char* path,
                                  const Config& config,
-                                 core::IAllocator& allocator);
+                                 core::IArena& arena);
 };
 
 } // namespace sndio

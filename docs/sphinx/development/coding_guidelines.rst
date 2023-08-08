@@ -88,7 +88,7 @@ Best practices
 
     <span></span>
 
-* Use allocators and pools for memory management.
+* Use arenas and pools for memory management.
 
 .. raw:: html
 

@@ -16,7 +16,7 @@
 #include "roc_audio/resampler_reader.h"
 #include "roc_audio/resampler_writer.h"
 #include "roc_core/buffer_factory.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
@@ -32,8 +32,8 @@ enum ResamplerMethod { Reader, Writer };
 
 const ResamplerMethod resampler_methods[] = { Reader, Writer };
 
-core::HeapAllocator allocator;
-core::BufferFactory<sample_t> buffer_factory(allocator, MaxFrameSize, true);
+core::HeapArena arena;
+core::BufferFactory<sample_t> buffer_factory(arena, MaxFrameSize, true);
 
 void generate_sine(sample_t* out, size_t num_samples, size_t num_padding) {
     for (size_t n = 0; n < num_samples; n++) {
@@ -167,10 +167,10 @@ void resample(ResamplerBackend backend,
               const audio::SampleSpec& sample_spec,
               float scaling) {
     core::ScopedPtr<IResampler> resampler(
-        ResamplerMap::instance().new_resampler(backend, allocator, buffer_factory,
+        ResamplerMap::instance().new_resampler(backend, arena, buffer_factory,
                                                ResamplerProfile_High, sample_spec,
                                                sample_spec),
-        allocator);
+        arena);
     CHECK(resampler);
     CHECK(resampler->is_valid());
 
@@ -205,9 +205,9 @@ TEST(resampler, supported_scalings) {
                     for (size_t sn = 0; sn < ROC_ARRAY_SIZE(scalings); sn++) {
                         core::ScopedPtr<IResampler> resampler(
                             ResamplerMap::instance().new_resampler(
-                                backend, allocator, buffer_factory, profiles[pn],
+                                backend, arena, buffer_factory, profiles[pn],
                                 in_sample_specs, out_sample_specs),
-                            allocator);
+                            arena);
                         CHECK(resampler);
                         CHECK(resampler->is_valid());
 
@@ -246,10 +246,10 @@ TEST(resampler, invalid_scalings) {
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
         core::ScopedPtr<IResampler> resampler(
-            ResamplerMap::instance().new_resampler(backend, allocator, buffer_factory,
+            ResamplerMap::instance().new_resampler(backend, arena, buffer_factory,
                                                    ResamplerProfile_High, SampleSpecs,
                                                    SampleSpecs),
-            allocator);
+            arena);
         CHECK(resampler);
         CHECK(resampler->is_valid());
 

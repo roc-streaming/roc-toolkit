@@ -12,9 +12,9 @@
 namespace roc {
 namespace address {
 
-IoUri::IoUri(core::IAllocator& allocator)
-    : scheme_(allocator)
-    , path_(allocator) {
+IoUri::IoUri(core::IArena& arena)
+    : scheme_(arena)
+    , path_(arena) {
 }
 
 bool IoUri::is_valid() const {

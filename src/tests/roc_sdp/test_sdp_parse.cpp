@@ -9,7 +9,7 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_address/socket_addr_to_str.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_sdp/parser.h"
 
 namespace roc {
@@ -17,14 +17,14 @@ namespace sdp {
 
 namespace {
 
-core::HeapAllocator allocator;
+core::HeapArena arena;
 
 } // namespace
 
 TEST_GROUP(sdp_parser) {};
 
 TEST(sdp_parser, guid_and_connection) {
-    SessionDescription session_description(allocator);
+    SessionDescription session_description(arena);
     CHECK(parse_sdp("v=0\r\n"
                     "o=test_origin 16914 1 IN IP4 192.168.58.15\r\n"
                     "c=IN IP4 230.123.12.42/250\r\n"
@@ -40,7 +40,7 @@ TEST(sdp_parser, guid_and_connection) {
 }
 
 TEST(sdp_parser, media_descriptions) {
-    SessionDescription session_description(allocator);
+    SessionDescription session_description(arena);
     CHECK(parse_sdp("v=0\r\n"
                     "o=test_origin 16914 1 IN IP4 192.168.58.15\r\n"
                     "c=IN IP4 230.255.12.42/250\r\n"

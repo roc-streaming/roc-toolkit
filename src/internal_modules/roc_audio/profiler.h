@@ -15,7 +15,7 @@
 #include "roc_audio/frame.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/array.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/rate_limiter.h"
@@ -65,7 +65,7 @@ struct ProfilerConfig {
 class Profiler : public core::NonCopyable<> {
 public:
     //! Initialization.
-    Profiler(core::IAllocator& allocator,
+    Profiler(core::IArena& arena,
              const audio::SampleSpec& sample_spec,
              ProfilerConfig profiler_config);
 

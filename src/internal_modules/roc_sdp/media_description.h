@@ -33,14 +33,11 @@ namespace sdp {
 //! @code
 //!  m=<type> <port> <proto> <fmt>
 //! @endcode
-class MediaDescription
-    : public core::RefCounted<MediaDescription, core::StandardAllocation>,
-      public core::ListNode {
-    typedef core::RefCounted<MediaDescription, core::StandardAllocation> RefCounted;
-
+class MediaDescription : public core::RefCounted<MediaDescription, core::ArenaAllocation>,
+                         public core::ListNode {
 public:
     //! Initialize empty media description
-    MediaDescription(core::IAllocator& allocator);
+    MediaDescription(core::IArena& arena);
 
     //! Clear all fields.
     void clear();

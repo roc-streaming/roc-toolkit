@@ -13,15 +13,15 @@
 namespace roc {
 namespace peer {
 
-Context::Context(const ContextConfig& config, core::IAllocator& allocator)
-    : allocator_(allocator)
-    , packet_factory_(allocator_, config.poisoning)
-    , byte_buffer_factory_(allocator_, config.max_packet_size, config.poisoning)
+Context::Context(const ContextConfig& config, core::IArena& arena)
+    : arena_(arena)
+    , packet_factory_(arena_, config.poisoning)
+    , byte_buffer_factory_(arena_, config.max_packet_size, config.poisoning)
     , sample_buffer_factory_(
-          allocator_, config.max_frame_size / sizeof(audio::sample_t), config.poisoning)
-    , format_map_(allocator_, config.poisoning)
-    , network_loop_(packet_factory_, byte_buffer_factory_, allocator_)
-    , control_loop_(network_loop_, allocator_)
+          arena_, config.max_frame_size / sizeof(audio::sample_t), config.poisoning)
+    , format_map_(arena_, config.poisoning)
+    , network_loop_(packet_factory_, byte_buffer_factory_, arena_)
+    , control_loop_(network_loop_, arena_)
     , ref_counter_(0) {
     roc_log(LogDebug, "context: initializing");
 }
@@ -57,8 +57,8 @@ bool Context::is_used() {
     return ref_counter_ != 0;
 }
 
-core::IAllocator& Context::allocator() {
-    return allocator_;
+core::IArena& Context::arena() {
+    return arena_;
 }
 
 packet::PacketFactory& Context::packet_factory() {

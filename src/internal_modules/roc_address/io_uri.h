@@ -25,7 +25,7 @@ namespace address {
 class IoUri : public core::NonCopyable<> {
 public:
     //! Initialize empty URI.
-    explicit IoUri(core::IAllocator&);
+    explicit IoUri(core::IArena&);
 
     //! Returns true if the URI has all required fields (scheme and path).
     bool is_valid() const;

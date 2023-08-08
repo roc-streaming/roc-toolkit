@@ -8,7 +8,7 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_peer/context.h"
 #include "roc_peer/receiver.h"
 #include "roc_peer/sender.h"
@@ -18,7 +18,7 @@ namespace peer {
 
 namespace {
 
-core::HeapAllocator allocator;
+core::HeapArena arena;
 
 } // namespace
 
@@ -26,7 +26,7 @@ TEST_GROUP(context) {};
 
 TEST(context, reference_counting) {
     ContextConfig context_config;
-    Context context(context_config, allocator);
+    Context context(context_config, arena);
 
     CHECK(context.is_valid());
     CHECK(!context.is_used());

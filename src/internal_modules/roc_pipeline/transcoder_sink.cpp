@@ -17,7 +17,7 @@ namespace pipeline {
 TranscoderSink::TranscoderSink(const TranscoderConfig& config,
                                audio::IFrameWriter* output_writer,
                                core::BufferFactory<audio::sample_t>& buffer_factory,
-                               core::IAllocator& allocator)
+                               core::IArena& arena)
     : audio_writer_(NULL)
     , config_(config) {
     audio::IFrameWriter* awriter = output_writer;
@@ -51,10 +51,10 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
         }
 
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-                             config.resampler_backend, allocator, buffer_factory,
+                             config.resampler_backend, arena, buffer_factory,
                              config.resampler_profile, config.input_sample_spec,
                              config.output_sample_spec),
-                         allocator);
+                         arena);
 
         if (!resampler_) {
             return;
@@ -81,7 +81,7 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
 
     if (config.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingWriter(
-            *awriter, allocator, config.input_sample_spec, config.profiler_config));
+            *awriter, arena, config.input_sample_spec, config.profiler_config));
         if (!profiler_ || !profiler_->is_valid()) {
             return;
         }

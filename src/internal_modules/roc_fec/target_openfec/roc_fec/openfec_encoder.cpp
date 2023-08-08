@@ -15,13 +15,13 @@ namespace fec {
 
 OpenfecEncoder::OpenfecEncoder(const CodecConfig& config,
                                core::BufferFactory<uint8_t>&,
-                               core::IAllocator& allocator)
+                               core::IArena& arena)
     : sblen_(0)
     , rblen_(0)
     , payload_size_(0)
     , of_sess_(NULL)
-    , buff_tab_(allocator)
-    , data_tab_(allocator)
+    , buff_tab_(arena)
+    , data_tab_(arena)
     , valid_(false) {
     if (config.scheme == packet::FEC_ReedSolomon_M8) {
         roc_log(LogDebug, "openfec encoder: initializing: codec=rs m=%u",
