@@ -30,7 +30,7 @@ public:
     ~HeapArena();
 
     //! Enable panic on leak in destructor, for all instances.
-    static void enable_panic_on_leak();
+    static void enable_leak_detection();
 
     //! Get number of allocated blocks.
     size_t num_allocations() const;
@@ -42,7 +42,7 @@ public:
     virtual void deallocate(void*);
 
 private:
-    static int panic_on_leak_;
+    static int enable_leak_detection_;
 
     Atomic<int> num_allocations_;
 };
