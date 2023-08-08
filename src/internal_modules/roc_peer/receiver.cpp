@@ -27,6 +27,8 @@ Receiver::Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_co
                 context.sample_buffer_factory(),
                 context.arena())
     , processing_task_(pipeline_)
+    , slot_pool_(context.arena(), pipeline_config.common.enable_poisoning)
+    , slot_map_(context.arena())
     , valid_(false) {
     roc_log(LogDebug, "receiver peer: initializing");
 
@@ -45,17 +47,18 @@ Receiver::~Receiver() {
 
     context().control_loop().wait(processing_task_);
 
-    for (size_t s = 0; s < slots_.size(); s++) {
-        if (!slots_[s].slot) {
+    for (core::SharedPtr<Slot> slot = slot_map_.front(); slot;
+         slot = slot_map_.nextof(*slot)) {
+        if (!slot->handle) {
             continue;
         }
 
         for (size_t p = 0; p < address::Iface_Max; p++) {
-            if (!slots_[s].ports[p].handle) {
+            if (!slot->ports[p].handle) {
                 continue;
             }
 
-            netio::NetworkLoop::Tasks::RemovePort task(slots_[s].ports[p].handle);
+            netio::NetworkLoop::Tasks::RemovePort task(slot->ports[p].handle);
             if (!context().network_loop().schedule_and_wait(task)) {
                 roc_panic("sender peer: can't remove port");
             }
@@ -80,7 +83,7 @@ bool Receiver::configure(size_t slot_index,
     roc_log(LogDebug, "receiver peer: configuring %s interface of slot %lu",
             address::interface_to_str(iface), (unsigned long)slot_index);
 
-    Slot* slot = get_slot_(slot_index, true);
+    core::SharedPtr<Slot> slot = get_slot_(slot_index, true);
     if (!slot) {
         roc_log(LogError,
                 "receiver peer:"
@@ -136,7 +139,7 @@ bool Receiver::bind(size_t slot_index,
         return false;
     }
 
-    Slot* slot = get_slot_(slot_index, true);
+    core::SharedPtr<Slot> slot = get_slot_(slot_index, true);
     if (!slot) {
         roc_log(LogError,
                 "receiver peer:"
@@ -159,7 +162,7 @@ bool Receiver::bind(size_t slot_index,
         return false;
     }
 
-    pipeline::ReceiverLoop::Tasks::CreateEndpoint endpoint_task(slot->slot, iface,
+    pipeline::ReceiverLoop::Tasks::CreateEndpoint endpoint_task(slot->handle, iface,
                                                                 uri.proto());
     if (!pipeline_.schedule_and_wait(endpoint_task)) {
         roc_log(LogError,
@@ -181,7 +184,7 @@ bool Receiver::bind(size_t slot_index,
                 " can't bind interface to local port",
                 address::interface_to_str(iface), (unsigned long)slot_index);
 
-        pipeline::ReceiverLoop::Tasks::DeleteEndpoint delete_endpoint_task(slot->slot,
+        pipeline::ReceiverLoop::Tasks::DeleteEndpoint delete_endpoint_task(slot->handle,
                                                                            iface);
         if (!pipeline_.schedule_and_wait(delete_endpoint_task)) {
             roc_panic("receiver peer: can't remove newly created endpoint");
@@ -228,34 +231,39 @@ void Receiver::update_compatibility_(address::Interface iface,
     used_protocols_[iface] = uri.proto();
 }
 
-Receiver::Slot* Receiver::get_slot_(size_t slot_index, bool auto_create) {
-    if (slots_.size() <= slot_index) {
-        if (!auto_create) {
+core::SharedPtr<Receiver::Slot> Receiver::get_slot_(size_t slot_index, bool auto_create) {
+    core::SharedPtr<Slot> slot = slot_map_.find(slot_index);
+
+    if (!slot) {
+        if (auto_create) {
+            pipeline::ReceiverLoop::Tasks::CreateSlot task;
+            if (!pipeline_.schedule_and_wait(task)) {
+                roc_log(LogError, "receiver peer: failed to create slot");
+                return NULL;
+            }
+
+            slot = new (slot_pool_) Slot(slot_pool_, slot_index, task.get_handle());
+            if (!slot) {
+                roc_log(LogError, "receiver peer: failed to create slot %lu",
+                        (unsigned long)slot_index);
+                return NULL;
+            }
+
+            if (!slot_map_.grow()) {
+                roc_log(LogError, "receiver peer: failed to create slot %lu",
+                        (unsigned long)slot_index);
+                return NULL;
+            }
+
+            slot_map_.insert(*slot);
+        } else {
             roc_log(LogError, "receiver peer: failed to find slot %lu",
                     (unsigned long)slot_index);
             return NULL;
         }
-        if (!slots_.resize(slot_index + 1)) {
-            roc_log(LogError, "receiver peer: failed to allocate slot");
-            return NULL;
-        }
     }
 
-    if (!slots_[slot_index].slot) {
-        if (!auto_create) {
-            roc_log(LogError, "receiver peer: failed to find slot %lu",
-                    (unsigned long)slot_index);
-            return NULL;
-        }
-        pipeline::ReceiverLoop::Tasks::CreateSlot task;
-        if (!pipeline_.schedule_and_wait(task)) {
-            roc_log(LogError, "receiver peer: failed to create slot");
-            return NULL;
-        }
-        slots_[slot_index].slot = task.get_handle();
-    }
-
-    return &slots_[slot_index];
+    return slot;
 }
 
 void Receiver::schedule_task_processing(pipeline::PipelineLoop&,

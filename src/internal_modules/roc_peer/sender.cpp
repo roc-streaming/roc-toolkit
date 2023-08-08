@@ -26,7 +26,8 @@ Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
                 context.sample_buffer_factory(),
                 context.arena())
     , processing_task_(pipeline_)
-    , slots_(context.arena())
+    , slot_pool_(context.arena(), pipeline_config.enable_poisoning)
+    , slot_map_(context.arena())
     , valid_(false) {
     roc_log(LogDebug, "sender peer: initializing");
 
@@ -45,17 +46,18 @@ Sender::~Sender() {
 
     context().control_loop().wait(processing_task_);
 
-    for (size_t s = 0; s < slots_.size(); s++) {
-        if (!slots_[s].handle) {
+    for (core::SharedPtr<Slot> slot = slot_map_.front(); slot;
+         slot = slot_map_.nextof(*slot)) {
+        if (!slot->handle) {
             continue;
         }
 
         for (size_t p = 0; p < address::Iface_Max; p++) {
-            if (!slots_[s].ports[p].handle) {
+            if (!slot->ports[p].handle) {
                 continue;
             }
 
-            netio::NetworkLoop::Tasks::RemovePort task(slots_[s].ports[p].handle);
+            netio::NetworkLoop::Tasks::RemovePort task(slot->ports[p].handle);
             if (!context().network_loop().schedule_and_wait(task)) {
                 roc_panic("sender peer: can't remove port");
             }
@@ -80,7 +82,7 @@ bool Sender::configure(size_t slot_index,
     roc_log(LogDebug, "sender peer: configuring %s interface of slot %lu",
             address::interface_to_str(iface), (unsigned long)slot_index);
 
-    Slot* slot = get_slot_(slot_index, true);
+    core::SharedPtr<Slot> slot = get_slot_(slot_index, true);
     if (!slot) {
         roc_log(LogError,
                 "sender peer:"
@@ -134,7 +136,7 @@ bool Sender::connect(size_t slot_index,
         return false;
     }
 
-    Slot* slot = get_slot_(slot_index, true);
+    core::SharedPtr<Slot> slot = get_slot_(slot_index, true);
     if (!slot) {
         roc_log(LogError,
                 "sender peer:"
@@ -213,16 +215,17 @@ bool Sender::is_ready() {
 
     roc_panic_if_not(is_valid());
 
-    if (slots_.size() == 0) {
+    if (slot_map_.size() == 0) {
         return false;
     }
 
-    for (size_t s = 0; s < slots_.size(); s++) {
-        if (!slots_[s].handle) {
+    for (core::SharedPtr<Slot> slot = slot_map_.front(); slot;
+         slot = slot_map_.nextof(*slot)) {
+        if (!slot->handle) {
             continue;
         }
 
-        pipeline::SenderLoop::Tasks::CheckSlotIsReady task(slots_[s].handle);
+        pipeline::SenderLoop::Tasks::CheckSlotIsReady task(slot->handle);
         if (!pipeline_.schedule_and_wait(task)) {
             return false;
         }
@@ -257,34 +260,40 @@ void Sender::update_compatibility_(address::Interface iface,
     used_protocols_[iface] = uri.proto();
 }
 
-Sender::Slot* Sender::get_slot_(size_t slot_index, bool auto_create) {
-    if (slots_.size() <= slot_index) {
-        if (!auto_create) {
+core::SharedPtr<Sender::Slot> Sender::get_slot_(size_t slot_index, bool auto_create) {
+    core::SharedPtr<Slot> slot = slot_map_.find(slot_index);
+
+    if (!slot) {
+        if (auto_create) {
+            pipeline::SenderLoop::Tasks::CreateSlot task;
+            if (!pipeline_.schedule_and_wait(task)) {
+                roc_log(LogError, "sender peer: failed to create slot %lu",
+                        (unsigned long)slot_index);
+                return NULL;
+            }
+
+            slot = new (slot_pool_) Slot(slot_pool_, slot_index, task.get_handle());
+            if (!slot) {
+                roc_log(LogError, "sender peer: failed to create slot %lu",
+                        (unsigned long)slot_index);
+                return NULL;
+            }
+
+            if (!slot_map_.grow()) {
+                roc_log(LogError, "sender peer: failed to create slot %lu",
+                        (unsigned long)slot_index);
+                return NULL;
+            }
+
+            slot_map_.insert(*slot);
+        } else {
             roc_log(LogError, "sender peer: failed to find slot %lu",
                     (unsigned long)slot_index);
             return NULL;
         }
-        if (!slots_.resize(slot_index + 1)) {
-            roc_log(LogError, "sender peer: failed to allocate slot");
-            return NULL;
-        }
     }
 
-    if (!slots_[slot_index].handle) {
-        if (!auto_create) {
-            roc_log(LogError, "sender peer: failed to find slot %lu",
-                    (unsigned long)slot_index);
-            return NULL;
-        }
-        pipeline::SenderLoop::Tasks::CreateSlot task;
-        if (!pipeline_.schedule_and_wait(task)) {
-            roc_log(LogError, "sender peer: failed to create slot");
-            return NULL;
-        }
-        slots_[slot_index].handle = task.get_handle();
-    }
-
-    return &slots_[slot_index];
+    return slot;
 }
 
 Sender::Port& Sender::select_outgoing_port_(Slot& slot,

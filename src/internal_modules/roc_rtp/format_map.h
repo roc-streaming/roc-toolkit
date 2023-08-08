@@ -64,16 +64,16 @@ private:
 
         Format format;
 
+        unsigned int key() const {
+            return format.payload_type;
+        }
+
         static core::hashsum_t key_hash(unsigned int pt) {
             return core::hashsum_int(pt);
         }
 
         static bool key_equal(unsigned int pt1, unsigned int pt2) {
             return pt1 == pt2;
-        }
-
-        unsigned int key() const {
-            return format.payload_type;
         }
     };
 
