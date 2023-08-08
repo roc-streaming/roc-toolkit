@@ -7,7 +7,7 @@
  */
 
 //! @file roc_core/use_counted.h
-//! @brief Base class for object with use counter.
+//! @brief Base class for object with usage counter.
 
 #ifndef ROC_CORE_USE_COUNTED_H_
 #define ROC_CORE_USE_COUNTED_H_
@@ -19,7 +19,7 @@
 namespace roc {
 namespace core {
 
-//! Base class for object with use counter.
+//! Base class for object with usage counter.
 //!
 //! Allows to increment and descrement use counter of the object. Checks the
 //! counter in destructor and panics if it's non-zero.
@@ -33,9 +33,11 @@ public:
 
     ~UseCounted() {
         if (!counter_.compare_exchange(0, -1)) {
-            roc_panic("use counter: attempt to destroy object that is still in use:"
-                      " counter=%d",
-                      (int)counter_);
+            roc_panic(
+                "use counter:"
+                " attempt to destroy object that is in use, destroyed, or corrupted:"
+                " counter=%d",
+                (int)counter_);
         }
     }
 
@@ -43,8 +45,11 @@ public:
     int getref() const {
         const int current_counter = counter_;
 
-        if (current_counter < 0) {
-            roc_panic("use counter: attempt to access destroyed object");
+        if (current_counter < 0 || current_counter > MaxCounter) {
+            roc_panic("use counter:"
+                      " attempt to access destroyed or currupted object:"
+                      " counter=%d",
+                      (int)current_counter);
         }
 
         return current_counter;
@@ -54,8 +59,11 @@ public:
     void incref() const {
         const int previous_counter = counter_++;
 
-        if (previous_counter < 0) {
-            roc_panic("use counter: attempt to call acquire on destroyed object");
+        if (previous_counter < 0 || previous_counter > MaxCounter) {
+            roc_panic("use counter:"
+                      " attempt to access destroyed or currupted object"
+                      " counter=%d",
+                      (int)previous_counter);
         }
     }
 
@@ -65,16 +73,21 @@ public:
     void decref() const {
         const int previous_counter = counter_--;
 
-        if (previous_counter < 0) {
-            roc_panic("use counter: attempt to call release on destroyed object");
+        if (previous_counter < 0 || previous_counter > MaxCounter) {
+            roc_panic("use counter:"
+                      " attempt to access destroyed or currupted object"
+                      " counter=%d",
+                      (int)previous_counter);
         }
 
         if (previous_counter == 0) {
-            roc_panic("use counter: attempt to call release without acquire");
+            roc_panic("use counter: unpaired incref/decref");
         }
     }
 
 private:
+    enum { MaxCounter = 100000 };
+
     mutable Atomic<int> counter_;
 };
 
