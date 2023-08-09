@@ -47,7 +47,7 @@ namespace core {
 //!     won't be visited. Elements inserted during iteration will be visited.
 //!
 //! Incremental rehashing technique is inspired by Go's map implementation, though
-//! there are differences. Load factor value is from Java's Hashmap implementation.
+//! there are differences. Load factor value is taken from it as well.
 //! Prime numbers for sizes are from https://planetmath.org/goodhashtableprimes.
 //!
 //! @tparam T defines object type, it should inherit HashmapNode and additionally
@@ -86,8 +86,10 @@ public:
     //!  either raw or smart pointer depending on the ownership policy.
     typedef typename OwnershipPolicy<T>::Pointer Pointer;
 
-    //! Initialize empty hashmap.
-    Hashmap(IArena& arena)
+    //! Initialize empty hashmap without arena.
+    //! @remarks
+    //!  Hashmap capacity will be limited to the embedded capacity.
+    Hashmap()
         : curr_buckets_(NULL)
         , n_curr_buckets_(0)
         , prev_buckets_(NULL)
@@ -95,15 +97,25 @@ public:
         , size_(0)
         , rehash_pos_(0)
         , rehash_remain_nodes_(0)
-        , arena_(arena) {
+        , arena_(NULL) {
         all_head_.all_prev = &all_head_;
         all_head_.all_next = &all_head_;
+    }
 
-        if (EmbeddedCapacity != 0) {
-            if (!realloc_buckets_(NumEmbeddedBuckets)) {
-                roc_panic("hashmap: initialization failed");
-            }
-        }
+    //! Initialize empty hashmap with arena.
+    //! @remarks
+    //!  Hashmap capacity may grow using arena.
+    explicit Hashmap(IArena& arena)
+        : curr_buckets_(NULL)
+        , n_curr_buckets_(0)
+        , prev_buckets_(NULL)
+        , n_prev_buckets_(0)
+        , size_(0)
+        , rehash_pos_(0)
+        , rehash_remain_nodes_(0)
+        , arena_(&arena) {
+        all_head_.all_prev = &all_head_;
+        all_head_.all_next = &all_head_;
     }
 
     //! Release ownership of all elements.
@@ -314,7 +326,7 @@ public:
         if (size_ == cap) {
             size_t n_buckets = n_curr_buckets_;
             do {
-                n_buckets = get_prime_larger_than_(n_buckets);
+                n_buckets = get_next_bucket_size_(n_buckets);
             } while (size_ >= buckets_capacity_(n_buckets));
 
             if (!realloc_buckets_(n_buckets)) {
@@ -331,12 +343,16 @@ public:
 private:
     enum {
         // rehash happens when n_elements >= n_buckets * LoadFactorNum / LoadFactorDen
-        LoadFactorNum = 75,
-        LoadFactorDen = 100,
+        LoadFactorNum = 13,
+        LoadFactorDen = 2,
 
         // how much buckets are embeded directly into Hashmap object
-        NumEmbeddedBuckets =
-            ((int)EmbeddedCapacity * LoadFactorDen + LoadFactorNum - 1) / LoadFactorNum
+        NumEmbeddedBuckets = ((int)(EmbeddedCapacity == 0        ? 0
+                                        : EmbeddedCapacity <= 16 ? 16
+                                                                 : EmbeddedCapacity)
+                                  * LoadFactorDen
+                              + LoadFactorNum - 1)
+            / LoadFactorNum * 2
     };
 
     struct Bucket {
@@ -357,17 +373,19 @@ private:
         if (n_buckets <= NumEmbeddedBuckets
             && curr_buckets_ != (Bucket*)embedded_buckets_.memory()) {
             buckets = (Bucket*)embedded_buckets_.memory();
-        } else {
-            buckets = (Bucket*)arena_.allocate(n_buckets * sizeof(Bucket));
+        } else if (arena_) {
+            buckets = (Bucket*)arena_->allocate(n_buckets * sizeof(Bucket));
             if (buckets == NULL) {
                 return false;
             }
+        } else {
+            return false;
         }
 
         memset(buckets, 0, n_buckets * sizeof(Bucket));
 
         if (prev_buckets_ && prev_buckets_ != (Bucket*)embedded_buckets_.memory()) {
-            arena_.deallocate(prev_buckets_);
+            arena_->deallocate(prev_buckets_);
             prev_buckets_ = NULL;
         }
 
@@ -387,11 +405,11 @@ private:
 
     void dealloc_buckets_() {
         if (curr_buckets_ && curr_buckets_ != (Bucket*)embedded_buckets_.memory()) {
-            arena_.deallocate(curr_buckets_);
+            arena_->deallocate(curr_buckets_);
         }
 
         if (prev_buckets_ && prev_buckets_ != (Bucket*)embedded_buckets_.memory()) {
-            arena_.deallocate(prev_buckets_);
+            arena_->deallocate(prev_buckets_);
         }
     }
 
@@ -588,22 +606,45 @@ private:
         bucket_insert_(bucket, node);
     }
 
-    size_t get_prime_larger_than_(size_t min) {
-        static const size_t primes[] = {
-            53,        97,        193,       389,       769,       1543,     3079,
-            6151,      12289,     24593,     49157,     98317,     196613,   393241,
-            786433,    1572869,   3145739,   6291469,   12582917,  25165843, 50331653,
-            100663319, 201326611, 402653189, 805306457, 1610612741
+    size_t get_next_bucket_size_(size_t current_count) {
+        // rougtly doubling sequence of prime numbers, used as bucket counts
+        static const size_t prime_counts[] = {
+            5,    11,   23,    53,    97,    193,   389,    769,    1543,
+            3079, 6151, 12289, 24593, 49157, 98317, 196613, 393241, 786433,
         };
 
-        for (size_t n = 0; n < ROC_ARRAY_SIZE(primes); n++) {
-            if (primes[n] > min) {
-                return primes[n];
+        // minimum bucket count when allocating from arena
+        const size_t min_arena_count = 23;
+
+        if ((ssize_t)current_count < (ssize_t)NumEmbeddedBuckets) {
+            // we are allocating from embedded capacity
+            // find maximum prime count above current and below capacity
+            for (size_t n = 0; n < ROC_ARRAY_SIZE(prime_counts) - 1; n++) {
+                if (prime_counts[n] > NumEmbeddedBuckets) {
+                    break;
+                }
+                if (prime_counts[n] > current_count
+                    && prime_counts[n + 1] > NumEmbeddedBuckets) {
+                    return prime_counts[n];
+                }
             }
         }
 
-        roc_panic_if(min * 3 < min);
-        return min * 3;
+        // we are allocating from arena
+        // find minimum prime count above current
+        for (size_t n = 0; n < ROC_ARRAY_SIZE(prime_counts); n++) {
+            if (prime_counts[n] < min_arena_count) {
+                // skip small counts when allocating from arena
+                continue;
+            }
+            if (prime_counts[n] > current_count) {
+                return prime_counts[n];
+            }
+        }
+
+        // fallback for unrealistically large counts
+        roc_panic_if(current_count * 3 < current_count);
+        return current_count * 3;
     }
 
     Bucket* curr_buckets_;
@@ -620,7 +661,7 @@ private:
     // head of list of all nodes
     HashmapNode::HashmapNodeData all_head_;
 
-    IArena& arena_;
+    IArena* arena_;
 
     AlignedStorage<NumEmbeddedBuckets * sizeof(Bucket)> embedded_buckets_;
 };

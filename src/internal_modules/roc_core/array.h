@@ -40,7 +40,7 @@ template <class T, size_t EmbeddedCapacity = 0> class Array : public NonCopyable
 public:
     //! Initialize empty array without arena.
     //! @remarks
-    //!  Array maximum size will be limited to the embedded capacity.
+    //!  Array capacity will be limited to the embedded capacity.
     Array()
         : data_(NULL)
         , size_(0)
@@ -50,7 +50,7 @@ public:
 
     //! Initialize empty array with arena.
     //! @remarks
-    //!  Array maximum size may grow using arena.
+    //!  Array capacity may grow using arena.
     explicit Array(IArena& arena)
         : data_(NULL)
         , size_(0)
@@ -164,7 +164,7 @@ public:
 
     //! Increase array capacity.
     //! @remarks
-    //!  If @p max_sz is greater than the current maximum size, a larger memory
+    //!  If @p max_sz is greater than the current capacity, a larger memory
     //!  region is allocated and the array elements are copied there.
     //! @returns
     //!  false if the allocation failed
@@ -205,7 +205,7 @@ public:
 
     //! Increase array capacity exponentially.
     //! @remarks
-    //!  If @p min_size is greater than the current maximum size, a larger memory
+    //!  If @p min_size is greater than the current capacity, a larger memory
     //!  region is allocated and the array elements are copied there.
     //!  The size growth will follow the sequence: 0, 2, 4, 8, 16, ... until
     //!  it reaches some threshold, and then starts growing linearly.
