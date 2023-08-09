@@ -70,6 +70,11 @@ public:
         return size_;
     }
 
+    //! Check if size is zero.
+    bool is_empty() const {
+        return size_ == 0;
+    }
+
     //! Check if element belongs to list.
     bool contains(const T& element) {
         const ListNode::ListNodeData* data = element.list_node_data();

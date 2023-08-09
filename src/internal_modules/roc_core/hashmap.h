@@ -137,6 +137,11 @@ public:
         return size_;
     }
 
+    //! Check if size is zero.
+    bool is_empty() const {
+        return size_ == 0;
+    }
+
     //! Check if element belongs to hashmap.
     //!
     //! @note

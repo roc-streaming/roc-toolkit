@@ -120,7 +120,7 @@ PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
 }
 
 PoolImpl::Slot* PoolImpl::acquire_slot_() {
-    if (free_slots_.size() == 0) {
+    if (free_slots_.is_empty()) {
         allocate_new_slab_();
     }
 

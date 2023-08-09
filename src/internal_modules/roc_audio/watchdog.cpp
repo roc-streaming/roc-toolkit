@@ -194,7 +194,7 @@ bool Watchdog::check_drops_timeout_() {
 }
 
 void Watchdog::update_status_(const Frame& frame) {
-    if (status_.size() == 0) {
+    if (status_.is_empty()) {
         return;
     }
 

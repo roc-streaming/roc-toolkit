@@ -46,8 +46,8 @@ Sender::~Sender() {
 
     context().control_loop().wait(processing_task_);
 
-    while (slot_map_.size() != 0) {
-        remove_slot_(slot_map_.front());
+    while (!slot_map_.is_empty()) {
+        remove_slot_(slot_map_.back());
     }
 }
 
@@ -221,7 +221,7 @@ bool Sender::is_ready() {
 
     roc_panic_if_not(is_valid());
 
-    if (slot_map_.size() == 0) {
+    if (slot_map_.is_empty()) {
         return false;
     }
 
