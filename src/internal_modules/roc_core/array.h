@@ -77,6 +77,11 @@ public:
         return size_;
     }
 
+    //! Check if size is zero.
+    bool is_empty() const {
+        return size_ == 0;
+    }
+
     //! Get pointer to first element.
     //! @remarks
     //!  Returns null if the array is empty.

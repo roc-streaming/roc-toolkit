@@ -210,7 +210,7 @@ void ReceiverSessionGroup::remove_session_(ReceiverSession& sess) {
 void ReceiverSessionGroup::remove_all_sessions_() {
     roc_log(LogDebug, "session group: removing all sessions");
 
-    while (sessions_.size() != 0) {
+    while (!sessions_.is_empty()) {
         remove_session_(*sessions_.back());
     }
 }
