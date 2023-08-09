@@ -50,7 +50,7 @@ TEST(sender, connect) {
 
     UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
 
-    {
+    { // one slot
         Sender sender(context, sender_config);
         CHECK(sender.is_valid());
 
@@ -63,15 +63,8 @@ TEST(sender, connect) {
     }
 
     UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
-}
 
-TEST(sender, connect_slots) {
-    Context context(context_config, arena);
-    CHECK(context.is_valid());
-
-    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
-
-    {
+    { // two slots
         Sender sender(context, sender_config);
         CHECK(sender.is_valid());
 
@@ -97,7 +90,7 @@ TEST(sender, configure) {
 
     UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
 
-    {
+    { // one slot
         Sender sender(context, sender_config);
         CHECK(sender.is_valid());
 
@@ -115,15 +108,8 @@ TEST(sender, configure) {
     }
 
     UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
-}
 
-TEST(sender, configure_slots) {
-    Context context(context_config, arena);
-    CHECK(context.is_valid());
-
-    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
-
-    {
+    { // two slots
         Sender sender(context, sender_config);
         CHECK(sender.is_valid());
 
@@ -144,6 +130,78 @@ TEST(sender, configure_slots) {
         CHECK(sender.connect(1, address::Iface_AudioSource, source_endp2));
 
         UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 2);
+    }
+
+    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
+}
+
+TEST(sender, unlink) {
+    Context context(context_config, arena);
+    CHECK(context.is_valid());
+
+    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
+
+    { // connect one slot, unlink one slot
+        Sender sender(context, sender_config);
+        CHECK(sender.is_valid());
+
+        address::EndpointUri source_endp(arena);
+        parse_uri(source_endp, "rtp://127.0.0.1:123");
+
+        CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
+
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 1);
+
+        CHECK(sender.unlink(DefaultSlot));
+
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
+    }
+
+    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
+
+    { // connect two slots, unlink one slot
+        Sender sender(context, sender_config);
+        CHECK(sender.is_valid());
+
+        address::EndpointUri source_endp1(arena);
+        parse_uri(source_endp1, "rtp://127.0.0.1:111");
+        CHECK(sender.connect(0, address::Iface_AudioSource, source_endp1));
+
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 1);
+
+        address::EndpointUri source_endp2(arena);
+        parse_uri(source_endp2, "rtp://127.0.0.1:222");
+        CHECK(sender.connect(1, address::Iface_AudioSource, source_endp2));
+
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 2);
+
+        CHECK(sender.unlink(0));
+
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 1);
+    }
+
+    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
+
+    { // connect two slots, unlink two slots
+        Sender sender(context, sender_config);
+        CHECK(sender.is_valid());
+
+        address::EndpointUri source_endp1(arena);
+        parse_uri(source_endp1, "rtp://127.0.0.1:111");
+        CHECK(sender.connect(0, address::Iface_AudioSource, source_endp1));
+
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 1);
+
+        address::EndpointUri source_endp2(arena);
+        parse_uri(source_endp2, "rtp://127.0.0.1:222");
+        CHECK(sender.connect(1, address::Iface_AudioSource, source_endp2));
+
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 2);
+
+        CHECK(sender.unlink(0));
+        CHECK(sender.unlink(1));
+
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
     }
 
     UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
@@ -294,7 +352,7 @@ TEST(sender, endpoints_fec) {
     }
 }
 
-TEST(sender, endpoints_fec_slots) {
+TEST(sender, endpoints_fec_multiple_slots) {
     Context context(context_config, arena);
     CHECK(context.is_valid());
 

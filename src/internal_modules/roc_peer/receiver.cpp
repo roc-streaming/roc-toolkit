@@ -47,22 +47,8 @@ Receiver::~Receiver() {
 
     context().control_loop().wait(processing_task_);
 
-    for (core::SharedPtr<Slot> slot = slot_map_.front(); slot;
-         slot = slot_map_.nextof(*slot)) {
-        if (!slot->handle) {
-            continue;
-        }
-
-        for (size_t p = 0; p < address::Iface_Max; p++) {
-            if (!slot->ports[p].handle) {
-                continue;
-            }
-
-            netio::NetworkLoop::Tasks::RemovePort task(slot->ports[p].handle);
-            if (!context().network_loop().schedule_and_wait(task)) {
-                roc_panic("sender peer: can't remove port");
-            }
-        }
+    while (slot_map_.size() != 0) {
+        remove_slot_(slot_map_.front());
     }
 }
 
@@ -207,6 +193,26 @@ bool Receiver::bind(size_t slot_index,
     return true;
 }
 
+bool Receiver::unlink(size_t slot_index) {
+    core::Mutex::Lock lock(mutex_);
+
+    roc_panic_if_not(is_valid());
+
+    roc_log(LogDebug, "receiver peer: unlinking slot %lu", (unsigned long)slot_index);
+
+    core::SharedPtr<Slot> slot = get_slot_(slot_index, false);
+    if (!slot) {
+        roc_log(LogError,
+                "receiver peer:"
+                " can't unlink slot %lu: can't find slot",
+                (unsigned long)slot_index);
+        return false;
+    }
+
+    remove_slot_(slot);
+    return true;
+}
+
 sndio::ISource& Receiver::source() {
     return pipeline_.source();
 }
@@ -264,6 +270,28 @@ core::SharedPtr<Receiver::Slot> Receiver::get_slot_(size_t slot_index, bool auto
     }
 
     return slot;
+}
+
+void Receiver::remove_slot_(const core::SharedPtr<Slot>& slot) {
+    if (slot->handle) {
+        pipeline::ReceiverLoop::Tasks::DeleteSlot task(slot->handle);
+        if (!pipeline_.schedule_and_wait(task)) {
+            roc_panic("receiver peer: can't remove pipeline slot %lu",
+                      (unsigned long)slot->index);
+        }
+    }
+
+    for (size_t p = 0; p < address::Iface_Max; p++) {
+        if (slot->ports[p].handle) {
+            netio::NetworkLoop::Tasks::RemovePort task(slot->ports[p].handle);
+            if (!context().network_loop().schedule_and_wait(task)) {
+                roc_panic("receiver peer: can't remove network port of slot %lu",
+                          (unsigned long)slot->index);
+            }
+        }
+    }
+
+    slot_map_.remove(*slot);
 }
 
 void Receiver::schedule_task_processing(pipeline::PipelineLoop&,
