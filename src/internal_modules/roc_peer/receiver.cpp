@@ -45,12 +45,15 @@ Receiver::Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_co
 Receiver::~Receiver() {
     roc_log(LogDebug, "receiver peer: deinitializing");
 
-    context().control_loop().wait(processing_task_);
-
+    // First remove all slots. This may involve usage of processing task.
     while (core::SharedPtr<Slot> slot = slot_map_.front()) {
         cleanup_slot_(*slot);
         slot_map_.remove(*slot);
     }
+
+    // Then wait until processing task is fully completed, before
+    // proceeding to its destruction.
+    context().control_loop().wait(processing_task_);
 }
 
 bool Receiver::is_valid() {
@@ -171,8 +174,8 @@ bool Receiver::bind(size_t slot_index,
         return false;
     }
 
-    pipeline::ReceiverLoop::Tasks::CreateEndpoint endpoint_task(slot->handle, iface,
-                                                                uri.proto());
+    pipeline::ReceiverLoop::Tasks::AddEndpoint endpoint_task(slot->handle, iface,
+                                                             uri.proto());
     if (!pipeline_.schedule_and_wait(endpoint_task)) {
         roc_log(LogError,
                 "receiver peer:"

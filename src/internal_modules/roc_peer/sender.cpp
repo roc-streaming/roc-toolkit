@@ -44,12 +44,15 @@ Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
 Sender::~Sender() {
     roc_log(LogDebug, "sender peer: deinitializing");
 
-    context().control_loop().wait(processing_task_);
-
+    // First remove all slots. This may involve usage of processing task.
     while (core::SharedPtr<Slot> slot = slot_map_.front()) {
         cleanup_slot_(*slot);
         slot_map_.remove(*slot);
     }
+
+    // Then wait until processing task is fully completed, before
+    // proceeding to its destruction.
+    context().control_loop().wait(processing_task_);
 }
 
 bool Sender::is_valid() const {
@@ -180,26 +183,13 @@ bool Sender::connect(size_t slot_index,
         return false;
     }
 
-    pipeline::SenderLoop::Tasks::CreateEndpoint endpoint_task(slot->handle, iface,
-                                                              uri.proto());
+    pipeline::SenderLoop::Tasks::AddEndpoint endpoint_task(
+        slot->handle, iface, uri.proto(), address, *port.writer);
     if (!pipeline_.schedule_and_wait(endpoint_task)) {
         roc_log(LogError,
                 "sender peer:"
                 " can't connect %s interface of slot %lu:"
                 " can't add endpoint to pipeline",
-                address::interface_to_str(iface), (unsigned long)slot_index);
-        break_slot_(*slot);
-        return false;
-    }
-
-    pipeline::SenderLoop::Tasks::ConfigureEndpoint configure_task(
-        endpoint_task.get_handle(), address, *port.writer);
-
-    if (!pipeline_.schedule_and_wait(configure_task)) {
-        roc_log(LogError,
-                "sender peer:"
-                " can't connect %s interface of slot %lu:"
-                " can't configure endpoint",
                 address::interface_to_str(iface), (unsigned long)slot_index);
         break_slot_(*slot);
         return false;
@@ -232,30 +222,29 @@ bool Sender::unlink(size_t slot_index) {
     return true;
 }
 
-bool Sender::is_ready() {
+bool Sender::has_incomplete() {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(is_valid());
 
-    if (slot_map_.is_empty()) {
-        return false;
-    }
-
     for (core::SharedPtr<Slot> slot = slot_map_.front(); slot;
          slot = slot_map_.nextof(*slot)) {
         if (slot->broken) {
-            return false;
+            return true;
         }
 
         if (slot->handle) {
-            pipeline::SenderLoop::Tasks::CheckSlotReady task(slot->handle);
+            pipeline::SenderLoop::Tasks::PollSlot task(slot->handle);
             if (!pipeline_.schedule_and_wait(task)) {
-                return false;
+                return true;
+            }
+            if (!task.get_complete()) {
+                return true;
             }
         }
     }
 
-    return true;
+    return false;
 }
 
 bool Sender::has_broken() {

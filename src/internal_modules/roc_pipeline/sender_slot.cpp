@@ -38,8 +38,10 @@ SenderSlot::~SenderSlot() {
     }
 }
 
-SenderEndpoint* SenderSlot::create_endpoint(address::Interface iface,
-                                            address::Protocol proto) {
+SenderEndpoint* SenderSlot::add_endpoint(address::Interface iface,
+                                         address::Protocol proto,
+                                         const address::SocketAddr& dest_address,
+                                         packet::IWriter& dest_writer) {
     roc_log(LogDebug, "sender slot: adding %s endpoint %s",
             address::interface_to_str(iface), address::proto_to_str(proto));
 
@@ -47,19 +49,19 @@ SenderEndpoint* SenderSlot::create_endpoint(address::Interface iface,
 
     switch (iface) {
     case address::Iface_AudioSource:
-        if (!(endpoint = create_source_endpoint_(proto))) {
+        if (!(endpoint = create_source_endpoint_(proto, dest_address, dest_writer))) {
             return NULL;
         }
         break;
 
     case address::Iface_AudioRepair:
-        if (!(endpoint = create_repair_endpoint_(proto))) {
+        if (!(endpoint = create_repair_endpoint_(proto, dest_address, dest_writer))) {
             return NULL;
         }
         break;
 
     case address::Iface_AudioControl:
-        if (!(endpoint = create_control_endpoint_(proto))) {
+        if (!(endpoint = create_control_endpoint_(proto, dest_address, dest_writer))) {
             return NULL;
         }
         break;
@@ -105,9 +107,8 @@ audio::IFrameWriter* SenderSlot::writer() {
     return session_.writer();
 }
 
-bool SenderSlot::is_ready() const {
-    return session_.writer() && source_endpoint_->has_destination_writer()
-        && (!repair_endpoint_ || repair_endpoint_->has_destination_writer());
+bool SenderSlot::is_complete() const {
+    return session_.writer();
 }
 
 core::nanoseconds_t SenderSlot::get_update_deadline() const {
@@ -118,7 +119,10 @@ void SenderSlot::update() {
     session_.update();
 }
 
-SenderEndpoint* SenderSlot::create_source_endpoint_(address::Protocol proto) {
+SenderEndpoint*
+SenderSlot::create_source_endpoint_(address::Protocol proto,
+                                    const address::SocketAddr& dest_address,
+                                    packet::IWriter& dest_writer) {
     if (source_endpoint_) {
         roc_log(LogError, "sender slot: audio source endpoint is already set");
         return NULL;
@@ -139,7 +143,8 @@ SenderEndpoint* SenderSlot::create_source_endpoint_(address::Protocol proto) {
         return NULL;
     }
 
-    source_endpoint_.reset(new (source_endpoint_) SenderEndpoint(proto, arena()));
+    source_endpoint_.reset(new (source_endpoint_)
+                               SenderEndpoint(proto, dest_address, dest_writer, arena()));
     if (!source_endpoint_ || !source_endpoint_->is_valid()) {
         roc_log(LogError, "sender slot: can't create source endpoint");
         source_endpoint_.reset(NULL);
@@ -149,7 +154,10 @@ SenderEndpoint* SenderSlot::create_source_endpoint_(address::Protocol proto) {
     return source_endpoint_.get();
 }
 
-SenderEndpoint* SenderSlot::create_repair_endpoint_(address::Protocol proto) {
+SenderEndpoint*
+SenderSlot::create_repair_endpoint_(address::Protocol proto,
+                                    const address::SocketAddr& dest_address,
+                                    packet::IWriter& dest_writer) {
     if (repair_endpoint_) {
         roc_log(LogError, "sender slot: audio repair endpoint is already set");
         return NULL;
@@ -170,7 +178,8 @@ SenderEndpoint* SenderSlot::create_repair_endpoint_(address::Protocol proto) {
         return NULL;
     }
 
-    repair_endpoint_.reset(new (repair_endpoint_) SenderEndpoint(proto, arena()));
+    repair_endpoint_.reset(new (repair_endpoint_)
+                               SenderEndpoint(proto, dest_address, dest_writer, arena()));
     if (!repair_endpoint_ || !repair_endpoint_->is_valid()) {
         roc_log(LogError, "sender slot: can't create repair endpoint");
         repair_endpoint_.reset(NULL);
@@ -180,7 +189,10 @@ SenderEndpoint* SenderSlot::create_repair_endpoint_(address::Protocol proto) {
     return repair_endpoint_.get();
 }
 
-SenderEndpoint* SenderSlot::create_control_endpoint_(address::Protocol proto) {
+SenderEndpoint*
+SenderSlot::create_control_endpoint_(address::Protocol proto,
+                                     const address::SocketAddr& dest_address,
+                                     packet::IWriter& dest_writer) {
     if (control_endpoint_) {
         roc_log(LogError, "sender slot: audio control endpoint is already set");
         return NULL;
@@ -190,7 +202,8 @@ SenderEndpoint* SenderSlot::create_control_endpoint_(address::Protocol proto) {
         return NULL;
     }
 
-    control_endpoint_.reset(new (control_endpoint_) SenderEndpoint(proto, arena()));
+    control_endpoint_.reset(new (control_endpoint_) SenderEndpoint(proto, dest_address,
+                                                                   dest_writer, arena()));
     if (!control_endpoint_ || !control_endpoint_->is_valid()) {
         roc_log(LogError, "sender slot: can't create control endpoint");
         control_endpoint_.reset(NULL);

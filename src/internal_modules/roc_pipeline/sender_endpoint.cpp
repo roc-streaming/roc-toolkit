@@ -15,9 +15,13 @@
 namespace roc {
 namespace pipeline {
 
-SenderEndpoint::SenderEndpoint(address::Protocol proto, core::IArena& arena)
+SenderEndpoint::SenderEndpoint(address::Protocol proto,
+                               const address::SocketAddr& dest_address,
+                               packet::IWriter& dest_writer,
+                               core::IArena& arena)
     : proto_(proto)
-    , dst_writer_(NULL)
+    , dst_writer_(&dest_writer)
+    , dst_address_(dest_address)
     , composer_(NULL) {
     packet::IComposer* composer = NULL;
 
@@ -117,32 +121,6 @@ packet::IWriter& SenderEndpoint::writer() {
     roc_panic_if(!is_valid());
 
     return *this;
-}
-
-bool SenderEndpoint::has_destination_writer() const {
-    roc_panic_if(!is_valid());
-
-    return dst_writer_;
-}
-
-void SenderEndpoint::set_destination_writer(packet::IWriter& writer) {
-    roc_panic_if(!is_valid());
-
-    if (dst_writer_) {
-        roc_panic("sender endpoint: attempt to set destination writer twice");
-    }
-
-    dst_writer_ = &writer;
-}
-
-void SenderEndpoint::set_destination_address(const address::SocketAddr& addr) {
-    roc_panic_if(!is_valid());
-
-    if (dst_address_.has_host_port()) {
-        roc_panic("sender endpoint: attempt to set destination address twice");
-    }
-
-    dst_address_ = addr;
 }
 
 void SenderEndpoint::write(const packet::PacketPtr& packet) {

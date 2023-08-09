@@ -42,10 +42,10 @@ ReceiverLoop::Tasks::DeleteSlot::DeleteSlot(SlotHandle slot) {
     slot_ = (ReceiverSlot*)slot;
 }
 
-ReceiverLoop::Tasks::CreateEndpoint::CreateEndpoint(SlotHandle slot,
-                                                    address::Interface iface,
-                                                    address::Protocol proto) {
-    func_ = &ReceiverLoop::task_create_endpoint_;
+ReceiverLoop::Tasks::AddEndpoint::AddEndpoint(SlotHandle slot,
+                                              address::Interface iface,
+                                              address::Protocol proto) {
+    func_ = &ReceiverLoop::task_add_endpoint_;
     if (!slot) {
         roc_panic("receiver loop: slot handle is null");
     }
@@ -54,22 +54,12 @@ ReceiverLoop::Tasks::CreateEndpoint::CreateEndpoint(SlotHandle slot,
     proto_ = proto;
 }
 
-packet::IWriter* ReceiverLoop::Tasks::CreateEndpoint::get_writer() const {
+packet::IWriter* ReceiverLoop::Tasks::AddEndpoint::get_writer() const {
     if (!success()) {
         return NULL;
     }
     roc_panic_if_not(writer_);
     return writer_;
-}
-
-ReceiverLoop::Tasks::DeleteEndpoint::DeleteEndpoint(SlotHandle slot,
-                                                    address::Interface iface) {
-    func_ = &ReceiverLoop::task_delete_endpoint_;
-    if (!slot) {
-        roc_panic("receiver loop: slot handle is null");
-    }
-    slot_ = (ReceiverSlot*)slot;
-    iface_ = iface;
 }
 
 ReceiverLoop::ReceiverLoop(IPipelineTaskScheduler& scheduler,
@@ -232,19 +222,14 @@ bool ReceiverLoop::task_delete_slot_(Task& task) {
     return true;
 }
 
-bool ReceiverLoop::task_create_endpoint_(Task& task) {
+bool ReceiverLoop::task_add_endpoint_(Task& task) {
     roc_panic_if(!task.slot_);
 
-    ReceiverEndpoint* endpoint = task.slot_->create_endpoint(task.iface_, task.proto_);
+    ReceiverEndpoint* endpoint = task.slot_->add_endpoint(task.iface_, task.proto_);
     if (!endpoint) {
         return false;
     }
     task.writer_ = &endpoint->writer();
-    return true;
-}
-
-bool ReceiverLoop::task_delete_endpoint_(Task& task) {
-    task.slot_->delete_endpoint(task.iface_);
     return true;
 }
 

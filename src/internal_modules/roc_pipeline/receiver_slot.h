@@ -46,11 +46,8 @@ public:
                  core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                  core::IArena& arena);
 
-    //! Create endpoint.
-    ReceiverEndpoint* create_endpoint(address::Interface iface, address::Protocol proto);
-
-    //! Delete endpoint.
-    void delete_endpoint(address::Interface iface);
+    //! Add endpoint.
+    ReceiverEndpoint* add_endpoint(address::Interface iface, address::Protocol proto);
 
     //! Pull packets from queues and advance session timestamp.
     void advance(packet::timestamp_t timestamp);

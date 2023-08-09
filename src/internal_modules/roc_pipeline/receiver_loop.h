@@ -84,27 +84,20 @@ public:
         };
 
         //! Create endpoint on given interface of the slot.
-        class CreateEndpoint : public Task {
+        class AddEndpoint : public Task {
         public:
             //! Set task parameters.
             //! @remarks
             //!  Each slot can have one source and zero or one repair endpoint.
             //!  The protocols of endpoints in one slot should be compatible.
-            CreateEndpoint(SlotHandle slot,
-                           address::Interface iface,
-                           address::Protocol proto);
+            AddEndpoint(SlotHandle slot,
+                        address::Interface iface,
+                        address::Protocol proto);
 
             //! Get packet writer for the endpoint.
             //! @remarks
             //!  The returned writer may be used from any thread.
             packet::IWriter* get_writer() const;
-        };
-
-        //! Delete endpoint on given interface of the slot, if it exists.
-        class DeleteEndpoint : public Task {
-        public:
-            //! Set task parameters.
-            DeleteEndpoint(SlotHandle slot, address::Interface iface);
         };
     };
 
@@ -146,8 +139,7 @@ private:
     // Methods for tasks
     bool task_create_slot_(Task& task);
     bool task_delete_slot_(Task& task);
-    bool task_create_endpoint_(Task& task);
-    bool task_delete_endpoint_(Task& task);
+    bool task_add_endpoint_(Task& task);
 
     ReceiverSource source_;
 
