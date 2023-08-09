@@ -6,8 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/poisoner.h
-//! @brief Memory poisoner.
+//! @file roc_core/poison_ops.h
+//! @brief Memory poisoning.
 
 #ifndef ROC_CORE_POISONER_H_
 #define ROC_CORE_POISONER_H_
@@ -17,8 +17,8 @@
 namespace roc {
 namespace core {
 
-//! Memory poisoner.
-class Poisoner {
+//! Memory poisoning.
+class PoisonOps {
 public:
     //! Poison memory that is going to be used.
     //! Helps catching uninitialized access bugs.
