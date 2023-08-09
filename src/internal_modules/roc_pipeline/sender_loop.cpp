@@ -20,7 +20,8 @@ SenderLoop::Task::Task()
     , endpoint_(NULL)
     , iface_(address::Iface_Invalid)
     , proto_(address::Proto_None)
-    , writer_(NULL) {
+    , writer_(NULL)
+    , is_complete_(false) {
 }
 
 SenderLoop::Tasks::CreateSlot::CreateSlot() {
@@ -43,45 +44,44 @@ SenderLoop::Tasks::DeleteSlot::DeleteSlot(SlotHandle slot) {
     slot_ = (SenderSlot*)slot;
 }
 
-SenderLoop::Tasks::CreateEndpoint::CreateEndpoint(SlotHandle slot,
-                                                  address::Interface iface,
-                                                  address::Protocol proto) {
-    func_ = &SenderLoop::task_create_endpoint_;
+SenderLoop::Tasks::PollSlot::PollSlot(SlotHandle slot) {
+    func_ = &SenderLoop::task_poll_slot_;
+    if (!slot) {
+        roc_panic("sender loop: slot handle is null");
+    }
+    slot_ = (SenderSlot*)slot;
+}
+
+bool SenderLoop::Tasks::PollSlot::get_complete() const {
+    if (!success()) {
+        return false;
+    }
+    roc_panic_if_not(slot_);
+    return is_complete_;
+}
+
+SenderLoop::Tasks::AddEndpoint::AddEndpoint(SlotHandle slot,
+                                            address::Interface iface,
+                                            address::Protocol proto,
+                                            const address::SocketAddr& dest_address,
+                                            packet::IWriter& dest_writer) {
+    func_ = &SenderLoop::task_add_endpoint_;
     if (!slot) {
         roc_panic("sender loop: slot handle is null");
     }
     slot_ = (SenderSlot*)slot;
     iface_ = iface;
     proto_ = proto;
+    address_ = dest_address;
+    writer_ = &dest_writer;
 }
 
-SenderLoop::EndpointHandle SenderLoop::Tasks::CreateEndpoint::get_handle() const {
+SenderLoop::EndpointHandle SenderLoop::Tasks::AddEndpoint::get_handle() const {
     if (!success()) {
         return NULL;
     }
     roc_panic_if_not(endpoint_);
     return (EndpointHandle)endpoint_;
-}
-
-SenderLoop::Tasks::ConfigureEndpoint::ConfigureEndpoint(
-    EndpointHandle endpoint,
-    const address::SocketAddr& dest_address,
-    packet::IWriter& dest_writer) {
-    func_ = &SenderLoop::task_configure_endpoint_;
-    if (!endpoint) {
-        roc_panic("sender loop: endpoint handle is null");
-    }
-    endpoint_ = (SenderEndpoint*)endpoint;
-    address_ = dest_address;
-    writer_ = &dest_writer;
-}
-
-SenderLoop::Tasks::CheckSlotReady::CheckSlotReady(SlotHandle slot) {
-    func_ = &SenderLoop::task_check_slot_ready_;
-    if (!slot) {
-        roc_panic("sender loop: slot handle is null");
-    }
-    slot_ = (SenderSlot*)slot;
 }
 
 SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
@@ -239,27 +239,23 @@ bool SenderLoop::task_delete_slot_(Task& task) {
     return true;
 }
 
-bool SenderLoop::task_create_endpoint_(Task& task) {
+bool SenderLoop::task_poll_slot_(Task& task) {
     roc_panic_if(!task.slot_);
 
-    task.endpoint_ = task.slot_->create_endpoint(task.iface_, task.proto_);
-    return (bool)task.endpoint_;
-}
-
-bool SenderLoop::task_configure_endpoint_(Task& task) {
-    roc_panic_if(!task.endpoint_);
-    roc_panic_if(!task.writer_);
-
-    task.endpoint_->set_destination_address(task.address_);
-    task.endpoint_->set_destination_writer(*task.writer_);
-
+    task.is_complete_ = task.slot_->is_complete();
     return true;
 }
 
-bool SenderLoop::task_check_slot_ready_(Task& task) {
+bool SenderLoop::task_add_endpoint_(Task& task) {
     roc_panic_if(!task.slot_);
 
-    return task.slot_->is_ready();
+    task.endpoint_ =
+        task.slot_->add_endpoint(task.iface_, task.proto_, task.address_, *task.writer_);
+    if (!task.endpoint_) {
+        return false;
+    }
+
+    return true;
 }
 
 } // namespace pipeline

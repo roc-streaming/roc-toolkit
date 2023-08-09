@@ -54,8 +54,8 @@ public:
     //! Remove slot.
     bool unlink(size_t slot_index);
 
-    //! Check if sender is fully and correctly configured.
-    bool is_ready();
+    //! Check if there are incomplete or broken slots.
+    bool has_incomplete();
 
     //! Check if there are broken slots.
     bool has_broken();

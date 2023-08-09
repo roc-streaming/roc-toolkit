@@ -48,14 +48,17 @@ public:
     ~SenderSlot();
 
     //! Add endpoint.
-    SenderEndpoint* create_endpoint(address::Interface iface, address::Protocol proto);
+    SenderEndpoint* add_endpoint(address::Interface iface,
+                                 address::Protocol proto,
+                                 const address::SocketAddr& dest_address,
+                                 packet::IWriter& dest_writer);
 
     //! Get audio writer.
     //! @returns NULL if slot is not ready.
     audio::IFrameWriter* writer();
 
-    //! Check if slot configuration is done.
-    bool is_ready() const;
+    //! Check if slot configuration is complete.
+    bool is_complete() const;
 
     //! Get deadline when the pipeline should be updated.
     core::nanoseconds_t get_update_deadline() const;
@@ -64,9 +67,15 @@ public:
     void update();
 
 private:
-    SenderEndpoint* create_source_endpoint_(address::Protocol proto);
-    SenderEndpoint* create_repair_endpoint_(address::Protocol proto);
-    SenderEndpoint* create_control_endpoint_(address::Protocol proto);
+    SenderEndpoint* create_source_endpoint_(address::Protocol proto,
+                                            const address::SocketAddr& dest_address,
+                                            packet::IWriter& dest_writer);
+    SenderEndpoint* create_repair_endpoint_(address::Protocol proto,
+                                            const address::SocketAddr& dest_address,
+                                            packet::IWriter& dest_writer);
+    SenderEndpoint* create_control_endpoint_(address::Protocol proto,
+                                             const address::SocketAddr& dest_address,
+                                             packet::IWriter& dest_writer);
 
     const SenderConfig& config_;
 
