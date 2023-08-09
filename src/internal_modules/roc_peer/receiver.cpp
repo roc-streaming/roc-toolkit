@@ -273,14 +273,7 @@ core::SharedPtr<Receiver::Slot> Receiver::get_slot_(size_t slot_index, bool auto
 }
 
 void Receiver::remove_slot_(const core::SharedPtr<Slot>& slot) {
-    if (slot->handle) {
-        pipeline::ReceiverLoop::Tasks::DeleteSlot task(slot->handle);
-        if (!pipeline_.schedule_and_wait(task)) {
-            roc_panic("receiver peer: can't remove pipeline slot %lu",
-                      (unsigned long)slot->index);
-        }
-    }
-
+    // First remove network ports, because they write to pipeline slot.
     for (size_t p = 0; p < address::Iface_Max; p++) {
         if (slot->ports[p].handle) {
             netio::NetworkLoop::Tasks::RemovePort task(slot->ports[p].handle);
@@ -288,6 +281,15 @@ void Receiver::remove_slot_(const core::SharedPtr<Slot>& slot) {
                 roc_panic("receiver peer: can't remove network port of slot %lu",
                           (unsigned long)slot->index);
             }
+        }
+    }
+
+    // Then remove pipeline slot.
+    if (slot->handle) {
+        pipeline::ReceiverLoop::Tasks::DeleteSlot task(slot->handle);
+        if (!pipeline_.schedule_and_wait(task)) {
+            roc_panic("receiver peer: can't remove pipeline slot %lu",
+                      (unsigned long)slot->index);
         }
     }
 
