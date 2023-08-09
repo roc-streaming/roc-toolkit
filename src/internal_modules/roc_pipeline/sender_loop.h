@@ -57,12 +57,12 @@ public:
 
         bool (SenderLoop::*func_)(Task&); //!< Task implementation method.
 
-        SenderSlot* slot_;         //!< Slot.
-        SenderEndpoint* endpoint_; //!< Endpoint.
-        address::Interface iface_; //!< Interface.
-        address::Protocol proto_;  //!< Protocol.
-        packet::IWriter* writer_;  //!< Packet writer.
-        address::SocketAddr addr_; //!< Endpoint address.
+        SenderSlot* slot_;            //!< Slot.
+        SenderEndpoint* endpoint_;    //!< Endpoint.
+        address::Interface iface_;    //!< Interface.
+        address::Protocol proto_;     //!< Protocol.
+        address::SocketAddr address_; //!< Destination address.
+        packet::IWriter* writer_;     //!< Destination writer.
     };
 
     //! Subclasses for specific tasks.
@@ -100,28 +100,21 @@ public:
             EndpointHandle get_handle() const;
         };
 
-        //! Set writer to which endpoint will write packets.
-        class SetEndpointDestinationWriter : public Task {
+        //! Set endpoint parameters.
+        class ConfigureEndpoint : public Task {
         public:
             //! Set task parameters.
-            SetEndpointDestinationWriter(EndpointHandle endpoint,
-                                         packet::IWriter& writer);
-        };
-
-        //! Set UDP address for output packets of endpoint.
-        class SetEndpointDestinationAddress : public Task {
-        public:
-            //! Set task parameters.
-            SetEndpointDestinationAddress(EndpointHandle endpoint,
-                                          const address::SocketAddr& addr);
+            ConfigureEndpoint(EndpointHandle endpoint,
+                              const address::SocketAddr& dest_address,
+                              packet::IWriter& dest_writer);
         };
 
         //! Check if the slot configuration is done.
         //! This is true when all necessary endpoints are added and configured.
-        class CheckSlotIsReady : public Task {
+        class CheckSlotReady : public Task {
         public:
             //! Set task parameters.
-            CheckSlotIsReady(SlotHandle slot);
+            CheckSlotReady(SlotHandle slot);
         };
     };
 
@@ -163,9 +156,8 @@ private:
     bool task_create_slot_(Task&);
     bool task_delete_slot_(Task&);
     bool task_create_endpoint_(Task&);
-    bool task_set_endpoint_destination_writer_(Task&);
-    bool task_set_endpoint_destination_address_(Task&);
-    bool task_check_slot_is_ready_(Task&);
+    bool task_configure_endpoint_(Task&);
+    bool task_check_slot_ready_(Task&);
 
     SenderSink sink_;
 
