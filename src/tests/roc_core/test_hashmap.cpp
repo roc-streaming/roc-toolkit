@@ -69,6 +69,29 @@ TEST_GROUP(hashmap) {
         CHECK(b.append_uint((uint64_t)n, 10));
         CHECK(b.ok());
     }
+
+    template <size_t Capacity> void test_embedded_capacity() {
+        Hashmap<Object, Capacity> hashmap;
+
+        UNSIGNED_LONGS_EQUAL(0, hashmap.capacity());
+
+        size_t n = 0;
+
+        for (;;) {
+            if (!hashmap.grow()) {
+                break;
+            }
+            n++;
+
+            char key[64];
+            format_key(key, sizeof(key), n);
+
+            SharedPtr<Object> obj = new Object(key);
+            hashmap.insert(*obj);
+        }
+
+        CHECK((ssize_t)n >= (ssize_t)Capacity);
+    }
 };
 
 TEST(hashmap, empty) {
@@ -202,9 +225,8 @@ TEST(hashmap, grow_rapidly_embedding) {
     Hashmap<Object, 50> hashmap(arena);
 
     UNSIGNED_LONGS_EQUAL(0, hashmap.size());
+    UNSIGNED_LONGS_EQUAL(0, hashmap.capacity());
     UNSIGNED_LONGS_EQUAL(0, arena.num_allocations());
-
-    CHECK(hashmap.capacity() > 0);
 
     size_t n_elems = 0;
 
@@ -221,9 +243,9 @@ TEST(hashmap, grow_rapidly_embedding) {
 
         UNSIGNED_LONGS_EQUAL(n_elems, hashmap.size());
 
-        if (i == 0) {
+        if (i < 2) {
             UNSIGNED_LONGS_EQUAL(0, arena.num_allocations());
-        } else if (i == 1) {
+        } else if (i < 3) {
             UNSIGNED_LONGS_EQUAL(1, arena.num_allocations());
         } else {
             UNSIGNED_LONGS_EQUAL(2, arena.num_allocations());
@@ -399,6 +421,30 @@ TEST(hashmap, iterate_modify) {
     }
 
     UNSIGNED_LONGS_EQUAL(NumElements, pos);
+}
+
+TEST(hashmap, embedded_capacity) {
+    test_embedded_capacity<0>();
+    test_embedded_capacity<5>();
+    test_embedded_capacity<10>();
+    test_embedded_capacity<15>();
+    test_embedded_capacity<20>();
+    test_embedded_capacity<25>();
+    test_embedded_capacity<30>();
+    test_embedded_capacity<35>();
+    test_embedded_capacity<40>();
+    test_embedded_capacity<45>();
+    test_embedded_capacity<50>();
+    test_embedded_capacity<55>();
+    test_embedded_capacity<60>();
+    test_embedded_capacity<65>();
+    test_embedded_capacity<70>();
+    test_embedded_capacity<75>();
+    test_embedded_capacity<80>();
+    test_embedded_capacity<85>();
+    test_embedded_capacity<90>();
+    test_embedded_capacity<95>();
+    test_embedded_capacity<100>();
 }
 
 } // namespace core
