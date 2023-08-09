@@ -63,28 +63,21 @@ SenderLoop::EndpointHandle SenderLoop::Tasks::CreateEndpoint::get_handle() const
     return (EndpointHandle)endpoint_;
 }
 
-SenderLoop::Tasks::SetEndpointDestinationWriter::SetEndpointDestinationWriter(
-    EndpointHandle endpoint, packet::IWriter& writer) {
-    func_ = &SenderLoop::task_set_endpoint_destination_writer_;
+SenderLoop::Tasks::ConfigureEndpoint::ConfigureEndpoint(
+    EndpointHandle endpoint,
+    const address::SocketAddr& dest_address,
+    packet::IWriter& dest_writer) {
+    func_ = &SenderLoop::task_configure_endpoint_;
     if (!endpoint) {
         roc_panic("sender loop: endpoint handle is null");
     }
     endpoint_ = (SenderEndpoint*)endpoint;
-    writer_ = &writer;
+    address_ = dest_address;
+    writer_ = &dest_writer;
 }
 
-SenderLoop::Tasks::SetEndpointDestinationAddress::SetEndpointDestinationAddress(
-    EndpointHandle endpoint, const address::SocketAddr& addr) {
-    func_ = &SenderLoop::task_set_endpoint_destination_address_;
-    if (!endpoint) {
-        roc_panic("sender loop: endpoint handle is null");
-    }
-    endpoint_ = (SenderEndpoint*)endpoint;
-    addr_ = addr;
-}
-
-SenderLoop::Tasks::CheckSlotIsReady::CheckSlotIsReady(SlotHandle slot) {
-    func_ = &SenderLoop::task_check_slot_is_ready_;
+SenderLoop::Tasks::CheckSlotReady::CheckSlotReady(SlotHandle slot) {
+    func_ = &SenderLoop::task_check_slot_ready_;
     if (!slot) {
         roc_panic("sender loop: slot handle is null");
     }
@@ -253,22 +246,17 @@ bool SenderLoop::task_create_endpoint_(Task& task) {
     return (bool)task.endpoint_;
 }
 
-bool SenderLoop::task_set_endpoint_destination_writer_(Task& task) {
+bool SenderLoop::task_configure_endpoint_(Task& task) {
     roc_panic_if(!task.endpoint_);
     roc_panic_if(!task.writer_);
 
+    task.endpoint_->set_destination_address(task.address_);
     task.endpoint_->set_destination_writer(*task.writer_);
+
     return true;
 }
 
-bool SenderLoop::task_set_endpoint_destination_address_(Task& task) {
-    roc_panic_if(!task.endpoint_);
-
-    task.endpoint_->set_destination_address(task.addr_);
-    return true;
-}
-
-bool SenderLoop::task_check_slot_is_ready_(Task& task) {
+bool SenderLoop::task_check_slot_ready_(Task& task) {
     roc_panic_if(!task.slot_);
 
     return task.slot_->is_ready();
