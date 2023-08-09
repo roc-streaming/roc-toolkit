@@ -224,7 +224,7 @@ void SpeexResampler::report_stats_() {
         (unsigned int)out_rate, (int)in_latency, (int)out_latency);
 }
 
-size_t SpeexResampler::n_left_to_process() const {
+float SpeexResampler::n_left_to_process() const {
     return (in_frame_size_ - in_frame_pos_) / num_ch_;
 }
 

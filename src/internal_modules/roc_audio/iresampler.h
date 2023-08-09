@@ -51,7 +51,7 @@ public:
     virtual size_t pop_output(Frame& out) = 0;
 
     //! How many samples were pushed but not processed yet.
-    virtual size_t n_left_to_process() const = 0;
+    virtual float n_left_to_process() const = 0;
 };
 
 } // namespace audio

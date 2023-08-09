@@ -12,7 +12,6 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_audio/iframe_reader.h"
-#include "roc_audio/sample_spec.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
@@ -21,7 +20,7 @@ namespace test {
 
 class MockReader : public IFrameReader {
 public:
-    MockReader(bool fail_on_empty = true)
+    explicit MockReader(bool fail_on_empty = true)
         : pos_(0)
         , size_(0)
         , fail_on_empty_(fail_on_empty) {
