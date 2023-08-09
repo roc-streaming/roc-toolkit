@@ -16,6 +16,7 @@
 #include "roc_core/atomic.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/iarena.h"
+#include "roc_core/use_counted.h"
 #include "roc_ctl/control_loop.h"
 #include "roc_netio/network_loop.h"
 #include "roc_packet/packet_factory.h"
@@ -39,7 +40,7 @@ struct ContextConfig {
 };
 
 //! Peer context.
-class Context : public core::NonCopyable<> {
+class Context : public core::UseCounted {
 public:
     //! Initialize.
     explicit Context(const ContextConfig& config, core::IArena& arena);
@@ -49,15 +50,6 @@ public:
 
     //! Check if successfully constructed.
     bool is_valid();
-
-    //! Increment context reference counter.
-    void incref();
-
-    //! Decrement context reference counter.
-    void decref();
-
-    //! Check if context is still in use.
-    bool is_used();
 
     //! Get arena.
     core::IArena& arena();
@@ -91,8 +83,6 @@ private:
 
     netio::NetworkLoop network_loop_;
     ctl::ControlLoop control_loop_;
-
-    core::Atomic<int> ref_counter_;
 };
 
 } // namespace peer
