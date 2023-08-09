@@ -48,6 +48,9 @@ public:
     //! Bind peer to local endpoint.
     bool bind(size_t slot_index, address::Interface iface, address::EndpointUri& uri);
 
+    //! Remove slot.
+    bool unlink(size_t slot_index);
+
     //! Get receiver source.
     sndio::ISource& source();
 
@@ -89,6 +92,7 @@ private:
     void update_compatibility_(address::Interface iface, const address::EndpointUri& uri);
 
     core::SharedPtr<Slot> get_slot_(size_t slot_index, bool auto_create);
+    void remove_slot_(const core::SharedPtr<Slot>& slot);
 
     virtual void schedule_task_processing(pipeline::PipelineLoop&,
                                           core::nanoseconds_t delay);

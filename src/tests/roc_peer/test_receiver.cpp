@@ -50,7 +50,7 @@ TEST(receiver, bind) {
 
     UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
 
-    {
+    { // one slot
         Receiver receiver(context, receiver_config);
         CHECK(receiver.is_valid());
 
@@ -65,15 +65,8 @@ TEST(receiver, bind) {
     }
 
     UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
-}
 
-TEST(receiver, bind_slots) {
-    Context context(context_config, arena);
-    CHECK(context.is_valid());
-
-    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
-
-    {
+    { // two slots
         Receiver receiver(context, receiver_config);
         CHECK(receiver.is_valid());
 
@@ -103,7 +96,7 @@ TEST(receiver, configure) {
 
     UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
 
-    {
+    { // one slot
         Receiver receiver(context, receiver_config);
         CHECK(receiver.is_valid());
 
@@ -123,15 +116,8 @@ TEST(receiver, configure) {
     }
 
     UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
-}
 
-TEST(receiver, configure_slots) {
-    Context context(context_config, arena);
-    CHECK(context.is_valid());
-
-    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
-
-    {
+    { // two slots
         Receiver receiver(context, receiver_config);
         CHECK(receiver.is_valid());
 
@@ -156,6 +142,88 @@ TEST(receiver, configure_slots) {
         CHECK(source_endp2.port() != 0);
 
         UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 2);
+    }
+
+    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
+}
+
+TEST(receiver, unlink) {
+    Context context(context_config, arena);
+    CHECK(context.is_valid());
+
+    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
+
+    { // bind one slot, unlink one slot
+        Receiver receiver(context, receiver_config);
+        CHECK(receiver.is_valid());
+
+        address::EndpointUri source_endp(arena);
+        parse_uri(source_endp, "rtp://127.0.0.1:0");
+
+        CHECK(source_endp.port() == 0);
+        CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
+        CHECK(source_endp.port() != 0);
+
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 1);
+
+        CHECK(receiver.unlink(DefaultSlot));
+
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
+    }
+
+    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
+
+    { // bind two slots, unlink one slot
+        Receiver receiver(context, receiver_config);
+        CHECK(receiver.is_valid());
+
+        address::EndpointUri source_endp1(arena);
+        parse_uri(source_endp1, "rtp://127.0.0.1:0");
+
+        CHECK(source_endp1.port() == 0);
+        CHECK(receiver.bind(0, address::Iface_AudioSource, source_endp1));
+        CHECK(source_endp1.port() != 0);
+
+        address::EndpointUri source_endp2(arena);
+        parse_uri(source_endp2, "rtp://127.0.0.1:0");
+
+        CHECK(source_endp2.port() == 0);
+        CHECK(receiver.bind(1, address::Iface_AudioSource, source_endp2));
+        CHECK(source_endp2.port() != 0);
+
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 2);
+
+        CHECK(receiver.unlink(0));
+
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 1);
+    }
+
+    UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
+
+    { // bind two slots, unlink two slots
+        Receiver receiver(context, receiver_config);
+        CHECK(receiver.is_valid());
+
+        address::EndpointUri source_endp1(arena);
+        parse_uri(source_endp1, "rtp://127.0.0.1:0");
+
+        CHECK(source_endp1.port() == 0);
+        CHECK(receiver.bind(0, address::Iface_AudioSource, source_endp1));
+        CHECK(source_endp1.port() != 0);
+
+        address::EndpointUri source_endp2(arena);
+        parse_uri(source_endp2, "rtp://127.0.0.1:0");
+
+        CHECK(source_endp2.port() == 0);
+        CHECK(receiver.bind(1, address::Iface_AudioSource, source_endp2));
+        CHECK(source_endp2.port() != 0);
+
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 2);
+
+        CHECK(receiver.unlink(0));
+        CHECK(receiver.unlink(1));
+
+        UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
     }
 
     UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);

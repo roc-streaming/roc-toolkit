@@ -51,6 +51,9 @@ public:
     bool
     connect(size_t slot_index, address::Interface iface, const address::EndpointUri& uri);
 
+    //! Remove slot.
+    bool unlink(size_t slot_index);
+
     //! Check if all necessary bind and connect calls were made.
     bool is_ready();
 
@@ -98,6 +101,7 @@ private:
     void update_compatibility_(address::Interface iface, const address::EndpointUri& uri);
 
     core::SharedPtr<Slot> get_slot_(size_t slot_index, bool auto_create);
+    void remove_slot_(const core::SharedPtr<Slot>& slot);
 
     Port&
     select_outgoing_port_(Slot& slot, address::Interface, address::AddrFamily family);
