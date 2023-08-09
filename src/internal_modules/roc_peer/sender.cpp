@@ -303,6 +303,7 @@ core::SharedPtr<Sender::Slot> Sender::get_slot_(size_t slot_index, bool auto_cre
 }
 
 void Sender::remove_slot_(const core::SharedPtr<Slot>& slot) {
+    // First remove pipeline slot, because it writes to network ports.
     if (slot->handle) {
         pipeline::SenderLoop::Tasks::DeleteSlot task(slot->handle);
         if (!pipeline_.schedule_and_wait(task)) {
@@ -311,6 +312,7 @@ void Sender::remove_slot_(const core::SharedPtr<Slot>& slot) {
         }
     }
 
+    // Then remove network ports.
     for (size_t p = 0; p < address::Iface_Max; p++) {
         if (slot->ports[p].handle) {
             netio::NetworkLoop::Tasks::RemovePort task(slot->ports[p].handle);
