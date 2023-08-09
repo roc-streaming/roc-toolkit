@@ -131,6 +131,22 @@ int roc_receiver_bind(roc_receiver* receiver,
     return 0;
 }
 
+int roc_receiver_unlink(roc_receiver* receiver, roc_slot slot) {
+    if (!receiver) {
+        roc_log(LogError, "roc_receiver_unlink(): invalid arguments: receiver is null");
+        return -1;
+    }
+
+    peer::Receiver* imp_receiver = (peer::Receiver*)receiver;
+
+    if (!imp_receiver->unlink(slot)) {
+        roc_log(LogError, "roc_receiver_unlink(): operation failed");
+        return -1;
+    }
+
+    return 0;
+}
+
 int roc_receiver_read(roc_receiver* receiver, roc_frame* frame) {
     if (!receiver) {
         roc_log(LogError, "roc_receiver_read(): invalid arguments: receiver is null");

@@ -221,6 +221,24 @@ ROC_API int roc_sender_connect(roc_sender* sender,
                                roc_interface iface,
                                const roc_endpoint* endpoint);
 
+/** Delete sender slot.
+ *
+ * Disconnects, unbinds, and removes all slot interfaces and removes the slot.
+ * All associated connections to remote peers are properly terminated.
+ *
+ * After unlinking the slot, it can be re-created again by re-using its number.
+ *
+ * **Parameters**
+ *  - \p sender should point to an opened sender
+ *  - \p slot specifies the sender slot
+ *
+ * **Returns**
+ *  - returns zero if the slot was successfully removed
+ *  - returns a negative value if the arguments are invalid
+ *  - returns a negative value if the slot does not exist
+ */
+ROC_API int roc_sender_unlink(roc_sender* sender, roc_slot slot);
+
 /** Encode samples to packets and transmit them to the receiver.
  *
  * Encodes samples to packets and enqueues them for transmission by the network worker

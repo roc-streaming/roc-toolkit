@@ -257,6 +257,24 @@ ROC_API int roc_receiver_bind(roc_receiver* receiver,
                               roc_interface iface,
                               roc_endpoint* endpoint);
 
+/** Delete receiver slot.
+ *
+ * Disconnects, unbinds, and removes all slot interfaces and removes the slot.
+ * All associated connections to remote peers are properly terminated.
+ *
+ * After unlinking the slot, it can be re-created again by re-using its number.
+ *
+ * **Parameters**
+ *  - \p receiver should point to an opened receiver
+ *  - \p slot specifies the receiver slot
+ *
+ * **Returns**
+ *  - returns zero if the slot was successfully removed
+ *  - returns a negative value if the arguments are invalid
+ *  - returns a negative value if the slot does not exist
+ */
+ROC_API int roc_receiver_unlink(roc_receiver* receiver, roc_slot slot);
+
 /** Read samples from the receiver.
  *
  * Reads network packets received on bound ports, routes packets to sessions, repairs lost
