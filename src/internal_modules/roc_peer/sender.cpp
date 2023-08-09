@@ -167,26 +167,14 @@ bool Sender::connect(size_t slot_index,
         return false;
     }
 
-    pipeline::SenderLoop::Tasks::SetEndpointDestinationAddress address_task(
-        endpoint_task.get_handle(), address);
+    pipeline::SenderLoop::Tasks::ConfigureEndpoint configure_task(
+        endpoint_task.get_handle(), address, *port.writer);
 
-    if (!pipeline_.schedule_and_wait(address_task)) {
+    if (!pipeline_.schedule_and_wait(configure_task)) {
         roc_log(LogError,
                 "sender peer:"
                 " can't connect %s interface of slot %lu:"
-                " can't set endpoint destination address",
-                address::interface_to_str(iface), (unsigned long)slot_index);
-        return false;
-    }
-
-    pipeline::SenderLoop::Tasks::SetEndpointDestinationWriter writer_task(
-        endpoint_task.get_handle(), *port.writer);
-
-    if (!pipeline_.schedule_and_wait(writer_task)) {
-        roc_log(LogError,
-                "sender peer:"
-                " can't connect %s interface of slot %lu:"
-                " can't set endpoint destination writer",
+                " can't configure endpoint",
                 address::interface_to_str(iface), (unsigned long)slot_index);
         return false;
     }
@@ -231,7 +219,7 @@ bool Sender::is_ready() {
             continue;
         }
 
-        pipeline::SenderLoop::Tasks::CheckSlotIsReady task(slot->handle);
+        pipeline::SenderLoop::Tasks::CheckSlotReady task(slot->handle);
         if (!pipeline_.schedule_and_wait(task)) {
             return false;
         }
