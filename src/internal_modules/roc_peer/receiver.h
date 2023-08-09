@@ -51,6 +51,9 @@ public:
     //! Remove slot.
     bool unlink(size_t slot_index);
 
+    //! Check if there are broken slots.
+    bool has_broken();
+
     //! Get receiver source.
     sndio::ISource& source();
 
@@ -66,13 +69,15 @@ private:
 
     struct Slot : core::RefCounted<Slot, core::PoolAllocation>, core::HashmapNode {
         const size_t index;
-        const pipeline::ReceiverLoop::SlotHandle handle;
+        pipeline::ReceiverLoop::SlotHandle handle;
         Port ports[address::Iface_Max];
+        bool broken;
 
         Slot(core::IPool& pool, size_t index, pipeline::SenderLoop::SlotHandle handle)
             : core::RefCounted<Slot, core::PoolAllocation>(pool)
             , index(index)
-            , handle(handle) {
+            , handle(handle)
+            , broken(false) {
         }
 
         size_t key() const {
@@ -92,7 +97,8 @@ private:
     void update_compatibility_(address::Interface iface, const address::EndpointUri& uri);
 
     core::SharedPtr<Slot> get_slot_(size_t slot_index, bool auto_create);
-    void remove_slot_(const core::SharedPtr<Slot>& slot);
+    void cleanup_slot_(Slot& slot);
+    void break_slot_(Slot& slot);
 
     virtual void schedule_task_processing(pipeline::PipelineLoop&,
                                           core::nanoseconds_t delay);
