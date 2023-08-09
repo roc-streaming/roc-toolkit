@@ -10,7 +10,7 @@
 #include "roc_core/align_ops.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_core/poisoner.h"
+#include "roc_core/poison_ops.h"
 
 namespace roc {
 namespace core {
@@ -108,13 +108,13 @@ void* PoolImpl::give_slot_to_user_(Slot* slot) {
 
     void* memory = slot;
 
-    Poisoner::before_use(memory, slot_size_);
+    PoisonOps::before_use(memory, slot_size_);
 
     return memory;
 }
 
 PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
-    Poisoner::after_use(memory, slot_size_);
+    PoisonOps::after_use(memory, slot_size_);
 
     return new (memory) Slot;
 }
