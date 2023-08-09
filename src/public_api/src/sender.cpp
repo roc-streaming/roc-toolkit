@@ -130,6 +130,22 @@ int roc_sender_connect(roc_sender* sender,
     return 0;
 }
 
+int roc_sender_unlink(roc_sender* sender, roc_slot slot) {
+    if (!sender) {
+        roc_log(LogError, "roc_sender_unlink(): invalid arguments: sender is null");
+        return -1;
+    }
+
+    peer::Sender* imp_sender = (peer::Sender*)sender;
+
+    if (!imp_sender->unlink(slot)) {
+        roc_log(LogError, "roc_sender_unlink(): operation failed");
+        return -1;
+    }
+
+    return 0;
+}
+
 int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
     if (!sender) {
         roc_log(LogError, "roc_sender_write(): invalid arguments: sender is null");
