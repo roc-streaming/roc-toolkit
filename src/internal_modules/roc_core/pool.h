@@ -57,10 +57,10 @@ public:
     //!  - @p object_size defines size of single object in bytes
     //!  - @p min_alloc_bytes defines minimum size in bytes per request to arena
     //!  - @p max_alloc_bytes defines maximum size in bytes per request to arena
-    Pool(IArena& arena,
-         size_t object_size = sizeof(T),
-         size_t min_alloc_bytes = 0,
-         size_t max_alloc_bytes = 0)
+    explicit Pool(IArena& arena,
+                  size_t object_size = sizeof(T),
+                  size_t min_alloc_bytes = 0,
+                  size_t max_alloc_bytes = 0)
         : impl_(arena,
                 object_size,
                 min_alloc_bytes,
