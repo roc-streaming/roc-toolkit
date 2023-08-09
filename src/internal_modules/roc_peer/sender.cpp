@@ -46,8 +46,9 @@ Sender::~Sender() {
 
     context().control_loop().wait(processing_task_);
 
-    while (!slot_map_.is_empty()) {
-        remove_slot_(slot_map_.back());
+    while (core::SharedPtr<Slot> slot = slot_map_.front()) {
+        cleanup_slot_(*slot);
+        slot_map_.remove(*slot);
     }
 }
 
@@ -78,12 +79,22 @@ bool Sender::configure(size_t slot_index,
         return false;
     }
 
+    if (slot->broken) {
+        roc_log(LogError,
+                "sender peer:"
+                " can't configure %s interface of slot %lu:"
+                " slot is marked broken and should be unlinked",
+                address::interface_to_str(iface), (unsigned long)slot_index);
+        return false;
+    }
+
     if (slot->ports[iface].handle) {
         roc_log(LogError,
                 "sender peer:"
                 " can't configure %s interface of slot %lu:"
                 " interface is already bound or connected",
                 address::interface_to_str(iface), (unsigned long)slot_index);
+        break_slot_(*slot);
         return false;
     }
 
@@ -106,10 +117,30 @@ bool Sender::connect(size_t slot_index,
             address::interface_to_str(iface), (unsigned long)slot_index,
             address::endpoint_uri_to_str(uri).c_str());
 
+    core::SharedPtr<Slot> slot = get_slot_(slot_index, true);
+    if (!slot) {
+        roc_log(LogError,
+                "sender peer:"
+                " can't connect %s interface of slot %lu:"
+                " can't create slot",
+                address::interface_to_str(iface), (unsigned long)slot_index);
+        return false;
+    }
+
+    if (slot->broken) {
+        roc_log(LogError,
+                "sender peer:"
+                " can't connect %s interface of slot %lu:"
+                " slot is marked broken and should be unlinked",
+                address::interface_to_str(iface), (unsigned long)slot_index);
+        return false;
+    }
+
     if (!uri.verify(address::EndpointUri::Subset_Full)) {
         roc_log(LogError,
                 "sender peer: can't connect %s interface of slot %lu: invalid uri",
                 address::interface_to_str(iface), (unsigned long)slot_index);
+        break_slot_(*slot);
         return false;
     }
 
@@ -119,16 +150,7 @@ bool Sender::connect(size_t slot_index,
                 " can't connect %s interface of slot %lu:"
                 " incompatible with other slots",
                 address::interface_to_str(iface), (unsigned long)slot_index);
-        return false;
-    }
-
-    core::SharedPtr<Slot> slot = get_slot_(slot_index, true);
-    if (!slot) {
-        roc_log(LogError,
-                "sender peer:"
-                " can't connect %s interface of slot %lu:"
-                " can't create slot",
-                address::interface_to_str(iface), (unsigned long)slot_index);
+        break_slot_(*slot);
         return false;
     }
 
@@ -140,6 +162,7 @@ bool Sender::connect(size_t slot_index,
                 " can't connect %s interface of slot %lu:"
                 " can't resolve endpoint address",
                 address::interface_to_str(iface), (unsigned long)slot_index);
+        break_slot_(*slot);
         return false;
     }
 
@@ -153,6 +176,7 @@ bool Sender::connect(size_t slot_index,
                 " can't connect %s interface of slot %lu:"
                 " can't bind to local port",
                 address::interface_to_str(iface), (unsigned long)slot_index);
+        break_slot_(*slot);
         return false;
     }
 
@@ -164,6 +188,7 @@ bool Sender::connect(size_t slot_index,
                 " can't connect %s interface of slot %lu:"
                 " can't add endpoint to pipeline",
                 address::interface_to_str(iface), (unsigned long)slot_index);
+        break_slot_(*slot);
         return false;
     }
 
@@ -176,6 +201,7 @@ bool Sender::connect(size_t slot_index,
                 " can't connect %s interface of slot %lu:"
                 " can't configure endpoint",
                 address::interface_to_str(iface), (unsigned long)slot_index);
+        break_slot_(*slot);
         return false;
     }
 
@@ -200,7 +226,9 @@ bool Sender::unlink(size_t slot_index) {
         return false;
     }
 
-    remove_slot_(slot);
+    cleanup_slot_(*slot);
+    slot_map_.remove(*slot);
+
     return true;
 }
 
@@ -215,17 +243,34 @@ bool Sender::is_ready() {
 
     for (core::SharedPtr<Slot> slot = slot_map_.front(); slot;
          slot = slot_map_.nextof(*slot)) {
-        if (!slot->handle) {
-            continue;
+        if (slot->broken) {
+            return false;
         }
 
-        pipeline::SenderLoop::Tasks::CheckSlotReady task(slot->handle);
-        if (!pipeline_.schedule_and_wait(task)) {
-            return false;
+        if (slot->handle) {
+            pipeline::SenderLoop::Tasks::CheckSlotReady task(slot->handle);
+            if (!pipeline_.schedule_and_wait(task)) {
+                return false;
+            }
         }
     }
 
     return true;
+}
+
+bool Sender::has_broken() {
+    core::Mutex::Lock lock(mutex_);
+
+    roc_panic_if_not(is_valid());
+
+    for (core::SharedPtr<Slot> slot = slot_map_.front(); slot;
+         slot = slot_map_.nextof(*slot)) {
+        if (slot->broken) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 sndio::ISink& Sender::sink() {
@@ -290,28 +335,36 @@ core::SharedPtr<Sender::Slot> Sender::get_slot_(size_t slot_index, bool auto_cre
     return slot;
 }
 
-void Sender::remove_slot_(const core::SharedPtr<Slot>& slot) {
+void Sender::cleanup_slot_(Slot& slot) {
     // First remove pipeline slot, because it writes to network ports.
-    if (slot->handle) {
-        pipeline::SenderLoop::Tasks::DeleteSlot task(slot->handle);
+    if (slot.handle) {
+        pipeline::SenderLoop::Tasks::DeleteSlot task(slot.handle);
         if (!pipeline_.schedule_and_wait(task)) {
             roc_panic("sender peer: can't remove pipeline slot %lu",
-                      (unsigned long)slot->index);
+                      (unsigned long)slot.index);
         }
+        slot.handle = NULL;
     }
 
     // Then remove network ports.
     for (size_t p = 0; p < address::Iface_Max; p++) {
-        if (slot->ports[p].handle) {
-            netio::NetworkLoop::Tasks::RemovePort task(slot->ports[p].handle);
+        if (slot.ports[p].handle) {
+            netio::NetworkLoop::Tasks::RemovePort task(slot.ports[p].handle);
             if (!context().network_loop().schedule_and_wait(task)) {
                 roc_panic("sender peer: can't remove network port of slot %lu",
-                          (unsigned long)slot->index);
+                          (unsigned long)slot.index);
             }
+            slot.ports[p].handle = NULL;
         }
     }
+}
 
-    slot_map_.remove(*slot);
+void Sender::break_slot_(Slot& slot) {
+    roc_log(LogError, "sender peer: marking slot %lu as broken, it needs to be unlinked",
+            (unsigned long)slot.index);
+
+    slot.broken = true;
+    cleanup_slot_(slot);
 }
 
 Sender::Port& Sender::select_outgoing_port_(Slot& slot,

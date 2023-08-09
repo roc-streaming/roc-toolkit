@@ -202,6 +202,10 @@ ROC_API int roc_receiver_open(roc_context* context,
  *
  * Automatically initializes slot with given index if it's used first time.
  *
+ * If an error happens during configure, the whole slot is disabled and marked broken.
+ * The slot index remains reserved. The user is responsible for removing the slot
+ * using roc_receiver_unlink(), after which slot index can be reused.
+ *
  * **Parameters**
  *  - \p receiver should point to an opened receiver
  *  - \p slot specifies the receiver slot
@@ -231,6 +235,10 @@ ROC_API int roc_receiver_configure(roc_receiver* receiver,
  * May be called multiple times for different slots or interfaces.
  *
  * Automatically initializes slot with given index if it's used first time.
+ *
+ * If an error happens during bind, the whole slot is disabled and marked broken.
+ * The slot index remains reserved. The user is responsible for removing the slot
+ * using roc_receiver_unlink(), after which slot index can be reused.
  *
  * If \p endpoint has explicitly set zero port, the receiver is bound to a randomly
  * chosen ephemeral port. If the function succeeds, the actual port to which the
@@ -262,7 +270,7 @@ ROC_API int roc_receiver_bind(roc_receiver* receiver,
  * Disconnects, unbinds, and removes all slot interfaces and removes the slot.
  * All associated connections to remote peers are properly terminated.
  *
- * After unlinking the slot, it can be re-created again by re-using its number.
+ * After unlinking the slot, it can be re-created again by re-using slot index.
  *
  * **Parameters**
  *  - \p receiver should point to an opened receiver
