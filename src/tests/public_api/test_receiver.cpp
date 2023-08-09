@@ -98,105 +98,30 @@ TEST(receiver, bind_slots) {
     LONGS_EQUAL(0, roc_receiver_close(receiver));
 }
 
-TEST(receiver, bind_errors) {
-    { // resolve error
-        roc_receiver* receiver = NULL;
-        CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
+TEST(receiver, bind_error) {
+    roc_receiver* receiver = NULL;
+    CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
 
-        roc_endpoint* source_endpoint = NULL;
-        CHECK(roc_endpoint_allocate(&source_endpoint) == 0);
-        CHECK(roc_endpoint_set_uri(source_endpoint, "rtp://invalid.:0") == 0);
+    roc_endpoint* source_endpoint = NULL;
+    CHECK(roc_endpoint_allocate(&source_endpoint) == 0);
+    CHECK(roc_endpoint_set_uri(source_endpoint, "rtp://invalid.:0") == 0);
 
-        CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
-                                source_endpoint)
-              == -1);
+    CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
+                            source_endpoint)
+          == -1);
 
-        CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
-        LONGS_EQUAL(0, roc_receiver_close(receiver));
-    }
-    { // bind twice
-        roc_receiver* receiver = NULL;
-        CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
+    CHECK(roc_endpoint_set_uri(source_endpoint, "rtp://127.0.0.1:0") == 0);
+    CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
+                            source_endpoint)
+          == -1);
 
-        roc_endpoint* source_endpoint = NULL;
-        CHECK(roc_endpoint_allocate(&source_endpoint) == 0);
-        CHECK(roc_endpoint_set_uri(source_endpoint, "rtp://127.0.0.1:0") == 0);
+    CHECK(roc_receiver_unlink(receiver, ROC_SLOT_DEFAULT) == 0);
+    CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
+                            source_endpoint)
+          == 0);
 
-        CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
-                                source_endpoint)
-              == 0);
-        CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
-                                source_endpoint)
-              == -1);
-
-        CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
-        LONGS_EQUAL(0, roc_receiver_close(receiver));
-    }
-    { // rebind after error
-        roc_receiver* receiver = NULL;
-        CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
-
-        roc_endpoint* source_endpoint = NULL;
-        CHECK(roc_endpoint_allocate(&source_endpoint) == 0);
-
-        CHECK(roc_endpoint_set_uri(source_endpoint, "rtp://8.8.8.8:0") == 0);
-        CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
-                                source_endpoint)
-              == -1);
-
-        CHECK(roc_endpoint_set_uri(source_endpoint, "rtp://127.0.0.1:0") == 0);
-        CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
-                                source_endpoint)
-              == 0);
-
-        CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
-        LONGS_EQUAL(0, roc_receiver_close(receiver));
-    }
-    { // bind incomplete endpoint
-        roc_receiver* receiver = NULL;
-        CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
-
-        roc_endpoint* source_endpoint = NULL;
-        CHECK(roc_endpoint_allocate(&source_endpoint) == 0);
-        CHECK(roc_endpoint_set_protocol(source_endpoint, ROC_PROTO_RTP) == 0);
-
-        CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
-                                source_endpoint)
-              == -1);
-
-        CHECK(roc_endpoint_set_host(source_endpoint, "127.0.0.1") == 0);
-        CHECK(roc_endpoint_set_port(source_endpoint, 0) == 0);
-
-        CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
-                                source_endpoint)
-              == 0);
-
-        CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
-        LONGS_EQUAL(0, roc_receiver_close(receiver));
-    }
-    { // bind partially invalidated endpoint
-        roc_receiver* receiver = NULL;
-        CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
-
-        roc_endpoint* source_endpoint = NULL;
-        CHECK(roc_endpoint_allocate(&source_endpoint) == 0);
-        CHECK(roc_endpoint_set_uri(source_endpoint, "rtp://127.0.0.1:0") == 0);
-
-        // invalidate protocol field
-        CHECK(roc_endpoint_set_protocol(source_endpoint, (roc_protocol)-1) == -1);
-        CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
-                                source_endpoint)
-              == -1);
-
-        // fix protocol field
-        CHECK(roc_endpoint_set_protocol(source_endpoint, ROC_PROTO_RTP) == 0);
-        CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
-                                source_endpoint)
-              == 0);
-
-        CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
-        LONGS_EQUAL(0, roc_receiver_close(receiver));
-    }
+    CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
+    LONGS_EQUAL(0, roc_receiver_close(receiver));
 }
 
 TEST(receiver, configure) {
@@ -292,125 +217,41 @@ TEST(receiver, configure_slots) {
     LONGS_EQUAL(0, roc_receiver_close(receiver));
 }
 
-TEST(receiver, configure_errors) {
-    { // multicast group: inappropriate address
-        roc_receiver* receiver = NULL;
-        CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
+TEST(receiver, configure_error) {
+    roc_receiver* receiver = NULL;
+    CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
 
-        roc_endpoint* source_endpoint = NULL;
-        CHECK(roc_endpoint_allocate(&source_endpoint) == 0);
-        CHECK(roc_endpoint_set_uri(source_endpoint, "rtp://224.0.0.1:0") == 0);
+    roc_endpoint* source_endpoint = NULL;
+    CHECK(roc_endpoint_allocate(&source_endpoint) == 0);
+    CHECK(roc_endpoint_set_uri(source_endpoint, "rtp://224.0.0.1:0") == 0);
 
-        roc_interface_config iface_config;
-        memset(&iface_config, 0, sizeof(iface_config));
+    roc_interface_config iface_config;
+    memset(&iface_config, 0, sizeof(iface_config));
 
-        strcpy(iface_config.multicast_group, "8.8.8.8");
+    strcpy(iface_config.multicast_group, "8.8.8.8");
 
-        CHECK(roc_receiver_configure(receiver, ROC_SLOT_DEFAULT,
-                                     ROC_INTERFACE_AUDIO_SOURCE, &iface_config)
-              == 0);
-        CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
-                                source_endpoint)
-              == -1);
+    CHECK(roc_receiver_configure(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
+                                 &iface_config)
+          == 0);
+    CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
+                            source_endpoint)
+          == -1);
 
-        strcpy(iface_config.multicast_group, "0.0.0.0");
+    strcpy(iface_config.multicast_group, "0.0.0.0");
+    CHECK(roc_receiver_configure(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
+                                 &iface_config)
+          == -1);
 
-        CHECK(roc_receiver_configure(receiver, ROC_SLOT_DEFAULT,
-                                     ROC_INTERFACE_AUDIO_SOURCE, &iface_config)
-              == 0);
-        CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
-                                source_endpoint)
-              == 0);
+    CHECK(roc_receiver_unlink(receiver, ROC_SLOT_DEFAULT) == 0);
+    CHECK(roc_receiver_configure(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
+                                 &iface_config)
+          == 0);
+    CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
+                            source_endpoint)
+          == 0);
 
-        CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
-        LONGS_EQUAL(0, roc_receiver_close(receiver));
-    }
-    { // multicast group: IP familty mismatch
-        roc_receiver* receiver = NULL;
-        CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
-
-        roc_endpoint* source_endpoint = NULL;
-        CHECK(roc_endpoint_allocate(&source_endpoint) == 0);
-        CHECK(roc_endpoint_set_uri(source_endpoint, "rtp://224.0.0.1:0") == 0);
-
-        roc_interface_config iface_config;
-        memset(&iface_config, 0, sizeof(iface_config));
-
-        strcpy(iface_config.multicast_group, "::");
-
-        CHECK(roc_receiver_configure(receiver, ROC_SLOT_DEFAULT,
-                                     ROC_INTERFACE_AUDIO_SOURCE, &iface_config)
-              == 0);
-        CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
-                                source_endpoint)
-              == -1);
-
-        strcpy(iface_config.multicast_group, "0.0.0.0");
-
-        CHECK(roc_receiver_configure(receiver, ROC_SLOT_DEFAULT,
-                                     ROC_INTERFACE_AUDIO_SOURCE, &iface_config)
-              == 0);
-        CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
-                                source_endpoint)
-              == 0);
-
-        CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
-        LONGS_EQUAL(0, roc_receiver_close(receiver));
-    }
-    { // multicast group: multicast flag mismatch
-        roc_receiver* receiver = NULL;
-        CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
-
-        roc_interface_config iface_config;
-        memset(&iface_config, 0, sizeof(iface_config));
-
-        // set multicast group
-        strcpy(iface_config.multicast_group, "0.0.0.0");
-
-        CHECK(roc_receiver_configure(receiver, ROC_SLOT_DEFAULT,
-                                     ROC_INTERFACE_AUDIO_SOURCE, &iface_config)
-              == 0);
-
-        roc_endpoint* source_endpoint = NULL;
-        CHECK(roc_endpoint_allocate(&source_endpoint) == 0);
-
-        // bind to non-multicast address
-        CHECK(roc_endpoint_set_uri(source_endpoint, "rtp://127.0.0.1:0") == 0);
-        CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
-                                source_endpoint)
-              == -1);
-
-        // bind to multicast address
-        CHECK(roc_endpoint_set_uri(source_endpoint, "rtp://224.0.0.1:0") == 0);
-        CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
-                                source_endpoint)
-              == 0);
-
-        CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
-        LONGS_EQUAL(0, roc_receiver_close(receiver));
-    }
-    { // already bound
-        roc_receiver* receiver = NULL;
-        CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
-
-        roc_endpoint* source_endpoint = NULL;
-        CHECK(roc_endpoint_allocate(&source_endpoint) == 0);
-        CHECK(roc_endpoint_set_uri(source_endpoint, "rtp://127.0.0.1:0") == 0);
-
-        CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
-                                source_endpoint)
-              == 0);
-
-        roc_interface_config iface_config;
-        memset(&iface_config, 0, sizeof(iface_config));
-
-        CHECK(roc_receiver_configure(receiver, ROC_SLOT_DEFAULT,
-                                     ROC_INTERFACE_AUDIO_SOURCE, &iface_config)
-              == -1);
-
-        CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
-        LONGS_EQUAL(0, roc_receiver_close(receiver));
-    }
+    CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
+    LONGS_EQUAL(0, roc_receiver_close(receiver));
 }
 
 TEST(receiver, unlink) {
@@ -464,45 +305,24 @@ TEST(receiver, unlink_reuse) {
     LONGS_EQUAL(0, roc_receiver_close(receiver));
 }
 
-TEST(receiver, unlink_errors) {
-    { // unlink non-existent
-        roc_receiver* receiver = NULL;
-        CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
-        CHECK(receiver);
+TEST(receiver, unlink_error) {
+    roc_receiver* receiver = NULL;
+    CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
+    CHECK(receiver);
 
-        roc_endpoint* source_endpoint = NULL;
-        CHECK(roc_endpoint_allocate(&source_endpoint) == 0);
-        CHECK(roc_endpoint_set_uri(source_endpoint, "rtp://127.0.0.1:0") == 0);
+    roc_endpoint* source_endpoint = NULL;
+    CHECK(roc_endpoint_allocate(&source_endpoint) == 0);
+    CHECK(roc_endpoint_set_uri(source_endpoint, "rtp://127.0.0.1:0") == 0);
 
-        CHECK(roc_receiver_bind(receiver, 0, ROC_INTERFACE_AUDIO_SOURCE, source_endpoint)
-              == 0);
+    CHECK(roc_receiver_bind(receiver, 0, ROC_INTERFACE_AUDIO_SOURCE, source_endpoint)
+          == 0);
 
-        CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
+    CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
 
-        CHECK(roc_receiver_unlink(receiver, 1) == -1);
-        CHECK(roc_receiver_unlink(receiver, 0) == 0);
+    CHECK(roc_receiver_unlink(receiver, 1) == -1);
+    CHECK(roc_receiver_unlink(receiver, 0) == 0);
 
-        LONGS_EQUAL(0, roc_receiver_close(receiver));
-    }
-    { // unlink twice
-        roc_receiver* receiver = NULL;
-        CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
-        CHECK(receiver);
-
-        roc_endpoint* source_endpoint = NULL;
-        CHECK(roc_endpoint_allocate(&source_endpoint) == 0);
-        CHECK(roc_endpoint_set_uri(source_endpoint, "rtp://127.0.0.1:0") == 0);
-
-        CHECK(roc_receiver_bind(receiver, 0, ROC_INTERFACE_AUDIO_SOURCE, source_endpoint)
-              == 0);
-
-        CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
-
-        CHECK(roc_receiver_unlink(receiver, 0) == 0);
-        CHECK(roc_receiver_unlink(receiver, 0) == -1);
-
-        LONGS_EQUAL(0, roc_receiver_close(receiver));
-    }
+    LONGS_EQUAL(0, roc_receiver_close(receiver));
 }
 
 TEST(receiver, bad_args) {

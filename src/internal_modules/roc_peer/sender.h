@@ -54,8 +54,11 @@ public:
     //! Remove slot.
     bool unlink(size_t slot_index);
 
-    //! Check if all necessary bind and connect calls were made.
+    //! Check if sender is fully and correctly configured.
     bool is_ready();
+
+    //! Check if there are broken slots.
+    bool has_broken();
 
     //! Get sender sink.
     sndio::ISink& sink();
@@ -75,13 +78,15 @@ private:
 
     struct Slot : core::RefCounted<Slot, core::PoolAllocation>, core::HashmapNode {
         const size_t index;
-        const pipeline::SenderLoop::SlotHandle handle;
+        pipeline::SenderLoop::SlotHandle handle;
         Port ports[address::Iface_Max];
+        bool broken;
 
         Slot(core::IPool& pool, size_t index, pipeline::SenderLoop::SlotHandle handle)
             : core::RefCounted<Slot, core::PoolAllocation>(pool)
             , index(index)
-            , handle(handle) {
+            , handle(handle)
+            , broken(false) {
         }
 
         size_t key() const {
@@ -101,7 +106,8 @@ private:
     void update_compatibility_(address::Interface iface, const address::EndpointUri& uri);
 
     core::SharedPtr<Slot> get_slot_(size_t slot_index, bool auto_create);
-    void remove_slot_(const core::SharedPtr<Slot>& slot);
+    void cleanup_slot_(Slot& slot);
+    void break_slot_(Slot& slot);
 
     Port&
     select_outgoing_port_(Slot& slot, address::Interface, address::AddrFamily family);

@@ -171,6 +171,10 @@ ROC_API int roc_sender_open(roc_context* context,
  *
  * Automatically initializes slot with given index if it's used first time.
  *
+ * If an error happens during configure, the whole slot is disabled and marked broken.
+ * The slot index remains reserved. The user is responsible for removing the slot
+ * using roc_sender_unlink(), after which slot index can be reused.
+ *
  * **Parameters**
  *  - \p sender should point to an opened sender
  *  - \p slot specifies the sender slot
@@ -201,6 +205,10 @@ ROC_API int roc_sender_configure(roc_sender* sender,
  *
  * Automatically initializes slot with given index if it's used first time.
  *
+ * If an error happens during connect, the whole slot is disabled and marked broken.
+ * The slot index remains reserved. The user is responsible for removing the slot
+ * using roc_sender_unlink(), after which slot index can be reused.
+ *
  * **Parameters**
  *  - \p sender should point to an opened sender
  *  - \p slot specifies the sender slot
@@ -226,7 +234,7 @@ ROC_API int roc_sender_connect(roc_sender* sender,
  * Disconnects, unbinds, and removes all slot interfaces and removes the slot.
  * All associated connections to remote peers are properly terminated.
  *
- * After unlinking the slot, it can be re-created again by re-using its number.
+ * After unlinking the slot, it can be re-created again by re-using slot index.
  *
  * **Parameters**
  *  - \p sender should point to an opened sender
