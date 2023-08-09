@@ -20,40 +20,16 @@ Context::Context(const ContextConfig& config, core::IArena& arena)
     , sample_buffer_factory_(arena_, config.max_frame_size / sizeof(audio::sample_t))
     , format_map_(arena_)
     , network_loop_(packet_factory_, byte_buffer_factory_, arena_)
-    , control_loop_(network_loop_, arena_)
-    , ref_counter_(0) {
+    , control_loop_(network_loop_, arena_) {
     roc_log(LogDebug, "context: initializing");
 }
 
 Context::~Context() {
     roc_log(LogDebug, "context: deinitializing");
-
-    if (is_used()) {
-        roc_panic("context: still in use when destroying: refcounter=%u",
-                  (unsigned)ref_counter_);
-    }
 }
 
 bool Context::is_valid() {
     return network_loop_.is_valid() && control_loop_.is_valid();
-}
-
-void Context::incref() {
-    if (!is_valid()) {
-        roc_panic("context: can't use invalid context");
-    }
-    ++ref_counter_;
-}
-
-void Context::decref() {
-    if (!is_valid()) {
-        roc_panic("context: can't use invalid context");
-    }
-    --ref_counter_;
-}
-
-bool Context::is_used() {
-    return ref_counter_ != 0;
 }
 
 core::IArena& Context::arena() {

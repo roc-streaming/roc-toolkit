@@ -29,25 +29,25 @@ TEST(context, reference_counting) {
     Context context(context_config, arena);
 
     CHECK(context.is_valid());
-    CHECK(!context.is_used());
+    CHECK(context.getref() == 0);
 
     {
         pipeline::SenderConfig sender_config;
         Sender sender(context, sender_config);
 
-        CHECK(context.is_used());
+        CHECK(context.getref() == 1);
+
+        {
+            pipeline::ReceiverConfig receiver_config;
+            Receiver receiver(context, receiver_config);
+
+            CHECK(context.getref() == 2);
+        }
+
+        CHECK(context.getref() == 1);
     }
 
-    CHECK(!context.is_used());
-
-    {
-        pipeline::ReceiverConfig receiver_config;
-        Receiver receiver(context, receiver_config);
-
-        CHECK(context.is_used());
-    }
-
-    CHECK(!context.is_used());
+    CHECK(context.getref() == 0);
 }
 
 } // namespace peer

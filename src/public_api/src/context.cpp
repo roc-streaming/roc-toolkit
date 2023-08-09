@@ -116,7 +116,7 @@ int roc_context_close(roc_context* context) {
 
     peer::Context* imp_context = (peer::Context*)context;
 
-    if (imp_context->is_used()) {
+    if (imp_context->getref() != 0) {
         roc_log(LogError, "roc_context_close(): context is still in use");
         return -1;
     }
