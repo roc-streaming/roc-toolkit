@@ -6,13 +6,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/poisoner.h"
+#include "roc_core/poison_ops.h"
 #include "roc_core/panic.h"
 
 namespace roc {
 namespace core {
 
-void Poisoner::before_use(void* data, size_t size) {
+void PoisonOps::before_use(void* data, size_t size) {
     if (!data) {
         roc_panic("poisoner: data is null");
     }
@@ -24,7 +24,7 @@ void Poisoner::before_use(void* data, size_t size) {
     memset(data, Pattern_BeforeUse, size);
 }
 
-void Poisoner::after_use(void* data, size_t size) {
+void PoisonOps::after_use(void* data, size_t size) {
     if (!data) {
         roc_panic("poisoner: data is null");
     }

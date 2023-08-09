@@ -8,7 +8,7 @@
 
 #include "roc_audio/poison_reader.h"
 #include "roc_audio/sample.h"
-#include "roc_core/poisoner.h"
+#include "roc_core/poison_ops.h"
 
 namespace roc {
 namespace audio {
@@ -18,7 +18,7 @@ PoisonReader::PoisonReader(IFrameReader& reader)
 }
 
 bool PoisonReader::read(Frame& frame) {
-    core::Poisoner::before_use(frame.samples(), frame.num_samples() * sizeof(sample_t));
+    core::PoisonOps::before_use(frame.samples(), frame.num_samples() * sizeof(sample_t));
 
     return reader_.read(frame);
 }
