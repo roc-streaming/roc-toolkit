@@ -13,6 +13,7 @@
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_packet/packet_factory.h"
+#include "roc_packet/queue.h"
 #include "roc_pipeline/sender_loop.h"
 #include "roc_rtp/format_map.h"
 
@@ -36,14 +37,14 @@ public:
         : pipeline_(pipeline)
         , slot_(NULL)
         , task_create_slot_(NULL)
-        , task_create_endpoint_(NULL)
+        , task_add_endpoint_(NULL)
         , task_delete_slot_(NULL)
         , done_(false) {
     }
 
     ~TaskIssuer() {
         delete task_create_slot_;
-        delete task_create_endpoint_;
+        delete task_add_endpoint_;
         delete task_delete_slot_;
     }
 
@@ -64,14 +65,15 @@ public:
         if (&task == task_create_slot_) {
             slot_ = task_create_slot_->get_handle();
             roc_panic_if_not(slot_);
-            task_create_endpoint_ = new SenderLoop::Tasks::CreateEndpoint(
-                slot_, address::Iface_AudioSource, address::Proto_RTP);
-            pipeline_.schedule(*task_create_endpoint_, *this);
+            task_add_endpoint_ = new SenderLoop::Tasks::AddEndpoint(
+                slot_, address::Iface_AudioSource, address::Proto_RTP, dest_address_,
+                dest_writer_);
+            pipeline_.schedule(*task_add_endpoint_, *this);
             return;
         }
 
-        if (&task == task_create_endpoint_) {
-            roc_panic_if_not(task_create_endpoint_->get_handle());
+        if (&task == task_add_endpoint_) {
+            roc_panic_if_not(task_add_endpoint_->get_handle());
             task_delete_slot_ = new SenderLoop::Tasks::DeleteSlot(slot_);
             pipeline_.schedule(*task_delete_slot_, *this);
             return;
@@ -90,8 +92,11 @@ private:
 
     SenderLoop::SlotHandle slot_;
 
+    address::SocketAddr dest_address_;
+    packet::Queue dest_writer_;
+
     SenderLoop::Tasks::CreateSlot* task_create_slot_;
-    SenderLoop::Tasks::CreateEndpoint* task_create_endpoint_;
+    SenderLoop::Tasks::AddEndpoint* task_add_endpoint_;
     SenderLoop::Tasks::DeleteSlot* task_delete_slot_;
 
     core::Atomic<int> done_;
@@ -112,6 +117,9 @@ TEST(sender_loop, endpoints_sync) {
 
     SenderLoop::SlotHandle slot = NULL;
 
+    address::SocketAddr dest_address;
+    packet::Queue dest_writer;
+
     {
         SenderLoop::Tasks::CreateSlot task;
         CHECK(sender.schedule_and_wait(task));
@@ -122,8 +130,9 @@ TEST(sender_loop, endpoints_sync) {
     }
 
     {
-        SenderLoop::Tasks::CreateEndpoint task(slot, address::Iface_AudioSource,
-                                               address::Proto_RTP);
+        SenderLoop::Tasks::AddEndpoint task(slot, address::Iface_AudioSource,
+                                            address::Proto_RTP, dest_address,
+                                            dest_writer);
         CHECK(sender.schedule_and_wait(task));
         CHECK(task.success());
         CHECK(task.get_handle());

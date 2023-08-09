@@ -67,7 +67,7 @@ ReceiverSlot* create_slot(ReceiverSource& source) {
 packet::IWriter*
 create_endpoint(ReceiverSlot* slot, address::Interface iface, address::Protocol proto) {
     CHECK(slot);
-    ReceiverEndpoint* endpoint = slot->create_endpoint(iface, proto);
+    ReceiverEndpoint* endpoint = slot->add_endpoint(iface, proto);
     CHECK(endpoint);
     return &endpoint->writer();
 }

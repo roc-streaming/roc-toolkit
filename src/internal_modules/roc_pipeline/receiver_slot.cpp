@@ -35,8 +35,8 @@ ReceiverSlot::ReceiverSlot(const ReceiverConfig& receiver_config,
     roc_log(LogDebug, "receiver slot: initializing");
 }
 
-ReceiverEndpoint* ReceiverSlot::create_endpoint(address::Interface iface,
-                                                address::Protocol proto) {
+ReceiverEndpoint* ReceiverSlot::add_endpoint(address::Interface iface,
+                                             address::Protocol proto) {
     roc_log(LogDebug, "receiver slot: adding %s endpoint %s",
             address::interface_to_str(iface), address::proto_to_str(proto));
 
@@ -56,28 +56,6 @@ ReceiverEndpoint* ReceiverSlot::create_endpoint(address::Interface iface,
 
     roc_log(LogError, "receiver slot: unsupported interface");
     return NULL;
-}
-
-void ReceiverSlot::delete_endpoint(address::Interface iface) {
-    roc_log(LogDebug, "receiver slot: removing %s endpoint",
-            address::interface_to_str(iface));
-
-    switch (iface) {
-    case address::Iface_AudioSource:
-        source_endpoint_.reset(NULL);
-        return;
-
-    case address::Iface_AudioRepair:
-        repair_endpoint_.reset(NULL);
-        return;
-
-    case address::Iface_AudioControl:
-        control_endpoint_.reset(NULL);
-        return;
-
-    default:
-        return;
-    }
 }
 
 void ReceiverSlot::advance(packet::timestamp_t timestamp) {

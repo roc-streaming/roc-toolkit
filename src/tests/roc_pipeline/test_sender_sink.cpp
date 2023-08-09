@@ -117,11 +117,8 @@ TEST(sender_sink, write) {
     CHECK(slot);
 
     SenderEndpoint* source_endpoint =
-        slot->create_endpoint(address::Iface_AudioSource, source_proto);
+        slot->add_endpoint(address::Iface_AudioSource, source_proto, dst_addr, queue);
     CHECK(source_endpoint);
-
-    source_endpoint->set_destination_writer(queue);
-    source_endpoint->set_destination_address(dst_addr);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -159,11 +156,8 @@ TEST(sender_sink, frame_size_small) {
     CHECK(slot);
 
     SenderEndpoint* source_endpoint =
-        slot->create_endpoint(address::Iface_AudioSource, source_proto);
+        slot->add_endpoint(address::Iface_AudioSource, source_proto, dst_addr, queue);
     CHECK(source_endpoint);
-
-    source_endpoint->set_destination_writer(queue);
-    source_endpoint->set_destination_address(dst_addr);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -201,11 +195,8 @@ TEST(sender_sink, frame_size_large) {
     CHECK(slot);
 
     SenderEndpoint* source_endpoint =
-        slot->create_endpoint(address::Iface_AudioSource, source_proto);
+        slot->add_endpoint(address::Iface_AudioSource, source_proto, dst_addr, queue);
     CHECK(source_endpoint);
-
-    source_endpoint->set_destination_writer(queue);
-    source_endpoint->set_destination_address(dst_addr);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -238,11 +229,8 @@ TEST(sender_sink, channels_stereo_to_mono) {
     CHECK(slot);
 
     SenderEndpoint* source_endpoint =
-        slot->create_endpoint(address::Iface_AudioSource, source_proto);
+        slot->add_endpoint(address::Iface_AudioSource, source_proto, dst_addr, queue);
     CHECK(source_endpoint);
-
-    source_endpoint->set_destination_writer(queue);
-    source_endpoint->set_destination_address(dst_addr);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -275,11 +263,8 @@ TEST(sender_sink, channels_mono_to_stereo) {
     CHECK(slot);
 
     SenderEndpoint* source_endpoint =
-        slot->create_endpoint(address::Iface_AudioSource, source_proto);
+        slot->add_endpoint(address::Iface_AudioSource, source_proto, dst_addr, queue);
     CHECK(source_endpoint);
-
-    source_endpoint->set_destination_writer(queue);
-    source_endpoint->set_destination_address(dst_addr);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 

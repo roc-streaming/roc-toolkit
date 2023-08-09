@@ -9,8 +9,8 @@
 //! @file roc_core/poison_ops.h
 //! @brief Memory poisoning.
 
-#ifndef ROC_CORE_POISONER_H_
-#define ROC_CORE_POISONER_H_
+#ifndef ROC_CORE_POISON_OPS_H_
+#define ROC_CORE_POISON_OPS_H_
 
 #include "roc_core/stddefs.h"
 
@@ -41,4 +41,4 @@ private:
 } // namespace core
 } // namespace roc
 
-#endif // ROC_CORE_POISONER_H_
+#endif // ROC_CORE_POISON_OPS_H_

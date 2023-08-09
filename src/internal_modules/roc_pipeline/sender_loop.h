@@ -63,6 +63,7 @@ public:
         address::Protocol proto_;     //!< Protocol.
         address::SocketAddr address_; //!< Destination address.
         packet::IWriter* writer_;     //!< Destination writer.
+        bool is_complete_;            //!< Completion flag.
     };
 
     //! Subclasses for specific tasks.
@@ -85,36 +86,31 @@ public:
             DeleteSlot(SlotHandle slot);
         };
 
+        //! Poll slot state.
+        class PollSlot : public Task {
+        public:
+            //! Set task parameters.
+            PollSlot(SlotHandle slot);
+
+            //! Get slot completion flag.
+            bool get_complete() const;
+        };
+
         //! Create endpoint on given interface of the slot.
-        class CreateEndpoint : public Task {
+        class AddEndpoint : public Task {
         public:
             //! Set task parameters.
             //! @remarks
             //!  Each slot can have one source and zero or one repair endpoint.
             //!  The protocols of endpoints in one slot should be compatible.
-            CreateEndpoint(SlotHandle slot,
-                           address::Interface iface,
-                           address::Protocol proto);
+            AddEndpoint(SlotHandle slot,
+                        address::Interface iface,
+                        address::Protocol proto,
+                        const address::SocketAddr& dest_address,
+                        packet::IWriter& dest_writer);
 
             //! Get created endpoint handle.
             EndpointHandle get_handle() const;
-        };
-
-        //! Set endpoint parameters.
-        class ConfigureEndpoint : public Task {
-        public:
-            //! Set task parameters.
-            ConfigureEndpoint(EndpointHandle endpoint,
-                              const address::SocketAddr& dest_address,
-                              packet::IWriter& dest_writer);
-        };
-
-        //! Check if the slot configuration is done.
-        //! This is true when all necessary endpoints are added and configured.
-        class CheckSlotReady : public Task {
-        public:
-            //! Set task parameters.
-            CheckSlotReady(SlotHandle slot);
         };
     };
 
@@ -155,9 +151,8 @@ private:
     // Methods for tasks
     bool task_create_slot_(Task&);
     bool task_delete_slot_(Task&);
-    bool task_create_endpoint_(Task&);
-    bool task_configure_endpoint_(Task&);
-    bool task_check_slot_ready_(Task&);
+    bool task_poll_slot_(Task&);
+    bool task_add_endpoint_(Task&);
 
     SenderSink sink_;
 

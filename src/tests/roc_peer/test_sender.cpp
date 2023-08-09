@@ -223,7 +223,7 @@ TEST(sender, endpoints_no_fec) {
 
         // everything is ok
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(sender.is_ready());
+        CHECK(!sender.has_incomplete());
     }
 
     {
@@ -233,7 +233,7 @@ TEST(sender, endpoints_no_fec) {
         CHECK(sender.is_valid());
 
         // source port not provided
-        CHECK(!sender.is_ready());
+        CHECK(!sender.has_incomplete());
     }
 }
 
@@ -252,14 +252,14 @@ TEST(sender, endpoints_fec) {
 
         // fec is not supported
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(!sender.is_ready());
+        CHECK(sender.has_incomplete());
 
         address::EndpointUri repair_endp(arena);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
 
         // fec is not supported
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioRepair, repair_endp));
-        CHECK(!sender.is_ready());
+        CHECK(sender.has_incomplete());
 
         return;
     }
@@ -279,7 +279,7 @@ TEST(sender, endpoints_fec) {
         // everything is ok
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioRepair, repair_endp));
-        CHECK(sender.is_ready());
+        CHECK(!sender.has_incomplete());
     }
 
     {
@@ -293,7 +293,7 @@ TEST(sender, endpoints_fec) {
 
         // source port fec scheme mismatch
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(!sender.is_ready());
+        CHECK(sender.has_incomplete());
     }
 
     {
@@ -307,7 +307,7 @@ TEST(sender, endpoints_fec) {
 
         // repair port fec scheme mismatch
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioRepair, repair_endp));
-        CHECK(!sender.is_ready());
+        CHECK(sender.has_incomplete());
     }
 
     {
@@ -321,7 +321,7 @@ TEST(sender, endpoints_fec) {
 
         // repair port provided when fec is disabled
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioRepair, repair_endp));
-        CHECK(!sender.is_ready());
+        CHECK(sender.has_incomplete());
     }
 
     {
@@ -335,7 +335,7 @@ TEST(sender, endpoints_fec) {
 
         // repair port not provided when fec is enabled
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(!sender.is_ready());
+        CHECK(sender.has_incomplete());
     }
 
     {
@@ -349,7 +349,7 @@ TEST(sender, endpoints_fec) {
 
         // source port not provided when fec is enabled
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioRepair, repair_endp));
-        CHECK(!sender.is_ready());
+        CHECK(sender.has_incomplete());
     }
 }
 
@@ -378,17 +378,17 @@ TEST(sender, endpoints_fec_multiple_slots) {
     address::EndpointUri repair_endp2(arena);
     parse_uri(repair_endp2, "rs8m://127.0.0.1:2002");
 
-    CHECK(!sender.is_ready());
+    CHECK(!sender.has_incomplete());
 
     CHECK(sender.connect(0, address::Iface_AudioSource, source_endp1));
     CHECK(sender.connect(1, address::Iface_AudioSource, source_endp2));
 
-    CHECK(!sender.is_ready());
+    CHECK(sender.has_incomplete());
 
     CHECK(sender.connect(0, address::Iface_AudioRepair, repair_endp1));
     CHECK(sender.connect(1, address::Iface_AudioRepair, repair_endp2));
 
-    CHECK(sender.is_ready());
+    CHECK(!sender.has_incomplete());
 }
 
 TEST(sender, connect_errors) {
@@ -541,7 +541,7 @@ TEST(sender, flow_errors) {
         parse_uri(source_endp, "rtp://127.0.0.1:123");
 
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(sender.is_ready());
+        CHECK(!sender.has_broken());
 
         UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 1);
 
@@ -573,7 +573,7 @@ TEST(sender, flow_errors) {
         parse_uri(source_endp, "rtp://127.0.0.1:123");
 
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(sender.is_ready());
+        CHECK(!sender.has_broken());
 
         CHECK(sender.unlink(DefaultSlot));
         CHECK(!sender.has_broken());
@@ -616,7 +616,7 @@ TEST(sender, recover) {
 
         // can connect
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp2));
-        CHECK(sender.is_ready());
+        CHECK(!sender.has_broken());
 
         UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 1);
     }
