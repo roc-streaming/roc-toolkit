@@ -61,9 +61,9 @@ Modules can be grouped into several layers, as shown on the diagram above:
 
 * control layer (roc_ctl)
 
-* peer layer (roc_peer)
+* node layer (roc_node)
 
-On receiver media flows from network I/O layer, through processing layer, to sound I/O layer. Accordingly, on sender media flows from sound I/O layer, through processing layer, to network I/O layer. On both receiver and sender, there is also control layer that handles various supportive tasks. Finally, peer layer is a top-level layer which glues everything together.
+On receiver media flows from network I/O layer, through processing layer, to sound I/O layer. Accordingly, on sender media flows from sound I/O layer, through processing layer, to network I/O layer. On both receiver and sender, there is also control layer that handles various supportive tasks. Finally, node layer is a top-level layer which glues everything together.
 
 Here is the full list of available modules:
 
@@ -82,7 +82,7 @@ roc_pipeline      Pipeline loop that arranges packet and frame processors into a
 roc_ctl           Control loop that handles signaling protocols and background tasks
 roc_netio         Network I/O loop
 roc_sndio         Sound I/O loop
-roc_peer          Top-level module that glues everything together
+roc_node          Top-level module that glues everything together
 ================= =================================
 
 .. _targets:

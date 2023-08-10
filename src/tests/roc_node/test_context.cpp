@@ -9,12 +9,12 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/heap_arena.h"
-#include "roc_peer/context.h"
-#include "roc_peer/receiver.h"
-#include "roc_peer/sender.h"
+#include "roc_node/context.h"
+#include "roc_node/receiver.h"
+#include "roc_node/sender.h"
 
 namespace roc {
-namespace peer {
+namespace node {
 
 namespace {
 
@@ -50,5 +50,5 @@ TEST(context, reference_counting) {
     CHECK(context.getref() == 0);
 }
 
-} // namespace peer
+} // namespace node
 } // namespace roc

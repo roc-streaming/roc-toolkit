@@ -18,8 +18,8 @@
 #include "roc_core/scoped_ptr.h"
 #include "roc_netio/network_loop.h"
 #include "roc_netio/udp_sender_port.h"
-#include "roc_peer/context.h"
-#include "roc_peer/sender.h"
+#include "roc_node/context.h"
+#include "roc_node/sender.h"
 #include "roc_pipeline/sender_sink.h"
 #include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/backend_map.h"
@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
         break;
     }
 
-    peer::ContextConfig context_config;
+    node::ContextConfig context_config;
 
     if (args.packet_limit_given) {
         if (args.packet_limit_arg <= 0) {
@@ -81,9 +81,9 @@ int main(int argc, char** argv) {
 
     core::HeapArena heap_arena;
 
-    peer::Context context(context_config, heap_arena);
+    node::Context context(context_config, heap_arena);
     if (!context.is_valid()) {
-        roc_log(LogError, "can't initialize peer context");
+        roc_log(LogError, "can't initialize node context");
         return 1;
     }
 
@@ -249,9 +249,9 @@ int main(int argc, char** argv) {
     sender_config.input_sample_spec.set_sample_rate(
         input_source->sample_spec().sample_rate());
 
-    peer::Sender sender(context, sender_config);
+    node::Sender sender(context, sender_config);
     if (!sender.is_valid()) {
-        roc_log(LogError, "can't create sender peer");
+        roc_log(LogError, "can't create sender node");
         return 1;
     }
 

@@ -19,7 +19,7 @@ Sender and receiver pipelines implement ``ISink`` and ``ISource`` interfaces, re
 
 Except reading and writing frames, we need to be able to change pipeline configuration on fly. To achieve this, pipelines provide task-based interface for configuration operations. The foundation for task processing is implemented in ``PipelineLoop`` class, which allows to schedule tasks for execution in between frames. ``SenderLoop`` and ``ReceiverLoop`` inherit this class and provide a set of tasks suitable for configuration of corresponding pipelines.
 
-``SenderLoop`` and ``ReceiverLoop`` are used by ``roc_peer`` module. It is a top-level module that combines together ``roc_pipeline`` (processing), ``roc_netio`` (network I/O), and ``roc_sndio`` (sound I/O). It uses ``SenderLoop`` and ``ReceiverLoop`` to configure pipeline and to retrieve ``ISink`` or ``ISource`` (which under the hood is implemented by ``SenderSink`` or ``ReceiverSource``). The latter is then used to transform audio frames retrieved from ``roc_sndio`` into network packets passed to ``roc_netio``, or vice versa.
+``SenderLoop`` and ``ReceiverLoop`` are used by ``roc_node`` module. It is a top-level module that combines together ``roc_pipeline`` (processing), ``roc_netio`` (network I/O), and ``roc_sndio`` (sound I/O). It uses ``SenderLoop`` and ``ReceiverLoop`` to configure pipeline and to retrieve ``ISink`` or ``ISource`` (which under the hood is implemented by ``SenderSink`` or ``ReceiverSource``). The latter is then used to transform audio frames retrieved from ``roc_sndio`` into network packets passed to ``roc_netio``, or vice versa.
 
 The diagram below demonstrates this.
 

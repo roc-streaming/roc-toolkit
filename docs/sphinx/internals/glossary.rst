@@ -10,7 +10,7 @@ Participants
 
 .. glossary::
 
-*roc peer*
+*roc node*
     A sender or receiver (see below).
 
 *roc sender*

@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_peer/receiver.h"
+#include "roc_node/receiver.h"
 #include "roc_address/endpoint_uri_to_str.h"
 #include "roc_address/socket_addr.h"
 #include "roc_address/socket_addr_to_str.h"
@@ -15,10 +15,10 @@
 #include "roc_core/panic.h"
 
 namespace roc {
-namespace peer {
+namespace node {
 
 Receiver::Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_config)
-    : BasicPeer(context)
+    : Node(context)
     , pipeline_(*this,
                 pipeline_config,
                 context.format_map(),
@@ -30,7 +30,7 @@ Receiver::Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_co
     , slot_pool_(context.arena())
     , slot_map_(context.arena())
     , valid_(false) {
-    roc_log(LogDebug, "receiver peer: initializing");
+    roc_log(LogDebug, "receiver node: initializing");
 
     memset(used_interfaces_, 0, sizeof(used_interfaces_));
     memset(used_protocols_, 0, sizeof(used_protocols_));
@@ -43,7 +43,7 @@ Receiver::Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_co
 }
 
 Receiver::~Receiver() {
-    roc_log(LogDebug, "receiver peer: deinitializing");
+    roc_log(LogDebug, "receiver node: deinitializing");
 
     // First remove all slots. This may involve usage of processing task.
     while (core::SharedPtr<Slot> slot = slot_map_.front()) {
@@ -70,13 +70,13 @@ bool Receiver::configure(size_t slot_index,
     roc_panic_if(iface < 0);
     roc_panic_if(iface >= (int)address::Iface_Max);
 
-    roc_log(LogDebug, "receiver peer: configuring %s interface of slot %lu",
+    roc_log(LogDebug, "receiver node: configuring %s interface of slot %lu",
             address::interface_to_str(iface), (unsigned long)slot_index);
 
     core::SharedPtr<Slot> slot = get_slot_(slot_index, true);
     if (!slot) {
         roc_log(LogError,
-                "receiver peer:"
+                "receiver node:"
                 " can't configure %s interface of slot %lu:"
                 " can't create slot",
                 address::interface_to_str(iface), (unsigned long)slot_index);
@@ -85,7 +85,7 @@ bool Receiver::configure(size_t slot_index,
 
     if (slot->broken) {
         roc_log(LogError,
-                "receiver peer:"
+                "receiver node:"
                 " can't configure %s interface of slot %lu:"
                 " slot is marked broken and should be unlinked",
                 address::interface_to_str(iface), (unsigned long)slot_index);
@@ -94,7 +94,7 @@ bool Receiver::configure(size_t slot_index,
 
     if (slot->ports[iface].handle) {
         roc_log(LogError,
-                "receiver peer:"
+                "receiver node:"
                 " can't configure %s interface of slot %lu:"
                 " interface is already bound or connected",
                 address::interface_to_str(iface), (unsigned long)slot_index);
@@ -117,14 +117,14 @@ bool Receiver::bind(size_t slot_index,
     roc_panic_if(iface < 0);
     roc_panic_if(iface >= (int)address::Iface_Max);
 
-    roc_log(LogInfo, "receiver peer: binding %s interface of slot %lu to %s",
+    roc_log(LogInfo, "receiver node: binding %s interface of slot %lu to %s",
             address::interface_to_str(iface), (unsigned long)slot_index,
             address::endpoint_uri_to_str(uri).c_str());
 
     core::SharedPtr<Slot> slot = get_slot_(slot_index, true);
     if (!slot) {
         roc_log(LogError,
-                "receiver peer:"
+                "receiver node:"
                 " can't bind %s interface of slot %lu:"
                 " can't create slot",
                 address::interface_to_str(iface), (unsigned long)slot_index);
@@ -133,7 +133,7 @@ bool Receiver::bind(size_t slot_index,
 
     if (slot->broken) {
         roc_log(LogError,
-                "receiver peer:"
+                "receiver node:"
                 " can't bind %s interface of slot %lu:"
                 " slot is marked broken and should be unlinked",
                 address::interface_to_str(iface), (unsigned long)slot_index);
@@ -142,7 +142,7 @@ bool Receiver::bind(size_t slot_index,
 
     if (!uri.verify(address::EndpointUri::Subset_Full)) {
         roc_log(LogError,
-                "receiver peer:"
+                "receiver node:"
                 " can't bind %s interface of slot %lu:"
                 " invalid uri",
                 address::interface_to_str(iface), (unsigned long)slot_index);
@@ -152,7 +152,7 @@ bool Receiver::bind(size_t slot_index,
 
     if (!check_compatibility_(iface, uri)) {
         roc_log(LogError,
-                "receiver peer:"
+                "receiver node:"
                 " can't bind %s interface of slot %lu:"
                 " incompatible with other slots",
                 address::interface_to_str(iface), (unsigned long)slot_index);
@@ -166,7 +166,7 @@ bool Receiver::bind(size_t slot_index,
 
     if (!context().network_loop().schedule_and_wait(resolve_task)) {
         roc_log(LogError,
-                "receiver peer:"
+                "receiver node:"
                 " can't bind %s interface of slot %lu:"
                 " can't resolve endpoint address",
                 address::interface_to_str(iface), (unsigned long)slot_index);
@@ -178,7 +178,7 @@ bool Receiver::bind(size_t slot_index,
                                                              uri.proto());
     if (!pipeline_.schedule_and_wait(endpoint_task)) {
         roc_log(LogError,
-                "receiver peer:"
+                "receiver node:"
                 " can't bind %s interface of slot %lu:"
                 " can't add endpoint to pipeline",
                 address::interface_to_str(iface), (unsigned long)slot_index);
@@ -192,7 +192,7 @@ bool Receiver::bind(size_t slot_index,
                                                             *endpoint_task.get_writer());
     if (!context().network_loop().schedule_and_wait(port_task)) {
         roc_log(LogError,
-                "receiver peer:"
+                "receiver node:"
                 " can't bind %s interface of slot %lu:"
                 " can't bind interface to local port",
                 address::interface_to_str(iface), (unsigned long)slot_index);
@@ -205,7 +205,7 @@ bool Receiver::bind(size_t slot_index,
     if (uri.port() == 0) {
         // Report back the port number we've selected.
         if (!uri.set_port(slot->ports[iface].config.bind_address.port())) {
-            roc_panic("receiver peer: can't set endpoint port");
+            roc_panic("receiver node: can't set endpoint port");
         }
     }
 
@@ -219,12 +219,12 @@ bool Receiver::unlink(size_t slot_index) {
 
     roc_panic_if_not(is_valid());
 
-    roc_log(LogDebug, "receiver peer: unlinking slot %lu", (unsigned long)slot_index);
+    roc_log(LogDebug, "receiver node: unlinking slot %lu", (unsigned long)slot_index);
 
     core::SharedPtr<Slot> slot = get_slot_(slot_index, false);
     if (!slot) {
         roc_log(LogError,
-                "receiver peer:"
+                "receiver node:"
                 " can't unlink slot %lu: can't find slot",
                 (unsigned long)slot_index);
         return false;
@@ -259,7 +259,7 @@ bool Receiver::check_compatibility_(address::Interface iface,
                                     const address::EndpointUri& uri) {
     if (used_interfaces_[iface] && used_protocols_[iface] != uri.proto()) {
         roc_log(LogError,
-                "receiver peer: same interface of all slots should use same protocols:"
+                "receiver node: same interface of all slots should use same protocols:"
                 " other slot uses %s, but this slot tries to use %s",
                 address::proto_to_str(used_protocols_[iface]),
                 address::proto_to_str(uri.proto()));
@@ -282,26 +282,26 @@ core::SharedPtr<Receiver::Slot> Receiver::get_slot_(size_t slot_index, bool auto
         if (auto_create) {
             pipeline::ReceiverLoop::Tasks::CreateSlot task;
             if (!pipeline_.schedule_and_wait(task)) {
-                roc_log(LogError, "receiver peer: failed to create slot");
+                roc_log(LogError, "receiver node: failed to create slot");
                 return NULL;
             }
 
             slot = new (slot_pool_) Slot(slot_pool_, slot_index, task.get_handle());
             if (!slot) {
-                roc_log(LogError, "receiver peer: failed to create slot %lu",
+                roc_log(LogError, "receiver node: failed to create slot %lu",
                         (unsigned long)slot_index);
                 return NULL;
             }
 
             if (!slot_map_.grow()) {
-                roc_log(LogError, "receiver peer: failed to create slot %lu",
+                roc_log(LogError, "receiver node: failed to create slot %lu",
                         (unsigned long)slot_index);
                 return NULL;
             }
 
             slot_map_.insert(*slot);
         } else {
-            roc_log(LogError, "receiver peer: failed to find slot %lu",
+            roc_log(LogError, "receiver node: failed to find slot %lu",
                     (unsigned long)slot_index);
             return NULL;
         }
@@ -316,7 +316,7 @@ void Receiver::cleanup_slot_(Slot& slot) {
         if (slot.ports[p].handle) {
             netio::NetworkLoop::Tasks::RemovePort task(slot.ports[p].handle);
             if (!context().network_loop().schedule_and_wait(task)) {
-                roc_panic("receiver peer: can't remove network port of slot %lu",
+                roc_panic("receiver node: can't remove network port of slot %lu",
                           (unsigned long)slot.index);
             }
             slot.ports[p].handle = NULL;
@@ -327,7 +327,7 @@ void Receiver::cleanup_slot_(Slot& slot) {
     if (slot.handle) {
         pipeline::ReceiverLoop::Tasks::DeleteSlot task(slot.handle);
         if (!pipeline_.schedule_and_wait(task)) {
-            roc_panic("receiver peer: can't remove pipeline slot %lu",
+            roc_panic("receiver node: can't remove pipeline slot %lu",
                       (unsigned long)slot.index);
         }
         slot.handle = NULL;
@@ -336,7 +336,7 @@ void Receiver::cleanup_slot_(Slot& slot) {
 
 void Receiver::break_slot_(Slot& slot) {
     roc_log(LogError,
-            "receiver peer: marking slot %lu as broken, it needs to be unlinked",
+            "receiver node: marking slot %lu as broken, it needs to be unlinked",
             (unsigned long)slot.index);
 
     slot.broken = true;
@@ -352,5 +352,5 @@ void Receiver::cancel_task_processing(pipeline::PipelineLoop&) {
     context().control_loop().async_cancel(processing_task_);
 }
 
-} // namespace peer
+} // namespace node
 } // namespace roc

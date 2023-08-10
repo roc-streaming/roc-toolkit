@@ -11,11 +11,11 @@
 #include "roc_address/protocol.h"
 #include "roc_core/heap_arena.h"
 #include "roc_fec/codec_map.h"
-#include "roc_peer/context.h"
-#include "roc_peer/sender.h"
+#include "roc_node/context.h"
+#include "roc_node/sender.h"
 
 namespace roc {
-namespace peer {
+namespace node {
 
 namespace {
 
@@ -752,5 +752,5 @@ TEST(sender, port_sharing) {
     UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
 }
 
-} // namespace peer
+} // namespace node
 } // namespace roc

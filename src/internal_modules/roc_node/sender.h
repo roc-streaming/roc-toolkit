@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_peer/sender.h
-//! @brief Sender peer.
+//! @file roc_node/sender.h
+//! @brief Sender node.
 
-#ifndef ROC_PEER_SENDER_H_
-#define ROC_PEER_SENDER_H_
+#ifndef ROC_NODE_SENDER_H_
+#define ROC_NODE_SENDER_H_
 
 #include "roc_address/endpoint_uri.h"
 #include "roc_address/interface.h"
@@ -21,17 +21,17 @@
 #include "roc_core/pool.h"
 #include "roc_core/ref_counted.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_node/context.h"
+#include "roc_node/node.h"
 #include "roc_packet/iwriter.h"
-#include "roc_peer/basic_peer.h"
-#include "roc_peer/context.h"
 #include "roc_pipeline/ipipeline_task_scheduler.h"
 #include "roc_pipeline/sender_loop.h"
 
 namespace roc {
-namespace peer {
+namespace node {
 
-//! Sender peer.
-class Sender : public BasicPeer, private pipeline::IPipelineTaskScheduler {
+//! Sender node.
+class Sender : public Node, private pipeline::IPipelineTaskScheduler {
 public:
     //! Initialize.
     Sender(Context& context, const pipeline::SenderConfig& pipeline_config);
@@ -47,7 +47,7 @@ public:
                    address::Interface iface,
                    const netio::UdpSenderConfig& config);
 
-    //! Connect peer to remote endpoint.
+    //! Connect to remote endpoint.
     bool
     connect(size_t slot_index, address::Interface iface, const address::EndpointUri& uri);
 
@@ -133,7 +133,7 @@ private:
     bool valid_;
 };
 
-} // namespace peer
+} // namespace node
 } // namespace roc
 
-#endif // ROC_PEER_SENDER_H_
+#endif // ROC_NODE_SENDER_H_
