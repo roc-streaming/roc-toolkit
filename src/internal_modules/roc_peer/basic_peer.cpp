@@ -12,16 +12,14 @@ namespace roc {
 namespace peer {
 
 BasicPeer::BasicPeer(Context& context)
-    : context_(context) {
-    context_.incref();
+    : context_(&context) {
 }
 
 BasicPeer::~BasicPeer() {
-    context_.decref();
 }
 
 Context& BasicPeer::context() {
-    return context_;
+    return *context_;
 }
 
 } // namespace peer
