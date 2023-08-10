@@ -56,6 +56,9 @@ public:
     //! Add flags.
     void add_flags(unsigned flags);
 
+    //! Check specific flag.
+    bool has_flags(unsigned flags) const;
+
     //! Get flags.
     unsigned flags() const;
 
