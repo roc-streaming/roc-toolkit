@@ -24,6 +24,10 @@ void Packet::add_flags(unsigned fl) {
     flags_ |= fl;
 }
 
+bool Packet::has_flags(unsigned fl) const {
+    return (flags_ & fl) != 0;
+}
+
 unsigned Packet::flags() const {
     return flags_;
 }
