@@ -19,6 +19,7 @@
 #include "roc_core/mutex.h"
 #include "roc_core/rate_limiter.h"
 #include "roc_core/seqlock.h"
+#include "roc_core/shared_ptr.h"
 #include "roc_netio/basic_port.h"
 #include "roc_netio/iclose_handler.h"
 #include "roc_netio/iconn.h"
@@ -319,7 +320,7 @@ private:
     uv_async_t terminate_sem_;
     bool terminate_sem_initialized_;
 
-    IConnHandler* conn_handler_;
+    core::SharedPtr<IConnHandler> conn_handler_;
 
     ITerminateHandler* terminate_handler_;
     void* terminate_handler_arg_;
