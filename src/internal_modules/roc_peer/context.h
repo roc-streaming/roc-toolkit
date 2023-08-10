@@ -13,10 +13,11 @@
 #define ROC_PEER_CONTEXT_H_
 
 #include "roc_audio/sample.h"
+#include "roc_core/allocation_policy.h"
 #include "roc_core/atomic.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/iarena.h"
-#include "roc_core/use_counted.h"
+#include "roc_core/ref_counted.h"
 #include "roc_ctl/control_loop.h"
 #include "roc_netio/network_loop.h"
 #include "roc_packet/packet_factory.h"
@@ -40,7 +41,7 @@ struct ContextConfig {
 };
 
 //! Peer context.
-class Context : public core::UseCounted {
+class Context : public core::RefCounted<Context, core::ManualAllocation> {
 public:
     //! Initialize.
     explicit Context(const ContextConfig& config, core::IArena& arena);

@@ -27,7 +27,7 @@ public:
         : arena_(&arena) {
     }
 
-    //! Destroy object and deallocate its memory.
+    //! Destroy object and return memory to arena.
     template <class T> void destroy(T& object) {
         arena_->destroy_object(object);
     }
@@ -50,7 +50,7 @@ public:
         : pool_(&pool) {
     }
 
-    //! Destroy object and deallocate its memory.
+    //! Destroy object and return memory to pool.
     template <class T> void destroy(T& object) {
         pool_->destroy_object(object);
     }
@@ -79,13 +79,23 @@ public:
         }
     }
 
-    //! Destroy object and deallocate its memory.
+    //! Invoke custom destruction function.
     template <class T> void destroy(T& object) {
         destroy_func_(&object);
     }
 
 private:
     DestroyFunc destroy_func_;
+};
+
+//! Allocation policy for objects that does not have automatical deallocation.
+class ManualAllocation {
+public:
+    //! No-op.
+    //! When SharedPtr or ScopedPtr "destroys" object, nothing happens.
+    //! The user is reponsible for destroying it manually.
+    template <class T> void destroy(T&) {
+    }
 };
 
 } // namespace core
