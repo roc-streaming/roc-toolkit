@@ -35,7 +35,7 @@ public:
 
     //! Initialize.
     //! @p mode defines whether reads will be blocking.
-    ConcurrentQueue(Mode mode);
+    explicit ConcurrentQueue(Mode mode = NonBlocking);
 
     //! Read next packet.
     //! If reads are not concurrent, and queue is non-blocking, then

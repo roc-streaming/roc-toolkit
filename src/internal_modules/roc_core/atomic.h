@@ -31,7 +31,7 @@ template <class T> class Atomic : public NonCopyable<> {
 
 public:
     //! Initialize with given value.
-    explicit inline Atomic(T val)
+    explicit inline Atomic(T val = 0)
         : var_(val) {
     }
 
@@ -126,7 +126,7 @@ private:
 template <class T> class Atomic<T*> : public NonCopyable<> {
 public:
     //! Initialize with given value.
-    explicit inline Atomic(T* val)
+    explicit inline Atomic(T* val = NULL)
         : var_(val) {
     }
 
