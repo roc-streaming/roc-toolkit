@@ -59,7 +59,7 @@ void Router::write(const PacketPtr& packet) {
             r.source = pkt_source;
             r.has_source = true;
 
-            roc_log(LogDebug, "router: detected new stream: source=%lu flags=0x%xu",
+            roc_log(LogDebug, "router: detected new stream: source=%lu flags=0x%x",
                     (unsigned long)r.source, (unsigned int)r.flags);
         }
 

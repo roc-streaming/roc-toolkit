@@ -35,11 +35,11 @@ public:
     //! Check if successfully constructed.
     bool is_valid();
 
-    //! Bind interface.
-    bool bind(address::Interface iface, address::Protocol proto);
+    //! Activate interface.
+    bool activate(address::Interface iface, address::Protocol proto);
 
     //! Write packet for decoding.
-    void write(address::Interface iface, const packet::PacketPtr& packet);
+    bool write(address::Interface iface, const packet::PacketPtr& packet);
 
     //! Source for reading decoded frames.
     sndio::ISource& source();

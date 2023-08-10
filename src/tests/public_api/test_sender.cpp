@@ -8,6 +8,7 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_core/macro_helpers.h"
 #include "roc_core/stddefs.h"
 
 #include "roc/config.h"
@@ -510,6 +511,70 @@ TEST(sender, bad_config) {
         CHECK(roc_sender_open(context, &sender_config_copy, &sender) != 0);
         CHECK(!sender);
     }
+}
+
+TEST(sender, write_args) {
+    roc_sender* sender = NULL;
+    CHECK(roc_sender_open(context, &sender_config, &sender) == 0);
+
+    float samples[16] = {};
+
+    { // all good, not connected
+        roc_frame frame;
+        frame.samples = samples;
+        frame.samples_size = ROC_ARRAY_SIZE(samples);
+        CHECK(roc_sender_write(sender, &frame) == 0);
+    }
+
+    roc_endpoint* source_endpoint = NULL;
+    CHECK(roc_endpoint_allocate(&source_endpoint) == 0);
+    CHECK(roc_endpoint_set_uri(source_endpoint, "rtp://127.0.0.1:123") == 0);
+
+    CHECK(roc_sender_connect(sender, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
+                             source_endpoint)
+          == 0);
+
+    { // all good, connected
+        roc_frame frame;
+        frame.samples = samples;
+        frame.samples_size = ROC_ARRAY_SIZE(samples);
+        CHECK(roc_sender_write(sender, &frame) == 0);
+    }
+
+    { // null sender
+        roc_frame frame;
+        frame.samples = samples;
+        frame.samples_size = ROC_ARRAY_SIZE(samples);
+        CHECK(roc_sender_write(NULL, &frame) == -1);
+    }
+
+    { // null frame
+        CHECK(roc_sender_write(sender, NULL) == -1);
+    }
+
+    { // null samples, zero sample count
+        roc_frame frame;
+        frame.samples = NULL;
+        frame.samples_size = 0;
+        CHECK(roc_sender_write(sender, &frame) == 0);
+    }
+
+    { // null samples, non-zero sample count
+        roc_frame frame;
+        frame.samples = NULL;
+        frame.samples_size = ROC_ARRAY_SIZE(samples);
+        CHECK(roc_sender_write(sender, &frame) == -1);
+    }
+
+    { // uneven sample count
+        roc_frame frame;
+        frame.samples = samples;
+        frame.samples_size = 1;
+        CHECK(roc_sender_write(sender, &frame) == -1);
+    }
+
+    CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
+    LONGS_EQUAL(0, roc_sender_close(sender));
 }
 
 } // namespace api
