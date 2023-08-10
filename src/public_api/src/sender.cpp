@@ -12,7 +12,7 @@
 
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_peer/sender.h"
+#include "roc_node/sender.h"
 
 using namespace roc;
 
@@ -31,7 +31,7 @@ int roc_sender_open(roc_context* context,
         return -1;
     }
 
-    peer::Context* imp_context = (peer::Context*)context;
+    node::Context* imp_context = (node::Context*)context;
 
     if (!config) {
         roc_log(LogError, "roc_sender_open(): invalid arguments: config is null");
@@ -44,8 +44,8 @@ int roc_sender_open(roc_context* context,
         return -1;
     }
 
-    core::ScopedPtr<peer::Sender> imp_sender(new (imp_context->arena())
-                                                 peer::Sender(*imp_context, imp_config),
+    core::ScopedPtr<node::Sender> imp_sender(new (imp_context->arena())
+                                                 node::Sender(*imp_context, imp_config),
                                              imp_context->arena());
 
     if (!imp_sender) {
@@ -71,7 +71,7 @@ int roc_sender_configure(roc_sender* sender,
         return -1;
     }
 
-    peer::Sender* imp_sender = (peer::Sender*)sender;
+    node::Sender* imp_sender = (node::Sender*)sender;
 
     address::Interface imp_iface;
     if (!api::interface_from_user(imp_iface, iface)) {
@@ -107,7 +107,7 @@ int roc_sender_connect(roc_sender* sender,
         return -1;
     }
 
-    peer::Sender* imp_sender = (peer::Sender*)sender;
+    node::Sender* imp_sender = (node::Sender*)sender;
 
     if (!endpoint) {
         roc_log(LogError, "roc_sender_connect(): invalid arguments: endpoint is null");
@@ -136,7 +136,7 @@ int roc_sender_unlink(roc_sender* sender, roc_slot slot) {
         return -1;
     }
 
-    peer::Sender* imp_sender = (peer::Sender*)sender;
+    node::Sender* imp_sender = (node::Sender*)sender;
 
     if (!imp_sender->unlink(slot)) {
         roc_log(LogError, "roc_sender_unlink(): operation failed");
@@ -152,7 +152,7 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
         return -1;
     }
 
-    peer::Sender* imp_sender = (peer::Sender*)sender;
+    node::Sender* imp_sender = (node::Sender*)sender;
 
     sndio::ISink& imp_sink = imp_sender->sink();
 
@@ -193,7 +193,7 @@ int roc_sender_close(roc_sender* sender) {
         return -1;
     }
 
-    peer::Sender* imp_sender = (peer::Sender*)sender;
+    node::Sender* imp_sender = (node::Sender*)sender;
     imp_sender->context().arena().destroy_object(*imp_sender);
 
     roc_log(LogInfo, "roc_sender_close(): closed sender");

@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_peer/context.h
-//! @brief Peer context.
+//! @file roc_node/context.h
+//! @brief Node context.
 
-#ifndef ROC_PEER_CONTEXT_H_
-#define ROC_PEER_CONTEXT_H_
+#ifndef ROC_NODE_CONTEXT_H_
+#define ROC_NODE_CONTEXT_H_
 
 #include "roc_audio/sample.h"
 #include "roc_core/allocation_policy.h"
@@ -24,9 +24,9 @@
 #include "roc_rtp/format_map.h"
 
 namespace roc {
-namespace peer {
+namespace node {
 
-//! Peer context config.
+//! Node context config.
 struct ContextConfig {
     //! Maximum size in bytes of a network packet.
     size_t max_packet_size;
@@ -40,7 +40,7 @@ struct ContextConfig {
     }
 };
 
-//! Peer context.
+//! Node context.
 class Context : public core::RefCounted<Context, core::ManualAllocation> {
 public:
     //! Initialize.
@@ -86,7 +86,7 @@ private:
     ctl::ControlLoop control_loop_;
 };
 
-} // namespace peer
+} // namespace node
 } // namespace roc
 
-#endif // ROC_PEER_CONTEXT_H_
+#endif // ROC_NODE_CONTEXT_H_

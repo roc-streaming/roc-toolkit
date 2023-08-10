@@ -695,7 +695,7 @@ env['ROC_MODULES'] = [
     'roc_pipeline',
     'roc_sdp',
     'roc_ctl',
-    'roc_peer',
+    'roc_node',
 ]
 
 # build variant for roc and dependencies (e.g. 'debug' or 'release')

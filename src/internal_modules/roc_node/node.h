@@ -6,36 +6,36 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_peer/basic_peer.h
-//! @brief Base class for peers.
+//! @file roc_node/node.h
+//! @brief Base class for nodes.
 
-#ifndef ROC_PEER_BASIC_PEER_H_
-#define ROC_PEER_BASIC_PEER_H_
+#ifndef ROC_NODE_NODE_H_
+#define ROC_NODE_NODE_H_
 
 #include "roc_core/noncopyable.h"
 #include "roc_core/shared_ptr.h"
-#include "roc_peer/context.h"
+#include "roc_node/context.h"
 
 namespace roc {
-namespace peer {
+namespace node {
 
-//! Base class for peers.
-class BasicPeer : public core::NonCopyable<> {
+//! Base class for nodes.
+class Node : public core::NonCopyable<> {
 public:
     //! Initialize.
-    BasicPeer(Context& context);
+    Node(Context& context);
 
     //! Deinitialize.
-    virtual ~BasicPeer();
+    virtual ~Node();
 
-    //! Peer's context.
+    //! All nodes hold reference to context.
     Context& context();
 
 private:
     core::SharedPtr<Context> context_;
 };
 
-} // namespace peer
+} // namespace node
 } // namespace roc
 
-#endif // ROC_PEER_BASIC_PEER_H_
+#endif // ROC_NODE_NODE_H_

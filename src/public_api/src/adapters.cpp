@@ -40,7 +40,7 @@ template <class T> ROC_ATTR_NO_SANITIZE_UB int enum_from_user(T t) {
 #endif
 
 ROC_ATTR_NO_SANITIZE_UB
-bool context_config_from_user(peer::ContextConfig& out, const roc_context_config& in) {
+bool context_config_from_user(node::ContextConfig& out, const roc_context_config& in) {
     if (in.max_packet_size != 0) {
         out.max_packet_size = in.max_packet_size;
     }
@@ -53,7 +53,7 @@ bool context_config_from_user(peer::ContextConfig& out, const roc_context_config
 }
 
 ROC_ATTR_NO_SANITIZE_UB
-bool sender_config_from_user(peer::Context& context,
+bool sender_config_from_user(node::Context& context,
                              pipeline::SenderConfig& out,
                              const roc_sender_config& in) {
     if (!sample_spec_from_user(out.input_sample_spec, in.frame_encoding)) {
@@ -132,7 +132,7 @@ bool sender_config_from_user(peer::Context& context,
 }
 
 ROC_ATTR_NO_SANITIZE_UB
-bool receiver_config_from_user(peer::Context&,
+bool receiver_config_from_user(node::Context&,
                                pipeline::ReceiverConfig& out,
                                const roc_receiver_config& in) {
     if (in.target_latency != 0) {

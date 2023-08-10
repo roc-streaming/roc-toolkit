@@ -15,7 +15,7 @@
 #include "roc_audio/pcm_encoder.h"
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_peer/context.h"
+#include "roc_node/context.h"
 
 using namespace roc;
 
@@ -32,14 +32,14 @@ int roc_context_open(const roc_context_config* config, roc_context** result) {
         return -1;
     }
 
-    peer::ContextConfig imp_config;
+    node::ContextConfig imp_config;
     if (!api::context_config_from_user(imp_config, *config)) {
         roc_log(LogError, "roc_context_open(): invalid arguments: bad config");
         return -1;
     }
 
-    core::ScopedPtr<peer::Context> imp_context(
-        new (api::default_arena) peer::Context(imp_config, api::default_arena),
+    core::ScopedPtr<node::Context> imp_context(
+        new (api::default_arena) node::Context(imp_config, api::default_arena),
         api::default_arena);
 
     if (!imp_context) {
@@ -80,7 +80,7 @@ int roc_context_register_encoding(roc_context* context,
         return -1;
     }
 
-    peer::Context* imp_context = (peer::Context*)context;
+    node::Context* imp_context = (node::Context*)context;
 
     rtp::Format fmt;
 
@@ -114,7 +114,7 @@ int roc_context_close(roc_context* context) {
         return -1;
     }
 
-    peer::Context* imp_context = (peer::Context*)context;
+    node::Context* imp_context = (node::Context*)context;
 
     if (imp_context->getref() != 0) {
         roc_log(LogError, "roc_context_close(): context is still in use");

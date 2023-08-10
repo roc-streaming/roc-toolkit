@@ -12,7 +12,7 @@
 
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_peer/receiver.h"
+#include "roc_node/receiver.h"
 
 using namespace roc;
 
@@ -31,7 +31,7 @@ int roc_receiver_open(roc_context* context,
         return -1;
     }
 
-    peer::Context* imp_context = (peer::Context*)context;
+    node::Context* imp_context = (node::Context*)context;
 
     if (!config) {
         roc_log(LogError, "roc_receiver_open(): invalid arguments: config is null");
@@ -44,8 +44,8 @@ int roc_receiver_open(roc_context* context,
         return -1;
     }
 
-    core::ScopedPtr<peer::Receiver> imp_receiver(
-        new (imp_context->arena()) peer::Receiver(*imp_context, imp_config),
+    core::ScopedPtr<node::Receiver> imp_receiver(
+        new (imp_context->arena()) node::Receiver(*imp_context, imp_config),
         imp_context->arena());
 
     if (!imp_receiver) {
@@ -72,7 +72,7 @@ int roc_receiver_configure(roc_receiver* receiver,
         return -1;
     }
 
-    peer::Receiver* imp_receiver = (peer::Receiver*)receiver;
+    node::Receiver* imp_receiver = (node::Receiver*)receiver;
 
     address::Interface imp_iface;
     if (!api::interface_from_user(imp_iface, iface)) {
@@ -108,7 +108,7 @@ int roc_receiver_bind(roc_receiver* receiver,
         return -1;
     }
 
-    peer::Receiver* imp_receiver = (peer::Receiver*)receiver;
+    node::Receiver* imp_receiver = (node::Receiver*)receiver;
 
     if (!endpoint) {
         roc_log(LogError, "roc_receiver_bind(): invalid arguments: endpoint is null");
@@ -137,7 +137,7 @@ int roc_receiver_unlink(roc_receiver* receiver, roc_slot slot) {
         return -1;
     }
 
-    peer::Receiver* imp_receiver = (peer::Receiver*)receiver;
+    node::Receiver* imp_receiver = (node::Receiver*)receiver;
 
     if (!imp_receiver->unlink(slot)) {
         roc_log(LogError, "roc_receiver_unlink(): operation failed");
@@ -153,7 +153,7 @@ int roc_receiver_read(roc_receiver* receiver, roc_frame* frame) {
         return -1;
     }
 
-    peer::Receiver* imp_receiver = (peer::Receiver*)receiver;
+    node::Receiver* imp_receiver = (node::Receiver*)receiver;
 
     sndio::ISource& imp_source = imp_receiver->source();
 
@@ -199,7 +199,7 @@ int roc_receiver_close(roc_receiver* receiver) {
         return -1;
     }
 
-    peer::Receiver* imp_receiver = (peer::Receiver*)receiver;
+    node::Receiver* imp_receiver = (node::Receiver*)receiver;
     imp_receiver->context().arena().destroy_object(*imp_receiver);
 
     roc_log(LogInfo, "roc_receiver_close(): closed receiver");
