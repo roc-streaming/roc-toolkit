@@ -13,6 +13,7 @@
 #define ROC_PEER_BASIC_PEER_H_
 
 #include "roc_core/noncopyable.h"
+#include "roc_core/shared_ptr.h"
 #include "roc_peer/context.h"
 
 namespace roc {
@@ -31,7 +32,7 @@ public:
     Context& context();
 
 private:
-    Context& context_;
+    core::SharedPtr<Context> context_;
 };
 
 } // namespace peer

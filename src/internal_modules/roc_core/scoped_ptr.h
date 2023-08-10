@@ -71,7 +71,7 @@ public:
     T* release() {
         T* ret = ptr_;
         if (ret == NULL) {
-            roc_panic("uniqueptr: attempting to release a null pointer");
+            roc_panic("scoped ptr: attempting to release a null pointer");
         }
 
         ptr_ = NULL;
@@ -93,7 +93,7 @@ public:
     //! Get underlying reference.
     T& operator*() const {
         if (ptr_ == NULL) {
-            roc_panic("unique ptr: attempting to dereference a null pointer");
+            roc_panic("scoped ptr: attempting to dereference a null pointer");
         }
         return *ptr_;
     }
