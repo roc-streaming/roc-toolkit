@@ -69,7 +69,7 @@ bool ReceiverDecoder::is_valid() {
     return valid_;
 }
 
-bool ReceiverDecoder::bind(address::Interface iface, address::Protocol proto) {
+bool ReceiverDecoder::activate(address::Interface iface, address::Protocol proto) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(is_valid());
@@ -77,14 +77,22 @@ bool ReceiverDecoder::bind(address::Interface iface, address::Protocol proto) {
     roc_panic_if(iface < 0);
     roc_panic_if(iface >= (int)address::Iface_Max);
 
-    roc_log(LogInfo, "receiver decoder node: binding %s interface to %s",
+    roc_log(LogInfo, "receiver decoder node: activating %s interface with protocol %s",
             address::interface_to_str(iface), address::proto_to_str(proto));
+
+    if (endpoint_writers_[iface]) {
+        roc_log(LogError,
+                "receiver decoder node:"
+                " can't activate %s interface: interface already activated",
+                address::interface_to_str(iface));
+        return false;
+    }
 
     pipeline::ReceiverLoop::Tasks::AddEndpoint endpoint_task(slot_, iface, proto);
     if (!pipeline_.schedule_and_wait(endpoint_task)) {
         roc_log(LogError,
                 "receiver decoder node:"
-                " can't connect %s interface: can't add endpoint to pipeline",
+                " can't activate %s interface: can't add endpoint to pipeline",
                 address::interface_to_str(iface));
         return false;
     }
@@ -94,15 +102,23 @@ bool ReceiverDecoder::bind(address::Interface iface, address::Protocol proto) {
     return true;
 }
 
-void ReceiverDecoder::write(address::Interface iface, const packet::PacketPtr& packet) {
+bool ReceiverDecoder::write(address::Interface iface, const packet::PacketPtr& packet) {
     roc_panic_if_not(is_valid());
 
     roc_panic_if(iface < 0);
     roc_panic_if(iface >= (int)address::Iface_Max);
 
-    if (packet::IWriter* writer = endpoint_writers_[iface]) {
-        writer->write(packet);
+    packet::IWriter* writer = endpoint_writers_[iface];
+    if (!writer) {
+        roc_log(LogError,
+                "receiver decoder node:"
+                " can't write to %s interface: interface not activated",
+                address::interface_to_str(iface));
+        return false;
     }
+
+    writer->write(packet);
+    return true;
 }
 
 sndio::ISource& ReceiverDecoder::source() {

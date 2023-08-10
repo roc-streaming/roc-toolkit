@@ -41,28 +41,30 @@ TEST(receiver_decoder, source) {
                          receiver_config.common.output_sample_spec.sample_rate());
 }
 
-TEST(receiver_decoder, read) {
+TEST(receiver_decoder, write) {
     Context context(context_config, arena);
     CHECK(context.is_valid());
 
     ReceiverDecoder receiver_decoder(context, receiver_config);
     CHECK(receiver_decoder.is_valid());
 
-    receiver_decoder.write(address::Iface_AudioSource, packet_factory.new_packet());
-    receiver_decoder.write(address::Iface_AudioRepair, packet_factory.new_packet());
+    packet::PacketPtr pp = packet_factory.new_packet();
+
+    CHECK(!receiver_decoder.write(address::Iface_AudioSource, pp));
+    CHECK(!receiver_decoder.write(address::Iface_AudioRepair, pp));
 }
 
-TEST(receiver_decoder, endpoints_no_fec) {
+TEST(receiver_decoder, activate_no_fec) {
     Context context(context_config, arena);
     CHECK(context.is_valid());
 
     ReceiverDecoder receiver_decoder(context, receiver_config);
     CHECK(receiver_decoder.is_valid());
 
-    CHECK(receiver_decoder.bind(address::Iface_AudioSource, address::Proto_RTP));
+    CHECK(receiver_decoder.activate(address::Iface_AudioSource, address::Proto_RTP));
 }
 
-TEST(receiver_decoder, endpoints_fec) {
+TEST(receiver_decoder, activate_fec) {
     Context context(context_config, arena);
     CHECK(context.is_valid());
 
@@ -70,15 +72,15 @@ TEST(receiver_decoder, endpoints_fec) {
     CHECK(receiver_decoder.is_valid());
 
     if (fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
-        CHECK(receiver_decoder.bind(address::Iface_AudioSource,
-                                    address::Proto_RTP_RS8M_Source));
-        CHECK(receiver_decoder.bind(address::Iface_AudioRepair,
-                                    address::Proto_RS8M_Repair));
+        CHECK(receiver_decoder.activate(address::Iface_AudioSource,
+                                        address::Proto_RTP_RS8M_Source));
+        CHECK(receiver_decoder.activate(address::Iface_AudioRepair,
+                                        address::Proto_RS8M_Repair));
     } else {
-        CHECK(!receiver_decoder.bind(address::Iface_AudioSource,
-                                     address::Proto_RTP_RS8M_Source));
-        CHECK(!receiver_decoder.bind(address::Iface_AudioRepair,
-                                     address::Proto_RS8M_Repair));
+        CHECK(!receiver_decoder.activate(address::Iface_AudioSource,
+                                         address::Proto_RTP_RS8M_Source));
+        CHECK(!receiver_decoder.activate(address::Iface_AudioRepair,
+                                         address::Proto_RS8M_Repair));
     }
 }
 

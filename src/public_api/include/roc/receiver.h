@@ -42,8 +42,7 @@ extern "C" {
  *
  * - A receiver is created using roc_receiver_open().
  *
- * - Optionally, the receiver parameters may be fine-tuned using `roc_receiver_set_*()`
- *   functions.
+ * - Optionally, the receiver parameters may be fine-tuned using roc_receiver_configure().
  *
  * - The receiver either binds local endpoints using roc_receiver_bind(), allowing senders
  *   connecting to them, or itself connects to remote sender endpoints using
@@ -76,32 +75,39 @@ extern "C" {
  *
  * Supported interface configurations:
  *
- *   - Bind \c ROC_INTERFACE_CONSOLIDATED to a local endpoint (e.g. be an RTSP server).
- *   - Connect \c ROC_INTERFACE_CONSOLIDATED to a remote endpoint (e.g. be an RTSP
+ *   - Bind \ref ROC_INTERFACE_CONSOLIDATED to a local endpoint (e.g. be an RTSP server).
+ *   - Connect \ref ROC_INTERFACE_CONSOLIDATED to a remote endpoint (e.g. be an RTSP
  *     client).
- *   - Bind \c ROC_INTERFACE_AUDIO_SOURCE, \c ROC_INTERFACE_AUDIO_REPAIR (optionally,
- *     for FEC), and \c ROC_INTERFACE_AUDIO_CONTROL (optionally, for control messages)
+ *   - Bind \ref ROC_INTERFACE_AUDIO_SOURCE, \ref ROC_INTERFACE_AUDIO_REPAIR (optionally,
+ *     for FEC), and \ref ROC_INTERFACE_AUDIO_CONTROL (optionally, for control messages)
  *     to local endpoints (e.g. be an RTP/FECFRAME/RTCP receiver).
+ *
+ * Slots can be removed using roc_receiver_unlink(). Removing a slot also removes all its
+ * interfaces and terminates all associated connections.
+ *
+ * Slots can be added and removed at any time on fly and from any thread. It is safe
+ * to do it from another thread concurrently with reading frames. Operations with
+ * slots won't block concurrent reads.
  *
  * **FEC scheme**
  *
- * If \c ROC_INTERFACE_CONSOLIDATED is used, it automatically creates all necessary
+ * If \ref ROC_INTERFACE_CONSOLIDATED is used, it automatically creates all necessary
  * transport interfaces and the user should not bother about them.
  *
- * Otherwise, the user should manually configure \c ROC_INTERFACE_AUDIO_SOURCE and
- * \c ROC_INTERFACE_AUDIO_REPAIR interfaces:
+ * Otherwise, the user should manually configure \ref ROC_INTERFACE_AUDIO_SOURCE and
+ * \ref ROC_INTERFACE_AUDIO_REPAIR interfaces:
  *
  *  - If FEC is disabled (\ref ROC_FEC_ENCODING_DISABLE), only
- *    \c ROC_INTERFACE_AUDIO_SOURCE should be configured. It will be used to transmit
+ *    \ref ROC_INTERFACE_AUDIO_SOURCE should be configured. It will be used to transmit
  *    audio packets.
  *
- *  - If FEC is enabled, both \c ROC_INTERFACE_AUDIO_SOURCE and
- *    \c ROC_INTERFACE_AUDIO_REPAIR interfaces should be configured. The second interface
- *    will be used to transmit redundant repair data.
+ *  - If FEC is enabled, both \ref ROC_INTERFACE_AUDIO_SOURCE and
+ *    \ref ROC_INTERFACE_AUDIO_REPAIR interfaces should be configured. The second
+ *    interface will be used to transmit redundant repair data.
  *
  * The protocols for the two interfaces should correspond to each other and to the FEC
- * scheme. For example, if \c ROC_FEC_RS8M is used, the protocols should be
- * \c ROC_PROTO_RTP_RS8M_SOURCE and \c ROC_PROTO_RS8M_REPAIR.
+ * scheme. For example, if \ref ROC_FEC_ENCODING_RS8M is used, the protocols should be
+ * \ref ROC_PROTO_RTP_RS8M_SOURCE and \ref ROC_PROTO_RS8M_REPAIR.
  *
  * **Sessions**
  *
@@ -139,8 +145,7 @@ extern "C" {
  * factor between the sender and the receiver clocks is calculated dynamically for every
  * session based on the session incoming packet queue size.
  *
- * Resampling is a quite time-consuming operation. The user can choose between completely
- * disabling resampling (at the cost of occasional underruns or overruns) or several
+ * Resampling is a quite time-consuming operation. The user can choose between several
  * resampler profiles providing different compromises between CPU consumption and quality.
  *
  * **Clock source**
@@ -148,16 +153,16 @@ extern "C" {
  * Receiver should decode samples at a constant rate that is configured when the receiver
  * is created. There are two ways to accomplish this:
  *
- *  - If the user enabled internal clock (\c ROC_CLOCK_SOURCE_INTERNAL), the receiver
+ *  - If the user enabled internal clock (\ref ROC_CLOCK_SOURCE_INTERNAL), the receiver
  *    employs a CPU timer to block reads until it's time to decode the next bunch of
  *    samples according to the configured sample rate.
  *
  *    This mode is useful when the user passes samples to a non-realtime destination,
  *    e.g. to an audio file.
  *
- *  - If the user enabled external clock (\c ROC_CLOCK_SOURCE_EXTERNAL), the samples read
- *    from the receiver are decoded immediately and hence the user is responsible to call
- *    read operation according to the sample rate.
+ *  - If the user enabled external clock (\ref ROC_CLOCK_SOURCE_EXTERNAL), the samples
+ *    read from the receiver are decoded immediately and hence the user is responsible to
+ *    call read operation according to the sample rate.
  *
  *    This mode is useful when the user passes samples to a realtime destination with its
  *    own clock, e.g. to an audio device. Internal clock should not be used in this case
@@ -189,6 +194,8 @@ typedef struct roc_receiver roc_receiver;
  *    after the function returns
  *  - passes the ownership of \p result to the user; the user is responsible to call
  *    roc_receiver_close() to free it
+ *  - attaches created receiver to \p context; the user should not close context
+ *    before closing receiver
  */
 ROC_API int roc_receiver_open(roc_context* context,
                               const roc_receiver_config* config,
@@ -285,20 +292,21 @@ ROC_API int roc_receiver_unlink(roc_receiver* receiver, roc_slot slot);
 
 /** Read samples from the receiver.
  *
- * Reads network packets received on bound ports, routes packets to sessions, repairs lost
- * packets, decodes samples, resamples and mixes them, and finally stores samples into the
- * provided frame.
+ * Reads retrieved network packets, decodes packets, routes packets to sessions, repairs
+ * losses, extracts samples, adjusts sample rate and channel layout, compensates clock
+ * drift, mixes samples from all sessions, and finally stores samples into the provided
+ * frame.
  *
- * If \c ROC_CLOCK_SOURCE_INTERNAL is used, the function blocks until it's time to decode
- * the samples according to the configured sample rate.
+ * If \ref ROC_CLOCK_SOURCE_INTERNAL is used, the function blocks until it's time to
+ * decode the samples according to the configured sample rate.
  *
  * Until the receiver is connected to at least one sender, it produces silence.
  * If the receiver is connected to multiple senders, it mixes their streams into one.
  *
  * **Parameters**
  *  - \p receiver should point to an opened receiver
- *  - \p frame should point to an initialized frame which will be filled with samples;
- *    the number of samples is defined by the frame size
+ *  - \p frame should point to an initialized frame; it should contain pointer to
+ *    a buffer and it's size; the buffer is fully filled with data from receiver
  *
  * **Returns**
  *  - returns zero if all samples were successfully decoded

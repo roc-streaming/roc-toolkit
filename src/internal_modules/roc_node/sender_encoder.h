@@ -15,7 +15,9 @@
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
 #include "roc_address/socket_addr.h"
+#include "roc_core/atomic.h"
 #include "roc_core/mutex.h"
+#include "roc_core/optional.h"
 #include "roc_node/context.h"
 #include "roc_node/node.h"
 #include "roc_packet/concurrent_queue.h"
@@ -38,14 +40,14 @@ public:
     //! Check if successfully constructed.
     bool is_valid() const;
 
-    //! Connect interface.
-    bool connect(address::Interface iface, address::Protocol proto);
+    //! Activate interface.
+    bool activate(address::Interface iface, address::Protocol proto);
 
     //! Check if everything is connected.
     bool is_complete();
 
     //! Read encoded packet.
-    packet::PacketPtr read(address::Interface iface);
+    bool read(address::Interface iface, packet::PacketPtr& packet);
 
     //! Sink for writing frames for encoding.
     sndio::ISink& sink();
@@ -59,7 +61,8 @@ private:
 
     address::SocketAddr address_;
 
-    packet::ConcurrentQueue endpoint_queues_[address::Iface_Max];
+    core::Optional<packet::ConcurrentQueue> endpoint_queues_[address::Iface_Max];
+    core::Atomic<packet::IReader*> endpoint_readers_[address::Iface_Max];
 
     pipeline::SenderLoop pipeline_;
     pipeline::SenderLoop::SlotHandle slot_;

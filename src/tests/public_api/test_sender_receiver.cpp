@@ -8,7 +8,6 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc/config.h"
 #include "test_helpers/context.h"
 #include "test_helpers/proxy.h"
 #include "test_helpers/receiver.h"
@@ -16,7 +15,7 @@
 
 #include "roc_fec/codec_map.h"
 
-#include "roc/log.h"
+#include "roc/config.h"
 
 namespace roc {
 namespace api {
@@ -36,9 +35,6 @@ TEST_GROUP(sender_receiver) {
     float sample_step;
 
     void setup() {
-        roc_log_set_level(core::Logger::instance().get_level() == LogNone
-                              ? ROC_LOG_NONE
-                              : ROC_LOG_DEBUG);
         sample_step = 1. / 32768.;
     }
 
@@ -78,7 +74,8 @@ TEST_GROUP(sender_receiver) {
             sender_conf.packet_encoding = (roc_packet_encoding)encoding_id;
         }
 
-        sender_conf.packet_length = test::PacketSamples * 1000000000ul / test::SampleRate;
+        sender_conf.packet_length =
+            test::PacketSamples * 1000000000ull / test::SampleRate;
         sender_conf.clock_source = ROC_CLOCK_SOURCE_INTERNAL;
 
         if (flags & test::FlagRS8M) {
@@ -115,9 +112,9 @@ TEST_GROUP(sender_receiver) {
 
         receiver_conf.clock_source = ROC_CLOCK_SOURCE_INTERNAL;
         receiver_conf.clock_sync_backend = ROC_CLOCK_SYNC_BACKEND_DISABLE;
-        receiver_conf.target_latency = test::Latency * 1000000000ul / test::SampleRate;
+        receiver_conf.target_latency = test::Latency * 1000000000ull / test::SampleRate;
         receiver_conf.no_playback_timeout =
-            test::Timeout * 1000000000ul / test::SampleRate;
+            test::Timeout * 1000000000ull / test::SampleRate;
     }
 
     bool is_rs8m_supported() {

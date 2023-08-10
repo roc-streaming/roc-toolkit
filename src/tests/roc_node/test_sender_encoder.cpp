@@ -47,11 +47,13 @@ TEST(sender_encoder, read) {
     SenderEncoder sender_encoder(context, sender_config);
     CHECK(sender_encoder.is_valid());
 
-    CHECK(!sender_encoder.read(address::Iface_AudioSource));
-    CHECK(!sender_encoder.read(address::Iface_AudioRepair));
+    packet::PacketPtr pp;
+
+    CHECK(!sender_encoder.read(address::Iface_AudioSource, pp));
+    CHECK(!sender_encoder.read(address::Iface_AudioRepair, pp));
 }
 
-TEST(sender_encoder, endpoints_no_fec) {
+TEST(sender_encoder, activate_no_fec) {
     Context context(context_config, arena);
     CHECK(context.is_valid());
 
@@ -61,11 +63,11 @@ TEST(sender_encoder, endpoints_no_fec) {
     CHECK(sender_encoder.is_valid());
     CHECK(!sender_encoder.is_complete());
 
-    CHECK(sender_encoder.connect(address::Iface_AudioSource, address::Proto_RTP));
+    CHECK(sender_encoder.activate(address::Iface_AudioSource, address::Proto_RTP));
     CHECK(sender_encoder.is_complete());
 }
 
-TEST(sender_encoder, endpoints_fec) {
+TEST(sender_encoder, activate_fec) {
     Context context(context_config, arena);
     CHECK(context.is_valid());
 
@@ -76,20 +78,20 @@ TEST(sender_encoder, endpoints_fec) {
     CHECK(!sender_encoder.is_complete());
 
     if (fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
-        CHECK(sender_encoder.connect(address::Iface_AudioSource,
-                                     address::Proto_RTP_RS8M_Source));
-        CHECK(!sender_encoder.is_complete());
-
-        CHECK(sender_encoder.connect(address::Iface_AudioRepair,
-                                     address::Proto_RS8M_Repair));
-        CHECK(sender_encoder.is_complete());
-    } else {
-        CHECK(!sender_encoder.connect(address::Iface_AudioSource,
+        CHECK(sender_encoder.activate(address::Iface_AudioSource,
                                       address::Proto_RTP_RS8M_Source));
         CHECK(!sender_encoder.is_complete());
 
-        CHECK(!sender_encoder.connect(address::Iface_AudioRepair,
+        CHECK(sender_encoder.activate(address::Iface_AudioRepair,
                                       address::Proto_RS8M_Repair));
+        CHECK(sender_encoder.is_complete());
+    } else {
+        CHECK(!sender_encoder.activate(address::Iface_AudioSource,
+                                       address::Proto_RTP_RS8M_Source));
+        CHECK(!sender_encoder.is_complete());
+
+        CHECK(!sender_encoder.activate(address::Iface_AudioRepair,
+                                       address::Proto_RS8M_Repair));
         CHECK(!sender_encoder.is_complete());
     }
 }

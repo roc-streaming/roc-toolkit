@@ -227,7 +227,7 @@ private:
     }
 
     static inline bool is_zero_(float s) {
-        return fabs(double(s)) < 1e-9;
+        return std::abs(double(s)) < 1e-9;
     }
 
     roc_receiver* recv_;
