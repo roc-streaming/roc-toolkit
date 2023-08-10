@@ -8,7 +8,7 @@ Threads and queues
 Threads
 =======
 
-Roc peers (senders and receivers) typically employ several threads.
+Roc nodes (senders and receivers) typically employ several threads.
 
 * **Network I/O thread**
 
@@ -38,7 +38,7 @@ Depending on sound system in use, sound I/O thread and pipeline thread may be th
 
 When the user uses ``roc_sender`` or ``roc_receiver`` from the C library, Roc does not manage sound I/O. It also does not create dedicated pipeline thread - instead, the user invokes pipeline processing on their own thread.
 
-Network and control threads belong to context. Sound I/O and pipeline threads, in contrast, belong to peer (sender or receiver). When multiple peers share a single context, they, among other things, share network and control threads as well. The user is free to decide whether to use one context for everything or create an individual context for each peer.
+Network and control threads belong to context. Sound I/O and pipeline threads, in contrast, belong to node (sender or receiver). When multiple nodes share a single context, they, among other things, share network and control threads as well. The user is free to decide whether to use one context for everything or create an individual context for each node.
 
 Queues
 ======

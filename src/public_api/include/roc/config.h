@@ -20,7 +20,7 @@ extern "C" {
 
 /** Network slot.
  *
- * A peer (sender or receiver) may have multiple slots, which may be independently
+ * A node (sender or receiver) may have multiple slots, which may be independently
  * bound or connected. You can use multiple slots on sender to connect it to multiple
  * receiver addresses, and you can use multiple slots on receiver to bind it to
  * multiple receiver addresses.
@@ -44,20 +44,20 @@ static const roc_slot ROC_SLOT_DEFAULT = 0;
 
 /** Network interface.
  *
- * Interface is a way to access the peer (sender or receiver) via network.
+ * Interface is a way to access the node (sender or receiver) via network.
  *
- * Each peer slot has multiple interfaces, one of each type. The user interconnects
- * peers by binding one of the first peer's interfaces to an URI and then connecting the
- * corresponding second peer's interface to that URI.
+ * Each node slot has multiple interfaces, one of each type. The user interconnects
+ * nodes by binding one of the first node's interfaces to an URI and then connecting the
+ * corresponding second node's interface to that URI.
  *
  * A URI is represented by \ref roc_endpoint object.
  *
- * The interface defines the type of the communication with the remote peer and the
+ * The interface defines the type of the communication with the remote node and the
  * set of protocols (URI schemes) that can be used with this particular interface.
  *
  * \c ROC_INTERFACE_CONSOLIDATED is an interface for high-level protocols which
  * automatically manage all necessary communication: transport streams, control messages,
- * parameter negotiation, etc. When a consolidated connection is established, peers may
+ * parameter negotiation, etc. When a consolidated connection is established, nodes may
  * automatically setup lower-level interfaces like \c ROC_INTERFACE_AUDIO_SOURCE, \c
  * ROC_INTERFACE_AUDIO_REPAIR, and \c ROC_INTERFACE_AUDIO_CONTROL.
  *

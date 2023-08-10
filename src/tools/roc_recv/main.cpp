@@ -17,8 +17,8 @@
 #include "roc_core/parse_duration.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_netio/network_loop.h"
-#include "roc_peer/context.h"
-#include "roc_peer/receiver.h"
+#include "roc_node/context.h"
+#include "roc_node/receiver.h"
 #include "roc_pipeline/receiver_source.h"
 #include "roc_pipeline/transcoder_source.h"
 #include "roc_sndio/backend_dispatcher.h"
@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
         break;
     }
 
-    peer::ContextConfig context_config;
+    node::ContextConfig context_config;
 
     if (args.packet_limit_given) {
         if (args.packet_limit_arg <= 0) {
@@ -81,9 +81,9 @@ int main(int argc, char** argv) {
 
     core::HeapArena heap_arena;
 
-    peer::Context context(context_config, heap_arena);
+    node::Context context(context_config, heap_arena);
     if (!context.is_valid()) {
-        roc_log(LogError, "can't initialize peer context");
+        roc_log(LogError, "can't initialize node context");
         return 1;
     }
 
@@ -350,9 +350,9 @@ int main(int argc, char** argv) {
         }
     }
 
-    peer::Receiver receiver(context, receiver_config);
+    node::Receiver receiver(context, receiver_config);
     if (!receiver.is_valid()) {
-        roc_log(LogError, "can't create receiver peer");
+        roc_log(LogError, "can't create receiver node");
         return 1;
     }
 

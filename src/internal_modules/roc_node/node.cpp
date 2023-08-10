@@ -6,21 +6,21 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_peer/basic_peer.h"
+#include "roc_node/node.h"
 
 namespace roc {
-namespace peer {
+namespace node {
 
-BasicPeer::BasicPeer(Context& context)
+Node::Node(Context& context)
     : context_(&context) {
 }
 
-BasicPeer::~BasicPeer() {
+Node::~Node() {
 }
 
-Context& BasicPeer::context() {
+Context& Node::context() {
     return *context_;
 }
 
-} // namespace peer
+} // namespace node
 } // namespace roc

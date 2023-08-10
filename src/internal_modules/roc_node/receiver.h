@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_peer/receiver.h
-//! @brief Receiver peer.
+//! @file roc_node/receiver.h
+//! @brief Receiver node.
 
-#ifndef ROC_PEER_RECEIVER_H_
-#define ROC_PEER_RECEIVER_H_
+#ifndef ROC_NODE_RECEIVER_H_
+#define ROC_NODE_RECEIVER_H_
 
 #include "roc_address/endpoint_uri.h"
 #include "roc_address/interface.h"
@@ -20,16 +20,16 @@
 #include "roc_core/pool.h"
 #include "roc_core/ref_counted.h"
 #include "roc_ctl/control_loop.h"
-#include "roc_peer/basic_peer.h"
-#include "roc_peer/context.h"
+#include "roc_node/context.h"
+#include "roc_node/node.h"
 #include "roc_pipeline/ipipeline_task_scheduler.h"
 #include "roc_pipeline/receiver_loop.h"
 
 namespace roc {
-namespace peer {
+namespace node {
 
-//! Receiver peer.
-class Receiver : public BasicPeer, private pipeline::IPipelineTaskScheduler {
+//! Receiver node.
+class Receiver : public Node, private pipeline::IPipelineTaskScheduler {
 public:
     //! Initialize.
     Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_config);
@@ -45,7 +45,7 @@ public:
                    address::Interface iface,
                    const netio::UdpReceiverConfig& config);
 
-    //! Bind peer to local endpoint.
+    //! Bind to local endpoint.
     bool bind(size_t slot_index, address::Interface iface, address::EndpointUri& uri);
 
     //! Remove slot.
@@ -118,7 +118,7 @@ private:
     bool valid_;
 };
 
-} // namespace peer
+} // namespace node
 } // namespace roc
 
-#endif // ROC_PEER_RECEIVER_H_
+#endif // ROC_NODE_RECEIVER_H_

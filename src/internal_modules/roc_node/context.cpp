@@ -6,12 +6,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_peer/context.h"
+#include "roc_node/context.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 
 namespace roc {
-namespace peer {
+namespace node {
 
 Context::Context(const ContextConfig& config, core::IArena& arena)
     : arena_(arena)
@@ -60,5 +60,5 @@ ctl::ControlLoop& Context::control_loop() {
     return control_loop_;
 }
 
-} // namespace peer
+} // namespace node
 } // namespace roc
