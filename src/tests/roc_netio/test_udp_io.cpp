@@ -107,7 +107,7 @@ void check_packet(const packet::PacketPtr& pp,
 TEST_GROUP(udp_io) {};
 
 TEST(udp_io, one_sender_one_receiver_single_thread_non_blocking_disabled) {
-    packet::ConcurrentQueue rx_queue;
+    packet::ConcurrentQueue rx_queue(packet::ConcurrentQueue::Blocking);
 
     UdpSenderConfig tx_config = make_sender_config();
     UdpReceiverConfig rx_config = make_receiver_config();
@@ -134,7 +134,7 @@ TEST(udp_io, one_sender_one_receiver_single_thread_non_blocking_disabled) {
 }
 
 TEST(udp_io, one_sender_one_receiver_single_loop) {
-    packet::ConcurrentQueue rx_queue;
+    packet::ConcurrentQueue rx_queue(packet::ConcurrentQueue::Blocking);
 
     UdpSenderConfig tx_config = make_sender_config();
     UdpReceiverConfig rx_config = make_receiver_config();
@@ -159,7 +159,7 @@ TEST(udp_io, one_sender_one_receiver_single_loop) {
 }
 
 TEST(udp_io, one_sender_one_receiver_separate_loops) {
-    packet::ConcurrentQueue rx_queue;
+    packet::ConcurrentQueue rx_queue(packet::ConcurrentQueue::Blocking);
 
     UdpSenderConfig tx_config = make_sender_config();
     UdpReceiverConfig rx_config = make_receiver_config();
@@ -186,9 +186,9 @@ TEST(udp_io, one_sender_one_receiver_separate_loops) {
 }
 
 TEST(udp_io, one_sender_many_receivers) {
-    packet::ConcurrentQueue rx_queue1;
-    packet::ConcurrentQueue rx_queue2;
-    packet::ConcurrentQueue rx_queue3;
+    packet::ConcurrentQueue rx_queue1(packet::ConcurrentQueue::Blocking);
+    packet::ConcurrentQueue rx_queue2(packet::ConcurrentQueue::Blocking);
+    packet::ConcurrentQueue rx_queue3(packet::ConcurrentQueue::Blocking);
 
     UdpSenderConfig tx_config = make_sender_config();
 
@@ -227,7 +227,7 @@ TEST(udp_io, one_sender_many_receivers) {
 }
 
 TEST(udp_io, many_senders_one_receiver) {
-    packet::ConcurrentQueue rx_queue;
+    packet::ConcurrentQueue rx_queue(packet::ConcurrentQueue::Blocking);
 
     UdpSenderConfig tx_config1 = make_sender_config();
     UdpSenderConfig tx_config2 = make_sender_config();

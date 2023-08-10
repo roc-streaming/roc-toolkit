@@ -136,7 +136,7 @@ TEST(tasks, synchronous_add) {
     CHECK(net_loop.is_valid());
 
     UdpReceiverConfig config = make_receiver_config("127.0.0.1", 0);
-    packet::ConcurrentQueue queue;
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
     NetworkLoop::Tasks::AddUdpReceiverPort task(config, queue);
 
@@ -154,7 +154,7 @@ TEST(tasks, asynchronous_add) {
     CHECK(net_loop.is_valid());
 
     UdpReceiverConfig config = make_receiver_config("127.0.0.1", 0);
-    packet::ConcurrentQueue queue;
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
     NetworkLoop::Tasks::AddUdpReceiverPort task(config, queue);
 
@@ -176,7 +176,7 @@ TEST(tasks, asynchronous_add_remove) {
     CHECK(net_loop.is_valid());
 
     UdpReceiverConfig config = make_receiver_config("127.0.0.1", 0);
-    packet::ConcurrentQueue queue;
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
     AddRemoveCompleter completer(net_loop);
 
