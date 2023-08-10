@@ -12,21 +12,20 @@
 namespace roc {
 namespace packet {
 
-ConcurrentQueue::ConcurrentQueue()
-    : cond_(mutex_) {
+ConcurrentQueue::ConcurrentQueue(Mode mode) {
+    if (mode == Blocking) {
+        write_sem_.reset(new (write_sem_) core::Semaphore());
+    }
 }
 
 PacketPtr ConcurrentQueue::read() {
-    core::Mutex::Lock lock(mutex_);
+    core::Mutex::Lock lock(read_mutex_);
 
-    PacketPtr packet;
-    while (!(packet = list_.front())) {
-        cond_.wait();
+    if (write_sem_) {
+        write_sem_->wait();
     }
 
-    list_.remove(*packet);
-
-    return packet;
+    return queue_.pop_front_exclusive();
 }
 
 void ConcurrentQueue::write(const PacketPtr& packet) {
@@ -34,10 +33,11 @@ void ConcurrentQueue::write(const PacketPtr& packet) {
         roc_panic("concurrent queue: packet is null");
     }
 
-    core::Mutex::Lock lock(mutex_);
+    queue_.push_back(*packet);
 
-    list_.push_back(*packet);
-    cond_.broadcast();
+    if (write_sem_) {
+        write_sem_->post();
+    }
 }
 
 } // namespace packet
