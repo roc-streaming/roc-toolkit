@@ -83,7 +83,7 @@ TEST(udp_ports, no_ports) {
 }
 
 TEST(udp_ports, add_anyaddr) {
-    packet::ConcurrentQueue queue;
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
     NetworkLoop net_loop(packet_factory, buffer_factory, arena);
     CHECK(net_loop.is_valid());
@@ -107,7 +107,7 @@ TEST(udp_ports, add_anyaddr) {
 }
 
 TEST(udp_ports, add_localhost) {
-    packet::ConcurrentQueue queue;
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
     NetworkLoop net_loop(packet_factory, buffer_factory, arena);
     CHECK(net_loop.is_valid());
@@ -131,7 +131,7 @@ TEST(udp_ports, add_localhost) {
 }
 
 TEST(udp_ports, add_addrinuse) {
-    packet::ConcurrentQueue queue;
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
     NetworkLoop net_loop1(packet_factory, buffer_factory, arena);
     CHECK(net_loop1.is_valid());
@@ -166,7 +166,7 @@ TEST(udp_ports, add_addrinuse) {
 }
 
 TEST(udp_ports, add_broadcast_sender) {
-    packet::ConcurrentQueue queue;
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
     NetworkLoop net_loop(packet_factory, buffer_factory, arena);
     CHECK(net_loop.is_valid());
@@ -182,7 +182,7 @@ TEST(udp_ports, add_broadcast_sender) {
 }
 
 TEST(udp_ports, add_multicast_receiver) {
-    packet::ConcurrentQueue queue;
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
     NetworkLoop net_loop(packet_factory, buffer_factory, arena);
     CHECK(net_loop.is_valid());
@@ -206,7 +206,7 @@ TEST(udp_ports, add_multicast_receiver) {
 }
 
 TEST(udp_ports, add_multicast_receiver_error) {
-    packet::ConcurrentQueue queue;
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
     NetworkLoop net_loop(packet_factory, buffer_factory, arena);
     CHECK(net_loop.is_valid());
@@ -237,7 +237,7 @@ TEST(udp_ports, add_multicast_receiver_error) {
 }
 
 TEST(udp_ports, add_remove) {
-    packet::ConcurrentQueue queue;
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
     NetworkLoop net_loop(packet_factory, buffer_factory, arena);
     CHECK(net_loop.is_valid());
