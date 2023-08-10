@@ -68,7 +68,7 @@ bool SenderEncoder::is_valid() const {
     return valid_;
 }
 
-bool SenderEncoder::connect(address::Interface iface, address::Protocol proto) {
+bool SenderEncoder::activate(address::Interface iface, address::Protocol proto) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(is_valid());
@@ -76,18 +76,31 @@ bool SenderEncoder::connect(address::Interface iface, address::Protocol proto) {
     roc_panic_if(iface < 0);
     roc_panic_if(iface >= (int)address::Iface_Max);
 
-    roc_log(LogInfo, "sender encoder node: connecting %s interface to %s",
+    roc_log(LogInfo, "sender encoder node: activating %s interface with protocol %s",
             address::interface_to_str(iface), address::proto_to_str(proto));
 
-    pipeline::SenderLoop::Tasks::AddEndpoint endpoint_task(slot_, iface, proto, address_,
-                                                           endpoint_queues_[iface]);
-    if (!pipeline_.schedule_and_wait(endpoint_task)) {
+    if (endpoint_readers_[iface]) {
         roc_log(LogError,
                 "sender encoder node:"
-                " can't connect %s interface: can't add endpoint to pipeline",
+                " can't activate %s interface: interface already activated",
                 address::interface_to_str(iface));
         return false;
     }
+
+    endpoint_queues_[iface].reset(new (endpoint_queues_[iface]) packet::ConcurrentQueue(
+        packet::ConcurrentQueue::NonBlocking));
+
+    pipeline::SenderLoop::Tasks::AddEndpoint endpoint_task(slot_, iface, proto, address_,
+                                                           *endpoint_queues_[iface]);
+    if (!pipeline_.schedule_and_wait(endpoint_task)) {
+        roc_log(LogError,
+                "sender encoder node:"
+                " can't activate %s interface: can't add endpoint to pipeline",
+                address::interface_to_str(iface));
+        return false;
+    }
+
+    endpoint_readers_[iface] = endpoint_queues_[iface].get();
 
     return true;
 }
@@ -105,13 +118,23 @@ bool SenderEncoder::is_complete() {
     return task.get_complete();
 }
 
-packet::PacketPtr SenderEncoder::read(address::Interface iface) {
+bool SenderEncoder::read(address::Interface iface, packet::PacketPtr& packet) {
     roc_panic_if_not(is_valid());
 
     roc_panic_if(iface < 0);
     roc_panic_if(iface >= (int)address::Iface_Max);
 
-    return endpoint_queues_[iface].read();
+    packet::IReader* reader = endpoint_readers_[iface];
+    if (!reader) {
+        roc_log(LogError,
+                "sender encoder node:"
+                " can't read from %s interface: interface not activated",
+                address::interface_to_str(iface));
+        return false;
+    }
+
+    packet = reader->read();
+    return true;
 }
 
 sndio::ISink& SenderEncoder::sink() {

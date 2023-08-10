@@ -169,8 +169,8 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
 
     if (frame->samples_size % factor != 0) {
         roc_log(LogError,
-                "roc_sender_write(): invalid arguments: # of samples should be "
-                "multiple of # of %u",
+                "roc_sender_write(): invalid arguments:"
+                " # of samples should be multiple of %u",
                 (unsigned)factor);
         return -1;
     }
