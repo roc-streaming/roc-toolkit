@@ -97,6 +97,8 @@ SpeexResampler::SpeexResampler(core::IArena&,
         return;
     }
 
+    startup_delay_compensator_ = (size_t)speex_resampler_get_output_latency(speex_state_);
+
     valid_ = true;
 }
 
@@ -185,6 +187,12 @@ size_t SpeexResampler::pop_output(Frame& out) {
         }
 
         in_frame_pos_ += remaining_in * num_ch_;
+        if (startup_delay_compensator_) {
+            const size_t ltnc =
+                std::min((size_t)remaining_out, startup_delay_compensator_);
+            remaining_out -= ltnc;
+            startup_delay_compensator_ -= ltnc;
+        }
         out_frame_pos += remaining_out * num_ch_;
 
         roc_panic_if(in_frame_pos_ > in_frame_size_);

@@ -75,6 +75,10 @@ private:
     core::RateLimiter rate_limiter_;
 
     bool valid_;
+
+    //! Counts how many output samples to throw away in order to
+    //! compensate resampler's inner latency.
+    size_t startup_delay_compensator_;
 };
 
 } // namespace audio
