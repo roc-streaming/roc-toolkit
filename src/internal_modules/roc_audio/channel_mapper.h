@@ -12,10 +12,10 @@
 #ifndef ROC_AUDIO_CHANNEL_MAPPER_H_
 #define ROC_AUDIO_CHANNEL_MAPPER_H_
 
+#include "roc_audio/channel_set.h"
 #include "roc_audio/frame.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/noncopyable.h"
-#include "roc_packet/units.h"
 
 namespace roc {
 namespace audio {
@@ -25,19 +25,35 @@ namespace audio {
 class ChannelMapper : public core::NonCopyable<> {
 public:
     //! Initialize.
-    ChannelMapper(packet::channel_mask_t in_chans, packet::channel_mask_t out_chans);
+    ChannelMapper(const ChannelSet& in_chans, const ChannelSet& out_chans);
 
     //! Map frame.
     void map(const Frame& in_frame, Frame& out_frame);
 
 private:
-    const packet::channel_mask_t in_chan_mask_;
-    const packet::channel_mask_t out_chan_mask_;
+    typedef void (ChannelMapper::*map_func_t)(const sample_t* in_samples,
+                                              sample_t* out_samples,
+                                              size_t n_samples);
 
-    const size_t in_chan_count_;
-    const size_t out_chan_count_;
+    void map_surround_surround_(const sample_t* in_samples,
+                                sample_t* out_samples,
+                                size_t n_samples);
+    void map_multitrack_surround_(const sample_t* in_samples,
+                                  sample_t* out_samples,
+                                  size_t n_samples);
+    void map_multitrack_multitrack_(const sample_t* in_samples,
+                                    sample_t* out_samples,
+                                    size_t n_samples);
 
-    const packet::channel_mask_t inout_chan_mask_;
+    void setup_map_matrix_();
+    void setup_map_func_();
+
+    const ChannelSet in_chans_;
+    const ChannelSet out_chans_;
+    ChannelSet inout_chans_;
+
+    sample_t map_matrix_[ChanPos_Max][ChanPos_Max];
+    map_func_t map_func_;
 };
 
 } // namespace audio

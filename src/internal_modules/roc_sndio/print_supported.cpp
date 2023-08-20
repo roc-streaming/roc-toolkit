@@ -43,8 +43,8 @@ void print_string_list(core::Printer& prn,
 
 } // namespace
 
-bool print_supported(BackendDispatcher& backend_dispatcher, core::IAllocator& allocator) {
-    core::StringList list(allocator);
+bool print_supported(BackendDispatcher& backend_dispatcher, core::IArena& arena) {
+    core::StringList list(arena);
     core::Printer prn;
 
     if (!backend_dispatcher.get_supported_schemes(list)) {

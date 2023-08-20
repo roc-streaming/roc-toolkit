@@ -8,11 +8,11 @@
 
 #include "roc/sender.h"
 
-#include "config_helpers.h"
+#include "adapters.h"
 
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_peer/sender.h"
+#include "roc_node/sender.h"
 
 using namespace roc;
 
@@ -31,7 +31,7 @@ int roc_sender_open(roc_context* context,
         return -1;
     }
 
-    peer::Context* imp_context = (peer::Context*)context;
+    node::Context* imp_context = (node::Context*)context;
 
     if (!config) {
         roc_log(LogError, "roc_sender_open(): invalid arguments: config is null");
@@ -39,21 +39,21 @@ int roc_sender_open(roc_context* context,
     }
 
     pipeline::SenderConfig imp_config;
-    if (!api::sender_config_from_user(imp_config, *config)) {
+    if (!api::sender_config_from_user(*imp_context, imp_config, *config)) {
         roc_log(LogError, "roc_sender_open(): invalid arguments: bad config");
         return -1;
     }
 
-    core::ScopedPtr<peer::Sender> imp_sender(new (imp_context->allocator())
-                                                 peer::Sender(*imp_context, imp_config),
-                                             imp_context->allocator());
+    core::ScopedPtr<node::Sender> imp_sender(new (imp_context->arena())
+                                                 node::Sender(*imp_context, imp_config),
+                                             imp_context->arena());
 
     if (!imp_sender) {
         roc_log(LogError, "roc_sender_open(): can't allocate sender");
         return -1;
     }
 
-    if (!imp_sender->valid()) {
+    if (!imp_sender->is_valid()) {
         roc_log(LogError, "roc_sender_open(): can't initialize sender");
         return -1;
     }
@@ -62,66 +62,36 @@ int roc_sender_open(roc_context* context,
     return 0;
 }
 
-int roc_sender_set_outgoing_address(roc_sender* sender,
-                                    roc_slot slot,
-                                    roc_interface iface,
-                                    const char* ip) {
+int roc_sender_configure(roc_sender* sender,
+                         roc_slot slot,
+                         roc_interface iface,
+                         const roc_interface_config* config) {
     if (!sender) {
-        roc_log(LogError,
-                "roc_sender_set_outgoing_address(): invalid arguments: sender is null");
+        roc_log(LogError, "roc_sender_configure(): invalid arguments: sender is null");
         return -1;
     }
 
-    peer::Sender* imp_sender = (peer::Sender*)sender;
+    node::Sender* imp_sender = (node::Sender*)sender;
 
     address::Interface imp_iface;
     if (!api::interface_from_user(imp_iface, iface)) {
-        roc_log(LogError,
-                "roc_sender_set_outgoing_address(): invalid arguments: bad interface");
+        roc_log(LogError, "roc_sender_configure(): invalid arguments: bad interface");
         return -1;
     }
 
-    if (!ip) {
-        roc_log(LogError,
-                "roc_sender_set_outgoing_address(): invalid arguments: ip is null");
+    if (!config) {
+        roc_log(LogError, "roc_sender_configure(): invalid arguments: config is null");
         return -1;
     }
 
-    if (!imp_sender->set_outgoing_address(slot, imp_iface, ip)) {
-        roc_log(LogError, "roc_sender_set_outgoing_address(): operation failed");
+    netio::UdpSenderConfig imp_config;
+    if (!api::sender_interface_config_from_user(imp_config, *config)) {
+        roc_log(LogError, "roc_sender_configure(): invalid arguments: bad config");
         return -1;
     }
 
-    return 0;
-}
-
-int roc_sender_set_reuseaddr(roc_sender* sender,
-                             roc_slot slot,
-                             roc_interface iface,
-                             int enabled) {
-    if (!sender) {
-        roc_log(LogError,
-                "roc_sender_set_reuseaddr(): invalid arguments: sender is null");
-        return -1;
-    }
-
-    peer::Sender* imp_sender = (peer::Sender*)sender;
-
-    address::Interface imp_iface;
-    if (!api::interface_from_user(imp_iface, iface)) {
-        roc_log(LogError, "roc_sender_set_reuseaddr(): invalid arguments: bad interface");
-        return -1;
-    }
-
-    if (enabled != 0 && enabled != 1) {
-        roc_log(
-            LogError,
-            "roc_sender_set_reuseaddr(): invalid arguments: enabled should be 0 or 1");
-        return -1;
-    }
-
-    if (!imp_sender->set_reuseaddr(slot, imp_iface, (bool)enabled)) {
-        roc_log(LogError, "roc_sender_set_reuseaddr(): operation failed");
+    if (!imp_sender->configure(slot, imp_iface, imp_config)) {
+        roc_log(LogError, "roc_sender_configure(): operation failed");
         return -1;
     }
 
@@ -137,7 +107,7 @@ int roc_sender_connect(roc_sender* sender,
         return -1;
     }
 
-    peer::Sender* imp_sender = (peer::Sender*)sender;
+    node::Sender* imp_sender = (node::Sender*)sender;
 
     if (!endpoint) {
         roc_log(LogError, "roc_sender_connect(): invalid arguments: endpoint is null");
@@ -160,13 +130,29 @@ int roc_sender_connect(roc_sender* sender,
     return 0;
 }
 
+int roc_sender_unlink(roc_sender* sender, roc_slot slot) {
+    if (!sender) {
+        roc_log(LogError, "roc_sender_unlink(): invalid arguments: sender is null");
+        return -1;
+    }
+
+    node::Sender* imp_sender = (node::Sender*)sender;
+
+    if (!imp_sender->unlink(slot)) {
+        roc_log(LogError, "roc_sender_unlink(): operation failed");
+        return -1;
+    }
+
+    return 0;
+}
+
 int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
     if (!sender) {
         roc_log(LogError, "roc_sender_write(): invalid arguments: sender is null");
         return -1;
     }
 
-    peer::Sender* imp_sender = (peer::Sender*)sender;
+    node::Sender* imp_sender = (node::Sender*)sender;
 
     sndio::ISink& imp_sink = imp_sender->sink();
 
@@ -183,8 +169,8 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
 
     if (frame->samples_size % factor != 0) {
         roc_log(LogError,
-                "roc_sender_write(): invalid arguments: # of samples should be "
-                "multiple of # of %u",
+                "roc_sender_write(): invalid arguments:"
+                " # of samples should be multiple of %u",
                 (unsigned)factor);
         return -1;
     }
@@ -207,8 +193,8 @@ int roc_sender_close(roc_sender* sender) {
         return -1;
     }
 
-    peer::Sender* imp_sender = (peer::Sender*)sender;
-    imp_sender->context().allocator().destroy_object(*imp_sender);
+    node::Sender* imp_sender = (node::Sender*)sender;
+    imp_sender->context().arena().destroy_object(*imp_sender);
 
     roc_log(LogInfo, "roc_sender_close(): closed sender");
 

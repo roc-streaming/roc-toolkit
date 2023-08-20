@@ -12,30 +12,77 @@
 #ifndef ROC_RTP_FORMAT_MAP_H_
 #define ROC_RTP_FORMAT_MAP_H_
 
+#include "roc_audio/sample_spec.h"
+#include "roc_core/allocation_policy.h"
+#include "roc_core/attributes.h"
+#include "roc_core/hashmap.h"
+#include "roc_core/iarena.h"
+#include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/pool.h"
+#include "roc_core/ref_counted.h"
 #include "roc_rtp/format.h"
 
 namespace roc {
 namespace rtp {
 
 //! RTP payload format map.
+//! Thread-safe.
+//! Returned formats are immutable and can be safely used from
+//! any thread.
 class FormatMap : public core::NonCopyable<> {
 public:
-    FormatMap();
+    //! Initialize.
+    FormatMap(core::IArena& arena);
 
-    //! Get format by payload type.
+    //! Find format by payload type.
     //! @returns
     //!  pointer to the format structure or null if there is no format
     //!  registered for this payload type.
-    const Format* format(unsigned int pt) const;
+    const Format* find_by_pt(unsigned int pt) const;
+
+    //! Find format by sample specification.
+    //! @returns
+    //!  pointer to the format structure or null if there is no format
+    //!  with matching specification.
+    const Format* find_by_spec(const audio::SampleSpec& spec) const;
+
+    //! Add format to the map.
+    //! @returns
+    //!  true if successfully added or false if another format with the same
+    //!  payload type already exists.
+    ROC_ATTR_NODISCARD bool add_format(const Format& fmt);
 
 private:
-    enum { MaxFormats = 2 };
+    enum { PreallocatedNodes = 16 };
 
-    Format formats_[MaxFormats];
-    size_t n_formats_;
+    struct Node : core::RefCounted<Node, core::PoolAllocation>, core::HashmapNode {
+        Node(core::IPool& pool, const Format& format)
+            : core::RefCounted<Node, core::PoolAllocation>(pool)
+            , format(format) {
+        }
 
-    void add_(const Format& fmt);
+        Format format;
+
+        unsigned int key() const {
+            return format.payload_type;
+        }
+
+        static core::hashsum_t key_hash(unsigned int pt) {
+            return core::hashsum_int(pt);
+        }
+
+        static bool key_equal(unsigned int pt1, unsigned int pt2) {
+            return pt1 == pt2;
+        }
+    };
+
+    void add_builtin_(const Format& fmt);
+
+    core::Mutex mutex_;
+
+    core::Pool<Node, PreallocatedNodes> node_pool_;
+    core::Hashmap<Node, PreallocatedNodes> node_map_;
 };
 
 } // namespace rtp

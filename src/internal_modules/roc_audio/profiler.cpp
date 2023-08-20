@@ -14,7 +14,7 @@
 namespace roc {
 namespace audio {
 
-Profiler::Profiler(core::IAllocator& allocator,
+Profiler::Profiler(core::IArena& arena,
                    const audio::SampleSpec& sample_spec,
                    ProfilerConfig profiler_config)
     : rate_limiter_(profiler_config.profiling_interval)
@@ -25,7 +25,7 @@ Profiler::Profiler(core::IAllocator& allocator,
     , num_chunks_((size_t)((unsigned long)profiler_config.profiling_interval
                            / (unsigned long)(profiler_config.chunk_duration))
                   + 1)
-    , chunks_(allocator)
+    , chunks_(arena)
     , first_chunk_num_(0)
     , last_chunk_num_(0)
     , last_chunk_samples_(0)
@@ -48,7 +48,7 @@ Profiler::Profiler(core::IAllocator& allocator,
     valid_ = true;
 }
 
-bool Profiler::valid() const {
+bool Profiler::is_valid() const {
     return valid_;
 }
 

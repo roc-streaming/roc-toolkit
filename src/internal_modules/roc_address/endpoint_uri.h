@@ -14,6 +14,7 @@
 
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
+#include "roc_core/attributes.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/string_buffer.h"
@@ -32,13 +33,13 @@ public:
     };
 
     //! Initialize empty URI.
-    explicit EndpointUri(core::IAllocator&);
+    explicit EndpointUri(core::IArena&);
 
     //! Check if URI is equivalent to another URI.
     bool is_equal(const EndpointUri& other) const;
 
     //! Copy data from another URI.
-    bool assign(const EndpointUri& other);
+    ROC_ATTR_NODISCARD bool assign(const EndpointUri& other);
 
     //! Check given subset of the URI.
     bool verify(Subset subset) const;
@@ -50,39 +51,39 @@ public:
     void invalidate(Subset subset);
 
     //! Set protocol ID (URI scheme).
-    bool set_proto(Protocol);
+    ROC_ATTR_NODISCARD bool set_proto(Protocol);
 
     //! Protocol ID (URI scheme).
     Protocol proto() const;
 
     //! Get protocol ID (URI scheme).
-    bool get_proto(Protocol& proto) const;
+    ROC_ATTR_NODISCARD bool get_proto(Protocol& proto) const;
 
     //! Get URI proto.
-    bool format_proto(core::StringBuilder& dst) const;
+    ROC_ATTR_NODISCARD bool format_proto(core::StringBuilder& dst) const;
 
     //! Set URI host.
     //! String should be zero-terminated.
-    bool set_host(const char* str);
+    ROC_ATTR_NODISCARD bool set_host(const char* str);
 
     //! Set URI host.
     //! String should not be zero-terminated.
-    bool set_host(const char* str, size_t str_len);
+    ROC_ATTR_NODISCARD bool set_host(const char* str, size_t str_len);
 
     //! Hostname or IP address.
     const char* host() const;
 
     //! Get URI host.
-    bool format_host(core::StringBuilder& dst) const;
+    ROC_ATTR_NODISCARD bool format_host(core::StringBuilder& dst) const;
 
     //! Set port.
-    bool set_port(int);
+    ROC_ATTR_NODISCARD bool set_port(int);
 
     //! TCP or UDP port.
     int port() const;
 
     //! Get URI port.
-    bool get_port(int& port) const;
+    ROC_ATTR_NODISCARD bool get_port(int& port) const;
 
     //! Get string representation of port.
     //! If port is not set, default port for the protocol is used.
@@ -91,43 +92,43 @@ public:
     const char* service() const;
 
     //! Set decoded URI path.
-    bool set_path(const char* str);
+    ROC_ATTR_NODISCARD bool set_path(const char* str);
 
     //! Set decoded URI path.
     //! String should not be zero-terminated.
-    bool set_path(const char* str, size_t str_len);
+    ROC_ATTR_NODISCARD bool set_path(const char* str, size_t str_len);
 
     //! Set encoded URI path.
     //! String should be percent-encoded.
-    bool set_encoded_path(const char* str);
+    ROC_ATTR_NODISCARD bool set_encoded_path(const char* str);
 
     //! Set encoded URI path.
     //! String should be percent-encoded.
     //! String should not be zero-terminated.
-    bool set_encoded_path(const char* str, size_t str_len);
+    ROC_ATTR_NODISCARD bool set_encoded_path(const char* str, size_t str_len);
 
     //! Decoded path.
     const char* path() const;
 
     //! Get URI path.
     //! String will be percent-encoded.
-    bool format_encoded_path(core::StringBuilder& dst) const;
+    ROC_ATTR_NODISCARD bool format_encoded_path(core::StringBuilder& dst) const;
 
     //! Set query.
     //! String should be percent-encoded.
-    bool set_encoded_query(const char* str);
+    ROC_ATTR_NODISCARD bool set_encoded_query(const char* str);
 
     //! Set query.
     //! String should be percent-encoded.
     //! String should not be zero-terminated.
-    bool set_encoded_query(const char* str, size_t str_len);
+    ROC_ATTR_NODISCARD bool set_encoded_query(const char* str, size_t str_len);
 
     //! Raw query.
     const char* encoded_query() const;
 
     //! Get URI query.
     //! String will be percent-encoded.
-    bool format_encoded_query(core::StringBuilder& dst) const;
+    ROC_ATTR_NODISCARD bool format_encoded_query(core::StringBuilder& dst) const;
 
 private:
     void set_service_from_port_(int port);
@@ -183,7 +184,8 @@ private:
 //!
 //! This parser does not try to perform full URI validation. For example, it does not
 //! check that path contains only allowed symbols. If it can be parsed, it will be.
-bool parse_endpoint_uri(const char* str, EndpointUri::Subset subset, EndpointUri& result);
+ROC_ATTR_NODISCARD bool
+parse_endpoint_uri(const char* str, EndpointUri::Subset subset, EndpointUri& result);
 
 //! Format EndpointUri to string.
 //!
@@ -194,9 +196,9 @@ bool parse_endpoint_uri(const char* str, EndpointUri::Subset subset, EndpointUri
 //!
 //! @returns
 //!  true on success or false if the buffer is too small.
-bool format_endpoint_uri(const EndpointUri& uri,
-                         EndpointUri::Subset subset,
-                         core::StringBuilder& dst);
+ROC_ATTR_NODISCARD bool format_endpoint_uri(const EndpointUri& uri,
+                                            EndpointUri::Subset subset,
+                                            core::StringBuilder& dst);
 
 } // namespace address
 } // namespace roc

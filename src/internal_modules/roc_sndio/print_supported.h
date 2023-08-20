@@ -12,14 +12,16 @@
 #ifndef ROC_SNDIO_PRINT_SUPPORTED_H_
 #define ROC_SNDIO_PRINT_SUPPORTED_H_
 
-#include "roc_core/iallocator.h"
+#include "roc_core/attributes.h"
+#include "roc_core/iarena.h"
 #include "roc_sndio/backend_dispatcher.h"
 
 namespace roc {
 namespace sndio {
 
 //! Print supported schemes and formats.
-bool print_supported(BackendDispatcher& backend_dispatcher, core::IAllocator& allocator);
+ROC_ATTR_NODISCARD bool print_supported(BackendDispatcher& backend_dispatcher,
+                                        core::IArena& arena);
 
 } // namespace sndio
 } // namespace roc

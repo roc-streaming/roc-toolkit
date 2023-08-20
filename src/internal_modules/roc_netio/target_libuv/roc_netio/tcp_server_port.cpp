@@ -17,8 +17,8 @@ namespace netio {
 TcpServerPort::TcpServerPort(const TcpServerConfig& config,
                              IConnAcceptor& conn_acceptor,
                              uv_loop_t& loop,
-                             core::IAllocator& allocator)
-    : BasicPort(allocator)
+                             core::IArena& arena)
+    : BasicPort(arena)
     , config_(config)
     , conn_acceptor_(conn_acceptor)
     , close_handler_(NULL)
@@ -146,8 +146,8 @@ void TcpServerPort::poll_cb_(uv_poll_t* handle, int status, int events) {
     roc_log(LogDebug, "tcp server: %s: trying to accept incoming connection",
             self.descriptor());
 
-    core::SharedPtr<TcpConnectionPort> conn = new (self.allocator())
-        TcpConnectionPort(TcpConn_Server, self.loop_, self.allocator());
+    core::SharedPtr<TcpConnectionPort> conn =
+        new (self.arena()) TcpConnectionPort(TcpConn_Server, self.loop_, self.arena());
     if (!conn) {
         roc_log(LogError, "tcp server: %s: can't allocate connection", self.descriptor());
         return;
@@ -180,7 +180,7 @@ void TcpServerPort::poll_cb_(uv_poll_t* handle, int status, int events) {
     }
 
     // release_usage will be called in handle_terminate_completed()
-    conn_handler->acquire_usage();
+    conn_handler->incref();
 
     self.open_conns_.push_back(*conn);
 
@@ -222,7 +222,7 @@ void TcpServerPort::handle_terminate_completed(IConn& conn, void* arg) {
         roc_log(LogDebug, "tcp server: %s: removing connection: %s", descriptor(),
                 tcp_conn->descriptor());
 
-        conn_handler->release_usage();
+        conn_handler->decref();
         conn_acceptor_.remove_connection(*conn_handler);
     }
 }
@@ -268,7 +268,9 @@ AsyncOperationStatus TcpServerPort::async_close_server_() {
 
 void TcpServerPort::finish_closing_server_() {
     if (socket_ != SocketInvalid) {
-        socket_close(socket_);
+        if (!socket_close(socket_)) {
+            roc_log(LogError, "tcp server: %s: failed to close socket", descriptor());
+        }
         socket_ = SocketInvalid;
     }
 }

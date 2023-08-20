@@ -11,7 +11,7 @@
 #include "roc_audio/pcm_decoder.h"
 #include "roc_audio/pcm_encoder.h"
 #include "roc_core/buffer_factory.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_core/scoped_ptr.h"
 
 namespace roc {
@@ -28,19 +28,19 @@ enum {
     NumCodecs
 };
 
-packet::channel_mask_t Codec_channels[NumCodecs] = {
-    0x1,
-    0x3,
-    0x1,
-    0x3,
+const ChannelMask Codec_channels[NumCodecs] = {
+    ChanMask_Surround_Mono,
+    ChanMask_Surround_Stereo,
+    ChanMask_Surround_Mono,
+    ChanMask_Surround_Stereo,
 };
 
 enum { SampleRate = 44100, MaxChans = 8, MaxBufSize = 2000 };
 
 const double Epsilon = 0.00001;
 
-core::HeapAllocator allocator;
-core::BufferFactory<uint8_t> byte_buffer_factory(allocator, MaxBufSize, true);
+core::HeapArena arena;
+core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize);
 
 sample_t nth_sample(uint8_t n) {
     return sample_t(n) / sample_t(1 << 8);
@@ -49,20 +49,24 @@ sample_t nth_sample(uint8_t n) {
 IFrameEncoder* new_encoder(size_t id) {
     switch (id) {
     case Codec_PCM_SInt16_1ch:
-        return new (allocator) PcmEncoder(PcmFormat(PcmEncoding_SInt16, PcmEndian_Big),
-                                          SampleSpec(SampleRate, 0x1));
+        return new (arena) PcmEncoder(
+            PcmFormat(PcmEncoding_SInt16, PcmEndian_Big),
+            SampleSpec(SampleRate, ChanLayout_Surround, ChanMask_Surround_Mono));
 
     case Codec_PCM_SInt16_2ch:
-        return new (allocator) PcmEncoder(PcmFormat(PcmEncoding_SInt16, PcmEndian_Big),
-                                          SampleSpec(SampleRate, 0x3));
+        return new (arena) PcmEncoder(
+            PcmFormat(PcmEncoding_SInt16, PcmEndian_Big),
+            SampleSpec(SampleRate, ChanLayout_Surround, ChanMask_Surround_Stereo));
 
     case Codec_PCM_SInt24_1ch:
-        return new (allocator) PcmEncoder(PcmFormat(PcmEncoding_SInt24, PcmEndian_Big),
-                                          SampleSpec(SampleRate, 0x1));
+        return new (arena) PcmEncoder(
+            PcmFormat(PcmEncoding_SInt24, PcmEndian_Big),
+            SampleSpec(SampleRate, ChanLayout_Surround, ChanMask_Surround_Mono));
 
     case Codec_PCM_SInt24_2ch:
-        return new (allocator) PcmEncoder(PcmFormat(PcmEncoding_SInt24, PcmEndian_Big),
-                                          SampleSpec(SampleRate, 0x3));
+        return new (arena) PcmEncoder(
+            PcmFormat(PcmEncoding_SInt24, PcmEndian_Big),
+            SampleSpec(SampleRate, ChanLayout_Surround, ChanMask_Surround_Stereo));
 
     default:
         FAIL("bad codec id");
@@ -74,20 +78,24 @@ IFrameEncoder* new_encoder(size_t id) {
 IFrameDecoder* new_decoder(size_t id) {
     switch (id) {
     case Codec_PCM_SInt16_1ch:
-        return new (allocator) PcmDecoder(PcmFormat(PcmEncoding_SInt16, PcmEndian_Big),
-                                          SampleSpec(SampleRate, 0x1));
+        return new (arena) PcmDecoder(
+            PcmFormat(PcmEncoding_SInt16, PcmEndian_Big),
+            SampleSpec(SampleRate, ChanLayout_Surround, ChanMask_Surround_Mono));
 
     case Codec_PCM_SInt16_2ch:
-        return new (allocator) PcmDecoder(PcmFormat(PcmEncoding_SInt16, PcmEndian_Big),
-                                          SampleSpec(SampleRate, 0x3));
+        return new (arena) PcmDecoder(
+            PcmFormat(PcmEncoding_SInt16, PcmEndian_Big),
+            SampleSpec(SampleRate, ChanLayout_Surround, ChanMask_Surround_Stereo));
 
     case Codec_PCM_SInt24_1ch:
-        return new (allocator) PcmDecoder(PcmFormat(PcmEncoding_SInt24, PcmEndian_Big),
-                                          SampleSpec(SampleRate, 0x1));
+        return new (arena) PcmDecoder(
+            PcmFormat(PcmEncoding_SInt24, PcmEndian_Big),
+            SampleSpec(SampleRate, ChanLayout_Surround, ChanMask_Surround_Mono));
 
     case Codec_PCM_SInt24_2ch:
-        return new (allocator) PcmDecoder(PcmFormat(PcmEncoding_SInt24, PcmEndian_Big),
-                                          SampleSpec(SampleRate, 0x3));
+        return new (arena) PcmDecoder(
+            PcmFormat(PcmEncoding_SInt24, PcmEndian_Big),
+            SampleSpec(SampleRate, ChanLayout_Surround, ChanMask_Surround_Stereo));
 
     default:
         FAIL("bad codec id");
@@ -105,11 +113,19 @@ core::Slice<uint8_t> new_buffer(size_t buffer_size) {
     return bp;
 }
 
-size_t fill_samples(sample_t* samples,
-                    size_t pos,
-                    size_t n_samples,
-                    packet::channel_mask_t ch_mask) {
-    const size_t n_chans = packet::num_channels(ch_mask);
+size_t num_channels(ChannelMask ch_mask) {
+    size_t n_ch = 0;
+    for (; ch_mask != 0; ch_mask >>= 1) {
+        if (ch_mask & 1) {
+            n_ch++;
+        }
+    }
+    return n_ch;
+}
+
+size_t
+fill_samples(sample_t* samples, size_t pos, size_t n_samples, ChannelMask ch_mask) {
+    const size_t n_chans = num_channels(ch_mask);
 
     for (size_t i = 0; i < n_samples; i++) {
         for (size_t j = 0; j < n_chans; j++) {
@@ -123,8 +139,8 @@ size_t fill_samples(sample_t* samples,
 size_t check_samples(const sample_t* samples,
                      size_t pos,
                      size_t n_samples,
-                     packet::channel_mask_t ch_mask) {
-    const size_t n_chans = packet::num_channels(ch_mask);
+                     ChannelMask ch_mask) {
+    const size_t n_chans = num_channels(ch_mask);
 
     for (size_t i = 0; i < n_samples; i++) {
         for (size_t j = 0; j < n_chans; j++) {
@@ -146,10 +162,10 @@ TEST(encoder_decoder, one_frame) {
     enum { Timestamp = 100500, SamplesPerFrame = 177 };
 
     for (size_t n_codec = 0; n_codec < NumCodecs; n_codec++) {
-        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
+        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), arena);
         CHECK(encoder);
 
-        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
+        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), arena);
         CHECK(decoder);
 
         core::Slice<uint8_t> bp =
@@ -191,10 +207,10 @@ TEST(encoder_decoder, multiple_frames) {
     enum { NumFrames = 20, SamplesPerFrame = 177 };
 
     for (size_t n_codec = 0; n_codec < NumCodecs; n_codec++) {
-        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
+        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), arena);
         CHECK(encoder);
 
-        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
+        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), arena);
         CHECK(decoder);
 
         packet::timestamp_t ts = 100500;
@@ -246,10 +262,10 @@ TEST(encoder_decoder, incomplete_frames) {
     enum { NumFrames = 20, ExpectedSamplesPerFrame = 211, ActualSamplesPerFrame = 177 };
 
     for (size_t n_codec = 0; n_codec < NumCodecs; n_codec++) {
-        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
+        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), arena);
         CHECK(encoder);
 
-        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
+        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), arena);
         CHECK(decoder);
 
         packet::timestamp_t ts = 100500;
@@ -303,10 +319,10 @@ TEST(encoder_decoder, shifted_frames) {
     enum { NumFrames = 20, SamplesPerFrame = 177, Shift = 55 };
 
     for (size_t n_codec = 0; n_codec < NumCodecs; n_codec++) {
-        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
+        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), arena);
         CHECK(encoder);
 
-        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
+        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), arena);
         CHECK(decoder);
 
         packet::timestamp_t ts = 100500;
@@ -339,7 +355,7 @@ TEST(encoder_decoder, shifted_frames) {
             UNSIGNED_LONGS_EQUAL(ts + Shift, decoder->position());
             UNSIGNED_LONGS_EQUAL(SamplesPerFrame - Shift, decoder->available());
 
-            decoder_pos += Shift * packet::num_channels(Codec_channels[n_codec]);
+            decoder_pos += Shift * num_channels(Codec_channels[n_codec]);
 
             sample_t decoder_samples[SamplesPerFrame * MaxChans];
 
@@ -365,10 +381,10 @@ TEST(encoder_decoder, skipped_frames) {
     enum { NumFrames = 20, SkipEvery = 3, SamplesPerFrame = 177 };
 
     for (size_t n_codec = 0; n_codec < NumCodecs; n_codec++) {
-        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
+        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), arena);
         CHECK(encoder);
 
-        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
+        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), arena);
         CHECK(decoder);
 
         packet::timestamp_t ts = 100500;
@@ -393,8 +409,7 @@ TEST(encoder_decoder, skipped_frames) {
 
             if (n % SkipEvery == 0) {
                 ts += SamplesPerFrame;
-                decoder_pos +=
-                    SamplesPerFrame * packet::num_channels(Codec_channels[n_codec]);
+                decoder_pos += SamplesPerFrame * num_channels(Codec_channels[n_codec]);
                 continue;
             }
 
@@ -432,10 +447,10 @@ TEST(encoder_decoder, write_incrementally) {
     };
 
     for (size_t n_codec = 0; n_codec < NumCodecs; n_codec++) {
-        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
+        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), arena);
         CHECK(encoder);
 
-        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
+        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), arena);
         CHECK(decoder);
 
         core::Slice<uint8_t> bp =
@@ -451,8 +466,7 @@ TEST(encoder_decoder, write_incrementally) {
         UNSIGNED_LONGS_EQUAL(
             SecondPart,
             encoder->write(encoder_samples
-                               + FirstPart
-                                   * packet::num_channels(Codec_channels[n_codec]),
+                               + FirstPart * num_channels(Codec_channels[n_codec]),
                            SecondPart));
 
         encoder->end();
@@ -477,10 +491,10 @@ TEST(encoder_decoder, write_too_much) {
     enum { Timestamp = 100500, SamplesPerFrame = 177 };
 
     for (size_t n_codec = 0; n_codec < NumCodecs; n_codec++) {
-        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
+        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), arena);
         CHECK(encoder);
 
-        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
+        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), arena);
         CHECK(decoder);
 
         core::Slice<uint8_t> bp =
@@ -521,10 +535,10 @@ TEST(encoder_decoder, read_incrementally) {
     };
 
     for (size_t n_codec = 0; n_codec < NumCodecs; n_codec++) {
-        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
+        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), arena);
         CHECK(encoder);
 
-        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
+        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), arena);
         CHECK(decoder);
 
         core::Slice<uint8_t> bp =
@@ -582,10 +596,10 @@ TEST(encoder_decoder, read_too_much) {
     enum { Timestamp = 100500, SamplesPerFrame = 177 };
 
     for (size_t n_codec = 0; n_codec < NumCodecs; n_codec++) {
-        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
+        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), arena);
         CHECK(encoder);
 
-        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
+        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), arena);
         CHECK(decoder);
 
         core::Slice<uint8_t> bp =
@@ -630,10 +644,10 @@ TEST(encoder_decoder, shift_incrementally) {
     };
 
     for (size_t n_codec = 0; n_codec < NumCodecs; n_codec++) {
-        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), allocator);
+        core::ScopedPtr<IFrameEncoder> encoder(new_encoder(n_codec), arena);
         CHECK(encoder);
 
-        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), allocator);
+        core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), arena);
         CHECK(decoder);
 
         core::Slice<uint8_t> bp =
@@ -665,8 +679,8 @@ TEST(encoder_decoder, shift_incrementally) {
             UNSIGNED_LONGS_EQUAL(SecondPart, decoder->read(decoder_samples, SecondPart));
 
             check_samples(decoder_samples,
-                          FirstPart * packet::num_channels(Codec_channels[n_codec]),
-                          SecondPart, Codec_channels[n_codec]);
+                          FirstPart * num_channels(Codec_channels[n_codec]), SecondPart,
+                          Codec_channels[n_codec]);
         }
 
         UNSIGNED_LONGS_EQUAL(Timestamp + FirstPart + SecondPart, decoder->position());

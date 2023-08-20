@@ -22,11 +22,11 @@ ResamplerReader::ResamplerReader(IFrameReader& reader,
     , out_sample_spec_(out_sample_spec)
     , scaling_(1.0f)
     , valid_(false) {
-    if (in_sample_spec_.channel_mask() != out_sample_spec_.channel_mask()) {
-        roc_panic("resampler reader: input and output channel mask should be equal");
+    if (in_sample_spec_.channel_set() != out_sample_spec_.channel_set()) {
+        roc_panic("resampler reader: input and output channel sets should be same");
     }
 
-    if (!resampler_.valid()) {
+    if (!resampler_.is_valid()) {
         return;
     }
 
@@ -38,12 +38,12 @@ ResamplerReader::ResamplerReader(IFrameReader& reader,
     valid_ = true;
 }
 
-bool ResamplerReader::valid() const {
+bool ResamplerReader::is_valid() const {
     return valid_;
 }
 
 bool ResamplerReader::set_scaling(float multiplier) {
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     scaling_ = multiplier;
 
@@ -52,7 +52,7 @@ bool ResamplerReader::set_scaling(float multiplier) {
 }
 
 bool ResamplerReader::read(Frame& out) {
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     size_t out_pos = 0;
 

@@ -13,7 +13,7 @@
 #define ROC_PIPELINE_RECEIVER_SESSION_GROUP_H_
 
 #include "roc_audio/mixer.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
 #include "roc_pipeline/receiver_session.h"
@@ -38,7 +38,9 @@ public:
                          packet::PacketFactory& packet_factory,
                          core::BufferFactory<uint8_t>& byte_buffer_factory,
                          core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-                         core::IAllocator& allocator);
+                         core::IArena& arena);
+
+    ~ReceiverSessionGroup();
 
     //! Route packet to session.
     void route_packet(const packet::PacketPtr& packet);
@@ -69,10 +71,11 @@ private:
 
     void create_session_(const packet::PacketPtr& packet);
     void remove_session_(ReceiverSession& sess);
+    void remove_all_sessions_();
 
     ReceiverSessionConfig make_session_config_(const packet::PacketPtr& packet) const;
 
-    core::IAllocator& allocator_;
+    core::IArena& arena_;
 
     packet::PacketFactory& packet_factory_;
     core::BufferFactory<uint8_t>& byte_buffer_factory_;

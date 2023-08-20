@@ -7,6 +7,7 @@
  */
 
 #include "roc_audio/resampler_builtin.h"
+#include "roc_audio/sample_spec_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
@@ -70,21 +71,6 @@ inline size_t calc_bits(size_t n) {
     return c;
 }
 
-inline size_t get_window_size(ResamplerProfile profile) {
-    switch (profile) {
-    case ResamplerProfile_Low:
-        return 16;
-
-    case ResamplerProfile_Medium:
-        return 32;
-
-    case ResamplerProfile_High:
-        return 64;
-    }
-
-    roc_panic("builtin resampler: unexpected profile");
-}
-
 inline size_t get_window_interp(ResamplerProfile profile) {
     switch (profile) {
     case ResamplerProfile_Low:
@@ -100,27 +86,51 @@ inline size_t get_window_interp(ResamplerProfile profile) {
     roc_panic("builtin resampler: unexpected profile");
 }
 
+inline size_t get_window_size(ResamplerProfile profile) {
+    switch (profile) {
+    case ResamplerProfile_Low:
+        return 16;
+
+    case ResamplerProfile_Medium:
+        return 32;
+
+    case ResamplerProfile_High:
+        return 64;
+    }
+
+    roc_panic("builtin resampler: unexpected profile");
+}
+
+inline size_t get_frame_size(size_t window_size,
+                             const audio::SampleSpec& in_spec,
+                             const audio::SampleSpec& out_spec) {
+    const float scaling =
+        (float)in_spec.sample_rate() / (float)out_spec.sample_rate() * 1.5f;
+
+    return (size_t)std::ceil(window_size * scaling);
+}
+
 } // namespace
 
-BuiltinResampler::BuiltinResampler(core::IAllocator& allocator,
+BuiltinResampler::BuiltinResampler(core::IArena& arena,
                                    core::BufferFactory<sample_t>& buffer_factory,
                                    ResamplerProfile profile,
-                                   core::nanoseconds_t frame_length,
-                                   const audio::SampleSpec& sample_spec)
-    : sample_spec_(sample_spec)
+                                   const audio::SampleSpec& in_spec,
+                                   const audio::SampleSpec& out_spec)
+    : in_spec_(in_spec)
+    , out_spec_(out_spec)
     , n_ready_frames_(0)
     , prev_frame_(NULL)
     , curr_frame_(NULL)
     , next_frame_(NULL)
     , scaling_(1.0)
-    , frame_size_(sample_spec.ns_2_samples_overall(frame_length))
-    , frame_size_ch_(sample_spec.num_channels() ? frame_size_ / sample_spec.num_channels()
-                                                : 0)
     , window_size_(get_window_size(profile))
     , qt_half_sinc_window_size_(float_to_fixedpoint(window_size_))
     , window_interp_(get_window_interp(profile))
     , window_interp_bits_(calc_bits(window_interp_))
-    , sinc_table_(allocator)
+    , frame_size_ch_(get_frame_size(window_size_, in_spec, out_spec))
+    , frame_size_(frame_size_ch_ * in_spec.num_channels())
+    , sinc_table_(arena)
     , sinc_table_ptr_(NULL)
     , qt_half_window_size_(float_to_fixedpoint((float)window_size_ / scaling_))
     , qt_epsilon_(float_to_fixedpoint(5e-8f))
@@ -145,7 +155,7 @@ BuiltinResampler::BuiltinResampler(core::IAllocator& allocator,
             "builtin resampler: initializing: "
             "window_interp=%lu window_size=%lu frame_size=%lu channels_num=%lu",
             (unsigned long)window_interp_, (unsigned long)window_size_,
-            (unsigned long)frame_size_, (unsigned long)sample_spec_.num_channels());
+            (unsigned long)frame_size_, (unsigned long)in_spec_.num_channels());
 
     valid_ = true;
 }
@@ -153,7 +163,7 @@ BuiltinResampler::BuiltinResampler(core::IAllocator& allocator,
 BuiltinResampler::~BuiltinResampler() {
 }
 
-bool BuiltinResampler::valid() const {
+bool BuiltinResampler::is_valid() const {
     return valid_;
 }
 
@@ -257,7 +267,7 @@ size_t BuiltinResampler::pop_output(Frame& out) {
     sample_t* out_data = out.samples();
     size_t out_pos = 0;
 
-    for (; out_pos < out.num_samples(); out_pos += sample_spec_.num_channels()) {
+    for (; out_pos < out.num_samples(); out_pos += in_spec_.num_channels()) {
         if (qt_sample_ >= qt_frame_size_) {
             break;
         }
@@ -269,7 +279,7 @@ size_t BuiltinResampler::pop_output(Frame& out) {
             qt_sample_ += qt_one;
         }
 
-        for (size_t channel = 0; channel < sample_spec_.num_channels(); ++channel) {
+        for (size_t channel = 0; channel < in_spec_.num_channels(); ++channel) {
             out_data[out_pos + channel] = resample_(channel);
         }
         qt_sample_ += qt_dt_;
@@ -294,29 +304,42 @@ bool BuiltinResampler::alloc_frames_(core::BufferFactory<sample_t>& buffer_facto
 }
 
 bool BuiltinResampler::check_config_() const {
-    if (sample_spec_.num_channels() < 1) {
-        roc_log(LogError, "builtin resampler: invalid num_channels: num_channels=%lu",
-                (unsigned long)sample_spec_.num_channels());
+    if (!in_spec_.is_valid() || !out_spec_.is_valid()) {
+        roc_log(LogError,
+                "builtin resampler: invalid sample spec:"
+                " in_spec=%s out_spec=%s",
+                sample_spec_to_str(in_spec_).c_str(),
+                sample_spec_to_str(out_spec_).c_str());
         return false;
     }
 
-    if (frame_size_ != frame_size_ch_ * sample_spec_.num_channels()) {
+    if (in_spec_.channel_set() != out_spec_.channel_set()) {
+        roc_log(LogError,
+                "builtin resampler: input and output channel sets should be equal:"
+                " in_spec=%s out_spec=%s",
+                sample_spec_to_str(in_spec_).c_str(),
+                sample_spec_to_str(out_spec_).c_str());
+        return false;
+    }
+
+    if (frame_size_ != frame_size_ch_ * in_spec_.num_channels()) {
         roc_log(LogError,
                 "builtin resampler: frame_size is not multiple of num_channels:"
                 " frame_size=%lu num_channels=%lu",
-                (unsigned long)frame_size_, (unsigned long)sample_spec_.num_channels());
+                (unsigned long)frame_size_, (unsigned long)in_spec_.num_channels());
         return false;
     }
 
     const size_t max_frame_size =
         (((fixedpoint_t)(signed_fixedpoint_t)-1 >> FRACT_BIT_COUNT) + 1)
-        * sample_spec_.num_channels();
+        * in_spec_.num_channels();
+
     if (frame_size_ > max_frame_size) {
         roc_log(LogError,
                 "builtin resampler: frame_size is too much: "
                 "max_frame_size=%lu frame_size=%lu num_channels=%lu",
                 (unsigned long)max_frame_size, (unsigned long)frame_size_,
-                (unsigned long)sample_spec_.num_channels());
+                (unsigned long)in_spec_.num_channels());
         return false;
     }
 
@@ -436,7 +459,7 @@ sample_t BuiltinResampler::resample_(const size_t channel_offset) {
     size_t i;
 
     // Run through previous frame.
-    for (i = ind_begin_prev; i < ind_end_prev; i += sample_spec_.num_channels()) {
+    for (i = ind_begin_prev; i < ind_end_prev; i += in_spec_.num_channels()) {
         accumulator += prev_frame_[i] * sinc_(qt_sinc_cur, f_sinc_cur_fract);
         qt_sinc_cur -= qt_sinc_inc;
     }
@@ -446,12 +469,12 @@ sample_t BuiltinResampler::resample_(const size_t channel_offset) {
 
     accumulator += curr_frame_[i] * sinc_(qt_sinc_cur, f_sinc_cur_fract);
     while (qt_sinc_cur >= qt_sinc_step_) {
-        i += sample_spec_.num_channels();
+        i += in_spec_.num_channels();
         qt_sinc_cur -= qt_sinc_inc;
         accumulator += curr_frame_[i] * sinc_(qt_sinc_cur, f_sinc_cur_fract);
     }
 
-    i += sample_spec_.num_channels();
+    i += in_spec_.num_channels();
 
     roc_panic_if(i > channelize_index(frame_size_ch_, channel_offset));
 
@@ -464,13 +487,13 @@ sample_t BuiltinResampler::resample_(const size_t channel_offset) {
     f_sinc_cur_fract = fractional(qt_sinc_cur << window_interp_bits_);
 
     // Run through right side of the window, increasing qt_sinc_cur.
-    for (; i <= ind_end_cur; i += sample_spec_.num_channels()) {
+    for (; i <= ind_end_cur; i += in_spec_.num_channels()) {
         accumulator += curr_frame_[i] * sinc_(qt_sinc_cur, f_sinc_cur_fract);
         qt_sinc_cur += qt_sinc_inc;
     }
 
     // Next frames run.
-    for (i = ind_begin_next; i < ind_end_next; i += sample_spec_.num_channels()) {
+    for (i = ind_begin_next; i < ind_end_next; i += in_spec_.num_channels()) {
         accumulator += next_frame_[i] * sinc_(qt_sinc_cur, f_sinc_cur_fract);
         qt_sinc_cur += qt_sinc_inc;
     }

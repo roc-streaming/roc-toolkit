@@ -41,18 +41,11 @@ namespace audio {
 class Mixer : public IFrameReader, public core::NonCopyable<> {
 public:
     //! Initialize.
-    //!
-    //! @b Parameters
-    //!  - @p buffer_factory is used to allocate a temporary buffer of samples
-    //!  - @p frame_length defines the temporary buffer length used to
-    //!    read from, in nanoseconds
-    //!  - @p sample_spec defines the sample spec taken from the audio signal
-    Mixer(core::BufferFactory<sample_t>& buffer_factory,
-          core::nanoseconds_t frame_length,
-          const audio::SampleSpec& sample_spec);
+    //! @p buffer_factory is used to allocate a temporary buffer for mixing.
+    Mixer(core::BufferFactory<sample_t>& buffer_factory);
 
     //! Check if the mixer was succefully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Add input reader.
     void add_input(IFrameReader&);

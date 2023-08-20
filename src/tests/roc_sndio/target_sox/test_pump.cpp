@@ -12,7 +12,7 @@
 #include "test_helpers/mock_source.h"
 
 #include "roc_core/buffer_factory.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/temp_file.h"
 #include "roc_sndio/pump.h"
@@ -26,13 +26,13 @@ namespace {
 
 enum { BufSize = 512, SampleRate = 44100, ChMask = 0x3 };
 
-const audio::SampleSpec SampleSpecs = audio::SampleSpec(SampleRate, ChMask);
+const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, ChMask);
 
 const core::nanoseconds_t BufDuration = BufSize * core::Second
     / core::nanoseconds_t(SampleSpecs.sample_rate() * SampleSpecs.num_channels());
 
-core::HeapAllocator allocator;
-core::BufferFactory<audio::sample_t> buffer_factory(allocator, BufSize, true);
+core::HeapArena arena;
+core::BufferFactory<audio::sample_t> buffer_factory(arena, BufSize);
 
 } // namespace
 
@@ -40,7 +40,8 @@ TEST_GROUP(pump) {
     Config config;
 
     void setup() {
-        config.sample_spec = audio::SampleSpec(SampleRate, ChMask);
+        config.sample_spec =
+            audio::SampleSpec(SampleRate, audio::ChanLayout_Surround, ChMask);
         config.frame_length = BufDuration;
     }
 };
@@ -54,25 +55,25 @@ TEST(pump, write_read) {
     core::TempFile file("test.wav");
 
     {
-        SoxSink sox_sink(allocator, config);
+        SoxSink sox_sink(arena, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
         Pump pump(buffer_factory, mock_source, NULL, sox_sink, BufDuration, SampleSpecs,
                   Pump::ModeOneshot);
-        CHECK(pump.valid());
+        CHECK(pump.is_valid());
         CHECK(pump.run());
 
         CHECK(mock_source.num_returned() >= NumSamples - BufSize);
     }
 
-    SoxSource sox_source(allocator, config);
+    SoxSource sox_source(arena, config);
     CHECK(sox_source.open(NULL, file.path()));
 
     test::MockSink mock_writer;
 
     Pump pump(buffer_factory, sox_source, NULL, mock_writer, BufDuration, SampleSpecs,
               Pump::ModePermanent);
-    CHECK(pump.valid());
+    CHECK(pump.is_valid());
     CHECK(pump.run());
 
     mock_writer.check(0, mock_source.num_returned());
@@ -87,12 +88,12 @@ TEST(pump, write_overwrite_read) {
     core::TempFile file("test.wav");
 
     {
-        SoxSink sox_sink(allocator, config);
+        SoxSink sox_sink(arena, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
         Pump pump(buffer_factory, mock_source, NULL, sox_sink, BufDuration, SampleSpecs,
                   Pump::ModeOneshot);
-        CHECK(pump.valid());
+        CHECK(pump.is_valid());
         CHECK(pump.run());
     }
 
@@ -102,26 +103,26 @@ TEST(pump, write_overwrite_read) {
     CHECK(num_returned1 >= NumSamples - BufSize);
 
     {
-        SoxSink sox_sink(allocator, config);
+        SoxSink sox_sink(arena, config);
         CHECK(sox_sink.open(NULL, file.path()));
 
         Pump pump(buffer_factory, mock_source, NULL, sox_sink, BufDuration, SampleSpecs,
                   Pump::ModeOneshot);
-        CHECK(pump.valid());
+        CHECK(pump.is_valid());
         CHECK(pump.run());
     }
 
     size_t num_returned2 = mock_source.num_returned() - num_returned1;
     CHECK(num_returned1 >= NumSamples - BufSize);
 
-    SoxSource sox_source(allocator, config);
+    SoxSource sox_source(arena, config);
     CHECK(sox_source.open(NULL, file.path()));
 
     test::MockSink mock_writer;
 
     Pump pump(buffer_factory, sox_source, NULL, mock_writer, BufDuration, SampleSpecs,
               Pump::ModePermanent);
-    CHECK(pump.valid());
+    CHECK(pump.is_valid());
     CHECK(pump.run());
 
     mock_writer.check(num_returned1, num_returned2);

@@ -70,6 +70,11 @@ public:
         return size_;
     }
 
+    //! Check if size is zero.
+    bool is_empty() const {
+        return size_ == 0;
+    }
+
     //! Check if element belongs to list.
     bool contains(const T& element) {
         const ListNode::ListNodeData* data = element.list_node_data();
@@ -178,13 +183,13 @@ public:
     }
 
 private:
-    static inline T* container_of_(ListNode::ListNodeData* data) {
+    static T* container_of_(ListNode::ListNodeData* data) {
         return static_cast<T*>(data->container_of());
     }
 
     static void check_is_member_(const ListNode::ListNodeData* data, const List* list) {
         if (data->list != list) {
-            roc_panic("list element is member of wrong list: expected %p, got %p",
+            roc_panic("list: element is member of wrong list: expected %p, got %p",
                       (const void*)list, (const void*)data->list);
         }
     }

@@ -10,7 +10,7 @@
 
 #include "roc_address/socket_addr.h"
 #include "roc_core/buffer_factory.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_netio/network_loop.h"
 #include "roc_packet/concurrent_queue.h"
 #include "roc_packet/packet_factory.h"
@@ -22,9 +22,9 @@ namespace {
 
 enum { MaxBufSize = 500 };
 
-core::HeapAllocator allocator;
-core::BufferFactory<uint8_t> buffer_factory(allocator, MaxBufSize, true);
-packet::PacketFactory packet_factory(allocator, true);
+core::HeapArena arena;
+core::BufferFactory<uint8_t> buffer_factory(arena, MaxBufSize);
+packet::PacketFactory packet_factory(arena);
 
 UdpSenderConfig make_sender_config(const char* ip, int port) {
     UdpSenderConfig config;
@@ -76,17 +76,17 @@ void remove_port(NetworkLoop& net_loop, NetworkLoop::PortHandle handle) {
 TEST_GROUP(udp_ports) {};
 
 TEST(udp_ports, no_ports) {
-    NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
-    CHECK(net_loop.valid());
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    CHECK(net_loop.is_valid());
 
     UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
 }
 
 TEST(udp_ports, add_anyaddr) {
-    packet::ConcurrentQueue queue;
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
-    CHECK(net_loop.valid());
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    CHECK(net_loop.is_valid());
 
     UdpSenderConfig tx_config = make_sender_config("0.0.0.0", 0);
     UdpReceiverConfig rx_config = make_receiver_config("0.0.0.0", 0);
@@ -107,10 +107,10 @@ TEST(udp_ports, add_anyaddr) {
 }
 
 TEST(udp_ports, add_localhost) {
-    packet::ConcurrentQueue queue;
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
-    CHECK(net_loop.valid());
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    CHECK(net_loop.is_valid());
 
     UdpSenderConfig tx_config = make_sender_config("127.0.0.1", 0);
     UdpReceiverConfig rx_config = make_receiver_config("127.0.0.1", 0);
@@ -131,10 +131,10 @@ TEST(udp_ports, add_localhost) {
 }
 
 TEST(udp_ports, add_addrinuse) {
-    packet::ConcurrentQueue queue;
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
-    NetworkLoop net_loop1(packet_factory, buffer_factory, allocator);
-    CHECK(net_loop1.valid());
+    NetworkLoop net_loop1(packet_factory, buffer_factory, arena);
+    CHECK(net_loop1.is_valid());
 
     UdpSenderConfig tx_config = make_sender_config("127.0.0.1", 0);
     UdpReceiverConfig rx_config = make_receiver_config("127.0.0.1", 0);
@@ -153,8 +153,8 @@ TEST(udp_ports, add_addrinuse) {
 
     UNSIGNED_LONGS_EQUAL(2, net_loop1.num_ports());
 
-    NetworkLoop net_loop2(packet_factory, buffer_factory, allocator);
-    CHECK(net_loop2.valid());
+    NetworkLoop net_loop2(packet_factory, buffer_factory, arena);
+    CHECK(net_loop2.is_valid());
 
     UNSIGNED_LONGS_EQUAL(0, net_loop2.num_ports());
 
@@ -166,10 +166,10 @@ TEST(udp_ports, add_addrinuse) {
 }
 
 TEST(udp_ports, add_broadcast_sender) {
-    packet::ConcurrentQueue queue;
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
-    CHECK(net_loop.valid());
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    CHECK(net_loop.is_valid());
 
     UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
 
@@ -182,10 +182,10 @@ TEST(udp_ports, add_broadcast_sender) {
 }
 
 TEST(udp_ports, add_multicast_receiver) {
-    packet::ConcurrentQueue queue;
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
-    CHECK(net_loop.valid());
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    CHECK(net_loop.is_valid());
 
     UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
 
@@ -206,10 +206,10 @@ TEST(udp_ports, add_multicast_receiver) {
 }
 
 TEST(udp_ports, add_multicast_receiver_error) {
-    packet::ConcurrentQueue queue;
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
-    CHECK(net_loop.valid());
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    CHECK(net_loop.is_valid());
 
     UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
 
@@ -237,10 +237,10 @@ TEST(udp_ports, add_multicast_receiver_error) {
 }
 
 TEST(udp_ports, add_remove) {
-    packet::ConcurrentQueue queue;
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
-    CHECK(net_loop.valid());
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    CHECK(net_loop.is_valid());
 
     UdpSenderConfig tx_config = make_sender_config("0.0.0.0", 0);
     UdpReceiverConfig rx_config = make_receiver_config("0.0.0.0", 0);
@@ -265,8 +265,8 @@ TEST(udp_ports, add_remove) {
 }
 
 TEST(udp_ports, add_remove_add) {
-    NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
-    CHECK(net_loop.valid());
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    CHECK(net_loop.is_valid());
 
     UdpSenderConfig tx_config = make_sender_config("0.0.0.0", 0);
 

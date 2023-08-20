@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-/** Sender peer.
+/** Sender node.
  *
  * Sender gets an audio stream from the user, encodes it into network packets, and
  * transmits them to a remote receiver.
@@ -42,8 +42,7 @@ extern "C" {
  *
  * - A sender is created using roc_sender_open().
  *
- * - Optionally, the sender parameters may be fine-tuned using `roc_sender_set_*()`
- *   functions.
+ * - Optionally, the sender parameters may be fine-tuned using roc_sender_configure().
  *
  * - The sender either binds local endpoints using roc_sender_bind(), allowing receivers
  *   connecting to them, or itself connects to remote receiver endpoints using
@@ -61,7 +60,7 @@ extern "C" {
  * zero and are created automatically. In simple cases just use \c ROC_SLOT_DEFAULT.
  *
  * Each slot has its own set of *interfaces*, one per each type defined in \ref
- * roc_interface. The interface defines the type of the communication with the remote peer
+ * roc_interface. The interface defines the type of the communication with the remote node
  * and the set of the protocols supported by it.
  *
  * Supported actions with the interface:
@@ -76,40 +75,46 @@ extern "C" {
  *
  * Supported interface configurations:
  *
- *   - Connect \c ROC_INTERFACE_CONSOLIDATED to a remote endpoint (e.g. be an RTSP
+ *   - Connect \ref ROC_INTERFACE_CONSOLIDATED to a remote endpoint (e.g. be an RTSP
  *     client).
- *   - Bind \c ROC_INTERFACE_CONSOLIDATED to a local endpoint (e.g. be an RTSP server).
- *   - Connect \c ROC_INTERFACE_AUDIO_SOURCE, \c ROC_INTERFACE_AUDIO_REPAIR (optionally,
- *     for FEC), and \c ROC_INTERFACE_AUDIO_CONTROL (optionally, for control messages)
- *     to remote endpoints (e.g. be an RTP/FECFRAME/RTCP sender).
+ *   - Bind \ref ROC_INTERFACE_CONSOLIDATED to a local endpoint (e.g. be an RTSP server).
+ *   - Connect \ref ROC_INTERFACE_AUDIO_SOURCE, \ref ROC_INTERFACE_AUDIO_REPAIR
+ *     (optionally, for FEC), and \ref ROC_INTERFACE_AUDIO_CONTROL (optionally, for
+ *     control messages) to remote endpoints (e.g. be an RTP/FECFRAME/RTCP sender).
+ *
+ * Slots can be removed using roc_sender_unlink(). Removing a slot also removes all its
+ * interfaces and terminates all associated connections.
+ *
+ * Slots can be added and removed at any time on fly and from any thread. It is safe
+ * to do it from another thread concurrently with writing frames. Operations with
+ * slots won't block concurrent writes.
  *
  * **FEC scheme**
  *
- * If \c ROC_INTERFACE_CONSOLIDATED is used, it automatically creates all necessary
+ * If \ref ROC_INTERFACE_CONSOLIDATED is used, it automatically creates all necessary
  * transport interfaces and the user should not bother about them.
  *
- * Otherwise, the user should manually configure \c ROC_INTERFACE_AUDIO_SOURCE and
- * \c ROC_INTERFACE_AUDIO_REPAIR interfaces:
+ * Otherwise, the user should manually configure \ref ROC_INTERFACE_AUDIO_SOURCE and
+ * \ref ROC_INTERFACE_AUDIO_REPAIR interfaces:
  *
  *  - If FEC is disabled (\ref ROC_FEC_ENCODING_DISABLE), only
- *    \c ROC_INTERFACE_AUDIO_SOURCE should be configured. It will be used to transmit
+ *    \ref ROC_INTERFACE_AUDIO_SOURCE should be configured. It will be used to transmit
  *    audio packets.
  *
- *  - If FEC is enabled, both \c ROC_INTERFACE_AUDIO_SOURCE and
- *    \c ROC_INTERFACE_AUDIO_REPAIR interfaces should be configured. The second interface
- *    will be used to transmit redundant repair data.
+ *  - If FEC is enabled, both \ref ROC_INTERFACE_AUDIO_SOURCE and
+ *    \ref ROC_INTERFACE_AUDIO_REPAIR interfaces should be configured. The second
+ *    interface will be used to transmit redundant repair data.
  *
  * The protocols for the two interfaces should correspond to each other and to the FEC
- * scheme. For example, if \c ROC_FEC_RS8M is used, the protocols should be
- * \c ROC_PROTO_RTP_RS8M_SOURCE and \c ROC_PROTO_RS8M_REPAIR.
+ * scheme. For example, if \ref ROC_FEC_ENCODING_RS8M is used, the protocols should be
+ * \ref ROC_PROTO_RTP_RS8M_SOURCE and \ref ROC_PROTO_RS8M_REPAIR.
  *
  * **Sample rate**
  *
  * If the sample rate of the user frames and the sample rate of the network packets are
  * different, the sender employs resampler to convert one rate to another.
  *
- * Resampling is a quite time-consuming operation. The user can choose between completely
- * disabling resampling (and so use the same rate for frames and packets) or several
+ * Resampling is a quite time-consuming operation. The user can choose between several
  * resampler profiles providing different compromises between CPU consumption and quality.
  *
  * **Clock source**
@@ -117,16 +122,16 @@ extern "C" {
  * Sender should encode samples at a constant rate that is configured when the sender
  * is created. There are two ways to accomplish this:
  *
- *  - If the user enabled internal clock (\c ROC_CLOCK_INTERNAL), the sender employs a
- *    CPU timer to block writes until it's time to encode the next bunch of samples
- *    according to the configured sample rate.
+ *  - If the user enabled internal clock (\ref ROC_CLOCK_SOURCE_INTERNAL), the sender
+ *    employs a CPU timer to block writes until it's time to encode the next bunch of
+ *    samples according to the configured sample rate.
 
  *    This mode is useful when the user gets samples from a non-realtime source, e.g.
  *    from an audio file.
  *
- *  - If the user enabled external clock (\c ROC_CLOCK_EXTERNAL), the samples written to
- *    the sender are encoded and sent immediately, and hence the user is responsible to
- *    call write operation according to the sample rate.
+ *  - If the user enabled external clock (\ref ROC_CLOCK_SOURCE_EXTERNAL), the samples
+ *    written to the sender are encoded and sent immediately, and hence the user is
+ *    responsible to call write operation according to the sample rate.
  *
  *    This mode is useful when the user gets samples from a realtime source with its own
  *    clock, e.g. from an audio device. Internal clock should not be used in this case
@@ -158,86 +163,44 @@ typedef struct roc_sender roc_sender;
  *    after the function returns
  *  - passes the ownership of \p result to the user; the user is responsible to call
  *    roc_sender_close() to free it
+ *  - attaches created sender to \p context; the user should not close context
+ *    before closing sender
  */
 ROC_API int roc_sender_open(roc_context* context,
                             const roc_sender_config* config,
                             roc_sender** result);
 
-/** Set sender interface outgoing address.
+/** Set sender interface configuration.
  *
- * Optional. Should be used only when connecting an interface to a remote endpoint.
- *
- * If set, explicitly defines the IP address of the OS network interface from which to
- * send the outgoing packets. If not set, the outgoing interface is selected automatically
- * by the OS, depending on the remote endpoint address.
- *
- * It is allowed to set outgoing address to `0.0.0.0` (for IPv4) or to `::` (for IPv6),
- * to achieve the same behavior as if it wasn't set, i.e. to let the OS to select the
- * outgoing interface automatically.
- *
- * By default, the outgoing address is not set.
- *
- * Each slot's interface can have only one outgoing address. The function should be called
- * before calling roc_sender_connect() for this slot and interface. It should not be
- * called when calling roc_sender_bind() for the interface.
+ * Updates configuration of specified interface of specified slot. If called, the
+ * call should be done before calling roc_sender_bind() or roc_sender_connect()
+ * for the same interface.
  *
  * Automatically initializes slot with given index if it's used first time.
+ *
+ * If an error happens during configure, the whole slot is disabled and marked broken.
+ * The slot index remains reserved. The user is responsible for removing the slot
+ * using roc_sender_unlink(), after which slot index can be reused.
  *
  * **Parameters**
  *  - \p sender should point to an opened sender
  *  - \p slot specifies the sender slot
  *  - \p iface specifies the sender interface
- *  - \p ip should be IPv4 or IPv6 address
+ *  - \p config should be point to an initialized config
  *
  * **Returns**
- *  - returns zero if the outgoing interface was successfully set
+ *  - returns zero if config was successfully updated
  *  - returns a negative value if the arguments are invalid
- *  - returns a negative value if an error occurred
+ *  - returns a negative value if slot is already bound or connected
  *
  * **Ownership**
- *  - doesn't take or share the ownership of \p ip; it may be safely deallocated
+ *  - doesn't take or share the ownership of \p config; it may be safely deallocated
  *    after the function returns
  */
-ROC_API int roc_sender_set_outgoing_address(roc_sender* sender,
-                                            roc_slot slot,
-                                            roc_interface iface,
-                                            const char* ip);
-
-/** Set sender interface address reuse option.
- *
- * Optional.
- *
- * When set to true, SO_REUSEADDR is enabled for interface socket, regardless of socket
- * type, unless binding to ephemeral port (port explicitly set to zero).
- *
- * When set to false, SO_REUSEADDR is enabled only for multicast sockets, unless binding
- * to ephemeral port (port explicitly set to zero).
- *
- * By default set to false.
- *
- * For TCP-based protocols, SO_REUSEADDR allows immediate reuse of recently closed socket
- * in TIME_WAIT state, which may be useful you want to be able to restart server quickly.
- *
- * For UDP-based protocols, SO_REUSEADDR allows multiple processes to bind to the same
- * address, which may be useful if you're using socket activation mechanism.
- *
- * Automatically initializes slot with given index if it's used first time.
- *
- * **Parameters**
- *  - \p sender should point to an opened sender
- *  - \p slot specifies the sender slot
- *  - \p iface specifies the sender interface
- *  - \p enabled should be 0 or 1
- *
- * **Returns**
- *  - returns zero if the multicast group was successfully set
- *  - returns a negative value if the arguments are invalid
- *  - returns a negative value if an error occurred
- */
-ROC_API int roc_sender_set_reuseaddr(roc_sender* sender,
-                                     roc_slot slot,
-                                     roc_interface iface,
-                                     int enabled);
+ROC_API int roc_sender_configure(roc_sender* sender,
+                                 roc_slot slot,
+                                 roc_interface iface,
+                                 const roc_interface_config* config);
 
 /** Connect the sender interface to a remote receiver endpoint.
  *
@@ -248,6 +211,10 @@ ROC_API int roc_sender_set_reuseaddr(roc_sender* sender,
  * May be called multiple times for different slots or interfaces.
  *
  * Automatically initializes slot with given index if it's used first time.
+ *
+ * If an error happens during connect, the whole slot is disabled and marked broken.
+ * The slot index remains reserved. The user is responsible for removing the slot
+ * using roc_sender_unlink(), after which slot index can be reused.
  *
  * **Parameters**
  *  - \p sender should point to an opened sender
@@ -269,22 +236,42 @@ ROC_API int roc_sender_connect(roc_sender* sender,
                                roc_interface iface,
                                const roc_endpoint* endpoint);
 
+/** Delete sender slot.
+ *
+ * Disconnects, unbinds, and removes all slot interfaces and removes the slot.
+ * All associated connections to remote nodes are properly terminated.
+ *
+ * After unlinking the slot, it can be re-created again by re-using slot index.
+ *
+ * **Parameters**
+ *  - \p sender should point to an opened sender
+ *  - \p slot specifies the sender slot
+ *
+ * **Returns**
+ *  - returns zero if the slot was successfully removed
+ *  - returns a negative value if the arguments are invalid
+ *  - returns a negative value if the slot does not exist
+ */
+ROC_API int roc_sender_unlink(roc_sender* sender, roc_slot slot);
+
 /** Encode samples to packets and transmit them to the receiver.
  *
  * Encodes samples to packets and enqueues them for transmission by the network worker
  * thread of the context.
  *
- * If \c ROC_CLOCK_INTERNAL is used, the function blocks until it's time to transmit the
- * samples according to the configured sample rate. The function returns after encoding
- * and enqueuing the packets, without waiting when the packets are actually transmitted.
+ * If \ref ROC_CLOCK_SOURCE_INTERNAL is used, the function blocks until it's time to
+ * transmit the samples according to the configured sample rate. The function returns
+ * after encoding and enqueuing the packets, without waiting when the packets are actually
+ * transmitted.
  *
  * Until the sender is connected to at least one receiver, the stream is just dropped.
  * If the sender is connected to multiple receivers, the stream is duplicated to
  * each of them.
  *
  * **Parameters**
- *  - \p sender should point to an opened, bound, and connected sender
- *  - \p frame should point to a valid frame with an array of samples to send
+ *  - \p sender should point to an opened sender
+ *  - \p frame should point to an initialized frame; it should contain pointer to
+ *    a buffer and it's size; the buffer is fully copied into the sender
  *
  * **Returns**
  *  - returns zero if all samples were successfully encoded and enqueued

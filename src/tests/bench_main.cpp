@@ -9,13 +9,13 @@
 #include <benchmark/benchmark.h>
 
 #include "roc_core/crash_handler.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_core/log.h"
 
 using namespace roc;
 
 int main(int argc, char** argv) {
-    core::HeapAllocator::enable_panic_on_leak();
+    core::HeapArena::enable_leak_detection();
 
     core::CrashHandler crash_handler;
 

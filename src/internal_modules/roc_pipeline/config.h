@@ -17,6 +17,7 @@
 #include "roc_audio/latency_monitor.h"
 #include "roc_audio/profiler.h"
 #include "roc_audio/resampler_backend.h"
+#include "roc_audio/resampler_map.h"
 #include "roc_audio/resampler_profile.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_audio/watchdog.h"
@@ -35,23 +36,25 @@ namespace pipeline {
 //! Default sample rate, number of samples per second.
 const size_t DefaultSampleRate = 44100;
 
-//! Default channel mask.
-const packet::channel_mask_t DefaultChannelMask = 0x3;
+//! Default sample specification.
+static const audio::SampleSpec DefaultSampleSpec(DefaultSampleRate,
+                                                 audio::ChanLayout_Surround,
+                                                 audio::ChanMask_Surround_Stereo);
 
 //! Default packet length.
-const core::nanoseconds_t DefaultPacketLength = 7 * core::Millisecond;
+//! @remarks
+//!  2.5ms gives 110 samples on 44100Hz and 120 samples on 48000Hz, which correspond,
+//!  respectively, to 458 and 498 bytes UDP packets on 2-channel 16-bit PCM packed into
+//!  RTP + FECFRAME. This packet sizes are chosen because they both are smaller than
+//!  508 bytes, the maximum UDP payload size that is typically not fragmented when sent
+//!  over Internet.
+const core::nanoseconds_t DefaultPacketLength = 2500 * core::Microsecond;
 
 //! Default latency.
+//! @remarks
+//!  200ms work well on majority Wi-Fi networks and is not too annoying. However, many
+//!  networks allow lower latencies, and some networks require higher.
 const core::nanoseconds_t DefaultLatency = 200 * core::Millisecond;
-
-//! Default internal frame length.
-const core::nanoseconds_t DefaultInternalFrameLength = 7 * core::Millisecond;
-
-//! Default minum latency relative to target latency.
-const int DefaultMinLatencyFactor = -1;
-
-//! Default maximum latency relative to target latency.
-const int DefaultMaxLatencyFactor = 2;
 
 //! Task processing parameters.
 struct TaskConfig {
@@ -91,7 +94,7 @@ struct TaskConfig {
     TaskConfig()
         : enable_precise_task_scheduling(true)
         , min_frame_length_between_tasks(200 * core::Microsecond)
-        , max_frame_length_between_tasks(DefaultInternalFrameLength)
+        , max_frame_length_between_tasks(1 * core::Millisecond)
         , max_inframe_task_processing(20 * core::Microsecond)
         , task_processing_prohibited_interval(200 * core::Microsecond) {
     }
@@ -117,29 +120,20 @@ struct SenderConfig {
     //! Input sample spec
     audio::SampleSpec input_sample_spec;
 
-    //! Duration of the internal frames, in nanoseconds.
-    core::nanoseconds_t internal_frame_length;
-
     //! Packet length, in nanoseconds.
     core::nanoseconds_t packet_length;
 
     //! RTP payload type for audio packets.
-    rtp::PayloadType payload_type;
-
-    //! Resample frames with a constant ratio.
-    bool resampling;
+    unsigned payload_type;
 
     //! Interleave packets.
-    bool interleaving;
+    bool enable_interleaving;
 
     //! Constrain receiver speed using a CPU timer according to the sample rate.
-    bool timing;
-
-    //! Fill unitialized data with large values to make them more noticable.
-    bool poisoning;
+    bool enable_timing;
 
     //! Profile moving average of frames being written.
-    bool profiling;
+    bool enable_profiling;
 
     //! Profiler configuration.
     audio::ProfilerConfig profiler_config;
@@ -147,15 +141,12 @@ struct SenderConfig {
     SenderConfig()
         : resampler_backend(audio::ResamplerBackend_Default)
         , resampler_profile(audio::ResamplerProfile_Medium)
-        , input_sample_spec(DefaultSampleRate, DefaultChannelMask)
-        , internal_frame_length(DefaultInternalFrameLength)
+        , input_sample_spec(DefaultSampleSpec)
         , packet_length(DefaultPacketLength)
         , payload_type(rtp::PayloadType_L16_Stereo)
-        , resampling(false)
-        , interleaving(false)
-        , timing(false)
-        , poisoning(false)
-        , profiling(false) {
+        , enable_interleaving(false)
+        , enable_timing(false)
+        , enable_profiling(false) {
     }
 };
 
@@ -178,9 +169,6 @@ struct ReceiverSessionConfig {
     //! RTP validator parameters.
     rtp::ValidatorConfig rtp_validator;
 
-    //! FreqEstimator config.
-    audio::FreqEstimatorConfig freq_estimator_config;
-
     //! LatencyMonitor parameters.
     audio::LatencyMonitorConfig latency_monitor;
 
@@ -196,11 +184,20 @@ struct ReceiverSessionConfig {
     ReceiverSessionConfig()
         : target_latency(DefaultLatency)
         , payload_type(0)
-        , freq_estimator_config()
         , resampler_backend(audio::ResamplerBackend_Default)
         , resampler_profile(audio::ResamplerProfile_Medium) {
-        latency_monitor.min_latency = target_latency * DefaultMinLatencyFactor;
-        latency_monitor.max_latency = target_latency * DefaultMaxLatencyFactor;
+        latency_monitor.deduce_min_latency(DefaultLatency);
+        latency_monitor.deduce_max_latency(DefaultLatency);
+    }
+
+    //! Automatically deduce resampler backend from FreqEstimator config.
+    void deduce_resampler_backend() {
+        if (latency_monitor.fe_enable
+            && latency_monitor.fe_profile == audio::FreqEstimatorProfile_Responsive) {
+            resampler_backend = audio::ResamplerBackend_Builtin;
+        } else {
+            resampler_backend = audio::ResamplerBackend_Default;
+        }
     }
 };
 
@@ -211,35 +208,23 @@ struct ReceiverCommonConfig {
     //! Output sample spec
     audio::SampleSpec output_sample_spec;
 
-    //! Duration of the internal frames, in nanoseconds.
-    core::nanoseconds_t internal_frame_length;
-
-    //! Perform resampling to compensate sender and receiver frequency difference.
-    bool resampling;
-
     //! Constrain receiver speed using a CPU timer according to the sample rate.
-    bool timing;
-
-    //! Fill uninitialized data with large values to make them more noticeable.
-    bool poisoning;
+    bool enable_timing;
 
     //! Profile moving average of frames being written.
-    bool profiling;
+    bool enable_profiling;
 
     //! Profiler configuration.
     audio::ProfilerConfig profiler_config;
 
     //! Insert weird beeps instead of silence on packet loss.
-    bool beeping;
+    bool enable_beeping;
 
     ReceiverCommonConfig()
-        : output_sample_spec(DefaultSampleRate, DefaultChannelMask)
-        , internal_frame_length(DefaultInternalFrameLength)
-        , resampling(false)
-        , timing(false)
-        , poisoning(false)
-        , profiling(false)
-        , beeping(false) {
+        : output_sample_spec(DefaultSampleSpec)
+        , enable_timing(false)
+        , enable_profiling(false)
+        , enable_beeping(false) {
     }
 };
 
@@ -256,7 +241,7 @@ struct ReceiverConfig {
 };
 
 //! Converter parameters.
-struct ConverterConfig {
+struct TranscoderConfig {
     //! To specify which resampling backend will be used.
     audio::ResamplerBackend resampler_backend;
 
@@ -269,30 +254,18 @@ struct ConverterConfig {
     //! Output sample spec
     audio::SampleSpec output_sample_spec;
 
-    //! Duration of the internal frames, in nanoseconds.
-    core::nanoseconds_t internal_frame_length;
-
-    //! Resample frames with a constant ratio.
-    bool resampling;
-
-    //! Fill unitialized data with large values to make them more noticable.
-    bool poisoning;
-
     //! Profile moving average of frames being written.
-    bool profiling;
+    bool enable_profiling;
 
     //! Profiler configuration.
     audio::ProfilerConfig profiler_config;
 
-    ConverterConfig()
+    TranscoderConfig()
         : resampler_backend(audio::ResamplerBackend_Default)
         , resampler_profile(audio::ResamplerProfile_Medium)
-        , input_sample_spec(DefaultSampleRate, DefaultChannelMask)
-        , output_sample_spec(DefaultSampleRate, DefaultChannelMask)
-        , internal_frame_length(DefaultInternalFrameLength)
-        , resampling(false)
-        , poisoning(false)
-        , profiling(false) {
+        , input_sample_spec(DefaultSampleSpec)
+        , output_sample_spec(DefaultSampleSpec)
+        , enable_profiling(false) {
     }
 };
 

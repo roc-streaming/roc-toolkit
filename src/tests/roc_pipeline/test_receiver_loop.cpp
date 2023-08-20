@@ -11,7 +11,7 @@
 #include "test_helpers/scheduler.h"
 
 #include "roc_core/buffer_factory.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_fec/codec_map.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_pipeline/receiver_loop.h"
@@ -24,14 +24,12 @@ namespace {
 
 enum { MaxBufSize = 1000 };
 
-const core::nanoseconds_t MaxBufDuration = core::Millisecond * 10;
+core::HeapArena arena;
+core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, MaxBufSize);
+core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize);
+packet::PacketFactory packet_factory(arena);
 
-core::HeapAllocator allocator;
-core::BufferFactory<audio::sample_t> sample_buffer_factory(allocator, MaxBufSize, true);
-core::BufferFactory<uint8_t> byte_buffer_factory(allocator, MaxBufSize, true);
-packet::PacketFactory packet_factory(allocator, true);
-
-rtp::FormatMap format_map;
+rtp::FormatMap format_map(arena);
 
 class TaskIssuer : public IPipelineTaskCompleter {
 public:
@@ -39,15 +37,15 @@ public:
         : pipeline_(pipeline)
         , slot_(NULL)
         , task_create_slot_(NULL)
-        , task_create_endpoint_(NULL)
-        , task_delete_endpoint_(NULL)
+        , task_add_endpoint_(NULL)
+        , task_delete_slot_(NULL)
         , done_(false) {
     }
 
     ~TaskIssuer() {
         delete task_create_slot_;
-        delete task_create_endpoint_;
-        delete task_delete_endpoint_;
+        delete task_add_endpoint_;
+        delete task_delete_slot_;
     }
 
     void start() {
@@ -67,20 +65,19 @@ public:
         if (&task == task_create_slot_) {
             slot_ = task_create_slot_->get_handle();
             roc_panic_if_not(slot_);
-            task_create_endpoint_ = new ReceiverLoop::Tasks::CreateEndpoint(
+            task_add_endpoint_ = new ReceiverLoop::Tasks::AddEndpoint(
                 slot_, address::Iface_AudioSource, address::Proto_RTP);
-            pipeline_.schedule(*task_create_endpoint_, *this);
+            pipeline_.schedule(*task_add_endpoint_, *this);
             return;
         }
 
-        if (&task == task_create_endpoint_) {
-            task_delete_endpoint_ = new ReceiverLoop::Tasks::DeleteEndpoint(
-                slot_, address::Iface_AudioSource);
-            pipeline_.schedule(*task_delete_endpoint_, *this);
+        if (&task == task_add_endpoint_) {
+            task_delete_slot_ = new ReceiverLoop::Tasks::DeleteSlot(slot_);
+            pipeline_.schedule(*task_delete_slot_, *this);
             return;
         }
 
-        if (&task == task_delete_endpoint_) {
+        if (&task == task_delete_slot_) {
             done_ = true;
             return;
         }
@@ -94,8 +91,8 @@ private:
     ReceiverLoop::SlotHandle slot_;
 
     ReceiverLoop::Tasks::CreateSlot* task_create_slot_;
-    ReceiverLoop::Tasks::CreateEndpoint* task_create_endpoint_;
-    ReceiverLoop::Tasks::DeleteEndpoint* task_delete_endpoint_;
+    ReceiverLoop::Tasks::AddEndpoint* task_add_endpoint_;
+    ReceiverLoop::Tasks::DeleteSlot* task_delete_slot_;
 
     core::Atomic<int> done_;
 };
@@ -108,18 +105,16 @@ TEST_GROUP(receiver_loop) {
     ReceiverConfig config;
 
     void setup() {
-        config.common.internal_frame_length = MaxBufDuration;
-
-        config.common.resampling = false;
-        config.common.timing = false;
+        config.common.enable_timing = false;
+        config.default_session.latency_monitor.fe_enable = false;
     }
 };
 
 TEST(receiver_loop, endpoints_sync) {
     ReceiverLoop receiver(scheduler, config, format_map, packet_factory,
-                          byte_buffer_factory, sample_buffer_factory, allocator);
+                          byte_buffer_factory, sample_buffer_factory, arena);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     ReceiverLoop::SlotHandle slot = NULL;
 
@@ -133,15 +128,15 @@ TEST(receiver_loop, endpoints_sync) {
     }
 
     {
-        ReceiverLoop::Tasks::CreateEndpoint task(slot, address::Iface_AudioSource,
-                                                 address::Proto_RTP);
+        ReceiverLoop::Tasks::AddEndpoint task(slot, address::Iface_AudioSource,
+                                              address::Proto_RTP);
         CHECK(receiver.schedule_and_wait(task));
         CHECK(task.success());
         CHECK(task.get_writer());
     }
 
     {
-        ReceiverLoop::Tasks::DeleteEndpoint task(slot, address::Iface_AudioSource);
+        ReceiverLoop::Tasks::DeleteSlot task(slot);
         CHECK(receiver.schedule_and_wait(task));
         CHECK(task.success());
     }
@@ -149,9 +144,9 @@ TEST(receiver_loop, endpoints_sync) {
 
 TEST(receiver_loop, endpoints_async) {
     ReceiverLoop receiver(scheduler, config, format_map, packet_factory,
-                          byte_buffer_factory, sample_buffer_factory, allocator);
+                          byte_buffer_factory, sample_buffer_factory, arena);
 
-    CHECK(receiver.valid());
+    CHECK(receiver.is_valid());
 
     TaskIssuer ti(receiver);
 

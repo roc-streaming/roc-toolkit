@@ -15,7 +15,8 @@
 #include "roc_audio/iframe_reader.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/array.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/attributes.h"
+#include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
 #include "roc_packet/units.h"
@@ -32,7 +33,7 @@ struct WatchdogConfig {
     //!  broken clients. Set to zero to disable.
     core::nanoseconds_t no_playback_timeout;
 
-    //! Timeout for frequent breakages, nanoseconds.
+    //! Timeout for frequent stuttering, nanoseconds.
     //! @remarks
     //!  Maximum allowed period during which every drop detection window overlaps with
     //!  at least one frame which caused packet drops and with at least one frame which
@@ -40,11 +41,12 @@ struct WatchdogConfig {
     //!  terminated. This mechanism allows to detect the vicious circle when all client
     //!  packets are a bit late and we are constantly dropping them producing unpleasant
     //!  noise. Set to zero to disable.
-    core::nanoseconds_t broken_playback_timeout;
+    core::nanoseconds_t choppy_playback_timeout;
 
-    //! Breakage detection window, nanoseconds.
-    //! @see broken_playback_timeout.
-    core::nanoseconds_t breakage_detection_window;
+    //! Window size of detecting stuttering, nanoseconds.
+    //! @see
+    //!  choppy_playback_timeout
+    core::nanoseconds_t choppy_playback_window;
 
     //! Frame status window size for logging, number of frames.
     //! @remarks
@@ -54,9 +56,14 @@ struct WatchdogConfig {
     //! Initialize config with default values.
     WatchdogConfig()
         : no_playback_timeout(2 * core::Second)
-        , broken_playback_timeout(2 * core::Second)
-        , breakage_detection_window(300 * core::Millisecond)
+        , choppy_playback_timeout(2 * core::Second)
+        , choppy_playback_window(300 * core::Millisecond)
         , frame_status_window(20) {
+    }
+
+    //! Automatically deduce choppy_playback_window from choppy_playback_timeout.
+    void deduce_choppy_playback_window(core::nanoseconds_t timeout) {
+        choppy_playback_window = std::min(300 * core::Millisecond, timeout / 4);
     }
 };
 
@@ -69,10 +76,10 @@ public:
     Watchdog(IFrameReader& reader,
              const audio::SampleSpec& sample_spec,
              const WatchdogConfig& config,
-             core::IAllocator& allocator);
+             core::IArena& arena);
 
     //! Check if object is successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Read audio frame.
     //! @remarks
@@ -84,7 +91,7 @@ public:
     //!  false if during the session timeout each frame has an empty flag or the maximum
     //!  allowed number of consecutive windows that can contain frames that aren't fully
     //!  filled and contain dropped packets was exceeded.
-    bool update();
+    ROC_ATTR_NODISCARD bool update();
 
 private:
     void update_blank_timeout_(const Frame& frame, packet::timestamp_t next_read_pos);

@@ -13,7 +13,7 @@
 #define ROC_FEC_READER_H_
 
 #include "roc_core/array.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
 #include "roc_fec/iblock_decoder.h"
@@ -47,7 +47,7 @@ public:
     //!  - @p source_reader specifies input queue with data packets;
     //!  - @p repair_reader specifies input queue with FEC packets;
     //!  - @p parser specifies packet parser for restored packets.
-    //!  - @p allocator is used to initialize a packet array
+    //!  - @p arena is used to initialize a packet array
     Reader(const ReaderConfig& config,
            packet::FecScheme fec_scheme,
            IBlockDecoder& decoder,
@@ -55,16 +55,16 @@ public:
            packet::IReader& repair_reader,
            packet::IParser& parser,
            packet::PacketFactory& packet_factory,
-           core::IAllocator& allocator);
+           core::IArena& arena);
 
     //! Check if object is successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Did decoder catch block beginning?
-    bool started() const;
+    bool is_started() const;
 
     //! Is decoder alive?
-    bool alive() const;
+    bool is_alive() const;
 
     //! Read packet.
     //! @remarks

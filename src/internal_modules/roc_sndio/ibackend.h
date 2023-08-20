@@ -13,7 +13,7 @@
 #define ROC_SNDIO_IBACKEND_H_
 
 #include "roc_core/array.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_sndio/config.h"
 #include "roc_sndio/device_type.h"
 #include "roc_sndio/driver.h"
@@ -39,7 +39,7 @@ public:
                                  const char* driver,
                                  const char* path,
                                  const Config& config,
-                                 core::IAllocator& allocator) = 0;
+                                 core::IArena& arena) = 0;
 };
 
 } // namespace sndio

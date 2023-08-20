@@ -47,12 +47,12 @@ static void* receiver_loop(void* arg) {
     roc_receiver_config receiver_config;
     memset(&receiver_config, 0, sizeof(receiver_config));
 
-    receiver_config.frame_sample_rate = MY_SAMPLE_RATE;
-    receiver_config.frame_channels = ROC_CHANNEL_SET_STEREO;
-    receiver_config.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
+    receiver_config.frame_encoding.rate = MY_SAMPLE_RATE;
+    receiver_config.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
+    receiver_config.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
 
     /* Receiver should clock itself. */
-    receiver_config.clock_source = ROC_CLOCK_INTERNAL;
+    receiver_config.clock_source = ROC_CLOCK_SOURCE_INTERNAL;
 
     roc_receiver* receiver = NULL;
     if (roc_receiver_open(context, &receiver_config, &receiver) != 0) {
@@ -124,15 +124,15 @@ static void* sender_loop(void* arg) {
     roc_sender_config sender_config;
     memset(&sender_config, 0, sizeof(sender_config));
 
-    sender_config.frame_sample_rate = MY_SAMPLE_RATE;
-    sender_config.frame_channels = ROC_CHANNEL_SET_STEREO;
-    sender_config.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
+    sender_config.frame_encoding.rate = MY_SAMPLE_RATE;
+    sender_config.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
+    sender_config.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
 
     /* Sender should not use any FEC scheme. */
     sender_config.fec_encoding = ROC_FEC_ENCODING_DISABLE;
 
     /* Sender should clock itself. */
-    sender_config.clock_source = ROC_CLOCK_INTERNAL;
+    sender_config.clock_source = ROC_CLOCK_SOURCE_INTERNAL;
 
     roc_sender* sender = NULL;
     if (roc_sender_open(context, &sender_config, &sender) != 0) {

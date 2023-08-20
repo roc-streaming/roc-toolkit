@@ -12,39 +12,53 @@
 #ifndef ROC_CORE_BUFFER_H_
 #define ROC_CORE_BUFFER_H_
 
-#include "roc_core/buffer_factory.h"
+#include "roc_core/align_ops.h"
+#include "roc_core/macro_helpers.h"
+#include "roc_core/pool.h"
 #include "roc_core/ref_counted.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
 namespace core {
 
-//! Buffer.
-template <class T>
-class Buffer : public RefCounted<Buffer<T>, FactoryAllocation<BufferFactory<T> > > {
-    typedef RefCounted<Buffer<T>, FactoryAllocation<BufferFactory<T> > > Base;
-
+//! Fixed-size dynamically-allocated buffer.
+//!
+//! @tparam T defines element type.
+//!
+//! @remarks
+//!  Buffer size is fixed, but determined at runtime, not compile time.
+//!  It is defined by the pool that allocates the buffer.
+//!  User typically works with buffers via Slice, which holds a reference
+//!  to buffer and points to a variable-size subset of its memory.
+//!
+//! @see BufferFactory, Slice.
+template <class T> class Buffer : public RefCounted<Buffer<T>, PoolAllocation> {
 public:
     //! Initialize empty buffer.
-    explicit Buffer(BufferFactory<T>& factory)
-        : Base(factory) {
+    Buffer(IPool& buffer_pool, size_t buffer_size)
+        : RefCounted<Buffer<T>, PoolAllocation>(buffer_pool)
+        , size_(buffer_size) {
         new (data()) T[size()];
     }
 
-    //! Get maximum number of elements.
+    //! Get number of elements in buffer.
     size_t size() const {
-        return Base::factory().buffer_size();
+        return size_;
     }
 
     //! Get buffer data.
     T* data() {
-        return (T*)(((char*)this) + sizeof(Buffer));
+        return (T*)data_;
     }
 
     //! Get pointer to buffer from the pointer to its data.
     static Buffer* container_of(void* data) {
-        return (Buffer*)((char*)data - sizeof(Buffer));
+        return ROC_CONTAINER_OF(data, Buffer, data_);
     }
+
+private:
+    const size_t size_;
+    AlignMax data_[];
 };
 
 } // namespace core

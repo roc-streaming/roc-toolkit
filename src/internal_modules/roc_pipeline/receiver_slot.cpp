@@ -20,8 +20,8 @@ ReceiverSlot::ReceiverSlot(const ReceiverConfig& receiver_config,
                            packet::PacketFactory& packet_factory,
                            core::BufferFactory<uint8_t>& byte_buffer_factory,
                            core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-                           core::IAllocator& allocator)
-    : RefCounted(allocator)
+                           core::IArena& arena)
+    : core::RefCounted<ReceiverSlot, core::ArenaAllocation>(arena)
     , format_map_(format_map)
     , receiver_state_(receiver_state)
     , session_group_(receiver_config,
@@ -31,12 +31,12 @@ ReceiverSlot::ReceiverSlot(const ReceiverConfig& receiver_config,
                      packet_factory,
                      byte_buffer_factory,
                      sample_buffer_factory,
-                     allocator) {
+                     arena) {
     roc_log(LogDebug, "receiver slot: initializing");
 }
 
-ReceiverEndpoint* ReceiverSlot::create_endpoint(address::Interface iface,
-                                                address::Protocol proto) {
+ReceiverEndpoint* ReceiverSlot::add_endpoint(address::Interface iface,
+                                             address::Protocol proto) {
     roc_log(LogDebug, "receiver slot: adding %s endpoint %s",
             address::interface_to_str(iface), address::proto_to_str(proto));
 
@@ -56,28 +56,6 @@ ReceiverEndpoint* ReceiverSlot::create_endpoint(address::Interface iface,
 
     roc_log(LogError, "receiver slot: unsupported interface");
     return NULL;
-}
-
-void ReceiverSlot::delete_endpoint(address::Interface iface) {
-    roc_log(LogDebug, "receiver slot: removing %s endpoint",
-            address::interface_to_str(iface));
-
-    switch (iface) {
-    case address::Iface_AudioSource:
-        source_endpoint_.reset(NULL);
-        return;
-
-    case address::Iface_AudioRepair:
-        repair_endpoint_.reset(NULL);
-        return;
-
-    case address::Iface_AudioControl:
-        control_endpoint_.reset(NULL);
-        return;
-
-    default:
-        return;
-    }
 }
 
 void ReceiverSlot::advance(packet::timestamp_t timestamp) {
@@ -121,9 +99,9 @@ ReceiverEndpoint* ReceiverSlot::create_source_endpoint_(address::Protocol proto)
     }
 
     source_endpoint_.reset(new (source_endpoint_) ReceiverEndpoint(
-        proto, receiver_state_, session_group_, format_map_, allocator()));
+        proto, receiver_state_, session_group_, format_map_, arena()));
 
-    if (!source_endpoint_ || !source_endpoint_->valid()) {
+    if (!source_endpoint_ || !source_endpoint_->is_valid()) {
         roc_log(LogError, "receiver slot: can't create source endpoint");
         source_endpoint_.reset(NULL);
         return NULL;
@@ -149,9 +127,9 @@ ReceiverEndpoint* ReceiverSlot::create_repair_endpoint_(address::Protocol proto)
     }
 
     repair_endpoint_.reset(new (repair_endpoint_) ReceiverEndpoint(
-        proto, receiver_state_, session_group_, format_map_, allocator()));
+        proto, receiver_state_, session_group_, format_map_, arena()));
 
-    if (!repair_endpoint_ || !repair_endpoint_->valid()) {
+    if (!repair_endpoint_ || !repair_endpoint_->is_valid()) {
         roc_log(LogError, "receiver slot: can't create repair endpoint");
         repair_endpoint_.reset(NULL);
         return NULL;
@@ -171,9 +149,9 @@ ReceiverEndpoint* ReceiverSlot::create_control_endpoint_(address::Protocol proto
     }
 
     control_endpoint_.reset(new (control_endpoint_) ReceiverEndpoint(
-        proto, receiver_state_, session_group_, format_map_, allocator()));
+        proto, receiver_state_, session_group_, format_map_, arena()));
 
-    if (!control_endpoint_ || !control_endpoint_->valid()) {
+    if (!control_endpoint_ || !control_endpoint_->is_valid()) {
         roc_log(LogError, "receiver slot: can't create control endpoint");
         control_endpoint_.reset(NULL);
         return NULL;

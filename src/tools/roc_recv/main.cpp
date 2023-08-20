@@ -8,18 +8,19 @@
 
 #include "roc_address/endpoint_uri.h"
 #include "roc_address/io_uri.h"
+#include "roc_audio/freq_estimator.h"
 #include "roc_audio/resampler_profile.h"
 #include "roc_core/array.h"
 #include "roc_core/crash_handler.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_core/log.h"
 #include "roc_core/parse_duration.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_netio/network_loop.h"
-#include "roc_peer/context.h"
-#include "roc_peer/receiver.h"
-#include "roc_pipeline/converter_source.h"
+#include "roc_node/context.h"
+#include "roc_node/receiver.h"
 #include "roc_pipeline/receiver_source.h"
+#include "roc_pipeline/transcoder_source.h"
 #include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/backend_map.h"
 #include "roc_sndio/print_supported.h"
@@ -30,7 +31,7 @@
 using namespace roc;
 
 int main(int argc, char** argv) {
-    core::HeapAllocator::enable_panic_on_leak();
+    core::HeapArena::enable_leak_detection();
 
     core::CrashHandler crash_handler;
 
@@ -50,22 +51,17 @@ int main(int argc, char** argv) {
     case color_arg_auto:
         core::Logger::instance().set_colors(core::ColorsAuto);
         break;
-
     case color_arg_always:
         core::Logger::instance().set_colors(core::ColorsEnabled);
         break;
-
     case color_arg_never:
         core::Logger::instance().set_colors(core::ColorsDisabled);
         break;
-
     default:
         break;
     }
 
-    peer::ContextConfig context_config;
-
-    context_config.poisoning = args.poisoning_flag;
+    node::ContextConfig context_config;
 
     if (args.packet_limit_given) {
         if (args.packet_limit_arg <= 0) {
@@ -83,18 +79,18 @@ int main(int argc, char** argv) {
         context_config.max_frame_size = (size_t)args.frame_limit_arg;
     }
 
-    core::HeapAllocator heap_allocator;
+    core::HeapArena heap_arena;
 
-    peer::Context context(context_config, heap_allocator);
-    if (!context.valid()) {
-        roc_log(LogError, "can't initialize peer context");
+    node::Context context(context_config, heap_arena);
+    if (!context.is_valid()) {
+        roc_log(LogError, "can't initialize node context");
         return 1;
     }
 
     sndio::BackendDispatcher backend_dispatcher;
 
     if (args.list_supported_given) {
-        if (!sndio::print_supported(backend_dispatcher, context.allocator())) {
+        if (!sndio::print_supported(backend_dispatcher, context.arena())) {
             return 1;
         }
         return 0;
@@ -102,14 +98,17 @@ int main(int argc, char** argv) {
 
     pipeline::ReceiverConfig receiver_config;
 
+    sndio::Config io_config;
+    io_config.sample_spec.set_channel_set(
+        receiver_config.common.output_sample_spec.channel_set());
+
     if (args.frame_length_given) {
-        if (!core::parse_duration(args.frame_length_arg,
-                                  receiver_config.common.internal_frame_length)) {
+        if (!core::parse_duration(args.frame_length_arg, io_config.frame_length)) {
             roc_log(LogError, "invalid --frame-length: bad format");
             return 1;
         }
         if (receiver_config.common.output_sample_spec.ns_2_samples_overall(
-                receiver_config.common.internal_frame_length)
+                io_config.frame_length)
             <= 0) {
             roc_log(LogError, "invalid --frame-length: should be > 0");
             return 1;
@@ -117,8 +116,7 @@ int main(int argc, char** argv) {
     }
 
     sndio::BackendMap::instance().set_frame_size(
-        receiver_config.common.internal_frame_length,
-        receiver_config.common.output_sample_spec);
+        io_config.frame_length, receiver_config.common.output_sample_spec);
 
     if (args.sess_latency_given) {
         if (!core::parse_duration(args.sess_latency_arg,
@@ -128,65 +126,76 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (args.min_latency_given) {
-        if (!core::parse_duration(
-                args.min_latency_arg,
-                receiver_config.default_session.latency_monitor.min_latency)) {
-            roc_log(LogError, "invalid --min-latency");
+    if (args.latency_tolerance_given) {
+        core::nanoseconds_t latency_tolerance = 0;
+        if (!core::parse_duration(args.latency_tolerance_arg, latency_tolerance)) {
+            roc_log(LogError, "invalid --latency-tolerance");
             return 1;
         }
-    } else {
         receiver_config.default_session.latency_monitor.min_latency =
             receiver_config.default_session.target_latency
-            * pipeline::DefaultMinLatencyFactor;
-    }
-
-    if (args.max_latency_given) {
-        if (!core::parse_duration(
-                args.max_latency_arg,
-                receiver_config.default_session.latency_monitor.max_latency)) {
-            roc_log(LogError, "invalid --max-latency");
-            return 1;
-        }
-    } else {
+            - (core::nanoseconds_t)latency_tolerance;
         receiver_config.default_session.latency_monitor.max_latency =
             receiver_config.default_session.target_latency
-            * pipeline::DefaultMaxLatencyFactor;
+            + (core::nanoseconds_t)latency_tolerance;
+    } else {
+        receiver_config.default_session.latency_monitor.deduce_min_latency(
+            receiver_config.default_session.target_latency);
+        receiver_config.default_session.latency_monitor.deduce_max_latency(
+            receiver_config.default_session.target_latency);
     }
 
-    if (args.np_timeout_given) {
+    if (args.no_play_timeout_given) {
         if (!core::parse_duration(
-                args.np_timeout_arg,
+                args.no_play_timeout_arg,
                 receiver_config.default_session.watchdog.no_playback_timeout)) {
-            roc_log(LogError, "invalid --np-timeout");
+            roc_log(LogError, "invalid --no-play-timeout");
             return 1;
         }
     }
 
-    if (args.bp_timeout_given) {
+    if (args.choppy_play_timeout_given) {
         if (!core::parse_duration(
-                args.bp_timeout_arg,
-                receiver_config.default_session.watchdog.broken_playback_timeout)) {
-            roc_log(LogError, "invalid --bp-timeout");
+                args.choppy_play_timeout_arg,
+                receiver_config.default_session.watchdog.choppy_playback_timeout)) {
+            roc_log(LogError, "invalid --choppy-play-timeout");
             return 1;
         }
+        receiver_config.default_session.watchdog.deduce_choppy_playback_window(
+            receiver_config.default_session.watchdog.choppy_playback_timeout);
     }
 
-    if (args.bp_window_given) {
-        if (!core::parse_duration(
-                args.bp_window_arg,
-                receiver_config.default_session.watchdog.breakage_detection_window)) {
-            roc_log(LogError, "invalid --bp-window");
-            return 1;
-        }
+    switch (args.clock_backend_arg) {
+    case clock_backend_arg_disable:
+        receiver_config.default_session.latency_monitor.fe_enable = false;
+        break;
+    case clock_backend_arg_niq:
+        receiver_config.default_session.latency_monitor.fe_enable = true;
+        break;
+    default:
+        break;
     }
 
-    receiver_config.common.resampling = !args.no_resampling_flag;
+    switch (args.clock_profile_arg) {
+    case clock_profile_arg_default:
+        receiver_config.default_session.latency_monitor.deduce_fe_profile(
+            receiver_config.default_session.target_latency);
+        break;
+    case clock_profile_arg_responsive:
+        receiver_config.default_session.latency_monitor.fe_profile =
+            audio::FreqEstimatorProfile_Responsive;
+        break;
+    case clock_profile_arg_gradual:
+        receiver_config.default_session.latency_monitor.fe_profile =
+            audio::FreqEstimatorProfile_Gradual;
+        break;
+    default:
+        break;
+    }
 
     switch (args.resampler_backend_arg) {
     case resampler_backend_arg_default:
-        receiver_config.default_session.resampler_backend =
-            audio::ResamplerBackend_Default;
+        receiver_config.default_session.deduce_resampler_backend();
         break;
     case resampler_backend_arg_builtin:
         receiver_config.default_session.resampler_backend =
@@ -203,12 +212,10 @@ int main(int argc, char** argv) {
     case resampler_profile_arg_low:
         receiver_config.default_session.resampler_profile = audio::ResamplerProfile_Low;
         break;
-
     case resampler_profile_arg_medium:
         receiver_config.default_session.resampler_profile =
             audio::ResamplerProfile_Medium;
         break;
-
     case resampler_profile_arg_high:
         receiver_config.default_session.resampler_profile = audio::ResamplerProfile_High;
         break;
@@ -217,14 +224,8 @@ int main(int argc, char** argv) {
         break;
     }
 
-    receiver_config.common.poisoning = args.poisoning_flag;
-    receiver_config.common.profiling = args.profiling_flag;
-    receiver_config.common.beeping = args.beeping_flag;
-
-    sndio::Config io_config;
-    io_config.frame_length = receiver_config.common.internal_frame_length;
-    io_config.sample_spec.set_channel_mask(
-        receiver_config.common.output_sample_spec.channel_mask());
+    receiver_config.common.enable_profiling = args.profiling_flag;
+    receiver_config.common.enable_beeping = args.beep_flag;
 
     if (args.io_latency_given) {
         if (!core::parse_duration(args.io_latency_arg, io_config.latency)) {
@@ -239,13 +240,9 @@ int main(int argc, char** argv) {
             return 1;
         }
         io_config.sample_spec.set_sample_rate((size_t)args.rate_arg);
-    } else {
-        if (!receiver_config.common.resampling) {
-            io_config.sample_spec.set_sample_rate(pipeline::DefaultSampleRate);
-        }
     }
 
-    address::IoUri output_uri(context.allocator());
+    address::IoUri output_uri(context.arena());
     if (args.output_given) {
         if (!address::parse_io_uri(args.output_arg, output_uri)) {
             roc_log(LogError, "invalid --output file or device URI");
@@ -269,12 +266,12 @@ int main(int argc, char** argv) {
     core::ScopedPtr<sndio::ISink> output_sink;
     if (output_uri.is_valid()) {
         output_sink.reset(backend_dispatcher.open_sink(output_uri, args.output_format_arg,
-                                                       io_config, context.allocator()),
-                          context.allocator());
+                                                       io_config, context.arena()),
+                          context.arena());
     } else {
         output_sink.reset(
-            backend_dispatcher.open_default_sink(io_config, context.allocator()),
-            context.allocator());
+            backend_dispatcher.open_default_sink(io_config, context.arena()),
+            context.arena());
     }
     if (!output_sink) {
         roc_log(LogError, "can't open output file or device: uri=%s format=%s",
@@ -282,7 +279,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    receiver_config.common.timing = !output_sink->has_clock();
+    receiver_config.common.enable_timing = !output_sink->has_clock();
     receiver_config.common.output_sample_spec.set_sample_rate(
         output_sink->sample_spec().sample_rate());
 
@@ -294,10 +291,10 @@ int main(int argc, char** argv) {
     }
 
     core::ScopedPtr<sndio::ISource> backup_source;
-    core::ScopedPtr<pipeline::ConverterSource> backup_pipeline;
+    core::ScopedPtr<pipeline::TranscoderSource> backup_pipeline;
 
     if (args.backup_given) {
-        address::IoUri backup_uri(context.allocator());
+        address::IoUri backup_uri(context.arena());
 
         if (!address::parse_io_uri(args.backup_arg, backup_uri)) {
             roc_log(LogError, "invalid --backup file or device URI");
@@ -318,10 +315,10 @@ int main(int argc, char** argv) {
             }
         }
 
-        backup_source.reset(
-            backend_dispatcher.open_source(backup_uri, args.backup_format_arg, io_config,
-                                           context.allocator()),
-            context.allocator());
+        backup_source.reset(backend_dispatcher.open_source(backup_uri,
+                                                           args.backup_format_arg,
+                                                           io_config, context.arena()),
+                            context.arena());
 
         if (!backup_source) {
             roc_log(LogError, "can't open backup file or device: uri=%s format=%s",
@@ -329,39 +326,33 @@ int main(int argc, char** argv) {
             return 1;
         }
 
-        pipeline::ConverterConfig converter_config;
+        pipeline::TranscoderConfig transcoder_config;
 
-        converter_config.resampler_backend =
+        transcoder_config.resampler_backend =
             receiver_config.default_session.resampler_backend;
-        converter_config.resampler_profile =
+        transcoder_config.resampler_profile =
             receiver_config.default_session.resampler_profile;
 
-        converter_config.input_sample_spec =
+        transcoder_config.input_sample_spec =
             audio::SampleSpec(backup_source->sample_spec().sample_rate(),
-                              receiver_config.common.output_sample_spec.channel_mask());
-        converter_config.output_sample_spec =
+                              receiver_config.common.output_sample_spec.channel_set());
+        transcoder_config.output_sample_spec =
             audio::SampleSpec(receiver_config.common.output_sample_spec.sample_rate(),
-                              receiver_config.common.output_sample_spec.channel_mask());
+                              receiver_config.common.output_sample_spec.channel_set());
 
-        converter_config.internal_frame_length =
-            receiver_config.common.internal_frame_length;
-
-        converter_config.resampling = receiver_config.common.resampling;
-        converter_config.poisoning = receiver_config.common.poisoning;
-
-        backup_pipeline.reset(new (context.allocator()) pipeline::ConverterSource(
-                                  converter_config, *backup_source,
-                                  context.sample_buffer_factory(), context.allocator()),
-                              context.allocator());
+        backup_pipeline.reset(new (context.arena()) pipeline::TranscoderSource(
+                                  transcoder_config, *backup_source,
+                                  context.sample_buffer_factory(), context.arena()),
+                              context.arena());
         if (!backup_pipeline) {
             roc_log(LogError, "can't create backup pipeline");
             return 1;
         }
     }
 
-    peer::Receiver receiver(context, receiver_config);
-    if (!receiver.valid()) {
-        roc_log(LogError, "can't create receiver peer");
+    node::Receiver receiver(context, receiver_config);
+    if (!receiver.is_valid()) {
+        roc_log(LogError, "can't create receiver node");
         return 1;
     }
 
@@ -395,7 +386,7 @@ int main(int argc, char** argv) {
     }
 
     for (size_t slot = 0; slot < (size_t)args.source_given; slot++) {
-        address::EndpointUri endpoint(context.allocator());
+        address::EndpointUri endpoint(context.arena());
 
         if (!address::parse_endpoint_uri(args.source_arg[slot],
                                          address::EndpointUri::Subset_Full, endpoint)) {
@@ -403,20 +394,22 @@ int main(int argc, char** argv) {
             return 1;
         }
 
+        netio::UdpReceiverConfig iface_config;
+        iface_config.reuseaddr = args.reuseaddr_given;
+
         if (args.miface_given) {
-            if (!receiver.set_multicast_group(slot, address::Iface_AudioSource,
-                                              args.miface_arg[slot])) {
-                roc_log(LogError, "can't set multicast group for --source endpoint: %s",
+            if (strlen(args.miface_arg[slot])
+                >= sizeof(iface_config.multicast_interface)) {
+                roc_log(LogError, "invalid --miface \"%s\": string too long",
                         args.miface_arg[slot]);
                 return 1;
             }
+            strcpy(iface_config.multicast_interface, args.miface_arg[slot]);
         }
 
-        if (args.reuseaddr_given) {
-            if (!receiver.set_reuseaddr(slot, address::Iface_AudioSource, true)) {
-                roc_log(LogError, "can't set reuseaddr option for --source endpoint");
-                return 1;
-            }
+        if (!receiver.configure(slot, address::Iface_AudioSource, iface_config)) {
+            roc_log(LogError, "can't configure --source endpoint");
+            return 1;
         }
 
         if (!receiver.bind(slot, address::Iface_AudioSource, endpoint)) {
@@ -426,7 +419,7 @@ int main(int argc, char** argv) {
     }
 
     for (size_t slot = 0; slot < (size_t)args.repair_given; slot++) {
-        address::EndpointUri endpoint(context.allocator());
+        address::EndpointUri endpoint(context.arena());
 
         if (!address::parse_endpoint_uri(args.repair_arg[slot],
                                          address::EndpointUri::Subset_Full, endpoint)) {
@@ -434,20 +427,22 @@ int main(int argc, char** argv) {
             return 1;
         }
 
+        netio::UdpReceiverConfig iface_config;
+        iface_config.reuseaddr = args.reuseaddr_given;
+
         if (args.miface_given) {
-            if (!receiver.set_multicast_group(slot, address::Iface_AudioRepair,
-                                              args.miface_arg[slot])) {
-                roc_log(LogError, "can't set multicast group for --repair endpoint: %s",
+            if (strlen(args.miface_arg[slot])
+                >= sizeof(iface_config.multicast_interface)) {
+                roc_log(LogError, "invalid --miface \"%s\": string too long",
                         args.miface_arg[slot]);
                 return 1;
             }
+            strcpy(iface_config.multicast_interface, args.miface_arg[slot]);
         }
 
-        if (args.reuseaddr_given) {
-            if (!receiver.set_reuseaddr(slot, address::Iface_AudioRepair, true)) {
-                roc_log(LogError, "can't set reuseaddr option for --repair endpoint");
-                return 1;
-            }
+        if (!receiver.configure(slot, address::Iface_AudioRepair, iface_config)) {
+            roc_log(LogError, "can't configure --repair endpoint");
+            return 1;
         }
 
         if (!receiver.bind(slot, address::Iface_AudioRepair, endpoint)) {
@@ -457,7 +452,7 @@ int main(int argc, char** argv) {
     }
 
     for (size_t slot = 0; slot < (size_t)args.control_given; slot++) {
-        address::EndpointUri endpoint(context.allocator());
+        address::EndpointUri endpoint(context.arena());
 
         if (!address::parse_endpoint_uri(args.control_arg[slot],
                                          address::EndpointUri::Subset_Full, endpoint)) {
@@ -466,20 +461,22 @@ int main(int argc, char** argv) {
             return 1;
         }
 
+        netio::UdpReceiverConfig iface_config;
+        iface_config.reuseaddr = args.reuseaddr_given;
+
         if (args.miface_given) {
-            if (!receiver.set_multicast_group(slot, address::Iface_AudioControl,
-                                              args.miface_arg[slot])) {
-                roc_log(LogError, "can't set multicast group for --control endpoint: %s",
+            if (strlen(args.miface_arg[slot])
+                >= sizeof(iface_config.multicast_interface)) {
+                roc_log(LogError, "invalid --miface \"%s\": string too long",
                         args.miface_arg[slot]);
                 return 1;
             }
+            strcpy(iface_config.multicast_interface, args.miface_arg[slot]);
         }
 
-        if (args.reuseaddr_given) {
-            if (!receiver.set_reuseaddr(slot, address::Iface_AudioControl, true)) {
-                roc_log(LogError, "can't set reuseaddr option for --control endpoint");
-                return 1;
-            }
+        if (!receiver.configure(slot, address::Iface_AudioControl, iface_config)) {
+            roc_log(LogError, "can't configure --control endpoint");
+            return 1;
         }
 
         if (!receiver.bind(slot, address::Iface_AudioControl, endpoint)) {
@@ -491,10 +488,9 @@ int main(int argc, char** argv) {
 
     sndio::Pump pump(
         context.sample_buffer_factory(), receiver.source(), backup_pipeline.get(),
-        *output_sink, receiver_config.common.internal_frame_length,
-        receiver_config.common.output_sample_spec,
+        *output_sink, io_config.frame_length, receiver_config.common.output_sample_spec,
         args.oneshot_flag ? sndio::Pump::ModeOneshot : sndio::Pump::ModePermanent);
-    if (!pump.valid()) {
+    if (!pump.is_valid()) {
         roc_log(LogError, "can't create pump");
         return 1;
     }

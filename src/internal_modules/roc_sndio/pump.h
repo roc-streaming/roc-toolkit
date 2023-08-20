@@ -15,6 +15,7 @@
 #include "roc_audio/sample.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/atomic.h"
+#include "roc_core/attributes.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
@@ -50,13 +51,13 @@ public:
          Mode mode);
 
     //! Check if the object was successfulyl constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Run the pump.
     //! @remarks
     //!  Run until the stop() is called or, if oneshot mode is enabled,
     //!  the source becomes inactive.
-    bool run();
+    ROC_ATTR_NODISCARD bool run();
 
     //! Stop the pump.
     //! @remarks

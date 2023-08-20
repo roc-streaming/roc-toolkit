@@ -13,6 +13,7 @@
 #define ROC_SDP_MEDIA_DESCRIPTION_H_
 
 #include "roc_address/socket_addr.h"
+#include "roc_core/attributes.h"
 #include "roc_core/list.h"
 #include "roc_core/list_node.h"
 #include "roc_core/log.h"
@@ -32,14 +33,11 @@ namespace sdp {
 //! @code
 //!  m=<type> <port> <proto> <fmt>
 //! @endcode
-class MediaDescription
-    : public core::RefCounted<MediaDescription, core::StandardAllocation>,
-      public core::ListNode {
-    typedef core::RefCounted<MediaDescription, core::StandardAllocation> RefCounted;
-
+class MediaDescription : public core::RefCounted<MediaDescription, core::ArenaAllocation>,
+                         public core::ListNode {
 public:
     //! Initialize empty media description
-    MediaDescription(core::IAllocator& allocator);
+    MediaDescription(core::IArena& arena);
 
     //! Clear all fields.
     void clear();
@@ -73,22 +71,22 @@ public:
     const ConnectionData& connection_data(size_t i) const;
 
     //! Set media type.
-    bool set_type(MediaType type);
+    ROC_ATTR_NODISCARD bool set_type(MediaType type);
 
     //! Set proto.
-    bool set_transport(MediaTransport transport);
+    ROC_ATTR_NODISCARD bool set_transport(MediaTransport transport);
 
     //! Set transport port.
-    bool set_port(long port);
+    ROC_ATTR_NODISCARD bool set_port(long port);
 
     //! Set number of transport port(s).
-    bool set_nb_ports(long nb_ports);
+    ROC_ATTR_NODISCARD bool set_nb_ports(long nb_ports);
 
     //! Add a media payload id.
-    bool add_payload_id(unsigned payload_id);
+    ROC_ATTR_NODISCARD bool add_payload_id(unsigned payload_id);
 
     //! Add a connection field from a string.
-    bool
+    ROC_ATTR_NODISCARD bool
     add_connection_data(address::AddrFamily addrtype, const char* str, size_t str_len);
 
 private:

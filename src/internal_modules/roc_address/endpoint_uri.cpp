@@ -25,11 +25,11 @@ bool safe_strcmp(const char* a, const char* b) {
 
 } // namespace
 
-EndpointUri::EndpointUri(core::IAllocator& allocator)
+EndpointUri::EndpointUri(core::IArena& arena)
     : invalid_parts_(0)
-    , host_(allocator)
-    , path_(allocator)
-    , query_(allocator) {
+    , host_(arena)
+    , path_(arena)
+    , query_(arena) {
     clear(Subset_Full);
 }
 
@@ -109,7 +109,7 @@ bool EndpointUri::verify(Subset subset) const {
         return false;
     }
 
-    const ProtocolAttrs* proto_attrs = ProtocolMap::instance().find_proto_by_id(proto_);
+    const ProtocolAttrs* proto_attrs = ProtocolMap::instance().find_by_id(proto_);
     if (!proto_attrs) {
         roc_log(LogError, "invalid endpoint uri: unknown protocol");
         return false;
@@ -166,7 +166,7 @@ void EndpointUri::invalidate(Subset subset) {
 }
 
 bool EndpointUri::set_proto(Protocol proto) {
-    if (ProtocolMap::instance().find_proto_by_id(proto) == NULL) {
+    if (ProtocolMap::instance().find_by_id(proto) == NULL) {
         set_invalid_(PartProto);
         return false;
     }
@@ -206,7 +206,7 @@ bool EndpointUri::format_proto(core::StringBuilder& dst) const {
         return false;
     }
 
-    const ProtocolAttrs* attrs = ProtocolMap::instance().find_proto_by_id(proto_);
+    const ProtocolAttrs* attrs = ProtocolMap::instance().find_by_id(proto_);
     if (!attrs) {
         return false;
     }
@@ -435,7 +435,7 @@ void EndpointUri::set_service_from_port_(int port) {
 }
 
 bool EndpointUri::set_service_from_proto_(Protocol proto) {
-    const ProtocolAttrs* attrs = ProtocolMap::instance().find_proto_by_id(proto);
+    const ProtocolAttrs* attrs = ProtocolMap::instance().find_by_id(proto);
     if (!attrs) {
         return false;
     }

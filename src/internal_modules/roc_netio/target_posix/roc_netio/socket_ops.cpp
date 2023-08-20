@@ -240,12 +240,12 @@ bool socket_create(address::AddrFamily family, SocketType type, SocketHandle& ne
     }
 
     if (!set_cloexec(new_sock)) {
-        socket_close(new_sock);
+        (void)socket_close(new_sock);
         return false;
     }
 
     if (!set_nonblock(new_sock)) {
-        socket_close(new_sock);
+        (void)socket_close(new_sock);
         return false;
     }
 
@@ -278,7 +278,7 @@ bool socket_accept(SocketHandle sock,
     if (addrlen != remote_address.slen()) {
         roc_log(LogError, "socket: accept4(): unexpected len: got=%lu expected=%lu",
                 (unsigned long)addrlen, (unsigned long)remote_address.slen());
-        socket_close(new_sock);
+        (void)socket_close(new_sock);
         return false;
     }
 
@@ -306,17 +306,17 @@ bool socket_accept(SocketHandle sock,
     if (addrlen != remote_address.slen()) {
         roc_log(LogError, "socket: accept(): unexpected len: got=%lu expected=%lu",
                 (unsigned long)addrlen, (unsigned long)remote_address.slen());
-        socket_close(new_sock);
+        (void)socket_close(new_sock);
         return false;
     }
 
     if (!set_cloexec(new_sock)) {
-        socket_close(new_sock);
+        (void)socket_close(new_sock);
         return false;
     }
 
     if (!set_nonblock(new_sock)) {
-        socket_close(new_sock);
+        (void)socket_close(new_sock);
         return false;
     }
 

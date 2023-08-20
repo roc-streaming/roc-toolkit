@@ -13,7 +13,8 @@
 #define ROC_CORE_ARRAY_H_
 
 #include "roc_core/aligned_storage.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/attributes.h"
+#include "roc_core/iarena.h"
 #include "roc_core/log.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
@@ -24,7 +25,7 @@ namespace core {
 
 //! Dynamic array.
 //!
-//! Elements are stored continuously in a memory chunk allocated using IAllocator.
+//! Elements are stored continuously in a memory chunk allocated using IArena.
 //! Small chunks can be stored directly in Array object, without extra allocation.
 //! Array can be resized only by explicitly calling resize(), grow(), or grow_exp().
 //! Elements are copied during resize and old copies are destroyed.
@@ -37,26 +38,28 @@ namespace core {
 //! the array size is small enough.
 template <class T, size_t EmbeddedCapacity = 0> class Array : public NonCopyable<> {
 public:
-    //! Initialize empty array without allocator.
+    //! Initialize empty array without arena.
     //! @remarks
-    //!  Array maximum size will be limited to the embedded capacity.
+    //!  Array capacity will be limited to the embedded capacity.
     Array()
         : data_(NULL)
         , size_(0)
         , max_size_(0)
-        , allocator_(NULL) {
+        , arena_(NULL) {
     }
 
-    //! Initialize empty array.
-    explicit Array(IAllocator& allocator)
+    //! Initialize empty array with arena.
+    //! @remarks
+    //!  Array capacity may grow using arena.
+    explicit Array(IArena& arena)
         : data_(NULL)
         , size_(0)
         , max_size_(0)
-        , allocator_(&allocator) {
+        , arena_(&arena) {
     }
 
     ~Array() {
-        resize(0);
+        clear();
 
         if (data_) {
             deallocate_(data_);
@@ -64,7 +67,7 @@ public:
     }
 
     //! Get maximum number of elements.
-    //! If array has allocator, capacity can be grown.
+    //! If array has arena, capacity can be grown.
     size_t capacity() const {
         return max_size_;
     }
@@ -72,6 +75,11 @@ public:
     //! Get number of elements.
     size_t size() const {
         return size_;
+    }
+
+    //! Check if size is zero.
+    bool is_empty() const {
+        return size_ == 0;
     }
 
     //! Get pointer to first element.
@@ -131,7 +139,7 @@ public:
     //!  Calls grow() to ensure that there is enough space in array.
     //! @returns
     //!  false if the allocation failed
-    bool resize(size_t sz) {
+    ROC_ATTR_NODISCARD bool resize(size_t sz) {
         // Move objects to a new memory region if necessary.
         if (!grow(sz)) {
             return false;
@@ -152,13 +160,20 @@ public:
         return true;
     }
 
+    //! Set array size to zero.
+    //! @remarks
+    //!  Never fails.
+    void clear() {
+        (void)resize(0);
+    }
+
     //! Increase array capacity.
     //! @remarks
-    //!  If @p max_sz is greater than the current maximum size, a larger memory
+    //!  If @p max_sz is greater than the current capacity, a larger memory
     //!  region is allocated and the array elements are copied there.
     //! @returns
     //!  false if the allocation failed
-    bool grow(size_t max_sz) {
+    ROC_ATTR_NODISCARD bool grow(size_t max_sz) {
         if (max_sz <= max_size_) {
             return true;
         }
@@ -195,13 +210,13 @@ public:
 
     //! Increase array capacity exponentially.
     //! @remarks
-    //!  If @p min_size is greater than the current maximum size, a larger memory
+    //!  If @p min_size is greater than the current capacity, a larger memory
     //!  region is allocated and the array elements are copied there.
     //!  The size growth will follow the sequence: 0, 2, 4, 8, 16, ... until
     //!  it reaches some threshold, and then starts growing linearly.
     //! @returns
     //!  false if the allocation failed
-    bool grow_exp(size_t min_size) {
+    ROC_ATTR_NODISCARD bool grow_exp(size_t min_size) {
         if (min_size <= max_size_) {
             return true;
         }
@@ -225,8 +240,8 @@ private:
     T* allocate_(size_t n_elems) {
         if (n_elems <= EmbeddedCapacity) {
             return (T*)embedded_data_.memory();
-        } else if (allocator_) {
-            return (T*)allocator_->allocate(n_elems * sizeof(T));
+        } else if (arena_) {
+            return (T*)arena_->allocate(n_elems * sizeof(T));
         } else {
             return NULL;
         }
@@ -234,8 +249,8 @@ private:
 
     void deallocate_(T* data) {
         if ((void*)data != (void*)embedded_data_.memory()) {
-            roc_panic_if(!allocator_);
-            allocator_->deallocate(data);
+            roc_panic_if(!arena_);
+            arena_->deallocate(data);
         }
     }
 
@@ -243,7 +258,7 @@ private:
     size_t size_;
     size_t max_size_;
 
-    IAllocator* allocator_;
+    IArena* arena_;
 
     AlignedStorage<EmbeddedCapacity * sizeof(T)> embedded_data_;
 };

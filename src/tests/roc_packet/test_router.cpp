@@ -8,7 +8,7 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_packet/router.h"
@@ -18,8 +18,8 @@ namespace packet {
 
 namespace {
 
-core::HeapAllocator allocator;
-PacketFactory packet_factory(allocator, true);
+core::HeapArena arena;
+PacketFactory packet_factory(arena);
 
 PacketPtr new_packet(source_t source, unsigned flags) {
     PacketPtr packet = packet_factory.new_packet();
@@ -34,7 +34,7 @@ PacketPtr new_packet(source_t source, unsigned flags) {
 TEST_GROUP(router) {};
 
 TEST(router, no_routes) {
-    Router router(allocator);
+    Router router(arena);
 
     PacketPtr p = new_packet(0, Packet::FlagAudio);
 
@@ -44,7 +44,7 @@ TEST(router, no_routes) {
 }
 
 TEST(router, one_route) {
-    Router router(allocator);
+    Router router(arena);
 
     Queue queue;
     CHECK(router.add_route(queue, Packet::FlagAudio));
@@ -73,7 +73,7 @@ TEST(router, one_route) {
 }
 
 TEST(router, two_routes) {
-    Router router(allocator);
+    Router router(arena);
 
     Queue queue_a;
     CHECK(router.add_route(queue_a, Packet::FlagAudio));
@@ -109,7 +109,7 @@ TEST(router, two_routes) {
 }
 
 TEST(router, same_route_different_sources) {
-    Router router(allocator);
+    Router router(arena);
 
     Queue queue;
     CHECK(router.add_route(queue, Packet::FlagAudio));
@@ -125,7 +125,7 @@ TEST(router, same_route_different_sources) {
 }
 
 TEST(router, different_routes_same_source) {
-    Router router(allocator);
+    Router router(arena);
 
     Queue queue_a;
     CHECK(router.add_route(queue_a, Packet::FlagAudio));
@@ -141,7 +141,7 @@ TEST(router, different_routes_same_source) {
 }
 
 TEST(router, different_routes_different_sources) {
-    Router router(allocator);
+    Router router(arena);
 
     Queue queue_a;
     CHECK(router.add_route(queue_a, Packet::FlagAudio));

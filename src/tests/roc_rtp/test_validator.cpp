@@ -8,7 +8,7 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_pipeline/config.h"
@@ -25,11 +25,11 @@ const PayloadType Pt2 = PayloadType_L16_Mono;
 
 enum { Src1 = 55, Src2 = 77, SampleRate = 10000, MaxSnJump = 100, MaxTsJump = 1000 };
 
-const audio::SampleSpec SampleSpecs =
-    audio::SampleSpec(SampleRate, pipeline::DefaultChannelMask);
+const audio::SampleSpec
+    SampleSpecs(SampleRate, audio::ChanLayout_Surround, audio::ChanMask_Surround_Stereo);
 
-core::HeapAllocator allocator;
-packet::PacketFactory packet_factory(allocator, true);
+core::HeapArena arena;
+packet::PacketFactory packet_factory(arena);
 
 } // namespace
 

@@ -13,7 +13,7 @@
 #define ROC_PIPELINE_SENDER_LOOP_H_
 
 #include "roc_core/buffer_factory.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/mutex.h"
 #include "roc_core/ticker.h"
 #include "roc_pipeline/config.h"
@@ -57,18 +57,19 @@ public:
 
         bool (SenderLoop::*func_)(Task&); //!< Task implementation method.
 
-        SenderSlot* slot_;         //!< Slot.
-        SenderEndpoint* endpoint_; //!< Endpoint.
-        address::Interface iface_; //!< Interface.
-        address::Protocol proto_;  //!< Protocol.
-        packet::IWriter* writer_;  //!< Packet writer.
-        address::SocketAddr addr_; //!< Endpoint address.
+        SenderSlot* slot_;            //!< Slot.
+        SenderEndpoint* endpoint_;    //!< Endpoint.
+        address::Interface iface_;    //!< Interface.
+        address::Protocol proto_;     //!< Protocol.
+        address::SocketAddr address_; //!< Destination address.
+        packet::IWriter* writer_;     //!< Destination writer.
+        bool is_complete_;            //!< Completion flag.
     };
 
     //! Subclasses for specific tasks.
     class Tasks {
     public:
-        //! Add new slot.
+        //! Create new slot.
         class CreateSlot : public Task {
         public:
             //! Set task parameters.
@@ -78,43 +79,38 @@ public:
             SlotHandle get_handle() const;
         };
 
+        //! Delete existing slot.
+        class DeleteSlot : public Task {
+        public:
+            //! Set task parameters.
+            DeleteSlot(SlotHandle slot);
+        };
+
+        //! Poll slot state.
+        class PollSlot : public Task {
+        public:
+            //! Set task parameters.
+            PollSlot(SlotHandle slot);
+
+            //! Get slot completion flag.
+            bool get_complete() const;
+        };
+
         //! Create endpoint on given interface of the slot.
-        class CreateEndpoint : public Task {
+        class AddEndpoint : public Task {
         public:
             //! Set task parameters.
             //! @remarks
             //!  Each slot can have one source and zero or one repair endpoint.
             //!  The protocols of endpoints in one slot should be compatible.
-            CreateEndpoint(SlotHandle slot,
-                           address::Interface iface,
-                           address::Protocol proto);
+            AddEndpoint(SlotHandle slot,
+                        address::Interface iface,
+                        address::Protocol proto,
+                        const address::SocketAddr& dest_address,
+                        packet::IWriter& dest_writer);
 
             //! Get created endpoint handle.
             EndpointHandle get_handle() const;
-        };
-
-        //! Set writer to which endpoint will write packets.
-        class SetEndpointDestinationWriter : public Task {
-        public:
-            //! Set task parameters.
-            SetEndpointDestinationWriter(EndpointHandle endpoint,
-                                         packet::IWriter& writer);
-        };
-
-        //! Set UDP address for output packets of endpoint.
-        class SetEndpointDestinationAddress : public Task {
-        public:
-            //! Set task parameters.
-            SetEndpointDestinationAddress(EndpointHandle endpoint,
-                                          const address::SocketAddr& addr);
-        };
-
-        //! Check if the slot configuration is done.
-        //! This is true when all necessary endpoints are added and configured.
-        class CheckSlotIsReady : public Task {
-        public:
-            //! Set task parameters.
-            CheckSlotIsReady(SlotHandle slot);
         };
     };
 
@@ -125,10 +121,10 @@ public:
                packet::PacketFactory& packet_factory,
                core::BufferFactory<uint8_t>& byte_buffer_factory,
                core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-               core::IAllocator& allocator);
+               core::IArena& arena);
 
     //! Check if the pipeline was successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Get sender sink.
     //! @remarks
@@ -154,10 +150,9 @@ private:
 
     // Methods for tasks
     bool task_create_slot_(Task&);
-    bool task_create_endpoint_(Task&);
-    bool task_set_endpoint_destination_writer_(Task&);
-    bool task_set_endpoint_destination_address_(Task&);
-    bool task_check_slot_is_ready_(Task&);
+    bool task_delete_slot_(Task&);
+    bool task_poll_slot_(Task&);
+    bool task_add_endpoint_(Task&);
 
     SenderSink sink_;
 

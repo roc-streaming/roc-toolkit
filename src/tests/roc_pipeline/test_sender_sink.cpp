@@ -14,12 +14,13 @@
 #include "roc_audio/pcm_decoder.h"
 #include "roc_core/atomic.h"
 #include "roc_core/buffer_factory.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_core/time.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_pipeline/sender_sink.h"
 #include "roc_rtp/format_map.h"
+#include "roc_rtp/headers.h"
 #include "roc_rtp/parser.h"
 
 namespace roc {
@@ -27,14 +28,16 @@ namespace pipeline {
 
 namespace {
 
-rtp::PayloadType PayloadType = rtp::PayloadType_L16_Stereo;
+const audio::ChannelMask Chans_Mono = audio::ChanMask_Surround_Mono;
+const audio::ChannelMask Chans_Stereo = audio::ChanMask_Surround_Stereo;
+
+const rtp::PayloadType PayloadType_Ch1 = rtp::PayloadType_L16_Mono;
+const rtp::PayloadType PayloadType_Ch2 = rtp::PayloadType_L16_Stereo;
 
 enum {
     MaxBufSize = 1000,
 
     SampleRate = 44100,
-    ChMask = 0x3,
-    NumCh = 2,
 
     SamplesPerFrame = 20,
     SamplesPerPacket = 100,
@@ -43,36 +46,56 @@ enum {
     ManyFrames = FramesPerPacket * 20
 };
 
-const audio::SampleSpec SampleSpecs = audio::SampleSpec(SampleRate, ChMask);
+core::HeapArena arena;
+core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, MaxBufSize);
+core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize);
+packet::PacketFactory packet_factory(arena);
 
-const core::nanoseconds_t MaxBufDuration = MaxBufSize * core::Second
-    / core::nanoseconds_t(SampleSpecs.sample_rate() * SampleSpecs.num_channels());
-
-core::HeapAllocator allocator;
-core::BufferFactory<audio::sample_t> sample_buffer_factory(allocator, MaxBufSize, true);
-core::BufferFactory<uint8_t> byte_buffer_factory(allocator, MaxBufSize, true);
-packet::PacketFactory packet_factory(allocator, true);
-
-rtp::FormatMap format_map;
+rtp::FormatMap format_map(arena);
 rtp::Parser rtp_parser(format_map, NULL);
 
 } // namespace
 
 TEST_GROUP(sender_sink) {
-    SenderConfig config;
+    audio::SampleSpec input_sample_spec;
+    audio::SampleSpec packet_sample_spec;
 
     address::Protocol source_proto;
     address::SocketAddr dst_addr;
 
-    void setup() {
-        config.input_sample_spec = audio::SampleSpec(SampleRate, ChMask);
-        config.packet_length = SamplesPerPacket * core::Second / SampleRate;
-        config.internal_frame_length = MaxBufDuration;
+    SenderConfig make_config() {
+        SenderConfig config;
 
-        config.interleaving = false;
-        config.timing = false;
-        config.poisoning = true;
-        config.profiling = true;
+        config.input_sample_spec = input_sample_spec;
+
+        switch (packet_sample_spec.num_channels()) {
+        case 1:
+            config.payload_type = PayloadType_Ch1;
+            break;
+        case 2:
+            config.payload_type = PayloadType_Ch2;
+            break;
+        default:
+            FAIL("unsupported packet_sample_spec");
+        }
+
+        config.packet_length = SamplesPerPacket * core::Second / SampleRate;
+
+        config.enable_interleaving = false;
+        config.enable_timing = false;
+        config.enable_profiling = true;
+
+        return config;
+    }
+
+    void init(audio::ChannelMask input_channels, audio::ChannelMask packet_channels) {
+        input_sample_spec.set_sample_rate(SampleRate);
+        input_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
+        input_sample_spec.channel_set().set_channel_mask(input_channels);
+
+        packet_sample_spec.set_sample_rate(SampleRate);
+        packet_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
+        packet_sample_spec.channel_set().set_channel_mask(packet_channels);
 
         source_proto = address::Proto_RTP;
         dst_addr = test::new_address(123);
@@ -80,33 +103,34 @@ TEST_GROUP(sender_sink) {
 };
 
 TEST(sender_sink, write) {
+    enum { Chans = Chans_Stereo };
+
+    init(Chans, Chans);
+
     packet::Queue queue;
 
-    SenderSink sender(config, format_map, packet_factory, byte_buffer_factory,
-                      sample_buffer_factory, allocator);
-    CHECK(sender.valid());
+    SenderSink sender(make_config(), format_map, packet_factory, byte_buffer_factory,
+                      sample_buffer_factory, arena);
+    CHECK(sender.is_valid());
 
     SenderSlot* slot = sender.create_slot();
     CHECK(slot);
 
     SenderEndpoint* source_endpoint =
-        slot->create_endpoint(address::Iface_AudioSource, source_proto);
+        slot->add_endpoint(address::Iface_AudioSource, source_proto, dst_addr, queue);
     CHECK(source_endpoint);
-
-    source_endpoint->set_destination_writer(queue);
-    source_endpoint->set_destination_address(dst_addr);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
-        frame_writer.write_samples(SamplesPerFrame * NumCh);
+        frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
     }
 
-    test::PacketReader packet_reader(allocator, queue, rtp_parser, format_map,
-                                     packet_factory, PayloadType, dst_addr);
+    test::PacketReader packet_reader(arena, queue, rtp_parser, format_map, packet_factory,
+                                     PayloadType_Ch2, dst_addr);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
-        packet_reader.read_packet(SamplesPerPacket, SampleSpecs);
+        packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
     }
 
     CHECK(!queue.read());
@@ -114,38 +138,38 @@ TEST(sender_sink, write) {
 
 TEST(sender_sink, frame_size_small) {
     enum {
+        Chans = Chans_Stereo,
         SamplesPerSmallFrame = SamplesPerFrame / 2,
         SmallFramesPerPacket = SamplesPerPacket / SamplesPerSmallFrame,
         ManySmallFrames = SmallFramesPerPacket * 20
     };
 
+    init(Chans, Chans);
+
     packet::Queue queue;
 
-    SenderSink sender(config, format_map, packet_factory, byte_buffer_factory,
-                      sample_buffer_factory, allocator);
-    CHECK(sender.valid());
+    SenderSink sender(make_config(), format_map, packet_factory, byte_buffer_factory,
+                      sample_buffer_factory, arena);
+    CHECK(sender.is_valid());
 
     SenderSlot* slot = sender.create_slot();
     CHECK(slot);
 
     SenderEndpoint* source_endpoint =
-        slot->create_endpoint(address::Iface_AudioSource, source_proto);
+        slot->add_endpoint(address::Iface_AudioSource, source_proto, dst_addr, queue);
     CHECK(source_endpoint);
-
-    source_endpoint->set_destination_writer(queue);
-    source_endpoint->set_destination_address(dst_addr);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManySmallFrames; nf++) {
-        frame_writer.write_samples(SamplesPerSmallFrame * NumCh);
+        frame_writer.write_samples(SamplesPerSmallFrame, input_sample_spec);
     }
 
-    test::PacketReader packet_reader(allocator, queue, rtp_parser, format_map,
-                                     packet_factory, PayloadType, dst_addr);
+    test::PacketReader packet_reader(arena, queue, rtp_parser, format_map, packet_factory,
+                                     PayloadType_Ch2, dst_addr);
 
     for (size_t np = 0; np < ManySmallFrames / SmallFramesPerPacket; np++) {
-        packet_reader.read_packet(SamplesPerPacket, SampleSpecs);
+        packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
     }
 
     CHECK(!queue.read());
@@ -153,38 +177,106 @@ TEST(sender_sink, frame_size_small) {
 
 TEST(sender_sink, frame_size_large) {
     enum {
+        Chans = Chans_Stereo,
         SamplesPerLargeFrame = SamplesPerPacket * 4,
         PacketsPerLargeFrame = SamplesPerLargeFrame / SamplesPerPacket,
         ManyLargeFrames = 20
     };
 
+    init(Chans, Chans);
+
     packet::Queue queue;
 
-    SenderSink sender(config, format_map, packet_factory, byte_buffer_factory,
-                      sample_buffer_factory, allocator);
-    CHECK(sender.valid());
+    SenderSink sender(make_config(), format_map, packet_factory, byte_buffer_factory,
+                      sample_buffer_factory, arena);
+    CHECK(sender.is_valid());
 
     SenderSlot* slot = sender.create_slot();
     CHECK(slot);
 
     SenderEndpoint* source_endpoint =
-        slot->create_endpoint(address::Iface_AudioSource, source_proto);
+        slot->add_endpoint(address::Iface_AudioSource, source_proto, dst_addr, queue);
     CHECK(source_endpoint);
-
-    source_endpoint->set_destination_writer(queue);
-    source_endpoint->set_destination_address(dst_addr);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyLargeFrames; nf++) {
-        frame_writer.write_samples(SamplesPerLargeFrame * NumCh);
+        frame_writer.write_samples(SamplesPerLargeFrame, input_sample_spec);
     }
 
-    test::PacketReader packet_reader(allocator, queue, rtp_parser, format_map,
-                                     packet_factory, PayloadType, dst_addr);
+    test::PacketReader packet_reader(arena, queue, rtp_parser, format_map, packet_factory,
+                                     PayloadType_Ch2, dst_addr);
 
     for (size_t np = 0; np < ManyLargeFrames * PacketsPerLargeFrame; np++) {
-        packet_reader.read_packet(SamplesPerPacket, SampleSpecs);
+        packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
+    }
+
+    CHECK(!queue.read());
+}
+
+TEST(sender_sink, channels_stereo_to_mono) {
+    enum { InputChans = Chans_Stereo, PacketChans = Chans_Mono };
+
+    init(InputChans, PacketChans);
+
+    packet::Queue queue;
+
+    SenderSink sender(make_config(), format_map, packet_factory, byte_buffer_factory,
+                      sample_buffer_factory, arena);
+    CHECK(sender.is_valid());
+
+    SenderSlot* slot = sender.create_slot();
+    CHECK(slot);
+
+    SenderEndpoint* source_endpoint =
+        slot->add_endpoint(address::Iface_AudioSource, source_proto, dst_addr, queue);
+    CHECK(source_endpoint);
+
+    test::FrameWriter frame_writer(sender, sample_buffer_factory);
+
+    for (size_t nf = 0; nf < ManyFrames; nf++) {
+        frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
+    }
+
+    test::PacketReader packet_reader(arena, queue, rtp_parser, format_map, packet_factory,
+                                     PayloadType_Ch1, dst_addr);
+
+    for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
+        packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
+    }
+
+    CHECK(!queue.read());
+}
+
+TEST(sender_sink, channels_mono_to_stereo) {
+    enum { InputChans = Chans_Mono, PacketChans = Chans_Stereo };
+
+    init(InputChans, PacketChans);
+
+    packet::Queue queue;
+
+    SenderSink sender(make_config(), format_map, packet_factory, byte_buffer_factory,
+                      sample_buffer_factory, arena);
+    CHECK(sender.is_valid());
+
+    SenderSlot* slot = sender.create_slot();
+    CHECK(slot);
+
+    SenderEndpoint* source_endpoint =
+        slot->add_endpoint(address::Iface_AudioSource, source_proto, dst_addr, queue);
+    CHECK(source_endpoint);
+
+    test::FrameWriter frame_writer(sender, sample_buffer_factory);
+
+    for (size_t nf = 0; nf < ManyFrames; nf++) {
+        frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
+    }
+
+    test::PacketReader packet_reader(arena, queue, rtp_parser, format_map, packet_factory,
+                                     PayloadType_Ch2, dst_addr);
+
+    for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
+        packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
     }
 
     CHECK(!queue.read());

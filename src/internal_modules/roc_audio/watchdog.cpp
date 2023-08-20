@@ -15,40 +15,40 @@ namespace audio {
 Watchdog::Watchdog(IFrameReader& reader,
                    const audio::SampleSpec& sample_spec,
                    const WatchdogConfig& config,
-                   core::IAllocator& allocator)
+                   core::IArena& arena)
     : reader_(reader)
     , sample_spec_(sample_spec)
     , max_blank_duration_(
           (packet::timestamp_t)sample_spec.ns_2_rtp_timestamp(config.no_playback_timeout))
     , max_drops_duration_((packet::timestamp_t)sample_spec.ns_2_rtp_timestamp(
-          config.broken_playback_timeout))
+          config.choppy_playback_timeout))
     , drop_detection_window_((packet::timestamp_t)sample_spec.ns_2_rtp_timestamp(
-          config.breakage_detection_window))
+          config.choppy_playback_window))
     , curr_read_pos_(0)
     , last_pos_before_blank_(0)
     , last_pos_before_drops_(0)
     , curr_window_flags_(0)
-    , status_(allocator)
+    , status_(arena)
     , status_pos_(0)
     , status_show_(false)
     , alive_(true)
     , valid_(false) {
-    if (config.no_playback_timeout < 0 || config.broken_playback_timeout < 0
-        || config.breakage_detection_window < 0) {
+    if (config.no_playback_timeout < 0 || config.choppy_playback_timeout < 0
+        || config.choppy_playback_window < 0) {
         roc_log(LogError,
-                "watchdog: invalid config: "
-                "no_packets_timeout=%ld drops_timeout=%ld drop_detection_window=%ld",
-                (long)config.no_playback_timeout, (long)config.broken_playback_timeout,
-                (long)config.breakage_detection_window);
+                "watchdog: invalid config:"
+                " no_packets_timeout=%ld drops_timeout=%ld drop_detection_window=%ld",
+                (long)config.no_playback_timeout, (long)config.choppy_playback_timeout,
+                (long)config.choppy_playback_window);
         return;
     }
 
     if (max_drops_duration_ != 0) {
         if (drop_detection_window_ == 0 || drop_detection_window_ > max_drops_duration_) {
             roc_log(LogError,
-                    "watchdog: invalid config: "
-                    "drop_detection_window should be in range (0; max_drops_duration]: "
-                    "max_drops_duration=%lu drop_detection_window=%lu",
+                    "watchdog: invalid config:"
+                    " drop_detection_window should be in range (0; max_drops_duration]:"
+                    " max_drops_duration=%lu drop_detection_window=%lu",
                     (unsigned long)max_drops_duration_,
                     (unsigned long)drop_detection_window_);
             return;
@@ -62,15 +62,15 @@ Watchdog::Watchdog(IFrameReader& reader,
     }
 
     roc_log(LogDebug,
-            "watchdog: initializing: "
-            "max_blank_duration=%lu max_drops_duration=%lu drop_detection_window=%lu",
+            "watchdog: initializing:"
+            " max_blank_duration=%lu max_drops_duration=%lu drop_detection_window=%lu",
             (unsigned long)max_blank_duration_, (unsigned long)max_drops_duration_,
             (unsigned long)drop_detection_window_);
 
     valid_ = true;
 }
 
-bool Watchdog::valid() const {
+bool Watchdog::is_valid() const {
     return valid_;
 }
 
@@ -194,7 +194,7 @@ bool Watchdog::check_drops_timeout_() {
 }
 
 void Watchdog::update_status_(const Frame& frame) {
-    if (status_.size() == 0) {
+    if (status_.is_empty()) {
         return;
     }
 

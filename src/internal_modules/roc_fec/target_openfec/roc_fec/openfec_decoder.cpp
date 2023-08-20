@@ -21,7 +21,7 @@ namespace fec {
 
 OpenfecDecoder::OpenfecDecoder(const CodecConfig& config,
                                core::BufferFactory<uint8_t>& buffer_factory,
-                               core::IAllocator& allocator)
+                               core::IArena& arena)
     : sblen_(0)
     , rblen_(0)
     , payload_size_(0)
@@ -29,10 +29,10 @@ OpenfecDecoder::OpenfecDecoder(const CodecConfig& config,
     , of_sess_(NULL)
     , of_sess_params_(NULL)
     , buffer_factory_(buffer_factory)
-    , buff_tab_(allocator)
-    , data_tab_(allocator)
-    , recv_tab_(allocator)
-    , status_(allocator)
+    , buff_tab_(arena)
+    , data_tab_(arena)
+    , recv_tab_(arena)
+    , status_(arena)
     , has_new_packets_(false)
     , decoding_finished_(false)
     , valid_(false) {
@@ -72,18 +72,18 @@ OpenfecDecoder::~OpenfecDecoder() {
     }
 }
 
-bool OpenfecDecoder::valid() const {
+bool OpenfecDecoder::is_valid() const {
     return valid_;
 }
 
 size_t OpenfecDecoder::max_block_length() const {
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     return max_block_length_;
 }
 
 bool OpenfecDecoder::begin(size_t sblen, size_t rblen, size_t payload_size) {
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     if (!resize_tabs_(sblen + rblen)) {
         return false;
@@ -101,7 +101,7 @@ bool OpenfecDecoder::begin(size_t sblen, size_t rblen, size_t payload_size) {
 }
 
 void OpenfecDecoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     if (index >= sblen_ + rblen_) {
         roc_panic("openfec decoder: index out of bounds: index=%lu size=%lu",
@@ -143,7 +143,7 @@ void OpenfecDecoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
 }
 
 core::Slice<uint8_t> OpenfecDecoder::repair(size_t index) {
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     if (!buff_tab_[index]) {
         update_();

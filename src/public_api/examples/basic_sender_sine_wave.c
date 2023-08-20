@@ -42,7 +42,7 @@
     } while (0)
 
 static void gensine(float* samples, size_t batch_num, size_t num_samples) {
-    double t = batch_num * num_samples / 2;
+    double t = batch_num * num_samples / 2.0;
     size_t i;
     for (i = 0; i < num_samples / 2; i++) {
         const float s =
@@ -79,14 +79,14 @@ int main() {
     memset(&sender_config, 0, sizeof(sender_config));
 
     /* Setup input frame format. */
-    sender_config.frame_sample_rate = MY_SAMPLE_RATE;
-    sender_config.frame_channels = ROC_CHANNEL_SET_STEREO;
-    sender_config.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
+    sender_config.frame_encoding.rate = MY_SAMPLE_RATE;
+    sender_config.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
+    sender_config.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
 
     /* Turn on internal CPU timer.
      * Sender must send packets with steady rate, so we should either implement
      * clocking or ask the library to do so. We choose the second here. */
-    sender_config.clock_source = ROC_CLOCK_INTERNAL;
+    sender_config.clock_source = ROC_CLOCK_SOURCE_INTERNAL;
 
     /* Create sender. */
     roc_sender* sender = NULL;

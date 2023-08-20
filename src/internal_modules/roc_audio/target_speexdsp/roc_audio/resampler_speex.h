@@ -35,16 +35,16 @@ namespace audio {
 class SpeexResampler : public IResampler, public core::NonCopyable<> {
 public:
     //! Initialize.
-    SpeexResampler(core::IAllocator& allocator,
+    SpeexResampler(core::IArena& arena,
                    core::BufferFactory<sample_t>& buffer_factory,
                    ResamplerProfile profile,
-                   core::nanoseconds_t frame_length,
-                   const audio::SampleSpec& sample_spec);
+                   const audio::SampleSpec& in_spec,
+                   const audio::SampleSpec& out_spec);
 
     ~SpeexResampler();
 
     //! Check if object is successfully constructed.
-    virtual bool valid() const;
+    virtual bool is_valid() const;
 
     //! Set new resample factor.
     virtual bool set_scaling(size_t input_rate, size_t output_rate, float multiplier);

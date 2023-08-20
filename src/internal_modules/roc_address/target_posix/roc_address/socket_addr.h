@@ -16,6 +16,7 @@
 #include <sys/socket.h>
 
 #include "roc_address/addr_family.h"
+#include "roc_core/attributes.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
@@ -34,13 +35,13 @@ public:
     bool has_host_port() const;
 
     //! Set host address.
-    bool set_host_port(AddrFamily type, const char* host, int port);
+    ROC_ATTR_NODISCARD bool set_host_port(AddrFamily type, const char* host, int port);
 
     //! Set host address, auto-detect family.
-    bool set_host_port_auto(const char* host, int port);
+    ROC_ATTR_NODISCARD bool set_host_port_auto(const char* host, int port);
 
     //! Set address from sockaddr struct.
-    bool set_host_port_saddr(const sockaddr* sa);
+    ROC_ATTR_NODISCARD bool set_host_port_saddr(const sockaddr* sa);
 
     //! Get IP version (IPv4 or IPv6).
     AddrFamily family() const;
@@ -49,7 +50,7 @@ public:
     bool multicast() const;
 
     //! Get host IP address.
-    bool get_host(char* buf, size_t bufsz) const;
+    ROC_ATTR_NODISCARD bool get_host(char* buf, size_t bufsz) const;
 
     //! Get address port.
     int port() const;

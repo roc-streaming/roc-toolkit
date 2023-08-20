@@ -61,10 +61,10 @@ public:
     }
 
     //! Get protocol attributes by ID.
-    const ProtocolAttrs* find_proto_by_id(Protocol proto) const;
+    const ProtocolAttrs* find_by_id(Protocol proto) const;
 
     //! Get protocol attributes by scheme name.
-    const ProtocolAttrs* find_proto_by_scheme(const char* scheme) const;
+    const ProtocolAttrs* find_by_scheme(const char* scheme) const;
 
 private:
     friend class core::Singleton<ProtocolMap>;

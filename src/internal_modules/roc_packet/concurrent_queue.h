@@ -12,10 +12,11 @@
 #ifndef ROC_PACKET_CONCURRENT_QUEUE_H_
 #define ROC_PACKET_CONCURRENT_QUEUE_H_
 
-#include "roc_core/cond.h"
-#include "roc_core/list.h"
+#include "roc_core/mpsc_queue.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/optional.h"
+#include "roc_core/semaphore.h"
 #include "roc_packet/ireader.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet.h"
@@ -26,23 +27,30 @@ namespace packet {
 //! Concurrent blocking packet queue.
 class ConcurrentQueue : public IReader, public IWriter, public core::NonCopyable<> {
 public:
-    ConcurrentQueue();
+    //! Queue mode.
+    enum Mode {
+        Blocking,   //!< Read operation blocks until queue is non-empty.
+        NonBlocking //!< Read operation returns null if queue is empty.
+    };
+
+    //! Initialize.
+    //! @p mode defines whether reads will be blocking.
+    explicit ConcurrentQueue(Mode mode);
 
     //! Read next packet.
-    //! @remarks
-    //!  Blocks until the queue becomes non-empty and returns the first
-    //!  packet from the queue.
+    //! If reads are not concurrent, and queue is non-blocking, then
+    //! reads are wait-free. Otherwise they may block.
+    //! @see Mode.
     virtual PacketPtr read();
 
     //! Add packet to the queue.
-    //! @remarks
-    //!  Adds packet to the end of the queue.
+    //! Wait-free operation.
     virtual void write(const PacketPtr& packet);
 
 private:
-    core::Mutex mutex_;
-    core::Cond cond_;
-    core::List<Packet> list_;
+    core::Optional<core::Semaphore> write_sem_;
+    core::Mutex read_mutex_;
+    core::MpscQueue<Packet> queue_;
 };
 
 } // namespace packet

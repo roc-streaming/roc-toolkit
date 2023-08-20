@@ -27,15 +27,15 @@ class ProfilingReader : public IFrameReader, public core::NonCopyable<> {
 public:
     //! Initialization.
     ProfilingReader(IFrameReader& reader,
-                    core::IAllocator& allocator,
+                    core::IArena& arena,
                     const audio::SampleSpec& sample_spec,
                     ProfilerConfig profiler_config);
 
+    //! Check if the profiler was succefully constructed.
+    bool is_valid() const;
+
     //! Read audio frame.
     virtual bool read(Frame& frame);
-
-    //! Check if the profiler was succefully constructed.
-    bool valid() const;
 
 private:
     core::nanoseconds_t read_(Frame& frame, bool& ret);

@@ -11,7 +11,7 @@
 #include "roc_core/array.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/fast_random.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_fec/codec_map.h"
@@ -23,19 +23,17 @@ namespace {
 
 const size_t MaxPayloadSize = 1024;
 
-core::HeapAllocator allocator;
-core::BufferFactory<uint8_t> buffer_factory(allocator, MaxPayloadSize, true);
+core::HeapArena arena;
+core::BufferFactory<uint8_t> buffer_factory(arena, MaxPayloadSize);
 
 } // namespace
 
 class Codec {
 public:
     Codec(const CodecConfig& config)
-        : encoder_(CodecMap::instance().new_encoder(config, buffer_factory, allocator),
-                   allocator)
-        , decoder_(CodecMap::instance().new_decoder(config, buffer_factory, allocator),
-                   allocator)
-        , buffers_(allocator) {
+        : encoder_(CodecMap::instance().new_encoder(config, buffer_factory, arena), arena)
+        , decoder_(CodecMap::instance().new_decoder(config, buffer_factory, arena), arena)
+        , buffers_(arena) {
         CHECK(encoder_);
         CHECK(decoder_);
     }

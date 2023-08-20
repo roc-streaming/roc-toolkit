@@ -13,7 +13,6 @@ section "Options"
 
     option "backup" - "Backup file or device URI (if set, used when there are no sessions)"
         typestr="IO_URI" string optional
-
     option "backup-format" - "Force backup file format"
         typestr="FILE_FORMAT" string optional
 
@@ -33,22 +32,16 @@ section "Options"
     option "sess-latency" - "Session target latency, TIME units"
         string optional
 
-    option "min-latency" - "Session minimum latency, TIME units"
-        string optional
-
-    option "max-latency" - "Session maximum latency, TIME units"
-        string optional
-
     option "io-latency" - "Playback target latency, TIME units"
         string optional
 
-    option "np-timeout" - "Session no playback timeout, TIME units"
+    option "latency-tolerance" - "Maximum latency deviation, TIME units"
         string optional
 
-    option "bp-timeout" - "Session broken playback timeout, TIME units"
+    option "no-play-timeout" - "No playback timeout, TIME units"
         string optional
 
-    option "bp-window" - "Session breakage detection window, TIME units"
+    option "choppy-play-timeout" - "Choppy playback timeout, TIME units"
         string optional
 
     option "packet-limit" - "Maximum packet size, in bytes"
@@ -63,7 +56,11 @@ section "Options"
     option "rate" - "Override output sample rate, Hz"
         int optional
 
-    option "no-resampling" - "Disable resampling" flag off
+    option "clock-backend" - "Clock synchronization backend"
+        values="disable","niq" default="niq" enum optional
+
+    option "clock-profile" - "Clock synchronization profile"
+        values="default","responsive","gradual" default="default" enum optional
 
     option "resampler-backend" - "Resampler backend"
         values="default","builtin","speex" default="default" enum optional
@@ -74,12 +71,9 @@ section "Options"
     option "oneshot" 1 "Exit when last connected client disconnects"
         flag off
 
-    option "poisoning" - "Enable uninitialized memory poisoning"
-        flag off
+    option "profiling" - "Enable self-profiling" flag off
 
-    option "profiling" - "Enable self profiling" flag off
-
-    option "beeping" - "Enable beeping on packet loss" flag off
+    option "beep" - "Enable beeping on packet loss" flag off
 
     option "color" - "Set colored logging mode for stderr output"
         values="auto","always","never" default="auto" enum optional

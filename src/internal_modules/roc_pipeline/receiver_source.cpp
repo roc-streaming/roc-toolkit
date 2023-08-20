@@ -21,36 +21,32 @@ ReceiverSource::ReceiverSource(
     packet::PacketFactory& packet_factory,
     core::BufferFactory<uint8_t>& byte_buffer_factory,
     core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-    core::IAllocator& allocator)
+    core::IArena& arena)
     : format_map_(format_map)
     , packet_factory_(packet_factory)
     , byte_buffer_factory_(byte_buffer_factory)
     , sample_buffer_factory_(sample_buffer_factory)
-    , allocator_(allocator)
+    , arena_(arena)
     , audio_reader_(NULL)
     , config_(config)
     , timestamp_(0) {
-    mixer_.reset(new (mixer_) audio::Mixer(sample_buffer_factory,
-                                           config.common.internal_frame_length,
-                                           config.common.output_sample_spec));
-    if (!mixer_ || !mixer_->valid()) {
+    mixer_.reset(new (mixer_) audio::Mixer(sample_buffer_factory));
+    if (!mixer_ || !mixer_->is_valid()) {
         return;
     }
     audio::IFrameReader* areader = mixer_.get();
 
-    if (config.common.poisoning) {
-        poisoner_.reset(new (poisoner_) audio::PoisonReader(*areader));
-        if (!poisoner_) {
-            return;
-        }
-        areader = poisoner_.get();
+    poisoner_.reset(new (poisoner_) audio::PoisonReader(*areader));
+    if (!poisoner_) {
+        return;
     }
+    areader = poisoner_.get();
 
-    if (config.common.profiling) {
+    if (config.common.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingReader(
-            *areader, allocator, config.common.output_sample_spec,
+            *areader, arena, config.common.output_sample_spec,
             config.common.profiler_config));
-        if (!profiler_ || !profiler_->valid()) {
+        if (!profiler_ || !profiler_->is_valid()) {
             return;
         }
         areader = profiler_.get();
@@ -59,20 +55,33 @@ ReceiverSource::ReceiverSource(
     audio_reader_ = areader;
 }
 
-bool ReceiverSource::valid() const {
+bool ReceiverSource::is_valid() const {
     return audio_reader_;
 }
 
 ReceiverSlot* ReceiverSource::create_slot() {
-    core::SharedPtr<ReceiverSlot> slot = new (allocator_)
-        ReceiverSlot(config_, state_, *mixer_, format_map_, packet_factory_,
-                     byte_buffer_factory_, sample_buffer_factory_, allocator_);
+    roc_panic_if(!is_valid());
+
+    roc_log(LogInfo, "receiver source: adding slot");
+
+    core::SharedPtr<ReceiverSlot> slot =
+        new (arena_) ReceiverSlot(config_, state_, *mixer_, format_map_, packet_factory_,
+                                  byte_buffer_factory_, sample_buffer_factory_, arena_);
+
     if (!slot) {
         return NULL;
     }
 
     slots_.push_back(*slot);
     return slot.get();
+}
+
+void ReceiverSource::delete_slot(ReceiverSlot* slot) {
+    roc_panic_if(!is_valid());
+
+    roc_log(LogInfo, "receiver source: removing slot");
+
+    slots_.remove(*slot);
 }
 
 size_t ReceiverSource::num_sessions() const {
@@ -84,7 +93,7 @@ sndio::DeviceType ReceiverSource::type() const {
 }
 
 sndio::DeviceState ReceiverSource::state() const {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     if (state_.num_sessions() != 0) {
         // we have sessions and they're producing some sound
@@ -121,11 +130,11 @@ core::nanoseconds_t ReceiverSource::latency() const {
 }
 
 bool ReceiverSource::has_clock() const {
-    return config_.common.timing;
+    return config_.common.enable_timing;
 }
 
 void ReceiverSource::reclock(packet::ntp_timestamp_t timestamp) {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     for (core::SharedPtr<ReceiverSlot> slot = slots_.front(); slot;
          slot = slots_.nextof(*slot)) {
@@ -134,7 +143,7 @@ void ReceiverSource::reclock(packet::ntp_timestamp_t timestamp) {
 }
 
 bool ReceiverSource::read(audio::Frame& frame) {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     for (core::SharedPtr<ReceiverSlot> slot = slots_.front(); slot;
          slot = slots_.nextof(*slot)) {

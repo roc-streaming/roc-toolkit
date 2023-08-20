@@ -23,8 +23,8 @@ const core::nanoseconds_t StatsReportInterval = 60 * core::Second;
 
 TcpConnectionPort::TcpConnectionPort(TcpConnectionType type,
                                      uv_loop_t& loop,
-                                     core::IAllocator& allocator)
-    : BasicPort(allocator)
+                                     core::IArena& arena)
+    : BasicPort(arena)
     , loop_(loop)
     , poll_handle_initialized_(false)
     , poll_handle_started_(false)
@@ -702,8 +702,6 @@ void TcpConnectionPort::report_state_(ConnectionState state) {
         return;
     }
 
-    roc_panic_if_not(conn_handler_->is_used());
-
     switch (state) {
     case State_Refused:
         roc_log(LogTrace, "tcp conn: %s: invoking connection_refused() callback",
@@ -734,12 +732,10 @@ void TcpConnectionPort::set_conn_handler_(IConnHandler& handler) {
     }
 
     conn_handler_ = &handler;
-    conn_handler_->acquire_usage();
 }
 
 void TcpConnectionPort::unset_conn_handler_() {
     if (conn_handler_) {
-        conn_handler_->release_usage();
         conn_handler_ = NULL;
     }
 }

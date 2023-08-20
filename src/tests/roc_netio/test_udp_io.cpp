@@ -10,7 +10,7 @@
 
 #include "roc_address/socket_addr.h"
 #include "roc_core/buffer_factory.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_netio/network_loop.h"
 #include "roc_packet/concurrent_queue.h"
 #include "roc_packet/packet_factory.h"
@@ -22,9 +22,9 @@ namespace {
 
 enum { NumIterations = 20, NumPackets = 10, BufferSize = 125 };
 
-core::HeapAllocator allocator;
-core::BufferFactory<uint8_t> buffer_factory(allocator, BufferSize, true);
-packet::PacketFactory packet_factory(allocator, true);
+core::HeapArena arena;
+core::BufferFactory<uint8_t> buffer_factory(arena, BufferSize);
+packet::PacketFactory packet_factory(arena);
 
 UdpSenderConfig make_sender_config() {
     UdpSenderConfig config;
@@ -107,15 +107,15 @@ void check_packet(const packet::PacketPtr& pp,
 TEST_GROUP(udp_io) {};
 
 TEST(udp_io, one_sender_one_receiver_single_thread_non_blocking_disabled) {
-    packet::ConcurrentQueue rx_queue;
+    packet::ConcurrentQueue rx_queue(packet::ConcurrentQueue::Blocking);
 
     UdpSenderConfig tx_config = make_sender_config();
     UdpReceiverConfig rx_config = make_receiver_config();
 
     tx_config.non_blocking_enabled = false;
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
-    CHECK(net_loop.valid());
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    CHECK(net_loop.is_valid());
 
     packet::IWriter* tx_writer = NULL;
     CHECK(add_udp_sender(net_loop, tx_config, &tx_writer));
@@ -134,13 +134,13 @@ TEST(udp_io, one_sender_one_receiver_single_thread_non_blocking_disabled) {
 }
 
 TEST(udp_io, one_sender_one_receiver_single_loop) {
-    packet::ConcurrentQueue rx_queue;
+    packet::ConcurrentQueue rx_queue(packet::ConcurrentQueue::Blocking);
 
     UdpSenderConfig tx_config = make_sender_config();
     UdpReceiverConfig rx_config = make_receiver_config();
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
-    CHECK(net_loop.valid());
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    CHECK(net_loop.is_valid());
 
     packet::IWriter* tx_writer = NULL;
     CHECK(add_udp_sender(net_loop, tx_config, &tx_writer));
@@ -159,20 +159,20 @@ TEST(udp_io, one_sender_one_receiver_single_loop) {
 }
 
 TEST(udp_io, one_sender_one_receiver_separate_loops) {
-    packet::ConcurrentQueue rx_queue;
+    packet::ConcurrentQueue rx_queue(packet::ConcurrentQueue::Blocking);
 
     UdpSenderConfig tx_config = make_sender_config();
     UdpReceiverConfig rx_config = make_receiver_config();
 
-    NetworkLoop tx_loop(packet_factory, buffer_factory, allocator);
-    CHECK(tx_loop.valid());
+    NetworkLoop tx_loop(packet_factory, buffer_factory, arena);
+    CHECK(tx_loop.is_valid());
 
     packet::IWriter* tx_writer = NULL;
     CHECK(add_udp_sender(tx_loop, tx_config, &tx_writer));
     CHECK(tx_writer);
 
-    NetworkLoop rx_loop(packet_factory, buffer_factory, allocator);
-    CHECK(rx_loop.valid());
+    NetworkLoop rx_loop(packet_factory, buffer_factory, arena);
+    CHECK(rx_loop.is_valid());
     CHECK(add_udp_receiver(rx_loop, rx_config, rx_queue));
 
     for (int i = 0; i < NumIterations; i++) {
@@ -186,9 +186,9 @@ TEST(udp_io, one_sender_one_receiver_separate_loops) {
 }
 
 TEST(udp_io, one_sender_many_receivers) {
-    packet::ConcurrentQueue rx_queue1;
-    packet::ConcurrentQueue rx_queue2;
-    packet::ConcurrentQueue rx_queue3;
+    packet::ConcurrentQueue rx_queue1(packet::ConcurrentQueue::Blocking);
+    packet::ConcurrentQueue rx_queue2(packet::ConcurrentQueue::Blocking);
+    packet::ConcurrentQueue rx_queue3(packet::ConcurrentQueue::Blocking);
 
     UdpSenderConfig tx_config = make_sender_config();
 
@@ -196,19 +196,19 @@ TEST(udp_io, one_sender_many_receivers) {
     UdpReceiverConfig rx_config2 = make_receiver_config();
     UdpReceiverConfig rx_config3 = make_receiver_config();
 
-    NetworkLoop tx_loop(packet_factory, buffer_factory, allocator);
-    CHECK(tx_loop.valid());
+    NetworkLoop tx_loop(packet_factory, buffer_factory, arena);
+    CHECK(tx_loop.is_valid());
 
     packet::IWriter* tx_writer = NULL;
     CHECK(add_udp_sender(tx_loop, tx_config, &tx_writer));
     CHECK(tx_writer);
 
-    NetworkLoop rx1_loop(packet_factory, buffer_factory, allocator);
-    CHECK(rx1_loop.valid());
+    NetworkLoop rx1_loop(packet_factory, buffer_factory, arena);
+    CHECK(rx1_loop.is_valid());
     CHECK(add_udp_receiver(rx1_loop, rx_config1, rx_queue1));
 
-    NetworkLoop rx23_loop(packet_factory, buffer_factory, allocator);
-    CHECK(rx23_loop.valid());
+    NetworkLoop rx23_loop(packet_factory, buffer_factory, arena);
+    CHECK(rx23_loop.is_valid());
     CHECK(add_udp_receiver(rx23_loop, rx_config2, rx_queue2));
     CHECK(add_udp_receiver(rx23_loop, rx_config3, rx_queue3));
 
@@ -227,7 +227,7 @@ TEST(udp_io, one_sender_many_receivers) {
 }
 
 TEST(udp_io, many_senders_one_receiver) {
-    packet::ConcurrentQueue rx_queue;
+    packet::ConcurrentQueue rx_queue(packet::ConcurrentQueue::Blocking);
 
     UdpSenderConfig tx_config1 = make_sender_config();
     UdpSenderConfig tx_config2 = make_sender_config();
@@ -235,15 +235,15 @@ TEST(udp_io, many_senders_one_receiver) {
 
     UdpReceiverConfig rx_config = make_receiver_config();
 
-    NetworkLoop tx1_loop(packet_factory, buffer_factory, allocator);
-    CHECK(tx1_loop.valid());
+    NetworkLoop tx1_loop(packet_factory, buffer_factory, arena);
+    CHECK(tx1_loop.is_valid());
 
     packet::IWriter* tx_writer1 = NULL;
     CHECK(add_udp_sender(tx1_loop, tx_config1, &tx_writer1));
     CHECK(tx_writer1);
 
-    NetworkLoop tx23_loop(packet_factory, buffer_factory, allocator);
-    CHECK(tx23_loop.valid());
+    NetworkLoop tx23_loop(packet_factory, buffer_factory, arena);
+    CHECK(tx23_loop.is_valid());
 
     packet::IWriter* tx_writer2 = NULL;
     CHECK(add_udp_sender(tx23_loop, tx_config2, &tx_writer2));
@@ -253,8 +253,8 @@ TEST(udp_io, many_senders_one_receiver) {
     CHECK(add_udp_sender(tx23_loop, tx_config3, &tx_writer3));
     CHECK(tx_writer3);
 
-    NetworkLoop rx_loop(packet_factory, buffer_factory, allocator);
-    CHECK(rx_loop.valid());
+    NetworkLoop rx_loop(packet_factory, buffer_factory, arena);
+    CHECK(rx_loop.is_valid());
     CHECK(add_udp_receiver(rx_loop, rx_config, rx_queue));
 
     for (int i = 0; i < NumIterations; i++) {

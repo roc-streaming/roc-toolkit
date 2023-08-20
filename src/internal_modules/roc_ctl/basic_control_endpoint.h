@@ -24,13 +24,11 @@ namespace ctl {
 
 //! Base class for control endpoints.
 class BasicControlEndpoint
-    : public core::RefCounted<BasicControlEndpoint, core::StandardAllocation>,
+    : public core::RefCounted<BasicControlEndpoint, core::ArenaAllocation>,
       public core::ListNode {
-    typedef core::RefCounted<BasicControlEndpoint, core::StandardAllocation> RefCounted;
-
 public:
     //! Initialization.
-    BasicControlEndpoint(core::IAllocator&);
+    BasicControlEndpoint(core::IArena&);
 
     virtual ~BasicControlEndpoint();
 

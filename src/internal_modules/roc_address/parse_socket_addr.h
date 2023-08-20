@@ -13,6 +13,7 @@
 #define ROC_ADDRESS_PARSE_SOCKET_ADDR_H_
 
 #include "roc_address/socket_addr.h"
+#include "roc_core/attributes.h"
 
 namespace roc {
 namespace address {
@@ -26,7 +27,7 @@ namespace address {
 //!
 //! @returns
 //!  false if @p host can't be parsed.
-bool parse_socket_addr(const char* host, int port, SocketAddr& addr);
+ROC_ATTR_NODISCARD bool parse_socket_addr(const char* host, int port, SocketAddr& addr);
 
 } // namespace address
 } // namespace roc

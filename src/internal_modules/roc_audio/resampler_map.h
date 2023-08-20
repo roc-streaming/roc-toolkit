@@ -16,7 +16,8 @@
 #include "roc_audio/resampler_backend.h"
 #include "roc_audio/resampler_profile.h"
 #include "roc_audio/sample_spec.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/buffer_factory.h"
+#include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/singleton.h"
 #include "roc_core/stddefs.h"
@@ -39,13 +40,16 @@ public:
     //! Get backend ID by number.
     ResamplerBackend nth_backend(size_t n) const;
 
+    //! Check if given backend is supported.
+    bool is_supported(ResamplerBackend backend_id) const;
+
     //! Method to instantiate and return a pointer to a IResampler object.
-    IResampler* new_resampler(ResamplerBackend resampler_backend,
-                              core::IAllocator& allocator,
+    IResampler* new_resampler(ResamplerBackend backend_id,
+                              core::IArena& arena,
                               core::BufferFactory<sample_t>& buffer_factory,
                               ResamplerProfile profile,
-                              core::nanoseconds_t frame_length,
-                              const audio::SampleSpec& sample_spec);
+                              const audio::SampleSpec& in_spec,
+                              const audio::SampleSpec& out_spec);
 
 private:
     friend class core::Singleton<ResamplerMap>;
@@ -59,11 +63,11 @@ private:
         }
 
         ResamplerBackend id;
-        IResampler* (*ctor)(core::IAllocator& allocator,
+        IResampler* (*ctor)(core::IArena& arena,
                             core::BufferFactory<sample_t>& buffer_factory,
                             ResamplerProfile profile,
-                            core::nanoseconds_t frame_length,
-                            const audio::SampleSpec& sample_spec);
+                            const audio::SampleSpec& in_spec,
+                            const audio::SampleSpec& out_spec);
     };
 
     ResamplerMap();

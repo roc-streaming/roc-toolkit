@@ -9,7 +9,7 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/buffer_factory.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/packet_factory.h"
@@ -24,9 +24,9 @@ namespace {
 
 enum { MaxBufSize = 1492 };
 
-core::HeapAllocator allocator;
-core::BufferFactory<uint8_t> buffer_factory(allocator, MaxBufSize, true);
-packet::PacketFactory packet_factory(allocator, true);
+core::HeapArena arena;
+core::BufferFactory<uint8_t> buffer_factory(arena, MaxBufSize);
+packet::PacketFactory packet_factory(arena);
 
 core::Slice<uint8_t> new_buffer(const uint8_t* data, size_t datasz) {
     core::Slice<uint8_t> buf = buffer_factory.new_buffer();

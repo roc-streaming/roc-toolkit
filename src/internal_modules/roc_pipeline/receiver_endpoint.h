@@ -14,7 +14,7 @@
 
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/mpsc_queue.h"
 #include "roc_core/optional.h"
 #include "roc_core/ref_counted.h"
@@ -36,22 +36,19 @@ namespace pipeline {
 //! Contains:
 //!  - a pipeline for processing packets from single network endpoint
 //!  - a reference to session group to which packets are routed
-class ReceiverEndpoint
-    : public core::RefCounted<ReceiverEndpoint, core::StandardAllocation>,
-      public core::ListNode,
-      private packet::IWriter {
-    typedef core::RefCounted<ReceiverEndpoint, core::StandardAllocation> RefCounted;
-
+class ReceiverEndpoint : public core::RefCounted<ReceiverEndpoint, core::ArenaAllocation>,
+                         public core::ListNode,
+                         private packet::IWriter {
 public:
     //! Initialize.
     ReceiverEndpoint(address::Protocol proto,
                      ReceiverState& receiver_state,
                      ReceiverSessionGroup& session_group,
                      const rtp::FormatMap& format_map,
-                     core::IAllocator& allocator);
+                     core::IArena& arena);
 
     //! Check if the port pipeline was succefully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Get protocol.
     address::Protocol proto() const;

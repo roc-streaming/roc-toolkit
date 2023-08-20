@@ -12,8 +12,8 @@
 namespace roc {
 namespace netio {
 
-BasicPort::BasicPort(core::IAllocator& allocator)
-    : RefCounted(allocator) {
+BasicPort::BasicPort(core::IArena& arena)
+    : core::RefCounted<BasicPort, core::ArenaAllocation>(arena) {
     descriptor_[0] = '\0';
 }
 

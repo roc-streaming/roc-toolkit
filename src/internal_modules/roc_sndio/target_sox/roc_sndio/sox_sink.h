@@ -16,7 +16,7 @@
 
 #include "roc_audio/sample_spec.h"
 #include "roc_core/array.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/units.h"
@@ -33,12 +33,12 @@ namespace sndio {
 class SoxSink : public ISink, public core::NonCopyable<> {
 public:
     //! Initialize.
-    SoxSink(core::IAllocator& allocator, const Config& config);
+    SoxSink(core::IArena& arena, const Config& config);
 
     virtual ~SoxSink();
 
     //! Check if the object was successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Open output file or device.
     //!

@@ -695,7 +695,7 @@ env['ROC_MODULES'] = [
     'roc_pipeline',
     'roc_sdp',
     'roc_ctl',
-    'roc_peer',
+    'roc_node',
 ]
 
 # build variant for roc and dependencies (e.g. 'debug' or 'release')
@@ -975,7 +975,6 @@ if meta.compiler == 'gcc':
 
             # enable
             '-Wcast-qual',
-            '-Wfloat-equal',
             '-Wformat-security',
             '-Wformat=2',
             '-Wmissing-declarations',
@@ -988,6 +987,7 @@ if meta.compiler == 'gcc':
             '-Wno-cast-function-type',
             '-Wno-psabi',
             '-Wno-restrict',
+            '-Wno-shadow',
             '-Wno-stringop-overflow',
             '-Wno-system-headers',
         ]})
@@ -1009,7 +1009,6 @@ if meta.compiler == 'gcc':
                 '-Wfloat-conversion',
                 '-Wlogical-op',
                 '-Woverlength-strings',
-                '-Wshadow',
                 '-Wsign-conversion',
             ]})
 
@@ -1024,8 +1023,6 @@ if meta.compiler == 'clang':
             '-Wcast-qual',
             '-Wdouble-promotion',
             '-Wfloat-conversion',
-            '-Wfloat-equal',
-            '-Wfloat-equal',
             '-Wformat-security',
             '-Wformat=2',
             '-Wnull-dereference',
@@ -1040,6 +1037,7 @@ if meta.compiler == 'clang':
             # disable
             '-Wno-format-nonliteral',
             '-Wno-psabi',
+            '-Wno-shadow',
             '-Wno-system-headers',
         ]})
 

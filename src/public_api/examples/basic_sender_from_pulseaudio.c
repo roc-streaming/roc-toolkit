@@ -65,14 +65,14 @@ int main() {
     memset(&sender_config, 0, sizeof(sender_config));
 
     /* Setup input frame format. */
-    sender_config.frame_sample_rate = MY_SAMPLE_RATE;
-    sender_config.frame_channels = ROC_CHANNEL_SET_STEREO;
-    sender_config.frame_encoding = ROC_FRAME_ENCODING_PCM_FLOAT;
+    sender_config.frame_encoding.rate = MY_SAMPLE_RATE;
+    sender_config.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
+    sender_config.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
 
     /* Use user-provided clock.
      * Sender will be clocked by PulseAudio source. Writer operation will be non-blocking.
      */
-    sender_config.clock_source = ROC_CLOCK_EXTERNAL;
+    sender_config.clock_source = ROC_CLOCK_SOURCE_EXTERNAL;
 
     /* Create sender. */
     roc_sender* sender = NULL;
@@ -92,7 +92,9 @@ int main() {
     roc_endpoint_set_host(source_endp, MY_RECEIVER_IP);
     roc_endpoint_set_port(source_endp, MY_RECEIVER_SOURCE_PORT);
 
-    if (roc_sender_connect(sender, ROC_INTERFACE_AUDIO_SOURCE, source_endp) != 0) {
+    if (roc_sender_connect(sender, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
+                           source_endp)
+        != 0) {
         oops();
     }
 
@@ -112,7 +114,9 @@ int main() {
     roc_endpoint_set_host(repair_endp, MY_RECEIVER_IP);
     roc_endpoint_set_port(repair_endp, MY_RECEIVER_REPAIR_PORT);
 
-    if (roc_sender_connect(sender, ROC_INTERFACE_AUDIO_REPAIR, repair_endp) != 0) {
+    if (roc_sender_connect(sender, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_REPAIR,
+                           repair_endp)
+        != 0) {
         oops();
     }
 

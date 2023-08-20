@@ -32,16 +32,16 @@ namespace audio {
 class BuiltinResampler : public IResampler, public core::NonCopyable<> {
 public:
     //! Initialize.
-    BuiltinResampler(core::IAllocator& allocator,
+    BuiltinResampler(core::IArena& arena,
                      core::BufferFactory<sample_t>& buffer_factory,
                      ResamplerProfile profile,
-                     core::nanoseconds_t frame_length,
-                     const audio::SampleSpec& sample_spec);
+                     const audio::SampleSpec& in_spec,
+                     const audio::SampleSpec& out_spec);
 
     ~BuiltinResampler();
 
     //! Check if object is successfully constructed.
-    virtual bool valid() const;
+    virtual bool is_valid() const;
 
     //! Set new resample factor.
     //! @remarks
@@ -67,10 +67,8 @@ private:
     typedef int32_t signed_fixedpoint_t;
     typedef int64_t signed_long_fixedpoint_t;
 
-    const audio::SampleSpec sample_spec_;
-
     inline size_t channelize_index(const size_t i, const size_t ch_offset) const {
-        return i * sample_spec_.num_channels() + ch_offset;
+        return i * in_spec_.num_channels() + ch_offset;
     }
 
     bool alloc_frames_(core::BufferFactory<sample_t>&);
@@ -85,6 +83,9 @@ private:
     //  (e.g. left -- 0, right -- 1, etc.).
     sample_t resample_(size_t channel_offset);
 
+    const audio::SampleSpec in_spec_;
+    const audio::SampleSpec out_spec_;
+
     core::Slice<sample_t> frames_[3];
     size_t n_ready_frames_;
 
@@ -94,14 +95,14 @@ private:
 
     float scaling_;
 
-    const size_t frame_size_;
-    const size_t frame_size_ch_;
-
     const size_t window_size_;
     const fixedpoint_t qt_half_sinc_window_size_;
 
     const size_t window_interp_;
     const size_t window_interp_bits_;
+
+    const size_t frame_size_ch_;
+    const size_t frame_size_;
 
     core::Array<sample_t> sinc_table_;
     const sample_t* sinc_table_ptr_;

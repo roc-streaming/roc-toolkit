@@ -7,7 +7,7 @@
  */
 
 //! @file roc_core/ref_counted.h
-//! @brief Base class for reference counted object.
+//! @brief Base class for object with reference counter.
 
 #ifndef ROC_CORE_REF_COUNTED_H_
 #define ROC_CORE_REF_COUNTED_H_
@@ -20,7 +20,7 @@
 namespace roc {
 namespace core {
 
-//! Base class for reference counted object.
+//! Base class for object with reference counter.
 //!
 //! Allows to increment and decrement reference counter. When the counter
 //! reaches zero, the object is automatically destroyed.
@@ -31,20 +31,22 @@ namespace core {
 //! When reference counter becomes zero, AllocationPolicy::destroy() is invoked
 //! by RefCounted to destroy itself.
 //!
-//! Inherits AllocationPolicy to make its methods available in the derived class.
+//! Inherits AllocationPolicy to make its methods and state available in the
+//! derived class. E.g., PoolAllocation policy holds a reference to the pool
+//! and uses it to release the object.
 //!
 //! Thread-safe.
 template <class T, class AllocationPolicy>
 class RefCounted : public NonCopyable<RefCounted<T, AllocationPolicy> >,
                    protected AllocationPolicy {
 public:
-    //! Initialization with default allocation policy.
+    //! Initialize.
     RefCounted()
         : AllocationPolicy()
         , counter_(0) {
     }
 
-    //! Initialization with arbitrary allocation policy.
+    //! Initialize.
     explicit RefCounted(const AllocationPolicy& policy)
         : AllocationPolicy(policy)
         , counter_(0) {
@@ -52,23 +54,37 @@ public:
 
     ~RefCounted() {
         if (!counter_.compare_exchange(0, -1)) {
-            roc_panic("ref counter: attempt to destroy object that is still in use: "
-                      "counter=%d",
-                      (int)counter_);
+            roc_panic(
+                "ref counter:"
+                " attempt to destroy object that is in use, destroyed, or corrupted:"
+                " counter=%d",
+                (int)counter_);
         }
     }
 
     //! Get reference counter.
-    long getref() const {
-        return counter_;
+    int getref() const {
+        const int current_counter = counter_;
+
+        if (current_counter < 0 || current_counter > MaxCounter) {
+            roc_panic("ref counter:"
+                      " attempt to access destroyed or currupted object:"
+                      " counter=%d",
+                      (int)current_counter);
+        }
+
+        return current_counter;
     }
 
     //! Increment reference counter.
     void incref() const {
         const int previous_counter = counter_++;
 
-        if (previous_counter < 0) {
-            roc_panic("ref counter: attempt to call acquire on destroyed object");
+        if (previous_counter < 0 || previous_counter > MaxCounter) {
+            roc_panic("ref counter:"
+                      " attempt to access destroyed or currupted object"
+                      " counter=%d",
+                      (int)previous_counter);
         }
     }
 
@@ -78,12 +94,15 @@ public:
     void decref() const {
         const int previous_counter = counter_--;
 
-        if (previous_counter < 0) {
-            roc_panic("ref counter: attempt to call release on destroyed object");
+        if (previous_counter < 0 || previous_counter > MaxCounter) {
+            roc_panic("ref counter:"
+                      " attempt to access destroyed or currupted object"
+                      " counter=%d",
+                      (int)previous_counter);
         }
 
         if (previous_counter == 0) {
-            roc_panic("ref counter: attempt to call release without acquire");
+            roc_panic("ref counter: unpaired incref/decref");
         }
 
         if (previous_counter == 1) {
@@ -93,6 +112,8 @@ public:
     }
 
 private:
+    enum { MaxCounter = 100000 };
+
     mutable Atomic<int> counter_;
 };
 

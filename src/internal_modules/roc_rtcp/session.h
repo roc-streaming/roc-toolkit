@@ -40,7 +40,7 @@ public:
             core::BufferFactory<uint8_t>& buffer_factory);
 
     //! Check if initialization succeeded.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Parse and process incoming packet.
     //! Invokes session hooks methods during processing.

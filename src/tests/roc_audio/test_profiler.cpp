@@ -9,7 +9,7 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_audio/profiler.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 
 namespace roc {
 namespace audio {
@@ -27,9 +27,9 @@ struct TestFrame {
 
 const int SampleRate = 5000; // 50 samples / chunk
 const int ChannelMask = 1;
-const audio::SampleSpec SampleSpecs = SampleSpec(SampleRate, ChannelMask);
+const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, ChannelMask);
 const double EpsilionThreshold = 0.001;
-core::HeapAllocator allocator;
+core::HeapArena arena;
 ProfilerConfig profiler_config(50 * core::Millisecond, 10 * core::Millisecond);
 
 } // namespace
@@ -37,7 +37,7 @@ ProfilerConfig profiler_config(50 * core::Millisecond, 10 * core::Millisecond);
 TEST_GROUP(profiler) {};
 
 TEST(profiler, test_moving_average) {
-    Profiler profiler(allocator, SampleSpecs, profiler_config);
+    Profiler profiler(arena, SampleSpecs, profiler_config);
 
     TestFrame frames[] = {
         TestFrame(50, 50 * core::Second),      TestFrame(25, 25 * core::Second),

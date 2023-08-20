@@ -18,6 +18,7 @@
 #include "roc_audio/sample.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/array.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
@@ -33,12 +34,11 @@ public:
     ResamplerWriter(IFrameWriter& writer,
                     IResampler& resampler,
                     core::BufferFactory<sample_t>& buffer_factory,
-                    core::nanoseconds_t frame_length,
                     const SampleSpec& in_sample_spec,
                     const SampleSpec& out_sample_spec);
 
     //! Check if object is successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Set new resample factor.
     bool set_scaling(float multiplier);

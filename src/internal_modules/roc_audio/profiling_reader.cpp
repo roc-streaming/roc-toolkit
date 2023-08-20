@@ -15,11 +15,15 @@ namespace roc {
 namespace audio {
 
 ProfilingReader::ProfilingReader(IFrameReader& reader,
-                                 core::IAllocator& allocator,
+                                 core::IArena& arena,
                                  const audio::SampleSpec& sample_spec,
                                  ProfilerConfig profiler_config)
-    : profiler_(allocator, sample_spec, profiler_config)
+    : profiler_(arena, sample_spec, profiler_config)
     , reader_(reader) {
+}
+
+bool ProfilingReader::is_valid() const {
+    return profiler_.is_valid();
 }
 
 bool ProfilingReader::read(Frame& frame) {
@@ -38,10 +42,6 @@ core::nanoseconds_t ProfilingReader::read_(Frame& frame, bool& ret) {
     ret = reader_.read(frame);
 
     return core::timestamp(core::ClockMonotonic) - start;
-}
-
-bool ProfilingReader::valid() const {
-    return profiler_.valid();
 }
 
 } // namespace audio

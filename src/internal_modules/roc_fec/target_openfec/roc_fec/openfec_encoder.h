@@ -14,7 +14,7 @@
 
 #include "roc_core/array.h"
 #include "roc_core/buffer_factory.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
 #include "roc_fec/codec_config.h"
@@ -42,12 +42,12 @@ public:
     //! Initialize.
     explicit OpenfecEncoder(const CodecConfig& config,
                             core::BufferFactory<uint8_t>& buffer_factory,
-                            core::IAllocator& allocator);
+                            core::IArena& arena);
 
     virtual ~OpenfecEncoder();
 
     //! Check if object is successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Get buffer alignment requirement.
     virtual size_t alignment() const;

@@ -90,16 +90,16 @@ ControlLoop::Tasks::PipelineProcessing::PipelineProcessing(
     , pipeline_(pipeline) {
 }
 
-ControlLoop::ControlLoop(netio::NetworkLoop& network_loop, core::IAllocator& allocator)
+ControlLoop::ControlLoop(netio::NetworkLoop& network_loop, core::IArena& arena)
     : network_loop_(network_loop)
-    , allocator_(allocator) {
+    , arena_(arena) {
 }
 
 ControlLoop::~ControlLoop() {
 }
 
-bool ControlLoop::valid() const {
-    return task_queue_.valid();
+bool ControlLoop::is_valid() const {
+    return task_queue_.is_valid();
 }
 
 void ControlLoop::schedule(ControlTask& task, IControlTaskCompleter* completer) {
@@ -133,8 +133,8 @@ ControlTaskResult ControlLoop::task_create_endpoint_(ControlTask& control_task) 
     roc_log(LogDebug, "control loop: creating endpoint");
 
     core::SharedPtr<BasicControlEndpoint> endpoint =
-        ControlInterfaceMap::instance().new_endpoint(
-            task.iface_, task.proto_, task_queue_, network_loop_, allocator_);
+        ControlInterfaceMap::instance().new_endpoint(task.iface_, task.proto_,
+                                                     task_queue_, network_loop_, arena_);
 
     if (!endpoint) {
         roc_log(LogError, "control loop: can't add endpoint: failed to create");

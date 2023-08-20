@@ -7,6 +7,7 @@
  */
 
 #include "roc_rtp/format_map.h"
+#include "roc_audio/channel_layout.h"
 #include "roc_audio/pcm_decoder.h"
 #include "roc_audio/pcm_encoder.h"
 #include "roc_core/panic.h"
@@ -14,71 +15,105 @@
 namespace roc {
 namespace rtp {
 
-namespace {
-
-template <audio::PcmEncoding Encoding,
-          audio::PcmEndian Endian,
-          size_t SampleRate,
-          packet::channel_mask_t ChMask>
-audio::IFrameEncoder* new_encoder(core::IAllocator& allocator) {
-    return new (allocator) audio::PcmEncoder(audio::PcmFormat(Encoding, Endian),
-                                             audio::SampleSpec(SampleRate, ChMask));
-}
-
-template <audio::PcmEncoding Encoding,
-          audio::PcmEndian Endian,
-          size_t SampleRate,
-          packet::channel_mask_t ChMask>
-audio::IFrameDecoder* new_decoder(core::IAllocator& allocator) {
-    return new (allocator) audio::PcmDecoder(audio::PcmFormat(Encoding, Endian),
-                                             audio::SampleSpec(SampleRate, ChMask));
-}
-
-} // namespace
-
-FormatMap::FormatMap()
-    : n_formats_(0) {
+FormatMap::FormatMap(core::IArena& arena)
+    : node_pool_(arena)
+    , node_map_(arena) {
     {
         Format fmt;
         fmt.payload_type = PayloadType_L16_Mono;
         fmt.pcm_format =
             audio::PcmFormat(audio::PcmEncoding_SInt16, audio::PcmEndian_Big);
-        fmt.sample_spec = audio::SampleSpec(44100, 0x1);
+        fmt.sample_spec = audio::SampleSpec(44100, audio::ChanLayout_Surround,
+                                            audio::ChanMask_Surround_Mono);
         fmt.packet_flags = packet::Packet::FlagAudio;
-        fmt.new_encoder =
-            &new_encoder<audio::PcmEncoding_SInt16, audio::PcmEndian_Big, 44100, 0x1>;
-        fmt.new_decoder =
-            &new_decoder<audio::PcmEncoding_SInt16, audio::PcmEndian_Big, 44100, 0x1>;
-        add_(fmt);
+        fmt.new_encoder = &audio::PcmEncoder::construct;
+        fmt.new_decoder = &audio::PcmDecoder::construct;
+
+        add_builtin_(fmt);
     }
     {
         Format fmt;
         fmt.payload_type = PayloadType_L16_Stereo;
         fmt.pcm_format =
             audio::PcmFormat(audio::PcmEncoding_SInt16, audio::PcmEndian_Big);
-        fmt.sample_spec = audio::SampleSpec(44100, 0x3);
+        fmt.sample_spec = audio::SampleSpec(44100, audio::ChanLayout_Surround,
+                                            audio::ChanMask_Surround_Stereo);
         fmt.packet_flags = packet::Packet::FlagAudio;
-        fmt.new_encoder =
-            &new_encoder<audio::PcmEncoding_SInt16, audio::PcmEndian_Big, 44100, 0x3>;
-        fmt.new_decoder =
-            &new_decoder<audio::PcmEncoding_SInt16, audio::PcmEndian_Big, 44100, 0x3>;
-        add_(fmt);
+        fmt.new_encoder = &audio::PcmEncoder::construct;
+        fmt.new_decoder = &audio::PcmDecoder::construct;
+
+        add_builtin_(fmt);
     }
 }
 
-const Format* FormatMap::format(unsigned int pt) const {
-    for (size_t n = 0; n < n_formats_; n++) {
-        if ((unsigned int)formats_[n].payload_type == pt) {
-            return &formats_[n];
+const Format* FormatMap::find_by_pt(unsigned int pt) const {
+    core::Mutex::Lock lock(mutex_);
+
+    if (core::SharedPtr<Node> node = node_map_.find(pt)) {
+        return &node->format;
+    }
+
+    return NULL;
+}
+
+const Format* FormatMap::find_by_spec(const audio::SampleSpec& spec) const {
+    core::Mutex::Lock lock(mutex_);
+
+    for (core::SharedPtr<Node> node = node_map_.front(); node != NULL;
+         node = node_map_.nextof(*node)) {
+        if (node->format.sample_spec == spec) {
+            return &node->format;
         }
     }
 
     return NULL;
 }
 
-void FormatMap::add_(const Format& fmt) {
-    roc_panic_if(n_formats_ == MaxFormats);
-    formats_[n_formats_++] = fmt;
+bool FormatMap::add_format(const Format& fmt) {
+    core::Mutex::Lock lock(mutex_);
+
+    if (fmt.payload_type == 0) {
+        roc_panic("format map: bad format: invalid payload type");
+    }
+
+    if (!fmt.sample_spec.is_valid()) {
+        roc_panic("format map: bad format: invalid sample spec");
+    }
+
+    if (!fmt.new_encoder || !fmt.new_decoder) {
+        roc_panic("format map: bad format: invalid codec functions");
+    }
+
+    if (!node_map_.grow()) {
+        roc_log(LogError,
+                "format map: failed to register format: hashmap allocation failed");
+        return false;
+    }
+
+    if (node_map_.find(fmt.payload_type)) {
+        roc_log(LogError,
+                "format map: failed to register format: payload type %u already exists",
+                fmt.payload_type);
+        return false;
+    }
+
+    core::SharedPtr<Node> node = new (node_pool_) Node(node_pool_, fmt);
+
+    if (!node) {
+        roc_log(LogError,
+                "format map: failed to register format: pool allocation failed");
+        return false;
+    }
+
+    node_map_.insert(*node);
+
+    return true;
+}
+
+void FormatMap::add_builtin_(const Format& fmt) {
+    if (!add_format(fmt)) {
+        roc_panic("format map: can't add builtin format");
+    }
 }
 
 } // namespace rtp

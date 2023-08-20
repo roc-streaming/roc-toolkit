@@ -12,7 +12,7 @@
 #ifndef ROC_PIPELINE_SENDER_ENDPOINT_H_
 #define ROC_PIPELINE_SENDER_ENDPOINT_H_
 
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
@@ -33,10 +33,17 @@ namespace pipeline {
 class SenderEndpoint : public core::NonCopyable<>, private packet::IWriter {
 public:
     //! Initialize.
-    SenderEndpoint(address::Protocol proto, core::IAllocator& allocator);
+    //!  - @p dest_address specifies destination address that is assigned to the
+    //!    outgoing packets in the end of endpoint pipeline
+    //!  - @p dest_writer specifies destination writer to which packets are sent
+    //!    in the end of endpoint pipeline
+    SenderEndpoint(address::Protocol proto,
+                   const address::SocketAddr& dest_address,
+                   packet::IWriter& dest_writer,
+                   core::IArena& arena);
 
     //! Check if pipeline was succefully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Get protocol.
     address::Protocol proto() const;
@@ -50,23 +57,6 @@ public:
     //! @remarks
     //!  This writer will pass packets to the endpoint pipeline.
     packet::IWriter& writer();
-
-    //! Check if destination writer was set.
-    //! @remarks
-    //!  True if set_destination_writer() was called.
-    bool has_destination_writer() const;
-
-    //! Set destination writer.
-    //! @remarks
-    //!  When packets are written to the endpoint pipeline, in the end they
-    //!  go to the destination writer.
-    void set_destination_writer(packet::IWriter& writer);
-
-    //! Set destination address.
-    //! @remarks
-    //!  When packets are written to the endpoint pipeline, they are assigned
-    //!  the specified destination address.
-    void set_destination_address(const address::SocketAddr&);
 
 private:
     virtual void write(const packet::PacketPtr& packet);

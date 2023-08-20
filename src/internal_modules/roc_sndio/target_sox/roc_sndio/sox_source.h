@@ -16,7 +16,7 @@
 
 #include "roc_audio/sample_spec.h"
 #include "roc_core/array.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/string_buffer.h"
@@ -34,12 +34,12 @@ namespace sndio {
 class SoxSource : public ISource, private core::NonCopyable<> {
 public:
     //! Initialize.
-    SoxSource(core::IAllocator& allocator, const Config& config);
+    SoxSource(core::IArena& arena, const Config& config);
 
     virtual ~SoxSource();
 
     //! Check if the object was successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Open input file or device.
     //!

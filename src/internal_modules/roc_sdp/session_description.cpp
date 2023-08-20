@@ -11,10 +11,10 @@
 namespace roc {
 namespace sdp {
 
-SessionDescription::SessionDescription(core::IAllocator& allocator)
-    : guid_(allocator)
+SessionDescription::SessionDescription(core::IArena& arena)
+    : guid_(arena)
     , media_descriptions_()
-    , allocator_(allocator) {
+    , arena_(arena) {
     clear();
 }
 
@@ -97,8 +97,7 @@ bool SessionDescription::set_origin_unicast_address(address::AddrFamily addrtype
 }
 
 bool SessionDescription::add_media_description() {
-    core::SharedPtr<MediaDescription> media =
-        new (allocator_) MediaDescription(allocator_);
+    core::SharedPtr<MediaDescription> media = new (arena_) MediaDescription(arena_);
 
     if (!media) {
         roc_log(LogError, "sender description: can't allocate media description.");

@@ -8,7 +8,7 @@
 
 #include "roc/log.h"
 
-#include "log_helpers.h"
+#include "adapters.h"
 
 #include "roc_core/log.h"
 #include "roc_core/macro_helpers.h"
@@ -23,7 +23,7 @@ void log_handler_adapter(const core::LogMessage& msg, void** args) {
 
     roc_log_message handler_msg;
     memset(&handler_msg, 0, sizeof(handler_msg));
-    api::log_message_to_user(msg, handler_msg);
+    api::log_message_to_user(handler_msg, msg);
 
     handler_func(&handler_msg, handler_arg);
 }

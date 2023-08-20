@@ -232,7 +232,7 @@ IDevice* SoxBackend::open_device(DeviceType device_type,
                                  const char* driver,
                                  const char* path,
                                  const Config& config,
-                                 core::IAllocator& allocator) {
+                                 core::IArena& arena) {
     first_created_ = true;
 
     driver = map_to_sox_driver(driver);
@@ -258,9 +258,8 @@ IDevice* SoxBackend::open_device(DeviceType device_type,
 
     switch (device_type) {
     case DeviceType_Sink: {
-        core::ScopedPtr<SoxSink> sink(new (allocator) SoxSink(allocator, config),
-                                      allocator);
-        if (!sink || !sink->valid()) {
+        core::ScopedPtr<SoxSink> sink(new (arena) SoxSink(arena, config), arena);
+        if (!sink || !sink->is_valid()) {
             roc_log(LogDebug, "sox backend: can't construct sink: driver=%s path=%s",
                     driver, path);
             return NULL;
@@ -276,9 +275,8 @@ IDevice* SoxBackend::open_device(DeviceType device_type,
     } break;
 
     case DeviceType_Source: {
-        core::ScopedPtr<SoxSource> source(new (allocator) SoxSource(allocator, config),
-                                          allocator);
-        if (!source || !source->valid()) {
+        core::ScopedPtr<SoxSource> source(new (arena) SoxSource(arena, config), arena);
+        if (!source || !source->is_valid()) {
             roc_log(LogDebug, "sox backend: can't construct source: driver=%s path=%s",
                     driver, path);
             return NULL;

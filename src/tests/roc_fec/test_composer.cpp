@@ -9,7 +9,7 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/buffer_factory.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_fec/composer.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_rtp/composer.h"
@@ -22,8 +22,8 @@ TEST_GROUP(composer) {};
 TEST(composer, align_footer) {
     enum { BufferSize = 100, Alignment = 8 };
 
-    core::HeapAllocator allocator;
-    core::BufferFactory<uint8_t> buffer_factory(allocator, BufferSize, true);
+    core::HeapArena arena;
+    core::BufferFactory<uint8_t> buffer_factory(arena, BufferSize);
 
     core::SharedPtr<core::Buffer<uint8_t> > buffer = buffer_factory.new_buffer();
     CHECK(buffer);
@@ -47,8 +47,8 @@ TEST(composer, align_footer) {
 TEST(composer, align_header) {
     enum { BufferSize = 100, Alignment = 8 };
 
-    core::HeapAllocator allocator;
-    core::BufferFactory<uint8_t> buffer_factory(allocator, BufferSize, true);
+    core::HeapArena arena;
+    core::BufferFactory<uint8_t> buffer_factory(arena, BufferSize);
 
     core::SharedPtr<core::Buffer<uint8_t> > buffer = buffer_factory.new_buffer();
     CHECK(buffer);
@@ -77,8 +77,8 @@ TEST(composer, align_header) {
 TEST(composer, align_outer_header) {
     enum { BufferSize = 100, Alignment = 8, OuterHeader = 5 };
 
-    core::HeapAllocator allocator;
-    core::BufferFactory<uint8_t> buffer_factory(allocator, BufferSize, true);
+    core::HeapArena arena;
+    core::BufferFactory<uint8_t> buffer_factory(arena, BufferSize);
 
     core::SharedPtr<core::Buffer<uint8_t> > buffer = buffer_factory.new_buffer();
     CHECK(buffer);
@@ -110,9 +110,9 @@ TEST(composer, align_outer_header) {
 TEST(composer, packet_size) {
     enum { BufferSize = 100, Alignment = 8, PayloadSize = 10 };
 
-    core::HeapAllocator allocator;
-    core::BufferFactory<uint8_t> buffer_factory(allocator, BufferSize, true);
-    packet::PacketFactory packet_factory(allocator, true);
+    core::HeapArena arena;
+    core::BufferFactory<uint8_t> buffer_factory(arena, BufferSize);
+    packet::PacketFactory packet_factory(arena);
 
     core::Slice<uint8_t> buffer = buffer_factory.new_buffer();
     CHECK(buffer);

@@ -23,8 +23,13 @@ namespace audio {
 //! PCM decoder.
 class PcmDecoder : public IFrameDecoder, public core::NonCopyable<> {
 public:
+    //! Construction function.
+    static IFrameDecoder* construct(core::IArena& arena,
+                                    const PcmFormat& pcm_format,
+                                    const SampleSpec& sample_spec);
+
     //! Initialize.
-    explicit PcmDecoder(const PcmFormat& pcm_format, const SampleSpec& sample_spec);
+    PcmDecoder(const PcmFormat& pcm_format, const SampleSpec& sample_spec);
 
     //! Get current stream position.
     virtual packet::timestamp_t position() const;

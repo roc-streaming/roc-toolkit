@@ -16,10 +16,9 @@
 #include "roc_audio/iframe_encoder.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/packetizer.h"
-#include "roc_audio/poison_writer.h"
 #include "roc_audio/profiling_writer.h"
 #include "roc_core/buffer_factory.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
 #include "roc_fec/iblock_encoder.h"
@@ -53,13 +52,16 @@ public:
                packet::PacketFactory& packet_factory,
                core::BufferFactory<uint8_t>& byte_buffer_factory,
                core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-               core::IAllocator& allocator);
+               core::IArena& arena);
 
     //! Check if the pipeline was successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Create slot.
     SenderSlot* create_slot();
+
+    //! Delete slot.
+    void delete_slot(SenderSlot* slot);
 
     //! Get deadline when the pipeline should be updated.
     core::nanoseconds_t get_update_deadline();
@@ -106,13 +108,12 @@ private:
     core::BufferFactory<uint8_t>& byte_buffer_factory_;
     core::BufferFactory<audio::sample_t>& sample_buffer_factory_;
 
-    core::IAllocator& allocator_;
-
-    core::List<SenderSlot> slots_;
+    core::IArena& arena_;
 
     audio::Fanout fanout_;
 
-    core::Optional<audio::PoisonWriter> pipeline_poisoner_;
+    core::List<SenderSlot> slots_;
+
     core::Optional<audio::ProfilingWriter> profiler_;
 
     audio::IFrameWriter* audio_writer_;

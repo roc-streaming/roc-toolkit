@@ -34,34 +34,32 @@ ReceiverLoop::SlotHandle ReceiverLoop::Tasks::CreateSlot::get_handle() const {
     return (SlotHandle)slot_;
 }
 
-ReceiverLoop::Tasks::CreateEndpoint::CreateEndpoint(SlotHandle slot,
-                                                    address::Interface iface,
-                                                    address::Protocol proto) {
-    func_ = &ReceiverLoop::task_create_endpoint_;
+ReceiverLoop::Tasks::DeleteSlot::DeleteSlot(SlotHandle slot) {
+    func_ = &ReceiverLoop::task_delete_slot_;
     if (!slot) {
-        roc_panic("receiver source: slot handle is null");
+        roc_panic("receiver loop: slot handle is null");
+    }
+    slot_ = (ReceiverSlot*)slot;
+}
+
+ReceiverLoop::Tasks::AddEndpoint::AddEndpoint(SlotHandle slot,
+                                              address::Interface iface,
+                                              address::Protocol proto) {
+    func_ = &ReceiverLoop::task_add_endpoint_;
+    if (!slot) {
+        roc_panic("receiver loop: slot handle is null");
     }
     slot_ = (ReceiverSlot*)slot;
     iface_ = iface;
     proto_ = proto;
 }
 
-packet::IWriter* ReceiverLoop::Tasks::CreateEndpoint::get_writer() const {
+packet::IWriter* ReceiverLoop::Tasks::AddEndpoint::get_writer() const {
     if (!success()) {
         return NULL;
     }
     roc_panic_if_not(writer_);
     return writer_;
-}
-
-ReceiverLoop::Tasks::DeleteEndpoint::DeleteEndpoint(SlotHandle slot,
-                                                    address::Interface iface) {
-    func_ = &ReceiverLoop::task_delete_endpoint_;
-    if (!slot) {
-        roc_panic("receiver source: slot handle is null");
-    }
-    slot_ = (ReceiverSlot*)slot;
-    iface_ = iface;
 }
 
 ReceiverLoop::ReceiverLoop(IPipelineTaskScheduler& scheduler,
@@ -70,21 +68,21 @@ ReceiverLoop::ReceiverLoop(IPipelineTaskScheduler& scheduler,
                            packet::PacketFactory& packet_factory,
                            core::BufferFactory<uint8_t>& byte_buffer_factory,
                            core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-                           core::IAllocator& allocator)
+                           core::IArena& arena)
     : PipelineLoop(scheduler, config.tasks, config.common.output_sample_spec)
     , source_(config,
               format_map,
               packet_factory,
               byte_buffer_factory,
               sample_buffer_factory,
-              allocator)
+              arena)
     , timestamp_(0)
     , valid_(false) {
-    if (!source_.valid()) {
+    if (!source_.is_valid()) {
         return;
     }
 
-    if (config.common.timing) {
+    if (config.common.enable_timing) {
         ticker_.reset(new (ticker_)
                           core::Ticker(config.common.output_sample_spec.sample_rate()));
         if (!ticker_) {
@@ -95,18 +93,18 @@ ReceiverLoop::ReceiverLoop(IPipelineTaskScheduler& scheduler,
     valid_ = true;
 }
 
-bool ReceiverLoop::valid() const {
+bool ReceiverLoop::is_valid() const {
     return valid_;
 }
 
 sndio::ISource& ReceiverLoop::source() {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     return *this;
 }
 
 sndio::DeviceType ReceiverLoop::type() const {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -114,7 +112,7 @@ sndio::DeviceType ReceiverLoop::type() const {
 }
 
 sndio::DeviceState ReceiverLoop::state() const {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -122,7 +120,7 @@ sndio::DeviceState ReceiverLoop::state() const {
 }
 
 void ReceiverLoop::pause() {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -130,7 +128,7 @@ void ReceiverLoop::pause() {
 }
 
 bool ReceiverLoop::resume() {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -138,7 +136,7 @@ bool ReceiverLoop::resume() {
 }
 
 bool ReceiverLoop::restart() {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -146,7 +144,7 @@ bool ReceiverLoop::restart() {
 }
 
 audio::SampleSpec ReceiverLoop::sample_spec() const {
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -154,7 +152,7 @@ audio::SampleSpec ReceiverLoop::sample_spec() const {
 }
 
 core::nanoseconds_t ReceiverLoop::latency() const {
-    roc_panic_if_not(valid());
+    roc_panic_if_not(is_valid());
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -162,7 +160,7 @@ core::nanoseconds_t ReceiverLoop::latency() const {
 }
 
 bool ReceiverLoop::has_clock() const {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -170,7 +168,7 @@ bool ReceiverLoop::has_clock() const {
 }
 
 void ReceiverLoop::reclock(packet::ntp_timestamp_t timestamp) {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -178,7 +176,7 @@ void ReceiverLoop::reclock(packet::ntp_timestamp_t timestamp) {
 }
 
 bool ReceiverLoop::read(audio::Frame& frame) {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -217,17 +215,21 @@ bool ReceiverLoop::task_create_slot_(Task& task) {
     return (bool)task.slot_;
 }
 
-bool ReceiverLoop::task_create_endpoint_(Task& task) {
-    ReceiverEndpoint* endpoint = task.slot_->create_endpoint(task.iface_, task.proto_);
+bool ReceiverLoop::task_delete_slot_(Task& task) {
+    roc_panic_if(!task.slot_);
+
+    source_.delete_slot(task.slot_);
+    return true;
+}
+
+bool ReceiverLoop::task_add_endpoint_(Task& task) {
+    roc_panic_if(!task.slot_);
+
+    ReceiverEndpoint* endpoint = task.slot_->add_endpoint(task.iface_, task.proto_);
     if (!endpoint) {
         return false;
     }
     task.writer_ = &endpoint->writer();
-    return true;
-}
-
-bool ReceiverLoop::task_delete_endpoint_(Task& task) {
-    task.slot_->delete_endpoint(task.iface_);
     return true;
 }
 

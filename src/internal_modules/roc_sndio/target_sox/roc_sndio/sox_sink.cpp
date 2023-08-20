@@ -7,6 +7,7 @@
  */
 
 #include "roc_sndio/sox_sink.h"
+#include "roc_audio/channel_layout.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_sndio/backend_map.h"
@@ -14,9 +15,9 @@
 namespace roc {
 namespace sndio {
 
-SoxSink::SoxSink(core::IAllocator& allocator, const Config& config)
+SoxSink::SoxSink(core::IArena& arena, const Config& config)
     : output_(NULL)
-    , buffer_(allocator)
+    , buffer_(arena)
     , buffer_size_(0)
     , is_file_(false)
     , valid_(false) {
@@ -52,7 +53,7 @@ SoxSink::~SoxSink() {
     close_();
 }
 
-bool SoxSink::valid() const {
+bool SoxSink::is_valid() const {
     return valid_;
 }
 
@@ -103,12 +104,17 @@ audio::SampleSpec SoxSink::sample_spec() const {
         roc_panic("sox sink: sample_rate(): non-open output file or device");
     }
 
-    const size_t sample_rate = size_t(output_->signal.rate);
+    if (output_->signal.channels == 1) {
+        return audio::SampleSpec(size_t(output_->signal.rate), audio::ChanLayout_Surround,
+                                 audio::ChanMask_Surround_Mono);
+    }
 
-    const packet::channel_mask_t chan_mask =
-        packet::channel_mask_t(1u << output_->signal.channels) - 1;
+    if (output_->signal.channels == 2) {
+        return audio::SampleSpec(size_t(output_->signal.rate), audio::ChanLayout_Surround,
+                                 audio::ChanMask_Surround_Stereo);
+    }
 
-    return audio::SampleSpec(sample_rate, chan_mask);
+    roc_panic("sox sink: unsupported channel count");
 }
 
 core::nanoseconds_t SoxSink::latency() const {

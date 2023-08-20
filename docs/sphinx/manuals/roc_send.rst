@@ -24,6 +24,7 @@ Options
 -r, --repair=ENDPOINT_URI   Remote repair endpoint
 -c, --control=ENDPOINT_URI  Remote control endpoint
 --reuseaddr                 enable SO_REUSEADDR when binding sockets
+--io-latency=STRING         Recording target latency, TIME units
 --nbsrc=INT                 Number of source packets in FEC block
 --nbrpr=INT                 Number of repair packets in FEC block
 --packet-length=STRING      Outgoing packet length, TIME units
@@ -35,7 +36,6 @@ Options
 --resampler-backend=ENUM    Resampler backend  (possible values="default", "builtin", "speex" default=`default')
 --resampler-profile=ENUM    Resampler profile  (possible values="low", "medium", "high" default=`medium')
 --interleaving              Enable packet interleaving  (default=off)
---poisoning                 Enable uninitialized memory poisoning (default=off)
 --profiling                 Enable self profiling  (default=off)
 --color=ENUM                Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
 

@@ -15,9 +15,13 @@
 namespace roc {
 namespace pipeline {
 
-SenderEndpoint::SenderEndpoint(address::Protocol proto, core::IAllocator& allocator)
+SenderEndpoint::SenderEndpoint(address::Protocol proto,
+                               const address::SocketAddr& dest_address,
+                               packet::IWriter& dest_writer,
+                               core::IArena& arena)
     : proto_(proto)
-    , dst_writer_(NULL)
+    , dst_writer_(&dest_writer)
+    , dst_address_(dest_address)
     , composer_(NULL) {
     packet::IComposer* composer = NULL;
 
@@ -38,10 +42,10 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto, core::IAllocator& alloca
     switch (proto) {
     case address::Proto_RTP_LDPC_Source:
         fec_composer_.reset(
-            new (allocator)
+            new (arena)
                 fec::Composer<fec::LDPC_Source_PayloadID, fec::Source, fec::Footer>(
                     composer),
-            allocator);
+            arena);
         if (!fec_composer_) {
             return;
         }
@@ -49,10 +53,10 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto, core::IAllocator& alloca
         break;
     case address::Proto_LDPC_Repair:
         fec_composer_.reset(
-            new (allocator)
+            new (arena)
                 fec::Composer<fec::LDPC_Repair_PayloadID, fec::Repair, fec::Header>(
                     composer),
-            allocator);
+            arena);
         if (!fec_composer_) {
             return;
         }
@@ -60,9 +64,9 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto, core::IAllocator& alloca
         break;
     case address::Proto_RTP_RS8M_Source:
         fec_composer_.reset(
-            new (allocator)
+            new (arena)
                 fec::Composer<fec::RS8M_PayloadID, fec::Source, fec::Footer>(composer),
-            allocator);
+            arena);
         if (!fec_composer_) {
             return;
         }
@@ -70,9 +74,9 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto, core::IAllocator& alloca
         break;
     case address::Proto_RS8M_Repair:
         fec_composer_.reset(
-            new (allocator)
+            new (arena)
                 fec::Composer<fec::RS8M_PayloadID, fec::Repair, fec::Header>(composer),
-            allocator);
+            arena);
         if (!fec_composer_) {
             return;
         }
@@ -97,56 +101,30 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto, core::IAllocator& alloca
     composer_ = composer;
 }
 
-bool SenderEndpoint::valid() const {
+bool SenderEndpoint::is_valid() const {
     return composer_;
 }
 
 address::Protocol SenderEndpoint::proto() const {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     return proto_;
 }
 
 packet::IComposer& SenderEndpoint::composer() {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     return *composer_;
 }
 
 packet::IWriter& SenderEndpoint::writer() {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     return *this;
 }
 
-bool SenderEndpoint::has_destination_writer() const {
-    roc_panic_if(!valid());
-
-    return dst_writer_;
-}
-
-void SenderEndpoint::set_destination_writer(packet::IWriter& writer) {
-    roc_panic_if(!valid());
-
-    if (dst_writer_) {
-        roc_panic("sender endpoint: attempt to set destination writer twice");
-    }
-
-    dst_writer_ = &writer;
-}
-
-void SenderEndpoint::set_destination_address(const address::SocketAddr& addr) {
-    roc_panic_if(!valid());
-
-    if (dst_address_.has_host_port()) {
-        roc_panic("sender endpoint: attempt to set destination address twice");
-    }
-
-    dst_address_ = addr;
-}
-
 void SenderEndpoint::write(const packet::PacketPtr& packet) {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     if (!dst_writer_) {
         return;

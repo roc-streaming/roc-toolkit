@@ -15,11 +15,15 @@ namespace roc {
 namespace audio {
 
 ProfilingWriter::ProfilingWriter(IFrameWriter& writer,
-                                 core::IAllocator& allocator,
+                                 core::IArena& arena,
                                  const audio::SampleSpec& sample_spec,
                                  ProfilerConfig profiler_config)
-    : profiler_(allocator, sample_spec, profiler_config)
+    : profiler_(arena, sample_spec, profiler_config)
     , writer_(writer) {
+}
+
+bool ProfilingWriter::is_valid() const {
+    return profiler_.is_valid();
 }
 
 void ProfilingWriter::write(Frame& frame) {
@@ -34,10 +38,6 @@ core::nanoseconds_t ProfilingWriter::write_(Frame& frame) {
     writer_.write(frame);
 
     return core::timestamp(core::ClockMonotonic) - start;
-}
-
-bool ProfilingWriter::valid() const {
-    return profiler_.valid();
 }
 
 } // namespace audio

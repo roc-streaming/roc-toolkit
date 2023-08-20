@@ -11,16 +11,16 @@
 namespace roc {
 namespace sdp {
 
-MediaDescription::MediaDescription(core::IAllocator& allocator)
-    : RefCounted(allocator)
-    , payload_ids_(allocator)
-    , connection_data_(allocator) {
+MediaDescription::MediaDescription(core::IArena& arena)
+    : core::RefCounted<MediaDescription, core::ArenaAllocation>(arena)
+    , payload_ids_(arena)
+    , connection_data_(arena) {
     clear();
 }
 
 void MediaDescription::clear() {
-    payload_ids_.resize(0);
-    connection_data_.resize(0);
+    payload_ids_.clear();
+    connection_data_.clear();
     type_ = MediaType_None;
     port_ = 0;
     nb_ports_ = 0;

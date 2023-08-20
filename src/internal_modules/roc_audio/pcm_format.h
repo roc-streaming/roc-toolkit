@@ -73,6 +73,16 @@ struct PcmFormat {
         : encoding(enc)
         , endian(end) {
     }
+
+    //! Check two formats for equality.
+    bool operator==(const PcmFormat& other) const {
+        return encoding == other.encoding && endian == other.endian;
+    }
+
+    //! Check two formats for equality.
+    bool operator!=(const PcmFormat& other) const {
+        return !(*this == other);
+    }
 };
 
 } // namespace audio

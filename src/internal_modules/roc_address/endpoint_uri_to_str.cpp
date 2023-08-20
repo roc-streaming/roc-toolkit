@@ -7,6 +7,7 @@
  */
 
 #include "roc_address/endpoint_uri_to_str.h"
+#include "roc_core/string_builder.h"
 
 namespace roc {
 namespace address {
@@ -19,7 +20,10 @@ endpoint_uri_to_str::endpoint_uri_to_str(const EndpointUri& u) {
         return;
     }
 
-    format_endpoint_uri(u, EndpointUri::Subset_Full, b);
+    if (!format_endpoint_uri(u, EndpointUri::Subset_Full, b)) {
+        b.assign_str("<bad>");
+        return;
+    }
 }
 
 } // namespace address

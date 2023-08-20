@@ -16,8 +16,9 @@
 
 #include "roc_address/socket_addr.h"
 #include "roc_core/atomic.h"
+#include "roc_core/attributes.h"
 #include "roc_core/buffer_factory.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/list.h"
 #include "roc_core/mpsc_queue.h"
 #include "roc_core/mpsc_queue_node.h"
@@ -187,7 +188,7 @@ public:
     //!  Start background thread if the object was successfully constructed.
     NetworkLoop(packet::PacketFactory& packet_factory,
                 core::BufferFactory<uint8_t>& buffer_factory,
-                core::IAllocator& allocator);
+                core::IArena& arena);
 
     //! Destroy. Stop all receivers and senders.
     //! @remarks
@@ -195,7 +196,7 @@ public:
     virtual ~NetworkLoop();
 
     //! Check if the object was successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Get number of receiver and sender ports.
     size_t num_ports() const;
@@ -211,7 +212,7 @@ public:
     //! Should not be called from schedule() callback.
     //! @returns
     //!  true if the task succeeded or false if it failed.
-    bool schedule_and_wait(NetworkTask& task);
+    ROC_ATTR_NODISCARD bool schedule_and_wait(NetworkTask& task);
 
 private:
     static void task_sem_cb_(uv_async_t* handle);
@@ -246,7 +247,7 @@ private:
 
     packet::PacketFactory& packet_factory_;
     core::BufferFactory<uint8_t>& buffer_factory_;
-    core::IAllocator& allocator_;
+    core::IArena& arena_;
 
     bool started_;
 

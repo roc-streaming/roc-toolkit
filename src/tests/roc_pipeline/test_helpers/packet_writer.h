@@ -28,7 +28,7 @@ namespace test {
 
 class PacketWriter : public core::NonCopyable<> {
 public:
-    PacketWriter(core::IAllocator& allocator,
+    PacketWriter(core::IArena& arena,
                  packet::IWriter& writer,
                  packet::IComposer& composer,
                  rtp::FormatMap& format_map,
@@ -39,7 +39,7 @@ public:
                  const address::SocketAddr& dst_addr)
         : writer_(writer)
         , composer_(composer)
-        , payload_encoder_(format_map.format(pt)->new_encoder(allocator), allocator)
+        , payload_encoder_(new_encoder_(arena, format_map, pt), arena)
         , packet_factory_(packet_factory)
         , buffer_factory_(buffer_factory)
         , src_addr_(src_addr)
@@ -54,7 +54,7 @@ public:
 
     void write_packets(size_t num_packets,
                        size_t samples_per_packet,
-                       audio::SampleSpec sample_spec) {
+                       const audio::SampleSpec& sample_spec) {
         CHECK(num_packets > 0);
 
         for (size_t np = 0; np < num_packets; np++) {
@@ -62,12 +62,10 @@ public:
         }
     }
 
-    void shift_to(size_t num_packets,
-                  size_t samples_per_packet,
-                  audio::SampleSpec sample_spec) {
+    void shift_to(size_t num_packets, size_t samples_per_packet) {
         seqnum_ = packet::seqnum_t(num_packets);
         timestamp_ = packet::timestamp_t(num_packets * samples_per_packet);
-        offset_ = uint8_t(num_packets * samples_per_packet * sample_spec.num_channels());
+        offset_ = uint8_t(num_packets * samples_per_packet);
     }
 
     uint8_t offset() const {
@@ -101,8 +99,16 @@ public:
 private:
     enum { MaxSamples = 4096 };
 
+    static audio::IFrameEncoder*
+    new_encoder_(core::IArena& arena, rtp::FormatMap& format_map, rtp::PayloadType pt) {
+        const rtp::Format* fmt = format_map.find_by_pt(pt);
+        CHECK(fmt);
+
+        return fmt->new_encoder(arena, fmt->pcm_format, fmt->sample_spec);
+    }
+
     packet::PacketPtr new_packet_(size_t samples_per_packet,
-                                  audio::SampleSpec sample_spec) {
+                                  const audio::SampleSpec& sample_spec) {
         packet::PacketPtr pp = packet_factory_.new_packet();
         CHECK(pp);
 
@@ -121,7 +127,7 @@ private:
     }
 
     core::Slice<uint8_t> new_buffer_(size_t samples_per_packet,
-                                     audio::SampleSpec sample_spec) {
+                                     const audio::SampleSpec& sample_spec) {
         CHECK(samples_per_packet * sample_spec.num_channels() < MaxSamples);
 
         packet::PacketPtr pp = packet_factory_.new_packet();
@@ -144,8 +150,11 @@ private:
         timestamp_ += samples_per_packet;
 
         audio::sample_t samples[MaxSamples];
-        for (size_t n = 0; n < samples_per_packet * sample_spec.num_channels(); n++) {
-            samples[n] = nth_sample(offset_++);
+        for (size_t ns = 0; ns < samples_per_packet; ns++) {
+            for (size_t nc = 0; nc < sample_spec.num_channels(); nc++) {
+                samples[ns * sample_spec.num_channels() + nc] = nth_sample(offset_);
+            }
+            offset_++;
         }
 
         payload_encoder_->begin(pp->rtp()->payload.data(), pp->rtp()->payload.size());

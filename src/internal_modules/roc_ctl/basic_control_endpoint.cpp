@@ -11,8 +11,8 @@
 namespace roc {
 namespace ctl {
 
-BasicControlEndpoint::BasicControlEndpoint(core::IAllocator& allocator)
-    : RefCounted(allocator) {
+BasicControlEndpoint::BasicControlEndpoint(core::IArena& arena)
+    : core::RefCounted<BasicControlEndpoint, core::ArenaAllocation>(arena) {
 }
 
 BasicControlEndpoint::~BasicControlEndpoint() {

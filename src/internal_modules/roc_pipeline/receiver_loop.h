@@ -13,7 +13,7 @@
 #define ROC_PIPELINE_RECEIVER_LOOP_H_
 
 #include "roc_core/buffer_factory.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/mutex.h"
 #include "roc_core/optional.h"
 #include "roc_core/stddefs.h"
@@ -66,7 +66,7 @@ public:
     //! Subclasses for specific tasks.
     class Tasks {
     public:
-        //! Add new slot.
+        //! Create new slot.
         class CreateSlot : public Task {
         public:
             //! Set task parameters.
@@ -76,28 +76,28 @@ public:
             SlotHandle get_handle() const;
         };
 
+        //! Delete existing slot.
+        class DeleteSlot : public Task {
+        public:
+            //! Set task parameters.
+            DeleteSlot(SlotHandle slot);
+        };
+
         //! Create endpoint on given interface of the slot.
-        class CreateEndpoint : public Task {
+        class AddEndpoint : public Task {
         public:
             //! Set task parameters.
             //! @remarks
             //!  Each slot can have one source and zero or one repair endpoint.
             //!  The protocols of endpoints in one slot should be compatible.
-            CreateEndpoint(SlotHandle slot,
-                           address::Interface iface,
-                           address::Protocol proto);
+            AddEndpoint(SlotHandle slot,
+                        address::Interface iface,
+                        address::Protocol proto);
 
             //! Get packet writer for the endpoint.
             //! @remarks
             //!  The returned writer may be used from any thread.
             packet::IWriter* get_writer() const;
-        };
-
-        //! Delete endpoint on given interface of the slot, if it exists.
-        class DeleteEndpoint : public Task {
-        public:
-            //! Set task parameters.
-            DeleteEndpoint(SlotHandle slot, address::Interface iface);
         };
     };
 
@@ -108,10 +108,10 @@ public:
                  packet::PacketFactory& packet_factory,
                  core::BufferFactory<uint8_t>& byte_buffer_factory,
                  core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-                 core::IAllocator& allocator);
+                 core::IArena& arena);
 
     //! Check if the pipeline was successfully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Get receiver sources.
     //! @remarks
@@ -138,8 +138,8 @@ private:
 
     // Methods for tasks
     bool task_create_slot_(Task& task);
-    bool task_create_endpoint_(Task& task);
-    bool task_delete_endpoint_(Task& task);
+    bool task_delete_slot_(Task& task);
+    bool task_add_endpoint_(Task& task);
 
     ReceiverSource source_;
 

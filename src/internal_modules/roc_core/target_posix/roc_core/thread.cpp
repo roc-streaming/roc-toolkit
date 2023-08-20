@@ -46,7 +46,7 @@ uint64_t Thread::get_tid() {
 #endif
 }
 
-bool Thread::set_realtime() {
+bool Thread::enable_realtime() {
     sched_param param;
     memset(&param, 0, sizeof(param));
     param.sched_priority = sched_get_priority_max(SCHED_RR);
@@ -67,12 +67,12 @@ Thread::Thread()
 }
 
 Thread::~Thread() {
-    if (joinable()) {
+    if (is_joinable()) {
         roc_panic("thread: thread was not joined before calling destructor");
     }
 }
 
-bool Thread::joinable() const {
+bool Thread::is_joinable() const {
     return joinable_;
 }
 

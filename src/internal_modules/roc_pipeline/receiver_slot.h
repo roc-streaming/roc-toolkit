@@ -15,7 +15,7 @@
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
 #include "roc_audio/mixer.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/list.h"
 #include "roc_core/list_node.h"
 #include "roc_core/ref_counted.h"
@@ -33,10 +33,8 @@ namespace pipeline {
 //! Contains:
 //!  - one or more related receiver endpoints, one per each type
 //!  - one session group associated with those endpoints
-class ReceiverSlot : public core::RefCounted<ReceiverSlot, core::StandardAllocation>,
+class ReceiverSlot : public core::RefCounted<ReceiverSlot, core::ArenaAllocation>,
                      public core::ListNode {
-    typedef core::RefCounted<ReceiverSlot, core::StandardAllocation> RefCounted;
-
 public:
     //! Initialize.
     ReceiverSlot(const ReceiverConfig& receiver_config,
@@ -46,13 +44,10 @@ public:
                  packet::PacketFactory& packet_factory,
                  core::BufferFactory<uint8_t>& byte_buffer_factory,
                  core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-                 core::IAllocator& allocator);
+                 core::IArena& arena);
 
-    //! Create endpoint.
-    ReceiverEndpoint* create_endpoint(address::Interface iface, address::Protocol proto);
-
-    //! Delete endpoint.
-    void delete_endpoint(address::Interface iface);
+    //! Add endpoint.
+    ReceiverEndpoint* add_endpoint(address::Interface iface, address::Protocol proto);
 
     //! Pull packets from queues and advance session timestamp.
     void advance(packet::timestamp_t timestamp);

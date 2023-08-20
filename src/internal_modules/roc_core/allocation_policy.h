@@ -12,112 +12,90 @@
 #ifndef ROC_CORE_ALLOCATION_POLICY_H_
 #define ROC_CORE_ALLOCATION_POLICY_H_
 
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
+#include "roc_core/ipool.h"
 #include "roc_core/panic.h"
 
 namespace roc {
 namespace core {
 
-//! Allocation policy for objects (de)allocated using IAllocator.
-class StandardAllocation {
+//! Allocation policy for objects allocated using IArena.
+class ArenaAllocation {
 public:
-    //! Initialize in invalid state.
-    //! Such instance wont be usable.
-    StandardAllocation()
-        : allocator_(NULL) {
+    //! Initialize.
+    ArenaAllocation(IArena& arena)
+        : arena_(&arena) {
     }
 
-    //! Initialize with given allocator.
-    //! Such instance will use allocator to destroy objects.
-    StandardAllocation(IAllocator& allocator)
-        : allocator_(&allocator) {
-    }
-
-    //! Destroy object and deallocate its memory.
+    //! Destroy object and return memory to arena.
     template <class T> void destroy(T& object) {
-        if (!allocator_) {
-            roc_panic("allocation policy: null allocator");
-        }
-        allocator_->destroy_object(object);
+        arena_->destroy_object(object);
     }
 
 protected:
-    //! Get allocator.
-    IAllocator& allocator() const {
-        if (!allocator_) {
-            roc_panic("allocation policy: null allocator");
-        }
-        return *allocator_;
+    //! Get arena.
+    IArena& arena() const {
+        return *arena_;
     }
 
 private:
-    IAllocator* allocator_;
+    IArena* arena_;
 };
 
-//! Allocation policy for objects (de)allocated using speciailized factory.
-template <class Factory> class FactoryAllocation {
+//! Allocation policy for objects allocated using IPool.
+class PoolAllocation {
 public:
-    //! Initialize in invalid state.
-    //! Such instance wont be usable.
-    FactoryAllocation()
-        : factory_(NULL) {
+    //! Initialize.
+    PoolAllocation(IPool& pool)
+        : pool_(&pool) {
     }
 
-    //! Initialize with given factory.
-    //! Such instance will use factory to destroy objects.
-    FactoryAllocation(Factory& factory)
-        : factory_(&factory) {
-    }
-
-    //! Destroy object and deallocate its memory.
+    //! Destroy object and return memory to pool.
     template <class T> void destroy(T& object) {
-        if (!factory_) {
-            roc_panic("allocation policy: null factory");
-        }
-        factory_->destroy(object);
+        pool_->destroy_object(object);
     }
 
 protected:
-    //! Get factory.
-    Factory& factory() const {
-        if (!factory_) {
-            roc_panic("allocation policy: null factory");
-        }
-        return *factory_;
+    //! Get pool.
+    IPool& pool() const {
+        return *pool_;
     }
 
 private:
-    Factory* factory_;
+    IPool* pool_;
 };
 
-//! Allocation policy for objects (de)allocated using custom functions.
+//! Allocation policy for objects with custom deallocation function.
 class CustomAllocation {
     typedef void (*DestroyFunc)(void*);
 
 public:
-    //! Initialize in invalid state.
-    //! Such instance wont be usable.
-    CustomAllocation()
-        : destroy_func_(NULL) {
-    }
-
-    //! Initialize with given function.
-    //! Such instance will use function to destroy objects.
+    //! Initialize.
     template <class T>
     CustomAllocation(void (*destroy_func)(T*))
         : destroy_func_((DestroyFunc)destroy_func) {
+        if (!destroy_func_) {
+            roc_panic("allocation policy: null function");
+        }
     }
 
-    //! Destroy object and deallocate its memory.
+    //! Invoke custom destruction function.
     template <class T> void destroy(T& object) {
-        if (!destroy_func_) {
-            roc_panic("allocation policy: null func");
-        }
         destroy_func_(&object);
     }
 
 private:
     DestroyFunc destroy_func_;
+};
+
+//! Allocation policy for objects that does not have automatical deallocation.
+class ManualAllocation {
+public:
+    //! No-op.
+    //! When SharedPtr or ScopedPtr "destroys" object, nothing happens.
+    //! The user is reponsible for destroying it manually.
+    template <class T> void destroy(T&) {
+    }
 };
 
 } // namespace core

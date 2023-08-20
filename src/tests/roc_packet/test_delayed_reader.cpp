@@ -8,7 +8,7 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_packet/delayed_reader.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
@@ -22,11 +22,11 @@ namespace {
 enum { SampleRate = 1000, NumSamples = 100, NumPackets = 30 };
 
 const core::nanoseconds_t NsPerSample = core::Second / SampleRate;
-const audio::SampleSpec SampleSpecs =
-    audio::SampleSpec(SampleRate, pipeline::DefaultChannelMask);
+const audio::SampleSpec
+    SampleSpecs(SampleRate, audio::ChanLayout_Surround, audio::ChanMask_Surround_Stereo);
 
-core::HeapAllocator allocator;
-PacketFactory packet_factory(allocator, true);
+core::HeapArena arena;
+PacketFactory packet_factory(arena);
 
 PacketPtr new_packet(seqnum_t sn) {
     PacketPtr packet = packet_factory.new_packet();

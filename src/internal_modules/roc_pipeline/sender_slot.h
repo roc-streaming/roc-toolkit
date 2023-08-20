@@ -16,7 +16,7 @@
 #include "roc_address/protocol.h"
 #include "roc_audio/fanout.h"
 #include "roc_core/buffer_factory.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
 #include "roc_core/ref_counted.h"
@@ -33,10 +33,8 @@ namespace pipeline {
 //! Contains:
 //!  - one or more related sender endpoints, one per each type
 //!  - one session associated with those endpoints
-class SenderSlot : public core::RefCounted<SenderSlot, core::StandardAllocation>,
+class SenderSlot : public core::RefCounted<SenderSlot, core::ArenaAllocation>,
                    public core::ListNode {
-    typedef core::RefCounted<SenderSlot, core::StandardAllocation> RefCounted;
-
 public:
     //! Initialize.
     SenderSlot(const SenderConfig& config,
@@ -45,17 +43,22 @@ public:
                packet::PacketFactory& packet_factory,
                core::BufferFactory<uint8_t>& byte_buffer_factory,
                core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-               core::IAllocator& allocator);
+               core::IArena& arena);
+
+    ~SenderSlot();
 
     //! Add endpoint.
-    SenderEndpoint* create_endpoint(address::Interface iface, address::Protocol proto);
+    SenderEndpoint* add_endpoint(address::Interface iface,
+                                 address::Protocol proto,
+                                 const address::SocketAddr& dest_address,
+                                 packet::IWriter& dest_writer);
 
     //! Get audio writer.
     //! @returns NULL if slot is not ready.
     audio::IFrameWriter* writer();
 
-    //! Check if slot configuration is done.
-    bool is_ready() const;
+    //! Check if slot configuration is complete.
+    bool is_complete() const;
 
     //! Get deadline when the pipeline should be updated.
     core::nanoseconds_t get_update_deadline() const;
@@ -64,9 +67,15 @@ public:
     void update();
 
 private:
-    SenderEndpoint* create_source_endpoint_(address::Protocol proto);
-    SenderEndpoint* create_repair_endpoint_(address::Protocol proto);
-    SenderEndpoint* create_control_endpoint_(address::Protocol proto);
+    SenderEndpoint* create_source_endpoint_(address::Protocol proto,
+                                            const address::SocketAddr& dest_address,
+                                            packet::IWriter& dest_writer);
+    SenderEndpoint* create_repair_endpoint_(address::Protocol proto,
+                                            const address::SocketAddr& dest_address,
+                                            packet::IWriter& dest_writer);
+    SenderEndpoint* create_control_endpoint_(address::Protocol proto,
+                                             const address::SocketAddr& dest_address,
+                                             packet::IWriter& dest_writer);
 
     const SenderConfig& config_;
 

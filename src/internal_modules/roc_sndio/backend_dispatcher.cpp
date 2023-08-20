@@ -62,20 +62,19 @@ bool match_driver(const DriverInfo& driver_info,
 BackendDispatcher::BackendDispatcher() {
 }
 
-ISink* BackendDispatcher::open_default_sink(const Config& config,
-                                            core::IAllocator& allocator) {
-    return (ISink*)open_default_device_(DeviceType_Sink, config, allocator);
+ISink* BackendDispatcher::open_default_sink(const Config& config, core::IArena& arena) {
+    return (ISink*)open_default_device_(DeviceType_Sink, config, arena);
 }
 
 ISource* BackendDispatcher::open_default_source(const Config& config,
-                                                core::IAllocator& allocator) {
-    return (ISource*)open_default_device_(DeviceType_Sink, config, allocator);
+                                                core::IArena& arena) {
+    return (ISource*)open_default_device_(DeviceType_Sink, config, arena);
 }
 
 ISink* BackendDispatcher::open_sink(const address::IoUri& uri,
                                     const char* force_format,
                                     const Config& config,
-                                    core::IAllocator& allocator) {
+                                    core::IArena& arena) {
     if (!uri.is_valid()) {
         roc_panic("backend dispatcher: invalid uri");
     }
@@ -84,13 +83,13 @@ ISink* BackendDispatcher::open_sink(const address::IoUri& uri,
     const char* driver_name = select_driver_name(uri, force_format);
 
     return (ISink*)open_device_(DeviceType_Sink, driver_type, driver_name, uri.path(),
-                                config, allocator);
+                                config, arena);
 }
 
 ISource* BackendDispatcher::open_source(const address::IoUri& uri,
                                         const char* force_format,
                                         const Config& config,
-                                        core::IAllocator& allocator) {
+                                        core::IArena& arena) {
     if (!uri.is_valid()) {
         roc_panic("backend dispatcher: invalid uri");
     }
@@ -99,7 +98,7 @@ ISource* BackendDispatcher::open_source(const address::IoUri& uri,
     const char* driver_name = select_driver_name(uri, force_format);
 
     return (ISource*)open_device_(DeviceType_Source, driver_type, driver_name, uri.path(),
-                                  config, allocator);
+                                  config, arena);
 }
 
 bool BackendDispatcher::get_supported_schemes(core::StringList& list) {
@@ -142,7 +141,7 @@ bool BackendDispatcher::get_supported_formats(core::StringList& list) {
 
 IDevice* BackendDispatcher::open_default_device_(DeviceType device_type,
                                                  const Config& config,
-                                                 core::IAllocator& allocator) {
+                                                 core::IArena& arena) {
     const unsigned driver_flags =
         unsigned(DriverFlag_IsDefault
                  | (device_type == DeviceType_Sink ? DriverFlag_SupportsSink
@@ -157,7 +156,7 @@ IDevice* BackendDispatcher::open_default_device_(DeviceType device_type,
 
         IDevice* device = BackendMap::instance().nth_driver(n).backend->open_device(
             device_type, DriverType_Device, BackendMap::instance().nth_driver(n).name,
-            "default", config, allocator);
+            "default", config, arena);
         if (device) {
             return device;
         }
@@ -172,7 +171,7 @@ IDevice* BackendDispatcher::open_device_(DeviceType device_type,
                                          const char* driver_name,
                                          const char* path,
                                          const Config& config,
-                                         core::IAllocator& allocator) {
+                                         core::IArena& arena) {
     const unsigned driver_flags =
         (device_type == DeviceType_Sink ? DriverFlag_SupportsSink
                                         : DriverFlag_SupportsSource);
@@ -186,7 +185,7 @@ IDevice* BackendDispatcher::open_device_(DeviceType device_type,
             }
 
             IDevice* device = BackendMap::instance().nth_driver(n).backend->open_device(
-                device_type, driver_type, driver_name, path, config, allocator);
+                device_type, driver_type, driver_name, path, config, arena);
             if (device) {
                 return device;
             }
@@ -195,8 +194,8 @@ IDevice* BackendDispatcher::open_device_(DeviceType device_type,
         for (size_t n = 0; n < BackendMap::instance().num_backends(); n++) {
             IBackend& backend = BackendMap::instance().nth_backend(n);
 
-            IDevice* device = backend.open_device(device_type, driver_type, NULL, path,
-                                                  config, allocator);
+            IDevice* device =
+                backend.open_device(device_type, driver_type, NULL, path, config, arena);
             if (device) {
                 return device;
             }

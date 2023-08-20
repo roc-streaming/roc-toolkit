@@ -10,7 +10,7 @@
 
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/buffer_factory.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_netio/network_loop.h"
 #include "roc_packet/packet_factory.h"
 
@@ -27,9 +27,9 @@ namespace {
 
 enum { MaxBufSize = 500, TotalBytes = 107701 };
 
-core::HeapAllocator allocator;
-core::BufferFactory<uint8_t> buffer_factory(allocator, MaxBufSize, true);
-packet::PacketFactory packet_factory(allocator, true);
+core::HeapArena arena;
+core::BufferFactory<uint8_t> buffer_factory(arena, MaxBufSize);
+packet::PacketFactory packet_factory(arena);
 
 TcpServerConfig make_server_config(const char* ip, int port) {
     TcpServerConfig config;
@@ -99,8 +99,8 @@ TEST(tcp_io, one_server_one_client_one_direction) {
     test::MockConnAcceptor acceptor;
     acceptor.push_handler(server_conn_handler);
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
-    CHECK(net_loop.valid());
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    CHECK(net_loop.is_valid());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 
@@ -119,8 +119,8 @@ TEST(tcp_io, one_server_one_client_one_direction) {
     test::ConnReader reader(client_conn_handler, *client_conn, TotalBytes);
     test::ConnWriter writer(server_conn_handler, *server_conn, TotalBytes);
 
-    reader.start();
-    writer.start();
+    CHECK(reader.start());
+    CHECK(writer.start());
 
     reader.join();
     writer.join();
@@ -138,8 +138,8 @@ TEST(tcp_io, one_server_one_client_both_directions) {
     test::MockConnAcceptor acceptor;
     acceptor.push_handler(server_conn_handler);
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
-    CHECK(net_loop.valid());
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    CHECK(net_loop.is_valid());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 
@@ -161,11 +161,11 @@ TEST(tcp_io, one_server_one_client_both_directions) {
     test::ConnReader server_reader(server_conn_handler, *server_conn, TotalBytes);
     test::ConnWriter server_writer(server_conn_handler, *server_conn, TotalBytes);
 
-    client_reader.start();
-    server_reader.start();
+    CHECK(client_reader.start());
+    CHECK(server_reader.start());
 
-    client_writer.start();
-    server_writer.start();
+    CHECK(client_writer.start());
+    CHECK(server_writer.start());
 
     client_writer.join();
     server_writer.join();
@@ -186,11 +186,11 @@ TEST(tcp_io, one_server_one_client_separate_loops) {
     test::MockConnAcceptor acceptor;
     acceptor.push_handler(server_conn_handler);
 
-    NetworkLoop client_net_loop(packet_factory, buffer_factory, allocator);
-    CHECK(client_net_loop.valid());
+    NetworkLoop client_net_loop(packet_factory, buffer_factory, arena);
+    CHECK(client_net_loop.is_valid());
 
-    NetworkLoop server_net_loop(packet_factory, buffer_factory, allocator);
-    CHECK(server_net_loop.valid());
+    NetworkLoop server_net_loop(packet_factory, buffer_factory, arena);
+    CHECK(server_net_loop.is_valid());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 
@@ -209,8 +209,8 @@ TEST(tcp_io, one_server_one_client_separate_loops) {
     test::ConnReader reader(client_conn_handler, *client_conn, TotalBytes);
     test::ConnWriter writer(server_conn_handler, *server_conn, TotalBytes);
 
-    reader.start();
-    writer.start();
+    CHECK(reader.start());
+    CHECK(writer.start());
 
     reader.join();
     writer.join();
@@ -232,8 +232,8 @@ TEST(tcp_io, one_server_many_clients) {
     acceptor.push_handler(server_conn_handler1);
     acceptor.push_handler(server_conn_handler2);
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, allocator);
-    CHECK(net_loop.valid());
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    CHECK(net_loop.is_valid());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 
@@ -265,11 +265,11 @@ TEST(tcp_io, one_server_many_clients) {
     test::ConnReader reader2(client_conn_handler2, *client_conn2, TotalBytes);
     test::ConnWriter writer2(server_conn_handler2, *server_conn2, TotalBytes);
 
-    reader1.start();
-    writer1.start();
+    CHECK(reader1.start());
+    CHECK(writer1.start());
 
-    reader2.start();
-    writer2.start();
+    CHECK(reader2.start());
+    CHECK(writer2.start());
 
     reader1.join();
     writer1.join();

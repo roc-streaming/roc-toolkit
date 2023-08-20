@@ -12,16 +12,12 @@
 namespace roc {
 namespace packet {
 
-PacketFactory::PacketFactory(core::IAllocator& allocator, bool poison)
-    : pool_(allocator, sizeof(Packet), poison) {
+PacketFactory::PacketFactory(core::IArena& arena)
+    : pool_(arena) {
 }
 
 core::SharedPtr<Packet> PacketFactory::new_packet() {
-    return new (pool_) Packet(*this);
-}
-
-void PacketFactory::destroy(Packet& packet) {
-    pool_.destroy_object(packet);
+    return new (pool_) Packet(pool_);
 }
 
 } // namespace packet

@@ -14,7 +14,7 @@
 #include "test_helpers/utils.h"
 
 #include "roc_address/socket_addr.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_netio/network_loop.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
@@ -31,14 +31,14 @@ public:
           const roc_endpoint* receiver_repair_endp,
           size_t n_source_packets,
           size_t n_repair_packets,
-          core::HeapAllocator& allocator,
+          core::HeapArena& arena,
           packet::PacketFactory& packet_factory,
           core::BufferFactory<uint8_t>& byte_buffer_factory)
-        : net_loop_(packet_factory, byte_buffer_factory, allocator)
+        : net_loop_(packet_factory, byte_buffer_factory, arena)
         , n_source_packets_(n_source_packets)
         , n_repair_packets_(n_repair_packets)
         , pos_(0) {
-        CHECK(net_loop_.valid());
+        CHECK(net_loop_.is_valid());
 
         roc_protocol source_proto;
         CHECK(roc_endpoint_get_protocol(receiver_source_endp, &source_proto) == 0);
@@ -52,17 +52,18 @@ public:
         int repair_port = 0;
         CHECK(roc_endpoint_get_port(receiver_repair_endp, &repair_port) == 0);
 
-        receiver_source_endp_.set_host_port(address::Family_IPv4, "127.0.0.1",
-                                            source_port);
-        receiver_repair_endp_.set_host_port(address::Family_IPv4, "127.0.0.1",
-                                            repair_port);
+        CHECK(receiver_source_endp_.set_host_port(address::Family_IPv4, "127.0.0.1",
+                                                  source_port));
+        CHECK(receiver_repair_endp_.set_host_port(address::Family_IPv4, "127.0.0.1",
+                                                  repair_port));
 
-        send_config_.bind_address.set_host_port(address::Family_IPv4, "127.0.0.1", 0);
+        CHECK(send_config_.bind_address.set_host_port(address::Family_IPv4, "127.0.0.1",
+                                                      0));
 
-        recv_source_config_.bind_address.set_host_port(address::Family_IPv4, "127.0.0.1",
-                                                       0);
-        recv_repair_config_.bind_address.set_host_port(address::Family_IPv4, "127.0.0.1",
-                                                       0);
+        CHECK(recv_source_config_.bind_address.set_host_port(address::Family_IPv4,
+                                                             "127.0.0.1", 0));
+        CHECK(recv_repair_config_.bind_address.set_host_port(address::Family_IPv4,
+                                                             "127.0.0.1", 0));
 
         netio::NetworkLoop::PortHandle send_port = NULL;
 

@@ -14,7 +14,7 @@ namespace roc {
 namespace address {
 
 const char* proto_to_str(Protocol proto) {
-    const ProtocolAttrs* attrs = ProtocolMap::instance().find_proto_by_id(proto);
+    const ProtocolAttrs* attrs = ProtocolMap::instance().find_by_id(proto);
     if (!attrs) {
         return NULL;
     }

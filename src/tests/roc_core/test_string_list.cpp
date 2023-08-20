@@ -8,7 +8,7 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/string_list.h"
 
@@ -16,11 +16,11 @@ namespace roc {
 namespace core {
 
 TEST_GROUP(string_list) {
-    HeapAllocator allocator;
+    HeapArena arena;
 };
 
 TEST(string_list, empty) {
-    StringList sl(allocator);
+    StringList sl(arena);
 
     LONGS_EQUAL(0, sl.size());
     CHECK(sl.front() == NULL);
@@ -28,7 +28,7 @@ TEST(string_list, empty) {
 }
 
 TEST(string_list, push_back) {
-    StringList sl(allocator);
+    StringList sl(arena);
 
     LONGS_EQUAL(0, sl.size());
     CHECK(sl.front() == NULL);
@@ -48,7 +48,7 @@ TEST(string_list, push_back) {
 }
 
 TEST(string_list, nextof) {
-    StringList sl(allocator);
+    StringList sl(arena);
 
     CHECK(sl.push_back("foo"));
     CHECK(sl.push_back("bar"));
@@ -72,12 +72,12 @@ TEST(string_list, nextof) {
 }
 
 TEST(string_list, copy) {
-    StringList sl(allocator);
+    StringList sl(arena);
 
     const char* src = "foo";
 
-    sl.push_back(src);
-    sl.push_back(src);
+    CHECK(sl.push_back(src));
+    CHECK(sl.push_back(src));
 
     LONGS_EQUAL(2, sl.size());
 
@@ -93,7 +93,7 @@ TEST(string_list, copy) {
 }
 
 TEST(string_list, empty_strings) {
-    StringList sl(allocator);
+    StringList sl(arena);
 
     CHECK(sl.push_back(""));
     CHECK(sl.push_back(""));
@@ -117,7 +117,7 @@ TEST(string_list, empty_strings) {
 }
 
 TEST(string_list, uniq) {
-    StringList sl(allocator);
+    StringList sl(arena);
 
     CHECK(sl.push_back("foo"));
     CHECK(sl.push_back("bar"));
@@ -149,7 +149,7 @@ TEST(string_list, uniq) {
 }
 
 TEST(string_list, push_back_range) {
-    StringList sl(allocator);
+    StringList sl(arena);
 
     LONGS_EQUAL(0, sl.size());
     CHECK(sl.front() == NULL);
@@ -170,7 +170,7 @@ TEST(string_list, push_back_range) {
 }
 
 TEST(string_list, clear) {
-    StringList sl(allocator);
+    StringList sl(arena);
 
     CHECK(sl.push_back("foo"));
 
@@ -189,7 +189,7 @@ TEST(string_list, clear) {
 }
 
 TEST(string_list, exponential_growth) {
-    StringList sl(allocator);
+    StringList sl(arena);
 
     const char* prev_front = sl.front();
     int num_reallocs = 0;

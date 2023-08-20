@@ -24,8 +24,8 @@ const core::nanoseconds_t PacketLogInterval = 20 * core::Second;
 
 UdpSenderPort::UdpSenderPort(const UdpSenderConfig& config,
                              uv_loop_t& event_loop,
-                             core::IAllocator& allocator)
-    : BasicPort(allocator)
+                             core::IArena& arena)
+    : BasicPort(arena)
     , config_(config)
     , close_handler_(NULL)
     , close_handler_arg_(NULL)

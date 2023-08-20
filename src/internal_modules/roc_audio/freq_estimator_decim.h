@@ -18,7 +18,7 @@
 namespace roc {
 namespace audio {
 
-// The max limit of frequency estimator decimator factor.
+//! The max limit of frequency estimator decimator factor.
 static const size_t fe_decim_factor_max = 10;
 
 //! Length of decimation filter response length in frequency estimator.
@@ -30,10 +30,10 @@ static const size_t fe_decim_len = 256;
 static const uint32_t fe_decim_len_mask = fe_decim_len - 1;
 
 //! Impulse response of decimation filter with factor of 10.
-extern const sample_t fe_decim_h[fe_decim_len];
+extern const double fe_decim_h[fe_decim_len];
 
 //! Filters gain, sum(fe_decim_h).
-extern const sample_t fe_decim_h_gain;
+extern const double fe_decim_h_gain;
 
 } // namespace audio
 } // namespace roc

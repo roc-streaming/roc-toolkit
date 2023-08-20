@@ -65,19 +65,20 @@ html_sidebars = {
    '**': ['globaltoc.html', 'searchbox.html'],
 }
 
-html_context = {
-    'css_files': ['_static/roc.css'],
-    'script_files': ['/analytics.js'],
-}
-
 html_static_path = ['_static']
 
-html4_writer = True
+html_css_files = [
+    'roc.css',
+]
+
+html_js_files = [
+    'analytics.js',
+]
 
 # -- Options for manual page output ---------------------------------------
 
 man_pages = [
     ('manuals/roc_send', 'roc-send', u'send real-time audio', [], 1),
     ('manuals/roc_recv', 'roc-recv', u'receive real-time audio', [], 1),
-    ('manuals/roc_conv', 'roc-conv', u'convert audio', [], 1),
+    ('manuals/roc_copy', 'roc-copy', u'copy local audio', [], 1),
 ]

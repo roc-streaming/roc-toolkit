@@ -21,8 +21,8 @@ ReceiverSessionGroup::ReceiverSessionGroup(
     packet::PacketFactory& packet_factory,
     core::BufferFactory<uint8_t>& byte_buffer_factory,
     core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-    core::IAllocator& allocator)
-    : allocator_(allocator)
+    core::IArena& arena)
+    : arena_(arena)
     , packet_factory_(packet_factory)
     , byte_buffer_factory_(byte_buffer_factory)
     , sample_buffer_factory_(sample_buffer_factory)
@@ -30,6 +30,10 @@ ReceiverSessionGroup::ReceiverSessionGroup(
     , mixer_(mixer)
     , receiver_state_(receiver_state)
     , receiver_config_(receiver_config) {
+}
+
+ReceiverSessionGroup::~ReceiverSessionGroup() {
+    remove_all_sessions_();
 }
 
 void ReceiverSessionGroup::route_packet(const packet::PacketPtr& packet) {
@@ -134,7 +138,7 @@ void ReceiverSessionGroup::route_control_packet_(const packet::PacketPtr& packet
             this, NULL, NULL, *rtcp_composer_, packet_factory_, byte_buffer_factory_));
     }
 
-    if (!rtcp_session_->valid()) {
+    if (!rtcp_session_->is_valid()) {
         return;
     }
 
@@ -173,11 +177,11 @@ void ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
             address::socket_addr_to_str(src_address).c_str(),
             address::socket_addr_to_str(dst_address).c_str());
 
-    core::SharedPtr<ReceiverSession> sess = new (allocator_) ReceiverSession(
+    core::SharedPtr<ReceiverSession> sess = new (arena_) ReceiverSession(
         sess_config, receiver_config_.common, src_address, format_map_, packet_factory_,
-        byte_buffer_factory_, sample_buffer_factory_, allocator_);
+        byte_buffer_factory_, sample_buffer_factory_, arena_);
 
-    if (!sess || !sess->valid()) {
+    if (!sess || !sess->is_valid()) {
         roc_log(LogError, "session group: can't create session, initialization failed");
         return;
     }
@@ -201,6 +205,14 @@ void ReceiverSessionGroup::remove_session_(ReceiverSession& sess) {
     sessions_.remove(sess);
 
     receiver_state_.add_sessions(-1);
+}
+
+void ReceiverSessionGroup::remove_all_sessions_() {
+    roc_log(LogDebug, "session group: removing all sessions");
+
+    while (!sessions_.is_empty()) {
+        remove_session_(*sessions_.back());
+    }
 }
 
 ReceiverSessionConfig

@@ -7,6 +7,7 @@
  */
 
 #include "roc_audio/latency_monitor.h"
+#include "roc_audio/freq_estimator.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 
@@ -25,13 +26,10 @@ LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
                                const LatencyMonitorConfig& config,
                                core::nanoseconds_t target_latency,
                                const audio::SampleSpec& input_sample_spec,
-                               const audio::SampleSpec& output_sample_spec,
-                               const FreqEstimatorConfig& fe_config)
+                               const audio::SampleSpec& output_sample_spec)
     : queue_(queue)
     , depacketizer_(depacketizer)
     , resampler_(resampler)
-    , fe_(fe_config,
-          (packet::timestamp_t)input_sample_spec.ns_2_rtp_timestamp(target_latency))
     , rate_limiter_(LogInterval)
     , update_interval_((packet::timestamp_t)input_sample_spec.ns_2_rtp_timestamp(
           config.fe_update_interval))
@@ -47,19 +45,15 @@ LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
     , valid_(false) {
     roc_log(LogDebug,
             "latency monitor: initializing:"
-            " target_latency=%lu(%.3fms) in_rate=%lu out_rate=%lu",
+            " target_latency=%lu(%.3fms) in_rate=%lu out_rate=%lu"
+            " fe_enable=%d fe_interval=%ld",
             (unsigned long)target_latency_,
             (double)input_sample_spec_.rtp_timestamp_2_ns(
                 (packet::timestamp_diff_t)target_latency_)
                 / core::Millisecond,
             (unsigned long)input_sample_spec_.sample_rate(),
-            (unsigned long)output_sample_spec_.sample_rate());
-
-    if (config.fe_update_interval <= 0) {
-        roc_log(LogError, "latency monitor: invalid config: fe_update_interval=%ld",
-                (long)config.fe_update_interval);
-        return;
-    }
+            (unsigned long)output_sample_spec_.sample_rate(), (int)config.fe_enable,
+            (long)config.fe_update_interval);
 
     if (target_latency < config.min_latency || target_latency > config.max_latency
         || target_latency <= 0) {
@@ -70,18 +64,27 @@ LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
         return;
     }
 
-    if (resampler_) {
-        if (!init_resampler_(input_sample_spec.sample_rate(),
-                             output_sample_spec.sample_rate())) {
+    if (config.fe_enable) {
+        if (config.fe_update_interval <= 0) {
+            roc_log(LogError, "latency monitor: invalid config: fe_update_interval=%ld",
+                    (long)config.fe_update_interval);
             return;
         }
-    } else {
-        if (input_sample_spec.sample_rate() != output_sample_spec.sample_rate()) {
-            roc_log(LogError,
-                    "latency monitor: input and output sample rates must be equal"
-                    " when resampling is disabled: in_rate=%lu, out_rate=%lu",
-                    (unsigned long)input_sample_spec.sample_rate(),
-                    (unsigned long)output_sample_spec.sample_rate());
+
+        if (!resampler_) {
+            roc_panic(
+                "latency monitor: freq estimator is enabled, but resampler is null");
+        }
+
+        fe_.reset(new (fe_) FreqEstimator(
+            config.fe_profile,
+            (packet::timestamp_t)input_sample_spec.ns_2_rtp_timestamp(target_latency)));
+        if (!fe_) {
+            return;
+        }
+
+        if (!init_scaling_(input_sample_spec.sample_rate(),
+                           output_sample_spec.sample_rate())) {
             return;
         }
     }
@@ -89,7 +92,7 @@ LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
     valid_ = true;
 }
 
-bool LatencyMonitor::valid() const {
+bool LatencyMonitor::is_valid() const {
     return valid_;
 }
 
@@ -104,11 +107,11 @@ bool LatencyMonitor::update(packet::timestamp_t pos) {
         return false;
     }
 
-    if (resampler_) {
+    if (fe_) {
         if (latency < 0) {
             latency = 0;
         }
-        if (!update_resampler_(pos, (packet::timestamp_t)latency)) {
+        if (!update_scaling_(pos, (packet::timestamp_t)latency)) {
             return false;
         }
     } else {
@@ -119,7 +122,7 @@ bool LatencyMonitor::update(packet::timestamp_t pos) {
 }
 
 bool LatencyMonitor::get_latency_(packet::timestamp_diff_t& latency) const {
-    if (!depacketizer_.started()) {
+    if (!depacketizer_.is_started()) {
         return false;
     }
 
@@ -164,23 +167,9 @@ bool LatencyMonitor::check_latency_(packet::timestamp_diff_t latency) const {
     return true;
 }
 
-float LatencyMonitor::trim_scaling_(float freq_coeff) const {
-    const float min_coeff = 1.0f - max_scaling_delta_;
-    const float max_coeff = 1.0f + max_scaling_delta_;
+bool LatencyMonitor::init_scaling_(size_t input_sample_rate, size_t output_sample_rate) {
+    roc_panic_if_not(resampler_);
 
-    if (freq_coeff < min_coeff) {
-        return min_coeff;
-    }
-
-    if (freq_coeff > max_coeff) {
-        return max_coeff;
-    }
-
-    return freq_coeff;
-}
-
-bool LatencyMonitor::init_resampler_(size_t input_sample_rate,
-                                     size_t output_sample_rate) {
     if (input_sample_rate == 0 || output_sample_rate == 0) {
         roc_log(LogError, "latency monitor: invalid sample rates: input=%lu output=%lu",
                 (unsigned long)input_sample_rate, (unsigned long)output_sample_rate);
@@ -197,25 +186,28 @@ bool LatencyMonitor::init_resampler_(size_t input_sample_rate,
     return true;
 }
 
-bool LatencyMonitor::update_resampler_(packet::timestamp_t pos,
-                                       packet::timestamp_t latency) {
+bool LatencyMonitor::update_scaling_(packet::timestamp_t pos,
+                                     packet::timestamp_t latency) {
+    roc_panic_if_not(resampler_);
+    roc_panic_if_not(fe_);
+
     if (!has_update_pos_) {
         has_update_pos_ = true;
         update_pos_ = pos;
     }
 
     while (pos >= update_pos_) {
-        fe_.update(latency);
+        fe_->update(latency);
         update_pos_ += update_interval_;
     }
 
-    const float freq_coeff = fe_.freq_coeff();
+    const float freq_coeff = fe_->freq_coeff();
     const float trimmed_coeff = trim_scaling_(freq_coeff);
 
     if (rate_limiter_.allow()) {
         roc_log(LogDebug,
                 "latency monitor:"
-                " latency=%lu(%.3fms) target=%lu(%.3fms) fe=%.5f trim_fe=%.5f",
+                " latency=%lu(%.3fms) target=%lu(%.3fms) fe=%.6f trim_fe=%.6f",
                 (unsigned long)latency,
                 (double)input_sample_spec_.rtp_timestamp_2_ns(
                     (packet::timestamp_diff_t)latency)
@@ -229,7 +221,7 @@ bool LatencyMonitor::update_resampler_(packet::timestamp_t pos,
 
     if (!resampler_->set_scaling(trimmed_coeff)) {
         roc_log(LogDebug,
-                "latency monitor: scaling factor out of bounds: fe=%.5f trim_fe=%.5f",
+                "latency monitor: scaling factor out of bounds: fe=%.6f trim_fe=%.6f",
                 (double)freq_coeff, (double)trimmed_coeff);
         return false;
     }
@@ -237,17 +229,33 @@ bool LatencyMonitor::update_resampler_(packet::timestamp_t pos,
     return true;
 }
 
-void LatencyMonitor::report_latency_(packet::timestamp_diff_t latency) {
-    if (rate_limiter_.allow()) {
-        roc_log(LogDebug, "latency monitor: latency=%ld(%.3fms) target=%lu(%.3fms)",
-                (long)latency,
-                (double)input_sample_spec_.rtp_timestamp_2_ns(latency)
-                    / core::Millisecond,
-                (unsigned long)target_latency_,
-                (double)input_sample_spec_.rtp_timestamp_2_ns(
-                    (packet::timestamp_diff_t)target_latency_)
-                    / core::Millisecond);
+float LatencyMonitor::trim_scaling_(float freq_coeff) const {
+    const float min_coeff = 1.0f - max_scaling_delta_;
+    const float max_coeff = 1.0f + max_scaling_delta_;
+
+    if (freq_coeff < min_coeff) {
+        return min_coeff;
     }
+
+    if (freq_coeff > max_coeff) {
+        return max_coeff;
+    }
+
+    return freq_coeff;
+}
+
+void LatencyMonitor::report_latency_(packet::timestamp_diff_t latency) {
+    if (!rate_limiter_.allow()) {
+        return;
+    }
+
+    roc_log(LogDebug, "latency monitor: latency=%ld(%.3fms) target=%lu(%.3fms)",
+            (long)latency,
+            (double)input_sample_spec_.rtp_timestamp_2_ns(latency) / core::Millisecond,
+            (unsigned long)target_latency_,
+            (double)input_sample_spec_.rtp_timestamp_2_ns(
+                (packet::timestamp_diff_t)target_latency_)
+                / core::Millisecond);
 }
 
 } // namespace audio

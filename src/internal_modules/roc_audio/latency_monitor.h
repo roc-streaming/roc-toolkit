@@ -16,7 +16,9 @@
 #include "roc_audio/freq_estimator.h"
 #include "roc_audio/resampler_reader.h"
 #include "roc_audio/sample_spec.h"
+#include "roc_core/attributes.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/optional.h"
 #include "roc_core/rate_limiter.h"
 #include "roc_core/time.h"
 #include "roc_packet/sorted_queue.h"
@@ -27,6 +29,12 @@ namespace audio {
 
 //! Parameters for latency monitor.
 struct LatencyMonitorConfig {
+    //! Enable FreqEstimator.
+    bool fe_enable;
+
+    //! FreqEstimator profile.
+    audio::FreqEstimatorProfile fe_profile;
+
     //! FreqEstimator update interval, nanoseconds.
     //! How often to run FreqEstimator and update Resampler scaling.
     core::nanoseconds_t fe_update_interval;
@@ -45,10 +53,33 @@ struct LatencyMonitorConfig {
     float max_scaling_delta;
 
     LatencyMonitorConfig()
-        : fe_update_interval(5 * core::Millisecond)
+        : fe_enable(true)
+        , fe_profile(FreqEstimatorProfile_Responsive)
+        , fe_update_interval(5 * core::Millisecond)
         , min_latency(0)
         , max_latency(0)
         , max_scaling_delta(0.005f) {
+    }
+
+    //! Automatically deduce FreqEstimator profile from target latency.
+    void deduce_fe_profile(core::nanoseconds_t target_latency) {
+        fe_profile = target_latency < 30 * core::Millisecond
+            // prefer responsive profile on low latencies, because gradual profile
+            // won't do it at all
+            ? FreqEstimatorProfile_Responsive
+            // prefer gradual profile for higher latencies, because it can handle
+            // higher network jitter
+            : FreqEstimatorProfile_Gradual;
+    }
+
+    //! Automatically deduce min_latency from target_latency.
+    void deduce_min_latency(core::nanoseconds_t target_latency) {
+        min_latency = target_latency - target_latency;
+    }
+
+    //! Automatically deduce max_latency from target_latency.
+    void deduce_max_latency(core::nanoseconds_t target_latency) {
+        max_latency = target_latency + target_latency;
     }
 };
 
@@ -75,32 +106,31 @@ public:
                    const LatencyMonitorConfig& config,
                    core::nanoseconds_t target_latency,
                    const audio::SampleSpec& input_sample_spec,
-                   const audio::SampleSpec& output_sample_spec,
-                   const FreqEstimatorConfig& fe_config);
+                   const audio::SampleSpec& output_sample_spec);
 
     //! Check if the object was initialized successfully.
-    bool valid() const;
+    bool is_valid() const;
 
     //! Update latency.
     //! @returns
     //!  false if the session should be terminated.
-    bool update(packet::timestamp_t time);
+    ROC_ATTR_NODISCARD bool update(packet::timestamp_t time);
 
 private:
     bool get_latency_(packet::timestamp_diff_t& latency) const;
     bool check_latency_(packet::timestamp_diff_t latency) const;
 
+    bool init_scaling_(size_t input_sample_rate, size_t output_sample_rate);
+    bool update_scaling_(packet::timestamp_t time, packet::timestamp_t latency);
     float trim_scaling_(float scaling) const;
-
-    bool init_resampler_(size_t input_sample_rate, size_t output_sample_rate);
-    bool update_resampler_(packet::timestamp_t time, packet::timestamp_t latency);
 
     void report_latency_(packet::timestamp_diff_t latency);
 
     const packet::SortedQueue& queue_;
     const Depacketizer& depacketizer_;
+
     ResamplerReader* resampler_;
-    FreqEstimator fe_;
+    core::Optional<FreqEstimator> fe_;
 
     core::RateLimiter rate_limiter_;
 

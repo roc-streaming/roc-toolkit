@@ -15,7 +15,7 @@
 #include "roc_audio/frame.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/array.h"
-#include "roc_core/iallocator.h"
+#include "roc_core/iarena.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/rate_limiter.h"
@@ -51,8 +51,8 @@ struct ProfilerConfig {
 //! The role of the profiler is to report the average processing speed (# of samples
 //! processed per time unit) during the last N seconds. We want to calculate the average
 //! processing speed efficiently (with O(1) complexity, without allocations, and as
-//! lightweight as possible). The problems with this are that the we have variable-sized
-//! frames and SMA requires fixed size chunks. To efficiently perform this calculation a
+//! lightweight as possible). The problems with this are that we have variable-sized
+//! frames and SMA requires fixed-size chunks. To efficiently perform this calculation a
 //! ring buffer is employed. The idea behind the ring buffer is that each chunk of the
 //! buffer is the average speed of 10ms worth of samples. The ring buffer is initialized
 //! with fixed size (N * 1000)ms / (10ms) chunks. Within each chunk a weighted mean is
@@ -65,17 +65,17 @@ struct ProfilerConfig {
 class Profiler : public core::NonCopyable<> {
 public:
     //! Initialization.
-    Profiler(core::IAllocator& allocator,
+    Profiler(core::IArena& arena,
              const audio::SampleSpec& sample_spec,
              ProfilerConfig profiler_config);
 
     //! Check if the profiler was succefully constructed.
-    bool valid() const;
+    bool is_valid() const;
 
-    //! Profile frame speed
+    //! Profile frame speed.
     void add_frame(size_t frame_size, core::nanoseconds_t elapsed);
 
-    //! For Testing Only
+    //! Get computed average.
     float get_moving_avg();
 
 private:

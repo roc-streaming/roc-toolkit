@@ -12,7 +12,8 @@
 #ifndef ROC_NETIO_ICONN_HANDLER_H_
 #define ROC_NETIO_ICONN_HANDLER_H_
 
-#include "roc_core/usage_counter.h"
+#include "roc_core/allocation_policy.h"
+#include "roc_core/ref_counted.h"
 #include "roc_netio/iconn.h"
 
 namespace roc {
@@ -56,7 +57,7 @@ namespace netio {
 //! @note
 //!  - Methods are called from the network loop thread.
 //!  - Methods should not block.
-class IConnHandler : public core::UsageCounter {
+class IConnHandler : public core::RefCounted<IConnHandler, core::ManualAllocation> {
 public:
     virtual ~IConnHandler();
 

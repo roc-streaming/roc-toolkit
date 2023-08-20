@@ -27,7 +27,7 @@ namespace test {
 
 class PacketReader : public core::NonCopyable<> {
 public:
-    PacketReader(core::IAllocator& allocator,
+    PacketReader(core::IArena& arena,
                  packet::IReader& reader,
                  packet::IParser& parser,
                  rtp::FormatMap& format_map,
@@ -36,7 +36,7 @@ public:
                  const address::SocketAddr& dst_addr)
         : reader_(reader)
         , parser_(parser)
-        , payload_decoder_(format_map.format(pt)->new_decoder(allocator), allocator)
+        , payload_decoder_(new_decoder_(arena, format_map, pt), arena)
         , packet_factory_(packet_factory)
         , dst_addr_(dst_addr)
         , source_(0)
@@ -47,7 +47,7 @@ public:
         , first_(true) {
     }
 
-    void read_packet(size_t samples_per_packet, audio::SampleSpec sample_spec) {
+    void read_packet(size_t samples_per_packet, const audio::SampleSpec& sample_spec) {
         packet::PacketPtr pp = reader_.read();
         CHECK(pp);
 
@@ -61,9 +61,17 @@ public:
 private:
     enum { MaxSamples = 4096 };
 
+    static audio::IFrameDecoder*
+    new_decoder_(core::IArena& arena, rtp::FormatMap& format_map, rtp::PayloadType pt) {
+        const rtp::Format* fmt = format_map.find_by_pt(pt);
+        CHECK(fmt);
+
+        return fmt->new_decoder(arena, fmt->pcm_format, fmt->sample_spec);
+    }
+
     void check_buffer_(const core::Slice<uint8_t> bp,
                        size_t samples_per_packet,
-                       audio::SampleSpec sample_spec) {
+                       const audio::SampleSpec& sample_spec) {
         packet::PacketPtr pp = packet_factory_.new_packet();
         CHECK(pp);
 
@@ -95,8 +103,12 @@ private:
 
         payload_decoder_->end();
 
-        for (size_t n = 0; n < samples_per_packet * sample_spec.num_channels(); n++) {
-            DOUBLES_EQUAL((double)nth_sample(offset_), (double)samples[n], Epsilon);
+        for (size_t ns = 0; ns < samples_per_packet; ns++) {
+            for (size_t nc = 0; nc < sample_spec.num_channels(); nc++) {
+                DOUBLES_EQUAL((double)nth_sample(offset_),
+                              (double)samples[ns * sample_spec.num_channels() + nc],
+                              Epsilon);
+            }
             offset_++;
         }
     }

@@ -21,30 +21,22 @@ SenderSink::SenderSink(const SenderConfig& config,
                        packet::PacketFactory& packet_factory,
                        core::BufferFactory<uint8_t>& byte_buffer_factory,
                        core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-                       core::IAllocator& allocator)
+                       core::IArena& arena)
     : config_(config)
     , format_map_(format_map)
     , packet_factory_(packet_factory)
     , byte_buffer_factory_(byte_buffer_factory)
     , sample_buffer_factory_(sample_buffer_factory)
-    , allocator_(allocator)
+    , arena_(arena)
     , audio_writer_(NULL)
     , update_deadline_valid_(false)
     , update_deadline_(0) {
     audio::IFrameWriter* awriter = &fanout_;
 
-    if (config_.poisoning) {
-        pipeline_poisoner_.reset(new (pipeline_poisoner_) audio::PoisonWriter(*awriter));
-        if (!pipeline_poisoner_) {
-            return;
-        }
-        awriter = pipeline_poisoner_.get();
-    }
-
-    if (config.profiling) {
+    if (config_.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingWriter(
-            *awriter, allocator, config.input_sample_spec, config.profiler_config));
-        if (!profiler_ || !profiler_->valid()) {
+            *awriter, arena, config_.input_sample_spec, config_.profiler_config));
+        if (!profiler_ || !profiler_->is_valid()) {
             return;
         }
         awriter = profiler_.get();
@@ -53,18 +45,18 @@ SenderSink::SenderSink(const SenderConfig& config,
     audio_writer_ = awriter;
 }
 
-bool SenderSink::valid() const {
+bool SenderSink::is_valid() const {
     return audio_writer_;
 }
 
 SenderSlot* SenderSink::create_slot() {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     roc_log(LogInfo, "sender sink: adding slot");
 
-    core::SharedPtr<SenderSlot> slot = new (allocator_)
-        SenderSlot(config_, format_map_, fanout_, packet_factory_, byte_buffer_factory_,
-                   sample_buffer_factory_, allocator_);
+    core::SharedPtr<SenderSlot> slot =
+        new (arena_) SenderSlot(config_, format_map_, fanout_, packet_factory_,
+                                byte_buffer_factory_, sample_buffer_factory_, arena_);
 
     if (!slot) {
         roc_log(LogError, "sender sink: can't allocate slot");
@@ -76,6 +68,16 @@ SenderSlot* SenderSink::create_slot() {
     invalidate_update_deadline_();
 
     return slot.get();
+}
+
+void SenderSink::delete_slot(SenderSlot* slot) {
+    roc_panic_if(!is_valid());
+
+    roc_log(LogInfo, "sender sink: removing slot");
+
+    slots_.remove(*slot);
+
+    invalidate_update_deadline_();
 }
 
 core::nanoseconds_t SenderSink::get_update_deadline() {
@@ -125,11 +127,11 @@ core::nanoseconds_t SenderSink::latency() const {
 }
 
 bool SenderSink::has_clock() const {
-    return config_.timing;
+    return config_.enable_timing;
 }
 
 void SenderSink::write(audio::Frame& frame) {
-    roc_panic_if(!valid());
+    roc_panic_if(!is_valid());
 
     audio_writer_->write(frame);
 }

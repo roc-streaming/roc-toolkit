@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-/** Receiver peer.
+/** Receiver node.
  *
  * Receiver gets the network packets from multiple senders, decodes audio streams
  * from them, mixes multiple streams into a single stream, and returns it to the user.
@@ -42,8 +42,7 @@ extern "C" {
  *
  * - A receiver is created using roc_receiver_open().
  *
- * - Optionally, the receiver parameters may be fine-tuned using `roc_receiver_set_*()`
- *   functions.
+ * - Optionally, the receiver parameters may be fine-tuned using roc_receiver_configure().
  *
  * - The receiver either binds local endpoints using roc_receiver_bind(), allowing senders
  *   connecting to them, or itself connects to remote sender endpoints using
@@ -61,7 +60,7 @@ extern "C" {
  * zero and are created automatically. In simple cases just use \c ROC_SLOT_DEFAULT.
  *
  * Each slot has its own set of *interfaces*, one per each type defined in \ref
- * roc_interface. The interface defines the type of the communication with the remote peer
+ * roc_interface. The interface defines the type of the communication with the remote node
  * and the set of the protocols supported by it.
  *
  * Supported actions with the interface:
@@ -76,32 +75,39 @@ extern "C" {
  *
  * Supported interface configurations:
  *
- *   - Bind \c ROC_INTERFACE_CONSOLIDATED to a local endpoint (e.g. be an RTSP server).
- *   - Connect \c ROC_INTERFACE_CONSOLIDATED to a remote endpoint (e.g. be an RTSP
+ *   - Bind \ref ROC_INTERFACE_CONSOLIDATED to a local endpoint (e.g. be an RTSP server).
+ *   - Connect \ref ROC_INTERFACE_CONSOLIDATED to a remote endpoint (e.g. be an RTSP
  *     client).
- *   - Bind \c ROC_INTERFACE_AUDIO_SOURCE, \c ROC_INTERFACE_AUDIO_REPAIR (optionally,
- *     for FEC), and \c ROC_INTERFACE_AUDIO_CONTROL (optionally, for control messages)
+ *   - Bind \ref ROC_INTERFACE_AUDIO_SOURCE, \ref ROC_INTERFACE_AUDIO_REPAIR (optionally,
+ *     for FEC), and \ref ROC_INTERFACE_AUDIO_CONTROL (optionally, for control messages)
  *     to local endpoints (e.g. be an RTP/FECFRAME/RTCP receiver).
+ *
+ * Slots can be removed using roc_receiver_unlink(). Removing a slot also removes all its
+ * interfaces and terminates all associated connections.
+ *
+ * Slots can be added and removed at any time on fly and from any thread. It is safe
+ * to do it from another thread concurrently with reading frames. Operations with
+ * slots won't block concurrent reads.
  *
  * **FEC scheme**
  *
- * If \c ROC_INTERFACE_CONSOLIDATED is used, it automatically creates all necessary
+ * If \ref ROC_INTERFACE_CONSOLIDATED is used, it automatically creates all necessary
  * transport interfaces and the user should not bother about them.
  *
- * Otherwise, the user should manually configure \c ROC_INTERFACE_AUDIO_SOURCE and
- * \c ROC_INTERFACE_AUDIO_REPAIR interfaces:
+ * Otherwise, the user should manually configure \ref ROC_INTERFACE_AUDIO_SOURCE and
+ * \ref ROC_INTERFACE_AUDIO_REPAIR interfaces:
  *
  *  - If FEC is disabled (\ref ROC_FEC_ENCODING_DISABLE), only
- *    \c ROC_INTERFACE_AUDIO_SOURCE should be configured. It will be used to transmit
+ *    \ref ROC_INTERFACE_AUDIO_SOURCE should be configured. It will be used to transmit
  *    audio packets.
  *
- *  - If FEC is enabled, both \c ROC_INTERFACE_AUDIO_SOURCE and
- *    \c ROC_INTERFACE_AUDIO_REPAIR interfaces should be configured. The second interface
- *    will be used to transmit redundant repair data.
+ *  - If FEC is enabled, both \ref ROC_INTERFACE_AUDIO_SOURCE and
+ *    \ref ROC_INTERFACE_AUDIO_REPAIR interfaces should be configured. The second
+ *    interface will be used to transmit redundant repair data.
  *
  * The protocols for the two interfaces should correspond to each other and to the FEC
- * scheme. For example, if \c ROC_FEC_RS8M is used, the protocols should be
- * \c ROC_PROTO_RTP_RS8M_SOURCE and \c ROC_PROTO_RS8M_REPAIR.
+ * scheme. For example, if \ref ROC_FEC_ENCODING_RS8M is used, the protocols should be
+ * \ref ROC_PROTO_RTP_RS8M_SOURCE and \ref ROC_PROTO_RS8M_REPAIR.
  *
  * **Sessions**
  *
@@ -139,8 +145,7 @@ extern "C" {
  * factor between the sender and the receiver clocks is calculated dynamically for every
  * session based on the session incoming packet queue size.
  *
- * Resampling is a quite time-consuming operation. The user can choose between completely
- * disabling resampling (at the cost of occasional underruns or overruns) or several
+ * Resampling is a quite time-consuming operation. The user can choose between several
  * resampler profiles providing different compromises between CPU consumption and quality.
  *
  * **Clock source**
@@ -148,16 +153,16 @@ extern "C" {
  * Receiver should decode samples at a constant rate that is configured when the receiver
  * is created. There are two ways to accomplish this:
  *
- *  - If the user enabled internal clock (\c ROC_CLOCK_INTERNAL), the receiver employs a
- *    CPU timer to block reads until it's time to decode the next bunch of samples
- *    according to the configured sample rate.
+ *  - If the user enabled internal clock (\ref ROC_CLOCK_SOURCE_INTERNAL), the receiver
+ *    employs a CPU timer to block reads until it's time to decode the next bunch of
+ *    samples according to the configured sample rate.
  *
  *    This mode is useful when the user passes samples to a non-realtime destination,
  *    e.g. to an audio file.
  *
- *  - If the user enabled external clock (\c ROC_CLOCK_EXTERNAL), the samples read from
- *    the receiver are decoded immediately and hence the user is responsible to call
- *    read operation according to the sample rate.
+ *  - If the user enabled external clock (\ref ROC_CLOCK_SOURCE_EXTERNAL), the samples
+ *    read from the receiver are decoded immediately and hence the user is responsible to
+ *    call read operation according to the sample rate.
  *
  *    This mode is useful when the user passes samples to a realtime destination with its
  *    own clock, e.g. to an audio device. Internal clock should not be used in this case
@@ -189,88 +194,44 @@ typedef struct roc_receiver roc_receiver;
  *    after the function returns
  *  - passes the ownership of \p result to the user; the user is responsible to call
  *    roc_receiver_close() to free it
+ *  - attaches created receiver to \p context; the user should not close context
+ *    before closing receiver
  */
 ROC_API int roc_receiver_open(roc_context* context,
                               const roc_receiver_config* config,
                               roc_receiver** result);
 
-/** Set receiver interface multicast group.
+/** Set receiver interface configuration.
  *
- * Optional.
- *
- * Multicast group should be set only when binding receiver interface to an endpoint with
- * multicast IP address. If present, it defines an IP address of the OS network interface
- * on which to join the multicast group. If not present, no multicast group is joined.
- *
- * It's possible to receive multicast traffic from only those OS network interfaces, on
- * which the process has joined the multicast group. When using multicast, the user should
- * either call this function, or join multicast group manually using OS-specific API.
- *
- * It is allowed to set multicast group to `0.0.0.0` (for IPv4) or to `::` (for IPv6),
- * to be able to receive multicast traffic from all available interfaces. However, this
- * may not be desirable for security reasons.
- *
- * Each slot's interface can have only one multicast group. The function should be called
- * before calling roc_receiver_bind() for the interface. It should not be called when
- * calling roc_receiver_connect() for the interface.
+ * Updates configuration of specified interface of specified slot. If called, the
+ * call should be done before calling roc_receiver_bind() or roc_receiver_connect()
+ * for the same interface.
  *
  * Automatically initializes slot with given index if it's used first time.
+ *
+ * If an error happens during configure, the whole slot is disabled and marked broken.
+ * The slot index remains reserved. The user is responsible for removing the slot
+ * using roc_receiver_unlink(), after which slot index can be reused.
  *
  * **Parameters**
  *  - \p receiver should point to an opened receiver
  *  - \p slot specifies the receiver slot
  *  - \p iface specifies the receiver interface
- *  - \p ip should be IPv4 or IPv6 address
+ *  - \p config should be point to an initialized config
  *
  * **Returns**
- *  - returns zero if the multicast group was successfully set
+ *  - returns zero if config was successfully updated
  *  - returns a negative value if the arguments are invalid
- *  - returns a negative value if an error occurred
+ *  - returns a negative value if slot is already bound or connected
  *
  * **Ownership**
- *  - doesn't take or share the ownership of \p ip; it may be safely deallocated
+ *  - doesn't take or share the ownership of \p config; it may be safely deallocated
  *    after the function returns
  */
-ROC_API int roc_receiver_set_multicast_group(roc_receiver* receiver,
-                                             roc_slot slot,
-                                             roc_interface iface,
-                                             const char* ip);
-
-/** Set receiver interface address reuse option.
- *
- * Optional.
- *
- * When set to true, SO_REUSEADDR is enabled for interface socket, regardless of socket
- * type, unless binding to ephemeral port (port explicitly set to zero).
- *
- * When set to false, SO_REUSEADDR is enabled only for multicast sockets, unless binding
- * to ephemeral port (port explicitly set to zero).
- *
- * By default set to false.
- *
- * For TCP-based protocols, SO_REUSEADDR allows immediate reuse of recently closed socket
- * in TIME_WAIT state, which may be useful you want to be able to restart server quickly.
- *
- * For UDP-based protocols, SO_REUSEADDR allows multiple processes to bind to the same
- * address, which may be useful if you're using socket activation mechanism.
- *
- * Automatically initializes slot with given index if it's used first time.
- *
- * **Parameters**
- *  - \p receiver should point to an opened receiver
- *  - \p slot specifies the receiver slot
- *  - \p iface specifies the receiver interface
- *  - \p enabled should be 0 or 1
- *
- * **Returns**
- *  - returns zero if the multicast group was successfully set
- *  - returns a negative value if the arguments are invalid
- *  - returns a negative value if an error occurred
- */
-ROC_API int roc_receiver_set_reuseaddr(roc_receiver* receiver,
-                                       roc_slot slot,
-                                       roc_interface iface,
-                                       int enabled);
+ROC_API int roc_receiver_configure(roc_receiver* receiver,
+                                   roc_slot slot,
+                                   roc_interface iface,
+                                   const roc_interface_config* config);
 
 /** Bind the receiver interface to a local endpoint.
  *
@@ -281,6 +242,10 @@ ROC_API int roc_receiver_set_reuseaddr(roc_receiver* receiver,
  * May be called multiple times for different slots or interfaces.
  *
  * Automatically initializes slot with given index if it's used first time.
+ *
+ * If an error happens during bind, the whole slot is disabled and marked broken.
+ * The slot index remains reserved. The user is responsible for removing the slot
+ * using roc_receiver_unlink(), after which slot index can be reused.
  *
  * If \p endpoint has explicitly set zero port, the receiver is bound to a randomly
  * chosen ephemeral port. If the function succeeds, the actual port to which the
@@ -307,22 +272,41 @@ ROC_API int roc_receiver_bind(roc_receiver* receiver,
                               roc_interface iface,
                               roc_endpoint* endpoint);
 
+/** Delete receiver slot.
+ *
+ * Disconnects, unbinds, and removes all slot interfaces and removes the slot.
+ * All associated connections to remote nodes are properly terminated.
+ *
+ * After unlinking the slot, it can be re-created again by re-using slot index.
+ *
+ * **Parameters**
+ *  - \p receiver should point to an opened receiver
+ *  - \p slot specifies the receiver slot
+ *
+ * **Returns**
+ *  - returns zero if the slot was successfully removed
+ *  - returns a negative value if the arguments are invalid
+ *  - returns a negative value if the slot does not exist
+ */
+ROC_API int roc_receiver_unlink(roc_receiver* receiver, roc_slot slot);
+
 /** Read samples from the receiver.
  *
- * Reads network packets received on bound ports, routes packets to sessions, repairs lost
- * packets, decodes samples, resamples and mixes them, and finally stores samples into the
- * provided frame.
+ * Reads retrieved network packets, decodes packets, routes packets to sessions, repairs
+ * losses, extracts samples, adjusts sample rate and channel layout, compensates clock
+ * drift, mixes samples from all sessions, and finally stores samples into the provided
+ * frame.
  *
- * If \c ROC_CLOCK_INTERNAL is used, the function blocks until it's time to decode the
- * samples according to the configured sample rate.
+ * If \ref ROC_CLOCK_SOURCE_INTERNAL is used, the function blocks until it's time to
+ * decode the samples according to the configured sample rate.
  *
  * Until the receiver is connected to at least one sender, it produces silence.
  * If the receiver is connected to multiple senders, it mixes their streams into one.
  *
  * **Parameters**
  *  - \p receiver should point to an opened receiver
- *  - \p frame should point to an initialized frame which will be filled with samples;
- *    the number of samples is defined by the frame size
+ *  - \p frame should point to an initialized frame; it should contain pointer to
+ *    a buffer and it's size; the buffer is fully filled with data from receiver
  *
  * **Returns**
  *  - returns zero if all samples were successfully decoded
