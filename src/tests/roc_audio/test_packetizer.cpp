@@ -40,6 +40,7 @@ enum {
 };
 
 const core::nanoseconds_t PacketDuration = SamplesPerPacket * core::Second / SampleRate;
+const core::nanoseconds_t Now = 1691499037871419405;
 
 const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, ChMask);
 const audio::PcmFormat PcmFmt(audio::PcmEncoding_SInt16, audio::PcmEndian_Big);
@@ -57,12 +58,13 @@ sample_t nth_sample(uint8_t n) {
 
 class PacketChecker {
 public:
-    PacketChecker(IFrameDecoder& payload_decoder)
+    PacketChecker(IFrameDecoder& payload_decoder, core::nanoseconds_t capture_ts = Now)
         : payload_decoder_(payload_decoder)
         , pos_(0)
         , src_(0)
         , sn_(0)
         , ts_(0)
+        , capture_ts_(capture_ts)
         , value_(0) {
     }
 
@@ -82,7 +84,8 @@ public:
             UNSIGNED_LONGS_EQUAL(sn_, pp->rtp()->seqnum);
             UNSIGNED_LONGS_EQUAL(ts_, pp->rtp()->timestamp);
         }
-
+        CHECK(core::ns_equal(pp->rtp()->capture_timestamp, capture_ts_, core::Microsecond));
+        capture_ts_ += SampleSpecs.samples_per_chan_2_ns(SamplesPerPacket);
         UNSIGNED_LONGS_EQUAL(n_samples, pp->rtp()->duration);
         UNSIGNED_LONGS_EQUAL(PayloadType, pp->rtp()->payload_type);
 
@@ -121,14 +124,16 @@ private:
     packet::source_t src_;
     packet::seqnum_t sn_;
     packet::timestamp_t ts_;
+    core::nanoseconds_t capture_ts_;
 
     uint8_t value_;
 };
 
 class FrameMaker {
 public:
-    FrameMaker()
-        : value_(0) {
+    FrameMaker(core::nanoseconds_t capture_ts = Now)
+        : value_(0)
+        , capture_ts_(capture_ts) {
     }
 
     void write(IFrameWriter& writer, size_t num_samples) {
@@ -145,11 +150,14 @@ public:
         }
 
         Frame frame(buf.data(), buf.size());
+        frame.capture_timestamp() = capture_ts_;
+        capture_ts_ += SampleSpecs.samples_per_chan_2_ns(num_samples);
         writer.write(frame);
     }
 
 private:
     uint8_t value_;
+    core::nanoseconds_t capture_ts_;
 };
 
 } // namespace

@@ -54,10 +54,11 @@ void Packetizer::write(Frame& frame) {
 
     const sample_t* buffer_ptr = frame.samples();
     size_t buffer_samples = frame.num_samples() / sample_spec_.num_channels();
+    core::nanoseconds_t pkt_ts = frame.capture_timestamp();
 
     while (buffer_samples != 0) {
         if (!packet_) {
-            if (!begin_packet_()) {
+            if (!begin_packet_(pkt_ts)) {
                 return;
             }
         }
@@ -72,6 +73,7 @@ void Packetizer::write(Frame& frame) {
         buffer_samples -= n_encoded;
 
         packet_pos_ += n_encoded;
+        pkt_ts += sample_spec_.samples_per_chan_2_ns(n_encoded);
 
         if (packet_pos_ == samples_per_packet_) {
             end_packet_();
@@ -85,7 +87,7 @@ void Packetizer::flush() {
     }
 }
 
-bool Packetizer::begin_packet_() {
+bool Packetizer::begin_packet_(const core::nanoseconds_t capture_ts) {
     packet::PacketPtr pp = create_packet_();
     if (!pp) {
         return false;
@@ -101,6 +103,7 @@ bool Packetizer::begin_packet_() {
     rtp->source = source_;
     rtp->seqnum = seqnum_;
     rtp->timestamp = timestamp_;
+    rtp->capture_timestamp = capture_ts;
     rtp->payload_type = payload_type_;
 
     packet_ = pp;
