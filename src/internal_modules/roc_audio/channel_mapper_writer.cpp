@@ -57,6 +57,7 @@ void ChannelMapperWriter::write(Frame& in_frame) {
 
     const size_t max_batch = output_buf_.size() / out_spec_.num_channels();
 
+    core::nanoseconds_t capt_ts = in_frame.capture_timestamp();
     sample_t* in_samples = in_frame.samples();
     size_t n_samples = in_frame.num_samples() / in_spec_.num_channels();
 
@@ -65,22 +66,27 @@ void ChannelMapperWriter::write(Frame& in_frame) {
     while (n_samples != 0) {
         const size_t n_write = std::min(n_samples, max_batch);
 
-        write_(in_samples, n_write, flags);
+        write_(in_samples, n_write, flags, capt_ts);
 
         in_samples += n_write * in_spec_.num_channels();
         n_samples -= n_write;
+        capt_ts += in_spec_.samples_per_chan_2_ns(n_write);
     }
 }
 
-void ChannelMapperWriter::write_(sample_t* in_samples, size_t n_samples, unsigned flags) {
+void ChannelMapperWriter::write_(sample_t* in_samples,
+                                 size_t n_samples,
+                                 unsigned flags,
+                                 core::nanoseconds_t capture_ts) {
     Frame in_frame(in_samples, n_samples * in_spec_.num_channels());
+    in_frame.capture_timestamp() = capture_ts;
 
     Frame out_frame(output_buf_.data(), n_samples * out_spec_.num_channels());
 
     out_frame.set_flags(flags);
 
     mapper_.map(in_frame, out_frame);
-    out_frame.capture_timestamp() = core::timestamp(core::ClockUnix);
+    out_frame.capture_timestamp() = capture_ts;
 
     output_writer_.write(out_frame);
 }
