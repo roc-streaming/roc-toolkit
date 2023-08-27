@@ -533,8 +533,7 @@ TEST(resampler, timestamp_passthrough_writer) {
         float scale = 1.0f;
 
         CHECK(rwriter.set_scaling(scale));
-        ts_step =
-            core::nanoseconds_t(InSampleSpecs.samples_overall_2_ns(FrameLen));
+        ts_step = core::nanoseconds_t(InSampleSpecs.samples_overall_2_ns(FrameLen));
 
         sample_t samples[FrameLen];
         {

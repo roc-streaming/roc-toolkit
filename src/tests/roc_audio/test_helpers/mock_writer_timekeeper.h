@@ -12,8 +12,8 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_audio/iframe_writer.h"
-#include "roc_core/stddefs.h"
 #include "roc_audio/sample_spec.h"
+#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace audio {
@@ -21,10 +21,9 @@ namespace test {
 
 class MockWriterTimekeeper : public IFrameWriter {
 public:
-    explicit
-    MockWriterTimekeeper(const core::nanoseconds_t capt_ts,
-                         const core::nanoseconds_t epsilon,
-                         const audio::SampleSpec &sample_spec)
+    explicit MockWriterTimekeeper(const core::nanoseconds_t capt_ts,
+                                  const core::nanoseconds_t epsilon,
+                                  const audio::SampleSpec& sample_spec)
         : pos_(0)
         , size_(0)
         , capt_ts_(capt_ts)
@@ -44,8 +43,8 @@ public:
             } else {
                 CHECK(core::ns_equal(capt_ts_, frame.capture_timestamp(), epsilon_));
             }
-            capt_ts_ += core::nanoseconds_t(sample_spec_.samples_overall_2_ns(frame.num_samples()) *
-                                                          scale_);
+            capt_ts_ += core::nanoseconds_t(
+                sample_spec_.samples_overall_2_ns(frame.num_samples()) * scale_);
         }
 
         memcpy(samples_ + size_, frame.samples(), frame.num_samples() * sizeof(sample_t));
@@ -74,7 +73,7 @@ private:
     size_t size_;
     core::nanoseconds_t capt_ts_;
     core::nanoseconds_t epsilon_;
-    const audio::SampleSpec &sample_spec_;
+    const audio::SampleSpec& sample_spec_;
     sample_t scale_;
 
     bool start_;

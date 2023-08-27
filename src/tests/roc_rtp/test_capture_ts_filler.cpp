@@ -51,8 +51,8 @@ TEST(capture_ts_filler, negative_and_positive_dn) {
     };
 
     const float sample_rate = 48000.;
-    const audio::SampleSpec sample_spec = audio::SampleSpec((size_t)sample_rate,
-                                               audio::ChanLayout_Surround, ChMask);
+    const audio::SampleSpec sample_spec =
+        audio::SampleSpec((size_t)sample_rate, audio::ChanLayout_Surround, ChMask);
 
     packet::timestamp_t rtp_ts = 2222;
     packet::timestamp_t packet_rtp_ts = (packet::timestamp_t)-4444;

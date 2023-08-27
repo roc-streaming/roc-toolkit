@@ -6,16 +6,16 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_rtp/ts_filler.h
+//! @file roc_rtp/capture_ts_filler.h
 //! @brief Fills capture timestamp field in packets.
 
-#ifndef ROC_TOOLKIT_CAPTURE_TS_FILLER_H
-#define ROC_TOOLKIT_CAPTURE_TS_FILLER_H
+#ifndef ROC_RTP_CAPTURE_TS_FILLER_H_
+#define ROC_RTP_CAPTURE_TS_FILLER_H_
 
-#include "roc_packet/ireader.h"
-#include "roc_core/noncopyable.h"
 #include "roc_audio/sample_spec.h"
+#include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
+#include "roc_packet/ireader.h"
 
 namespace roc {
 namespace rtp {
@@ -35,13 +35,11 @@ private:
     core::nanoseconds_t ts_;
     packet::timestamp_t rtp_ts_;
 
-    packet::IReader &reader_;
+    packet::IReader& reader_;
     const audio::SampleSpec sample_spec_;
-
 };
 
 } // namespace rtp
 } // namespace roc
 
-
-#endif // ROC_TOOLKIT_CAPTURE_TS_FILLER_H
+#endif // ROC_RTP_CAPTURE_TS_FILLER_H_

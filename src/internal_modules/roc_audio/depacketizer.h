@@ -108,7 +108,6 @@ private:
 
     bool first_packet_;
     bool valid_;
-
 };
 
 } // namespace audio

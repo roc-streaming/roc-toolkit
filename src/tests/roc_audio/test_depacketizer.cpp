@@ -35,8 +35,7 @@ enum {
 
 const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, ChMask);
 const audio::PcmFormat PcmFmt(audio::PcmEncoding_SInt16, audio::PcmEndian_Big);
-const core::nanoseconds_t ns_per_packet =
-    SampleSpecs.samples_overall_2_ns(SamplesSize);
+const core::nanoseconds_t ns_per_packet = SampleSpecs.samples_overall_2_ns(SamplesSize);
 const core::nanoseconds_t Now = 1691499037871419405;
 
 core::HeapArena arena;
@@ -93,7 +92,9 @@ void expect_values(const sample_t* samples, size_t num_samples, sample_t value) 
     }
 }
 
-void expect_output(Depacketizer& depacketizer, size_t sz, sample_t value,
+void expect_output(Depacketizer& depacketizer,
+                   size_t sz,
+                   sample_t value,
                    core::nanoseconds_t capt_ts) {
     core::Slice<sample_t> buf = new_buffer(sz);
 
@@ -158,7 +159,7 @@ TEST(depacketizer, multiple_packets_one_read) {
     Depacketizer dp(queue, decoder, SampleSpecs, false);
     CHECK(dp.is_valid());
 
-    core::nanoseconds_t  ts = Now;
+    core::nanoseconds_t ts = Now;
     for (packet::timestamp_t n = 0; n < NumPackets; n++) {
         queue.write(new_packet(encoder, n * SamplesPerPacket, 0.11f, ts));
         ts += ns_per_packet;
@@ -311,7 +312,8 @@ TEST(depacketizer, zeros_between_packets) {
     CHECK(dp.is_valid());
 
     queue.write(new_packet(encoder, 1 * SamplesPerPacket, 0.11f, Now));
-    queue.write(new_packet(encoder, 3 * SamplesPerPacket, 0.33f, Now + ns_per_packet*2));
+    queue.write(
+        new_packet(encoder, 3 * SamplesPerPacket, 0.33f, Now + ns_per_packet * 2));
 
     expect_output(dp, SamplesPerPacket, 0.11f, Now);
     expect_output(dp, SamplesPerPacket, 0.00f, Now + ns_per_packet);
@@ -336,9 +338,9 @@ TEST(depacketizer, zeros_between_packets_timestamp_overflow) {
     queue.write(new_packet(encoder, ts1, 0.11f, capt_ts1));
     queue.write(new_packet(encoder, ts3, 0.33f, capt_ts3));
 
-    expect_output(dp, SamplesPerPacket, 0.11f,  capt_ts1);
+    expect_output(dp, SamplesPerPacket, 0.11f, capt_ts1);
     expect_output(dp, SamplesPerPacket, 0.000f, capt_ts2);
-    expect_output(dp, SamplesPerPacket, 0.33f,  capt_ts3);
+    expect_output(dp, SamplesPerPacket, 0.33f, capt_ts3);
 }
 
 TEST(depacketizer, zeros_after_packet) {
@@ -398,7 +400,7 @@ TEST(depacketizer, overlapping_packets) {
     packet::timestamp_t ts3 = SamplesPerPacket;
 
     queue.write(new_packet(encoder, ts1, 0.11f, Now));
-    queue.write(new_packet(encoder, ts2, 0.22f, Now + ns_per_packet/2));
+    queue.write(new_packet(encoder, ts2, 0.22f, Now + ns_per_packet / 2));
     queue.write(new_packet(encoder, ts3, 0.33f, Now + ns_per_packet));
 
     expect_output(dp, SamplesPerPacket, 0.11f, Now);
@@ -547,9 +549,7 @@ TEST(depacketizer, timestamp) {
     capt_ts = Now;
     for (size_t n = 0; n < NumPackets; n++) {
         const size_t nsamples = packet::timestamp_t(n * SamplesPerPacket);
-        queue.write(new_packet(encoder,
-                               StartTimestamp + nsamples,
-                               0.1f, capt_ts));
+        queue.write(new_packet(encoder, StartTimestamp + nsamples, 0.1f, capt_ts));
         capt_ts += SampleSpecs.samples_per_chan_2_ns(SamplesPerPacket);
     }
 

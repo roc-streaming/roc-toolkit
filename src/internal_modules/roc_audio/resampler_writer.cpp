@@ -79,11 +79,15 @@ void ResamplerWriter::write(Frame& frame) {
 
         if (output_pos_ == output_.size()) {
             Frame out_frame(output_.data(), output_.size());
-            const core::nanoseconds_t capt_ts = frame.capture_timestamp() +
-                in_sample_spec_.samples_overall_2_ns(frame_pos) - // last added sample ts
-                in_sample_spec_.samples_overall_2_ns(input_pos_) - // num unprocessed inside
-                in_sample_spec_.samples_per_chan_2_ns(size_t(resampler_.n_left_to_process())) -
-                core::nanoseconds_t(out_sample_spec_.samples_overall_2_ns(output_pos_)*scaling_);
+            const core::nanoseconds_t capt_ts = frame.capture_timestamp()
+                + in_sample_spec_.samples_overall_2_ns(frame_pos) - // last added sample
+                                                                    // ts
+                in_sample_spec_.samples_overall_2_ns(input_pos_) -  // num unprocessed
+                                                                    // inside
+                in_sample_spec_.samples_per_chan_2_ns(
+                    size_t(resampler_.n_left_to_process()))
+                - core::nanoseconds_t(out_sample_spec_.samples_overall_2_ns(output_pos_)
+                                      * scaling_);
             out_frame.capture_timestamp() = capt_ts;
             writer_.write(out_frame);
 
@@ -93,11 +97,12 @@ void ResamplerWriter::write(Frame& frame) {
 
     if (output_pos_ != 0) {
         Frame out_frame(output_.data(), output_pos_);
-        const core::nanoseconds_t capt_ts = frame.capture_timestamp() +
-            in_sample_spec_.samples_overall_2_ns(frame_pos) - // last added sample ts
-            in_sample_spec_.samples_overall_2_ns(input_pos_) - // num unprocessed inside
-            in_sample_spec_.samples_per_chan_2_ns(size_t(resampler_.n_left_to_process())) -
-            core::nanoseconds_t(out_sample_spec_.samples_overall_2_ns(output_pos_)*scaling_);
+        const core::nanoseconds_t capt_ts = frame.capture_timestamp()
+            + in_sample_spec_.samples_overall_2_ns(frame_pos) - // last added sample ts
+            in_sample_spec_.samples_overall_2_ns(input_pos_) -  // num unprocessed inside
+            in_sample_spec_.samples_per_chan_2_ns(size_t(resampler_.n_left_to_process()))
+            - core::nanoseconds_t(out_sample_spec_.samples_overall_2_ns(output_pos_)
+                                  * scaling_);
         out_frame.capture_timestamp() = capt_ts;
         scaling_ = next_scaling_;
         writer_.write(out_frame);

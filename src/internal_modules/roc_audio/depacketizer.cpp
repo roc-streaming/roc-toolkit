@@ -114,10 +114,10 @@ Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end, FrameInfo& i
             const size_t max_samples = (size_t)(buff_end - buff_ptr);
             const size_t nsamples = std::min(mis_samples, max_samples);
 
-            buff_ptr = read_missing_samples_(
-                buff_ptr, buff_ptr + nsamples);
+            buff_ptr = read_missing_samples_(buff_ptr, buff_ptr + nsamples);
             if (!info.ts) {
-                info.ts = next_capture_ts_ - sample_spec_.samples_overall_2_ns(mis_samples);
+                info.ts =
+                    next_capture_ts_ - sample_spec_.samples_overall_2_ns(mis_samples);
             }
         }
 
@@ -239,7 +239,7 @@ void Depacketizer::update_packet_(FrameInfo& info) {
     if (packet::timestamp_lt(pkt_timestamp, timestamp_)) {
         const size_t diff_samples =
             (size_t)packet::timestamp_diff(timestamp_, pkt_timestamp);
-            next_capture_ts_ += sample_spec_.samples_per_chan_2_ns(diff_samples);
+        next_capture_ts_ += sample_spec_.samples_per_chan_2_ns(diff_samples);
 
         if (payload_decoder_.shift(diff_samples) != diff_samples) {
             roc_panic("depacketizer: can't shift packet");

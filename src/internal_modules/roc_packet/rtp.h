@@ -14,8 +14,8 @@
 
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
-#include "roc_packet/units.h"
 #include "roc_core/time.h"
+#include "roc_packet/units.h"
 
 namespace roc {
 namespace packet {
