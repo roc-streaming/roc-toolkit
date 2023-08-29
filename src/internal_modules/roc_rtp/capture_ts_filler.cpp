@@ -19,6 +19,7 @@ CaptureTsFiller::CaptureTsFiller(packet::IReader& packet_src,
     , reader_(packet_src)
     , sample_spec_(sample_spec) {
 }
+
 CaptureTsFiller::~CaptureTsFiller() {
 }
 

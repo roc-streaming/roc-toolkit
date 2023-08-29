@@ -20,13 +20,23 @@
 namespace roc {
 namespace rtp {
 
+//! Fills capture timestamps in rtp packets.
+//!
+//! Gets a pair of a reference unix-time stamp (in ns) and correspondant rtp timestamp,
+//! and approximates this dependency to a passing packet.
 class CaptureTsFiller : public packet::IReader, public core::NonCopyable<> {
 public:
+    //! Initialize.
     CaptureTsFiller(packet::IReader& packet_src, const audio::SampleSpec& sample_spec);
+    //! Virtual destructor.
     virtual ~CaptureTsFiller();
 
+    //! Get packet with filled capture ts field.
+    //!
+    //! If set_current_timestamp has not been called yet, capture timestamp will be 0.
     virtual packet::PacketPtr read();
 
+    //! Get a pair of a reference timestamps.
     void set_current_timestamp(core::nanoseconds_t capture_ts,
                                packet::timestamp_t rtp_ts);
 
