@@ -9,7 +9,7 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/buffer_factory.h"
-#include "roc_core/heap_allocator.h"
+#include "roc_core/heap_arena.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/packet_factory.h"
@@ -25,8 +25,8 @@ namespace rtp {
 
 namespace {
 
-static core::HeapAllocator allocator;
-static packet::PacketFactory packet_factory(allocator, true);
+core::HeapArena arena;
+static packet::PacketFactory packet_factory(arena);
 
 packet::PacketPtr new_packet(packet::seqnum_t sn, packet::timestamp_t ts) {
     packet::PacketPtr packet = packet_factory.new_packet();

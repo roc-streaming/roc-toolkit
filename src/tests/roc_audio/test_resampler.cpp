@@ -422,10 +422,10 @@ TEST(resampler, timestamp_passthrough_reader) {
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
         core::ScopedPtr<IResampler> resampler(
-            ResamplerMap::instance().new_resampler(backend, allocator, buffer_factory,
+            ResamplerMap::instance().new_resampler(backend, arena, buffer_factory,
                                                    ResamplerProfile_High, InSampleSpecs,
                                                    OutSampleSpecs),
-            allocator);
+            arena);
 
         const core::nanoseconds_t start_ts = 1691499037871419405;
         core::nanoseconds_t cur_ts = start_ts;
@@ -495,6 +495,8 @@ TEST(resampler, timestamp_passthrough_reader) {
     }
 }
 
+// Tests resampler writer ability to pass through capture timestamps of frames.
+//! It copies the method from the same test for resampler reader.
 TEST(resampler, timestamp_passthrough_writer) {
     enum {
         InSampleRate = 44100,
@@ -511,10 +513,10 @@ TEST(resampler, timestamp_passthrough_writer) {
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
         core::ScopedPtr<IResampler> resampler(
-            ResamplerMap::instance().new_resampler(backend, allocator, buffer_factory,
+            ResamplerMap::instance().new_resampler(backend, arena, buffer_factory,
                                                    ResamplerProfile_High, InSampleSpecs,
                                                    OutSampleSpecs),
-            allocator);
+            arena);
 
         const core::nanoseconds_t start_ts = 1691499037871419405;
         core::nanoseconds_t cur_ts = start_ts;
