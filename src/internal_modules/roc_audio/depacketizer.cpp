@@ -92,7 +92,7 @@ void Depacketizer::read_frame_(Frame& frame) {
 
     roc_panic_if(buff_ptr != buff_end);
     if (valid_capture_ts_) {
-        frame.capture_timestamp() = info.ts;
+        frame.set_capture_timestamp(info.ts);
     }
 
     set_frame_flags_(frame, info);

@@ -49,9 +49,8 @@ void Frame::print() const {
 core::nanoseconds_t Frame::capture_timestamp() const {
     return capture_timestamp_;
 }
-
-core::nanoseconds_t& Frame::capture_timestamp() {
-    return capture_timestamp_;
+void Frame::set_capture_timestamp(const core::nanoseconds_t& cts) {
+    capture_timestamp_ = cts;
 }
 
 } // namespace audio

@@ -71,10 +71,11 @@ bool ResamplerReader::read(Frame& out) {
         out_pos += num_popped;
     }
 
-    out.capture_timestamp() = last_in_ts_
+    core::nanoseconds_t ts = last_in_ts_
         - in_sample_spec_.fract_samples_per_chan_2_ns(resampler_.n_left_to_process());
-    out.capture_timestamp() -= core::nanoseconds_t(
+    ts -= core::nanoseconds_t(
         out_sample_spec_.samples_overall_2_ns(out.num_samples()) * scaling_);
+    out.set_capture_timestamp(ts);
 
     return true;
 }

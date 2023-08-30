@@ -151,7 +151,7 @@ public:
         }
 
         Frame frame(buf.data(), buf.size());
-        frame.capture_timestamp() = capture_ts_;
+        frame.set_capture_timestamp(capture_ts_);
         capture_ts_ += SampleSpecs.samples_per_chan_2_ns(num_samples);
         writer.write(frame);
     }

@@ -88,7 +88,7 @@ void ResamplerWriter::write(Frame& frame) {
                     size_t(resampler_.n_left_to_process()))
                 - core::nanoseconds_t(out_sample_spec_.samples_overall_2_ns(output_pos_)
                                       * scaling_);
-            out_frame.capture_timestamp() = capt_ts;
+            out_frame.set_capture_timestamp(capt_ts);
             writer_.write(out_frame);
 
             output_pos_ = 0;
@@ -103,7 +103,7 @@ void ResamplerWriter::write(Frame& frame) {
             in_sample_spec_.samples_per_chan_2_ns(size_t(resampler_.n_left_to_process()))
             - core::nanoseconds_t(out_sample_spec_.samples_overall_2_ns(output_pos_)
                                   * scaling_);
-        out_frame.capture_timestamp() = capt_ts;
+        out_frame.set_capture_timestamp(capt_ts);
         scaling_ = next_scaling_;
         writer_.write(out_frame);
 

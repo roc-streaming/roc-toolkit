@@ -39,7 +39,7 @@ void check(sample_t* input,
     sample_t actual_output[MaxSamples] = {};
 
     Frame in_frame(input, n_samples * in_chans.num_channels());
-    in_frame.capture_timestamp() = 555 * core::Second;
+    in_frame.set_capture_timestamp(555 * core::Second);
     Frame out_frame(actual_output, n_samples * out_chans.num_channels());
 
     ChannelMapper mapper(in_chans, out_chans);

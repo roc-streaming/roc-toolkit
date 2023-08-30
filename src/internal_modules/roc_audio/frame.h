@@ -59,11 +59,11 @@ public:
     //! Print frame to stderr.
     void print() const;
 
-    //! Get ntp timestamp of the 1st sample.
+    //! Get unix-epoch timestamp in ns of the 1st sample.
     core::nanoseconds_t capture_timestamp() const;
 
-    //! Get/set ntp timestamp of the 1st sample.
-    core::nanoseconds_t& capture_timestamp();
+    //! Get/set unix-epoch timestamp in ns of the 1st sample.
+    void set_capture_timestamp(const core::nanoseconds_t& cts);
 
 private:
     sample_t* samples_;

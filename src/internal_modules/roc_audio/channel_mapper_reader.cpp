@@ -64,10 +64,12 @@ bool ChannelMapperReader::read(Frame& out_frame) {
     while (n_samples != 0) {
         const size_t n_read = std::min(n_samples, max_batch);
 
-        if (!read_(out_samples, n_read, flags, out_frame.capture_timestamp())) {
+        core::nanoseconds_t capt_ts;
+        if (!read_(out_samples, n_read, flags, capt_ts)) {
             return false;
         }
 
+        out_frame.set_capture_timestamp(capt_ts);
         out_samples += n_read * out_spec_.num_channels();
         n_samples -= n_read;
     }

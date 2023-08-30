@@ -540,12 +540,12 @@ TEST(resampler, timestamp_passthrough_writer) {
         sample_t samples[FrameLen];
         {
             Frame frame(samples, ROC_ARRAY_SIZE(samples));
-            frame.capture_timestamp() = cur_ts;
+            frame.set_capture_timestamp(cur_ts);
             rwriter.write(frame);
             cur_ts = frame.capture_timestamp();
             for (size_t i = 0; i < 10; i++) {
                 cur_ts += ts_step;
-                frame.capture_timestamp() = cur_ts;
+                frame.set_capture_timestamp(cur_ts);
                 rwriter.write(frame);
             }
         }
@@ -556,12 +556,12 @@ TEST(resampler, timestamp_passthrough_writer) {
         {
             Frame frame(samples, ROC_ARRAY_SIZE(samples));
             cur_ts += ts_step;
-            frame.capture_timestamp() = cur_ts;
+            frame.set_capture_timestamp(cur_ts);
             rwriter.write(frame);
 
             for (size_t i = 0; i < 10; i++) {
                 cur_ts += ts_step;
-                frame.capture_timestamp() = cur_ts;
+                frame.set_capture_timestamp(cur_ts);
                 rwriter.write(frame);
             }
         }
@@ -572,11 +572,11 @@ TEST(resampler, timestamp_passthrough_writer) {
         {
             Frame frame(samples, ROC_ARRAY_SIZE(samples));
             cur_ts += ts_step;
-            frame.capture_timestamp() = cur_ts;
+            frame.set_capture_timestamp(cur_ts);
             rwriter.write(frame);
             for (size_t i = 0; i < 10; i++) {
                 cur_ts += ts_step;
-                frame.capture_timestamp() = cur_ts;
+                frame.set_capture_timestamp(cur_ts);
                 rwriter.write(frame);
             }
         }

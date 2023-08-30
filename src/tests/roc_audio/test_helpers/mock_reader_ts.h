@@ -33,7 +33,7 @@ public:
 
     virtual bool read(Frame& frame) {
         if (MockReader::read(frame)) {
-            frame.capture_timestamp() = base_timestamp_;
+            frame.set_capture_timestamp(base_timestamp_);
             base_timestamp_ += sample_spec_.samples_overall_2_ns(frame.num_samples());
             return true;
         } else {

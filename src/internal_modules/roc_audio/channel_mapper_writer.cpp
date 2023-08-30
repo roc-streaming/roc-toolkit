@@ -79,14 +79,14 @@ void ChannelMapperWriter::write_(sample_t* in_samples,
                                  unsigned flags,
                                  core::nanoseconds_t capture_ts) {
     Frame in_frame(in_samples, n_samples * in_spec_.num_channels());
-    in_frame.capture_timestamp() = capture_ts;
+    in_frame.set_capture_timestamp(capture_ts);
 
     Frame out_frame(output_buf_.data(), n_samples * out_spec_.num_channels());
 
     out_frame.set_flags(flags);
 
     mapper_.map(in_frame, out_frame);
-    out_frame.capture_timestamp() = capture_ts;
+    out_frame.set_capture_timestamp(capture_ts);
 
     output_writer_.write(out_frame);
 }
