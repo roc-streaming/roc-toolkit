@@ -6,6 +6,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+//! @file roc_rtp/timestamp_extractor.h
+//! @brief Fills capture timestamp field in packets.
+
 #ifndef ROC_RTP_CAPTURE_TS_GETTER_H_
 #define ROC_RTP_CAPTURE_TS_GETTER_H_
 

@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_rtp/capture_ts_filler.h
+//! @file roc_rtp/timestamp_injector.h
 //! @brief Fills capture timestamp field in packets.
 
 #ifndef ROC_RTP_CAPTURE_TS_FILLER_H_
