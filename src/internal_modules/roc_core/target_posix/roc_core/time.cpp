@@ -140,10 +140,5 @@ nanoseconds_t tm_2_nanoseconds(std::tm tm) {
     return nanoseconds_t(sec) * Second;
 }
 
-bool ns_equal(nanoseconds_t t1, nanoseconds_t t2, nanoseconds_t epsilon) {
-    nanoseconds_t abs_error = std::max(t1, t2) - std::min(t1, t2);
-    return abs_error <= epsilon;
-}
-
 } // namespace core
 } // namespace roc
