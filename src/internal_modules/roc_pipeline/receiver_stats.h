@@ -12,7 +12,7 @@
 #ifndef ROC_PIPELINE_RECEIVER_STATS_H_
 #define ROC_PIPELINE_RECEIVER_STATS_H_
 
-#include "stddef.h"
+#include "roc_core/time.h"
 
 namespace roc {
 namespace pipeline {
