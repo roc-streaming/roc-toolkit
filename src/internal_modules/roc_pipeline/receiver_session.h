@@ -21,6 +21,7 @@
 #include "roc_audio/latency_monitor.h"
 #include "roc_audio/poison_reader.h"
 #include "roc_audio/resampler_reader.h"
+#include "roc_audio/EndToEndLatencyMonitor.h"
 #include "roc_audio/watchdog.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/iarena.h"
@@ -43,6 +44,7 @@
 #include "roc_rtp/parser.h"
 #include "roc_rtp/populator.h"
 #include "roc_rtp/validator.h"
+#include "receiver_stats.h"
 
 namespace roc {
 namespace pipeline {
@@ -92,6 +94,11 @@ public:
     //! Handle estimated link metrics.
     void add_link_metrics(const rtcp::LinkMetrics& metrics);
 
+    //! Gets recent latency statistics.
+    //! @returns
+    //! True if statistics is valid.
+    bool stats(Stats& stats) const;
+
 private:
     const address::SocketAddr src_address_;
 
@@ -125,6 +132,9 @@ private:
     core::Optional<audio::PoisonReader> session_poisoner_;
 
     core::Optional<audio::LatencyMonitor> latency_monitor_;
+    core::Optional<audio::EndToEndLatencyMonitor> e2e_latency_monitor_;
+
+    core::nanoseconds_t local_latency_;
 };
 
 } // namespace pipeline
