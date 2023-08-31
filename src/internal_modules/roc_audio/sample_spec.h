@@ -101,6 +101,9 @@ public:
     //! Convert number of samples for all channels to nanoseconds duration.
     core::nanoseconds_t samples_overall_2_ns(size_t n_samples) const;
 
+    //! Convert number of samples (possibly non-integer) to nanoseconds.
+    core::nanoseconds_t fract_samples_overall_2_ns(const float n) const;
+
     // @}
 
     //! @name RTP timestamp converters
@@ -116,8 +119,6 @@ public:
     //!  Same as samples_per_chan_2_ns(), but supports negative deltas.
     core::nanoseconds_t rtp_timestamp_2_ns(packet::timestamp_diff_t rtp_delta) const;
 
-    //! Convert number of samples (possibly non-integer) to nanoseconds.
-    core::nanoseconds_t n_samples_2_ns(const float n) const;
 
     // @}
 

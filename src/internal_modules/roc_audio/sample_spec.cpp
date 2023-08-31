@@ -84,14 +84,14 @@ core::nanoseconds_t SampleSpec::samples_per_chan_2_ns(const size_t n_samples) co
     roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
                      sample_spec_to_str(*this).c_str());
 
-    return n_samples_2_ns((float)n_samples);
+    return fract_samples_overall_2_ns((float)n_samples);
 }
 
 core::nanoseconds_t SampleSpec::fract_samples_per_chan_2_ns(const float samples) const {
     roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
                      sample_spec_to_str(*this).c_str());
 
-    return n_samples_2_ns(samples);
+    return fract_samples_overall_2_ns(samples);
 }
 
 size_t SampleSpec::ns_2_samples_overall(const core::nanoseconds_t ns_duration) const {
@@ -110,7 +110,7 @@ core::nanoseconds_t SampleSpec::samples_overall_2_ns(const size_t n_samples) con
     roc_panic_if_msg(n_samples % num_channels() != 0,
                      "sample spec: # of samples must be dividable by channels number");
 
-    return n_samples_2_ns(float(n_samples / num_channels()));
+    return fract_samples_overall_2_ns(float(n_samples / num_channels()));
 }
 
 packet::timestamp_diff_t
@@ -127,10 +127,10 @@ SampleSpec::rtp_timestamp_2_ns(const packet::timestamp_diff_t rtp_delta) const {
     roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
                      sample_spec_to_str(*this).c_str());
 
-    return n_samples_2_ns((float)rtp_delta);
+    return fract_samples_overall_2_ns((float)rtp_delta);
 }
 
-core::nanoseconds_t SampleSpec::n_samples_2_ns(const float n) const {
+core::nanoseconds_t SampleSpec::fract_samples_overall_2_ns(const float n) const {
     return core::nanoseconds_t(roundf(n / sample_rate_ * core::Second));
 }
 
