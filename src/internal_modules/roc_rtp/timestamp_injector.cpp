@@ -6,12 +6,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_rtp/capture_ts_filler.h"
+#include "roc_rtp/timestamp_injector.h"
 
 namespace roc {
 namespace rtp {
 
-CaptureTsFiller::CaptureTsFiller(packet::IReader& packet_src,
+TimestampInjector::TimestampInjector(packet::IReader& packet_src,
                                  const audio::SampleSpec& sample_spec)
     : valid_ts_(false)
     , ts_(0)
@@ -20,16 +20,16 @@ CaptureTsFiller::CaptureTsFiller(packet::IReader& packet_src,
     , sample_spec_(sample_spec) {
 }
 
-CaptureTsFiller::~CaptureTsFiller() {
+TimestampInjector::~TimestampInjector() {
 }
 
-packet::PacketPtr CaptureTsFiller::read() {
+packet::PacketPtr TimestampInjector::read() {
     packet::PacketPtr pkt = reader_.read();
     if (!pkt) {
         return NULL;
     }
 
-    if (pkt->rtp() || valid_ts_) {
+    if (pkt->rtp() && valid_ts_) {
         const packet::timestamp_diff_t dn =
             packet::timestamp_diff(pkt->rtp()->timestamp, rtp_ts_);
 
@@ -45,7 +45,7 @@ packet::PacketPtr CaptureTsFiller::read() {
     return pkt;
 }
 
-void CaptureTsFiller::set_current_timestamp(core::nanoseconds_t capture_ts,
+void TimestampInjector::update_mapping(core::nanoseconds_t capture_ts,
                                             packet::timestamp_t rtp_ts) {
     ts_ = capture_ts;
     rtp_ts_ = rtp_ts;

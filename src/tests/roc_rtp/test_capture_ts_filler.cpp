@@ -15,10 +15,10 @@
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_packet/units.h"
-#include "roc_rtp/capture_ts_filler.h"
 #include "roc_rtp/composer.h"
 #include "roc_rtp/format_map.h"
 #include "roc_rtp/parser.h"
+#include "roc_rtp/timestamp_injector.h"
 
 namespace roc {
 namespace rtp {
@@ -67,8 +67,8 @@ TEST(capture_ts_filler, negative_and_positive_dn) {
                   rtp_ts - packet_rtp_ts, 1e-3);
 
     packet::Queue queue;
-    CaptureTsFiller filler(queue, sample_spec);
-    filler.set_current_timestamp(reference_capt_ts, rtp_ts);
+    TimestampInjector filler(queue, sample_spec);
+    filler.update_mapping(reference_capt_ts, rtp_ts);
 
     LONGS_EQUAL(0, queue.size());
     for (size_t i = 0; i < NPackets; i++) {

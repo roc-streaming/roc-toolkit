@@ -19,18 +19,18 @@ namespace roc {
 namespace rtp {
 
 //! Remembers a recent pair of capture timestamp and rtp ts.
-class CaptureTsGetter : public packet::IWriter, public core::NonCopyable<> {
+class TimestampExtractor : public packet::IWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
-    CaptureTsGetter(packet::IWriter& writer);
+    TimestampExtractor(packet::IWriter& writer);
     //! Destroy.
-    virtual ~CaptureTsGetter();
+    virtual ~TimestampExtractor();
 
     //! Passes pkt downstream and remembers its capture and rtp timestamps.
     virtual void write(const packet::PacketPtr& pkt);
 
     //! Get the last remembers its capture and rtp timestamps.
-    bool get(core::nanoseconds_t& ns, packet::timestamp_t& rtp) const;
+    bool get_mapping(core::nanoseconds_t& ns, packet::timestamp_t& rtp) const;
 
 private:
     packet::IWriter& writer_;

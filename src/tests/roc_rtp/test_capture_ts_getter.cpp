@@ -12,14 +12,14 @@
 #include "roc_core/heap_arena.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
+#include "roc_packet/iwriter.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_packet/units.h"
-#include "roc_rtp/capture_ts_getter.h"
 #include "roc_rtp/composer.h"
 #include "roc_rtp/format_map.h"
 #include "roc_rtp/parser.h"
-#include "roc_packet/iwriter.h"
+#include "roc_rtp/timestamp_extractor.h"
 
 namespace roc {
 namespace rtp {
@@ -75,8 +75,8 @@ TEST(capture_ts_getter, single_write) {
     packet::timestamp_t rts = rtp_ts;
 
     LastPacketHolder holder;
-    CaptureTsGetter getter(holder);
-    CHECK_FALSE(getter.get(cts, rts));
+    TimestampExtractor getter(holder);
+    CHECK_FALSE(getter.get_mapping(cts, rts));
     CHECK_EQUAL(cts, cur_packet_capt_ts);
     CHECK_EQUAL(rts, rtp_ts);
 
@@ -86,7 +86,7 @@ TEST(capture_ts_getter, single_write) {
 
     CHECK_EQUAL(holder.get(), pkt);
 
-    CHECK(getter.get(cts, rts));
+    CHECK(getter.get_mapping(cts, rts));
     CHECK_EQUAL(cts, cur_packet_capt_ts+core::Second);
     CHECK_EQUAL(rts, rtp_ts+100);
 }

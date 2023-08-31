@@ -6,12 +6,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "capture_ts_getter.h"
+#include "timestamp_extractor.h"
 
 namespace roc {
 namespace rtp {
 
-CaptureTsGetter::CaptureTsGetter(packet::IWriter& writer)
+TimestampExtractor::TimestampExtractor(packet::IWriter& writer)
     : writer_(writer)
     , valid_(false)
     , capt_ts_(0)
@@ -19,11 +19,11 @@ CaptureTsGetter::CaptureTsGetter(packet::IWriter& writer)
 
 }
 
-CaptureTsGetter::~CaptureTsGetter() {
+TimestampExtractor::~TimestampExtractor() {
 
 }
 
-void CaptureTsGetter::write(const packet::PacketPtr& pkt) {
+void TimestampExtractor::write(const packet::PacketPtr& pkt) {
     if (pkt->rtp() && pkt->rtp()->capture_timestamp) {
         valid_ = true;
         capt_ts_ = pkt->rtp()->capture_timestamp;
@@ -33,7 +33,7 @@ void CaptureTsGetter::write(const packet::PacketPtr& pkt) {
     writer_.write(pkt);
 }
 
-bool CaptureTsGetter::get(core::nanoseconds_t& ns, packet::timestamp_t& rtp) const {
+bool TimestampExtractor::get_mapping(core::nanoseconds_t& ns, packet::timestamp_t& rtp) const {
     if (!valid_) {
         return false;
     }
