@@ -6,20 +6,22 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_ENDTOENDLATENCYMONITOR_H_
-#define ROC_ENDTOENDLATENCYMONITOR_H_
+//! @file roc_audio/EndToEndLatencyMonitor.h
+//! @brief TODO.
 
-#include "stddef.h"
-#include "roc_audio/iframe_reader.h"
+#ifndef ROC_AUDIO_ENDTOENDLATENCYMONITOR_H_
+#define ROC_AUDIO_ENDTOENDLATENCYMONITOR_H_
+
 #include "roc_audio/frame.h"
+#include "roc_audio/iframe_reader.h"
+#include "stddef.h"
 
 namespace roc {
 namespace audio {
 
 //! Keeps track of current overall latency for a specific participant per stream.
-class EndToEndLatencyMonitor : public IFrameReader,  public core::NonCopyable<>  {
+class EndToEndLatencyMonitor : public IFrameReader, public core::NonCopyable<> {
 public:
-
     //! Constructor.
     EndToEndLatencyMonitor(IFrameReader& reader);
     //! Destructor.
@@ -46,4 +48,4 @@ private:
 } // namespace audio
 } // namespace roc
 
-#endif // ROC_ENDTOENDLATENCYMONITOR_H_
+#endif // ROC_AUDIO_ENDTOENDLATENCYMONITOR_H_

@@ -16,11 +16,9 @@ TimestampExtractor::TimestampExtractor(packet::IWriter& writer)
     , valid_(false)
     , capt_ts_(0)
     , rtp_ts_(0) {
-
 }
 
 TimestampExtractor::~TimestampExtractor() {
-
 }
 
 void TimestampExtractor::write(const packet::PacketPtr& pkt) {
@@ -33,7 +31,8 @@ void TimestampExtractor::write(const packet::PacketPtr& pkt) {
     writer_.write(pkt);
 }
 
-bool TimestampExtractor::get_mapping(core::nanoseconds_t& ns, packet::timestamp_t& rtp) const {
+bool TimestampExtractor::get_mapping(core::nanoseconds_t& ns,
+                                     packet::timestamp_t& rtp) const {
     if (!valid_) {
         return false;
     }

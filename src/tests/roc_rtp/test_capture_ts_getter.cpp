@@ -27,17 +27,17 @@ namespace rtp {
 class LastPacketHolder : public packet::IWriter {
 public:
     LastPacketHolder()
-    : last_pkt_(NULL) {
-
+        : last_pkt_(NULL) {
     }
 
-    virtual ~LastPacketHolder() {}
+    virtual ~LastPacketHolder() {
+    }
 
     virtual void write(const packet::PacketPtr& pkt) {
         last_pkt_ = pkt;
     }
 
-    const packet::PacketPtr &get() const {
+    const packet::PacketPtr& get() const {
         return last_pkt_;
     }
 
@@ -50,8 +50,8 @@ namespace {
 core::HeapArena arena;
 static packet::PacketFactory packet_factory(arena);
 
-packet::PacketPtr new_packet(packet::seqnum_t sn, packet::timestamp_t ts,
-                             core::nanoseconds_t capt_ts) {
+packet::PacketPtr
+new_packet(packet::seqnum_t sn, packet::timestamp_t ts, core::nanoseconds_t capt_ts) {
     packet::PacketPtr packet = packet_factory.new_packet();
     CHECK(packet);
 
@@ -80,15 +80,15 @@ TEST(capture_ts_getter, single_write) {
     CHECK_EQUAL(cts, cur_packet_capt_ts);
     CHECK_EQUAL(rts, rtp_ts);
 
-
-    packet::PacketPtr pkt = new_packet(555, rtp_ts+100, cur_packet_capt_ts+core::Second);
+    packet::PacketPtr pkt =
+        new_packet(555, rtp_ts + 100, cur_packet_capt_ts + core::Second);
     getter.write(pkt);
 
     CHECK_EQUAL(holder.get(), pkt);
 
     CHECK(getter.get_mapping(cts, rts));
-    CHECK_EQUAL(cts, cur_packet_capt_ts+core::Second);
-    CHECK_EQUAL(rts, rtp_ts+100);
+    CHECK_EQUAL(cts, cur_packet_capt_ts + core::Second);
+    CHECK_EQUAL(rts, rtp_ts + 100);
 }
 
 } // namespace rtp

@@ -67,16 +67,16 @@ bool Validator::check_(const packet::RTP& prev, const packet::RTP& next) const {
     }
 
     if (!!next.capture_timestamp && !!prev.capture_timestamp) {
-        const bool valid_capt_ts = core::ns_equal(next.capture_timestamp,
-                       prev.capture_timestamp, config_.max_ts_jump) &&
-        next.capture_timestamp > prev.capture_timestamp;
+        const bool valid_capt_ts =
+            core::ns_equal(next.capture_timestamp, prev.capture_timestamp,
+                           config_.max_ts_jump)
+            && next.capture_timestamp > prev.capture_timestamp;
         if (!valid_capt_ts) {
             roc_log(LogDebug,
                     "rtp validator: too long capture timestamp jump:"
                     " prev=%lu next=%lu dist=%lu",
                     (unsigned long)prev.capture_timestamp,
-                    (unsigned long)next.capture_timestamp,
-                    (unsigned long)sn_dist);
+                    (unsigned long)next.capture_timestamp, (unsigned long)sn_dist);
             return false;
         }
     }

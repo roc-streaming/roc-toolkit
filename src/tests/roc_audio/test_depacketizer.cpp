@@ -318,8 +318,7 @@ TEST(depacketizer, zeros_between_packets) {
     CHECK(dp.is_valid());
 
     queue.write(new_packet(encoder, 1 * SamplesPerPacket, 0.11f, Now));
-    queue.write(
-        new_packet(encoder, 3 * SamplesPerPacket, 0.33f, Now + NsPerPacket * 2));
+    queue.write(new_packet(encoder, 3 * SamplesPerPacket, 0.33f, Now + NsPerPacket * 2));
 
     expect_output(dp, SamplesPerPacket, 0.11f, Now);
     expect_output(dp, SamplesPerPacket, 0.00f, Now + NsPerPacket);

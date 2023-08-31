@@ -119,7 +119,6 @@ public:
     //!  Same as samples_per_chan_2_ns(), but supports negative deltas.
     core::nanoseconds_t rtp_timestamp_2_ns(packet::timestamp_diff_t rtp_delta) const;
 
-
     // @}
 
 private:

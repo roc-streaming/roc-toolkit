@@ -73,7 +73,8 @@ public:
         return size_ - pos_;
     }
 
-    void setup_capt_ts(const core::nanoseconds_t  base_timestamp, const SampleSpec& sample_spec) {
+    void setup_capt_ts(const core::nanoseconds_t base_timestamp,
+                       const SampleSpec& sample_spec) {
         sample_spec_ = sample_spec;
         base_timestamp_ = base_timestamp;
     }

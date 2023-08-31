@@ -253,8 +253,7 @@ void LatencyMonitor::report_latency_(packet::timestamp_diff_t latency) {
     }
 
     roc_log(LogDebug, "latency monitor: latency=%ld(%.3fms) target=%lu(%.3fms)",
-            (long)latency,
-            (double)latency_ / core::Millisecond,
+            (long)latency, (double)latency_ / core::Millisecond,
             (unsigned long)target_latency_,
             (double)input_sample_spec_.rtp_timestamp_2_ns(
                 (packet::timestamp_diff_t)target_latency_)

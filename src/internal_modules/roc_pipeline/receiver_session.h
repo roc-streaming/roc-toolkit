@@ -12,7 +12,9 @@
 #ifndef ROC_PIPELINE_RECEIVER_SESSION_H_
 #define ROC_PIPELINE_RECEIVER_SESSION_H_
 
+#include "receiver_stats.h"
 #include "roc_address/socket_addr.h"
+#include "roc_audio/EndToEndLatencyMonitor.h"
 #include "roc_audio/channel_mapper_reader.h"
 #include "roc_audio/depacketizer.h"
 #include "roc_audio/iframe_decoder.h"
@@ -21,7 +23,6 @@
 #include "roc_audio/latency_monitor.h"
 #include "roc_audio/poison_reader.h"
 #include "roc_audio/resampler_reader.h"
-#include "roc_audio/EndToEndLatencyMonitor.h"
 #include "roc_audio/watchdog.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/iarena.h"
@@ -44,7 +45,6 @@
 #include "roc_rtp/parser.h"
 #include "roc_rtp/populator.h"
 #include "roc_rtp/validator.h"
-#include "receiver_stats.h"
 
 namespace roc {
 namespace pipeline {
@@ -133,8 +133,6 @@ private:
 
     core::Optional<audio::LatencyMonitor> latency_monitor_;
     core::Optional<audio::EndToEndLatencyMonitor> e2e_latency_monitor_;
-
-    core::nanoseconds_t local_latency_;
 };
 
 } // namespace pipeline

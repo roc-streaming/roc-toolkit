@@ -9,8 +9,8 @@
 //! @file roc_rtp/timestamp_injector.h
 //! @brief Fills capture timestamp field in packets.
 
-#ifndef ROC_RTP_CAPTURE_TS_FILLER_H_
-#define ROC_RTP_CAPTURE_TS_FILLER_H_
+#ifndef ROC_RTP_TIMESTAMP_INJECTOR_H_
+#define ROC_RTP_TIMESTAMP_INJECTOR_H_
 
 #include "roc_audio/sample_spec.h"
 #include "roc_core/noncopyable.h"
@@ -37,8 +37,7 @@ public:
     virtual packet::PacketPtr read();
 
     //! Get a pair of a reference timestamps.
-    void update_mapping(core::nanoseconds_t capture_ts,
-                               packet::timestamp_t rtp_ts);
+    void update_mapping(core::nanoseconds_t capture_ts, packet::timestamp_t rtp_ts);
 
 private:
     bool valid_ts_;
@@ -52,4 +51,4 @@ private:
 } // namespace rtp
 } // namespace roc
 
-#endif // ROC_RTP_CAPTURE_TS_FILLER_H_
+#endif // ROC_RTP_TIMESTAMP_INJECTOR_H_

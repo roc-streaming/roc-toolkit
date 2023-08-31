@@ -9,8 +9,8 @@
 //! @file roc_rtp/timestamp_extractor.h
 //! @brief Fills capture timestamp field in packets.
 
-#ifndef ROC_RTP_CAPTURE_TS_GETTER_H_
-#define ROC_RTP_CAPTURE_TS_GETTER_H_
+#ifndef ROC_RTP_TIMESTAMP_EXTRACTOR_H_
+#define ROC_RTP_TIMESTAMP_EXTRACTOR_H_
 
 #include "roc_audio/sample_spec.h"
 #include "roc_core/noncopyable.h"
@@ -41,10 +41,9 @@ private:
     bool valid_;
     core::nanoseconds_t capt_ts_;
     packet::timestamp_t rtp_ts_;
-
 };
 
 } // namespace rtp
 } // namespace roc
 
-#endif // ROC_RTP_CAPTURE_TS_GETTER_H_
+#endif // ROC_RTP_TIMESTAMP_EXTRACTOR_H_

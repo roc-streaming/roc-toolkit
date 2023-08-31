@@ -12,7 +12,7 @@ namespace roc {
 namespace rtp {
 
 TimestampInjector::TimestampInjector(packet::IReader& packet_src,
-                                 const audio::SampleSpec& sample_spec)
+                                     const audio::SampleSpec& sample_spec)
     : valid_ts_(false)
     , ts_(0)
     , rtp_ts_(0)
@@ -46,7 +46,7 @@ packet::PacketPtr TimestampInjector::read() {
 }
 
 void TimestampInjector::update_mapping(core::nanoseconds_t capture_ts,
-                                            packet::timestamp_t rtp_ts) {
+                                       packet::timestamp_t rtp_ts) {
     ts_ = capture_ts;
     rtp_ts_ = rtp_ts;
     valid_ts_ = !!capture_ts;
