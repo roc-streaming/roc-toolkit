@@ -9,7 +9,6 @@
 #include <CppUTest/TestHarness.h>
 
 #include "test_helpers/mock_reader.h"
-#include "test_helpers/mock_reader_ts.h"
 #include "test_helpers/mock_writer.h"
 #include "test_helpers/mock_writer_timekeeper.h"
 
@@ -436,7 +435,8 @@ TEST(resampler, timestamp_passthrough_reader) {
         const core::nanoseconds_t epsilon =
             core::nanoseconds_t(1. / InSampleRate * core::Second);
 
-        test::MockReaderTs input_reader(start_ts, InSampleSpecs, true);
+        test::MockReader input_reader(true, true);
+        input_reader.setup_capt_ts(start_ts, InSampleSpecs);
         input_reader.pad_zeros();
         audio::ResamplerReader rreader(input_reader, *resampler, InSampleSpecs,
                                        OutSampleSpecs);

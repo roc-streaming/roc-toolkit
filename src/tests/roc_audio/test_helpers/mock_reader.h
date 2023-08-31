@@ -20,10 +20,11 @@ namespace test {
 
 class MockReader : public IFrameReader {
 public:
-    explicit MockReader(bool fail_on_empty = true)
+    explicit MockReader(bool fail_on_empty = true, bool pass_capture_ts = false)
         : pos_(0)
         , size_(0)
-        , fail_on_empty_(fail_on_empty) {
+        , fail_on_empty_(fail_on_empty)
+        , pass_capture_ts_(pass_capture_ts) {
     }
 
     virtual bool read(Frame& frame) {
@@ -43,6 +44,10 @@ public:
 
         pos_ += frame.num_samples();
 
+        if (pass_capture_ts_) {
+            frame.set_capture_timestamp(base_timestamp_);
+            base_timestamp_ += sample_spec_.samples_overall_2_ns(frame.num_samples());
+        }
         return true;
     }
 
@@ -68,6 +73,11 @@ public:
         return size_ - pos_;
     }
 
+    void setup_capt_ts(const core::nanoseconds_t  base_timestamp, const SampleSpec& sample_spec) {
+        sample_spec_ = sample_spec;
+        base_timestamp_ = base_timestamp;
+    }
+
 private:
     enum { MaxSz = 64 * 1024 };
 
@@ -76,6 +86,10 @@ private:
     size_t pos_;
     size_t size_;
     const bool fail_on_empty_;
+
+    bool pass_capture_ts_;
+    SampleSpec sample_spec_;
+    core::nanoseconds_t base_timestamp_;
 };
 
 } // namespace test
