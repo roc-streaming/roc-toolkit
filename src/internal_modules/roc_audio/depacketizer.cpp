@@ -91,11 +91,7 @@ void Depacketizer::read_frame_(Frame& frame) {
     }
 
     roc_panic_if(buff_ptr != buff_end);
-    if (valid_capture_ts_) {
-        frame.set_capture_timestamp(info.capture_ts);
-    }
-
-    set_frame_flags_(frame, info);
+    set_frame_props_(frame, info);
 }
 
 sample_t*
@@ -268,7 +264,7 @@ packet::PacketPtr Depacketizer::read_packet_() {
     return pp;
 }
 
-void Depacketizer::set_frame_flags_(Frame& frame, const FrameInfo& info) {
+void Depacketizer::set_frame_props_(Frame& frame, const FrameInfo& info) {
     unsigned flags = 0;
 
     if (info.n_decoded_samples != 0) {
@@ -281,6 +277,10 @@ void Depacketizer::set_frame_flags_(Frame& frame, const FrameInfo& info) {
 
     if (info.n_dropped_packets != 0) {
         flags |= Frame::FlagDrops;
+    }
+
+    if (valid_capture_ts_) {
+        frame.set_capture_timestamp(info.capture_ts);
     }
 
     frame.set_flags(flags);

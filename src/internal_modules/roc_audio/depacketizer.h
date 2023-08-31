@@ -83,7 +83,7 @@ private:
     void update_packet_(FrameInfo& info);
     packet::PacketPtr read_packet_();
 
-    void set_frame_flags_(Frame& frame, const FrameInfo& info);
+    void set_frame_props_(Frame& frame, const FrameInfo& info);
 
     void report_stats_();
 
