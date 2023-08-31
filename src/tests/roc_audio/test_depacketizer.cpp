@@ -35,7 +35,7 @@ enum {
 
 const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, ChMask);
 const audio::PcmFormat PcmFmt(audio::PcmEncoding_SInt16, audio::PcmEndian_Big);
-const core::nanoseconds_t ns_per_packet = SampleSpecs.samples_overall_2_ns(SamplesSize);
+const core::nanoseconds_t NsPerPacket = SampleSpecs.samples_overall_2_ns(SamplesSize);
 const core::nanoseconds_t Now = 1691499037871419405;
 
 core::HeapArena arena;
@@ -162,7 +162,7 @@ TEST(depacketizer, multiple_packets_one_read) {
     core::nanoseconds_t ts = Now;
     for (packet::timestamp_t n = 0; n < NumPackets; n++) {
         queue.write(new_packet(encoder, n * SamplesPerPacket, 0.11f, ts));
-        ts += ns_per_packet;
+        ts += NsPerPacket;
     }
 
     expect_output(dp, NumPackets * SamplesPerPacket, 0.11f, Now);
@@ -180,15 +180,21 @@ TEST(depacketizer, multiple_packets_multiple_reads) {
     Depacketizer dp(queue, decoder, SampleSpecs, false);
     CHECK(dp.is_valid());
 
+    // Start with a packet with zero capture timestamp.
+    queue.write(new_packet(encoder, 0, 0.01f, 0));
+    const size_t samples_per_frame = SamplesPerPacket / FramesPerPacket;
+    for (size_t n = 0; n < FramesPerPacket; n++) {
+        expect_output(dp, samples_per_frame, 0.01f, 0);
+    }
+
     core::nanoseconds_t ts = Now;
     queue.write(new_packet(encoder, 1 * SamplesPerPacket, 0.11f, ts));
-    ts += ns_per_packet;
+    ts += NsPerPacket;
     queue.write(new_packet(encoder, 2 * SamplesPerPacket, 0.22f, ts));
-    ts += ns_per_packet;
+    ts += NsPerPacket;
     queue.write(new_packet(encoder, 3 * SamplesPerPacket, 0.33f, ts));
 
     ts = Now;
-    const size_t samples_per_frame = SamplesPerPacket / FramesPerPacket;
     for (size_t n = 0; n < FramesPerPacket; n++) {
         expect_output(dp, samples_per_frame, 0.11f, ts);
         ts += SampleSpecs.samples_per_chan_2_ns(samples_per_frame);
@@ -219,16 +225,16 @@ TEST(depacketizer, timestamp_overflow) {
 
     core::nanoseconds_t ts = Now;
     queue.write(new_packet(encoder, ts1, 0.11f, ts));
-    ts += ns_per_packet;
+    ts += NsPerPacket;
     queue.write(new_packet(encoder, ts2, 0.22f, ts));
-    ts += ns_per_packet;
+    ts += NsPerPacket;
     queue.write(new_packet(encoder, ts3, 0.33f, ts));
 
     ts = Now;
     expect_output(dp, SamplesPerPacket, 0.11f, ts);
-    ts += ns_per_packet;
+    ts += NsPerPacket;
     expect_output(dp, SamplesPerPacket, 0.22f, ts);
-    ts += ns_per_packet;
+    ts += NsPerPacket;
     expect_output(dp, SamplesPerPacket, 0.33f, ts);
 }
 
@@ -243,9 +249,9 @@ TEST(depacketizer, drop_late_packets) {
     const packet::timestamp_t ts1 = SamplesPerPacket * 2;
     const packet::timestamp_t ts2 = SamplesPerPacket * 1;
     const packet::timestamp_t ts3 = SamplesPerPacket * 3;
-    const core::nanoseconds_t capt_ts1 = Now + ns_per_packet;
+    const core::nanoseconds_t capt_ts1 = Now + NsPerPacket;
     const core::nanoseconds_t capt_ts2 = Now;
-    const core::nanoseconds_t capt_ts3 = ts1 + ns_per_packet;
+    const core::nanoseconds_t capt_ts3 = ts1 + NsPerPacket;
 
     queue.write(new_packet(encoder, ts1, 0.11f, capt_ts1));
     queue.write(new_packet(encoder, ts2, 0.22f, capt_ts2));
@@ -267,8 +273,8 @@ TEST(depacketizer, drop_late_packets_timestamp_overflow) {
     const packet::timestamp_t ts2 = ts1 - SamplesPerPacket;
     const packet::timestamp_t ts3 = ts1 + SamplesPerPacket;
     const core::nanoseconds_t capt_ts1 = Now;
-    const core::nanoseconds_t capt_ts2 = Now - ns_per_packet;
-    const core::nanoseconds_t capt_ts3 = Now + ns_per_packet;
+    const core::nanoseconds_t capt_ts2 = Now - NsPerPacket;
+    const core::nanoseconds_t capt_ts3 = Now + NsPerPacket;
 
     queue.write(new_packet(encoder, ts1, 0.11f, capt_ts1));
     queue.write(new_packet(encoder, ts2, 0.22f, capt_ts2));
@@ -313,11 +319,11 @@ TEST(depacketizer, zeros_between_packets) {
 
     queue.write(new_packet(encoder, 1 * SamplesPerPacket, 0.11f, Now));
     queue.write(
-        new_packet(encoder, 3 * SamplesPerPacket, 0.33f, Now + ns_per_packet * 2));
+        new_packet(encoder, 3 * SamplesPerPacket, 0.33f, Now + NsPerPacket * 2));
 
     expect_output(dp, SamplesPerPacket, 0.11f, Now);
-    expect_output(dp, SamplesPerPacket, 0.00f, Now + ns_per_packet);
-    expect_output(dp, SamplesPerPacket, 0.33f, Now + 2 * ns_per_packet);
+    expect_output(dp, SamplesPerPacket, 0.00f, Now + NsPerPacket);
+    expect_output(dp, SamplesPerPacket, 0.33f, Now + 2 * NsPerPacket);
 }
 
 TEST(depacketizer, zeros_between_packets_timestamp_overflow) {
@@ -331,9 +337,9 @@ TEST(depacketizer, zeros_between_packets_timestamp_overflow) {
     const packet::timestamp_t ts2 = 0;
     const packet::timestamp_t ts1 = ts2 - SamplesPerPacket;
     const packet::timestamp_t ts3 = ts2 + SamplesPerPacket;
-    const core::nanoseconds_t capt_ts1 = Now - ns_per_packet;
+    const core::nanoseconds_t capt_ts1 = Now - NsPerPacket;
     const core::nanoseconds_t capt_ts2 = Now;
-    const core::nanoseconds_t capt_ts3 = Now + ns_per_packet;
+    const core::nanoseconds_t capt_ts3 = Now + NsPerPacket;
 
     queue.write(new_packet(encoder, ts1, 0.11f, capt_ts1));
     queue.write(new_packet(encoder, ts3, 0.33f, capt_ts3));
@@ -400,12 +406,12 @@ TEST(depacketizer, overlapping_packets) {
     packet::timestamp_t ts3 = SamplesPerPacket;
 
     queue.write(new_packet(encoder, ts1, 0.11f, Now));
-    queue.write(new_packet(encoder, ts2, 0.22f, Now + ns_per_packet / 2));
-    queue.write(new_packet(encoder, ts3, 0.33f, Now + ns_per_packet));
+    queue.write(new_packet(encoder, ts2, 0.22f, Now + NsPerPacket / 2));
+    queue.write(new_packet(encoder, ts3, 0.33f, Now + NsPerPacket));
 
     expect_output(dp, SamplesPerPacket, 0.11f, Now);
-    expect_output(dp, SamplesPerPacket / 2, 0.22f, Now + ns_per_packet);
-    expect_output(dp, SamplesPerPacket / 2, 0.33f, Now + ns_per_packet * 3 / 2);
+    expect_output(dp, SamplesPerPacket / 2, 0.22f, Now + NsPerPacket);
+    expect_output(dp, SamplesPerPacket / 2, 0.33f, Now + NsPerPacket * 3 / 2);
 }
 
 TEST(depacketizer, frame_flags_incompltete_blank) {
@@ -421,27 +427,27 @@ TEST(depacketizer, frame_flags_incompltete_blank) {
     packet::PacketPtr packets[][PacketsPerFrame] = {
         {
             new_packet(encoder, SamplesPerPacket * 1, 0.11f, Now),
-            new_packet(encoder, SamplesPerPacket * 2, 0.11f, Now + ns_per_packet),
-            new_packet(encoder, SamplesPerPacket * 3, 0.11f, Now + 2 * ns_per_packet),
+            new_packet(encoder, SamplesPerPacket * 2, 0.11f, Now + NsPerPacket),
+            new_packet(encoder, SamplesPerPacket * 3, 0.11f, Now + 2 * NsPerPacket),
         },
         {
             NULL,
-            new_packet(encoder, SamplesPerPacket * 5, 0.11f, Now + ns_per_packet),
-            new_packet(encoder, SamplesPerPacket * 6, 0.11f, Now + 2 * ns_per_packet),
+            new_packet(encoder, SamplesPerPacket * 5, 0.11f, Now + NsPerPacket),
+            new_packet(encoder, SamplesPerPacket * 6, 0.11f, Now + 2 * NsPerPacket),
         },
         {
             new_packet(encoder, SamplesPerPacket * 7, 0.11f, Now),
             NULL,
-            new_packet(encoder, SamplesPerPacket * 9, 0.11f, Now + 2 * ns_per_packet),
+            new_packet(encoder, SamplesPerPacket * 9, 0.11f, Now + 2 * NsPerPacket),
         },
         {
             new_packet(encoder, SamplesPerPacket * 10, 0.11f, Now),
-            new_packet(encoder, SamplesPerPacket * 11, 0.11f, Now + ns_per_packet),
+            new_packet(encoder, SamplesPerPacket * 11, 0.11f, Now + NsPerPacket),
             NULL,
         },
         {
             NULL,
-            new_packet(encoder, SamplesPerPacket * 14, 0.11f, Now + ns_per_packet),
+            new_packet(encoder, SamplesPerPacket * 14, 0.11f, Now + NsPerPacket),
             NULL,
         },
         {
@@ -451,8 +457,8 @@ TEST(depacketizer, frame_flags_incompltete_blank) {
         },
         {
             new_packet(encoder, SamplesPerPacket * 22, 0.11f, Now),
-            new_packet(encoder, SamplesPerPacket * 23, 0.11f, Now + ns_per_packet),
-            new_packet(encoder, SamplesPerPacket * 24, 0.11f, Now + 2 * ns_per_packet),
+            new_packet(encoder, SamplesPerPacket * 23, 0.11f, Now + NsPerPacket),
+            new_packet(encoder, SamplesPerPacket * 24, 0.11f, Now + 2 * NsPerPacket),
         },
         {
             NULL,

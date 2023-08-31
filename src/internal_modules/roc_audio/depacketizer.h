@@ -64,12 +64,12 @@ private:
         size_t n_dropped_packets;
 
         // This frame first sample timestamp.
-        core::nanoseconds_t ts;
+        core::nanoseconds_t capture_ts;
 
         FrameInfo()
             : n_decoded_samples(0)
             , n_dropped_packets(0)
-            , ts(0) {
+            , capture_ts(0) {
         }
     };
 
