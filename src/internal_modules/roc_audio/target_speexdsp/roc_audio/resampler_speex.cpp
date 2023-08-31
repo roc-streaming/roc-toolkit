@@ -55,7 +55,8 @@ SpeexResampler::SpeexResampler(core::IArena&,
     , in_frame_pos_(in_frame_size_)
     , num_ch_((spx_uint32_t)in_spec.num_channels())
     , rate_limiter_(LogReportInterval)
-    , valid_(false) {
+    , valid_(false)
+    , startup_delay_compensator_(0) {
     if (!in_spec.is_valid() || !out_spec.is_valid()) {
         roc_log(LogError,
                 "speex resampler: invalid sample spec:"
