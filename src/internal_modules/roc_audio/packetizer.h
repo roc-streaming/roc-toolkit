@@ -65,7 +65,7 @@ public:
     void flush();
 
 private:
-    bool begin_packet_(const core::nanoseconds_t capture_ts);
+    bool begin_packet_();
     void end_packet_();
 
     void pad_packet_();
@@ -90,6 +90,7 @@ private:
     packet::source_t source_;
     packet::seqnum_t seqnum_;
     packet::timestamp_t timestamp_;
+    core::nanoseconds_t capture_ts_;
 
     bool valid_;
 };
