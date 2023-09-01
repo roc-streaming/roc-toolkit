@@ -101,18 +101,23 @@ void expect_output(Depacketizer& depacketizer,
     Frame frame(buf.data(), buf.size());
     CHECK(depacketizer.read(frame));
 
-    CHECK(core::ns_equal(frame.capture_timestamp(), capt_ts, core::Microsecond));
+    CHECK(core::ns_within_delta(frame.capture_timestamp(), capt_ts, core::Microsecond));
     UNSIGNED_LONGS_EQUAL(sz * SampleSpecs.num_channels(), frame.num_samples());
     expect_values(frame.samples(), sz * SampleSpecs.num_channels(), value);
 }
 
-void expect_flags(Depacketizer& depacketizer, size_t sz, unsigned int flags) {
+void expect_flags(Depacketizer& depacketizer, size_t sz, unsigned int flags,
+                  core::nanoseconds_t capt_ts = -1) {
     core::Slice<sample_t> buf = new_buffer(sz);
+    const core::nanoseconds_t epsilon = 100*core::Microsecond;
 
     Frame frame(buf.data(), buf.size());
     CHECK(depacketizer.read(frame));
 
     UNSIGNED_LONGS_EQUAL(flags, frame.flags());
+    if (capt_ts >= 0){
+        CHECK(core::ns_within_delta(frame.capture_timestamp(), capt_ts, epsilon));
+    }
 }
 
 } // namespace
@@ -417,11 +422,8 @@ TEST(depacketizer, frame_flags_incompltete_blank) {
     enum { PacketsPerFrame = 3 };
 
     PcmEncoder encoder(PcmFmt, SampleSpecs);
-    PcmDecoder decoder(PcmFmt, SampleSpecs);
 
     packet::Queue queue;
-    Depacketizer dp(queue, decoder, SampleSpecs, false);
-    CHECK(dp.is_valid());
 
     packet::PacketPtr packets[][PacketsPerFrame] = {
         {
@@ -473,20 +475,35 @@ TEST(depacketizer, frame_flags_incompltete_blank) {
         Frame::FlagIncomplete | Frame::FlagNonblank,
         Frame::FlagIncomplete | Frame::FlagNonblank,
         Frame::FlagIncomplete,
-        Frame::FlagIncomplete,
         Frame::FlagNonblank,
+        Frame::FlagIncomplete,
+    };
+
+    core::nanoseconds_t capt_ts[] = {
+        Now,
+        Now+NsPerPacket,
+        Now,
+        Now,
+        Now+NsPerPacket,
+        0,
+        Now,
+        0,
     };
 
     CHECK(ROC_ARRAY_SIZE(packets) == ROC_ARRAY_SIZE(frame_flags));
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(packets); n++) {
+        PcmDecoder decoder(PcmFmt, SampleSpecs);
+        Depacketizer dp(queue, decoder, SampleSpecs, false);
+        CHECK(dp.is_valid());
+
         for (size_t p = 0; p < PacketsPerFrame; p++) {
             if (packets[n][p] != NULL) {
                 queue.write(packets[n][p]);
             }
         }
 
-        expect_flags(dp, SamplesPerPacket * PacketsPerFrame, frame_flags[n]);
+        expect_flags(dp, SamplesPerPacket * PacketsPerFrame, frame_flags[n], capt_ts[n]);
     }
 }
 
