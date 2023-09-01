@@ -135,6 +135,7 @@ Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end, FrameInfo& i
     } else {
         const size_t nsamples = size_t(buff_end - buff_ptr);
         if (valid_capture_ts_) {
+            roc_panic_if(info.capture_ts);
             info.capture_ts = next_capture_ts_;
             next_capture_ts_ += sample_spec_.samples_overall_2_ns(nsamples);
         }
