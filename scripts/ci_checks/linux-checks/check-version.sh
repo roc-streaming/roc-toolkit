@@ -3,8 +3,7 @@
 set -euo pipefail
 
 
-tagname=$(git tag -l)
-tagname=${tagname: -5}
+tagname="$(git tag -l | tail -n1)"
 header_tagname=$(python3 scripts/scons_helpers/parse-version.py)
 
 if [[ "$tagname" != "$header_tagname" ]]; then
