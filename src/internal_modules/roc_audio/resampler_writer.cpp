@@ -84,8 +84,8 @@ void ResamplerWriter::write(Frame& frame) {
                                                                     // ts
                 in_sample_spec_.samples_overall_2_ns(input_pos_) -  // num unprocessed
                                                                     // inside
-                in_sample_spec_.samples_per_chan_2_ns(
-                    size_t(resampler_.n_left_to_process()))
+                in_sample_spec_.fract_samples_per_chan_2_ns(
+                    resampler_.n_left_to_process())
                 - core::nanoseconds_t(out_sample_spec_.samples_overall_2_ns(output_pos_)
                                       * scaling_);
             out_frame.set_capture_timestamp(capt_ts);
@@ -100,7 +100,7 @@ void ResamplerWriter::write(Frame& frame) {
         const core::nanoseconds_t capt_ts = frame.capture_timestamp()
             + in_sample_spec_.samples_overall_2_ns(frame_pos) - // last added sample ts
             in_sample_spec_.samples_overall_2_ns(input_pos_) -  // num unprocessed inside
-            in_sample_spec_.samples_per_chan_2_ns(size_t(resampler_.n_left_to_process()))
+            in_sample_spec_.fract_samples_per_chan_2_ns(resampler_.n_left_to_process())
             - core::nanoseconds_t(out_sample_spec_.samples_overall_2_ns(output_pos_)
                                   * scaling_);
         out_frame.set_capture_timestamp(capt_ts);
