@@ -97,7 +97,7 @@ public:
     //! Gets recent latency statistics.
     //! @returns
     //! True if statistics is valid.
-    bool stats(Stats& stats) const;
+    void stats(SessionStats& stats) const;
 
 private:
     const address::SocketAddr src_address_;

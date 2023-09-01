@@ -266,11 +266,12 @@ void ReceiverSession::add_link_metrics(const rtcp::LinkMetrics& metrics) {
     (void)metrics;
 }
 
-bool ReceiverSession::stats(Stats& stats) const {
-    bool res = e2e_latency_monitor_->is_valid() && latency_monitor_->is_valid();
-    stats.end_to_end_latency = e2e_latency_monitor_->latency();
-    stats.local_latency = latency_monitor_->latency();
-    return res;
+void ReceiverSession::stats(SessionStats& stats) const {
+    if (e2e_latency_monitor_->is_valid()) {
+        stats.end_to_end_latency = e2e_latency_monitor_->latency();
+    } else {
+        stats.end_to_end_latency = 0;
+    }
 }
 
 } // namespace pipeline

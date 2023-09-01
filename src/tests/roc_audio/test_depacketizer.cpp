@@ -106,16 +106,18 @@ void expect_output(Depacketizer& depacketizer,
     expect_values(frame.samples(), sz * SampleSpecs.num_channels(), value);
 }
 
-void expect_flags(Depacketizer& depacketizer, size_t sz, unsigned int flags,
+void expect_flags(Depacketizer& depacketizer,
+                  size_t sz,
+                  unsigned int flags,
                   core::nanoseconds_t capt_ts = -1) {
     core::Slice<sample_t> buf = new_buffer(sz);
-    const core::nanoseconds_t epsilon = 100*core::Microsecond;
+    const core::nanoseconds_t epsilon = 100 * core::Microsecond;
 
     Frame frame(buf.data(), buf.size());
     CHECK(depacketizer.read(frame));
 
     UNSIGNED_LONGS_EQUAL(flags, frame.flags());
-    if (capt_ts >= 0){
+    if (capt_ts >= 0) {
         CHECK(core::ns_within_delta(frame.capture_timestamp(), capt_ts, epsilon));
     }
 }
@@ -480,14 +482,7 @@ TEST(depacketizer, frame_flags_incompltete_blank) {
     };
 
     core::nanoseconds_t capt_ts[] = {
-        Now,
-        Now+NsPerPacket,
-        Now,
-        Now,
-        Now+NsPerPacket,
-        0,
-        Now,
-        0,
+        Now, Now + NsPerPacket, Now, Now, Now + NsPerPacket, 0, Now, 0,
     };
 
     CHECK(ROC_ARRAY_SIZE(packets) == ROC_ARRAY_SIZE(frame_flags));

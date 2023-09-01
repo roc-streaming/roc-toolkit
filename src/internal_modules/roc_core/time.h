@@ -102,7 +102,7 @@ std::tm nanoseconds_2_tm(nanoseconds_t timestamp);
 nanoseconds_t tm_2_nanoseconds(std::tm tm);
 
 //! Compares t1 and t2 if they close enough.
-bool ns_equal(nanoseconds_t t1, nanoseconds_t t2, nanoseconds_t epsilon);
+bool ns_within_delta(nanoseconds_t t1, nanoseconds_t t2, nanoseconds_t epsilon);
 
 } // namespace core
 } // namespace roc

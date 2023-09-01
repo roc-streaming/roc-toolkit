@@ -75,15 +75,18 @@ TEST(samplespec, nsamples_2_ns) {
 
         core::nanoseconds_t sampling_period = core::nanoseconds_t(1 / fs * core::Second);
 
-        CHECK(core::ns_equal(samplespec.samples_per_chan_2_ns(1), sampling_period,
-                             epsilon));
-        CHECK(core::ns_equal(samplespec.fract_samples_per_chan_2_ns(0.1f),
-                             core::nanoseconds_t(0.1 / fs * core::Second), epsilon));
-        CHECK(core::ns_equal(samplespec.fract_samples_per_chan_2_ns(-0.1f),
-                             -core::nanoseconds_t(0.1 / fs * core::Second), epsilon));
-        CHECK(core::ns_equal(samplespec.samples_overall_2_ns(numch), sampling_period,
-                             epsilon));
-        CHECK(core::ns_equal(samplespec.rtp_timestamp_2_ns(1), sampling_period, epsilon));
+        CHECK(core::ns_within_delta(samplespec.samples_per_chan_2_ns(1), sampling_period,
+                                    epsilon));
+        CHECK(core::ns_within_delta(samplespec.fract_samples_per_chan_2_ns(0.1f),
+                                    core::nanoseconds_t(0.1 / fs * core::Second),
+                                    epsilon));
+        CHECK(core::ns_within_delta(samplespec.fract_samples_per_chan_2_ns(-0.1f),
+                                    -core::nanoseconds_t(0.1 / fs * core::Second),
+                                    epsilon));
+        CHECK(core::ns_within_delta(samplespec.samples_overall_2_ns(numch),
+                                    sampling_period, epsilon));
+        CHECK(core::ns_within_delta(samplespec.rtp_timestamp_2_ns(1), sampling_period,
+                                    epsilon));
     }
 }
 

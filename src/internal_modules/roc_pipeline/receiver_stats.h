@@ -18,20 +18,15 @@ namespace roc {
 namespace pipeline {
 
 //! Per participant statistics.
-struct Stats {
+struct SessionStats {
     //! Overall participant latency.
     //! How much time does it take for a just formed audio::Frame on a sender side
     //! to be played on a receiver.
     core::nanoseconds_t end_to_end_latency;
 
-    //! Local latency.
-    //! How much time does it take for a just arrived packet to be played.
-    core::nanoseconds_t local_latency;
-
     //! Constructor.
-    Stats(core::nanoseconds_t e2e, core::nanoseconds_t local)
-        : end_to_end_latency(e2e)
-        , local_latency(local) {
+    SessionStats(core::nanoseconds_t e2e)
+        : end_to_end_latency(e2e) {
     }
 };
 
