@@ -108,9 +108,10 @@ Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end, FrameInfo& i
                 * (size_t)packet::timestamp_diff(next_timestamp, timestamp_);
 
             const size_t max_samples = (size_t)(buff_end - buff_ptr);
-            const size_t nsamples = std::min(mis_samples, max_samples);
+            const size_t n_samples = std::min(mis_samples, max_samples);
 
-            buff_ptr = read_missing_samples_(buff_ptr, buff_ptr + nsamples);
+            buff_ptr = read_missing_samples_(buff_ptr, buff_ptr + n_samples);
+
             if (!info.capture_ts && valid_capture_ts_) {
                 info.capture_ts =
                     next_capture_ts_ - sample_spec_.samples_overall_2_ns(mis_samples);
@@ -119,25 +120,30 @@ Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end, FrameInfo& i
 
         if (buff_ptr < buff_end) {
             sample_t* new_buff_ptr = read_packet_samples_(buff_ptr, buff_end);
-            const size_t nsamples = size_t(new_buff_ptr - buff_ptr);
+            const size_t n_samples = size_t(new_buff_ptr - buff_ptr);
 
-            info.n_decoded_samples += nsamples;
-            if (nsamples && !info.capture_ts && valid_capture_ts_) {
+            info.n_decoded_samples += n_samples;
+            if (n_samples && !info.capture_ts && valid_capture_ts_) {
                 info.capture_ts = next_capture_ts_;
             }
             if (valid_capture_ts_) {
-                next_capture_ts_ += sample_spec_.samples_overall_2_ns(nsamples);
+                next_capture_ts_ += sample_spec_.samples_overall_2_ns(n_samples);
             }
+
             buff_ptr = new_buff_ptr;
         }
 
         return buff_ptr;
     } else {
-        const size_t nsamples = size_t(buff_end - buff_ptr);
-        if (valid_capture_ts_ && !info.capture_ts) {
+        const size_t n_samples = size_t(buff_end - buff_ptr);
+
+        if (!info.capture_ts && valid_capture_ts_) {
             info.capture_ts = next_capture_ts_;
-            next_capture_ts_ += sample_spec_.samples_overall_2_ns(nsamples);
         }
+        if (valid_capture_ts_) {
+            next_capture_ts_ += sample_spec_.samples_overall_2_ns(n_samples);
+        }
+
         return read_missing_samples_(buff_ptr, buff_end);
     }
 }
@@ -279,11 +285,11 @@ void Depacketizer::set_frame_props_(Frame& frame, const FrameInfo& info) {
         flags |= Frame::FlagDrops;
     }
 
-    if (valid_capture_ts_) {
+    frame.set_flags(flags);
+
+    if (info.capture_ts) {
         frame.set_capture_timestamp(info.capture_ts);
     }
-
-    frame.set_flags(flags);
 }
 
 void Depacketizer::report_stats_() {

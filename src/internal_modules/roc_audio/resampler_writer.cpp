@@ -79,16 +79,8 @@ void ResamplerWriter::write(Frame& frame) {
 
         if (output_pos_ == output_.size()) {
             Frame out_frame(output_.data(), output_.size());
-            const core::nanoseconds_t capt_ts = frame.capture_timestamp()
-                + in_sample_spec_.samples_overall_2_ns(frame_pos) - // last added sample
-                                                                    // ts
-                in_sample_spec_.samples_overall_2_ns(input_pos_) -  // num unprocessed
-                                                                    // inside
-                in_sample_spec_.fract_samples_per_chan_2_ns(
-                    resampler_.n_left_to_process())
-                - core::nanoseconds_t(out_sample_spec_.samples_overall_2_ns(output_pos_)
-                                      * scaling_);
-            out_frame.set_capture_timestamp(capt_ts);
+            out_frame.set_capture_timestamp(capture_ts_(frame, frame_pos));
+
             writer_.write(out_frame);
 
             output_pos_ = 0;
@@ -97,13 +89,8 @@ void ResamplerWriter::write(Frame& frame) {
 
     if (output_pos_ != 0) {
         Frame out_frame(output_.data(), output_pos_);
-        const core::nanoseconds_t capt_ts = frame.capture_timestamp()
-            + in_sample_spec_.samples_overall_2_ns(frame_pos) - // last added sample ts
-            in_sample_spec_.samples_overall_2_ns(input_pos_) -  // num unprocessed inside
-            in_sample_spec_.fract_samples_per_chan_2_ns(resampler_.n_left_to_process())
-            - core::nanoseconds_t(out_sample_spec_.samples_overall_2_ns(output_pos_)
-                                  * scaling_);
-        out_frame.set_capture_timestamp(capt_ts);
+        out_frame.set_capture_timestamp(capture_ts_(frame, frame_pos));
+
         scaling_ = next_scaling_;
         writer_.write(out_frame);
 
@@ -130,6 +117,15 @@ size_t ResamplerWriter::push_input_(Frame& frame, size_t frame_pos) {
     }
 
     return num_copy;
+}
+
+core::nanoseconds_t ResamplerWriter::capture_ts_(Frame& frame, size_t frame_pos) {
+    return frame.capture_timestamp()
+        + in_sample_spec_.samples_overall_2_ns(frame_pos)  // last added sample ts
+        - in_sample_spec_.samples_overall_2_ns(input_pos_) // num unprocessed inside
+        - in_sample_spec_.fract_samples_per_chan_2_ns(resampler_.n_left_to_process())
+        - core::nanoseconds_t(out_sample_spec_.samples_overall_2_ns(output_pos_)
+                              * scaling_);
 }
 
 } // namespace audio

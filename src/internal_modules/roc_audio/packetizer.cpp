@@ -37,6 +37,7 @@ Packetizer::Packetizer(packet::IWriter& writer,
     source_ = (packet::source_t)core::fast_random(0, packet::source_t(-1));
     seqnum_ = (packet::seqnum_t)core::fast_random(0, packet::seqnum_t(-1));
     timestamp_ = (packet::timestamp_t)core::fast_random(0, packet::timestamp_t(-1));
+    capture_ts_ = 0;
     valid_ = true;
     roc_log(LogDebug, "packetizer: initializing: n_channels=%lu samples_per_packet=%lu",
             (unsigned long)sample_spec_.num_channels(),

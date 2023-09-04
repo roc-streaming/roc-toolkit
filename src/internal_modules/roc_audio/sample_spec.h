@@ -93,7 +93,7 @@ public:
     core::nanoseconds_t samples_per_chan_2_ns(size_t n_samples) const;
 
     //! Convert (possibly fractional) number samples per channel to nanoseconds duration.
-    core::nanoseconds_t fract_samples_per_chan_2_ns(const float n_samples) const;
+    core::nanoseconds_t fract_samples_per_chan_2_ns(float n_samples) const;
 
     //! Convert nanoseconds duration to number of samples for all channels.
     size_t ns_2_samples_overall(core::nanoseconds_t ns_duration) const;
@@ -102,7 +102,7 @@ public:
     core::nanoseconds_t samples_overall_2_ns(size_t n_samples) const;
 
     //! Convert number of samples (possibly non-integer) to nanoseconds.
-    core::nanoseconds_t fract_samples_overall_2_ns(const float n) const;
+    core::nanoseconds_t fract_samples_overall_2_ns(float n_samples) const;
 
     // @}
 

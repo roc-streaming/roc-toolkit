@@ -20,13 +20,13 @@ namespace pipeline {
 //! Per participant statistics.
 struct SessionStats {
     //! Overall participant latency.
-    //! How much time does it take for a just formed audio::Frame on a sender side
+    //! How much time does it take for a just captured audio::Frame on a sender side
     //! to be played on a receiver.
     core::nanoseconds_t end_to_end_latency;
 
     //! Constructor.
-    SessionStats(core::nanoseconds_t e2e)
-        : end_to_end_latency(e2e) {
+    SessionStats()
+        : end_to_end_latency(0) {
     }
 };
 

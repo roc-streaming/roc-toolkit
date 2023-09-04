@@ -28,6 +28,7 @@ class TimestampInjector : public packet::IReader, public core::NonCopyable<> {
 public:
     //! Initialize.
     TimestampInjector(packet::IReader& packet_src, const audio::SampleSpec& sample_spec);
+
     //! Virtual destructor.
     virtual ~TimestampInjector();
 
