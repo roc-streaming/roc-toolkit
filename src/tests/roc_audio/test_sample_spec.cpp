@@ -17,15 +17,16 @@ namespace audio {
 TEST_GROUP(sample_spec) {};
 
 TEST(sample_spec, ns_2_nsamples) {
-    const float SampleRate = 44100;
+    const double SampleRate = 44100;
 
-    for (size_t numch = 1; numch < 32; ++numch) {
-        const SampleSpec sample_spec = SampleSpec((size_t)SampleRate, ChanLayout_Surround,
-                                                  ChannelMask((1 << numch) - 1));
+    for (size_t numChans = 1; numChans < 32; ++numChans) {
+        const SampleSpec sample_spec =
+            SampleSpec((size_t)SampleRate, ChanLayout_Surround,
+                       ChannelMask(((uint64_t)1 << numChans) - 1));
 
-        CHECK_EQUAL(sample_spec.channel_set().num_channels(), numch);
+        CHECK_EQUAL(sample_spec.channel_set().num_channels(), numChans);
 
-        CHECK_EQUAL(sample_spec.num_channels(), numch);
+        CHECK_EQUAL(sample_spec.num_channels(), numChans);
 
         // Check rounding
         CHECK_EQUAL(sample_spec.ns_2_samples_per_chan(
@@ -49,10 +50,10 @@ TEST(sample_spec, ns_2_nsamples) {
                     2);
         CHECK_EQUAL(sample_spec.ns_2_samples_overall(
                         core::nanoseconds_t(1 / SampleRate * core::Second)),
-                    numch);
+                    numChans);
         CHECK_EQUAL(sample_spec.ns_2_samples_overall(
                         core::nanoseconds_t(2 / SampleRate * core::Second)),
-                    numch * 2);
+                    numChans * 2);
     }
 }
 
@@ -61,13 +62,14 @@ TEST(sample_spec, nsamples_2_ns) {
 
     core::nanoseconds_t epsilon = core::nanoseconds_t(0.01 / SampleRate * core::Second);
 
-    for (size_t numch = 1; numch < 32; ++numch) {
-        const SampleSpec sample_spec = SampleSpec((size_t)SampleRate, ChanLayout_Surround,
-                                                  ChannelMask((1 << numch) - 1));
+    for (size_t numChans = 1; numChans < 32; ++numChans) {
+        const SampleSpec sample_spec =
+            SampleSpec((size_t)SampleRate, ChanLayout_Surround,
+                       ChannelMask(((uint64_t)1 << numChans) - 1));
 
-        CHECK_EQUAL(sample_spec.channel_set().num_channels(), numch);
+        CHECK_EQUAL(sample_spec.channel_set().num_channels(), numChans);
 
-        CHECK_EQUAL(sample_spec.num_channels(), numch);
+        CHECK_EQUAL(sample_spec.num_channels(), numChans);
 
         core::nanoseconds_t sampling_period =
             core::nanoseconds_t(1 / SampleRate * core::Second);
@@ -80,7 +82,7 @@ TEST(sample_spec, nsamples_2_ns) {
         CHECK(core::ns_equal_delta(sample_spec.fract_samples_per_chan_2_ns(-0.1f),
                                    -core::nanoseconds_t(0.1 / SampleRate * core::Second),
                                    epsilon));
-        CHECK(core::ns_equal_delta(sample_spec.samples_overall_2_ns(numch),
+        CHECK(core::ns_equal_delta(sample_spec.samples_overall_2_ns(numChans),
                                    sampling_period, epsilon));
         CHECK(core::ns_equal_delta(sample_spec.rtp_timestamp_2_ns(1), sampling_period,
                                    epsilon));
