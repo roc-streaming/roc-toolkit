@@ -42,7 +42,7 @@ public:
                 capt_ts_ = frame.capture_timestamp();
             } else {
                 CHECK(
-                    core::ns_within_delta(capt_ts_, frame.capture_timestamp(), epsilon_));
+                    core::ns_equal_delta(capt_ts_, frame.capture_timestamp(), epsilon_));
             }
             capt_ts_ += core::nanoseconds_t(
                 sample_spec_.samples_overall_2_ns(frame.num_samples()) * scale_);

@@ -8,6 +8,7 @@
 
 #include "roc_packet/ntp.h"
 #include "roc_core/panic.h"
+#include "roc_core/stddefs.h"
 #include "roc_core/time.h"
 
 namespace roc {
