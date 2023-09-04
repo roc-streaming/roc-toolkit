@@ -12,9 +12,9 @@
 namespace roc {
 namespace core {
 
-bool ns_within_delta(nanoseconds_t t1, nanoseconds_t t2, nanoseconds_t epsilon) {
-    nanoseconds_t abs_error = std::max(t1, t2) - std::min(t1, t2);
-    return abs_error <= epsilon;
+bool ns_equal_delta(nanoseconds_t a, nanoseconds_t b, nanoseconds_t delta) {
+    nanoseconds_t abs_error = std::max(a, b) - std::min(a, b);
+    return abs_error <= delta;
 }
 
 } // namespace core

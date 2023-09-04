@@ -83,7 +83,7 @@ TEST(timestamp_injector, negative_and_positive_dn) {
         const core::nanoseconds_t pkt_capt_ts = packet->rtp()->capture_timestamp;
 
         // Assume error must be less than 0.1 of samples period.
-        CHECK(core::ns_within_delta(cur_packet_capt_ts, pkt_capt_ts, epsilon));
+        CHECK(core::ns_equal_delta(cur_packet_capt_ts, pkt_capt_ts, epsilon));
         cur_packet_capt_ts += ts_step;
     }
 }

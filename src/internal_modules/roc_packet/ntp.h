@@ -12,17 +12,16 @@
 #ifndef ROC_PACKET_NTP_H_
 #define ROC_PACKET_NTP_H_
 
-#include <errno.h>
-#include <sys/time.h>
-#include <time.h>
-
-#include "roc_core/errno_to_str.h"
-#include "roc_core/panic.h"
 #include "roc_core/time.h"
-#include "roc_packet/units.h"
 
 namespace roc {
 namespace packet {
+
+//! NTP timestamp.
+//! @remarks
+//!  Highest 32 bits - seconds since NTP epoch, lowest 32 bits - fractions of a second.
+//!  NTP epoch starts from January 1, 1900.
+typedef uint64_t ntp_timestamp_t;
 
 //! Get current NTP time.
 packet::ntp_timestamp_t ntp_timestamp();
@@ -32,15 +31,15 @@ bool ntp_equal_delta(ntp_timestamp_t a, ntp_timestamp_t b, ntp_timestamp_t delta
 
 //! Converts nanoseconds to ntp timestamp.
 //! @param ns must be non-negative.
-//! @remark
-//! Warning: for deltas only, since NTP epoch represnted in nanoseconds could not fit
-//! into 64 bits.
+//! @pre
+//!  For deltas only, since NTP epoch represnted in nanoseconds
+//!  could not fit into 64 bits.
 ntp_timestamp_t nanoseconds_2_ntp(core::nanoseconds_t ns);
 
 //! Converts ntp timestamp to nanoseconds.
-//! @remark
-//! Warning: for deltas only, since NTP epoch represented in nanoseconds could not fit
-//! into 64 bits.
+//! @pre
+//!  For deltas only, since NTP epoch represnted in nanoseconds
+//!  could not fit into 64 bits.
 core::nanoseconds_t ntp_2_nanoseconds(ntp_timestamp_t ts);
 
 } // namespace packet

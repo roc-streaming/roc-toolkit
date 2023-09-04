@@ -14,6 +14,7 @@
 
 #include "roc_core/stddefs.h"
 #include "roc_core/time.h"
+#include "roc_packet/ntp.h"
 #include "roc_packet/units.h"
 
 namespace roc {

@@ -101,7 +101,7 @@ void expect_output(Depacketizer& depacketizer,
     Frame frame(buf.data(), buf.size());
     CHECK(depacketizer.read(frame));
 
-    CHECK(core::ns_within_delta(frame.capture_timestamp(), capt_ts, core::Microsecond));
+    CHECK(core::ns_equal_delta(frame.capture_timestamp(), capt_ts, core::Microsecond));
     UNSIGNED_LONGS_EQUAL(sz * SampleSpecs.num_channels(), frame.num_samples());
     expect_values(frame.samples(), sz * SampleSpecs.num_channels(), value);
 }
@@ -118,7 +118,7 @@ void expect_flags(Depacketizer& depacketizer,
 
     UNSIGNED_LONGS_EQUAL(flags, frame.flags());
     if (capt_ts >= 0) {
-        CHECK(core::ns_within_delta(frame.capture_timestamp(), capt_ts, epsilon));
+        CHECK(core::ns_equal_delta(frame.capture_timestamp(), capt_ts, epsilon));
     }
 }
 

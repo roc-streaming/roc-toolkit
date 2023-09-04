@@ -456,7 +456,7 @@ TEST(resampler, timestamp_passthrough_reader) {
             for (size_t i = 0; i < 10; i++) {
                 CHECK(rreader.read(frame));
                 cur_ts += ts_step;
-                CHECK(core::ns_within_delta(frame.capture_timestamp(), cur_ts, epsilon));
+                CHECK(core::ns_equal_delta(frame.capture_timestamp(), cur_ts, epsilon));
             }
         }
 
@@ -466,13 +466,13 @@ TEST(resampler, timestamp_passthrough_reader) {
             Frame frame(samples, ROC_ARRAY_SIZE(samples));
             CHECK(rreader.read(frame));
             cur_ts += ts_step;
-            CHECK(core::ns_within_delta(frame.capture_timestamp(), cur_ts, epsilon));
+            CHECK(core::ns_equal_delta(frame.capture_timestamp(), cur_ts, epsilon));
             ts_step = core::nanoseconds_t(OutSampleSpecs.samples_overall_2_ns(FrameLen)
                                           * scale);
             for (size_t i = 0; i < 10; i++) {
                 CHECK(rreader.read(frame));
                 cur_ts += ts_step;
-                CHECK(core::ns_within_delta(frame.capture_timestamp(), cur_ts, epsilon));
+                CHECK(core::ns_equal_delta(frame.capture_timestamp(), cur_ts, epsilon));
             }
         }
 
@@ -482,13 +482,13 @@ TEST(resampler, timestamp_passthrough_reader) {
             Frame frame(samples, ROC_ARRAY_SIZE(samples));
             CHECK(rreader.read(frame));
             cur_ts += ts_step;
-            CHECK(core::ns_within_delta(frame.capture_timestamp(), cur_ts, epsilon));
+            CHECK(core::ns_equal_delta(frame.capture_timestamp(), cur_ts, epsilon));
             ts_step = core::nanoseconds_t(OutSampleSpecs.samples_overall_2_ns(FrameLen)
                                           * scale);
             for (size_t i = 0; i < 10; i++) {
                 CHECK(rreader.read(frame));
                 cur_ts += ts_step;
-                CHECK(core::ns_within_delta(frame.capture_timestamp(), cur_ts, epsilon));
+                CHECK(core::ns_equal_delta(frame.capture_timestamp(), cur_ts, epsilon));
             }
         }
     }

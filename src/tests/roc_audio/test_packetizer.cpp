@@ -84,8 +84,8 @@ public:
             UNSIGNED_LONGS_EQUAL(sn_, pp->rtp()->seqnum);
             UNSIGNED_LONGS_EQUAL(ts_, pp->rtp()->timestamp);
         }
-        CHECK(core::ns_within_delta(pp->rtp()->capture_timestamp, capture_ts_,
-                                    core::Microsecond));
+        CHECK(core::ns_equal_delta(pp->rtp()->capture_timestamp, capture_ts_,
+                                   core::Microsecond));
         capture_ts_ += SampleSpecs.samples_per_chan_2_ns(n_samples);
         UNSIGNED_LONGS_EQUAL(n_samples, pp->rtp()->duration);
         UNSIGNED_LONGS_EQUAL(PayloadType, pp->rtp()->payload_type);

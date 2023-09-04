@@ -84,12 +84,6 @@ inline bool blknum_le(blknum_t a, blknum_t b) {
     return blknum_diff(a, b) <= 0;
 }
 
-//! NTP timestamp.
-//! @remarks
-//!  Highest 32 bits - seconds since NTP epoch, lowest 32 bits - fractions of a second.
-//!  NTP epoch starts from January 1, 1900.
-typedef uint64_t ntp_timestamp_t;
-
 } // namespace packet
 } // namespace roc
 
