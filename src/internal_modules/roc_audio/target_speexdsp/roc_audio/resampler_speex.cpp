@@ -55,7 +55,8 @@ SpeexResampler::SpeexResampler(core::IArena&,
     , in_frame_pos_(in_frame_size_)
     , num_ch_((spx_uint32_t)in_spec.num_channels())
     , rate_limiter_(LogReportInterval)
-    , valid_(false) {
+    , valid_(false)
+    , startup_delay_compensator_(0) {
     if (!in_spec.is_valid() || !out_spec.is_valid()) {
         roc_log(LogError,
                 "speex resampler: invalid sample spec:"
@@ -96,6 +97,8 @@ SpeexResampler::SpeexResampler(core::IArena&,
                 get_error_msg(err));
         return;
     }
+
+    startup_delay_compensator_ = (size_t)speex_resampler_get_output_latency(speex_state_);
 
     valid_ = true;
 }
@@ -185,6 +188,12 @@ size_t SpeexResampler::pop_output(Frame& out) {
         }
 
         in_frame_pos_ += remaining_in * num_ch_;
+        if (startup_delay_compensator_) {
+            const size_t ltnc =
+                std::min((size_t)remaining_out, startup_delay_compensator_);
+            remaining_out -= ltnc;
+            startup_delay_compensator_ -= ltnc;
+        }
         out_frame_pos += remaining_out * num_ch_;
 
         roc_panic_if(in_frame_pos_ > in_frame_size_);
@@ -222,6 +231,10 @@ void SpeexResampler::report_stats_() {
         " ratio_num=%u ratio_den=%u in_rate=%u out_rate=%u in_latency=%d out_latency=%d",
         (unsigned int)ratio_num, (unsigned int)ratio_den, (unsigned int)in_rate,
         (unsigned int)out_rate, (int)in_latency, (int)out_latency);
+}
+
+float SpeexResampler::n_left_to_process() const {
+    return (in_frame_size_ - in_frame_pos_) / num_ch_;
 }
 
 } // namespace audio

@@ -55,6 +55,9 @@ private:
 
     float scaling_;
     bool valid_;
+
+    //! The timestamp of the last sample +1 of the last frame pushed into a resampler.
+    core::nanoseconds_t last_in_ts_;
 };
 
 } // namespace audio

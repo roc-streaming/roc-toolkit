@@ -40,7 +40,10 @@ public:
     virtual void write(Frame& frame);
 
 private:
-    void write_(sample_t* in_samples, size_t n_samples, unsigned flags);
+    void write_(sample_t* in_samples,
+                size_t n_samples,
+                unsigned flags,
+                core::nanoseconds_t capture_ts);
 
     IFrameWriter& output_writer_;
     core::Slice<sample_t> output_buf_;

@@ -49,6 +49,12 @@ public:
     //!  the input ring buffer. In this case the caller should provide resampler
     //!  with more input samples using begin_push_input() and end_push_input().
     virtual size_t pop_output(Frame& out) = 0;
+
+    //! How many samples were pushed but not processed yet.
+    //!
+    //! It is float, as a resampler backend could possibly keep track of current position
+    //! from output stream perspective.
+    virtual float n_left_to_process() const = 0;
 };
 
 } // namespace audio

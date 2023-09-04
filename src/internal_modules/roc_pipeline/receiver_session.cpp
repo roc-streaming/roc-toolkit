@@ -195,6 +195,13 @@ ReceiverSession::ReceiverSession(
         return;
     }
 
+    e2e_latency_monitor_.reset(new (e2e_latency_monitor_)
+                                   audio::EndToEndLatencyMonitor(*areader));
+    if (!e2e_latency_monitor_) {
+        return;
+    }
+    areader = e2e_latency_monitor_.get();
+
     audio_reader_ = areader;
 }
 
@@ -257,6 +264,14 @@ void ReceiverSession::add_sending_metrics(const rtcp::SendingMetrics& metrics) {
 void ReceiverSession::add_link_metrics(const rtcp::LinkMetrics& metrics) {
     // TODO
     (void)metrics;
+}
+
+void ReceiverSession::stats(SessionStats& stats) const {
+    if (e2e_latency_monitor_->is_valid()) {
+        stats.end_to_end_latency = e2e_latency_monitor_->latency();
+    } else {
+        stats.end_to_end_latency = 0;
+    }
 }
 
 } // namespace pipeline

@@ -116,6 +116,9 @@ public:
     //!  false if the session should be terminated.
     ROC_ATTR_NODISCARD bool update(packet::timestamp_t time);
 
+    //! Get latency.
+    core::nanoseconds_t latency() const;
+
 private:
     bool get_latency_(packet::timestamp_diff_t& latency) const;
     bool check_latency_(packet::timestamp_diff_t latency) const;
@@ -148,6 +151,8 @@ private:
     const audio::SampleSpec output_sample_spec_;
 
     bool valid_;
+
+    core::nanoseconds_t latency_;
 };
 
 } // namespace audio

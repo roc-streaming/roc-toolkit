@@ -38,6 +38,8 @@ Depacketizer::Depacketizer(packet::IReader& reader,
     , payload_decoder_(payload_decoder)
     , sample_spec_(sample_spec)
     , timestamp_(0)
+    , next_capture_ts_(0)
+    , valid_capture_ts_(false)
     , zero_samples_(0)
     , missing_samples_(0)
     , packet_samples_(0)
@@ -89,8 +91,7 @@ void Depacketizer::read_frame_(Frame& frame) {
     }
 
     roc_panic_if(buff_ptr != buff_end);
-
-    set_frame_flags_(frame, info);
+    set_frame_props_(frame, info);
 }
 
 sample_t*
@@ -107,21 +108,36 @@ Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end, FrameInfo& i
                 * (size_t)packet::timestamp_diff(next_timestamp, timestamp_);
 
             const size_t max_samples = (size_t)(buff_end - buff_ptr);
+            const size_t nsamples = std::min(mis_samples, max_samples);
 
-            buff_ptr = read_missing_samples_(
-                buff_ptr, buff_ptr + std::min(mis_samples, max_samples));
+            buff_ptr = read_missing_samples_(buff_ptr, buff_ptr + nsamples);
+            if (!info.capture_ts && valid_capture_ts_) {
+                info.capture_ts =
+                    next_capture_ts_ - sample_spec_.samples_overall_2_ns(mis_samples);
+            }
         }
 
         if (buff_ptr < buff_end) {
             sample_t* new_buff_ptr = read_packet_samples_(buff_ptr, buff_end);
+            const size_t nsamples = size_t(new_buff_ptr - buff_ptr);
 
-            info.n_decoded_samples += size_t(new_buff_ptr - buff_ptr);
-
+            info.n_decoded_samples += nsamples;
+            if (nsamples && !info.capture_ts && valid_capture_ts_) {
+                info.capture_ts = next_capture_ts_;
+            }
+            if (valid_capture_ts_) {
+                next_capture_ts_ += sample_spec_.samples_overall_2_ns(nsamples);
+            }
             buff_ptr = new_buff_ptr;
         }
 
         return buff_ptr;
     } else {
+        const size_t nsamples = size_t(buff_end - buff_ptr);
+        if (valid_capture_ts_ && !info.capture_ts) {
+            info.capture_ts = next_capture_ts_;
+            next_capture_ts_ += sample_spec_.samples_overall_2_ns(nsamples);
+        }
         return read_missing_samples_(buff_ptr, buff_end);
     }
 }
@@ -207,6 +223,11 @@ void Depacketizer::update_packet_(FrameInfo& info) {
         return;
     }
 
+    next_capture_ts_ = packet_->rtp()->capture_timestamp;
+    if (!valid_capture_ts_ && !!next_capture_ts_) {
+        valid_capture_ts_ = true;
+    }
+
     if (first_packet_) {
         roc_log(LogDebug, "depacketizer: got first packet: zero_samples=%lu",
                 (unsigned long)zero_samples_);
@@ -215,9 +236,14 @@ void Depacketizer::update_packet_(FrameInfo& info) {
         first_packet_ = false;
     }
 
+    // Packet       |-----------------|
+    // NextFrame             |----------------|
     if (packet::timestamp_lt(pkt_timestamp, timestamp_)) {
         const size_t diff_samples =
             (size_t)packet::timestamp_diff(timestamp_, pkt_timestamp);
+        if (valid_capture_ts_) {
+            next_capture_ts_ += sample_spec_.samples_per_chan_2_ns(diff_samples);
+        }
 
         if (payload_decoder_.shift(diff_samples) != diff_samples) {
             roc_panic("depacketizer: can't shift packet");
@@ -238,7 +264,7 @@ packet::PacketPtr Depacketizer::read_packet_() {
     return pp;
 }
 
-void Depacketizer::set_frame_flags_(Frame& frame, const FrameInfo& info) {
+void Depacketizer::set_frame_props_(Frame& frame, const FrameInfo& info) {
     unsigned flags = 0;
 
     if (info.n_decoded_samples != 0) {
@@ -251,6 +277,10 @@ void Depacketizer::set_frame_flags_(Frame& frame, const FrameInfo& info) {
 
     if (info.n_dropped_packets != 0) {
         flags |= Frame::FlagDrops;
+    }
+
+    if (valid_capture_ts_) {
+        frame.set_capture_timestamp(info.capture_ts);
     }
 
     frame.set_flags(flags);
