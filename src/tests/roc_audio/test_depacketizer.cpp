@@ -33,8 +33,8 @@ enum {
     SamplesSize = SamplesPerPacket * NumCh
 };
 
-const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, ChMask);
-const audio::PcmFormat PcmFmt(audio::PcmEncoding_SInt16, audio::PcmEndian_Big);
+const SampleSpec SampleSpecs(SampleRate, ChanLayout_Surround, ChMask);
+const PcmFormat PcmFmt(PcmEncoding_SInt16, PcmEndian_Big);
 const core::nanoseconds_t NsPerPacket = SampleSpecs.samples_overall_2_ns(SamplesSize);
 const core::nanoseconds_t Now = 1691499037871419405;
 

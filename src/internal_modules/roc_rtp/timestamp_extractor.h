@@ -7,7 +7,7 @@
  */
 
 //! @file roc_rtp/timestamp_extractor.h
-//! @brief Fills capture timestamp field in packets.
+//! @brief Extracts capture timestamp field from packets.
 
 #ifndef ROC_RTP_TIMESTAMP_EXTRACTOR_H_
 #define ROC_RTP_TIMESTAMP_EXTRACTOR_H_
@@ -26,6 +26,7 @@ class TimestampExtractor : public packet::IWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
     TimestampExtractor(packet::IWriter& writer);
+
     //! Destroy.
     virtual ~TimestampExtractor();
 

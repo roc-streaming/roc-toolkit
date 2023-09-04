@@ -42,8 +42,8 @@ enum {
 const core::nanoseconds_t PacketDuration = SamplesPerPacket * core::Second / SampleRate;
 const core::nanoseconds_t Now = 1691499037871419405;
 
-const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, ChMask);
-const audio::PcmFormat PcmFmt(audio::PcmEncoding_SInt16, audio::PcmEndian_Big);
+const SampleSpec SampleSpecs(SampleRate, ChanLayout_Surround, ChMask);
+const PcmFormat PcmFmt(PcmEncoding_SInt16, PcmEndian_Big);
 
 core::HeapArena arena;
 core::BufferFactory<sample_t> sample_buffer_factory(arena, MaxBufSize);

@@ -38,14 +38,10 @@ void check(sample_t* input,
 
     sample_t actual_output[MaxSamples] = {};
 
-    Frame in_frame(input, n_samples * in_chans.num_channels());
-    in_frame.set_capture_timestamp(555 * core::Second);
-    Frame out_frame(actual_output, n_samples * out_chans.num_channels());
-
     ChannelMapper mapper(in_chans, out_chans);
-    mapper.map(in_frame, out_frame);
+    mapper.map(input, n_samples * in_chans.num_channels(), actual_output,
+               n_samples * out_chans.num_channels());
 
-    //    CHECK_EQUAL(out_frame.capture_timestamp(), in_frame.capture_timestamp());
     for (size_t n = 0; n < n_samples; n++) {
         DOUBLES_EQUAL(output[n], actual_output[n], Epsilon);
     }
@@ -508,11 +504,9 @@ TEST(channel_mapper, surround_1ch) {
                         in_buf[ns * in_chans.num_channels() + in_off] = 0.12345f;
                     }
 
-                    Frame in_frame(in_buf, NumSamples * in_chans.num_channels());
-                    Frame out_frame(out_buf, NumSamples * out_chans.num_channels());
-
                     ChannelMapper mapper(in_chans, out_chans);
-                    mapper.map(in_frame, out_frame);
+                    mapper.map(in_buf, NumSamples * in_chans.num_channels(), out_buf,
+                               NumSamples * out_chans.num_channels());
 
                     for (size_t ns = 0; ns < NumSamples; ns++) {
                         CHECK(out_buf[ns * out_chans.num_channels() + out_off] > 0.f);

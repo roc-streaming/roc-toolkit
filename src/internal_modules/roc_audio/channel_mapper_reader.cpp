@@ -65,7 +65,7 @@ bool ChannelMapperReader::read(Frame& out_frame) {
     while (n_samples != 0) {
         const size_t n_read = std::min(n_samples, max_batch);
 
-        core::nanoseconds_t capt_ts;
+        core::nanoseconds_t capt_ts = 0;
         if (!read_(out_samples, n_read, flags, capt_ts)) {
             return false;
         }
@@ -88,14 +88,12 @@ bool ChannelMapperReader::read_(sample_t* out_samples,
                                 unsigned& flags,
                                 core::nanoseconds_t& capt_ts) {
     Frame in_frame(input_buf_.data(), n_samples * in_spec_.num_channels());
-
     if (!input_reader_.read(in_frame)) {
         return false;
     }
 
-    Frame out_frame(out_samples, n_samples * out_spec_.num_channels(),
-                    in_frame.capture_timestamp());
-    mapper_.map(in_frame, out_frame);
+    mapper_.map(in_frame.samples(), in_frame.num_samples(), out_samples,
+                n_samples * out_spec_.num_channels());
 
     capt_ts = in_frame.capture_timestamp();
     flags |= in_frame.flags();

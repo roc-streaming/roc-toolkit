@@ -24,6 +24,8 @@
 namespace roc {
 namespace rtp {
 
+namespace {
+
 class LastPacketHolder : public packet::IWriter {
 public:
     LastPacketHolder()
@@ -45,8 +47,6 @@ private:
     packet::PacketPtr last_pkt_;
 };
 
-namespace {
-
 core::HeapArena arena;
 static packet::PacketFactory packet_factory(arena);
 
@@ -64,10 +64,10 @@ new_packet(packet::seqnum_t sn, packet::timestamp_t ts, core::nanoseconds_t capt
 }
 } // namespace
 
-TEST_GROUP(capture_ts_getter) {};
+TEST_GROUP(timestamp_extractor) {};
 
 // Basic test.
-TEST(capture_ts_getter, single_write) {
+TEST(timestamp_extractor, single_write) {
     packet::timestamp_t rtp_ts = 2222;
     core::nanoseconds_t cur_packet_capt_ts = 1691499037871419405;
 
@@ -75,18 +75,18 @@ TEST(capture_ts_getter, single_write) {
     packet::timestamp_t rts = rtp_ts;
 
     LastPacketHolder holder;
-    TimestampExtractor getter(holder);
-    CHECK_FALSE(getter.get_mapping(cts, rts));
+    TimestampExtractor extractor(holder);
+    CHECK_FALSE(extractor.get_mapping(cts, rts));
     CHECK_EQUAL(cts, cur_packet_capt_ts);
     CHECK_EQUAL(rts, rtp_ts);
 
     packet::PacketPtr pkt =
         new_packet(555, rtp_ts + 100, cur_packet_capt_ts + core::Second);
-    getter.write(pkt);
+    extractor.write(pkt);
 
     CHECK_EQUAL(holder.get(), pkt);
 
-    CHECK(getter.get_mapping(cts, rts));
+    CHECK(extractor.get_mapping(cts, rts));
     CHECK_EQUAL(cts, cur_packet_capt_ts + core::Second);
     CHECK_EQUAL(rts, rtp_ts + 100);
 }

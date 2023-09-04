@@ -27,8 +27,11 @@ public:
     //! Initialize.
     ChannelMapper(const ChannelSet& in_chans, const ChannelSet& out_chans);
 
-    //! Map frame.
-    void map(const Frame& in_frame, Frame& out_frame);
+    //! Map samples.
+    void map(const sample_t* in_samples,
+             size_t n_in_samples,
+             sample_t* out_samples,
+             size_t n_out_samples);
 
 private:
     typedef void (ChannelMapper::*map_func_t)(const sample_t* in_samples,

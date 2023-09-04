@@ -250,6 +250,16 @@ bool ReceiverSession::reclock(packet::ntp_timestamp_t) {
     return true;
 }
 
+SessionStats ReceiverSession::stats() const {
+    SessionStats stats;
+
+    if (e2e_latency_monitor_->has_latency()) {
+        stats.end_to_end_latency = e2e_latency_monitor_->latency();
+    }
+
+    return stats;
+}
+
 audio::IFrameReader& ReceiverSession::reader() {
     roc_panic_if(!is_valid());
 
@@ -264,14 +274,6 @@ void ReceiverSession::add_sending_metrics(const rtcp::SendingMetrics& metrics) {
 void ReceiverSession::add_link_metrics(const rtcp::LinkMetrics& metrics) {
     // TODO
     (void)metrics;
-}
-
-void ReceiverSession::stats(SessionStats& stats) const {
-    if (e2e_latency_monitor_->is_valid()) {
-        stats.end_to_end_latency = e2e_latency_monitor_->latency();
-    } else {
-        stats.end_to_end_latency = 0;
-    }
 }
 
 } // namespace pipeline

@@ -40,9 +40,9 @@ packet::PacketPtr new_packet(packet::seqnum_t sn, packet::timestamp_t ts) {
 }
 } // namespace
 
-TEST_GROUP(capture_ts_filler) {};
+TEST_GROUP(timestamp_injector) {};
 
-TEST(capture_ts_filler, negative_and_positive_dn) {
+TEST(timestamp_injector, negative_and_positive_dn) {
     enum {
         NumCh = 2,
         ChMask = 3,
@@ -67,8 +67,8 @@ TEST(capture_ts_filler, negative_and_positive_dn) {
                   rtp_ts - packet_rtp_ts, 1e-3);
 
     packet::Queue queue;
-    TimestampInjector filler(queue, sample_spec);
-    filler.update_mapping(reference_capt_ts, rtp_ts);
+    TimestampInjector injector(queue, sample_spec);
+    injector.update_mapping(reference_capt_ts, rtp_ts);
 
     LONGS_EQUAL(0, queue.size());
     for (size_t i = 0; i < NPackets; i++) {
@@ -79,7 +79,7 @@ TEST(capture_ts_filler, negative_and_positive_dn) {
 
     core::nanoseconds_t ts_step = sample_spec.samples_per_chan_2_ns(PacketSz);
     for (size_t i = 0; i < NPackets; i++) {
-        packet::PacketPtr packet = filler.read();
+        packet::PacketPtr packet = injector.read();
         const core::nanoseconds_t pkt_capt_ts = packet->rtp()->capture_timestamp;
 
         // Assume error must be less than 0.1 of samples period.

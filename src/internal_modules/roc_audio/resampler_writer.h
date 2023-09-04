@@ -48,6 +48,7 @@ public:
 
 private:
     size_t push_input_(Frame& frame, size_t frame_pos);
+    core::nanoseconds_t capture_ts_(Frame& frame, size_t frame_pos);
 
     IResampler& resampler_;
     IFrameWriter& writer_;

@@ -22,6 +22,10 @@ TimestampExtractor::~TimestampExtractor() {
 }
 
 void TimestampExtractor::write(const packet::PacketPtr& pkt) {
+    if (!pkt) {
+        return;
+    }
+
     if (pkt->rtp() && pkt->rtp()->capture_timestamp) {
         valid_ = true;
         capt_ts_ = pkt->rtp()->capture_timestamp;

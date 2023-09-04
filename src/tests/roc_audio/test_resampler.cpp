@@ -110,7 +110,7 @@ void resample_reader(IResampler& resampler,
                      sample_t* in,
                      sample_t* out,
                      size_t num_samples,
-                     const audio::SampleSpec& sample_spec,
+                     const SampleSpec& sample_spec,
                      float scaling) {
     test::MockReader input_reader;
     for (size_t n = 0; n < num_samples; n++) {
@@ -135,7 +135,7 @@ void resample_writer(IResampler& resampler,
                      sample_t* in,
                      sample_t* out,
                      size_t num_samples,
-                     const audio::SampleSpec& sample_spec,
+                     const SampleSpec& sample_spec,
                      float scaling) {
     test::MockWriter output_writer;
 
@@ -165,7 +165,7 @@ void resample(ResamplerBackend backend,
               sample_t* in,
               sample_t* out,
               size_t num_samples,
-              const audio::SampleSpec& sample_spec,
+              const SampleSpec& sample_spec,
               float scaling) {
     core::ScopedPtr<IResampler> resampler(
         ResamplerMap::instance().new_resampler(backend, arena, buffer_factory,
@@ -198,11 +198,11 @@ TEST(resampler, supported_scalings) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
         for (size_t pn = 0; pn < ROC_ARRAY_SIZE(profiles); pn++) {
             for (size_t irate = 0; irate < ROC_ARRAY_SIZE(rates); irate++) {
-                const audio::SampleSpec in_sample_specs =
-                    SampleSpec(rates[irate], audio::ChanLayout_Surround, ChMask);
+                const SampleSpec in_sample_specs =
+                    SampleSpec(rates[irate], ChanLayout_Surround, ChMask);
                 for (size_t orate = 0; orate < ROC_ARRAY_SIZE(rates); orate++) {
-                    const audio::SampleSpec out_sample_specs =
-                        SampleSpec(rates[orate], audio::ChanLayout_Surround, ChMask);
+                    const SampleSpec out_sample_specs =
+                        SampleSpec(rates[orate], ChanLayout_Surround, ChMask);
                     for (size_t sn = 0; sn < ROC_ARRAY_SIZE(scalings); sn++) {
                         core::ScopedPtr<IResampler> resampler(
                             ResamplerMap::instance().new_resampler(
@@ -242,7 +242,7 @@ TEST(resampler, supported_scalings) {
 
 TEST(resampler, invalid_scalings) {
     enum { SampleRate = 44100, ChMask = 0x1 };
-    const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, ChMask);
+    const SampleSpec SampleSpecs(SampleRate, ChanLayout_Surround, ChMask);
 
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
@@ -273,7 +273,7 @@ TEST(resampler, upscale_downscale_mono) {
         NumTruncate = 8 * OutFrameSize,
         NumSamples = 50 * OutFrameSize
     };
-    const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, ChMask);
+    const SampleSpec SampleSpecs(SampleRate, ChanLayout_Surround, ChMask);
 
     const float Scaling = 0.97f;
     const float Threshold = 0.06f;
@@ -336,7 +336,7 @@ TEST(resampler, upscale_downscale_stereo) {
         NumTruncate = 8 * OutFrameSize,
         NumSamples = 50 * OutFrameSize
     };
-    const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, ChMask);
+    const SampleSpec SampleSpecs(SampleRate, ChanLayout_Surround, ChMask);
 
     const float Scaling = 0.97f;
     const float Threshold = 0.06f;
@@ -413,10 +413,10 @@ TEST(resampler, timestamp_passthrough_reader) {
         ChMask = 0x3,
         FrameLen = 178
     };
-    const audio::SampleSpec InSampleSpecs =
-        SampleSpec(InSampleRate, audio::ChanLayout_Surround, ChMask);
-    const audio::SampleSpec OutSampleSpecs =
-        SampleSpec(OutSampleRate, audio::ChanLayout_Surround, ChMask);
+    const SampleSpec InSampleSpecs =
+        SampleSpec(InSampleRate, ChanLayout_Surround, ChMask);
+    const SampleSpec OutSampleSpecs =
+        SampleSpec(OutSampleRate, ChanLayout_Surround, ChMask);
 
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
@@ -438,8 +438,7 @@ TEST(resampler, timestamp_passthrough_reader) {
         test::MockReader input_reader(true, true);
         input_reader.setup_capt_ts(start_ts, InSampleSpecs);
         input_reader.pad_zeros();
-        audio::ResamplerReader rreader(input_reader, *resampler, InSampleSpecs,
-                                       OutSampleSpecs);
+        ResamplerReader rreader(input_reader, *resampler, InSampleSpecs, OutSampleSpecs);
         // Immediate sample rate.
         float scale = 1.0f;
 
@@ -496,7 +495,7 @@ TEST(resampler, timestamp_passthrough_reader) {
 }
 
 // Tests resampler writer ability to pass through capture timestamps of frames.
-//! It copies the method from the same test for resampler reader.
+// It copies the method from the same test for resampler reader.
 TEST(resampler, timestamp_passthrough_writer) {
     enum {
         InSampleRate = 44100,
@@ -505,10 +504,10 @@ TEST(resampler, timestamp_passthrough_writer) {
         ChMask = 0x3,
         FrameLen = 178
     };
-    const audio::SampleSpec InSampleSpecs =
-        SampleSpec(InSampleRate, audio::ChanLayout_Surround, ChMask);
-    const audio::SampleSpec OutSampleSpecs =
-        SampleSpec(OutSampleRate, audio::ChanLayout_Surround, ChMask);
+    const SampleSpec InSampleSpecs =
+        SampleSpec(InSampleRate, ChanLayout_Surround, ChMask);
+    const SampleSpec OutSampleSpecs =
+        SampleSpec(OutSampleRate, ChanLayout_Surround, ChMask);
 
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
@@ -529,8 +528,8 @@ TEST(resampler, timestamp_passthrough_writer) {
 
         test::MockWriterTimekeeper output_writer(start_ts, epsilon, OutSampleSpecs);
 
-        audio::ResamplerWriter rwriter(output_writer, *resampler, buffer_factory,
-                                       InSampleSpecs, OutSampleSpecs);
+        ResamplerWriter rwriter(output_writer, *resampler, buffer_factory, InSampleSpecs,
+                                OutSampleSpecs);
         // Immediate sample rate.
         float scale = 1.0f;
 

@@ -42,15 +42,16 @@ size_t Frame::num_samples() const {
     return num_samples_;
 }
 
-void Frame::print() const {
-    core::print_buffer(samples_, num_samples_);
-}
-
 core::nanoseconds_t Frame::capture_timestamp() const {
     return capture_timestamp_;
 }
-void Frame::set_capture_timestamp(const core::nanoseconds_t& cts) {
-    capture_timestamp_ = cts;
+
+void Frame::set_capture_timestamp(core::nanoseconds_t capture_ts) {
+    capture_timestamp_ = capture_ts;
+}
+
+void Frame::print() const {
+    core::print_buffer(samples_, num_samples_);
 }
 
 } // namespace audio

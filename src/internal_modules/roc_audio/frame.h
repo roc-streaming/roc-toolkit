@@ -56,14 +56,14 @@ public:
     //! Get frame data size.
     size_t num_samples() const;
 
-    //! Print frame to stderr.
-    void print() const;
-
     //! Get unix-epoch timestamp in ns of the 1st sample.
     core::nanoseconds_t capture_timestamp() const;
 
-    //! Get/set unix-epoch timestamp in ns of the 1st sample.
-    void set_capture_timestamp(const core::nanoseconds_t& cts);
+    //! Set unix-epoch timestamp in ns of the 1st sample.
+    void set_capture_timestamp(core::nanoseconds_t capture_ts);
+
+    //! Print frame to stderr.
+    void print() const;
 
 private:
     sample_t* samples_;

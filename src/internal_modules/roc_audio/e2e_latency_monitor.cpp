@@ -6,39 +6,35 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//
-// Created by misha on 31.08.23.
-//
-
-#include "EndToEndLatencyMonitor.h"
+#include "roc_audio/e2e_latency_monitor.h"
 
 namespace roc {
 namespace audio {
 
 EndToEndLatencyMonitor::EndToEndLatencyMonitor(IFrameReader& reader)
     : reader_(reader)
-    , valid_(false)
+    , ready_(false)
     , e2e_latency_(0) {
 }
 
 EndToEndLatencyMonitor::~EndToEndLatencyMonitor() {
 }
 
-bool EndToEndLatencyMonitor::is_valid() const {
-    return valid_;
-}
-
 bool EndToEndLatencyMonitor::read(Frame& frame) {
     const bool res = reader_.read(frame);
     if (!!frame.capture_timestamp()) {
         const core::nanoseconds_t cur_ts = core::timestamp(core::ClockMonotonic);
-        valid_ = true;
+        ready_ = true;
         e2e_latency_ = cur_ts - frame.capture_timestamp();
     } else {
-        valid_ = false;
+        ready_ = false;
     }
 
     return res;
+}
+
+bool EndToEndLatencyMonitor::has_latency() const {
+    return ready_;
 }
 
 core::nanoseconds_t EndToEndLatencyMonitor::latency() const {

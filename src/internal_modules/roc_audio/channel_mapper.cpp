@@ -36,36 +36,40 @@ ChannelMapper::ChannelMapper(const ChannelSet& in_chans, const ChannelSet& out_c
     setup_map_matrix_();
 }
 
-void ChannelMapper::map(const Frame& in_frame, Frame& out_frame) {
-    if (in_frame.num_samples() % in_chans_.num_channels() != 0) {
-        roc_panic("channel mapper: invalid input frame size:"
-                  " in_frame_samples=%lu in_chans=%lu",
-                  (unsigned long)in_frame.num_samples(),
-                  (unsigned long)in_chans_.num_channels());
+void ChannelMapper::map(const sample_t* in_samples,
+                        size_t n_in_samples,
+                        sample_t* out_samples,
+                        size_t n_out_samples) {
+    if (!in_samples) {
+        roc_panic("channel mapper: input buffer is null");
     }
 
-    if (out_frame.num_samples() % out_chans_.num_channels() != 0) {
-        roc_panic("channel mapper: invalid output frame size:"
-                  " out_frame_samples=%lu out_chans=%lu",
-                  (unsigned long)out_frame.num_samples(),
-                  (unsigned long)out_chans_.num_channels());
+    if (!out_samples) {
+        roc_panic("channel mapper: output buffer is null");
     }
 
-    if (in_frame.num_samples() / in_chans_.num_channels()
-        != out_frame.num_samples() / out_chans_.num_channels()) {
-        roc_panic("channel mapper: mismatching frame sizes:"
-                  " in_frame_samples=%lu out_frame_samples=%lu",
-                  (unsigned long)in_frame.num_samples(),
-                  (unsigned long)out_frame.num_samples());
+    if (n_in_samples % in_chans_.num_channels() != 0) {
+        roc_panic("channel mapper: invalid input buffer size:"
+                  " in_samples=%lu in_chans=%lu",
+                  (unsigned long)n_in_samples, (unsigned long)in_chans_.num_channels());
     }
 
-    //    out_frame.set_capture_timestamp(in_frame.capture_timestamp());
-    const size_t n_samples = in_frame.num_samples() / in_chans_.num_channels();
+    if (n_out_samples % out_chans_.num_channels() != 0) {
+        roc_panic("channel mapper: invalid output buffer size:"
+                  " out_samples=%lu out_chans=%lu",
+                  (unsigned long)n_out_samples, (unsigned long)out_chans_.num_channels());
+    }
 
-    const sample_t* in_samples = in_frame.samples();
-    sample_t* out_samples = out_frame.samples();
+    if (n_in_samples / in_chans_.num_channels()
+        != n_out_samples / out_chans_.num_channels()) {
+        roc_panic("channel mapper: mismatching buffer sizes:"
+                  " in_samples=%lu out_samples=%lu",
+                  (unsigned long)n_in_samples, (unsigned long)n_out_samples);
+    }
 
-    (this->*map_func_)(in_samples, out_samples, n_samples);
+    const size_t n_samples_per_chan = n_in_samples / in_chans_.num_channels();
+
+    (this->*map_func_)(in_samples, out_samples, n_samples_per_chan);
 }
 
 // Map between two surround channel sets.

@@ -13,6 +13,18 @@
 namespace roc {
 namespace audio {
 
+namespace {
+
+float ns_2_nsamples(const core::nanoseconds_t ns, const size_t sample_rate) {
+    return roundf(float(ns) / core::Second * sample_rate);
+}
+
+core::nanoseconds_t nsamples_2_ns(const float n_samples, const size_t sample_rate) {
+    return core::nanoseconds_t(roundf(n_samples / sample_rate * core::Second));
+}
+
+} // namespace
+
 SampleSpec::SampleSpec()
     : sample_rate_(0) {
 }
@@ -77,21 +89,21 @@ size_t SampleSpec::ns_2_samples_per_chan(const core::nanoseconds_t ns_duration) 
 
     roc_panic_if_msg(ns_duration < 0, "sample spec: duration should not be negative");
 
-    return (size_t)ns_2_rtp_timestamp(ns_duration);
+    return (size_t)ns_2_nsamples(ns_duration, sample_rate_);
 }
 
 core::nanoseconds_t SampleSpec::samples_per_chan_2_ns(const size_t n_samples) const {
     roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
                      sample_spec_to_str(*this).c_str());
 
-    return fract_samples_per_chan_2_ns((float)n_samples);
+    return nsamples_2_ns((float)n_samples, sample_rate_);
 }
 
-core::nanoseconds_t SampleSpec::fract_samples_per_chan_2_ns(const float samples) const {
+core::nanoseconds_t SampleSpec::fract_samples_per_chan_2_ns(const float n_samples) const {
     roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
                      sample_spec_to_str(*this).c_str());
 
-    return core::nanoseconds_t(roundf(samples / sample_rate_ * core::Second));
+    return nsamples_2_ns(n_samples, sample_rate_);
 }
 
 size_t SampleSpec::ns_2_samples_overall(const core::nanoseconds_t ns_duration) const {
@@ -100,7 +112,7 @@ size_t SampleSpec::ns_2_samples_overall(const core::nanoseconds_t ns_duration) c
 
     roc_panic_if_msg(ns_duration < 0, "sample spec: duration should not be negative");
 
-    return (size_t)ns_2_rtp_timestamp(ns_duration) * num_channels();
+    return (size_t)ns_2_nsamples(ns_duration, sample_rate_) * num_channels();
 }
 
 core::nanoseconds_t SampleSpec::samples_overall_2_ns(const size_t n_samples) const {
@@ -110,7 +122,14 @@ core::nanoseconds_t SampleSpec::samples_overall_2_ns(const size_t n_samples) con
     roc_panic_if_msg(n_samples % num_channels() != 0,
                      "sample spec: # of samples must be dividable by channels number");
 
-    return fract_samples_overall_2_ns(float(n_samples));
+    return nsamples_2_ns((float)n_samples / num_channels(), sample_rate_);
+}
+
+core::nanoseconds_t SampleSpec::fract_samples_overall_2_ns(const float n_samples) const {
+    roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
+                     sample_spec_to_str(*this).c_str());
+
+    return nsamples_2_ns(n_samples / num_channels(), sample_rate_);
 }
 
 packet::timestamp_diff_t
@@ -118,8 +137,7 @@ SampleSpec::ns_2_rtp_timestamp(const core::nanoseconds_t ns_delta) const {
     roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
                      sample_spec_to_str(*this).c_str());
 
-    return packet::timestamp_diff_t(
-        roundf(float(ns_delta) / core::Second * sample_rate_));
+    return (packet::timestamp_diff_t)ns_2_nsamples(ns_delta, sample_rate_);
 }
 
 core::nanoseconds_t
@@ -127,11 +145,7 @@ SampleSpec::rtp_timestamp_2_ns(const packet::timestamp_diff_t rtp_delta) const {
     roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
                      sample_spec_to_str(*this).c_str());
 
-    return fract_samples_per_chan_2_ns((float)rtp_delta);
-}
-
-core::nanoseconds_t SampleSpec::fract_samples_overall_2_ns(const float n) const {
-    return core::nanoseconds_t(roundf(n / num_channels() / sample_rate_ * core::Second));
+    return nsamples_2_ns((float)rtp_delta, sample_rate_);
 }
 
 } // namespace audio

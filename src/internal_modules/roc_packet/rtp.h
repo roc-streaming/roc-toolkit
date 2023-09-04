@@ -50,9 +50,10 @@ struct RTP {
     //! @remarks
     //!  In an ideal case the meaning of this value should be the same on a sender
     //!  and a receiver, particularly it should store the moment in time the first sample
-    //!  of a packet came into existence. This could be achieved by outbound signaling
-    //!  such as RTCP (with XR extension). In case RTCP is not fully functional
-    //!  this value could store the moment a packet arrived.
+    //!  of a packet came into existence. In practice receiver estimates this value for
+    //!  each packet with the help of RTCP and XR. If RTCP is not available, timestamps
+    //!  will be zero, If RTCP is available, but without XR, timestamps will be correct
+    //!  only of NTP system clocks on sender and receiver are synchronized.
     core::nanoseconds_t capture_timestamp;
 
     //! Packet marker bit.
