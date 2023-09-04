@@ -40,7 +40,10 @@ public:
     virtual bool read(Frame& frame);
 
 private:
-    bool read_(sample_t* out_samples, size_t n_samples, unsigned& flags);
+    bool read_(sample_t* out_samples,
+               size_t n_samples,
+               unsigned& flags,
+               core::nanoseconds_t& capt_ts);
 
     IFrameReader& input_reader_;
     core::Slice<sample_t> input_buf_;

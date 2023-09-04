@@ -16,6 +16,7 @@ RTP::RTP()
     , seqnum(0)
     , timestamp(0)
     , duration(0)
+    , capture_timestamp(0)
     , marker(false)
     , payload_type(0) {
 }

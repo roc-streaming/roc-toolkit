@@ -63,9 +63,13 @@ private:
         // Number of packets dropped during frame construction.
         size_t n_dropped_packets;
 
+        // This frame first sample timestamp.
+        core::nanoseconds_t capture_ts;
+
         FrameInfo()
             : n_decoded_samples(0)
-            , n_dropped_packets(0) {
+            , n_dropped_packets(0)
+            , capture_ts(0) {
         }
     };
 
@@ -79,7 +83,7 @@ private:
     void update_packet_(FrameInfo& info);
     packet::PacketPtr read_packet_();
 
-    void set_frame_flags_(Frame& frame, const FrameInfo& info);
+    void set_frame_props_(Frame& frame, const FrameInfo& info);
 
     void report_stats_();
 
@@ -91,6 +95,8 @@ private:
     packet::PacketPtr packet_;
 
     packet::timestamp_t timestamp_;
+    core::nanoseconds_t next_capture_ts_;
+    bool valid_capture_ts_;
 
     packet::timestamp_t zero_samples_;
     packet::timestamp_t missing_samples_;

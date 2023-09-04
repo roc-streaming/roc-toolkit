@@ -58,6 +58,9 @@ public:
     //! Read samples from input frame and fill output frame.
     virtual size_t pop_output(Frame& out);
 
+    //! How many samples were pushed but not processed yet.
+    virtual float n_left_to_process() const;
+
 private:
     void report_stats_();
 
@@ -72,6 +75,10 @@ private:
     core::RateLimiter rate_limiter_;
 
     bool valid_;
+
+    //! Counts how many output samples to throw away in order to
+    //! compensate resampler's inner latency.
+    size_t startup_delay_compensator_;
 };
 
 } // namespace audio

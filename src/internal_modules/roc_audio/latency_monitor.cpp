@@ -42,7 +42,8 @@ LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
     , max_scaling_delta_(config.max_scaling_delta)
     , input_sample_spec_(input_sample_spec)
     , output_sample_spec_(output_sample_spec)
-    , valid_(false) {
+    , valid_(false)
+    , latency_(-1) {
     roc_log(LogDebug,
             "latency monitor: initializing:"
             " target_latency=%lu(%.3fms) in_rate=%lu out_rate=%lu"
@@ -106,6 +107,8 @@ bool LatencyMonitor::update(packet::timestamp_t pos) {
     if (!check_latency_(latency)) {
         return false;
     }
+
+    latency_ = input_sample_spec_.rtp_timestamp_2_ns(latency);
 
     if (fe_) {
         if (latency < 0) {
@@ -250,12 +253,15 @@ void LatencyMonitor::report_latency_(packet::timestamp_diff_t latency) {
     }
 
     roc_log(LogDebug, "latency monitor: latency=%ld(%.3fms) target=%lu(%.3fms)",
-            (long)latency,
-            (double)input_sample_spec_.rtp_timestamp_2_ns(latency) / core::Millisecond,
+            (long)latency, (double)latency_ / core::Millisecond,
             (unsigned long)target_latency_,
             (double)input_sample_spec_.rtp_timestamp_2_ns(
                 (packet::timestamp_diff_t)target_latency_)
                 / core::Millisecond);
+}
+
+core::nanoseconds_t LatencyMonitor::latency() const {
+    return latency_;
 }
 
 } // namespace audio

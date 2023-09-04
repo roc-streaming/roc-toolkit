@@ -37,6 +37,11 @@ inline fixedpoint_t float_to_fixedpoint(const float t) {
     return (fixedpoint_t)(t * (float)qt_one);
 }
 
+// Convert float to fixed-point.
+inline float fixedpoint_to_float(const fixedpoint_t f) {
+    return f / (float)qt_one;
+}
+
 inline size_t fixedpoint_to_size(const fixedpoint_t t) {
     return t >> FRACT_BIT_COUNT;
 }
@@ -225,6 +230,7 @@ bool BuiltinResampler::set_scaling(size_t input_sample_rate,
     }
 
     scaling_ = new_scaling;
+    qt_dt_ = float_to_fixedpoint(scaling_);
 
     return true;
 }
@@ -254,9 +260,6 @@ void BuiltinResampler::end_push_input() {
     if (qt_sample_ >= qt_frame_size_) {
         qt_sample_ -= qt_frame_size_;
     }
-
-    // scaling_ may change every frame so it have to be smooth
-    qt_dt_ = float_to_fixedpoint(scaling_);
 }
 
 size_t BuiltinResampler::pop_output(Frame& out) {
@@ -499,6 +502,10 @@ sample_t BuiltinResampler::resample_(const size_t channel_offset) {
     }
 
     return accumulator;
+}
+
+float BuiltinResampler::n_left_to_process() const {
+    return fixedpoint_to_float(2 * qt_frame_size_ - qt_sample_);
 }
 
 } // namespace audio

@@ -61,6 +61,8 @@ private:
     core::Slice<sample_t> input_;
     core::Slice<sample_t> output_;
 
+    float scaling_;
+    float next_scaling_;
     bool valid_;
 };
 

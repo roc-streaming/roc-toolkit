@@ -12,7 +12,9 @@
 #ifndef ROC_PIPELINE_RECEIVER_SESSION_H_
 #define ROC_PIPELINE_RECEIVER_SESSION_H_
 
+#include "receiver_stats.h"
 #include "roc_address/socket_addr.h"
+#include "roc_audio/EndToEndLatencyMonitor.h"
 #include "roc_audio/channel_mapper_reader.h"
 #include "roc_audio/depacketizer.h"
 #include "roc_audio/iframe_decoder.h"
@@ -92,6 +94,11 @@ public:
     //! Handle estimated link metrics.
     void add_link_metrics(const rtcp::LinkMetrics& metrics);
 
+    //! Gets recent latency statistics.
+    //! @returns
+    //! True if statistics is valid.
+    void stats(SessionStats& stats) const;
+
 private:
     const address::SocketAddr src_address_;
 
@@ -125,6 +132,7 @@ private:
     core::Optional<audio::PoisonReader> session_poisoner_;
 
     core::Optional<audio::LatencyMonitor> latency_monitor_;
+    core::Optional<audio::EndToEndLatencyMonitor> e2e_latency_monitor_;
 };
 
 } // namespace pipeline

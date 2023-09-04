@@ -90,6 +90,7 @@ private:
     packet::source_t source_;
     packet::seqnum_t seqnum_;
     packet::timestamp_t timestamp_;
+    core::nanoseconds_t capture_ts_;
 
     bool valid_;
 };

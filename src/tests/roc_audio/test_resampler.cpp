@@ -10,6 +10,7 @@
 
 #include "test_helpers/mock_reader.h"
 #include "test_helpers/mock_writer.h"
+#include "test_helpers/mock_writer_timekeeper.h"
 
 #include "roc_audio/iresampler.h"
 #include "roc_audio/resampler_map.h"
@@ -397,6 +398,186 @@ TEST(resampler, upscale_downscale_stereo) {
                               " backend=%d method=%d",
                               (int)backend, (int)method);
                 }
+            }
+        }
+    }
+}
+
+// Testing how resampler deals with timestamps: output frame timestamp must accumulate
+// number of previous sammples multiplid by immediate sample rate.
+TEST(resampler, timestamp_passthrough_reader) {
+    enum {
+        InSampleRate = 44100,
+        OutSampleRate = 48000,
+        NumCh = 2,
+        ChMask = 0x3,
+        FrameLen = 178
+    };
+    const audio::SampleSpec InSampleSpecs =
+        SampleSpec(InSampleRate, audio::ChanLayout_Surround, ChMask);
+    const audio::SampleSpec OutSampleSpecs =
+        SampleSpec(OutSampleRate, audio::ChanLayout_Surround, ChMask);
+
+    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
+        ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
+        core::ScopedPtr<IResampler> resampler(
+            ResamplerMap::instance().new_resampler(backend, arena, buffer_factory,
+                                                   ResamplerProfile_High, InSampleSpecs,
+                                                   OutSampleSpecs),
+            arena);
+
+        const core::nanoseconds_t start_ts = 1691499037871419405;
+        core::nanoseconds_t cur_ts = start_ts;
+        core::nanoseconds_t ts_step;
+
+        // Time Stamp allowance. Built in resampler passess the test with 0.1 --
+        // much better.
+        const core::nanoseconds_t epsilon =
+            core::nanoseconds_t(1. / InSampleRate * core::Second);
+
+        test::MockReader input_reader(true, true);
+        input_reader.setup_capt_ts(start_ts, InSampleSpecs);
+        input_reader.pad_zeros();
+        audio::ResamplerReader rreader(input_reader, *resampler, InSampleSpecs,
+                                       OutSampleSpecs);
+        // Immediate sample rate.
+        float scale = 1.0f;
+
+        CHECK(rreader.set_scaling(scale));
+        ts_step =
+            core::nanoseconds_t(OutSampleSpecs.samples_overall_2_ns(FrameLen) * scale);
+
+        sample_t samples[FrameLen];
+
+        {
+            Frame frame(samples, ROC_ARRAY_SIZE(samples));
+            CHECK(rreader.read(frame));
+            CHECK(frame.capture_timestamp() >= start_ts);
+            cur_ts = frame.capture_timestamp();
+            for (size_t i = 0; i < 10; i++) {
+                CHECK(rreader.read(frame));
+                cur_ts += ts_step;
+                CHECK(core::ns_within_delta(frame.capture_timestamp(), cur_ts, epsilon));
+            }
+        }
+
+        scale = 0.95f;
+        rreader.set_scaling(scale);
+        {
+            Frame frame(samples, ROC_ARRAY_SIZE(samples));
+            CHECK(rreader.read(frame));
+            cur_ts += ts_step;
+            CHECK(core::ns_within_delta(frame.capture_timestamp(), cur_ts, epsilon));
+            ts_step = core::nanoseconds_t(OutSampleSpecs.samples_overall_2_ns(FrameLen)
+                                          * scale);
+            for (size_t i = 0; i < 10; i++) {
+                CHECK(rreader.read(frame));
+                cur_ts += ts_step;
+                CHECK(core::ns_within_delta(frame.capture_timestamp(), cur_ts, epsilon));
+            }
+        }
+
+        scale = 1.05f;
+        rreader.set_scaling(scale);
+        {
+            Frame frame(samples, ROC_ARRAY_SIZE(samples));
+            CHECK(rreader.read(frame));
+            cur_ts += ts_step;
+            CHECK(core::ns_within_delta(frame.capture_timestamp(), cur_ts, epsilon));
+            ts_step = core::nanoseconds_t(OutSampleSpecs.samples_overall_2_ns(FrameLen)
+                                          * scale);
+            for (size_t i = 0; i < 10; i++) {
+                CHECK(rreader.read(frame));
+                cur_ts += ts_step;
+                CHECK(core::ns_within_delta(frame.capture_timestamp(), cur_ts, epsilon));
+            }
+        }
+    }
+}
+
+// Tests resampler writer ability to pass through capture timestamps of frames.
+//! It copies the method from the same test for resampler reader.
+TEST(resampler, timestamp_passthrough_writer) {
+    enum {
+        InSampleRate = 44100,
+        OutSampleRate = 48000,
+        NumCh = 2,
+        ChMask = 0x3,
+        FrameLen = 178
+    };
+    const audio::SampleSpec InSampleSpecs =
+        SampleSpec(InSampleRate, audio::ChanLayout_Surround, ChMask);
+    const audio::SampleSpec OutSampleSpecs =
+        SampleSpec(OutSampleRate, audio::ChanLayout_Surround, ChMask);
+
+    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
+        ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
+        core::ScopedPtr<IResampler> resampler(
+            ResamplerMap::instance().new_resampler(backend, arena, buffer_factory,
+                                                   ResamplerProfile_High, InSampleSpecs,
+                                                   OutSampleSpecs),
+            arena);
+
+        const core::nanoseconds_t start_ts = 1691499037871419405;
+        core::nanoseconds_t cur_ts = start_ts;
+        core::nanoseconds_t ts_step;
+
+        // Time Stamp allowance. Built in resampler passess the test with 0.1 --
+        // much better.
+        const core::nanoseconds_t epsilon =
+            core::nanoseconds_t(1. / InSampleRate * core::Second);
+
+        test::MockWriterTimekeeper output_writer(start_ts, epsilon, OutSampleSpecs);
+
+        audio::ResamplerWriter rwriter(output_writer, *resampler, buffer_factory,
+                                       InSampleSpecs, OutSampleSpecs);
+        // Immediate sample rate.
+        float scale = 1.0f;
+
+        CHECK(rwriter.set_scaling(scale));
+        ts_step = core::nanoseconds_t(InSampleSpecs.samples_overall_2_ns(FrameLen));
+
+        sample_t samples[FrameLen];
+        {
+            Frame frame(samples, ROC_ARRAY_SIZE(samples));
+            frame.set_capture_timestamp(cur_ts);
+            rwriter.write(frame);
+            cur_ts = frame.capture_timestamp();
+            for (size_t i = 0; i < 10; i++) {
+                cur_ts += ts_step;
+                frame.set_capture_timestamp(cur_ts);
+                rwriter.write(frame);
+            }
+        }
+
+        scale = 0.95f;
+        rwriter.set_scaling(scale);
+        output_writer.set_scaling(scale);
+        {
+            Frame frame(samples, ROC_ARRAY_SIZE(samples));
+            cur_ts += ts_step;
+            frame.set_capture_timestamp(cur_ts);
+            rwriter.write(frame);
+
+            for (size_t i = 0; i < 10; i++) {
+                cur_ts += ts_step;
+                frame.set_capture_timestamp(cur_ts);
+                rwriter.write(frame);
+            }
+        }
+
+        scale = 1.05f;
+        rwriter.set_scaling(scale);
+        output_writer.set_scaling(scale);
+        {
+            Frame frame(samples, ROC_ARRAY_SIZE(samples));
+            cur_ts += ts_step;
+            frame.set_capture_timestamp(cur_ts);
+            rwriter.write(frame);
+            for (size_t i = 0; i < 10; i++) {
+                cur_ts += ts_step;
+                frame.set_capture_timestamp(cur_ts);
+                rwriter.write(frame);
             }
         }
     }
