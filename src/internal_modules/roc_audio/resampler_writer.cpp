@@ -120,6 +120,10 @@ size_t ResamplerWriter::push_input_(Frame& frame, size_t frame_pos) {
 }
 
 core::nanoseconds_t ResamplerWriter::capture_ts_(Frame& frame, size_t frame_pos) {
+    if (frame.capture_timestamp() == 0) {
+        return 0;
+    }
+
     return frame.capture_timestamp()
         + in_sample_spec_.samples_overall_2_ns(frame_pos)  // last added sample ts
         - in_sample_spec_.samples_overall_2_ns(input_pos_) // num unprocessed inside
