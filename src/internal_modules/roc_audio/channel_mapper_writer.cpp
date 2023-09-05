@@ -70,7 +70,10 @@ void ChannelMapperWriter::write(Frame& in_frame) {
 
         in_samples += n_write * in_spec_.num_channels();
         n_samples -= n_write;
-        capt_ts += in_spec_.samples_per_chan_2_ns(n_write);
+
+        if (capt_ts) {
+            capt_ts += in_spec_.samples_per_chan_2_ns(n_write);
+        }
     }
 }
 
