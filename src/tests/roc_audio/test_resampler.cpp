@@ -10,7 +10,6 @@
 
 #include "test_helpers/mock_reader.h"
 #include "test_helpers/mock_writer.h"
-#include "test_helpers/mock_writer_timekeeper.h"
 
 #include "roc_audio/iresampler.h"
 #include "roc_audio/resampler_map.h"
@@ -35,6 +34,46 @@ const ResamplerMethod resampler_methods[] = { Reader, Writer };
 
 core::HeapArena arena;
 core::BufferFactory<sample_t> buffer_factory(arena, MaxFrameSize);
+
+class TimestampChecker : public IFrameWriter {
+public:
+    TimestampChecker(const core::nanoseconds_t capt_ts,
+                     const core::nanoseconds_t epsilon,
+                     const audio::SampleSpec& sample_spec)
+        : capt_ts_(capt_ts)
+        , epsilon_(epsilon)
+        , sample_spec_(sample_spec)
+        , scale_(1.f)
+        , start_(true) {
+    }
+
+    void set_scaling(const sample_t scale) {
+        scale_ = scale;
+    }
+
+    virtual void write(Frame& frame) {
+        if (capt_ts_ && epsilon_) {
+            if (start_) {
+                start_ = false;
+                CHECK(frame.capture_timestamp() >= capt_ts_);
+                capt_ts_ = frame.capture_timestamp();
+            } else {
+                CHECK(
+                    core::ns_equal_delta(capt_ts_, frame.capture_timestamp(), epsilon_));
+            }
+            capt_ts_ += core::nanoseconds_t(
+                sample_spec_.samples_overall_2_ns(frame.num_samples()) * scale_);
+        }
+    }
+
+private:
+    core::nanoseconds_t capt_ts_;
+    core::nanoseconds_t epsilon_;
+    const audio::SampleSpec& sample_spec_;
+    sample_t scale_;
+
+    bool start_;
+};
 
 void generate_sine(sample_t* out, size_t num_samples, size_t num_padding) {
     for (size_t n = 0; n < num_samples; n++) {
@@ -526,9 +565,9 @@ TEST(resampler, timestamp_passthrough_writer) {
         const core::nanoseconds_t epsilon =
             core::nanoseconds_t(1. / InSampleRate * core::Second);
 
-        test::MockWriterTimekeeper output_writer(start_ts, epsilon, OutSampleSpecs);
+        TimestampChecker ts_checker(start_ts, epsilon, OutSampleSpecs);
 
-        ResamplerWriter rwriter(output_writer, *resampler, buffer_factory, InSampleSpecs,
+        ResamplerWriter rwriter(ts_checker, *resampler, buffer_factory, InSampleSpecs,
                                 OutSampleSpecs);
         // Immediate sample rate.
         float scale = 1.0f;
@@ -551,7 +590,7 @@ TEST(resampler, timestamp_passthrough_writer) {
 
         scale = 0.95f;
         rwriter.set_scaling(scale);
-        output_writer.set_scaling(scale);
+        ts_checker.set_scaling(scale);
         {
             Frame frame(samples, ROC_ARRAY_SIZE(samples));
             cur_ts += ts_step;
@@ -567,7 +606,7 @@ TEST(resampler, timestamp_passthrough_writer) {
 
         scale = 1.05f;
         rwriter.set_scaling(scale);
-        output_writer.set_scaling(scale);
+        ts_checker.set_scaling(scale);
         {
             Frame frame(samples, ROC_ARRAY_SIZE(samples));
             cur_ts += ts_step;
