@@ -118,6 +118,7 @@ private:
     core::ScopedPtr<fec::IBlockDecoder> fec_decoder_;
     core::Optional<fec::Reader> fec_reader_;
     core::Optional<rtp::Validator> fec_validator_;
+    core::Optional<rtp::Populator> fec_populator_;
 
     core::Optional<audio::Depacketizer> depacketizer_;
 
