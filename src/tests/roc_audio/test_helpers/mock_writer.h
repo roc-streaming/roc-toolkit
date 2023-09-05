@@ -22,7 +22,8 @@ class MockWriter : public IFrameWriter {
 public:
     MockWriter()
         : pos_(0)
-        , size_(0) {
+        , size_(0)
+        , n_writes_(0) {
     }
 
     virtual void write(Frame& frame) {
@@ -30,6 +31,14 @@ public:
 
         memcpy(samples_ + size_, frame.samples(), frame.num_samples() * sizeof(sample_t));
         size_ += frame.num_samples();
+
+        CHECK(n_writes_ < MaxWrites);
+
+        frame_sizes_[n_writes_] = frame.num_samples();
+        frame_flags_[n_writes_] = frame.flags();
+        frame_timestamps_[n_writes_] = frame.capture_timestamp();
+
+        n_writes_++;
     }
 
     sample_t get() {
@@ -42,12 +51,37 @@ public:
         return size_ - pos_;
     }
 
+    size_t n_writes() const {
+        return n_writes_;
+    }
+
+    size_t frame_size(size_t n) const {
+        CHECK(n < n_writes_);
+        return frame_sizes_[n];
+    }
+
+    unsigned frame_flags(size_t n) const {
+        CHECK(n < n_writes_);
+        return frame_flags_[n];
+    }
+
+    core::nanoseconds_t frame_timestamp(size_t n) const {
+        CHECK(n < n_writes_);
+        return frame_timestamps_[n];
+    }
+
 private:
-    enum { MaxSz = 64 * 1024 };
+    enum { MaxWrites = 1000, MaxSz = 64 * 1024 };
 
     sample_t samples_[MaxSz];
     size_t pos_;
     size_t size_;
+
+    size_t n_writes_;
+
+    size_t frame_sizes_[MaxWrites];
+    unsigned frame_flags_[MaxWrites];
+    core::nanoseconds_t frame_timestamps_[MaxWrites];
 };
 
 } // namespace test
