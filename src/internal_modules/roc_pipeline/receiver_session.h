@@ -44,6 +44,7 @@
 #include "roc_rtp/format_map.h"
 #include "roc_rtp/parser.h"
 #include "roc_rtp/populator.h"
+#include "roc_rtp/timestamp_injector.h"
 #include "roc_rtp/validator.h"
 
 namespace roc {
@@ -119,6 +120,8 @@ private:
     core::Optional<fec::Reader> fec_reader_;
     core::Optional<rtp::Validator> fec_validator_;
     core::Optional<rtp::Populator> fec_populator_;
+
+    core::Optional<rtp::TimestampInjector> timestamp_injector_;
 
     core::Optional<audio::Depacketizer> depacketizer_;
 
