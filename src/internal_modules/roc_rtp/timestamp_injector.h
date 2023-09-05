@@ -41,7 +41,7 @@ public:
     void update_mapping(core::nanoseconds_t capture_ts, packet::timestamp_t rtp_ts);
 
 private:
-    bool valid_ts_;
+    bool has_ts_;
     core::nanoseconds_t ts_;
     packet::timestamp_t rtp_ts_;
 
