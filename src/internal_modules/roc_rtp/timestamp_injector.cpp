@@ -13,12 +13,12 @@
 namespace roc {
 namespace rtp {
 
-TimestampInjector::TimestampInjector(packet::IReader& packet_src,
+TimestampInjector::TimestampInjector(packet::IReader& reader,
                                      const audio::SampleSpec& sample_spec)
     : has_ts_(false)
-    , ts_(0)
+    , capt_ts_(0)
     , rtp_ts_(0)
-    , reader_(packet_src)
+    , reader_(reader)
     , sample_spec_(sample_spec) {
 }
 
@@ -46,10 +46,10 @@ packet::PacketPtr TimestampInjector::read() {
 
         if (dn >= 0) {
             pkt->rtp()->capture_timestamp =
-                ts_ + sample_spec_.samples_per_chan_2_ns((size_t)dn);
+                capt_ts_ + sample_spec_.samples_per_chan_2_ns((size_t)dn);
         } else {
             pkt->rtp()->capture_timestamp =
-                ts_ - sample_spec_.samples_per_chan_2_ns((size_t)-dn);
+                capt_ts_ - sample_spec_.samples_per_chan_2_ns((size_t)-dn);
         }
     }
 
@@ -62,7 +62,7 @@ void TimestampInjector::update_mapping(core::nanoseconds_t capture_ts,
         if (!has_ts_) {
             roc_log(LogDebug, "timestamp injector: received first mapping");
         }
-        ts_ = capture_ts;
+        capt_ts_ = capture_ts;
         rtp_ts_ = rtp_ts;
         has_ts_ = true;
     }

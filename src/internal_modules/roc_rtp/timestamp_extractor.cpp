@@ -12,11 +12,13 @@
 namespace roc {
 namespace rtp {
 
-TimestampExtractor::TimestampExtractor(packet::IWriter& writer)
+TimestampExtractor::TimestampExtractor(packet::IWriter& writer,
+                                       const audio::SampleSpec& sample_spec)
     : writer_(writer)
     , has_ts_(false)
     , capt_ts_(0)
-    , rtp_ts_(0) {
+    , rtp_ts_(0)
+    , sample_spec_(sample_spec) {
 }
 
 TimestampExtractor::~TimestampExtractor() {
@@ -40,13 +42,21 @@ void TimestampExtractor::write(const packet::PacketPtr& pkt) {
     writer_.write(pkt);
 }
 
-bool TimestampExtractor::get_mapping(core::nanoseconds_t& ns,
-                                     packet::timestamp_t& rtp) const {
+bool TimestampExtractor::get_mapping(core::nanoseconds_t capture_ts,
+                                     packet::timestamp_t* rtp_ts) const {
+    if (!rtp_ts) {
+        roc_panic("timestamp extractor: unexpected null pointer");
+    }
+
     if (!has_ts_) {
         return false;
     }
-    ns = capt_ts_;
-    rtp = rtp_ts_;
+
+    const packet::timestamp_diff_t dn =
+        sample_spec_.ns_2_rtp_timestamp(capture_ts - capt_ts_);
+
+    *rtp_ts = rtp_ts_ + (packet::timestamp_t)dn;
+
     return true;
 }
 
