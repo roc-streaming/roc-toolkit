@@ -13,6 +13,7 @@
 #define ROC_RTP_TIMESTAMP_EXTRACTOR_H_
 
 #include "roc_audio/sample_spec.h"
+#include "roc_core/attributes.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/iwriter.h"
@@ -25,7 +26,7 @@ namespace rtp {
 class TimestampExtractor : public packet::IWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
-    TimestampExtractor(packet::IWriter& writer);
+    TimestampExtractor(packet::IWriter& writer, const audio::SampleSpec& sample_spec);
 
     //! Destroy.
     virtual ~TimestampExtractor();
@@ -33,8 +34,11 @@ public:
     //! Passes pkt downstream and remembers its capture and rtp timestamps.
     virtual void write(const packet::PacketPtr& pkt);
 
-    //! Get the last remembers its capture and rtp timestamps.
-    bool get_mapping(core::nanoseconds_t& ns, packet::timestamp_t& rtp) const;
+    //! Get rtp timestamp mapped to given capture timestamp.
+    //! @returns
+    //!  false if mapping is not available yet.
+    ROC_ATTR_NODISCARD bool get_mapping(core::nanoseconds_t capture_ts,
+                                        packet::timestamp_t* rtp_ts) const;
 
 private:
     packet::IWriter& writer_;
@@ -42,6 +46,8 @@ private:
     bool has_ts_;
     core::nanoseconds_t capt_ts_;
     packet::timestamp_t rtp_ts_;
+
+    const audio::SampleSpec sample_spec_;
 };
 
 } // namespace rtp

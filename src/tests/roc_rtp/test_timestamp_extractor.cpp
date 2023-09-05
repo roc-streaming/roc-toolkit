@@ -26,27 +26,6 @@ namespace rtp {
 
 namespace {
 
-class LastPacketHolder : public packet::IWriter {
-public:
-    LastPacketHolder()
-        : last_pkt_(NULL) {
-    }
-
-    virtual ~LastPacketHolder() {
-    }
-
-    virtual void write(const packet::PacketPtr& pkt) {
-        last_pkt_ = pkt;
-    }
-
-    const packet::PacketPtr& get() const {
-        return last_pkt_;
-    }
-
-private:
-    packet::PacketPtr last_pkt_;
-};
-
 core::HeapArena arena;
 static packet::PacketFactory packet_factory(arena);
 
@@ -66,29 +45,40 @@ new_packet(packet::seqnum_t sn, packet::timestamp_t ts, core::nanoseconds_t capt
 
 TEST_GROUP(timestamp_extractor) {};
 
-// Basic test.
 TEST(timestamp_extractor, single_write) {
-    packet::timestamp_t rtp_ts = 2222;
-    core::nanoseconds_t cur_packet_capt_ts = 1691499037871419405;
+    // 1 second = 1000 samples
+    const audio::SampleSpec sample_spec =
+        audio::SampleSpec(1000, audio::ChanLayout_Surround, 0x1);
 
-    core::nanoseconds_t cts = cur_packet_capt_ts;
-    packet::timestamp_t rts = rtp_ts;
+    const core::nanoseconds_t cts = 1691499037871419405;
+    const packet::timestamp_t rts = 2222;
+    packet::timestamp_t mapped_rts = 0;
 
-    LastPacketHolder holder;
-    TimestampExtractor extractor(holder);
-    CHECK_FALSE(extractor.get_mapping(cts, rts));
-    CHECK_EQUAL(cts, cur_packet_capt_ts);
-    CHECK_EQUAL(rts, rtp_ts);
+    packet::Queue queue;
+    TimestampExtractor extractor(queue, sample_spec);
 
-    packet::PacketPtr pkt =
-        new_packet(555, rtp_ts + 100, cur_packet_capt_ts + core::Second);
+    // no mapping yet
+    CHECK_FALSE(extractor.get_mapping(cts, &mapped_rts));
+
+    // write packet
+    packet::PacketPtr pkt = new_packet(555, rts, cts);
     extractor.write(pkt);
 
-    CHECK_EQUAL(holder.get(), pkt);
+    // ensure packet was passed to inner writer
+    CHECK_EQUAL(1, queue.size());
+    CHECK_EQUAL(pkt, queue.read());
 
-    CHECK(extractor.get_mapping(cts, rts));
-    CHECK_EQUAL(cts, cur_packet_capt_ts + core::Second);
-    CHECK_EQUAL(rts, rtp_ts + 100);
+    // get mapping for exact time
+    CHECK(extractor.get_mapping(cts, &mapped_rts));
+    CHECK_EQUAL(rts, mapped_rts);
+
+    // get mapping for time in future
+    CHECK(extractor.get_mapping(cts + core::Second, &mapped_rts));
+    CHECK_EQUAL(rts + 1000, mapped_rts);
+
+    // get mapping for time in past
+    CHECK(extractor.get_mapping(cts - core::Second, &mapped_rts));
+    CHECK_EQUAL(rts - 1000, mapped_rts);
 }
 
 } // namespace rtp

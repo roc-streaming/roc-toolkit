@@ -21,20 +21,20 @@ namespace roc {
 namespace rtp {
 
 //! Fills capture timestamps in rtp packets.
-//!
-//! Gets a pair of a reference unix-time stamp (in ns) and correspondant rtp timestamp,
-//! and approximates this dependency to a passing packet.
+//! @remarks
+//!  Gets a pair of a reference unix-time stamp (in ns) and correspondant rtp timestamp,
+//!  and approximates this dependency to a passing packet.
 class TimestampInjector : public packet::IReader, public core::NonCopyable<> {
 public:
     //! Initialize.
-    TimestampInjector(packet::IReader& packet_src, const audio::SampleSpec& sample_spec);
+    TimestampInjector(packet::IReader& reader, const audio::SampleSpec& sample_spec);
 
     //! Virtual destructor.
     virtual ~TimestampInjector();
 
     //! Get packet with filled capture ts field.
-    //!
-    //! If update_mapping has not been called yet, capture timestamp will be 0.
+    //! @remarks
+    //!  If update_mapping has not been called yet, capture timestamp will be 0.
     virtual packet::PacketPtr read();
 
     //! Get a pair of a reference timestamps.
@@ -42,7 +42,7 @@ public:
 
 private:
     bool has_ts_;
-    core::nanoseconds_t ts_;
+    core::nanoseconds_t capt_ts_;
     packet::timestamp_t rtp_ts_;
 
     packet::IReader& reader_;
