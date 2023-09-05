@@ -58,14 +58,25 @@ packet::PacketPtr TimestampInjector::read() {
 
 void TimestampInjector::update_mapping(core::nanoseconds_t capture_ts,
                                        packet::timestamp_t rtp_ts) {
-    if (capture_ts != 0) {
-        if (!has_ts_) {
-            roc_log(LogDebug, "timestamp injector: received first mapping");
-        }
-        capt_ts_ = capture_ts;
-        rtp_ts_ = rtp_ts;
-        has_ts_ = true;
+    if (capture_ts == 0) {
+        return;
     }
+
+    if (!has_ts_) {
+        roc_log(LogDebug,
+                "timestamp injector: received first mapping: unix:%llu/rtp:%llu",
+                (unsigned long long)capture_ts, (unsigned long long)rtp_ts);
+    } else {
+        roc_log(LogTrace,
+                "timestamp injector: received mapping:"
+                " old=unix:%llu/rtp:%llu new=unix:%llu/rtp:%llu",
+                (unsigned long long)capt_ts_, (unsigned long long)rtp_ts_,
+                (unsigned long long)capture_ts, (unsigned long long)rtp_ts);
+    }
+
+    capt_ts_ = capture_ts;
+    rtp_ts_ = rtp_ts;
+    has_ts_ = true;
 }
 
 } // namespace rtp

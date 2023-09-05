@@ -28,12 +28,13 @@ void print_packet(const Packet& pkt, int flags) {
     }
 
     if (pkt.rtp()) {
-        p.writef(" rtp: src=%lu m=%d sn=%lu ts=%lu dur=%lu pt=%u payload_sz=%lu\n",
-                 (unsigned long)pkt.rtp()->source, (int)pkt.rtp()->marker,
-                 (unsigned long)pkt.rtp()->seqnum, (unsigned long)pkt.rtp()->timestamp,
-                 (unsigned long)pkt.rtp()->duration,
-                 (unsigned int)pkt.rtp()->payload_type,
-                 (unsigned long)pkt.rtp()->payload.size());
+        p.writef(
+            " rtp: src=%lu m=%d sn=%lu ts=%lu dur=%lu cts=%lld pt=%u payload_sz=%lu\n",
+            (unsigned long)pkt.rtp()->source, (int)pkt.rtp()->marker,
+            (unsigned long)pkt.rtp()->seqnum, (unsigned long)pkt.rtp()->timestamp,
+            (unsigned long)pkt.rtp()->duration, (long long)pkt.rtp()->capture_timestamp,
+            (unsigned int)pkt.rtp()->payload_type,
+            (unsigned long)pkt.rtp()->payload.size());
 
         if ((flags & PrintPayload) && pkt.rtp()->payload) {
             core::print_buffer(pkt.rtp()->payload.data(), pkt.rtp()->payload.size());
