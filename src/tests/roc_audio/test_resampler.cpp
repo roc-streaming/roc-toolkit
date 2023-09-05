@@ -474,8 +474,8 @@ TEST(resampler, timestamp_passthrough_reader) {
         const core::nanoseconds_t epsilon =
             core::nanoseconds_t(1. / InSampleRate * core::Second);
 
-        test::MockReader input_reader(true, true);
-        input_reader.setup_capt_ts(start_ts, InSampleSpecs);
+        test::MockReader input_reader;
+        input_reader.setup_timestamps(start_ts, InSampleSpecs);
         input_reader.pad_zeros();
         ResamplerReader rreader(input_reader, *resampler, InSampleSpecs, OutSampleSpecs);
         // Immediate sample rate.
