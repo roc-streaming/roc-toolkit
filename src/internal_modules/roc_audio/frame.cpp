@@ -9,6 +9,7 @@
 #include "roc_audio/frame.h"
 #include "roc_core/panic.h"
 #include "roc_core/print_buffer.h"
+#include "roc_core/printer.h"
 
 namespace roc {
 namespace audio {
@@ -51,6 +52,10 @@ void Frame::set_capture_timestamp(core::nanoseconds_t capture_ts) {
 }
 
 void Frame::print() const {
+    core::Printer p;
+
+    p.writef("@ frame cts=%lld\n", (long long)capture_timestamp_);
+
     core::print_buffer(samples_, num_samples_);
 }
 
