@@ -341,9 +341,11 @@ bool PipelineLoop::process_next_subframe_(audio::Frame& frame, size_t* frame_pos
         ? std::min(frame.num_samples() - *frame_pos, max_samples_between_tasks_)
         : frame.num_samples();
 
-    audio::Frame sub_frame(frame.samples() + *frame_pos, subframe_size,
-                           frame.capture_timestamp()
-                               + sample_spec_.samples_overall_2_ns(*frame_pos));
+    audio::Frame sub_frame(frame.samples() + *frame_pos, subframe_size);
+
+    sub_frame.set_flags(frame.flags());
+    sub_frame.set_capture_timestamp(frame.capture_timestamp()
+                                    + sample_spec_.samples_overall_2_ns(*frame_pos));
 
     const bool ret = process_subframe_imp(sub_frame);
 

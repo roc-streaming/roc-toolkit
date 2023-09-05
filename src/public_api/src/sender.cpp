@@ -180,8 +180,9 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
         return -1;
     }
 
-    audio::Frame imp_frame((float*)frame->samples, frame->samples_size / sizeof(float),
-                           core::timestamp(core::ClockUnix));
+    audio::Frame imp_frame((float*)frame->samples, frame->samples_size / sizeof(float));
+
+    imp_frame.set_capture_timestamp(core::timestamp(core::ClockUnix));
 
     imp_sink.write(imp_frame);
 
