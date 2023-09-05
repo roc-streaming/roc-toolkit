@@ -7,6 +7,7 @@
  */
 
 #include "roc_audio/e2e_latency_monitor.h"
+#include "roc_core/time.h"
 
 namespace roc {
 namespace audio {
@@ -23,7 +24,7 @@ EndToEndLatencyMonitor::~EndToEndLatencyMonitor() {
 bool EndToEndLatencyMonitor::read(Frame& frame) {
     const bool res = reader_.read(frame);
     if (!!frame.capture_timestamp()) {
-        const core::nanoseconds_t cur_ts = core::timestamp(core::ClockMonotonic);
+        const core::nanoseconds_t cur_ts = core::timestamp(core::ClockUnix);
         ready_ = true;
         e2e_latency_ = cur_ts - frame.capture_timestamp();
     } else {
