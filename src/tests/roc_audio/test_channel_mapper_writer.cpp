@@ -136,6 +136,36 @@ TEST(channel_mapper_writer, small_frame_downmix) {
     CHECK_EQUAL(0, mock_writer.num_unread());
 }
 
+TEST(channel_mapper_writer, small_frame_nocts) {
+    enum { FrameSz = MaxSz / 2 };
+
+    const SampleSpec in_spec(MaxSz, ChanLayout_Surround, ChanMask_Surround_Stereo);
+    const SampleSpec out_spec(MaxSz, ChanLayout_Surround, ChanMask_Surround_Mono);
+
+    test::MockWriter mock_writer;
+    ChannelMapperWriter mapper_writer(mock_writer, buffer_factory, in_spec, out_spec);
+
+    sample_t samples[FrameSz] = {};
+    const unsigned flags = Frame::FlagIncomplete;
+
+    Frame frame(samples, FrameSz);
+    frame.set_flags(flags);
+    frame.set_capture_timestamp(0);
+    fill_stereo(frame, 0.2f, 0.4f);
+
+    mapper_writer.write(frame);
+
+    CHECK_EQUAL(1, mock_writer.n_writes());
+
+    CHECK_EQUAL(FrameSz / 2, mock_writer.frame_size(0));
+    CHECK_EQUAL(flags, mock_writer.frame_flags(0));
+    CHECK_EQUAL(0, mock_writer.frame_timestamp(0));
+
+    expect_mono(mock_writer, FrameSz / 2, 0.3f);
+
+    CHECK_EQUAL(0, mock_writer.num_unread());
+}
+
 TEST(channel_mapper_writer, large_frame_upmix) {
     enum { FrameSz = MaxSz * 3 };
 
@@ -197,6 +227,38 @@ TEST(channel_mapper_writer, large_frame_downmix) {
         CHECK_EQUAL(flags, mock_writer.frame_flags(i));
         CHECK_EQUAL(timestamp + (core::nanoseconds_t)i * core::Second,
                     mock_writer.frame_timestamp(i));
+
+        expect_mono(mock_writer, MaxSz, 0.3f);
+    }
+
+    CHECK_EQUAL(0, mock_writer.num_unread());
+}
+
+TEST(channel_mapper_writer, large_frame_nocts) {
+    enum { FrameSz = MaxSz * 4 };
+
+    const SampleSpec in_spec(MaxSz, ChanLayout_Surround, ChanMask_Surround_Stereo);
+    const SampleSpec out_spec(MaxSz, ChanLayout_Surround, ChanMask_Surround_Mono);
+
+    test::MockWriter mock_writer;
+    ChannelMapperWriter mapper_writer(mock_writer, buffer_factory, in_spec, out_spec);
+
+    sample_t samples[FrameSz] = {};
+    const unsigned flags = Frame::FlagIncomplete;
+
+    Frame frame(samples, FrameSz);
+    frame.set_flags(flags);
+    frame.set_capture_timestamp(0);
+    fill_stereo(frame, 0.2f, 0.4f);
+
+    mapper_writer.write(frame);
+
+    CHECK_EQUAL(2, mock_writer.n_writes());
+
+    for (size_t i = 0; i < mock_writer.n_writes(); i++) {
+        CHECK_EQUAL(MaxSz, mock_writer.frame_size(i));
+        CHECK_EQUAL(flags, mock_writer.frame_flags(i));
+        CHECK_EQUAL(0, mock_writer.frame_timestamp(i));
 
         expect_mono(mock_writer, MaxSz, 0.3f);
     }

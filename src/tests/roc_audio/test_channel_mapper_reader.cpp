@@ -136,6 +136,33 @@ TEST(channel_mapper_reader, small_frame_downmix) {
     expect_mono(frame, 0.3f);
 }
 
+TEST(channel_mapper_reader, small_frame_nocts) {
+    enum { FrameSz = MaxSz / 2 };
+
+    const SampleSpec in_spec(MaxSz, ChanLayout_Surround, ChanMask_Surround_Stereo);
+    const SampleSpec out_spec(MaxSz, ChanLayout_Surround, ChanMask_Surround_Mono);
+
+    test::MockReader mock_reader;
+    ChannelMapperReader mapper_reader(mock_reader, buffer_factory, in_spec, out_spec);
+
+    const unsigned flags = Frame::FlagIncomplete;
+
+    add_stereo(mock_reader, FrameSz * 2, 0.2f, 0.4f, flags);
+
+    sample_t samples[FrameSz] = {};
+    Frame frame(samples, FrameSz);
+
+    CHECK(mapper_reader.read(frame));
+
+    CHECK_EQUAL(1, mock_reader.total_reads());
+    CHECK_EQUAL(0, mock_reader.num_unread());
+
+    CHECK_EQUAL(flags, frame.flags());
+    CHECK_EQUAL(0, frame.capture_timestamp());
+
+    expect_mono(frame, 0.3f);
+}
+
 TEST(channel_mapper_reader, large_frame_upmix) {
     enum { FrameSz = MaxSz * 4 };
 
@@ -196,6 +223,35 @@ TEST(channel_mapper_reader, large_frame_downmix) {
 
     CHECK_EQUAL(flags1 | flags2, frame.flags());
     CHECK_EQUAL(start_ts, frame.capture_timestamp());
+
+    expect_mono(frame, 0.3f);
+}
+
+TEST(channel_mapper_reader, large_frame_nocts) {
+    enum { FrameSz = MaxSz };
+
+    const SampleSpec in_spec(MaxSz, ChanLayout_Surround, ChanMask_Surround_Stereo);
+    const SampleSpec out_spec(MaxSz, ChanLayout_Surround, ChanMask_Surround_Mono);
+
+    test::MockReader mock_reader;
+    ChannelMapperReader mapper_reader(mock_reader, buffer_factory, in_spec, out_spec);
+
+    const unsigned flags1 = Frame::FlagIncomplete;
+    const unsigned flags2 = Frame::FlagDrops;
+
+    add_stereo(mock_reader, MaxSz, 0.2f, 0.4f, flags1);
+    add_stereo(mock_reader, MaxSz, 0.2f, 0.4f, flags2);
+
+    sample_t samples[FrameSz] = {};
+    Frame frame(samples, FrameSz);
+
+    CHECK(mapper_reader.read(frame));
+
+    CHECK_EQUAL(2, mock_reader.total_reads());
+    CHECK_EQUAL(0, mock_reader.num_unread());
+
+    CHECK_EQUAL(flags1 | flags2, frame.flags());
+    CHECK_EQUAL(0, frame.capture_timestamp());
 
     expect_mono(frame, 0.3f);
 }
