@@ -13,11 +13,11 @@
 namespace roc {
 namespace audio {
 
-Frame::Frame(sample_t* samples, size_t num_samples, core::nanoseconds_t capture_ts)
+Frame::Frame(sample_t* samples, size_t num_samples)
     : samples_(samples)
     , num_samples_(num_samples)
     , flags_(0)
-    , capture_timestamp_(capture_ts) {
+    , capture_timestamp_(0) {
     if (!samples) {
         roc_panic("frame: can't create frame with null samples");
     }

@@ -27,7 +27,7 @@ public:
     //! Construct frame from samples.
     //! @remarks
     //!  The pointer is saved in the frame, no copying is performed.
-    Frame(sample_t* samples, size_t num_samples, core::nanoseconds_t capture_ts = 0);
+    Frame(sample_t* samples, size_t num_samples);
 
     //! Frame flags.
     enum {
