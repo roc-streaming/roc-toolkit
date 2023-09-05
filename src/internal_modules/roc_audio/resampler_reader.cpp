@@ -71,11 +71,14 @@ bool ResamplerReader::read(Frame& out) {
         out_pos += num_popped;
     }
 
-    core::nanoseconds_t ts = last_in_ts_
-        - in_sample_spec_.fract_samples_per_chan_2_ns(resampler_.n_left_to_process());
-    ts -= core::nanoseconds_t(out_sample_spec_.samples_overall_2_ns(out.num_samples())
-                              * scaling_);
-    out.set_capture_timestamp(ts);
+    if (last_in_ts_) {
+        const core::nanoseconds_t capt_ts = last_in_ts_
+            - in_sample_spec_.fract_samples_per_chan_2_ns(resampler_.n_left_to_process())
+            - core::nanoseconds_t(out_sample_spec_.samples_overall_2_ns(out.num_samples())
+                                  * scaling_);
+
+        out.set_capture_timestamp(capt_ts);
+    }
 
     return true;
 }
@@ -90,8 +93,12 @@ bool ResamplerReader::push_input_() {
     }
 
     resampler_.end_push_input();
-    last_in_ts_ = frame.capture_timestamp()
-        + in_sample_spec_.samples_overall_2_ns(frame.num_samples());
+
+    const core::nanoseconds_t capt_ts = frame.capture_timestamp();
+    if (capt_ts) {
+        last_in_ts_ = capt_ts + in_sample_spec_.samples_overall_2_ns(frame.num_samples());
+    }
+
     return true;
 }
 
