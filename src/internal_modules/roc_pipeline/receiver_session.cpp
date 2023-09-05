@@ -112,6 +112,13 @@ ReceiverSession::ReceiverSession(
             return;
         }
         preader = fec_validator_.get();
+
+        fec_populator_.reset(new (fec_populator_) rtp::Populator(
+            *preader, *payload_decoder_, format->sample_spec));
+        if (!fec_populator_) {
+            return;
+        }
+        preader = fec_populator_.get();
     }
 
     depacketizer_.reset(new (depacketizer_) audio::Depacketizer(

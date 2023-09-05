@@ -30,8 +30,10 @@ packet::PacketPtr Populator::read() {
         roc_panic("rtp populator: unexpected non-rtp packet");
     }
 
-    packet->rtp()->duration = (packet::timestamp_t)decoder_.decoded_sample_count(
-        packet->rtp()->payload.data(), packet->rtp()->payload.size());
+    if (packet->rtp()->duration == 0) {
+        packet->rtp()->duration = (packet::timestamp_t)decoder_.decoded_sample_count(
+            packet->rtp()->payload.data(), packet->rtp()->payload.size());
+    }
 
     return packet;
 }
