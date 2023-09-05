@@ -171,9 +171,10 @@ public:
                             snprintf(
                                 sbuff, sizeof(sbuff),
                                 "failed comparing samples:\n\n"
-                                "sample_num: %lu\n"
+                                "sample_num: %lu identical_sample_num=%lu\n"
                                 "frame_num: %lu, frame_off=%lu chan=%lu\n"
                                 "original: %f, received: %f\n",
+                                (unsigned long)sample_num,
                                 (unsigned long)identical_sample_num,
                                 (unsigned long)frame_num, (unsigned long)ns,
                                 (unsigned long)nc,

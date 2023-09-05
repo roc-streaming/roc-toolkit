@@ -23,24 +23,27 @@ namespace packet {
 //!  NTP epoch starts from January 1, 1900.
 typedef uint64_t ntp_timestamp_t;
 
-//! Get current NTP time.
-packet::ntp_timestamp_t ntp_timestamp();
-
 //! Compares a and b if they close enough.
 bool ntp_equal_delta(ntp_timestamp_t a, ntp_timestamp_t b, ntp_timestamp_t delta);
 
-//! Converts nanoseconds to ntp timestamp.
-//! @param ns must be non-negative.
-//! @pre
-//!  For deltas only, since NTP epoch represnted in nanoseconds
-//!  could not fit into 64 bits.
-ntp_timestamp_t nanoseconds_2_ntp(core::nanoseconds_t ns);
+//! Get current NTP time since NTP epoch.
+packet::ntp_timestamp_t ntp_timestamp();
 
-//! Converts ntp timestamp to nanoseconds.
-//! @pre
-//!  For deltas only, since NTP epoch represnted in nanoseconds
-//!  could not fit into 64 bits.
-core::nanoseconds_t ntp_2_nanoseconds(ntp_timestamp_t ts);
+//! Convert Unix absolute time to NTP absolute time.
+//! @remarks
+//!  @p unix_time defines nanoseconds since Unix epoch (should be positive)
+ntp_timestamp_t unix_2_ntp(core::nanoseconds_t unix_time);
+
+//! Convert NTP absolute time to Unix absolute time.
+core::nanoseconds_t ntp_2_unix(ntp_timestamp_t ntp_time);
+
+//! Convert nanoseconds delta to NTP delta.
+//! @remarks
+//!  @p ns_delta defines nanoseconds delta (should be positive)
+ntp_timestamp_t nanoseconds_2_ntp(core::nanoseconds_t ns_delta);
+
+//! Converts NTP delta to nanoseconds delta.
+core::nanoseconds_t ntp_2_nanoseconds(ntp_timestamp_t ntp_delta);
 
 } // namespace packet
 } // namespace roc

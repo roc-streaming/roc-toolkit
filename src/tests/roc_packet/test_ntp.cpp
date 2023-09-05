@@ -8,6 +8,7 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_core/time.h"
 #include "roc_packet/ntp.h"
 
 namespace roc {
@@ -15,26 +16,41 @@ namespace packet {
 
 TEST_GROUP(ntp) {};
 
+TEST(ntp, ntp_timestamp) {
+    core::nanoseconds_t ts1 = core::timestamp(core::ClockUnix);
+    core::nanoseconds_t ts2 = ntp_2_unix(ntp_timestamp());
+
+    CHECK(ts1 <= ts2 + core::Microsecond);
+    CHECK(ts2 <= ts1 + core::Second);
+}
+
+TEST(ntp, ntp_2_unix) {
+    CHECK_EQUAL(0, ntp_2_unix((uint64_t)2208988800ul << 32));
+    CHECK_EQUAL((int64_t)1000 * 1000000000,
+                ntp_2_unix((uint64_t)(2208988800ul + 1000) << 32));
+    CHECK_EQUAL((int64_t)-1000 * 1000000000,
+                ntp_2_unix((uint64_t)(2208988800ul - 1000) << 32));
+}
+
+TEST(ntp, unix_2_ntp) {
+    CHECK_EQUAL(((uint64_t)2208988800ul << 32), unix_2_ntp(0));
+    CHECK_EQUAL(((uint64_t)(2208988800ul + 1000) << 32),
+                unix_2_ntp((int64_t)1000 * 1000000000));
+    CHECK_EQUAL(((uint64_t)(2208988800ul - 1000) << 32),
+                unix_2_ntp((int64_t)-1000 * 1000000000));
+}
+
 TEST(ntp, ntp_2_nanoseconds) {
-    ntp_timestamp_t ntp = ((uint64_t)1 << 31) + ((uint64_t)1 << 32); // 1.5 seconds
-    core::nanoseconds_t nans = ntp_2_nanoseconds(ntp);
-
-    CHECK_EQUAL(1500 * core::Millisecond, nans);
-
-    ntp = 0;
-    nans = ntp_2_nanoseconds(ntp);
-    CHECK_EQUAL(0, nans);
+    CHECK_EQUAL(0, ntp_2_nanoseconds(0));
+    CHECK_EQUAL(1500 * core::Millisecond,
+                ntp_2_nanoseconds(((uint64_t)1 << 31) + ((uint64_t)1 << 32)));
 }
 
 TEST(ntp, nanoseconds_2_ntp) {
-    core::nanoseconds_t nans = 1500 * core::Millisecond;
-    ntp_timestamp_t ntp = packet::nanoseconds_2_ntp(nans);
-
-    CHECK_EQUAL(((uint64_t)1 << 31) + ((uint64_t)1 << 32), ntp);
-
-    nans = 1;
-    ntp = packet::nanoseconds_2_ntp(nans);
-    CHECK_EQUAL(ntp_timestamp_t(double(1e-9) * double((uint64_t)1 << 32)), ntp);
+    CHECK_EQUAL(ntp_timestamp_t(double(1e-9) * double((uint64_t)1 << 32)),
+                nanoseconds_2_ntp(1));
+    CHECK_EQUAL(((uint64_t)1 << 31) + ((uint64_t)1 << 32),
+                nanoseconds_2_ntp(1500 * core::Millisecond));
 }
 
 } // namespace packet
