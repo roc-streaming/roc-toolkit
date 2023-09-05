@@ -91,6 +91,13 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         pwriter = fec_writer_.get();
     }
 
+    timestamp_extractor_.reset(new (timestamp_extractor_) rtp::TimestampExtractor(
+        *pwriter, format->sample_spec));
+    if (!timestamp_extractor_) {
+        return false;
+    }
+    pwriter = timestamp_extractor_.get();
+
     payload_encoder_.reset(
         format->new_encoder(arena_, format->pcm_format, format->sample_spec), arena_);
     if (!payload_encoder_) {
@@ -206,10 +213,15 @@ packet::source_t SenderSession::on_get_sending_source(size_t source_index) {
 
 rtcp::SendingMetrics
 SenderSession::on_get_sending_metrics(packet::ntp_timestamp_t report_time) {
-    // TODO
-
     rtcp::SendingMetrics metrics;
     metrics.origin_ntp = report_time;
+
+    const core::nanoseconds_t origin_unix = packet::ntp_2_unix(report_time);
+    packet::timestamp_t origin_rtp = 0;
+
+    if (timestamp_extractor_->get_mapping(origin_unix, &origin_rtp)) {
+        metrics.origin_rtp = origin_rtp;
+    }
 
     return metrics;
 }

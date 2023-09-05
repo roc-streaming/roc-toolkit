@@ -33,6 +33,7 @@
 #include "roc_rtcp/composer.h"
 #include "roc_rtcp/session.h"
 #include "roc_rtp/format_map.h"
+#include "roc_rtp/timestamp_extractor.h"
 
 namespace roc {
 namespace pipeline {
@@ -94,6 +95,8 @@ private:
 
     core::ScopedPtr<fec::IBlockEncoder> fec_encoder_;
     core::Optional<fec::Writer> fec_writer_;
+
+    core::Optional<rtp::TimestampExtractor> timestamp_extractor_;
 
     core::ScopedPtr<audio::IFrameEncoder> payload_encoder_;
     core::Optional<audio::Packetizer> packetizer_;

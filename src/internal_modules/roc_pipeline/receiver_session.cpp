@@ -10,7 +10,9 @@
 #include "roc_audio/resampler_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_core/time.h"
 #include "roc_fec/codec_map.h"
+#include "roc_packet/ntp.h"
 
 namespace roc {
 namespace pipeline {
@@ -120,6 +122,13 @@ ReceiverSession::ReceiverSession(
         }
         preader = fec_populator_.get();
     }
+
+    timestamp_injector_.reset(new (timestamp_injector_)
+                                  rtp::TimestampInjector(*preader, format->sample_spec));
+    if (!timestamp_injector_) {
+        return;
+    }
+    preader = timestamp_injector_.get();
 
     depacketizer_.reset(new (depacketizer_) audio::Depacketizer(
         *preader, *payload_decoder_, format->sample_spec, common_config.enable_beeping));
@@ -274,8 +283,11 @@ audio::IFrameReader& ReceiverSession::reader() {
 }
 
 void ReceiverSession::add_sending_metrics(const rtcp::SendingMetrics& metrics) {
-    // TODO
-    (void)metrics;
+    roc_panic_if(!is_valid());
+
+    const core::nanoseconds_t origin_unix = packet::ntp_2_unix(metrics.origin_ntp);
+
+    timestamp_injector_->update_mapping(origin_unix, metrics.origin_rtp);
 }
 
 void ReceiverSession::add_link_metrics(const rtcp::LinkMetrics& metrics) {
