@@ -7,13 +7,15 @@
  */
 
 #include "roc_rtp/timestamp_injector.h"
+#include "roc_core/log.h"
+#include "roc_core/panic.h"
 
 namespace roc {
 namespace rtp {
 
 TimestampInjector::TimestampInjector(packet::IReader& packet_src,
                                      const audio::SampleSpec& sample_spec)
-    : valid_ts_(false)
+    : has_ts_(false)
     , ts_(0)
     , rtp_ts_(0)
     , reader_(packet_src)
@@ -29,7 +31,16 @@ packet::PacketPtr TimestampInjector::read() {
         return NULL;
     }
 
-    if (pkt->rtp() && valid_ts_) {
+    if (!pkt->rtp()) {
+        roc_panic("timestamp injector: unexpected non-rtp packet");
+    }
+
+    if (pkt->rtp()->capture_timestamp != 0) {
+        roc_panic(
+            "timestamp injector: unexpected packet with non-zero capture timestamp");
+    }
+
+    if (has_ts_) {
         const packet::timestamp_diff_t dn =
             packet::timestamp_diff(pkt->rtp()->timestamp, rtp_ts_);
 
@@ -47,9 +58,14 @@ packet::PacketPtr TimestampInjector::read() {
 
 void TimestampInjector::update_mapping(core::nanoseconds_t capture_ts,
                                        packet::timestamp_t rtp_ts) {
-    ts_ = capture_ts;
-    rtp_ts_ = rtp_ts;
-    valid_ts_ = !!capture_ts;
+    if (capture_ts != 0) {
+        if (!has_ts_) {
+            roc_log(LogDebug, "timestamp injector: received first mapping");
+        }
+        ts_ = capture_ts;
+        rtp_ts_ = rtp_ts;
+        has_ts_ = true;
+    }
 }
 
 } // namespace rtp

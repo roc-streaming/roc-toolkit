@@ -39,7 +39,7 @@ public:
 private:
     packet::IWriter& writer_;
 
-    bool valid_;
+    bool has_ts_;
     core::nanoseconds_t capt_ts_;
     packet::timestamp_t rtp_ts_;
 };
