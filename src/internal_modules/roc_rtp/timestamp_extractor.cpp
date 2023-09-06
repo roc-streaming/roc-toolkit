@@ -7,10 +7,17 @@
  */
 
 #include "roc_rtp/timestamp_extractor.h"
+#include "roc_core/log.h"
 #include "roc_core/panic.h"
 
 namespace roc {
 namespace rtp {
+
+namespace {
+
+const core::nanoseconds_t ReportInterval = core::Second * 30;
+
+} // namespace
 
 TimestampExtractor::TimestampExtractor(packet::IWriter& writer,
                                        const audio::SampleSpec& sample_spec)
@@ -18,7 +25,8 @@ TimestampExtractor::TimestampExtractor(packet::IWriter& writer,
     , has_ts_(false)
     , capt_ts_(0)
     , rtp_ts_(0)
-    , sample_spec_(sample_spec) {
+    , sample_spec_(sample_spec)
+    , rate_limiter_(ReportInterval) {
 }
 
 TimestampExtractor::~TimestampExtractor() {
@@ -47,28 +55,33 @@ void TimestampExtractor::write(const packet::PacketPtr& pkt) {
     writer_.write(pkt);
 }
 
-bool TimestampExtractor::get_mapping(core::nanoseconds_t capture_ts,
-                                     packet::timestamp_t* rtp_ts) const {
+bool TimestampExtractor::has_mapping() {
+    return has_ts_;
+}
+
+packet::timestamp_t TimestampExtractor::get_mapping(core::nanoseconds_t capture_ts) {
     if (capture_ts <= 0) {
         roc_panic(
             "timestamp extractor: unexpected negative cts in mapping request: cts=%lld",
             (long long)capture_ts);
     }
 
-    if (!rtp_ts) {
-        roc_panic("timestamp extractor: unexpected null pointer in mapping request");
-    }
-
     if (!has_ts_) {
-        return false;
+        roc_panic(
+            "timestamp extractor: attempt to get mapping before it becomes available");
     }
 
     const packet::timestamp_diff_t dn =
         sample_spec_.ns_2_rtp_timestamp(capture_ts - capt_ts_);
 
-    *rtp_ts = rtp_ts_ + (packet::timestamp_t)dn;
+    const packet::timestamp_t rtp_ts = rtp_ts_ + (packet::timestamp_t)dn;
 
-    return true;
+    if (rate_limiter_.allow()) {
+        roc_log(LogDebug, "timestamp extractor: returning mapping: unix:%lld/rtp:%llu",
+                (long long)capture_ts, (unsigned long long)rtp_ts);
+    }
+
+    return rtp_ts;
 }
 
 } // namespace rtp

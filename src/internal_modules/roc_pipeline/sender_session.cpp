@@ -187,7 +187,7 @@ core::nanoseconds_t SenderSession::get_update_deadline() const {
 }
 
 void SenderSession::update() {
-    if (rtcp_session_) {
+    if (rtcp_session_ && timestamp_extractor_->has_mapping()) {
         rtcp_session_->generate_packets();
     }
 }
@@ -213,15 +213,11 @@ packet::source_t SenderSession::on_get_sending_source(size_t source_index) {
 
 rtcp::SendingMetrics
 SenderSession::on_get_sending_metrics(packet::ntp_timestamp_t report_time) {
+    const core::nanoseconds_t origin_unix = packet::ntp_2_unix(report_time);
+
     rtcp::SendingMetrics metrics;
     metrics.origin_ntp = report_time;
-
-    const core::nanoseconds_t origin_unix = packet::ntp_2_unix(report_time);
-    packet::timestamp_t origin_rtp = 0;
-
-    if (timestamp_extractor_->get_mapping(origin_unix, &origin_rtp)) {
-        metrics.origin_rtp = origin_rtp;
-    }
+    metrics.origin_rtp = timestamp_extractor_->get_mapping(origin_unix);
 
     return metrics;
 }
