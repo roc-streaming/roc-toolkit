@@ -53,7 +53,7 @@ public:
     void advance(packet::timestamp_t timestamp);
 
     //! Adjust session clock to match consumer clock.
-    void reclock(packet::ntp_timestamp_t timestamp);
+    void reclock(core::nanoseconds_t timestamp);
 
     //! Get number of alive sessions.
     size_t num_sessions() const;

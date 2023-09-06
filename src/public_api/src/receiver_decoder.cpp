@@ -219,7 +219,7 @@ int roc_receiver_decoder_pop(roc_receiver_decoder* decoder, roc_frame* frame) {
         return -1;
     }
 
-    imp_source.reclock(packet::ntp_timestamp());
+    imp_source.reclock(core::timestamp(core::ClockUnix));
 
     return 0;
 }

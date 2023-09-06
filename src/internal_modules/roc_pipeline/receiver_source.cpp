@@ -133,7 +133,7 @@ bool ReceiverSource::has_clock() const {
     return config_.common.enable_timing;
 }
 
-void ReceiverSource::reclock(packet::ntp_timestamp_t timestamp) {
+void ReceiverSource::reclock(core::nanoseconds_t timestamp) {
     roc_panic_if(!is_valid());
 
     for (core::SharedPtr<ReceiverSlot> slot = slots_.front(); slot;

@@ -58,7 +58,7 @@ void ReceiverSessionGroup::advance_sessions(packet::timestamp_t timestamp) {
     }
 }
 
-void ReceiverSessionGroup::reclock_sessions(packet::ntp_timestamp_t timestamp) {
+void ReceiverSessionGroup::reclock_sessions(core::nanoseconds_t timestamp) {
     core::SharedPtr<ReceiverSession> curr, next;
 
     for (curr = sessions_.front(); curr; curr = next) {

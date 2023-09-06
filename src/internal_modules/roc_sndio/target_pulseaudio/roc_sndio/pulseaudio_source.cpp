@@ -52,7 +52,7 @@ bool PulseaudioSource::has_clock() const {
     return PulseaudioDevice::has_clock();
 }
 
-void PulseaudioSource::reclock(packet::ntp_timestamp_t) {
+void PulseaudioSource::reclock(core::nanoseconds_t) {
     // no-op
 }
 

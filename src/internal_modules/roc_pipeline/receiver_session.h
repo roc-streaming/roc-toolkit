@@ -84,7 +84,7 @@ public:
     //! Adjust session clock to match consumer clock.
     //! @returns
     //!  false if the session is ended
-    bool reclock(packet::ntp_timestamp_t timestamp);
+    bool reclock(core::nanoseconds_t timestamp);
 
     //! Get recent latency statistics.
     SessionStats stats() const;

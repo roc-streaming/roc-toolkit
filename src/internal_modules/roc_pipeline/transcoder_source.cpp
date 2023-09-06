@@ -123,7 +123,7 @@ bool TranscoderSource::has_clock() const {
     return input_source_.has_clock();
 }
 
-void TranscoderSource::reclock(packet::ntp_timestamp_t timestamp) {
+void TranscoderSource::reclock(core::nanoseconds_t timestamp) {
     input_source_.reclock(timestamp);
 }
 
