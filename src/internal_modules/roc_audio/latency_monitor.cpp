@@ -145,7 +145,7 @@ bool LatencyMonitor::get_latency_(packet::timestamp_diff_t& latency) const {
 bool LatencyMonitor::check_latency_(packet::timestamp_diff_t latency) const {
     if (latency < min_latency_) {
         roc_log(
-            LogInfo,
+            LogDebug,
             "latency monitor: latency out of bounds: latency=%ld(%.3fms) min=%ld(%.3fms)",
             (long)latency,
             (double)input_sample_spec_.rtp_timestamp_2_ns(latency) / core::Millisecond,
@@ -157,7 +157,7 @@ bool LatencyMonitor::check_latency_(packet::timestamp_diff_t latency) const {
 
     if (latency > max_latency_) {
         roc_log(
-            LogInfo,
+            LogDebug,
             "latency monitor: latency out of bounds: latency=%ld(%.3fms) max=%ld(%.3fms)",
             (long)latency,
             (double)input_sample_spec_.rtp_timestamp_2_ns(latency) / core::Millisecond,

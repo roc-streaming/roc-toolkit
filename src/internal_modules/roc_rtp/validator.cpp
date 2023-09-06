@@ -16,6 +16,7 @@ Validator::Validator(packet::IReader& reader,
                      const ValidatorConfig& config,
                      const audio::SampleSpec& sample_spec)
     : reader_(reader)
+    , has_prev_packet_(false)
     , config_(config)
     , sample_spec_(sample_spec) {
 }
@@ -26,29 +27,24 @@ packet::PacketPtr Validator::read() {
         return NULL;
     }
 
-    const packet::RTP* next_rtp = next_packet->rtp();
-    if (!next_rtp) {
-        roc_log(LogDebug, "rtp validator: unexpected non-RTP packet");
+    if (!next_packet->rtp()) {
+        roc_log(LogDebug, "rtp validator: unexpected non-rtp packet");
         return NULL;
     }
 
-    const packet::RTP* prev_rtp = NULL;
-    if (prev_packet_) {
-        prev_rtp = prev_packet_->rtp();
-    }
-
-    if (prev_rtp && !check_(*prev_rtp, *next_rtp)) {
+    if (has_prev_packet_ && !validate_(prev_packet_rtp_, *next_packet->rtp())) {
         return NULL;
     }
 
-    if (!prev_rtp || prev_rtp->compare(*next_rtp) < 0) {
-        prev_packet_ = next_packet;
+    if (!has_prev_packet_ || prev_packet_rtp_.compare(*next_packet->rtp()) < 0) {
+        has_prev_packet_ = true;
+        prev_packet_rtp_ = *next_packet->rtp();
     }
 
     return next_packet;
 }
 
-bool Validator::check_(const packet::RTP& prev, const packet::RTP& next) const {
+bool Validator::validate_(const packet::RTP& prev, const packet::RTP& next) const {
     if (prev.source != next.source) {
         roc_log(LogDebug, "rtp validator: source id jump: prev=%lu next=%lu",
                 (unsigned long)prev.source, (unsigned long)next.source);
@@ -88,6 +84,22 @@ bool Validator::check_(const packet::RTP& prev, const packet::RTP& next) const {
                 " too long timestamp jump: prev=%lu next=%lu dist=%lu",
                 (unsigned long)prev.timestamp, (unsigned long)next.timestamp,
                 (unsigned long)ts_dist);
+        return false;
+    }
+
+    if (next.capture_timestamp < 0) {
+        roc_log(LogDebug,
+                "rtp validator:"
+                " invalid negative cts: prev=%lld next=%lld",
+                (long long)prev.capture_timestamp, (long long)next.capture_timestamp);
+        return false;
+    }
+
+    if (next.capture_timestamp == 0 && prev.capture_timestamp != 0) {
+        roc_log(LogDebug,
+                "rtp validator:"
+                " invalid zero cts after non-zero cts: prev=%lld next=%lld",
+                (long long)prev.capture_timestamp, (long long)next.capture_timestamp);
         return false;
     }
 

@@ -9,6 +9,7 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/heap_arena.h"
+#include "roc_core/time.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_pipeline/config.h"
@@ -43,7 +44,8 @@ TEST_GROUP(validator) {
     }
 
     packet::PacketPtr new_packet(PayloadType pt, packet::source_t src,
-                                 packet::seqnum_t sn, packet::timestamp_t ts) {
+                                 packet::seqnum_t sn, packet::timestamp_t ts,
+                                 core::nanoseconds_t cts) {
         packet::PacketPtr packet = packet_factory.new_packet();
         CHECK(packet);
 
@@ -52,6 +54,7 @@ TEST_GROUP(validator) {
         packet->rtp()->source = src;
         packet->rtp()->seqnum = sn;
         packet->rtp()->timestamp = ts;
+        packet->rtp()->capture_timestamp = cts;
 
         return packet;
     }
@@ -68,11 +71,11 @@ TEST(validator, normal) {
     packet::Queue queue;
     Validator validator(queue, config, SampleSpecs);
 
-    packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, 1);
+    packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, 1, 0);
     queue.write(p1);
     CHECK(validator.read() == p1);
 
-    packet::PacketPtr p2 = new_packet(Pt1, Src1, 2, 2);
+    packet::PacketPtr p2 = new_packet(Pt1, Src1, 2, 2, 0);
     queue.write(p2);
     CHECK(validator.read() == p2);
 
@@ -83,11 +86,11 @@ TEST(validator, payload_id_jump) {
     packet::Queue queue;
     Validator validator(queue, config, SampleSpecs);
 
-    packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, 1);
+    packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, 1, 0);
     queue.write(p1);
     CHECK(validator.read() == p1);
 
-    packet::PacketPtr p2 = new_packet(Pt2, Src1, 2, 2);
+    packet::PacketPtr p2 = new_packet(Pt2, Src1, 2, 2, 0);
     queue.write(p2);
     CHECK(!validator.read());
 
@@ -98,11 +101,11 @@ TEST(validator, source_id_jump) {
     packet::Queue queue;
     Validator validator(queue, config, SampleSpecs);
 
-    packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, 1);
+    packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, 1, 0);
     queue.write(p1);
     CHECK(validator.read() == p1);
 
-    packet::PacketPtr p2 = new_packet(Pt1, Src2, 2, 2);
+    packet::PacketPtr p2 = new_packet(Pt1, Src2, 2, 2, 0);
     queue.write(p2);
     CHECK(!validator.read());
 
@@ -121,11 +124,11 @@ TEST(validator, seqnum_no_jump) {
         packet::Queue queue;
         Validator validator(queue, config, SampleSpecs);
 
-        packet::PacketPtr p1 = new_packet(Pt1, Src1, sn1, 1);
+        packet::PacketPtr p1 = new_packet(Pt1, Src1, sn1, 1, 0);
         queue.write(p1);
         CHECK(validator.read() == p1);
 
-        packet::PacketPtr p2 = new_packet(Pt1, Src1, sn2, 2);
+        packet::PacketPtr p2 = new_packet(Pt1, Src1, sn2, 2, 0);
         queue.write(p2);
         CHECK(validator.read() == p2);
 
@@ -145,11 +148,11 @@ TEST(validator, seqnum_jump_up) {
         packet::Queue queue;
         Validator validator(queue, config, SampleSpecs);
 
-        packet::PacketPtr p1 = new_packet(Pt1, Src1, sn1, 1);
+        packet::PacketPtr p1 = new_packet(Pt1, Src1, sn1, 1, 0);
         queue.write(p1);
         CHECK(validator.read() == p1);
 
-        packet::PacketPtr p2 = new_packet(Pt1, Src1, sn2, 2);
+        packet::PacketPtr p2 = new_packet(Pt1, Src1, sn2, 2, 0);
         queue.write(p2);
         CHECK(!validator.read());
 
@@ -169,11 +172,11 @@ TEST(validator, seqnum_jump_down) {
         packet::Queue queue;
         Validator validator(queue, config, SampleSpecs);
 
-        packet::PacketPtr p1 = new_packet(Pt1, Src1, sn2, 1);
+        packet::PacketPtr p1 = new_packet(Pt1, Src1, sn2, 1, 0);
         queue.write(p1);
         CHECK(validator.read() == p1);
 
-        packet::PacketPtr p2 = new_packet(Pt1, Src1, sn1, 2);
+        packet::PacketPtr p2 = new_packet(Pt1, Src1, sn1, 2, 0);
         queue.write(p2);
         CHECK(!validator.read());
 
@@ -189,15 +192,15 @@ TEST(validator, seqnum_late) {
     packet::Queue queue;
     Validator validator(queue, config, SampleSpecs);
 
-    packet::PacketPtr p1 = new_packet(Pt1, Src1, sn1, 1);
+    packet::PacketPtr p1 = new_packet(Pt1, Src1, sn1, 1, 0);
     queue.write(p1);
     CHECK(validator.read() == p1);
 
-    packet::PacketPtr p2 = new_packet(Pt1, Src1, sn2, 2);
+    packet::PacketPtr p2 = new_packet(Pt1, Src1, sn2, 2, 0);
     queue.write(p2);
     CHECK(validator.read() == p2);
 
-    packet::PacketPtr p3 = new_packet(Pt1, Src1, sn3, 3);
+    packet::PacketPtr p3 = new_packet(Pt1, Src1, sn3, 3, 0);
     queue.write(p3);
     CHECK(validator.read() == p3);
 
@@ -216,11 +219,11 @@ TEST(validator, timestamp_no_jump) {
         packet::Queue queue;
         Validator validator(queue, config, SampleSpecs);
 
-        packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, ts1);
+        packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, ts1, 0);
         queue.write(p1);
         CHECK(validator.read() == p1);
 
-        packet::PacketPtr p2 = new_packet(Pt1, Src1, 2, ts2);
+        packet::PacketPtr p2 = new_packet(Pt1, Src1, 2, ts2, 0);
         queue.write(p2);
         CHECK(validator.read() == p2);
 
@@ -240,11 +243,11 @@ TEST(validator, timestamp_jump_up) {
         packet::Queue queue;
         Validator validator(queue, config, SampleSpecs);
 
-        packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, ts1);
+        packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, ts1, 0);
         queue.write(p1);
         CHECK(validator.read() == p1);
 
-        packet::PacketPtr p2 = new_packet(Pt1, Src1, 2, ts2);
+        packet::PacketPtr p2 = new_packet(Pt1, Src1, 2, ts2, 0);
         queue.write(p2);
         CHECK(!validator.read());
 
@@ -264,11 +267,11 @@ TEST(validator, timestamp_jump_down) {
         packet::Queue queue;
         Validator validator(queue, config, SampleSpecs);
 
-        packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, ts2);
+        packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, ts2, 0);
         queue.write(p1);
         CHECK(validator.read() == p1);
 
-        packet::PacketPtr p2 = new_packet(Pt1, Src1, 2, ts1);
+        packet::PacketPtr p2 = new_packet(Pt1, Src1, 2, ts1, 0);
         queue.write(p2);
         CHECK(!validator.read());
 
@@ -284,17 +287,86 @@ TEST(validator, timestamp_late) {
     packet::Queue queue;
     Validator validator(queue, config, SampleSpecs);
 
-    packet::PacketPtr p1 = new_packet(Pt1, Src1, 2, ts1);
+    packet::PacketPtr p1 = new_packet(Pt1, Src1, 2, ts1, 0);
     queue.write(p1);
     CHECK(validator.read() == p1);
 
-    packet::PacketPtr p2 = new_packet(Pt1, Src1, 1, ts2);
+    packet::PacketPtr p2 = new_packet(Pt1, Src1, 1, ts2, 0);
     queue.write(p2);
     CHECK(validator.read() == p2);
 
-    packet::PacketPtr p3 = new_packet(Pt1, Src1, 3, ts3);
+    packet::PacketPtr p3 = new_packet(Pt1, Src1, 3, ts3, 0);
     queue.write(p3);
     CHECK(validator.read() == p3);
+
+    CHECK(!queue.read());
+}
+
+TEST(validator, cts_positive) {
+    packet::Queue queue;
+    Validator validator(queue, config, SampleSpecs);
+
+    packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, 1, 100);
+    queue.write(p1);
+    CHECK(validator.read() == p1);
+
+    packet::PacketPtr p2 = new_packet(Pt1, Src1, 2, 2, 50);
+    queue.write(p2);
+    CHECK(validator.read() == p2);
+
+    packet::PacketPtr p3 = new_packet(Pt1, Src1, 3, 3, 200);
+    queue.write(p3);
+    CHECK(validator.read() == p3);
+
+    packet::PacketPtr p4 = new_packet(Pt1, Src1, 4, 4, 150);
+    queue.write(p4);
+    CHECK(validator.read() == p4);
+
+    CHECK(!queue.read());
+}
+
+TEST(validator, cts_negative) {
+    packet::Queue queue;
+    Validator validator(queue, config, SampleSpecs);
+
+    packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, 1, 100);
+    queue.write(p1);
+    CHECK(validator.read() == p1);
+
+    packet::PacketPtr p2 = new_packet(Pt1, Src1, 2, 2, -100);
+    queue.write(p2);
+    CHECK(!validator.read());
+
+    packet::PacketPtr p3 = new_packet(Pt1, Src1, 3, 3, 200);
+    queue.write(p3);
+    CHECK(validator.read() == p3);
+
+    packet::PacketPtr p4 = new_packet(Pt1, Src1, 4, 4, -200);
+    queue.write(p4);
+    CHECK(!validator.read());
+
+    CHECK(!queue.read());
+}
+
+TEST(validator, cts_zero) {
+    packet::Queue queue;
+    Validator validator(queue, config, SampleSpecs);
+
+    packet::PacketPtr p1 = new_packet(Pt1, Src1, 1, 1, 100);
+    queue.write(p1);
+    CHECK(validator.read() == p1);
+
+    packet::PacketPtr p2 = new_packet(Pt1, Src1, 2, 2, 0);
+    queue.write(p2);
+    CHECK(!validator.read());
+
+    packet::PacketPtr p3 = new_packet(Pt1, Src1, 3, 3, 200);
+    queue.write(p3);
+    CHECK(validator.read() == p3);
+
+    packet::PacketPtr p4 = new_packet(Pt1, Src1, 4, 4, 0);
+    queue.write(p4);
+    CHECK(!validator.read());
 
     CHECK(!queue.read());
 }

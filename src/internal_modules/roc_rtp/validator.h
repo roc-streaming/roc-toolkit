@@ -50,14 +50,16 @@ public:
     //! Read next packet.
     //! @remarks
     //!  Reads packet from the underlying reader and validates it. If the packet
-    //!  is valid, return it. Otherwise, returns NULL.
+    //!  is valid, returns it. Otherwise, returns NULL.
     virtual packet::PacketPtr read();
 
 private:
-    bool check_(const packet::RTP& prev, const packet::RTP& next) const;
+    bool validate_(const packet::RTP& prev, const packet::RTP& next) const;
 
     packet::IReader& reader_;
-    packet::PacketPtr prev_packet_;
+
+    bool has_prev_packet_;
+    packet::RTP prev_packet_rtp_;
 
     const ValidatorConfig config_;
     const audio::SampleSpec sample_spec_;

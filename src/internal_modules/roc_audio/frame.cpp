@@ -28,6 +28,7 @@ void Frame::set_flags(unsigned fl) {
     if (flags_) {
         roc_panic("frame: can't set flags more than once");
     }
+
     flags_ = fl;
 }
 
@@ -48,6 +49,14 @@ core::nanoseconds_t Frame::capture_timestamp() const {
 }
 
 void Frame::set_capture_timestamp(core::nanoseconds_t capture_ts) {
+    if (capture_ts < 0) {
+        roc_panic("frame: can't set cts to negative value: %lld", (long long)capture_ts);
+    }
+
+    if (capture_timestamp_ != 0) {
+        roc_panic("frame: can't set cts more than once");
+    }
+
     capture_timestamp_ = capture_ts;
 }
 

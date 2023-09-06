@@ -9,9 +9,16 @@
 #include "roc_rtp/timestamp_injector.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_core/time.h"
 
 namespace roc {
 namespace rtp {
+
+namespace {
+
+const core::nanoseconds_t ReportInterval = core::Second * 30;
+
+} // namespace
 
 TimestampInjector::TimestampInjector(packet::IReader& reader,
                                      const audio::SampleSpec& sample_spec)
@@ -19,7 +26,9 @@ TimestampInjector::TimestampInjector(packet::IReader& reader,
     , capt_ts_(0)
     , rtp_ts_(0)
     , reader_(reader)
-    , sample_spec_(sample_spec) {
+    , sample_spec_(sample_spec)
+    , n_drops_(0)
+    , rate_limiter_(ReportInterval) {
 }
 
 TimestampInjector::~TimestampInjector() {
@@ -36,8 +45,8 @@ packet::PacketPtr TimestampInjector::read() {
     }
 
     if (pkt->rtp()->capture_timestamp != 0) {
-        roc_panic(
-            "timestamp injector: unexpected packet with non-zero capture timestamp");
+        roc_panic("timestamp injector: unexpected non-zero cts in packet: %lld",
+                  (long long)pkt->rtp()->capture_timestamp);
     }
 
     if (has_ts_) {
@@ -58,20 +67,18 @@ packet::PacketPtr TimestampInjector::read() {
 
 void TimestampInjector::update_mapping(core::nanoseconds_t capture_ts,
                                        packet::timestamp_t rtp_ts) {
-    if (capture_ts == 0) {
-        return;
+    if (rate_limiter_.allow()) {
+        roc_log(LogDebug,
+                "timestamp injector: received mapping:"
+                " old=unix:%lld/rtp:%llu new=unix:%lld/rtp:%llu has_ts=%d n_drops=%lu",
+                (long long)capt_ts_, (unsigned long long)rtp_ts_, (long long)capture_ts,
+                (unsigned long long)rtp_ts, (int)has_ts_, (unsigned long)n_drops_);
     }
 
-    if (!has_ts_) {
-        roc_log(LogDebug,
-                "timestamp injector: received first mapping: unix:%llu/rtp:%llu",
-                (unsigned long long)capture_ts, (unsigned long long)rtp_ts);
-    } else {
-        roc_log(LogTrace,
-                "timestamp injector: received mapping:"
-                " old=unix:%llu/rtp:%llu new=unix:%llu/rtp:%llu",
-                (unsigned long long)capt_ts_, (unsigned long long)rtp_ts_,
-                (unsigned long long)capture_ts, (unsigned long long)rtp_ts);
+    if (capture_ts <= 0) {
+        roc_log(LogTrace, "timestamp injector: dropping mapping with negative cts");
+        n_drops_++;
+        return;
     }
 
     capt_ts_ = capture_ts;
