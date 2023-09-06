@@ -99,6 +99,12 @@ bool Pump::run() {
             }
         }
 
+        if (frame.capture_timestamp() == 0) {
+            // if audio source does not provide capture timestamps,
+            // fill them here
+            frame.set_capture_timestamp(core::timestamp(core::ClockUnix));
+        }
+
         sink_.write(frame);
 
         current_source->reclock(packet::ntp_timestamp()
