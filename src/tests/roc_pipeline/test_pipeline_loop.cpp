@@ -8,10 +8,12 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_audio/frame.h"
 #include "roc_core/cond.h"
 #include "roc_core/mutex.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/thread.h"
+#include "roc_core/time.h"
 #include "roc_pipeline/pipeline_loop.h"
 
 namespace roc {
@@ -37,6 +39,8 @@ const core::nanoseconds_t FrameProcessingTime = 50 * core::Microsecond;
 
 const float Epsilon = 1e6f;
 
+const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, Chans);
+
 class TestPipeline : public PipelineLoop, private IPipelineTaskScheduler {
 public:
     class Task : public PipelineTask {
@@ -46,9 +50,7 @@ public:
     };
 
     TestPipeline(const TaskConfig& config)
-        : PipelineLoop(*this,
-                       config,
-                       audio::SampleSpec(SampleRate, audio::ChanLayout_Surround, Chans))
+        : PipelineLoop(*this, config, SampleSpecs)
         , blocked_cond_(mutex_)
         , unblocked_cond_(mutex_)
         , blocked_counter_(0)
@@ -58,6 +60,8 @@ public:
         , time_(StartTime)
         , exp_frame_val_(0)
         , exp_frame_sz_(0)
+        , exp_frame_flags_(0)
+        , exp_frame_cts_(0)
         , exp_sched_deadline_(-1)
         , n_processed_frames_(0)
         , n_processed_tasks_(0)
@@ -165,10 +169,15 @@ public:
         return n_sched_cancellations_;
     }
 
-    void expect_frame(audio::sample_t val, size_t sz) {
+    void expect_frame(audio::sample_t val,
+                      size_t sz,
+                      unsigned flags = 0,
+                      core::nanoseconds_t cts = 0) {
         core::Mutex::Lock lock(mutex_);
         exp_frame_val_ = val;
         exp_frame_sz_ = sz;
+        exp_frame_flags_ = flags;
+        exp_frame_cts_ = cts;
     }
 
     void expect_sched_deadline(core::nanoseconds_t d) {
@@ -202,6 +211,8 @@ private:
         for (size_t n = 0; n < exp_frame_sz_; n++) {
             roc_panic_if(std::abs(frame.samples()[n] - exp_frame_val_) > Epsilon);
         }
+        roc_panic_if(frame.flags() != exp_frame_flags_);
+        roc_panic_if(frame.capture_timestamp() != exp_frame_cts_);
         n_processed_frames_++;
         return true;
     }
@@ -259,6 +270,8 @@ private:
 
     audio::sample_t exp_frame_val_;
     size_t exp_frame_sz_;
+    unsigned exp_frame_flags_;
+    core::nanoseconds_t exp_frame_cts_;
 
     core::nanoseconds_t exp_sched_deadline_;
 
@@ -2198,6 +2211,56 @@ TEST(task_pipeline, schedule_and_wait_until_process_frame_called) {
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_sched_calls());
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_sched_cancellations());
+}
+
+TEST(task_pipeline, forward_flags_and_cts_small_frame) {
+    TestPipeline pipeline(config);
+
+    const unsigned frame_flags = audio::Frame::FlagNonblank;
+    const core::nanoseconds_t frame_cts = 1000000000;
+
+    audio::Frame frame(samples, FrameSize);
+    fill_frame(frame, 0.1f, 0, FrameSize);
+    frame.set_flags(frame_flags);
+    frame.set_capture_timestamp(frame_cts);
+
+    pipeline.set_time(StartTime);
+    pipeline.expect_frame(0.1f, FrameSize, frame_flags, frame_cts);
+
+    CHECK(pipeline.process_subframes_and_tasks(frame));
+
+    UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_frames());
+}
+
+TEST(task_pipeline, forward_flags_and_cts_large_frame) {
+    TestPipeline pipeline(config);
+
+    const unsigned frame_flags = audio::Frame::FlagNonblank;
+    const core::nanoseconds_t frame_cts = 1000000000;
+
+    audio::Frame frame(samples, MaxFrameSize * 2);
+    fill_frame(frame, 0.1f, 0, MaxFrameSize * 2);
+    frame.set_flags(frame_flags);
+    frame.set_capture_timestamp(frame_cts);
+
+    pipeline.set_time(StartTime);
+    pipeline.block_frames();
+
+    AsyncFrameWriter fw(pipeline, frame);
+    CHECK(fw.start());
+
+    pipeline.wait_blocked();
+    pipeline.expect_frame(0.1f, MaxFrameSize, frame_flags, frame_cts);
+    pipeline.unblock_one_frame();
+
+    pipeline.wait_blocked();
+    pipeline.expect_frame(0.1f, MaxFrameSize, frame_flags,
+                          frame_cts + SampleSpecs.samples_overall_2_ns(MaxFrameSize));
+    pipeline.unblock_one_frame();
+
+    fw.join();
+
+    UNSIGNED_LONGS_EQUAL(2, pipeline.num_processed_frames());
 }
 
 } // namespace pipeline
