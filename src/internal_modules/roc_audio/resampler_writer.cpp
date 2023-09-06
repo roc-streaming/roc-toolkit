@@ -64,6 +64,10 @@ bool ResamplerWriter::set_scaling(float multiplier) {
 void ResamplerWriter::write(Frame& frame) {
     roc_panic_if_not(is_valid());
 
+    if (frame.num_samples() % in_sample_spec_.num_channels() != 0) {
+        roc_panic("resampler writer: unexpected frame size");
+    }
+
     size_t frame_pos = 0;
 
     while (frame_pos < frame.num_samples()) {

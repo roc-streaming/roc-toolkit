@@ -55,6 +55,10 @@ bool ResamplerReader::set_scaling(float multiplier) {
 bool ResamplerReader::read(Frame& out) {
     roc_panic_if_not(is_valid());
 
+    if (out.num_samples() % out_sample_spec_.num_channels() != 0) {
+        roc_panic("resampler reader: unexpected frame size");
+    }
+
     size_t out_pos = 0;
 
     while (out_pos < out.num_samples()) {
