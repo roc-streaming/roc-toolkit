@@ -52,13 +52,12 @@ TEST(timestamp_extractor, single_write) {
 
     const core::nanoseconds_t cts = 1691499037871419405;
     const packet::timestamp_t rts = 2222;
-    packet::timestamp_t mapped_rts = 0;
 
     packet::Queue queue;
     TimestampExtractor extractor(queue, sample_spec);
 
     // no mapping yet
-    CHECK_FALSE(extractor.get_mapping(cts, &mapped_rts));
+    CHECK_FALSE(extractor.has_mapping());
 
     // write packet
     packet::PacketPtr pkt = new_packet(555, rts, cts);
@@ -69,16 +68,16 @@ TEST(timestamp_extractor, single_write) {
     CHECK_EQUAL(pkt, queue.read());
 
     // get mapping for exact time
-    CHECK(extractor.get_mapping(cts, &mapped_rts));
-    CHECK_EQUAL(rts, mapped_rts);
+    CHECK_TRUE(extractor.has_mapping());
+    CHECK_EQUAL(rts, extractor.get_mapping(cts));
 
     // get mapping for time in future
-    CHECK(extractor.get_mapping(cts + core::Second, &mapped_rts));
-    CHECK_EQUAL(rts + 1000, mapped_rts);
+    CHECK_TRUE(extractor.has_mapping());
+    CHECK_EQUAL(rts + 1000, extractor.get_mapping(cts + core::Second));
 
     // get mapping for time in past
-    CHECK(extractor.get_mapping(cts - core::Second, &mapped_rts));
-    CHECK_EQUAL(rts - 1000, mapped_rts);
+    CHECK_TRUE(extractor.has_mapping());
+    CHECK_EQUAL(rts - 1000, extractor.get_mapping(cts - core::Second));
 }
 
 } // namespace rtp

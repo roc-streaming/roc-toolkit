@@ -63,6 +63,8 @@ void Session::process_packet(const packet::PacketPtr& packet) {
 
 core::nanoseconds_t Session::generation_deadline() {
     if (next_deadline_ == 0) {
+        // until generate_packets() is called first time, report that
+        // we're ready immediately
         next_deadline_ = core::timestamp(core::ClockMonotonic);
     }
 
@@ -77,6 +79,7 @@ void Session::generate_packets() {
     }
 
     do {
+        // TODO: use IntervalComputer
         next_deadline_ += core::Millisecond * 200;
     } while (next_deadline_ <= core::timestamp(core::ClockMonotonic));
 

@@ -15,6 +15,7 @@
 #include "roc_audio/sample_spec.h"
 #include "roc_core/attributes.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/rate_limiter.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet.h"
@@ -34,11 +35,13 @@ public:
     //! Passes pkt downstream and remembers its capture and rtp timestamps.
     virtual void write(const packet::PacketPtr& pkt);
 
+    //! Check if mapping already available.
+    bool has_mapping();
+
     //! Get rtp timestamp mapped to given capture timestamp.
-    //! @returns
-    //!  false if mapping is not available yet.
-    ROC_ATTR_NODISCARD bool get_mapping(core::nanoseconds_t capture_ts,
-                                        packet::timestamp_t* rtp_ts) const;
+    //! @pre
+    //!  has_mapping() should return true, otherwise it will panic.
+    packet::timestamp_t get_mapping(core::nanoseconds_t capture_ts);
 
 private:
     packet::IWriter& writer_;
@@ -48,6 +51,8 @@ private:
     packet::timestamp_t rtp_ts_;
 
     const audio::SampleSpec sample_spec_;
+
+    core::RateLimiter rate_limiter_;
 };
 
 } // namespace rtp
