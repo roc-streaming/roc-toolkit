@@ -74,7 +74,9 @@ void Packetizer::write(Frame& frame) {
         buffer_samples -= n_encoded;
 
         packet_pos_ += n_encoded;
-        capture_ts_ += sample_spec_.samples_per_chan_2_ns(n_encoded);
+        if (capture_ts_) {
+            capture_ts_ += sample_spec_.samples_per_chan_2_ns(n_encoded);
+        }
 
         if (packet_pos_ == samples_per_packet_) {
             end_packet_();
