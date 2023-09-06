@@ -67,7 +67,7 @@ public:
         return false;
     }
 
-    virtual void reclock(packet::ntp_timestamp_t) {
+    virtual void reclock(core::nanoseconds_t) {
         // no-op
     }
 

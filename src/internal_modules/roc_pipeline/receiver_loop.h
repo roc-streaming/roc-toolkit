@@ -128,7 +128,7 @@ private:
     virtual audio::SampleSpec sample_spec() const;
     virtual core::nanoseconds_t latency() const;
     virtual bool has_clock() const;
-    virtual void reclock(packet::ntp_timestamp_t timestamp);
+    virtual void reclock(core::nanoseconds_t timestamp);
     virtual bool read(audio::Frame&);
 
     // Methods of PipelineLoop

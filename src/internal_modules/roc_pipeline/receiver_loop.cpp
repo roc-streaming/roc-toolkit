@@ -167,7 +167,7 @@ bool ReceiverLoop::has_clock() const {
     return source_.has_clock();
 }
 
-void ReceiverLoop::reclock(packet::ntp_timestamp_t timestamp) {
+void ReceiverLoop::reclock(core::nanoseconds_t timestamp) {
     roc_panic_if(!is_valid());
 
     core::Mutex::Lock lock(source_mutex_);

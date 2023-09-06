@@ -99,16 +99,17 @@ bool Pump::run() {
             }
         }
 
+        const core::nanoseconds_t timestamp = core::timestamp(core::ClockUnix);
+
         if (frame.capture_timestamp() == 0) {
             // if audio source does not provide capture timestamps,
             // fill them here
-            frame.set_capture_timestamp(core::timestamp(core::ClockUnix));
+            frame.set_capture_timestamp(timestamp);
         }
 
         sink_.write(frame);
 
-        current_source->reclock(packet::ntp_timestamp()
-                                + packet::nanoseconds_2_ntp(sink_.latency()));
+        current_source->reclock(timestamp + sink_.latency());
 
         if (current_source == &main_source_) {
             n_bufs_++;

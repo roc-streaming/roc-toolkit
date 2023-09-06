@@ -259,7 +259,7 @@ bool ReceiverSession::advance(packet::timestamp_t timestamp) {
     return true;
 }
 
-bool ReceiverSession::reclock(packet::ntp_timestamp_t) {
+bool ReceiverSession::reclock(core::nanoseconds_t) {
     roc_panic_if(!is_valid());
 
     // no-op

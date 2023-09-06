@@ -74,7 +74,7 @@ void ReceiverSlot::advance(packet::timestamp_t timestamp) {
     session_group_.advance_sessions(timestamp);
 }
 
-void ReceiverSlot::reclock(packet::ntp_timestamp_t timestamp) {
+void ReceiverSlot::reclock(core::nanoseconds_t timestamp) {
     session_group_.reclock_sessions(timestamp);
 }
 

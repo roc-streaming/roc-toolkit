@@ -51,7 +51,7 @@ public:
     virtual bool has_clock() const;
 
     //! Adjust source clock to match consumer clock.
-    virtual void reclock(packet::ntp_timestamp_t timestamp);
+    virtual void reclock(core::nanoseconds_t timestamp);
 
     //! Read frame.
     virtual bool read(audio::Frame& frame);

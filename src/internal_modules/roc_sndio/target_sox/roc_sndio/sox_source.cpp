@@ -213,7 +213,7 @@ bool SoxSource::has_clock() const {
     return !is_file_;
 }
 
-void SoxSource::reclock(packet::ntp_timestamp_t) {
+void SoxSource::reclock(core::nanoseconds_t) {
     // no-op
 }
 

@@ -11,6 +11,7 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_core/time.h"
 #include "roc_sndio/isource.h"
 
 namespace roc {
@@ -62,7 +63,7 @@ public:
         return false;
     }
 
-    virtual void reclock(packet::ntp_timestamp_t) {
+    virtual void reclock(core::nanoseconds_t) {
         // no-op
     }
 
