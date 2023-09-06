@@ -14,6 +14,7 @@
 
 #include "roc_audio/sample_spec.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/rate_limiter.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/ireader.h"
 
@@ -47,6 +48,10 @@ private:
 
     packet::IReader& reader_;
     const audio::SampleSpec sample_spec_;
+
+    size_t n_drops_;
+
+    core::RateLimiter rate_limiter_;
 };
 
 } // namespace rtp

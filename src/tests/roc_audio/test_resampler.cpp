@@ -488,11 +488,14 @@ TEST(resampler, timestamp_passthrough_reader) {
         sample_t samples[FrameLen];
 
         {
-            Frame frame(samples, ROC_ARRAY_SIZE(samples));
-            CHECK(rreader.read(frame));
-            CHECK(frame.capture_timestamp() >= start_ts);
-            cur_ts = frame.capture_timestamp();
+            {
+                Frame frame(samples, ROC_ARRAY_SIZE(samples));
+                CHECK(rreader.read(frame));
+                CHECK(frame.capture_timestamp() >= start_ts);
+                cur_ts = frame.capture_timestamp();
+            }
             for (size_t i = 0; i < 10; i++) {
+                Frame frame(samples, ROC_ARRAY_SIZE(samples));
                 CHECK(rreader.read(frame));
                 cur_ts += ts_step;
                 CHECK(core::ns_equal_delta(frame.capture_timestamp(), cur_ts, epsilon));
@@ -502,13 +505,16 @@ TEST(resampler, timestamp_passthrough_reader) {
         scale = 0.95f;
         rreader.set_scaling(scale);
         {
-            Frame frame(samples, ROC_ARRAY_SIZE(samples));
-            CHECK(rreader.read(frame));
-            cur_ts += ts_step;
-            CHECK(core::ns_equal_delta(frame.capture_timestamp(), cur_ts, epsilon));
-            ts_step = core::nanoseconds_t(OutSampleSpecs.samples_overall_2_ns(FrameLen)
-                                          * scale);
+            {
+                Frame frame(samples, ROC_ARRAY_SIZE(samples));
+                CHECK(rreader.read(frame));
+                cur_ts += ts_step;
+                CHECK(core::ns_equal_delta(frame.capture_timestamp(), cur_ts, epsilon));
+                ts_step = core::nanoseconds_t(
+                    OutSampleSpecs.samples_overall_2_ns(FrameLen) * scale);
+            }
             for (size_t i = 0; i < 10; i++) {
+                Frame frame(samples, ROC_ARRAY_SIZE(samples));
                 CHECK(rreader.read(frame));
                 cur_ts += ts_step;
                 CHECK(core::ns_equal_delta(frame.capture_timestamp(), cur_ts, epsilon));
@@ -518,13 +524,16 @@ TEST(resampler, timestamp_passthrough_reader) {
         scale = 1.05f;
         rreader.set_scaling(scale);
         {
-            Frame frame(samples, ROC_ARRAY_SIZE(samples));
-            CHECK(rreader.read(frame));
-            cur_ts += ts_step;
-            CHECK(core::ns_equal_delta(frame.capture_timestamp(), cur_ts, epsilon));
-            ts_step = core::nanoseconds_t(OutSampleSpecs.samples_overall_2_ns(FrameLen)
-                                          * scale);
+            {
+                Frame frame(samples, ROC_ARRAY_SIZE(samples));
+                CHECK(rreader.read(frame));
+                cur_ts += ts_step;
+                CHECK(core::ns_equal_delta(frame.capture_timestamp(), cur_ts, epsilon));
+                ts_step = core::nanoseconds_t(
+                    OutSampleSpecs.samples_overall_2_ns(FrameLen) * scale);
+            }
             for (size_t i = 0; i < 10; i++) {
+                Frame frame(samples, ROC_ARRAY_SIZE(samples));
                 CHECK(rreader.read(frame));
                 cur_ts += ts_step;
                 CHECK(core::ns_equal_delta(frame.capture_timestamp(), cur_ts, epsilon));
@@ -577,11 +586,14 @@ TEST(resampler, timestamp_passthrough_writer) {
 
         sample_t samples[FrameLen];
         {
-            Frame frame(samples, ROC_ARRAY_SIZE(samples));
-            frame.set_capture_timestamp(cur_ts);
-            rwriter.write(frame);
-            cur_ts = frame.capture_timestamp();
+            {
+                Frame frame(samples, ROC_ARRAY_SIZE(samples));
+                frame.set_capture_timestamp(cur_ts);
+                rwriter.write(frame);
+                cur_ts = frame.capture_timestamp();
+            }
             for (size_t i = 0; i < 10; i++) {
+                Frame frame(samples, ROC_ARRAY_SIZE(samples));
                 cur_ts += ts_step;
                 frame.set_capture_timestamp(cur_ts);
                 rwriter.write(frame);
@@ -592,12 +604,14 @@ TEST(resampler, timestamp_passthrough_writer) {
         rwriter.set_scaling(scale);
         ts_checker.set_scaling(scale);
         {
-            Frame frame(samples, ROC_ARRAY_SIZE(samples));
-            cur_ts += ts_step;
-            frame.set_capture_timestamp(cur_ts);
-            rwriter.write(frame);
-
+            {
+                Frame frame(samples, ROC_ARRAY_SIZE(samples));
+                cur_ts += ts_step;
+                frame.set_capture_timestamp(cur_ts);
+                rwriter.write(frame);
+            }
             for (size_t i = 0; i < 10; i++) {
+                Frame frame(samples, ROC_ARRAY_SIZE(samples));
                 cur_ts += ts_step;
                 frame.set_capture_timestamp(cur_ts);
                 rwriter.write(frame);
@@ -608,11 +622,14 @@ TEST(resampler, timestamp_passthrough_writer) {
         rwriter.set_scaling(scale);
         ts_checker.set_scaling(scale);
         {
-            Frame frame(samples, ROC_ARRAY_SIZE(samples));
-            cur_ts += ts_step;
-            frame.set_capture_timestamp(cur_ts);
-            rwriter.write(frame);
+            {
+                Frame frame(samples, ROC_ARRAY_SIZE(samples));
+                cur_ts += ts_step;
+                frame.set_capture_timestamp(cur_ts);
+                rwriter.write(frame);
+            }
             for (size_t i = 0; i < 10; i++) {
+                Frame frame(samples, ROC_ARRAY_SIZE(samples));
                 cur_ts += ts_step;
                 frame.set_capture_timestamp(cur_ts);
                 rwriter.write(frame);

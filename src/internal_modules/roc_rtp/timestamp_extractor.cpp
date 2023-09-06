@@ -33,6 +33,11 @@ void TimestampExtractor::write(const packet::PacketPtr& pkt) {
         roc_panic("timestamp extractor: unexpected non-rtp packet");
     }
 
+    if (pkt->rtp()->capture_timestamp < 0) {
+        roc_panic("timestamp extractor: unexpected negative cts in packet: cts=%lld",
+                  (long long)pkt->rtp()->capture_timestamp);
+    }
+
     if (pkt->rtp()->capture_timestamp != 0) {
         has_ts_ = true;
         capt_ts_ = pkt->rtp()->capture_timestamp;
@@ -44,8 +49,14 @@ void TimestampExtractor::write(const packet::PacketPtr& pkt) {
 
 bool TimestampExtractor::get_mapping(core::nanoseconds_t capture_ts,
                                      packet::timestamp_t* rtp_ts) const {
+    if (capture_ts <= 0) {
+        roc_panic(
+            "timestamp extractor: unexpected negative cts in mapping request: cts=%lld",
+            (long long)capture_ts);
+    }
+
     if (!rtp_ts) {
-        roc_panic("timestamp extractor: unexpected null pointer");
+        roc_panic("timestamp extractor: unexpected null pointer in mapping request");
     }
 
     if (!has_ts_) {
