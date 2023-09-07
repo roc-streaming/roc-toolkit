@@ -38,11 +38,17 @@ namespace audio {
 //! @code
 //!  5, 7, 9, ...
 //! @endcode
+//!
+//! If timestamps are enabled, mixer computes capture timestamp of output
+//! frame as the average capture timestamps of all mixed input frames.
+//! This makes sense only when all inputs are synchronized and their
+//! timestamps are close to each other.
 class Mixer : public IFrameReader, public core::NonCopyable<> {
 public:
     //! Initialize.
     //! @p buffer_factory is used to allocate a temporary buffer for mixing.
-    Mixer(core::BufferFactory<sample_t>& buffer_factory);
+    //! @p enable_timestamps defines whether to enable calculation of capture timestamps.
+    Mixer(core::BufferFactory<sample_t>& buffer_factory, bool enable_timestamps);
 
     //! Check if the mixer was succefully constructed.
     bool is_valid() const;
@@ -60,10 +66,15 @@ public:
     virtual bool read(Frame& frame);
 
 private:
-    void read_(sample_t* out_data, size_t out_sz, unsigned& flags);
+    void read_(sample_t* out_data,
+               size_t out_size,
+               unsigned& out_flags,
+               core::nanoseconds_t& out_cts);
 
     core::List<IFrameReader, core::NoOwnership> readers_;
     core::Slice<sample_t> temp_buf_;
+
+    const bool enable_timestamps_;
 
     bool valid_;
 };
