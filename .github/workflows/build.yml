@@ -105,6 +105,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: recursive
+          
 
       - name: Build and test
         run: |
@@ -152,6 +153,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: recursive
+          fetch-tags: true
 
       - name: Build and test
         run: |
@@ -310,6 +312,34 @@ jobs:
       - name: Build and test
         run: |
           scripts/ci_checks/macos/${{ matrix.script }}.sh
+
+      - name: Handle failure
+        if: failure()
+        run: |
+          scripts/ci_checks/failure.sh
+
+  release-checks:
+    runs-on: ubuntu-latest
+
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - script: linux-checks/check-version
+
+    name: ${{ matrix.script }}
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          fetch-tags: true
+
+      - name: Build and test
+        run: |
+          scripts/ci_checks/${{ matrix.script }}.sh
 
       - name: Handle failure
         if: failure()
