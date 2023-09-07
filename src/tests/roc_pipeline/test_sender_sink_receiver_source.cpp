@@ -8,6 +8,8 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_address/interface.h"
+#include "roc_core/time.h"
 #include "test_helpers/frame_reader.h"
 #include "test_helpers/frame_writer.h"
 #include "test_helpers/packet_sender.h"
@@ -47,7 +49,9 @@ enum {
     Latency = SamplesPerPacket * SourcePackets,
     Timeout = Latency * 20,
 
-    ManyFrames = Latency / SamplesPerFrame * 10
+    ManyFrames = Latency / SamplesPerFrame * 10,
+
+    FramesPerUpdate = 10,
 };
 
 enum {
@@ -70,7 +74,13 @@ enum {
     FlagReedSolomon = (1 << 4),
 
     // enable LDPC-Staircase FEC scheme on sender
-    FlagLDPC = (1 << 5)
+    FlagLDPC = (1 << 5),
+
+    // enable RTCP traffic
+    FlagRTCP = (1 << 6),
+
+    // enable capture timestamps
+    FlagCTS = (1 << 7)
 };
 
 core::HeapArena arena;
@@ -159,6 +169,13 @@ address::Protocol select_repair_proto(int flags) {
     return address::Proto_None;
 }
 
+address::Protocol select_control_proto(int flags) {
+    if (flags & FlagRTCP) {
+        return address::Proto_RTCP;
+    }
+    return address::Proto_None;
+}
+
 bool is_fec_supported(int flags) {
     if (flags & FlagReedSolomon) {
         return fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8);
@@ -199,16 +216,17 @@ void send_receive(int flags,
 
     address::Protocol source_proto = select_source_proto(flags);
     address::Protocol repair_proto = select_repair_proto(flags);
+    address::Protocol control_proto = select_control_proto(flags);
 
     address::SocketAddr receiver_source_addr = test::new_address(11);
     address::SocketAddr receiver_repair_addr = test::new_address(22);
+    address::SocketAddr receiver_control_addr = test::new_address(33);
 
     SenderConfig sender_config =
         make_sender_config(flags, frame_channels, packet_channels);
 
     SenderSink sender(sender_config, format_map, packet_factory, byte_buffer_factory,
                       sample_buffer_factory, arena);
-
     CHECK(sender.is_valid());
 
     SenderSlot* sender_slot = sender.create_slot();
@@ -216,6 +234,7 @@ void send_receive(int flags,
 
     SenderEndpoint* sender_source_endpoint = NULL;
     SenderEndpoint* sender_repair_endpoint = NULL;
+    SenderEndpoint* sender_control_endpoint = NULL;
 
     sender_source_endpoint = sender_slot->add_endpoint(
         address::Iface_AudioSource, source_proto, receiver_source_addr, queue);
@@ -227,12 +246,17 @@ void send_receive(int flags,
         CHECK(sender_repair_endpoint);
     }
 
+    if (control_proto != address::Proto_None) {
+        sender_control_endpoint = sender_slot->add_endpoint(
+            address::Iface_AudioControl, control_proto, receiver_control_addr, queue);
+        CHECK(sender_control_endpoint);
+    }
+
     ReceiverConfig receiver_config =
         make_receiver_config(frame_channels, packet_channels);
 
     ReceiverSource receiver(receiver_config, format_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
-
     CHECK(receiver.is_valid());
 
     ReceiverSlot* receiver_slot = receiver.create_slot();
@@ -240,9 +264,11 @@ void send_receive(int flags,
 
     ReceiverEndpoint* receiver_source_endpoint = NULL;
     ReceiverEndpoint* receiver_repair_endpoint = NULL;
+    ReceiverEndpoint* receiver_control_endpoint = NULL;
 
     packet::IWriter* receiver_source_endpoint_writer = NULL;
     packet::IWriter* receiver_repair_endpoint_writer = NULL;
+    packet::IWriter* receiver_control_endpoint_writer = NULL;
 
     receiver_source_endpoint =
         receiver_slot->add_endpoint(address::Iface_AudioSource, source_proto);
@@ -256,14 +282,33 @@ void send_receive(int flags,
         receiver_repair_endpoint_writer = &receiver_repair_endpoint->writer();
     }
 
+    if (control_proto != address::Proto_None) {
+        receiver_control_endpoint =
+            receiver_slot->add_endpoint(address::Iface_AudioControl, control_proto);
+        CHECK(receiver_control_endpoint);
+        receiver_control_endpoint_writer = &receiver_control_endpoint->writer();
+    }
+
+    core::nanoseconds_t send_base_cts = -1;
+
+    if (flags & FlagCTS) {
+        send_base_cts = 1000000000000000;
+    }
+
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
-        frame_writer.write_samples(SamplesPerFrame, sender_config.input_sample_spec);
+        frame_writer.write_samples(SamplesPerFrame, sender_config.input_sample_spec,
+                                   send_base_cts);
+
+        if (nf % FramesPerUpdate) {
+            sender.update(frame_writer.capture_timestamp());
+        }
     }
 
     test::PacketSender packet_sender(packet_factory, receiver_source_endpoint_writer,
-                                     receiver_repair_endpoint_writer);
+                                     receiver_repair_endpoint_writer,
+                                     receiver_control_endpoint_writer);
 
     filter_packets(flags, queue, packet_sender);
 
@@ -273,13 +318,38 @@ void send_receive(int flags,
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            core::nanoseconds_t recv_base_cts = -1;
+
+            if ((flags & FlagCTS) && np != 0) {
+                recv_base_cts = send_base_cts;
+            }
+
             frame_reader.read_samples(SamplesPerFrame, num_sessions,
-                                      receiver_config.common.output_sample_spec);
+                                      receiver_config.common.output_sample_spec,
+                                      recv_base_cts);
 
             UNSIGNED_LONGS_EQUAL(num_sessions, receiver.num_sessions());
         }
 
         packet_sender.deliver(1);
+    }
+
+    if ((flags & FlagDropSource) == 0) {
+        CHECK(packet_sender.n_source() > 0);
+    } else {
+        CHECK(packet_sender.n_source() == 0);
+    }
+
+    if ((flags & FlagDropRepair) == 0 && (flags & (FlagReedSolomon | FlagLDPC)) != 0) {
+        CHECK(packet_sender.n_repair() > 0);
+    } else {
+        CHECK(packet_sender.n_repair() == 0);
+    }
+
+    if ((flags & FlagRTCP) != 0) {
+        CHECK(packet_sender.n_control() > 0);
+    } else {
+        CHECK(packet_sender.n_control() == 0);
     }
 }
 
@@ -287,7 +357,7 @@ void send_receive(int flags,
 
 TEST_GROUP(sender_sink_receiver_source) {};
 
-TEST(sender_sink_receiver_source, bare) {
+TEST(sender_sink_receiver_source, bare_rtp) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
     send_receive(FlagNone, NumSess, Chans, Chans);
@@ -347,16 +417,28 @@ TEST(sender_sink_receiver_source, fec_drop_repair) {
     }
 }
 
-TEST(sender_sink_receiver_source, channels_stereo_to_mono) {
+TEST(sender_sink_receiver_source, channel_mapping_stereo_to_mono) {
     enum { FrameChans = Chans_Stereo, PacketChans = Chans_Mono, NumSess = 1 };
 
     send_receive(FlagNone, NumSess, FrameChans, PacketChans);
 }
 
-TEST(sender_sink_receiver_source, channels_mono_to_stereo) {
+TEST(sender_sink_receiver_source, channel_mapping_mono_to_stereo) {
     enum { FrameChans = Chans_Mono, PacketChans = Chans_Stereo, NumSess = 1 };
 
     send_receive(FlagNone, NumSess, FrameChans, PacketChans);
+}
+
+TEST(sender_sink_receiver_source, timestamp_mapping) {
+    enum { Chans = Chans_Stereo, NumSess = 1 };
+
+    send_receive(FlagRTCP | FlagCTS, NumSess, Chans, Chans);
+}
+
+TEST(sender_sink_receiver_source, timestamp_mapping_remixing) {
+    enum { FrameChans = Chans_Mono, PacketChans = Chans_Stereo, NumSess = 1 };
+
+    send_receive(FlagRTCP | FlagCTS, NumSess, FrameChans, PacketChans);
 }
 
 } // namespace pipeline

@@ -27,10 +27,14 @@ public:
     FrameWriter(sndio::ISink& sink, core::BufferFactory<audio::sample_t>& buffer_factory)
         : sink_(sink)
         , buffer_factory_(buffer_factory)
-        , offset_(0) {
+        , offset_(0)
+        , abs_offset_(0)
+        , capture_ts_(0) {
     }
 
-    void write_samples(size_t num_samples, const audio::SampleSpec& sample_spec) {
+    void write_samples(size_t num_samples,
+                       const audio::SampleSpec& sample_spec,
+                       core::nanoseconds_t base_capture_ts = -1) {
         core::Slice<audio::sample_t> samples = buffer_factory_.new_buffer();
         CHECK(samples);
         samples.reslice(0, num_samples * sample_spec.num_channels());
@@ -44,7 +48,21 @@ public:
         }
 
         audio::Frame frame(samples.data(), samples.size());
+
+        if (base_capture_ts >= 0) {
+            capture_ts_ =
+                base_capture_ts + sample_spec.samples_per_chan_2_ns(abs_offset_);
+
+            frame.set_capture_timestamp(capture_ts_);
+        }
+
         sink_.write(frame);
+
+        abs_offset_ += num_samples;
+    }
+
+    core::nanoseconds_t capture_timestamp() const {
+        return capture_ts_;
     }
 
 private:
@@ -52,6 +70,9 @@ private:
     core::BufferFactory<audio::sample_t>& buffer_factory_;
 
     uint8_t offset_;
+    size_t abs_offset_;
+
+    core::nanoseconds_t capture_ts_;
 };
 
 } // namespace test

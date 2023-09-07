@@ -10,6 +10,7 @@
 #define ROC_PIPELINE_TEST_HELPERS_PACKET_READER_H_
 
 #include <CppUTest/TestHarness.h>
+#include <CppUTest/UtestMacros.h>
 
 #include "test_helpers/utils.h"
 
@@ -44,18 +45,62 @@ public:
         , timestamp_(0)
         , pt_(pt)
         , offset_(0)
+        , abs_offset_(0)
         , first_(true) {
     }
 
-    void read_packet(size_t samples_per_packet, const audio::SampleSpec& sample_spec) {
-        packet::PacketPtr pp = reader_.read();
-        CHECK(pp);
+    void read_packet(size_t samples_per_packet,
+                     const audio::SampleSpec& sample_spec,
+                     core::nanoseconds_t base_capture_ts = -1) {
+        packet::PacketPtr pp = read_packet_();
 
-        CHECK(pp->flags() & packet::Packet::FlagUDP);
-        CHECK(pp->udp()->dst_addr == dst_addr_);
+        audio::sample_t samples[MaxSamples] = {};
+        parse_packet_(pp->data(), samples_per_packet, samples);
+        check_timestamp_(*pp, sample_spec, base_capture_ts);
 
-        CHECK(pp->flags() & packet::Packet::FlagComposed);
-        check_buffer_(pp->data(), samples_per_packet, sample_spec);
+        for (size_t ns = 0; ns < samples_per_packet; ns++) {
+            for (size_t nc = 0; nc < sample_spec.num_channels(); nc++) {
+                DOUBLES_EQUAL((double)nth_sample(offset_),
+                              (double)samples[ns * sample_spec.num_channels() + nc],
+                              SampleEpsilon);
+            }
+            offset_++;
+        }
+        abs_offset_ += samples_per_packet;
+    }
+
+    void read_nonzero_packet(size_t samples_per_packet,
+                             const audio::SampleSpec& sample_spec,
+                             core::nanoseconds_t base_capture_ts = -1) {
+        packet::PacketPtr pp = read_packet_();
+
+        audio::sample_t samples[MaxSamples] = {};
+        parse_packet_(pp->data(), samples_per_packet, samples);
+        check_timestamp_(*pp, sample_spec, base_capture_ts);
+
+        size_t non_zero = 0;
+        for (size_t ns = 0; ns < samples_per_packet; ns++) {
+            if (samples[ns] != 0) {
+                non_zero++;
+            }
+        }
+        CHECK(non_zero > 0);
+        abs_offset_ += samples_per_packet;
+    }
+
+    void read_zero_packet(size_t samples_per_packet,
+                          const audio::SampleSpec& sample_spec,
+                          core::nanoseconds_t base_capture_ts = -1) {
+        packet::PacketPtr pp = read_packet_();
+
+        audio::sample_t samples[MaxSamples] = {};
+        parse_packet_(pp->data(), samples_per_packet, samples);
+        check_timestamp_(*pp, sample_spec, base_capture_ts);
+
+        for (size_t ns = 0; ns < samples_per_packet; ns++) {
+            DOUBLES_EQUAL(0.0, (double)samples[ns], SampleEpsilon);
+        }
+        abs_offset_ += samples_per_packet;
     }
 
 private:
@@ -69,9 +114,21 @@ private:
         return fmt->new_decoder(arena, fmt->pcm_format, fmt->sample_spec);
     }
 
-    void check_buffer_(const core::Slice<uint8_t> bp,
+    packet::PacketPtr read_packet_() {
+        packet::PacketPtr pp = reader_.read();
+        CHECK(pp);
+
+        CHECK(pp->flags() & packet::Packet::FlagUDP);
+        CHECK(pp->flags() & packet::Packet::FlagComposed);
+
+        CHECK(pp->udp()->dst_addr == dst_addr_);
+
+        return pp;
+    }
+
+    void parse_packet_(const core::Slice<uint8_t> bp,
                        size_t samples_per_packet,
-                       const audio::SampleSpec& sample_spec) {
+                       audio::sample_t* samples) {
         packet::PacketPtr pp = packet_factory_.new_packet();
         CHECK(pp);
 
@@ -97,19 +154,25 @@ private:
         payload_decoder_->begin(pp->rtp()->timestamp, pp->rtp()->payload.data(),
                                 pp->rtp()->payload.size());
 
-        audio::sample_t samples[MaxSamples] = {};
         UNSIGNED_LONGS_EQUAL(samples_per_packet,
                              payload_decoder_->read(samples, samples_per_packet));
 
         payload_decoder_->end();
+    }
 
-        for (size_t ns = 0; ns < samples_per_packet; ns++) {
-            for (size_t nc = 0; nc < sample_spec.num_channels(); nc++) {
-                DOUBLES_EQUAL((double)nth_sample(offset_),
-                              (double)samples[ns * sample_spec.num_channels() + nc],
-                              Epsilon);
-            }
-            offset_++;
+    void check_timestamp_(const packet::Packet& pkt,
+                          const audio::SampleSpec& sample_spec,
+                          core::nanoseconds_t base_ts) {
+        CHECK(pkt.rtp());
+
+        if (base_ts < 0) {
+            LONGS_EQUAL(0, pkt.rtp()->capture_timestamp);
+        } else {
+            const core::nanoseconds_t capture_ts =
+                base_ts + sample_spec.samples_per_chan_2_ns(abs_offset_);
+
+            expect_capture_timestamp(capture_ts, pkt.rtp()->capture_timestamp,
+                                     TimestampEpsilon);
         }
     }
 
@@ -129,6 +192,7 @@ private:
     rtp::PayloadType pt_;
 
     uint8_t offset_;
+    size_t abs_offset_;
     bool first_;
 };
 

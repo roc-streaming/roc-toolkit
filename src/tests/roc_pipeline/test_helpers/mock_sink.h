@@ -6,8 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_PIPELINE_TEST_HELPERS_FRAME_CHECKER_H_
-#define ROC_PIPELINE_TEST_HELPERS_FRAME_CHECKER_H_
+#ifndef ROC_PIPELINE_TEST_HELPERS_MOCK_SINK_H_
+#define ROC_PIPELINE_TEST_HELPERS_MOCK_SINK_H_
 
 #include <CppUTest/TestHarness.h>
 
@@ -20,9 +20,9 @@ namespace roc {
 namespace pipeline {
 namespace test {
 
-class FrameChecker : public sndio::ISink, public core::NonCopyable<> {
+class MockSink : public sndio::ISink, public core::NonCopyable<> {
 public:
-    FrameChecker(const audio::SampleSpec& sample_spec)
+    MockSink(const audio::SampleSpec& sample_spec)
         : off_(0)
         , n_frames_(0)
         , n_samples_(0)
@@ -65,15 +65,18 @@ public:
 
     virtual void write(audio::Frame& frame) {
         CHECK(frame.num_samples() % n_chans_ == 0);
+
         for (size_t ns = 0; ns < frame.num_samples() / n_chans_; ns++) {
             for (size_t nc = 0; nc < n_chans_; nc++) {
                 DOUBLES_EQUAL((double)frame.samples()[ns * n_chans_ + nc],
-                              (double)nth_sample(off_), Epsilon);
+                              (double)nth_sample(off_), SampleEpsilon);
                 n_samples_++;
             }
             off_++;
         }
         n_frames_++;
+
+        CHECK(frame.capture_timestamp() == 0);
     }
 
     void expect_frames(size_t total) {
@@ -96,4 +99,4 @@ private:
 } // namespace pipeline
 } // namespace roc
 
-#endif // ROC_PIPELINE_TEST_HELPERS_FRAME_CHECKER_H_
+#endif // ROC_PIPELINE_TEST_HELPERS_MOCK_SINK_H_
