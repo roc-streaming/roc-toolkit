@@ -101,6 +101,7 @@ ReceiverSessionGroup::on_get_reception_metrics(size_t source_index) {
 void ReceiverSessionGroup::on_add_sending_metrics(const rtcp::SendingMetrics& metrics) {
     core::SharedPtr<ReceiverSession> sess;
 
+    // TODO: match session by SSRC/CNAME
     for (sess = sessions_.front(); sess; sess = sessions_.nextof(*sess)) {
         sess->add_sending_metrics(metrics);
     }
@@ -109,6 +110,7 @@ void ReceiverSessionGroup::on_add_sending_metrics(const rtcp::SendingMetrics& me
 void ReceiverSessionGroup::on_add_link_metrics(const rtcp::LinkMetrics& metrics) {
     core::SharedPtr<ReceiverSession> sess;
 
+    // TODO: match session by SSRC/CNAME
     for (sess = sessions_.front(); sess; sess = sessions_.nextof(*sess)) {
         sess->add_link_metrics(metrics);
     }
