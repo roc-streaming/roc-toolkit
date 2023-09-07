@@ -64,7 +64,7 @@ TEST(mixer, one_reader) {
 
     mixer.add_input(reader);
 
-    reader.add(BufSz, 0.11f);
+    reader.add_samples(BufSz, 0.11f);
     expect_output(mixer, BufSz, 0.11f);
 
     CHECK(reader.num_unread() == 0);
@@ -78,7 +78,7 @@ TEST(mixer, one_reader_large) {
 
     mixer.add_input(reader);
 
-    reader.add(MaxBufSz * 2, 0.11f);
+    reader.add_samples(MaxBufSz * 2, 0.11f);
     expect_output(mixer, MaxBufSz * 2, 0.11f);
 
     CHECK(reader.num_unread() == 0);
@@ -94,8 +94,8 @@ TEST(mixer, two_readers) {
     mixer.add_input(reader1);
     mixer.add_input(reader2);
 
-    reader1.add(BufSz, 0.11f);
-    reader2.add(BufSz, 0.22f);
+    reader1.add_samples(BufSz, 0.11f);
+    reader2.add_samples(BufSz, 0.22f);
 
     expect_output(mixer, BufSz, 0.33f);
 
@@ -113,20 +113,20 @@ TEST(mixer, remove_reader) {
     mixer.add_input(reader1);
     mixer.add_input(reader2);
 
-    reader1.add(BufSz, 0.11f);
-    reader2.add(BufSz, 0.22f);
+    reader1.add_samples(BufSz, 0.11f);
+    reader2.add_samples(BufSz, 0.22f);
     expect_output(mixer, BufSz, 0.33f);
 
     mixer.remove_input(reader2);
 
-    reader1.add(BufSz, 0.44f);
-    reader2.add(BufSz, 0.55f);
+    reader1.add_samples(BufSz, 0.44f);
+    reader2.add_samples(BufSz, 0.55f);
     expect_output(mixer, BufSz, 0.44f);
 
     mixer.remove_input(reader1);
 
-    reader1.add(BufSz, 0.77f);
-    reader2.add(BufSz, 0.88f);
+    reader1.add_samples(BufSz, 0.77f);
+    reader2.add_samples(BufSz, 0.88f);
     expect_output(mixer, BufSz, 0.0f);
 
     CHECK(reader1.num_unread() == BufSz);
@@ -143,18 +143,18 @@ TEST(mixer, clamp) {
     mixer.add_input(reader1);
     mixer.add_input(reader2);
 
-    reader1.add(BufSz, 0.900f);
-    reader2.add(BufSz, 0.101f);
+    reader1.add_samples(BufSz, 0.900f);
+    reader2.add_samples(BufSz, 0.101f);
 
     expect_output(mixer, BufSz, 1.0f);
 
-    reader1.add(BufSz, 0.2f);
-    reader2.add(BufSz, 1.1f);
+    reader1.add_samples(BufSz, 0.2f);
+    reader2.add_samples(BufSz, 1.1f);
 
     expect_output(mixer, BufSz, 1.0f);
 
-    reader1.add(BufSz, -0.2f);
-    reader2.add(BufSz, -0.81f);
+    reader1.add_samples(BufSz, -0.2f);
+    reader2.add_samples(BufSz, -0.81f);
 
     expect_output(mixer, BufSz, -1.0f);
 
@@ -174,14 +174,14 @@ TEST(mixer, flags) {
     mixer.add_input(reader1);
     mixer.add_input(reader2);
 
-    reader1.add(BigBatch, 0.1f, 0);
-    reader1.add(BigBatch, 0.1f, Frame::FlagNonblank);
-    reader1.add(BigBatch, 0.1f, 0);
+    reader1.add_samples(BigBatch, 0.1f, 0);
+    reader1.add_samples(BigBatch, 0.1f, Frame::FlagNonblank);
+    reader1.add_samples(BigBatch, 0.1f, 0);
 
-    reader2.add(BigBatch, 0.1f, Frame::FlagIncomplete);
-    reader2.add(BigBatch / 2, 0.1f, 0);
-    reader2.add(BigBatch / 2, 0.1f, Frame::FlagDrops);
-    reader2.add(BigBatch, 0.1f, 0);
+    reader2.add_samples(BigBatch, 0.1f, Frame::FlagIncomplete);
+    reader2.add_samples(BigBatch / 2, 0.1f, 0);
+    reader2.add_samples(BigBatch / 2, 0.1f, Frame::FlagDrops);
+    reader2.add_samples(BigBatch, 0.1f, 0);
 
     expect_output(mixer, BigBatch, 0.2f, Frame::FlagIncomplete);
     expect_output(mixer, BigBatch, 0.2f, Frame::FlagNonblank | Frame::FlagDrops);

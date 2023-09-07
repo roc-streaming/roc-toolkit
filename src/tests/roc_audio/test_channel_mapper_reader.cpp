@@ -36,7 +36,7 @@ void add_mono(test::MockReader& mock_reader,
     CHECK(size > 0);
 
     for (size_t n = 0; n < size; n++) {
-        mock_reader.add(1, value, flags);
+        mock_reader.add_samples(1, value, flags);
     }
 }
 
@@ -49,8 +49,8 @@ void add_stereo(test::MockReader& mock_reader,
     CHECK(size % 2 == 0);
 
     for (size_t n = 0; n < size; n += 2) {
-        mock_reader.add(1, left_value, flags);
-        mock_reader.add(1, right_value, flags);
+        mock_reader.add_samples(1, left_value, flags);
+        mock_reader.add_samples(1, right_value, flags);
     }
 }
 
@@ -89,7 +89,7 @@ TEST(channel_mapper_reader, small_frame_upmix) {
 
     const unsigned flags = Frame::FlagIncomplete;
 
-    mock_reader.setup_timestamps(start_ts, in_spec);
+    mock_reader.enable_timestamps(start_ts, in_spec);
     add_mono(mock_reader, FrameSz / 2, 0.3f, flags);
 
     sample_t samples[FrameSz] = {};
@@ -119,7 +119,7 @@ TEST(channel_mapper_reader, small_frame_downmix) {
 
     const unsigned flags = Frame::FlagIncomplete;
 
-    mock_reader.setup_timestamps(start_ts, in_spec);
+    mock_reader.enable_timestamps(start_ts, in_spec);
     add_stereo(mock_reader, FrameSz * 2, 0.2f, 0.4f, flags);
 
     sample_t samples[FrameSz] = {};
@@ -177,7 +177,7 @@ TEST(channel_mapper_reader, large_frame_upmix) {
     const unsigned flags1 = Frame::FlagIncomplete;
     const unsigned flags2 = Frame::FlagDrops;
 
-    mock_reader.setup_timestamps(start_ts, in_spec);
+    mock_reader.enable_timestamps(start_ts, in_spec);
     add_mono(mock_reader, MaxSz, 0.3f, flags1);
     add_mono(mock_reader, MaxSz, 0.3f, flags2);
 
@@ -209,7 +209,7 @@ TEST(channel_mapper_reader, large_frame_downmix) {
     const unsigned flags1 = Frame::FlagIncomplete;
     const unsigned flags2 = Frame::FlagDrops;
 
-    mock_reader.setup_timestamps(start_ts, in_spec);
+    mock_reader.enable_timestamps(start_ts, in_spec);
     add_stereo(mock_reader, MaxSz, 0.2f, 0.4f, flags1);
     add_stereo(mock_reader, MaxSz, 0.2f, 0.4f, flags2);
 

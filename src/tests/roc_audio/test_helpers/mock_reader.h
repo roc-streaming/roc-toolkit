@@ -24,7 +24,8 @@ public:
         : total_reads_(0)
         , pos_(0)
         , size_(0)
-        , fail_on_empty_(fail_on_empty) {
+        , fail_on_empty_(fail_on_empty)
+        , timestamp_(-1) {
     }
 
     virtual bool read(Frame& frame) {
@@ -46,15 +47,21 @@ public:
 
         pos_ += frame.num_samples();
 
-        if (sample_spec_.is_valid()) {
-            frame.set_capture_timestamp(base_timestamp_);
-            base_timestamp_ += sample_spec_.samples_overall_2_ns(frame.num_samples());
+        if (timestamp_ >= 0) {
+            frame.set_capture_timestamp(timestamp_);
+            timestamp_ += sample_spec_.samples_overall_2_ns(frame.num_samples());
         }
 
         return true;
     }
 
-    void add(size_t size, sample_t value, unsigned flags = 0) {
+    void enable_timestamps(const core::nanoseconds_t base_timestamp,
+                           const SampleSpec& sample_spec) {
+        timestamp_ = base_timestamp;
+        sample_spec_ = sample_spec;
+    }
+
+    void add_samples(size_t size, sample_t value, unsigned flags = 0) {
         CHECK(size_ + size < MaxSz);
 
         for (size_t n = 0; n < size; n++) {
@@ -64,18 +71,12 @@ public:
         }
     }
 
-    void pad_zeros() {
+    void add_zero_samples() {
         while (size_ < MaxSz) {
             samples_[size_] = 0;
             flags_[size_] = 0;
             size_++;
         }
-    }
-
-    void setup_timestamps(const core::nanoseconds_t base_timestamp,
-                          const SampleSpec& sample_spec) {
-        sample_spec_ = sample_spec;
-        base_timestamp_ = base_timestamp;
     }
 
     size_t total_reads() const {
@@ -98,7 +99,7 @@ private:
     const bool fail_on_empty_;
 
     SampleSpec sample_spec_;
-    core::nanoseconds_t base_timestamp_;
+    core::nanoseconds_t timestamp_;
 };
 
 } // namespace test
