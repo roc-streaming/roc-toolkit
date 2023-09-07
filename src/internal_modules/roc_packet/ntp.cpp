@@ -27,12 +27,6 @@ bool ntp_equal_delta(ntp_timestamp_t a, ntp_timestamp_t b, ntp_timestamp_t delta
     return abs_error <= delta;
 }
 
-ntp_timestamp_t ntp_timestamp() {
-    const core::nanoseconds_t unix_time = core::timestamp(core::ClockUnix);
-
-    return unix_2_ntp(unix_time);
-}
-
 ntp_timestamp_t unix_2_ntp(core::nanoseconds_t unix_time) {
     const core::nanoseconds_t ntp_time =
         unix_time + (core::nanoseconds_t)unix_epoch * core::Second;

@@ -13,7 +13,7 @@
 #define ROC_SNDIO_ISOURCE_H_
 
 #include "roc_audio/iframe_reader.h"
-#include "roc_packet/ntp.h"
+#include "roc_core/time.h"
 #include "roc_sndio/idevice.h"
 
 namespace roc {

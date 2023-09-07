@@ -12,7 +12,6 @@
 #include "roc_core/panic.h"
 #include "roc_core/time.h"
 #include "roc_fec/codec_map.h"
-#include "roc_packet/ntp.h"
 
 namespace roc {
 namespace pipeline {
@@ -285,9 +284,7 @@ audio::IFrameReader& ReceiverSession::reader() {
 void ReceiverSession::add_sending_metrics(const rtcp::SendingMetrics& metrics) {
     roc_panic_if(!is_valid());
 
-    const core::nanoseconds_t origin_unix = packet::ntp_2_unix(metrics.origin_ntp);
-
-    timestamp_injector_->update_mapping(origin_unix, metrics.origin_rtp);
+    timestamp_injector_->update_mapping(metrics.origin_time, metrics.origin_rtp);
 }
 
 void ReceiverSession::add_link_metrics(const rtcp::LinkMetrics& metrics) {
