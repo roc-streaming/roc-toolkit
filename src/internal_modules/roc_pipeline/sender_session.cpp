@@ -9,6 +9,7 @@
 #include "roc_pipeline/sender_session.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_core/time.h"
 #include "roc_fec/codec_map.h"
 
 namespace roc {
@@ -212,12 +213,10 @@ packet::source_t SenderSession::on_get_sending_source(size_t source_index) {
 }
 
 rtcp::SendingMetrics
-SenderSession::on_get_sending_metrics(packet::ntp_timestamp_t report_time) {
-    const core::nanoseconds_t origin_unix = packet::ntp_2_unix(report_time);
-
+SenderSession::on_get_sending_metrics(core::nanoseconds_t report_time) {
     rtcp::SendingMetrics metrics;
-    metrics.origin_ntp = report_time;
-    metrics.origin_rtp = timestamp_extractor_->get_mapping(origin_unix);
+    metrics.origin_time = report_time;
+    metrics.origin_rtp = timestamp_extractor_->get_mapping(report_time);
 
     return metrics;
 }

@@ -16,14 +16,6 @@ namespace packet {
 
 TEST_GROUP(ntp) {};
 
-TEST(ntp, ntp_timestamp) {
-    core::nanoseconds_t ts1 = core::timestamp(core::ClockUnix);
-    core::nanoseconds_t ts2 = ntp_2_unix(ntp_timestamp());
-
-    CHECK(ts1 <= ts2 + core::Microsecond);
-    CHECK(ts2 <= ts1 + core::Second);
-}
-
 TEST(ntp, ntp_2_unix) {
     CHECK_EQUAL(0, ntp_2_unix((uint64_t)2208988800ul << 32));
     CHECK_EQUAL((int64_t)1000 * 1000000000,

@@ -13,6 +13,7 @@
 #define ROC_RTCP_ISENDER_HOOKS_H_
 
 #include "roc_core/stddefs.h"
+#include "roc_core/time.h"
 #include "roc_rtcp/metrics.h"
 
 namespace roc {
@@ -32,9 +33,10 @@ public:
 
     //! Generate sending metrics.
     //! The obtained metrics will be sent to receiver(s).
-    //! @p report_time defines time point relative to which metrics should be calculated.
-    virtual SendingMetrics
-    on_get_sending_metrics(packet::ntp_timestamp_t report_time) = 0;
+    //! @remarks
+    //!  @p report_time defines time point relative to which metrics should be
+    //!  calculated, measured in nanoseconds since Unix epoch.
+    virtual SendingMetrics on_get_sending_metrics(core::nanoseconds_t report_time) = 0;
 
     //! Handle reception feedback metrics obtained from receiver.
     //! Called for each source.

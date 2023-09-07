@@ -26,9 +26,6 @@ typedef uint64_t ntp_timestamp_t;
 //! Compares a and b if they close enough.
 bool ntp_equal_delta(ntp_timestamp_t a, ntp_timestamp_t b, ntp_timestamp_t delta);
 
-//! Get current NTP time since NTP epoch.
-packet::ntp_timestamp_t ntp_timestamp();
-
 //! Convert Unix absolute time to NTP absolute time.
 //! @remarks
 //!  @p unix_time defines nanoseconds since Unix epoch (should be positive)

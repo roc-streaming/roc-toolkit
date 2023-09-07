@@ -14,7 +14,6 @@
 
 #include "roc_core/stddefs.h"
 #include "roc_core/time.h"
-#include "roc_packet/ntp.h"
 #include "roc_packet/units.h"
 
 namespace roc {
@@ -22,21 +21,22 @@ namespace rtcp {
 
 //! Metrics sent from sender to receiver.
 struct SendingMetrics {
-    //! NTP time when these metrics were generated.
-    packet::ntp_timestamp_t origin_ntp;
+    //! Unix time when these metrics were generated.
+    //! Nanoseconds since Unix epoch in sender clock domain.
+    core::nanoseconds_t origin_time;
 
     //! RTP timestamp correspnding to NTP timestamp.
     packet::timestamp_t origin_rtp;
 
     SendingMetrics()
-        : origin_ntp(0)
+        : origin_time(0)
         , origin_rtp(0) {
     }
 };
 
 //! Metrics sent from receiver to sender per source.
 struct ReceptionMetrics {
-    //! To which source there metrics apply.
+    //! To which source these metrics apply.
     packet::source_t ssrc;
 
     //! Fraction of lost packets.

@@ -67,8 +67,8 @@ private:
     packet::PacketPtr generate_packet_();
 
     bool build_packet_(core::Slice<uint8_t>& data);
-    void build_sender_report_(Builder& bld, packet::ntp_timestamp_t report_time);
-    void build_receiver_report_(Builder& bld, packet::ntp_timestamp_t report_time);
+    void build_sender_report_(Builder& bld, core::nanoseconds_t report_time);
+    void build_receiver_report_(Builder& bld, core::nanoseconds_t report_time);
     header::ReceptionReportBlock build_reception_block_(const ReceptionMetrics& metrics);
     void build_session_description_(Builder& bld);
     void build_source_description_(Builder& bld, packet::source_t ssrc);

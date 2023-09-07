@@ -11,7 +11,6 @@
 #include "roc_audio/sample_spec_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_packet/ntp.h"
 
 namespace roc {
 namespace audio {
