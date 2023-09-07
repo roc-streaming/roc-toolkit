@@ -62,29 +62,29 @@ void Session::process_packet(const packet::PacketPtr& packet) {
     parse_reports_(traverser);
 }
 
-core::nanoseconds_t Session::generation_deadline() {
+core::nanoseconds_t Session::generation_deadline(core::nanoseconds_t current_time) {
     if (next_deadline_ == 0) {
         // until generate_packets() is called first time, report that
         // we're ready immediately
-        next_deadline_ = core::timestamp(core::ClockMonotonic);
+        next_deadline_ = current_time;
     }
 
     return next_deadline_;
 }
 
-void Session::generate_packets() {
+void Session::generate_packets(core::nanoseconds_t current_time) {
     roc_panic_if_msg(!packet_writer_, "rtcp session: packet writer not set");
 
     if (next_deadline_ == 0) {
-        next_deadline_ = core::timestamp(core::ClockMonotonic);
+        next_deadline_ = current_time;
     }
 
     do {
         // TODO: use IntervalComputer
         next_deadline_ += core::Millisecond * 200;
-    } while (next_deadline_ <= core::timestamp(core::ClockMonotonic));
+    } while (next_deadline_ <= current_time);
 
-    packet::PacketPtr packet = generate_packet_();
+    packet::PacketPtr packet = generate_packet_(current_time);
 
     if (packet) {
         packet_writer_->write(packet);
@@ -218,7 +218,7 @@ void Session::parse_reception_block_(const header::ReceptionReportBlock& blk) {
     }
 }
 
-packet::PacketPtr Session::generate_packet_() {
+packet::PacketPtr Session::generate_packet_(core::nanoseconds_t current_time) {
     packet::PacketPtr packet = packet_factory_.new_packet();
     if (!packet) {
         roc_log(LogError, "rtcp session: can't create packet");
@@ -236,7 +236,7 @@ packet::PacketPtr Session::generate_packet_() {
     rtcp_data.reslice(0, 0);
 
     // fill RTCP packet
-    if (!build_packet_(rtcp_data)) {
+    if (!build_packet_(rtcp_data, current_time)) {
         roc_log(LogError, "rtcp session: can't build packet");
         return NULL;
     }
@@ -277,10 +277,7 @@ packet::PacketPtr Session::generate_packet_() {
     return packet;
 }
 
-bool Session::build_packet_(core::Slice<uint8_t>& data) {
-    // FIXME
-    const core::nanoseconds_t report_time = core::timestamp(core::ClockUnix);
-
+bool Session::build_packet_(core::Slice<uint8_t>& data, core::nanoseconds_t report_time) {
     Builder bld(data);
 
     if (send_hooks_) {

@@ -48,11 +48,13 @@ public:
 
     //! When we should generate packets next time.
     //! Returns absolute time.
-    core::nanoseconds_t generation_deadline();
+    //! @p current_time is current time in nanoseconds since Unix epoch.
+    core::nanoseconds_t generation_deadline(core::nanoseconds_t current_time);
 
     //! Generate and send packet(s).
     //! Should be called accroding to generation_deadline().
-    void generate_packets();
+    //! @p current_time is current time in nanoseconds since Unix epoch.
+    void generate_packets(core::nanoseconds_t current_time);
 
 private:
     void parse_events_(const Traverser& traverser);
@@ -64,9 +66,9 @@ private:
     void parse_receiver_report_(const header::ReceiverReportPacket& rr);
     void parse_reception_block_(const header::ReceptionReportBlock& blk);
 
-    packet::PacketPtr generate_packet_();
+    packet::PacketPtr generate_packet_(core::nanoseconds_t current_time);
 
-    bool build_packet_(core::Slice<uint8_t>& data);
+    bool build_packet_(core::Slice<uint8_t>& data, core::nanoseconds_t report_time);
     void build_sender_report_(Builder& bld, core::nanoseconds_t report_time);
     void build_receiver_report_(Builder& bld, core::nanoseconds_t report_time);
     header::ReceptionReportBlock build_reception_block_(const ReceptionMetrics& metrics);

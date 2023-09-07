@@ -64,10 +64,10 @@ public:
     audio::IFrameWriter* writer() const;
 
     //! Get deadline when the pipeline should be updated.
-    core::nanoseconds_t get_update_deadline() const;
+    core::nanoseconds_t get_update_deadline(core::nanoseconds_t current_time) const;
 
     //! Update pipeline.
-    void update();
+    void update(core::nanoseconds_t current_time);
 
 private:
     // Implementation of rtcp::ISenderHooks interface.

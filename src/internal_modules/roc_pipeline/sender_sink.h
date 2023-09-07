@@ -64,10 +64,10 @@ public:
     void delete_slot(SenderSlot* slot);
 
     //! Get deadline when the pipeline should be updated.
-    core::nanoseconds_t get_update_deadline();
+    core::nanoseconds_t get_update_deadline(core::nanoseconds_t current_time);
 
     //! Update pipeline.
-    void update();
+    void update(core::nanoseconds_t current_time);
 
     //! Get device type.
     virtual sndio::DeviceType type() const;
@@ -97,7 +97,7 @@ public:
     virtual void write(audio::Frame& frame);
 
 private:
-    void compute_update_deadline_();
+    void compute_update_deadline_(core::nanoseconds_t current_time);
     void invalidate_update_deadline_();
 
     const SenderConfig config_;
