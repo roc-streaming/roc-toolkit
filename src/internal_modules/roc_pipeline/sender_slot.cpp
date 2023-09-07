@@ -111,12 +111,13 @@ bool SenderSlot::is_complete() const {
     return session_.writer();
 }
 
-core::nanoseconds_t SenderSlot::get_update_deadline() const {
-    return session_.get_update_deadline();
+core::nanoseconds_t
+SenderSlot::get_update_deadline(core::nanoseconds_t current_time) const {
+    return session_.get_update_deadline(current_time);
 }
 
-void SenderSlot::update() {
-    session_.update();
+void SenderSlot::update(core::nanoseconds_t current_time) {
+    session_.update(current_time);
 }
 
 SenderEndpoint*

@@ -179,17 +179,18 @@ audio::IFrameWriter* SenderSession::writer() const {
     return audio_writer_;
 }
 
-core::nanoseconds_t SenderSession::get_update_deadline() const {
+core::nanoseconds_t
+SenderSession::get_update_deadline(core::nanoseconds_t current_time) const {
     if (rtcp_session_) {
-        return rtcp_session_->generation_deadline();
+        return rtcp_session_->generation_deadline(current_time);
     }
 
     return 0;
 }
 
-void SenderSession::update() {
+void SenderSession::update(core::nanoseconds_t current_time) {
     if (rtcp_session_ && timestamp_extractor_->has_mapping()) {
-        rtcp_session_->generate_packets();
+        rtcp_session_->generate_packets(current_time);
     }
 }
 

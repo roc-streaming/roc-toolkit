@@ -80,19 +80,19 @@ void SenderSink::delete_slot(SenderSlot* slot) {
     invalidate_update_deadline_();
 }
 
-core::nanoseconds_t SenderSink::get_update_deadline() {
+core::nanoseconds_t SenderSink::get_update_deadline(core::nanoseconds_t current_time) {
     if (!update_deadline_valid_) {
-        compute_update_deadline_();
+        compute_update_deadline_(current_time);
     }
 
     return update_deadline_;
 }
 
-void SenderSink::update() {
+void SenderSink::update(core::nanoseconds_t current_time) {
     core::SharedPtr<SenderSlot> slot;
 
     for (slot = slots_.front(); slot; slot = slots_.nextof(*slot)) {
-        slot->update();
+        slot->update(current_time);
     }
 
     invalidate_update_deadline_();
@@ -136,13 +136,13 @@ void SenderSink::write(audio::Frame& frame) {
     audio_writer_->write(frame);
 }
 
-void SenderSink::compute_update_deadline_() {
+void SenderSink::compute_update_deadline_(core::nanoseconds_t current_time) {
     core::SharedPtr<SenderSlot> slot;
 
     update_deadline_ = 0;
 
     for (slot = slots_.front(); slot; slot = slots_.nextof(*slot)) {
-        const core::nanoseconds_t deadline = slot->get_update_deadline();
+        const core::nanoseconds_t deadline = slot->get_update_deadline(current_time);
         if (deadline == 0) {
             continue;
         }
