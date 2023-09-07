@@ -153,9 +153,9 @@ void resample_reader(IResampler& resampler,
                      float scaling) {
     test::MockReader input_reader;
     for (size_t n = 0; n < num_samples; n++) {
-        input_reader.add(1, in[n]);
+        input_reader.add_samples(1, in[n]);
     }
-    input_reader.pad_zeros();
+    input_reader.add_zero_samples();
 
     ResamplerReader rr(input_reader, resampler, sample_spec, sample_spec);
     CHECK(rr.is_valid());
@@ -252,7 +252,7 @@ TEST(resampler, supported_scalings) {
                         CHECK(resampler->is_valid());
 
                         test::MockReader input_reader;
-                        input_reader.pad_zeros();
+                        input_reader.add_zero_samples();
 
                         ResamplerReader rr(input_reader, *resampler, in_sample_specs,
                                            out_sample_specs);
@@ -475,8 +475,8 @@ TEST(resampler, timestamp_passthrough_reader) {
             core::nanoseconds_t(1. / InSampleRate * core::Second);
 
         test::MockReader input_reader;
-        input_reader.setup_timestamps(start_ts, InSampleSpecs);
-        input_reader.pad_zeros();
+        input_reader.enable_timestamps(start_ts, InSampleSpecs);
+        input_reader.add_zero_samples();
         ResamplerReader rreader(input_reader, *resampler, InSampleSpecs, OutSampleSpecs);
         // Immediate sample rate.
         float scale = 1.0f;
