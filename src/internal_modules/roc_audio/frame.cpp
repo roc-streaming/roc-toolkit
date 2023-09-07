@@ -53,7 +53,7 @@ void Frame::set_capture_timestamp(core::nanoseconds_t capture_ts) {
         roc_panic("frame: can't set cts to negative value: %lld", (long long)capture_ts);
     }
 
-    if (capture_timestamp_ != 0) {
+    if (capture_timestamp_ != 0 && capture_ts != 0) {
         roc_panic("frame: can't set cts more than once");
     }
 

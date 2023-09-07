@@ -30,7 +30,7 @@ ReceiverSource::ReceiverSource(
     , audio_reader_(NULL)
     , config_(config)
     , timestamp_(0) {
-    mixer_.reset(new (mixer_) audio::Mixer(sample_buffer_factory));
+    mixer_.reset(new (mixer_) audio::Mixer(sample_buffer_factory, true));
     if (!mixer_ || !mixer_->is_valid()) {
         return;
     }
