@@ -198,7 +198,7 @@ TEST(transcoder_source, frame_size_large) {
     UNSIGNED_LONGS_EQUAL(mock_source.num_remaining(), 0);
 }
 
-TEST(transcoder_source, channels_stereo_to_mono) {
+TEST(transcoder_source, channel_mapping_stereo_to_mono) {
     enum { InputChans = Chans_Stereo, OutputChans = Chans_Mono };
 
     init(InputChans, OutputChans);
@@ -218,7 +218,7 @@ TEST(transcoder_source, channels_stereo_to_mono) {
     UNSIGNED_LONGS_EQUAL(mock_source.num_remaining(), 0);
 }
 
-TEST(transcoder_source, channels_mono_to_stereo) {
+TEST(transcoder_source, channel_mapping_mono_to_stereo) {
     enum { InputChans = Chans_Mono, OutputChans = Chans_Stereo };
 
     init(InputChans, OutputChans);

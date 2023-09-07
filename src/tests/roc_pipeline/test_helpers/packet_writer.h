@@ -11,6 +11,7 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_packet/units.h"
 #include "test_helpers/utils.h"
 
 #include "roc_audio/iframe_encoder.h"
@@ -76,6 +77,10 @@ public:
         offset_ = uint8_t(offset);
     }
 
+    packet::source_t source() const {
+        return source_;
+    }
+
     void set_source(packet::source_t source) {
         source_ = source;
     }
@@ -86,6 +91,10 @@ public:
 
     void set_seqnum(packet::seqnum_t seqnum) {
         seqnum_ = seqnum;
+    }
+
+    packet::timestamp_t timestamp() const {
+        return timestamp_;
     }
 
     void set_timestamp(packet::timestamp_t timestamp) {

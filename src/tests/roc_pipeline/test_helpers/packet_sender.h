@@ -24,14 +24,31 @@ class PacketSender : public packet::IWriter, core::NonCopyable<> {
 public:
     PacketSender(packet::PacketFactory& packet_factory,
                  packet::IWriter* source_writer,
-                 packet::IWriter* repair_writer)
+                 packet::IWriter* repair_writer,
+                 packet::IWriter* control_writer)
         : packet_factory_(packet_factory)
         , source_writer_(source_writer)
-        , repair_writer_(repair_writer) {
+        , repair_writer_(repair_writer)
+        , control_writer_(control_writer)
+        , n_source_(0)
+        , n_repair_(0)
+        , n_control_(0) {
     }
 
     virtual void write(const packet::PacketPtr& pp) {
         queue_.write(pp);
+    }
+
+    size_t n_source() const {
+        return n_source_;
+    }
+
+    size_t n_repair() const {
+        return n_repair_;
+    }
+
+    size_t n_control() const {
+        return n_control_;
     }
 
     void deliver(size_t n_source_packets) {
@@ -41,18 +58,27 @@ public:
                 break;
             }
 
-            if (pp->flags() & packet::Packet::FlagRepair) {
+            if (pp->flags() & packet::Packet::FlagControl) {
+                CHECK(control_writer_);
+                control_writer_->write(copy_packet_(pp));
+                n_control_++;
+            } else if (pp->flags() & packet::Packet::FlagRepair) {
                 CHECK(repair_writer_);
                 repair_writer_->write(copy_packet_(pp));
+                n_repair_++;
             } else {
                 CHECK(source_writer_);
-                np++;
                 source_writer_->write(copy_packet_(pp));
+                n_source_++;
+                np++;
             }
         }
     }
 
 private:
+    // creates a new packet with the same buffer, clearing all meta-information
+    // like flags, parsed fields, etc; this way we simulate delivering packet
+    // over network
     packet::PacketPtr copy_packet_(const packet::PacketPtr& pa) {
         packet::PacketPtr pb = packet_factory_.new_packet();
         CHECK(pb);
@@ -67,8 +93,15 @@ private:
     }
 
     packet::PacketFactory& packet_factory_;
+
     packet::IWriter* source_writer_;
     packet::IWriter* repair_writer_;
+    packet::IWriter* control_writer_;
+
+    size_t n_source_;
+    size_t n_repair_;
+    size_t n_control_;
+
     packet::Queue queue_;
 };
 

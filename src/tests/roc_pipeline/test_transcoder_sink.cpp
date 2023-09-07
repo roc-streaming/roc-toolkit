@@ -8,8 +8,8 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "test_helpers/frame_checker.h"
 #include "test_helpers/frame_writer.h"
+#include "test_helpers/mock_sink.h"
 
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
@@ -52,21 +52,22 @@ TEST_GROUP(transcoder_sink) {
         return config;
     }
 
-    void init(audio::ChannelMask input_channels, audio::ChannelMask output_channels) {
-        input_sample_spec.set_sample_rate(SampleRate);
+    void init(int input_sample_rate, audio::ChannelMask input_channels,
+              int output_sample_rate, audio::ChannelMask output_channels) {
+        input_sample_spec.set_sample_rate((size_t)input_sample_rate);
         input_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
         input_sample_spec.channel_set().set_channel_mask(input_channels);
 
-        output_sample_spec.set_sample_rate(SampleRate);
+        output_sample_spec.set_sample_rate((size_t)output_sample_rate);
         output_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
         output_sample_spec.channel_set().set_channel_mask(output_channels);
     }
 };
 
 TEST(transcoder_sink, null) {
-    enum { Chans = Chans_Stereo };
+    enum { Rate = SampleRate, Chans = Chans_Stereo };
 
-    init(Chans, Chans);
+    init(Rate, Chans, Rate, Chans);
 
     TranscoderSink transcoder(make_config(), NULL, sample_buffer_factory, arena);
     CHECK(transcoder.is_valid());
@@ -79,14 +80,13 @@ TEST(transcoder_sink, null) {
 }
 
 TEST(transcoder_sink, write) {
-    enum { Chans = Chans_Stereo };
+    enum { Rate = SampleRate, Chans = Chans_Stereo };
 
-    init(Chans, Chans);
+    init(Rate, Chans, Rate, Chans);
 
-    test::FrameChecker frame_checker(output_sample_spec);
+    test::MockSink mock_sink(output_sample_spec);
 
-    TranscoderSink transcoder(make_config(), &frame_checker, sample_buffer_factory,
-                              arena);
+    TranscoderSink transcoder(make_config(), &mock_sink, sample_buffer_factory, arena);
     CHECK(transcoder.is_valid());
 
     test::FrameWriter frame_writer(transcoder, sample_buffer_factory);
@@ -95,19 +95,22 @@ TEST(transcoder_sink, write) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
     }
 
-    frame_checker.expect_frames(ManyFrames);
-    frame_checker.expect_samples(ManyFrames * SamplesPerFrame);
+    mock_sink.expect_frames(ManyFrames);
+    mock_sink.expect_samples(ManyFrames * SamplesPerFrame);
 }
 
 TEST(transcoder_sink, frame_size_small) {
-    enum { Chans = Chans_Stereo, SamplesPerSmallFrame = SamplesPerFrame / 2 - 3 };
+    enum {
+        Rate = SampleRate,
+        Chans = Chans_Stereo,
+        SamplesPerSmallFrame = SamplesPerFrame / 2 - 3
+    };
 
-    init(Chans, Chans);
+    init(Rate, Chans, Rate, Chans);
 
-    test::FrameChecker frame_checker(output_sample_spec);
+    test::MockSink mock_sink(output_sample_spec);
 
-    TranscoderSink transcoder(make_config(), &frame_checker, sample_buffer_factory,
-                              arena);
+    TranscoderSink transcoder(make_config(), &mock_sink, sample_buffer_factory, arena);
     CHECK(transcoder.is_valid());
 
     test::FrameWriter frame_writer(transcoder, sample_buffer_factory);
@@ -116,19 +119,22 @@ TEST(transcoder_sink, frame_size_small) {
         frame_writer.write_samples(SamplesPerSmallFrame, input_sample_spec);
     }
 
-    frame_checker.expect_frames(ManyFrames);
-    frame_checker.expect_samples(ManyFrames * SamplesPerSmallFrame);
+    mock_sink.expect_frames(ManyFrames);
+    mock_sink.expect_samples(ManyFrames * SamplesPerSmallFrame);
 }
 
 TEST(transcoder_sink, frame_size_large) {
-    enum { Chans = Chans_Stereo, SamplesPerLargeFrame = SamplesPerFrame * 2 + 3 };
+    enum {
+        Rate = SampleRate,
+        Chans = Chans_Stereo,
+        SamplesPerLargeFrame = SamplesPerFrame * 2 + 3
+    };
 
-    init(Chans, Chans);
+    init(Rate, Chans, Rate, Chans);
 
-    test::FrameChecker frame_checker(output_sample_spec);
+    test::MockSink mock_sink(output_sample_spec);
 
-    TranscoderSink transcoder(make_config(), &frame_checker, sample_buffer_factory,
-                              arena);
+    TranscoderSink transcoder(make_config(), &mock_sink, sample_buffer_factory, arena);
     CHECK(transcoder.is_valid());
 
     test::FrameWriter frame_writer(transcoder, sample_buffer_factory);
@@ -137,19 +143,18 @@ TEST(transcoder_sink, frame_size_large) {
         frame_writer.write_samples(SamplesPerLargeFrame, input_sample_spec);
     }
 
-    frame_checker.expect_frames(ManyFrames);
-    frame_checker.expect_samples(ManyFrames * SamplesPerLargeFrame);
+    mock_sink.expect_frames(ManyFrames);
+    mock_sink.expect_samples(ManyFrames * SamplesPerLargeFrame);
 }
 
-TEST(transcoder_sink, channels_stereo_to_mono) {
-    enum { InputChans = Chans_Stereo, OutputChans = Chans_Mono };
+TEST(transcoder_sink, channel_mapping_stereo_to_mono) {
+    enum { Rate = SampleRate, InputChans = Chans_Stereo, OutputChans = Chans_Mono };
 
-    init(InputChans, OutputChans);
+    init(Rate, InputChans, Rate, OutputChans);
 
-    test::FrameChecker frame_checker(output_sample_spec);
+    test::MockSink mock_sink(output_sample_spec);
 
-    TranscoderSink transcoder(make_config(), &frame_checker, sample_buffer_factory,
-                              arena);
+    TranscoderSink transcoder(make_config(), &mock_sink, sample_buffer_factory, arena);
     CHECK(transcoder.is_valid());
 
     test::FrameWriter frame_writer(transcoder, sample_buffer_factory);
@@ -158,19 +163,18 @@ TEST(transcoder_sink, channels_stereo_to_mono) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
     }
 
-    frame_checker.expect_frames(ManyFrames);
-    frame_checker.expect_samples(ManyFrames * SamplesPerFrame);
+    mock_sink.expect_frames(ManyFrames);
+    mock_sink.expect_samples(ManyFrames * SamplesPerFrame);
 }
 
-TEST(transcoder_sink, channels_mono_to_stereo) {
-    enum { InputChans = Chans_Mono, OutputChans = Chans_Stereo };
+TEST(transcoder_sink, channel_mapping_mono_to_stereo) {
+    enum { Rate = SampleRate, InputChans = Chans_Mono, OutputChans = Chans_Stereo };
 
-    init(InputChans, OutputChans);
+    init(Rate, InputChans, Rate, OutputChans);
 
-    test::FrameChecker frame_checker(output_sample_spec);
+    test::MockSink mock_sink(output_sample_spec);
 
-    TranscoderSink transcoder(make_config(), &frame_checker, sample_buffer_factory,
-                              arena);
+    TranscoderSink transcoder(make_config(), &mock_sink, sample_buffer_factory, arena);
     CHECK(transcoder.is_valid());
 
     test::FrameWriter frame_writer(transcoder, sample_buffer_factory);
@@ -179,8 +183,8 @@ TEST(transcoder_sink, channels_mono_to_stereo) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
     }
 
-    frame_checker.expect_frames(ManyFrames);
-    frame_checker.expect_samples(ManyFrames * SamplesPerFrame);
+    mock_sink.expect_frames(ManyFrames);
+    mock_sink.expect_samples(ManyFrames * SamplesPerFrame);
 }
 
 } // namespace pipeline
