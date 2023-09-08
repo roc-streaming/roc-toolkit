@@ -203,19 +203,13 @@ ReceiverSession::ReceiverSession(
     areader = session_poisoner_.get();
 
     latency_monitor_.reset(new (latency_monitor_) audio::LatencyMonitor(
-        *source_queue_, *depacketizer_, resampler_reader_.get(),
+        *areader, *source_queue_, *depacketizer_, resampler_reader_.get(),
         session_config.latency_monitor, session_config.target_latency,
         format->sample_spec, common_config.output_sample_spec));
     if (!latency_monitor_ || !latency_monitor_->is_valid()) {
         return;
     }
-
-    e2e_latency_monitor_.reset(new (e2e_latency_monitor_)
-                                   audio::EndToEndLatencyMonitor(*areader));
-    if (!e2e_latency_monitor_) {
-        return;
-    }
-    areader = e2e_latency_monitor_.get();
+    areader = latency_monitor_.get();
 
     audio_reader_ = areader;
 }
@@ -249,10 +243,8 @@ bool ReceiverSession::advance(packet::timestamp_t timestamp) {
         }
     }
 
-    if (latency_monitor_) {
-        if (!latency_monitor_->update(timestamp)) {
-            return false;
-        }
+    if (!latency_monitor_->update(timestamp)) {
+        return false;
     }
 
     return true;
@@ -266,11 +258,10 @@ bool ReceiverSession::reclock(core::nanoseconds_t) {
 }
 
 SessionStats ReceiverSession::stats() const {
-    SessionStats stats;
+    roc_panic_if(!is_valid());
 
-    if (e2e_latency_monitor_->has_latency()) {
-        stats.end_to_end_latency = e2e_latency_monitor_->latency();
-    }
+    SessionStats stats;
+    stats.latency = latency_monitor_->stats();
 
     return stats;
 }
