@@ -560,7 +560,7 @@ TEST(depacketizer, timestamp) {
         capt_ts += SampleSpecs.samples_per_chan_2_ns(SamplesPerFrame);
 
         CHECK(!dp.is_started());
-        UNSIGNED_LONGS_EQUAL(0, dp.timestamp());
+        UNSIGNED_LONGS_EQUAL(0, dp.next_timestamp());
     }
 
     capt_ts = Now;
@@ -580,7 +580,7 @@ TEST(depacketizer, timestamp) {
         ts += SamplesPerFrame;
 
         CHECK(dp.is_started());
-        UNSIGNED_LONGS_EQUAL(ts, dp.timestamp());
+        UNSIGNED_LONGS_EQUAL(ts, dp.next_timestamp());
     }
 
     for (size_t n = 0; n < NumPackets * FramesPerPacket; n++) {
@@ -590,7 +590,7 @@ TEST(depacketizer, timestamp) {
         ts += SamplesPerFrame;
 
         CHECK(dp.is_started());
-        UNSIGNED_LONGS_EQUAL(ts, dp.timestamp());
+        UNSIGNED_LONGS_EQUAL(ts, dp.next_timestamp());
     }
 }
 

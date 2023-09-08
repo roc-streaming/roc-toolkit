@@ -52,8 +52,8 @@ public:
 
     //! Get next timestamp to be rendered.
     //! @pre
-    //!  started() should return true
-    packet::timestamp_t timestamp() const;
+    //!  is_started() should return true
+    packet::timestamp_t next_timestamp() const;
 
 private:
     struct FrameInfo {
