@@ -61,7 +61,7 @@ bool Depacketizer::is_started() const {
     return !first_packet_;
 }
 
-packet::timestamp_t Depacketizer::timestamp() const {
+packet::timestamp_t Depacketizer::next_timestamp() const {
     if (first_packet_) {
         return 0;
     }

@@ -129,7 +129,7 @@ bool LatencyMonitor::get_latency_(packet::timestamp_diff_t& latency) const {
         return false;
     }
 
-    const packet::timestamp_t head = depacketizer_.timestamp();
+    const packet::timestamp_t head = depacketizer_.next_timestamp();
 
     packet::PacketPtr latest = queue_.latest();
     if (!latest) {
