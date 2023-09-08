@@ -23,6 +23,16 @@
 //! Get number of elements in a static array.
 #define ROC_ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
+//! Get minimum value of signed or unsigned integer type.
+#define ROC_MIN_OF(type)                                                                 \
+    ((type)-1 > (type)0 ? (type)0                                                        \
+                        : (type)((~0ull) - ((1ull << ((sizeof(type) * 8) - 1)) - 1ull)))
+
+//! Get maximum value of signed or unsigned integer type.
+#define ROC_MAX_OF(type)                                                                 \
+    ((type)-1 > (type)0 ? (type)(~0ull)                                                  \
+                        : (type)((1ull << ((sizeof(type) * 8) - 1)) - 1ull))
+
 //! Cast a member of a structure out to the containing structure.
 #define ROC_CONTAINER_OF(ptr, type, member)                                              \
     (reinterpret_cast<type*>((char*)(ptr)-offsetof(type, member)))

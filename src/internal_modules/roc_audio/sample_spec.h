@@ -87,21 +87,41 @@ public:
     //! @{
 
     //! Convert nanoseconds duration to number of samples per channel.
+    //! @pre
+    //!  @p ns_duration should not be negative.
+    //! @note
+    //!  In case of overflow, result is saturated.
     size_t ns_2_samples_per_chan(core::nanoseconds_t ns_duration) const;
 
     //! Convert number of samples per channel to nanoseconds duration.
+    //! @note
+    //!  In case of overflow, result is saturated.
     core::nanoseconds_t samples_per_chan_2_ns(size_t n_samples) const;
 
     //! Convert (possibly fractional) number samples per channel to nanoseconds duration.
+    //! @note
+    //!  In case of overflow, result is saturated.
     core::nanoseconds_t fract_samples_per_chan_2_ns(float n_samples) const;
 
     //! Convert nanoseconds duration to number of samples for all channels.
+    //! @pre
+    //!  @p ns_duration should not be negative.
+    //! @post
+    //!  result is always multiple of number of channels.
+    //! @note
+    //!  In case of overflow, result is saturated.
     size_t ns_2_samples_overall(core::nanoseconds_t ns_duration) const;
 
     //! Convert number of samples for all channels to nanoseconds duration.
+    //! @pre
+    //!  @p n_samples should be multiple of number of channels.
+    //! @note
+    //!  In case of overflow, result is saturated.
     core::nanoseconds_t samples_overall_2_ns(size_t n_samples) const;
 
     //! Convert number of samples (possibly non-integer) to nanoseconds.
+    //! @note
+    //!  In case of overflow, result is saturated.
     core::nanoseconds_t fract_samples_overall_2_ns(float n_samples) const;
 
     // @}
@@ -110,12 +130,12 @@ public:
     //! @{
 
     //! Convert nanoseconds delta to RTP timestamp delta.
-    //! @note
+    //! @remarks
     //!  Same as ns_2_samples_per_chan(), but supports negative deltas.
     packet::timestamp_diff_t ns_2_rtp_timestamp(core::nanoseconds_t ns_delta) const;
 
     //! Convert RTP timestamp delta to nanoseconds delta.
-    //! @note
+    //! @remarks
     //!  Same as samples_per_chan_2_ns(), but supports negative deltas.
     core::nanoseconds_t rtp_timestamp_2_ns(packet::timestamp_diff_t rtp_delta) const;
 
