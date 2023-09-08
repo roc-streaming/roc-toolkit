@@ -53,15 +53,18 @@ public:
     //! Initialize.
     //!
     //! @b Parameters
+    //!  - @p name defines pool name, used for logging
     //!  - @p arena is used to allocate slabs
     //!  - @p object_size defines size of single object in bytes
     //!  - @p min_alloc_bytes defines minimum size in bytes per request to arena
     //!  - @p max_alloc_bytes defines maximum size in bytes per request to arena
-    explicit Pool(IArena& arena,
+    explicit Pool(const char* name,
+                  IArena& arena,
                   size_t object_size = sizeof(T),
                   size_t min_alloc_bytes = 0,
                   size_t max_alloc_bytes = 0)
-        : impl_(arena,
+        : impl_(name,
+                arena,
                 object_size,
                 min_alloc_bytes,
                 max_alloc_bytes,
