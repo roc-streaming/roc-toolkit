@@ -48,10 +48,6 @@ void Logger::set_verbosity(unsigned verb) {
         set_level(LogDebug);
         break;
 
-    case 3:
-        set_level(LogDebug);
-        break;
-
     default:
         set_level(LogTrace);
         break;
