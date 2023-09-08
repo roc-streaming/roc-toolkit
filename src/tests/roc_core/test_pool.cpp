@@ -44,7 +44,7 @@ TEST_GROUP(pool) {};
 
 TEST(pool, object_size) {
     TestArena arena;
-    Pool<TestObject> pool(arena);
+    Pool<TestObject> pool("test", arena);
 
     LONGS_EQUAL(sizeof(TestObject), pool.object_size());
 }
@@ -53,7 +53,7 @@ TEST(pool, allocate_deallocate) {
     TestArena arena;
 
     {
-        Pool<TestObject> pool(arena);
+        Pool<TestObject> pool("test", arena);
 
         LONGS_EQUAL(0, arena.num_allocations());
 
@@ -74,7 +74,7 @@ TEST(pool, allocate_deallocate_many) {
     TestArena arena;
 
     {
-        Pool<TestObject> pool(arena);
+        Pool<TestObject> pool("test", arena);
 
         for (int i = 0; i < 10; i++) {
             void* pointers[1 + 2 + 4] = {};
@@ -118,7 +118,7 @@ TEST(pool, reserve) {
     TestArena arena;
 
     {
-        Pool<TestObject> pool(arena);
+        Pool<TestObject> pool("test", arena);
 
         LONGS_EQUAL(0, arena.num_allocations());
 
@@ -143,7 +143,7 @@ TEST(pool, reserve_many) {
     TestArena arena;
 
     {
-        Pool<TestObject> pool(arena);
+        Pool<TestObject> pool("test", arena);
 
         for (int i = 0; i < 10; i++) {
             void* pointers[1 + 2 + 4] = {};
@@ -199,7 +199,7 @@ TEST(pool, min_size_allocate) {
     // min_size=0
     {
         TestArena arena;
-        Pool<TestObject> pool(arena,
+        Pool<TestObject> pool("test", arena,
                               sizeof(TestObject), // object_size
                               0,                  // min_size
                               0                   // max_size
@@ -217,7 +217,7 @@ TEST(pool, min_size_allocate) {
     // min_size=sizeof(TestObject)
     {
         TestArena arena;
-        Pool<TestObject> pool(arena,
+        Pool<TestObject> pool("test", arena,
                               sizeof(TestObject), // object_size
                               sizeof(TestObject), // min_size
                               0                   // max_size
@@ -235,7 +235,7 @@ TEST(pool, min_size_allocate) {
     // min_size=sizeof(TestObject)*2
     {
         TestArena arena;
-        Pool<TestObject> pool(arena,
+        Pool<TestObject> pool("test", arena,
                               sizeof(TestObject),     // object_size
                               sizeof(TestObject) * 2, // min_size
                               0                       // max_size
@@ -256,7 +256,7 @@ TEST(pool, min_size_reserve) {
     // min_size=0
     {
         TestArena arena;
-        Pool<TestObject> pool(arena,
+        Pool<TestObject> pool("test", arena,
                               sizeof(TestObject), // object_size
                               0,                  // min_size
                               0                   // max_size
@@ -272,7 +272,7 @@ TEST(pool, min_size_reserve) {
     // min_size=sizeof(TestObject)
     {
         TestArena arena;
-        Pool<TestObject> pool(arena,
+        Pool<TestObject> pool("test", arena,
                               sizeof(TestObject), // object_size
                               sizeof(TestObject), // min_size
                               0                   // max_size
@@ -288,7 +288,7 @@ TEST(pool, min_size_reserve) {
     // min_size=sizeof(TestObject)*2
     {
         TestArena arena;
-        Pool<TestObject> pool(arena,
+        Pool<TestObject> pool("test", arena,
                               sizeof(TestObject),     // object_size
                               sizeof(TestObject) * 2, // min_size
                               0                       // max_size
@@ -307,7 +307,7 @@ TEST(pool, max_size_allocate) {
     // max_size=0
     {
         TestArena arena;
-        Pool<TestObject> pool(arena,
+        Pool<TestObject> pool("test", arena,
                               sizeof(TestObject), // object_size
                               0,                  // min_size
                               0                   // max_size
@@ -331,7 +331,7 @@ TEST(pool, max_size_allocate) {
     // max_size=sizeof(TestObject)*100
     {
         TestArena arena;
-        Pool<TestObject> pool(arena,
+        Pool<TestObject> pool("test", arena,
                               sizeof(TestObject),      // object_size
                               0,                       // min_size
                               sizeof(TestObject) * 100 // max_size
@@ -355,7 +355,7 @@ TEST(pool, max_size_allocate) {
     // max_size=sizeof(TestObject)*2
     {
         TestArena arena;
-        Pool<TestObject> pool(arena,
+        Pool<TestObject> pool("test", arena,
                               sizeof(TestObject),    // object_size
                               0,                     // min_size
                               sizeof(TestObject) * 2 // max_size
@@ -382,7 +382,7 @@ TEST(pool, max_size_reserve) {
     // max_size=0
     {
         TestArena arena;
-        Pool<TestObject> pool(arena,
+        Pool<TestObject> pool("test", arena,
                               sizeof(TestObject), // object_size
                               0,                  // min_size
                               0                   // max_size
@@ -395,7 +395,7 @@ TEST(pool, max_size_reserve) {
     // max_size=sizeof(TestObject)*100
     {
         TestArena arena;
-        Pool<TestObject> pool(arena,
+        Pool<TestObject> pool("test", arena,
                               sizeof(TestObject),      // object_size
                               0,                       // min_size
                               sizeof(TestObject) * 100 // max_size
@@ -408,7 +408,7 @@ TEST(pool, max_size_reserve) {
     // max_size=sizeof(TestObject)*2
     {
         TestArena arena;
-        Pool<TestObject> pool(arena,
+        Pool<TestObject> pool("test", arena,
                               sizeof(TestObject),    // object_size
                               0,                     // min_size
                               sizeof(TestObject) * 2 // max_size
@@ -424,7 +424,7 @@ TEST(pool, embedded_capacity) {
     TestArena arena;
 
     {
-        Pool<TestObject, 5> pool(arena);
+        Pool<TestObject, 5> pool("test", arena);
 
         LONGS_EQUAL(0, arena.num_allocations());
 
@@ -456,7 +456,7 @@ TEST(pool, embedded_capacity_reuse) {
     TestArena arena;
 
     {
-        Pool<TestObject, 5> pool(arena);
+        Pool<TestObject, 5> pool("test", arena);
 
         for (int i = 0; i < 10; i++) {
             LONGS_EQUAL(0, arena.num_allocations());

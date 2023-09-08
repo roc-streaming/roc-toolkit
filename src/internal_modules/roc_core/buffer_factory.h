@@ -29,7 +29,7 @@ public:
     //! Initialization.
     //! @p buffer_size defines number of elements in buffer.
     BufferFactory(IArena& arena, size_t buffer_size)
-        : buffer_pool_(arena, sizeof(Buffer<T>) + sizeof(T) * buffer_size)
+        : buffer_pool_("buffer_pool", arena, sizeof(Buffer<T>) + sizeof(T) * buffer_size)
         , buffer_size_(buffer_size) {
     }
 

@@ -31,7 +31,8 @@ namespace core {
 class PoolImpl : public NonCopyable<> {
 public:
     //! Initialize.
-    PoolImpl(IArena& arena,
+    PoolImpl(const char* name,
+             IArena& arena,
              size_t object_size,
              size_t min_alloc_bytes,
              size_t max_alloc_bytes,

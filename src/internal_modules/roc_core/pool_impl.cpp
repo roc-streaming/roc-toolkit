@@ -29,7 +29,8 @@ size_t clamp(size_t value, size_t lower_limit, size_t upper_limit) {
 
 } // namespace
 
-PoolImpl::PoolImpl(IArena& arena,
+PoolImpl::PoolImpl(const char* name,
+                   IArena& arena,
                    size_t object_size,
                    size_t min_alloc_bytes,
                    size_t max_alloc_bytes,
@@ -46,8 +47,8 @@ PoolImpl::PoolImpl(IArena& arena,
     , object_size_(object_size) {
     roc_log(LogDebug,
             "pool: initializing:"
-            " object_size=%lu min_slab=%luB(%luS) max_slab=%luB(%luS)",
-            (unsigned long)slot_size_, (unsigned long)slab_min_bytes_,
+            " name=%s object_size=%lu min_slab=%luB(%luS) max_slab=%luB(%luS)",
+            name, (unsigned long)slot_size_, (unsigned long)slab_min_bytes_,
             (unsigned long)slab_cur_slots_, (unsigned long)slab_max_bytes_,
             (unsigned long)slab_max_slots_);
 
