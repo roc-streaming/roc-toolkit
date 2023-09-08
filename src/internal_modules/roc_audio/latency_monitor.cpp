@@ -47,14 +47,15 @@ LatencyMonitor::LatencyMonitor(const packet::SortedQueue& queue,
     roc_log(LogDebug,
             "latency monitor: initializing:"
             " target_latency=%lu(%.3fms) in_rate=%lu out_rate=%lu"
-            " fe_enable=%d fe_interval=%ld",
+            " fe_enable=%d fe_profile=%s fe_interval=%.3fms",
             (unsigned long)target_latency_,
             (double)input_sample_spec_.rtp_timestamp_2_ns(
                 (packet::timestamp_diff_t)target_latency_)
                 / core::Millisecond,
             (unsigned long)input_sample_spec_.sample_rate(),
             (unsigned long)output_sample_spec_.sample_rate(), (int)config.fe_enable,
-            (long)config.fe_update_interval);
+            fe_profile_to_str(config.fe_profile),
+            (double)config.fe_update_interval / core::Millisecond);
 
     if (target_latency < config.min_latency || target_latency > config.max_latency
         || target_latency <= 0) {

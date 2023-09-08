@@ -152,5 +152,17 @@ double FreqEstimator::run_controller_(double current) {
     return 1 + config_.P * error + config_.I * accum_;
 }
 
+const char* fe_profile_to_str(FreqEstimatorProfile profile) {
+    switch (profile) {
+    case FreqEstimatorProfile_Responsive:
+        return "responsive";
+
+    case FreqEstimatorProfile_Gradual:
+        return "gradual";
+    }
+
+    return "invalid";
+}
+
 } // namespace audio
 } // namespace roc

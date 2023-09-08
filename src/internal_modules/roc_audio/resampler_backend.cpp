@@ -20,10 +20,10 @@ const char* resampler_backend_to_str(ResamplerBackend backend) {
         return "speex";
 
     case ResamplerBackend_Default:
-        break;
+        return "default";
     }
 
-    return "default";
+    return "invalid";
 }
 
 } // namespace audio

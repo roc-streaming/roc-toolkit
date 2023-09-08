@@ -94,6 +94,9 @@ private:
     double coeff_; // Current frequency coefficient value.
 };
 
+//! Get string name of FreqEstimator profile.
+const char* fe_profile_to_str(FreqEstimatorProfile profile);
+
 } // namespace audio
 } // namespace roc
 
