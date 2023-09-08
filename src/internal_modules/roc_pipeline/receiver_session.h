@@ -15,7 +15,6 @@
 #include "roc_address/socket_addr.h"
 #include "roc_audio/channel_mapper_reader.h"
 #include "roc_audio/depacketizer.h"
-#include "roc_audio/e2e_latency_monitor.h"
 #include "roc_audio/iframe_decoder.h"
 #include "roc_audio/iframe_reader.h"
 #include "roc_audio/iresampler.h"
@@ -134,7 +133,6 @@ private:
     core::Optional<audio::PoisonReader> session_poisoner_;
 
     core::Optional<audio::LatencyMonitor> latency_monitor_;
-    core::Optional<audio::EndToEndLatencyMonitor> e2e_latency_monitor_;
 };
 
 } // namespace pipeline

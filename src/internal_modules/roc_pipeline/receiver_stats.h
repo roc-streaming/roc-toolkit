@@ -12,22 +12,15 @@
 #ifndef ROC_PIPELINE_RECEIVER_STATS_H_
 #define ROC_PIPELINE_RECEIVER_STATS_H_
 
-#include "roc_core/time.h"
+#include "roc_audio/latency_monitor.h"
 
 namespace roc {
 namespace pipeline {
 
 //! Per participant statistics.
 struct SessionStats {
-    //! Overall participant latency.
-    //! How much time does it take for a just captured audio::Frame on a sender side
-    //! to be played on a receiver.
-    core::nanoseconds_t end_to_end_latency;
-
-    //! Constructor.
-    SessionStats()
-        : end_to_end_latency(0) {
-    }
+    //! Latency statistics.
+    audio::LatencyMonitorStats latency;
 };
 
 } // namespace pipeline
