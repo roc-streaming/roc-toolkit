@@ -8,19 +8,56 @@
 
 #include "roc_audio/sample_spec.h"
 #include "roc_audio/sample_spec_to_str.h"
+#include "roc_core/macro_helpers.h"
 #include "roc_core/panic.h"
+#include "roc_packet/units.h"
 
 namespace roc {
 namespace audio {
 
 namespace {
 
-float ns_2_nsamples(const core::nanoseconds_t ns, const size_t sample_rate) {
+float ns_2_fract_samples(const core::nanoseconds_t ns, const size_t sample_rate) {
     return roundf(float(ns) / core::Second * sample_rate);
 }
 
+template <class T>
+T ns_2_int_samples(const core::nanoseconds_t ns,
+                   const size_t sample_rate,
+                   const size_t multiplier) {
+    const T min_val = ROC_MIN_OF(T);
+    const T max_val = ROC_MAX_OF(T);
+
+    const T mul = (T)multiplier;
+
+    const float val = ns_2_fract_samples(ns, sample_rate);
+
+    if (val * multiplier <= (float)min_val) {
+        return min_val / mul * mul;
+    }
+
+    if (val * multiplier >= (float)max_val) {
+        return max_val / mul * mul;
+    }
+
+    return (T)val * mul;
+}
+
 core::nanoseconds_t nsamples_2_ns(const float n_samples, const size_t sample_rate) {
-    return core::nanoseconds_t(roundf(n_samples / sample_rate * core::Second));
+    const core::nanoseconds_t min_val = ROC_MIN_OF(core::nanoseconds_t);
+    const core::nanoseconds_t max_val = ROC_MAX_OF(core::nanoseconds_t);
+
+    const float val = roundf(n_samples / sample_rate * core::Second);
+
+    if (val <= (float)min_val) {
+        return min_val;
+    }
+
+    if (val >= (float)max_val) {
+        return max_val;
+    }
+
+    return (core::nanoseconds_t)val;
 }
 
 } // namespace
@@ -89,7 +126,7 @@ size_t SampleSpec::ns_2_samples_per_chan(const core::nanoseconds_t ns_duration) 
 
     roc_panic_if_msg(ns_duration < 0, "sample spec: duration should not be negative");
 
-    return (size_t)ns_2_nsamples(ns_duration, sample_rate_);
+    return ns_2_int_samples<size_t>(ns_duration, sample_rate_, 1);
 }
 
 core::nanoseconds_t SampleSpec::samples_per_chan_2_ns(const size_t n_samples) const {
@@ -112,7 +149,7 @@ size_t SampleSpec::ns_2_samples_overall(const core::nanoseconds_t ns_duration) c
 
     roc_panic_if_msg(ns_duration < 0, "sample spec: duration should not be negative");
 
-    return (size_t)ns_2_nsamples(ns_duration, sample_rate_) * num_channels();
+    return ns_2_int_samples<size_t>(ns_duration, sample_rate_, num_channels());
 }
 
 core::nanoseconds_t SampleSpec::samples_overall_2_ns(const size_t n_samples) const {
@@ -137,7 +174,7 @@ SampleSpec::ns_2_rtp_timestamp(const core::nanoseconds_t ns_delta) const {
     roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
                      sample_spec_to_str(*this).c_str());
 
-    return (packet::timestamp_diff_t)ns_2_nsamples(ns_delta, sample_rate_);
+    return ns_2_int_samples<packet::timestamp_diff_t>(ns_delta, sample_rate_, 1);
 }
 
 core::nanoseconds_t
