@@ -50,16 +50,11 @@ packet::PacketPtr TimestampInjector::read() {
     }
 
     if (has_ts_) {
-        const packet::timestamp_diff_t dn =
+        const packet::timestamp_diff_t rtp_dn =
             packet::timestamp_diff(pkt->rtp()->timestamp, rtp_ts_);
 
-        if (dn >= 0) {
-            pkt->rtp()->capture_timestamp =
-                capt_ts_ + sample_spec_.samples_per_chan_2_ns((size_t)dn);
-        } else {
-            pkt->rtp()->capture_timestamp =
-                capt_ts_ - sample_spec_.samples_per_chan_2_ns((size_t)-dn);
-        }
+        pkt->rtp()->capture_timestamp =
+            capt_ts_ + sample_spec_.rtp_timestamp_2_ns(rtp_dn);
     }
 
     return pkt;
