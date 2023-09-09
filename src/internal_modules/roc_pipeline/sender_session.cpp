@@ -189,7 +189,7 @@ SenderSession::get_update_deadline(core::nanoseconds_t current_time) const {
 }
 
 void SenderSession::update(core::nanoseconds_t current_time) {
-    if (rtcp_session_ && timestamp_extractor_->has_mapping()) {
+    if (rtcp_session_ && timestamp_extractor_ && timestamp_extractor_->has_mapping()) {
         rtcp_session_->generate_packets(current_time);
     }
 }

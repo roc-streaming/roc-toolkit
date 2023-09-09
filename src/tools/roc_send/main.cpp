@@ -346,6 +346,14 @@ int main(int argc, char** argv) {
         }
     }
 
+    if (sender.has_incomplete()) {
+        roc_log(
+            LogError,
+            "incomplete sender configuration:"
+            " FEC is implied by protocol, but matching --source or --repair is missing");
+        return 1;
+    }
+
     sndio::Pump pump(context.sample_buffer_factory(), *input_source, NULL, sender.sink(),
                      io_config.frame_length, sender_config.input_sample_spec,
                      sndio::Pump::ModePermanent);
