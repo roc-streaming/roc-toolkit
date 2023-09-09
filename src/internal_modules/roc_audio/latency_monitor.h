@@ -20,7 +20,6 @@
 #include "roc_core/attributes.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
-#include "roc_core/rate_limiter.h"
 #include "roc_core/time.h"
 #include "roc_packet/sorted_queue.h"
 #include "roc_packet/units.h"
@@ -202,14 +201,14 @@ private:
     ResamplerReader* resampler_;
     core::Optional<FreqEstimator> fe_;
 
-    core::RateLimiter rate_limiter_;
-
     packet::timestamp_t stream_pos_;
     core::nanoseconds_t stream_cts_;
 
     const packet::timestamp_t update_interval_;
     packet::timestamp_t update_pos_;
-    bool has_update_pos_;
+
+    const packet::timestamp_t report_interval_;
+    packet::timestamp_t report_pos_;
 
     float freq_coeff_;
 
