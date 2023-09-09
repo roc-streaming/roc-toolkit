@@ -88,6 +88,7 @@ bool Pump::run() {
 
         audio::Frame frame(frame_buffer_.data(), frame_buffer_.size());
 
+        // if source has clock, here we block on it
         if (!current_source->read(frame)) {
             roc_log(LogDebug, "pump: got eof from source");
 
@@ -100,16 +101,22 @@ bool Pump::run() {
         }
 
         if (frame.capture_timestamp() == 0) {
-            // if audio source does not provide capture timestamps, fill them here
+            // if source does not provide capture timestamps, we fill them here
+            // we subtract source latency to take into account recording buffer size,
+            // where this frame spent some time before we read it
             frame.set_capture_timestamp(core::timestamp(core::ClockUnix)
                                         - current_source->latency());
         }
 
-        // this may block until space is available in playback buffer
+        // if sink has clock, here we block on it
         sink_.write(frame);
 
-        // tell source what will be playback time of last frame
-        current_source->reclock(core::timestamp(core::ClockUnix) + sink_.latency());
+        // tell source what is playback time of first sample of last read frame
+        // we add sink latency to take into account playback buffer size
+        // we subtract frame size because we already wrote the whole frame into
+        // playback buffer, and should take it into account too
+        current_source->reclock(core::timestamp(core::ClockUnix) + sink_.latency()
+                                - sample_spec_.samples_overall_2_ns(frame.num_samples()));
 
         if (current_source == &main_source_) {
             n_bufs_++;

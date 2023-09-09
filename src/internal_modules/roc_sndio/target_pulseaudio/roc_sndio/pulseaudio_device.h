@@ -116,7 +116,8 @@ private:
     size_t record_frag_size_;
     bool record_frag_flag_;
 
-    core::nanoseconds_t latency_;
+    core::nanoseconds_t target_latency_;
+    core::nanoseconds_t actual_latency_;
     core::nanoseconds_t timeout_;
 
     bool open_done_;
