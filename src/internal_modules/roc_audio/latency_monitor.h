@@ -123,13 +123,13 @@ struct LatencyMonitorStats {
 //!
 //! @b Flow
 //!
-//!  - pipeline periodically calls update() method; it uses references to incoming
+//!  - pipeline periodically calls read() method; it uses references to incoming
 //!    packet queue (start of the pipeline) and depacketizer (last pipeline element
 //!    that works with packets), asks them about current packet / frame, and calculates
 //!    distance between them, which is NIQ latency
-//!  - pipeline inserts latency monitor as a reader at the end of pipeline (after
-//!    resampler); read() method calculates difference between capture timestamp
-//!    in frame and current wallclock time, which is E2E latency
+//!  - after adding frame to playback buffer, pipeline invokes reclock() method;
+//!    it calculates difference between capture and playback time of the frame,
+//!    which is E2E latency
 //!  - latency monitor has an instance of FreqEstimator (FE); it continously passes
 //!    calculated latency to FE, and FE calculates scaling factor for resampler
 //!  - latency monitor has a reference to resampler, and periodically passes
@@ -173,18 +173,26 @@ public:
     //!  Forwards frame from underlying reader as-is.
     virtual bool read(Frame& frame);
 
+    //! Report playback timestamp of last frame returned by read.
+    //! @remarks
+    //!  Pipeline invokes this method after adding last frame to
+    //!  playback buffer and knowing its playback time.
+    //! @returns
+    //!  false if the session is ended
+    bool reclock(core::nanoseconds_t playback_timestamp);
+
 private:
-    void update_(Frame& frame);
+    void compute_niq_latency_();
+    void compute_e2e_latency_(core::nanoseconds_t playback_timestamp);
 
-    void update_niq_latency_();
-    void update_e2e_latency_(core::nanoseconds_t capture_ts);
+    bool update_();
 
-    bool check_latency_(packet::timestamp_diff_t latency) const;
+    bool check_bounds_(packet::timestamp_diff_t latency) const;
 
     bool init_scaling_(size_t input_sample_rate, size_t output_sample_rate);
     bool update_scaling_(packet::timestamp_diff_t latency);
 
-    void report_latency_();
+    void report_();
 
     IFrameReader& frame_reader_;
 
@@ -197,6 +205,7 @@ private:
     core::RateLimiter rate_limiter_;
 
     packet::timestamp_t stream_pos_;
+    core::nanoseconds_t stream_cts_;
 
     const packet::timestamp_t update_interval_;
     packet::timestamp_t update_pos_;

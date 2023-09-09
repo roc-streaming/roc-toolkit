@@ -250,11 +250,10 @@ bool ReceiverSession::refresh() {
     return true;
 }
 
-bool ReceiverSession::reclock(core::nanoseconds_t) {
+bool ReceiverSession::reclock(core::nanoseconds_t timestamp) {
     roc_panic_if(!is_valid());
 
-    // no-op
-    return true;
+    return latency_monitor_->reclock(timestamp);
 }
 
 SessionStats ReceiverSession::stats() const {
