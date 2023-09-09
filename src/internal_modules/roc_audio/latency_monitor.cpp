@@ -38,13 +38,14 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
     , incoming_queue_(incoming_queue)
     , depacketizer_(depacketizer)
     , resampler_(resampler)
-    , rate_limiter_(LogInterval)
     , stream_pos_(0)
     , stream_cts_(0)
     , update_interval_((packet::timestamp_t)input_sample_spec.ns_2_rtp_timestamp(
           config.fe_update_interval))
     , update_pos_(0)
-    , has_update_pos_(false)
+    , report_interval_(
+          (packet::timestamp_t)input_sample_spec.ns_2_rtp_timestamp(LogInterval))
+    , report_pos_(0)
     , freq_coeff_(0)
     , niq_latency_(0)
     , e2e_latency_(0)
@@ -270,9 +271,8 @@ bool LatencyMonitor::update_scaling_(packet::timestamp_diff_t latency) {
         latency = 0;
     }
 
-    if (!has_update_pos_) {
-        has_update_pos_ = true;
-        update_pos_ = stream_pos_;
+    if (stream_pos_ < update_pos_) {
+        return true;
     }
 
     while (stream_pos_ >= update_pos_) {
@@ -295,8 +295,12 @@ bool LatencyMonitor::update_scaling_(packet::timestamp_diff_t latency) {
 }
 
 void LatencyMonitor::report_() {
-    if (!rate_limiter_.allow()) {
+    if (stream_pos_ < report_pos_) {
         return;
+    }
+
+    while (stream_pos_ >= report_pos_) {
+        report_pos_ += report_interval_;
     }
 
     roc_log(LogDebug,
