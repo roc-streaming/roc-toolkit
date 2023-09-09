@@ -234,16 +234,16 @@ bool ReceiverSession::handle(const packet::PacketPtr& packet) {
     return true;
 }
 
-bool ReceiverSession::advance(packet::timestamp_t timestamp) {
+bool ReceiverSession::refresh() {
     roc_panic_if(!is_valid());
 
     if (watchdog_) {
-        if (!watchdog_->update()) {
+        if (!watchdog_->is_alive()) {
             return false;
         }
     }
 
-    if (!latency_monitor_->update(timestamp)) {
+    if (!latency_monitor_->is_alive()) {
         return false;
     }
 

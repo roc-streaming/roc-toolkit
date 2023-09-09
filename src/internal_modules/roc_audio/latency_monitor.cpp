@@ -38,6 +38,7 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
     , depacketizer_(depacketizer)
     , resampler_(resampler)
     , rate_limiter_(LogInterval)
+    , stream_pos_(0)
     , update_interval_((packet::timestamp_t)input_sample_spec.ns_2_rtp_timestamp(
           config.fe_update_interval))
     , update_pos_(0)
@@ -53,6 +54,7 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
     , max_scaling_delta_(config.max_scaling_delta)
     , input_sample_spec_(input_sample_spec)
     , output_sample_spec_(output_sample_spec)
+    , alive_(true)
     , valid_(false) {
     roc_log(
         LogDebug,
@@ -106,6 +108,12 @@ bool LatencyMonitor::is_valid() const {
     return valid_;
 }
 
+bool LatencyMonitor::is_alive() const {
+    roc_panic_if(!is_valid());
+
+    return alive_;
+}
+
 LatencyMonitorStats LatencyMonitor::stats() const {
     roc_panic_if(!is_valid());
 
@@ -123,29 +131,33 @@ bool LatencyMonitor::read(Frame& frame) {
         return false;
     }
 
-    update_e2e_latency_(frame.capture_timestamp());
-
+    update_(frame);
     return true;
 }
 
-bool LatencyMonitor::update(packet::timestamp_t stream_position) {
-    roc_panic_if(!is_valid());
+void LatencyMonitor::update_(Frame& frame) {
+    if (!alive_) {
+        return;
+    }
+
+    stream_pos_ += frame.num_samples() / input_sample_spec_.num_channels();
 
     update_niq_latency_();
+    update_e2e_latency_(frame.capture_timestamp());
 
     if (has_niq_latency_) {
         if (!check_latency_(niq_latency_)) {
-            return false;
+            alive_ = false;
+            return;
         }
         if (fe_) {
-            if (!update_scaling_(stream_position, niq_latency_)) {
-                return false;
+            if (!update_scaling_(niq_latency_)) {
+                alive_ = false;
+                return;
             }
         }
         report_latency_();
     }
-
-    return true;
 }
 
 void LatencyMonitor::update_niq_latency_() {
@@ -218,8 +230,7 @@ bool LatencyMonitor::init_scaling_(size_t input_sample_rate, size_t output_sampl
     return true;
 }
 
-bool LatencyMonitor::update_scaling_(packet::timestamp_t stream_position,
-                                     packet::timestamp_diff_t latency) {
+bool LatencyMonitor::update_scaling_(packet::timestamp_diff_t latency) {
     roc_panic_if_not(resampler_);
     roc_panic_if_not(fe_);
 
@@ -229,10 +240,10 @@ bool LatencyMonitor::update_scaling_(packet::timestamp_t stream_position,
 
     if (!has_update_pos_) {
         has_update_pos_ = true;
-        update_pos_ = stream_position;
+        update_pos_ = stream_pos_;
     }
 
-    while (stream_position >= update_pos_) {
+    while (stream_pos_ >= update_pos_) {
         fe_->update((packet::timestamp_t)latency);
         update_pos_ += update_interval_;
     }

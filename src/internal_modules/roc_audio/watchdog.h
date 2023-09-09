@@ -81,17 +81,17 @@ public:
     //! Check if object is successfully constructed.
     bool is_valid() const;
 
-    //! Read audio frame.
-    //! @remarks
-    //!  Updates stream state and reads frame from the input reader.
-    virtual bool read(Frame& frame);
-
-    //! Update stream.
+    //! Check if stream is still alive.
     //! @returns
     //!  false if during the session timeout each frame has an empty flag or the maximum
     //!  allowed number of consecutive windows that can contain frames that aren't fully
     //!  filled and contain dropped packets was exceeded.
-    ROC_ATTR_NODISCARD bool update();
+    bool is_alive() const;
+
+    //! Read audio frame.
+    //! @remarks
+    //!  Updates stream state and reads frame from the input reader.
+    virtual bool read(Frame& frame);
 
 private:
     void update_blank_timeout_(const Frame& frame, packet::timestamp_t next_read_pos);

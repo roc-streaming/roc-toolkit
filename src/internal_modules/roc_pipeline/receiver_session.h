@@ -75,10 +75,10 @@ public:
     //!  true if the packet is dedicated for this session
     bool handle(const packet::PacketPtr& packet);
 
-    //! Advance session timestamp.
+    //! Refresh session status.
     //! @returns
     //!  false if the session is ended
-    bool advance(packet::timestamp_t timestamp);
+    bool refresh();
 
     //! Adjust session clock to match consumer clock.
     //! @returns

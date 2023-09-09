@@ -45,13 +45,13 @@ void ReceiverSessionGroup::route_packet(const packet::PacketPtr& packet) {
     route_transport_packet_(packet);
 }
 
-void ReceiverSessionGroup::advance_sessions(packet::timestamp_t timestamp) {
+void ReceiverSessionGroup::refresh_sessions() {
     core::SharedPtr<ReceiverSession> curr, next;
 
     for (curr = sessions_.front(); curr; curr = next) {
         next = sessions_.nextof(*curr);
 
-        if (!curr->advance(timestamp)) {
+        if (!curr->refresh()) {
             // Session ended.
             remove_session_(*curr);
         }

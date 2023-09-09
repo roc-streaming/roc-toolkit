@@ -28,8 +28,7 @@ ReceiverSource::ReceiverSource(
     , sample_buffer_factory_(sample_buffer_factory)
     , arena_(arena)
     , audio_reader_(NULL)
-    , config_(config)
-    , timestamp_(0) {
+    , config_(config) {
     mixer_.reset(new (mixer_) audio::Mixer(sample_buffer_factory, true));
     if (!mixer_ || !mixer_->is_valid()) {
         return;
@@ -147,15 +146,12 @@ bool ReceiverSource::read(audio::Frame& frame) {
 
     for (core::SharedPtr<ReceiverSlot> slot = slots_.front(); slot;
          slot = slots_.nextof(*slot)) {
-        slot->advance(timestamp_);
+        slot->refresh();
     }
 
     if (!audio_reader_->read(frame)) {
         return false;
     }
-
-    timestamp_ += packet::timestamp_t(frame.num_samples()
-                                      / config_.common.output_sample_spec.num_channels());
 
     return true;
 }

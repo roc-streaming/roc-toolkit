@@ -49,8 +49,8 @@ public:
     //! Add endpoint.
     ReceiverEndpoint* add_endpoint(address::Interface iface, address::Protocol proto);
 
-    //! Pull packets from queues and advance session timestamp.
-    void advance(packet::timestamp_t timestamp);
+    //! Pull packets and refresh sessions.
+    void refresh();
 
     //! Adjust session clock to match consumer clock.
     void reclock(core::nanoseconds_t timestamp);

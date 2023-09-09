@@ -58,7 +58,7 @@ ReceiverEndpoint* ReceiverSlot::add_endpoint(address::Interface iface,
     return NULL;
 }
 
-void ReceiverSlot::advance(packet::timestamp_t timestamp) {
+void ReceiverSlot::refresh() {
     if (control_endpoint_) {
         control_endpoint_->pull_packets();
     }
@@ -71,7 +71,7 @@ void ReceiverSlot::advance(packet::timestamp_t timestamp) {
         repair_endpoint_->pull_packets();
     }
 
-    session_group_.advance_sessions(timestamp);
+    session_group_.refresh_sessions();
 }
 
 void ReceiverSlot::reclock(core::nanoseconds_t timestamp) {

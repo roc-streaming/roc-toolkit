@@ -74,7 +74,15 @@ bool Watchdog::is_valid() const {
     return valid_;
 }
 
+bool Watchdog::is_alive() const {
+    roc_panic_if(!is_valid());
+
+    return alive_;
+}
+
 bool Watchdog::read(Frame& frame) {
+    roc_panic_if(!is_valid());
+
     if (!alive_) {
         if (frame.num_samples() != 0) {
             memset(frame.samples(), 0, frame.num_samples() * sizeof(sample_t));
@@ -100,18 +108,9 @@ bool Watchdog::read(Frame& frame) {
         alive_ = false;
     }
 
-    return true;
-}
-
-bool Watchdog::update() {
-    if (!alive_) {
-        return false;
-    }
-
     if (!check_blank_timeout_()) {
         flush_status_();
         alive_ = false;
-        return false;
     }
 
     return true;
