@@ -114,8 +114,6 @@ private:
     audio::IFrameReader* audio_reader_;
 
     ReceiverConfig config_;
-
-    packet::timestamp_t timestamp_;
 };
 
 } // namespace pipeline

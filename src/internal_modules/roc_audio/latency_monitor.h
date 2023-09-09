@@ -162,6 +162,9 @@ public:
     //! Check if the object was initialized successfully.
     bool is_valid() const;
 
+    //! Check if the stream is still alive.
+    bool is_alive() const;
+
     //! Get statistics.
     LatencyMonitorStats stats() const;
 
@@ -170,20 +173,16 @@ public:
     //!  Forwards frame from underlying reader as-is.
     virtual bool read(Frame& frame);
 
-    //! Update latency.
-    //! @returns
-    //!  false if the session should be terminated.
-    ROC_ATTR_NODISCARD bool update(packet::timestamp_t stream_position);
-
 private:
+    void update_(Frame& frame);
+
     void update_niq_latency_();
     void update_e2e_latency_(core::nanoseconds_t capture_ts);
 
     bool check_latency_(packet::timestamp_diff_t latency) const;
 
     bool init_scaling_(size_t input_sample_rate, size_t output_sample_rate);
-    bool update_scaling_(packet::timestamp_t stream_position,
-                         packet::timestamp_diff_t latency);
+    bool update_scaling_(packet::timestamp_diff_t latency);
 
     void report_latency_();
 
@@ -196,6 +195,8 @@ private:
     core::Optional<FreqEstimator> fe_;
 
     core::RateLimiter rate_limiter_;
+
+    packet::timestamp_t stream_pos_;
 
     const packet::timestamp_t update_interval_;
     packet::timestamp_t update_pos_;
@@ -217,6 +218,7 @@ private:
     const SampleSpec input_sample_spec_;
     const SampleSpec output_sample_spec_;
 
+    bool alive_;
     bool valid_;
 };
 
