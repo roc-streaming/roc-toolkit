@@ -10,6 +10,7 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
+#include "roc_core/time.h"
 
 namespace roc {
 namespace audio {
@@ -39,6 +40,7 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
     , resampler_(resampler)
     , rate_limiter_(LogInterval)
     , stream_pos_(0)
+    , stream_cts_(0)
     , update_interval_((packet::timestamp_t)input_sample_spec.ns_2_rtp_timestamp(
           config.fe_update_interval))
     , update_pos_(0)
@@ -127,44 +129,46 @@ LatencyMonitorStats LatencyMonitor::stats() const {
 bool LatencyMonitor::read(Frame& frame) {
     roc_panic_if(!is_valid());
 
+    if (frame.num_samples() % input_sample_spec_.num_channels() != 0) {
+        roc_panic("latency monitor: unexpected frame size");
+    }
+
+    compute_niq_latency_();
+
+    update_();
+
     if (!frame_reader_.read(frame)) {
         return false;
     }
 
-    update_(frame);
+    stream_pos_ += frame.num_samples() / input_sample_spec_.num_channels();
+    stream_cts_ = frame.capture_timestamp();
+
+    report_();
+
     return true;
 }
 
-void LatencyMonitor::update_(Frame& frame) {
-    if (!alive_) {
-        return;
+bool LatencyMonitor::reclock(core::nanoseconds_t playback_timestamp) {
+    roc_panic_if(!is_valid());
+
+    if (playback_timestamp < 0) {
+        roc_panic("latency monitor: unexpected playback timestamp");
     }
 
-    stream_pos_ += frame.num_samples() / input_sample_spec_.num_channels();
+    // this method is called when playback time of last frame was reported
+    // now we can update e2e latency based on it
+    compute_e2e_latency_(playback_timestamp);
 
-    update_niq_latency_();
-    update_e2e_latency_(frame.capture_timestamp());
-
-    if (has_niq_latency_) {
-        if (!check_latency_(niq_latency_)) {
-            alive_ = false;
-            return;
-        }
-        if (fe_) {
-            if (!update_scaling_(niq_latency_)) {
-                alive_ = false;
-                return;
-            }
-        }
-        report_latency_();
-    }
+    return true;
 }
 
-void LatencyMonitor::update_niq_latency_() {
+void LatencyMonitor::compute_niq_latency_() {
     if (!depacketizer_.is_started()) {
         return;
     }
 
+    // timestamp of next sample that depacketizer expects from packet pipeline
     const packet::timestamp_t niq_head = depacketizer_.next_timestamp();
 
     packet::PacketPtr latest_packet = incoming_queue_.latest();
@@ -172,24 +176,52 @@ void LatencyMonitor::update_niq_latency_() {
         return;
     }
 
+    // timestamp of last sample of last packet in packet pipeline
     const packet::timestamp_t niq_tail = latest_packet->end();
 
+    // packet pipeline length
+    // includes incoming queue and packets buffered inside other packet
+    // pipeline elements, e.g. in FEC reader
     niq_latency_ = packet::timestamp_diff(niq_tail, niq_head);
     has_niq_latency_ = true;
 }
 
-void LatencyMonitor::update_e2e_latency_(core::nanoseconds_t capture_ts) {
-    if (capture_ts == 0) {
+void LatencyMonitor::compute_e2e_latency_(core::nanoseconds_t playback_timestamp) {
+    if (stream_cts_ == 0) {
         return;
     }
 
-    const core::nanoseconds_t current_ts = core::timestamp(core::ClockUnix);
-
-    e2e_latency_ = input_sample_spec_.ns_2_rtp_timestamp(current_ts - capture_ts);
+    // delta between time when first sample of last frame is played on receiver and
+    // time when first sample of that frame was captured on sender
+    // (both timestamps are in receiver clock domain)
+    e2e_latency_ =
+        input_sample_spec_.ns_2_rtp_timestamp(playback_timestamp - stream_cts_);
     has_e2e_latency_ = true;
 }
 
-bool LatencyMonitor::check_latency_(packet::timestamp_diff_t latency) const {
+bool LatencyMonitor::update_() {
+    if (!alive_) {
+        return false;
+    }
+
+    // currently scaling is always updated based on niq latency
+    if (has_niq_latency_) {
+        if (!check_bounds_(niq_latency_)) {
+            alive_ = false;
+            return false;
+        }
+        if (fe_) {
+            if (!update_scaling_(niq_latency_)) {
+                alive_ = false;
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+bool LatencyMonitor::check_bounds_(packet::timestamp_diff_t latency) const {
     if (latency < min_latency_) {
         roc_log(
             LogDebug,
@@ -262,7 +294,7 @@ bool LatencyMonitor::update_scaling_(packet::timestamp_diff_t latency) {
     return true;
 }
 
-void LatencyMonitor::report_latency_() {
+void LatencyMonitor::report_() {
     if (!rate_limiter_.allow()) {
         return;
     }

@@ -100,13 +100,15 @@ bool Pump::run() {
         }
 
         if (frame.capture_timestamp() == 0) {
-            // if audio source does not provide capture timestamps,
-            // fill them here
-            frame.set_capture_timestamp(core::timestamp(core::ClockUnix));
+            // if audio source does not provide capture timestamps, fill them here
+            frame.set_capture_timestamp(core::timestamp(core::ClockUnix)
+                                        - current_source->latency());
         }
 
+        // this may block until space is available in playback buffer
         sink_.write(frame);
 
+        // tell source what will be playback time of last frame
         current_source->reclock(core::timestamp(core::ClockUnix) + sink_.latency());
 
         if (current_source == &main_source_) {
