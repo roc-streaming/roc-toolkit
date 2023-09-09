@@ -142,7 +142,7 @@ core::nanoseconds_t PulseaudioDevice::latency() const {
 
     pa_threaded_mainloop_lock(mainloop_);
 
-    const core::nanoseconds_t latency = config_.latency;
+    const core::nanoseconds_t latency = latency_;
 
     pa_threaded_mainloop_unlock(mainloop_);
 
