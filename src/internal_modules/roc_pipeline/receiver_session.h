@@ -38,7 +38,7 @@
 #include "roc_packet/router.h"
 #include "roc_packet/sorted_queue.h"
 #include "roc_pipeline/config.h"
-#include "roc_pipeline/receiver_stats.h"
+#include "roc_pipeline/metrics.h"
 #include "roc_rtcp/metrics.h"
 #include "roc_rtp/format_map.h"
 #include "roc_rtp/parser.h"
@@ -85,8 +85,8 @@ public:
     //!  false if the session is ended
     bool reclock(core::nanoseconds_t timestamp);
 
-    //! Get recent latency statistics.
-    SessionStats stats() const;
+    //! Get session metrics.
+    ReceiverSessionMetrics get_metrics() const;
 
     //! Get audio reader.
     audio::IFrameReader& reader();

@@ -56,6 +56,12 @@ public:
     //! Remove slot.
     bool unlink(slot_index_t slot_index);
 
+    //! Get slot metrics.
+    bool get_metrics(slot_index_t slot_index,
+                     pipeline::ReceiverSlotMetrics& slot_metrics,
+                     pipeline::ReceiverSessionMetrics* sess_metrics,
+                     size_t* sess_metrics_size);
+
     //! Check if there are broken slots.
     bool has_broken();
 

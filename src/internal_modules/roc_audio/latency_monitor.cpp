@@ -117,14 +117,14 @@ bool LatencyMonitor::is_alive() const {
     return alive_;
 }
 
-LatencyMonitorStats LatencyMonitor::stats() const {
+LatencyMonitorMetrics LatencyMonitor::metrics() const {
     roc_panic_if(!is_valid());
 
-    LatencyMonitorStats stats;
-    stats.niq_latency = input_sample_spec_.rtp_timestamp_2_ns(niq_latency_);
-    stats.e2e_latency = input_sample_spec_.rtp_timestamp_2_ns(e2e_latency_);
+    LatencyMonitorMetrics metrics;
+    metrics.niq_latency = input_sample_spec_.rtp_timestamp_2_ns(niq_latency_);
+    metrics.e2e_latency = input_sample_spec_.rtp_timestamp_2_ns(e2e_latency_);
 
-    return stats;
+    return metrics;
 }
 
 bool LatencyMonitor::read(Frame& frame) {

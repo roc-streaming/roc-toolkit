@@ -30,7 +30,8 @@ public:
         : source_(source)
         , buffer_factory_(buffer_factory)
         , offset_(0)
-        , abs_offset_(0) {
+        , abs_offset_(0)
+        , last_cts_(0) {
     }
 
     void read_samples(size_t num_samples,
@@ -98,6 +99,10 @@ public:
         abs_offset_ += num_samples;
     }
 
+    core::nanoseconds_t last_capture_ts() const {
+        return last_cts_;
+    }
+
     void set_offset(size_t offset) {
         offset_ = uint8_t(offset);
         abs_offset_ = offset;
@@ -107,6 +112,8 @@ private:
     void check_timestamp_(const audio::Frame& frame,
                           const audio::SampleSpec& sample_spec,
                           core::nanoseconds_t base_ts) {
+        last_cts_ = frame.capture_timestamp();
+
         if (base_ts < 0) {
             LONGS_EQUAL(0, frame.capture_timestamp());
         } else {
@@ -123,6 +130,8 @@ private:
 
     uint8_t offset_;
     size_t abs_offset_;
+
+    core::nanoseconds_t last_cts_;
 };
 
 } // namespace test

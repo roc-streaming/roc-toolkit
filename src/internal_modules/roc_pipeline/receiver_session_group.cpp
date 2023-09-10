@@ -9,6 +9,7 @@
 #include "roc_pipeline/receiver_session_group.h"
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
+#include "roc_core/panic.h"
 
 namespace roc {
 namespace pipeline {
@@ -73,6 +74,25 @@ void ReceiverSessionGroup::reclock_sessions(core::nanoseconds_t timestamp) {
 
 size_t ReceiverSessionGroup::num_sessions() const {
     return sessions_.size();
+}
+
+void ReceiverSessionGroup::get_metrics(ReceiverSessionMetrics* metrics,
+                                       size_t* metrics_size) const {
+    roc_panic_if_not(metrics);
+    roc_panic_if_not(metrics_size);
+
+    *metrics_size = std::min(*metrics_size, sessions_.size());
+
+    size_t n = 0;
+
+    for (core::SharedPtr<ReceiverSession> sess = sessions_.front(); sess;
+         sess = sessions_.nextof(*sess)) {
+        if (n == *metrics_size) {
+            break;
+        }
+        metrics[n] = sess->get_metrics();
+        n++;
+    }
 }
 
 void ReceiverSessionGroup::on_update_source(packet::source_t ssrc, const char* cname) {

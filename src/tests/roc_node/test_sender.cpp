@@ -752,5 +752,25 @@ TEST(sender, port_sharing) {
     UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
 }
 
+TEST(sender, metrics) {
+    Context context(context_config, arena);
+    CHECK(context.is_valid());
+
+    Sender sender(context, sender_config);
+    CHECK(sender.is_valid());
+
+    pipeline::SenderSlotMetrics slot_metrics;
+    pipeline::SenderSessionMetrics sess_metrics;
+
+    CHECK(!sender.get_metrics(DefaultSlot, slot_metrics, sess_metrics));
+
+    address::EndpointUri source_endp(arena);
+    parse_uri(source_endp, "rtp://127.0.0.1:123");
+    CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
+
+    CHECK(sender.get_metrics(DefaultSlot, slot_metrics, sess_metrics));
+    CHECK(slot_metrics.is_complete);
+}
+
 } // namespace node
 } // namespace roc

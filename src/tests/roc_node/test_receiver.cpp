@@ -596,5 +596,32 @@ TEST(receiver, recover) {
     }
 }
 
+TEST(receiver, metrics) {
+    Context context(context_config, arena);
+    CHECK(context.is_valid());
+
+    Receiver receiver(context, receiver_config);
+    CHECK(receiver.is_valid());
+
+    pipeline::ReceiverSlotMetrics slot_metrics;
+    pipeline::ReceiverSessionMetrics sess_metrics;
+    size_t sess_metrics_size = 1;
+
+    CHECK(!receiver.get_metrics(DefaultSlot, slot_metrics, NULL, NULL));
+    CHECK(!receiver.get_metrics(DefaultSlot, slot_metrics, &sess_metrics,
+                                &sess_metrics_size));
+
+    address::EndpointUri source_endp(arena);
+    parse_uri(source_endp, "rtp://127.0.0.1:0");
+    CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
+
+    CHECK(receiver.get_metrics(DefaultSlot, slot_metrics, NULL, NULL));
+    CHECK(receiver.get_metrics(DefaultSlot, slot_metrics, &sess_metrics,
+                               &sess_metrics_size));
+
+    UNSIGNED_LONGS_EQUAL(0, slot_metrics.num_sessions);
+    UNSIGNED_LONGS_EQUAL(0, sess_metrics_size);
+}
+
 } // namespace node
 } // namespace roc

@@ -17,6 +17,7 @@
 #include "roc_core/mutex.h"
 #include "roc_core/ticker.h"
 #include "roc_pipeline/config.h"
+#include "roc_pipeline/metrics.h"
 #include "roc_pipeline/pipeline_loop.h"
 #include "roc_pipeline/sender_sink.h"
 #include "roc_sndio/isink.h"
@@ -57,13 +58,14 @@ public:
 
         bool (SenderLoop::*func_)(Task&); //!< Task implementation method.
 
-        SenderSlot* slot_;            //!< Slot.
-        SenderEndpoint* endpoint_;    //!< Endpoint.
-        address::Interface iface_;    //!< Interface.
-        address::Protocol proto_;     //!< Protocol.
-        address::SocketAddr address_; //!< Destination address.
-        packet::IWriter* writer_;     //!< Destination writer.
-        bool is_complete_;            //!< Completion flag.
+        SenderSlot* slot_;                   //!< Slot.
+        SenderEndpoint* endpoint_;           //!< Endpoint.
+        address::Interface iface_;           //!< Interface.
+        address::Protocol proto_;            //!< Protocol.
+        address::SocketAddr address_;        //!< Destination address.
+        packet::IWriter* writer_;            //!< Destination writer.
+        SenderSlotMetrics* slot_metrics_;    //!< Output for slot metrics.
+        SenderSessionMetrics* sess_metrics_; //!< Output for session metrics.
     };
 
     //! Subclasses for specific tasks.
@@ -86,14 +88,15 @@ public:
             DeleteSlot(SlotHandle slot);
         };
 
-        //! Poll slot state.
-        class PollSlot : public Task {
+        //! Query slot metrics.
+        class QuerySlot : public Task {
         public:
             //! Set task parameters.
-            PollSlot(SlotHandle slot);
-
-            //! Get slot completion flag.
-            bool get_complete() const;
+            //! @remarks
+            //!  Metrics are written to provided structs.
+            QuerySlot(SlotHandle slot,
+                      SenderSlotMetrics& slot_metrics,
+                      SenderSessionMetrics* sess_metrics);
         };
 
         //! Create endpoint on given interface of the slot.
@@ -151,7 +154,7 @@ private:
     // Methods for tasks
     bool task_create_slot_(Task&);
     bool task_delete_slot_(Task&);
-    bool task_poll_slot_(Task&);
+    bool task_query_slot_(Task&);
     bool task_add_endpoint_(Task&);
 
     SenderSink sink_;

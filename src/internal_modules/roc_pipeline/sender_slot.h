@@ -22,6 +22,7 @@
 #include "roc_core/ref_counted.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_pipeline/config.h"
+#include "roc_pipeline/metrics.h"
 #include "roc_pipeline/sender_endpoint.h"
 #include "roc_pipeline/sender_session.h"
 
@@ -65,6 +66,10 @@ public:
 
     //! Update pipeline.
     void update(core::nanoseconds_t current_time);
+
+    //! Get metrics for slot and its session.
+    void get_metrics(SenderSlotMetrics& slot_metrics,
+                     SenderSessionMetrics* sess_metrics) const;
 
 private:
     SenderEndpoint* create_source_endpoint_(address::Protocol proto,

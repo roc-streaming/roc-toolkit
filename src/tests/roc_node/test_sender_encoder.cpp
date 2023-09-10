@@ -96,5 +96,24 @@ TEST(sender_encoder, activate_fec) {
     }
 }
 
+TEST(sender_encoder, metrics) {
+    Context context(context_config, arena);
+    CHECK(context.is_valid());
+
+    SenderEncoder sender_encoder(context, sender_config);
+    CHECK(sender_encoder.is_valid());
+
+    pipeline::SenderSlotMetrics slot_metrics;
+    pipeline::SenderSessionMetrics sess_metrics;
+
+    CHECK(sender_encoder.get_metrics(slot_metrics, sess_metrics));
+    CHECK(!slot_metrics.is_complete);
+
+    CHECK(sender_encoder.activate(address::Iface_AudioSource, address::Proto_RTP));
+
+    CHECK(sender_encoder.get_metrics(slot_metrics, sess_metrics));
+    CHECK(slot_metrics.is_complete);
+}
+
 } // namespace node
 } // namespace roc

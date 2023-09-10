@@ -120,6 +120,16 @@ void SenderSlot::update(core::nanoseconds_t current_time) {
     session_.update(current_time);
 }
 
+void SenderSlot::get_metrics(SenderSlotMetrics& slot_metrics,
+                             SenderSessionMetrics* sess_metrics) const {
+    slot_metrics = SenderSlotMetrics();
+    slot_metrics.is_complete = is_complete();
+
+    if (sess_metrics) {
+        *sess_metrics = session_.get_metrics();
+    }
+}
+
 SenderEndpoint*
 SenderSlot::create_source_endpoint_(address::Protocol proto,
                                     const address::SocketAddr& dest_address,

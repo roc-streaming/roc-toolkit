@@ -59,6 +59,11 @@ public:
     //! Remove slot.
     bool unlink(slot_index_t slot_index);
 
+    //! Get slot metrics.
+    bool get_metrics(slot_index_t slot_index,
+                     pipeline::SenderSlotMetrics& slot_metrics,
+                     pipeline::SenderSessionMetrics& sess_metrics);
+
     //! Check if there are incomplete or broken slots.
     bool has_incomplete();
 
@@ -87,7 +92,9 @@ private:
         Port ports[address::Iface_Max];
         bool broken;
 
-        Slot(core::IPool& pool, slot_index_t index, pipeline::SenderLoop::SlotHandle handle)
+        Slot(core::IPool& pool,
+             slot_index_t index,
+             pipeline::SenderLoop::SlotHandle handle)
             : core::RefCounted<Slot, core::PoolAllocation>(pool)
             , index(index)
             , handle(handle)
