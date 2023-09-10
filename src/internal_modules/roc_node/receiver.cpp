@@ -60,7 +60,7 @@ bool Receiver::is_valid() {
     return valid_;
 }
 
-bool Receiver::configure(size_t slot_index,
+bool Receiver::configure(slot_index_t slot_index,
                          address::Interface iface,
                          const netio::UdpReceiverConfig& config) {
     core::Mutex::Lock lock(mutex_);
@@ -107,7 +107,7 @@ bool Receiver::configure(size_t slot_index,
     return true;
 }
 
-bool Receiver::bind(size_t slot_index,
+bool Receiver::bind(slot_index_t slot_index,
                     address::Interface iface,
                     address::EndpointUri& uri) {
     core::Mutex::Lock lock(mutex_);
@@ -214,7 +214,7 @@ bool Receiver::bind(size_t slot_index,
     return true;
 }
 
-bool Receiver::unlink(size_t slot_index) {
+bool Receiver::unlink(slot_index_t slot_index) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(is_valid());
@@ -275,7 +275,8 @@ void Receiver::update_compatibility_(address::Interface iface,
     used_protocols_[iface] = uri.proto();
 }
 
-core::SharedPtr<Receiver::Slot> Receiver::get_slot_(size_t slot_index, bool auto_create) {
+core::SharedPtr<Receiver::Slot> Receiver::get_slot_(slot_index_t slot_index,
+                                                    bool auto_create) {
     core::SharedPtr<Slot> slot = slot_map_.find(slot_index);
 
     if (!slot) {

@@ -19,6 +19,7 @@
 #include "roc_core/mutex.h"
 #include "roc_core/pool.h"
 #include "roc_core/ref_counted.h"
+#include "roc_core/stddefs.h"
 #include "roc_ctl/control_loop.h"
 #include "roc_node/context.h"
 #include "roc_node/node.h"
@@ -31,6 +32,9 @@ namespace node {
 //! Receiver node.
 class Receiver : public Node, private pipeline::IPipelineTaskScheduler {
 public:
+    //! Slot index.
+    typedef uint64_t slot_index_t;
+
     //! Initialize.
     Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_config);
 
@@ -41,15 +45,16 @@ public:
     bool is_valid();
 
     //! Set interface config.
-    bool configure(size_t slot_index,
+    bool configure(slot_index_t slot_index,
                    address::Interface iface,
                    const netio::UdpReceiverConfig& config);
 
     //! Bind to local endpoint.
-    bool bind(size_t slot_index, address::Interface iface, address::EndpointUri& uri);
+    bool
+    bind(slot_index_t slot_index, address::Interface iface, address::EndpointUri& uri);
 
     //! Remove slot.
-    bool unlink(size_t slot_index);
+    bool unlink(slot_index_t slot_index);
 
     //! Check if there are broken slots.
     bool has_broken();
@@ -68,27 +73,29 @@ private:
     };
 
     struct Slot : core::RefCounted<Slot, core::PoolAllocation>, core::HashmapNode {
-        const size_t index;
+        const slot_index_t index;
         pipeline::ReceiverLoop::SlotHandle handle;
         Port ports[address::Iface_Max];
         bool broken;
 
-        Slot(core::IPool& pool, size_t index, pipeline::SenderLoop::SlotHandle handle)
+        Slot(core::IPool& pool,
+             slot_index_t index,
+             pipeline::SenderLoop::SlotHandle handle)
             : core::RefCounted<Slot, core::PoolAllocation>(pool)
             , index(index)
             , handle(handle)
             , broken(false) {
         }
 
-        size_t key() const {
+        slot_index_t key() const {
             return index;
         }
 
-        static core::hashsum_t key_hash(size_t index) {
+        static core::hashsum_t key_hash(slot_index_t index) {
             return core::hashsum_int(index);
         }
 
-        static bool key_equal(size_t index1, size_t index2) {
+        static bool key_equal(slot_index_t index1, slot_index_t index2) {
             return index1 == index2;
         }
     };
@@ -96,7 +103,7 @@ private:
     bool check_compatibility_(address::Interface iface, const address::EndpointUri& uri);
     void update_compatibility_(address::Interface iface, const address::EndpointUri& uri);
 
-    core::SharedPtr<Slot> get_slot_(size_t slot_index, bool auto_create);
+    core::SharedPtr<Slot> get_slot_(slot_index_t slot_index, bool auto_create);
     void cleanup_slot_(Slot& slot);
     void break_slot_(Slot& slot);
 
