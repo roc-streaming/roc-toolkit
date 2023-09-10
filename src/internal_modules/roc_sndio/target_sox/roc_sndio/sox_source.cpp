@@ -203,6 +203,16 @@ core::nanoseconds_t SoxSource::latency() const {
     return 0;
 }
 
+bool SoxSource::has_latency() const {
+    roc_panic_if(!valid_);
+
+    if (!input_) {
+        roc_panic("sox source: has_latency(): non-open input file or device");
+    }
+
+    return false;
+}
+
 bool SoxSource::has_clock() const {
     roc_panic_if(!valid_);
 

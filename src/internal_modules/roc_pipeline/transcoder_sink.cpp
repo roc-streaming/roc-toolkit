@@ -106,6 +106,10 @@ core::nanoseconds_t TranscoderSink::latency() const {
     return 0;
 }
 
+bool TranscoderSink::has_latency() const {
+    return false;
+}
+
 bool TranscoderSink::has_clock() const {
     return false;
 }

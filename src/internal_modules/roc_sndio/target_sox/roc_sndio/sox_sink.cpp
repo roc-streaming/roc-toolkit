@@ -127,6 +127,16 @@ core::nanoseconds_t SoxSink::latency() const {
     return 0;
 }
 
+bool SoxSink::has_latency() const {
+    roc_panic_if(!valid_);
+
+    if (!output_) {
+        roc_panic("sox sink: has_latency(): non-open output file or device");
+    }
+
+    return false;
+}
+
 bool SoxSink::has_clock() const {
     roc_panic_if(!valid_);
 

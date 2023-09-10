@@ -161,10 +161,6 @@ core::nanoseconds_t PulseaudioDevice::latency() const {
     return latency;
 }
 
-bool PulseaudioDevice::has_clock() const {
-    return true;
-}
-
 bool PulseaudioDevice::request(audio::Frame& frame) {
     want_mainloop_();
 

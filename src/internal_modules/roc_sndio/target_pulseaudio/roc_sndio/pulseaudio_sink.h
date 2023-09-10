@@ -47,6 +47,9 @@ public:
     //! Get latency of the sink.
     virtual core::nanoseconds_t latency() const;
 
+    //! Check if the sink supports latency reports.
+    virtual bool has_latency() const;
+
     //! Check if the sink has own clock.
     virtual bool has_clock() const;
 

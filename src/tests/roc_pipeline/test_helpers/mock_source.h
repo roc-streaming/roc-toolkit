@@ -63,6 +63,10 @@ public:
         return 0;
     }
 
+    virtual bool has_latency() const {
+        return false;
+    }
+
     virtual bool has_clock() const {
         return false;
     }

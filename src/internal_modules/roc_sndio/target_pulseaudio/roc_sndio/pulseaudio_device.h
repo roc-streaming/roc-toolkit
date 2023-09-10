@@ -57,9 +57,6 @@ protected:
     //! Get latency of the sink.
     core::nanoseconds_t latency() const;
 
-    //! Check if the sink has own clock.
-    bool has_clock() const;
-
     //! Process audio frame.
     bool request(audio::Frame& frame);
 
