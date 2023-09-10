@@ -15,6 +15,7 @@
 #include "roc_audio/sample.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/time.h"
+#include "roc_pipeline/config.h"
 
 namespace roc {
 namespace pipeline {
@@ -24,7 +25,8 @@ namespace {
 
 const double SampleEpsilon = 0.00001;
 
-const core::nanoseconds_t TimestampEpsilon = core::Microsecond;
+const core::nanoseconds_t TimestampEpsilon =
+    (core::nanoseconds_t)(1. / DefaultSampleRate * core::Second);
 
 inline audio::sample_t nth_sample(uint8_t n) {
     return audio::sample_t(n) / 1024;

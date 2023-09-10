@@ -594,5 +594,28 @@ TEST(depacketizer, timestamp) {
     }
 }
 
+TEST(depacketizer, timestamp_fract_frame_per_packet) {
+    enum {
+        StartTimestamp = 1000,
+        NumPackets = 3,
+        SamplesPerFrame = SamplesPerPacket + 50
+    };
+
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
+
+    packet::Queue queue;
+    Depacketizer dp(queue, decoder, SampleSpecs, false);
+    CHECK(dp.is_valid());
+
+    core::nanoseconds_t capt_ts =
+        Now + SampleSpecs.samples_overall_2_ns(SamplesPerPacket);
+    // 1st packet in the frame has 0 capture ts, and the next
+    queue.write(new_packet(encoder, StartTimestamp, 0.1f, 0));
+    queue.write(
+        new_packet(encoder, StartTimestamp + SamplesPerPacket / NumCh, 0.1f, capt_ts));
+    expect_output(dp, SamplesPerFrame, 0.1f, Now);
+}
+
 } // namespace audio
 } // namespace roc

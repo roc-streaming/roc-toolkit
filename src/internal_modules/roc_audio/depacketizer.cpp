@@ -112,9 +112,17 @@ Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end, FrameInfo& i
 
             buff_ptr = read_missing_samples_(buff_ptr, buff_ptr + n_samples);
 
+            //           next_capture_ts_
+            //           next_timestamp
+            //                  ↓
+            // Packet           |-----------------|
+            //           timestamp_
+            //               ↓
+            // Frame      |----------------|
+            info.n_filled_samples += n_samples;
             if (!info.capture_ts && valid_capture_ts_) {
-                info.capture_ts =
-                    next_capture_ts_ - sample_spec_.samples_overall_2_ns(mis_samples);
+                info.capture_ts = next_capture_ts_
+                    - sample_spec_.samples_overall_2_ns(info.n_filled_samples);
             }
         }
 
@@ -124,12 +132,14 @@ Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end, FrameInfo& i
 
             info.n_decoded_samples += n_samples;
             if (n_samples && !info.capture_ts && valid_capture_ts_) {
-                info.capture_ts = next_capture_ts_;
+                info.capture_ts = next_capture_ts_
+                    - sample_spec_.samples_overall_2_ns(info.n_filled_samples);
             }
             if (valid_capture_ts_) {
                 next_capture_ts_ += sample_spec_.samples_overall_2_ns(n_samples);
             }
 
+            info.n_filled_samples += n_samples;
             buff_ptr = new_buff_ptr;
         }
 
@@ -138,12 +148,14 @@ Depacketizer::read_samples_(sample_t* buff_ptr, sample_t* buff_end, FrameInfo& i
         const size_t n_samples = size_t(buff_end - buff_ptr);
 
         if (!info.capture_ts && valid_capture_ts_) {
-            info.capture_ts = next_capture_ts_;
+            info.capture_ts = next_capture_ts_
+                - sample_spec_.samples_overall_2_ns(info.n_filled_samples);
         }
         if (valid_capture_ts_) {
             next_capture_ts_ += sample_spec_.samples_overall_2_ns(n_samples);
         }
 
+        info.n_filled_samples += n_samples;
         return read_missing_samples_(buff_ptr, buff_end);
     }
 }
