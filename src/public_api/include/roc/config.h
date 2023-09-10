@@ -151,6 +151,7 @@ typedef enum roc_protocol {
      * Audio encodings:
      *   - \ref ROC_PACKET_ENCODING_AVP_L16_MONO
      *   - \ref ROC_PACKET_ENCODING_AVP_L16_STEREO
+     *   - encodings registered using roc_context_register_encoding()
      *
      * FEC encodings:
      *   - none
@@ -495,12 +496,12 @@ typedef enum roc_resampler_backend {
      */
     ROC_RESAMPLER_BACKEND_DEFAULT = 0,
 
-    /** Slow good-quality high-precision built-in resampler.
+    /** CPU-intensive good-quality high-precision built-in resampler.
      *
-     * Backend controls clock speed with high precision, and hence is useful when
+     * This backend controls clock speed with high precision, and hence is useful when
      * latency or synchronization error should be very low.
      *
-     * Backend has high CPU usage, especially on high resampling quality and on
+     * This backend has high CPU usage, especially on high resampling quality and on
      * CPUs with small caches.
      *
      * This backend is always available.
@@ -509,11 +510,11 @@ typedef enum roc_resampler_backend {
      */
     ROC_RESAMPLER_BACKEND_BUILTIN = 1,
 
-    /** Fast good-quality low-precision resampler based on SpeexDSP.
+    /** Very fast good-quality low-precision resampler based on SpeexDSP.
      *
-     * Backend has low CPU usage even on high resampler quality and cheap CPUs.
+     * This backend has low CPU usage even on high resampler quality and cheap CPUs.
      *
-     * Backend controls clock speed with lower precision, and is not so good when
+     * This backend controls clock speed with lower precision, and is not so good when
      * latency or synchronization error should be very low.
      *
      * This backend is available if SpeexDSP was enabled at build time.
