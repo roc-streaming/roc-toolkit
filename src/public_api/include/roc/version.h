@@ -32,6 +32,22 @@ extern "C" {
  */
 #define ROC_VERSION_PATCH 6
 
+/** Convert version triple to numeric version code.
+ * Version codes can be compared direcrly, e.g.:
+ * \code
+ *   #if ROC_VERSION < ROC_VERSION_CODE(1, 2, 3)
+ *   ...
+ *   #endif
+ * \endcode
+ */
+#define ROC_VERSION_CODE(major, minor, patch) ((major)*1000000 + (minor)*1000 + (patch))
+
+/** Numeric version code.
+ * \see ROC_VERSION_CODE
+ */
+#define ROC_VERSION                                                                      \
+    ROC_VERSION_CODE(ROC_VERSION_MAJOR, ROC_VERSION_MINOR, ROC_VERSION_PATCH)
+
 /** Version components.
  */
 typedef struct roc_version {
@@ -46,6 +62,10 @@ typedef struct roc_version {
     /** Patch version component.
      */
     unsigned int patch;
+
+    /** Numeric version code.
+     */
+    unsigned int code;
 } roc_version;
 
 /** Retrieve version numbers.
