@@ -1707,7 +1707,7 @@ TEST(receiver_source, timestamp_mapping_periodic_control_packets) {
     }
 }
 
-IGNORE_TEST(receiver_source, timestamp_mapping_remixing) {
+TEST(receiver_source, recv_timestamp_mapping_remixing) {
     enum {
         OutputRate = 48000,
         PacketRate = 44100,
@@ -1734,7 +1734,7 @@ IGNORE_TEST(receiver_source, timestamp_mapping_remixing) {
 
     test::PacketWriter packet_writer(arena, *packet_endpoint, encoding_map,
                                      packet_factory, byte_buffer_factory, src1, dst1,
-                                     PayloadType_Ch2);
+                                     PayloadType_Ch1);
 
     test::ControlWriter control_writer(*control_endpoint, packet_factory,
                                        byte_buffer_factory, src1, dst2);
