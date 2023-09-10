@@ -104,11 +104,15 @@ bool Pump::run() {
             // if source does not provide capture timestamps, we fill them here
             // we subtract source latency to take into account recording buffer size,
             // where this frame spent some time before we read it
-            frame.set_capture_timestamp(core::timestamp(core::ClockUnix)
-                                        - current_source->latency());
+            // we subtract frame size because we already read the whole frame from
+            // recording buffer, and should take it into account too
+            frame.set_capture_timestamp(
+                core::timestamp(core::ClockUnix) - current_source->latency()
+                - sample_spec_.samples_overall_2_ns(frame.num_samples()));
         }
 
         // if sink has clock, here we block on it
+        // note that either source or sink may have clock, but not both
         sink_.write(frame);
 
         // tell source what is playback time of first sample of last read frame

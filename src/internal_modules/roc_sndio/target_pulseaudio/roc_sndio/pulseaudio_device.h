@@ -71,7 +71,6 @@ private:
 
     static void stream_state_cb_(pa_stream* stream, void* userdata);
     static void stream_request_cb_(pa_stream* stream, size_t length, void* userdata);
-    static void stream_latency_cb_(pa_stream* stream, void* userdata);
 
     static void timer_cb_(pa_mainloop_api* mainloop,
                           pa_time_event* timer,
@@ -103,6 +102,9 @@ private:
     ssize_t read_stream_(audio::sample_t* data, size_t size);
     ssize_t wait_stream_();
 
+    bool get_latency_(core::nanoseconds_t& latency) const;
+    void report_latency_();
+
     void start_timer_(core::nanoseconds_t timeout);
     bool stop_timer_();
 
@@ -117,7 +119,6 @@ private:
     bool record_frag_flag_;
 
     core::nanoseconds_t target_latency_;
-    core::nanoseconds_t actual_latency_;
     core::nanoseconds_t timeout_;
 
     bool open_done_;
