@@ -291,6 +291,10 @@ size_t BuiltinResampler::pop_output(Frame& out) {
     return out_pos;
 }
 
+float BuiltinResampler::n_left_to_process() const {
+    return fixedpoint_to_float(2 * qt_frame_size_ - qt_sample_);
+}
+
 bool BuiltinResampler::alloc_frames_(core::BufferFactory<sample_t>& buffer_factory) {
     for (size_t n = 0; n < ROC_ARRAY_SIZE(frames_); n++) {
         frames_[n] = buffer_factory.new_buffer();
@@ -502,10 +506,6 @@ sample_t BuiltinResampler::resample_(const size_t channel_offset) {
     }
 
     return accumulator;
-}
-
-float BuiltinResampler::n_left_to_process() const {
-    return fixedpoint_to_float(2 * qt_frame_size_ - qt_sample_);
 }
 
 } // namespace audio

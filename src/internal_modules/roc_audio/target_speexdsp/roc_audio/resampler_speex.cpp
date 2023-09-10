@@ -205,6 +205,10 @@ size_t SpeexResampler::pop_output(Frame& out) {
     return (size_t)out_frame_pos;
 }
 
+float SpeexResampler::n_left_to_process() const {
+    return (in_frame_size_ - in_frame_pos_) / num_ch_;
+}
+
 void SpeexResampler::report_stats_() {
     if (!speex_state_) {
         return;
@@ -231,10 +235,6 @@ void SpeexResampler::report_stats_() {
         " ratio_num=%u ratio_den=%u in_rate=%u out_rate=%u in_latency=%d out_latency=%d",
         (unsigned int)ratio_num, (unsigned int)ratio_den, (unsigned int)in_rate,
         (unsigned int)out_rate, (int)in_latency, (int)out_latency);
-}
-
-float SpeexResampler::n_left_to_process() const {
-    return (in_frame_size_ - in_frame_pos_) / num_ch_;
 }
 
 } // namespace audio

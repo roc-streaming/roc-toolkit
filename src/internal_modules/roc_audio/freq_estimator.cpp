@@ -161,7 +161,7 @@ const char* fe_profile_to_str(FreqEstimatorProfile profile) {
         return "gradual";
     }
 
-    return "invalid";
+    return "<invalid>";
 }
 
 } // namespace audio
