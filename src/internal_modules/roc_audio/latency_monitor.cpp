@@ -295,6 +295,10 @@ bool LatencyMonitor::update_scaling_(packet::timestamp_diff_t latency) {
 }
 
 void LatencyMonitor::report_() {
+    if (!has_niq_latency_) {
+        return;
+    }
+
     if (stream_pos_ < report_pos_) {
         return;
     }
