@@ -43,6 +43,10 @@ public:
     //! Activate interface.
     bool activate(address::Interface iface, address::Protocol proto);
 
+    //! Get metrics.
+    bool get_metrics(pipeline::SenderSlotMetrics& slot_metrics,
+                     pipeline::SenderSessionMetrics& sess_metrics);
+
     //! Check if everything is connected.
     bool is_complete();
 

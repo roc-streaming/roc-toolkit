@@ -20,6 +20,7 @@
 #include "roc_core/list_node.h"
 #include "roc_core/ref_counted.h"
 #include "roc_packet/packet_factory.h"
+#include "roc_pipeline/metrics.h"
 #include "roc_pipeline/receiver_endpoint.h"
 #include "roc_pipeline/receiver_session_group.h"
 #include "roc_pipeline/receiver_state.h"
@@ -57,6 +58,11 @@ public:
 
     //! Get number of alive sessions.
     size_t num_sessions() const;
+
+    //! Get metrics for slot and its sessions.
+    void get_metrics(ReceiverSlotMetrics& slot_metrics,
+                     ReceiverSessionMetrics* sess_metrics,
+                     size_t* sess_metrics_size) const;
 
 private:
     ReceiverEndpoint* create_source_endpoint_(address::Protocol proto);

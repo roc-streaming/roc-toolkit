@@ -236,6 +236,36 @@ bool Receiver::unlink(slot_index_t slot_index) {
     return true;
 }
 
+bool Receiver::get_metrics(slot_index_t slot_index,
+                           pipeline::ReceiverSlotMetrics& slot_metrics,
+                           pipeline::ReceiverSessionMetrics* sess_metrics,
+                           size_t* sess_metrics_size) {
+    core::Mutex::Lock lock(mutex_);
+
+    roc_panic_if_not(is_valid());
+
+    core::SharedPtr<Slot> slot = get_slot_(slot_index, false);
+    if (!slot) {
+        roc_log(LogError,
+                "receiver node:"
+                " can't get metrics of slot %lu: can't find slot",
+                (unsigned long)slot_index);
+        return false;
+    }
+
+    pipeline::ReceiverLoop::Tasks::QuerySlot task(slot->handle, slot_metrics,
+                                                  sess_metrics, sess_metrics_size);
+    if (!pipeline_.schedule_and_wait(task)) {
+        roc_log(LogError,
+                "receiver node:"
+                " can't get metrics of slot %lu: operation failed",
+                (unsigned long)slot_index);
+        return false;
+    }
+
+    return true;
+}
+
 bool Receiver::has_broken() {
     core::Mutex::Lock lock(mutex_);
 

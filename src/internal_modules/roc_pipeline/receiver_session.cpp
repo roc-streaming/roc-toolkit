@@ -256,13 +256,13 @@ bool ReceiverSession::reclock(core::nanoseconds_t timestamp) {
     return latency_monitor_->reclock(timestamp);
 }
 
-SessionStats ReceiverSession::stats() const {
+ReceiverSessionMetrics ReceiverSession::get_metrics() const {
     roc_panic_if(!is_valid());
 
-    SessionStats stats;
-    stats.latency = latency_monitor_->stats();
+    ReceiverSessionMetrics metrics;
+    metrics.latency = latency_monitor_->metrics();
 
-    return stats;
+    return metrics;
 }
 
 audio::IFrameReader& ReceiverSession::reader() {

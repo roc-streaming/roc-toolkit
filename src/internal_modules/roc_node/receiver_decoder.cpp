@@ -102,6 +102,25 @@ bool ReceiverDecoder::activate(address::Interface iface, address::Protocol proto
     return true;
 }
 
+bool ReceiverDecoder::get_metrics(pipeline::ReceiverSlotMetrics& slot_metrics,
+                                  pipeline::ReceiverSessionMetrics& sess_metrics) {
+    core::Mutex::Lock lock(mutex_);
+
+    roc_panic_if_not(is_valid());
+
+    size_t sess_metrics_size = 1;
+    pipeline::ReceiverLoop::Tasks::QuerySlot task(slot_, slot_metrics, &sess_metrics,
+                                                  &sess_metrics_size);
+    if (!pipeline_.schedule_and_wait(task)) {
+        roc_log(LogError,
+                "receiver decoder node:"
+                " can't get metrics: operation failed");
+        return false;
+    }
+
+    return true;
+}
+
 bool ReceiverDecoder::write(address::Interface iface, const packet::PacketPtr& packet) {
     roc_panic_if_not(is_valid());
 

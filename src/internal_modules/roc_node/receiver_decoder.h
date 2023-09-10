@@ -38,6 +38,10 @@ public:
     //! Activate interface.
     bool activate(address::Interface iface, address::Protocol proto);
 
+    //! Get slot metrics.
+    bool get_metrics(pipeline::ReceiverSlotMetrics& slot_metrics,
+                     pipeline::ReceiverSessionMetrics& sess_metrics);
+
     //! Write packet for decoding.
     bool write(address::Interface iface, const packet::PacketPtr& packet);
 

@@ -194,6 +194,11 @@ void SenderSession::update(core::nanoseconds_t current_time) {
     }
 }
 
+SenderSessionMetrics SenderSession::get_metrics() const {
+    SenderSessionMetrics metrics;
+    return metrics;
+}
+
 size_t SenderSession::on_get_num_sources() {
     return num_sources_;
 }

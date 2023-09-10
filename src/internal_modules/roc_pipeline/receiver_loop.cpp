@@ -19,7 +19,10 @@ ReceiverLoop::Task::Task()
     , slot_(NULL)
     , iface_(address::Iface_Invalid)
     , proto_(address::Proto_None)
-    , writer_(NULL) {
+    , writer_(NULL)
+    , slot_metrics_(NULL)
+    , sess_metrics_(NULL)
+    , sess_metrics_size_(NULL) {
 }
 
 ReceiverLoop::Tasks::CreateSlot::CreateSlot() {
@@ -40,6 +43,20 @@ ReceiverLoop::Tasks::DeleteSlot::DeleteSlot(SlotHandle slot) {
         roc_panic("receiver loop: slot handle is null");
     }
     slot_ = (ReceiverSlot*)slot;
+}
+
+ReceiverLoop::Tasks::QuerySlot::QuerySlot(SlotHandle slot,
+                                          ReceiverSlotMetrics& slot_metrics,
+                                          ReceiverSessionMetrics* sess_metrics,
+                                          size_t* sess_metrics_size) {
+    func_ = &ReceiverLoop::task_query_slot_;
+    if (!slot) {
+        roc_panic("receiver loop: slot handle is null");
+    }
+    slot_ = (ReceiverSlot*)slot;
+    slot_metrics_ = &slot_metrics;
+    sess_metrics_ = sess_metrics;
+    sess_metrics_size_ = sess_metrics_size;
 }
 
 ReceiverLoop::Tasks::AddEndpoint::AddEndpoint(SlotHandle slot,
@@ -219,6 +236,15 @@ bool ReceiverLoop::task_delete_slot_(Task& task) {
     roc_panic_if(!task.slot_);
 
     source_.delete_slot(task.slot_);
+    return true;
+}
+
+bool ReceiverLoop::task_query_slot_(Task& task) {
+    roc_panic_if(!task.slot_);
+    roc_panic_if(!task.slot_metrics_);
+
+    task.slot_->get_metrics(*task.slot_metrics_, task.sess_metrics_,
+                            task.sess_metrics_size_);
     return true;
 }
 

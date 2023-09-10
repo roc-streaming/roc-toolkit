@@ -83,8 +83,8 @@ struct LatencyMonitorConfig {
     }
 };
 
-//! Statistics of latency monitor.
-struct LatencyMonitorStats {
+//! Metrics of latency monitor.
+struct LatencyMonitorMetrics {
     //! Estimated NIQ latency.
     //! NIQ = network incoming queue.
     //! Defines how many samples are buffered in receiver packet queue and
@@ -97,7 +97,7 @@ struct LatencyMonitorStats {
     //! (when it is captured) and leaved received pipeline (when it is played).
     core::nanoseconds_t e2e_latency;
 
-    LatencyMonitorStats()
+    LatencyMonitorMetrics()
         : niq_latency(0)
         , e2e_latency(0) {
     }
@@ -164,8 +164,8 @@ public:
     //! Check if the stream is still alive.
     bool is_alive() const;
 
-    //! Get statistics.
-    LatencyMonitorStats stats() const;
+    //! Get metrics.
+    LatencyMonitorMetrics metrics() const;
 
     //! Read audio frame from a pipeline.
     //! @remarks

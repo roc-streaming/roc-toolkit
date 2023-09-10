@@ -16,6 +16,7 @@
 #include "roc_core/iarena.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
+#include "roc_pipeline/metrics.h"
 #include "roc_pipeline/receiver_session.h"
 #include "roc_pipeline/receiver_state.h"
 #include "roc_rtcp/composer.h"
@@ -53,6 +54,14 @@ public:
 
     //! Get number of alive sessions.
     size_t num_sessions() const;
+
+    //! Get metrics for all sessions.
+    //! @remarks
+    //!  @p metrics defines array of metrics structs, and @p metrics_size
+    //!  defines number of array elements. Metrics are written to given array,
+    //!  and @p metrics_size is updated of actual number of elements written.
+    //!  If there is not enough space for all sessions, result is truncated.
+    void get_metrics(ReceiverSessionMetrics* metrics, size_t* metrics_size) const;
 
 private:
     // Implementation of rtcp::IReceiverHooks interface.

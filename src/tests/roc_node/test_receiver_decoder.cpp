@@ -84,5 +84,24 @@ TEST(receiver_decoder, activate_fec) {
     }
 }
 
+TEST(receiver_decoder, metrics) {
+    Context context(context_config, arena);
+    CHECK(context.is_valid());
+
+    ReceiverDecoder receiver_decoder(context, receiver_config);
+    CHECK(receiver_decoder.is_valid());
+
+    pipeline::ReceiverSlotMetrics slot_metrics;
+    pipeline::ReceiverSessionMetrics sess_metrics;
+
+    CHECK(receiver_decoder.get_metrics(slot_metrics, sess_metrics));
+    UNSIGNED_LONGS_EQUAL(0, slot_metrics.num_sessions);
+
+    CHECK(receiver_decoder.activate(address::Iface_AudioSource, address::Proto_RTP));
+
+    CHECK(receiver_decoder.get_metrics(slot_metrics, sess_metrics));
+    UNSIGNED_LONGS_EQUAL(0, slot_metrics.num_sessions);
+}
+
 } // namespace node
 } // namespace roc

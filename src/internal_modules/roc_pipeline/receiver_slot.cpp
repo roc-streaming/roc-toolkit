@@ -82,6 +82,17 @@ size_t ReceiverSlot::num_sessions() const {
     return session_group_.num_sessions();
 }
 
+void ReceiverSlot::get_metrics(ReceiverSlotMetrics& slot_metrics,
+                               ReceiverSessionMetrics* sess_metrics,
+                               size_t* sess_metrics_size) const {
+    slot_metrics = ReceiverSlotMetrics();
+    slot_metrics.num_sessions = session_group_.num_sessions();
+
+    if (sess_metrics) {
+        session_group_.get_metrics(sess_metrics, sess_metrics_size);
+    }
+}
+
 ReceiverEndpoint* ReceiverSlot::create_source_endpoint_(address::Protocol proto) {
     if (source_endpoint_) {
         roc_log(LogError, "receiver slot: audio source endpoint is already set");

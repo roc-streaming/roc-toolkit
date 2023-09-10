@@ -29,6 +29,7 @@
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/router.h"
 #include "roc_pipeline/config.h"
+#include "roc_pipeline/metrics.h"
 #include "roc_pipeline/sender_endpoint.h"
 #include "roc_rtcp/composer.h"
 #include "roc_rtcp/session.h"
@@ -68,6 +69,9 @@ public:
 
     //! Update pipeline.
     void update(core::nanoseconds_t current_time);
+
+    //! Get session metrics.
+    SenderSessionMetrics get_metrics() const;
 
 private:
     // Implementation of rtcp::ISenderHooks interface.

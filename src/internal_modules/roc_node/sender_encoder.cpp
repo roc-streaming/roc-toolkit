@@ -9,6 +9,7 @@
 #include "roc_node/sender_encoder.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_pipeline/metrics.h"
 
 namespace roc {
 namespace node {
@@ -105,17 +106,35 @@ bool SenderEncoder::activate(address::Interface iface, address::Protocol proto) 
     return true;
 }
 
+bool SenderEncoder::get_metrics(pipeline::SenderSlotMetrics& slot_metrics,
+                                pipeline::SenderSessionMetrics& sess_metrics) {
+    core::Mutex::Lock lock(mutex_);
+
+    roc_panic_if_not(is_valid());
+
+    pipeline::SenderLoop::Tasks::QuerySlot task(slot_, slot_metrics, &sess_metrics);
+    if (!pipeline_.schedule_and_wait(task)) {
+        roc_log(LogError,
+                "sender encoder node:"
+                " can't get metrics: operation failed");
+        return false;
+    }
+
+    return true;
+}
+
 bool SenderEncoder::is_complete() {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(is_valid());
 
-    pipeline::SenderLoop::Tasks::PollSlot task(slot_);
+    pipeline::SenderSlotMetrics slot_metrics;
+    pipeline::SenderLoop::Tasks::QuerySlot task(slot_, slot_metrics, NULL);
     if (!pipeline_.schedule_and_wait(task)) {
         return false;
     }
 
-    return task.get_complete();
+    return slot_metrics.is_complete;
 }
 
 bool SenderEncoder::read(address::Interface iface, packet::PacketPtr& packet) {
