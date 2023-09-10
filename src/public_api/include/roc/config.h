@@ -14,6 +14,8 @@
 #ifndef ROC_CONFIG_H_
 #define ROC_CONFIG_H_
 
+#include "roc/platform.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -34,7 +36,7 @@ extern "C" {
  * Inside each slot, there can be up to one endpoint for each interface type.
  * See \ref roc_interface for details.
  */
-typedef unsigned int roc_slot;
+typedef unsigned long long roc_slot;
 
 /** Alias for the slot with index zero.
  * Has no special meaning, exists just for convenience.
