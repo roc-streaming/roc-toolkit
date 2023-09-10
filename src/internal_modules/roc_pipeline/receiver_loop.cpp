@@ -176,6 +176,14 @@ core::nanoseconds_t ReceiverLoop::latency() const {
     return source_.latency();
 }
 
+bool ReceiverLoop::has_latency() const {
+    roc_panic_if(!is_valid());
+
+    core::Mutex::Lock lock(source_mutex_);
+
+    return source_.has_latency();
+}
+
 bool ReceiverLoop::has_clock() const {
     roc_panic_if(!is_valid());
 

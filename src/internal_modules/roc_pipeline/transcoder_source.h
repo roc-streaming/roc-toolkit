@@ -64,6 +64,9 @@ public:
     //! Get latency of the source.
     virtual core::nanoseconds_t latency() const;
 
+    //! Check if the source supports latency reports.
+    virtual bool has_latency() const;
+
     //! Check if the sink has own clock.
     virtual bool has_clock() const;
 

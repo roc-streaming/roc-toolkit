@@ -46,8 +46,12 @@ core::nanoseconds_t PulseaudioSink::latency() const {
     return PulseaudioDevice::latency();
 }
 
+bool PulseaudioSink::has_latency() const {
+    return true;
+}
+
 bool PulseaudioSink::has_clock() const {
-    return PulseaudioDevice::has_clock();
+    return true;
 }
 
 void PulseaudioSink::write(audio::Frame& frame) {

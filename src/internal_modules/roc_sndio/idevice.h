@@ -53,6 +53,9 @@ public:
     //! Get latency of the device.
     virtual core::nanoseconds_t latency() const = 0;
 
+    //! Check if the device supports latency reports.
+    virtual bool has_latency() const = 0;
+
     //! Check if the device has own clock.
     virtual bool has_clock() const = 0;
 };

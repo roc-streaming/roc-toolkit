@@ -177,6 +177,14 @@ core::nanoseconds_t SenderLoop::latency() const {
     return sink_.latency();
 }
 
+bool SenderLoop::has_latency() const {
+    roc_panic_if_not(is_valid());
+
+    core::Mutex::Lock lock(sink_mutex_);
+
+    return sink_.has_latency();
+}
+
 bool SenderLoop::has_clock() const {
     roc_panic_if_not(is_valid());
 

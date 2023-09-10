@@ -128,6 +128,10 @@ core::nanoseconds_t ReceiverSource::latency() const {
     return 0;
 }
 
+bool ReceiverSource::has_latency() const {
+    return false;
+}
+
 bool ReceiverSource::has_clock() const {
     return config_.common.enable_timing;
 }

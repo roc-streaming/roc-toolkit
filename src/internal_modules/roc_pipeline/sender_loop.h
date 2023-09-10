@@ -143,6 +143,7 @@ private:
     virtual bool restart();
     virtual audio::SampleSpec sample_spec() const;
     virtual core::nanoseconds_t latency() const;
+    virtual bool has_latency() const;
     virtual bool has_clock() const;
     virtual void write(audio::Frame& frame);
 

@@ -126,6 +126,10 @@ core::nanoseconds_t SenderSink::latency() const {
     return 0;
 }
 
+bool SenderSink::has_latency() const {
+    return false;
+}
+
 bool SenderSink::has_clock() const {
     return config_.enable_timing;
 }
