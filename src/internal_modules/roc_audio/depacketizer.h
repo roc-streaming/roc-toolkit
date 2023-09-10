@@ -60,6 +60,9 @@ private:
         // Number of samples decoded from packets into the frame.
         size_t n_decoded_samples;
 
+        // Number of samples filled out in the frame.
+        size_t n_filled_samples;
+
         // Number of packets dropped during frame construction.
         size_t n_dropped_packets;
 
@@ -68,6 +71,7 @@ private:
 
         FrameInfo()
             : n_decoded_samples(0)
+            , n_filled_samples(0)
             , n_dropped_packets(0)
             , capture_ts(0) {
         }
