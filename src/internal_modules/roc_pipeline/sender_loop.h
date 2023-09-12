@@ -161,7 +161,7 @@ private:
     SenderSink sink_;
 
     core::Optional<core::Ticker> ticker_;
-    packet::timestamp_t timestamp_;
+    core::Ticker::ticks_t ticker_ts_;
 
     core::Mutex sink_mutex_;
 

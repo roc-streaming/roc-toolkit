@@ -93,7 +93,7 @@ ReceiverLoop::ReceiverLoop(IPipelineTaskScheduler& scheduler,
               byte_buffer_factory,
               sample_buffer_factory,
               arena)
-    , timestamp_(0)
+    , ticker_ts_(0)
     , valid_(false) {
     if (!source_.is_valid()) {
         return;
@@ -206,16 +206,14 @@ bool ReceiverLoop::read(audio::Frame& frame) {
     core::Mutex::Lock lock(source_mutex_);
 
     if (ticker_) {
-        ticker_->wait(timestamp_);
+        ticker_->wait(ticker_ts_);
+        ticker_ts_ += frame.num_samples() / source_.sample_spec().num_channels();
     }
 
     // invokes process_subframe_imp() and process_task_imp()
     if (!process_subframes_and_tasks(frame)) {
         return false;
     }
-
-    timestamp_ +=
-        packet::timestamp_t(frame.num_samples() / source_.sample_spec().num_channels());
 
     return true;
 }
