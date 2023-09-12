@@ -160,11 +160,12 @@ private:
     bool task_add_endpoint_(Task& task);
 
     ReceiverSource source_;
+    core::Mutex source_mutex_;
 
     core::Optional<core::Ticker> ticker_;
     core::Ticker::ticks_t ticker_ts_;
 
-    core::Mutex source_mutex_;
+    bool auto_reclock_;
 
     bool valid_;
 };

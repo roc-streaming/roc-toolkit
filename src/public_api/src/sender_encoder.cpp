@@ -135,9 +135,6 @@ int roc_sender_encoder_push(roc_sender_encoder* encoder, const roc_frame* frame)
     }
 
     audio::Frame imp_frame((float*)frame->samples, frame->samples_size / sizeof(float));
-
-    imp_frame.set_capture_timestamp(core::timestamp(core::ClockUnix));
-
     imp_sink.write(imp_frame);
 
     return 0;
