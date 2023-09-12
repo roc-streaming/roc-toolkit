@@ -37,6 +37,8 @@ const core::nanoseconds_t StartTime = 10000000 * core::Second;
 
 const core::nanoseconds_t FrameProcessingTime = 50 * core::Microsecond;
 
+const uint64_t DefaultThread = 1, ProcessingThread = 2, BackgroundThread = 3;
+
 const float Epsilon = 1e6f;
 
 const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, Chans);
@@ -58,6 +60,7 @@ public:
         , frame_allow_counter_(999999)
         , task_allow_counter_(999999)
         , time_(StartTime)
+        , tid_(DefaultThread)
         , exp_frame_val_(0)
         , exp_frame_sz_(0)
         , exp_frame_flags_(0)
@@ -72,6 +75,11 @@ public:
     void set_time(core::nanoseconds_t t) {
         core::Mutex::Lock lock(mutex_);
         time_ = t;
+    }
+
+    void set_tid(uint64_t t) {
+        core::Mutex::Lock lock(mutex_);
+        tid_ = t;
     }
 
     void block_frames() {
@@ -195,6 +203,11 @@ private:
         return time_;
     }
 
+    virtual uint64_t tid_imp() const {
+        core::Mutex::Lock lock(mutex_);
+        return tid_;
+    }
+
     virtual bool process_subframe_imp(audio::Frame& frame) {
         core::Mutex::Lock lock(mutex_);
         bool first_iter = true;
@@ -267,6 +280,7 @@ private:
     int task_allow_counter_;
 
     core::nanoseconds_t time_;
+    uint64_t tid_;
 
     audio::sample_t exp_frame_val_;
     size_t exp_frame_sz_;
@@ -487,11 +501,17 @@ TEST(pipeline_loop, schedule_when_can_process_tasks) {
 
     pipeline.set_time(StartTime);
 
+    // next call is done from "processing thread"
+    pipeline.set_tid(ProcessingThread);
+
     // process_subframes_and_tasks() should allow task processing
     // until (StartTime + FrameSize * core::Microsecond - NoTaskProcessingGap / 2)
     CHECK(pipeline.process_subframes_and_tasks(frame));
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_frames());
+
+    // further calls are done from "background thread"
+    pipeline.set_tid(BackgroundThread);
 
     TestCompleter completer(pipeline);
     TestPipeline::Task task;
@@ -518,6 +538,50 @@ TEST(pipeline_loop, schedule_when_can_process_tasks) {
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_preemptions());
 }
 
+TEST(pipeline_loop, schedule_when_cant_process_tasks_but_from_processing_thread) {
+    TestPipeline pipeline(config);
+
+    audio::Frame frame1(samples, FrameSize);
+    fill_frame(frame1, 0.1f, 0, FrameSize);
+    pipeline.expect_frame(0.1f, FrameSize);
+
+    pipeline.set_time(StartTime);
+
+    // next call is done from "processing thread"
+    pipeline.set_tid(ProcessingThread);
+
+    // process_subframes_and_tasks() should allow task processing
+    // until (StartTime + FrameSize * core::Microsecond - NoTaskProcessingGap / 2)
+    CHECK(pipeline.process_subframes_and_tasks(frame1));
+
+    UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_frames());
+
+    TestCompleter completer(pipeline);
+    TestPipeline::Task task;
+
+    // deadline expired
+    pipeline.set_time(StartTime + FrameSize * core::Microsecond
+                      - NoTaskProcessingGap / 2);
+
+    // schedule() should process task in-place even when deadline expired,
+    // because we're still on "processing thread"
+    pipeline.schedule(task, completer);
+
+    POINTERS_EQUAL(&task, completer.get_task());
+
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_pending_tasks());
+    UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_tasks());
+
+    UNSIGNED_LONGS_EQUAL(1, pipeline.num_tasks_processed_in_sched());
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_tasks_processed_in_frame());
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_tasks_processed_in_proc());
+
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_sched_calls());
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_sched_cancellations());
+
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_preemptions());
+}
+
 TEST(pipeline_loop, schedule_when_cant_process_tasks_then_process_frame) {
     TestPipeline pipeline(config);
 
@@ -527,11 +591,17 @@ TEST(pipeline_loop, schedule_when_cant_process_tasks_then_process_frame) {
 
     pipeline.set_time(StartTime);
 
+    // next call is done from "processing thread"
+    pipeline.set_tid(ProcessingThread);
+
     // process_subframes_and_tasks() should allow task processing
     // until (StartTime + FrameSize * core::Microsecond - NoTaskProcessingGap / 2)
     CHECK(pipeline.process_subframes_and_tasks(frame1));
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_frames());
+
+    // further calls are done from "background thread"
+    pipeline.set_tid(BackgroundThread);
 
     TestCompleter completer(pipeline);
     TestPipeline::Task task;
@@ -565,11 +635,17 @@ TEST(pipeline_loop, schedule_when_cant_process_tasks_then_process_frame) {
 
     pipeline.set_time(StartTime + FrameSize * core::Microsecond);
 
+    // next call is done from "processing thread"
+    pipeline.set_tid(ProcessingThread);
+
     // process_subframes_and_tasks() should call cancel_task_processing() and
     // process the task from the queue
     CHECK(pipeline.process_subframes_and_tasks(frame2));
 
     UNSIGNED_LONGS_EQUAL(2, pipeline.num_processed_frames());
+
+    // further calls are done from "background thread"
+    pipeline.set_tid(BackgroundThread);
 
     POINTERS_EQUAL(&task, completer.get_task());
 
@@ -595,11 +671,17 @@ TEST(pipeline_loop, schedule_when_cant_process_tasks_then_process_tasks) {
 
     pipeline.set_time(StartTime);
 
+    // next call is done from "processing thread"
+    pipeline.set_tid(ProcessingThread);
+
     // process_subframes_and_tasks() should allow task processing
     // until (StartTime + FrameSize * core::Microsecond - NoTaskProcessingGap / 2)
     CHECK(pipeline.process_subframes_and_tasks(frame1));
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_frames());
+
+    // further calls are done from "background thread"
+    pipeline.set_tid(BackgroundThread);
 
     TestCompleter completer(pipeline);
     TestPipeline::Task task;
@@ -1141,8 +1223,14 @@ TEST(pipeline_loop, process_tasks_interframe_deadline) {
     fill_frame(frame, 0.1f, 0, FrameSize);
     pipeline.expect_frame(0.1f, FrameSize);
 
+    // next call is done from "processing thread"
+    pipeline.set_tid(ProcessingThread);
+
     // process frame and set inter-frame task processing deadline
     CHECK(pipeline.process_subframes_and_tasks(frame));
+
+    // further calls are done from "background thread"
+    pipeline.set_tid(BackgroundThread);
 
     // next process_task_imp() call will block
     pipeline.block_tasks();

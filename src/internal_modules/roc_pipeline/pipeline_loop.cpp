@@ -33,6 +33,7 @@ PipelineLoop::PipelineLoop(IPipelineTaskScheduler& scheduler,
     , pending_tasks_(0)
     , pending_frames_(0)
     , processing_state_(ProcNotScheduled)
+    , frame_processing_tid_(0)
     , next_frame_deadline_(0)
     , subframe_tasks_deadline_(0)
     , samples_processed_(0)
@@ -261,6 +262,8 @@ bool PipelineLoop::process_subframes_and_tasks_precise_(audio::Frame& frame) {
 
     report_stats_();
 
+    frame_processing_tid_.exclusive_store(tid_imp());
+
     pipeline_mutex_.unlock();
 
     if (--pending_frames_ == 0 && pending_tasks_ != 0) {
@@ -411,9 +414,29 @@ PipelineLoop::update_next_frame_deadline_(core::nanoseconds_t frame_start_time,
 bool PipelineLoop::interframe_task_processing_allowed_(
     core::nanoseconds_t next_frame_deadline) const {
     if (!config_.enable_precise_task_scheduling) {
+        // task scheduling disabled, so we just process all task in-place
         return true;
     }
 
+    uint64_t frame_tid = 0;
+    if (frame_processing_tid_.try_load(frame_tid)) {
+        if (frame_tid == 0) {
+            // no frames were ever processed yet
+            // until the very first frame, we allow processing all tasks in-place
+            return true;
+        }
+        if (frame_tid == tid_imp()) {
+            // last frame was processed at current thread
+            // we assume that frames are usually processed at the same thread, and
+            // hence allow processing tasks in-place on that thread, because likely
+            // it will anyway wait for task completion before proceeding to frame
+            return true;
+        }
+    }
+
+    // this task is scheduled not from the thread that processes frames
+    // if there is enough time until next frame, we allow processing task in-place,
+    // otherwise the task should be queued to avoid blocking frame processing
     const core::nanoseconds_t now = timestamp_imp();
 
     return now < (next_frame_deadline - no_task_proc_half_interval_)

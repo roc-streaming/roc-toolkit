@@ -149,6 +149,7 @@ private:
 
     // Methods of PipelineLoop
     virtual core::nanoseconds_t timestamp_imp() const;
+    virtual uint64_t tid_imp() const;
     virtual bool process_subframe_imp(audio::Frame&);
     virtual bool process_task_imp(PipelineTask&);
 
