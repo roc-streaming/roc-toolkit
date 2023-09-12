@@ -38,9 +38,20 @@ public:
     //! Activate interface.
     bool activate(address::Interface iface, address::Protocol proto);
 
-    //! Get slot metrics.
+    //! Callback for getting session metrics.
+    typedef void (*sess_metrics_func_t)(
+        const pipeline::ReceiverSessionMetrics& sess_metrics,
+        size_t sess_index,
+        void* sess_arg);
+
+    //! Get metrics.
+    //! @remarks
+    //!  Metrics for slot are written into @p slot_metrics.
+    //!  Metrics for each session are passed to @p sess_metrics_func.
     bool get_metrics(pipeline::ReceiverSlotMetrics& slot_metrics,
-                     pipeline::ReceiverSessionMetrics& sess_metrics);
+                     sess_metrics_func_t sess_metrics_func,
+                     size_t* sess_metrics_size,
+                     void* sess_metrics_arg);
 
     //! Write packet for decoding.
     bool write(address::Interface iface, const packet::PacketPtr& packet);
@@ -60,6 +71,8 @@ private:
     pipeline::ReceiverLoop pipeline_;
     pipeline::ReceiverLoop::SlotHandle slot_;
     ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
+
+    core::Array<pipeline::ReceiverSessionMetrics, 8> sess_metrics_;
 
     bool valid_;
 };

@@ -17,6 +17,7 @@
 #include "roc/config.h"
 #include "roc/context.h"
 #include "roc/frame.h"
+#include "roc/metrics.h"
 #include "roc/packet.h"
 #include "roc/platform.h"
 
@@ -119,6 +120,26 @@ ROC_API int roc_sender_encoder_open(roc_context* context,
 ROC_API int roc_sender_encoder_activate(roc_sender_encoder* encoder,
                                         roc_interface iface,
                                         roc_protocol proto);
+
+/** Query encoder metrics.
+ *
+ * Reads encoder metrics into provided struct.
+ *
+ * **Parameters**
+ *  - \p encoder should point to an opened encoder
+ *  - \p metrics specifies struct where to write metrics
+ *
+ * **Returns**
+ *  - returns zero if the slot was successfully removed
+ *  - returns a negative value if the arguments are invalid
+ *  - returns a negative value if the slot does not exist
+ *
+ * **Ownership**
+ *  - doesn't take or share the ownership of \p metrics; it
+ *    may be safely deallocated after the function returns
+ */
+ROC_API int roc_sender_encoder_query(roc_sender_encoder* encoder,
+                                     roc_sender_metrics* metrics);
 
 /** Write frame to encoder.
  *

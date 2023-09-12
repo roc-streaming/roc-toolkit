@@ -18,6 +18,7 @@
 #include "roc/context.h"
 #include "roc/endpoint.h"
 #include "roc/frame.h"
+#include "roc/metrics.h"
 #include "roc/platform.h"
 
 #ifdef __cplusplus
@@ -235,6 +236,27 @@ ROC_API int roc_sender_connect(roc_sender* sender,
                                roc_slot slot,
                                roc_interface iface,
                                const roc_endpoint* endpoint);
+
+/** Query sender slot metrics.
+ *
+ * Reads sender slot metrics into provided struct.
+ *
+ * **Parameters**
+ *  - \p sender should point to an opened sender
+ *  - \p slot specifies the sender slot
+ *  - \p metrics specifies struct where to write metrics
+ *
+ * **Returns**
+ *  - returns zero if the slot was successfully removed
+ *  - returns a negative value if the arguments are invalid
+ *  - returns a negative value if the slot does not exist
+ *
+ * **Ownership**
+ *  - doesn't take or share the ownership of \p metrics; it
+ *    may be safely deallocated after the function returns
+ */
+ROC_API int
+roc_sender_query(roc_sender* sender, roc_slot slot, roc_sender_metrics* metrics);
 
 /** Delete sender slot.
  *

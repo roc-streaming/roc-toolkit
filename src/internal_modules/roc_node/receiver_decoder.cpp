@@ -26,6 +26,7 @@ ReceiverDecoder::ReceiverDecoder(Context& context,
                 context.arena())
     , slot_(NULL)
     , processing_task_(pipeline_)
+    , sess_metrics_(context.arena())
     , valid_(false) {
     roc_log(LogDebug, "receiver decoder node: initializing");
 
@@ -103,19 +104,31 @@ bool ReceiverDecoder::activate(address::Interface iface, address::Protocol proto
 }
 
 bool ReceiverDecoder::get_metrics(pipeline::ReceiverSlotMetrics& slot_metrics,
-                                  pipeline::ReceiverSessionMetrics& sess_metrics) {
+                                  sess_metrics_func_t sess_metrics_func,
+                                  size_t* sess_metrics_size,
+                                  void* sess_metrics_arg) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(is_valid());
 
-    size_t sess_metrics_size = 1;
-    pipeline::ReceiverLoop::Tasks::QuerySlot task(slot_, slot_metrics, &sess_metrics,
-                                                  &sess_metrics_size);
+    if (!sess_metrics_.resize(*sess_metrics_size)) {
+        roc_log(LogError,
+                "receiver decoder node:"
+                " can't get metrics: can't allocate buffer");
+        return false;
+    }
+
+    pipeline::ReceiverLoop::Tasks::QuerySlot task(
+        slot_, slot_metrics, sess_metrics_.data(), sess_metrics_size);
     if (!pipeline_.schedule_and_wait(task)) {
         roc_log(LogError,
                 "receiver decoder node:"
                 " can't get metrics: operation failed");
         return false;
+    }
+
+    for (size_t sess_index = 0; sess_index < *sess_metrics_size; sess_index++) {
+        sess_metrics_func(sess_metrics_[sess_index], sess_index, sess_metrics_arg);
     }
 
     return true;

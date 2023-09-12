@@ -17,6 +17,7 @@
 #include "roc/config.h"
 #include "roc/context.h"
 #include "roc/frame.h"
+#include "roc/metrics.h"
 #include "roc/packet.h"
 #include "roc/platform.h"
 
@@ -119,6 +120,36 @@ ROC_API int roc_receiver_decoder_open(roc_context* context,
 ROC_API int roc_receiver_decoder_activate(roc_receiver_decoder* decoder,
                                           roc_interface iface,
                                           roc_protocol proto);
+
+/** Query decoder metrics.
+ *
+ * Reads decoder metrics into provided struct.
+ *
+ * To retrieve per-session metrics, set \c sessions field of \ref roc_receiver_metrics
+ * to a buffer of \ref roc_session_metrics structs, and \c sessions_size to the number
+ * of structs in buffer. The function will write session metrcis to the buffer and
+ * update \c sessions_size with the actual number of sessions written.
+ *
+ * If \c sessions_size is lesser than actual number of sessions, metrics for some
+ * sessions will be dropped. \c num_sessions will always contain actual total number.
+ *
+ * If \c sessions field is NULL, per-session metrics are not retrieved.
+ *
+ * **Parameters**
+ *  - \p decoder should point to an opened decoder
+ *  - \p metrics specifies struct where to write metrics
+ *
+ * **Returns**
+ *  - returns zero if the slot was successfully removed
+ *  - returns a negative value if the arguments are invalid
+ *  - returns a negative value if the slot does not exist
+ *
+ * **Ownership**
+ *  - doesn't take or share the ownership of \p metrics or its \c sessions field; they
+ *    may be safely deallocated after the function returns
+ */
+ROC_API int roc_receiver_decoder_query(roc_receiver_decoder* decoder,
+                                       roc_receiver_metrics* metrics);
 
 /** Write packet to decoder.
  *
