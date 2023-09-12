@@ -101,6 +101,35 @@ int roc_receiver_decoder_activate(roc_receiver_decoder* decoder,
     return 0;
 }
 
+int roc_receiver_decoder_query(roc_receiver_decoder* decoder,
+                               roc_receiver_metrics* metrics) {
+    if (!decoder) {
+        roc_log(LogError,
+                "roc_receiver_decoder_query(): invalid arguments: decoder is null");
+        return -1;
+    }
+
+    if (!metrics) {
+        roc_log(LogError,
+                "roc_receiver_decoder_query(): invalid arguments: metrics are null");
+        return -1;
+    }
+
+    node::ReceiverDecoder* imp_decoder = (node::ReceiverDecoder*)decoder;
+
+    pipeline::ReceiverSlotMetrics slot_metrics;
+
+    if (!imp_decoder->get_metrics(slot_metrics, api::receiver_session_metrics_to_user,
+                                  &metrics->sessions_size, metrics->sessions)) {
+        roc_log(LogError, "roc_receiver_decoder_query(): operation failed");
+        return -1;
+    }
+
+    api::receiver_slot_metrics_to_user(*metrics, slot_metrics);
+
+    return 0;
+}
+
 int roc_receiver_decoder_push(roc_receiver_decoder* decoder,
                               roc_interface iface,
                               const roc_packet* packet) {

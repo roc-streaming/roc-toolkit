@@ -147,6 +147,35 @@ int roc_receiver_unlink(roc_receiver* receiver, roc_slot slot) {
     return 0;
 }
 
+int roc_receiver_query(roc_receiver* receiver,
+                       roc_slot slot,
+                       roc_receiver_metrics* metrics) {
+    if (!receiver) {
+        roc_log(LogError, "roc_receiver_query(): invalid arguments: receiver is null");
+        return -1;
+    }
+
+    if (!metrics) {
+        roc_log(LogError, "roc_receiver_query(): invalid arguments: metrics are null");
+        return -1;
+    }
+
+    node::Receiver* imp_receiver = (node::Receiver*)receiver;
+
+    pipeline::ReceiverSlotMetrics slot_metrics;
+
+    if (!imp_receiver->get_metrics(slot, slot_metrics,
+                                   api::receiver_session_metrics_to_user,
+                                   &metrics->sessions_size, metrics->sessions)) {
+        roc_log(LogError, "roc_receiver_query(): operation failed");
+        return -1;
+    }
+
+    api::receiver_slot_metrics_to_user(*metrics, slot_metrics);
+
+    return 0;
+}
+
 int roc_receiver_read(roc_receiver* receiver, roc_frame* frame) {
     if (!receiver) {
         roc_log(LogError, "roc_receiver_read(): invalid arguments: receiver is null");

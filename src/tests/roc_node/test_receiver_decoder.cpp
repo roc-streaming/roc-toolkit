@@ -23,6 +23,12 @@ namespace {
 core::HeapArena arena;
 packet::PacketFactory packet_factory(arena);
 
+void handle_sess_metrics(const pipeline::ReceiverSessionMetrics& sess_metrics,
+                         size_t sess_index,
+                         void* sess_arg) {
+    ((pipeline::ReceiverSessionMetrics*)sess_arg)[sess_index] = sess_metrics;
+}
+
 } // namespace
 
 TEST_GROUP(receiver_decoder) {
@@ -92,15 +98,24 @@ TEST(receiver_decoder, metrics) {
     CHECK(receiver_decoder.is_valid());
 
     pipeline::ReceiverSlotMetrics slot_metrics;
-    pipeline::ReceiverSessionMetrics sess_metrics;
+    pipeline::ReceiverSessionMetrics sess_metrics[10];
+    size_t sess_metrics_size = 0;
 
-    CHECK(receiver_decoder.get_metrics(slot_metrics, sess_metrics));
+    sess_metrics_size = ROC_ARRAY_SIZE(sess_metrics);
+    CHECK(receiver_decoder.get_metrics(slot_metrics, handle_sess_metrics,
+                                       &sess_metrics_size, sess_metrics));
+
     UNSIGNED_LONGS_EQUAL(0, slot_metrics.num_sessions);
+    UNSIGNED_LONGS_EQUAL(0, sess_metrics_size);
 
     CHECK(receiver_decoder.activate(address::Iface_AudioSource, address::Proto_RTP));
 
-    CHECK(receiver_decoder.get_metrics(slot_metrics, sess_metrics));
+    sess_metrics_size = ROC_ARRAY_SIZE(sess_metrics);
+    CHECK(receiver_decoder.get_metrics(slot_metrics, handle_sess_metrics,
+                                       &sess_metrics_size, sess_metrics));
+
     UNSIGNED_LONGS_EQUAL(0, slot_metrics.num_sessions);
+    UNSIGNED_LONGS_EQUAL(0, sess_metrics_size);
 }
 
 } // namespace node

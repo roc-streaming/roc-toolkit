@@ -18,6 +18,7 @@
 #include "roc/context.h"
 #include "roc/endpoint.h"
 #include "roc/frame.h"
+#include "roc/metrics.h"
 #include "roc/platform.h"
 
 #ifdef __cplusplus
@@ -271,6 +272,37 @@ ROC_API int roc_receiver_bind(roc_receiver* receiver,
                               roc_slot slot,
                               roc_interface iface,
                               roc_endpoint* endpoint);
+
+/** Query receiver slot metrics.
+ *
+ * Reads receiver slot metrics into provided struct.
+ *
+ * To retrieve per-session metrics, set \c sessions field of \ref roc_receiver_metrics
+ * to a buffer of \ref roc_session_metrics structs, and \c sessions_size to the number
+ * of structs in buffer. The function will write session metrcis to the buffer and
+ * update \c sessions_size with the actual number of sessions written.
+ *
+ * If \c sessions_size is lesser than actual number of sessions, metrics for some
+ * sessions will be dropped. \c num_sessions will always contain actual total number.
+ *
+ * If \c sessions field is NULL, per-session metrics are not retrieved.
+ *
+ * **Parameters**
+ *  - \p receiver should point to an opened receiver
+ *  - \p slot specifies the receiver slot
+ *  - \p metrics specifies struct where to write metrics
+ *
+ * **Returns**
+ *  - returns zero if the slot was successfully removed
+ *  - returns a negative value if the arguments are invalid
+ *  - returns a negative value if the slot does not exist
+ *
+ * **Ownership**
+ *  - doesn't take or share the ownership of \p metrics or its \c sessions field; they
+ *    may be safely deallocated after the function returns
+ */
+ROC_API int
+roc_receiver_query(roc_receiver* receiver, roc_slot slot, roc_receiver_metrics* metrics);
 
 /** Delete receiver slot.
  *

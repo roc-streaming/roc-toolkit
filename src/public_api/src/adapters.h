@@ -11,6 +11,7 @@
 
 #include "roc/config.h"
 #include "roc/log.h"
+#include "roc/metrics.h"
 
 #include "roc_node/context.h"
 #include "roc_node/receiver.h"
@@ -57,6 +58,18 @@ bool interface_from_user(address::Interface& out, const roc_interface& in);
 
 bool proto_from_user(address::Protocol& out, const roc_protocol& in);
 bool proto_to_user(roc_protocol& out, address::Protocol in);
+
+void receiver_slot_metrics_to_user(roc_receiver_metrics& out,
+                                   const pipeline::ReceiverSlotMetrics& in);
+
+void receiver_session_metrics_to_user(
+    const pipeline::ReceiverSessionMetrics& sess_metrics,
+    size_t sess_index,
+    void* sess_arg);
+
+void sender_metrics_to_user(roc_sender_metrics& out,
+                            const pipeline::SenderSlotMetrics& in_slot,
+                            const pipeline::SenderSessionMetrics& in_sess);
 
 LogLevel log_level_from_user(roc_log_level level);
 roc_log_level log_level_to_user(LogLevel level);

@@ -98,6 +98,34 @@ int roc_sender_encoder_activate(roc_sender_encoder* encoder,
     return 0;
 }
 
+int roc_sender_encoder_query(roc_sender_encoder* encoder, roc_sender_metrics* metrics) {
+    if (!encoder) {
+        roc_log(LogError,
+                "roc_sender_encoder_query(): invalid arguments: sender is null");
+        return -1;
+    }
+
+    if (!metrics) {
+        roc_log(LogError,
+                "roc_sender_encoder_query(): invalid arguments: metrics are null");
+        return -1;
+    }
+
+    node::SenderEncoder* imp_encoder = (node::SenderEncoder*)encoder;
+
+    pipeline::SenderSlotMetrics slot_metrics;
+    pipeline::SenderSessionMetrics sess_metrics;
+
+    if (!imp_encoder->get_metrics(slot_metrics, sess_metrics)) {
+        roc_log(LogError, "roc_sender_encoder_query(): operation failed");
+        return -1;
+    }
+
+    api::sender_metrics_to_user(*metrics, slot_metrics, sess_metrics);
+
+    return 0;
+}
+
 int roc_sender_encoder_push(roc_sender_encoder* encoder, const roc_frame* frame) {
     if (!encoder) {
         roc_log(LogError,

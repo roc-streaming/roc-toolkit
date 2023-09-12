@@ -612,8 +612,9 @@ TEST(receiver, metrics) {
 
     pipeline::ReceiverSlotMetrics slot_metrics;
     pipeline::ReceiverSessionMetrics sess_metrics[10];
-    size_t sess_metrics_size = ROC_ARRAY_SIZE(sess_metrics);
+    size_t sess_metrics_size = 0;
 
+    sess_metrics_size = ROC_ARRAY_SIZE(sess_metrics);
     CHECK(!receiver.get_metrics(DefaultSlot, slot_metrics, handle_sess_metrics,
                                 &sess_metrics_size, sess_metrics));
 
@@ -621,6 +622,7 @@ TEST(receiver, metrics) {
     parse_uri(source_endp, "rtp://127.0.0.1:0");
     CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
 
+    sess_metrics_size = ROC_ARRAY_SIZE(sess_metrics);
     CHECK(receiver.get_metrics(DefaultSlot, slot_metrics, handle_sess_metrics,
                                &sess_metrics_size, sess_metrics));
 
