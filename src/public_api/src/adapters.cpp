@@ -93,6 +93,9 @@ bool sender_config_from_user(node::Context& context,
         out.packet_length = (core::nanoseconds_t)in.packet_length;
     }
 
+    out.enable_timing = false;
+    out.enable_auto_cts = true;
+
     out.enable_interleaving = in.packet_interleaving;
 
     if (!fec_encoding_from_user(out.fec_encoder.scheme, in.fec_encoding)) {
@@ -169,6 +172,9 @@ bool receiver_config_from_user(node::Context&,
         out.default_session.watchdog.deduce_choppy_playback_window(
             out.default_session.watchdog.choppy_playback_timeout);
     }
+
+    out.common.enable_timing = false;
+    out.common.enable_auto_reclock = true;
 
     if (!sample_spec_from_user(out.common.output_sample_spec, in.frame_encoding)) {
         roc_log(LogError,

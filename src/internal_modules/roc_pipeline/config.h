@@ -132,6 +132,9 @@ struct SenderConfig {
     //! Constrain receiver speed using a CPU timer according to the sample rate.
     bool enable_timing;
 
+    //! Automatically fill capture timestamps of input frames with invocation time.
+    bool enable_auto_cts;
+
     //! Profile moving average of frames being written.
     bool enable_profiling;
 
@@ -146,6 +149,7 @@ struct SenderConfig {
         , payload_type(rtp::PayloadType_L16_Stereo)
         , enable_interleaving(false)
         , enable_timing(false)
+        , enable_auto_cts(false)
         , enable_profiling(false) {
     }
 };
@@ -211,6 +215,9 @@ struct ReceiverCommonConfig {
     //! Constrain receiver speed using a CPU timer according to the sample rate.
     bool enable_timing;
 
+    //! Automatically invoke reclock before returning frames with invocation time.
+    bool enable_auto_reclock;
+
     //! Profile moving average of frames being written.
     bool enable_profiling;
 
@@ -223,6 +230,7 @@ struct ReceiverCommonConfig {
     ReceiverCommonConfig()
         : output_sample_spec(DefaultSampleSpec)
         , enable_timing(false)
+        , enable_auto_reclock(false)
         , enable_profiling(false)
         , enable_beeping(false) {
     }

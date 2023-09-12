@@ -188,8 +188,6 @@ int roc_receiver_read(roc_receiver* receiver, roc_frame* frame) {
         return -1;
     }
 
-    imp_source.reclock(core::timestamp(core::ClockUnix));
-
     return 0;
 }
 

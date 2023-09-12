@@ -94,6 +94,7 @@ ReceiverLoop::ReceiverLoop(IPipelineTaskScheduler& scheduler,
               sample_buffer_factory,
               arena)
     , ticker_ts_(0)
+    , auto_reclock_(false)
     , valid_(false) {
     if (!source_.is_valid()) {
         return;
@@ -106,6 +107,8 @@ ReceiverLoop::ReceiverLoop(IPipelineTaskScheduler& scheduler,
             return;
         }
     }
+
+    auto_reclock_ = config.common.enable_auto_reclock;
 
     valid_ = true;
 }
@@ -195,6 +198,10 @@ bool ReceiverLoop::has_clock() const {
 void ReceiverLoop::reclock(core::nanoseconds_t timestamp) {
     roc_panic_if(!is_valid());
 
+    if (auto_reclock_) {
+        roc_panic("receiver loop: unexpected reclock() call in auto-reclock mode");
+    }
+
     core::Mutex::Lock lock(source_mutex_);
 
     source_.reclock(timestamp);
@@ -213,6 +220,10 @@ bool ReceiverLoop::read(audio::Frame& frame) {
     // invokes process_subframe_imp() and process_task_imp()
     if (!process_subframes_and_tasks(frame)) {
         return false;
+    }
+
+    if (auto_reclock_) {
+        source_.reclock(core::timestamp(core::ClockUnix));
     }
 
     return true;

@@ -96,6 +96,7 @@ SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
             sample_buffer_factory,
             arena)
     , ticker_ts_(0)
+    , auto_cts_(false)
     , valid_(false) {
     if (!sink_.is_valid()) {
         return;
@@ -107,6 +108,8 @@ SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
             return;
         }
     }
+
+    auto_cts_ = config.enable_auto_cts;
 
     valid_ = true;
 }
@@ -195,6 +198,13 @@ bool SenderLoop::has_clock() const {
 
 void SenderLoop::write(audio::Frame& frame) {
     roc_panic_if_not(is_valid());
+
+    if (auto_cts_) {
+        if (frame.capture_timestamp() != 0) {
+            roc_panic("sender loop: unexpected non-zero cts in auto-cts mode");
+        }
+        frame.set_capture_timestamp(core::timestamp(core::ClockUnix));
+    }
 
     core::Mutex::Lock lock(sink_mutex_);
 

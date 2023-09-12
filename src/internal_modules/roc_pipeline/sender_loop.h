@@ -159,11 +159,12 @@ private:
     bool task_add_endpoint_(Task&);
 
     SenderSink sink_;
+    core::Mutex sink_mutex_;
 
     core::Optional<core::Ticker> ticker_;
     core::Ticker::ticks_t ticker_ts_;
 
-    core::Mutex sink_mutex_;
+    bool auto_cts_;
 
     bool valid_;
 };
