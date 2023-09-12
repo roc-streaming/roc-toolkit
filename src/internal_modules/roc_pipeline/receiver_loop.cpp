@@ -10,6 +10,7 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/shared_ptr.h"
+#include "roc_core/thread.h"
 
 namespace roc {
 namespace pipeline {
@@ -231,6 +232,10 @@ bool ReceiverLoop::read(audio::Frame& frame) {
 
 core::nanoseconds_t ReceiverLoop::timestamp_imp() const {
     return core::timestamp(core::ClockMonotonic);
+}
+
+uint64_t ReceiverLoop::tid_imp() const {
+    return core::Thread::get_tid();
 }
 
 bool ReceiverLoop::process_subframe_imp(audio::Frame& frame) {

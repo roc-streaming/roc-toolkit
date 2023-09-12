@@ -256,6 +256,9 @@ protected:
     //! Get current time.
     virtual core::nanoseconds_t timestamp_imp() const = 0;
 
+    //! Get current thread id.
+    virtual uint64_t tid_imp() const = 0;
+
     //! Process subframe.
     virtual bool process_subframe_imp(audio::Frame& frame) = 0;
 
@@ -317,6 +320,9 @@ private:
 
     // asynchronous processing state
     core::Atomic<int> processing_state_;
+
+    // tid of last thread that performed frame processing
+    core::Seqlock<uint64_t> frame_processing_tid_;
 
     // when next frame is expected to be started
     core::Seqlock<core::nanoseconds_t> next_frame_deadline_;

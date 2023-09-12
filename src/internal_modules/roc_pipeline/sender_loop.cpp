@@ -10,6 +10,7 @@
 #include "roc_audio/resampler_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_core/thread.h"
 
 namespace roc {
 namespace pipeline {
@@ -221,6 +222,10 @@ void SenderLoop::write(audio::Frame& frame) {
 
 core::nanoseconds_t SenderLoop::timestamp_imp() const {
     return core::timestamp(core::ClockMonotonic);
+}
+
+uint64_t SenderLoop::tid_imp() const {
+    return core::Thread::get_tid();
 }
 
 bool SenderLoop::process_subframe_imp(audio::Frame& frame) {

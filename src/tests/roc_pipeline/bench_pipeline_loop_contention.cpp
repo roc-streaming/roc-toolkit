@@ -81,6 +81,10 @@ private:
         return core::timestamp(core::ClockMonotonic);
     }
 
+    virtual uint64_t tid_imp() const {
+        return 0;
+    }
+
     virtual bool process_subframe_imp(audio::Frame&) {
         return true;
     }
