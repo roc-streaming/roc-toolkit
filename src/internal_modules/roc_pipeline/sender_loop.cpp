@@ -95,7 +95,7 @@ SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
             byte_buffer_factory,
             sample_buffer_factory,
             arena)
-    , timestamp_(0)
+    , ticker_ts_(0)
     , valid_(false) {
     if (!sink_.is_valid()) {
         return;
@@ -199,16 +199,14 @@ void SenderLoop::write(audio::Frame& frame) {
     core::Mutex::Lock lock(sink_mutex_);
 
     if (ticker_) {
-        ticker_->wait(timestamp_);
+        ticker_->wait(ticker_ts_);
+        ticker_ts_ += frame.num_samples() / sink_.sample_spec().num_channels();
     }
 
     // invokes process_subframe_imp() and process_task_imp()
     if (!process_subframes_and_tasks(frame)) {
         return;
     }
-
-    timestamp_ +=
-        packet::timestamp_t(frame.num_samples() / sink_.sample_spec().num_channels());
 }
 
 core::nanoseconds_t SenderLoop::timestamp_imp() const {
