@@ -209,7 +209,7 @@ bool ReceiverLoop::read(audio::Frame& frame) {
         ticker_->wait(timestamp_);
     }
 
-    // Invokes process_subframe_imp() and process_task_imp().
+    // invokes process_subframe_imp() and process_task_imp()
     if (!process_subframes_and_tasks(frame)) {
         return false;
     }
@@ -225,6 +225,9 @@ core::nanoseconds_t ReceiverLoop::timestamp_imp() const {
 }
 
 bool ReceiverLoop::process_subframe_imp(audio::Frame& frame) {
+    // TODO: handle returned deadline and schedule refresh
+    source_.refresh(core::timestamp(core::ClockUnix));
+
     return source_.read(frame);
 }
 

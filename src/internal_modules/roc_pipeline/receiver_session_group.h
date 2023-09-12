@@ -46,11 +46,17 @@ public:
     //! Route packet to session.
     void route_packet(const packet::PacketPtr& packet);
 
-    //! Refresh sessions statuses.
-    void refresh_sessions();
+    //! Refresh pipeline according to current time.
+    //! @returns
+    //!  deadline (absolute time) when refresh should be invoked again
+    //!  if there are no frames
+    core::nanoseconds_t refresh_sessions(core::nanoseconds_t current_time);
 
     //! Adjust session clock to match consumer clock.
-    void reclock_sessions(core::nanoseconds_t timestamp);
+    //! @remarks
+    //!  @p playback_time specified absolute time when first sample of last frame
+    //!  retrieved from pipeline will be actually played on sink
+    void reclock_sessions(core::nanoseconds_t playback_time);
 
     //! Get number of alive sessions.
     size_t num_sessions() const;

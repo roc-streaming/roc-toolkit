@@ -87,6 +87,27 @@ size_t ReceiverSource::num_sessions() const {
     return state_.num_sessions();
 }
 
+core::nanoseconds_t ReceiverSource::refresh(core::nanoseconds_t current_time) {
+    roc_panic_if(!is_valid());
+
+    core::nanoseconds_t next_deadline = 0;
+
+    for (core::SharedPtr<ReceiverSlot> slot = slots_.front(); slot;
+         slot = slots_.nextof(*slot)) {
+        const core::nanoseconds_t slot_deadline = slot->refresh(current_time);
+
+        if (slot_deadline != 0) {
+            if (next_deadline == 0) {
+                next_deadline = slot_deadline;
+            } else {
+                next_deadline = std::min(next_deadline, slot_deadline);
+            }
+        }
+    }
+
+    return next_deadline;
+}
+
 sndio::DeviceType ReceiverSource::type() const {
     return sndio::DeviceType_Source;
 }
@@ -136,28 +157,19 @@ bool ReceiverSource::has_clock() const {
     return config_.common.enable_timing;
 }
 
-void ReceiverSource::reclock(core::nanoseconds_t timestamp) {
+void ReceiverSource::reclock(core::nanoseconds_t playback_time) {
     roc_panic_if(!is_valid());
 
     for (core::SharedPtr<ReceiverSlot> slot = slots_.front(); slot;
          slot = slots_.nextof(*slot)) {
-        slot->reclock(timestamp);
+        slot->reclock(playback_time);
     }
 }
 
 bool ReceiverSource::read(audio::Frame& frame) {
     roc_panic_if(!is_valid());
 
-    for (core::SharedPtr<ReceiverSlot> slot = slots_.front(); slot;
-         slot = slots_.nextof(*slot)) {
-        slot->refresh();
-    }
-
-    if (!audio_reader_->read(frame)) {
-        return false;
-    }
-
-    return true;
+    return audio_reader_->read(frame);
 }
 
 } // namespace pipeline

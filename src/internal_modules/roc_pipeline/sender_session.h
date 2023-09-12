@@ -64,11 +64,11 @@ public:
     //! Get audio writer.
     audio::IFrameWriter* writer() const;
 
-    //! Get deadline when the pipeline should be updated.
-    core::nanoseconds_t get_update_deadline(core::nanoseconds_t current_time) const;
-
-    //! Update pipeline.
-    void update(core::nanoseconds_t current_time);
+    //! Refresh pipeline according to current time.
+    //! @returns
+    //!  deadline (absolute time) when refresh should be invoked again
+    //!  if there are no frames
+    core::nanoseconds_t refresh(core::nanoseconds_t current_time);
 
     //! Get session metrics.
     SenderSessionMetrics get_metrics() const;

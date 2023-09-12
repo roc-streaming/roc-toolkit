@@ -75,15 +75,21 @@ public:
     //!  true if the packet is dedicated for this session
     bool handle(const packet::PacketPtr& packet);
 
-    //! Refresh session status.
+    //! Refresh pipeline according to current time.
+    //! @remarks
+    //!  writes to @p next_refresh deadline (absolute time) when refresh should
+    //!  be invoked again if there are no frames
     //! @returns
     //!  false if the session is ended
-    bool refresh();
+    bool refresh(core::nanoseconds_t current_time, core::nanoseconds_t* next_refresh);
 
     //! Adjust session clock to match consumer clock.
+    //! @remarks
+    //!  @p playback_time specified absolute time when first sample of last frame
+    //!  retrieved from pipeline will be actually played on sink
     //! @returns
     //!  false if the session is ended
-    bool reclock(core::nanoseconds_t timestamp);
+    bool reclock(core::nanoseconds_t playback_time);
 
     //! Get session metrics.
     ReceiverSessionMetrics get_metrics() const;
