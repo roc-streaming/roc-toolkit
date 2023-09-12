@@ -43,6 +43,10 @@ roc_sender
 
 .. doxygenfunction:: roc_sender_connect
 
+.. doxygenfunction:: roc_sender_query
+
+.. doxygenfunction:: roc_sender_unlink
+
 .. doxygenfunction:: roc_sender_write
 
 .. doxygenfunction:: roc_sender_close
@@ -62,9 +66,55 @@ roc_receiver
 
 .. doxygenfunction:: roc_receiver_bind
 
+.. doxygenfunction:: roc_receiver_query
+
+.. doxygenfunction:: roc_receiver_unlink
+
 .. doxygenfunction:: roc_receiver_read
 
 .. doxygenfunction:: roc_receiver_close
+
+roc_sender_encoder
+==================
+
+.. code-block:: c
+
+   #include <roc/sender_encoder.h>
+
+.. doxygentypedef:: roc_sender_encoder
+
+.. doxygenfunction:: roc_sender_encoder_open
+
+.. doxygenfunction:: roc_sender_encoder_activate
+
+.. doxygenfunction:: roc_sender_encoder_query
+
+.. doxygenfunction:: roc_sender_encoder_push
+
+.. doxygenfunction:: roc_sender_encoder_pop
+
+.. doxygenfunction:: roc_sender_encoder_close
+
+roc_receiver_decoder
+====================
+
+.. code-block:: c
+
+   #include <roc/receiver_decoder.h>
+
+.. doxygentypedef:: roc_receiver_decoder
+
+.. doxygenfunction:: roc_receiver_decoder_open
+
+.. doxygenfunction:: roc_receiver_decoder_activate
+
+.. doxygenfunction:: roc_receiver_decoder_query
+
+.. doxygenfunction:: roc_receiver_decoder_push
+
+.. doxygenfunction:: roc_receiver_decoder_pop
+
+.. doxygenfunction:: roc_receiver_decoder_close
 
 roc_frame
 =========
@@ -74,6 +124,16 @@ roc_frame
    #include <roc/frame.h>
 
 .. doxygenstruct:: roc_frame
+   :members:
+
+roc_packet
+==========
+
+.. code-block:: c
+
+   #include <roc/packet.h>
+
+.. doxygenstruct:: roc_packet
    :members:
 
 roc_endpoint
@@ -133,7 +193,7 @@ roc_config
 .. doxygenenum:: roc_channel_layout
 
 .. doxygenstruct:: roc_media_encoding
-   :outline:
+   :members:
 
 .. doxygenenum:: roc_clock_source
 
@@ -152,6 +212,22 @@ roc_config
    :members:
 
 .. doxygenstruct:: roc_receiver_config
+   :members:
+
+roc_metrics
+===========
+
+.. code-block:: c
+
+   #include <roc/metrics.h>
+
+.. doxygenstruct:: roc_sender_metrics
+   :members:
+
+.. doxygenstruct:: roc_receiver_metrics
+   :members:
+
+.. doxygenstruct:: roc_session_metrics
    :members:
 
 roc_log
@@ -184,6 +260,10 @@ roc_version
 .. doxygendefine:: ROC_VERSION_MINOR
 
 .. doxygendefine:: ROC_VERSION_PATCH
+
+.. doxygendefine:: ROC_VERSION
+
+.. doxygendefine:: ROC_VERSION_CODE
 
 .. doxygenstruct:: roc_version
    :members:
