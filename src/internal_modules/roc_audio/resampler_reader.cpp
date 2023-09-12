@@ -75,14 +75,7 @@ bool ResamplerReader::read(Frame& out) {
         out_pos += num_popped;
     }
 
-    if (last_in_ts_) {
-        const core::nanoseconds_t capt_ts = last_in_ts_
-            - in_sample_spec_.fract_samples_per_chan_2_ns(resampler_.n_left_to_process())
-            - core::nanoseconds_t(out_sample_spec_.samples_overall_2_ns(out.num_samples())
-                                  * scaling_);
-
-        out.set_capture_timestamp(capt_ts);
-    }
+    out.set_capture_timestamp(capture_ts_(out));
 
     return true;
 }
@@ -104,6 +97,26 @@ bool ResamplerReader::push_input_() {
     }
 
     return true;
+}
+
+core::nanoseconds_t ResamplerReader::capture_ts_(Frame& frame) {
+    if (last_in_ts_ == 0) {
+        // we didn't receive frame with non-zero cts yet
+        return 0;
+    }
+
+    const core::nanoseconds_t capt_ts = last_in_ts_
+        - in_sample_spec_.fract_samples_per_chan_2_ns(resampler_.n_left_to_process())
+        - core::nanoseconds_t(out_sample_spec_.samples_overall_2_ns(frame.num_samples())
+                              * scaling_);
+
+    if (capt_ts < 0) {
+        // frame cts was very close to zero (unix epoch), in this case we
+        // avoid producing negative cts
+        return 0;
+    }
+
+    return capt_ts;
 }
 
 } // namespace audio

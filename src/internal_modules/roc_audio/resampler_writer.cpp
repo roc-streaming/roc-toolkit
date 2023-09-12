@@ -125,15 +125,24 @@ size_t ResamplerWriter::push_input_(Frame& frame, size_t frame_pos) {
 
 core::nanoseconds_t ResamplerWriter::capture_ts_(Frame& frame, size_t frame_pos) {
     if (frame.capture_timestamp() == 0) {
+        // we didn't receive frame with non-zero cts yet
         return 0;
     }
 
-    return frame.capture_timestamp()
+    const core::nanoseconds_t capt_ts = frame.capture_timestamp()
         + in_sample_spec_.samples_overall_2_ns(frame_pos)  // last added sample ts
         - in_sample_spec_.samples_overall_2_ns(input_pos_) // num unprocessed inside
         - in_sample_spec_.fract_samples_per_chan_2_ns(resampler_.n_left_to_process())
         - core::nanoseconds_t(out_sample_spec_.samples_overall_2_ns(output_pos_)
                               * scaling_);
+
+    if (capt_ts < 0) {
+        // frame cts was very close to zero (unix epoch), in this case we
+        // avoid producing negative cts
+        return 0;
+    }
+
+    return capt_ts;
 }
 
 } // namespace audio

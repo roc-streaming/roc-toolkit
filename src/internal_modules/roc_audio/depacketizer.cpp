@@ -287,7 +287,9 @@ void Depacketizer::set_frame_props_(Frame& frame, const FrameInfo& info) {
 
     frame.set_flags(flags);
 
-    if (info.capture_ts) {
+    if (info.capture_ts > 0) {
+        // do not produce negative cts, which may happen when first packet was in
+        // the middle of the frame and has small timestamp close to unix epoch
         frame.set_capture_timestamp(info.capture_ts);
     }
 }
