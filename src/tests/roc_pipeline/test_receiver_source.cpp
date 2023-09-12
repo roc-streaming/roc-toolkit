@@ -149,6 +149,7 @@ TEST(receiver_source, no_sessions) {
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
     for (size_t nf = 0; nf < ManyPackets * FramesPerPacket; nf++) {
+        receiver.refresh(frame_reader.refresh_ts());
         frame_reader.read_zero_samples(SamplesPerFrame, output_sample_spec);
 
         UNSIGNED_LONGS_EQUAL(0, receiver.num_sessions());
@@ -182,6 +183,7 @@ TEST(receiver_source, one_session) {
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
 
             UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
@@ -219,6 +221,7 @@ TEST(receiver_source, one_session_long_run) {
     for (size_t ni = 0; ni < NumIterations; ni++) {
         for (size_t np = 0; np < ManyPackets; np++) {
             for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+                receiver.refresh(frame_reader.refresh_ts());
                 frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
 
                 UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
@@ -255,6 +258,7 @@ TEST(receiver_source, initial_latency) {
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
 
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_zero_samples(SamplesPerFrame, output_sample_spec);
         }
 
@@ -265,6 +269,7 @@ TEST(receiver_source, initial_latency) {
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
         }
 
@@ -298,12 +303,14 @@ TEST(receiver_source, initial_latency_timeout) {
 
     for (size_t np = 0; np < Timeout / SamplesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_zero_samples(SamplesPerFrame, output_sample_spec);
         }
 
         UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
     }
 
+    receiver.refresh(frame_reader.refresh_ts());
     frame_reader.read_zero_samples(SamplesPerFrame, output_sample_spec);
 
     UNSIGNED_LONGS_EQUAL(0, receiver.num_sessions());
@@ -336,6 +343,7 @@ TEST(receiver_source, timeout) {
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
         }
 
@@ -343,6 +351,7 @@ TEST(receiver_source, timeout) {
     }
 
     while (receiver.num_sessions() != 0) {
+        receiver.refresh(frame_reader.refresh_ts());
         frame_reader.read_zero_samples(SamplesPerFrame, output_sample_spec);
     }
 }
@@ -376,6 +385,7 @@ TEST(receiver_source, initial_trim) {
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
 
             UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
@@ -418,6 +428,7 @@ TEST(receiver_source, two_sessions_synchronous) {
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 2, output_sample_spec);
 
             UNSIGNED_LONGS_EQUAL(2, receiver.num_sessions());
@@ -455,6 +466,7 @@ TEST(receiver_source, two_sessions_overlapping) {
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
 
             UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
@@ -473,6 +485,7 @@ TEST(receiver_source, two_sessions_overlapping) {
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 2, output_sample_spec);
 
             UNSIGNED_LONGS_EQUAL(2, receiver.num_sessions());
@@ -523,6 +536,7 @@ TEST(receiver_source, two_sessions_two_endpoints) {
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 2, output_sample_spec);
 
             UNSIGNED_LONGS_EQUAL(2, receiver.num_sessions());
@@ -571,6 +585,7 @@ TEST(receiver_source, two_sessions_same_address_same_stream) {
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
 
             UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
@@ -621,6 +636,7 @@ TEST(receiver_source, two_sessions_same_address_different_streams) {
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
 
             UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
@@ -659,6 +675,7 @@ TEST(receiver_source, seqnum_overflow) {
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
         }
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
@@ -692,6 +709,7 @@ TEST(receiver_source, seqnum_small_jump) {
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
         }
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
@@ -701,6 +719,7 @@ TEST(receiver_source, seqnum_small_jump) {
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
         }
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
@@ -734,6 +753,7 @@ TEST(receiver_source, seqnum_large_jump) {
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
         }
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
@@ -743,12 +763,14 @@ TEST(receiver_source, seqnum_large_jump) {
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
         }
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
     }
 
     while (receiver.num_sessions() != 0) {
+        receiver.refresh(frame_reader.refresh_ts());
         frame_reader.read_zero_samples(SamplesPerFrame, output_sample_spec);
     }
 }
@@ -784,6 +806,7 @@ TEST(receiver_source, seqnum_reorder) {
     for (size_t ni = 0; ni < ManyPackets / ReorderWindow; ni++) {
         if (pos >= Latency / SamplesPerPacket) {
             for (size_t nf = 0; nf < ReorderWindow * FramesPerPacket; nf++) {
+                receiver.refresh(frame_reader.refresh_ts());
                 frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
             }
         }
@@ -825,6 +848,7 @@ TEST(receiver_source, seqnum_late) {
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
         }
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
@@ -832,12 +856,14 @@ TEST(receiver_source, seqnum_late) {
 
     for (size_t np = 0; np < DelayedPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 0, output_sample_spec);
         }
     }
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
         }
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
@@ -848,10 +874,12 @@ TEST(receiver_source, seqnum_late) {
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
         }
     }
 
+    receiver.refresh(frame_reader.refresh_ts());
     frame_reader.read_samples(SamplesPerFrame, 0, output_sample_spec);
 }
 
@@ -885,6 +913,7 @@ TEST(receiver_source, timestamp_overflow) {
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
         }
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
@@ -921,6 +950,7 @@ TEST(receiver_source, timestamp_small_jump) {
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
         }
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
@@ -928,6 +958,7 @@ TEST(receiver_source, timestamp_small_jump) {
 
     for (size_t np = 0; np < ShiftedPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 0, output_sample_spec);
         }
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
@@ -935,6 +966,7 @@ TEST(receiver_source, timestamp_small_jump) {
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
         }
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
@@ -971,12 +1003,14 @@ TEST(receiver_source, timestamp_large_jump) {
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
         }
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
     }
 
     while (receiver.num_sessions() != 0) {
+        receiver.refresh(frame_reader.refresh_ts());
         frame_reader.read_zero_samples(SamplesPerFrame, output_sample_spec);
     }
 }
@@ -1015,6 +1049,7 @@ TEST(receiver_source, timestamp_overlap) {
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
         }
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
@@ -1048,6 +1083,7 @@ TEST(receiver_source, timestamp_reorder) {
 
     for (ssize_t np = Latency / SamplesPerPacket - 1; np >= 0; np--) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
         }
 
@@ -1064,6 +1100,7 @@ TEST(receiver_source, timestamp_reorder) {
 
     for (size_t np = 0; np < Latency / SamplesPerPacket - 1; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 0, output_sample_spec);
         }
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
@@ -1071,6 +1108,7 @@ TEST(receiver_source, timestamp_reorder) {
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
         }
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
@@ -1107,6 +1145,7 @@ TEST(receiver_source, timestamp_late) {
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
         }
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
@@ -1114,12 +1153,14 @@ TEST(receiver_source, timestamp_late) {
 
     for (size_t np = 0; np < DelayedPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 0, output_sample_spec);
         }
     }
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
         }
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
@@ -1132,10 +1173,12 @@ TEST(receiver_source, timestamp_late) {
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
         }
     }
 
+    receiver.refresh(frame_reader.refresh_ts());
     frame_reader.read_samples(SamplesPerFrame, 0, output_sample_spec);
 }
 
@@ -1171,6 +1214,7 @@ TEST(receiver_source, packet_size_small) {
                                 packet_sample_spec);
 
     for (size_t nf = 0; nf < ManySmallPackets / SmallPacketsPerFrame; nf++) {
+        receiver.refresh(frame_reader.refresh_ts());
         frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
         for (size_t np = 0; np < SmallPacketsPerFrame; np++) {
             packet_writer.write_packets(1, SamplesPerSmallPacket, packet_sample_spec);
@@ -1211,6 +1255,7 @@ TEST(receiver_source, packet_size_large) {
 
     for (size_t np = 0; np < ManyLargePackets; np++) {
         for (size_t nf = 0; nf < FramesPerLargePacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
         }
         packet_writer.write_packets(1, SamplesPerLargePacket, packet_sample_spec);
@@ -1256,6 +1301,7 @@ TEST(receiver_source, packet_size_variable) {
 
     for (size_t ni = 0; ni < NumIterations; ni++) {
         for (; available >= Latency; available -= SamplesPerFrame) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
         }
 
@@ -1295,6 +1341,7 @@ TEST(receiver_source, corrupted_packets_new_session) {
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_zero_samples(SamplesPerFrame, output_sample_spec);
 
             UNSIGNED_LONGS_EQUAL(0, receiver.num_sessions());
@@ -1332,6 +1379,7 @@ TEST(receiver_source, corrupted_packets_existing_session) {
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
 
             UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
@@ -1344,6 +1392,7 @@ TEST(receiver_source, corrupted_packets_existing_session) {
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 0, output_sample_spec);
 
             UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
@@ -1354,6 +1403,7 @@ TEST(receiver_source, corrupted_packets_existing_session) {
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
 
             UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
@@ -1390,6 +1440,7 @@ TEST(receiver_source, channel_mapping_stereo_to_mono) {
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
 
             UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
@@ -1426,6 +1477,7 @@ TEST(receiver_source, channel_mapping_mono_to_stereo) {
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
 
             UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
@@ -1462,6 +1514,7 @@ TEST(receiver_source, sample_rate_mapping) {
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_nonzero_samples(SamplesPerFrame * OutputRate / PacketRate
                                                   / output_sample_spec.num_channels()
                                                   * output_sample_spec.num_channels(),
@@ -1511,6 +1564,7 @@ TEST(receiver_source, timestamp_mapping_no_control_packets) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             const core::nanoseconds_t capture_ts_base = -1;
 
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec,
                                       capture_ts_base);
 
@@ -1565,6 +1619,7 @@ TEST(receiver_source, timestamp_mapping_one_control_packet) {
                 capture_ts_base = unix_base;
             }
 
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec,
                                       capture_ts_base);
 
@@ -1625,6 +1680,7 @@ TEST(receiver_source, timestamp_mapping_periodic_control_packets) {
                 capture_ts_base = unix_base - unix_base_step;
             }
 
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec,
                                       capture_ts_base);
 
@@ -1683,8 +1739,13 @@ IGNORE_TEST(receiver_source, timestamp_mapping_remixing) {
     size_t frame_num = 0;
     core::nanoseconds_t first_ts = 0;
 
+    core::nanoseconds_t cur_time = 2000000000000000;
+
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(cur_time);
+            cur_time += output_sample_spec.samples_overall_2_ns(frame_size);
+
             audio::Frame frame(frame_data, frame_size);
             CHECK(receiver.read(frame));
 
@@ -1766,6 +1827,7 @@ TEST(receiver_source, metrics_sessions) {
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_nonzero_samples(SamplesPerFrame, output_sample_spec);
 
             UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
@@ -1797,6 +1859,7 @@ TEST(receiver_source, metrics_sessions) {
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_nonzero_samples(SamplesPerFrame, output_sample_spec);
 
             UNSIGNED_LONGS_EQUAL(2, receiver.num_sessions());
@@ -1854,6 +1917,7 @@ TEST(receiver_source, metrics_niq) {
 
     for (size_t np = 0; np < ManyPackets; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_nonzero_samples(SamplesPerFrame, output_sample_spec);
 
             UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
@@ -1923,6 +1987,7 @@ TEST(receiver_source, metrics_e2e) {
                 capture_ts_base = unix_base;
             }
 
+            receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_nonzero_samples(SamplesPerFrame, output_sample_spec,
                                               capture_ts_base);
 
@@ -1990,6 +2055,7 @@ TEST(receiver_source, metrics_truncation) {
                                  output_sample_spec);
 
     for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+        receiver.refresh(frame_reader.refresh_ts());
         frame_reader.read_nonzero_samples(SamplesPerFrame, output_sample_spec);
     }
 
@@ -2075,9 +2141,14 @@ TEST(receiver_source, state) {
     CHECK(samples);
     samples.reslice(0, FramesPerPacket * output_sample_spec.num_channels());
 
+    core::nanoseconds_t cur_time = 1000000000000000;
+
     CHECK(receiver.state() == sndio::DeviceState_Idle);
 
     {
+        receiver.refresh(cur_time);
+        cur_time += output_sample_spec.samples_overall_2_ns(samples.size());
+
         audio::Frame frame(samples.data(), samples.size());
         receiver.read(frame);
     }
@@ -2088,11 +2159,17 @@ TEST(receiver_source, state) {
     CHECK(receiver.state() == sndio::DeviceState_Active);
 
     {
+        receiver.refresh(cur_time);
+        cur_time += output_sample_spec.samples_overall_2_ns(samples.size());
+
         audio::Frame frame(samples.data(), samples.size());
         receiver.read(frame);
     }
 
     for (;;) {
+        receiver.refresh(cur_time);
+        cur_time += output_sample_spec.samples_overall_2_ns(samples.size());
+
         audio::Frame frame(samples.data(), samples.size());
         receiver.read(frame);
 

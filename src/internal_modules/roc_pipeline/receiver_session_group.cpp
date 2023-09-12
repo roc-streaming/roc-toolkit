@@ -46,26 +46,42 @@ void ReceiverSessionGroup::route_packet(const packet::PacketPtr& packet) {
     route_transport_packet_(packet);
 }
 
-void ReceiverSessionGroup::refresh_sessions() {
+core::nanoseconds_t
+ReceiverSessionGroup::refresh_sessions(core::nanoseconds_t current_time) {
     core::SharedPtr<ReceiverSession> curr, next;
+
+    core::nanoseconds_t next_deadline = 0;
 
     for (curr = sessions_.front(); curr; curr = next) {
         next = sessions_.nextof(*curr);
 
-        if (!curr->refresh()) {
+        core::nanoseconds_t sess_deadline = 0;
+
+        if (!curr->refresh(current_time, &sess_deadline)) {
             // Session ended.
             remove_session_(*curr);
+            continue;
+        }
+
+        if (sess_deadline != 0) {
+            if (next_deadline == 0) {
+                next_deadline = sess_deadline;
+            } else {
+                next_deadline = std::min(next_deadline, sess_deadline);
+            }
         }
     }
+
+    return next_deadline;
 }
 
-void ReceiverSessionGroup::reclock_sessions(core::nanoseconds_t timestamp) {
+void ReceiverSessionGroup::reclock_sessions(core::nanoseconds_t playback_time) {
     core::SharedPtr<ReceiverSession> curr, next;
 
     for (curr = sessions_.front(); curr; curr = next) {
         next = sessions_.nextof(*curr);
 
-        if (!curr->reclock(timestamp)) {
+        if (!curr->reclock(playback_time)) {
             // Session ended.
             remove_session_(*curr);
         }

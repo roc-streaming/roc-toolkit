@@ -202,7 +202,7 @@ void SenderLoop::write(audio::Frame& frame) {
         ticker_->wait(timestamp_);
     }
 
-    // Invokes process_subframe_imp() and process_task_imp().
+    // invokes process_subframe_imp() and process_task_imp()
     if (!process_subframes_and_tasks(frame)) {
         return;
     }
@@ -218,11 +218,8 @@ core::nanoseconds_t SenderLoop::timestamp_imp() const {
 bool SenderLoop::process_subframe_imp(audio::Frame& frame) {
     sink_.write(frame);
 
-    const core::nanoseconds_t timestamp = core::timestamp(core::ClockUnix);
-
-    if (sink_.get_update_deadline(timestamp) <= timestamp) {
-        sink_.update(timestamp);
-    }
+    // TODO: handle returned deadline and schedule refresh
+    sink_.refresh(core::timestamp(core::ClockUnix));
 
     return true;
 }

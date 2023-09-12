@@ -50,11 +50,17 @@ public:
     //! Add endpoint.
     ReceiverEndpoint* add_endpoint(address::Interface iface, address::Protocol proto);
 
-    //! Pull packets and refresh sessions.
-    void refresh();
+    //! Pull packets and refresh sessions according to current time.
+    //! @returns
+    //!  deadline (absolute time) when refresh should be invoked again
+    //!  if there are no frames
+    core::nanoseconds_t refresh(core::nanoseconds_t current_time);
 
-    //! Adjust session clock to match consumer clock.
-    void reclock(core::nanoseconds_t timestamp);
+    //! Adjust sessions clock to match consumer clock.
+    //! @remarks
+    //!  @p playback_time specified absolute time when first sample of last frame
+    //!  retrieved from pipeline will be actually played on sink
+    void reclock(core::nanoseconds_t playback_time);
 
     //! Get number of alive sessions.
     size_t num_sessions() const;

@@ -28,9 +28,7 @@ SenderSink::SenderSink(const SenderConfig& config,
     , byte_buffer_factory_(byte_buffer_factory)
     , sample_buffer_factory_(sample_buffer_factory)
     , arena_(arena)
-    , audio_writer_(NULL)
-    , update_deadline_valid_(false)
-    , update_deadline_(0) {
+    , audio_writer_(NULL) {
     audio::IFrameWriter* awriter = &fanout_;
 
     if (config_.enable_profiling) {
@@ -65,8 +63,6 @@ SenderSlot* SenderSink::create_slot() {
 
     slots_.push_back(*slot);
 
-    invalidate_update_deadline_();
-
     return slot.get();
 }
 
@@ -76,26 +72,25 @@ void SenderSink::delete_slot(SenderSlot* slot) {
     roc_log(LogInfo, "sender sink: removing slot");
 
     slots_.remove(*slot);
-
-    invalidate_update_deadline_();
 }
 
-core::nanoseconds_t SenderSink::get_update_deadline(core::nanoseconds_t current_time) {
-    if (!update_deadline_valid_) {
-        compute_update_deadline_(current_time);
+core::nanoseconds_t SenderSink::refresh(core::nanoseconds_t current_time) {
+    core::nanoseconds_t next_deadline = 0;
+
+    for (core::SharedPtr<SenderSlot> slot = slots_.front(); slot;
+         slot = slots_.nextof(*slot)) {
+        const core::nanoseconds_t slot_deadline = slot->refresh(current_time);
+
+        if (slot_deadline != 0) {
+            if (next_deadline == 0) {
+                next_deadline = slot_deadline;
+            } else {
+                next_deadline = std::min(next_deadline, slot_deadline);
+            }
+        }
     }
 
-    return update_deadline_;
-}
-
-void SenderSink::update(core::nanoseconds_t current_time) {
-    core::SharedPtr<SenderSlot> slot;
-
-    for (slot = slots_.front(); slot; slot = slots_.nextof(*slot)) {
-        slot->update(current_time);
-    }
-
-    invalidate_update_deadline_();
+    return next_deadline;
 }
 
 sndio::DeviceType SenderSink::type() const {
@@ -138,32 +133,6 @@ void SenderSink::write(audio::Frame& frame) {
     roc_panic_if(!is_valid());
 
     audio_writer_->write(frame);
-}
-
-void SenderSink::compute_update_deadline_(core::nanoseconds_t current_time) {
-    core::SharedPtr<SenderSlot> slot;
-
-    update_deadline_ = 0;
-
-    for (slot = slots_.front(); slot; slot = slots_.nextof(*slot)) {
-        const core::nanoseconds_t deadline = slot->get_update_deadline(current_time);
-        if (deadline == 0) {
-            continue;
-        }
-
-        if (update_deadline_ == 0) {
-            update_deadline_ = deadline;
-        } else {
-            update_deadline_ = std::min(update_deadline_, deadline);
-        }
-    }
-
-    update_deadline_valid_ = true;
-}
-
-void SenderSink::invalidate_update_deadline_() {
-    update_deadline_ = 0;
-    update_deadline_valid_ = false;
 }
 
 } // namespace pipeline

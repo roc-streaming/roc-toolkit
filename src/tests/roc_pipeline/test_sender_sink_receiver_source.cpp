@@ -50,8 +50,6 @@ enum {
     Timeout = Latency * 20,
 
     ManyFrames = Latency / SamplesPerFrame * 10,
-
-    FramesPerUpdate = 10,
 };
 
 enum {
@@ -290,7 +288,6 @@ void send_receive(int flags,
     }
 
     core::nanoseconds_t send_base_cts = -1;
-
     if (flags & FlagCTS) {
         send_base_cts = 1000000000000000;
     }
@@ -300,10 +297,7 @@ void send_receive(int flags,
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, sender_config.input_sample_spec,
                                    send_base_cts);
-
-        if (nf % FramesPerUpdate) {
-            sender.update(frame_writer.capture_timestamp());
-        }
+        sender.refresh(frame_writer.last_capture_ts());
     }
 
     test::PacketSender packet_sender(packet_factory, receiver_source_endpoint_writer,
@@ -318,9 +312,10 @@ void send_receive(int flags,
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
-            core::nanoseconds_t recv_base_cts = -1;
+            receiver.refresh(frame_reader.refresh_ts());
 
-            if ((flags & FlagCTS) && np != 0) {
+            core::nanoseconds_t recv_base_cts = -1;
+            if (flags & FlagCTS) {
                 recv_base_cts = send_base_cts;
             }
 

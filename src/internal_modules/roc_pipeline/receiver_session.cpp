@@ -234,8 +234,15 @@ bool ReceiverSession::handle(const packet::PacketPtr& packet) {
     return true;
 }
 
-bool ReceiverSession::refresh() {
+bool ReceiverSession::refresh(core::nanoseconds_t current_time,
+                              core::nanoseconds_t* next_refresh) {
     roc_panic_if(!is_valid());
+
+    (void)current_time;
+
+    if (next_refresh) {
+        *next_refresh = 0;
+    }
 
     if (watchdog_) {
         if (!watchdog_->is_alive()) {
@@ -250,10 +257,10 @@ bool ReceiverSession::refresh() {
     return true;
 }
 
-bool ReceiverSession::reclock(core::nanoseconds_t timestamp) {
+bool ReceiverSession::reclock(core::nanoseconds_t playback_time) {
     roc_panic_if(!is_valid());
 
-    return latency_monitor_->reclock(timestamp);
+    return latency_monitor_->reclock(playback_time);
 }
 
 ReceiverSessionMetrics ReceiverSession::get_metrics() const {

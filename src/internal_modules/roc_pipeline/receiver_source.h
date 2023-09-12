@@ -65,6 +65,16 @@ public:
     //! Get number of connected sessions.
     size_t num_sessions() const;
 
+    //! Pull packets and refresh pipeline according to current time.
+    //! @remarks
+    //!  Should be invoked before reading each frame.
+    //!  Also should be invoked after provided deadline if no frames were
+    //!  read until that deadline expires.
+    //! @returns
+    //!  deadline (absolute time) when refresh should be invoked again
+    //!  if there are no frames
+    core::nanoseconds_t refresh(core::nanoseconds_t current_time);
+
     //! Get device type.
     virtual sndio::DeviceType type() const;
 
@@ -92,8 +102,11 @@ public:
     //! Check if the source has own clock.
     virtual bool has_clock() const;
 
-    //! Adjust source clock to match consumer clock.
-    virtual void reclock(core::nanoseconds_t timestamp);
+    //! Adjust sessions clock to match consumer clock.
+    //! @remarks
+    //!  @p playback_time specified absolute time when first sample of last frame
+    //!  retrieved from pipeline will be actually played on sink
+    virtual void reclock(core::nanoseconds_t playback_time);
 
     //! Read audio frame.
     virtual bool read(audio::Frame&);

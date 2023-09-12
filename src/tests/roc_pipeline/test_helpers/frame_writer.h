@@ -29,7 +29,9 @@ public:
         , buffer_factory_(buffer_factory)
         , offset_(0)
         , abs_offset_(0)
-        , capture_ts_(0) {
+        , refresh_ts_(0)
+        , next_refresh_ts_(0)
+        , last_capture_ts_(0) {
     }
 
     void write_samples(size_t num_samples,
@@ -50,19 +52,26 @@ public:
         audio::Frame frame(samples.data(), samples.size());
 
         if (base_capture_ts >= 0) {
-            capture_ts_ =
+            last_capture_ts_ =
                 base_capture_ts + sample_spec.samples_per_chan_2_ns(abs_offset_);
 
-            frame.set_capture_timestamp(capture_ts_);
+            frame.set_capture_timestamp(last_capture_ts_);
         }
 
         sink_.write(frame);
 
         abs_offset_ += num_samples;
+
+        refresh_ts_ = next_refresh_ts_;
+        next_refresh_ts_ += sample_spec.samples_per_chan_2_ns(num_samples);
     }
 
-    core::nanoseconds_t capture_timestamp() const {
-        return capture_ts_;
+    core::nanoseconds_t refresh_ts() const {
+        return refresh_ts_;
+    }
+
+    core::nanoseconds_t last_capture_ts() const {
+        return last_capture_ts_;
     }
 
 private:
@@ -72,7 +81,9 @@ private:
     uint8_t offset_;
     size_t abs_offset_;
 
-    core::nanoseconds_t capture_ts_;
+    core::nanoseconds_t refresh_ts_;
+    core::nanoseconds_t next_refresh_ts_;
+    core::nanoseconds_t last_capture_ts_;
 };
 
 } // namespace test

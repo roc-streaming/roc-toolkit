@@ -79,6 +79,10 @@ void Session::generate_packets(core::nanoseconds_t current_time) {
         next_deadline_ = current_time;
     }
 
+    if (next_deadline_ > current_time) {
+        return;
+    }
+
     do {
         // TODO: use IntervalComputer
         next_deadline_ += core::Millisecond * 200;

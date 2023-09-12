@@ -58,11 +58,7 @@ ReceiverEndpoint* ReceiverSlot::add_endpoint(address::Interface iface,
     return NULL;
 }
 
-void ReceiverSlot::refresh() {
-    if (control_endpoint_) {
-        control_endpoint_->pull_packets();
-    }
-
+core::nanoseconds_t ReceiverSlot::refresh(core::nanoseconds_t current_time) {
     if (source_endpoint_) {
         source_endpoint_->pull_packets();
     }
@@ -71,11 +67,15 @@ void ReceiverSlot::refresh() {
         repair_endpoint_->pull_packets();
     }
 
-    session_group_.refresh_sessions();
+    if (control_endpoint_) {
+        control_endpoint_->pull_packets();
+    }
+
+    return session_group_.refresh_sessions(current_time);
 }
 
-void ReceiverSlot::reclock(core::nanoseconds_t timestamp) {
-    session_group_.reclock_sessions(timestamp);
+void ReceiverSlot::reclock(core::nanoseconds_t playback_time) {
+    session_group_.reclock_sessions(playback_time);
 }
 
 size_t ReceiverSlot::num_sessions() const {
