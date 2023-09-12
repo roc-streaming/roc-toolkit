@@ -46,6 +46,7 @@ public:
 
 private:
     bool push_input_();
+    core::nanoseconds_t capture_ts_(Frame& frame);
 
     IResampler& resampler_;
     IFrameReader& reader_;
