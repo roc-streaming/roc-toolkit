@@ -60,6 +60,8 @@ public:
     bool unlink(slot_index_t slot_index);
 
     //! Get slot metrics.
+    //! @remarks
+    //!  Metrics are written into provided arguments.
     bool get_metrics(slot_index_t slot_index,
                      pipeline::SenderSlotMetrics& slot_metrics,
                      pipeline::SenderSessionMetrics& sess_metrics);

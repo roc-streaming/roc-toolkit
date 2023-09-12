@@ -9,6 +9,7 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/heap_arena.h"
+#include "roc_core/macro_helpers.h"
 #include "roc_fec/codec_map.h"
 #include "roc_node/context.h"
 #include "roc_node/receiver.h"
@@ -24,6 +25,12 @@ core::HeapArena arena;
 
 void parse_uri(address::EndpointUri& uri, const char* str) {
     CHECK(address::parse_endpoint_uri(str, address::EndpointUri::Subset_Full, uri));
+}
+
+void handle_sess_metrics(const pipeline::ReceiverSessionMetrics& sess_metrics,
+                         size_t sess_index,
+                         void* sess_arg) {
+    ((pipeline::ReceiverSessionMetrics*)sess_arg)[sess_index] = sess_metrics;
 }
 
 } // namespace
@@ -604,20 +611,18 @@ TEST(receiver, metrics) {
     CHECK(receiver.is_valid());
 
     pipeline::ReceiverSlotMetrics slot_metrics;
-    pipeline::ReceiverSessionMetrics sess_metrics;
-    size_t sess_metrics_size = 1;
+    pipeline::ReceiverSessionMetrics sess_metrics[10];
+    size_t sess_metrics_size = ROC_ARRAY_SIZE(sess_metrics);
 
-    CHECK(!receiver.get_metrics(DefaultSlot, slot_metrics, NULL, NULL));
-    CHECK(!receiver.get_metrics(DefaultSlot, slot_metrics, &sess_metrics,
-                                &sess_metrics_size));
+    CHECK(!receiver.get_metrics(DefaultSlot, slot_metrics, handle_sess_metrics,
+                                &sess_metrics_size, sess_metrics));
 
     address::EndpointUri source_endp(arena);
     parse_uri(source_endp, "rtp://127.0.0.1:0");
     CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
 
-    CHECK(receiver.get_metrics(DefaultSlot, slot_metrics, NULL, NULL));
-    CHECK(receiver.get_metrics(DefaultSlot, slot_metrics, &sess_metrics,
-                               &sess_metrics_size));
+    CHECK(receiver.get_metrics(DefaultSlot, slot_metrics, handle_sess_metrics,
+                               &sess_metrics_size, sess_metrics));
 
     UNSIGNED_LONGS_EQUAL(0, slot_metrics.num_sessions);
     UNSIGNED_LONGS_EQUAL(0, sess_metrics_size);

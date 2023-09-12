@@ -56,11 +56,21 @@ public:
     //! Remove slot.
     bool unlink(slot_index_t slot_index);
 
+    //! Callback for getting session metrics.
+    typedef void (*sess_metrics_func_t)(
+        const pipeline::ReceiverSessionMetrics& sess_metrics,
+        size_t sess_index,
+        void* sess_arg);
+
     //! Get slot metrics.
+    //! @remarks
+    //!  Metrics for slot are written into @p slot_metrics.
+    //!  Metrics for each session are passed to @p sess_metrics_func.
     bool get_metrics(slot_index_t slot_index,
                      pipeline::ReceiverSlotMetrics& slot_metrics,
-                     pipeline::ReceiverSessionMetrics* sess_metrics,
-                     size_t* sess_metrics_size);
+                     sess_metrics_func_t sess_metrics_func,
+                     size_t* sess_metrics_size,
+                     void* sess_metrics_arg);
 
     //! Check if there are broken slots.
     bool has_broken();
@@ -127,6 +137,8 @@ private:
 
     bool used_interfaces_[address::Iface_Max];
     address::Protocol used_protocols_[address::Iface_Max];
+
+    core::Array<pipeline::ReceiverSessionMetrics, 8> sess_metrics_;
 
     bool valid_;
 };
