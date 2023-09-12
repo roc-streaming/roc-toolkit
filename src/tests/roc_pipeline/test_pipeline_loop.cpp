@@ -403,7 +403,7 @@ private:
 
 } // namespace
 
-TEST_GROUP(task_pipeline) {
+TEST_GROUP(pipeline_loop) {
     audio::sample_t samples[MaxSamples];
 
     TaskConfig config;
@@ -425,7 +425,7 @@ TEST_GROUP(task_pipeline) {
     }
 };
 
-TEST(task_pipeline, schedule_and_wait_right_after_creation) {
+TEST(pipeline_loop, schedule_and_wait_right_after_creation) {
     TestPipeline pipeline(config);
 
     TestPipeline::Task task;
@@ -450,7 +450,7 @@ TEST(task_pipeline, schedule_and_wait_right_after_creation) {
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_preemptions());
 }
 
-TEST(task_pipeline, schedule_right_after_creation) {
+TEST(pipeline_loop, schedule_right_after_creation) {
     TestPipeline pipeline(config);
 
     TestCompleter completer(pipeline);
@@ -478,7 +478,7 @@ TEST(task_pipeline, schedule_right_after_creation) {
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_preemptions());
 }
 
-TEST(task_pipeline, schedule_when_can_process_tasks) {
+TEST(pipeline_loop, schedule_when_can_process_tasks) {
     TestPipeline pipeline(config);
 
     audio::Frame frame(samples, FrameSize);
@@ -518,7 +518,7 @@ TEST(task_pipeline, schedule_when_can_process_tasks) {
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_preemptions());
 }
 
-TEST(task_pipeline, schedule_when_cant_process_tasks_then_process_frame) {
+TEST(pipeline_loop, schedule_when_cant_process_tasks_then_process_frame) {
     TestPipeline pipeline(config);
 
     audio::Frame frame1(samples, FrameSize);
@@ -586,7 +586,7 @@ TEST(task_pipeline, schedule_when_cant_process_tasks_then_process_frame) {
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_preemptions());
 }
 
-TEST(task_pipeline, schedule_when_cant_process_tasks_then_process_tasks) {
+TEST(pipeline_loop, schedule_when_cant_process_tasks_then_process_tasks) {
     TestPipeline pipeline(config);
 
     audio::Frame frame1(samples, FrameSize);
@@ -667,7 +667,7 @@ TEST(task_pipeline, schedule_when_cant_process_tasks_then_process_tasks) {
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_preemptions());
 }
 
-TEST(task_pipeline, schedule_when_another_schedule_is_running_then_process_tasks) {
+TEST(pipeline_loop, schedule_when_another_schedule_is_running_then_process_tasks) {
     TestPipeline pipeline(config);
     TestCompleter completer(pipeline);
 
@@ -749,7 +749,7 @@ TEST(task_pipeline, schedule_when_another_schedule_is_running_then_process_tasks
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_preemptions());
 }
 
-TEST(task_pipeline, schedule_when_process_tasks_is_running) {
+TEST(pipeline_loop, schedule_when_process_tasks_is_running) {
     TestPipeline pipeline(config);
 
     pipeline.set_time(StartTime);
@@ -857,7 +857,7 @@ TEST(task_pipeline, schedule_when_process_tasks_is_running) {
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_preemptions());
 }
 
-TEST(task_pipeline, schedule_when_processing_frame) {
+TEST(pipeline_loop, schedule_when_processing_frame) {
     TestPipeline pipeline(config);
 
     audio::Frame frame(samples, FrameSize);
@@ -917,7 +917,7 @@ TEST(task_pipeline, schedule_when_processing_frame) {
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_preemptions());
 }
 
-TEST(task_pipeline, process_tasks_when_schedule_is_running) {
+TEST(pipeline_loop, process_tasks_when_schedule_is_running) {
     TestPipeline pipeline(config);
 
     // next process_task_imp() call will block
@@ -967,7 +967,7 @@ TEST(task_pipeline, process_tasks_when_schedule_is_running) {
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_preemptions());
 }
 
-TEST(task_pipeline, process_tasks_when_another_process_tasks_is_running) {
+TEST(pipeline_loop, process_tasks_when_another_process_tasks_is_running) {
     TestPipeline pipeline(config);
 
     pipeline.set_time(StartTime);
@@ -1069,7 +1069,7 @@ TEST(task_pipeline, process_tasks_when_another_process_tasks_is_running) {
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_preemptions());
 }
 
-TEST(task_pipeline, process_tasks_when_processing_frame) {
+TEST(pipeline_loop, process_tasks_when_processing_frame) {
     TestPipeline pipeline(config);
 
     audio::Frame frame(samples, FrameSize);
@@ -1132,7 +1132,7 @@ TEST(task_pipeline, process_tasks_when_processing_frame) {
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_preemptions());
 }
 
-TEST(task_pipeline, process_tasks_interframe_deadline) {
+TEST(pipeline_loop, process_tasks_interframe_deadline) {
     TestPipeline pipeline(config);
 
     pipeline.set_time(StartTime);
@@ -1285,7 +1285,7 @@ TEST(task_pipeline, process_tasks_interframe_deadline) {
     POINTERS_EQUAL(&task3, completer3.get_task());
 }
 
-TEST(task_pipeline, process_frame_when_schedule_is_running) {
+TEST(pipeline_loop, process_frame_when_schedule_is_running) {
     TestPipeline pipeline(config);
     TestCompleter completer(pipeline);
 
@@ -1394,7 +1394,7 @@ TEST(task_pipeline, process_frame_when_schedule_is_running) {
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_preemptions());
 }
 
-TEST(task_pipeline, process_frame_when_process_tasks_is_running) {
+TEST(pipeline_loop, process_frame_when_process_tasks_is_running) {
     TestPipeline pipeline(config);
 
     pipeline.set_time(StartTime);
@@ -1542,7 +1542,7 @@ TEST(task_pipeline, process_frame_when_process_tasks_is_running) {
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_preemptions());
 }
 
-TEST(task_pipeline, process_frame_max_samples_between_frames) {
+TEST(pipeline_loop, process_frame_max_samples_between_frames) {
     TestPipeline pipeline(config);
 
     pipeline.set_time(StartTime);
@@ -1705,7 +1705,7 @@ TEST(task_pipeline, process_frame_max_samples_between_frames) {
     POINTERS_EQUAL(&task3, completer3.get_task());
 }
 
-TEST(task_pipeline, process_frame_min_samples_between_frames) {
+TEST(pipeline_loop, process_frame_min_samples_between_frames) {
     TestPipeline pipeline(config);
 
     pipeline.set_time(StartTime);
@@ -1783,7 +1783,7 @@ TEST(task_pipeline, process_frame_min_samples_between_frames) {
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_sched_cancellations());
 }
 
-TEST(task_pipeline, schedule_from_completion_completer_called_in_place) {
+TEST(pipeline_loop, schedule_from_completion_completer_called_in_place) {
     TestPipeline pipeline(config);
 
     TestPipeline::Task task1;
@@ -1842,7 +1842,7 @@ TEST(task_pipeline, schedule_from_completion_completer_called_in_place) {
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_preemptions());
 }
 
-TEST(task_pipeline, schedule_from_completion_completer_called_from_process_tasks) {
+TEST(pipeline_loop, schedule_from_completion_completer_called_from_process_tasks) {
     TestPipeline pipeline(config);
 
     pipeline.set_time(StartTime);
@@ -1915,7 +1915,7 @@ TEST(task_pipeline, schedule_from_completion_completer_called_from_process_tasks
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_sched_cancellations());
 }
 
-TEST(task_pipeline, schedule_from_completion_completer_called_from_process_frame) {
+TEST(pipeline_loop, schedule_from_completion_completer_called_from_process_frame) {
     TestPipeline pipeline(config);
 
     pipeline.set_time(StartTime);
@@ -1993,7 +1993,7 @@ TEST(task_pipeline, schedule_from_completion_completer_called_from_process_frame
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_sched_cancellations());
 }
 
-TEST(task_pipeline, schedule_and_wait_until_process_tasks_called) {
+TEST(pipeline_loop, schedule_and_wait_until_process_tasks_called) {
     TestPipeline pipeline(config);
     TestCompleter completer(pipeline);
 
@@ -2101,7 +2101,7 @@ TEST(task_pipeline, schedule_and_wait_until_process_tasks_called) {
     UNSIGNED_LONGS_EQUAL(0, pipeline.num_sched_cancellations());
 }
 
-TEST(task_pipeline, schedule_and_wait_until_process_frame_called) {
+TEST(pipeline_loop, schedule_and_wait_until_process_frame_called) {
     TestPipeline pipeline(config);
     TestCompleter completer(pipeline);
 
@@ -2213,7 +2213,7 @@ TEST(task_pipeline, schedule_and_wait_until_process_frame_called) {
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_sched_cancellations());
 }
 
-TEST(task_pipeline, forward_flags_and_cts_small_frame) {
+TEST(pipeline_loop, forward_flags_and_cts_small_frame) {
     TestPipeline pipeline(config);
 
     const unsigned frame_flags = audio::Frame::FlagNonblank;
@@ -2232,7 +2232,7 @@ TEST(task_pipeline, forward_flags_and_cts_small_frame) {
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_frames());
 }
 
-TEST(task_pipeline, forward_flags_and_cts_large_frame) {
+TEST(pipeline_loop, forward_flags_and_cts_large_frame) {
     TestPipeline pipeline(config);
 
     const unsigned frame_flags = audio::Frame::FlagNonblank;
