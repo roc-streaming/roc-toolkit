@@ -31,7 +31,14 @@ enum {
     Timeout = TotalSamples * 10
 };
 
-enum { FlagRS8M = (1 << 0), FlagLDPC = (1 << 1), FlagMultitrack = (1 << 2) };
+enum {
+    FlagRS8M = (1 << 0),
+    FlagLDPC = (1 << 1),
+    FlagRTCP = (1 << 2),
+    FlagMultitrack = (1 << 3),
+    FlagNonStrict = (1 << 4),
+    FlagInfinite = (1 << 5),
+};
 
 inline float increment_sample_value(float sample_value, float sample_step) {
     sample_value += sample_step;

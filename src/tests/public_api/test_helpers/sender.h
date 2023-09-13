@@ -14,6 +14,7 @@
 #include "test_helpers/context.h"
 #include "test_helpers/utils.h"
 
+#include "roc_core/atomic.h"
 #include "roc_core/panic.h"
 #include "roc_core/thread.h"
 
@@ -31,11 +32,13 @@ public:
            roc_sender_config& config,
            float sample_step,
            size_t num_chans,
-           size_t frame_size)
+           size_t frame_size,
+           unsigned flags)
         : sndr_(NULL)
         , sample_step_(sample_step)
         , num_chans_(num_chans)
         , frame_samples_(frame_size * num_chans)
+        , flags_(flags)
         , stopped_(false) {
         CHECK(roc_sender_open(context.get(), &config, &sndr_) == 0);
         CHECK(sndr_);
@@ -47,9 +50,9 @@ public:
 
     void connect(const roc_endpoint* receiver_source_endp,
                  const roc_endpoint* receiver_repair_endp,
-                 unsigned flags,
+                 const roc_endpoint* receiver_control_endp,
                  roc_slot slot = ROC_SLOT_DEFAULT) {
-        if (flags & FlagRS8M || flags & FlagLDPC) {
+        if ((flags_ & FlagRS8M) || (flags_ & FlagLDPC)) {
             CHECK(roc_sender_connect(sndr_, slot, ROC_INTERFACE_AUDIO_SOURCE,
                                      receiver_source_endp)
                   == 0);
@@ -59,6 +62,12 @@ public:
         } else {
             CHECK(roc_sender_connect(sndr_, slot, ROC_INTERFACE_AUDIO_SOURCE,
                                      receiver_source_endp)
+                  == 0);
+        }
+
+        if (flags_ & FlagRTCP) {
+            CHECK(roc_sender_connect(sndr_, slot, ROC_INTERFACE_AUDIO_CONTROL,
+                                     receiver_control_endp)
                   == 0);
         }
     }
@@ -91,9 +100,12 @@ private:
     }
 
     roc_sender* sndr_;
+
     const float sample_step_;
     const size_t num_chans_;
     const size_t frame_samples_;
+    const unsigned flags_;
+
     core::Atomic<int> stopped_;
 };
 

@@ -14,6 +14,7 @@
 #include "roc_core/heap_arena.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/stddefs.h"
+#include "roc_core/time.h"
 #include "roc_fec/codec_map.h"
 #include "roc_packet/packet_factory.h"
 
@@ -92,8 +93,18 @@ TEST_GROUP(sender_encoder_receiver_decoder) {
         size_t iface_packets[10] = {};
         size_t zero_samples = 0, total_samples = 0;
 
+        unsigned long long max_niq_latency = 0, max_e2e_latency = 0;
+
+        bool has_control = false;
+
+        for (size_t n_if = 0; n_if < num_ifaces; n_if++) {
+            if (ifaces[n_if] == ROC_INTERFACE_AUDIO_CONTROL) {
+                has_control = true;
+            }
+        }
+
         for (size_t nf = 0; nf < NumFrames; nf++) {
-            { // write from to encoder
+            { // write frame to encoder
                 float samples[test::FrameSamples] = {};
 
                 for (size_t ns = 0; ns < test::FrameSamples; ns++) {
@@ -105,6 +116,11 @@ TEST_GROUP(sender_encoder_receiver_decoder) {
                 frame.samples = samples;
                 frame.samples_size = test::FrameSamples * sizeof(float);
                 CHECK(roc_sender_encoder_push(encoder, &frame) == 0);
+            }
+            {
+                // simulate small network delay, so that receiver will calculate
+                // non-zero latency
+                core::sleep_for(core::ClockMonotonic, core::Nanosecond * 100);
             }
             { // read encoded packets from encoder and write to decoder
                 uint8_t bytes[test::MaxBufSize] = {};
@@ -164,6 +180,22 @@ TEST_GROUP(sender_encoder_receiver_decoder) {
                     }
                 }
             }
+            { // check metrics
+                roc_session_metrics sess_metrics;
+                memset(&sess_metrics, 0, sizeof(sess_metrics));
+                roc_receiver_metrics recv_metrics;
+                memset(&recv_metrics, 0, sizeof(recv_metrics));
+                recv_metrics.sessions = &sess_metrics;
+                recv_metrics.sessions_size = 1;
+
+                CHECK(roc_receiver_decoder_query(decoder, &recv_metrics) == 0);
+
+                UNSIGNED_LONGS_EQUAL(1, recv_metrics.num_sessions);
+                UNSIGNED_LONGS_EQUAL(1, recv_metrics.sessions_size);
+
+                max_niq_latency = std::max(max_niq_latency, sess_metrics.niq_latency);
+                max_e2e_latency = std::max(max_e2e_latency, sess_metrics.e2e_latency);
+            }
         }
 
         // check we have received enough good samples
@@ -172,6 +204,15 @@ TEST_GROUP(sender_encoder_receiver_decoder) {
         // check that there were packets on all active interfaces
         for (size_t n_if = 0; n_if < num_ifaces; n_if++) {
             CHECK(iface_packets[n_if] > 0);
+        }
+
+        // check metrics
+        CHECK(max_niq_latency > 0);
+
+        if (has_control) {
+            CHECK(max_e2e_latency > 0);
+        } else {
+            CHECK(max_e2e_latency == 0);
         }
     }
 };
