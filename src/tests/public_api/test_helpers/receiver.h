@@ -17,6 +17,7 @@
 #include "test_helpers/utils.h"
 
 #include "roc_core/array.h"
+#include "roc_core/atomic.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
 
@@ -33,11 +34,14 @@ public:
              roc_receiver_config& config,
              float sample_step,
              size_t num_chans,
-             size_t frame_size)
+             size_t frame_size,
+             unsigned flags)
         : recv_(NULL)
         , sample_step_(sample_step)
         , num_chans_(num_chans)
-        , frame_samples_(frame_size * num_chans) {
+        , frame_samples_(frame_size * num_chans)
+        , flags_(flags)
+        , stopped_(false) {
         CHECK(roc_receiver_open(context.get(), &config, &recv_) == 0);
         CHECK(recv_);
     }
@@ -55,23 +59,29 @@ public:
             }
         }
 
+        for (size_t slot = 0; slot < control_endp_.size(); slot++) {
+            if (control_endp_[slot]) {
+                CHECK(roc_endpoint_deallocate(control_endp_[slot]) == 0);
+            }
+        }
+
         CHECK(roc_receiver_close(recv_) == 0);
     }
 
-    void bind(unsigned flags, roc_slot slot = ROC_SLOT_DEFAULT) {
+    void bind(roc_slot slot = ROC_SLOT_DEFAULT) {
         if (source_endp_.size() < slot + 1) {
-            if (!source_endp_.resize(slot + 1)) {
-                FAIL("resize failed");
-            }
+            CHECK(source_endp_.resize(slot + 1));
         }
 
         if (repair_endp_.size() < slot + 1) {
-            if (!repair_endp_.resize(slot + 1)) {
-                FAIL("resize failed");
-            }
+            CHECK(repair_endp_.resize(slot + 1));
         }
 
-        if (flags & FlagRS8M) {
+        if (control_endp_.size() < slot + 1) {
+            CHECK(control_endp_.resize(slot + 1));
+        }
+
+        if (flags_ & FlagRS8M) {
             CHECK(roc_endpoint_allocate(&source_endp_[slot]) == 0);
             CHECK(roc_endpoint_set_uri(source_endp_[slot], "rtp+rs8m://127.0.0.1:0")
                   == 0);
@@ -85,7 +95,7 @@ public:
             CHECK(roc_receiver_bind(recv_, slot, ROC_INTERFACE_AUDIO_REPAIR,
                                     repair_endp_[slot])
                   == 0);
-        } else if (flags & FlagLDPC) {
+        } else if (flags_ & FlagLDPC) {
             CHECK(roc_endpoint_allocate(&source_endp_[slot]) == 0);
             CHECK(roc_endpoint_set_uri(source_endp_[slot], "rtp+ldpc://127.0.0.1:0")
                   == 0);
@@ -107,6 +117,15 @@ public:
                                     source_endp_[slot])
                   == 0);
         }
+
+        if (flags_ & FlagRTCP) {
+            CHECK(roc_endpoint_allocate(&control_endp_[slot]) == 0);
+            CHECK(roc_endpoint_set_uri(control_endp_[slot], "rtcp://127.0.0.1:0") == 0);
+
+            CHECK(roc_receiver_bind(recv_, slot, ROC_INTERFACE_AUDIO_CONTROL,
+                                    control_endp_[slot])
+                  == 0);
+        }
     }
 
     const roc_endpoint* source_endpoint(roc_slot slot = ROC_SLOT_DEFAULT) const {
@@ -117,6 +136,10 @@ public:
         return repair_endp_[slot];
     }
 
+    const roc_endpoint* control_endpoint(roc_slot slot = ROC_SLOT_DEFAULT) const {
+        return control_endp_[slot];
+    }
+
     void receive() {
         float rx_buff[MaxBufSize];
 
@@ -124,13 +147,20 @@ public:
         size_t frame_num = 0;
 
         bool wait_for_signal = true;
-        size_t identical_sample_num = 0;
+        size_t good_sample_num = 0;
 
         size_t nb_success = PacketSamples * SourcePackets * 4;
 
         float prev_sample = sample_step_;
 
-        while (identical_sample_num < nb_success) {
+        for (;;) {
+            if ((flags_ & FlagInfinite) == 0 && good_sample_num >= nb_success) {
+                break;
+            }
+            if (stopped_) {
+                break;
+            }
+
             frame_num++;
 
             roc_frame frame;
@@ -156,36 +186,45 @@ public:
             }
 
             if (!wait_for_signal) {
-                for (; ns < frame_samples_; ns += num_chans_) {
-                    float curr_sample = 0;
-
-                    for (size_t nc = 0; nc < num_chans_; ++nc) {
-                        curr_sample = rx_buff[ns + nc];
-
-                        if (is_zero_(increment_sample_value(prev_sample, sample_step_)
-                                     - curr_sample)) {
-                            identical_sample_num++;
-                        } else if (!is_zero_(prev_sample)
-                                   && !is_zero_(curr_sample)) { // Allows stream shifts
-                            char sbuff[256];
-                            snprintf(
-                                sbuff, sizeof(sbuff),
-                                "failed comparing samples:\n\n"
-                                "sample_num: %lu identical_sample_num=%lu\n"
-                                "frame_num: %lu, frame_off=%lu chan=%lu\n"
-                                "original: %f, received: %f\n",
-                                (unsigned long)sample_num,
-                                (unsigned long)identical_sample_num,
-                                (unsigned long)frame_num, (unsigned long)ns,
-                                (unsigned long)nc,
-                                (double)increment_sample_value(prev_sample, sample_step_),
-                                (double)curr_sample);
-                            roc_panic("%s", sbuff);
+                if (flags_ & FlagNonStrict) {
+                    for (; ns < frame_samples_; ns++) {
+                        if (!is_zero_(rx_buff[ns])) {
+                            good_sample_num++;
                         }
                     }
+                } else {
+                    for (; ns < frame_samples_; ns += num_chans_) {
+                        float curr_sample = 0;
 
-                    prev_sample = curr_sample;
-                    sample_num++;
+                        for (size_t nc = 0; nc < num_chans_; ++nc) {
+                            curr_sample = rx_buff[ns + nc];
+
+                            if (is_zero_(increment_sample_value(prev_sample, sample_step_)
+                                         - curr_sample)) {
+                                good_sample_num++;
+                            } else if (!is_zero_(prev_sample)
+                                       && !is_zero_(curr_sample)) { // Allows stream
+                                                                    // shifts
+                                char sbuff[256];
+                                snprintf(sbuff, sizeof(sbuff),
+                                         "failed comparing samples:\n\n"
+                                         "sample_num: %lu good_sample_num=%lu\n"
+                                         "frame_num: %lu, frame_off=%lu chan=%lu\n"
+                                         "original: %f, received: %f\n",
+                                         (unsigned long)sample_num,
+                                         (unsigned long)good_sample_num,
+                                         (unsigned long)frame_num, (unsigned long)ns,
+                                         (unsigned long)nc,
+                                         (double)increment_sample_value(prev_sample,
+                                                                        sample_step_),
+                                         (double)curr_sample);
+                                roc_panic("%s", sbuff);
+                            }
+                        }
+
+                        prev_sample = curr_sample;
+                        sample_num++;
+                    }
                 }
             }
         }
@@ -222,6 +261,25 @@ public:
         }
     }
 
+    const roc_receiver_metrics& query(size_t requested_sessions,
+                                      roc_slot slot = ROC_SLOT_DEFAULT) {
+        memset(&recv_metrics_, 0, sizeof(recv_metrics_));
+
+        if (requested_sessions != 0) {
+            CHECK(sess_metrics_.resize(requested_sessions));
+            recv_metrics_.sessions = sess_metrics_.data();
+            recv_metrics_.sessions_size = requested_sessions;
+        }
+
+        CHECK(roc_receiver_query(recv_, slot, &recv_metrics_) == 0);
+
+        return recv_metrics_;
+    }
+
+    void stop() {
+        stopped_ = true;
+    }
+
 private:
     virtual void run() {
         receive();
@@ -235,10 +293,17 @@ private:
 
     core::Array<roc_endpoint*, 16> source_endp_;
     core::Array<roc_endpoint*, 16> repair_endp_;
+    core::Array<roc_endpoint*, 16> control_endp_;
+
+    core::Array<roc_session_metrics, 16> sess_metrics_;
+    roc_receiver_metrics recv_metrics_;
 
     const float sample_step_;
     const size_t num_chans_;
     const size_t frame_samples_;
+    const unsigned flags_;
+
+    core::Atomic<int> stopped_;
 };
 
 } // namespace test

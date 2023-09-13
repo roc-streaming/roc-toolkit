@@ -106,6 +106,20 @@ TEST(receiver_decoder, bad_args) {
 
         LONGS_EQUAL(0, roc_receiver_decoder_close(decoder));
     }
+    { // query
+        roc_receiver_decoder* decoder = NULL;
+        CHECK(roc_receiver_decoder_open(context, &receiver_config, &decoder) == 0);
+
+        roc_receiver_metrics metrics;
+        memset(&metrics, 0, sizeof(metrics));
+
+        CHECK(roc_receiver_decoder_query(NULL, &metrics) == -1);
+        CHECK(roc_receiver_decoder_query(decoder, NULL) == -1);
+
+        CHECK(roc_receiver_decoder_query(decoder, &metrics) == 0);
+
+        LONGS_EQUAL(0, roc_receiver_decoder_close(decoder));
+    }
 }
 
 TEST(receiver_decoder, push_args) {

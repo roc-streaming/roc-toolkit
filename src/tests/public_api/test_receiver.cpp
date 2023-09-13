@@ -396,6 +396,30 @@ TEST(receiver, bad_args) {
 
         LONGS_EQUAL(0, roc_receiver_close(receiver));
     }
+    { // query
+        roc_receiver* receiver = NULL;
+        CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
+
+        roc_endpoint* source_endpoint = NULL;
+        CHECK(roc_endpoint_allocate(&source_endpoint) == 0);
+        CHECK(roc_endpoint_set_uri(source_endpoint, "rtp://127.0.0.1:0") == 0);
+
+        CHECK(roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
+                                source_endpoint)
+              == 0);
+
+        roc_receiver_metrics metrics;
+        memset(&metrics, 0, sizeof(metrics));
+
+        CHECK(roc_receiver_query(NULL, ROC_SLOT_DEFAULT, &metrics) == -1);
+        CHECK(roc_receiver_query(receiver, 999, &metrics) == -1);
+        CHECK(roc_receiver_query(receiver, ROC_SLOT_DEFAULT, NULL) == -1);
+
+        CHECK(roc_receiver_query(receiver, ROC_SLOT_DEFAULT, &metrics) == 0);
+
+        CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
+        LONGS_EQUAL(0, roc_receiver_close(receiver));
+    }
     { // unlink
         roc_receiver* receiver = NULL;
         CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
