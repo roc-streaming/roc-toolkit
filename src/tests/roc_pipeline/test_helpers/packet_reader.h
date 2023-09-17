@@ -69,9 +69,9 @@ public:
         abs_offset_ += samples_per_packet;
     }
 
-    void read_nonzero_packet(size_t samples_per_packet,
-                             const audio::SampleSpec& sample_spec,
-                             core::nanoseconds_t base_capture_ts = -1) {
+    packet::PacketPtr read_nonzero_packet(size_t samples_per_packet,
+                                          const audio::SampleSpec& sample_spec,
+                                          core::nanoseconds_t base_capture_ts = -1) {
         packet::PacketPtr pp = read_packet_();
 
         audio::sample_t samples[MaxSamples] = {};
@@ -86,6 +86,8 @@ public:
         }
         CHECK(non_zero > 0);
         abs_offset_ += samples_per_packet;
+
+        return pp;
     }
 
     void read_zero_packet(size_t samples_per_packet,
@@ -165,9 +167,9 @@ private:
                           core::nanoseconds_t base_ts) {
         CHECK(pkt.rtp());
 
-        if (base_ts < 0) {
+        if (base_ts == 0) {
             LONGS_EQUAL(0, pkt.rtp()->capture_timestamp);
-        } else {
+        } else if (base_ts > 0) {
             const core::nanoseconds_t capture_ts =
                 base_ts + sample_spec.samples_per_chan_2_ns(abs_offset_);
 

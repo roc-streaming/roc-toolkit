@@ -133,7 +133,7 @@ TEST(sender_sink, write) {
                                      PayloadType_Ch2, dst_addr);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
-        packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
+        packet_reader.read_packet(SamplesPerPacket, packet_sample_spec, 0);
     }
 
     CHECK(!queue.read());
@@ -174,7 +174,7 @@ TEST(sender_sink, frame_size_small) {
                                      PayloadType_Ch2, dst_addr);
 
     for (size_t np = 0; np < ManySmallFrames / SmallFramesPerPacket; np++) {
-        packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
+        packet_reader.read_packet(SamplesPerPacket, packet_sample_spec, 0);
     }
 
     CHECK(!queue.read());
@@ -215,7 +215,7 @@ TEST(sender_sink, frame_size_large) {
                                      PayloadType_Ch2, dst_addr);
 
     for (size_t np = 0; np < ManyLargeFrames * PacketsPerLargeFrame; np++) {
-        packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
+        packet_reader.read_packet(SamplesPerPacket, packet_sample_spec, 0);
     }
 
     CHECK(!queue.read());
@@ -250,7 +250,7 @@ TEST(sender_sink, channel_mapping_stereo_to_mono) {
                                      PayloadType_Ch1, dst_addr);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
-        packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
+        packet_reader.read_packet(SamplesPerPacket, packet_sample_spec, 0);
     }
 
     CHECK(!queue.read());
@@ -285,7 +285,7 @@ TEST(sender_sink, channel_mapping_mono_to_stereo) {
                                      PayloadType_Ch2, dst_addr);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
-        packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
+        packet_reader.read_packet(SamplesPerPacket, packet_sample_spec, 0);
     }
 
     CHECK(!queue.read());
@@ -323,7 +323,7 @@ TEST(sender_sink, sample_rate_mapping) {
                                      PayloadType_Ch2, dst_addr);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket - 5; np++) {
-        packet_reader.read_nonzero_packet(SamplesPerPacket, packet_sample_spec);
+        packet_reader.read_nonzero_packet(SamplesPerPacket, packet_sample_spec, 0);
     }
 }
 
@@ -364,13 +364,15 @@ TEST(sender_sink, timestamp_mapping) {
     CHECK(!queue.read());
 }
 
-IGNORE_TEST(sender_sink, timestamp_mapping_remixing) {
+TEST(sender_sink, timestamp_mapping_remixing_packet_reader) {
     enum {
         InputRate = 48000,
         PacketRate = 44100,
         InputChans = Chans_Stereo,
         PacketChans = Chans_Mono
     };
+    const core::nanoseconds_t eps_resampled =
+        core::nanoseconds_t(1.f / PacketRate * core::Second);
 
     init(InputRate, InputChans, PacketRate, PacketChans);
 
@@ -402,9 +404,19 @@ IGNORE_TEST(sender_sink, timestamp_mapping_remixing) {
     test::PacketReader packet_reader(arena, queue, rtp_parser, format_map, packet_factory,
                                      PayloadType_Ch1, dst_addr);
 
+    core::nanoseconds_t cts = 0;
     for (size_t np = 0; np < ManyFrames / FramesPerPacket - 5; np++) {
-        packet_reader.read_nonzero_packet(SamplesPerPacket, packet_sample_spec,
-                                          unix_base);
+        packet::PacketPtr pp =
+            packet_reader.read_nonzero_packet(SamplesPerPacket, packet_sample_spec, -1);
+
+        if (np == 0) {
+            cts = pp->rtp()->capture_timestamp;
+            CHECK(cts >= unix_base);
+        } else {
+            test::expect_capture_timestamp(cts, pp->rtp()->capture_timestamp,
+                                           eps_resampled);
+        }
+        cts += packet_sample_spec.samples_per_chan_2_ns(pp->rtp()->duration);
     }
 }
 
