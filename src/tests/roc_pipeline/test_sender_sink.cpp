@@ -377,13 +377,15 @@ TEST(sender_sink, timestamp_mapping) {
     packet_reader.read_eof();
 }
 
-IGNORE_TEST(sender_sink, timestamp_mapping_remixing) {
+TEST(sender_sink, timestamp_mapping_remixing_packet_reader) {
     enum {
         InputRate = 48000,
         PacketRate = 44100,
         InputChans = Chans_Stereo,
         PacketChans = Chans_Mono
     };
+    const core::nanoseconds_t eps_resampled =
+        core::nanoseconds_t(1.f / PacketRate * core::Second);
 
     init(InputRate, InputChans, PacketRate, PacketChans);
 
@@ -415,9 +417,20 @@ IGNORE_TEST(sender_sink, timestamp_mapping_remixing) {
     test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory, dst_addr,
                                      PayloadType_Ch1);
 
+    core::nanoseconds_t cts = 0;
     for (size_t np = 0; np < ManyFrames / FramesPerPacket - 5; np++) {
-        packet_reader.read_nonzero_packet(SamplesPerPacket, packet_sample_spec,
-                                          unix_base);
+        packet::PacketPtr pp;
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(pp));
+        CHECK(pp);
+
+        if (np == 0) {
+            cts = pp->rtp()->capture_timestamp;
+            CHECK(cts >= unix_base);
+        } else {
+            test::expect_capture_timestamp(cts, pp->rtp()->capture_timestamp,
+                                           eps_resampled);
+        }
+        cts += packet_sample_spec.samples_per_chan_2_ns(pp->rtp()->duration);
     }
 }
 
