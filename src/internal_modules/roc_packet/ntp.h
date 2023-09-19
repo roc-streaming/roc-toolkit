@@ -18,17 +18,21 @@ namespace roc {
 namespace packet {
 
 //! NTP timestamp.
-//! @remarks
-//!  Highest 32 bits - seconds since NTP epoch, lowest 32 bits - fractions of a second.
-//!  NTP epoch starts from January 1, 1900.
+//!
+//! Format:
+//!  - highest 32 bits - seconds since NTP epoch
+//!  - lowest 32 bits - fractions of a second
+//!
+//! Epoch:
+//!  - for dates in years 1968-2036, epoch starts from 1 Jan 1900 00:00:00
+//!  - for dates in years 2036-2104, epoch starts from 7 Feb 2036 06:28:16
+//!
+//! See RFC 5905 and RFC 2030.
 typedef uint64_t ntp_timestamp_t;
-
-//! Compares a and b if they close enough.
-bool ntp_equal_delta(ntp_timestamp_t a, ntp_timestamp_t b, ntp_timestamp_t delta);
 
 //! Convert Unix absolute time to NTP absolute time.
 //! @remarks
-//!  @p unix_time defines nanoseconds since Unix epoch (should be positive)
+//!  @p unix_time defines nanoseconds since Unix epoch (should belong to years 1968-2104).
 ntp_timestamp_t unix_2_ntp(core::nanoseconds_t unix_time);
 
 //! Convert NTP absolute time to Unix absolute time.
