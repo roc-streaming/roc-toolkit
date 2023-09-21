@@ -1,4 +1,4 @@
-name: "create packages"
+name: "release"
 
 on:
   push:
@@ -8,14 +8,40 @@ on:
   workflow_dispatch:
 
 jobs:
-  package:
-    if: startsWith(github.ref, 'refs/tags/v')
+  checks:
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
 
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - script: linux-checks/check-version
+
+    name: ${{ matrix.script }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Run check
+        run: |
+          scripts/ci_checks/${{ matrix.script }}.sh
+
+  package:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [checks]
+
+    runs-on: ubuntu-latest
+
     steps:
     - name: Checkout
       uses: actions/checkout@v3
       with:
+        submodules: recursive
         fetch-depth: 0
 
     - name: Detect version
