@@ -28,6 +28,10 @@ namespace packet {
 //!  - for dates in years 2036-2104, epoch starts from 7 Feb 2036 06:28:16
 //!
 //! See RFC 5905 and RFC 2030.
+//!
+//! See also:
+//!  - https://tickelton.gitlab.io/articles/ntp-timestamps/
+//!  - https://www.eecis.udel.edu/~mills/y2k.html
 typedef uint64_t ntp_timestamp_t;
 
 //! Convert Unix absolute time to NTP absolute time.
