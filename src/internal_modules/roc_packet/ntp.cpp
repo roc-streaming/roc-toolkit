@@ -26,6 +26,15 @@ static uint64_t UnixEpoch = uint64_t(70 * 365 + 17) * (24 * 3600);
 static uint64_t Era1 =
     uint64_t(66 * 365 + 16 + 37) * (24 * 3600) + (6 * 3600) + (28 * 60) + 16;
 
+uint64_t bits_pack(uint32_t hi, uint32_t lo) {
+    return ((uint64_t)hi << 32) | (uint64_t)lo;
+}
+
+void bits_unpack(uint64_t value, uint32_t& hi, uint32_t& lo) {
+    hi = uint32_t((value & 0xffffffff00000000ull) >> 32);
+    lo = uint32_t(value & 0xffffffffull);
+}
+
 } // namespace
 
 ntp_timestamp_t unix_2_ntp(core::nanoseconds_t unix_time) {
@@ -62,23 +71,20 @@ core::nanoseconds_t ntp_2_unix(ntp_timestamp_t ntp_time) {
 ntp_timestamp_t nanoseconds_2_ntp(core::nanoseconds_t ns_delta) {
     roc_panic_if_msg(ns_delta < 0, "ntp: can not convert negative delta to ntp");
 
-    ntp_timestamp_t res_h = 0;
-    ntp_timestamp_t res_l = 0;
-    const uint64_t seconds = (uint64_t)(ns_delta / core::Second);
-    res_h |= seconds << 32;
-    res_l |= ((((uint64_t)ns_delta - seconds * core::Second) << 32) / (core::Second))
-        & (((uint64_t)1 << 32) - 1);
+    const uint64_t seconds = (uint64_t)ns_delta / core::Second;
+    const uint64_t nans = (uint64_t)ns_delta - (seconds * core::Second);
+    const uint64_t fraction = ((uint64_t)nans << 32) / core::Second;
 
-    return res_h + res_l;
+    return bits_pack((uint32_t)seconds, (uint32_t)fraction);
 }
 
 core::nanoseconds_t ntp_2_nanoseconds(ntp_timestamp_t ntp_delta) {
-    core::nanoseconds_t seconds;
-    core::nanoseconds_t nans;
+    uint32_t hi = 0;
+    uint32_t lo = 0;
+    bits_unpack(ntp_delta, hi, lo);
 
-    seconds = (core::nanoseconds_t)(ntp_delta >> 32);
-    nans = (core::nanoseconds_t)((ntp_delta & (((uint64_t)1 << 32) - 1)) * core::Second);
-    nans >>= 32;
+    const core::nanoseconds_t seconds = (core::nanoseconds_t)hi;
+    const core::nanoseconds_t nans = (core::nanoseconds_t)(lo * core::Second) >> 32;
 
     return seconds * core::Second + nans;
 }
