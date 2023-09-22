@@ -74,3 +74,7 @@ Contributors
 * Paras Raba <parasgadhvi12345@gmail.com>
 * Wataru Ito <https://github.com/Wataru>
 * DieMass <diemass1908@gmail.com>
+* Paras Raba <parasgadhvi12345@gmail.com>
+* G41797 <g41797@gmail.com>
+* Geoffrey Tisserand <https://github.com/geoffrey>
+* Poulastha Mukherjee <poulasthamax01@gmail.com>
