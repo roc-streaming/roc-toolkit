@@ -8,16 +8,28 @@ Coding guidelines
 Language and libraries
 ======================
 
-* The codebase is mostly written in "C with classes", a simple and unsophisticated subset of C++.
-* We use C++98.
-* We don't use exceptions.
-* We mostly avoid templates.
-* We avoid inheritance, except "interface" inheritance.
-* We avoid operators, overloading, and default arguments.
-* We avoid using the preprocessor.
-* We don't use STL (the algorithms-and-containers part of the C++ standard library).
-* We don't use third-party utility libraries like Boost.
-* We maintain our own minimal utility library (roc_core) designed to be very lightweight and allowing fine-grained memory management.
+The usage of C++ in this project is quite specific. The codebase is primarily written in what we refer to as "C with classes", a simplified subset of C++ that intentionally omits several of its features:
+
+* No C++ features beyond C++98
+* No exceptions
+* No STL (the algorithms-and-containers part of the standard library)
+* Custom "core" library (roc_core)
+* Templates are mostly avoided (except utility classes in core)
+* Inheritance is primarily used only for "interface inheritance"
+* Overloading, operators, default arguments are avoided
+
+The roc_core library makes several essential design choices that differ significantly from STL:
+
+* it is small and lightweight
+* heavy operations, like deep copying or allocations, are never implicit
+* most operations include safety checks and will trigger a panic with stacktrace on incorrect usage
+* most containers are based on intrusive data structures
+* encourages fine-grained memory management based on arenas and pools
+* provides building blocks for lock-free programming
+
+These design choices render Roc codebase pretty unique and distinguish it from both plain C and modern C++.
+
+This approach may not be suitable for every project, but it appears to have been effective in the case of Roc due to its low-level, real-time nature, and at the same time the considerable size of its codebase.
 
 Portability
 ===========
@@ -33,7 +45,7 @@ Portability
 Best practices
 ==============
 
-* The code should compile without warnings (use ``--enable-werror`` SCons option).
+* The code should compile without warnings. Use ``--enable-werror`` :doc:`option </building/scons_options>` to turn warnings into errors.
 
 .. raw:: html
 
@@ -57,7 +69,7 @@ Best practices
 
     <span></span>
 
-* Use const when it is useful.
+* Use ``const`` when it's useful.
 
 .. raw:: html
 
@@ -81,13 +93,13 @@ Best practices
 
     <span></span>
 
-* Log (using ``roc_log``) important events and information needed to understand why an error occurred.
+* Carefully log (using ``roc_log``) all important events and information needed to understand why an error occurred.
 
 .. raw:: html
 
     <span></span>
 
-* Panic (using ``roc_panic``) when a contract or an invariant is broken. A panic is always preferred over a crash. However, remember that panics are only for bugs in Roc itself. Never panic on invalid or unexpected data from the outside world.
+* Panic (using ``roc_panic``) when a contract or an invariant is broken. A panic is always preferred over a crash or undefined behavior. However, remember that panics are only for bugs in Roc itself. Never panic on invalid or unexpected data from the outside world.
 
 Coding style
 ============
@@ -104,7 +116,7 @@ Coding style
 
     <span></span>
 
-* Headers, classes, public members, and free functions should be documented using Doxygen. If Doxygen is installed, it is invoked during build and warns about undocumented items.
+* Headers, classes, public members, and free functions should be documented using Doxygen. Use ``--enable-doxygen`` :doc:`option </building/scons_options>` to enable warnings about undocumented elements.
 
 .. raw:: html
 

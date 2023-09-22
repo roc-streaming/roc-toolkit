@@ -40,7 +40,3 @@ You can open the chat right in your browser using web links above, or you can `i
 .. note::
 
    You need to setup Matrix account to be able to join the room.
-
-.. note::
-
-   The formerly used IRC channel ``#rocstreaming`` at freenode is abandoned. Archives are `here <https://freenode.logbot.info/rocstreaming/>`_.

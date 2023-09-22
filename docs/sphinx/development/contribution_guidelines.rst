@@ -5,79 +5,66 @@ Contribution guidelines
    :local:
    :depth: 1
 
+Community
+=========
+
+Welcome to join our Matrix chats and mailing list!
+
+Please refer :doc:`this page </about_project/contacts>` for more details.
+
 How you can help
 ================
 
-If you would like to help the project, you can:
+* **Contributing code**
 
-* **help with testing**
+  We are always looking for new contributors. Please refer to the section below for details on the onboarding process.
 
-  Try to use Roc command-line tools or PulseAudio modules and report bugs or suggest improvements.
+* **Testing**
 
-* **help with research**
+  We'd appreciate help in testing new releases on your hardware and letting us know if you find any issues. We highly depend on feedback from users to identify bugs and receive suggestions for new features.
 
-  Discover how does Roc perform on different conditions and configurations and share the results. What latency and service quality does it provide in different cases, what parameter combinations are optimal, and so on.
+* **Writing tutorials**
 
-* **help with porting**
+  If you've built Roc for a niche OS or hardware, or tweaked settings to make it work better for your needs, we'd love it if you share your experience with the community. If you've written a guide, you can send it to us to be added to the :doc:`publications page </about_project/publications>`.
 
-  We'd be happy to meet developers who can help with maintaining ports for non-Linux \*nix systems, macOS, Android, Windows, and other platforms.
+Becoming a contributor
+======================
 
-* **contribute code**
+First of all, thank you for your interest! We welcome and appreciate all help. Many important features were submitted by :doc:`numerous contributors </about_project/authors>`, and we are really grateful for that.
 
-  Roc has quite a long and pretty interesting roadmap and a backlog with issues of varying difficulty. Read the documentation, choose a task, and submit pull requests!
+The guide bellow will help you to prepare your first patch.
 
-Choosing a task
-===============
+* **Step 1: Checkout and build project**
 
-Want to contribute code? Great! Here is how you can choose a task.
+  Build instructions can be found here:
 
-.. note::
+  * :doc:`/building/user_cookbook`
+  * :doc:`/building/developer_cookbook`
 
-   It is highly recommended to leave a comment on GitHub or throw a mail to the mailing list before starting working on an issue to ensure that nobody is already working on it.
+* **Step 2: Get introduced to project internals**
 
-* **"help wanted" tag**
+  Take a look at documentation of :doc:`project internals </internals>`.
 
-  Look for issues marked with the `"help wanted" <https://github.com/roc-streaming/roc-toolkit/labels/help%20wanted>`_ tag. This tag means that this is an important and awaited task but we have no human resources for it yet, and it is still in the backlog.
+  There is also Doxygen-generated documentation for `internal modules <https://roc-streaming.org/toolkit/doxygen/>`_.
 
-* **"easy hacks" tag**
+* **Step 3: Learn coding guidelines**
 
-  Look for issues that are additionally marked with the `"easy hacks" <https://github.com/roc-streaming/roc-toolkit/labels/easy%20hacks>`_ tag. This tag means that the solution is expected to be straightforward even if you are new to the project.
+  Please refer to this page: :doc:`/development/coding_guidelines`.
 
-* **backlog column**
+* **Step 4: Choose a task**
 
-  Look for issues in the "Backlog" column in the `project board <https://github.com/roc-streaming/roc-toolkit/projects/2>`_. Issues that are *not* marked as "help wanted" are probably not very good for you if you're new to the project, but you can take your chances if you would like to.
+  Tasks needing assistance are marked with `"help wanted" <https://github.com/roc-streaming/roc-toolkit/labels/help%20wanted>`_ label. These tasks usually come with detailed explanations and are suitable for newcomers.
 
-* **project roadmap**
+  Some of these tasks are also labeled as `"easy hacks" <https://github.com/roc-streaming/roc-toolkit/labels/easy%20hacks>`_. It indicates that the solution is expected to be pretty straightforward, making them a good entry point to the project.
 
-  Look for unimplemented features in the long-term :doc:`project roadmap </development/roadmap>`. If there is no issue for a feature yet, it means that nobody had thought through it yet. You are suggested to open an issue for discussion in this case.
+  Extra labels make it easier to find various kinds of problems, like "tests," "refactoring," "algorithms," "networking," and more.
 
-* **suggest your own**
+  When you pick a task, please leave a comment to let others know so that we don't end up with multiple people doing the same thing. If a task hasn't been assigned, it usually means no one is currently working on it.
 
-  Of course, you're also welcome to open an issue and suggest a feature that is not in our backlog and roadmap.
+* **Step 5: Create pull request!**
 
-Working on a patch
-==================
+  Please remember that pull requests should be always rebased on ``develop`` branch and should be targeted to it, as :doc:`described here </development/version_control>`.
 
-If you have chosen a task and are ready to work on it, the following documentation is your friend:
+  Before submitting PR, don't forget to run code formatting, as described in coding guidelines.
 
-* **project internals**
-
-  See :doc:`/internals` section for a high-level overview.
-
-  See also more low-level `Doxygen-generated documentation <https://roc-streaming.org/toolkit/doxygen/>`_.
-
-* **coding guidelines**
-
-  Please take a look at the :doc:`/development/coding_guidelines` page. The guidelines are not hard to follow but some of them a specific.
-
-* **version control**
-
-  Please also take a look at the :doc:`/development/version_control` page for details on commits, branches, and pull requests.
-
-* **asking questions**
-
-  Feel free to ask questions on our mailing list or Matrix chat. See :doc:`/about_project/contacts` page for details.
-
-* **getting credits**
-
-  Feel free to add yourself to the :doc:`/about_project/authors` page when submitting a patch. It is updated from git log from time to time.
+  Please ensure that all CI checks pass on your PR and fix them if needed.
