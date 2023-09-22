@@ -75,9 +75,6 @@ roc_frame
 
    #include <roc/frame.h>
 
-.. doxygentypedef:: roc_frame
-   :outline:
-
 .. doxygenstruct:: roc_frame
    :members:
 
@@ -125,55 +122,29 @@ roc_config
 
 .. doxygenvariable:: ROC_SLOT_DEFAULT
 
-.. doxygentypedef:: roc_interface
-   :outline:
-
 .. doxygenenum:: roc_interface
-
-.. doxygentypedef:: roc_protocol
-   :outline:
 
 .. doxygenenum:: roc_protocol
 
-.. doxygentypedef:: roc_fec_encoding
-   :outline:
+.. doxygenenum:: roc_packet_encoding
 
 .. doxygenenum:: roc_fec_encoding
 
-.. doxygentypedef:: roc_packet_encoding
-   :outline:
-
-.. doxygenenum:: roc_packet_encoding
-
-.. doxygentypedef:: roc_frame_encoding
-   :outline:
+.. doxygenenum:: roc_channel_set
 
 .. doxygenenum:: roc_frame_encoding
 
-.. doxygentypedef:: roc_channel_set
-   :outline:
+.. doxygenenum:: roc_clock_source
 
-.. doxygenenum:: roc_channel_set
-
-.. doxygentypedef:: roc_resampler_profile
-   :outline:
+.. doxygenenum:: roc_resampler_backend
 
 .. doxygenenum:: roc_resampler_profile
-
-.. doxygentypedef:: roc_context_config
-   :outline:
 
 .. doxygenstruct:: roc_context_config
    :members:
 
-.. doxygentypedef:: roc_sender_config
-   :outline:
-
 .. doxygenstruct:: roc_sender_config
    :members:
-
-.. doxygentypedef:: roc_receiver_config
-   :outline:
 
 .. doxygenstruct:: roc_receiver_config
    :members:
@@ -185,13 +156,7 @@ roc_log
 
    #include <roc/log.h>
 
-.. doxygentypedef:: roc_log_level
-   :outline:
-
 .. doxygenenum:: roc_log_level
-
-.. doxygentypedef:: roc_log_message
-   :outline:
 
 .. doxygenstruct:: roc_log_message
    :members:
@@ -214,9 +179,6 @@ roc_version
 .. doxygendefine:: ROC_VERSION_MINOR
 
 .. doxygendefine:: ROC_VERSION_PATCH
-
-.. doxygentypedef:: roc_version
-   :outline:
 
 .. doxygenstruct:: roc_version
    :members:
