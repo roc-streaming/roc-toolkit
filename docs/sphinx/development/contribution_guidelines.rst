@@ -17,15 +17,15 @@ How you can help
 
 * **Contributing code**
 
-  We are always looking for new contributors. Please refer to the section below for details on the onboarding process.
+  We are always happy to meet new people in the project. Please refer to the section below for details on the onboarding process.
 
 * **Testing**
 
-  We'd appreciate help in testing new releases on your hardware and letting us know if you find any issues. We highly depend on feedback from users to identify bugs and receive suggestions for new features.
+  We also appreciate help in testing new releases. We highly depend on feedback from users to identify bugs and receive suggestions for new features.
 
 * **Writing tutorials**
 
-  If you've built Roc for a niche OS or hardware, or tweaked settings to make it work better for your needs, we'd love it if you share your experience with the community. If you've written a guide, you can send it to us to be added to the :doc:`publications page </about_project/publications>`.
+  If you've built Roc for a niche OS or hardware, or tweaked settings to make it work better for your needs, we'd love if you share your experience with the community. If you wrote a guide, you can send it to us to be added to the :doc:`publications page </about_project/publications>`.
 
 Becoming a contributor
 ======================
@@ -57,7 +57,7 @@ The guide bellow will help you to prepare your first patch.
 
   Some of these tasks are also labeled as `"easy hacks" <https://github.com/roc-streaming/roc-toolkit/labels/easy%20hacks>`_. It indicates that the solution is expected to be pretty straightforward, making them a good entry point to the project.
 
-  Extra labels make it easier to find various kinds of problems, like "tests," "refactoring," "algorithms," "networking," and more.
+  Extra labels make it easier to find various kinds of problems, like "tests," "refactoring," "algorithms," "networking," and so on.
 
   When you pick a task, please leave a comment to let others know so that we don't end up with multiple people doing the same thing. If a task hasn't been assigned, it usually means no one is currently working on it.
 

@@ -13,7 +13,8 @@ The usage of C++ in this project is quite specific. The codebase is primarily wr
 * No C++ features beyond C++98
 * No exceptions
 * No STL (the algorithms-and-containers part of the standard library)
-* Custom "core" library (roc_core)
+* No general-purpose utility libraries like Boost
+* Lightweight "core" library (roc_core) instead of STL
 * Templates are mostly avoided (except utility classes in core)
 * Inheritance is primarily used only for "interface inheritance"
 * Overloading, operators, default arguments are avoided
@@ -24,10 +25,10 @@ The roc_core library makes several essential design choices that differ signific
 * heavy operations, like deep copying or allocations, are never implicit
 * most operations include safety checks and will trigger a panic with stacktrace on incorrect usage
 * most containers are based on intrusive data structures
-* encourages fine-grained memory management based on arenas and pools
-* provides building blocks for lock-free programming
+* fine-grained memory management based on arenas and pools
+* building blocks for lock-free programming
 
-These design choices render Roc codebase pretty unique and distinguish it from both plain C and modern C++.
+These design choices render Roc codebase pretty different from both plain C and modern C++ code.
 
 This approach may not be suitable for every project, but it appears to have been effective in the case of Roc due to its low-level, real-time nature, and at the same time the considerable size of its codebase.
 
