@@ -14,7 +14,8 @@ Basic features
 - |:white_large_square:| Configurable network encoding
 - |:ballot_box_with_check:| Automatic channel and rate conversions
 - |:white_large_square:| Automatic encoding conversions
-- |:white_large_square:| IDLE state reporting
+- |:ballot_box_with_check:| Metrics reporting
+- |:white_large_square:| State reporting
 
 Advanced features
 =================
