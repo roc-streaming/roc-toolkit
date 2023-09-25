@@ -73,7 +73,7 @@ public:
     }
 
     //! Store value.
-    //! Can NOT be called concurrently, assumes that writes are srialized.
+    //! Can NOT be called concurrently, assumes that writes are serialized.
     //! Is both lock-free and wait-free, i.e. it never waits for sleeping threads
     //! and never spins.
     //! After this call returns, any thread calling wait_load() is guaranteed to
