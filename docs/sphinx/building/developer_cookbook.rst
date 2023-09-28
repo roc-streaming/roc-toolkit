@@ -115,7 +115,7 @@ There are a few macOS-specific build options:
 
 * ``--macos-arch`` - specify macOS target architecture(s), for example ``x86_64`` or ``arm64``.
 
-  You can specify multiple architectures (comma-separated) to produce universal binaries (a.k.a. fat binaries) that contain code for every architecture and can be executed on each of them. Use special architecture ``all`` to enable all supported architectures. 
+  You can specify multiple architectures (comma-separated) to produce universal binaries (a.k.a. fat binaries) that contain code for every architecture and can be executed on each of them. Use special architecture ``all`` to enable all supported architectures.
 
 Building dependencies
 =====================
@@ -222,11 +222,11 @@ Run doxygen manually:
 .. code::
 
    # internal modules (HTML)
-   $ cd src/modules
+   $ cd src/internal_modules
    $ doxygen
 
    # public api (XML for sphinx)
-   $ cd src/lib
+   $ cd src/public_api
    $ doxygen
 
 Cleaning build results
