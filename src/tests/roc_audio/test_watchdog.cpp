@@ -72,8 +72,8 @@ TEST_GROUP(watchdog) {
         return buf;
     }
 
-    WatchdogConfig make_config(packet::timestamp_t no_playback_timeout,
-                               packet::timestamp_t broken_playback_timeout) {
+    WatchdogConfig make_config(packet::stream_timestamp_t no_playback_timeout,
+                               packet::stream_timestamp_t broken_playback_timeout) {
         WatchdogConfig config;
         config.no_playback_timeout = no_playback_timeout * core::Second / SampleRate;
         config.choppy_playback_timeout =
@@ -123,7 +123,7 @@ TEST(watchdog, no_playback_timeout_blank_frames) {
                       make_config(NoPlaybackTimeout, BrokenPlaybackTimeout), arena);
     CHECK(watchdog.is_valid());
 
-    for (packet::timestamp_t n = 0; n < NoPlaybackTimeout / SamplesPerFrame; n++) {
+    for (packet::stream_timestamp_t n = 0; n < NoPlaybackTimeout / SamplesPerFrame; n++) {
         CHECK(watchdog.is_alive());
         check_read(watchdog, true, SamplesPerFrame, 0);
     }
@@ -142,8 +142,8 @@ TEST(watchdog, no_playback_timeout_blank_and_non_blank_frames) {
     CHECK(watchdog.is_valid());
 
     for (unsigned int i = 0; i < 2; i++) {
-        for (packet::timestamp_t n = 0; n < (NoPlaybackTimeout / SamplesPerFrame) - 1;
-             n++) {
+        for (packet::stream_timestamp_t n = 0;
+             n < (NoPlaybackTimeout / SamplesPerFrame) - 1; n++) {
             CHECK(watchdog.is_alive());
             check_read(watchdog, true, SamplesPerFrame, 0);
         }
@@ -161,7 +161,8 @@ TEST(watchdog, no_playback_timeout_disabled) {
                           make_config(NoPlaybackTimeout, BrokenPlaybackTimeout), arena);
         CHECK(watchdog.is_valid());
 
-        for (packet::timestamp_t n = 0; n < NoPlaybackTimeout / SamplesPerFrame; n++) {
+        for (packet::stream_timestamp_t n = 0; n < NoPlaybackTimeout / SamplesPerFrame;
+             n++) {
             CHECK(watchdog.is_alive());
             check_read(watchdog, true, SamplesPerFrame, 0);
         }
@@ -173,7 +174,8 @@ TEST(watchdog, no_playback_timeout_disabled) {
                           arena);
         CHECK(watchdog.is_valid());
 
-        for (packet::timestamp_t n = 0; n < NoPlaybackTimeout / SamplesPerFrame; n++) {
+        for (packet::stream_timestamp_t n = 0; n < NoPlaybackTimeout / SamplesPerFrame;
+             n++) {
             CHECK(watchdog.is_alive());
             check_read(watchdog, true, SamplesPerFrame, 0);
         }
@@ -317,7 +319,7 @@ TEST(watchdog, broken_playback_timeout_constant_drops) {
                       make_config(NoPlaybackTimeout, BrokenPlaybackTimeout), arena);
     CHECK(watchdog.is_valid());
 
-    for (packet::timestamp_t n = 0; n < BreakageWindowsPerTimeout; n++) {
+    for (packet::stream_timestamp_t n = 0; n < BreakageWindowsPerTimeout; n++) {
         CHECK(watchdog.is_alive());
         check_read(watchdog, true, BreakageWindow / 2,
                    Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
@@ -407,8 +409,8 @@ TEST(watchdog, broken_playback_timeout_disabled) {
                           make_config(NoPlaybackTimeout, BrokenPlaybackTimeout), arena);
         CHECK(watchdog.is_valid());
 
-        for (packet::timestamp_t n = 0; n < BrokenPlaybackTimeout / SamplesPerFrame;
-             n++) {
+        for (packet::stream_timestamp_t n = 0;
+             n < BrokenPlaybackTimeout / SamplesPerFrame; n++) {
             CHECK(watchdog.is_alive());
             check_read(watchdog, true, SamplesPerFrame,
                        Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
@@ -421,8 +423,8 @@ TEST(watchdog, broken_playback_timeout_disabled) {
                           arena);
         CHECK(watchdog.is_valid());
 
-        for (packet::timestamp_t n = 0; n < BrokenPlaybackTimeout / SamplesPerFrame;
-             n++) {
+        for (packet::stream_timestamp_t n = 0;
+             n < BrokenPlaybackTimeout / SamplesPerFrame; n++) {
             CHECK(watchdog.is_alive());
             check_read(watchdog, true, SamplesPerFrame,
                        Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);

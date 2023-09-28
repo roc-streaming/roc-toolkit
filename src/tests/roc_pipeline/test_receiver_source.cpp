@@ -905,7 +905,7 @@ TEST(receiver_source, timestamp_overflow) {
                                      packet_factory, byte_buffer_factory, PayloadType_Ch2,
                                      src1, dst1);
 
-    packet_writer.set_timestamp(packet::timestamp_t(-1)
+    packet_writer.set_timestamp(packet::stream_timestamp_t(-1)
                                 - ManyPackets * SamplesPerPacket / 2);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
@@ -1090,7 +1090,7 @@ TEST(receiver_source, timestamp_reorder) {
         packet_writer.set_offset(Latency + size_t(np) * SamplesPerPacket);
 
         packet_writer.set_timestamp(
-            packet::timestamp_t(Latency + size_t(np) * SamplesPerPacket));
+            packet::stream_timestamp_t(Latency + size_t(np) * SamplesPerPacket));
 
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
     }
@@ -1553,7 +1553,7 @@ TEST(receiver_source, timestamp_mapping_no_control_packets) {
                                      packet_factory, byte_buffer_factory, PayloadType_Ch2,
                                      src1, dst1);
 
-    const packet::timestamp_t rtp_base = 1000000;
+    const packet::stream_timestamp_t rtp_base = 1000000;
 
     packet_writer.set_timestamp(rtp_base);
 
@@ -1605,7 +1605,7 @@ TEST(receiver_source, timestamp_mapping_one_control_packet) {
                                        byte_buffer_factory, src1, dst2);
 
     const core::nanoseconds_t unix_base = 1000000000000000;
-    const packet::timestamp_t rtp_base = 1000000;
+    const packet::stream_timestamp_t rtp_base = 1000000;
 
     packet_writer.set_timestamp(rtp_base);
 
@@ -1664,7 +1664,7 @@ TEST(receiver_source, timestamp_mapping_periodic_control_packets) {
                                        byte_buffer_factory, src1, dst2);
 
     const core::nanoseconds_t unix_base_step = 1000000000000000;
-    const packet::timestamp_t rtp_base = 1000000;
+    const packet::stream_timestamp_t rtp_base = 1000000;
 
     packet_writer.set_timestamp(rtp_base);
 
@@ -1726,7 +1726,7 @@ IGNORE_TEST(receiver_source, timestamp_mapping_remixing) {
                                        byte_buffer_factory, src1, dst2);
 
     const core::nanoseconds_t unix_base = 1000000000000000;
-    const packet::timestamp_t rtp_base = 1000000;
+    const packet::stream_timestamp_t rtp_base = 1000000;
 
     packet_writer.set_timestamp(rtp_base);
 
@@ -1973,7 +1973,7 @@ TEST(receiver_source, metrics_e2e) {
                                        byte_buffer_factory, src1, dst2);
 
     const core::nanoseconds_t unix_base = 1000000000000000;
-    const packet::timestamp_t rtp_base = 1000000;
+    const packet::stream_timestamp_t rtp_base = 1000000;
 
     packet_writer.set_timestamp(rtp_base);
 

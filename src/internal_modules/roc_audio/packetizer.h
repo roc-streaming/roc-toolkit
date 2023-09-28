@@ -87,9 +87,9 @@ private:
     packet::PacketPtr packet_;
     size_t packet_pos_;
 
-    packet::source_t source_;
+    packet::stream_source_t source_;
     packet::seqnum_t seqnum_;
-    packet::timestamp_t timestamp_;
+    packet::stream_timestamp_t stream_ts_;
     core::nanoseconds_t capture_ts_;
 
     bool valid_;

@@ -34,13 +34,11 @@ enum FecScheme {
 //! FECFRAME packet.
 struct FEC {
     //! The FEC scheme to which the packet belongs to.
-    //!
     //! @remarks
     //!  Defines both FEC header or footer format and FEC payalod format.
     FecScheme fec_scheme;
 
-    //! The index number of packet in a block.
-    //!
+    //! The index number of packet in a block ("esi").
     //! @remarks
     //!  Source packets are numbered in range [0; k).
     //!  Repair packets are numbered in range [k; k + n), where
@@ -48,22 +46,19 @@ struct FEC {
     //!  n is a number of repair packets per block.
     size_t encoding_symbol_id;
 
-    //! Number of a source block in a packet stream.
-    //!
+    //! Number of a source block in a packet stream ("sbn").
     //! @remarks
     //!  Source block is formed from the source packets.
     //!  Blocks are numbered sequentially starting from a random number.
     //!  Block number can wrap.
     blknum_t source_block_number;
 
-    //! Number of source packets in the block to which this packet belongs to.
-    //!
+    //! Number of source packets in block to which this packet belongs ("sblen").
     //! @remarks
     //!  Different blocks can have different number of source packets.
     size_t source_block_length;
 
-    //! Number of source packets and repair in the block to which this packet belongs to.
-    //!
+    //! Number of source + repair packets in block to which this packet belongs ("blen").
     //! @remarks
     //!  Different blocks can have different number of packets.
     //!  Always larger than source_block_length.

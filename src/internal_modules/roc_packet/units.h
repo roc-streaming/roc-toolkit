@@ -18,69 +18,95 @@
 namespace roc {
 namespace packet {
 
-//! Packet source ID identifying packet stream.
-typedef uint32_t source_t;
+//! Packet stream identifier.
+//! @remarks
+//!  Identifies packet stream within session.
+//!  Unique only within one session.
+//!  For example, audio packet stream and repair (FEC) packet stream
+//!  usually have different source identifiers.
+typedef uint32_t stream_source_t;
 
-//! Audio packet timestamp.
-typedef uint32_t timestamp_t;
+//! Packet stream timestamp.
+//! @remarks
+//!  Defines position of packet contents (e.g. audio chunk) within stream.
+//!  Starts from unspecified value and can wrap.
+//!  Measured in sender's clock domain and clock rate.
+//!  For PCM audio, stream timestamp is incremented by one every N samples,
+//!  where N is the number of channels.
+typedef uint32_t stream_timestamp_t;
 
-//! Audio packet timestamps difference.
-typedef int32_t timestamp_diff_t;
+//! Packet stream timestamp delta.
+//! @remarks
+//!  Signed version of stream_timestamp_t.
+typedef int32_t stream_timestamp_diff_t;
 
 //! Compute difference between two timestamps.
-inline timestamp_diff_t timestamp_diff(timestamp_t a, timestamp_t b) {
-    return timestamp_diff_t(a - b);
+inline stream_timestamp_diff_t stream_timestamp_diff(const stream_timestamp_t a,
+                                                     const stream_timestamp_t b) {
+    return stream_timestamp_diff_t(a - b);
 }
 
-//! Check if a is before b taking possible wrap into account.
-inline bool timestamp_lt(timestamp_t a, timestamp_t b) {
-    return timestamp_diff(a, b) < 0;
+//! Check if `a` is before `b`, taking possible wrap into account.
+inline bool stream_timestamp_lt(const stream_timestamp_t a, const stream_timestamp_t b) {
+    return stream_timestamp_diff(a, b) < 0;
 }
 
-//! Check if a is before or equal to b taking possible wrap into account.
-inline bool timestamp_le(timestamp_t a, timestamp_t b) {
-    return timestamp_diff(a, b) <= 0;
+//! Check if `a` is before or equal to `b`, taking possible wrap into account.
+inline bool stream_timestamp_le(const stream_timestamp_t a, const stream_timestamp_t b) {
+    return stream_timestamp_diff(a, b) <= 0;
 }
 
-//! Packet sequence number in packet stream.
+//! Packet sequence number.
+//! @remarks
+//!  Defines position of packet within stream.
+//!  Starts from unspecified value and can wrap.
+//!  Incremented by one each packet.
 typedef uint16_t seqnum_t;
 
-//! Packet sequence numbers difference.
+//! Packet sequence number delta.
+//! @remarks
+//!  Signed version of seqnum_t.
 typedef int16_t seqnum_diff_t;
 
 //! Compute difference between two seqnums.
-inline seqnum_diff_t seqnum_diff(seqnum_t a, seqnum_t b) {
+inline seqnum_diff_t seqnum_diff(const seqnum_t a, const seqnum_t b) {
     return seqnum_diff_t(a - b);
 }
 
-//! Check if a is before b taking possible wrap into account.
-inline bool seqnum_lt(seqnum_t a, seqnum_t b) {
+//! Check if `a` is before `b`, taking possible wrap into account.
+inline bool seqnum_lt(const seqnum_t a, const seqnum_t b) {
     return seqnum_diff(a, b) < 0;
 }
 
-//! Check if a is before or equal to b taking possible wrap into account.
-inline bool seqnum_le(seqnum_t a, seqnum_t b) {
+//! Check if `a` is before or equal to `b`, taking possible wrap into account.
+inline bool seqnum_le(const seqnum_t a, const seqnum_t b) {
     return seqnum_diff(a, b) <= 0;
 }
 
-//! FEC block number in a packet stream.
+//! FEC packet block number.
+//! @remarks
+//!  Defines position of FEC packet block within stream.
+//!  Starts from unspecified value and can wrap.
+//!  Incremented by one each block.
 typedef uint16_t blknum_t;
 
-//! FEC block numbers difference.
+//! FEC packet block number delta.
+//! @remarks
+//!  Signed version of blknum_t.
 typedef int16_t blknum_diff_t;
 
-//! Compute difference between two FEC block numbers.
-inline blknum_diff_t blknum_diff(blknum_t a, blknum_t b) {
+//! Compute difference between two FEC packet block numbers.
+inline blknum_diff_t blknum_diff(const blknum_t a, const blknum_t b) {
     return blknum_diff_t(a - b);
 }
 
-//! Check if a is before b taking possible wrap into account.
-inline bool blknum_lt(blknum_t a, blknum_t b) {
+//! Check if `a` is before `b`, taking possible wrap into account.
+inline bool blknum_lt(const blknum_t a, const blknum_t b) {
     return blknum_diff(a, b) < 0;
 }
 
-//! Check if a is before or equal to b taking possible wrap into account.
-inline bool blknum_le(blknum_t a, blknum_t b) {
+//! Check if `a` is before or equal to `b`, taking possible wrap into account.
+inline bool blknum_le(const blknum_t a, const blknum_t b) {
     return blknum_diff(a, b) <= 0;
 }
 

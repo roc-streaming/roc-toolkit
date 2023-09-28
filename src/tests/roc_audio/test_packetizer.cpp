@@ -78,11 +78,11 @@ public:
         if (pos_ == 0) {
             src_ = pp->rtp()->source;
             sn_ = pp->rtp()->seqnum;
-            ts_ = pp->rtp()->timestamp;
+            ts_ = pp->rtp()->stream_timestamp;
         } else {
             UNSIGNED_LONGS_EQUAL(src_, pp->rtp()->source);
             UNSIGNED_LONGS_EQUAL(sn_, pp->rtp()->seqnum);
-            UNSIGNED_LONGS_EQUAL(ts_, pp->rtp()->timestamp);
+            UNSIGNED_LONGS_EQUAL(ts_, pp->rtp()->stream_timestamp);
         }
         CHECK(core::ns_equal_delta(pp->rtp()->capture_timestamp, capture_ts_,
                                    core::Microsecond));
@@ -93,7 +93,7 @@ public:
         CHECK(pp->rtp()->header);
         CHECK(pp->rtp()->payload);
 
-        payload_decoder_.begin(pp->rtp()->timestamp, pp->rtp()->payload.data(),
+        payload_decoder_.begin(pp->rtp()->stream_timestamp, pp->rtp()->payload.data(),
                                pp->rtp()->payload.size());
 
         sample_t samples[SamplesPerPacket * NumCh] = {};
@@ -122,9 +122,9 @@ private:
 
     size_t pos_;
 
-    packet::source_t src_;
+    packet::stream_source_t src_;
     packet::seqnum_t sn_;
-    packet::timestamp_t ts_;
+    packet::stream_timestamp_t ts_;
     core::nanoseconds_t capture_ts_;
 
     uint8_t value_;

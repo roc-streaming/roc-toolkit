@@ -28,15 +28,16 @@ Packetizer::Packetizer(packet::IWriter& writer,
     , packet_factory_(packet_factory)
     , buffer_factory_(buffer_factory)
     , sample_spec_(sample_spec)
-    , samples_per_packet_(
-          (packet::timestamp_t)sample_spec.ns_2_rtp_timestamp(packet_length))
+    , samples_per_packet_((packet::stream_timestamp_t)
+                              sample_spec.ns_2_stream_timestamp_delta(packet_length))
     , payload_type_(payload_type)
     , payload_size_(payload_encoder.encoded_byte_count(samples_per_packet_))
     , packet_pos_(0)
     , valid_(false) {
-    source_ = (packet::source_t)core::fast_random(0, packet::source_t(-1));
+    source_ = (packet::stream_source_t)core::fast_random(0, packet::stream_source_t(-1));
     seqnum_ = (packet::seqnum_t)core::fast_random(0, packet::seqnum_t(-1));
-    timestamp_ = (packet::timestamp_t)core::fast_random(0, packet::timestamp_t(-1));
+    stream_ts_ =
+        (packet::stream_timestamp_t)core::fast_random(0, packet::stream_timestamp_t(-1));
     capture_ts_ = 0;
     valid_ = true;
     roc_log(LogDebug, "packetizer: initializing: n_channels=%lu samples_per_packet=%lu",
@@ -105,7 +106,7 @@ bool Packetizer::begin_packet_() {
 
     rtp->source = source_;
     rtp->seqnum = seqnum_;
-    rtp->timestamp = timestamp_;
+    rtp->stream_timestamp = stream_ts_;
     rtp->capture_timestamp = capture_ts_;
     rtp->payload_type = payload_type_;
 
@@ -117,7 +118,7 @@ bool Packetizer::begin_packet_() {
 void Packetizer::end_packet_() {
     payload_encoder_.end();
 
-    packet_->rtp()->duration = (packet::timestamp_t)packet_pos_;
+    packet_->rtp()->duration = (packet::stream_timestamp_t)packet_pos_;
 
     if (packet_pos_ < samples_per_packet_) {
         pad_packet_();
@@ -126,7 +127,7 @@ void Packetizer::end_packet_() {
     writer_.write(packet_);
 
     seqnum_++;
-    timestamp_ += (packet::timestamp_t)packet_pos_;
+    stream_ts_ += (packet::stream_timestamp_t)packet_pos_;
 
     packet_ = NULL;
     packet_pos_ = 0;

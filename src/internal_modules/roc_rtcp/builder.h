@@ -107,7 +107,7 @@ public:
     void begin_bye();
 
     //! Add SSRC to current BYE packet.
-    void add_bye_ssrc(const packet::source_t ssrc);
+    void add_bye_ssrc(const packet::stream_source_t ssrc);
 
     //! Add REASON to current BYE packet.
     void add_bye_reason(const char* reason);

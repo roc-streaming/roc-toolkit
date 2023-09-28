@@ -26,7 +26,7 @@ struct SendingMetrics {
     core::nanoseconds_t origin_time;
 
     //! RTP timestamp correspnding to NTP timestamp.
-    packet::timestamp_t origin_rtp;
+    packet::stream_timestamp_t origin_rtp;
 
     SendingMetrics()
         : origin_time(0)
@@ -37,7 +37,7 @@ struct SendingMetrics {
 //! Metrics sent from receiver to sender per source.
 struct ReceptionMetrics {
     //! To which source these metrics apply.
-    packet::source_t ssrc;
+    packet::stream_source_t ssrc;
 
     //! Fraction of lost packets.
     float fract_loss;

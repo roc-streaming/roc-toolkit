@@ -70,20 +70,21 @@ bool Validator::validate_(const packet::RTP& prev, const packet::RTP& next) cons
         return false;
     }
 
-    packet::timestamp_diff_t ts_dist =
-        packet::timestamp_diff(next.timestamp, prev.timestamp);
+    packet::stream_timestamp_diff_t ts_dist =
+        packet::stream_timestamp_diff(next.stream_timestamp, prev.stream_timestamp);
     if (ts_dist < 0) {
         ts_dist = -ts_dist;
     }
 
-    const core::nanoseconds_t ts_dist_ns = sample_spec_.rtp_timestamp_2_ns(ts_dist);
+    const core::nanoseconds_t ts_dist_ns =
+        sample_spec_.stream_timestamp_delta_2_ns(ts_dist);
 
     if (ts_dist_ns > config_.max_ts_jump) {
         roc_log(LogDebug,
                 "rtp validator:"
                 " too long timestamp jump: prev=%lu next=%lu dist=%lu",
-                (unsigned long)prev.timestamp, (unsigned long)next.timestamp,
-                (unsigned long)ts_dist);
+                (unsigned long)prev.stream_timestamp,
+                (unsigned long)next.stream_timestamp, (unsigned long)ts_dist);
         return false;
     }
 

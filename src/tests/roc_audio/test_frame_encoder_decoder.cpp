@@ -213,7 +213,7 @@ TEST(encoder_decoder, multiple_frames) {
         core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), arena);
         CHECK(decoder);
 
-        packet::timestamp_t ts = 100500;
+        packet::stream_timestamp_t ts = 100500;
 
         size_t encoder_pos = 0;
         size_t decoder_pos = 0;
@@ -268,7 +268,7 @@ TEST(encoder_decoder, incomplete_frames) {
         core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), arena);
         CHECK(decoder);
 
-        packet::timestamp_t ts = 100500;
+        packet::stream_timestamp_t ts = 100500;
 
         size_t encoder_pos = 0;
         size_t decoder_pos = 0;
@@ -325,7 +325,7 @@ TEST(encoder_decoder, shifted_frames) {
         core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), arena);
         CHECK(decoder);
 
-        packet::timestamp_t ts = 100500;
+        packet::stream_timestamp_t ts = 100500;
 
         size_t encoder_pos = 0;
         size_t decoder_pos = 0;
@@ -387,7 +387,7 @@ TEST(encoder_decoder, skipped_frames) {
         core::ScopedPtr<IFrameDecoder> decoder(new_decoder(n_codec), arena);
         CHECK(decoder);
 
-        packet::timestamp_t ts = 100500;
+        packet::stream_timestamp_t ts = 100500;
 
         size_t encoder_pos = 0;
         size_t decoder_pos = 0;

@@ -32,17 +32,18 @@ public:
     PcmDecoder(const PcmFormat& pcm_format, const SampleSpec& sample_spec);
 
     //! Get current stream position.
-    virtual packet::timestamp_t position() const;
+    virtual packet::stream_timestamp_t position() const;
 
     //! Get number of samples available for decoding.
-    virtual packet::timestamp_t available() const;
+    virtual packet::stream_timestamp_t available() const;
 
     //! Get number of samples per channel, that can be decoded from given frame.
     virtual size_t decoded_sample_count(const void* frame_data, size_t frame_size) const;
 
     //! Start decoding a new frame.
-    virtual void
-    begin(packet::timestamp_t frame_position, const void* frame_data, size_t frame_size);
+    virtual void begin(packet::stream_timestamp_t frame_position,
+                       const void* frame_data,
+                       size_t frame_size);
 
     //! Read samples from current frame.
     virtual size_t read(sample_t* samples, size_t n_samples);
@@ -57,8 +58,8 @@ private:
     PcmMapper pcm_mapper_;
     const size_t n_chans_;
 
-    packet::timestamp_t stream_pos_;
-    packet::timestamp_t stream_avail_;
+    packet::stream_timestamp_t stream_pos_;
+    packet::stream_timestamp_t stream_avail_;
 
     const void* frame_data_;
     size_t frame_byte_size_;

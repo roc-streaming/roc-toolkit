@@ -53,7 +53,7 @@ public:
     //! Get next timestamp to be rendered.
     //! @pre
     //!  is_started() should return true
-    packet::timestamp_t next_timestamp() const;
+    packet::stream_timestamp_t next_timestamp() const;
 
 private:
     struct FrameInfo {
@@ -94,13 +94,13 @@ private:
 
     packet::PacketPtr packet_;
 
-    packet::timestamp_t timestamp_;
+    packet::stream_timestamp_t stream_ts_;
     core::nanoseconds_t next_capture_ts_;
     bool valid_capture_ts_;
 
-    packet::timestamp_t zero_samples_;
-    packet::timestamp_t missing_samples_;
-    packet::timestamp_t packet_samples_;
+    packet::stream_timestamp_t zero_samples_;
+    packet::stream_timestamp_t missing_samples_;
+    packet::stream_timestamp_t packet_samples_;
 
     core::RateLimiter rate_limiter_;
 

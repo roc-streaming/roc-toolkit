@@ -62,7 +62,7 @@ double dot_prod(const double* coeff,
 } // namespace
 
 FreqEstimator::FreqEstimator(FreqEstimatorProfile profile,
-                             packet::timestamp_t target_latency)
+                             packet::stream_timestamp_t target_latency)
     : config_(make_config(profile))
     , target_(target_latency)
     , dec1_ind_(0)
@@ -101,7 +101,7 @@ float FreqEstimator::freq_coeff() const {
     return (float)coeff_;
 }
 
-void FreqEstimator::update(packet::timestamp_t current) {
+void FreqEstimator::update(packet::stream_timestamp_t current) {
     double filtered;
 
     if (run_decimators_(current, filtered)) {
@@ -109,7 +109,8 @@ void FreqEstimator::update(packet::timestamp_t current) {
     }
 }
 
-bool FreqEstimator::run_decimators_(packet::timestamp_t current, double& filtered) {
+bool FreqEstimator::run_decimators_(packet::stream_timestamp_t current,
+                                    double& filtered) {
     samples_counter_++;
 
     dec1_casc_buff_[dec1_ind_] = current;

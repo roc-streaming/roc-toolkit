@@ -677,14 +677,15 @@ ssize_t PulseaudioDevice::wait_stream_() {
         }
 
         if (avail_size == 0 && timer_expired) {
-            roc_log(LogInfo,
-                    "pulseaudio %s: stream timeout expired:"
-                    " latency=%ld(%.3fms) timeout=%ld(%.3fms)",
-                    device_type_to_str(device_type_),
-                    (long)config_.sample_spec.ns_2_rtp_timestamp(target_latency_),
-                    (double)target_latency_ / core::Millisecond,
-                    (long)config_.sample_spec.ns_2_rtp_timestamp(timeout_),
-                    (double)timeout_ / core::Millisecond);
+            roc_log(
+                LogInfo,
+                "pulseaudio %s: stream timeout expired:"
+                " latency=%ld(%.3fms) timeout=%ld(%.3fms)",
+                device_type_to_str(device_type_),
+                (long)config_.sample_spec.ns_2_stream_timestamp_delta(target_latency_),
+                (double)target_latency_ / core::Millisecond,
+                (long)config_.sample_spec.ns_2_stream_timestamp_delta(timeout_),
+                (double)timeout_ / core::Millisecond);
 
             if (timeout_ < MaxTimeout) {
                 timeout_ *= 2;
@@ -695,9 +696,10 @@ ssize_t PulseaudioDevice::wait_stream_() {
                         "pulseaudio %s: stream timeout increased:"
                         " latency=%ld(%.3fms) timeout=%ld(%.3fms)",
                         device_type_to_str(device_type_),
-                        (long)config_.sample_spec.ns_2_rtp_timestamp(target_latency_),
+                        (long)config_.sample_spec.ns_2_stream_timestamp_delta(
+                            target_latency_),
                         (double)target_latency_ / core::Millisecond,
-                        (long)config_.sample_spec.ns_2_rtp_timestamp(timeout_),
+                        (long)config_.sample_spec.ns_2_stream_timestamp_delta(timeout_),
                         (double)timeout_ / core::Millisecond);
             }
 

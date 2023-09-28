@@ -186,10 +186,10 @@ private:
 
     bool update_();
 
-    bool check_bounds_(packet::timestamp_diff_t latency) const;
+    bool check_bounds_(packet::stream_timestamp_diff_t latency) const;
 
     bool init_scaling_(size_t input_sample_rate, size_t output_sample_rate);
-    bool update_scaling_(packet::timestamp_diff_t latency);
+    bool update_scaling_(packet::stream_timestamp_diff_t latency);
 
     void report_();
 
@@ -201,25 +201,25 @@ private:
     ResamplerReader* resampler_;
     core::Optional<FreqEstimator> fe_;
 
-    packet::timestamp_t stream_pos_;
+    packet::stream_timestamp_t stream_pos_;
     core::nanoseconds_t stream_cts_;
 
-    const packet::timestamp_t update_interval_;
-    packet::timestamp_t update_pos_;
+    const packet::stream_timestamp_t update_interval_;
+    packet::stream_timestamp_t update_pos_;
 
-    const packet::timestamp_t report_interval_;
-    packet::timestamp_t report_pos_;
+    const packet::stream_timestamp_t report_interval_;
+    packet::stream_timestamp_t report_pos_;
 
     float freq_coeff_;
 
-    packet::timestamp_diff_t niq_latency_;
-    packet::timestamp_diff_t e2e_latency_;
+    packet::stream_timestamp_diff_t niq_latency_;
+    packet::stream_timestamp_diff_t e2e_latency_;
     bool has_niq_latency_;
     bool has_e2e_latency_;
 
-    const packet::timestamp_diff_t target_latency_;
-    const packet::timestamp_diff_t min_latency_;
-    const packet::timestamp_diff_t max_latency_;
+    const packet::stream_timestamp_diff_t target_latency_;
+    const packet::stream_timestamp_diff_t min_latency_;
+    const packet::stream_timestamp_diff_t max_latency_;
 
     const float max_scaling_delta_;
 

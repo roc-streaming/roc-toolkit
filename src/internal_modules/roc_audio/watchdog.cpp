@@ -19,11 +19,14 @@ Watchdog::Watchdog(IFrameReader& reader,
     : reader_(reader)
     , sample_spec_(sample_spec)
     , max_blank_duration_(
-          (packet::timestamp_t)sample_spec.ns_2_rtp_timestamp(config.no_playback_timeout))
-    , max_drops_duration_((packet::timestamp_t)sample_spec.ns_2_rtp_timestamp(
-          config.choppy_playback_timeout))
-    , drop_detection_window_((packet::timestamp_t)sample_spec.ns_2_rtp_timestamp(
-          config.choppy_playback_window))
+          (packet::stream_timestamp_t)sample_spec.ns_2_stream_timestamp_delta(
+              config.no_playback_timeout))
+    , max_drops_duration_(
+          (packet::stream_timestamp_t)sample_spec.ns_2_stream_timestamp_delta(
+              config.choppy_playback_timeout))
+    , drop_detection_window_(
+          (packet::stream_timestamp_t)sample_spec.ns_2_stream_timestamp_delta(
+              config.choppy_playback_window))
     , curr_read_pos_(0)
     , last_pos_before_blank_(0)
     , last_pos_before_drops_(0)
@@ -94,7 +97,7 @@ bool Watchdog::read(Frame& frame) {
         return false;
     }
 
-    const packet::timestamp_t next_read_pos = packet::timestamp_t(
+    const packet::stream_timestamp_t next_read_pos = packet::stream_timestamp_t(
         curr_read_pos_ + frame.num_samples() / sample_spec_.num_channels());
 
     update_blank_timeout_(frame, next_read_pos);
@@ -117,7 +120,7 @@ bool Watchdog::read(Frame& frame) {
 }
 
 void Watchdog::update_blank_timeout_(const Frame& frame,
-                                     packet::timestamp_t next_read_pos) {
+                                     packet::stream_timestamp_t next_read_pos) {
     if (max_blank_duration_ == 0) {
         return;
     }
@@ -146,19 +149,19 @@ bool Watchdog::check_blank_timeout_() const {
 }
 
 void Watchdog::update_drops_timeout_(const Frame& frame,
-                                     packet::timestamp_t next_read_pos) {
+                                     packet::stream_timestamp_t next_read_pos) {
     if (max_drops_duration_ == 0) {
         return;
     }
 
     curr_window_flags_ |= frame.flags();
 
-    const packet::timestamp_t window_start =
+    const packet::stream_timestamp_t window_start =
         curr_read_pos_ / drop_detection_window_ * drop_detection_window_;
 
-    const packet::timestamp_t window_end = window_start + drop_detection_window_;
+    const packet::stream_timestamp_t window_end = window_start + drop_detection_window_;
 
-    if (packet::timestamp_le(window_end, next_read_pos)) {
+    if (packet::stream_timestamp_le(window_end, next_read_pos)) {
         const unsigned drop_flags = Frame::FlagIncomplete | Frame::FlagDrops;
 
         if ((curr_window_flags_ & drop_flags) != drop_flags) {

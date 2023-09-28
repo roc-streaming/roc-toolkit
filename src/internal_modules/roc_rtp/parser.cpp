@@ -93,7 +93,7 @@ bool Parser::parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer) {
 
     rtp.source = header.ssrc();
     rtp.seqnum = header.seqnum();
-    rtp.timestamp = header.timestamp();
+    rtp.stream_timestamp = header.timestamp();
     rtp.marker = header.marker();
     rtp.payload_type = header.payload_type();
     rtp.header = buffer.subslice(0, header_size);

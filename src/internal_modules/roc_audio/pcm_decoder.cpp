@@ -28,11 +28,11 @@ PcmDecoder::PcmDecoder(const PcmFormat& pcm_format, const SampleSpec& sample_spe
     , frame_bit_off_(0) {
 }
 
-packet::timestamp_t PcmDecoder::position() const {
+packet::stream_timestamp_t PcmDecoder::position() const {
     return stream_pos_;
 }
 
-packet::timestamp_t PcmDecoder::available() const {
+packet::stream_timestamp_t PcmDecoder::available() const {
     return stream_avail_;
 }
 
@@ -42,7 +42,7 @@ size_t PcmDecoder::decoded_sample_count(const void* frame_data, size_t frame_siz
     return pcm_mapper_.input_sample_count(frame_size) / n_chans_;
 }
 
-void PcmDecoder::begin(packet::timestamp_t frame_position,
+void PcmDecoder::begin(packet::stream_timestamp_t frame_position,
                        const void* frame_data,
                        size_t frame_size) {
     roc_panic_if_not(frame_data);
@@ -56,7 +56,7 @@ void PcmDecoder::begin(packet::timestamp_t frame_position,
 
     stream_pos_ = frame_position;
     stream_avail_ =
-        packet::timestamp_t(pcm_mapper_.input_sample_count(frame_size) / n_chans_);
+        packet::stream_timestamp_t(pcm_mapper_.input_sample_count(frame_size) / n_chans_);
 }
 
 size_t PcmDecoder::read(audio::sample_t* samples, size_t n_samples) {
@@ -79,8 +79,8 @@ size_t PcmDecoder::read(audio::sample_t* samples, size_t n_samples) {
     roc_panic_if_not(samples_bit_off % 8 == 0);
     roc_panic_if_not(n_mapped_samples <= n_samples);
 
-    stream_pos_ += (packet::timestamp_t)n_mapped_samples;
-    stream_avail_ -= (packet::timestamp_t)n_mapped_samples;
+    stream_pos_ += (packet::stream_timestamp_t)n_mapped_samples;
+    stream_avail_ -= (packet::stream_timestamp_t)n_mapped_samples;
 
     return n_mapped_samples;
 }
@@ -96,8 +96,8 @@ size_t PcmDecoder::shift(size_t n_samples) {
 
     frame_bit_off_ += pcm_mapper_.input_bit_count(n_samples * n_chans_);
 
-    stream_pos_ += (packet::timestamp_t)n_samples;
-    stream_avail_ -= (packet::timestamp_t)n_samples;
+    stream_pos_ += (packet::stream_timestamp_t)n_samples;
+    stream_avail_ -= (packet::stream_timestamp_t)n_samples;
 
     return n_samples;
 }

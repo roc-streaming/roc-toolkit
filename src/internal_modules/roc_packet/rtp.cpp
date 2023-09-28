@@ -14,7 +14,7 @@ namespace packet {
 RTP::RTP()
     : source(0)
     , seqnum(0)
-    , timestamp(0)
+    , stream_timestamp(0)
     , duration(0)
     , capture_timestamp(0)
     , marker(false)

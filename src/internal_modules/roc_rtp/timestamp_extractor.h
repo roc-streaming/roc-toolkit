@@ -41,14 +41,14 @@ public:
     //! Get rtp timestamp mapped to given capture timestamp.
     //! @pre
     //!  has_mapping() should return true, otherwise it will panic.
-    packet::timestamp_t get_mapping(core::nanoseconds_t capture_ts);
+    packet::stream_timestamp_t get_mapping(core::nanoseconds_t capture_ts);
 
 private:
     packet::IWriter& writer_;
 
     bool has_ts_;
     core::nanoseconds_t capt_ts_;
-    packet::timestamp_t rtp_ts_;
+    packet::stream_timestamp_t rtp_ts_;
 
     const audio::SampleSpec sample_spec_;
 

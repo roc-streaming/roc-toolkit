@@ -78,7 +78,7 @@ void check_packet_fields(const packet::Packet& packet, const test::PacketInfo& p
 
     UNSIGNED_LONGS_EQUAL(pi.ssrc, packet.rtp()->source);
     UNSIGNED_LONGS_EQUAL(pi.seqnum, packet.rtp()->seqnum);
-    UNSIGNED_LONGS_EQUAL(pi.ts, packet.rtp()->timestamp);
+    UNSIGNED_LONGS_EQUAL(pi.ts, packet.rtp()->stream_timestamp);
     UNSIGNED_LONGS_EQUAL(pi.marker, packet.rtp()->marker);
     UNSIGNED_LONGS_EQUAL(pi.pt, packet.rtp()->payload_type);
     UNSIGNED_LONGS_EQUAL(pi.padding, (packet.rtp()->padding.size() != 0));
@@ -89,7 +89,7 @@ void set_packet_fields(packet::Packet& packet, const test::PacketInfo& pi) {
 
     packet.rtp()->source = pi.ssrc;
     packet.rtp()->seqnum = pi.seqnum;
-    packet.rtp()->timestamp = pi.ts;
+    packet.rtp()->stream_timestamp = pi.ts;
     packet.rtp()->marker = pi.marker;
     packet.rtp()->payload_type = pi.pt;
 }
@@ -115,7 +115,7 @@ void decode_samples(audio::IFrameDecoder& decoder,
                     const test::PacketInfo& pi) {
     audio::sample_t samples[test::PacketInfo::MaxSamples * test::PacketInfo::MaxCh] = {};
 
-    decoder.begin(packet.rtp()->timestamp, packet.rtp()->payload.data(),
+    decoder.begin(packet.rtp()->stream_timestamp, packet.rtp()->payload.data(),
                   packet.rtp()->payload.size());
 
     UNSIGNED_LONGS_EQUAL(pi.num_samples, decoder.read(samples, pi.num_samples));

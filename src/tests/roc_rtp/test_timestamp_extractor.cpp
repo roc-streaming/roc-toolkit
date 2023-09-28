@@ -29,14 +29,15 @@ namespace {
 core::HeapArena arena;
 static packet::PacketFactory packet_factory(arena);
 
-packet::PacketPtr
-new_packet(packet::seqnum_t sn, packet::timestamp_t ts, core::nanoseconds_t capt_ts) {
+packet::PacketPtr new_packet(packet::seqnum_t sn,
+                             packet::stream_timestamp_t ts,
+                             core::nanoseconds_t capt_ts) {
     packet::PacketPtr packet = packet_factory.new_packet();
     CHECK(packet);
 
     packet->add_flags(packet::Packet::FlagRTP);
     packet->rtp()->seqnum = sn;
-    packet->rtp()->timestamp = ts;
+    packet->rtp()->stream_timestamp = ts;
     packet->rtp()->capture_timestamp = capt_ts;
 
     return packet;
@@ -51,7 +52,7 @@ TEST(timestamp_extractor, single_write) {
         audio::SampleSpec(1000, audio::ChanLayout_Surround, 0x1);
 
     const core::nanoseconds_t cts = 1691499037871419405;
-    const packet::timestamp_t rts = 2222;
+    const packet::stream_timestamp_t rts = 2222;
 
     packet::Queue queue;
     TimestampExtractor extractor(queue, sample_spec);

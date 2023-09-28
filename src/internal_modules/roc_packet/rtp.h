@@ -22,46 +22,57 @@ namespace packet {
 
 //! RTP packet.
 struct RTP {
-    //! Packet source ID identifying packet stream.
+    //! Packet source ID identifying packet stream ("src").
     //! @remarks
     //!  Sequence numbers and timestamp are numbered independently inside
     //!  different packet streams.
-    source_t source;
+    stream_source_t source;
 
-    //! Packet sequence number in packet stream.
+    //! Packet sequence number in packet stream ("sn").
     //! @remarks
     //!  Packets are numbered sequentaly in every stream, starting from some
     //!  random value. May overflow.
     seqnum_t seqnum;
 
-    //! Packet timestamp.
+    //! Packet stream timestamp ("sts").
     //! @remarks
-    //!  Timestamp units and exact meaning depends on packet type. For example,
-    //!  it may be used to define the number of the first sample in packet, or
-    //!  the time when the packet were generated.
-    timestamp_t timestamp;
+    //!  Describes position of the first sample using abstract stream clock.
+    //!  This clock belongs to sender and has sample rate of the stream.
+    //!  For example, if sender is 44100Hz audio card, then stream timestamp
+    //!  is incremented by one each generated sample, and it happens 44100
+    //!  times per second, according to audio card clock.
+    //!  This timestamp corresponds to "timestamp" field of RTP packet.
+    //!  Just like seqnum, it starts from random value and may overflow.
+    stream_timestamp_t stream_timestamp;
 
-    //! Packet duration.
+    //! Packet duration ("dur").
     //! @remarks
     //!  Duration is measured in the same units as timestamp.
-    timestamp_t duration;
+    //!  Duration is not stored directly in RTP header. It is calculated
+    //!  from packet size.
+    stream_timestamp_t duration;
 
-    //! Timestamp of the first sample at the moment it was captured from an interface.
+    //! Packet capture timestamp ("cts").
     //! @remarks
-    //!  In an ideal case the meaning of this value should be the same on a sender
-    //!  and a receiver, particularly it should store the moment in time the first sample
-    //!  of a packet came into existence. In practice receiver estimates this value for
-    //!  each packet with the help of RTCP and XR. If RTCP is not available, timestamps
-    //!  will be zero, If RTCP is available, but without XR, timestamps will be correct
-    //!  only of NTP system clocks on sender and receiver are synchronized.
+    //!  Describes capture time of the first sample using local Unix-time clock.
+    //!  This clock belongs to local system, no matter if we're on sender or receiver.
+    //!  On sender, capture timestamp is assigned to the system time of sender when
+    //!  the first sample in the packet was captured.
+    //!  On receiver, capture timestamp is assigned an estimation of the same
+    //!  value, converted to receiver system clock, i.e. the system time of receiver
+    //!  when the first sample in the packet was captured on sender.
+    //!  This field does not directly correspond to anything inside RTP packet.
+    //!  Instead, receiver deduces this value based on "timestamp" field from RTP
+    //!  packet, current NTP time, and mapping of NTP timestamps to RTP timestamps
+    //!  retrieved via RTCP.
     core::nanoseconds_t capture_timestamp;
 
-    //! Packet marker bit.
+    //! Packet marker bit ("m").
     //! @remarks
     //!  Marker bit meaning depends on packet type.
     bool marker;
 
-    //! Packet payload type.
+    //! Packet payload type ("pt").
     unsigned int payload_type;
 
     //! Packet header.

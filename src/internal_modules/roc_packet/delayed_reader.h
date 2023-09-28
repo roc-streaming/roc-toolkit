@@ -44,12 +44,12 @@ private:
     bool fetch_packets_();
     PacketPtr read_queued_packet_();
 
-    timestamp_t queue_size_() const;
+    stream_timestamp_t queue_size_() const;
 
     IReader& reader_;
     SortedQueue queue_;
 
-    const timestamp_t delay_;
+    const stream_timestamp_t delay_;
     bool started_;
 };
 

@@ -31,7 +31,7 @@ Session::Session(IReceiverHooks* recv_hooks,
     , next_deadline_(0)
     , ssrc_(0)
     , valid_(false) {
-    ssrc_ = (packet::source_t)core::fast_random(0, packet::source_t(-1));
+    ssrc_ = (packet::stream_source_t)core::fast_random(0, packet::stream_source_t(-1));
 
     // TODO
     strcpy(cname_, "TODO");
@@ -378,7 +378,7 @@ void Session::build_session_description_(Builder& bld) {
     bld.end_sdes();
 }
 
-void Session::build_source_description_(Builder& bld, packet::source_t ssrc) {
+void Session::build_source_description_(Builder& bld, packet::stream_source_t ssrc) {
     SdesChunk chunk;
     chunk.ssrc = ssrc;
 

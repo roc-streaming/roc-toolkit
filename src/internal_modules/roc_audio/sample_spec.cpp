@@ -169,20 +169,20 @@ core::nanoseconds_t SampleSpec::fract_samples_overall_2_ns(const float n_samples
     return nsamples_2_ns(n_samples / num_channels(), sample_rate_);
 }
 
-packet::timestamp_diff_t
-SampleSpec::ns_2_rtp_timestamp(const core::nanoseconds_t ns_delta) const {
+packet::stream_timestamp_diff_t
+SampleSpec::ns_2_stream_timestamp_delta(const core::nanoseconds_t ns_delta) const {
     roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
                      sample_spec_to_str(*this).c_str());
 
-    return ns_2_int_samples<packet::timestamp_diff_t>(ns_delta, sample_rate_, 1);
+    return ns_2_int_samples<packet::stream_timestamp_diff_t>(ns_delta, sample_rate_, 1);
 }
 
-core::nanoseconds_t
-SampleSpec::rtp_timestamp_2_ns(const packet::timestamp_diff_t rtp_delta) const {
+core::nanoseconds_t SampleSpec::stream_timestamp_delta_2_ns(
+    const packet::stream_timestamp_diff_t sts_delta) const {
     roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
                      sample_spec_to_str(*this).c_str());
 
-    return nsamples_2_ns((float)rtp_delta, sample_rate_);
+    return nsamples_2_ns((float)sts_delta, sample_rate_);
 }
 
 } // namespace audio

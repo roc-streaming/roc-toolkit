@@ -111,13 +111,14 @@ void ReceiverSessionGroup::get_metrics(ReceiverSessionMetrics* metrics,
     }
 }
 
-void ReceiverSessionGroup::on_update_source(packet::source_t ssrc, const char* cname) {
+void ReceiverSessionGroup::on_update_source(packet::stream_source_t ssrc,
+                                            const char* cname) {
     // TODO
     (void)ssrc;
     (void)cname;
 }
 
-void ReceiverSessionGroup::on_remove_source(packet::source_t ssrc) {
+void ReceiverSessionGroup::on_remove_source(packet::stream_source_t ssrc) {
     // TODO
     (void)ssrc;
 }

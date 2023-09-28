@@ -111,7 +111,7 @@ ByeTraverser::Iterator::State ByeTraverser::Iterator::next() {
     return state_;
 }
 
-packet::source_t ByeTraverser::Iterator::ssrc() const {
+packet::stream_source_t ByeTraverser::Iterator::ssrc() const {
     roc_panic_if_msg(
         state_ != SSRC,
         "bye traverser:"

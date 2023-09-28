@@ -200,7 +200,7 @@ size_t SenderSession::on_get_num_sources() {
     return num_sources_;
 }
 
-packet::source_t SenderSession::on_get_sending_source(size_t source_index) {
+packet::stream_source_t SenderSession::on_get_sending_source(size_t source_index) {
     switch (source_index) {
     case 0:
         // TODO

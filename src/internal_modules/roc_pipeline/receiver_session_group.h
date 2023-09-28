@@ -72,8 +72,8 @@ public:
 private:
     // Implementation of rtcp::IReceiverHooks interface.
     // These methods are invoked by rtcp::Session.
-    virtual void on_update_source(packet::source_t ssrc, const char* cname);
-    virtual void on_remove_source(packet::source_t ssrc);
+    virtual void on_update_source(packet::stream_source_t ssrc, const char* cname);
+    virtual void on_remove_source(packet::stream_source_t ssrc);
     virtual size_t on_get_num_sources();
     virtual rtcp::ReceptionMetrics on_get_reception_metrics(size_t source_index);
     virtual void on_add_sending_metrics(const rtcp::SendingMetrics& metrics);

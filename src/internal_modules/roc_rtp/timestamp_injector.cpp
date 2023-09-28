@@ -50,18 +50,18 @@ packet::PacketPtr TimestampInjector::read() {
     }
 
     if (has_ts_) {
-        const packet::timestamp_diff_t rtp_dn =
-            packet::timestamp_diff(pkt->rtp()->timestamp, rtp_ts_);
+        const packet::stream_timestamp_diff_t rtp_dn =
+            packet::stream_timestamp_diff(pkt->rtp()->stream_timestamp, rtp_ts_);
 
         pkt->rtp()->capture_timestamp =
-            capt_ts_ + sample_spec_.rtp_timestamp_2_ns(rtp_dn);
+            capt_ts_ + sample_spec_.stream_timestamp_delta_2_ns(rtp_dn);
     }
 
     return pkt;
 }
 
 void TimestampInjector::update_mapping(core::nanoseconds_t capture_ts,
-                                       packet::timestamp_t rtp_ts) {
+                                       packet::stream_timestamp_t rtp_ts) {
     if (rate_limiter_.allow()) {
         roc_log(LogDebug,
                 "timestamp injector: received mapping:"
