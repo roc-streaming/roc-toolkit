@@ -23,13 +23,11 @@ namespace {
 #if defined(CLOCK_REALTIME)
 
 clockid_t map_clock(clock_t clock) {
-    (void)clock;
-
-#if defined(CLOCK_MONOTONIC)
     if (clock == ClockMonotonic) {
+#if defined(CLOCK_MONOTONIC)
         return CLOCK_MONOTONIC;
-    }
 #endif
+    }
 
     return CLOCK_REALTIME;
 }

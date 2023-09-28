@@ -27,7 +27,7 @@ enum clock_t {
     //!  When platform supports it, uses the clock source that grows monotonically. It
     //!  never jumps backwards and is not affected by system clock change.
     //!
-    //!  This clock is still subject to clock rate adjustments applied by NTP daemon.
+    //!  This clock is still subject to clock *rate* adjustments applied by NTP daemon.
     //!  When it performs synchronization, it may slightly speed up or slow down both
     //!  unix and monotonic clocks for a while.
     //!
@@ -39,10 +39,10 @@ enum clock_t {
     //!  Actual precision is platform-dependent.
     ClockMonotonic,
 
-    //! Real-time unix-time clock.
+    //! Real-time Unix-time UTC clock.
     //!
     //! @remarks
-    //!  Starts at 1 Jan 1970 00:00:00.
+    //!  Starts at 1 Jan 1970 00:00:00 UTC.
     //!
     //!  May instantly jump forwards or backwards when system administrator sets time.
     //!  May speed up or slow down when NTP daemon adjusts clock rate.
