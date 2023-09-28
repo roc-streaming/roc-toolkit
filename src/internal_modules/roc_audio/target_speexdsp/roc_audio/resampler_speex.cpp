@@ -9,6 +9,7 @@
 #include "roc_audio/resampler_speex.h"
 #include "roc_audio/sample_spec_to_str.h"
 #include "roc_core/log.h"
+#include "roc_core/macro_helpers.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
 
@@ -23,6 +24,7 @@ const spx_uint32_t InputFrameSize = 32;
 
 inline const char* get_error_msg(int err) {
     if (err == 5) {
+        // this code is missing from speex_resampler_strerror()
         return "Ratio overflow.";
     }
     return speex_resampler_strerror(err);
@@ -114,24 +116,54 @@ bool SpeexResampler::is_valid() const {
 }
 
 bool SpeexResampler::set_scaling(size_t input_rate, size_t output_rate, float mult) {
-    // Maximum possible precision for reasanoble rate and scaling values.
-    // Not ideal, but larger precision will cause overflow error in speex.
-    enum { Precision = 50000 };
-
-    if (input_rate == 0 || output_rate == 0) {
-        roc_log(LogError, "speex resampler: invalid rate");
+    if (input_rate == 0 || output_rate == 0 || mult <= 0
+        || input_rate * mult > (float)ROC_MAX_OF(spx_uint32_t)
+        || output_rate * mult > (float)ROC_MAX_OF(spx_uint32_t)) {
+        roc_log(LogError,
+                "speex resampler: scaling out of range: in_rate=%lu out_rate=%lu mult=%e",
+                (unsigned long)input_rate, (unsigned long)output_rate, (double)mult);
         return false;
     }
 
-    if (mult <= 0 || mult > ((float)0xffffffff / Precision)) {
-        roc_log(LogError, "speex resampler: invalid scaling");
-        return false;
-    }
+    // We need to provide speex with integer numerator and denumerator, where numerator
+    // is proportional to `input_rate * mult` and denumerator is proportional to
+    // `output_rate`.
+    //
+    // If we just multiply rate by `mult` and round result to integer, the precision
+    // will be quite low, because `mult` is very close to 1.0 (because it's used to
+    // compensate clock drift which is slow).
+    //
+    // To increase precision, we first multiply input and output rates by same `base`.
+    // The higher is the base, the better is scaling precision. E.g. if `base` is
+    // 1'000'000, we could represent 6 digits of fractional part of `mult` without
+    // rounding errors.
+    //
+    // Unfortunately, speex does not allow numerator and denumerator to be larger
+    // than certain value. If it happens, either speex_resampler_set_rate_frac()
+    // returns error, or it succeedes, but overflows happen during resampling.
+    //
+    // To work around this, we use floating-point `base` and compute maximum "safe"
+    // value which will not cause overflows in speex.
+    //
+    // We also keep number of digits in fractional part of `base` small, to be sure
+    // that multiplying rates by `base` won't introduce its own rounding errors.
+    //
+    // Another important feature of these formulas is that when `mult` is exactly 1.0,
+    // `numerator / denumerator` will be exactly equal to `input_rate / output_rate`.
+    // For example, when sender uses resampler without clock drift compensation, it
+    // sets `mult` to 1.0 and needs to be sure that resampler will convert between
+    // rates exactly as requested, without rounding errors.
 
-    const spx_uint32_t ratio_num = spx_uint32_t(mult * Precision);
+    const float max_numerator = 80000; // selected empirically
+    const float base_frac = 10;        // no more than 1 digit in fractional part
 
-    const spx_uint32_t ratio_den =
-        spx_uint32_t(float(output_rate) / float(input_rate) * Precision);
+    const float base = (input_rate < max_numerator && output_rate < max_numerator)
+        ? roundf(max_numerator / std::max(input_rate, output_rate) * base_frac)
+            / base_frac
+        : 1.0f;
+
+    const spx_uint32_t ratio_num = spx_uint32_t(roundf(float(input_rate) * mult * base));
+    const spx_uint32_t ratio_den = spx_uint32_t(roundf(float(output_rate) * base));
 
     if (ratio_num == 0 || ratio_den == 0) {
         roc_log(LogError, "speex resampler: invalid scaling");
@@ -139,13 +171,13 @@ bool SpeexResampler::set_scaling(size_t input_rate, size_t output_rate, float mu
     }
 
     const int err = speex_resampler_set_rate_frac(speex_state_, ratio_num, ratio_den,
-                                                  spx_uint32_t(float(input_rate) * mult),
+                                                  spx_uint32_t(roundf(input_rate * mult)),
                                                   spx_uint32_t(output_rate));
 
     if (err != RESAMPLER_ERR_SUCCESS) {
         roc_log(LogError,
-                "speex resampler: speex_resampler_set_rate_frac(%d,%d,%d,%d): [%d] %s",
-                (int)ratio_num, (int)ratio_den, int(float(input_rate) * mult),
+                "speex resampler: speex_resampler_set_rate_frac(%d/%d, %d/%d): [%d] %s",
+                (int)ratio_num, (int)ratio_den, int(roundf(input_rate * mult)),
                 int(output_rate), err, get_error_msg(err));
         return false;
     }
