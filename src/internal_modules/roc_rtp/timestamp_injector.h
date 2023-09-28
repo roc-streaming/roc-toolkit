@@ -39,12 +39,13 @@ public:
     virtual packet::PacketPtr read();
 
     //! Get a pair of a reference timestamps.
-    void update_mapping(core::nanoseconds_t capture_ts, packet::timestamp_t rtp_ts);
+    void update_mapping(core::nanoseconds_t capture_ts,
+                        packet::stream_timestamp_t rtp_ts);
 
 private:
     bool has_ts_;
     core::nanoseconds_t capt_ts_;
-    packet::timestamp_t rtp_ts_;
+    packet::stream_timestamp_t rtp_ts_;
 
     packet::IReader& reader_;
     const audio::SampleSpec sample_spec_;

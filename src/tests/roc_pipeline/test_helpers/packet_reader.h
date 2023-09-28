@@ -56,7 +56,7 @@ public:
 
         audio::sample_t samples[MaxSamples] = {};
         parse_packet_(pp->data(), samples_per_packet, samples);
-        check_timestamp_(*pp, sample_spec, base_capture_ts);
+        check_capture_timestamp_(*pp, sample_spec, base_capture_ts);
 
         for (size_t ns = 0; ns < samples_per_packet; ns++) {
             for (size_t nc = 0; nc < sample_spec.num_channels(); nc++) {
@@ -76,7 +76,7 @@ public:
 
         audio::sample_t samples[MaxSamples] = {};
         parse_packet_(pp->data(), samples_per_packet, samples);
-        check_timestamp_(*pp, sample_spec, base_capture_ts);
+        check_capture_timestamp_(*pp, sample_spec, base_capture_ts);
 
         size_t non_zero = 0;
         for (size_t ns = 0; ns < samples_per_packet; ns++) {
@@ -95,7 +95,7 @@ public:
 
         audio::sample_t samples[MaxSamples] = {};
         parse_packet_(pp->data(), samples_per_packet, samples);
-        check_timestamp_(*pp, sample_spec, base_capture_ts);
+        check_capture_timestamp_(*pp, sample_spec, base_capture_ts);
 
         for (size_t ns = 0; ns < samples_per_packet; ns++) {
             DOUBLES_EQUAL(0.0, (double)samples[ns], SampleEpsilon);
@@ -138,12 +138,12 @@ private:
         if (first_) {
             source_ = pp->rtp()->source;
             seqnum_ = pp->rtp()->seqnum;
-            timestamp_ = pp->rtp()->timestamp;
+            timestamp_ = pp->rtp()->stream_timestamp;
             first_ = false;
         } else {
             UNSIGNED_LONGS_EQUAL(source_, pp->rtp()->source);
             UNSIGNED_LONGS_EQUAL(seqnum_, pp->rtp()->seqnum);
-            UNSIGNED_LONGS_EQUAL(timestamp_, pp->rtp()->timestamp);
+            UNSIGNED_LONGS_EQUAL(timestamp_, pp->rtp()->stream_timestamp);
         }
 
         UNSIGNED_LONGS_EQUAL(pt_, pp->rtp()->payload_type);
@@ -151,7 +151,7 @@ private:
         seqnum_++;
         timestamp_ += samples_per_packet;
 
-        payload_decoder_->begin(pp->rtp()->timestamp, pp->rtp()->payload.data(),
+        payload_decoder_->begin(pp->rtp()->stream_timestamp, pp->rtp()->payload.data(),
                                 pp->rtp()->payload.size());
 
         UNSIGNED_LONGS_EQUAL(samples_per_packet,
@@ -160,9 +160,9 @@ private:
         payload_decoder_->end();
     }
 
-    void check_timestamp_(const packet::Packet& pkt,
-                          const audio::SampleSpec& sample_spec,
-                          core::nanoseconds_t base_ts) {
+    void check_capture_timestamp_(const packet::Packet& pkt,
+                                  const audio::SampleSpec& sample_spec,
+                                  core::nanoseconds_t base_ts) {
         CHECK(pkt.rtp());
 
         if (base_ts < 0) {
@@ -185,9 +185,9 @@ private:
 
     address::SocketAddr dst_addr_;
 
-    packet::source_t source_;
+    packet::stream_source_t source_;
     packet::seqnum_t seqnum_;
-    packet::timestamp_t timestamp_;
+    packet::stream_timestamp_t timestamp_;
 
     rtp::PayloadType pt_;
 

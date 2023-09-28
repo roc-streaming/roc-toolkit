@@ -132,7 +132,7 @@ bool Composer::compose(packet::Packet& packet) {
     header.set_version(V2);
     header.set_ssrc(rtp->source);
     header.set_seqnum(rtp->seqnum);
-    header.set_timestamp(rtp->timestamp);
+    header.set_timestamp(rtp->stream_timestamp);
     header.set_marker(rtp->marker);
     header.set_payload_type(PayloadType(rtp->payload_type));
 

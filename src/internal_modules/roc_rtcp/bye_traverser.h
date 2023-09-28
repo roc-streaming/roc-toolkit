@@ -40,7 +40,7 @@ public:
 
         //! Get SSRC element.
         //! @pre Can be used if next() returned SSRC.
-        packet::source_t ssrc() const;
+        packet::stream_source_t ssrc() const;
 
         //! Get REASON element.
         //! Zero-terminated UTF-8 string.
@@ -62,7 +62,7 @@ public:
         uint8_t* pcur_;
         size_t cur_ssrc_;
 
-        packet::source_t parsed_ssrc_;
+        packet::stream_source_t parsed_ssrc_;
         char parsed_reason_[header::ByeReasonHeader::MaxTextLen + 1];
     };
 

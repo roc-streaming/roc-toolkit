@@ -159,7 +159,7 @@ TEST_GROUP(writer_reader) {
         pp->rtp()->source = SourceID;
         pp->rtp()->payload_type = PayloadType;
         pp->rtp()->seqnum = packet::seqnum_t(sn);
-        pp->rtp()->timestamp = packet::timestamp_t(sn * 10);
+        pp->rtp()->stream_timestamp = packet::stream_timestamp_t(sn * 10);
 
         for (size_t i = 0; i < rtp_payload_size; i++) {
             pp->rtp()->payload.data()[i] = uint8_t(sn + i);
@@ -185,7 +185,8 @@ TEST_GROUP(writer_reader) {
         UNSIGNED_LONGS_EQUAL(SourceID, pp->rtp()->source);
 
         UNSIGNED_LONGS_EQUAL(sn, pp->rtp()->seqnum);
-        UNSIGNED_LONGS_EQUAL(packet::timestamp_t(sn * 10), pp->rtp()->timestamp);
+        UNSIGNED_LONGS_EQUAL(packet::stream_timestamp_t(sn * 10),
+                             pp->rtp()->stream_timestamp);
 
         UNSIGNED_LONGS_EQUAL(PayloadType, pp->rtp()->payload_type);
         UNSIGNED_LONGS_EQUAL(rtp_payload_size, pp->rtp()->payload.size());
@@ -1865,7 +1866,7 @@ TEST(writer_reader, writer_encode_blocks) {
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
-        packet::source_t data_source = 555;
+        packet::stream_source_t data_source = 555;
 
         for (size_t n = 0; n < 5; n++) {
             core::ScopedPtr<IBlockEncoder> encoder(

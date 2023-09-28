@@ -28,13 +28,13 @@ namespace {
 core::HeapArena arena;
 static packet::PacketFactory packet_factory(arena);
 
-packet::PacketPtr new_packet(packet::seqnum_t sn, packet::timestamp_t ts) {
+packet::PacketPtr new_packet(packet::seqnum_t sn, packet::stream_timestamp_t ts) {
     packet::PacketPtr packet = packet_factory.new_packet();
     CHECK(packet);
 
     packet->add_flags(packet::Packet::FlagRTP);
     packet->rtp()->seqnum = sn;
-    packet->rtp()->timestamp = ts;
+    packet->rtp()->stream_timestamp = ts;
 
     return packet;
 }
@@ -54,14 +54,14 @@ TEST(timestamp_injector, negative_and_positive_dn) {
     const audio::SampleSpec sample_spec =
         audio::SampleSpec((size_t)sample_rate, audio::ChanLayout_Surround, ChMask);
 
-    packet::timestamp_t rtp_ts = 2222;
-    packet::timestamp_t packet_rtp_ts = (packet::timestamp_t)-4444;
+    packet::stream_timestamp_t rtp_ts = 2222;
+    packet::stream_timestamp_t packet_rtp_ts = (packet::stream_timestamp_t)-4444;
     const core::nanoseconds_t epsilon = core::nanoseconds_t(1.f / sample_rate * 1e9f);
 
     core::nanoseconds_t cur_packet_capt_ts = 1691499037871419405;
     const core::nanoseconds_t reference_capt_ts = cur_packet_capt_ts
         + sample_spec.samples_per_chan_2_ns(
-            (size_t)packet::timestamp_diff(rtp_ts, packet_rtp_ts));
+            (size_t)packet::stream_timestamp_diff(rtp_ts, packet_rtp_ts));
 
     DOUBLES_EQUAL((reference_capt_ts - cur_packet_capt_ts) * 1e-9f * sample_rate,
                   rtp_ts - packet_rtp_ts, 1e-3);
@@ -72,8 +72,9 @@ TEST(timestamp_injector, negative_and_positive_dn) {
 
     LONGS_EQUAL(0, queue.size());
     for (size_t i = 0; i < NPackets; i++) {
-        queue.write(new_packet((packet::seqnum_t)i,
-                               (packet::timestamp_t)(packet_rtp_ts + i * PacketSz)));
+        queue.write(
+            new_packet((packet::seqnum_t)i,
+                       (packet::stream_timestamp_t)(packet_rtp_ts + i * PacketSz)));
     }
     LONGS_EQUAL(NPackets, queue.size());
 

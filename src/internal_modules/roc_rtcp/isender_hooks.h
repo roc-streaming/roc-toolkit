@@ -29,7 +29,7 @@ public:
 
     //! Get identifier of the source with given index.
     //! @p source_index is a number from 0 ro num_receipted_sources().
-    virtual packet::source_t on_get_sending_source(size_t source_index) = 0;
+    virtual packet::stream_source_t on_get_sending_source(size_t source_index) = 0;
 
     //! Generate sending metrics.
     //! The obtained metrics will be sent to receiver(s).

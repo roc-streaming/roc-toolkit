@@ -18,7 +18,7 @@ DelayedReader::DelayedReader(IReader& reader,
                              const audio::SampleSpec& sample_spec)
     : reader_(reader)
     , queue_(0)
-    , delay_((packet::timestamp_t)sample_spec.ns_2_rtp_timestamp(delay))
+    , delay_((packet::stream_timestamp_t)sample_spec.ns_2_stream_timestamp_delta(delay))
     , started_(false) {
     roc_log(LogDebug, "delayed reader: initializing: delay=%lu", (unsigned long)delay_);
 }
@@ -44,7 +44,7 @@ bool DelayedReader::fetch_packets_() {
         queue_.write(pp);
     }
 
-    const timestamp_t qs = queue_size_();
+    const stream_timestamp_t qs = queue_size_();
     if (qs < delay_) {
         return false;
     }
@@ -58,12 +58,12 @@ bool DelayedReader::fetch_packets_() {
 PacketPtr DelayedReader::read_queued_packet_() {
     PacketPtr pp;
 
-    timestamp_t qs = 0;
+    stream_timestamp_t qs = 0;
 
     for (;;) {
         pp = queue_.read();
 
-        const timestamp_t new_qs = queue_size_();
+        const stream_timestamp_t new_qs = queue_size_();
         if (new_qs < delay_) {
             break;
         }
@@ -80,13 +80,13 @@ PacketPtr DelayedReader::read_queued_packet_() {
     return pp;
 }
 
-timestamp_t DelayedReader::queue_size_() const {
+stream_timestamp_t DelayedReader::queue_size_() const {
     if (queue_.size() == 0) {
         return 0;
     }
 
-    const timestamp_diff_t qs =
-        timestamp_diff(queue_.tail()->end(), queue_.head()->begin());
+    const stream_timestamp_diff_t qs =
+        stream_timestamp_diff(queue_.tail()->end(), queue_.head()->begin());
 
     if (qs < 0) {
         roc_log(LogError, "delayed reader: unexpected negative queue size: %ld",
@@ -94,7 +94,7 @@ timestamp_t DelayedReader::queue_size_() const {
         return 0;
     }
 
-    return (timestamp_t)qs;
+    return (stream_timestamp_t)qs;
 }
 
 } // namespace packet

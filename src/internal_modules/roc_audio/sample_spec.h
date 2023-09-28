@@ -129,15 +129,17 @@ public:
     //! @name RTP timestamp converters
     //! @{
 
-    //! Convert nanoseconds delta to RTP timestamp delta.
+    //! Convert nanoseconds delta to stream timestamp delta.
     //! @remarks
     //!  Same as ns_2_samples_per_chan(), but supports negative deltas.
-    packet::timestamp_diff_t ns_2_rtp_timestamp(core::nanoseconds_t ns_delta) const;
+    packet::stream_timestamp_diff_t
+    ns_2_stream_timestamp_delta(core::nanoseconds_t ns_delta) const;
 
-    //! Convert RTP timestamp delta to nanoseconds delta.
+    //! Convert stream timestamp delta to nanoseconds delta.
     //! @remarks
     //!  Same as samples_per_chan_2_ns(), but supports negative deltas.
-    core::nanoseconds_t rtp_timestamp_2_ns(packet::timestamp_diff_t rtp_delta) const;
+    core::nanoseconds_t
+    stream_timestamp_delta_2_ns(packet::stream_timestamp_diff_t sts_delta) const;
 
     // @}
 

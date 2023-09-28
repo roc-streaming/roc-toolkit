@@ -65,7 +65,7 @@ public:
 
     void shift_to(size_t num_packets, size_t samples_per_packet) {
         seqnum_ = packet::seqnum_t(num_packets);
-        timestamp_ = packet::timestamp_t(num_packets * samples_per_packet);
+        timestamp_ = packet::stream_timestamp_t(num_packets * samples_per_packet);
         offset_ = uint8_t(num_packets * samples_per_packet);
     }
 
@@ -77,11 +77,11 @@ public:
         offset_ = uint8_t(offset);
     }
 
-    packet::source_t source() const {
+    packet::stream_source_t source() const {
         return source_;
     }
 
-    void set_source(packet::source_t source) {
+    void set_source(packet::stream_source_t source) {
         source_ = source;
     }
 
@@ -93,11 +93,11 @@ public:
         seqnum_ = seqnum;
     }
 
-    packet::timestamp_t timestamp() const {
+    packet::stream_timestamp_t timestamp() const {
         return timestamp_;
     }
 
-    void set_timestamp(packet::timestamp_t timestamp) {
+    void set_timestamp(packet::stream_timestamp_t timestamp) {
         timestamp_ = timestamp;
     }
 
@@ -152,7 +152,7 @@ private:
 
         pp->rtp()->source = source_;
         pp->rtp()->seqnum = seqnum_;
-        pp->rtp()->timestamp = timestamp_;
+        pp->rtp()->stream_timestamp = timestamp_;
         pp->rtp()->payload_type = pt_;
 
         seqnum_++;
@@ -189,9 +189,9 @@ private:
     address::SocketAddr src_addr_;
     address::SocketAddr dst_addr_;
 
-    packet::source_t source_;
+    packet::stream_source_t source_;
     packet::seqnum_t seqnum_;
-    packet::timestamp_t timestamp_;
+    packet::stream_timestamp_t timestamp_;
 
     rtp::PayloadType pt_;
 

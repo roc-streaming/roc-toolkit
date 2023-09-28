@@ -96,19 +96,19 @@ public:
     //! @remarks
     //!  The returning value depends on packet type. For some packet types, may
     //!  be always zero.
-    source_t source() const;
+    stream_source_t source() const;
 
     //! Get the timestamp of the first sample in packet.
     //! @remarks
     //!  Timestamp units depend on packet type. For some packet types, may
     //!  be always zero.
-    timestamp_t begin() const;
+    stream_timestamp_t begin() const;
 
     //! Get the timestamp of the last sample in packet plus one.
     //! @remarks
     //!  Timestamp units depend on packet type. For some packet types, may
     //!  be always zero.
-    timestamp_t end() const;
+    stream_timestamp_t end() const;
 
     //! Determine packet order.
     //! @returns

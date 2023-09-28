@@ -43,8 +43,8 @@ TEST_GROUP(validator) {
         config.max_ts_jump = MaxTsJump * core::Second / SampleRate;
     }
 
-    packet::PacketPtr new_packet(PayloadType pt, packet::source_t src,
-                                 packet::seqnum_t sn, packet::timestamp_t ts,
+    packet::PacketPtr new_packet(PayloadType pt, packet::stream_source_t src,
+                                 packet::seqnum_t sn, packet::stream_timestamp_t ts,
                                  core::nanoseconds_t cts) {
         packet::PacketPtr packet = packet_factory.new_packet();
         CHECK(packet);
@@ -53,7 +53,7 @@ TEST_GROUP(validator) {
         packet->rtp()->payload_type = pt;
         packet->rtp()->source = src;
         packet->rtp()->seqnum = sn;
-        packet->rtp()->timestamp = ts;
+        packet->rtp()->stream_timestamp = ts;
         packet->rtp()->capture_timestamp = cts;
 
         return packet;
@@ -208,13 +208,13 @@ TEST(validator, seqnum_late) {
 }
 
 TEST(validator, timestamp_no_jump) {
-    const packet::timestamp_t tss[] = {
+    const packet::stream_timestamp_t tss[] = {
         1,
-        packet::timestamp_t(-1) - MaxTsJump / 2,
+        packet::stream_timestamp_t(-1) - MaxTsJump / 2,
     };
     for (size_t i = 0; i < 2; i++) {
-        const packet::timestamp_t ts1 = tss[i];
-        const packet::timestamp_t ts2 = ts1 + MaxTsJump;
+        const packet::stream_timestamp_t ts1 = tss[i];
+        const packet::stream_timestamp_t ts2 = ts1 + MaxTsJump;
 
         packet::Queue queue;
         Validator validator(queue, config, SampleSpecs);
@@ -232,13 +232,13 @@ TEST(validator, timestamp_no_jump) {
 }
 
 TEST(validator, timestamp_jump_up) {
-    const packet::timestamp_t tss[] = {
+    const packet::stream_timestamp_t tss[] = {
         1,
-        packet::timestamp_t(-1) - MaxTsJump / 2,
+        packet::stream_timestamp_t(-1) - MaxTsJump / 2,
     };
     for (size_t i = 0; i < 2; i++) {
-        const packet::timestamp_t ts1 = tss[i];
-        const packet::timestamp_t ts2 = ts1 + MaxTsJump + 10;
+        const packet::stream_timestamp_t ts1 = tss[i];
+        const packet::stream_timestamp_t ts2 = ts1 + MaxTsJump + 10;
 
         packet::Queue queue;
         Validator validator(queue, config, SampleSpecs);
@@ -256,13 +256,13 @@ TEST(validator, timestamp_jump_up) {
 }
 
 TEST(validator, timestamp_jump_down) {
-    const packet::timestamp_t tss[] = {
+    const packet::stream_timestamp_t tss[] = {
         1,
-        packet::timestamp_t(-1) - MaxTsJump / 2,
+        packet::stream_timestamp_t(-1) - MaxTsJump / 2,
     };
     for (size_t i = 0; i < 2; i++) {
-        const packet::timestamp_t ts1 = tss[i];
-        const packet::timestamp_t ts2 = ts1 + MaxTsJump + 10;
+        const packet::stream_timestamp_t ts1 = tss[i];
+        const packet::stream_timestamp_t ts2 = ts1 + MaxTsJump + 10;
 
         packet::Queue queue;
         Validator validator(queue, config, SampleSpecs);
@@ -280,9 +280,9 @@ TEST(validator, timestamp_jump_down) {
 }
 
 TEST(validator, timestamp_late) {
-    const packet::timestamp_t ts1 = 100;
-    const packet::timestamp_t ts2 = 50;
-    const packet::timestamp_t ts3 = ts2 + MaxTsJump + 1;
+    const packet::stream_timestamp_t ts1 = 100;
+    const packet::stream_timestamp_t ts2 = 50;
+    const packet::stream_timestamp_t ts3 = ts2 + MaxTsJump + 1;
 
     packet::Queue queue;
     Validator validator(queue, config, SampleSpecs);

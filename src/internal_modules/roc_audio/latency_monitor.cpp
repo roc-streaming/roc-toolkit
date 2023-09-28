@@ -20,8 +20,8 @@ namespace {
 const core::nanoseconds_t LogInterval = 5 * core::Second;
 
 double timestamp_to_ms(const SampleSpec& sample_spec,
-                       packet::timestamp_diff_t timestamp) {
-    return (double)sample_spec.rtp_timestamp_2_ns(timestamp) / core::Millisecond;
+                       packet::stream_timestamp_diff_t timestamp) {
+    return (double)sample_spec.stream_timestamp_delta_2_ns(timestamp) / core::Millisecond;
 }
 
 } // namespace
@@ -40,36 +40,37 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
     , resampler_(resampler)
     , stream_pos_(0)
     , stream_cts_(0)
-    , update_interval_((packet::timestamp_t)input_sample_spec.ns_2_rtp_timestamp(
-          config.fe_update_interval))
+    , update_interval_(
+          (packet::stream_timestamp_t)input_sample_spec.ns_2_stream_timestamp_delta(
+              config.fe_update_interval))
     , update_pos_(0)
-    , report_interval_(
-          (packet::timestamp_t)input_sample_spec.ns_2_rtp_timestamp(LogInterval))
+    , report_interval_((packet::stream_timestamp_t)
+                           input_sample_spec.ns_2_stream_timestamp_delta(LogInterval))
     , report_pos_(0)
     , freq_coeff_(0)
     , niq_latency_(0)
     , e2e_latency_(0)
     , has_niq_latency_(false)
     , has_e2e_latency_(false)
-    , target_latency_(input_sample_spec.ns_2_rtp_timestamp(target_latency))
-    , min_latency_(input_sample_spec.ns_2_rtp_timestamp(config.min_latency))
-    , max_latency_(input_sample_spec.ns_2_rtp_timestamp(config.max_latency))
+    , target_latency_(input_sample_spec.ns_2_stream_timestamp_delta(target_latency))
+    , min_latency_(input_sample_spec.ns_2_stream_timestamp_delta(config.min_latency))
+    , max_latency_(input_sample_spec.ns_2_stream_timestamp_delta(config.max_latency))
     , max_scaling_delta_(config.max_scaling_delta)
     , input_sample_spec_(input_sample_spec)
     , output_sample_spec_(output_sample_spec)
     , alive_(true)
     , valid_(false) {
-    roc_log(
-        LogDebug,
-        "latency monitor: initializing:"
-        " target_latency=%lu(%.3fms) in_rate=%lu out_rate=%lu"
-        " fe_enable=%d fe_profile=%s fe_interval=%.3fms",
-        (unsigned long)target_latency_,
-        timestamp_to_ms(input_sample_spec_, target_latency_),
-        (unsigned long)input_sample_spec_.sample_rate(),
-        (unsigned long)output_sample_spec_.sample_rate(), (int)config.fe_enable,
-        fe_profile_to_str(config.fe_profile),
-        timestamp_to_ms(input_sample_spec_, (packet::timestamp_diff_t)update_interval_));
+    roc_log(LogDebug,
+            "latency monitor: initializing:"
+            " target_latency=%lu(%.3fms) in_rate=%lu out_rate=%lu"
+            " fe_enable=%d fe_profile=%s fe_interval=%.3fms",
+            (unsigned long)target_latency_,
+            timestamp_to_ms(input_sample_spec_, target_latency_),
+            (unsigned long)input_sample_spec_.sample_rate(),
+            (unsigned long)output_sample_spec_.sample_rate(), (int)config.fe_enable,
+            fe_profile_to_str(config.fe_profile),
+            timestamp_to_ms(input_sample_spec_,
+                            (packet::stream_timestamp_diff_t)update_interval_));
 
     if (target_latency < config.min_latency || target_latency > config.max_latency
         || target_latency <= 0) {
@@ -93,7 +94,7 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
         }
 
         fe_.reset(new (fe_) FreqEstimator(config.fe_profile,
-                                          (packet::timestamp_t)target_latency_));
+                                          (packet::stream_timestamp_t)target_latency_));
         if (!fe_) {
             return;
         }
@@ -121,8 +122,8 @@ LatencyMonitorMetrics LatencyMonitor::metrics() const {
     roc_panic_if(!is_valid());
 
     LatencyMonitorMetrics metrics;
-    metrics.niq_latency = input_sample_spec_.rtp_timestamp_2_ns(niq_latency_);
-    metrics.e2e_latency = input_sample_spec_.rtp_timestamp_2_ns(e2e_latency_);
+    metrics.niq_latency = input_sample_spec_.stream_timestamp_delta_2_ns(niq_latency_);
+    metrics.e2e_latency = input_sample_spec_.stream_timestamp_delta_2_ns(e2e_latency_);
 
     return metrics;
 }
@@ -170,7 +171,7 @@ void LatencyMonitor::compute_niq_latency_() {
     }
 
     // timestamp of next sample that depacketizer expects from packet pipeline
-    const packet::timestamp_t niq_head = depacketizer_.next_timestamp();
+    const packet::stream_timestamp_t niq_head = depacketizer_.next_timestamp();
 
     packet::PacketPtr latest_packet = incoming_queue_.latest();
     if (!latest_packet) {
@@ -178,12 +179,12 @@ void LatencyMonitor::compute_niq_latency_() {
     }
 
     // timestamp of last sample of last packet in packet pipeline
-    const packet::timestamp_t niq_tail = latest_packet->end();
+    const packet::stream_timestamp_t niq_tail = latest_packet->end();
 
     // packet pipeline length
     // includes incoming queue and packets buffered inside other packet
     // pipeline elements, e.g. in FEC reader
-    niq_latency_ = packet::timestamp_diff(niq_tail, niq_head);
+    niq_latency_ = packet::stream_timestamp_diff(niq_tail, niq_head);
     has_niq_latency_ = true;
 }
 
@@ -196,7 +197,7 @@ void LatencyMonitor::compute_e2e_latency_(core::nanoseconds_t playback_timestamp
     // time when first sample of that frame was captured on sender
     // (both timestamps are in receiver clock domain)
     e2e_latency_ =
-        input_sample_spec_.ns_2_rtp_timestamp(playback_timestamp - stream_cts_);
+        input_sample_spec_.ns_2_stream_timestamp_delta(playback_timestamp - stream_cts_);
     has_e2e_latency_ = true;
 }
 
@@ -222,7 +223,7 @@ bool LatencyMonitor::update_() {
     return true;
 }
 
-bool LatencyMonitor::check_bounds_(packet::timestamp_diff_t latency) const {
+bool LatencyMonitor::check_bounds_(packet::stream_timestamp_diff_t latency) const {
     if (latency < min_latency_) {
         roc_log(
             LogDebug,
@@ -263,7 +264,7 @@ bool LatencyMonitor::init_scaling_(size_t input_sample_rate, size_t output_sampl
     return true;
 }
 
-bool LatencyMonitor::update_scaling_(packet::timestamp_diff_t latency) {
+bool LatencyMonitor::update_scaling_(packet::stream_timestamp_diff_t latency) {
     roc_panic_if_not(resampler_);
     roc_panic_if_not(fe_);
 
@@ -276,7 +277,7 @@ bool LatencyMonitor::update_scaling_(packet::timestamp_diff_t latency) {
     }
 
     while (stream_pos_ >= update_pos_) {
-        fe_->update((packet::timestamp_t)latency);
+        fe_->update((packet::stream_timestamp_t)latency);
         update_pos_ += update_interval_;
     }
 

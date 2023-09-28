@@ -102,7 +102,7 @@ void Packet::set_data(const core::Slice<uint8_t>& d) {
     data_ = d;
 }
 
-source_t Packet::source() const {
+stream_source_t Packet::source() const {
     if (const RTP* r = rtp()) {
         return r->source;
     }
@@ -110,17 +110,17 @@ source_t Packet::source() const {
     return 0;
 }
 
-timestamp_t Packet::begin() const {
+stream_timestamp_t Packet::begin() const {
     if (const RTP* r = rtp()) {
-        return r->timestamp;
+        return r->stream_timestamp;
     }
 
     return 0;
 }
 
-timestamp_t Packet::end() const {
+stream_timestamp_t Packet::end() const {
     if (const RTP* r = rtp()) {
-        return r->timestamp + r->duration;
+        return r->stream_timestamp + r->duration;
     }
 
     return 0;

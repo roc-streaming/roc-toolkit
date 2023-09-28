@@ -94,10 +94,12 @@ public:
     virtual bool read(Frame& frame);
 
 private:
-    void update_blank_timeout_(const Frame& frame, packet::timestamp_t next_read_pos);
+    void update_blank_timeout_(const Frame& frame,
+                               packet::stream_timestamp_t next_read_pos);
     bool check_blank_timeout_() const;
 
-    void update_drops_timeout_(const Frame& frame, packet::timestamp_t next_read_pos);
+    void update_drops_timeout_(const Frame& frame,
+                               packet::stream_timestamp_t next_read_pos);
     bool check_drops_timeout_();
 
     void update_status_(const Frame& frame);
@@ -107,13 +109,13 @@ private:
 
     const audio::SampleSpec sample_spec_;
 
-    const packet::timestamp_t max_blank_duration_;
-    const packet::timestamp_t max_drops_duration_;
-    const packet::timestamp_t drop_detection_window_;
+    const packet::stream_timestamp_t max_blank_duration_;
+    const packet::stream_timestamp_t max_drops_duration_;
+    const packet::stream_timestamp_t drop_detection_window_;
 
-    packet::timestamp_t curr_read_pos_;
-    packet::timestamp_t last_pos_before_blank_;
-    packet::timestamp_t last_pos_before_drops_;
+    packet::stream_timestamp_t curr_read_pos_;
+    packet::stream_timestamp_t last_pos_before_blank_;
+    packet::stream_timestamp_t last_pos_before_drops_;
 
     unsigned curr_window_flags_;
 

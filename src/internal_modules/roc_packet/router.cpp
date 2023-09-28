@@ -49,7 +49,7 @@ void Router::write(const PacketPtr& packet) {
             }
         }
 
-        const source_t pkt_source = packet->source();
+        const stream_source_t pkt_source = packet->source();
 
         if (r.has_source) {
             if (r.source != pkt_source) {

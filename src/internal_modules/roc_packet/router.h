@@ -43,7 +43,7 @@ private:
     struct Route {
         IWriter* writer;
         unsigned flags;
-        source_t source;
+        stream_source_t source;
         bool has_source;
     };
 

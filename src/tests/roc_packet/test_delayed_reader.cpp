@@ -34,7 +34,7 @@ PacketPtr new_packet(seqnum_t sn) {
 
     packet->add_flags(Packet::FlagRTP);
     packet->rtp()->seqnum = sn;
-    packet->rtp()->timestamp = timestamp_t(sn * NumSamples);
+    packet->rtp()->stream_timestamp = stream_timestamp_t(sn * NumSamples);
 
     return packet;
 }

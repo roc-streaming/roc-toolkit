@@ -29,9 +29,9 @@ void print_packet(const Packet& pkt, int flags) {
 
     if (pkt.rtp()) {
         p.writef(
-            " rtp: src=%lu m=%d sn=%lu ts=%lu dur=%lu cts=%lld pt=%u payload_sz=%lu\n",
+            " rtp: src=%lu m=%d sn=%lu sts=%lu dur=%lu cts=%lld pt=%u payload_sz=%lu\n",
             (unsigned long)pkt.rtp()->source, (int)pkt.rtp()->marker,
-            (unsigned long)pkt.rtp()->seqnum, (unsigned long)pkt.rtp()->timestamp,
+            (unsigned long)pkt.rtp()->seqnum, (unsigned long)pkt.rtp()->stream_timestamp,
             (unsigned long)pkt.rtp()->duration, (long long)pkt.rtp()->capture_timestamp,
             (unsigned int)pkt.rtp()->payload_type,
             (unsigned long)pkt.rtp()->payload.size());

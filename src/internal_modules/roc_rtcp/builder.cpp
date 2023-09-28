@@ -166,7 +166,7 @@ void Builder::begin_bye() {
     state_ = BYE_HEAD;
 }
 
-void Builder::add_bye_ssrc(const packet::source_t ssrc) {
+void Builder::add_bye_ssrc(const packet::stream_source_t ssrc) {
     roc_panic_if_not(state_ == BYE_HEAD || state_ == BYE_SSRC);
 
     header::ByeSourceHeader* p =

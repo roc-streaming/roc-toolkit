@@ -73,7 +73,7 @@ private:
     void build_receiver_report_(Builder& bld, core::nanoseconds_t report_time);
     header::ReceptionReportBlock build_reception_block_(const ReceptionMetrics& metrics);
     void build_session_description_(Builder& bld);
-    void build_source_description_(Builder& bld, packet::source_t ssrc);
+    void build_source_description_(Builder& bld, packet::stream_source_t ssrc);
 
     packet::PacketFactory& packet_factory_;
     core::BufferFactory<uint8_t>& buffer_factory_;
@@ -86,7 +86,7 @@ private:
 
     core::nanoseconds_t next_deadline_;
 
-    packet::source_t ssrc_;
+    packet::stream_source_t ssrc_;
     char cname_[header::SdesItemHeader::MaxTextLen + 1];
 
     bool valid_;

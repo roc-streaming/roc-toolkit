@@ -39,7 +39,8 @@ public:
         , source_(0) {
     }
 
-    void write_sender_report(packet::ntp_timestamp_t ntp_ts, packet::timestamp_t rtp_ts) {
+    void write_sender_report(packet::ntp_timestamp_t ntp_ts,
+                             packet::stream_timestamp_t rtp_ts) {
         core::Slice<uint8_t> buff = buffer_factory_.new_buffer();
         CHECK(buff);
 
@@ -58,7 +59,7 @@ public:
         writer_.write(new_packet_(buff));
     }
 
-    void set_source(packet::source_t source) {
+    void set_source(packet::stream_source_t source) {
         source_ = source;
     }
 
@@ -85,7 +86,7 @@ private:
     address::SocketAddr src_addr_;
     address::SocketAddr dst_addr_;
 
-    packet::source_t source_;
+    packet::stream_source_t source_;
 };
 
 } // namespace test

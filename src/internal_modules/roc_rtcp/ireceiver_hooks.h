@@ -24,10 +24,11 @@ public:
     virtual ~IReceiverHooks();
 
     //! Invoked when retrieved source description.
-    virtual void on_update_source(packet::source_t source_id, const char* cname) = 0;
+    virtual void on_update_source(packet::stream_source_t source_id,
+                                  const char* cname) = 0;
 
     //! Invoked when retrieved source termination message.
-    virtual void on_remove_source(packet::source_t source_id) = 0;
+    virtual void on_remove_source(packet::stream_source_t source_id) = 0;
 
     //! Get number of sources for which we send reception metrics.
     virtual size_t on_get_num_sources() = 0;

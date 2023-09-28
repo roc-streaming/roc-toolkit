@@ -16,47 +16,47 @@ namespace packet {
 TEST_GROUP(units) {};
 
 TEST(units, timestamp_diff) {
-    const timestamp_t v = 4294967295u;
+    const stream_timestamp_t v = 4294967295u;
 
-    LONGS_EQUAL(0, timestamp_diff(v, v));
+    LONGS_EQUAL(0, stream_timestamp_diff(v, v));
 
-    LONGS_EQUAL(+1, timestamp_diff(timestamp_t(v + 1), v));
-    LONGS_EQUAL(-1, timestamp_diff(timestamp_t(v - 1), v));
+    LONGS_EQUAL(+1, stream_timestamp_diff(stream_timestamp_t(v + 1), v));
+    LONGS_EQUAL(-1, stream_timestamp_diff(stream_timestamp_t(v - 1), v));
 
-    CHECK(timestamp_lt(v / 2, v));
-    CHECK(timestamp_diff(v / 2, v) < 0);
+    CHECK(stream_timestamp_lt(v / 2, v));
+    CHECK(stream_timestamp_diff(v / 2, v) < 0);
 
-    CHECK(!timestamp_lt(v / 2 - 1, v));
-    CHECK(timestamp_diff(v / 2 - 1, v) > 0);
+    CHECK(!stream_timestamp_lt(v / 2 - 1, v));
+    CHECK(stream_timestamp_diff(v / 2 - 1, v) > 0);
 }
 
 TEST(units, timestamp_lt) {
-    const timestamp_t v = 4294967295u;
+    const stream_timestamp_t v = 4294967295u;
 
-    CHECK(timestamp_lt(timestamp_t(v - 1), v));
-    CHECK(timestamp_lt(timestamp_t(v - 5), v));
+    CHECK(stream_timestamp_lt(stream_timestamp_t(v - 1), v));
+    CHECK(stream_timestamp_lt(stream_timestamp_t(v - 5), v));
 
-    CHECK(!timestamp_lt(timestamp_t(v + 1), v));
-    CHECK(!timestamp_lt(timestamp_t(v + 5), v));
+    CHECK(!stream_timestamp_lt(stream_timestamp_t(v + 1), v));
+    CHECK(!stream_timestamp_lt(stream_timestamp_t(v + 5), v));
 
-    CHECK(timestamp_lt(v / 2, v));
-    CHECK(!timestamp_lt(v / 2 - 1, v));
+    CHECK(stream_timestamp_lt(v / 2, v));
+    CHECK(!stream_timestamp_lt(v / 2 - 1, v));
 }
 
 TEST(units, timestamp_le) {
-    const timestamp_t v = 4294967295u;
+    const stream_timestamp_t v = 4294967295u;
 
-    CHECK(!timestamp_lt(v, v));
-    CHECK(timestamp_le(v, v));
+    CHECK(!stream_timestamp_lt(v, v));
+    CHECK(stream_timestamp_le(v, v));
 
-    CHECK(timestamp_le(timestamp_t(v - 1), v));
-    CHECK(timestamp_le(timestamp_t(v - 5), v));
+    CHECK(stream_timestamp_le(stream_timestamp_t(v - 1), v));
+    CHECK(stream_timestamp_le(stream_timestamp_t(v - 5), v));
 
-    CHECK(!timestamp_le(timestamp_t(v + 1), v));
-    CHECK(!timestamp_le(timestamp_t(v + 5), v));
+    CHECK(!stream_timestamp_le(stream_timestamp_t(v + 1), v));
+    CHECK(!stream_timestamp_le(stream_timestamp_t(v + 5), v));
 
-    CHECK(timestamp_le(v / 2, v));
-    CHECK(!timestamp_le(v / 2 - 1, v));
+    CHECK(stream_timestamp_le(v / 2, v));
+    CHECK(!stream_timestamp_le(v / 2 - 1, v));
 }
 
 TEST(units, seqnum_diff) {

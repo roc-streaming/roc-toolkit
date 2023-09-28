@@ -46,7 +46,7 @@ packet::PacketFactory packet_factory(arena);
 rtp::Composer rtp_composer(NULL);
 
 packet::PacketPtr new_packet(IFrameEncoder& encoder,
-                             packet::timestamp_t ts,
+                             packet::stream_timestamp_t ts,
                              sample_t value,
                              core::nanoseconds_t capt_ts) {
     packet::PacketPtr pp = packet_factory.new_packet();
@@ -59,7 +59,7 @@ packet::PacketPtr new_packet(IFrameEncoder& encoder,
 
     pp->set_data(bp);
 
-    pp->rtp()->timestamp = ts;
+    pp->rtp()->stream_timestamp = ts;
     pp->rtp()->duration = SamplesPerPacket;
     pp->rtp()->capture_timestamp = capt_ts;
 
@@ -167,7 +167,7 @@ TEST(depacketizer, multiple_packets_one_read) {
     CHECK(dp.is_valid());
 
     core::nanoseconds_t ts = Now;
-    for (packet::timestamp_t n = 0; n < NumPackets; n++) {
+    for (packet::stream_timestamp_t n = 0; n < NumPackets; n++) {
         queue.write(new_packet(encoder, n * SamplesPerPacket, 0.11f, ts));
         ts += NsPerPacket;
     }
@@ -226,9 +226,9 @@ TEST(depacketizer, timestamp_overflow) {
     Depacketizer dp(queue, decoder, SampleSpecs, false);
     CHECK(dp.is_valid());
 
-    const packet::timestamp_t ts2 = 0;
-    const packet::timestamp_t ts1 = ts2 - SamplesPerPacket;
-    const packet::timestamp_t ts3 = ts2 + SamplesPerPacket;
+    const packet::stream_timestamp_t ts2 = 0;
+    const packet::stream_timestamp_t ts1 = ts2 - SamplesPerPacket;
+    const packet::stream_timestamp_t ts3 = ts2 + SamplesPerPacket;
 
     core::nanoseconds_t ts = Now;
     queue.write(new_packet(encoder, ts1, 0.11f, ts));
@@ -253,9 +253,9 @@ TEST(depacketizer, drop_late_packets) {
     Depacketizer dp(queue, decoder, SampleSpecs, false);
     CHECK(dp.is_valid());
 
-    const packet::timestamp_t ts1 = SamplesPerPacket * 2;
-    const packet::timestamp_t ts2 = SamplesPerPacket * 1;
-    const packet::timestamp_t ts3 = SamplesPerPacket * 3;
+    const packet::stream_timestamp_t ts1 = SamplesPerPacket * 2;
+    const packet::stream_timestamp_t ts2 = SamplesPerPacket * 1;
+    const packet::stream_timestamp_t ts3 = SamplesPerPacket * 3;
     const core::nanoseconds_t capt_ts1 = Now + NsPerPacket;
     const core::nanoseconds_t capt_ts2 = Now;
     const core::nanoseconds_t capt_ts3 = ts1 + NsPerPacket;
@@ -276,9 +276,9 @@ TEST(depacketizer, drop_late_packets_timestamp_overflow) {
     Depacketizer dp(queue, decoder, SampleSpecs, false);
     CHECK(dp.is_valid());
 
-    const packet::timestamp_t ts1 = 0;
-    const packet::timestamp_t ts2 = ts1 - SamplesPerPacket;
-    const packet::timestamp_t ts3 = ts1 + SamplesPerPacket;
+    const packet::stream_timestamp_t ts1 = 0;
+    const packet::stream_timestamp_t ts2 = ts1 - SamplesPerPacket;
+    const packet::stream_timestamp_t ts3 = ts1 + SamplesPerPacket;
     const core::nanoseconds_t capt_ts1 = Now;
     const core::nanoseconds_t capt_ts2 = Now - NsPerPacket;
     const core::nanoseconds_t capt_ts3 = Now + NsPerPacket;
@@ -340,9 +340,9 @@ TEST(depacketizer, zeros_between_packets_timestamp_overflow) {
     Depacketizer dp(queue, decoder, SampleSpecs, false);
     CHECK(dp.is_valid());
 
-    const packet::timestamp_t ts2 = 0;
-    const packet::timestamp_t ts1 = ts2 - SamplesPerPacket;
-    const packet::timestamp_t ts3 = ts2 + SamplesPerPacket;
+    const packet::stream_timestamp_t ts2 = 0;
+    const packet::stream_timestamp_t ts1 = ts2 - SamplesPerPacket;
+    const packet::stream_timestamp_t ts3 = ts2 + SamplesPerPacket;
     const core::nanoseconds_t capt_ts1 = Now - NsPerPacket;
     const core::nanoseconds_t capt_ts2 = Now;
     const core::nanoseconds_t capt_ts3 = Now + NsPerPacket;
@@ -407,9 +407,9 @@ TEST(depacketizer, overlapping_packets) {
     Depacketizer dp(queue, decoder, SampleSpecs, false);
     CHECK(dp.is_valid());
 
-    packet::timestamp_t ts1 = 0;
-    packet::timestamp_t ts2 = SamplesPerPacket / 2;
-    packet::timestamp_t ts3 = SamplesPerPacket;
+    packet::stream_timestamp_t ts1 = 0;
+    packet::stream_timestamp_t ts2 = SamplesPerPacket / 2;
+    packet::stream_timestamp_t ts3 = SamplesPerPacket;
 
     queue.write(new_packet(encoder, ts1, 0.11f, Now));
     queue.write(new_packet(encoder, ts2, 0.22f, Now + NsPerPacket / 2));
@@ -565,12 +565,12 @@ TEST(depacketizer, timestamp) {
 
     capt_ts = Now;
     for (size_t n = 0; n < NumPackets; n++) {
-        const size_t nsamples = packet::timestamp_t(n * SamplesPerPacket);
+        const size_t nsamples = packet::stream_timestamp_t(n * SamplesPerPacket);
         queue.write(new_packet(encoder, StartTimestamp + nsamples, 0.1f, capt_ts));
         capt_ts += SampleSpecs.samples_per_chan_2_ns(SamplesPerPacket);
     }
 
-    packet::timestamp_t ts = StartTimestamp;
+    packet::stream_timestamp_t ts = StartTimestamp;
 
     capt_ts = Now;
     for (size_t n = 0; n < NumPackets * FramesPerPacket; n++) {

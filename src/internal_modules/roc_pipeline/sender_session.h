@@ -77,7 +77,7 @@ private:
     // Implementation of rtcp::ISenderHooks interface.
     // These methods are invoked by rtcp::Session.
     virtual size_t on_get_num_sources();
-    virtual packet::source_t on_get_sending_source(size_t source_index);
+    virtual packet::stream_source_t on_get_sending_source(size_t source_index);
     virtual rtcp::SendingMetrics on_get_sending_metrics(core::nanoseconds_t report_time);
     virtual void on_add_reception_metrics(const rtcp::ReceptionMetrics& metrics);
     virtual void on_add_link_metrics(const rtcp::LinkMetrics& metrics);

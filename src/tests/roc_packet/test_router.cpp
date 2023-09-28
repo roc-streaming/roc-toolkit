@@ -21,7 +21,7 @@ namespace {
 core::HeapArena arena;
 PacketFactory packet_factory(arena);
 
-PacketPtr new_packet(source_t source, unsigned flags) {
+PacketPtr new_packet(stream_source_t source, unsigned flags) {
     PacketPtr packet = packet_factory.new_packet();
     CHECK(packet);
     packet->add_flags(Packet::FlagRTP | flags);

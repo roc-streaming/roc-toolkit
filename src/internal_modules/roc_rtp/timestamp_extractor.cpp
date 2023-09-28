@@ -49,7 +49,7 @@ void TimestampExtractor::write(const packet::PacketPtr& pkt) {
     if (pkt->rtp()->capture_timestamp != 0) {
         has_ts_ = true;
         capt_ts_ = pkt->rtp()->capture_timestamp;
-        rtp_ts_ = pkt->rtp()->timestamp;
+        rtp_ts_ = pkt->rtp()->stream_timestamp;
     }
 
     writer_.write(pkt);
@@ -59,7 +59,8 @@ bool TimestampExtractor::has_mapping() {
     return has_ts_;
 }
 
-packet::timestamp_t TimestampExtractor::get_mapping(core::nanoseconds_t capture_ts) {
+packet::stream_timestamp_t
+TimestampExtractor::get_mapping(core::nanoseconds_t capture_ts) {
     if (capture_ts <= 0) {
         roc_panic(
             "timestamp extractor: unexpected negative cts in mapping request: cts=%lld",
@@ -71,10 +72,10 @@ packet::timestamp_t TimestampExtractor::get_mapping(core::nanoseconds_t capture_
             "timestamp extractor: attempt to get mapping before it becomes available");
     }
 
-    const packet::timestamp_diff_t dn =
-        sample_spec_.ns_2_rtp_timestamp(capture_ts - capt_ts_);
+    const packet::stream_timestamp_diff_t dn =
+        sample_spec_.ns_2_stream_timestamp_delta(capture_ts - capt_ts_);
 
-    const packet::timestamp_t rtp_ts = rtp_ts_ + (packet::timestamp_t)dn;
+    const packet::stream_timestamp_t rtp_ts = rtp_ts_ + (packet::stream_timestamp_t)dn;
 
     if (rate_limiter_.allow()) {
         roc_log(LogDebug, "timestamp extractor: returning mapping: unix:%lld/rtp:%llu",

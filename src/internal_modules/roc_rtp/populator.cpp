@@ -31,8 +31,9 @@ packet::PacketPtr Populator::read() {
     }
 
     if (packet->rtp()->duration == 0) {
-        packet->rtp()->duration = (packet::timestamp_t)decoder_.decoded_sample_count(
-            packet->rtp()->payload.data(), packet->rtp()->payload.size());
+        packet->rtp()->duration =
+            (packet::stream_timestamp_t)decoder_.decoded_sample_count(
+                packet->rtp()->payload.data(), packet->rtp()->payload.size());
     }
 
     return packet;

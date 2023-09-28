@@ -67,16 +67,16 @@ public:
     //!  - @p profile defines configuration preset.
     //!  - @p target_latency defines latency we want to archive.
     explicit FreqEstimator(FreqEstimatorProfile profile,
-                           packet::timestamp_t target_latency);
+                           packet::stream_timestamp_t target_latency);
 
     //! Get current frequecy coefficient.
     float freq_coeff() const;
 
     //! Compute new value of frequency coefficient.
-    void update(packet::timestamp_t current_latency);
+    void update(packet::stream_timestamp_t current_latency);
 
 private:
-    bool run_decimators_(packet::timestamp_t current, double& filtered);
+    bool run_decimators_(packet::stream_timestamp_t current, double& filtered);
     double run_controller_(double current);
 
     const FreqEstimatorConfig config_;

@@ -26,7 +26,7 @@ struct SdesChunk {
     }
 
     //! Source ID.
-    packet::source_t ssrc;
+    packet::stream_source_t ssrc;
 };
 
 //! Parsed SDES item.

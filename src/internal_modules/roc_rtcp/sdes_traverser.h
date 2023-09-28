@@ -61,7 +61,7 @@ public:
         uint8_t* pcur_;
         size_t cur_chunk_;
 
-        packet::source_t parsed_ssrc_;
+        packet::stream_source_t parsed_ssrc_;
         header::SdesItemType parsed_item_type_;
         char parsed_item_text_[header::SdesItemHeader::MaxTextLen + 1];
     };

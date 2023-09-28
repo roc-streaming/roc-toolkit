@@ -35,7 +35,7 @@ public:
     //!  begin() changes it according to the provided frame position, however it depends
     //!  on the implementation how exactly. read() and shift() increase it by the number
     //!  of samples they returned.
-    virtual packet::timestamp_t position() const = 0;
+    virtual packet::stream_timestamp_t position() const = 0;
 
     //! Get number of samples available for decoding.
     //!
@@ -48,7 +48,7 @@ public:
     //!  and end() methods. begin() resets it according to the provided frame size,
     //!  however it depends on the implementation how exactly. end() resets it to zero.
     //!  read() and shift() decrease it by the number of samples they returned.
-    virtual packet::timestamp_t available() const = 0;
+    virtual packet::stream_timestamp_t available() const = 0;
 
     //! Get number of samples per channel that can be decoded from given frame.
     virtual size_t decoded_sample_count(const void* frame_data,
@@ -65,7 +65,7 @@ public:
     //!  Decoder updates the decoded stream possition according to @p frame_position,
     //!  but not necessary to the same value. Encoded and decoded stream positions
     //!  may be slightly different, depending on the codec implementation.
-    virtual void begin(packet::timestamp_t frame_position,
+    virtual void begin(packet::stream_timestamp_t frame_position,
                        const void* frame_data,
                        size_t frame_size) = 0;
 
