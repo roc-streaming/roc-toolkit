@@ -17,9 +17,9 @@ namespace audio {
 
 namespace {
 
-//! Fixed point type Q8.24 for realizing computations of curr_frame_ in fixed point
-//! arithmetic. Sometimes this computations requires ceil(...) and floor(...) and
-//! it is very CPU-time hungry in floating point variant on x86.
+// Fixed point type Q8.24 for realizing computations of curr_frame_ in fixed point
+// arithmetic. Sometimes this computations requires ceil(...) and floor(...) and
+// it is very CPU-time hungry in floating point variant on x86.
 typedef uint32_t fixedpoint_t;
 
 // Signed version of fixedpoint_t.

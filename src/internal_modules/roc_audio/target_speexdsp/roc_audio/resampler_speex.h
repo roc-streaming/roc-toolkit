@@ -7,7 +7,7 @@
  */
 
 //! @file roc_audio/target_speexdsp/roc_audio/resampler_speex.h
-//! @brief Resampler Speex.
+//! @brief Speex resampler.
 
 #ifndef ROC_AUDIO_RESAMPLER_SPEEX_H_
 #define ROC_AUDIO_RESAMPLER_SPEEX_H_
@@ -31,7 +31,12 @@
 namespace roc {
 namespace audio {
 
-//! Resamples audio stream using speex resampler.
+//! Speex resampler.
+//!
+//! Resamples audio stream using SpeexDSP library.
+//!
+//! This backend is very fast even on weak CPUs, and provides good quality,
+//! but it can't apply requested scaling very precisely.
 class SpeexResampler : public IResampler, public core::NonCopyable<> {
 public:
     //! Initialize.
@@ -76,8 +81,8 @@ private:
 
     bool valid_;
 
-    //! Counts how many output samples to throw away in order to
-    //! compensate resampler's inner latency.
+    // Counts how many output samples to throw away in order to
+    // compensate resampler's inner latency.
     size_t startup_delay_compensator_;
 };
 
