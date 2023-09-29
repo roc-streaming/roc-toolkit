@@ -60,6 +60,8 @@ This is how it works:
 
 * Receiver maintains the same mapping, and updates this mapping whenever it receives an RTCP packet. Using this mapping, receiver is able to assign each packet a CTS based on its STS field.
 
+This logic is implemented in ``TimestampExtractor`` (on sender) and ``TimestampInjector`` (on receiver).
+
 There are two subtleties here:
 
 * First, sender and receiver system time is not necessarily synchronized.
