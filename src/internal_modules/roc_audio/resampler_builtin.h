@@ -7,7 +7,7 @@
  */
 
 //! @file roc_audio/resampler_builtin.h
-//! @brief Resampler.
+//! @brief Built-in resampler.
 
 #ifndef ROC_AUDIO_RESAMPLER_BUILTIN_H_
 #define ROC_AUDIO_RESAMPLER_BUILTIN_H_
@@ -28,7 +28,14 @@
 namespace roc {
 namespace audio {
 
+//! Built-in resampler.
+//!
 //! Resamples audio stream with non-integer dynamically changing factor.
+//! Implements bandlimited interpolation from this paper:
+//!   https://ccrma.stanford.edu/~jos/resample/resample.pdf
+//!
+//! This backend is quite CPU-hungry, but it maintains requested scaling
+//! factor with very high precision.
 class BuiltinResampler : public IResampler, public core::NonCopyable<> {
 public:
     //! Initialize.
