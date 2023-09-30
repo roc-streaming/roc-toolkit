@@ -65,6 +65,8 @@ public:
     void stop();
 
 private:
+    bool transfer_frame_(ISource& current_source);
+
     ISource& main_source_;
     ISource* backup_source_;
     ISink& sink_;

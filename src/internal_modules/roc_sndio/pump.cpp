@@ -88,10 +88,7 @@ bool Pump::run() {
         }
 
         // read frame
-        audio::Frame frame(frame_buffer_.data(), frame_buffer_.size());
-
-        // if source has clock, here we block on it
-        if (!current_source->read(frame)) {
+        if (!transfer_frame_(*current_source)) {
             roc_log(LogDebug, "pump: got eof from source");
 
             if (current_source == backup_source_) {
@@ -100,42 +97,6 @@ bool Pump::run() {
             } else {
                 break;
             }
-        }
-
-        if (frame.capture_timestamp() == 0) {
-            // if source does not provide capture timestamps, we fill them here
-            // we subtract source latency to take into account recording buffer size,
-            // where this frame spent some time before we read it
-            // we subtract frame size because we already read the whole frame from
-            // recording buffer, and should take it into account too
-            core::nanoseconds_t capture_latency = 0;
-
-            if (current_source->has_latency()) {
-                capture_latency = current_source->latency()
-                    + sample_spec_.samples_overall_2_ns(frame.num_samples());
-            }
-
-            frame.set_capture_timestamp(core::timestamp(core::ClockUnix)
-                                        - capture_latency);
-        }
-
-        // if sink has clock, here we block on it
-        // note that either source or sink has clock, but not both
-        sink_.write(frame);
-
-        {
-            // tell source what is playback time of first sample of last read frame
-            // we add sink latency to take into account playback buffer size
-            // we subtract frame size because we already wrote the whole frame into
-            // playback buffer, and should take it into account too
-            core::nanoseconds_t playback_latency = 0;
-
-            if (sink_.has_latency()) {
-                playback_latency = sink_.latency()
-                    - sample_spec_.samples_overall_2_ns(frame.num_samples());
-            }
-
-            current_source->reclock(core::timestamp(core::ClockUnix) + playback_latency);
         }
 
         if (current_source == &main_source_) {
@@ -147,6 +108,52 @@ bool Pump::run() {
             (unsigned long)n_bufs_);
 
     return !stop_;
+}
+
+bool Pump::transfer_frame_(ISource& current_source) {
+    audio::Frame frame(frame_buffer_.data(), frame_buffer_.size());
+
+    // if source has clock, here we block on it
+    if (!current_source.read(frame)) {
+        return false;
+    }
+
+    if (frame.capture_timestamp() == 0) {
+        // if source does not provide capture timestamps, we fill them here
+        // we subtract source latency to take into account recording buffer size,
+        // where this frame spent some time before we read it
+        // we subtract frame size because we already read the whole frame from
+        // recording buffer, and should take it into account too
+        core::nanoseconds_t capture_latency = 0;
+
+        if (current_source.has_latency()) {
+            capture_latency = current_source.latency()
+                + sample_spec_.samples_overall_2_ns(frame.num_samples());
+        }
+
+        frame.set_capture_timestamp(core::timestamp(core::ClockUnix) - capture_latency);
+    }
+
+    // if sink has clock, here we block on it
+    // note that either source or sink has clock, but not both
+    sink_.write(frame);
+
+    {
+        // tell source what is playback time of first sample of last read frame
+        // we add sink latency to take into account playback buffer size
+        // we subtract frame size because we already wrote the whole frame into
+        // playback buffer, and should take it into account too
+        core::nanoseconds_t playback_latency = 0;
+
+        if (sink_.has_latency()) {
+            playback_latency =
+                sink_.latency() - sample_spec_.samples_overall_2_ns(frame.num_samples());
+        }
+
+        current_source.reclock(core::timestamp(core::ClockUnix) + playback_latency);
+    }
+
+    return true;
 }
 
 void Pump::stop() {
