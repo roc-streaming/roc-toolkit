@@ -87,7 +87,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    sndio::BackendDispatcher backend_dispatcher;
+    sndio::BackendDispatcher backend_dispatcher(context.arena());
     if (args.list_supported_given) {
         if (!sndio::print_supported(backend_dispatcher, context.arena())) {
             return 1;
@@ -230,14 +230,12 @@ int main(int argc, char** argv) {
 
     core::ScopedPtr<sndio::ISource> input_source;
     if (input_uri.is_valid()) {
-        input_source.reset(backend_dispatcher.open_source(input_uri,
-                                                          args.input_format_arg,
-                                                          io_config, context.arena()),
-                           context.arena());
-    } else {
         input_source.reset(
-            backend_dispatcher.open_default_source(io_config, context.arena()),
+            backend_dispatcher.open_source(input_uri, args.input_format_arg, io_config),
             context.arena());
+    } else {
+        input_source.reset(backend_dispatcher.open_default_source(io_config),
+                           context.arena());
     }
     if (!input_source) {
         roc_log(LogError, "can't open input file or device: uri=%s format=%s",

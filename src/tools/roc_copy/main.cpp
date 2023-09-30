@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
     }
 
     core::HeapArena arena;
-    sndio::BackendDispatcher backend_dispatcher;
+    sndio::BackendDispatcher backend_dispatcher(arena);
 
     if (args.list_supported_given) {
         if (!sndio::print_supported(backend_dispatcher, arena)) {
@@ -109,11 +109,10 @@ int main(int argc, char** argv) {
     core::ScopedPtr<sndio::ISource> input_source;
     if (input_uri.is_valid()) {
         input_source.reset(backend_dispatcher.open_source(
-                               input_uri, args.input_format_arg, source_config, arena),
+                               input_uri, args.input_format_arg, source_config),
                            arena);
     } else {
-        input_source.reset(backend_dispatcher.open_default_source(source_config, arena),
-                           arena);
+        input_source.reset(backend_dispatcher.open_default_source(source_config), arena);
     }
     if (!input_source) {
         roc_log(LogError, "can't open input: %s", args.input_arg);
@@ -188,11 +187,10 @@ int main(int argc, char** argv) {
     if (args.output_given) {
         if (output_uri.is_valid()) {
             output_sink.reset(backend_dispatcher.open_sink(
-                                  output_uri, args.output_format_arg, sink_config, arena),
+                                  output_uri, args.output_format_arg, sink_config),
                               arena);
         } else {
-            output_sink.reset(backend_dispatcher.open_default_sink(sink_config, arena),
-                              arena);
+            output_sink.reset(backend_dispatcher.open_default_sink(sink_config), arena);
         }
         if (!output_sink) {
             roc_log(LogError, "can't open output: %s", args.output_arg);

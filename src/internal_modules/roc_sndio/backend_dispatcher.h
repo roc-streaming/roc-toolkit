@@ -32,43 +32,39 @@ namespace sndio {
 class BackendDispatcher : public core::NonCopyable<> {
 public:
     //! Initialize.
-    BackendDispatcher();
+    BackendDispatcher(core::IArena& arena);
 
     //! Create and open default sink.
-    ISink* open_default_sink(const Config& config, core::IArena& arena);
+    ISink* open_default_sink(const Config& config);
 
     //! Create and open default source.
-    ISource* open_default_source(const Config& config, core::IArena& arena);
+    ISource* open_default_source(const Config& config);
 
     //! Create and open a sink.
-    ISink* open_sink(const address::IoUri& uri,
-                     const char* force_format,
-                     const Config& config,
-                     core::IArena& arena);
+    ISink*
+    open_sink(const address::IoUri& uri, const char* force_format, const Config& config);
 
     //! Create and open a source.
     ISource* open_source(const address::IoUri& uri,
                          const char* force_format,
-                         const Config& config,
-                         core::IArena& arena);
+                         const Config& config);
 
     //! Get all supported URI schemes.
-    ROC_ATTR_NODISCARD bool get_supported_schemes(core::StringList&);
+    ROC_ATTR_NODISCARD bool get_supported_schemes(core::StringList& result);
 
     //! Get all supported file formats.
-    ROC_ATTR_NODISCARD bool get_supported_formats(core::StringList&);
+    ROC_ATTR_NODISCARD bool get_supported_formats(core::StringList& result);
 
 private:
-    IDevice* open_default_device_(DeviceType device_type,
-                                  const Config& config,
-                                  core::IArena& arena);
+    IDevice* open_default_device_(DeviceType device_type, const Config& config);
 
     IDevice* open_device_(DeviceType device_type,
                           DriverType driver_type,
                           const char* driver_name,
                           const char* path,
-                          const Config& config,
-                          core::IArena& arena);
+                          const Config& config);
+
+    core::IArena& arena_;
 };
 
 } // namespace sndio
