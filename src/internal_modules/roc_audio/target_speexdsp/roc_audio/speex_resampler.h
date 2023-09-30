@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_audio/target_speexdsp/roc_audio/resampler_speex.h
+//! @file roc_audio/target_speexdsp/roc_audio/speex_resampler.h
 //! @brief Speex resampler.
 
-#ifndef ROC_AUDIO_RESAMPLER_SPEEX_H_
-#define ROC_AUDIO_RESAMPLER_SPEEX_H_
+#ifndef ROC_AUDIO_SPEEX_RESAMPLER_H_
+#define ROC_AUDIO_SPEEX_RESAMPLER_H_
 
 #include "roc_audio/frame.h"
 #include "roc_audio/iframe_reader.h"
@@ -89,4 +89,4 @@ private:
 } // namespace audio
 } // namespace roc
 
-#endif // ROC_AUDIO_RESAMPLER_SPEEX_H_
+#endif // ROC_AUDIO_SPEEX_RESAMPLER_H_

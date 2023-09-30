@@ -7,13 +7,13 @@
  */
 
 #include "roc_audio/resampler_map.h"
-#include "roc_audio/resampler_builtin.h"
+#include "roc_audio/builtin_resampler.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/scoped_ptr.h"
 
 #ifdef ROC_TARGET_SPEEXDSP
-#include "roc_audio/resampler_speex.h"
+#include "roc_audio/speex_resampler.h"
 #endif // ROC_TARGET_SPEEXDSP
 
 namespace roc {
