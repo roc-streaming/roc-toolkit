@@ -29,9 +29,9 @@ namespace {
 
 enum { InFrameSize = 128, OutFrameSize = 200, MaxFrameSize = 4000 };
 
-enum ResamplerMethod { Reader, Writer };
+enum Direction { Dir_Read, Dir_Write };
 
-const ResamplerMethod resampler_methods[] = { Reader, Writer };
+const Direction resampler_dirs[] = { Dir_Read, Dir_Write };
 
 core::HeapArena arena;
 core::BufferFactory<sample_t> buffer_factory(arena, MaxFrameSize);
@@ -146,12 +146,25 @@ void dump(const sample_t* sig1, const sample_t* sig2, size_t num_samples) {
     }
 }
 
-void resample_reader(IResampler& resampler,
-                     sample_t* in,
-                     sample_t* out,
-                     size_t num_samples,
-                     const SampleSpec& sample_spec,
-                     float scaling) {
+void fail(const char* fmt, ...) {
+    char buf[512] = {};
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buf, sizeof(buf) - 1, fmt, args);
+    va_end(args);
+    FAIL(buf);
+}
+
+const char* dir_to_str(Direction dir) {
+    return dir == Dir_Read ? "read" : "write";
+}
+
+void resample_read(IResampler& resampler,
+                   sample_t* in,
+                   sample_t* out,
+                   size_t num_samples,
+                   const SampleSpec& sample_spec,
+                   float scaling) {
     test::MockReader input_reader;
     for (size_t n = 0; n < num_samples; n++) {
         input_reader.add_samples(1, in[n]);
@@ -171,12 +184,12 @@ void resample_reader(IResampler& resampler,
     }
 }
 
-void resample_writer(IResampler& resampler,
-                     sample_t* in,
-                     sample_t* out,
-                     size_t num_samples,
-                     const SampleSpec& sample_spec,
-                     float scaling) {
+void resample_write(IResampler& resampler,
+                    sample_t* in,
+                    sample_t* out,
+                    size_t num_samples,
+                    const SampleSpec& sample_spec,
+                    float scaling) {
     test::MockWriter output_writer;
 
     ResamplerWriter rw(output_writer, resampler, buffer_factory, sample_spec,
@@ -201,7 +214,7 @@ void resample_writer(IResampler& resampler,
 }
 
 void resample(ResamplerBackend backend,
-              ResamplerMethod method,
+              Direction dir,
               sample_t* in,
               sample_t* out,
               size_t num_samples,
@@ -212,10 +225,10 @@ void resample(ResamplerBackend backend,
     CHECK(resampler);
     CHECK(resampler->is_valid());
 
-    if (method == Reader) {
-        resample_reader(*resampler, in, out, num_samples, sample_spec, scaling);
+    if (dir == Dir_Read) {
+        resample_read(*resampler, in, out, num_samples, sample_spec, scaling);
     } else {
-        resample_writer(*resampler, in, out, num_samples, sample_spec, scaling);
+        resample_write(*resampler, in, out, num_samples, sample_spec, scaling);
     }
 }
 
@@ -264,12 +277,12 @@ TEST(resampler, supported_scalings) {
 
                         for (int iter = 0; iter < NumIters; iter++) {
                             if (!rr.set_scaling(scalings[sn])) {
-                                roc_panic("set_scaling() failed:"
-                                          " irate=%d orate=%d scaling=%f"
-                                          " profile=%d backend=%d iteration=%d",
-                                          (int)rates[irate], (int)rates[orate],
-                                          (double)scalings[sn], (int)profiles[pn],
-                                          (int)backend, iter);
+                                fail("set_scaling() failed:"
+                                     " irate=%d orate=%d scaling=%f"
+                                     " profile=%d backend=%s iteration=%d",
+                                     (int)rates[irate], (int)rates[orate],
+                                     (double)scalings[sn], (int)profiles[pn],
+                                     resampler_backend_to_str(backend), iter);
                             }
 
                             sample_t samples[32];
@@ -322,17 +335,17 @@ TEST(resampler, upscale_downscale_mono) {
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
 
-        for (size_t n_meth = 0; n_meth < ROC_ARRAY_SIZE(resampler_methods); n_meth++) {
-            ResamplerMethod method = resampler_methods[n_meth];
+        for (size_t n_dir = 0; n_dir < ROC_ARRAY_SIZE(resampler_dirs); n_dir++) {
+            Direction dir = resampler_dirs[n_dir];
 
             sample_t input[NumSamples];
             generate_sine(input, NumSamples, NumPad);
 
             sample_t upscaled[NumSamples] = {};
-            resample(backend, method, input, upscaled, NumSamples, SampleSpecs, Scaling);
+            resample(backend, dir, input, upscaled, NumSamples, SampleSpecs, Scaling);
 
             sample_t downscaled[NumSamples] = {};
-            resample(backend, method, upscaled, downscaled, NumSamples, SampleSpecs,
+            resample(backend, dir, upscaled, downscaled, NumSamples, SampleSpecs,
                      1.0f / Scaling);
 
             trim_leading_zeros(input, NumSamples, Threshold);
@@ -351,18 +364,16 @@ TEST(resampler, upscale_downscale_mono) {
                 // for plot_resampler_test_dump.py
                 dump(input, upscaled, NumSamples);
 
-                roc_panic(
-                    "compare with upscaled unexpectedly succeeded: backend=%d method=%d",
-                    (int)backend, (int)method);
+                fail("compare with upscaled unexpectedly succeeded: backend=%s dir=%s",
+                     resampler_backend_to_str(backend), dir_to_str(dir));
             }
 
             if (!compare(input, downscaled, NumSamples, Threshold)) {
                 // for plot_resampler_test_dump.py
                 dump(input, downscaled, NumSamples);
 
-                roc_panic(
-                    "compare with downscaled unexpectedly failed: backend=%d method=%d",
-                    (int)backend, (int)method);
+                fail("compare with downscaled unexpectedly failed: backend=%s dir=%s",
+                     resampler_backend_to_str(backend), dir_to_str(dir));
             }
         }
     }
@@ -385,8 +396,8 @@ TEST(resampler, upscale_downscale_stereo) {
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
 
-        for (size_t n_meth = 0; n_meth < ROC_ARRAY_SIZE(resampler_methods); n_meth++) {
-            ResamplerMethod method = resampler_methods[n_meth];
+        for (size_t n_dir = 0; n_dir < ROC_ARRAY_SIZE(resampler_dirs); n_dir++) {
+            Direction dir = resampler_dirs[n_dir];
 
             sample_t input_ch[NumCh][NumSamples];
             generate_sine(input_ch[0], NumSamples, NumPad);
@@ -396,12 +407,12 @@ TEST(resampler, upscale_downscale_stereo) {
             mix_stereo(input, input_ch[0], input_ch[1], NumSamples);
 
             sample_t upscaled[NumSamples * NumCh] = {};
-            resample(backend, method, input, upscaled, NumSamples * NumCh, SampleSpecs,
+            resample(backend, dir, input, upscaled, NumSamples * NumCh, SampleSpecs,
                      Scaling);
 
             sample_t downscaled[NumSamples * NumCh] = {};
-            resample(backend, method, upscaled, downscaled, NumSamples * NumCh,
-                     SampleSpecs, 1.0f / Scaling);
+            resample(backend, dir, upscaled, downscaled, NumSamples * NumCh, SampleSpecs,
+                     1.0f / Scaling);
 
             for (int ch = 0; ch < NumCh; ch++) {
                 sample_t upscaled_ch[NumSamples] = {};
@@ -426,18 +437,18 @@ TEST(resampler, upscale_downscale_stereo) {
                     // for plot_resampler_test_dump.py
                     dump(input_ch[ch], upscaled_ch, NumSamples);
 
-                    roc_panic("compare with upscaled unexpectedly succeeded:"
-                              " backend=%d method=%d",
-                              (int)backend, (int)method);
+                    fail("compare with upscaled unexpectedly succeeded:"
+                         " backend=%s dir=%s",
+                         resampler_backend_to_str(backend), dir_to_str(dir));
                 }
 
                 if (!compare(input_ch[ch], downscaled_ch, NumSamples, Threshold)) {
                     // for plot_resampler_test_dump.py
                     dump(input_ch[ch], downscaled_ch, NumSamples);
 
-                    roc_panic("compare with downscaled unexpectedly failed:"
-                              " backend=%d method=%d",
-                              (int)backend, (int)method);
+                    fail("compare with downscaled unexpectedly failed:"
+                         " backend=%s dir=%s",
+                         resampler_backend_to_str(backend), dir_to_str(dir));
                 }
             }
         }
