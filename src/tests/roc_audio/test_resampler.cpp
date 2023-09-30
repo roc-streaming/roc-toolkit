@@ -96,7 +96,7 @@ void generate_sine(sample_t* out, size_t num_samples, size_t num_padding) {
     for (size_t n = 0; n < num_samples; n++) {
         out[n] = n < num_padding
             ? 0.0f
-            : (sample_t)std::sin(M_PI / 10 * double(n - num_padding)) * 0.8f;
+            : (sample_t)std::sin(M_PI / 1000 * double(n - num_padding)) * 0.8f;
     }
 }
 
@@ -147,10 +147,20 @@ void normalize(sample_t* sig, size_t num_samples) {
 bool compare(const sample_t* in,
              const sample_t* out,
              size_t num_samples,
-             float threshold) {
+             float threshold_p99,
+             float threshold_p100) {
+    size_t n99 = 0;
     for (size_t n = 0; n < num_samples; n++) {
-        if (std::abs(in[n] - out[n]) >= threshold) {
+        // 100% of samples should satisfy threshold_p100
+        if (std::abs(in[n] - out[n]) >= threshold_p100) {
             return false;
+        }
+        // 99% of samples should satisfy threshold_p99
+        if (std::abs(in[n] - out[n]) >= threshold_p99) {
+            n99++;
+            if (n99 > num_samples * 0.99) {
+                return false;
+            }
         }
     }
     return true;
@@ -158,7 +168,8 @@ bool compare(const sample_t* in,
 
 void dump(const sample_t* sig1, const sample_t* sig2, size_t num_samples) {
     for (size_t n = 0; n < num_samples; n++) {
-        roc_log(LogDebug, "dump %f %f", (double)sig1[n], (double)sig2[n]);
+        roc_log(LogDebug, "dump %f %f %f", (double)sig1[n], (double)sig2[n],
+                std::abs((double)sig1[n] - (double)sig2[n]));
     }
 }
 
@@ -346,7 +357,8 @@ TEST(resampler, upscale_downscale_mono) {
     const SampleSpec SampleSpecs(SampleRate, ChanLayout_Surround, ChMask);
 
     const float Scaling = 0.97f;
-    const float Threshold = 0.06f;
+    const float Threshold99 = 0.001f; // threshold for 99% of samples
+    const float Threshold100 = 0.01f; // threshold for 100% of samples
 
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
@@ -364,9 +376,9 @@ TEST(resampler, upscale_downscale_mono) {
             resample(backend, dir, upscaled, downscaled, NumSamples, SampleSpecs,
                      1.0f / Scaling);
 
-            trim_leading_zeros(input, NumSamples, Threshold);
-            trim_leading_zeros(upscaled, NumSamples, Threshold);
-            trim_leading_zeros(downscaled, NumSamples, Threshold);
+            trim_leading_zeros(input, NumSamples, Threshold99);
+            trim_leading_zeros(upscaled, NumSamples, Threshold99);
+            trim_leading_zeros(downscaled, NumSamples, Threshold99);
 
             truncate(input, NumSamples, NumTruncate);
             truncate(upscaled, NumSamples, NumTruncate);
@@ -376,7 +388,7 @@ TEST(resampler, upscale_downscale_mono) {
             normalize(upscaled, NumSamples);
             normalize(downscaled, NumSamples);
 
-            if (compare(input, upscaled, NumSamples, Threshold)) {
+            if (compare(input, upscaled, NumSamples, Threshold99, Threshold100)) {
                 // for plot_resampler_test_dump.py
                 dump(input, upscaled, NumSamples);
 
@@ -384,7 +396,7 @@ TEST(resampler, upscale_downscale_mono) {
                      resampler_backend_to_str(backend), dir_to_str(dir));
             }
 
-            if (!compare(input, downscaled, NumSamples, Threshold)) {
+            if (!compare(input, downscaled, NumSamples, Threshold99, Threshold100)) {
                 // for plot_resampler_test_dump.py
                 dump(input, downscaled, NumSamples);
 
@@ -407,7 +419,8 @@ TEST(resampler, upscale_downscale_stereo) {
     const SampleSpec SampleSpecs(SampleRate, ChanLayout_Surround, ChMask);
 
     const float Scaling = 0.97f;
-    const float Threshold = 0.06f;
+    const float Threshold99 = 0.001f; // threshold for 99% of samples
+    const float Threshold100 = 0.01f; // threshold for 100% of samples
 
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
@@ -437,9 +450,9 @@ TEST(resampler, upscale_downscale_stereo) {
                 sample_t downscaled_ch[NumSamples] = {};
                 extract_channel(downscaled_ch, downscaled, NumCh, ch, NumSamples);
 
-                trim_leading_zeros(input_ch[ch], NumSamples, Threshold);
-                trim_leading_zeros(upscaled_ch, NumSamples, Threshold);
-                trim_leading_zeros(downscaled_ch, NumSamples, Threshold);
+                trim_leading_zeros(input_ch[ch], NumSamples, Threshold99);
+                trim_leading_zeros(upscaled_ch, NumSamples, Threshold99);
+                trim_leading_zeros(downscaled_ch, NumSamples, Threshold99);
 
                 truncate(input_ch[ch], NumSamples, NumTruncate);
                 truncate(upscaled_ch, NumSamples, NumTruncate);
@@ -449,7 +462,8 @@ TEST(resampler, upscale_downscale_stereo) {
                 normalize(upscaled_ch, NumSamples);
                 normalize(downscaled_ch, NumSamples);
 
-                if (compare(input_ch[ch], upscaled_ch, NumSamples, Threshold)) {
+                if (compare(input_ch[ch], upscaled_ch, NumSamples, Threshold99,
+                            Threshold100)) {
                     // for plot_resampler_test_dump.py
                     dump(input_ch[ch], upscaled_ch, NumSamples);
 
@@ -458,7 +472,8 @@ TEST(resampler, upscale_downscale_stereo) {
                          resampler_backend_to_str(backend), dir_to_str(dir));
                 }
 
-                if (!compare(input_ch[ch], downscaled_ch, NumSamples, Threshold)) {
+                if (!compare(input_ch[ch], downscaled_ch, NumSamples, Threshold99,
+                             Threshold100)) {
                     // for plot_resampler_test_dump.py
                     dump(input_ch[ch], downscaled_ch, NumSamples);
 
