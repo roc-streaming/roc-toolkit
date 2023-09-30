@@ -20,7 +20,7 @@ namespace {
 
 const core::nanoseconds_t LogReportInterval = 20 * core::Second;
 
-const spx_uint32_t InputFrameSize = 32;
+const spx_uint32_t InputFrameSize = 16;
 
 inline const char* get_error_msg(int err) {
     if (err == 5) {
@@ -53,12 +53,12 @@ SpeexResampler::SpeexResampler(core::IArena&,
                                const audio::SampleSpec& in_spec,
                                const audio::SampleSpec& out_spec)
     : speex_state_(NULL)
-    , in_frame_size_(InputFrameSize)
+    , in_frame_size_(InputFrameSize * in_spec.num_channels())
     , in_frame_pos_(in_frame_size_)
     , num_ch_((spx_uint32_t)in_spec.num_channels())
+    , startup_delay_compensator_(0)
     , rate_limiter_(LogReportInterval)
-    , valid_(false)
-    , startup_delay_compensator_(0) {
+    , valid_(false) {
     if (!in_spec.is_valid() || !out_spec.is_valid()) {
         roc_log(LogError,
                 "speex resampler: invalid sample spec:"
@@ -80,8 +80,8 @@ SpeexResampler::SpeexResampler(core::IArena&,
     const int quality = get_quality(profile);
 
     roc_log(LogDebug,
-            "speex resampler: initializing: "
-            "quality=%d frame_size=%lu channels_num=%lu",
+            "speex resampler: initializing:"
+            " quality=%d frame_size=%lu channels_num=%lu",
             quality, (unsigned long)in_frame_size_, (unsigned long)num_ch_);
 
     if (!(in_frame_ = buffer_factory.new_buffer())) {
@@ -116,6 +116,8 @@ bool SpeexResampler::is_valid() const {
 }
 
 bool SpeexResampler::set_scaling(size_t input_rate, size_t output_rate, float mult) {
+    roc_panic_if_not(is_valid());
+
     if (input_rate == 0 || output_rate == 0 || mult <= 0
         || input_rate * mult > (float)ROC_MAX_OF(spx_uint32_t)
         || output_rate * mult > (float)ROC_MAX_OF(spx_uint32_t)) {
@@ -154,7 +156,7 @@ bool SpeexResampler::set_scaling(size_t input_rate, size_t output_rate, float mu
     // sets `mult` to 1.0 and needs to be sure that resampler will convert between
     // rates exactly as requested, without rounding errors.
 
-    const float max_numerator = 80000; // selected empirically
+    const float max_numerator = 60000; // selected empirically
     const float base_frac = 10;        // no more than 1 digit in fractional part
 
     const float base = (input_rate < max_numerator && output_rate < max_numerator)
@@ -186,16 +188,21 @@ bool SpeexResampler::set_scaling(size_t input_rate, size_t output_rate, float mu
 }
 
 const core::Slice<sample_t>& SpeexResampler::begin_push_input() {
+    roc_panic_if_not(is_valid());
     roc_panic_if_not(in_frame_pos_ == in_frame_size_);
 
     return in_frame_;
 }
 
 void SpeexResampler::end_push_input() {
+    roc_panic_if_not(is_valid());
+
     in_frame_pos_ = 0;
 }
 
 size_t SpeexResampler::pop_output(Frame& out) {
+    roc_panic_if_not(is_valid());
+
     const spx_uint32_t out_frame_size = spx_uint32_t(out.num_samples());
     sample_t* out_frame_data = out.samples();
     spx_uint32_t out_frame_pos = 0;
@@ -238,7 +245,9 @@ size_t SpeexResampler::pop_output(Frame& out) {
 }
 
 float SpeexResampler::n_left_to_process() const {
-    return (in_frame_size_ - in_frame_pos_) / num_ch_;
+    roc_panic_if_not(is_valid());
+
+    return float(in_frame_size_ - in_frame_pos_) / num_ch_;
 }
 
 void SpeexResampler::report_stats_() {
