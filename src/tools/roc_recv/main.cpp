@@ -87,7 +87,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    sndio::BackendDispatcher backend_dispatcher;
+    sndio::BackendDispatcher backend_dispatcher(context.arena());
 
     if (args.list_supported_given) {
         if (!sndio::print_supported(backend_dispatcher, context.arena())) {
@@ -265,13 +265,12 @@ int main(int argc, char** argv) {
 
     core::ScopedPtr<sndio::ISink> output_sink;
     if (output_uri.is_valid()) {
-        output_sink.reset(backend_dispatcher.open_sink(output_uri, args.output_format_arg,
-                                                       io_config, context.arena()),
-                          context.arena());
-    } else {
         output_sink.reset(
-            backend_dispatcher.open_default_sink(io_config, context.arena()),
+            backend_dispatcher.open_sink(output_uri, args.output_format_arg, io_config),
             context.arena());
+    } else {
+        output_sink.reset(backend_dispatcher.open_default_sink(io_config),
+                          context.arena());
     }
     if (!output_sink) {
         roc_log(LogError, "can't open output file or device: uri=%s format=%s",
@@ -315,10 +314,9 @@ int main(int argc, char** argv) {
             }
         }
 
-        backup_source.reset(backend_dispatcher.open_source(backup_uri,
-                                                           args.backup_format_arg,
-                                                           io_config, context.arena()),
-                            context.arena());
+        backup_source.reset(
+            backend_dispatcher.open_source(backup_uri, args.backup_format_arg, io_config),
+            context.arena());
 
         if (!backup_source) {
             roc_log(LogError, "can't open backup file or device: uri=%s format=%s",
