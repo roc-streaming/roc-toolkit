@@ -42,10 +42,8 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
     if (config.input_sample_spec.sample_rate()
         != config.output_sample_spec.sample_rate()) {
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-                             config.resampler_backend, arena, buffer_factory,
-                             config.resampler_profile, config.input_sample_spec,
-                             config.output_sample_spec),
-                         arena);
+            config.resampler_backend, arena, buffer_factory, config.resampler_profile,
+            config.input_sample_spec, config.output_sample_spec));
 
         if (!resampler_) {
             return;

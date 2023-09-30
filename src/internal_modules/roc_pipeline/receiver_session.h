@@ -134,7 +134,7 @@ private:
 
     core::Optional<audio::PoisonReader> resampler_poisoner_;
     core::Optional<audio::ResamplerReader> resampler_reader_;
-    core::ScopedPtr<audio::IResampler> resampler_;
+    core::SharedPtr<audio::IResampler> resampler_;
 
     core::Optional<audio::PoisonReader> session_poisoner_;
 

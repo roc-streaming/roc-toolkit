@@ -22,11 +22,11 @@ namespace audio {
 namespace {
 
 template <class T>
-IResampler* resampler_ctor(core::IArena& arena,
-                           core::BufferFactory<sample_t>& buffer_factory,
-                           ResamplerProfile profile,
-                           const audio::SampleSpec& in_spec,
-                           const audio::SampleSpec& out_spec) {
+core::SharedPtr<IResampler> resampler_ctor(core::IArena& arena,
+                                           core::BufferFactory<sample_t>& buffer_factory,
+                                           ResamplerProfile profile,
+                                           const audio::SampleSpec& in_spec,
+                                           const audio::SampleSpec& out_spec) {
     return new (arena) T(arena, buffer_factory, profile, in_spec, out_spec);
 }
 
@@ -63,12 +63,13 @@ bool ResamplerMap::is_supported(ResamplerBackend backend_id) const {
     return find_backend_(backend_id) != NULL;
 }
 
-IResampler* ResamplerMap::new_resampler(ResamplerBackend backend_id,
-                                        core::IArena& arena,
-                                        core::BufferFactory<sample_t>& buffer_factory,
-                                        ResamplerProfile profile,
-                                        const audio::SampleSpec& in_spec,
-                                        const audio::SampleSpec& out_spec) {
+core::SharedPtr<IResampler>
+ResamplerMap::new_resampler(ResamplerBackend backend_id,
+                            core::IArena& arena,
+                            core::BufferFactory<sample_t>& buffer_factory,
+                            ResamplerProfile profile,
+                            const audio::SampleSpec& in_spec,
+                            const audio::SampleSpec& out_spec) {
     const Backend* backend = find_backend_(backend_id);
     if (!backend) {
         roc_log(LogError, "resampler map: unsupported resampler backend: [%d] %s",
@@ -76,14 +77,14 @@ IResampler* ResamplerMap::new_resampler(ResamplerBackend backend_id,
         return NULL;
     }
 
-    core::ScopedPtr<IResampler> resampler(
-        backend->ctor(arena, buffer_factory, profile, in_spec, out_spec), arena);
+    core::SharedPtr<IResampler> resampler =
+        backend->ctor(arena, buffer_factory, profile, in_spec, out_spec);
 
     if (!resampler || !resampler->is_valid()) {
         return NULL;
     }
 
-    return resampler.release();
+    return resampler;
 }
 
 void ResamplerMap::add_backend_(const Backend& backend) {

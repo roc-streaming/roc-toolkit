@@ -79,7 +79,7 @@ private:
     core::Optional<audio::ChannelMapperWriter> channel_mapper_writer_;
 
     core::Optional<audio::ResamplerWriter> resampler_writer_;
-    core::ScopedPtr<audio::IResampler> resampler_;
+    core::SharedPtr<audio::IResampler> resampler_;
 
     core::Optional<audio::ProfilingWriter> profiler_;
 

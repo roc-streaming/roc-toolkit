@@ -46,12 +46,10 @@ TranscoderSource::TranscoderSource(const TranscoderConfig& config,
         areader = resampler_poisoner_.get();
 
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-                             config.resampler_backend, arena, buffer_factory,
-                             config.resampler_profile,
-                             audio::SampleSpec(config.input_sample_spec.sample_rate(),
-                                               config.output_sample_spec.channel_set()),
-                             config.output_sample_spec),
-                         arena);
+            config.resampler_backend, arena, buffer_factory, config.resampler_profile,
+            audio::SampleSpec(config.input_sample_spec.sample_rate(),
+                              config.output_sample_spec.channel_set()),
+            config.output_sample_spec));
 
         if (!resampler_) {
             return;

@@ -19,6 +19,7 @@
 #include "roc_core/buffer_factory.h"
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/shared_ptr.h"
 #include "roc_core/singleton.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/units.h"
@@ -43,13 +44,14 @@ public:
     //! Check if given backend is supported.
     bool is_supported(ResamplerBackend backend_id) const;
 
-    //! Method to instantiate and return a pointer to a IResampler object.
-    IResampler* new_resampler(ResamplerBackend backend_id,
-                              core::IArena& arena,
-                              core::BufferFactory<sample_t>& buffer_factory,
-                              ResamplerProfile profile,
-                              const audio::SampleSpec& in_spec,
-                              const audio::SampleSpec& out_spec);
+    //! Instantiate IResampler for given backend ID.
+    core::SharedPtr<IResampler>
+    new_resampler(ResamplerBackend backend_id,
+                  core::IArena& arena,
+                  core::BufferFactory<sample_t>& buffer_factory,
+                  ResamplerProfile profile,
+                  const audio::SampleSpec& in_spec,
+                  const audio::SampleSpec& out_spec);
 
 private:
     friend class core::Singleton<ResamplerMap>;
@@ -63,11 +65,11 @@ private:
         }
 
         ResamplerBackend id;
-        IResampler* (*ctor)(core::IArena& arena,
-                            core::BufferFactory<sample_t>& buffer_factory,
-                            ResamplerProfile profile,
-                            const audio::SampleSpec& in_spec,
-                            const audio::SampleSpec& out_spec);
+        core::SharedPtr<IResampler> (*ctor)(core::IArena& arena,
+                                            core::BufferFactory<sample_t>& buffer_factory,
+                                            ResamplerProfile profile,
+                                            const audio::SampleSpec& in_spec,
+                                            const audio::SampleSpec& out_spec);
     };
 
     ResamplerMap();

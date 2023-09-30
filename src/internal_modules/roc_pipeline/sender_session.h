@@ -107,7 +107,7 @@ private:
     core::Optional<audio::ChannelMapperWriter> channel_mapper_writer_;
 
     core::Optional<audio::ResamplerWriter> resampler_writer_;
-    core::ScopedPtr<audio::IResampler> resampler_;
+    core::SharedPtr<audio::IResampler> resampler_;
 
     core::Optional<rtcp::Composer> rtcp_composer_;
     core::Optional<rtcp::Session> rtcp_session_;

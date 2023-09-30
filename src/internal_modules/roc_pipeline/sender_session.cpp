@@ -130,11 +130,10 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
 
     if (format->sample_spec.sample_rate() != config_.input_sample_spec.sample_rate()) {
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-                             config_.resampler_backend, arena_, sample_buffer_factory_,
-                             config_.resampler_profile, config_.input_sample_spec,
-                             audio::SampleSpec(format->sample_spec.sample_rate(),
-                                               config_.input_sample_spec.channel_set())),
-                         arena_);
+            config_.resampler_backend, arena_, sample_buffer_factory_,
+            config_.resampler_profile, config_.input_sample_spec,
+            audio::SampleSpec(format->sample_spec.sample_rate(),
+                              config_.input_sample_spec.channel_set())));
 
         if (!resampler_) {
             return false;
