@@ -14,14 +14,19 @@
 
 #include "roc_audio/frame.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/ref_counted.h"
 #include "roc_core/slice.h"
 
 namespace roc {
 namespace audio {
 
 //! Audio writer interface.
-class IResampler {
+class IResampler : public core::RefCounted<IResampler, core::ArenaAllocation> {
 public:
+    //! Initialization.
+    IResampler(core::IArena& arena);
+
+    //! Deinitialization.
     virtual ~IResampler();
 
     //! Check if object is successfully constructed.

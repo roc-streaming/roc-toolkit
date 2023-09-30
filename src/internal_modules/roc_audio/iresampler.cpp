@@ -11,6 +11,10 @@
 namespace roc {
 namespace audio {
 
+IResampler::IResampler(core::IArena& arena)
+    : core::RefCounted<IResampler, core::ArenaAllocation>(arena) {
+}
+
 IResampler::~IResampler() {
 }
 

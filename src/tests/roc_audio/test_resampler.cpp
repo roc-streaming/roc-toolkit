@@ -207,11 +207,8 @@ void resample(ResamplerBackend backend,
               size_t num_samples,
               const SampleSpec& sample_spec,
               float scaling) {
-    core::ScopedPtr<IResampler> resampler(
-        ResamplerMap::instance().new_resampler(backend, arena, buffer_factory,
-                                               ResamplerProfile_High, sample_spec,
-                                               sample_spec),
-        arena);
+    core::SharedPtr<IResampler> resampler = ResamplerMap::instance().new_resampler(
+        backend, arena, buffer_factory, ResamplerProfile_High, sample_spec, sample_spec);
     CHECK(resampler);
     CHECK(resampler->is_valid());
 
@@ -251,11 +248,10 @@ TEST(resampler, supported_scalings) {
                         continue;
                     }
                     for (size_t sn = 0; sn < ROC_ARRAY_SIZE(scalings); sn++) {
-                        core::ScopedPtr<IResampler> resampler(
+                        core::SharedPtr<IResampler> resampler =
                             ResamplerMap::instance().new_resampler(
                                 backend, arena, buffer_factory, profiles[pn],
-                                in_sample_specs, out_sample_specs),
-                            arena);
+                                in_sample_specs, out_sample_specs);
                         CHECK(resampler);
                         CHECK(resampler->is_valid());
 
@@ -293,11 +289,9 @@ TEST(resampler, invalid_scalings) {
 
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
-        core::ScopedPtr<IResampler> resampler(
-            ResamplerMap::instance().new_resampler(backend, arena, buffer_factory,
-                                                   ResamplerProfile_High, SampleSpecs,
-                                                   SampleSpecs),
-            arena);
+        core::SharedPtr<IResampler> resampler = ResamplerMap::instance().new_resampler(
+            backend, arena, buffer_factory, ResamplerProfile_High, SampleSpecs,
+            SampleSpecs);
         CHECK(resampler);
         CHECK(resampler->is_valid());
 
@@ -467,11 +461,9 @@ TEST(resampler, timestamp_passthrough_reader) {
 
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
-        core::ScopedPtr<IResampler> resampler(
-            ResamplerMap::instance().new_resampler(backend, arena, buffer_factory,
-                                                   ResamplerProfile_High, InSampleSpecs,
-                                                   OutSampleSpecs),
-            arena);
+        core::SharedPtr<IResampler> resampler = ResamplerMap::instance().new_resampler(
+            backend, arena, buffer_factory, ResamplerProfile_High, InSampleSpecs,
+            OutSampleSpecs);
 
         const core::nanoseconds_t start_ts = 1691499037871419405;
         core::nanoseconds_t cur_ts = start_ts;
@@ -567,11 +559,9 @@ TEST(resampler, timestamp_passthrough_writer) {
 
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
-        core::ScopedPtr<IResampler> resampler(
-            ResamplerMap::instance().new_resampler(backend, arena, buffer_factory,
-                                                   ResamplerProfile_High, InSampleSpecs,
-                                                   OutSampleSpecs),
-            arena);
+        core::SharedPtr<IResampler> resampler = ResamplerMap::instance().new_resampler(
+            backend, arena, buffer_factory, ResamplerProfile_High, InSampleSpecs,
+            OutSampleSpecs);
 
         const core::nanoseconds_t start_ts = 1691499037871419405;
         core::nanoseconds_t cur_ts = start_ts;

@@ -47,12 +47,13 @@ inline int get_quality(ResamplerProfile profile) {
 
 } // namespace
 
-SpeexResampler::SpeexResampler(core::IArena&,
+SpeexResampler::SpeexResampler(core::IArena& arena,
                                core::BufferFactory<sample_t>& buffer_factory,
                                ResamplerProfile profile,
                                const audio::SampleSpec& in_spec,
                                const audio::SampleSpec& out_spec)
-    : speex_state_(NULL)
+    : IResampler(arena)
+    , speex_state_(NULL)
     , in_frame_size_(InputFrameSize * in_spec.num_channels())
     , in_frame_pos_(in_frame_size_)
     , num_ch_((spx_uint32_t)in_spec.num_channels())

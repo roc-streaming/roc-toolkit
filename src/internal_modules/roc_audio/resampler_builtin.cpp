@@ -122,7 +122,8 @@ BuiltinResampler::BuiltinResampler(core::IArena& arena,
                                    ResamplerProfile profile,
                                    const audio::SampleSpec& in_spec,
                                    const audio::SampleSpec& out_spec)
-    : in_spec_(in_spec)
+    : IResampler(arena)
+    , in_spec_(in_spec)
     , out_spec_(out_spec)
     , n_ready_frames_(0)
     , prev_frame_(NULL)

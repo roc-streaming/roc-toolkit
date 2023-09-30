@@ -171,14 +171,12 @@ ReceiverSession::ReceiverSession(
         }
         areader = resampler_poisoner_.get();
 
-        resampler_.reset(
-            audio::ResamplerMap::instance().new_resampler(
-                session_config.resampler_backend, arena, sample_buffer_factory,
-                session_config.resampler_profile,
-                audio::SampleSpec(format->sample_spec.sample_rate(),
-                                  common_config.output_sample_spec.channel_set()),
-                common_config.output_sample_spec),
-            arena);
+        resampler_.reset(audio::ResamplerMap::instance().new_resampler(
+            session_config.resampler_backend, arena, sample_buffer_factory,
+            session_config.resampler_profile,
+            audio::SampleSpec(format->sample_spec.sample_rate(),
+                              common_config.output_sample_spec.channel_set()),
+            common_config.output_sample_spec));
 
         if (!resampler_) {
             return;

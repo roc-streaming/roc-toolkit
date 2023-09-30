@@ -76,6 +76,11 @@ public:
     }
 
     //! Reset shared pointer and attach it to another object.
+    void reset(const SharedPtr& other) {
+        reset(other.ptr_);
+    }
+
+    //! Reset shared pointer and attach it to another object.
     void reset(T* ptr = NULL) {
         if (ptr != ptr_) {
             release_();
