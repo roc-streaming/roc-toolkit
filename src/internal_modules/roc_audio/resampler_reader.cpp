@@ -62,11 +62,12 @@ bool ResamplerReader::read(Frame& out_frame) {
     size_t out_pos = 0;
 
     while (out_pos < out_frame.num_samples()) {
-        Frame out_part(out_frame.samples() + out_pos, out_frame.num_samples() - out_pos);
+        const size_t out_remain = out_frame.num_samples() - out_pos;
 
-        const size_t num_popped = resampler_.pop_output(out_part);
+        const size_t num_popped =
+            resampler_.pop_output(out_frame.samples() + out_pos, out_remain);
 
-        if (num_popped < out_part.num_samples()) {
+        if (num_popped < out_remain) {
             if (!push_input_()) {
                 return false;
             }

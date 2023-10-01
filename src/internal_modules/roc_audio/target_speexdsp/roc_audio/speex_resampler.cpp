@@ -201,17 +201,14 @@ void SpeexResampler::end_push_input() {
     in_frame_pos_ = 0;
 }
 
-size_t SpeexResampler::pop_output(Frame& out) {
+size_t SpeexResampler::pop_output(sample_t* out_buf, size_t out_bufsz) {
     roc_panic_if_not(is_valid());
 
-    const spx_uint32_t out_frame_size = spx_uint32_t(out.num_samples());
-    sample_t* out_frame_data = out.samples();
+    const sample_t* in_frame_data = in_frame_.data();
+
+    sample_t* out_frame_data = out_buf;
+    const spx_uint32_t out_frame_size = (spx_uint32_t)out_bufsz;
     spx_uint32_t out_frame_pos = 0;
-
-    sample_t* in_frame_data = in_frame_.data();
-
-    roc_panic_if(!out_frame_data);
-    roc_panic_if(!in_frame_data);
 
     while (in_frame_pos_ != in_frame_size_ && out_frame_pos != out_frame_size) {
         spx_uint32_t remaining_out = (out_frame_size - out_frame_pos) / num_ch_;
