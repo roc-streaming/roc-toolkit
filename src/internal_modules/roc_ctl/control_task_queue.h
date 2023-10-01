@@ -16,6 +16,7 @@
 #include "roc_core/list.h"
 #include "roc_core/mpsc_queue.h"
 #include "roc_core/mutex.h"
+#include "roc_core/pairing_heap.h"
 #include "roc_core/thread.h"
 #include "roc_core/time.h"
 #include "roc_core/timer.h"
@@ -276,7 +277,7 @@ private:
 
     core::Atomic<int> ready_queue_size_;
     core::MpscQueue<ControlTask, core::NoOwnership> ready_queue_;
-    core::List<ControlTask, core::NoOwnership> sleeping_queue_;
+    core::PairingHeap<ControlTask, core::NoOwnership> sleeping_queue_;
     core::List<ControlTask, core::NoOwnership> paused_queue_;
 
     core::Timer wakeup_timer_;
