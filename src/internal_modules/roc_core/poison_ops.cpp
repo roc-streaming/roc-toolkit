@@ -36,7 +36,7 @@ void PoisonOps::after_use(void* data, size_t size) {
     memset(data, Pattern_AfterUse, size);
 }
 
-void PoisonOps::add_boundary_guard(void* data, size_t size) {
+void PoisonOps::prepare_boundary_guard(void* data, size_t size) {
     if (!data) {
         roc_panic("poisoner: data is null");
     }

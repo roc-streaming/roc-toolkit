@@ -112,9 +112,9 @@ void* PoolImpl::give_slot_to_user_(Slot* slot) {
     void* memory = (char*)slot + BoundarySize;
     void* boundary_end = (char*)slot + BoundarySize + slot_size_no_boundary_;
 
-    PoisonOps::add_boundary_guard(boundary_begin, BoundarySize);
+    PoisonOps::prepare_boundary_guard(boundary_begin, BoundarySize);
     PoisonOps::before_use(memory, slot_size_no_boundary_);
-    PoisonOps::add_boundary_guard(boundary_end, BoundarySize);
+    PoisonOps::prepare_boundary_guard(boundary_end, BoundarySize);
 
     return memory;
 }

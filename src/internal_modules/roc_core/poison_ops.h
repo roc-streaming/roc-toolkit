@@ -30,7 +30,7 @@ public:
 
     //! Poison memory that is a boundary guard.
     //! Helps catching buffer overflow/underflow bugs.
-    static void add_boundary_guard(void* data, size_t size);
+    static void prepare_boundary_guard(void* data, size_t size);
 
     //! Checks memory that is a boundary guard and panics if not.
     static void check_boundary_guard(void* data, size_t size);
