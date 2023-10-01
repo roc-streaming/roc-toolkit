@@ -479,5 +479,43 @@ TEST(pool, embedded_capacity_reuse) {
     LONGS_EQUAL(0, arena.num_allocations());
 }
 
+IGNORE_TEST(pool, panics_on_boundary_guard_before_embedded_object_violation) {
+    TestArena arena;
+
+    Pool<TestObject, 1> pool("test", arena);
+
+    void* pointers[2] = {};
+
+    pointers[0] = pool.allocate();
+    CHECK(pointers[0]);
+
+    char* data = (char*)pointers[0];
+    data--;
+    *data = 0x00;
+
+    pool.deallocate(pointers[0]);
+}
+
+IGNORE_TEST(pool, panics_on_boundary_guard_after_non_embedded_object_violation) {
+    TestArena arena;
+
+    Pool<TestObject, 1> pool("test", arena);
+
+    void* pointers[2] = {};
+
+    pointers[0] = pool.allocate();
+    CHECK(pointers[0]);
+
+    pointers[1] = pool.allocate();
+    CHECK(pointers[1]);
+
+    char* data = (char*)pointers[1];
+    data += AlignOps::align_max(sizeof(TestObject));
+    data++;
+    *data = 0x00;
+
+    pool.deallocate(pointers[1]);
+}
+
 } // namespace core
 } // namespace roc
