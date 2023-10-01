@@ -293,7 +293,7 @@ size_t BuiltinResampler::pop_output(Frame& out) {
 }
 
 float BuiltinResampler::n_left_to_process() const {
-    return fixedpoint_to_float(2 * qt_frame_size_ - qt_sample_);
+    return fixedpoint_to_float(2 * qt_frame_size_ - qt_sample_) * in_spec_.num_channels();
 }
 
 bool BuiltinResampler::alloc_frames_(core::BufferFactory<sample_t>& buffer_factory) {

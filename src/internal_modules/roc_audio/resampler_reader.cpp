@@ -118,8 +118,7 @@ core::nanoseconds_t ResamplerReader::capture_ts_(Frame& out_frame) {
 
     // Subtract number of input samples that resampler haven't processed yet.
     // Now we have point in input stream corresponding to tail of output frame.
-    out_cts -=
-        in_sample_spec_.fract_samples_per_chan_2_ns(resampler_.n_left_to_process());
+    out_cts -= in_sample_spec_.fract_samples_overall_2_ns(resampler_.n_left_to_process());
 
     // Subtract length of current output frame multiplied by scaling.
     // Now we have point in input stream corresponding to head of output frame.

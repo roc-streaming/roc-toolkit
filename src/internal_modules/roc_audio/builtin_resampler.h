@@ -90,7 +90,7 @@ private:
 
     // Computes single sample of the particular audio channel.
     // channel_offset a serial number of the channel
-    //  (e.g. left -- 0, right -- 1, etc.).
+    // (e.g. left -- 0, right -- 1, etc.).
     sample_t resample_(size_t channel_offset);
 
     const audio::SampleSpec in_spec_;

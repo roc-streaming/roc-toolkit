@@ -257,7 +257,7 @@ size_t SpeexResampler::pop_output(Frame& out) {
 float SpeexResampler::n_left_to_process() const {
     roc_panic_if_not(is_valid());
 
-    return float(in_frame_size_ - in_frame_pos_) / num_ch_;
+    return float(in_frame_size_ - in_frame_pos_);
 }
 
 void SpeexResampler::report_stats_() {
