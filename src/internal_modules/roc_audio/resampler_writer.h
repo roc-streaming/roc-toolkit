@@ -63,8 +63,6 @@ private:
     size_t output_buf_pos_;
 
     float scaling_;
-    float next_scaling_;
-
     bool valid_;
 };
 
