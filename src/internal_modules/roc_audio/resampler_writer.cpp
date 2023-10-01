@@ -25,7 +25,6 @@ ResamplerWriter::ResamplerWriter(IFrameWriter& writer,
     , input_buf_pos_(0)
     , output_buf_pos_(0)
     , scaling_(1.f)
-    , next_scaling_(scaling_)
     , valid_(false) {
     if (in_sample_spec_.channel_set() != out_sample_spec_.channel_set()) {
         roc_panic("resampler writer: input and output channel sets should be same");
@@ -56,7 +55,8 @@ bool ResamplerWriter::is_valid() const {
 bool ResamplerWriter::set_scaling(float multiplier) {
     roc_panic_if_not(is_valid());
 
-    scaling_ = next_scaling_ = multiplier;
+    scaling_ = multiplier;
+
     return resampler_.set_scaling(in_sample_spec_.sample_rate(),
                                   out_sample_spec_.sample_rate(), multiplier);
 }
@@ -96,7 +96,6 @@ void ResamplerWriter::write(Frame& in_frame) {
         Frame out_frame(output_buf_.data(), output_buf_pos_);
         out_frame.set_capture_timestamp(capture_ts_(in_frame, in_pos));
 
-        scaling_ = next_scaling_;
         writer_.write(out_frame);
 
         output_buf_pos_ = 0;
