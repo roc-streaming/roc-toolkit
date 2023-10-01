@@ -22,8 +22,8 @@ ResamplerWriter::ResamplerWriter(IFrameWriter& writer,
     , writer_(writer)
     , in_sample_spec_(in_sample_spec)
     , out_sample_spec_(out_sample_spec)
-    , input_pos_(0)
-    , output_pos_(0)
+    , input_buf_pos_(0)
+    , output_buf_pos_(0)
     , scaling_(1.f)
     , next_scaling_(scaling_)
     , valid_(false) {
@@ -40,11 +40,11 @@ ResamplerWriter::ResamplerWriter(IFrameWriter& writer,
         return;
     }
 
-    if (!(output_ = buffer_factory.new_buffer())) {
+    if (!(output_buf_ = buffer_factory.new_buffer())) {
         roc_log(LogError, "resampler writer: can't allocate buffer for output frame");
         return;
     }
-    output_.reslice(0, output_.capacity());
+    output_buf_.reslice(0, output_buf_.capacity());
 
     valid_ = true;
 }
@@ -61,88 +61,107 @@ bool ResamplerWriter::set_scaling(float multiplier) {
                                   out_sample_spec_.sample_rate(), multiplier);
 }
 
-void ResamplerWriter::write(Frame& frame) {
+void ResamplerWriter::write(Frame& in_frame) {
     roc_panic_if_not(is_valid());
 
-    if (frame.num_samples() % in_sample_spec_.num_channels() != 0) {
+    if (in_frame.num_samples() % in_sample_spec_.num_channels() != 0) {
         roc_panic("resampler writer: unexpected frame size");
     }
 
-    size_t frame_pos = 0;
+    size_t in_pos = 0;
 
-    while (frame_pos < frame.num_samples()) {
-        Frame out_part(output_.data() + output_pos_, output_.size() - output_pos_);
+    while (in_pos < in_frame.num_samples()) {
+        Frame out_part(output_buf_.data() + output_buf_pos_,
+                       output_buf_.size() - output_buf_pos_);
 
         const size_t num_popped = resampler_.pop_output(out_part);
 
         if (num_popped < out_part.num_samples()) {
-            frame_pos += push_input_(frame, frame_pos);
+            in_pos += push_input_(in_frame, in_pos);
         }
 
-        output_pos_ += num_popped;
+        output_buf_pos_ += num_popped;
 
-        if (output_pos_ == output_.size()) {
-            Frame out_frame(output_.data(), output_.size());
-            out_frame.set_capture_timestamp(capture_ts_(frame, frame_pos));
+        if (output_buf_pos_ == output_buf_.size()) {
+            Frame out_frame(output_buf_.data(), output_buf_.size());
+            out_frame.set_capture_timestamp(capture_ts_(in_frame, in_pos));
 
             writer_.write(out_frame);
 
-            output_pos_ = 0;
+            output_buf_pos_ = 0;
         }
     }
 
-    if (output_pos_ != 0) {
-        Frame out_frame(output_.data(), output_pos_);
-        out_frame.set_capture_timestamp(capture_ts_(frame, frame_pos));
+    if (output_buf_pos_ != 0) {
+        Frame out_frame(output_buf_.data(), output_buf_pos_);
+        out_frame.set_capture_timestamp(capture_ts_(in_frame, in_pos));
 
         scaling_ = next_scaling_;
         writer_.write(out_frame);
 
-        output_pos_ = 0;
+        output_buf_pos_ = 0;
     }
 }
 
-size_t ResamplerWriter::push_input_(Frame& frame, size_t frame_pos) {
-    if (input_pos_ == 0) {
-        input_ = resampler_.begin_push_input();
+size_t ResamplerWriter::push_input_(Frame& in_frame, size_t in_pos) {
+    if (input_buf_pos_ == 0) {
+        input_buf_ = resampler_.begin_push_input();
     }
 
     const size_t num_copy =
-        std::min(frame.num_samples() - frame_pos, input_.size() - input_pos_);
+        std::min(in_frame.num_samples() - in_pos, input_buf_.size() - input_buf_pos_);
 
-    memcpy(input_.data() + input_pos_, frame.samples() + frame_pos,
+    memcpy(input_buf_.data() + input_buf_pos_, in_frame.samples() + in_pos,
            num_copy * sizeof(sample_t));
 
-    input_pos_ += num_copy;
+    input_buf_pos_ += num_copy;
 
-    if (input_pos_ == input_.size()) {
-        input_pos_ = 0;
+    if (input_buf_pos_ == input_buf_.size()) {
+        input_buf_pos_ = 0;
         resampler_.end_push_input();
     }
 
     return num_copy;
 }
 
-core::nanoseconds_t ResamplerWriter::capture_ts_(Frame& frame, size_t frame_pos) {
-    if (frame.capture_timestamp() == 0) {
-        // we didn't receive frame with non-zero cts yet
+// Compute timestamp of first sample of current output frame.
+// We have timestamps in input frames, and we should find to
+// which time our output frame does correspond in input stream.
+core::nanoseconds_t ResamplerWriter::capture_ts_(Frame& in_frame, size_t in_pos) {
+    if (in_frame.capture_timestamp() == 0) {
+        // We didn't receive input frame with non-zero cts yet,
+        // so for now we keep cts zero.
         return 0;
     }
 
-    const core::nanoseconds_t capt_ts = frame.capture_timestamp()
-        + in_sample_spec_.samples_overall_2_ns(frame_pos)  // last added sample ts
-        - in_sample_spec_.samples_overall_2_ns(input_pos_) // num unprocessed inside
-        - in_sample_spec_.fract_samples_per_chan_2_ns(resampler_.n_left_to_process())
-        - core::nanoseconds_t(out_sample_spec_.samples_overall_2_ns(output_pos_)
-                              * scaling_);
+    // Get timestamp of first sample of last input frame pushed to resampler.
+    core::nanoseconds_t out_cts = in_frame.capture_timestamp();
 
-    if (capt_ts < 0) {
-        // frame cts was very close to zero (unix epoch), in this case we
-        // avoid producing negative cts
+    // Add number of samples copied from input frame to our buffer and then to resampler.
+    // Now we have tail of input stream.
+    out_cts += in_sample_spec_.samples_overall_2_ns(in_pos);
+
+    // Subtract number of samples pending in our buffer and not copied to resampler yet.
+    // Now we have tail of input stream inside resampler.
+    out_cts -= in_sample_spec_.samples_overall_2_ns(input_buf_pos_);
+
+    // Subtract number of input samples that resampler haven't processed yet.
+    // Now we have point in input stream corresponding to tail of output frame.
+    out_cts -=
+        in_sample_spec_.fract_samples_per_chan_2_ns(resampler_.n_left_to_process());
+
+    // Subtract length of current output frame multiplied by scaling.
+    // Now we have point in input stream corresponding to head of output frame.
+    out_cts -= core::nanoseconds_t(out_sample_spec_.samples_overall_2_ns(output_buf_pos_)
+                                   * scaling_);
+
+    if (out_cts < 0) {
+        // Input frame cts was very close to zero (unix epoch), in this case we
+        // avoid producing negative cts until it grows a bit.
         return 0;
     }
 
-    return capt_ts;
+    return out_cts;
 }
 
 } // namespace audio

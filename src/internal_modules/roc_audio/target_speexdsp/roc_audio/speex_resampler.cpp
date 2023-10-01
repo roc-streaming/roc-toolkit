@@ -57,7 +57,7 @@ SpeexResampler::SpeexResampler(core::IArena& arena,
     , in_frame_size_(InputFrameSize * in_spec.num_channels())
     , in_frame_pos_(in_frame_size_)
     , num_ch_((spx_uint32_t)in_spec.num_channels())
-    , startup_delay_compensator_(0)
+    , startup_countdown_(0)
     , rate_limiter_(LogReportInterval)
     , valid_(false) {
     if (!in_spec.is_valid() || !out_spec.is_valid()) {
@@ -101,7 +101,7 @@ SpeexResampler::SpeexResampler(core::IArena& arena,
         return;
     }
 
-    startup_delay_compensator_ = (size_t)speex_resampler_get_output_latency(speex_state_);
+    startup_countdown_ = (size_t)speex_resampler_get_output_latency(speex_state_);
 
     valid_ = true;
 }
@@ -228,12 +228,21 @@ size_t SpeexResampler::pop_output(Frame& out) {
         }
 
         in_frame_pos_ += remaining_in * num_ch_;
-        if (startup_delay_compensator_) {
-            const size_t ltnc =
-                std::min((size_t)remaining_out, startup_delay_compensator_);
-            remaining_out -= ltnc;
-            startup_delay_compensator_ -= ltnc;
+
+        // Speex inserts zero samples in the beginning of the stream, corresponding to
+        // its latency. Other resampler backends don't do it, instead, in the beginning
+        // they request more samples (by returning zero from pop) until they accumulate
+        // required latency.
+        //
+        // Here we adjust speex behavior to be in-line with other backends. It allows
+        // us to perform latency and timestamp calculations uniformely for all backends.
+        if (startup_countdown_) {
+            const size_t n_samples = std::min((size_t)remaining_out, startup_countdown_);
+
+            remaining_out -= n_samples;
+            startup_countdown_ -= n_samples;
         }
+
         out_frame_pos += remaining_out * num_ch_;
 
         roc_panic_if(in_frame_pos_ > in_frame_size_);

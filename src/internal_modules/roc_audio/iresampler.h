@@ -57,6 +57,9 @@ public:
 
     //! How many samples were pushed but not processed yet.
     //! @remarks
+    //!  If last input sample pushed to resampler has number N, then last output sample
+    //!  popped from resampler corresponds to input sample number N - n_left_to_process().
+    //! @note
     //!  It is float, as a resampler backend could possibly keep track of current
     //!  position from output stream perspective.
     virtual float n_left_to_process() const = 0;
