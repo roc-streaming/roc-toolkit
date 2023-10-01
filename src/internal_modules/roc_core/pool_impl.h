@@ -12,6 +12,7 @@
 #ifndef ROC_CORE_POOL_IMPL_H_
 #define ROC_CORE_POOL_IMPL_H_
 
+#include "roc_core/align_ops.h"
 #include "roc_core/attributes.h"
 #include "roc_core/iarena.h"
 #include "roc_core/list.h"
@@ -30,6 +31,9 @@ namespace core {
 //! @see Pool.
 class PoolImpl : public NonCopyable<> {
 public:
+    //! Size for boundary guard.
+    enum { BoundarySize = sizeof(AlignMax) };
+
     //! Initialize.
     PoolImpl(const char* name,
              IArena& arena,

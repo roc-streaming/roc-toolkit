@@ -27,8 +27,6 @@ size_t clamp(size_t value, size_t lower_limit, size_t upper_limit) {
     return value;
 }
 
-const size_t boundary_size = AlignOps::align_max(1);
-
 } // namespace
 
 PoolImpl::PoolImpl(const char* name,
@@ -43,7 +41,7 @@ PoolImpl::PoolImpl(const char* name,
     , slab_min_bytes_(clamp(min_alloc_bytes, preallocated_size, max_alloc_bytes))
     , slab_max_bytes_(max_alloc_bytes)
     , slot_size_no_boundary_(AlignOps::align_max(std::max(sizeof(Slot), object_size)))
-    , slot_size_(boundary_size + slot_size_no_boundary_ + boundary_size)
+    , slot_size_(BoundarySize + slot_size_no_boundary_ + BoundarySize)
     , slab_hdr_size_(AlignOps::align_max(sizeof(Slab)))
     , slab_cur_slots_(slab_min_bytes_ == 0 ? 1 : slots_per_slab_(slab_min_bytes_, true))
     , slab_max_slots_(slab_max_bytes_ == 0 ? 0 : slots_per_slab_(slab_max_bytes_, false))
@@ -111,23 +109,23 @@ void* PoolImpl::give_slot_to_user_(Slot* slot) {
     slot->~Slot();
 
     void* boundary_begin = slot;
-    void* memory = (char*)slot + boundary_size;
-    void* boundary_end = (char*)slot + boundary_size + slot_size_no_boundary_;
+    void* memory = (char*)slot + BoundarySize;
+    void* boundary_end = (char*)slot + BoundarySize + slot_size_no_boundary_;
 
-    PoisonOps::add_boundary_guard(boundary_begin, boundary_size);
+    PoisonOps::add_boundary_guard(boundary_begin, BoundarySize);
     PoisonOps::before_use(memory, slot_size_no_boundary_);
-    PoisonOps::add_boundary_guard(boundary_end, boundary_size);
+    PoisonOps::add_boundary_guard(boundary_end, BoundarySize);
 
     return memory;
 }
 
 PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
-    void* boundary_begin = (char*)memory - boundary_size;
+    void* boundary_begin = (char*)memory - BoundarySize;
     void* boundary_end = (char*)memory + slot_size_no_boundary_;
 
-    PoisonOps::check_boundary_guard(boundary_begin, boundary_size);
-    PoisonOps::after_use(memory, slot_size_);
-    PoisonOps::check_boundary_guard(boundary_end, boundary_size);
+    PoisonOps::check_boundary_guard(boundary_begin, BoundarySize);
+    PoisonOps::after_use(memory, slot_size_no_boundary_);
+    PoisonOps::check_boundary_guard(boundary_end, BoundarySize);
 
     return new (boundary_begin) Slot;
 }
