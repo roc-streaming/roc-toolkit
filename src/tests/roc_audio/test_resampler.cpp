@@ -36,6 +36,23 @@ const Direction resampler_dirs[] = { Dir_Read, Dir_Write };
 core::HeapArena arena;
 core::BufferFactory<sample_t> buffer_factory(arena, MaxFrameSize);
 
+inline void expect_capture_timestamp(core::nanoseconds_t expected,
+                                     core::nanoseconds_t actual,
+                                     core::nanoseconds_t epsilon) {
+    if (!core::ns_equal_delta(expected, actual, epsilon)) {
+        char sbuff[256];
+        snprintf(sbuff, sizeof(sbuff),
+                 "failed comparing capture timestamps:\n"
+                 " expected:  %lld\n"
+                 " actual:    %lld\n"
+                 " delta:     %lld\n"
+                 " max_delta: %lld\n",
+                 (long long)expected, (long long)actual, (long long)(expected - actual),
+                 (long long)epsilon);
+        FAIL(sbuff);
+    }
+}
+
 class TimestampChecker : public IFrameWriter {
 public:
     TimestampChecker(const core::nanoseconds_t capt_ts,
@@ -59,8 +76,7 @@ public:
                 CHECK(frame.capture_timestamp() >= capt_ts_);
                 capt_ts_ = frame.capture_timestamp();
             } else {
-                CHECK(
-                    core::ns_equal_delta(capt_ts_, frame.capture_timestamp(), epsilon_));
+                expect_capture_timestamp(capt_ts_, frame.capture_timestamp(), epsilon_);
             }
             capt_ts_ += core::nanoseconds_t(
                 sample_spec_.samples_overall_2_ns(frame.num_samples()) * scale_);
@@ -509,7 +525,7 @@ TEST(resampler, timestamp_passthrough_reader) {
                 Frame frame(samples, ROC_ARRAY_SIZE(samples));
                 CHECK(rreader.read(frame));
                 cur_ts += ts_step;
-                CHECK(core::ns_equal_delta(frame.capture_timestamp(), cur_ts, epsilon));
+                expect_capture_timestamp(cur_ts, frame.capture_timestamp(), epsilon);
             }
         }
 
@@ -520,7 +536,7 @@ TEST(resampler, timestamp_passthrough_reader) {
                 Frame frame(samples, ROC_ARRAY_SIZE(samples));
                 CHECK(rreader.read(frame));
                 cur_ts += ts_step;
-                CHECK(core::ns_equal_delta(frame.capture_timestamp(), cur_ts, epsilon));
+                expect_capture_timestamp(cur_ts, frame.capture_timestamp(), epsilon);
                 ts_step = core::nanoseconds_t(
                     OutSampleSpecs.samples_overall_2_ns(FrameLen) * scale);
             }
@@ -528,7 +544,7 @@ TEST(resampler, timestamp_passthrough_reader) {
                 Frame frame(samples, ROC_ARRAY_SIZE(samples));
                 CHECK(rreader.read(frame));
                 cur_ts += ts_step;
-                CHECK(core::ns_equal_delta(frame.capture_timestamp(), cur_ts, epsilon));
+                expect_capture_timestamp(cur_ts, frame.capture_timestamp(), epsilon);
             }
         }
 
@@ -539,7 +555,7 @@ TEST(resampler, timestamp_passthrough_reader) {
                 Frame frame(samples, ROC_ARRAY_SIZE(samples));
                 CHECK(rreader.read(frame));
                 cur_ts += ts_step;
-                CHECK(core::ns_equal_delta(frame.capture_timestamp(), cur_ts, epsilon));
+                expect_capture_timestamp(cur_ts, frame.capture_timestamp(), epsilon);
                 ts_step = core::nanoseconds_t(
                     OutSampleSpecs.samples_overall_2_ns(FrameLen) * scale);
             }
@@ -547,7 +563,7 @@ TEST(resampler, timestamp_passthrough_reader) {
                 Frame frame(samples, ROC_ARRAY_SIZE(samples));
                 CHECK(rreader.read(frame));
                 cur_ts += ts_step;
-                CHECK(core::ns_equal_delta(frame.capture_timestamp(), cur_ts, epsilon));
+                expect_capture_timestamp(cur_ts, frame.capture_timestamp(), epsilon);
             }
         }
     }
