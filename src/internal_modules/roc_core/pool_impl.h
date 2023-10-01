@@ -85,6 +85,7 @@ private:
     const size_t slab_min_bytes_;
     const size_t slab_max_bytes_;
 
+    const size_t slot_size_no_boundary_;
     const size_t slot_size_;
     const size_t slab_hdr_size_;
 

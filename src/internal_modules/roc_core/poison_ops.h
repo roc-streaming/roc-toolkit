@@ -28,6 +28,13 @@ public:
     //! Helps catching use after free bugs.
     static void after_use(void* data, size_t size);
 
+    //! Poison memory that is a boundary guard.
+    //! Helps catching buffer overflow/underflow bugs.
+    static void add_boundary_guard(void* data, size_t size);
+
+    //! Checks memory that is a boundary guard and panics if not.
+    static void check_boundary_guard(void* data, size_t size);
+
 private:
     // Some good fillers for memory.
     // If we fill memory with these values and interpret it as 16-bit or 32-bit
@@ -35,7 +42,11 @@ private:
     // loudly when trying to play them on sound card.
     // We use two different patterns to make it easy to distinguish between
     // them in debugger.
-    enum { Pattern_BeforeUse = 0x7a, Pattern_AfterUse = 0x7d };
+    enum {
+        Pattern_BeforeUse = 0x7a,
+        Pattern_AfterUse = 0x7d,
+        Pattern_BoundaryGuard = 0x7b,
+    };
 };
 
 } // namespace core
