@@ -79,7 +79,7 @@ private:
 
     // Counts how many output samples to throw away in order to
     // compensate resampler's inner latency.
-    size_t startup_delay_compensator_;
+    size_t startup_countdown_;
 
     core::RateLimiter rate_limiter_;
 

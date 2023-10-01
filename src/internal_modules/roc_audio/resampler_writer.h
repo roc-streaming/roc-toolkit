@@ -47,8 +47,8 @@ public:
     virtual void write(Frame&);
 
 private:
-    size_t push_input_(Frame& frame, size_t frame_pos);
-    core::nanoseconds_t capture_ts_(Frame& frame, size_t frame_pos);
+    size_t push_input_(Frame& in_frame, size_t in_pos);
+    core::nanoseconds_t capture_ts_(Frame& in_frame, size_t in_pos);
 
     IResampler& resampler_;
     IFrameWriter& writer_;
@@ -56,14 +56,15 @@ private:
     const audio::SampleSpec in_sample_spec_;
     const audio::SampleSpec out_sample_spec_;
 
-    size_t input_pos_;
-    size_t output_pos_;
+    core::Slice<sample_t> input_buf_;
+    core::Slice<sample_t> output_buf_;
 
-    core::Slice<sample_t> input_;
-    core::Slice<sample_t> output_;
+    size_t input_buf_pos_;
+    size_t output_buf_pos_;
 
     float scaling_;
     float next_scaling_;
+
     bool valid_;
 };
 
