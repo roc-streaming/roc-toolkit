@@ -66,7 +66,7 @@ public:
     virtual void end_push_input();
 
     //! Read samples from input frame and fill output frame.
-    virtual size_t pop_output(Frame& out);
+    virtual size_t pop_output(sample_t* out_data, size_t out_size);
 
     //! How many samples were pushed but not processed yet.
     virtual float n_left_to_process() const;

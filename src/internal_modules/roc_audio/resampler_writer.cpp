@@ -71,12 +71,12 @@ void ResamplerWriter::write(Frame& in_frame) {
     size_t in_pos = 0;
 
     while (in_pos < in_frame.num_samples()) {
-        Frame out_part(output_buf_.data() + output_buf_pos_,
-                       output_buf_.size() - output_buf_pos_);
+        const size_t output_buf_remain = output_buf_.size() - output_buf_pos_;
 
-        const size_t num_popped = resampler_.pop_output(out_part);
+        const size_t num_popped = resampler_.pop_output(
+            output_buf_.data() + output_buf_pos_, output_buf_remain);
 
-        if (num_popped < out_part.num_samples()) {
+        if (num_popped < output_buf_remain) {
             in_pos += push_input_(in_frame, in_pos);
         }
 

@@ -263,15 +263,14 @@ void BuiltinResampler::end_push_input() {
     }
 }
 
-size_t BuiltinResampler::pop_output(Frame& out) {
+size_t BuiltinResampler::pop_output(sample_t* out_data, size_t out_size) {
     if (n_ready_frames_ < 3) {
         return 0;
     }
 
-    sample_t* out_data = out.samples();
     size_t out_pos = 0;
 
-    for (; out_pos < out.num_samples(); out_pos += in_spec_.num_channels()) {
+    for (; out_pos < out_size; out_pos += in_spec_.num_channels()) {
         if (qt_sample_ >= qt_frame_size_) {
             break;
         }

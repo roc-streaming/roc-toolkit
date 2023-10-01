@@ -53,7 +53,7 @@ public:
     //!  May return lesser samples than requested if there are no more samples in
     //!  the input ring buffer. In this case the caller should provide resampler
     //!  with more input samples using begin_push_input() and end_push_input().
-    virtual size_t pop_output(Frame& out) = 0;
+    virtual size_t pop_output(sample_t* out_data, size_t out_size) = 0;
 
     //! How many samples were pushed but not processed yet.
     //! @remarks
