@@ -40,7 +40,7 @@ private:
     // If we fill memory with these values and interpret it as 16-bit or 32-bit
     // integers, or as floats, the values will be rather high and will sound
     // loudly when trying to play them on sound card.
-    // We use two different patterns to make it easy to distinguish between
+    // We use different patterns to make it easy to distinguish between
     // them in debugger.
     enum {
         Pattern_BeforeUse = 0x7a,

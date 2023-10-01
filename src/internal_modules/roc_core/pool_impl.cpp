@@ -108,26 +108,26 @@ void PoolImpl::deallocate(void* memory) {
 void* PoolImpl::give_slot_to_user_(Slot* slot) {
     slot->~Slot();
 
-    void* boundary_begin = slot;
+    void* boundary1_offset = slot;
     void* memory = (char*)slot + BoundarySize;
-    void* boundary_end = (char*)slot + BoundarySize + slot_size_no_boundary_;
+    void* boundary2_offset = (char*)slot + BoundarySize + slot_size_no_boundary_;
 
-    PoisonOps::prepare_boundary_guard(boundary_begin, BoundarySize);
+    PoisonOps::prepare_boundary_guard(boundary1_offset, BoundarySize);
     PoisonOps::before_use(memory, slot_size_no_boundary_);
-    PoisonOps::prepare_boundary_guard(boundary_end, BoundarySize);
+    PoisonOps::prepare_boundary_guard(boundary2_offset, BoundarySize);
 
     return memory;
 }
 
 PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
-    void* boundary_begin = (char*)memory - BoundarySize;
-    void* boundary_end = (char*)memory + slot_size_no_boundary_;
+    void* boundary1_offset = (char*)memory - BoundarySize;
+    void* boundary2_offset = (char*)memory + slot_size_no_boundary_;
 
-    PoisonOps::check_boundary_guard(boundary_begin, BoundarySize);
+    PoisonOps::check_boundary_guard(boundary1_offset, BoundarySize);
     PoisonOps::after_use(memory, slot_size_no_boundary_);
-    PoisonOps::check_boundary_guard(boundary_end, BoundarySize);
+    PoisonOps::check_boundary_guard(boundary2_offset, BoundarySize);
 
-    return new (boundary_begin) Slot;
+    return new (boundary1_offset) Slot;
 }
 
 PoolImpl::Slot* PoolImpl::acquire_slot_() {
