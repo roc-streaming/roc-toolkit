@@ -7,7 +7,7 @@
  */
 
 //! @file roc_core/ref_counted_impl.h
-//! @brief Implementation class for object with reference counter.
+//! @brief Implementation class for reference counter.
 
 #ifndef ROC_CORE_REF_COUNTED_IMPL_H_
 #define ROC_CORE_REF_COUNTED_IMPL_H_
@@ -17,6 +17,9 @@
 namespace roc {
 namespace core {
 
+//! Implementation class for reference counter.
+//!
+//! Allows to increment and decrement reference counter.
 class RefCountedImpl {
 public:
     //! Initialize.
@@ -28,11 +31,11 @@ public:
     int getref() const;
 
     //! Increment reference counter.
-    //! @returns counter value after incrementing.
+    //! @returns reference counter value after incrementing.
     int incref() const;
 
     //! Decrement reference counter.
-    //! @returns counter value after decrementing.
+    //! @returns reference counter value after decrementing.
     int decref() const;
 
 private:

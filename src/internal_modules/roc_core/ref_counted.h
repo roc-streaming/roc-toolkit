@@ -25,7 +25,7 @@ namespace core {
 //! reaches zero, the object is automatically destroyed.
 //!
 //! @tparam T defines the derived class.
-//! @tparam AllocationPolicy defies destroy policy.
+//! @tparam AllocationPolicy defines destroy policy.
 //!
 //! When reference counter becomes zero, AllocationPolicy::destroy() is invoked
 //! by RefCounted to destroy itself.

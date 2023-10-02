@@ -6,9 +6,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/ref_counted_impl.cpp
-//! @brief Implementation class for object with reference counter.
-
 #include "roc_core/ref_counted_impl.h"
 #include "roc_core/panic.h"
 
@@ -33,7 +30,7 @@ int RefCountedImpl::getref() const {
 
     if (current_counter < 0 || current_counter > MaxCounter) {
         roc_panic("ref counter:"
-                  " attempt to access destroyed or currupted object:"
+                  " attempt to access destroyed or corrupted object:"
                   " counter=%d",
                   (int)current_counter);
     }
@@ -46,7 +43,7 @@ int RefCountedImpl::incref() const {
 
     if (current_counter < 0 || current_counter > MaxCounter) {
         roc_panic("ref counter:"
-                  " attempt to access destroyed or currupted object"
+                  " attempt to access destroyed or corrupted object"
                   " counter=%d",
                   (int)current_counter);
     }
@@ -59,7 +56,7 @@ int RefCountedImpl::decref() const {
 
     if (current_counter < 0 || current_counter > MaxCounter) {
         roc_panic("ref counter:"
-                  " attempt to access destroyed or currupted object"
+                  " attempt to access destroyed or corrupted object"
                   " counter=%d",
                   (int)current_counter);
     }
