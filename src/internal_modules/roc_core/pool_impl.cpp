@@ -139,12 +139,8 @@ PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
 
     if (!canary_ok) {
         num_buffer_overflows_++;
-        const char message[] = "pool: buffer overflow detected";
-        if (flags_ & PoolFlags_DisableOverflowPanic) {
-            roc_log(LogError, message);
-        } else {
-            roc_panic(message);
-        }
+        roc_log(LogError, "pool: buffer overflow detected");
+        roc_panic_if_not(flags_ & PoolFlags_DisableOverflowPanic);
     }
 
     return new (canary_before) Slot;
