@@ -9,6 +9,7 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/heap_arena.h"
+#include "roc_core/memory_ops.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/pool.h"
 
@@ -479,7 +480,7 @@ TEST(pool, embedded_capacity_reuse) {
     LONGS_EQUAL(0, arena.num_allocations());
 }
 
-TEST(pool, boundary_guard_around_object) {
+TEST(pool, guard_object) {
     TestArena arena;
     Pool<TestObject, 1> pool("test", arena);
     void* pointer = NULL;
@@ -490,32 +491,16 @@ TEST(pool, boundary_guard_around_object) {
     char* data = (char*)pointer;
     char* before_data = data - 1;
     char* after_data = data + AlignOps::align_max(sizeof(TestObject));
-    // See MemoryOps::Pattern_Canary.
-    char Pattern_Canary = 0x7b;
-    CHECK(*before_data == Pattern_Canary);
-    CHECK(*after_data == Pattern_Canary);
+    CHECK(*before_data == MemoryOps::Pattern_Canary);
+    CHECK(*after_data == MemoryOps::Pattern_Canary);
 
     pool.deallocate(pointer);
 }
 
-IGNORE_TEST(pool, panics_on_boundary_guard_before_embedded_object_violation) {
+TEST(pool, guard_object_violations) {
     TestArena arena;
-    Pool<TestObject, 1> pool("test", arena);
-    void* pointer = NULL;
-
-    pointer = pool.allocate();
-    CHECK(pointer);
-
-    char* data = (char*)pointer;
-    data--;
-    *data = 0x00;
-
-    pool.deallocate(pointer);
-}
-
-IGNORE_TEST(pool, panics_on_boundary_guard_after_non_embedded_object_violation) {
-    TestArena arena;
-    Pool<TestObject, 1> pool("test", arena);
+    Pool<TestObject, 1> pool("test", arena, sizeof(TestObject), 0, 0,
+                             PoolFlags_DisableOverflowPanic);
     void* pointers[2] = {};
 
     pointers[0] = pool.allocate();
@@ -524,12 +509,20 @@ IGNORE_TEST(pool, panics_on_boundary_guard_after_non_embedded_object_violation) 
     pointers[1] = pool.allocate();
     CHECK(pointers[1]);
 
-    char* data = (char*)pointers[1];
-    data += AlignOps::align_max(sizeof(TestObject));
-    *data = 0x00;
-
+    {
+        char* data = (char*)pointers[0];
+        data--;
+        *data = 0x00;
+    }
     pool.deallocate(pointers[0]);
+    CHECK(pool.num_buffer_overflows() == 1);
+    {
+        char* data = (char*)pointers[1];
+        data += AlignOps::align_max(sizeof(TestObject));
+        *data = 0x00;
+    }
     pool.deallocate(pointers[1]);
+    CHECK(pool.num_buffer_overflows() == 2);
 }
 
 } // namespace core

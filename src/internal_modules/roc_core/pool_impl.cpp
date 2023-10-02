@@ -11,6 +11,7 @@
 #include "roc_core/log.h"
 #include "roc_core/memory_ops.h"
 #include "roc_core/panic.h"
+#include "roc_core/pool.h"
 
 namespace roc {
 namespace core {
@@ -35,7 +36,8 @@ PoolImpl::PoolImpl(const char* name,
                    size_t min_alloc_bytes,
                    size_t max_alloc_bytes,
                    void* preallocated_data,
-                   size_t preallocated_size)
+                   size_t preallocated_size,
+                   size_t flags)
     : arena_(arena)
     , n_used_slots_(0)
     , slab_min_bytes_(clamp(min_alloc_bytes, preallocated_size, max_alloc_bytes))
@@ -45,7 +47,9 @@ PoolImpl::PoolImpl(const char* name,
     , slab_hdr_size_(AlignOps::align_max(sizeof(Slab)))
     , slab_cur_slots_(slab_min_bytes_ == 0 ? 1 : slots_per_slab_(slab_min_bytes_, true))
     , slab_max_slots_(slab_max_bytes_ == 0 ? 0 : slots_per_slab_(slab_max_bytes_, false))
-    , object_size_(object_size) {
+    , object_size_(object_size)
+    , flags_(flags)
+    , num_buffer_overflows_(0) {
     roc_log(LogDebug,
             "pool: initializing:"
             " name=%s object_size=%lu min_slab=%luB(%luS) max_slab=%luB(%luS)",
@@ -105,6 +109,10 @@ void PoolImpl::deallocate(void* memory) {
     }
 }
 
+size_t PoolImpl::num_buffer_overflows() const {
+    return num_buffer_overflows_;
+}
+
 void* PoolImpl::give_slot_to_user_(Slot* slot) {
     slot->~Slot();
 
@@ -123,12 +131,18 @@ PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
     void* canary_before = (char*)memory - BoundarySize;
     void* canary_after = (char*)memory + slot_size_no_boundary_;
 
-    if (!MemoryOps::check_canary(canary_before, BoundarySize)) {
-        roc_panic("pool: canary before object voilated");
-    }
+    bool canary_ok = MemoryOps::check_canary(canary_before, BoundarySize);
     MemoryOps::poison_after_use(memory, slot_size_no_boundary_);
-    if (!MemoryOps::check_canary(canary_after, BoundarySize)) {
-        roc_panic("pool: canary after object voilated");
+    canary_ok &= MemoryOps::check_canary(canary_after, BoundarySize);
+
+    if (!canary_ok) {
+        num_buffer_overflows_++;
+        const char message[] = "pool: canary after object voilated";
+        if (flags_ & PoolFlags_DisableOverflowPanic) {
+            roc_log(LogError, message);
+        } else {
+            roc_panic(message);
+        }
     }
 
     return new (canary_before) Slot;

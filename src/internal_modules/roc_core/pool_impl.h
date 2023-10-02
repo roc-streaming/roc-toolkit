@@ -41,7 +41,8 @@ public:
              size_t min_alloc_bytes,
              size_t max_alloc_bytes,
              void* preallocated_data,
-             size_t preallocated_size);
+             size_t preallocated_size,
+             size_t flags);
 
     //! Deinitialize.
     ~PoolImpl();
@@ -57,6 +58,9 @@ public:
 
     //! Return memory to pool.
     void deallocate(void* memory);
+
+    //! Get number of buffer overflows detected.
+    size_t num_buffer_overflows() const;
 
 private:
     struct Slab : ListNode {};
@@ -97,6 +101,9 @@ private:
     const size_t slab_max_slots_;
 
     const size_t object_size_;
+
+    const size_t flags_;
+    size_t num_buffer_overflows_;
 };
 
 } // namespace core
