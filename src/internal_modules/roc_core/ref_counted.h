@@ -16,6 +16,7 @@
 #include "roc_core/atomic.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
+#include "roc_core/ref_counted_impl.h"
 
 namespace roc {
 namespace core {
