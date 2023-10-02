@@ -479,28 +479,43 @@ TEST(pool, embedded_capacity_reuse) {
     LONGS_EQUAL(0, arena.num_allocations());
 }
 
+TEST(pool, boundary_guard_around_object) {
+    TestArena arena;
+    Pool<TestObject, 1> pool("test", arena);
+    void* pointer = NULL;
+
+    pointer = pool.allocate();
+    CHECK(pointer);
+
+    char* data = (char*)pointer;
+    char* before_data = data - 1;
+    char* after_data = data + AlignOps::align_max(sizeof(TestObject));
+    // See PoisonOps::Pattern_BoundaryGuard.
+    char Pattern_BoundaryGuard = 0x7b;
+    CHECK(*before_data == Pattern_BoundaryGuard);
+    CHECK(*after_data == Pattern_BoundaryGuard);
+
+    pool.deallocate(pointer);
+}
+
 IGNORE_TEST(pool, panics_on_boundary_guard_before_embedded_object_violation) {
     TestArena arena;
-
     Pool<TestObject, 1> pool("test", arena);
+    void* pointer = NULL;
 
-    void* pointers[2] = {};
+    pointer = pool.allocate();
+    CHECK(pointer);
 
-    pointers[0] = pool.allocate();
-    CHECK(pointers[0]);
-
-    char* data = (char*)pointers[0];
+    char* data = (char*)pointer;
     data--;
     *data = 0x00;
 
-    pool.deallocate(pointers[0]);
+    pool.deallocate(pointer);
 }
 
 IGNORE_TEST(pool, panics_on_boundary_guard_after_non_embedded_object_violation) {
     TestArena arena;
-
     Pool<TestObject, 1> pool("test", arena);
-
     void* pointers[2] = {};
 
     pointers[0] = pool.allocate();
@@ -511,9 +526,9 @@ IGNORE_TEST(pool, panics_on_boundary_guard_after_non_embedded_object_violation) 
 
     char* data = (char*)pointers[1];
     data += AlignOps::align_max(sizeof(TestObject));
-    data++;
     *data = 0x00;
 
+    pool.deallocate(pointers[0]);
     pool.deallocate(pointers[1]);
 }
 
