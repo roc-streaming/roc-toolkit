@@ -490,7 +490,7 @@ TEST(pool, guard_object) {
 
     char* data = (char*)pointer;
     char* before_data = data - 1;
-    char* after_data = data + AlignOps::align_max(sizeof(TestObject));
+    char* after_data = data + sizeof(TestObject);
     CHECK(*before_data == MemoryOps::Pattern_Canary);
     CHECK(*after_data == MemoryOps::Pattern_Canary);
 
@@ -518,7 +518,7 @@ TEST(pool, guard_object_violations) {
     CHECK(pool.num_buffer_overflows() == 1);
     {
         char* data = (char*)pointers[1];
-        data += AlignOps::align_max(sizeof(TestObject));
+        data += sizeof(TestObject);
         *data = 0x00;
     }
     pool.deallocate(pointers[1]);

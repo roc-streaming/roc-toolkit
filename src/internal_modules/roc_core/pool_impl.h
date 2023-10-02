@@ -93,7 +93,6 @@ private:
     const size_t slab_min_bytes_;
     const size_t slab_max_bytes_;
 
-    const size_t slot_size_no_boundary_;
     const size_t slot_size_;
     const size_t slab_hdr_size_;
 
@@ -101,6 +100,7 @@ private:
     const size_t slab_max_slots_;
 
     const size_t object_size_;
+    const size_t object_size_padding_;
 
     const size_t flags_;
     size_t num_buffer_overflows_;

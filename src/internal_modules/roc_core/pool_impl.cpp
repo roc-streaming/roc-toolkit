@@ -42,12 +42,13 @@ PoolImpl::PoolImpl(const char* name,
     , n_used_slots_(0)
     , slab_min_bytes_(clamp(min_alloc_bytes, preallocated_size, max_alloc_bytes))
     , slab_max_bytes_(max_alloc_bytes)
-    , slot_size_no_boundary_(AlignOps::align_max(std::max(sizeof(Slot), object_size)))
-    , slot_size_(BoundarySize + slot_size_no_boundary_ + BoundarySize)
+    , slot_size_(std::max(sizeof(Slot),
+                          BoundarySize + AlignOps::align_max(object_size) + BoundarySize))
     , slab_hdr_size_(AlignOps::align_max(sizeof(Slab)))
     , slab_cur_slots_(slab_min_bytes_ == 0 ? 1 : slots_per_slab_(slab_min_bytes_, true))
     , slab_max_slots_(slab_max_bytes_ == 0 ? 0 : slots_per_slab_(slab_max_bytes_, false))
     , object_size_(object_size)
+    , object_size_padding_(AlignOps::align_max(object_size) - object_size)
     , flags_(flags)
     , num_buffer_overflows_(0) {
     roc_log(LogDebug,
@@ -118,26 +119,27 @@ void* PoolImpl::give_slot_to_user_(Slot* slot) {
 
     void* canary_before = slot;
     void* memory = (char*)slot + BoundarySize;
-    void* canary_after = (char*)slot + BoundarySize + slot_size_no_boundary_;
+    void* canary_after = (char*)slot + BoundarySize + object_size_;
 
     MemoryOps::prepare_canary(canary_before, BoundarySize);
-    MemoryOps::poison_before_use(memory, slot_size_no_boundary_);
-    MemoryOps::prepare_canary(canary_after, BoundarySize);
+    MemoryOps::poison_before_use(memory, object_size_);
+    MemoryOps::prepare_canary(canary_after, object_size_padding_ + BoundarySize);
 
     return memory;
 }
 
 PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
     void* canary_before = (char*)memory - BoundarySize;
-    void* canary_after = (char*)memory + slot_size_no_boundary_;
+    void* canary_after = (char*)memory + object_size_;
 
     bool canary_ok = MemoryOps::check_canary(canary_before, BoundarySize);
-    MemoryOps::poison_after_use(memory, slot_size_no_boundary_);
-    canary_ok &= MemoryOps::check_canary(canary_after, BoundarySize);
+    MemoryOps::poison_after_use(memory, object_size_);
+    canary_ok &=
+        MemoryOps::check_canary(canary_after, object_size_padding_ + BoundarySize);
 
     if (!canary_ok) {
         num_buffer_overflows_++;
-        const char message[] = "pool: canary after object voilated";
+        const char message[] = "pool: buffer overflow detected";
         if (flags_ & PoolFlags_DisableOverflowPanic) {
             roc_log(LogError, message);
         } else {
