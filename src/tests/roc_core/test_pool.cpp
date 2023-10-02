@@ -490,10 +490,10 @@ TEST(pool, boundary_guard_around_object) {
     char* data = (char*)pointer;
     char* before_data = data - 1;
     char* after_data = data + AlignOps::align_max(sizeof(TestObject));
-    // See PoisonOps::Pattern_BoundaryGuard.
-    char Pattern_BoundaryGuard = 0x7b;
-    CHECK(*before_data == Pattern_BoundaryGuard);
-    CHECK(*after_data == Pattern_BoundaryGuard);
+    // See MemoryOps::Pattern_Canary.
+    char Pattern_Canary = 0x7b;
+    CHECK(*before_data == Pattern_Canary);
+    CHECK(*after_data == Pattern_Canary);
 
     pool.deallocate(pointer);
 }

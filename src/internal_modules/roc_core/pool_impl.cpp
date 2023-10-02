@@ -9,8 +9,8 @@
 #include "roc_core/pool_impl.h"
 #include "roc_core/align_ops.h"
 #include "roc_core/log.h"
+#include "roc_core/memory_ops.h"
 #include "roc_core/panic.h"
-#include "roc_core/poison_ops.h"
 
 namespace roc {
 namespace core {
@@ -108,26 +108,30 @@ void PoolImpl::deallocate(void* memory) {
 void* PoolImpl::give_slot_to_user_(Slot* slot) {
     slot->~Slot();
 
-    void* boundary1_offset = slot;
+    void* canary_before = slot;
     void* memory = (char*)slot + BoundarySize;
-    void* boundary2_offset = (char*)slot + BoundarySize + slot_size_no_boundary_;
+    void* canary_after = (char*)slot + BoundarySize + slot_size_no_boundary_;
 
-    PoisonOps::prepare_boundary_guard(boundary1_offset, BoundarySize);
-    PoisonOps::before_use(memory, slot_size_no_boundary_);
-    PoisonOps::prepare_boundary_guard(boundary2_offset, BoundarySize);
+    MemoryOps::prepare_canary(canary_before, BoundarySize);
+    MemoryOps::poison_before_use(memory, slot_size_no_boundary_);
+    MemoryOps::prepare_canary(canary_after, BoundarySize);
 
     return memory;
 }
 
 PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
-    void* boundary1_offset = (char*)memory - BoundarySize;
-    void* boundary2_offset = (char*)memory + slot_size_no_boundary_;
+    void* canary_before = (char*)memory - BoundarySize;
+    void* canary_after = (char*)memory + slot_size_no_boundary_;
 
-    PoisonOps::check_boundary_guard(boundary1_offset, BoundarySize);
-    PoisonOps::after_use(memory, slot_size_no_boundary_);
-    PoisonOps::check_boundary_guard(boundary2_offset, BoundarySize);
+    if (!MemoryOps::check_canary(canary_before, BoundarySize)) {
+        roc_panic("pool: canary before object voilated");
+    }
+    MemoryOps::poison_after_use(memory, slot_size_no_boundary_);
+    if (!MemoryOps::check_canary(canary_after, BoundarySize)) {
+        roc_panic("pool: canary after object voilated");
+    }
 
-    return new (boundary1_offset) Slot;
+    return new (canary_before) Slot;
 }
 
 PoolImpl::Slot* PoolImpl::acquire_slot_() {
