@@ -51,6 +51,8 @@ private:
         AlignMax data[];
     };
 
+    typedef AlignMax ChunkCanary;
+
     static int enable_leak_detection_;
 
     Atomic<int> num_allocations_;

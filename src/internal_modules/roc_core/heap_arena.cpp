@@ -42,13 +42,24 @@ size_t HeapArena::num_allocations() const {
 void* HeapArena::allocate(size_t size) {
     num_allocations_++;
 
-    Chunk* chunk = (Chunk*)malloc(sizeof(Chunk) + size);
+    size_t total_size = (sizeof(Chunk) + sizeof(ChunkCanary) + size + sizeof(ChunkCanary)
+                         + sizeof(AlignMax) - 1)
+        / sizeof(AlignMax) * sizeof(AlignMax);
+    size_t size_padding = AlignOps::align_max(size) - size;
+
+    Chunk* chunk = (Chunk*)malloc(total_size);
+
+    char* canary_before = (char*)chunk->data;
+    char* memory = (char*)chunk->data + sizeof(ChunkCanary);
+    char* canary_after = (char*)chunk->data + sizeof(ChunkCanary) + size;
+
+    MemoryOps::prepare_canary(canary_before, sizeof(ChunkCanary));
+    MemoryOps::poison_before_use(memory, size);
+    MemoryOps::prepare_canary(canary_after, size_padding + sizeof(ChunkCanary));
 
     chunk->size = size;
 
-    MemoryOps::poison_before_use(chunk->data, size);
-
-    return chunk->data;
+    return memory;
 }
 
 void HeapArena::deallocate(void* ptr) {
@@ -62,9 +73,23 @@ void HeapArena::deallocate(void* ptr) {
         roc_panic("heap arena: unpaired deallocate");
     }
 
-    Chunk* chunk = ROC_CONTAINER_OF(ptr, Chunk, data);
+    Chunk* chunk = ROC_CONTAINER_OF((char*)ptr - sizeof(ChunkCanary), Chunk, data);
 
-    MemoryOps::poison_after_use(chunk->data, chunk->size);
+    size_t size = chunk->size;
+    size_t size_padding = AlignOps::align_max(size) - size;
+
+    char* canary_before = (char*)chunk->data;
+    char* memory = (char*)chunk->data + sizeof(ChunkCanary);
+    char* canary_after = (char*)chunk->data + sizeof(ChunkCanary) + size;
+
+    bool canary_before_ok = MemoryOps::check_canary(canary_before, sizeof(ChunkCanary));
+    bool canary_after_ok =
+        MemoryOps::check_canary(canary_after, size_padding + sizeof(ChunkCanary));
+    if (!canary_before_ok || !canary_after_ok) {
+        roc_panic("heap arena: buffer overflow detected");
+    }
+
+    MemoryOps::poison_after_use(memory, chunk->size);
 
     free(chunk);
 }
