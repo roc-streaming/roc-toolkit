@@ -500,7 +500,7 @@ TEST(pool, guard_object) {
 TEST(pool, guard_object_violations) {
     TestArena arena;
     Pool<TestObject, 1> pool("test", arena, sizeof(TestObject), 0, 0,
-                             PoolFlags_DisableOverflowPanic);
+                             (DefaultPoolFlags & ~PoolFlag_PanicOnOverflow));
     void* pointers[2] = {};
 
     pointers[0] = pool.allocate();
@@ -516,6 +516,7 @@ TEST(pool, guard_object_violations) {
     }
     pool.deallocate(pointers[0]);
     CHECK(pool.num_buffer_overflows() == 1);
+
     {
         char* data = (char*)pointers[1];
         data += sizeof(TestObject);

@@ -31,8 +31,8 @@ namespace core {
 //! @see Pool.
 class PoolImpl : public NonCopyable<> {
 public:
-    //! Size for boundary guard.
-    enum { BoundarySize = sizeof(AlignMax) };
+    //! Size for canary guard.
+    enum { CanarySize = sizeof(AlignMax) };
 
     //! Initialize.
     PoolImpl(const char* name,
@@ -84,6 +84,7 @@ private:
 
     Mutex mutex_;
 
+    const char* name_;
     IArena& arena_;
 
     List<Slab, NoOwnership> slabs_;

@@ -25,8 +25,11 @@ namespace core {
 
 //! Memory pool flags.
 enum PoolFlags {
-    PoolFlags_DisableOverflowPanic = 0x01, //! Disables overflow panic and logs instead.
+    PoolFlag_PanicOnOverflow = (1 << 0), //!< Panic on overflow.
 };
+
+//! Default Memory pool flags.
+enum { DefaultPoolFlags = (PoolFlag_PanicOnOverflow) };
 
 //! Memory pool.
 //!
@@ -69,7 +72,7 @@ public:
                   size_t object_size = sizeof(T),
                   size_t min_alloc_bytes = 0,
                   size_t max_alloc_bytes = 0,
-                  size_t flags = 0)
+                  size_t flags = DefaultPoolFlags)
         : impl_(name,
                 arena,
                 object_size,
@@ -106,8 +109,8 @@ public:
     }
 
 private:
-    AlignedStorage<EmbeddedCapacity*(sizeof(T) + PoolImpl::BoundarySize
-                                     + PoolImpl::BoundarySize)>
+    AlignedStorage<EmbeddedCapacity*(sizeof(T) + PoolImpl::CanarySize
+                                     + PoolImpl::CanarySize)>
         embedded_data_;
     PoolImpl impl_;
 };
