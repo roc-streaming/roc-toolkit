@@ -63,7 +63,7 @@ private:
 
     const address::Protocol proto_;
 
-    packet::IWriter* dst_writer_;
+    packet::IWriter& dst_writer_;
     address::SocketAddr dst_address_;
 
     packet::IComposer* composer_;
