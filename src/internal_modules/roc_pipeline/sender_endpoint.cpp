@@ -20,7 +20,7 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto,
                                packet::IWriter& dest_writer,
                                core::IArena& arena)
     : proto_(proto)
-    , dst_writer_(&dest_writer)
+    , dst_writer_(dest_writer)
     , dst_address_(dest_address)
     , composer_(NULL) {
     packet::IComposer* composer = NULL;
@@ -126,10 +126,6 @@ packet::IWriter& SenderEndpoint::writer() {
 void SenderEndpoint::write(const packet::PacketPtr& packet) {
     roc_panic_if(!is_valid());
 
-    if (!dst_writer_) {
-        return;
-    }
-
     if (dst_address_.has_host_port()) {
         packet->add_flags(packet::Packet::FlagUDP);
         packet->udp()->dst_addr = dst_address_;
@@ -142,7 +138,7 @@ void SenderEndpoint::write(const packet::PacketPtr& packet) {
         packet->add_flags(packet::Packet::FlagComposed);
     }
 
-    dst_writer_->write(packet);
+    dst_writer_.write(packet);
 }
 
 } // namespace pipeline
