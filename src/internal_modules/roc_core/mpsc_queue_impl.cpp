@@ -18,6 +18,12 @@ MpscQueueImpl::MpscQueueImpl()
     , head_(&stub_) {
 }
 
+MpscQueueImpl::~MpscQueueImpl() {
+    if (head_ != &stub_) {
+        roc_panic("mpsc_queue_impl: queue isn't empty on destruct");
+    }
+}
+
 void MpscQueueImpl::push_back(MpscQueueData* node) {
     push_node_(node);
 }

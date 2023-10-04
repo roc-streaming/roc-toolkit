@@ -21,6 +21,8 @@ class MpscQueueImpl {
 public:
     MpscQueueImpl();
 
+    ~MpscQueueImpl();
+
     void push_back(MpscQueueNode::MpscQueueData* node);
 
     template <bool CanSpin> MpscQueueNode::MpscQueueData* pop_front() {
