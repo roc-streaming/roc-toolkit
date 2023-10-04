@@ -23,6 +23,14 @@
 namespace roc {
 namespace core {
 
+//! Memory pool flags.
+enum PoolFlags {
+    PoolFlag_PanicOnOverflow = (1 << 0), //!< Panic on overflow.
+};
+
+//! Default Memory pool flags.
+enum { DefaultPoolFlags = (PoolFlag_PanicOnOverflow) };
+
 //! Memory pool.
 //!
 //! Implements slab allocator algorithm. Allocates large chunks of memory ("slabs") from
@@ -58,18 +66,21 @@ public:
     //!  - @p object_size defines size of single object in bytes
     //!  - @p min_alloc_bytes defines minimum size in bytes per request to arena
     //!  - @p max_alloc_bytes defines maximum size in bytes per request to arena
+    //!  - @p flags defines options to modify behaviour as indicated in PoolFlags
     explicit Pool(const char* name,
                   IArena& arena,
                   size_t object_size = sizeof(T),
                   size_t min_alloc_bytes = 0,
-                  size_t max_alloc_bytes = 0)
+                  size_t max_alloc_bytes = 0,
+                  size_t flags = DefaultPoolFlags)
         : impl_(name,
                 arena,
                 object_size,
                 min_alloc_bytes,
                 max_alloc_bytes,
                 embedded_data_.memory(),
-                embedded_data_.size()) {
+                embedded_data_.size(),
+                flags) {
     }
 
     //! Get size of objects in pool.
@@ -92,8 +103,15 @@ public:
         impl_.deallocate(memory);
     }
 
+    //! Get number of buffer overflows detected.
+    size_t num_buffer_overflows() const {
+        return impl_.num_buffer_overflows();
+    }
+
 private:
-    AlignedStorage<EmbeddedCapacity * sizeof(T)> embedded_data_;
+    AlignedStorage<EmbeddedCapacity*(sizeof(T) + PoolImpl::CanarySize
+                                     + PoolImpl::CanarySize)>
+        embedded_data_;
     PoolImpl impl_;
 };
 

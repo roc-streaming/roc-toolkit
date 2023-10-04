@@ -9,8 +9,8 @@
 #include "roc_core/heap_arena.h"
 #include "roc_core/atomic_ops.h"
 #include "roc_core/macro_helpers.h"
+#include "roc_core/memory_ops.h"
 #include "roc_core/panic.h"
-#include "roc_core/poison_ops.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
@@ -46,7 +46,7 @@ void* HeapArena::allocate(size_t size) {
 
     chunk->size = size;
 
-    PoisonOps::before_use(chunk->data, size);
+    MemoryOps::poison_before_use(chunk->data, size);
 
     return chunk->data;
 }
@@ -64,7 +64,7 @@ void HeapArena::deallocate(void* ptr) {
 
     Chunk* chunk = ROC_CONTAINER_OF(ptr, Chunk, data);
 
-    PoisonOps::after_use(chunk->data, chunk->size);
+    MemoryOps::poison_after_use(chunk->data, chunk->size);
 
     free(chunk);
 }
