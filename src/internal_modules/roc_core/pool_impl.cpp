@@ -55,7 +55,7 @@ PoolImpl::PoolImpl(const char* name,
     roc_log(LogDebug,
             "pool: initializing:"
             " name=%s object_size=%lu min_slab=%luB(%luS) max_slab=%luB(%luS)",
-            name, (unsigned long)slot_size_, (unsigned long)slab_min_bytes_,
+            name_, (unsigned long)slot_size_, (unsigned long)slab_min_bytes_,
             (unsigned long)slab_cur_slots_, (unsigned long)slab_max_bytes_,
             (unsigned long)slab_max_slots_);
 
@@ -99,7 +99,7 @@ void* PoolImpl::allocate() {
 
 void PoolImpl::deallocate(void* memory) {
     if (memory == NULL) {
-        roc_panic("pool: deallocating null pointer");
+        roc_panic("pool: deallocating null pointer: name=%s", name_);
     }
 
     Slot* slot = take_slot_from_user_(memory);
@@ -139,7 +139,7 @@ PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
 
     if (!canary_before_ok || !canary_after_ok) {
         num_buffer_overflows_++;
-        if ((flags_ & PoolFlag_PanicOnOverflow) == 1) {
+        if ((flags_ & PoolFlag_PanicOnOverflow) != 0) {
             roc_panic("pool: buffer overflow detected: name=%s", name_);
         }
     }
@@ -165,7 +165,7 @@ PoolImpl::Slot* PoolImpl::acquire_slot_() {
 
 void PoolImpl::release_slot_(Slot* slot) {
     if (n_used_slots_ == 0) {
-        roc_panic("pool: unpaired deallocation");
+        roc_panic("pool: unpaired deallocation: name=%s", name_);
     }
 
     n_used_slots_--;
@@ -223,8 +223,8 @@ bool PoolImpl::allocate_new_slab_() {
 
 void PoolImpl::deallocate_everything_() {
     if (n_used_slots_ != 0) {
-        roc_panic("pool: detected leak: used=%lu free=%lu", (unsigned long)n_used_slots_,
-                  (unsigned long)free_slots_.size());
+        roc_panic("pool: detected leak: name=%s n_used=%lu n_free=%lu", name_,
+                  (unsigned long)n_used_slots_, (unsigned long)free_slots_.size());
     }
 
     while (Slot* slot = free_slots_.front()) {
@@ -239,7 +239,7 @@ void PoolImpl::deallocate_everything_() {
 
 void PoolImpl::add_preallocated_memory_(void* memory, size_t memory_size) {
     if (memory == NULL) {
-        roc_panic("pool: preallocated memory is null");
+        roc_panic("pool: preallocated memory is null: name=%s", name_);
     }
 
     const size_t n_slots = memory_size / slot_size_;

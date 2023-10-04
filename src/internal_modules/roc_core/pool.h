@@ -25,10 +25,10 @@ namespace core {
 
 //! Memory pool flags.
 enum PoolFlags {
-    PoolFlag_PanicOnOverflow = (1 << 0), //!< Panic on overflow.
+    PoolFlag_PanicOnOverflow = (1 << 0), //!< Panic when buffer overflow detected.
 };
 
-//! Default Memory pool flags.
+//! Default memory pool flags.
 enum { DefaultPoolFlags = (PoolFlag_PanicOnOverflow) };
 
 //! Memory pool.
