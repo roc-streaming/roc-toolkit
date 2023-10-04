@@ -19,15 +19,18 @@ namespace core {
 
 //! Multi-producer single-consumer queue internal implementation class.
 //!
-//! Provides only push/pop functionality. Ownership is left up to the main MpscQueue class.
+//! Provides only push/pop functionality. Ownership is left up to the main MpscQueue
+//! class.
 class MpscQueueImpl {
 public:
     MpscQueueImpl();
 
     ~MpscQueueImpl();
 
+    //! Add object to the end of the queue.
     void push_back(MpscQueueNode::MpscQueueData* node);
 
+    //! Remove object from the beginning of the queue.
     template <bool CanSpin> MpscQueueNode::MpscQueueData* pop_front() {
         return pop_node_(CanSpin);
     }
