@@ -12,6 +12,7 @@
 #ifndef ROC_CORE_POOL_IMPL_H_
 #define ROC_CORE_POOL_IMPL_H_
 
+#include "roc_core/align_ops.h"
 #include "roc_core/attributes.h"
 #include "roc_core/iarena.h"
 #include "roc_core/list.h"
@@ -30,6 +31,9 @@ namespace core {
 //! @see Pool.
 class PoolImpl : public NonCopyable<> {
 public:
+    //! Size for canary guard.
+    enum { CanarySize = sizeof(AlignMax) };
+
     //! Initialize.
     PoolImpl(const char* name,
              IArena& arena,
@@ -37,7 +41,8 @@ public:
              size_t min_alloc_bytes,
              size_t max_alloc_bytes,
              void* preallocated_data,
-             size_t preallocated_size);
+             size_t preallocated_size,
+             size_t flags);
 
     //! Deinitialize.
     ~PoolImpl();
@@ -53,6 +58,9 @@ public:
 
     //! Return memory to pool.
     void deallocate(void* memory);
+
+    //! Get number of buffer overflows detected.
+    size_t num_buffer_overflows() const;
 
 private:
     struct Slab : ListNode {};
@@ -76,6 +84,7 @@ private:
 
     Mutex mutex_;
 
+    const char* name_;
     IArena& arena_;
 
     List<Slab, NoOwnership> slabs_;
@@ -92,6 +101,10 @@ private:
     const size_t slab_max_slots_;
 
     const size_t object_size_;
+    const size_t object_size_padding_;
+
+    const size_t flags_;
+    size_t num_buffer_overflows_;
 };
 
 } // namespace core
