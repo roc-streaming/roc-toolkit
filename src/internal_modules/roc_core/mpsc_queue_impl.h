@@ -17,6 +17,9 @@
 namespace roc {
 namespace core {
 
+//! Multi-producer single-consumer queue internal implementation class.
+//!
+//! Provides only push/pop functionality. Ownership is left up to the main MpscQueue class.
 class MpscQueueImpl {
 public:
     MpscQueueImpl();
