@@ -30,19 +30,31 @@ namespace core {
 //!
 //! @see Pool.
 class PoolImpl : public NonCopyable<> {
+private:
+    struct Slab : ListNode {};
+    struct Slot : ListNode {};
+
+    // Slot layout when supplying data to user.
+    struct UserSlot {
+        PoolImpl* owner;
+        AlignMax canary_before;
+        AlignMax data[];
+        // Another canary immediately after actual data. Any padding for data is
+        // considered part of canary.
+    };
+
 public:
     //! Size for canary guard.
     enum { CanarySize = sizeof(AlignMax) };
 
     //! Size of slot given object size.
     //! Used at compile time to calculate embedded storage in main Pool class.
-    template <size_t ObjectSize> struct CalculateSlotSize {
+    template <size_t ObjectSize> struct SlotSize {
     private:
         enum {
-            slot_size_ = MaxAlignedSize<sizeof(ListNode)>::value,
-            user_slot_size_ = MaxAlignedSize<sizeof(PoolImpl*)>::value
-                + PoolImpl::CanarySize + MaxAlignedSize<ObjectSize>::value
-                + PoolImpl::CanarySize,
+            slot_size_ = MaxAlignedSize<sizeof(Slot)>::value,
+            user_slot_size_ = MaxAlignedSize<sizeof(UserSlot)>::value
+                + MaxAlignedSize<ObjectSize>::value + PoolImpl::CanarySize,
         };
 
     public:
@@ -83,18 +95,6 @@ public:
     size_t num_invalid_ownerships() const;
 
 private:
-    struct Slab : ListNode {};
-    struct Slot : ListNode {};
-
-    // Slot layout when supplying data to user.
-    struct UserSlot {
-        PoolImpl* owner;
-        AlignMax canary_before;
-        AlignMax data[];
-        // Another canary immediately after data.
-        // Any padding for data is considered part of canary.
-    };
-
     void* give_slot_to_user_(Slot* slot);
     Slot* take_slot_from_user_(void* memory);
 

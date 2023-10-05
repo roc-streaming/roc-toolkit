@@ -116,7 +116,7 @@ public:
     }
 
 private:
-    AlignedStorage<EmbeddedCapacity * PoolImpl::CalculateSlotSize<sizeof(T)>::value>
+    AlignedStorage<EmbeddedCapacity * PoolImpl::SlotSize<sizeof(T)>::value>
         embedded_data_;
     PoolImpl impl_;
 };
