@@ -172,6 +172,9 @@ int main(int argc, char** argv) {
     case resampler_backend_arg_speex:
         sender_config.resampler_backend = audio::ResamplerBackend_Speex;
         break;
+    case resampler_backend_arg_speexdec:
+        sender_config.resampler_backend = audio::ResamplerBackend_SpeexDec;
+        break;
     default:
         break;
     }

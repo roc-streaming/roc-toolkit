@@ -8,6 +8,7 @@
 
 #include "roc_audio/resampler_map.h"
 #include "roc_audio/builtin_resampler.h"
+#include "roc_audio/decimation_resampler.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/scoped_ptr.h"
@@ -30,6 +31,20 @@ core::SharedPtr<IResampler> resampler_ctor(core::IArena& arena,
     return new (arena) T(arena, buffer_factory, profile, in_spec, out_spec);
 }
 
+template <class T>
+core::SharedPtr<IResampler>
+resampler_dec_ctor(core::IArena& arena,
+                   core::BufferFactory<sample_t>& buffer_factory,
+                   ResamplerProfile profile,
+                   const audio::SampleSpec& in_spec,
+                   const audio::SampleSpec& out_spec) {
+    core::SharedPtr<IResampler> inner_resampler =
+        new (arena) T(arena, buffer_factory, profile, in_spec, out_spec);
+
+    return new (arena)
+        DecimationResampler(inner_resampler, arena, buffer_factory, in_spec, out_spec);
+}
+
 } // namespace
 
 ResamplerMap::ResamplerMap()
@@ -39,6 +54,12 @@ ResamplerMap::ResamplerMap()
         Backend back;
         back.id = ResamplerBackend_Speex;
         back.ctor = &resampler_ctor<SpeexResampler>;
+        add_backend_(back);
+    }
+    {
+        Backend back;
+        back.id = ResamplerBackend_SpeexDec;
+        back.ctor = &resampler_dec_ctor<SpeexResampler>;
         add_backend_(back);
     }
 #endif // ROC_TARGET_SPEEXDSP

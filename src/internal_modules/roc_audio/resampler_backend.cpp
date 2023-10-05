@@ -19,6 +19,9 @@ const char* resampler_backend_to_str(ResamplerBackend backend) {
     case ResamplerBackend_Speex:
         return "speex";
 
+    case ResamplerBackend_SpeexDec:
+        return "speexdec";
+
     case ResamplerBackend_Default:
         return "default";
     }
