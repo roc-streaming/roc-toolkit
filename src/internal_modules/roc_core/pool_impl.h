@@ -79,6 +79,9 @@ public:
     //! Get number of buffer overflows detected.
     size_t num_buffer_overflows() const;
 
+    //! Get number of invalid ownerships detected.
+    size_t num_invalid_ownerships() const;
+
 private:
     struct Slab : ListNode {};
     struct Slot : ListNode {};
@@ -131,6 +134,7 @@ private:
 
     const size_t flags_;
     size_t num_buffer_overflows_;
+    size_t num_invalid_ownerships_;
 };
 
 } // namespace core

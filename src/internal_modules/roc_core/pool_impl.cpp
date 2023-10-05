@@ -51,7 +51,8 @@ PoolImpl::PoolImpl(const char* name,
     , object_size_(object_size)
     , object_size_padding_(AlignOps::align_max(object_size) - object_size)
     , flags_(flags)
-    , num_buffer_overflows_(0) {
+    , num_buffer_overflows_(0)
+    , num_invalid_ownerships_(0) {
     roc_log(LogDebug,
             "pool: initializing:"
             " name=%s object_size=%lu min_slab=%luB(%luS) max_slab=%luB(%luS)",
@@ -104,6 +105,10 @@ void PoolImpl::deallocate(void* memory) {
 
     Slot* slot = take_slot_from_user_(memory);
 
+    if (slot == NULL) {
+        return;
+    }
+
     {
         Mutex::Lock lock(mutex_);
 
@@ -113,6 +118,10 @@ void PoolImpl::deallocate(void* memory) {
 
 size_t PoolImpl::num_buffer_overflows() const {
     return num_buffer_overflows_;
+}
+
+size_t PoolImpl::num_invalid_ownerships() const {
+    return num_invalid_ownerships_;
 }
 
 void* PoolImpl::give_slot_to_user_(Slot* slot) {
@@ -151,7 +160,11 @@ PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
     }
 
     if (userSlot->owner != this) {
-        roc_panic("pool: does not own memory: name=%s", name_);
+        num_invalid_ownerships_++;
+        if ((flags_ & PoolFlag_PanicOnInvalidOwnership) != 0) {
+            roc_panic("pool: invalid ownership detected: name=%s", name_);
+        }
+        return NULL;
     }
 
     MemoryOps::poison_after_use(memory, object_size_);

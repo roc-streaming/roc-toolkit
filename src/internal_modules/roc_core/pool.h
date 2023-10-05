@@ -25,11 +25,13 @@ namespace core {
 
 //! Memory pool flags.
 enum PoolFlags {
-    PoolFlag_PanicOnOverflow = (1 << 0), //!< Panic when buffer overflow detected.
+    PoolFlag_PanicOnOverflow = (1 << 0),         //!< Panic when buffer overflow detected.
+    PoolFlag_PanicOnInvalidOwnership = (1 << 1), //!< Panic when invalid ownership
+                                                 //!< detected.
 };
 
 //! Default memory pool flags.
-enum { DefaultPoolFlags = (PoolFlag_PanicOnOverflow) };
+enum { DefaultPoolFlags = (PoolFlag_PanicOnOverflow | PoolFlag_PanicOnInvalidOwnership) };
 
 //! Memory pool.
 //!
@@ -106,6 +108,11 @@ public:
     //! Get number of buffer overflows detected.
     size_t num_buffer_overflows() const {
         return impl_.num_buffer_overflows();
+    }
+
+    //! Get number of invalid ownerships detected.
+    size_t num_invalid_ownerships() const {
+        return impl_.num_invalid_ownerships();
     }
 
 private:

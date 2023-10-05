@@ -526,5 +526,26 @@ TEST(pool, guard_object_violations) {
     CHECK(pool.num_buffer_overflows() == 2);
 }
 
+TEST(pool, object_ownership_guard) {
+    TestArena arena;
+    Pool<TestObject, 1> pool0("test", arena, sizeof(TestObject), 0, 0,
+                              (DefaultPoolFlags & ~PoolFlag_PanicOnInvalidOwnership));
+    Pool<TestObject, 1> pool1("test", arena);
+
+    void* pointers[2] = {};
+
+    pointers[0] = pool0.allocate();
+    CHECK(pointers[0]);
+
+    pointers[1] = pool1.allocate();
+    CHECK(pointers[1]);
+
+    pool0.deallocate(pointers[1]);
+    CHECK(pool0.num_invalid_ownerships() == 1);
+
+    pool0.deallocate(pointers[0]);
+    pool1.deallocate(pointers[1]);
+}
+
 } // namespace core
 } // namespace roc
