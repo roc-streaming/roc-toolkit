@@ -144,6 +144,9 @@ int main(int argc, char** argv) {
     case resampler_backend_arg_speex:
         transcoder_config.resampler_backend = audio::ResamplerBackend_Speex;
         break;
+    case resampler_backend_arg_speexdec:
+        transcoder_config.resampler_backend = audio::ResamplerBackend_SpeexDec;
+        break;
     default:
         break;
     }

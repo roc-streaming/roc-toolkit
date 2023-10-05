@@ -56,7 +56,7 @@ public:
 private:
     friend class core::Singleton<ResamplerMap>;
 
-    enum { MaxBackends = 2 };
+    enum { MaxBackends = 4 };
 
     struct Backend {
         Backend()

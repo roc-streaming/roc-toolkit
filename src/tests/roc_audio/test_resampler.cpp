@@ -186,6 +186,23 @@ const char* dir_to_str(Direction dir) {
     return dir == Dir_Read ? "read" : "write";
 }
 
+// returns expected precision of CTS calculations for given backend,
+// measured in number of samples per channel
+double timestamp_allowance(ResamplerBackend backend) {
+    switch (backend) {
+    case ResamplerBackend_Builtin:
+        return 0.1;
+    case ResamplerBackend_Speex:
+        return 1;
+    case ResamplerBackend_SpeexDec:
+        return 2;
+    default:
+        break;
+    }
+    FAIL("bad backend");
+    return 0;
+}
+
 void resample_read(IResampler& resampler,
                    sample_t* in,
                    sample_t* out,
@@ -511,10 +528,8 @@ TEST(resampler, timestamp_passthrough_reader) {
         core::nanoseconds_t cur_ts = start_ts;
         core::nanoseconds_t ts_step;
 
-        // Time Stamp allowance. Built in resampler passess the test with 0.1 --
-        // much better.
-        const core::nanoseconds_t epsilon =
-            core::nanoseconds_t(1. / InSampleRate * core::Second);
+        const core::nanoseconds_t epsilon = core::nanoseconds_t(
+            1. / InSampleRate * core::Second * timestamp_allowance(backend));
 
         test::MockReader input_reader;
         input_reader.enable_timestamps(start_ts, InSampleSpecs);
@@ -536,7 +551,7 @@ TEST(resampler, timestamp_passthrough_reader) {
                 CHECK(frame.capture_timestamp() >= start_ts);
                 cur_ts = frame.capture_timestamp();
             }
-            for (size_t i = 0; i < 10; i++) {
+            for (size_t i = 0; i < 30; i++) {
                 Frame frame(samples, ROC_ARRAY_SIZE(samples));
                 CHECK(rreader.read(frame));
                 cur_ts += ts_step;
@@ -555,7 +570,7 @@ TEST(resampler, timestamp_passthrough_reader) {
                 ts_step = core::nanoseconds_t(
                     OutSampleSpecs.samples_overall_2_ns(FrameLen) * scale);
             }
-            for (size_t i = 0; i < 10; i++) {
+            for (size_t i = 0; i < 30; i++) {
                 Frame frame(samples, ROC_ARRAY_SIZE(samples));
                 CHECK(rreader.read(frame));
                 cur_ts += ts_step;
@@ -574,7 +589,7 @@ TEST(resampler, timestamp_passthrough_reader) {
                 ts_step = core::nanoseconds_t(
                     OutSampleSpecs.samples_overall_2_ns(FrameLen) * scale);
             }
-            for (size_t i = 0; i < 10; i++) {
+            for (size_t i = 0; i < 30; i++) {
                 Frame frame(samples, ROC_ARRAY_SIZE(samples));
                 CHECK(rreader.read(frame));
                 cur_ts += ts_step;
@@ -609,10 +624,8 @@ TEST(resampler, timestamp_passthrough_writer) {
         core::nanoseconds_t cur_ts = start_ts;
         core::nanoseconds_t ts_step;
 
-        // Time Stamp allowance. Built in resampler passess the test with 0.1 --
-        // much better.
-        const core::nanoseconds_t epsilon =
-            core::nanoseconds_t(1. / InSampleRate * core::Second);
+        const core::nanoseconds_t epsilon = core::nanoseconds_t(
+            1. / InSampleRate * core::Second * timestamp_allowance(backend));
 
         TimestampChecker ts_checker(start_ts, epsilon, OutSampleSpecs);
 
@@ -632,7 +645,7 @@ TEST(resampler, timestamp_passthrough_writer) {
                 rwriter.write(frame);
                 cur_ts = frame.capture_timestamp();
             }
-            for (size_t i = 0; i < 10; i++) {
+            for (size_t i = 0; i < 30; i++) {
                 Frame frame(samples, ROC_ARRAY_SIZE(samples));
                 cur_ts += ts_step;
                 frame.set_capture_timestamp(cur_ts);
@@ -650,7 +663,7 @@ TEST(resampler, timestamp_passthrough_writer) {
                 frame.set_capture_timestamp(cur_ts);
                 rwriter.write(frame);
             }
-            for (size_t i = 0; i < 10; i++) {
+            for (size_t i = 0; i < 30; i++) {
                 Frame frame(samples, ROC_ARRAY_SIZE(samples));
                 cur_ts += ts_step;
                 frame.set_capture_timestamp(cur_ts);
@@ -668,7 +681,7 @@ TEST(resampler, timestamp_passthrough_writer) {
                 frame.set_capture_timestamp(cur_ts);
                 rwriter.write(frame);
             }
-            for (size_t i = 0; i < 10; i++) {
+            for (size_t i = 0; i < 30; i++) {
                 Frame frame(samples, ROC_ARRAY_SIZE(samples));
                 cur_ts += ts_step;
                 frame.set_capture_timestamp(cur_ts);
