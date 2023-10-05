@@ -159,7 +159,9 @@ PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
         }
     }
 
-    if (userSlot->owner != this) {
+    bool is_owner = userSlot->owner == this;
+
+    if (!is_owner) {
         num_invalid_ownerships_++;
         if ((flags_ & PoolFlag_PanicOnInvalidOwnership) != 0) {
             roc_panic("pool: invalid ownership detected: name=%s", name_);
