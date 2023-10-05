@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Roc Streaming authors
+ * Copyright (c) 2020 Roc Streaming authors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,19 +20,26 @@ MpscQueueImpl::MpscQueueImpl()
 
 MpscQueueImpl::~MpscQueueImpl() {
     if (head_ != &stub_) {
-        roc_panic("mpsc_queue_impl: queue isn't empty on destruct");
+        roc_panic("mpsc_queue: queue isn't empty on destruct");
     }
 }
 
 void MpscQueueImpl::push_back(MpscQueueData* node) {
+    change_owner_(node, NULL, this);
     push_node_(node);
+}
+
+MpscQueueNode::MpscQueueData* MpscQueueImpl::pop_front(bool can_spin) {
+    MpscQueueData* node = pop_node_(can_spin);
+    if (node != NULL) {
+        change_owner_(node, this, NULL);
+    }
+    return node;
 }
 
 void MpscQueueImpl::push_node_(MpscQueueData* node) {
     AtomicOps::store_relaxed(node->next, (MpscQueueData*)NULL);
-
     MpscQueueData* prev = AtomicOps::exchange_seq_cst(tail_, node);
-
     AtomicOps::store_release(prev->next, node);
 }
 
@@ -83,6 +90,12 @@ MpscQueueImpl::MpscQueueData* MpscQueueImpl::pop_node_(bool can_spin) {
     return head;
 }
 
+// Wait until concurrent push_node_() completes and node->next becomes non-NULL.
+// This version may block indefinetely.
+// Usually it returns immediately. It can block only if the thread performing
+// push_node_() was interrupted exactly after updating tail and before updating
+// next, and is now sleeping. In this rare case, this method will wait until the
+// push_node_() thread is resumed and completed.
 MpscQueueImpl::MpscQueueData* MpscQueueImpl::wait_next_(MpscQueueData* node) {
     if (MpscQueueData* next = try_wait_next_(node)) {
         return next;
@@ -95,6 +108,10 @@ MpscQueueImpl::MpscQueueData* MpscQueueImpl::wait_next_(MpscQueueData* node) {
     }
 }
 
+// Wait until concurrent push_node_() completes and node->next becomes non-NULL.
+// This version is non-blocking and gives up after a few re-tries.
+// Usually it succeeds. It can fail only in the same rare case when
+// wait_next_() blocks.
 MpscQueueImpl::MpscQueueData* MpscQueueImpl::try_wait_next_(MpscQueueData* node) {
     MpscQueueData* next;
     if ((next = AtomicOps::load_acquire(node->next))) {
@@ -107,6 +124,14 @@ MpscQueueImpl::MpscQueueData* MpscQueueImpl::try_wait_next_(MpscQueueData* node)
         return next;
     }
     return NULL;
+}
+
+void MpscQueueImpl::change_owner_(MpscQueueData* node, void* from, void* to) {
+    void* exp = from;
+    if (!AtomicOps::compare_exchange_relaxed(node->queue, exp, to)) {
+        roc_panic("mpsc queue: unexpected node owner: from=%p to=%p cur=%p", from, to,
+                  exp);
+    }
 }
 
 } // namespace core

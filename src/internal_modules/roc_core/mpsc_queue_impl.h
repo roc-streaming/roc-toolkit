@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Roc Streaming authors
+ * Copyright (c) 2020 Roc Streaming authors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,9 +31,7 @@ public:
     void push_back(MpscQueueNode::MpscQueueData* node);
 
     //! Remove object from the beginning of the queue.
-    template <bool CanSpin> MpscQueueNode::MpscQueueData* pop_front() {
-        return pop_node_(CanSpin);
-    }
+    MpscQueueNode::MpscQueueData* pop_front(bool can_spin);
 
 private:
     typedef MpscQueueNode::MpscQueueData MpscQueueData;
@@ -42,19 +40,11 @@ private:
 
     MpscQueueData* pop_node_(bool can_spin);
 
-    // Wait until concurrent push_node_() completes and node->next becomes non-NULL.
-    // This version may block indefinetely.
-    // Usually it returns immediately. It can block only if the thread performing
-    // push_node_() was interrupted exactly after updating tail and before updating
-    // next, and is now sleeping. In this rare case, this method will wait until the
-    // push_node_() thread is resumed and completed.
     MpscQueueData* wait_next_(MpscQueueData* node);
 
-    // Wait until concurrent push_node_() completes and node->next becomes non-NULL.
-    // This version is non-blocking and gives up after a few re-tries.
-    // Usually it succeeds. It can fail only in the same rare case when
-    // wait_next_() blocks.
     MpscQueueData* try_wait_next_(MpscQueueData* node);
+
+    void change_owner_(MpscQueueData* node, void* from, void* to);
 
     MpscQueueData* tail_;
     MpscQueueData* head_;

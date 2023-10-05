@@ -70,8 +70,6 @@ public:
 
         MpscQueueNode::MpscQueueData* node = obj.mpsc_queue_data();
 
-        change_owner_(node, NULL, this);
-
         impl_.push_back(node);
     }
 
@@ -87,12 +85,10 @@ public:
     //!  - This operation is both lock-free and wait-free on all architectures, i.e. it
     //!    never waits for sleeping threads and never spins indefinitely.
     Pointer try_pop_front_exclusive() {
-        MpscQueueNode::MpscQueueData* node = impl_.pop_front<false>();
+        MpscQueueNode::MpscQueueData* node = impl_.pop_front(false);
         if (!node) {
             return NULL;
         }
-
-        change_owner_(node, this, NULL);
 
         Pointer obj = static_cast<T*>(node->container_of());
         OwnershipPolicy<T>::release(*obj);
@@ -112,12 +108,10 @@ public:
     //!  - On the "fast-path", however, this operation does not wait for any
     //!    threads and just performs a few atomic reads and writes.
     Pointer pop_front_exclusive() {
-        MpscQueueNode::MpscQueueData* node = impl_.pop_front<true>();
+        MpscQueueNode::MpscQueueData* node = impl_.pop_front(true);
         if (!node) {
             return NULL;
         }
-
-        change_owner_(node, this, NULL);
 
         Pointer obj = static_cast<T*>(node->container_of());
         OwnershipPolicy<T>::release(*obj);
@@ -127,14 +121,6 @@ public:
 
 private:
     typedef MpscQueueNode::MpscQueueData MpscQueueData;
-
-    void change_owner_(MpscQueueData* node, void* from, void* to) {
-        void* exp = from;
-        if (!AtomicOps::compare_exchange_relaxed(node->queue, exp, to)) {
-            roc_panic("mpsc queue: unexpected node owner: from=%p to=%p cur=%p", from, to,
-                      exp);
-        }
-    }
 
     MpscQueueImpl impl_;
 };
