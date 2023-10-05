@@ -24,6 +24,16 @@ union AlignMax {
     void (*p)(); //!< 4-, 8- or 16-byte function pointer.
 };
 
+//! Size of AlignMax.
+enum { AlignMaxSize = sizeof(AlignMax) };
+
+//! Size aligned to AlignMax. For compile time.
+template <size_t Size> struct MaxAlignedSize {
+    enum {
+        value = ((Size + AlignMaxSize - 1) / AlignMaxSize) * AlignMaxSize,
+    };
+};
+
 //! Alignment operations.
 class AlignOps {
 public:
