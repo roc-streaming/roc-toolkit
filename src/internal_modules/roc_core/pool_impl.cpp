@@ -129,6 +129,8 @@ void* PoolImpl::give_slot_to_user_(Slot* slot) {
 
     UserSlot* userSlot = (UserSlot*)slot;
 
+    userSlot->owner = this;
+
     void* canary_before = &userSlot->canary_before;
     void* memory = userSlot->data;
     void* canary_after = (char*)userSlot->data + object_size_;
@@ -136,8 +138,6 @@ void* PoolImpl::give_slot_to_user_(Slot* slot) {
     MemoryOps::prepare_canary(canary_before, CanarySize);
     MemoryOps::poison_before_use(memory, object_size_);
     MemoryOps::prepare_canary(canary_after, object_size_padding_ + CanarySize);
-
-    userSlot->owner = this;
 
     return memory;
 }
