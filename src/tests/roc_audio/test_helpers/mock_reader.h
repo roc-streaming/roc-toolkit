@@ -88,7 +88,7 @@ public:
     }
 
 private:
-    enum { MaxSz = 64 * 1024 };
+    enum { MaxSz = 100000 };
 
     size_t total_reads_;
 
