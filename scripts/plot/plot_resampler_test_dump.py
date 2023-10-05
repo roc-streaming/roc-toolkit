@@ -1,4 +1,4 @@
-# !/usr/bin/env python3
+#!/usr/bin/env python3
 #
 # usage:
 # roc-test-audio -v -g resampler -n upscale_downscale_mono |& \
