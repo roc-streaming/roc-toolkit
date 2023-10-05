@@ -18,18 +18,23 @@ namespace audio {
 //! Resampler backends.
 enum ResamplerBackend {
     //! Default backend.
-    //! Resolved to some of other backends, depending
-    //! on what is supported.
+    //! Resolved to one of other backends, depending on what
+    //! is enabled at build time.
     ResamplerBackend_Default,
 
     //! Built-in resampler.
-    //! High precision, slow.
+    //! High precision, high quality, slow.
     ResamplerBackend_Builtin,
 
     //! SpeexDSP resampler.
-    //! Lower precision, fast.
+    //! Low precision, high quality, fast.
     //! May be disabled at build time.
-    ResamplerBackend_Speex
+    ResamplerBackend_Speex,
+
+    //! Combined SpeexDSP + decimating resampler.
+    //! Tolerable precision, tolerable quality, fast.
+    //! May be disabled at build time.
+    ResamplerBackend_SpeexDec
 };
 
 //! Get string name of resampler backend.
