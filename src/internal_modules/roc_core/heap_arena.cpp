@@ -16,11 +16,12 @@
 namespace roc {
 namespace core {
 
-int HeapArena::enable_leak_detection_ = false;
+int HeapArena::enable_leak_detection_ =
+    (DefaultHeapArenaFlags & HeapArenaFlag_EnableLeakDetection) != 0;
+int HeapArena::enable_guards_ = (DefaultHeapArenaFlags & HeapArenaFlag_EnableGuards) != 0;
 
-HeapArena::HeapArena(size_t flags)
+HeapArena::HeapArena()
     : num_allocations_(0)
-    , flags_(flags)
     , num_guard_failures_(0) {
 }
 
@@ -33,8 +34,10 @@ HeapArena::~HeapArena() {
     }
 }
 
-void HeapArena::enable_leak_detection() {
-    AtomicOps::store_seq_cst(enable_leak_detection_, true);
+void HeapArena::set_flags(size_t flags) {
+    AtomicOps::store_seq_cst(enable_leak_detection_,
+                             (flags & HeapArenaFlag_EnableLeakDetection) != 0);
+    AtomicOps::store_seq_cst(enable_guards_, (flags & HeapArenaFlag_EnableGuards) != 0);
 }
 
 size_t HeapArena::num_allocations() const {
@@ -44,12 +47,12 @@ size_t HeapArena::num_allocations() const {
 void* HeapArena::allocate(size_t size) {
     num_allocations_++;
 
-    size_t total_size = (sizeof(Chunk) + sizeof(ChunkCanary) + size + sizeof(ChunkCanary)
-                         + sizeof(AlignMax) - 1)
-        / sizeof(AlignMax) * sizeof(AlignMax);
-    size_t size_padding = AlignOps::align_max(size) - size;
+    size_t size_aligned = AlignOps::align_max(size);
+    size_t total_size =
+        sizeof(ChunkHeader) + sizeof(ChunkCanary) + size_aligned + sizeof(ChunkCanary);
+    size_t size_padding = size_aligned - size;
 
-    Chunk* chunk = (Chunk*)malloc(total_size);
+    ChunkHeader* chunk = (ChunkHeader*)malloc(total_size);
 
     char* canary_before = (char*)chunk->data;
     char* memory = (char*)chunk->data + sizeof(ChunkCanary);
@@ -75,22 +78,26 @@ void HeapArena::deallocate(void* ptr) {
         roc_panic("heap arena: unpaired deallocate");
     }
 
-    Chunk* chunk = ROC_CONTAINER_OF((char*)ptr - sizeof(ChunkCanary), Chunk, data);
+    ChunkHeader* chunk =
+        ROC_CONTAINER_OF((char*)ptr - sizeof(ChunkCanary), ChunkHeader, data);
 
     size_t size = chunk->size;
-    size_t size_padding = AlignOps::align_max(size) - size;
+    size_t size_aligned = AlignOps::align_max(size);
+    size_t size_padding = size_aligned - size;
 
     char* canary_before = (char*)chunk->data;
     char* memory = (char*)chunk->data + sizeof(ChunkCanary);
     char* canary_after = (char*)chunk->data + sizeof(ChunkCanary) + size;
 
-    bool canary_before_ok = MemoryOps::check_canary(canary_before, sizeof(ChunkCanary));
-    bool canary_after_ok =
+    const bool canary_before_ok =
+        MemoryOps::check_canary(canary_before, sizeof(ChunkCanary));
+    const bool canary_after_ok =
         MemoryOps::check_canary(canary_after, size_padding + sizeof(ChunkCanary));
     if (!canary_before_ok || !canary_after_ok) {
         num_guard_failures_++;
-        if ((flags_ & HeapArenaFlag_EnableGuards) != 0) {
-            roc_panic("heap arena: buffer overflow detected");
+        if (AtomicOps::load_seq_cst(enable_guards_)) {
+            roc_panic("heap arena: detected memory violation: ok_before=%d ok_after=%d",
+                      (int)canary_before_ok, (int)canary_after_ok);
         }
     }
 

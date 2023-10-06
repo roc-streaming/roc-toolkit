@@ -17,7 +17,10 @@ namespace core {
 TEST_GROUP(heap_arena) {};
 
 TEST(heap_arena, guard_object) {
-    HeapArena arena((DefaultHeapArenaFlags & ~HeapArenaFlag_EnableGuards));
+    core::HeapArena::set_flags(core::DefaultHeapArenaFlags
+                               & ~core::HeapArenaFlag_EnableGuards);
+
+    HeapArena arena;
     void* pointer = NULL;
 
     pointer = arena.allocate(127);
@@ -30,10 +33,14 @@ TEST(heap_arena, guard_object) {
     CHECK(*after_data == MemoryOps::Pattern_Canary);
 
     arena.deallocate(pointer);
+    core::HeapArena::set_flags(core::DefaultHeapArenaFlags
+                               | core::HeapArenaFlag_EnableGuards);
 }
 
 TEST(heap_arena, guard_object_violations) {
-    HeapArena arena((DefaultHeapArenaFlags & ~HeapArenaFlag_EnableGuards));
+    core::HeapArena::set_flags(core::DefaultHeapArenaFlags
+                               & ~core::HeapArenaFlag_EnableGuards);
+    HeapArena arena;
 
     void* pointers[2] = {};
 
@@ -58,6 +65,9 @@ TEST(heap_arena, guard_object_violations) {
     }
     arena.deallocate(pointers[1]);
     CHECK(arena.num_guard_failures() == 2);
+
+    core::HeapArena::set_flags(core::DefaultHeapArenaFlags
+                               | core::HeapArenaFlag_EnableGuards);
 }
 
 } // namespace core
