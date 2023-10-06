@@ -15,13 +15,16 @@ namespace roc {
 namespace core {
 
 TEST_GROUP(heap_arena) {
-    void setup() { core::HeapArena::set_flags(core::DefaultHeapArenaFlags
-                                              & ~core::HeapArenaFlag_EnableGuards);
-}
-void teardown() {
-    core::HeapArena::set_flags(core::DefaultHeapArenaFlags
-                               | core::HeapArenaFlag_EnableGuards);
-}
+    // clang-format off
+    void setup() {
+        core::HeapArena::set_flags(core::DefaultHeapArenaFlags
+                                    & ~core::HeapArenaFlag_EnableGuards);
+    }
+    void teardown() {
+        core::HeapArena::set_flags(core::DefaultHeapArenaFlags
+                                    | core::HeapArenaFlag_EnableGuards);
+    }
+// clang-format on
 }; // namespace roc
 
 TEST(heap_arena, guard_object) {
