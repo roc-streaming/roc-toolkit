@@ -53,8 +53,7 @@ PoolImpl::PoolImpl(const char* name,
     , object_size_(object_size)
     , object_size_padding_(AlignOps::align_max(object_size) - object_size)
     , flags_(flags)
-    , num_buffer_overflows_(0)
-    , num_invalid_ownerships_(0) {
+    , num_guard_failures_(0) {
     roc_log(LogDebug,
             "pool: initializing:"
             " name=%s object_size=%lu min_slab=%luB(%luS) max_slab=%luB(%luS)",
@@ -118,12 +117,8 @@ void PoolImpl::deallocate(void* memory) {
     }
 }
 
-size_t PoolImpl::num_buffer_overflows() const {
-    return num_buffer_overflows_;
-}
-
-size_t PoolImpl::num_invalid_ownerships() const {
-    return num_invalid_ownerships_;
+size_t PoolImpl::num_guard_failures() const {
+    return num_guard_failures_;
 }
 
 void* PoolImpl::give_slot_to_user_(Slot* slot) {
@@ -156,7 +151,7 @@ PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
         MemoryOps::check_canary(canary_after, object_size_padding_ + sizeof(SlotCanary));
 
     if (!canary_before_ok || !canary_after_ok) {
-        num_buffer_overflows_++;
+        num_guard_failures_++;
         if ((flags_ & PoolFlag_EnableGuards) != 0) {
             roc_panic("pool: buffer overflow detected: name=%s", name_);
         }
@@ -165,7 +160,7 @@ PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
     bool is_owner = slot_hdr->owner == this;
 
     if (!is_owner) {
-        num_invalid_ownerships_++;
+        num_guard_failures_++;
         if ((flags_ & PoolFlag_EnableGuards) != 0) {
             roc_panic("pool: invalid ownership detected: name=%s", name_);
         }

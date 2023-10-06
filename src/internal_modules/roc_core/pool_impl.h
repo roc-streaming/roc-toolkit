@@ -64,11 +64,8 @@ public:
     //! Return memory to pool.
     void deallocate(void* memory);
 
-    //! Get number of buffer overflows detected.
-    size_t num_buffer_overflows() const;
-
-    //! Get number of invalid ownerships detected.
-    size_t num_invalid_ownerships() const;
+    //! Get number of guard failures.
+    size_t num_guard_failures() const;
 
 private:
     struct Slab : ListNode {};
@@ -112,8 +109,7 @@ private:
     const size_t object_size_padding_;
 
     const size_t flags_;
-    size_t num_buffer_overflows_;
-    size_t num_invalid_ownerships_;
+    size_t num_guard_failures_;
 };
 
 } // namespace core

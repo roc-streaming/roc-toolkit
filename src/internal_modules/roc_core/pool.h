@@ -25,7 +25,7 @@ namespace core {
 
 //! Memory pool flags.
 enum PoolFlags {
-    //! Panic when buffer overflow and invalid ownership is detected.
+    //! Enable guards for buffer overflow, invalid ownership, etc.
     PoolFlag_EnableGuards = (1 << 0),
 };
 
@@ -105,13 +105,8 @@ public:
     }
 
     //! Get number of buffer overflows detected.
-    size_t num_buffer_overflows() const {
-        return impl_.num_buffer_overflows();
-    }
-
-    //! Get number of invalid ownerships detected.
-    size_t num_invalid_ownerships() const {
-        return impl_.num_invalid_ownerships();
+    size_t num_guard_failures() const {
+        return impl_.num_guard_failures();
     }
 
 private:

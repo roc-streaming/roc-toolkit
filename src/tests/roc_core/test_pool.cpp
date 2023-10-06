@@ -515,7 +515,7 @@ TEST(pool, guard_object_violations) {
         *data = 0x00;
     }
     pool.deallocate(pointers[0]);
-    CHECK(pool.num_buffer_overflows() == 1);
+    CHECK(pool.num_guard_failures() == 1);
 
     {
         char* data = (char*)pointers[1];
@@ -523,7 +523,7 @@ TEST(pool, guard_object_violations) {
         *data = 0x00;
     }
     pool.deallocate(pointers[1]);
-    CHECK(pool.num_buffer_overflows() == 2);
+    CHECK(pool.num_guard_failures() == 2);
 }
 
 TEST(pool, object_ownership_guard) {
@@ -541,7 +541,7 @@ TEST(pool, object_ownership_guard) {
     CHECK(pointers[1]);
 
     pool0.deallocate(pointers[1]);
-    CHECK(pool0.num_invalid_ownerships() == 1);
+    CHECK(pool0.num_guard_failures() == 1);
 
     pool0.deallocate(pointers[0]);
     pool1.deallocate(pointers[1]);
