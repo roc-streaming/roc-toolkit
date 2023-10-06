@@ -40,6 +40,10 @@ size_t HeapArena::num_allocations() const {
     return (size_t)num_allocations_;
 }
 
+size_t HeapArena::num_guard_failures() const {
+    return num_guard_failures_;
+}
+
 void* HeapArena::allocate(size_t size) {
     num_allocations_++;
 
@@ -102,8 +106,5 @@ void HeapArena::deallocate(void* ptr) {
     free(chunk);
 }
 
-size_t HeapArena::num_guard_failures() const {
-    return num_guard_failures_;
-}
 } // namespace core
 } // namespace roc

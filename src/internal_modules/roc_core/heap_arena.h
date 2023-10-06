@@ -22,9 +22,9 @@ namespace core {
 
 //! Heap arena flags.
 enum HeapArenaFlags {
-    //! Enable leak detection, etc.
+    //! Enable panic if leaks detected in arena destructor.
     HeapArenaFlag_EnableLeakDetection = (1 << 0),
-    //! Enable guards such as canary, etc.
+    //! Enable panic if memory violation detected when deallocating chunk.
     HeapArenaFlag_EnableGuards = (1 << 1),
 };
 
@@ -54,14 +54,14 @@ public:
     //! Get number of allocated blocks.
     size_t num_allocations() const;
 
+    //! Get number of guard failures.
+    size_t num_guard_failures() const;
+
     //! Allocate memory.
     virtual void* allocate(size_t size);
 
     //! Deallocate previously allocated memory.
     virtual void deallocate(void*);
-
-    //! Get number of guard failures.
-    size_t num_guard_failures() const;
 
 private:
     struct ChunkHeader {

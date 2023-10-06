@@ -14,12 +14,17 @@
 namespace roc {
 namespace core {
 
-TEST_GROUP(heap_arena) {};
+TEST_GROUP(heap_arena) {
+    void setup() { core::HeapArena::set_flags(core::DefaultHeapArenaFlags
+                                              & ~core::HeapArenaFlag_EnableGuards);
+}
+void teardown() {
+    core::HeapArena::set_flags(core::DefaultHeapArenaFlags
+                               | core::HeapArenaFlag_EnableGuards);
+}
+}; // namespace roc
 
 TEST(heap_arena, guard_object) {
-    core::HeapArena::set_flags(core::DefaultHeapArenaFlags
-                               & ~core::HeapArenaFlag_EnableGuards);
-
     HeapArena arena;
     void* pointer = NULL;
 
@@ -33,13 +38,9 @@ TEST(heap_arena, guard_object) {
     CHECK(*after_data == MemoryOps::Pattern_Canary);
 
     arena.deallocate(pointer);
-    core::HeapArena::set_flags(core::DefaultHeapArenaFlags
-                               | core::HeapArenaFlag_EnableGuards);
 }
 
 TEST(heap_arena, guard_object_violations) {
-    core::HeapArena::set_flags(core::DefaultHeapArenaFlags
-                               & ~core::HeapArenaFlag_EnableGuards);
     HeapArena arena;
 
     void* pointers[2] = {};
@@ -65,9 +66,6 @@ TEST(heap_arena, guard_object_violations) {
     }
     arena.deallocate(pointers[1]);
     CHECK(arena.num_guard_failures() == 2);
-
-    core::HeapArena::set_flags(core::DefaultHeapArenaFlags
-                               | core::HeapArenaFlag_EnableGuards);
 }
 
 } // namespace core
