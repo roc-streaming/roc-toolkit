@@ -25,11 +25,12 @@ namespace core {
 
 //! Memory pool flags.
 enum PoolFlags {
-    PoolFlag_PanicOnOverflow = (1 << 0), //!< Panic when buffer overflow detected.
+    //! Enable guards for buffer overflow, invalid ownership, etc.
+    PoolFlag_EnableGuards = (1 << 0),
 };
 
 //! Default memory pool flags.
-enum { DefaultPoolFlags = (PoolFlag_PanicOnOverflow) };
+enum { DefaultPoolFlags = (PoolFlag_EnableGuards) };
 
 //! Memory pool.
 //!
@@ -104,14 +105,17 @@ public:
     }
 
     //! Get number of buffer overflows detected.
-    size_t num_buffer_overflows() const {
-        return impl_.num_buffer_overflows();
+    size_t num_guard_failures() const {
+        return impl_.num_guard_failures();
     }
 
 private:
-    AlignedStorage<EmbeddedCapacity*(sizeof(T) + PoolImpl::CanarySize
-                                     + PoolImpl::CanarySize)>
-        embedded_data_;
+    enum {
+        SlotSize = (sizeof(PoolImpl::SlotHeader) + sizeof(PoolImpl::SlotCanary)
+                    + sizeof(T) + sizeof(PoolImpl::SlotCanary) + sizeof(AlignMax) - 1)
+            / sizeof(AlignMax) * sizeof(AlignMax)
+    };
+    AlignedStorage<EmbeddedCapacity * SlotSize> embedded_data_;
     PoolImpl impl_;
 };
 

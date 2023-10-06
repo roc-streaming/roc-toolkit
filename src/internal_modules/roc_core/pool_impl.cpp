@@ -44,14 +44,16 @@ PoolImpl::PoolImpl(const char* name,
     , slab_min_bytes_(clamp(min_alloc_bytes, preallocated_size, max_alloc_bytes))
     , slab_max_bytes_(max_alloc_bytes)
     , slot_size_(std::max(sizeof(Slot),
-                          CanarySize + AlignOps::align_max(object_size) + CanarySize))
+                          (sizeof(SlotHeader) + sizeof(SlotCanary) + object_size
+                           + sizeof(SlotCanary) + sizeof(AlignMax) - 1)
+                              / sizeof(AlignMax) * sizeof(AlignMax)))
     , slab_hdr_size_(AlignOps::align_max(sizeof(Slab)))
     , slab_cur_slots_(slab_min_bytes_ == 0 ? 1 : slots_per_slab_(slab_min_bytes_, true))
     , slab_max_slots_(slab_max_bytes_ == 0 ? 0 : slots_per_slab_(slab_max_bytes_, false))
     , object_size_(object_size)
     , object_size_padding_(AlignOps::align_max(object_size) - object_size)
     , flags_(flags)
-    , num_buffer_overflows_(0) {
+    , num_guard_failures_(0) {
     roc_log(LogDebug,
             "pool: initializing:"
             " name=%s object_size=%lu min_slab=%luB(%luS) max_slab=%luB(%luS)",
@@ -104,6 +106,10 @@ void PoolImpl::deallocate(void* memory) {
 
     Slot* slot = take_slot_from_user_(memory);
 
+    if (slot == NULL) {
+        return;
+    }
+
     {
         Mutex::Lock lock(mutex_);
 
@@ -111,42 +117,59 @@ void PoolImpl::deallocate(void* memory) {
     }
 }
 
-size_t PoolImpl::num_buffer_overflows() const {
-    return num_buffer_overflows_;
+size_t PoolImpl::num_guard_failures() const {
+    return num_guard_failures_;
 }
 
 void* PoolImpl::give_slot_to_user_(Slot* slot) {
     slot->~Slot();
 
-    void* canary_before = slot;
-    void* memory = (char*)slot + CanarySize;
-    void* canary_after = (char*)slot + CanarySize + object_size_;
+    SlotHeader* slot_hdr = (SlotHeader*)slot;
 
-    MemoryOps::prepare_canary(canary_before, CanarySize);
+    slot_hdr->owner = this;
+
+    void* canary_before = (char*)slot_hdr->data;
+    void* memory = (char*)slot_hdr->data + sizeof(SlotCanary);
+    void* canary_after = (char*)slot_hdr->data + sizeof(SlotCanary) + object_size_;
+
+    MemoryOps::prepare_canary(canary_before, sizeof(SlotCanary));
     MemoryOps::poison_before_use(memory, object_size_);
-    MemoryOps::prepare_canary(canary_after, object_size_padding_ + CanarySize);
+    MemoryOps::prepare_canary(canary_after, object_size_padding_ + sizeof(SlotCanary));
 
     return memory;
 }
 
 PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
-    void* canary_before = (char*)memory - CanarySize;
-    void* canary_after = (char*)memory + object_size_;
+    SlotHeader* slot_hdr =
+        ROC_CONTAINER_OF((char*)memory - sizeof(SlotCanary), SlotHeader, data);
 
-    bool canary_before_ok = MemoryOps::check_canary(canary_before, CanarySize);
+    void* canary_before = (char*)slot_hdr->data;
+    void* canary_after = (char*)slot_hdr->data + sizeof(SlotCanary) + object_size_;
+
+    bool canary_before_ok = MemoryOps::check_canary(canary_before, sizeof(SlotCanary));
     bool canary_after_ok =
-        MemoryOps::check_canary(canary_after, object_size_padding_ + CanarySize);
+        MemoryOps::check_canary(canary_after, object_size_padding_ + sizeof(SlotCanary));
 
     if (!canary_before_ok || !canary_after_ok) {
-        num_buffer_overflows_++;
-        if ((flags_ & PoolFlag_PanicOnOverflow) != 0) {
+        num_guard_failures_++;
+        if ((flags_ & PoolFlag_EnableGuards) != 0) {
             roc_panic("pool: buffer overflow detected: name=%s", name_);
         }
     }
 
+    bool is_owner = slot_hdr->owner == this;
+
+    if (!is_owner) {
+        num_guard_failures_++;
+        if ((flags_ & PoolFlag_EnableGuards) != 0) {
+            roc_panic("pool: invalid ownership detected: name=%s", name_);
+        }
+        return NULL;
+    }
+
     MemoryOps::poison_after_use(memory, object_size_);
 
-    return new (canary_before) Slot;
+    return new (slot_hdr) Slot;
 }
 
 PoolImpl::Slot* PoolImpl::acquire_slot_() {
