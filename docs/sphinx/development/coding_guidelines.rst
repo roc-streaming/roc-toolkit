@@ -135,6 +135,25 @@ Coding style
 
     <span></span>
 
+* Members in class should have the following order:
+
+  * public members:
+     * types and constants
+     * methods
+
+  * protected members:
+     * types and constants
+     * methods
+
+  * private members:
+     * types and constants
+     * methods
+     * fields
+
+.. raw:: html
+
+    <span></span>
+
 * The code should be formatted according to our 1TBS-like indentation style defined in ``.clang-format`` config:
 
   * use 4 spaces for indentation;
