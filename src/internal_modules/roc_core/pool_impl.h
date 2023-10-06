@@ -28,6 +28,23 @@ namespace core {
 //! This is non-template class that implements all pool logic, to avoid
 //! polluting header file.
 //!
+//! Allocated slot have the following format:
+//! @code
+//!  +------------+------------+-----------+------------+
+//!  | SlotHeader | SlotCanary | user data | SlotCanary |
+//!  +------------+------------+-----------+------------+
+//! @endcode
+//!
+//! SlotHeader contains pointer to the owning pool. It is used to ensure
+//! integrity of allocation and deallocation calls.
+//!
+//! SlotCanary contains magic bytes filled when returning slot to user,
+//! and checked when returning slot to pool. They are used to detect
+//! buffer overflow bugs.
+//!
+//! If user data requires padding to be maximum-aligned, this padding
+//! also becomes part of the trailing canary guard.
+//!
 //! @see Pool.
 class PoolImpl : public NonCopyable<> {
 public:
@@ -102,6 +119,7 @@ private:
     const size_t slab_min_bytes_;
     const size_t slab_max_bytes_;
 
+    const size_t unaligned_slot_size_;
     const size_t slot_size_;
     const size_t slab_hdr_size_;
 

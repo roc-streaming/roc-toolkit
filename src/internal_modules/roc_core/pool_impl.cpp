@@ -43,15 +43,14 @@ PoolImpl::PoolImpl(const char* name,
     , n_used_slots_(0)
     , slab_min_bytes_(clamp(min_alloc_bytes, preallocated_size, max_alloc_bytes))
     , slab_max_bytes_(max_alloc_bytes)
-    , slot_size_(std::max(sizeof(Slot),
-                          (sizeof(SlotHeader) + sizeof(SlotCanary) + object_size
-                           + sizeof(SlotCanary) + sizeof(AlignMax) - 1)
-                              / sizeof(AlignMax) * sizeof(AlignMax)))
+    , unaligned_slot_size_(sizeof(SlotHeader) + sizeof(SlotCanary) + object_size
+                           + sizeof(SlotCanary))
+    , slot_size_(AlignOps::align_max(std::max(sizeof(Slot), unaligned_slot_size_)))
     , slab_hdr_size_(AlignOps::align_max(sizeof(Slab)))
     , slab_cur_slots_(slab_min_bytes_ == 0 ? 1 : slots_per_slab_(slab_min_bytes_, true))
     , slab_max_slots_(slab_max_bytes_ == 0 ? 0 : slots_per_slab_(slab_max_bytes_, false))
     , object_size_(object_size)
-    , object_size_padding_(AlignOps::align_max(object_size) - object_size)
+    , object_size_padding_(slot_size_ - unaligned_slot_size_)
     , flags_(flags)
     , num_guard_failures_(0) {
     roc_log(LogDebug,
@@ -146,23 +145,27 @@ PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
     void* canary_before = (char*)slot_hdr->data;
     void* canary_after = (char*)slot_hdr->data + sizeof(SlotCanary) + object_size_;
 
-    bool canary_before_ok = MemoryOps::check_canary(canary_before, sizeof(SlotCanary));
-    bool canary_after_ok =
+    const bool canary_before_ok =
+        MemoryOps::check_canary(canary_before, sizeof(SlotCanary));
+    const bool canary_after_ok =
         MemoryOps::check_canary(canary_after, object_size_padding_ + sizeof(SlotCanary));
 
     if (!canary_before_ok || !canary_after_ok) {
         num_guard_failures_++;
-        if ((flags_ & PoolFlag_EnableGuards) != 0) {
-            roc_panic("pool: buffer overflow detected: name=%s", name_);
+        if (flags_ & PoolFlag_EnableGuards) {
+            roc_panic("pool: detected memory violation: name=%s ok_before=%d ok_after=%d",
+                      name_, (int)canary_before_ok, (int)canary_after_ok);
         }
     }
 
-    bool is_owner = slot_hdr->owner == this;
+    const bool is_owner = slot_hdr->owner == this;
 
     if (!is_owner) {
         num_guard_failures_++;
-        if ((flags_ & PoolFlag_EnableGuards) != 0) {
-            roc_panic("pool: invalid ownership detected: name=%s", name_);
+        if (flags_ & PoolFlag_EnableGuards) {
+            roc_panic("pool: attempt to deallocate slot not belonging to this pool:"
+                      " name=%s this_pool=%p slot_pool=%p",
+                      name_, (const void*)this, (const void*)slot_hdr->owner);
         }
         return NULL;
     }
@@ -246,7 +249,7 @@ bool PoolImpl::allocate_new_slab_() {
 
 void PoolImpl::deallocate_everything_() {
     if (n_used_slots_ != 0) {
-        roc_panic("pool: detected leak: name=%s n_used=%lu n_free=%lu", name_,
+        roc_panic("pool: detected memory leak: name=%s n_used=%lu n_free=%lu", name_,
                   (unsigned long)n_used_slots_, (unsigned long)free_slots_.size());
     }
 

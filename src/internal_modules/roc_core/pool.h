@@ -104,7 +104,7 @@ public:
         impl_.deallocate(memory);
     }
 
-    //! Get number of buffer overflows detected.
+    //! Get number of guard failures detected.
     size_t num_guard_failures() const {
         return impl_.num_guard_failures();
     }
