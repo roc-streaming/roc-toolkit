@@ -20,7 +20,7 @@ MpscQueueImpl::MpscQueueImpl()
 
 MpscQueueImpl::~MpscQueueImpl() {
     if (head_ != &stub_) {
-        roc_panic("mpsc_queue: queue isn't empty on destruct");
+        roc_panic("mpsc queue: queue isn't empty on destruct");
     }
 }
 
@@ -56,7 +56,7 @@ MpscQueueImpl::MpscQueueData* MpscQueueImpl::pop_node_(bool can_spin) {
                 // queue is not empty, so head->next == NULL means that
                 // a push_node_() call is in progress
                 if (!(next = (can_spin ? wait_next_(head) : try_wait_next_(head)))) {
-                    // this may happen only if CanSpin is false
+                    // this may happen only if can_spin is false
                     return NULL;
                 }
             }
@@ -79,7 +79,7 @@ MpscQueueImpl::MpscQueueData* MpscQueueImpl::pop_node_(bool can_spin) {
 
         // if head->next == NULL here means that a push_node_() call is in progress
         if (!(next = (can_spin ? wait_next_(head) : try_wait_next_(head)))) {
-            // this may happen only if CanSpin is false
+            // this may happen only if can_spin is false
             return NULL;
         }
     }

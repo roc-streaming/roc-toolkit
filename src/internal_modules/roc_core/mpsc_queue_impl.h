@@ -37,11 +37,9 @@ private:
     typedef MpscQueueNode::MpscQueueData MpscQueueData;
 
     void push_node_(MpscQueueData* node);
-
     MpscQueueData* pop_node_(bool can_spin);
 
     MpscQueueData* wait_next_(MpscQueueData* node);
-
     MpscQueueData* try_wait_next_(MpscQueueData* node);
 
     void change_owner_(MpscQueueData* node, void* from, void* to);

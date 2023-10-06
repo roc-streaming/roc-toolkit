@@ -120,8 +120,6 @@ public:
     }
 
 private:
-    typedef MpscQueueNode::MpscQueueData MpscQueueData;
-
     MpscQueueImpl impl_;
 };
 
