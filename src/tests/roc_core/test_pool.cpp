@@ -500,7 +500,7 @@ TEST(pool, guard_object) {
 TEST(pool, guard_object_violations) {
     TestArena arena;
     Pool<TestObject, 1> pool("test", arena, sizeof(TestObject), 0, 0,
-                             (DefaultPoolFlags & ~PoolFlag_PanicOnOverflow));
+                             (DefaultPoolFlags & ~PoolFlag_EnableGuards));
     void* pointers[2] = {};
 
     pointers[0] = pool.allocate();
@@ -529,7 +529,7 @@ TEST(pool, guard_object_violations) {
 TEST(pool, object_ownership_guard) {
     TestArena arena;
     Pool<TestObject, 1> pool0("test", arena, sizeof(TestObject), 0, 0,
-                              (DefaultPoolFlags & ~PoolFlag_PanicOnInvalidOwnership));
+                              (DefaultPoolFlags & ~PoolFlag_EnableGuards));
     Pool<TestObject, 1> pool1("test", arena);
 
     void* pointers[2] = {};

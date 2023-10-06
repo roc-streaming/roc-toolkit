@@ -25,13 +25,12 @@ namespace core {
 
 //! Memory pool flags.
 enum PoolFlags {
-    PoolFlag_PanicOnOverflow = (1 << 0),         //!< Panic when buffer overflow detected.
-    PoolFlag_PanicOnInvalidOwnership = (1 << 1), //!< Panic when invalid ownership
-                                                 //!< detected.
+    //! Panic when buffer overflow and invalid ownership is detected.
+    PoolFlag_EnableGuards = (1 << 0),
 };
 
 //! Default memory pool flags.
-enum { DefaultPoolFlags = (PoolFlag_PanicOnOverflow | PoolFlag_PanicOnInvalidOwnership) };
+enum { DefaultPoolFlags = (PoolFlag_EnableGuards) };
 
 //! Memory pool.
 //!

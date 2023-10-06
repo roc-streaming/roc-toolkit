@@ -154,7 +154,7 @@ PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
 
     if (!canary_before_ok || !canary_after_ok) {
         num_buffer_overflows_++;
-        if ((flags_ & PoolFlag_PanicOnOverflow) != 0) {
+        if ((flags_ & PoolFlag_EnableGuards) != 0) {
             roc_panic("pool: buffer overflow detected: name=%s", name_);
         }
     }
@@ -163,7 +163,7 @@ PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
 
     if (!is_owner) {
         num_invalid_ownerships_++;
-        if ((flags_ & PoolFlag_PanicOnInvalidOwnership) != 0) {
+        if ((flags_ & PoolFlag_EnableGuards) != 0) {
             roc_panic("pool: invalid ownership detected: name=%s", name_);
         }
         return NULL;
