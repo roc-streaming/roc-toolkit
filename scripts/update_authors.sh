@@ -84,6 +84,11 @@ function add_if_new() {
         print_addr="https://github.com/${github_login}"
     fi
 
+    if grep -qiF "${print_addr}" "${file}"
+    then
+        return
+    fi
+
     if [ -z "${print_addr}" ]
     then
         echo "[${repo_name}] adding ${print_name}" 1>&2
