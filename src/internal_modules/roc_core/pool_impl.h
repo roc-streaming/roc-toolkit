@@ -33,10 +33,13 @@ class PoolImpl : public NonCopyable<> {
 public:
     //! Slot header.
     struct SlotHeader {
+        //! The pool that the slot belongs to.
         PoolImpl* owner;
+        //! Variable-length data surrounded by canary guard.
         AlignMax data[];
     };
-    //! Canary guard will surround variable data and includes any padding for data.
+
+    //! Canary guard which surrounds variable-length data.
     typedef AlignMax SlotCanary;
 
     //! Initialize.
