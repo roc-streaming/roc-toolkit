@@ -14,6 +14,7 @@
 
 #include "roc_core/aligned_storage.h"
 #include "roc_core/attributes.h"
+#include "roc_core/hashmap_impl.h"
 #include "roc_core/hashmap_node.h"
 #include "roc_core/hashsum.h"
 #include "roc_core/iarena.h"
@@ -90,32 +91,14 @@ public:
     //! @remarks
     //!  Hashmap capacity will be limited to the embedded capacity.
     Hashmap()
-        : curr_buckets_(NULL)
-        , n_curr_buckets_(0)
-        , prev_buckets_(NULL)
-        , n_prev_buckets_(0)
-        , size_(0)
-        , rehash_pos_(0)
-        , rehash_remain_nodes_(0)
-        , arena_(NULL) {
-        all_head_.all_prev = &all_head_;
-        all_head_.all_next = &all_head_;
+        : impl_(embedded_buckets_.memory(), embedded_buckets_.size()) {
     }
 
     //! Initialize empty hashmap with arena.
     //! @remarks
     //!  Hashmap capacity may grow using arena.
     explicit Hashmap(IArena& arena)
-        : curr_buckets_(NULL)
-        , n_curr_buckets_(0)
-        , prev_buckets_(NULL)
-        , n_prev_buckets_(0)
-        , size_(0)
-        , rehash_pos_(0)
-        , rehash_remain_nodes_(0)
-        , arena_(&arena) {
-        all_head_.all_prev = &all_head_;
-        all_head_.all_next = &all_head_;
+        : impl_(embedded_buckets_.memory(), embedded_buckets_.size(), arena) {
     }
 
     //! Release ownership of all elements.
@@ -129,17 +112,17 @@ public:
     //! Get maximum number of elements that can be added to hashmap before
     //! grow() should be called.
     size_t capacity() const {
-        return buckets_capacity_(n_curr_buckets_);
+        return impl_.capacity();
     }
 
     //! Get number of elements added to hashmap.
     size_t size() const {
-        return size_;
+        return impl_.size();
     }
 
     //! Check if size is zero.
     bool is_empty() const {
-        return size_ == 0;
+        return size() == 0;
     }
 
     //! Check if element belongs to hashmap.
@@ -150,15 +133,7 @@ public:
     bool contains(const T& element) const {
         const HashmapNode::HashmapNodeData* node = element.hashmap_node_data();
 
-        if (member_of_bucket_array_(curr_buckets_, n_curr_buckets_, node)) {
-            return true;
-        }
-
-        if (member_of_bucket_array_(prev_buckets_, n_prev_buckets_, node)) {
-            return true;
-        }
-
-        return false;
+        return impl_.contains(node);
     }
 
     //! Find element in the hashmap by key.
@@ -360,10 +335,6 @@ private:
             / LoadFactorNum * 2
     };
 
-    struct Bucket {
-        HashmapNode::HashmapNodeData* head;
-    };
-
     static T* container_of_(HashmapNode::HashmapNodeData* data) {
         return static_cast<T*>(data->container_of());
     }
@@ -418,17 +389,17 @@ private:
         }
     }
 
-    bool member_of_bucket_array_(Bucket* buckets,
-                                 size_t n_buckets,
-                                 const HashmapNode::HashmapNodeData* node) const {
-        if (n_buckets == 0) {
-            return false;
-        }
-
-        Bucket* node_bucket = (Bucket*)node->bucket;
-
-        return node_bucket >= buckets && node_bucket < buckets + n_buckets;
-    }
+    //    bool member_of_bucket_array_(Bucket* buckets,
+    //                                 size_t n_buckets,
+    //                                 const HashmapNode::HashmapNodeData* node) const {
+    //        if (n_buckets == 0) {
+    //            return false;
+    //        }
+    //
+    //        Bucket* node_bucket = (Bucket*)node->bucket;
+    //
+    //        return node_bucket >= buckets && node_bucket < buckets + n_buckets;
+    //    }
 
     void release_bucket_array_(Bucket* buckets, size_t n_buckets) {
         if (n_buckets == 0) {
@@ -652,23 +623,9 @@ private:
         return current_count * 3;
     }
 
-    Bucket* curr_buckets_;
-    size_t n_curr_buckets_;
+    HashmapImpl impl_;
 
-    Bucket* prev_buckets_;
-    size_t n_prev_buckets_;
-
-    size_t size_;
-
-    size_t rehash_pos_;
-    size_t rehash_remain_nodes_;
-
-    // head of list of all nodes
-    HashmapNode::HashmapNodeData all_head_;
-
-    IArena* arena_;
-
-    AlignedStorage<NumEmbeddedBuckets * sizeof(Bucket)> embedded_buckets_;
+    AlignedStorage<NumEmbeddedBuckets * sizeof(HashmapImpl::Bucket)> embedded_buckets_;
 };
 
 } // namespace core
