@@ -39,6 +39,10 @@ enum { DefaultHeapArenaFlags = (HeapArenaFlag_EnableGuards) };
 //! The memory is always maximum aligned. Thread-safe.
 class HeapArena : public IArena, public NonCopyable<> {
 public:
+    //! Initialize.
+    //!
+    //! @b Parameters
+    //! - @p flags defines options to modify behaviour as indicated in HeapArenaFlags
     HeapArena(size_t flags = DefaultHeapArenaFlags);
     ~HeapArena();
 
