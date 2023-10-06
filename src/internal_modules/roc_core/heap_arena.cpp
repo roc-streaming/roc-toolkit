@@ -16,9 +16,7 @@
 namespace roc {
 namespace core {
 
-int HeapArena::enable_leak_detection_ =
-    (DefaultHeapArenaFlags & HeapArenaFlag_EnableLeakDetection) != 0;
-int HeapArena::enable_guards_ = (DefaultHeapArenaFlags & HeapArenaFlag_EnableGuards) != 0;
+size_t HeapArena::flags_ = DefaultHeapArenaFlags;
 
 HeapArena::HeapArena()
     : num_allocations_(0)
@@ -27,7 +25,7 @@ HeapArena::HeapArena()
 
 HeapArena::~HeapArena() {
     if (num_allocations_ != 0) {
-        if (AtomicOps::load_seq_cst(enable_leak_detection_)) {
+        if (AtomicOps::load_seq_cst(flags_) & HeapArenaFlag_EnableLeakDetection) {
             roc_panic("heap arena: detected leak(s): %d objects was not freed",
                       (int)num_allocations_);
         }
@@ -35,9 +33,7 @@ HeapArena::~HeapArena() {
 }
 
 void HeapArena::set_flags(size_t flags) {
-    AtomicOps::store_seq_cst(enable_leak_detection_,
-                             (flags & HeapArenaFlag_EnableLeakDetection) != 0);
-    AtomicOps::store_seq_cst(enable_guards_, (flags & HeapArenaFlag_EnableGuards) != 0);
+    AtomicOps::store_seq_cst(flags_, flags);
 }
 
 size_t HeapArena::num_allocations() const {
@@ -95,7 +91,7 @@ void HeapArena::deallocate(void* ptr) {
         MemoryOps::check_canary(canary_after, size_padding + sizeof(ChunkCanary));
     if (!canary_before_ok || !canary_after_ok) {
         num_guard_failures_++;
-        if (AtomicOps::load_seq_cst(enable_guards_)) {
+        if (AtomicOps::load_seq_cst(flags_) & HeapArenaFlag_EnableGuards) {
             roc_panic("heap arena: detected memory violation: ok_before=%d ok_after=%d",
                       (int)canary_before_ok, (int)canary_after_ok);
         }

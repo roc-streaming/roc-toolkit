@@ -73,8 +73,7 @@ private:
 
     Atomic<int> num_allocations_;
 
-    static int enable_leak_detection_;
-    static int enable_guards_;
+    static size_t flags_;
 
     size_t num_guard_failures_;
 };
