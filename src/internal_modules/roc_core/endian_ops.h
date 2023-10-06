@@ -87,66 +87,28 @@ private:
         return (int64_t)reverse_octets_((uint64_t)v);
     }
 
-    template <class T> static inline T reverse_octets_(T v) {
-        enum { NumOctets = sizeof(T) };
-
+    static inline float reverse_octets_(float v) {
         union {
-            T value;
-            char octets[sizeof(T)];
+            float f;
+            uint32_t i;
         } u;
 
-        u.value = v;
+        u.f = v;
+        u.i = reverse_octets_(u.i);
 
-        switch ((int)NumOctets) {
-        case 0:
-        case 1:
-            break;
+        return u.f;
+    }
 
-        case 2:
-            std::swap(u.octets[0], u.octets[1]);
-            break;
+    static inline double reverse_octets_(double v) {
+        union {
+            double f;
+            uint64_t i;
+        } u;
 
-        case 3:
-            std::swap(u.octets[0], u.octets[2]);
-            break;
+        u.f = v;
+        u.i = reverse_octets_(u.i);
 
-        case 4:
-            std::swap(u.octets[0], u.octets[3]);
-            std::swap(u.octets[1], u.octets[2]);
-            break;
-
-        case 5:
-            std::swap(u.octets[0], u.octets[4]);
-            std::swap(u.octets[1], u.octets[3]);
-            break;
-
-        case 6:
-            std::swap(u.octets[0], u.octets[5]);
-            std::swap(u.octets[1], u.octets[4]);
-            std::swap(u.octets[2], u.octets[3]);
-            break;
-
-        case 7:
-            std::swap(u.octets[0], u.octets[6]);
-            std::swap(u.octets[1], u.octets[5]);
-            std::swap(u.octets[2], u.octets[4]);
-            break;
-
-        case 8:
-            std::swap(u.octets[0], u.octets[7]);
-            std::swap(u.octets[1], u.octets[6]);
-            std::swap(u.octets[2], u.octets[5]);
-            std::swap(u.octets[3], u.octets[4]);
-            break;
-
-        default:
-            for (size_t n = 0; n < NumOctets / 2; n++) {
-                std::swap(u.octets[n], u.octets[NumOctets - n - 1]);
-            }
-            break;
-        }
-
-        return v;
+        return u.f;
     }
 };
 
