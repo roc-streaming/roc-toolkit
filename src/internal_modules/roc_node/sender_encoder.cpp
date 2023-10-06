@@ -10,6 +10,7 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_pipeline/metrics.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace node {
@@ -137,7 +138,8 @@ bool SenderEncoder::is_complete() {
     return slot_metrics.is_complete;
 }
 
-bool SenderEncoder::read(address::Interface iface, packet::PacketPtr& packet) {
+status::StatusCode SenderEncoder::read(address::Interface iface,
+                                       packet::PacketPtr& packet) {
     roc_panic_if_not(is_valid());
 
     roc_panic_if(iface < 0);
@@ -149,11 +151,11 @@ bool SenderEncoder::read(address::Interface iface, packet::PacketPtr& packet) {
                 "sender encoder node:"
                 " can't read from %s interface: interface not activated",
                 address::interface_to_str(iface));
-        return false;
+        // TODO: return StatusInvalidArg (gh-183)
+        return status::StatusNoData;
     }
 
-    packet = reader->read();
-    return true;
+    return reader->read(packet);
 }
 
 sndio::ISink& SenderEncoder::sink() {

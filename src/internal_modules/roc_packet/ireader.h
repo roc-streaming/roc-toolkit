@@ -12,7 +12,9 @@
 #ifndef ROC_PACKET_IREADER_H_
 #define ROC_PACKET_IREADER_H_
 
+#include "roc_core/attributes.h"
 #include "roc_packet/packet.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace packet {
@@ -23,9 +25,13 @@ public:
     virtual ~IReader();
 
     //! Read packet.
+    //!
     //! @returns
-    //!  next available packet or NULL if there are no packets.
-    virtual PacketPtr read() = 0;
+    //!  - If a returned code is not status::StatusOK, a packet is never set;
+    //!  - If a packet is set, a returned code is always status::StatusOK.
+    //!
+    //! @see status::StatusCode.
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr& packet) = 0;
 };
 
 } // namespace packet

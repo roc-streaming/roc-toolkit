@@ -7,17 +7,18 @@
  */
 
 #include "roc_packet/queue.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace packet {
 
-PacketPtr Queue::read() {
-    PacketPtr packet = list_.front();
+status::StatusCode Queue::read(PacketPtr& packet) {
+    packet = list_.front();
     if (!packet) {
-        return NULL;
+        return status::StatusNoData;
     }
     list_.remove(*packet);
-    return packet;
+    return status::StatusOK;
 }
 
 void Queue::write(const PacketPtr& packet) {

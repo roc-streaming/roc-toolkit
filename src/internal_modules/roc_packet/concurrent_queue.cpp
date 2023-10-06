@@ -8,6 +8,7 @@
 
 #include "roc_packet/concurrent_queue.h"
 #include "roc_core/panic.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace packet {
@@ -18,14 +19,19 @@ ConcurrentQueue::ConcurrentQueue(Mode mode) {
     }
 }
 
-PacketPtr ConcurrentQueue::read() {
+status::StatusCode ConcurrentQueue::read(PacketPtr& ptr) {
     core::Mutex::Lock lock(read_mutex_);
 
     if (write_sem_) {
         write_sem_->wait();
     }
 
-    return queue_.pop_front_exclusive();
+    ptr = queue_.pop_front_exclusive();
+    if (!ptr) {
+        return status::StatusNoData;
+    }
+
+    return status::StatusOK;
 }
 
 void ConcurrentQueue::write(const PacketPtr& packet) {

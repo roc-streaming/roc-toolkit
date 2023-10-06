@@ -29,7 +29,7 @@ public:
               const audio::SampleSpec& sample_spec);
 
     //! Read next packet.
-    virtual packet::PacketPtr read();
+    virtual status::StatusCode read(packet::PacketPtr&);
 
 private:
     packet::IReader& reader_;

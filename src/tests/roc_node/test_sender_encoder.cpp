@@ -14,6 +14,7 @@
 #include "roc_fec/codec_map.h"
 #include "roc_node/context.h"
 #include "roc_node/sender_encoder.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace node {
@@ -49,8 +50,11 @@ TEST(sender_encoder, read) {
 
     packet::PacketPtr pp;
 
-    CHECK(!sender_encoder.read(address::Iface_AudioSource, pp));
-    CHECK(!sender_encoder.read(address::Iface_AudioRepair, pp));
+    // TODO: compare with StatusInvalidArg (gh-183)
+    UNSIGNED_LONGS_EQUAL(status::StatusNoData,
+                         sender_encoder.read(address::Iface_AudioSource, pp));
+    UNSIGNED_LONGS_EQUAL(status::StatusNoData,
+                         sender_encoder.read(address::Iface_AudioRepair, pp));
 }
 
 TEST(sender_encoder, activate_no_fec) {

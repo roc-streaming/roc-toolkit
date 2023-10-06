@@ -9,6 +9,7 @@
 #include "roc_packet/sorted_queue.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace packet {
@@ -17,13 +18,14 @@ SortedQueue::SortedQueue(size_t max_size)
     : max_size_(max_size) {
 }
 
-PacketPtr SortedQueue::read() {
-    if (PacketPtr packet = list_.back()) {
+status::StatusCode SortedQueue::read(PacketPtr& packet) {
+    packet = list_.back();
+    if (packet) {
         list_.remove(*packet);
-        return packet;
+        return status::StatusOK;
     }
 
-    return NULL;
+    return status::StatusNoData;
 }
 
 void SortedQueue::write(const PacketPtr& packet) {

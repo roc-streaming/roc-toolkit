@@ -128,7 +128,9 @@ TEST(udp_io, one_sender_one_receiver_single_thread_non_blocking_disabled) {
             tx_writer->write(new_packet(tx_config, rx_config, p));
         }
         for (int p = 0; p < NumPackets; p++) {
-            check_packet(rx_queue.read(), tx_config, rx_config, p);
+            packet::PacketPtr pp;
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, rx_queue.read(pp));
+            check_packet(pp, tx_config, rx_config, p);
         }
     }
 }
@@ -153,7 +155,9 @@ TEST(udp_io, one_sender_one_receiver_single_loop) {
             tx_writer->write(new_packet(tx_config, rx_config, p));
         }
         for (int p = 0; p < NumPackets; p++) {
-            check_packet(rx_queue.read(), tx_config, rx_config, p);
+            packet::PacketPtr pp;
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, rx_queue.read(pp));
+            check_packet(pp, tx_config, rx_config, p);
         }
     }
 }
@@ -180,7 +184,9 @@ TEST(udp_io, one_sender_one_receiver_separate_loops) {
             tx_writer->write(new_packet(tx_config, rx_config, p));
         }
         for (int p = 0; p < NumPackets; p++) {
-            check_packet(rx_queue.read(), tx_config, rx_config, p);
+            packet::PacketPtr pp;
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, rx_queue.read(pp));
+            check_packet(pp, tx_config, rx_config, p);
         }
     }
 }
@@ -219,9 +225,17 @@ TEST(udp_io, one_sender_many_receivers) {
             tx_writer->write(new_packet(tx_config, rx_config3, p * 30));
         }
         for (int p = 0; p < NumPackets; p++) {
-            check_packet(rx_queue1.read(), tx_config, rx_config1, p * 10);
-            check_packet(rx_queue2.read(), tx_config, rx_config2, p * 20);
-            check_packet(rx_queue3.read(), tx_config, rx_config3, p * 30);
+            packet::PacketPtr pp1;
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, rx_queue1.read(pp1));
+            check_packet(pp1, tx_config, rx_config1, p * 10);
+
+            packet::PacketPtr pp2;
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, rx_queue2.read(pp2));
+            check_packet(pp2, tx_config, rx_config2, p * 20);
+
+            packet::PacketPtr pp3;
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, rx_queue3.read(pp3));
+            check_packet(pp3, tx_config, rx_config3, p * 30);
         }
     }
 }
@@ -262,19 +276,25 @@ TEST(udp_io, many_senders_one_receiver) {
             tx_writer1->write(new_packet(tx_config1, rx_config, p * 10));
         }
         for (int p = 0; p < NumPackets; p++) {
-            check_packet(rx_queue.read(), tx_config1, rx_config, p * 10);
+            packet::PacketPtr pp;
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, rx_queue.read(pp));
+            check_packet(pp, tx_config1, rx_config, p * 10);
         }
         for (int p = 0; p < NumPackets; p++) {
             tx_writer2->write(new_packet(tx_config2, rx_config, p * 20));
         }
         for (int p = 0; p < NumPackets; p++) {
-            check_packet(rx_queue.read(), tx_config2, rx_config, p * 20);
+            packet::PacketPtr pp;
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, rx_queue.read(pp));
+            check_packet(pp, tx_config2, rx_config, p * 20);
         }
         for (int p = 0; p < NumPackets; p++) {
             tx_writer3->write(new_packet(tx_config3, rx_config, p * 30));
         }
         for (int p = 0; p < NumPackets; p++) {
-            check_packet(rx_queue.read(), tx_config3, rx_config, p * 30);
+            packet::PacketPtr pp;
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, rx_queue.read(pp));
+            check_packet(pp, tx_config3, rx_config, p * 30);
         }
     }
 }

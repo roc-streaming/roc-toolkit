@@ -20,10 +20,10 @@ Populator::Populator(packet::IReader& reader,
     , sample_spec_(sample_spec) {
 }
 
-packet::PacketPtr Populator::read() {
-    packet::PacketPtr packet = reader_.read();
-    if (!packet) {
-        return NULL;
+status::StatusCode Populator::read(packet::PacketPtr& packet) {
+    const status::StatusCode code = reader_.read(packet);
+    if (code != status::StatusOK) {
+        return code;
     }
 
     if (!packet->rtp()) {
@@ -36,7 +36,7 @@ packet::PacketPtr Populator::read() {
                 packet->rtp()->payload.data(), packet->rtp()->payload.size());
     }
 
-    return packet;
+    return status::StatusOK;
 }
 
 } // namespace rtp

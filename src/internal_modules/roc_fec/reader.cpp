@@ -10,6 +10,7 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_packet/fec_scheme_to_str.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace fec {
@@ -59,43 +60,49 @@ bool Reader::is_alive() const {
     return alive_;
 }
 
-packet::PacketPtr Reader::read() {
+status::StatusCode Reader::read(packet::PacketPtr& pp) {
     roc_panic_if_not(is_valid());
+
     if (!alive_) {
-        return NULL;
+        // TODO: return StatusDead (gh-183)
+        return status::StatusNoData;
     }
-    packet::PacketPtr pp = read_();
-    if (pp) {
+
+    status::StatusCode code = read_(pp);
+    if (code == status::StatusOK) {
         n_packets_++;
     }
-    // check if alive_ has changed
-    return (alive_ ? pp : NULL);
-}
-
-packet::PacketPtr Reader::read_() {
-    fetch_packets_();
-
-    if (!started_) {
-        packet::PacketPtr pp = get_first_packet_();
-        if (!pp || pp->fec()->encoding_symbol_id > 0) {
-            return source_queue_.read();
-        }
-
-        roc_log(LogDebug,
-                "fec reader: got first packet in a block, start decoding:"
-                " n_packets_before=%u sbn=%lu",
-                n_packets_, (unsigned long)cur_sbn_);
-
-        started_ = true;
+    if (!alive_) {
+        pp = NULL;
+        // TODO: return StatusDead (gh-183)
+        return status::StatusNoData;
     }
 
-    return get_next_packet_();
+    return code;
 }
 
-packet::PacketPtr Reader::get_first_packet_() {
+status::StatusCode Reader::read_(packet::PacketPtr& ptr) {
+    const status::StatusCode code = fetch_all_packets_();
+    if (code != status::StatusOK) {
+        return code;
+    }
+
+    if (!started_) {
+        started_ = try_start_();
+    }
+
+    if (!started_) {
+        // until started, just forward all source packets
+        return source_queue_.read(ptr);
+    }
+
+    return get_next_packet_(ptr);
+}
+
+bool Reader::try_start_() {
     packet::PacketPtr pp = source_queue_.head();
     if (!pp) {
-        return NULL;
+        return false;
     }
 
     const packet::FEC& fec = *pp->fec();
@@ -107,16 +114,28 @@ packet::PacketPtr Reader::get_first_packet_() {
                 (unsigned long)fec.encoding_symbol_id,
                 (unsigned long)fec.source_block_length, (unsigned long)fec.block_length,
                 (unsigned long)fec.payload.size());
-        return NULL;
+        return false;
     }
 
     cur_sbn_ = fec.source_block_number;
     drop_repair_packets_from_prev_blocks_();
 
-    return pp;
+    if (pp->fec()->encoding_symbol_id > 0) {
+        // Wait until we receive first packet in block (ESI=0), see also gh-186.
+        return false;
+    }
+
+    roc_log(LogDebug,
+            "fec reader: got first packet in a block, start decoding:"
+            " n_packets_before=%u sbn=%lu",
+            n_packets_, (unsigned long)cur_sbn_);
+
+    started_ = true;
+
+    return true;
 }
 
-packet::PacketPtr Reader::get_next_packet_() {
+status::StatusCode Reader::get_next_packet_(packet::PacketPtr& ptr) {
     fill_block_();
 
     packet::PacketPtr pp = source_block_[next_packet_];
@@ -138,7 +157,7 @@ packet::PacketPtr Reader::get_next_packet_() {
 
             if (pos == source_block_.size()) {
                 if (source_queue_.size() == 0) {
-                    return NULL;
+                    return status::StatusNoData;
                 }
             } else {
                 pp = source_block_[pos++];
@@ -154,7 +173,9 @@ packet::PacketPtr Reader::get_next_packet_() {
         }
     } while (!pp);
 
-    return pp;
+    ptr = pp;
+
+    return status::StatusOK;
 }
 
 void Reader::next_block_() {
@@ -253,28 +274,36 @@ packet::PacketPtr Reader::parse_repaired_packet_(const core::Slice<uint8_t>& buf
     return pp;
 }
 
-void Reader::fetch_packets_() {
-    for (;;) {
-        if (packet::PacketPtr pp = source_reader_.read()) {
-            if (!validate_fec_packet_(pp)) {
-                return;
-            }
-            source_queue_.write(pp);
-        } else {
-            break;
-        }
+status::StatusCode Reader::fetch_all_packets_() {
+    status::StatusCode code = fetch_packets_(source_reader_, source_queue_);
+    if (code == status::StatusOK) {
+        code = fetch_packets_(repair_reader_, repair_queue_);
     }
 
+    return code;
+}
+
+status::StatusCode Reader::fetch_packets_(packet::IReader& reader,
+                                          packet::IWriter& writer) {
     for (;;) {
-        if (packet::PacketPtr pp = repair_reader_.read()) {
-            if (!validate_fec_packet_(pp)) {
-                return;
+        packet::PacketPtr pp;
+
+        const status::StatusCode code = reader.read(pp);
+        if (code != status::StatusOK) {
+            if (code == status::StatusNoData) {
+                break;
             }
-            repair_queue_.write(pp);
-        } else {
+            return code;
+        }
+
+        if (!validate_fec_packet_(pp)) {
             break;
         }
+
+        writer.write(pp);
     }
+
+    return status::StatusOK;
 }
 
 void Reader::fill_block_() {
@@ -301,7 +330,10 @@ void Reader::fill_source_block_() {
             break;
         }
 
-        (void)source_queue_.read();
+        packet::PacketPtr p;
+        const status::StatusCode code = source_queue_.read(p);
+        roc_panic_if_msg(code != status::StatusOK, "failed to read source packet: %s",
+                         status::code_to_str(code));
         n_fetched++;
 
         if (packet::blknum_lt(fec.source_block_number, cur_sbn_)) {
@@ -366,7 +398,10 @@ void Reader::fill_repair_block_() {
             break;
         }
 
-        (void)repair_queue_.read();
+        packet::PacketPtr p;
+        const status::StatusCode code = repair_queue_.read(p);
+        roc_panic_if_msg(code != status::StatusOK, "failed to read repair packet: %s",
+                         status::code_to_str(code));
         n_fetched++;
 
         if (packet::blknum_lt(fec.source_block_number, cur_sbn_)) {
@@ -737,7 +772,10 @@ void Reader::drop_repair_packets_from_prev_blocks_() {
                 " decoding not started: cur_sbn=%lu pkt_sbn=%lu",
                 (unsigned long)cur_sbn_, (unsigned long)fec.source_block_number);
 
-        (void)repair_queue_.read();
+        packet::PacketPtr p;
+        const status::StatusCode code = repair_queue_.read(p);
+        roc_panic_if_msg(code != status::StatusOK, "failed to read repair packet: %s",
+                         status::code_to_str(code));
         n_dropped++;
     }
 
