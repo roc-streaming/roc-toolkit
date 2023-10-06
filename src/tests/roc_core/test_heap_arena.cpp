@@ -20,12 +20,12 @@ TEST(heap_arena, guard_object) {
     HeapArena arena((DefaultHeapArenaFlags & ~HeapArenaFlag_EnableGuards));
     void* pointer = NULL;
 
-    pointer = arena.allocate(128);
+    pointer = arena.allocate(127);
     CHECK(pointer);
 
     char* data = (char*)pointer;
     char* before_data = data - 1;
-    char* after_data = data + 128;
+    char* after_data = data + 127;
     CHECK(*before_data == MemoryOps::Pattern_Canary);
     CHECK(*after_data == MemoryOps::Pattern_Canary);
 
@@ -37,7 +37,7 @@ TEST(heap_arena, guard_object_violations) {
 
     void* pointers[2] = {};
 
-    pointers[0] = arena.allocate(127);
+    pointers[0] = arena.allocate(128);
     CHECK(pointers[0]);
 
     pointers[1] = arena.allocate(128);
