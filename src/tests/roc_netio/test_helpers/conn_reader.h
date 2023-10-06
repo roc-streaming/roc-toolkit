@@ -43,7 +43,7 @@ private:
             handler_.wait_readable();
 
             while (num_read < total_bytes_) {
-                size_t bufsz = core::fast_random(1, MaxBatch);
+                size_t bufsz = core::fast_random_range(1, MaxBatch);
                 if (bufsz > (total_bytes_ - num_read)) {
                     bufsz = (total_bytes_ - num_read);
                 }

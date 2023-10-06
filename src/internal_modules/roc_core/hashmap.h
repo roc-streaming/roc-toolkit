@@ -352,11 +352,11 @@ private:
         LoadFactorDen = 2,
 
         // how much buckets are embeded directly into Hashmap object
-        NumEmbeddedBuckets = ((int)(EmbeddedCapacity == 0        ? 0
-                                        : EmbeddedCapacity <= 16 ? 16
-                                                                 : EmbeddedCapacity)
-                                  * LoadFactorDen
-                              + LoadFactorNum - 1)
+        NumEmbeddedBuckets =
+            ((int)(EmbeddedCapacity == 0 ? 0
+                                         : EmbeddedCapacity <= 16 ? 16 : EmbeddedCapacity)
+                 * LoadFactorDen
+             + LoadFactorNum - 1)
             / LoadFactorNum * 2
     };
 

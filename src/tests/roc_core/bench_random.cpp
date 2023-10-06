@@ -17,7 +17,7 @@ namespace {
 void BM_Random_Fast(benchmark::State& state) {
     uint32_t r = 0;
     while (state.KeepRunning()) {
-        r = fast_random(r, (uint32_t)-1);
+        r = fast_random_range(r, (uint32_t)-1);
         benchmark::DoNotOptimize(r);
     }
 }
