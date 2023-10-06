@@ -61,12 +61,14 @@ TEST(timestamp_extractor, single_write) {
     CHECK_FALSE(extractor.has_mapping());
 
     // write packet
-    packet::PacketPtr pkt = new_packet(555, rts, cts);
-    extractor.write(pkt);
+    packet::PacketPtr wp = new_packet(555, rts, cts);
+    extractor.write(wp);
 
     // ensure packet was passed to inner writer
     CHECK_EQUAL(1, queue.size());
-    CHECK_EQUAL(pkt, queue.read());
+    packet::PacketPtr rp;
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp));
+    CHECK_EQUAL(wp, rp);
 
     // get mapping for exact time
     CHECK_TRUE(extractor.has_mapping());

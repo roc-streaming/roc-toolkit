@@ -25,9 +25,7 @@ namespace packet {
 class Queue : public IReader, public IWriter, public core::NonCopyable<> {
 public:
     //! Read next packet.
-    //! @returns
-    //!  the first packet in the queue or null if there are no packets.
-    virtual PacketPtr read();
+    virtual status::StatusCode read(PacketPtr& packet);
 
     //! Add packet to the queue.
     //! @remarks

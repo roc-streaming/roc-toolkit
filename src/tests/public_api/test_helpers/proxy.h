@@ -146,10 +146,15 @@ private:
     }
 
     bool send_packet_(packet::IReader& reader, bool drop) {
-        packet::PacketPtr pp = reader.read();
-        if (!pp) {
+        packet::PacketPtr pp;
+        const status::StatusCode code = reader.read(pp);
+        if (code != status::StatusOK) {
+            CHECK(!pp);
             return false;
         }
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, code);
+        CHECK(pp);
+
         pos_++;
         if (!drop) {
             writer_->write(pp);

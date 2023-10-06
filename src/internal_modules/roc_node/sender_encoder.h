@@ -16,6 +16,7 @@
 #include "roc_address/protocol.h"
 #include "roc_address/socket_addr.h"
 #include "roc_core/atomic.h"
+#include "roc_core/attributes.h"
 #include "roc_core/mutex.h"
 #include "roc_core/optional.h"
 #include "roc_node/context.h"
@@ -51,7 +52,8 @@ public:
     bool is_complete();
 
     //! Read encoded packet.
-    bool read(address::Interface iface, packet::PacketPtr& packet);
+    ROC_ATTR_NODISCARD status::StatusCode read(address::Interface iface,
+                                               packet::PacketPtr& packet);
 
     //! Sink for writing frames for encoding.
     sndio::ISink& sink();

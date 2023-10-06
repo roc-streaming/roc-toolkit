@@ -12,6 +12,7 @@
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_packet/router.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace packet {
@@ -49,27 +50,34 @@ TEST(router, one_route) {
     Queue queue;
     CHECK(router.add_route(queue, Packet::FlagAudio));
 
-    PacketPtr pa1 = new_packet(0, Packet::FlagAudio);
-    PacketPtr pa2 = new_packet(0, Packet::FlagAudio);
+    PacketPtr wpa1 = new_packet(0, Packet::FlagAudio);
+    PacketPtr wpa2 = new_packet(0, Packet::FlagAudio);
 
     PacketPtr pf1 = new_packet(0, Packet::FlagFEC);
     PacketPtr pf2 = new_packet(0, Packet::FlagFEC);
 
-    router.write(pa1);
-    router.write(pa2);
+    router.write(wpa1);
+    router.write(wpa2);
 
     router.write(pf1);
     router.write(pf2);
 
-    LONGS_EQUAL(2, pa1->getref());
-    LONGS_EQUAL(2, pa2->getref());
+    LONGS_EQUAL(2, wpa1->getref());
+    LONGS_EQUAL(2, wpa2->getref());
 
     LONGS_EQUAL(1, pf1->getref());
     LONGS_EQUAL(1, pf2->getref());
 
-    CHECK(queue.read() == pa1);
-    CHECK(queue.read() == pa2);
-    CHECK(!queue.read());
+    PacketPtr rpa1;
+    PacketPtr rpa2;
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rpa1));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rpa2));
+    CHECK(wpa1 == rpa1);
+    CHECK(wpa2 == rpa2);
+
+    PacketPtr pp;
+    LONGS_EQUAL(status::StatusNoData, queue.read(pp));
+    CHECK(!pp);
 }
 
 TEST(router, two_routes) {
@@ -81,31 +89,45 @@ TEST(router, two_routes) {
     Queue queue_f;
     CHECK(router.add_route(queue_f, Packet::FlagFEC));
 
-    PacketPtr pa1 = new_packet(0, Packet::FlagAudio);
-    PacketPtr pa2 = new_packet(0, Packet::FlagAudio);
+    PacketPtr wpa1 = new_packet(0, Packet::FlagAudio);
+    PacketPtr wpa2 = new_packet(0, Packet::FlagAudio);
 
-    PacketPtr pf1 = new_packet(0, Packet::FlagFEC);
-    PacketPtr pf2 = new_packet(0, Packet::FlagFEC);
+    PacketPtr wpf1 = new_packet(0, Packet::FlagFEC);
+    PacketPtr wpf2 = new_packet(0, Packet::FlagFEC);
 
-    router.write(pa1);
-    router.write(pa2);
+    router.write(wpa1);
+    router.write(wpa2);
 
-    router.write(pf1);
-    router.write(pf2);
+    router.write(wpf1);
+    router.write(wpf2);
 
-    LONGS_EQUAL(2, pa1->getref());
-    LONGS_EQUAL(2, pa2->getref());
+    LONGS_EQUAL(2, wpa1->getref());
+    LONGS_EQUAL(2, wpa2->getref());
 
-    LONGS_EQUAL(2, pf1->getref());
-    LONGS_EQUAL(2, pf2->getref());
+    LONGS_EQUAL(2, wpf1->getref());
+    LONGS_EQUAL(2, wpf2->getref());
 
-    CHECK(queue_a.read() == pa1);
-    CHECK(queue_a.read() == pa2);
-    CHECK(!queue_a.read());
+    PacketPtr rpa1;
+    PacketPtr rpa2;
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue_a.read(rpa1));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue_a.read(rpa2));
+    CHECK(wpa1 == rpa1);
+    CHECK(wpa2 == rpa2);
 
-    CHECK(queue_f.read() == pf1);
-    CHECK(queue_f.read() == pf2);
-    CHECK(!queue_f.read());
+    PacketPtr ppa;
+    LONGS_EQUAL(status::StatusNoData, queue_a.read(ppa));
+    CHECK(!ppa);
+
+    PacketPtr rpf1;
+    PacketPtr rpf2;
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue_f.read(rpf1));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue_f.read(rpf2));
+    CHECK(wpf1 == rpf1);
+    CHECK(wpf2 == rpf2);
+
+    PacketPtr ppf;
+    CHECK(queue_f.read(ppa) == status::StatusNoData);
+    CHECK(!ppf);
 }
 
 TEST(router, same_route_different_sources) {

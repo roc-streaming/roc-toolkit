@@ -14,6 +14,7 @@
 #include "roc_core/time.h"
 #include "roc_packet/concurrent_queue.h"
 #include "roc_packet/packet_factory.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace packet {
@@ -52,10 +53,12 @@ TEST(concurrent_queue, blocking_write_one_read_one) {
     ConcurrentQueue queue(ConcurrentQueue::Blocking);
 
     for (size_t i = 0; i < 100; i++) {
-        PacketPtr p = new_packet();
-        queue.write(p);
+        PacketPtr wp = new_packet();
+        queue.write(wp);
 
-        CHECK(queue.read() == p);
+        PacketPtr rp;
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp));
+        CHECK(wp == rp);
     }
 }
 
@@ -74,7 +77,9 @@ TEST(concurrent_queue, blocking_write_many_read_many) {
         }
 
         for (size_t j = 0; j < ROC_ARRAY_SIZE(packets); j++) {
-            CHECK(queue.read() == packets[j]);
+            PacketPtr pp;
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(pp));
+            CHECK(pp == packets[j]);
         }
     }
 }
@@ -83,13 +88,15 @@ TEST(concurrent_queue, blocking_read_empty) {
     ConcurrentQueue queue(ConcurrentQueue::Blocking);
 
     for (size_t i = 0; i < 100; i++) {
-        PacketPtr p = new_packet();
+        PacketPtr wp = new_packet();
 
-        TestWriter writer(queue, p);
+        TestWriter writer(queue, wp);
         CHECK(writer.start());
         writer.join();
 
-        CHECK(queue.read() == p);
+        PacketPtr rp;
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp));
+        CHECK(wp == rp);
     }
 }
 
@@ -97,10 +104,12 @@ TEST(concurrent_queue, nonblocking_write_one_read_one) {
     ConcurrentQueue queue(ConcurrentQueue::NonBlocking);
 
     for (size_t i = 0; i < 100; i++) {
-        PacketPtr p = new_packet();
-        queue.write(p);
+        PacketPtr wp = new_packet();
+        queue.write(wp);
 
-        CHECK(queue.read() == p);
+        PacketPtr rp;
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp));
+        CHECK(wp == rp);
     }
 }
 
@@ -119,7 +128,9 @@ TEST(concurrent_queue, nonblocking_write_many_read_many) {
         }
 
         for (size_t j = 0; j < ROC_ARRAY_SIZE(packets); j++) {
-            CHECK(queue.read() == packets[j]);
+            PacketPtr pp;
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(pp));
+            CHECK(pp == packets[j]);
         }
     }
 }
@@ -128,11 +139,16 @@ TEST(concurrent_queue, nonblocking_read_empty) {
     ConcurrentQueue queue(ConcurrentQueue::NonBlocking);
 
     for (size_t i = 0; i < 100; i++) {
-        PacketPtr p = new_packet();
-        queue.write(p);
+        PacketPtr wp = new_packet();
+        queue.write(wp);
 
-        CHECK(queue.read() == p);
-        CHECK(!queue.read());
+        PacketPtr rp;
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp));
+        CHECK(wp == rp);
+
+        PacketPtr pp;
+        UNSIGNED_LONGS_EQUAL(status::StatusNoData, queue.read(pp));
+        CHECK(!pp);
     }
 }
 

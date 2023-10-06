@@ -10,6 +10,7 @@
 
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
+#include "roc_core/macro_helpers.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/packet_factory.h"
@@ -19,6 +20,8 @@
 #include "roc_rtp/format_map.h"
 #include "roc_rtp/parser.h"
 #include "roc_rtp/timestamp_injector.h"
+#include "roc_status/status_code.h"
+#include "test_helpers/status_reader.h"
 
 namespace roc {
 namespace rtp {
@@ -38,9 +41,34 @@ packet::PacketPtr new_packet(packet::seqnum_t sn, packet::stream_timestamp_t ts)
 
     return packet;
 }
+
 } // namespace
 
 TEST_GROUP(timestamp_injector) {};
+
+TEST(timestamp_injector, failed_to_read_packet) {
+    enum {
+        ChMask = 3,
+        SampleRate = 10000,
+    };
+
+    const audio::SampleSpec sample_spec =
+        audio::SampleSpec(SampleRate, audio::ChanLayout_Surround, ChMask);
+
+    const status::StatusCode codes[] = {
+        status::StatusUnknown,
+        status::StatusNoData,
+    };
+
+    for (unsigned n = 0; n < ROC_ARRAY_SIZE(codes); ++n) {
+        test::StatusReader reader(codes[n]);
+        TimestampInjector injector(reader, sample_spec);
+
+        packet::PacketPtr pp;
+        UNSIGNED_LONGS_EQUAL(codes[n], injector.read(pp));
+        CHECK(!pp);
+    }
+}
 
 TEST(timestamp_injector, negative_and_positive_dn) {
     enum {
@@ -80,7 +108,9 @@ TEST(timestamp_injector, negative_and_positive_dn) {
 
     core::nanoseconds_t ts_step = sample_spec.samples_per_chan_2_ns(PacketSz);
     for (size_t i = 0; i < NPackets; i++) {
-        packet::PacketPtr packet = injector.read();
+        packet::PacketPtr packet;
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, injector.read(packet));
+        CHECK(packet);
         const core::nanoseconds_t pkt_capt_ts = packet->rtp()->capture_timestamp;
 
         // Assume error must be less than 0.1 of samples period.

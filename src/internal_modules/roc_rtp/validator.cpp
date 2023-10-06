@@ -8,6 +8,7 @@
 
 #include "roc_rtp/validator.h"
 #include "roc_core/log.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace rtp {
@@ -21,27 +22,32 @@ Validator::Validator(packet::IReader& reader,
     , sample_spec_(sample_spec) {
 }
 
-packet::PacketPtr Validator::read() {
-    packet::PacketPtr next_packet = reader_.read();
-    if (!next_packet) {
-        return NULL;
+status::StatusCode Validator::read(packet::PacketPtr& pp) {
+    packet::PacketPtr next_packet;
+    const status::StatusCode code = reader_.read(next_packet);
+    if (code != status::StatusOK) {
+        return code;
     }
 
     if (!next_packet->rtp()) {
         roc_log(LogDebug, "rtp validator: unexpected non-rtp packet");
-        return NULL;
+        // TODO: return StatusAgain (gh-183)
+        return status::StatusNoData;
     }
 
     if (has_prev_packet_ && !validate_(prev_packet_rtp_, *next_packet->rtp())) {
-        return NULL;
+        // TODO: return StatusAgain (gh-183)
+        return status::StatusNoData;
     }
 
-    if (!has_prev_packet_ || prev_packet_rtp_.compare(*next_packet->rtp()) < 0) {
+    pp = next_packet;
+
+    if (!has_prev_packet_ || prev_packet_rtp_.compare(*pp->rtp()) < 0) {
         has_prev_packet_ = true;
-        prev_packet_rtp_ = *next_packet->rtp();
+        prev_packet_rtp_ = *pp->rtp();
     }
 
-    return next_packet;
+    return status::StatusOK;
 }
 
 bool Validator::validate_(const packet::RTP& prev, const packet::RTP& next) const {

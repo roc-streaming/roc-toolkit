@@ -9,6 +9,7 @@
 #include "roc_packet/delayed_reader.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace packet {
@@ -23,45 +24,56 @@ DelayedReader::DelayedReader(IReader& reader,
     roc_log(LogDebug, "delayed reader: initializing: delay=%lu", (unsigned long)delay_);
 }
 
-PacketPtr DelayedReader::read() {
+status::StatusCode DelayedReader::read(PacketPtr& ptr) {
     if (!started_) {
-        if (!fetch_packets_()) {
-            return NULL;
+        const status::StatusCode code = fetch_packets_();
+        if (code != status::StatusOK) {
+            return code;
         }
 
         started_ = true;
     }
 
     if (queue_.size() != 0) {
-        return read_queued_packet_();
+        return read_queued_packet_(ptr);
     }
 
-    return reader_.read();
+    return reader_.read(ptr);
 }
 
-bool DelayedReader::fetch_packets_() {
-    while (PacketPtr pp = reader_.read()) {
+status::StatusCode DelayedReader::fetch_packets_() {
+    PacketPtr pp;
+    for (;;) {
+        const status::StatusCode code = reader_.read(pp);
+        if (code != status::StatusOK) {
+            if (code == status::StatusNoData) {
+                break;
+            }
+            return code;
+        }
+
         queue_.write(pp);
     }
 
     const stream_timestamp_t qs = queue_size_();
     if (qs < delay_) {
-        return false;
+        return status::StatusNoData;
     }
 
     roc_log(LogDebug, "delayed reader: initial queue: delay=%lu queue=%lu packets=%lu",
             (unsigned long)delay_, (unsigned long)qs, (unsigned long)queue_.size());
 
-    return true;
+    return status::StatusOK;
 }
 
-PacketPtr DelayedReader::read_queued_packet_() {
-    PacketPtr pp;
-
+status::StatusCode DelayedReader::read_queued_packet_(PacketPtr& pp) {
     stream_timestamp_t qs = 0;
 
     for (;;) {
-        pp = queue_.read();
+        const status::StatusCode code = queue_.read(pp);
+        if (code != status::StatusOK) {
+            return code;
+        }
 
         const stream_timestamp_t new_qs = queue_size_();
         if (new_qs < delay_) {
@@ -77,7 +89,7 @@ PacketPtr DelayedReader::read_queued_packet_() {
             (unsigned long)delay_, (unsigned long)qs, (unsigned long)(queue_.size() + 1));
     }
 
-    return pp;
+    return status::StatusOK;
 }
 
 stream_timestamp_t DelayedReader::queue_size_() const {

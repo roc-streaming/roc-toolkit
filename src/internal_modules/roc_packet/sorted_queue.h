@@ -39,11 +39,10 @@ public:
     virtual void write(const PacketPtr& packet);
 
     //! Read next packet.
-    //! @returns
-    //!  the first packet in the queue or null if there are no packets
+    //!
     //! @remarks
     //!  Removes returned packet from the queue.
-    virtual PacketPtr read();
+    virtual status::StatusCode read(PacketPtr& packet);
 
     //! Get number of packets in queue.
     size_t size() const;

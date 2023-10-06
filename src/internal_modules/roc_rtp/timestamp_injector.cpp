@@ -34,10 +34,10 @@ TimestampInjector::TimestampInjector(packet::IReader& reader,
 TimestampInjector::~TimestampInjector() {
 }
 
-packet::PacketPtr TimestampInjector::read() {
-    packet::PacketPtr pkt = reader_.read();
-    if (!pkt) {
-        return NULL;
+status::StatusCode TimestampInjector::read(packet::PacketPtr& pkt) {
+    const status::StatusCode code = reader_.read(pkt);
+    if (code != status::StatusOK) {
+        return code;
     }
 
     if (!pkt->rtp()) {
@@ -57,7 +57,7 @@ packet::PacketPtr TimestampInjector::read() {
             capt_ts_ + sample_spec_.stream_timestamp_delta_2_ns(rtp_dn);
     }
 
-    return pkt;
+    return status::StatusOK;
 }
 
 void TimestampInjector::update_mapping(core::nanoseconds_t capture_ts,

@@ -72,7 +72,8 @@ TEST(interleaver, read_write) {
 
     // Check that packets have different seqnums.
     for (size_t i = 0; i < num_packets; i++) {
-        PacketPtr p = queue.read();
+        PacketPtr p;
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(p));
         CHECK(p);
         CHECK(p->rtp()->seqnum < num_packets);
         CHECK(!packets_ctr[p->rtp()->seqnum]);
@@ -101,13 +102,15 @@ TEST(interleaver, flush) {
     const size_t num_packets = intrlvr.block_size() * 5;
 
     for (size_t n = 0; n < num_packets; n++) {
-        PacketPtr packet = new_packet(seqnum_t(n));
+        PacketPtr wp = new_packet(seqnum_t(n));
 
-        intrlvr.write(packet);
+        intrlvr.write(wp);
         intrlvr.flush();
         LONGS_EQUAL(1, queue.size());
 
-        CHECK(queue.read() == packet);
+        PacketPtr rp;
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp));
+        CHECK(wp == rp);
         LONGS_EQUAL(0, queue.size());
     }
 }

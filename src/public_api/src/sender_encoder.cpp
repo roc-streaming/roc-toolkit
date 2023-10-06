@@ -15,6 +15,7 @@
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
 #include "roc_node/sender_encoder.h"
+#include "roc_status/code_to_str.h"
 
 using namespace roc;
 
@@ -196,12 +197,14 @@ int roc_sender_encoder_pop(roc_sender_encoder* encoder,
     }
 
     packet::PacketPtr imp_packet;
-    if (!imp_encoder->read(imp_iface, imp_packet)) {
-        roc_log(LogError, "roc_sender_encoder_pop(): can't read packet from encoder");
-        return -1;
-    }
-    if (!imp_packet) {
-        // request is valid, there are just no new packets
+    const status::StatusCode code = imp_encoder->read(imp_iface, imp_packet);
+    if (code != status::StatusOK) {
+        // TODO: forward status code to user (gh-183)
+        if (code != status::StatusNoData) {
+            roc_log(LogError,
+                    "roc_sender_encoder_pop(): can't read packet from encoder: %s",
+                    status::code_to_str(code));
+        }
         return -1;
     }
 

@@ -10,6 +10,7 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace audio {
@@ -260,8 +261,15 @@ void Depacketizer::update_packet_(FrameInfo& info) {
 }
 
 packet::PacketPtr Depacketizer::read_packet_() {
-    packet::PacketPtr pp = reader_.read();
-    if (!pp) {
+    packet::PacketPtr pp;
+    const status::StatusCode code = reader_.read(pp);
+    if (code != status::StatusOK) {
+        if (code != status::StatusNoData) {
+            // TODO: forward status (gh-302)
+            roc_log(LogError, "depacketizer: failed to read packet: %s",
+                    status::code_to_str(code));
+        }
+
         return NULL;
     }
 

@@ -83,11 +83,15 @@ public:
         const size_t n_repair_packets = repair_queue_.size();
 
         for (size_t i = 0; i < n_source_packets; ++i) {
-            source_queue_.read();
+            packet::PacketPtr pp;
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, source_queue_.read(pp));
+            CHECK(pp);
         }
 
         for (size_t i = 0; i < n_repair_packets; ++i) {
-            repair_queue_.read();
+            packet::PacketPtr pp;
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_queue_.read(pp));
+            CHECK(pp);
         }
 
         packet_num_ = 0;
@@ -119,25 +123,29 @@ public:
 
     void push_stocks() {
         while (source_stock_.head()) {
-            packet::PacketPtr p = source_stock_.read();
+            packet::PacketPtr p;
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, source_stock_.read(p));
             deliver_(p);
         }
         while (repair_stock_.head()) {
-            packet::PacketPtr p = repair_stock_.read();
+            packet::PacketPtr p;
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_stock_.read(p));
             deliver_(p);
         }
     }
 
     void push_source_stock(size_t limit) {
         for (size_t n = 0; n < limit; n++) {
-            packet::PacketPtr p = source_stock_.read();
+            packet::PacketPtr p;
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, source_stock_.read(p));
             deliver_(p);
         }
     }
 
     void push_repair_stock(size_t limit) {
         for (size_t n = 0; n < limit; n++) {
-            packet::PacketPtr p = repair_stock_.read();
+            packet::PacketPtr p;
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_stock_.read(p));
             deliver_(p);
         }
     }
