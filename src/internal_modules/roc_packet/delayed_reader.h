@@ -38,11 +38,11 @@ public:
                   const audio::SampleSpec& sample_spec);
 
     //! Read packet.
-    virtual PacketPtr read();
+    virtual status::StatusCode read(PacketPtr&);
 
 private:
-    bool fetch_packets_();
-    PacketPtr read_queued_packet_();
+    status::StatusCode fetch_packets_();
+    status::StatusCode read_queued_packet_(PacketPtr&);
 
     stream_timestamp_t queue_size_() const;
 

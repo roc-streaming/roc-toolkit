@@ -187,7 +187,8 @@ bool is_fec_supported(int flags) {
 void filter_packets(int flags, packet::IReader& reader, packet::IWriter& writer) {
     size_t counter = 0;
 
-    while (packet::PacketPtr pp = reader.read()) {
+    packet::PacketPtr pp;
+    while (reader.read(pp) == status::StatusOK) {
         if ((flags & FlagLosses) && counter++ % (SourcePackets + RepairPackets) == 1) {
             continue;
         }

@@ -136,7 +136,7 @@ TEST(sender_sink, write) {
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
     }
 
-    CHECK(!queue.read());
+    packet_reader.read_eof();
 }
 
 TEST(sender_sink, frame_size_small) {
@@ -177,7 +177,7 @@ TEST(sender_sink, frame_size_small) {
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
     }
 
-    CHECK(!queue.read());
+    packet_reader.read_eof();
 }
 
 TEST(sender_sink, frame_size_large) {
@@ -218,7 +218,7 @@ TEST(sender_sink, frame_size_large) {
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
     }
 
-    CHECK(!queue.read());
+    packet_reader.read_eof();
 }
 
 TEST(sender_sink, channel_mapping_stereo_to_mono) {
@@ -253,7 +253,7 @@ TEST(sender_sink, channel_mapping_stereo_to_mono) {
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
     }
 
-    CHECK(!queue.read());
+    packet_reader.read_eof();
 }
 
 TEST(sender_sink, channel_mapping_mono_to_stereo) {
@@ -288,7 +288,7 @@ TEST(sender_sink, channel_mapping_mono_to_stereo) {
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
     }
 
-    CHECK(!queue.read());
+    packet_reader.read_eof();
 }
 
 TEST(sender_sink, sample_rate_mapping) {
@@ -361,7 +361,7 @@ TEST(sender_sink, timestamp_mapping) {
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec, unix_base);
     }
 
-    CHECK(!queue.read());
+    packet_reader.read_eof();
 }
 
 IGNORE_TEST(sender_sink, timestamp_mapping_remixing) {

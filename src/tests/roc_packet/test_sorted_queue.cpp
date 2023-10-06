@@ -11,6 +11,7 @@
 #include "roc_core/heap_arena.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/sorted_queue.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace packet {
@@ -40,7 +41,9 @@ TEST(sorted_queue, empty) {
     CHECK(!queue.tail());
     CHECK(!queue.head());
 
-    CHECK(!queue.read());
+    PacketPtr pp;
+    UNSIGNED_LONGS_EQUAL(status::StatusNoData, queue.read(pp));
+    CHECK(!pp);
 
     LONGS_EQUAL(0, queue.size());
 }
@@ -48,32 +51,38 @@ TEST(sorted_queue, empty) {
 TEST(sorted_queue, two_packets) {
     SortedQueue queue(0);
 
-    PacketPtr p1 = new_packet(1);
-    PacketPtr p2 = new_packet(2);
+    PacketPtr wp1 = new_packet(1);
+    PacketPtr wp2 = new_packet(2);
 
-    queue.write(p2);
-    queue.write(p1);
+    queue.write(wp2);
+    queue.write(wp1);
 
     LONGS_EQUAL(2, queue.size());
 
-    CHECK(queue.tail() == p2);
-    CHECK(queue.head() == p1);
+    CHECK(queue.tail() == wp2);
+    CHECK(queue.head() == wp1);
 
-    CHECK(queue.read() == p1);
+    PacketPtr rp1;
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp1));
+    CHECK(wp1 == rp1);
 
     LONGS_EQUAL(1, queue.size());
 
-    CHECK(queue.tail() == p2);
-    CHECK(queue.head() == p2);
+    CHECK(queue.tail() == wp2);
+    CHECK(queue.head() == wp2);
 
-    CHECK(queue.read() == p2);
+    PacketPtr rp2;
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp2));
+    CHECK(wp2 == rp2);
 
     LONGS_EQUAL(0, queue.size());
 
     CHECK(!queue.tail());
     CHECK(!queue.head());
 
-    CHECK(!queue.read());
+    PacketPtr pp;
+    UNSIGNED_LONGS_EQUAL(status::StatusNoData, queue.read(pp));
+    CHECK(!pp);
 
     LONGS_EQUAL(0, queue.size());
 }
@@ -99,7 +108,9 @@ TEST(sorted_queue, many_packets) {
     CHECK(queue.tail() == packets[NumPackets - 1]);
 
     for (size_t n = 0; n < NumPackets; n++) {
-        CHECK(queue.read() == packets[n]);
+        PacketPtr pp;
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(pp));
+        CHECK(pp == packets[n]);
     }
 
     LONGS_EQUAL(0, queue.size());
@@ -108,33 +119,39 @@ TEST(sorted_queue, many_packets) {
 TEST(sorted_queue, out_of_order) {
     SortedQueue queue(0);
 
-    PacketPtr p1 = new_packet(1);
-    PacketPtr p2 = new_packet(2);
+    PacketPtr wp1 = new_packet(1);
+    PacketPtr wp2 = new_packet(2);
 
-    queue.write(p2);
+    queue.write(wp2);
 
     LONGS_EQUAL(1, queue.size());
 
-    CHECK(queue.tail() == p2);
-    CHECK(queue.head() == p2);
+    CHECK(queue.tail() == wp2);
+    CHECK(queue.head() == wp2);
 
-    CHECK(queue.read() == p2);
+    PacketPtr rp2;
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp2));
+    CHECK(wp2 == rp2);
 
     LONGS_EQUAL(0, queue.size());
 
-    queue.write(p1);
+    queue.write(wp1);
 
     LONGS_EQUAL(1, queue.size());
 
-    CHECK(queue.tail() == p1);
-    CHECK(queue.head() == p1);
+    CHECK(queue.tail() == wp1);
+    CHECK(queue.head() == wp1);
 
-    CHECK(queue.read() == p1);
+    PacketPtr rp1;
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp1));
+    CHECK(wp1 == rp1);
 
     CHECK(!queue.tail());
     CHECK(!queue.head());
 
-    CHECK(!queue.read());
+    PacketPtr pp;
+    UNSIGNED_LONGS_EQUAL(status::StatusNoData, queue.read(pp));
+    CHECK(!pp);
 }
 
 TEST(sorted_queue, out_of_order_many_packets) {
@@ -151,7 +168,8 @@ TEST(sorted_queue, out_of_order_many_packets) {
     }
 
     for (packet::seqnum_t n = 0; n < 7; ++n) {
-        const packet::PacketPtr p = queue.read();
+        packet::PacketPtr p;
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(p));
 
         CHECK(p);
         CHECK(p->rtp()->seqnum == n);
@@ -161,7 +179,8 @@ TEST(sorted_queue, out_of_order_many_packets) {
     queue.write(new_packet(10));
 
     for (packet::seqnum_t n = 9; n < NumPackets; ++n) {
-        const packet::PacketPtr p = queue.read();
+        packet::PacketPtr p;
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(p));
 
         CHECK(p->rtp()->seqnum == n);
 
@@ -169,8 +188,11 @@ TEST(sorted_queue, out_of_order_many_packets) {
             queue.write(new_packet(8));
             queue.write(new_packet(7));
 
-            CHECK(queue.read()->rtp()->seqnum == 7);
-            CHECK(queue.read()->rtp()->seqnum == 8);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(p));
+            UNSIGNED_LONGS_EQUAL(7, p->rtp()->seqnum);
+
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(p));
+            UNSIGNED_LONGS_EQUAL(8, p->rtp()->seqnum);
         }
     }
 }
@@ -178,25 +200,29 @@ TEST(sorted_queue, out_of_order_many_packets) {
 TEST(sorted_queue, one_duplicate) {
     SortedQueue queue(0);
 
-    PacketPtr p1 = new_packet(1);
-    PacketPtr p2 = new_packet(1);
+    PacketPtr wp1 = new_packet(1);
+    PacketPtr wp2 = new_packet(1);
 
-    queue.write(p1);
-    queue.write(p2);
+    queue.write(wp1);
+    queue.write(wp2);
 
     LONGS_EQUAL(1, queue.size());
 
-    CHECK(queue.tail() == p1);
-    CHECK(queue.head() == p1);
+    CHECK(queue.tail() == wp1);
+    CHECK(queue.head() == wp1);
 
-    CHECK(queue.read() == p1);
+    PacketPtr rp1;
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp1));
+    CHECK(wp1 == rp1);
 
     LONGS_EQUAL(0, queue.size());
 
     CHECK(!queue.tail());
     CHECK(!queue.head());
 
-    CHECK(!queue.read());
+    PacketPtr pp;
+    UNSIGNED_LONGS_EQUAL(status::StatusNoData, queue.read(pp));
+    CHECK(!pp);
 }
 
 TEST(sorted_queue, many_duplicates) {
@@ -217,7 +243,9 @@ TEST(sorted_queue, many_duplicates) {
     LONGS_EQUAL(NumPackets, queue.size());
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
-        CHECK(queue.read()->rtp()->seqnum == n);
+        PacketPtr p;
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(p));
+        LONGS_EQUAL(n, p->rtp()->seqnum);
     }
 
     LONGS_EQUAL(0, queue.size());
@@ -226,29 +254,31 @@ TEST(sorted_queue, many_duplicates) {
 TEST(sorted_queue, max_size) {
     SortedQueue queue(2);
 
-    PacketPtr p1 = new_packet(1);
-    PacketPtr p2 = new_packet(2);
-    PacketPtr p3 = new_packet(3);
+    PacketPtr wp1 = new_packet(1);
+    PacketPtr wp2 = new_packet(2);
+    PacketPtr wp3 = new_packet(3);
 
-    queue.write(p1);
-    queue.write(p2);
-    queue.write(p3);
+    queue.write(wp1);
+    queue.write(wp2);
+    queue.write(wp3);
 
     LONGS_EQUAL(2, queue.size());
 
-    CHECK(queue.head() == p1);
-    CHECK(queue.tail() == p2);
+    CHECK(queue.head() == wp1);
+    CHECK(queue.tail() == wp2);
 
-    CHECK(queue.read() == p1);
+    PacketPtr rp1;
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp1));
+    CHECK(wp1 == rp1);
 
     LONGS_EQUAL(1, queue.size());
 
-    queue.write(p3);
+    queue.write(wp3);
 
     LONGS_EQUAL(2, queue.size());
 
-    CHECK(queue.head() == p2);
-    CHECK(queue.tail() == p3);
+    CHECK(queue.head() == wp2);
+    CHECK(queue.tail() == wp3);
 }
 
 TEST(sorted_queue, overflow_ordered1) {
@@ -256,23 +286,31 @@ TEST(sorted_queue, overflow_ordered1) {
 
     SortedQueue queue(0);
 
-    PacketPtr p1 = new_packet(seqnum_t(sn - 10));
-    PacketPtr p2 = new_packet(sn);
-    PacketPtr p3 = new_packet(seqnum_t(sn + 10));
+    PacketPtr wp1 = new_packet(seqnum_t(sn - 10));
+    PacketPtr wp2 = new_packet(sn);
+    PacketPtr wp3 = new_packet(seqnum_t(sn + 10));
 
-    queue.write(p1);
-    queue.write(p2);
-    queue.write(p3);
+    queue.write(wp1);
+    queue.write(wp2);
+    queue.write(wp3);
 
     LONGS_EQUAL(3, queue.size());
 
-    CHECK(queue.read() == p1);
-    CHECK(queue.read() == p2);
-    CHECK(queue.read() == p3);
+    PacketPtr rp1;
+    PacketPtr rp2;
+    PacketPtr rp3;
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp1));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp2));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp3));
+    CHECK(wp1 == rp1);
+    CHECK(wp2 == rp2);
+    CHECK(wp3 == rp3);
 
     LONGS_EQUAL(0, queue.size());
 
-    CHECK(!queue.read());
+    PacketPtr pp;
+    UNSIGNED_LONGS_EQUAL(status::StatusNoData, queue.read(pp));
+    CHECK(!pp);
 }
 
 TEST(sorted_queue, overflow_ordered2) {
@@ -280,23 +318,31 @@ TEST(sorted_queue, overflow_ordered2) {
 
     SortedQueue queue(0);
 
-    PacketPtr p1 = new_packet(seqnum_t(sn - 10));
-    PacketPtr p2 = new_packet(sn);
-    PacketPtr p3 = new_packet(seqnum_t(sn + 10));
+    PacketPtr wp1 = new_packet(seqnum_t(sn - 10));
+    PacketPtr wp2 = new_packet(sn);
+    PacketPtr wp3 = new_packet(seqnum_t(sn + 10));
 
-    queue.write(p1);
-    queue.write(p2);
-    queue.write(p3);
+    queue.write(wp1);
+    queue.write(wp2);
+    queue.write(wp3);
 
     LONGS_EQUAL(3, queue.size());
 
-    CHECK(queue.read() == p1);
-    CHECK(queue.read() == p2);
-    CHECK(queue.read() == p3);
+    PacketPtr rp1;
+    PacketPtr rp2;
+    PacketPtr rp3;
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp1));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp2));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp3));
+    CHECK(wp1 == rp1);
+    CHECK(wp2 == rp2);
+    CHECK(wp3 == rp3);
 
     LONGS_EQUAL(0, queue.size());
 
-    CHECK(!queue.read());
+    PacketPtr pp;
+    UNSIGNED_LONGS_EQUAL(status::StatusNoData, queue.read(pp));
+    CHECK(!pp);
 }
 
 TEST(sorted_queue, overflow_sorting) {
@@ -304,23 +350,31 @@ TEST(sorted_queue, overflow_sorting) {
 
     SortedQueue queue(0);
 
-    PacketPtr p1 = new_packet(seqnum_t(sn - 10));
-    PacketPtr p2 = new_packet(sn);
-    PacketPtr p3 = new_packet(seqnum_t(sn + 10));
+    PacketPtr wp1 = new_packet(seqnum_t(sn - 10));
+    PacketPtr wp2 = new_packet(sn);
+    PacketPtr wp3 = new_packet(seqnum_t(sn + 10));
 
-    queue.write(p2);
-    queue.write(p1);
-    queue.write(p3);
+    queue.write(wp2);
+    queue.write(wp1);
+    queue.write(wp3);
 
     LONGS_EQUAL(3, queue.size());
 
-    CHECK(queue.read() == p1);
-    CHECK(queue.read() == p2);
-    CHECK(queue.read() == p3);
+    PacketPtr rp1;
+    PacketPtr rp2;
+    PacketPtr rp3;
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp1));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp2));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp3));
+    CHECK(wp1 == rp1);
+    CHECK(wp2 == rp2);
+    CHECK(wp3 == rp3);
 
     LONGS_EQUAL(0, queue.size());
 
-    CHECK(!queue.read());
+    PacketPtr pp;
+    UNSIGNED_LONGS_EQUAL(status::StatusNoData, queue.read(pp));
+    CHECK(!pp);
 }
 
 TEST(sorted_queue, overflow_out_of_order) {
@@ -328,69 +382,92 @@ TEST(sorted_queue, overflow_out_of_order) {
 
     SortedQueue queue(0);
 
-    PacketPtr p1 = new_packet(seqnum_t(sn - 10));
-    PacketPtr p2 = new_packet(sn);
-    PacketPtr p3 = new_packet(sn / 2);
+    PacketPtr wp1 = new_packet(seqnum_t(sn - 10));
+    PacketPtr wp2 = new_packet(sn);
+    PacketPtr wp3 = new_packet(sn / 2);
 
-    queue.write(p1);
-
-    LONGS_EQUAL(1, queue.size());
-    CHECK(queue.read() == p1);
-    LONGS_EQUAL(0, queue.size());
-
-    queue.write(p2);
+    queue.write(wp1);
 
     LONGS_EQUAL(1, queue.size());
-    CHECK(queue.read() == p2);
+    PacketPtr rp1;
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp1));
+    CHECK(wp1 == rp1);
     LONGS_EQUAL(0, queue.size());
 
-    queue.write(p3);
+    queue.write(wp2);
 
     LONGS_EQUAL(1, queue.size());
-    CHECK(queue.read() == p3);
+    PacketPtr rp2;
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp2));
+    CHECK(wp2 == rp2);
     LONGS_EQUAL(0, queue.size());
 
-    CHECK(!queue.read());
+    queue.write(wp3);
+
+    LONGS_EQUAL(1, queue.size());
+    PacketPtr rp3;
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp3));
+    CHECK(wp3 == rp3);
+    LONGS_EQUAL(0, queue.size());
+
+    PacketPtr pp;
+    UNSIGNED_LONGS_EQUAL(status::StatusNoData, queue.read(pp));
+    CHECK(!pp);
 }
 
 TEST(sorted_queue, latest) {
     SortedQueue queue(0);
 
-    PacketPtr p1 = new_packet(1);
-    PacketPtr p2 = new_packet(3);
-    PacketPtr p3 = new_packet(2);
-    PacketPtr p4 = new_packet(4);
+    PacketPtr wp1 = new_packet(1);
+    PacketPtr wp2 = new_packet(3);
+    PacketPtr wp3 = new_packet(2);
+    PacketPtr wp4 = new_packet(4);
 
     LONGS_EQUAL(0, queue.size());
     CHECK(!queue.latest());
 
-    queue.write(p1);
+    queue.write(wp1);
     LONGS_EQUAL(1, queue.size());
-    CHECK(queue.latest() == p1);
+    CHECK(queue.latest() == wp1);
 
-    queue.write(p2);
+    queue.write(wp2);
     LONGS_EQUAL(2, queue.size());
-    CHECK(queue.latest() == p2);
+    CHECK(queue.latest() == wp2);
 
-    queue.write(p3);
+    queue.write(wp3);
     LONGS_EQUAL(3, queue.size());
-    CHECK(queue.latest() == p2);
+    CHECK(queue.latest() == wp2);
 
-    CHECK(queue.read());
+    {
+        PacketPtr pp;
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(pp));
+        CHECK(pp);
+    }
+
     LONGS_EQUAL(2, queue.size());
-    CHECK(queue.latest() == p2);
+    CHECK(queue.latest() == wp2);
 
-    CHECK(queue.read());
+    {
+        PacketPtr pp;
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(pp));
+        CHECK(pp);
+    }
+
     LONGS_EQUAL(1, queue.size());
-    CHECK(queue.latest() == p2);
+    CHECK(queue.latest() == wp2);
 
-    CHECK(queue.read());
+    {
+        PacketPtr pp;
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(pp));
+        CHECK(pp);
+    }
+
     LONGS_EQUAL(0, queue.size());
-    CHECK(queue.latest() == p2);
+    CHECK(queue.latest() == wp2);
 
-    queue.write(p4);
+    queue.write(wp4);
     LONGS_EQUAL(1, queue.size());
-    CHECK(queue.latest() == p4);
+    CHECK(queue.latest() == wp4);
 }
 
 } // namespace packet

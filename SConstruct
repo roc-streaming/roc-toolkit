@@ -683,7 +683,7 @@ env['ROC_SOVER'] = '.'.join(env['ROC_VERSION'].split('.')[:2])
 # internal modules
 env['ROC_MODULES'] = [
     'roc_core',
-    'roc_error',
+    'roc_status',
     'roc_address',
     'roc_packet',
     'roc_audio',

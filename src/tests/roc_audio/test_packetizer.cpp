@@ -69,7 +69,8 @@ public:
     }
 
     void read(packet::IReader& reader, size_t n_samples) {
-        packet::PacketPtr pp = reader.read();
+        packet::PacketPtr pp;
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(pp));
         CHECK(pp);
 
         UNSIGNED_LONGS_EQUAL(packet::Packet::FlagRTP | packet::Packet::FlagAudio,

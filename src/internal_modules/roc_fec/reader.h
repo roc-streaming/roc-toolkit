@@ -69,20 +69,21 @@ public:
     //! Read packet.
     //! @remarks
     //!  When a packet loss is detected, try to restore it from repair packets.
-    virtual packet::PacketPtr read();
+    virtual status::StatusCode read(packet::PacketPtr&);
 
 private:
-    packet::PacketPtr read_();
+    status::StatusCode read_(packet::PacketPtr&);
 
-    packet::PacketPtr get_first_packet_();
-    packet::PacketPtr get_next_packet_();
+    bool try_start_();
+    status::StatusCode get_next_packet_(packet::PacketPtr&);
 
     void next_block_();
     void try_repair_();
 
     packet::PacketPtr parse_repaired_packet_(const core::Slice<uint8_t>& buffer);
 
-    void fetch_packets_();
+    status::StatusCode fetch_all_packets_();
+    status::StatusCode fetch_packets_(packet::IReader&, packet::IWriter&);
 
     void fill_block_();
     void fill_source_block_();

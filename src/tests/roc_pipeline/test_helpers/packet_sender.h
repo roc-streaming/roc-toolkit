@@ -15,6 +15,7 @@
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace pipeline {
@@ -53,8 +54,10 @@ public:
 
     void deliver(size_t n_source_packets) {
         for (size_t np = 0; np < n_source_packets;) {
-            packet::PacketPtr pp = queue_.read();
-            if (!pp) {
+            packet::PacketPtr pp;
+            const status::StatusCode code = queue_.read(pp);
+            if (code != status::StatusOK) {
+                UNSIGNED_LONGS_EQUAL(status::StatusNoData, code);
                 break;
             }
 

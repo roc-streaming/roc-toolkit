@@ -48,10 +48,10 @@ public:
               const audio::SampleSpec& sample_spec);
 
     //! Read next packet.
+    //!
     //! @remarks
-    //!  Reads packet from the underlying reader and validates it. If the packet
-    //!  is valid, returns it. Otherwise, returns NULL.
-    virtual packet::PacketPtr read();
+    //!  Reads packet from the underlying reader and validates it.
+    virtual status::StatusCode read(packet::PacketPtr& pp);
 
 private:
     bool validate_(const packet::RTP& prev, const packet::RTP& next) const;

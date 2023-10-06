@@ -15,9 +15,11 @@
 #include "roc_audio/pcm_encoder.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
+#include "roc_core/macro_helpers.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_rtp/composer.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace audio {
@@ -121,6 +123,49 @@ void expect_flags(Depacketizer& depacketizer,
         CHECK(core::ns_equal_delta(frame.capture_timestamp(), capt_ts, epsilon));
     }
 }
+
+class TestReader : public packet::IReader {
+public:
+    TestReader(packet::IReader& reader)
+        : reader_(reader)
+        , call_count_(0)
+        , code_enabled_(false)
+        , code_(default_code_) {
+    }
+
+    virtual status::StatusCode read(packet::PacketPtr& pp) {
+        ++call_count_;
+
+        if (code_enabled_) {
+            return code_;
+        }
+
+        return reader_.read(pp);
+    }
+
+    void enable_status_code(status::StatusCode code) {
+        code_enabled_ = true;
+        code_ = code;
+    }
+
+    void disable_status_code() {
+        code_enabled_ = false;
+        code_ = default_code_;
+    }
+
+    unsigned call_count() const {
+        return call_count_;
+    }
+
+private:
+    static const status::StatusCode default_code_ = status::StatusUnknown;
+
+    packet::IReader& reader_;
+
+    unsigned call_count_;
+    bool code_enabled_;
+    status::StatusCode code_;
+};
 
 } // namespace
 
@@ -591,6 +636,37 @@ TEST(depacketizer, timestamp) {
 
         CHECK(dp.is_started());
         UNSIGNED_LONGS_EQUAL(ts, dp.next_timestamp());
+    }
+}
+
+TEST(depacketizer, read_after_error) {
+    const status::StatusCode codes[] = {
+        status::StatusUnknown,
+        status::StatusNoData,
+    };
+
+    for (unsigned n = 0; n < ROC_ARRAY_SIZE(codes); ++n) {
+        PcmEncoder encoder(PcmFmt, SampleSpecs);
+        PcmDecoder decoder(PcmFmt, SampleSpecs);
+
+        packet::Queue queue;
+        TestReader reader(queue);
+        Depacketizer dp(reader, decoder, SampleSpecs, false);
+        CHECK(dp.is_valid());
+
+        queue.write(new_packet(encoder, 0, 0.11f, Now));
+
+        UNSIGNED_LONGS_EQUAL(0, reader.call_count());
+
+        reader.enable_status_code(codes[n]);
+        expect_output(dp, SamplesPerPacket, 0.00f, 0);
+        UNSIGNED_LONGS_EQUAL(1, reader.call_count());
+        CHECK(dp.is_valid());
+
+        reader.disable_status_code();
+        expect_output(dp, SamplesPerPacket, 0.11f, Now);
+        UNSIGNED_LONGS_EQUAL(2, reader.call_count());
+        CHECK(dp.is_valid());
     }
 }
 

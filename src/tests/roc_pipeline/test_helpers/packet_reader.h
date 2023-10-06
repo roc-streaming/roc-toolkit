@@ -21,6 +21,7 @@
 #include "roc_packet/ireader.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_rtp/format_map.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace pipeline {
@@ -103,6 +104,12 @@ public:
         abs_offset_ += samples_per_packet;
     }
 
+    void read_eof() {
+        packet::PacketPtr pp;
+        LONGS_EQUAL(status::StatusNoData, reader_.read(pp));
+        CHECK(!pp);
+    }
+
 private:
     enum { MaxSamples = 4096 };
 
@@ -115,7 +122,8 @@ private:
     }
 
     packet::PacketPtr read_packet_() {
-        packet::PacketPtr pp = reader_.read();
+        packet::PacketPtr pp;
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, reader_.read(pp));
         CHECK(pp);
 
         CHECK(pp->flags() & packet::Packet::FlagUDP);
