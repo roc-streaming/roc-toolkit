@@ -115,8 +115,12 @@ public:
     }
 
 private:
-    AlignedStorage<EmbeddedCapacity * PoolImpl::SlotSize<sizeof(T)>::value>
-        embedded_data_;
+    enum {
+        SlotSize = (sizeof(PoolImpl::SlotHeader) + sizeof(PoolImpl::SlotCanary)
+                    + sizeof(T) + sizeof(PoolImpl::SlotCanary) + sizeof(AlignMax) - 1)
+            / sizeof(AlignMax) * sizeof(AlignMax)
+    };
+    AlignedStorage<EmbeddedCapacity * SlotSize> embedded_data_;
     PoolImpl impl_;
 };
 

@@ -43,8 +43,10 @@ PoolImpl::PoolImpl(const char* name,
     , n_used_slots_(0)
     , slab_min_bytes_(clamp(min_alloc_bytes, preallocated_size, max_alloc_bytes))
     , slab_max_bytes_(max_alloc_bytes)
-    , slot_size_(std::max(
-          sizeof(Slot), sizeof(UserSlot) + AlignOps::align_max(object_size) + CanarySize))
+    , slot_size_(std::max(sizeof(Slot),
+                          (sizeof(SlotHeader) + CanarySize + object_size + CanarySize
+                           + sizeof(AlignMax) - 1)
+                              / sizeof(AlignMax) * sizeof(AlignMax)))
     , slab_hdr_size_(AlignOps::align_max(sizeof(Slab)))
     , slab_cur_slots_(slab_min_bytes_ == 0 ? 1 : slots_per_slab_(slab_min_bytes_, true))
     , slab_max_slots_(slab_max_bytes_ == 0 ? 0 : slots_per_slab_(slab_max_bytes_, false))
@@ -127,13 +129,13 @@ size_t PoolImpl::num_invalid_ownerships() const {
 void* PoolImpl::give_slot_to_user_(Slot* slot) {
     slot->~Slot();
 
-    UserSlot* userSlot = (UserSlot*)slot;
+    SlotHeader* slot_hdr = (SlotHeader*)slot;
 
-    userSlot->owner = this;
+    slot_hdr->owner = this;
 
-    void* canary_before = &userSlot->canary_before;
-    void* memory = userSlot->data;
-    void* canary_after = (char*)userSlot->data + object_size_;
+    void* canary_before = (char*)slot_hdr->data;
+    void* memory = (char*)slot_hdr->data + CanarySize;
+    void* canary_after = (char*)slot_hdr->data + CanarySize + object_size_;
 
     MemoryOps::prepare_canary(canary_before, CanarySize);
     MemoryOps::poison_before_use(memory, object_size_);
@@ -143,10 +145,10 @@ void* PoolImpl::give_slot_to_user_(Slot* slot) {
 }
 
 PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
-    UserSlot* userSlot = ROC_CONTAINER_OF(memory, UserSlot, data);
+    SlotHeader* slot_hdr = ROC_CONTAINER_OF((char*)memory - CanarySize, SlotHeader, data);
 
-    void* canary_before = (char*)&userSlot->canary_before;
-    void* canary_after = (char*)userSlot->data + object_size_;
+    void* canary_before = (char*)slot_hdr->data;
+    void* canary_after = (char*)slot_hdr->data + CanarySize + object_size_;
 
     bool canary_before_ok = MemoryOps::check_canary(canary_before, CanarySize);
     bool canary_after_ok =
@@ -159,7 +161,7 @@ PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
         }
     }
 
-    bool is_owner = userSlot->owner == this;
+    bool is_owner = slot_hdr->owner == this;
 
     if (!is_owner) {
         num_invalid_ownerships_++;
@@ -171,7 +173,7 @@ PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
 
     MemoryOps::poison_after_use(memory, object_size_);
 
-    return new (userSlot) Slot;
+    return new (slot_hdr) Slot;
 }
 
 PoolImpl::Slot* PoolImpl::acquire_slot_() {
