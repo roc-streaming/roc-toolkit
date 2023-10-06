@@ -18,8 +18,10 @@ namespace core {
 
 int HeapArena::enable_leak_detection_ = false;
 
-HeapArena::HeapArena()
-    : num_allocations_(0) {
+HeapArena::HeapArena(size_t flags)
+    : num_allocations_(0)
+    , flags_(flags)
+    , num_guard_failures_(0) {
 }
 
 HeapArena::~HeapArena() {
@@ -86,7 +88,10 @@ void HeapArena::deallocate(void* ptr) {
     bool canary_after_ok =
         MemoryOps::check_canary(canary_after, size_padding + sizeof(ChunkCanary));
     if (!canary_before_ok || !canary_after_ok) {
-        roc_panic("heap arena: buffer overflow detected");
+        num_guard_failures_++;
+        if ((flags_ & HeapArenaFlag_EnableGuards) != 0) {
+            roc_panic("heap arena: buffer overflow detected");
+        }
     }
 
     MemoryOps::poison_after_use(memory, chunk->size);
@@ -94,5 +99,8 @@ void HeapArena::deallocate(void* ptr) {
     free(chunk);
 }
 
+size_t HeapArena::num_guard_failures() const {
+    return num_guard_failures_;
+}
 } // namespace core
 } // namespace roc

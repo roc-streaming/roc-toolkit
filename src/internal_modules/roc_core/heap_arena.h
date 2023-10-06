@@ -20,6 +20,15 @@
 namespace roc {
 namespace core {
 
+//! Heap arena flags.
+enum HeapArenaFlags {
+    //! Enable guards such as canary, etc.
+    HeapArenaFlag_EnableGuards = (1 << 0),
+};
+
+//! Default heap arena flags.
+enum { DefaultHeapArenaFlags = (HeapArenaFlag_EnableGuards) };
+
 //! Heap arena implementation.
 //!
 //! Uses malloc() and free().
@@ -30,7 +39,7 @@ namespace core {
 //! The memory is always maximum aligned. Thread-safe.
 class HeapArena : public IArena, public NonCopyable<> {
 public:
-    HeapArena();
+    HeapArena(size_t flags = DefaultHeapArenaFlags);
     ~HeapArena();
 
     //! Enable panic on leak in destructor, for all instances.
@@ -45,6 +54,9 @@ public:
     //! Deallocate previously allocated memory.
     virtual void deallocate(void*);
 
+    //! Get number of guard failures.
+    size_t num_guard_failures() const;
+
 private:
     struct Chunk {
         size_t size;
@@ -56,6 +68,8 @@ private:
     static int enable_leak_detection_;
 
     Atomic<int> num_allocations_;
+    size_t flags_;
+    size_t num_guard_failures_;
 };
 
 } // namespace core
