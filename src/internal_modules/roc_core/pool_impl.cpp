@@ -44,8 +44,8 @@ PoolImpl::PoolImpl(const char* name,
     , slab_min_bytes_(clamp(min_alloc_bytes, preallocated_size, max_alloc_bytes))
     , slab_max_bytes_(max_alloc_bytes)
     , slot_size_(std::max(sizeof(Slot),
-                          (sizeof(SlotHeader) + CanarySize + object_size + CanarySize
-                           + sizeof(AlignMax) - 1)
+                          (sizeof(SlotHeader) + sizeof(SlotCanary) + object_size
+                           + sizeof(SlotCanary) + sizeof(AlignMax) - 1)
                               / sizeof(AlignMax) * sizeof(AlignMax)))
     , slab_hdr_size_(AlignOps::align_max(sizeof(Slab)))
     , slab_cur_slots_(slab_min_bytes_ == 0 ? 1 : slots_per_slab_(slab_min_bytes_, true))
@@ -134,25 +134,26 @@ void* PoolImpl::give_slot_to_user_(Slot* slot) {
     slot_hdr->owner = this;
 
     void* canary_before = (char*)slot_hdr->data;
-    void* memory = (char*)slot_hdr->data + CanarySize;
-    void* canary_after = (char*)slot_hdr->data + CanarySize + object_size_;
+    void* memory = (char*)slot_hdr->data + sizeof(SlotCanary);
+    void* canary_after = (char*)slot_hdr->data + sizeof(SlotCanary) + object_size_;
 
-    MemoryOps::prepare_canary(canary_before, CanarySize);
+    MemoryOps::prepare_canary(canary_before, sizeof(SlotCanary));
     MemoryOps::poison_before_use(memory, object_size_);
-    MemoryOps::prepare_canary(canary_after, object_size_padding_ + CanarySize);
+    MemoryOps::prepare_canary(canary_after, object_size_padding_ + sizeof(SlotCanary));
 
     return memory;
 }
 
 PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
-    SlotHeader* slot_hdr = ROC_CONTAINER_OF((char*)memory - CanarySize, SlotHeader, data);
+    SlotHeader* slot_hdr =
+        ROC_CONTAINER_OF((char*)memory - sizeof(SlotCanary), SlotHeader, data);
 
     void* canary_before = (char*)slot_hdr->data;
-    void* canary_after = (char*)slot_hdr->data + CanarySize + object_size_;
+    void* canary_after = (char*)slot_hdr->data + sizeof(SlotCanary) + object_size_;
 
-    bool canary_before_ok = MemoryOps::check_canary(canary_before, CanarySize);
+    bool canary_before_ok = MemoryOps::check_canary(canary_before, sizeof(SlotCanary));
     bool canary_after_ok =
-        MemoryOps::check_canary(canary_after, object_size_padding_ + CanarySize);
+        MemoryOps::check_canary(canary_after, object_size_padding_ + sizeof(SlotCanary));
 
     if (!canary_before_ok || !canary_after_ok) {
         num_buffer_overflows_++;

@@ -71,8 +71,6 @@ public:
     size_t num_invalid_ownerships() const;
 
 private:
-    enum { CanarySize = sizeof(SlotCanary) };
-
     struct Slab : ListNode {};
     struct Slot : ListNode {};
 
