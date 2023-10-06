@@ -5,25 +5,18 @@ Contribution guidelines
    :local:
    :depth: 1
 
-Community
-=========
-
-Welcome to join our Matrix chats and mailing list!
-
-Please refer :doc:`this page </about_project/contacts>` for more details.
-
 How you can help
 ================
 
 * **Contributing code**
 
-  We are always happy to meet new people in the project. Please refer to the section below for details on the onboarding process.
+  We are always happy to meet new people in the project. For details on the onboarding process, see below.
 
 * **Testing**
 
-  We also appreciate help in testing new releases. We highly depend on feedback from users to identify bugs and receive suggestions for new features.
+  We appreciate help in testing on various OSes and hardware, and highly depend on feedback from users. If you wish to test, you can look for tutorials on :doc:`publications page </about_project/publications>`.
 
-* **Writing tutorials**
+* **Writing**
 
   If you've built Roc for a niche OS or hardware, or tweaked settings to make it work better for your needs, we'd love if you share your experience with the community. If you wrote a guide, you can send it to us to be added to the :doc:`publications page </about_project/publications>`.
 
@@ -31,6 +24,8 @@ Becoming a contributor
 ======================
 
 First of all, thank you for your interest! We welcome and appreciate all help. Many important features were submitted by :doc:`numerous contributors </about_project/authors>`, and we are really grateful for that.
+
+In case of any questions, welcome to join our :doc:`chat and mailing list </about_project/contacts>`.
 
 The guide bellow will help you to prepare your first patch.
 
