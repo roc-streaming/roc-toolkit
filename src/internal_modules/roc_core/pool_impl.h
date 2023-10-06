@@ -31,8 +31,16 @@ namespace core {
 //! @see Pool.
 class PoolImpl : public NonCopyable<> {
 public:
-    //! Size for canary guard.
-    enum { CanarySize = sizeof(AlignMax) };
+    //! Slot header.
+    struct SlotHeader {
+        //! The pool that the slot belongs to.
+        PoolImpl* owner;
+        //! Variable-length data surrounded by canary guard.
+        AlignMax data[];
+    };
+
+    //! Canary guard which surrounds variable-length data.
+    typedef AlignMax SlotCanary;
 
     //! Initialize.
     PoolImpl(const char* name,
@@ -59,8 +67,8 @@ public:
     //! Return memory to pool.
     void deallocate(void* memory);
 
-    //! Get number of buffer overflows detected.
-    size_t num_buffer_overflows() const;
+    //! Get number of guard failures.
+    size_t num_guard_failures() const;
 
 private:
     struct Slab : ListNode {};
@@ -104,7 +112,7 @@ private:
     const size_t object_size_padding_;
 
     const size_t flags_;
-    size_t num_buffer_overflows_;
+    size_t num_guard_failures_;
 };
 
 } // namespace core

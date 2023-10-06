@@ -500,7 +500,7 @@ TEST(pool, guard_object) {
 TEST(pool, guard_object_violations) {
     TestArena arena;
     Pool<TestObject, 1> pool("test", arena, sizeof(TestObject), 0, 0,
-                             (DefaultPoolFlags & ~PoolFlag_PanicOnOverflow));
+                             (DefaultPoolFlags & ~PoolFlag_EnableGuards));
     void* pointers[2] = {};
 
     pointers[0] = pool.allocate();
@@ -515,7 +515,7 @@ TEST(pool, guard_object_violations) {
         *data = 0x00;
     }
     pool.deallocate(pointers[0]);
-    CHECK(pool.num_buffer_overflows() == 1);
+    CHECK(pool.num_guard_failures() == 1);
 
     {
         char* data = (char*)pointers[1];
@@ -523,7 +523,28 @@ TEST(pool, guard_object_violations) {
         *data = 0x00;
     }
     pool.deallocate(pointers[1]);
-    CHECK(pool.num_buffer_overflows() == 2);
+    CHECK(pool.num_guard_failures() == 2);
+}
+
+TEST(pool, object_ownership_guard) {
+    TestArena arena;
+    Pool<TestObject, 1> pool0("test", arena, sizeof(TestObject), 0, 0,
+                              (DefaultPoolFlags & ~PoolFlag_EnableGuards));
+    Pool<TestObject, 1> pool1("test", arena);
+
+    void* pointers[2] = {};
+
+    pointers[0] = pool0.allocate();
+    CHECK(pointers[0]);
+
+    pointers[1] = pool1.allocate();
+    CHECK(pointers[1]);
+
+    pool0.deallocate(pointers[1]);
+    CHECK(pool0.num_guard_failures() == 1);
+
+    pool0.deallocate(pointers[0]);
+    pool1.deallocate(pointers[1]);
 }
 
 } // namespace core
