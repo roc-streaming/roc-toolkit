@@ -20,6 +20,17 @@
 namespace roc {
 namespace core {
 
+//! Heap arena flags.
+enum HeapArenaFlags {
+    //! Enable panic if leaks detected in arena destructor.
+    HeapArenaFlag_EnableLeakDetection = (1 << 0),
+    //! Enable panic if memory violation detected when deallocating chunk.
+    HeapArenaFlag_EnableGuards = (1 << 1),
+};
+
+//! Default heap arena flags.
+enum { DefaultHeapArenaFlags = (HeapArenaFlag_EnableGuards) };
+
 //! Heap arena implementation.
 //!
 //! Uses malloc() and free().
@@ -30,14 +41,21 @@ namespace core {
 //! The memory is always maximum aligned. Thread-safe.
 class HeapArena : public IArena, public NonCopyable<> {
 public:
+    //! Initialize.
     HeapArena();
     ~HeapArena();
 
-    //! Enable panic on leak in destructor, for all instances.
-    static void enable_leak_detection();
+    //! Set flags, for all instances.
+    //!
+    //! @b Parameters
+    //! - @p flags defines options to modify behaviour as indicated in HeapArenaFlags
+    static void set_flags(size_t flags);
 
     //! Get number of allocated blocks.
     size_t num_allocations() const;
+
+    //! Get number of guard failures.
+    size_t num_guard_failures() const;
 
     //! Allocate memory.
     virtual void* allocate(size_t size);
@@ -46,14 +64,18 @@ public:
     virtual void deallocate(void*);
 
 private:
-    struct Chunk {
+    struct ChunkHeader {
         size_t size;
         AlignMax data[];
     };
 
-    static int enable_leak_detection_;
+    typedef AlignMax ChunkCanary;
 
     Atomic<int> num_allocations_;
+
+    static size_t flags_;
+
+    size_t num_guard_failures_;
 };
 
 } // namespace core

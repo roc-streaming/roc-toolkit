@@ -16,39 +16,53 @@
 namespace roc {
 namespace core {
 
-int HeapArena::enable_leak_detection_ = false;
+size_t HeapArena::flags_ = DefaultHeapArenaFlags;
 
 HeapArena::HeapArena()
-    : num_allocations_(0) {
+    : num_allocations_(0)
+    , num_guard_failures_(0) {
 }
 
 HeapArena::~HeapArena() {
     if (num_allocations_ != 0) {
-        if (AtomicOps::load_seq_cst(enable_leak_detection_)) {
+        if (AtomicOps::load_seq_cst(flags_) & HeapArenaFlag_EnableLeakDetection) {
             roc_panic("heap arena: detected leak(s): %d objects was not freed",
                       (int)num_allocations_);
         }
     }
 }
 
-void HeapArena::enable_leak_detection() {
-    AtomicOps::store_seq_cst(enable_leak_detection_, true);
+void HeapArena::set_flags(size_t flags) {
+    AtomicOps::store_seq_cst(flags_, flags);
 }
 
 size_t HeapArena::num_allocations() const {
     return (size_t)num_allocations_;
 }
 
+size_t HeapArena::num_guard_failures() const {
+    return num_guard_failures_;
+}
+
 void* HeapArena::allocate(size_t size) {
     num_allocations_++;
 
-    Chunk* chunk = (Chunk*)malloc(sizeof(Chunk) + size);
+    size_t chunk_size =
+        sizeof(ChunkHeader) + sizeof(ChunkCanary) + size + sizeof(ChunkCanary);
+
+    ChunkHeader* chunk = (ChunkHeader*)malloc(chunk_size);
+
+    char* canary_before = (char*)chunk->data;
+    char* memory = (char*)chunk->data + sizeof(ChunkCanary);
+    char* canary_after = (char*)chunk->data + sizeof(ChunkCanary) + size;
+
+    MemoryOps::prepare_canary(canary_before, sizeof(ChunkCanary));
+    MemoryOps::poison_before_use(memory, size);
+    MemoryOps::prepare_canary(canary_after, sizeof(ChunkCanary));
 
     chunk->size = size;
 
-    MemoryOps::poison_before_use(chunk->data, size);
-
-    return chunk->data;
+    return memory;
 }
 
 void HeapArena::deallocate(void* ptr) {
@@ -62,9 +76,29 @@ void HeapArena::deallocate(void* ptr) {
         roc_panic("heap arena: unpaired deallocate");
     }
 
-    Chunk* chunk = ROC_CONTAINER_OF(ptr, Chunk, data);
+    ChunkHeader* chunk =
+        ROC_CONTAINER_OF((char*)ptr - sizeof(ChunkCanary), ChunkHeader, data);
 
-    MemoryOps::poison_after_use(chunk->data, chunk->size);
+    size_t size = chunk->size;
+
+    char* canary_before = (char*)chunk->data;
+    char* memory = (char*)chunk->data + sizeof(ChunkCanary);
+    char* canary_after = (char*)chunk->data + sizeof(ChunkCanary) + size;
+
+    const bool canary_before_ok =
+        MemoryOps::check_canary(canary_before, sizeof(ChunkCanary));
+    const bool canary_after_ok =
+        MemoryOps::check_canary(canary_after, sizeof(ChunkCanary));
+
+    if (!canary_before_ok || !canary_after_ok) {
+        num_guard_failures_++;
+        if (AtomicOps::load_seq_cst(flags_) & HeapArenaFlag_EnableGuards) {
+            roc_panic("heap arena: detected memory violation: ok_before=%d ok_after=%d",
+                      (int)canary_before_ok, (int)canary_after_ok);
+        }
+    }
+
+    MemoryOps::poison_after_use(memory, chunk->size);
 
     free(chunk);
 }
