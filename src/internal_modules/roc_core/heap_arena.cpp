@@ -47,12 +47,10 @@ size_t HeapArena::num_guard_failures() const {
 void* HeapArena::allocate(size_t size) {
     num_allocations_++;
 
-    size_t size_aligned = AlignOps::align_max(size);
-    size_t total_size =
-        sizeof(ChunkHeader) + sizeof(ChunkCanary) + size_aligned + sizeof(ChunkCanary);
-    size_t size_padding = size_aligned - size;
+    size_t chunk_size =
+        sizeof(ChunkHeader) + sizeof(ChunkCanary) + size + sizeof(ChunkCanary);
 
-    ChunkHeader* chunk = (ChunkHeader*)malloc(total_size);
+    ChunkHeader* chunk = (ChunkHeader*)malloc(chunk_size);
 
     char* canary_before = (char*)chunk->data;
     char* memory = (char*)chunk->data + sizeof(ChunkCanary);
@@ -60,7 +58,7 @@ void* HeapArena::allocate(size_t size) {
 
     MemoryOps::prepare_canary(canary_before, sizeof(ChunkCanary));
     MemoryOps::poison_before_use(memory, size);
-    MemoryOps::prepare_canary(canary_after, size_padding + sizeof(ChunkCanary));
+    MemoryOps::prepare_canary(canary_after, sizeof(ChunkCanary));
 
     chunk->size = size;
 
@@ -82,8 +80,6 @@ void HeapArena::deallocate(void* ptr) {
         ROC_CONTAINER_OF((char*)ptr - sizeof(ChunkCanary), ChunkHeader, data);
 
     size_t size = chunk->size;
-    size_t size_aligned = AlignOps::align_max(size);
-    size_t size_padding = size_aligned - size;
 
     char* canary_before = (char*)chunk->data;
     char* memory = (char*)chunk->data + sizeof(ChunkCanary);
@@ -92,7 +88,8 @@ void HeapArena::deallocate(void* ptr) {
     const bool canary_before_ok =
         MemoryOps::check_canary(canary_before, sizeof(ChunkCanary));
     const bool canary_after_ok =
-        MemoryOps::check_canary(canary_after, size_padding + sizeof(ChunkCanary));
+        MemoryOps::check_canary(canary_after, sizeof(ChunkCanary));
+
     if (!canary_before_ok || !canary_after_ok) {
         num_guard_failures_++;
         if (AtomicOps::load_seq_cst(flags_) & HeapArenaFlag_EnableGuards) {

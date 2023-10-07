@@ -14,18 +14,17 @@
 namespace roc {
 namespace core {
 
+// clang-format off
 TEST_GROUP(heap_arena) {
-    // clang-format off
     void setup() {
         core::HeapArena::set_flags(core::DefaultHeapArenaFlags
                                     & ~core::HeapArenaFlag_EnableGuards);
     }
     void teardown() {
-        core::HeapArena::set_flags(core::DefaultHeapArenaFlags
-                                    | core::HeapArenaFlag_EnableGuards);
+        core::HeapArena::set_flags(core::DefaultHeapArenaFlags);
     }
+};
 // clang-format on
-}; // namespace roc
 
 TEST(heap_arena, guard_object) {
     HeapArena arena;
