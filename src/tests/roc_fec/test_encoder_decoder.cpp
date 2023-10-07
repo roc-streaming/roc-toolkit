@@ -84,7 +84,7 @@ private:
         core::Slice<uint8_t> buf = buffer_factory.new_buffer();
         buf.reslice(0, p_size);
         for (size_t j = 0; j < buf.size(); ++j) {
-            buf.data()[j] = (uint8_t)core::fast_random(0, 0xff);
+            buf.data()[j] = (uint8_t)core::fast_random_range(0, 0xff);
         }
         return buf;
     }
@@ -170,7 +170,8 @@ TEST(encoder_decoder, random_losses) {
 
             size_t curr_loss = 0;
             for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
-                if (core::fast_random(0, 100) < LossPercent && curr_loss <= MaxLoss) {
+                if (core::fast_random_range(0, 100) < LossPercent
+                    && curr_loss <= MaxLoss) {
                     total_loss++;
                     curr_loss++;
                 } else {

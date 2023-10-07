@@ -44,12 +44,13 @@ private:
             handler_.wait_writable();
 
             while (num_written < total_bytes_) {
-                const core::nanoseconds_t delay = (core::nanoseconds_t)core::fast_random(
-                    0, MaxDelayNs * core::Nanosecond);
+                const core::nanoseconds_t delay =
+                    (core::nanoseconds_t)core::fast_random_range(
+                        0, MaxDelayNs * core::Nanosecond);
 
                 core::sleep_for(core::ClockMonotonic, delay);
 
-                size_t bufsz = core::fast_random(1, MaxBatch);
+                size_t bufsz = core::fast_random_range(1, MaxBatch);
                 if (bufsz > (total_bytes_ - num_written)) {
                     bufsz = (total_bytes_ - num_written);
                 }

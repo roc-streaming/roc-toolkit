@@ -31,7 +31,8 @@ Session::Session(IReceiverHooks* recv_hooks,
     , next_deadline_(0)
     , ssrc_(0)
     , valid_(false) {
-    ssrc_ = (packet::stream_source_t)core::fast_random(0, packet::stream_source_t(-1));
+    ssrc_ =
+        (packet::stream_source_t)core::fast_random_range(0, packet::stream_source_t(-1));
 
     // TODO
     strcpy(cname_, "TODO");
