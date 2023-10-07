@@ -6,11 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <stdlib.h>
-
-#include "roc_core/atomic_ops.h"
-#include "roc_core/errno_to_str.h"
 #include "roc_core/fast_random.h"
+#include "roc_core/atomic_ops.h"
 #include "roc_core/panic.h"
 #include "roc_core/time.h"
 
