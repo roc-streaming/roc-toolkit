@@ -41,8 +41,9 @@ Writer::Writer(const WriterConfig& config,
     , fec_scheme_(fec_scheme)
     , valid_(false)
     , alive_(true) {
-    cur_sbn_ = (packet::blknum_t)core::fast_random(0, packet::blknum_t(-1));
-    cur_block_repair_sn_ = (packet::seqnum_t)core::fast_random(0, packet::seqnum_t(-1));
+    cur_sbn_ = (packet::blknum_t)core::fast_random_range(0, packet::blknum_t(-1));
+    cur_block_repair_sn_ =
+        (packet::seqnum_t)core::fast_random_range(0, packet::seqnum_t(-1));
     if (!resize(config.n_source_packets, config.n_repair_packets)) {
         return;
     }

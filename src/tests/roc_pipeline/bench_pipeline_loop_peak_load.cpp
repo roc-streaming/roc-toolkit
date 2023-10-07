@@ -336,8 +336,8 @@ private:
     virtual bool process_task_imp(PipelineTask& basic_task) {
         Task& task = (Task&)basic_task;
         stats_.task_processing_started(task.elapsed_time());
-        busy_wait(
-            core::fast_random(MinTaskProcessingDuration, MaxTaskProcessingDuration));
+        busy_wait(core::fast_random_range(MinTaskProcessingDuration,
+                                          MaxTaskProcessingDuration));
         return true;
     }
 
@@ -375,9 +375,9 @@ private:
     virtual void run() {
         while (!stop_) {
             core::sleep_for(core::ClockMonotonic,
-                            core::fast_random(MinTaskDelay, MaxTaskDelay));
+                            core::fast_random_range(MinTaskDelay, MaxTaskDelay));
 
-            const size_t n_tasks = core::fast_random(MinTaskBurst, MaxTaskBurst);
+            const size_t n_tasks = core::fast_random_range(MinTaskBurst, MaxTaskBurst);
 
             for (size_t n = 0; n < n_tasks; n++) {
                 TestPipeline::Task* task = new TestPipeline::Task;

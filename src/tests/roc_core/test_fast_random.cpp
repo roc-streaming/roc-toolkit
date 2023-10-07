@@ -20,20 +20,20 @@ TEST_GROUP(fast_random) {};
 
 TEST(fast_random, min_min) {
     uint32_t lo_hi = 0;
-    uint32_t res = fast_random(lo_hi, lo_hi);
+    uint32_t res = fast_random_range(lo_hi, lo_hi);
 
     LONGS_EQUAL(res, lo_hi);
 }
 
 TEST(fast_random, max_max) {
     uint32_t lo_hi = UINT32_MAX;
-    uint32_t res = fast_random(lo_hi, lo_hi);
+    uint32_t res = fast_random_range(lo_hi, lo_hi);
 
     LONGS_EQUAL(res, lo_hi);
 }
 
 TEST(fast_random, limits) {
-    uint32_t res = fast_random(1, 100);
+    uint32_t res = fast_random_range(1, 100);
 
     CHECK(1 <= res && res <= 100);
 }
