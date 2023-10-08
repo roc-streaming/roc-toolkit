@@ -93,8 +93,8 @@ private:
 
     bool seek_(uint64_t offset);
 
-    core::StringBuffer<16> driver_name_;
-    core::StringBuffer<> input_name_;
+    core::StringBuffer driver_name_;
+    core::StringBuffer input_name_;
 
     core::Array<sox_sample_t> buffer_;
     size_t buffer_size_;

@@ -61,8 +61,8 @@ public:
     ROC_ATTR_NODISCARD bool format_encoded_path(core::StringBuilder& dst) const;
 
 private:
-    core::StringBuffer<16> scheme_;
-    core::StringBuffer<> path_;
+    core::StringBuffer scheme_;
+    core::StringBuffer path_;
 };
 
 //! Parse IoUri from string.

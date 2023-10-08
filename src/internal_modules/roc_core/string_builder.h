@@ -61,8 +61,8 @@ public:
     //! The builder will write output string into the given buffer. The buffer
     //! will be resized accordingly to the output string size plus terminating
     //! zero byte. The buffer will be always zero-terminated.
-    template <size_t N> StringBuilder(StringBuffer<N>& buf) {
-        writer_.reset(new (writer_) DynamicBufferWriter<StringBuffer<N> >(buf));
+    StringBuilder(StringBuffer& buf) {
+        writer_.reset(new (writer_) DynamicBufferWriter<StringBuffer>(buf));
         initialize_();
     }
 
@@ -138,7 +138,7 @@ private:
         char* buf_wr_ptr_;
     };
 
-    template <class Buffer = StringBuffer<> >
+    template <class Buffer = StringBuffer>
     class DynamicBufferWriter : public IBufferWriter {
     public:
         DynamicBufferWriter(Buffer& buf)

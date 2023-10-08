@@ -27,7 +27,7 @@ namespace core {
 //! but guarantees that the string is always zero-terminated.
 //!
 //! @tparam EmbeddedCapacity is the same as for Array.
-template <size_t EmbeddedCapacity = 0> class StringBuffer : public NonCopyable<> {
+class StringBuffer : public NonCopyable<> {
 public:
     //! Initialize empty buffer.
     explicit StringBuffer(IArena& arena)
@@ -123,7 +123,7 @@ public:
     }
 
 private:
-    Array<char, EmbeddedCapacity ? EmbeddedCapacity : 1> data_;
+    Array<char, 32> data_;
 };
 
 } // namespace core
