@@ -89,8 +89,8 @@ const ChannelMap chan_maps[chan_map_count] = {
             // FC
             { ChanPos_FrontCenter, ChanPos_FrontLeft, 0.707f },
             { ChanPos_FrontCenter, ChanPos_FrontRight, 0.707f },
-            { ChanPos_FrontCenter, ChanPos_SurroundLeft, 0.500f },
-            { ChanPos_FrontCenter, ChanPos_SurroundRight, 0.500f },
+            { ChanPos_FrontCenter, ChanPos_BackLeft, 0.500f },
+            { ChanPos_FrontCenter, ChanPos_BackRight, 0.500f },
         },
     },
     {
@@ -100,10 +100,10 @@ const ChannelMap chan_maps[chan_map_count] = {
         {
             // FL
             { ChanPos_FrontLeft, ChanPos_FrontLeft, 1.000f },
-            { ChanPos_FrontLeft, ChanPos_SurroundLeft, 0.707f },
+            { ChanPos_FrontLeft, ChanPos_BackLeft, 0.707f },
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
-            { ChanPos_FrontRight, ChanPos_SurroundRight, 0.707f },
+            { ChanPos_FrontRight, ChanPos_BackRight, 0.707f },
             // LFE
             { ChanPos_LowFrequency, ChanPos_LowFrequency, 1.000f },
         },
@@ -115,15 +115,15 @@ const ChannelMap chan_maps[chan_map_count] = {
         {
             // FL
             { ChanPos_FrontLeft, ChanPos_FrontLeft, 1.000f },
-            { ChanPos_FrontLeft, ChanPos_SurroundLeft, 0.707f },
+            { ChanPos_FrontLeft, ChanPos_BackLeft, 0.707f },
             // FC
             { ChanPos_FrontCenter, ChanPos_FrontLeft, 0.707f },
             { ChanPos_FrontCenter, ChanPos_FrontRight, 0.707f },
-            { ChanPos_FrontCenter, ChanPos_SurroundLeft, 0.500f },
-            { ChanPos_FrontCenter, ChanPos_SurroundRight, 0.500f },
+            { ChanPos_FrontCenter, ChanPos_BackLeft, 0.500f },
+            { ChanPos_FrontCenter, ChanPos_BackRight, 0.500f },
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
-            { ChanPos_FrontRight, ChanPos_SurroundRight, 0.707f },
+            { ChanPos_FrontRight, ChanPos_BackRight, 0.707f },
             // LFE
             { ChanPos_LowFrequency, ChanPos_LowFrequency, 1.000f },
         },
@@ -138,8 +138,8 @@ const ChannelMap chan_maps[chan_map_count] = {
             { ChanPos_FrontCenter, ChanPos_FrontLeft, 0.707f },
             { ChanPos_FrontCenter, ChanPos_FrontCenter, 1.000f },
             { ChanPos_FrontCenter, ChanPos_FrontRight, 0.707f },
-            { ChanPos_FrontCenter, ChanPos_SurroundLeft, 0.500f },
-            { ChanPos_FrontCenter, ChanPos_SurroundRight, 0.500f },
+            { ChanPos_FrontCenter, ChanPos_BackLeft, 0.500f },
+            { ChanPos_FrontCenter, ChanPos_BackRight, 0.500f },
             { ChanPos_FrontCenter, ChanPos_TopMidLeft, 0.500f },
             { ChanPos_FrontCenter, ChanPos_TopMidRight, 0.500f },
         },
@@ -152,12 +152,12 @@ const ChannelMap chan_maps[chan_map_count] = {
             // FL
             { ChanPos_FrontLeft, ChanPos_FrontLeft, 1.000f },
             { ChanPos_FrontLeft, ChanPos_FrontCenter, 0.707f },
-            { ChanPos_FrontLeft, ChanPos_SurroundLeft, 0.707f },
+            { ChanPos_FrontLeft, ChanPos_BackLeft, 0.707f },
             { ChanPos_FrontLeft, ChanPos_TopMidLeft, 0.707f },
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
             { ChanPos_FrontRight, ChanPos_FrontCenter, 0.707f },
-            { ChanPos_FrontRight, ChanPos_SurroundRight, 0.707f },
+            { ChanPos_FrontRight, ChanPos_BackRight, 0.707f },
             { ChanPos_FrontRight, ChanPos_TopMidRight, 0.707f },
             // LFE
             { ChanPos_LowFrequency, ChanPos_LowFrequency, 1.000f },
@@ -170,13 +170,13 @@ const ChannelMap chan_maps[chan_map_count] = {
         {
             // FL
             { ChanPos_FrontLeft, ChanPos_FrontLeft, 1.000f },
-            { ChanPos_FrontLeft, ChanPos_SurroundLeft, 0.707f },
+            { ChanPos_FrontLeft, ChanPos_BackLeft, 0.707f },
             { ChanPos_FrontLeft, ChanPos_TopMidLeft, 0.707f },
             // FC
             { ChanPos_FrontCenter, ChanPos_FrontCenter, 1.000f },
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
-            { ChanPos_FrontRight, ChanPos_SurroundRight, 0.707f },
+            { ChanPos_FrontRight, ChanPos_BackRight, 0.707f },
             { ChanPos_FrontRight, ChanPos_TopMidRight, 0.707f },
             // LFE
             { ChanPos_LowFrequency, ChanPos_LowFrequency, 1.000f },
@@ -195,12 +195,12 @@ const ChannelMap chan_maps[chan_map_count] = {
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
             { ChanPos_FrontRight, ChanPos_FrontCenter, 0.707f },
             { ChanPos_FrontRight, ChanPos_TopMidRight, 0.707f },
-            // SL
-            { ChanPos_SurroundLeft, ChanPos_SurroundLeft, 1.000f },
-            { ChanPos_SurroundLeft, ChanPos_TopMidLeft, 0.707f },
-            // SR
-            { ChanPos_SurroundRight, ChanPos_SurroundRight, 1.000f },
-            { ChanPos_SurroundRight, ChanPos_TopMidRight, 0.707f },
+            // BL
+            { ChanPos_BackLeft, ChanPos_BackLeft, 1.000f },
+            { ChanPos_BackLeft, ChanPos_TopMidLeft, 0.707f },
+            // BR
+            { ChanPos_BackRight, ChanPos_BackRight, 1.000f },
+            { ChanPos_BackRight, ChanPos_TopMidRight, 0.707f },
             // LFE
             { ChanPos_LowFrequency, ChanPos_LowFrequency, 1.000f },
         },
@@ -218,12 +218,12 @@ const ChannelMap chan_maps[chan_map_count] = {
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
             { ChanPos_FrontRight, ChanPos_TopMidRight, 0.707f },
-            // SL
-            { ChanPos_SurroundLeft, ChanPos_SurroundLeft, 1.000f },
-            { ChanPos_SurroundLeft, ChanPos_TopMidLeft, 0.707f },
-            // SR
-            { ChanPos_SurroundRight, ChanPos_SurroundRight, 1.000f },
-            { ChanPos_SurroundRight, ChanPos_TopMidRight, 0.707f },
+            // BL
+            { ChanPos_BackLeft, ChanPos_BackLeft, 1.000f },
+            { ChanPos_BackLeft, ChanPos_TopMidLeft, 0.707f },
+            // BR
+            { ChanPos_BackRight, ChanPos_BackRight, 1.000f },
+            { ChanPos_BackRight, ChanPos_TopMidRight, 0.707f },
             // LFE
             { ChanPos_LowFrequency, ChanPos_LowFrequency, 1.000f },
         },
@@ -238,8 +238,8 @@ const ChannelMap chan_maps[chan_map_count] = {
             { ChanPos_FrontCenter, ChanPos_FrontLeft, 0.707f },
             { ChanPos_FrontCenter, ChanPos_FrontCenter, 1.000f },
             { ChanPos_FrontCenter, ChanPos_FrontRight, 0.707f },
-            { ChanPos_FrontCenter, ChanPos_SurroundLeft, 0.500f },
-            { ChanPos_FrontCenter, ChanPos_SurroundRight, 0.500f },
+            { ChanPos_FrontCenter, ChanPos_BackLeft, 0.500f },
+            { ChanPos_FrontCenter, ChanPos_BackRight, 0.500f },
             { ChanPos_FrontCenter, ChanPos_TopFrontLeft, 0.500f },
             { ChanPos_FrontCenter, ChanPos_TopFrontRight, 0.500f },
             { ChanPos_FrontCenter, ChanPos_TopBackLeft, 0.354f },
@@ -254,13 +254,13 @@ const ChannelMap chan_maps[chan_map_count] = {
             // FL
             { ChanPos_FrontLeft, ChanPos_FrontLeft, 1.000f },
             { ChanPos_FrontLeft, ChanPos_FrontCenter, 0.707f },
-            { ChanPos_FrontLeft, ChanPos_SurroundLeft, 0.707f },
+            { ChanPos_FrontLeft, ChanPos_BackLeft, 0.707f },
             { ChanPos_FrontLeft, ChanPos_TopFrontLeft, 0.707f },
             { ChanPos_FrontLeft, ChanPos_TopBackLeft, 0.500f },
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
             { ChanPos_FrontRight, ChanPos_FrontCenter, 0.707f },
-            { ChanPos_FrontRight, ChanPos_SurroundRight, 0.707f },
+            { ChanPos_FrontRight, ChanPos_BackRight, 0.707f },
             { ChanPos_FrontRight, ChanPos_TopFrontRight, 0.707f },
             { ChanPos_FrontRight, ChanPos_TopBackRight, 0.500f },
             // LFE
@@ -274,14 +274,14 @@ const ChannelMap chan_maps[chan_map_count] = {
         {
             // FL
             { ChanPos_FrontLeft, ChanPos_FrontLeft, 1.000f },
-            { ChanPos_FrontLeft, ChanPos_SurroundLeft, 0.707f },
+            { ChanPos_FrontLeft, ChanPos_BackLeft, 0.707f },
             { ChanPos_FrontLeft, ChanPos_TopFrontLeft, 0.707f },
             { ChanPos_FrontLeft, ChanPos_TopBackLeft, 0.500f },
             // FC
             { ChanPos_FrontCenter, ChanPos_FrontCenter, 1.000f },
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
-            { ChanPos_FrontRight, ChanPos_SurroundRight, 0.707f },
+            { ChanPos_FrontRight, ChanPos_BackRight, 0.707f },
             { ChanPos_FrontRight, ChanPos_TopFrontRight, 0.707f },
             { ChanPos_FrontRight, ChanPos_TopBackRight, 0.500f },
             // LFE
@@ -301,12 +301,12 @@ const ChannelMap chan_maps[chan_map_count] = {
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
             { ChanPos_FrontRight, ChanPos_FrontCenter, 0.707f },
             { ChanPos_FrontRight, ChanPos_TopFrontRight, 0.707f },
-            // SL
-            { ChanPos_SurroundLeft, ChanPos_SurroundLeft, 1.000f },
-            { ChanPos_SurroundLeft, ChanPos_TopBackLeft, 0.707f },
-            // SR
-            { ChanPos_SurroundRight, ChanPos_SurroundRight, 1.000f },
-            { ChanPos_SurroundRight, ChanPos_TopBackRight, 0.707f },
+            // BL
+            { ChanPos_BackLeft, ChanPos_BackLeft, 1.000f },
+            { ChanPos_BackLeft, ChanPos_TopBackLeft, 0.707f },
+            // BR
+            { ChanPos_BackRight, ChanPos_BackRight, 1.000f },
+            { ChanPos_BackRight, ChanPos_TopBackRight, 0.707f },
             // LFE
             { ChanPos_LowFrequency, ChanPos_LowFrequency, 1.000f },
         },
@@ -324,12 +324,12 @@ const ChannelMap chan_maps[chan_map_count] = {
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
             { ChanPos_FrontRight, ChanPos_TopFrontRight, 0.707f },
-            // SL
-            { ChanPos_SurroundLeft, ChanPos_SurroundLeft, 1.000f },
-            { ChanPos_SurroundLeft, ChanPos_TopBackLeft, 0.707f },
-            // SR
-            { ChanPos_SurroundRight, ChanPos_SurroundRight, 1.000f },
-            { ChanPos_SurroundRight, ChanPos_TopBackRight, 0.707f },
+            // BL
+            { ChanPos_BackLeft, ChanPos_BackLeft, 1.000f },
+            { ChanPos_BackLeft, ChanPos_TopBackLeft, 0.707f },
+            // BR
+            { ChanPos_BackRight, ChanPos_BackRight, 1.000f },
+            { ChanPos_BackRight, ChanPos_TopBackRight, 0.707f },
             // LFE
             { ChanPos_LowFrequency, ChanPos_LowFrequency, 1.000f },
         },
@@ -347,12 +347,12 @@ const ChannelMap chan_maps[chan_map_count] = {
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
             { ChanPos_FrontRight, ChanPos_TopFrontRight, 0.707f },
-            // SL
-            { ChanPos_SurroundLeft, ChanPos_SurroundLeft, 1.000f },
-            { ChanPos_SurroundLeft, ChanPos_TopBackLeft, 0.707f },
-            // SR
-            { ChanPos_SurroundRight, ChanPos_SurroundRight, 1.000f },
-            { ChanPos_SurroundRight, ChanPos_TopBackRight, 0.707f },
+            // BL
+            { ChanPos_BackLeft, ChanPos_BackLeft, 1.000f },
+            { ChanPos_BackLeft, ChanPos_TopBackLeft, 0.707f },
+            // BR
+            { ChanPos_BackRight, ChanPos_BackRight, 1.000f },
+            { ChanPos_BackRight, ChanPos_TopBackRight, 0.707f },
             // TML
             { ChanPos_TopMidLeft, ChanPos_TopFrontLeft, 1.000f },
             { ChanPos_TopMidLeft, ChanPos_TopBackLeft, 1.000f },
@@ -373,9 +373,9 @@ const ChannelMap chan_maps[chan_map_count] = {
             { ChanPos_FrontCenter, ChanPos_FrontLeft, 0.707f },
             { ChanPos_FrontCenter, ChanPos_FrontCenter, 1.000f },
             { ChanPos_FrontCenter, ChanPos_FrontRight, 0.707f },
-            { ChanPos_FrontCenter, ChanPos_SurroundLeft, 0.500f },
-            { ChanPos_FrontCenter, ChanPos_SurroundCenter, 0.707f },
-            { ChanPos_FrontCenter, ChanPos_SurroundRight, 0.500f },
+            { ChanPos_FrontCenter, ChanPos_BackLeft, 0.500f },
+            { ChanPos_FrontCenter, ChanPos_BackCenter, 0.707f },
+            { ChanPos_FrontCenter, ChanPos_BackRight, 0.500f },
         },
     },
     {
@@ -386,13 +386,13 @@ const ChannelMap chan_maps[chan_map_count] = {
             // FL
             { ChanPos_FrontLeft, ChanPos_FrontLeft, 1.000f },
             { ChanPos_FrontLeft, ChanPos_FrontCenter, 0.707f },
-            { ChanPos_FrontLeft, ChanPos_SurroundLeft, 0.707f },
-            { ChanPos_FrontLeft, ChanPos_SurroundCenter, 0.500f },
+            { ChanPos_FrontLeft, ChanPos_BackLeft, 0.707f },
+            { ChanPos_FrontLeft, ChanPos_BackCenter, 0.500f },
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
             { ChanPos_FrontRight, ChanPos_FrontCenter, 0.707f },
-            { ChanPos_FrontRight, ChanPos_SurroundRight, 0.707f },
-            { ChanPos_FrontRight, ChanPos_SurroundCenter, 0.500f },
+            { ChanPos_FrontRight, ChanPos_BackRight, 0.707f },
+            { ChanPos_FrontRight, ChanPos_BackCenter, 0.500f },
             // LFE
             { ChanPos_LowFrequency, ChanPos_LowFrequency, 1.000f },
         },
@@ -404,18 +404,18 @@ const ChannelMap chan_maps[chan_map_count] = {
         {
             // FL
             { ChanPos_FrontLeft, ChanPos_FrontLeft, 1.000f },
-            { ChanPos_FrontLeft, ChanPos_SurroundLeft, 0.707f },
-            { ChanPos_FrontLeft, ChanPos_SurroundCenter, 0.500f },
+            { ChanPos_FrontLeft, ChanPos_BackLeft, 0.707f },
+            { ChanPos_FrontLeft, ChanPos_BackCenter, 0.500f },
             // FC
             { ChanPos_FrontCenter, ChanPos_FrontLeft, 0.707f },
             { ChanPos_FrontCenter, ChanPos_FrontCenter, 1.000f },
             { ChanPos_FrontCenter, ChanPos_FrontRight, 0.707f },
-            { ChanPos_FrontCenter, ChanPos_SurroundLeft, 0.500f },
-            { ChanPos_FrontCenter, ChanPos_SurroundRight, 0.500f },
+            { ChanPos_FrontCenter, ChanPos_BackLeft, 0.500f },
+            { ChanPos_FrontCenter, ChanPos_BackRight, 0.500f },
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
-            { ChanPos_FrontRight, ChanPos_SurroundRight, 0.707f },
-            { ChanPos_FrontRight, ChanPos_SurroundCenter, 0.500f },
+            { ChanPos_FrontRight, ChanPos_BackRight, 0.707f },
+            { ChanPos_FrontRight, ChanPos_BackCenter, 0.500f },
             // LFE
             { ChanPos_LowFrequency, ChanPos_LowFrequency, 1.000f },
         },
@@ -431,12 +431,12 @@ const ChannelMap chan_maps[chan_map_count] = {
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
             { ChanPos_FrontRight, ChanPos_FrontCenter, 0.707f },
-            // SL
-            { ChanPos_SurroundLeft, ChanPos_SurroundLeft, 1.000f },
-            { ChanPos_SurroundLeft, ChanPos_SurroundCenter, 0.707f },
-            // SR
-            { ChanPos_SurroundRight, ChanPos_SurroundRight, 1.000f },
-            { ChanPos_SurroundRight, ChanPos_SurroundCenter, 0.707f },
+            // BL
+            { ChanPos_BackLeft, ChanPos_BackLeft, 1.000f },
+            { ChanPos_BackLeft, ChanPos_BackCenter, 0.707f },
+            // BR
+            { ChanPos_BackRight, ChanPos_BackRight, 1.000f },
+            { ChanPos_BackRight, ChanPos_BackCenter, 0.707f },
             // LFE
             { ChanPos_LowFrequency, ChanPos_LowFrequency, 1.000f },
         },
@@ -452,20 +452,20 @@ const ChannelMap chan_maps[chan_map_count] = {
             { ChanPos_FrontCenter, ChanPos_FrontCenter, 1.000f },
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
-            // SL
-            { ChanPos_SurroundLeft, ChanPos_SurroundLeft, 1.000f },
-            { ChanPos_SurroundLeft, ChanPos_SurroundCenter, 0.707f },
-            // SR
-            { ChanPos_SurroundRight, ChanPos_SurroundRight, 1.000f },
-            { ChanPos_SurroundRight, ChanPos_SurroundCenter, 0.707f },
+            // BL
+            { ChanPos_BackLeft, ChanPos_BackLeft, 1.000f },
+            { ChanPos_BackLeft, ChanPos_BackCenter, 0.707f },
+            // BR
+            { ChanPos_BackRight, ChanPos_BackRight, 1.000f },
+            { ChanPos_BackRight, ChanPos_BackCenter, 0.707f },
             // TML
             { ChanPos_TopMidLeft, ChanPos_FrontLeft, 1.000f },
-            { ChanPos_TopMidLeft, ChanPos_SurroundLeft, 1.000f },
-            { ChanPos_TopMidLeft, ChanPos_SurroundCenter, 0.707f },
+            { ChanPos_TopMidLeft, ChanPos_BackLeft, 1.000f },
+            { ChanPos_TopMidLeft, ChanPos_BackCenter, 0.707f },
             // TMR
             { ChanPos_TopMidRight, ChanPos_FrontRight, 1.000f },
-            { ChanPos_TopMidRight, ChanPos_SurroundRight, 1.000f },
-            { ChanPos_TopMidRight, ChanPos_SurroundCenter, 0.707f },
+            { ChanPos_TopMidRight, ChanPos_BackRight, 1.000f },
+            { ChanPos_TopMidRight, ChanPos_BackCenter, 0.707f },
             // LFE
             { ChanPos_LowFrequency, ChanPos_LowFrequency, 1.000f },
         },
@@ -481,22 +481,22 @@ const ChannelMap chan_maps[chan_map_count] = {
             { ChanPos_FrontCenter, ChanPos_FrontCenter, 1.000f },
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
-            // SL
-            { ChanPos_SurroundLeft, ChanPos_SurroundLeft, 1.000f },
-            { ChanPos_SurroundLeft, ChanPos_SurroundCenter, 0.707f },
-            // SR
-            { ChanPos_SurroundRight, ChanPos_SurroundRight, 1.000f },
-            { ChanPos_SurroundRight, ChanPos_SurroundCenter, 0.707f },
+            // BL
+            { ChanPos_BackLeft, ChanPos_BackLeft, 1.000f },
+            { ChanPos_BackLeft, ChanPos_BackCenter, 0.707f },
+            // BR
+            { ChanPos_BackRight, ChanPos_BackRight, 1.000f },
+            { ChanPos_BackRight, ChanPos_BackCenter, 0.707f },
             // TFL
             { ChanPos_TopFrontLeft, ChanPos_FrontLeft, 1.000f },
             // TFR
             { ChanPos_TopFrontRight, ChanPos_FrontRight, 1.000f },
             // TBL
-            { ChanPos_TopBackLeft, ChanPos_SurroundLeft, 1.000f },
-            { ChanPos_TopBackLeft, ChanPos_SurroundCenter, 0.707f },
+            { ChanPos_TopBackLeft, ChanPos_BackLeft, 1.000f },
+            { ChanPos_TopBackLeft, ChanPos_BackCenter, 0.707f },
             // TBR
-            { ChanPos_TopBackRight, ChanPos_SurroundRight, 1.000f },
-            { ChanPos_TopBackRight, ChanPos_SurroundCenter, 0.707f },
+            { ChanPos_TopBackRight, ChanPos_BackRight, 1.000f },
+            { ChanPos_TopBackRight, ChanPos_BackCenter, 0.707f },
             // LFE
             { ChanPos_LowFrequency, ChanPos_LowFrequency, 1.000f },
         },
@@ -511,8 +511,8 @@ const ChannelMap chan_maps[chan_map_count] = {
             { ChanPos_FrontCenter, ChanPos_FrontLeft, 0.707f },
             { ChanPos_FrontCenter, ChanPos_FrontCenter, 1.000f },
             { ChanPos_FrontCenter, ChanPos_FrontRight, 0.707f },
-            { ChanPos_FrontCenter, ChanPos_SurroundLeft, 0.500f },
-            { ChanPos_FrontCenter, ChanPos_SurroundRight, 0.500f },
+            { ChanPos_FrontCenter, ChanPos_SideLeft, 0.500f },
+            { ChanPos_FrontCenter, ChanPos_SideRight, 0.500f },
             { ChanPos_FrontCenter, ChanPos_BackLeft, 0.500f },
             { ChanPos_FrontCenter, ChanPos_BackRight, 0.500f },
             { ChanPos_FrontCenter, ChanPos_TopMidLeft, 0.500f },
@@ -527,13 +527,13 @@ const ChannelMap chan_maps[chan_map_count] = {
             // FL
             { ChanPos_FrontLeft, ChanPos_FrontLeft, 1.000f },
             { ChanPos_FrontLeft, ChanPos_FrontCenter, 0.707f },
-            { ChanPos_FrontLeft, ChanPos_SurroundLeft, 0.707f },
+            { ChanPos_FrontLeft, ChanPos_SideLeft, 0.707f },
             { ChanPos_FrontLeft, ChanPos_BackLeft, 0.707f },
             { ChanPos_FrontLeft, ChanPos_TopMidLeft, 0.707f },
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
             { ChanPos_FrontRight, ChanPos_FrontCenter, 0.707f },
-            { ChanPos_FrontRight, ChanPos_SurroundRight, 0.707f },
+            { ChanPos_FrontRight, ChanPos_SideRight, 0.707f },
             { ChanPos_FrontRight, ChanPos_BackRight, 0.707f },
             { ChanPos_FrontRight, ChanPos_TopMidRight, 0.707f },
             // LFE
@@ -547,14 +547,14 @@ const ChannelMap chan_maps[chan_map_count] = {
         {
             // FL
             { ChanPos_FrontLeft, ChanPos_FrontLeft, 1.000f },
-            { ChanPos_FrontLeft, ChanPos_SurroundLeft, 0.707f },
+            { ChanPos_FrontLeft, ChanPos_SideLeft, 0.707f },
             { ChanPos_FrontLeft, ChanPos_BackLeft, 0.707f },
             { ChanPos_FrontLeft, ChanPos_TopMidLeft, 0.707f },
             // FC
             { ChanPos_FrontCenter, ChanPos_FrontCenter, 1.000f },
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
-            { ChanPos_FrontRight, ChanPos_SurroundRight, 0.707f },
+            { ChanPos_FrontRight, ChanPos_SideRight, 0.707f },
             { ChanPos_FrontRight, ChanPos_BackRight, 0.707f },
             { ChanPos_FrontRight, ChanPos_TopMidRight, 0.707f },
             // LFE
@@ -574,14 +574,14 @@ const ChannelMap chan_maps[chan_map_count] = {
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
             { ChanPos_FrontRight, ChanPos_FrontCenter, 0.707f },
             { ChanPos_FrontRight, ChanPos_TopMidRight, 0.707f },
-            // SL
-            { ChanPos_SurroundLeft, ChanPos_SurroundLeft, 1.000f },
-            { ChanPos_SurroundLeft, ChanPos_BackLeft, 1.000f },
-            { ChanPos_SurroundLeft, ChanPos_TopMidLeft, 0.707f },
-            // SR
-            { ChanPos_SurroundRight, ChanPos_SurroundRight, 1.000f },
-            { ChanPos_SurroundRight, ChanPos_BackRight, 1.000f },
-            { ChanPos_SurroundRight, ChanPos_TopMidRight, 0.707f },
+            // BL
+            { ChanPos_BackLeft, ChanPos_SideLeft, 1.000f },
+            { ChanPos_BackLeft, ChanPos_BackLeft, 1.000f },
+            { ChanPos_BackLeft, ChanPos_TopMidLeft, 0.707f },
+            // BR
+            { ChanPos_BackRight, ChanPos_SideRight, 1.000f },
+            { ChanPos_BackRight, ChanPos_BackRight, 1.000f },
+            { ChanPos_BackRight, ChanPos_TopMidRight, 0.707f },
             // LFE
             { ChanPos_LowFrequency, ChanPos_LowFrequency, 1.000f },
         },
@@ -597,12 +597,12 @@ const ChannelMap chan_maps[chan_map_count] = {
             { ChanPos_FrontCenter, ChanPos_FrontCenter, 1.000f },
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
-            // SL
-            { ChanPos_SurroundLeft, ChanPos_SurroundLeft, 1.000f },
-            { ChanPos_SurroundLeft, ChanPos_BackLeft, 1.000f },
-            // SR
-            { ChanPos_SurroundRight, ChanPos_SurroundRight, 1.000f },
-            { ChanPos_SurroundRight, ChanPos_BackRight, 1.000f },
+            // BL
+            { ChanPos_BackLeft, ChanPos_SideLeft, 1.000f },
+            { ChanPos_BackLeft, ChanPos_BackLeft, 1.000f },
+            // BR
+            { ChanPos_BackRight, ChanPos_SideRight, 1.000f },
+            { ChanPos_BackRight, ChanPos_BackRight, 1.000f },
             // TML
             { ChanPos_TopMidLeft, ChanPos_TopMidLeft, 1.000f },
             // TMR
@@ -622,12 +622,12 @@ const ChannelMap chan_maps[chan_map_count] = {
             { ChanPos_FrontCenter, ChanPos_FrontCenter, 1.000f },
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
-            // SL
-            { ChanPos_SurroundLeft, ChanPos_SurroundLeft, 1.000f },
-            { ChanPos_SurroundLeft, ChanPos_BackLeft, 1.000f },
-            // SR
-            { ChanPos_SurroundRight, ChanPos_SurroundRight, 1.000f },
-            { ChanPos_SurroundRight, ChanPos_BackRight, 1.000f },
+            // BL
+            { ChanPos_BackLeft, ChanPos_SideLeft, 1.000f },
+            { ChanPos_BackLeft, ChanPos_BackLeft, 1.000f },
+            // BR
+            { ChanPos_BackRight, ChanPos_SideRight, 1.000f },
+            { ChanPos_BackRight, ChanPos_BackRight, 1.000f },
             // TFL
             { ChanPos_TopFrontLeft, ChanPos_TopMidLeft, 1.000f },
             // TFR
@@ -653,20 +653,20 @@ const ChannelMap chan_maps[chan_map_count] = {
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
             { ChanPos_FrontRight, ChanPos_TopMidRight, 0.707f },
-            // SL
-            { ChanPos_SurroundLeft, ChanPos_SurroundLeft, 1.000f },
-            { ChanPos_SurroundLeft, ChanPos_BackLeft, 1.000f },
-            { ChanPos_SurroundLeft, ChanPos_TopMidLeft, 0.707f },
-            // SC
-            { ChanPos_SurroundCenter, ChanPos_SurroundLeft, 1.000f },
-            { ChanPos_SurroundCenter, ChanPos_SurroundRight, 1.000f },
-            { ChanPos_SurroundCenter, ChanPos_BackLeft, 1.000f },
-            { ChanPos_SurroundCenter, ChanPos_BackRight, 1.000f },
-            { ChanPos_SurroundCenter, ChanPos_TopMidLeft, 0.707f },
-            // SR
-            { ChanPos_SurroundRight, ChanPos_SurroundRight, 1.000f },
-            { ChanPos_SurroundRight, ChanPos_BackRight, 1.000f },
-            { ChanPos_SurroundRight, ChanPos_TopMidRight, 0.707f },
+            // BL
+            { ChanPos_BackLeft, ChanPos_SideLeft, 1.000f },
+            { ChanPos_BackLeft, ChanPos_BackLeft, 1.000f },
+            { ChanPos_BackLeft, ChanPos_TopMidLeft, 0.707f },
+            // BC
+            { ChanPos_BackCenter, ChanPos_SideLeft, 1.000f },
+            { ChanPos_BackCenter, ChanPos_SideRight, 1.000f },
+            { ChanPos_BackCenter, ChanPos_BackLeft, 1.000f },
+            { ChanPos_BackCenter, ChanPos_BackRight, 1.000f },
+            { ChanPos_BackCenter, ChanPos_TopMidLeft, 0.707f },
+            // BR
+            { ChanPos_BackRight, ChanPos_SideRight, 1.000f },
+            { ChanPos_BackRight, ChanPos_BackRight, 1.000f },
+            { ChanPos_BackRight, ChanPos_TopMidRight, 0.707f },
             // LFE
             { ChanPos_LowFrequency, ChanPos_LowFrequency, 1.000f },
         },
@@ -683,11 +683,11 @@ const ChannelMap chan_maps[chan_map_count] = {
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
             // SL
-            { ChanPos_SurroundLeft, ChanPos_SurroundLeft, 1.000f },
-            { ChanPos_SurroundLeft, ChanPos_TopMidLeft, 0.707f },
+            { ChanPos_SideLeft, ChanPos_SideLeft, 1.000f },
+            { ChanPos_SideLeft, ChanPos_TopMidLeft, 0.707f },
             // SR
-            { ChanPos_SurroundRight, ChanPos_SurroundRight, 1.000f },
-            { ChanPos_SurroundRight, ChanPos_TopMidRight, 0.707f },
+            { ChanPos_SideRight, ChanPos_SideRight, 1.000f },
+            { ChanPos_SideRight, ChanPos_TopMidRight, 0.707f },
             // BL
             { ChanPos_BackLeft, ChanPos_BackLeft, 1.000f },
             // BR
@@ -706,8 +706,8 @@ const ChannelMap chan_maps[chan_map_count] = {
             { ChanPos_FrontCenter, ChanPos_FrontLeft, 0.707f },
             { ChanPos_FrontCenter, ChanPos_FrontCenter, 1.000f },
             { ChanPos_FrontCenter, ChanPos_FrontRight, 0.707f },
-            { ChanPos_FrontCenter, ChanPos_SurroundLeft, 0.500f },
-            { ChanPos_FrontCenter, ChanPos_SurroundRight, 0.500f },
+            { ChanPos_FrontCenter, ChanPos_SideLeft, 0.500f },
+            { ChanPos_FrontCenter, ChanPos_SideRight, 0.500f },
             { ChanPos_FrontCenter, ChanPos_BackLeft, 0.500f },
             { ChanPos_FrontCenter, ChanPos_BackRight, 0.500f },
             { ChanPos_FrontCenter, ChanPos_TopFrontLeft, 0.500f },
@@ -724,14 +724,14 @@ const ChannelMap chan_maps[chan_map_count] = {
             // FL
             { ChanPos_FrontLeft, ChanPos_FrontLeft, 1.000f },
             { ChanPos_FrontLeft, ChanPos_FrontCenter, 0.707f },
-            { ChanPos_FrontLeft, ChanPos_SurroundLeft, 0.707f },
+            { ChanPos_FrontLeft, ChanPos_SideLeft, 0.707f },
             { ChanPos_FrontLeft, ChanPos_BackLeft, 0.707f },
             { ChanPos_FrontLeft, ChanPos_TopFrontLeft, 0.707f },
             { ChanPos_FrontLeft, ChanPos_TopBackLeft, 0.500f },
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
             { ChanPos_FrontRight, ChanPos_FrontCenter, 0.707f },
-            { ChanPos_FrontRight, ChanPos_SurroundRight, 0.707f },
+            { ChanPos_FrontRight, ChanPos_SideRight, 0.707f },
             { ChanPos_FrontRight, ChanPos_BackRight, 0.707f },
             { ChanPos_FrontRight, ChanPos_TopFrontRight, 0.707f },
             { ChanPos_FrontRight, ChanPos_TopBackRight, 0.500f },
@@ -746,7 +746,7 @@ const ChannelMap chan_maps[chan_map_count] = {
         {
             // FL
             { ChanPos_FrontLeft, ChanPos_FrontLeft, 1.000f },
-            { ChanPos_FrontLeft, ChanPos_SurroundLeft, 0.707f },
+            { ChanPos_FrontLeft, ChanPos_SideLeft, 0.707f },
             { ChanPos_FrontLeft, ChanPos_BackLeft, 0.707f },
             { ChanPos_FrontLeft, ChanPos_TopFrontLeft, 0.707f },
             { ChanPos_FrontLeft, ChanPos_TopBackLeft, 0.500f },
@@ -754,7 +754,7 @@ const ChannelMap chan_maps[chan_map_count] = {
             { ChanPos_FrontCenter, ChanPos_FrontCenter, 1.000f },
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
-            { ChanPos_FrontRight, ChanPos_SurroundRight, 0.707f },
+            { ChanPos_FrontRight, ChanPos_SideRight, 0.707f },
             { ChanPos_FrontRight, ChanPos_BackRight, 0.707f },
             { ChanPos_FrontRight, ChanPos_TopFrontRight, 0.707f },
             { ChanPos_FrontRight, ChanPos_TopBackRight, 0.500f },
@@ -775,14 +775,14 @@ const ChannelMap chan_maps[chan_map_count] = {
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
             { ChanPos_FrontRight, ChanPos_FrontCenter, 0.707f },
             { ChanPos_FrontRight, ChanPos_TopFrontRight, 0.707f },
-            // SL
-            { ChanPos_SurroundLeft, ChanPos_SurroundLeft, 1.000f },
-            { ChanPos_SurroundLeft, ChanPos_BackLeft, 1.000f },
-            { ChanPos_SurroundLeft, ChanPos_TopBackLeft, 0.707f },
-            // SR
-            { ChanPos_SurroundRight, ChanPos_SurroundRight, 1.000f },
-            { ChanPos_SurroundRight, ChanPos_BackRight, 1.000f },
-            { ChanPos_SurroundRight, ChanPos_TopBackRight, 0.707f },
+            // BL
+            { ChanPos_BackLeft, ChanPos_SideLeft, 1.000f },
+            { ChanPos_BackLeft, ChanPos_BackLeft, 1.000f },
+            { ChanPos_BackLeft, ChanPos_TopBackLeft, 0.707f },
+            // BR
+            { ChanPos_BackRight, ChanPos_SideRight, 1.000f },
+            { ChanPos_BackRight, ChanPos_BackRight, 1.000f },
+            { ChanPos_BackRight, ChanPos_TopBackRight, 0.707f },
             // LFE
             { ChanPos_LowFrequency, ChanPos_LowFrequency, 1.000f },
         },
@@ -800,14 +800,14 @@ const ChannelMap chan_maps[chan_map_count] = {
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
             { ChanPos_FrontRight, ChanPos_TopFrontRight, 0.707f },
-            // SL
-            { ChanPos_SurroundLeft, ChanPos_SurroundLeft, 1.000f },
-            { ChanPos_SurroundLeft, ChanPos_BackLeft, 1.000f },
-            { ChanPos_SurroundLeft, ChanPos_TopBackLeft, 0.707f },
-            // SR
-            { ChanPos_SurroundRight, ChanPos_SurroundRight, 1.000f },
-            { ChanPos_SurroundRight, ChanPos_BackRight, 1.000f },
-            { ChanPos_SurroundRight, ChanPos_TopBackRight, 0.707f },
+            // BL
+            { ChanPos_BackLeft, ChanPos_SideLeft, 1.000f },
+            { ChanPos_BackLeft, ChanPos_BackLeft, 1.000f },
+            { ChanPos_BackLeft, ChanPos_TopBackLeft, 0.707f },
+            // BR
+            { ChanPos_BackRight, ChanPos_SideRight, 1.000f },
+            { ChanPos_BackRight, ChanPos_BackRight, 1.000f },
+            { ChanPos_BackRight, ChanPos_TopBackRight, 0.707f },
             // TML
             { ChanPos_TopMidLeft, ChanPos_TopFrontLeft, 1.000f },
             { ChanPos_TopMidLeft, ChanPos_TopBackLeft, 1.000f },
@@ -829,12 +829,12 @@ const ChannelMap chan_maps[chan_map_count] = {
             { ChanPos_FrontCenter, ChanPos_FrontCenter, 1.000f },
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
-            // SL
-            { ChanPos_SurroundLeft, ChanPos_SurroundLeft, 1.000f },
-            { ChanPos_SurroundLeft, ChanPos_BackLeft, 1.000f },
-            // SR
-            { ChanPos_SurroundRight, ChanPos_SurroundRight, 1.000f },
-            { ChanPos_SurroundRight, ChanPos_BackRight, 1.000f },
+            // BL
+            { ChanPos_BackLeft, ChanPos_SideLeft, 1.000f },
+            { ChanPos_BackLeft, ChanPos_BackLeft, 1.000f },
+            // BR
+            { ChanPos_BackRight, ChanPos_SideRight, 1.000f },
+            { ChanPos_BackRight, ChanPos_BackRight, 1.000f },
             // TFL
             { ChanPos_TopFrontLeft, ChanPos_TopFrontLeft, 1.000f },
             // TFR
@@ -860,21 +860,21 @@ const ChannelMap chan_maps[chan_map_count] = {
             // FR
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
             { ChanPos_FrontRight, ChanPos_TopFrontRight, 0.707f },
-            // SL
-            { ChanPos_SurroundLeft, ChanPos_SurroundLeft, 1.000f },
-            { ChanPos_SurroundLeft, ChanPos_BackLeft, 1.000f },
-            { ChanPos_SurroundLeft, ChanPos_TopBackLeft, 0.707f },
-            // SC
-            { ChanPos_SurroundCenter, ChanPos_SurroundLeft, 1.000f },
-            { ChanPos_SurroundCenter, ChanPos_SurroundRight, 1.000f },
-            { ChanPos_SurroundCenter, ChanPos_BackLeft, 1.000f },
-            { ChanPos_SurroundCenter, ChanPos_BackRight, 1.000f },
-            { ChanPos_SurroundCenter, ChanPos_TopBackLeft, 0.707f },
-            { ChanPos_SurroundCenter, ChanPos_TopBackRight, 0.707f },
-            // SR
-            { ChanPos_SurroundRight, ChanPos_SurroundRight, 1.000f },
-            { ChanPos_SurroundRight, ChanPos_BackRight, 1.000f },
-            { ChanPos_SurroundRight, ChanPos_TopBackRight, 0.707f },
+            // BL
+            { ChanPos_BackLeft, ChanPos_SideLeft, 1.000f },
+            { ChanPos_BackLeft, ChanPos_BackLeft, 1.000f },
+            { ChanPos_BackLeft, ChanPos_TopBackLeft, 0.707f },
+            // BC
+            { ChanPos_BackCenter, ChanPos_SideLeft, 1.000f },
+            { ChanPos_BackCenter, ChanPos_SideRight, 1.000f },
+            { ChanPos_BackCenter, ChanPos_BackLeft, 1.000f },
+            { ChanPos_BackCenter, ChanPos_BackRight, 1.000f },
+            { ChanPos_BackCenter, ChanPos_TopBackLeft, 0.707f },
+            { ChanPos_BackCenter, ChanPos_TopBackRight, 0.707f },
+            // BR
+            { ChanPos_BackRight, ChanPos_SideRight, 1.000f },
+            { ChanPos_BackRight, ChanPos_BackRight, 1.000f },
+            { ChanPos_BackRight, ChanPos_TopBackRight, 0.707f },
             // LFE
             { ChanPos_LowFrequency, ChanPos_LowFrequency, 1.000f },
         },
@@ -893,9 +893,9 @@ const ChannelMap chan_maps[chan_map_count] = {
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
             { ChanPos_FrontRight, ChanPos_TopFrontRight, 0.707f },
             // SL
-            { ChanPos_SurroundLeft, ChanPos_SurroundLeft, 1.000f },
+            { ChanPos_SideLeft, ChanPos_SideLeft, 1.000f },
             // SR
-            { ChanPos_SurroundRight, ChanPos_SurroundRight, 1.000f },
+            { ChanPos_SideRight, ChanPos_SideRight, 1.000f },
             // BL
             { ChanPos_BackLeft, ChanPos_BackLeft, 1.000f },
             { ChanPos_BackLeft, ChanPos_TopBackLeft, 0.707f },
@@ -920,9 +920,9 @@ const ChannelMap chan_maps[chan_map_count] = {
             { ChanPos_FrontRight, ChanPos_FrontRight, 1.000f },
             { ChanPos_FrontRight, ChanPos_TopFrontRight, 0.707f },
             // SL
-            { ChanPos_SurroundLeft, ChanPos_SurroundLeft, 1.000f },
+            { ChanPos_SideLeft, ChanPos_SideLeft, 1.000f },
             // SR
-            { ChanPos_SurroundRight, ChanPos_SurroundRight, 1.000f },
+            { ChanPos_SideRight, ChanPos_SideRight, 1.000f },
             // BL
             { ChanPos_BackLeft, ChanPos_BackLeft, 1.000f },
             { ChanPos_BackLeft, ChanPos_TopBackLeft, 0.707f },

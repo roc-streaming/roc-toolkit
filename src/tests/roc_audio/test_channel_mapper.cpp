@@ -170,7 +170,7 @@ TEST(channel_mapper, surround_61_41) {
     sample_t slev = 0.707f / (1.000f + 0.707f);
 
     sample_t input[NumSamples * 7] = {
-        // FL     FC     FR     SL     SC     SR    LFE
+        // FL     FC     FR     BL     BC     BR    LFE
         0.01f, 0.02f, 0.03f, 0.04f, 0.05f, 0.06f, 0.07f, // 0
         0.11f, 0.12f, 0.13f, 0.14f, 0.15f, 0.16f, 0.17f, // 1
         0.21f, 0.22f, 0.23f, 0.24f, 0.25f, 0.26f, 0.27f, // 2
@@ -182,32 +182,32 @@ TEST(channel_mapper, surround_61_41) {
         // 0
         clev * 0.01f + slev * 0.02f, // FL
         clev * 0.03f + slev * 0.02f, // FR
-        clev * 0.04f + slev * 0.05f, // SL
-        clev * 0.06f + slev * 0.05f, // SR
+        clev * 0.04f + slev * 0.05f, // BL
+        clev * 0.06f + slev * 0.05f, // BR
         0.07f,                       // LFE
         // 1
         clev * 0.11f + slev * 0.12f, // FL
         clev * 0.13f + slev * 0.12f, // FR
-        clev * 0.14f + slev * 0.15f, // SL
-        clev * 0.16f + slev * 0.15f, // SR
+        clev * 0.14f + slev * 0.15f, // BL
+        clev * 0.16f + slev * 0.15f, // BR
         0.17f,                       // LFE
         // 2
         clev * 0.21f + slev * 0.22f, // FL
         clev * 0.23f + slev * 0.22f, // FR
-        clev * 0.24f + slev * 0.25f, // SL
-        clev * 0.26f + slev * 0.25f, // SR
+        clev * 0.24f + slev * 0.25f, // BL
+        clev * 0.26f + slev * 0.25f, // BR
         0.27f,                       // LFE
         // 3
         clev * 0.31f + slev * 0.32f, // FL
         clev * 0.33f + slev * 0.32f, // FR
-        clev * 0.34f + slev * 0.35f, // SL
-        clev * 0.36f + slev * 0.35f, // SR
+        clev * 0.34f + slev * 0.35f, // BL
+        clev * 0.36f + slev * 0.35f, // BR
         0.37f,                       // LFE
         // 4
         clev * 0.41f + slev * 0.42f, // FL
         clev * 0.43f + slev * 0.42f, // FR
-        clev * 0.44f + slev * 0.45f, // SL
-        clev * 0.46f + slev * 0.45f, // SR
+        clev * 0.44f + slev * 0.45f, // BL
+        clev * 0.46f + slev * 0.45f, // BR
         0.47f,                       // LFE
     };
 
@@ -226,7 +226,7 @@ TEST(channel_mapper, surround_60_41) {
     sample_t slev = 0.707f / (1.000f + 0.707f);
 
     sample_t input[NumSamples * 7] = {
-        // FL     FC     FR     SL     SC     SR
+        // FL     FC     FR     BL     BC     BR
         0.01f, 0.02f, 0.03f, 0.04f, 0.05f, 0.06f, // 0
         0.11f, 0.12f, 0.13f, 0.14f, 0.15f, 0.16f, // 1
         0.21f, 0.22f, 0.23f, 0.24f, 0.25f, 0.26f, // 2
@@ -238,32 +238,32 @@ TEST(channel_mapper, surround_60_41) {
         // 0
         clev * 0.01f + slev * 0.02f, // FL
         clev * 0.03f + slev * 0.02f, // FR
-        clev * 0.04f + slev * 0.05f, // SL
-        clev * 0.06f + slev * 0.05f, // SR
+        clev * 0.04f + slev * 0.05f, // BL
+        clev * 0.06f + slev * 0.05f, // BR
         0.f,                         // LFE
         // 1
         clev * 0.11f + slev * 0.12f, // FL
         clev * 0.13f + slev * 0.12f, // FR
-        clev * 0.14f + slev * 0.15f, // SL
-        clev * 0.16f + slev * 0.15f, // SR
+        clev * 0.14f + slev * 0.15f, // BL
+        clev * 0.16f + slev * 0.15f, // BR
         0.f,                         // LFE
         // 2
         clev * 0.21f + slev * 0.22f, // FL
         clev * 0.23f + slev * 0.22f, // FR
-        clev * 0.24f + slev * 0.25f, // SL
-        clev * 0.26f + slev * 0.25f, // SR
+        clev * 0.24f + slev * 0.25f, // BL
+        clev * 0.26f + slev * 0.25f, // BR
         0.f,                         // LFE
         // 3
         clev * 0.31f + slev * 0.32f, // FL
         clev * 0.33f + slev * 0.32f, // FR
-        clev * 0.34f + slev * 0.35f, // SL
-        clev * 0.36f + slev * 0.35f, // SR
+        clev * 0.34f + slev * 0.35f, // BL
+        clev * 0.36f + slev * 0.35f, // BR
         0.f,                         // LFE
         // 4
         clev * 0.41f + slev * 0.42f, // FL
         clev * 0.43f + slev * 0.42f, // FR
-        clev * 0.44f + slev * 0.45f, // SL
-        clev * 0.46f + slev * 0.45f, // SR
+        clev * 0.44f + slev * 0.45f, // BL
+        clev * 0.46f + slev * 0.45f, // BR
         0.f,                         // LFE
     };
 
@@ -282,7 +282,7 @@ TEST(channel_mapper, surround_61_40) {
     sample_t slev = 0.707f / (1.000f + 0.707f);
 
     sample_t input[NumSamples * 7] = {
-        // FL     FC     FR     SL     SC     SR    LFE
+        // FL     FC     FR     BL     BC     BR    LFE
         0.01f, 0.02f, 0.03f, 0.04f, 0.05f, 0.06f, 0.07f, // 0
         0.11f, 0.12f, 0.13f, 0.14f, 0.15f, 0.16f, 0.17f, // 1
         0.21f, 0.22f, 0.23f, 0.24f, 0.25f, 0.26f, 0.27f, // 2
@@ -294,28 +294,28 @@ TEST(channel_mapper, surround_61_40) {
         // 0
         clev * 0.01f + slev * 0.02f, // FL
         clev * 0.03f + slev * 0.02f, // FR
-        clev * 0.04f + slev * 0.05f, // SL
-        clev * 0.06f + slev * 0.05f, // SR
+        clev * 0.04f + slev * 0.05f, // BL
+        clev * 0.06f + slev * 0.05f, // BR
         // 1
         clev * 0.11f + slev * 0.12f, // FL
         clev * 0.13f + slev * 0.12f, // FR
-        clev * 0.14f + slev * 0.15f, // SL
-        clev * 0.16f + slev * 0.15f, // SR
+        clev * 0.14f + slev * 0.15f, // BL
+        clev * 0.16f + slev * 0.15f, // BR
         // 2
         clev * 0.21f + slev * 0.22f, // FL
         clev * 0.23f + slev * 0.22f, // FR
-        clev * 0.24f + slev * 0.25f, // SL
-        clev * 0.26f + slev * 0.25f, // SR
+        clev * 0.24f + slev * 0.25f, // BL
+        clev * 0.26f + slev * 0.25f, // BR
         // 3
         clev * 0.31f + slev * 0.32f, // FL
         clev * 0.33f + slev * 0.32f, // FR
-        clev * 0.34f + slev * 0.35f, // SL
-        clev * 0.36f + slev * 0.35f, // SR
+        clev * 0.34f + slev * 0.35f, // BL
+        clev * 0.36f + slev * 0.35f, // BR
         // 4
         clev * 0.41f + slev * 0.42f, // FL
         clev * 0.43f + slev * 0.42f, // FR
-        clev * 0.44f + slev * 0.45f, // SL
-        clev * 0.46f + slev * 0.45f, // SR
+        clev * 0.44f + slev * 0.45f, // BL
+        clev * 0.46f + slev * 0.45f, // BR
     };
 
     check(input, output, NumSamples, ChanLayout_Surround, InChans, ChanLayout_Surround,
@@ -327,18 +327,18 @@ TEST(channel_mapper, surround_6x_4x) {
         NumSamples = 5,
         // missing FC
         InChans = (1 << ChanPos_FrontLeft) | (1 << ChanPos_FrontRight)
-            | (1 << ChanPos_SurroundLeft) | (1 << ChanPos_SurroundCenter)
-            | (1 << ChanPos_SurroundRight),
+            | (1 << ChanPos_BackLeft) | (1 << ChanPos_BackCenter)
+            | (1 << ChanPos_BackRight),
         // missing FR
-        OutChans = (1 << ChanPos_FrontLeft) | (1 << ChanPos_SurroundLeft)
-            | (1 << ChanPos_SurroundRight)
+        OutChans =
+            (1 << ChanPos_FrontLeft) | (1 << ChanPos_BackLeft) | (1 << ChanPos_BackRight)
     };
 
     sample_t clev = 1.000f / (1.000f + 0.707f);
     sample_t slev = 0.707f / (1.000f + 0.707f);
 
     sample_t input[NumSamples * 5] = {
-        // FL     FR     SL     SC     SR
+        // FL     FR     BL     BC     BR
         0.01f, 0.03f, 0.04f, 0.05f, 0.06f, // 0
         0.11f, 0.13f, 0.14f, 0.15f, 0.16f, // 1
         0.21f, 0.23f, 0.24f, 0.25f, 0.26f, // 2
@@ -349,24 +349,24 @@ TEST(channel_mapper, surround_6x_4x) {
     sample_t output[NumSamples * 3] = {
         // 0
         0.01f,                       // FL
-        clev * 0.04f + slev * 0.05f, // SL
-        clev * 0.06f + slev * 0.05f, // SR
+        clev * 0.04f + slev * 0.05f, // BL
+        clev * 0.06f + slev * 0.05f, // BR
         // 1
         0.11f,                       // FL
-        clev * 0.14f + slev * 0.15f, // SL
-        clev * 0.16f + slev * 0.15f, // SR
+        clev * 0.14f + slev * 0.15f, // BL
+        clev * 0.16f + slev * 0.15f, // BR
         // 2
         0.21f,                       // FL
-        clev * 0.24f + slev * 0.25f, // SL
-        clev * 0.26f + slev * 0.25f, // SR
+        clev * 0.24f + slev * 0.25f, // BL
+        clev * 0.26f + slev * 0.25f, // BR
         // 3
         0.31f,                       // FL
-        clev * 0.34f + slev * 0.35f, // SL
-        clev * 0.36f + slev * 0.35f, // SR
+        clev * 0.34f + slev * 0.35f, // BL
+        clev * 0.36f + slev * 0.35f, // BR
         // 4
         0.41f,                       // FL
-        clev * 0.44f + slev * 0.45f, // SL
-        clev * 0.46f + slev * 0.45f, // SR
+        clev * 0.44f + slev * 0.45f, // BL
+        clev * 0.46f + slev * 0.45f, // BR
     };
 
     check(input, output, NumSamples, ChanLayout_Surround, InChans, ChanLayout_Surround,
@@ -383,7 +383,7 @@ TEST(channel_mapper, surround_41_61) {
     sample_t lev = (1.f / 0.707f) / (2.f / 0.707f);
 
     sample_t input[NumSamples * 5] = {
-        // FL     FR     SL     SR    LFE
+        // FL     FR     BL     BR    LFE
         0.01f, 0.02f, 0.03f, 0.04f, 0.05f, // 0
         0.11f, 0.12f, 0.13f, 0.14f, 0.15f, // 1
         0.21f, 0.22f, 0.23f, 0.24f, 0.25f, // 2
@@ -396,41 +396,41 @@ TEST(channel_mapper, surround_41_61) {
         0.01f,                     // FL
         lev * 0.01f + lev * 0.02f, // FC
         0.02f,                     // FR
-        0.03f,                     // SL
-        lev * 0.03f + lev * 0.04f, // SC
-        0.04f,                     // SR
+        0.03f,                     // BL
+        lev * 0.03f + lev * 0.04f, // BC
+        0.04f,                     // BR
         0.05f,                     // LFE
         // 1
         0.11f,                     // FL
         lev * 0.11f + lev * 0.12f, // FC
         0.12f,                     // FR
-        0.13f,                     // SL
-        lev * 0.13f + lev * 0.14f, // SC
-        0.14f,                     // SR
+        0.13f,                     // BL
+        lev * 0.13f + lev * 0.14f, // BC
+        0.14f,                     // BR
         0.15f,                     // LFE
         // 2
         0.21f,                     // FL
         lev * 0.21f + lev * 0.22f, // FC
         0.22f,                     // FR
-        0.23f,                     // SL
-        lev * 0.23f + lev * 0.24f, // SC
-        0.24f,                     // SR
+        0.23f,                     // BL
+        lev * 0.23f + lev * 0.24f, // BC
+        0.24f,                     // BR
         0.25f,                     // LFE
         // 3
         0.31f,                     // FL
         lev * 0.31f + lev * 0.32f, // FC
         0.32f,                     // FR
-        0.33f,                     // SL
-        lev * 0.33f + lev * 0.34f, // SC
-        0.34f,                     // SR
+        0.33f,                     // BL
+        lev * 0.33f + lev * 0.34f, // BC
+        0.34f,                     // BR
         0.35f,                     // LFE
         // 4
         0.41f,                     // FL
         lev * 0.41f + lev * 0.42f, // FC
         0.42f,                     // FR
-        0.43f,                     // SL
-        lev * 0.43f + lev * 0.44f, // SC
-        0.44f,                     // SR
+        0.43f,                     // BL
+        lev * 0.43f + lev * 0.44f, // BC
+        0.44f,                     // BR
         0.45f,                     // LFE
     };
 
