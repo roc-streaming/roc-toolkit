@@ -51,20 +51,14 @@ public:
     //! non-zero to get an error when buffer size is exceeded (like if it was
     //! a real buffer); use zero to disable buffer size checking (there is
     //! no buffer anyway).
-    StringBuilder(char* buf, size_t bufsz) {
-        writer_.reset(new (writer_) StaticBufferWriter(buf, bufsz));
-        initialize_();
-    }
+    StringBuilder(char* buf, size_t bufsz);
 
     //! Construct string builder on top of dynamic buffer.
     //!
     //! The builder will write output string into the given buffer. The buffer
     //! will be resized accordingly to the output string size plus terminating
     //! zero byte. The buffer will be always zero-terminated.
-    StringBuilder(StringBuffer& buf) {
-        writer_.reset(new (writer_) DynamicBufferWriter<StringBuffer>(buf));
-        initialize_();
-    }
+    StringBuilder(StringBuffer& buf);
 
     //! Get number of bytes required to store the output string.
     //! Includes terminating zero byte.
@@ -138,39 +132,22 @@ private:
         char* buf_wr_ptr_;
     };
 
-    template <class Buffer = StringBuffer>
     class DynamicBufferWriter : public IBufferWriter {
     public:
-        DynamicBufferWriter(Buffer& buf)
-            : buf_(buf)
-            , buf_wr_ptr_(NULL) {
-        }
+        DynamicBufferWriter(StringBuffer& buf);
 
-        virtual bool is_noop() {
-            return false;
-        }
+        virtual bool is_noop();
 
-        virtual bool reset() {
-            buf_.clear();
-            buf_wr_ptr_ = NULL;
-            return true;
-        }
+        virtual bool reset();
 
-        virtual bool grow_by(size_t n_chars) {
-            return buf_.grow_exp(buf_.len() + n_chars);
-        }
+        virtual bool grow_by(size_t n_chars);
 
-        virtual ssize_t extend_by(size_t n_chars) {
-            buf_wr_ptr_ = buf_.extend(n_chars);
-            return buf_wr_ptr_ ? (ssize_t)n_chars : -1;
-        }
+        virtual ssize_t extend_by(size_t n_chars);
 
-        virtual char* write_ptr() {
-            return buf_wr_ptr_;
-        }
+        virtual char* write_ptr();
 
     private:
-        Buffer& buf_;
+        StringBuffer& buf_;
         char* buf_wr_ptr_;
     };
 
@@ -179,7 +156,7 @@ private:
     bool append_(const char* str, size_t str_size, bool grow);
 
     Optional<IBufferWriter,
-             ROC_MAX(sizeof(StaticBufferWriter), sizeof(DynamicBufferWriter<>))>
+             ROC_MAX(sizeof(StaticBufferWriter), sizeof(DynamicBufferWriter))>
         writer_;
 
     size_t n_processed_;
