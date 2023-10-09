@@ -11,6 +11,65 @@
 namespace roc {
 namespace audio {
 
+// These tables define supported channel orders.
+//
+// When channel order is applied, the list of channels is filtered, and only
+// channels present in channel mask are kept. The resulting filtered list
+// defines how channels are placed in memory.
+//
+// This allows us to define single list that for multiple channel masks.
+// For example, ITU/SMPTE defines order for each channel mask (5.x, 7.x),
+// but we define only one list ChanOrder_Smpte, and after filtering it
+// becomes suitable for each of the masks.
+//
+// The opposite is also true: if some channel is missing from the order's
+// list, it is considered unsupported by the order and is zeroized.
+
+const ChannelList chan_orders[ChanOrder_Max] = {
+    // ChanOrder_None
+    {
+        {
+            ChanPos_Max,
+        },
+    },
+    // ChanOrder_Smpte
+    {
+        {
+            ChanPos_FrontLeft,
+            ChanPos_FrontRight,
+            ChanPos_FrontCenter,
+            ChanPos_LowFrequency,
+            ChanPos_BackLeft,
+            ChanPos_BackRight,
+            ChanPos_BackCenter,
+            ChanPos_SideLeft,
+            ChanPos_SideRight,
+            ChanPos_TopFrontLeft,
+            ChanPos_TopFrontRight,
+            ChanPos_TopMidLeft,
+            ChanPos_TopMidRight,
+            ChanPos_TopBackLeft,
+            ChanPos_TopBackRight,
+            ChanPos_Max,
+        },
+    },
+    // ChanOrder_Alsa
+    {
+        {
+            ChanPos_FrontLeft,
+            ChanPos_FrontRight,
+            ChanPos_BackLeft,
+            ChanPos_BackRight,
+            ChanPos_FrontCenter,
+            ChanPos_LowFrequency,
+            ChanPos_SideLeft,
+            ChanPos_SideRight,
+            ChanPos_BackCenter,
+            ChanPos_Max,
+        },
+    },
+};
+
 // These tables define downmixing coefficients for mapping between different
 // surround channel sets. They are used for both downmixing and upmixing.
 //
