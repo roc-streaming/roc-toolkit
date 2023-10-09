@@ -137,13 +137,9 @@ private:
         DynamicBufferWriter(StringBuffer& buf);
 
         virtual bool is_noop();
-
         virtual bool reset();
-
         virtual bool grow_by(size_t n_chars);
-
         virtual ssize_t extend_by(size_t n_chars);
-
         virtual char* write_ptr();
 
     private:

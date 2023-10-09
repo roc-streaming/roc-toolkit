@@ -35,7 +35,7 @@ void StringBuffer::clear() {
     data_[0] = '\0';
 }
 
-ROC_ATTR_NODISCARD bool StringBuffer::assign(const char* str) {
+bool StringBuffer::assign(const char* str) {
     if (!str) {
         roc_panic("string buffer: null pointer");
     }
@@ -43,7 +43,7 @@ ROC_ATTR_NODISCARD bool StringBuffer::assign(const char* str) {
     return assign(str, str + strlen(str));
 }
 
-ROC_ATTR_NODISCARD bool StringBuffer::assign(const char* str_begin, const char* str_end) {
+bool StringBuffer::assign(const char* str_begin, const char* str_end) {
     if (!str_begin || !str_end) {
         roc_panic("string buffer: null pointer");
     }
@@ -79,11 +79,11 @@ char* StringBuffer::extend(size_t n_chars) {
     return data_.data() + orig_sz - 1;
 }
 
-ROC_ATTR_NODISCARD bool StringBuffer::grow(size_t desired_len) {
+bool StringBuffer::grow(size_t desired_len) {
     return data_.grow(desired_len + 1);
 }
 
-ROC_ATTR_NODISCARD bool StringBuffer::grow_exp(size_t desired_len) {
+bool StringBuffer::grow_exp(size_t desired_len) {
     return data_.grow_exp(desired_len + 1);
 }
 
