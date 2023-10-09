@@ -90,7 +90,7 @@ public:
     nextof_media_description(core::SharedPtr<MediaDescription> element) const;
 
 private:
-    core::StringBuffer<> guid_;
+    core::StringBuffer guid_;
 
     address::SocketAddr origin_unicast_address_;
 

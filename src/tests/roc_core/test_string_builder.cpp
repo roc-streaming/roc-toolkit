@@ -56,7 +56,7 @@ TEST(string_builder, init) {
         CHECK(buf[0] == 0);
     }
     { // zero-size StringBuffer
-        StringBuffer<> buf(arena);
+        StringBuffer buf(arena);
         StringBuilder b(buf);
 
         CHECK(b.ok());
@@ -67,7 +67,7 @@ TEST(string_builder, init) {
         CHECK(*buf.c_str() == '\0');
     }
     { // one-byte StringBuffer
-        StringBuffer<> buf(arena);
+        StringBuffer buf(arena);
         CHECK(buf.assign("x"));
 
         StringBuilder b(buf);
@@ -438,7 +438,7 @@ TEST(string_builder, append_uint) {
 
 TEST(string_builder, resizing) {
     { // assign
-        StringBuffer<> buf(arena);
+        StringBuffer buf(arena);
         StringBuilder b(buf);
 
         UNSIGNED_LONGS_EQUAL(1, b.needed_size());
@@ -466,7 +466,7 @@ TEST(string_builder, resizing) {
         STRCMP_EQUAL("1234abcd", buf.c_str());
     }
     { // append
-        StringBuffer<> buf(arena);
+        StringBuffer buf(arena);
         StringBuilder b(buf);
 
         UNSIGNED_LONGS_EQUAL(1, b.needed_size());
