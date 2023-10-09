@@ -202,7 +202,7 @@ int roc_sender_encoder_pop(roc_sender_encoder* encoder,
         // TODO: forward status code to user (gh-183)
         if (code != status::StatusNoData) {
             roc_log(LogError,
-                    "roc_sender_encoder_pop(): can't read packet from encoder: %s",
+                    "roc_sender_encoder_pop(): can't read packet from encoder: status=%s",
                     status::code_to_str(code));
         }
         return -1;
