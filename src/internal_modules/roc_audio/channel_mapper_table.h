@@ -41,6 +41,11 @@ struct ChannelMap {
     ChannelMapRule rules[24];
 };
 
+//! Defines ordered list of channels.
+struct ChannelList {
+    ChannelPosition chans[ChanPos_Max + 1]; //!< Channels.
+};
+
 //! Number of defined channel mappings.
 const size_t chan_map_count = 40;
 
@@ -48,6 +53,10 @@ const size_t chan_map_count = 40;
 //! Channel mapper will search for appropriate mapping in this list,
 //! based on input and output channel masks.
 extern const ChannelMap chan_maps[chan_map_count];
+
+//! Defines mapping of channel order identifier to list of channel positions
+//! in corresponding order.
+extern const ChannelList chan_orders[ChanOrder_Max];
 
 } // namespace audio
 } // namespace roc
