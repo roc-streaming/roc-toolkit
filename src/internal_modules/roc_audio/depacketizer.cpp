@@ -7,6 +7,7 @@
  */
 
 #include "roc_audio/depacketizer.h"
+#include "roc_audio/sample_spec_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
@@ -48,6 +49,9 @@ Depacketizer::Depacketizer(packet::IReader& reader,
     , beep_(beep)
     , first_packet_(true)
     , valid_(false) {
+    roc_panic_if_msg(!sample_spec.is_valid(), "depacketizer: invalid sample spec: %s",
+                     sample_spec_to_str(sample_spec).c_str());
+
     roc_log(LogDebug, "depacketizer: initializing: n_channels=%lu",
             (unsigned long)sample_spec_.num_channels());
 
