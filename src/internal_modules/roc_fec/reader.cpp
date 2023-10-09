@@ -332,7 +332,8 @@ void Reader::fill_source_block_() {
 
         packet::PacketPtr p;
         const status::StatusCode code = source_queue_.read(p);
-        roc_panic_if_msg(code != status::StatusOK, "failed to read source packet: %s",
+        roc_panic_if_msg(code != status::StatusOK,
+                         "failed to read source packet: status=%s",
                          status::code_to_str(code));
         n_fetched++;
 
@@ -400,7 +401,8 @@ void Reader::fill_repair_block_() {
 
         packet::PacketPtr p;
         const status::StatusCode code = repair_queue_.read(p);
-        roc_panic_if_msg(code != status::StatusOK, "failed to read repair packet: %s",
+        roc_panic_if_msg(code != status::StatusOK,
+                         "failed to read repair packet: status=%s",
                          status::code_to_str(code));
         n_fetched++;
 
@@ -774,7 +776,8 @@ void Reader::drop_repair_packets_from_prev_blocks_() {
 
         packet::PacketPtr p;
         const status::StatusCode code = repair_queue_.read(p);
-        roc_panic_if_msg(code != status::StatusOK, "failed to read repair packet: %s",
+        roc_panic_if_msg(code != status::StatusOK,
+                         "failed to read repair packet: status=%s",
                          status::code_to_str(code));
         n_dropped++;
     }
