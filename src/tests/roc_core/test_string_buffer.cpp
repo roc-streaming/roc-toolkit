@@ -19,7 +19,7 @@ TEST_GROUP(string_buffer) {
 };
 
 TEST(string_buffer, init) {
-    StringBuffer<> sb(arena);
+    StringBuffer sb(arena);
 
     CHECK(sb.is_empty());
     UNSIGNED_LONGS_EQUAL(0, sb.len());
@@ -27,7 +27,7 @@ TEST(string_buffer, init) {
 }
 
 TEST(string_buffer, assign) {
-    StringBuffer<> sb(arena);
+    StringBuffer sb(arena);
 
     CHECK(sb.assign("12345"));
 
@@ -37,7 +37,7 @@ TEST(string_buffer, assign) {
 }
 
 TEST(string_buffer, assign_range) {
-    StringBuffer<> sb(arena);
+    StringBuffer sb(arena);
 
     const char* s = "12345678";
     CHECK(sb.assign(s, s + 5));
@@ -48,7 +48,7 @@ TEST(string_buffer, assign_range) {
 }
 
 TEST(string_buffer, assign_empty) {
-    StringBuffer<> sb(arena);
+    StringBuffer sb(arena);
 
     CHECK(sb.assign("12345"));
     CHECK(sb.assign(""));
@@ -59,7 +59,7 @@ TEST(string_buffer, assign_empty) {
 }
 
 TEST(string_buffer, assign_overwrite) {
-    StringBuffer<> sb(arena);
+    StringBuffer sb(arena);
 
     CHECK(sb.assign("12345678"));
     CHECK(sb.assign("12345"));
@@ -70,7 +70,7 @@ TEST(string_buffer, assign_overwrite) {
 }
 
 TEST(string_buffer, clear) {
-    StringBuffer<> sb(arena);
+    StringBuffer sb(arena);
 
     CHECK(sb.assign("12345"));
     sb.clear();
@@ -81,7 +81,7 @@ TEST(string_buffer, clear) {
 }
 
 TEST(string_buffer, extend) {
-    StringBuffer<> sb(arena);
+    StringBuffer sb(arena);
 
     CHECK(sb.assign("1234"));
 
@@ -98,7 +98,7 @@ TEST(string_buffer, extend) {
 }
 
 TEST(string_buffer, grow) {
-    StringBuffer<> sb(arena);
+    StringBuffer sb(arena);
 
     CHECK(sb.assign("12345"));
     CHECK(sb.grow(10));

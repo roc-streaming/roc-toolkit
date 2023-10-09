@@ -150,12 +150,12 @@ private:
 
     Protocol proto_;
 
-    core::StringBuffer<56> host_;
+    core::StringBuffer host_;
     int port_;
     char service_[6];
 
-    core::StringBuffer<> path_;
-    core::StringBuffer<> query_;
+    core::StringBuffer path_;
+    core::StringBuffer query_;
 };
 
 //! Parse EndpointUri from string.

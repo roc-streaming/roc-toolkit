@@ -80,6 +80,44 @@ char* StringBuilder::StaticBufferWriter::write_ptr() {
     return buf_wr_ptr_;
 }
 
+StringBuilder::DynamicBufferWriter::DynamicBufferWriter(StringBuffer& buf)
+    : buf_(buf)
+    , buf_wr_ptr_(NULL) {
+}
+
+bool StringBuilder::DynamicBufferWriter::is_noop() {
+    return false;
+}
+
+bool StringBuilder::DynamicBufferWriter::reset() {
+    buf_.clear();
+    buf_wr_ptr_ = NULL;
+    return true;
+}
+
+bool StringBuilder::DynamicBufferWriter::grow_by(size_t n_chars) {
+    return buf_.grow_exp(buf_.len() + n_chars);
+}
+
+ssize_t StringBuilder::DynamicBufferWriter::extend_by(size_t n_chars) {
+    buf_wr_ptr_ = buf_.extend(n_chars);
+    return buf_wr_ptr_ ? (ssize_t)n_chars : -1;
+}
+
+char* StringBuilder::DynamicBufferWriter::write_ptr() {
+    return buf_wr_ptr_;
+}
+
+StringBuilder::StringBuilder(char* buf, size_t bufsz) {
+    writer_.reset(new (writer_) StaticBufferWriter(buf, bufsz));
+    initialize_();
+}
+
+StringBuilder::StringBuilder(StringBuffer& buf) {
+    writer_.reset(new (writer_) DynamicBufferWriter(buf));
+    initialize_();
+}
+
 size_t StringBuilder::needed_size() const {
     return n_processed_ + 1;
 }
