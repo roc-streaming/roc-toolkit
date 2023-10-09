@@ -48,7 +48,7 @@ static ChannelMask mapped_masks[] = {
     ChanMask_Surround_7_1_4, //
 };
 
-int order(ChannelMask ch_mask) {
+int sortpos(ChannelMask ch_mask) {
     if (ch_mask == 0) {
         return 0;
     }
@@ -121,18 +121,18 @@ TEST(channel_mapper_table, combinations) {
     }
 }
 
-TEST(channel_mapper_table, ordering) {
+TEST(channel_mapper_table, sorting) {
     ChannelMask in_mask = 0;
     ChannelMask out_mask = 0;
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(chan_maps); n++) {
-        if (order(chan_maps[n].in_mask) < order(in_mask)) {
+        if (sortpos(chan_maps[n].in_mask) < sortpos(in_mask)) {
             fail("unexpected mapping order (input mask is before previous)",
                  chan_maps[n]);
         }
 
         if (in_mask == chan_maps[n].in_mask) {
-            if (order(chan_maps[n].out_mask) < order(out_mask)) {
+            if (sortpos(chan_maps[n].out_mask) < sortpos(out_mask)) {
                 fail("unexpected mapping order (output mask is before previous)",
                      chan_maps[n]);
             }
@@ -215,6 +215,34 @@ TEST(channel_mapper_table, completeness) {
 
         if (actual_out_chans != expected_out_mask) {
             fail("unexpected output channels found in mapping", chan_maps[n]);
+        }
+    }
+}
+
+TEST(channel_mapper_table, orders) {
+    for (int n = 0; n < ChanOrder_Max; n++) {
+        CHECK(n >= ChanOrder_None);
+        CHECK(n < ChanOrder_Max);
+
+        const ChannelOrder order = (ChannelOrder)n;
+        const ChannelList& chan_list = chan_orders[order];
+
+        size_t n_chans = 0;
+        while (chan_list.chans[n_chans] != ChanPos_Max) {
+            n_chans++;
+        }
+
+        if (order == ChanOrder_None) {
+            CHECK(n_chans == 0);
+        } else {
+            CHECK(n_chans > 0);
+            CHECK(n_chans <= ChanPos_Max);
+        }
+
+        for (size_t i = 0; i < n_chans; i++) {
+            for (size_t j = i + 1; j < n_chans; j++) {
+                CHECK(chan_list.chans[i] != chan_list.chans[j]);
+            }
         }
     }
 }
