@@ -37,17 +37,17 @@ const char* channel_position_to_str(ChannelPosition position) {
     case ChanPos_FrontRight:
         return "FR";
 
-    case ChanPos_SurroundLeft:
+    case ChanPos_SideLeft:
         return "SL";
 
-    case ChanPos_SurroundCenter:
-        return "SC";
-
-    case ChanPos_SurroundRight:
+    case ChanPos_SideRight:
         return "SR";
 
     case ChanPos_BackLeft:
         return "BL";
+
+    case ChanPos_BackCenter:
+        return "BC";
 
     case ChanPos_BackRight:
         return "BR";

@@ -29,12 +29,16 @@ enum ChannelLayout {
     //! Multi-channel mono / stereo / surround sound.
     //! @remarks
     //!  The meaning of channel index is defined by ChannelPosition enum.
+    //!  Channels are mapped according to their position in space, e.g. if
+    //!  top-left channel is missing, it can be mixed from front-left and
+    //!  side-left channels.
     ChanLayout_Surround,
 
     //! Multi-channel multi-track sound.
     //! @remarks
-    //!  There is no special meaning of channels, they are considered to
-    //!  be independent tracks.
+    //!  There is no special meaning of channels, they are considered to be
+    //!  independent tracks. Channels are mapped according to their numbers;
+    //!  channel N is mapped to channel N and nothing else.
     ChanLayout_Multitrack
 };
 
@@ -57,22 +61,21 @@ enum ChannelPosition {
 
     //! @name Surround speakers.
     //! @remarks
-    //!  Placed behind the user (in surround 4.x, 5.x, or 6.x),
-    //!  or on the sides (in surround 7.x).
-    //!  Also known as "mid" or "side" speakers.
+    //!  Placed on the sides of the user (in surround 7.x).
+    //!  Also known as "mid" speakers.
     // @{
-    ChanPos_SurroundLeft,   //!< Surround left (SL).
-    ChanPos_SurroundCenter, //!< Surround center (SC).
-    ChanPos_SurroundRight,  //!< Surround right (SR).
+    ChanPos_SideLeft,  //!< Side left (SL).
+    ChanPos_SideRight, //!< Side right (SR).
     // @}
 
     //! @name Back speakers.
     //! @remarks
-    //!  Placed behind the user (in surround 7.x).
+    //!  Placed behind the user.
     //!  Also known as "rear" speakers.
     // @{
-    ChanPos_BackLeft,  //!< Back left (BL).
-    ChanPos_BackRight, //!< Back right (BR).
+    ChanPos_BackLeft,   //!< Back left (BL).
+    ChanPos_BackCenter, //!< Back center (BC).
+    ChanPos_BackRight,  //!< Back right (BR).
     // @}
 
     //! @name Top speakers.
@@ -165,26 +168,26 @@ static const ChannelMask ChanMask_Surround_3_1 = //
     | (1 << ChanPos_LowFrequency);
 
 //! Surround 4.0.
-//! Mask: FL, FR, SL, SR.
+//! Mask: FL, FR, BL, BR.
 //! @code
 //!  +------------------+
 //!  |  FL          FR  |
 //!  |       user       |
-//!  |  SL          SR  |
+//!  |  BL          BR  |
 //!  +------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_4_0 =         //
     (1 << ChanPos_FrontLeft) | (1 << ChanPos_FrontRight) //
-    | (1 << ChanPos_SurroundLeft) | (1 << ChanPos_SurroundRight);
+    | (1 << ChanPos_BackLeft) | (1 << ChanPos_BackRight);
 
 //! Surround 4.1.
-//! Mask: FL, FR, SL, SR | LFE.
+//! Mask: FL, FR, BL, BR | LFE.
 //! @code
 //!  +------------------+
 //!  |  FL          FR  |
 //!  |       user       |
 //!  |             LFE  |
-//!  |  SL          SR  |
+//!  |  BL          BR  |
 //!  +------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_4_1 = //
@@ -192,26 +195,26 @@ static const ChannelMask ChanMask_Surround_4_1 = //
     | (1 << ChanPos_LowFrequency);
 
 //! Surround 5.0.
-//! Mask: FL, FC, FR, SL, SR.
+//! Mask: FL, FC, FR, BL, BR.
 //! @code
 //!  +------------------+
 //!  |  FL    FC    FR  |
 //!  |       user       |
-//!  |  SL          SR  |
+//!  |  BL          BR  |
 //!  +------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_5_0 =                                      //
     (1 << ChanPos_FrontLeft) | (1 << ChanPos_FrontCenter) | (1 << ChanPos_FrontRight) //
-    | (1 << ChanPos_SurroundLeft) | (1 << ChanPos_SurroundRight);
+    | (1 << ChanPos_BackLeft) | (1 << ChanPos_BackRight);
 
 //! Surround 5.1.
-//! Mask: FL, FC, FR, SL, SR | LFE.
+//! Mask: FL, FC, FR, BL, BR | LFE.
 //! @code
 //!  +------------------+
 //!  |  FL    FC    FR  |
 //!  |       user       |
 //!  |             LFE  |
-//!  |  SL          SR  |
+//!  |  BL          BR  |
 //!  +------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_5_1 = //
@@ -219,14 +222,14 @@ static const ChannelMask ChanMask_Surround_5_1 = //
     | (1 << ChanPos_LowFrequency);
 
 //! Surround 5.1.2.
-//! Mask: FL, FC, FR, SL, SR | LFE | TML, TMR.
+//! Mask: FL, FC, FR, BL, BR | LFE | TML, TMR.
 //! @code
 //!  +------------------+
 //!  |  FL    FC    FR  |
 //!  |                  |
 //!  |   TML user TMR   |
 //!  |             LFE  |
-//!  |  SL          SR  |
+//!  |  BL          BR  |
 //!  +------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_5_1_2 = //
@@ -235,7 +238,7 @@ static const ChannelMask ChanMask_Surround_5_1_2 = //
     | (1 << ChanPos_TopMidLeft) | (1 << ChanPos_TopMidRight);
 
 //! Surround 5.1.4.
-//! Mask: FL, FC, FR, SL, SR | LFE | TFL, TFR, TBL, TBR.
+//! Mask: FL, FC, FR, BL, BR | LFE | TFL, TFR, TBL, TBR.
 //! @code
 //!  +------------------+
 //!  |  FL    FC    FR  |
@@ -243,7 +246,7 @@ static const ChannelMask ChanMask_Surround_5_1_2 = //
 //!  |       user       |
 //!  |             LFE  |
 //!  |   TBL      TBR   |
-//!  |  SL          SR  |
+//!  |  BL          BR  |
 //!  +------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_5_1_4 = //
@@ -253,27 +256,26 @@ static const ChannelMask ChanMask_Surround_5_1_4 = //
     | (1 << ChanPos_TopBackLeft) | (1 << ChanPos_TopBackRight);
 
 //! Surround 6.0.
-//! Mask: FL, FC, FR, SL, SC, SR.
+//! Mask: FL, FC, FR, BL, BC, BR.
 //! @code
 //!  +------------------+
 //!  |  FL    FC    FR  |
 //!  |       user       |
-//!  |  SL    SC    SR  |
+//!  |  BL    BC    BR  |
 //!  +------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_6_0 =                                      //
     (1 << ChanPos_FrontLeft) | (1 << ChanPos_FrontCenter) | (1 << ChanPos_FrontRight) //
-    | (1 << ChanPos_SurroundLeft) | (1 << ChanPos_SurroundCenter)
-    | (1 << ChanPos_SurroundRight);
+    | (1 << ChanPos_BackLeft) | (1 << ChanPos_BackCenter) | (1 << ChanPos_BackRight);
 
 //! Surround 6.1.
-//! Mask: FL, FC, FR, SL, SC, SR | LFE.
+//! Mask: FL, FC, FR, BL, BC, BR | LFE.
 //! @code
 //!  +------------------+
 //!  |  FL    FC    FR  |
 //!  |       user       |
 //!  |             LFE  |
-//!  |  SL    SC    SR  |
+//!  |  BL    BC    BR  |
 //!  +------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_6_1 = //
@@ -291,7 +293,7 @@ static const ChannelMask ChanMask_Surround_6_1 = //
 //! @endcode
 static const ChannelMask ChanMask_Surround_7_0 =                                      //
     (1 << ChanPos_FrontLeft) | (1 << ChanPos_FrontCenter) | (1 << ChanPos_FrontRight) //
-    | (1 << ChanPos_SurroundLeft) | (1 << ChanPos_SurroundRight)                      //
+    | (1 << ChanPos_SideLeft) | (1 << ChanPos_SideRight)                              //
     | (1 << ChanPos_BackLeft) | (1 << ChanPos_BackRight);
 
 //! Surround 7.1.
