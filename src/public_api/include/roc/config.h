@@ -500,11 +500,13 @@ typedef enum roc_resampler_backend {
 
     /** CPU-intensive good-quality high-precision built-in resampler.
      *
-     * This backend controls clock speed with high precision, and hence is useful when
-     * latency or synchronization error should be very low.
+     * This backend controls clock speed with very high precision, and hence is useful
+     * when latency or synchronization error should be very low.
      *
-     * This backend has high CPU usage, especially on high resampling quality and on
-     * CPUs with small caches.
+     * This backend has higher CPU usage, especially on high resampling quality and on
+     * CPUs with small L3 caches.
+     *
+     * The implementation is based on bandlimited interpolation algorithm.
      *
      * This backend is always available.
      *
@@ -512,18 +514,43 @@ typedef enum roc_resampler_backend {
      */
     ROC_RESAMPLER_BACKEND_BUILTIN = 1,
 
-    /** Very fast good-quality low-precision resampler based on SpeexDSP.
+    /** Fast good-quality low-precision resampler based on SpeexDSP.
      *
      * This backend has low CPU usage even on high resampler quality and cheap CPUs.
      *
      * This backend controls clock speed with lower precision, and is not so good when
      * latency or synchronization error should be very low.
      *
-     * This backend is available if SpeexDSP was enabled at build time.
+     * This backend is available only when SpeexDSP was enabled at build time.
      *
      * Recommended for \ref ROC_CLOCK_SYNC_PROFILE_GRADUAL and on cheap CPUs.
      */
-    ROC_RESAMPLER_BACKEND_SPEEX = 2
+    ROC_RESAMPLER_BACKEND_SPEEX = 2,
+
+    /** Fast medium-quality and medium-precision resampler combining SpeexDSP with
+     * decimation.
+     *
+     * This backend uses SpeexDSP for converting between base rates (e.g. 44100 vs 48000)
+     * and decimation/expansion (dropping or duplicating samples) for clock drift
+     * compensation.
+     *
+     * Typical decimation rate needed to compensate clock drift is below 0.5ms/second
+     * (20 samples/second on 48Khz), which gives tolerable quality despite usage of
+     * decimation, especially for speech.
+     *
+     * When frame and packet sample rates are equal (e.g. both are 44100), only decimation
+     * stage is needed, and this becomes fastest possible backend working almost as fast
+     * as memcpy().
+     *
+     * When frame and packet rates are different, usage of this backend compared to
+     * \c ROC_RESAMPLER_BACKEND_SPEEX allows to sacrify some quality, but somewhat
+     * improve scaling precision in return.
+     *
+     * This backend is available only when SpeexDSP was enabled at build time.
+     *
+     * Recommended when CPU resources are extremely limited.
+     */
+    ROC_RESAMPLER_BACKEND_SPEEXDEC = 3
 } roc_resampler_backend;
 
 /** Resampler profile.
