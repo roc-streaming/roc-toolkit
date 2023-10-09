@@ -7,6 +7,7 @@
  */
 
 #include "roc_audio/packetizer.h"
+#include "roc_audio/sample_spec_to_str.h"
 #include "roc_core/fast_random.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
@@ -34,16 +35,21 @@ Packetizer::Packetizer(packet::IWriter& writer,
     , payload_size_(payload_encoder.encoded_byte_count(samples_per_packet_))
     , packet_pos_(0)
     , valid_(false) {
+    roc_panic_if_msg(!sample_spec.is_valid(), "packetizer: invalid sample spec: %s",
+                     sample_spec_to_str(sample_spec).c_str());
+
     source_ =
         (packet::stream_source_t)core::fast_random_range(0, packet::stream_source_t(-1));
     seqnum_ = (packet::seqnum_t)core::fast_random_range(0, packet::seqnum_t(-1));
     stream_ts_ = (packet::stream_timestamp_t)core::fast_random_range(
         0, packet::stream_timestamp_t(-1));
     capture_ts_ = 0;
-    valid_ = true;
+
     roc_log(LogDebug, "packetizer: initializing: n_channels=%lu samples_per_packet=%lu",
             (unsigned long)sample_spec_.num_channels(),
             (unsigned long)samples_per_packet_);
+
+    valid_ = true;
 }
 
 bool Packetizer::is_valid() const {

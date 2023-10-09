@@ -25,6 +25,12 @@ ChannelMapperWriter::ChannelMapperWriter(IFrameWriter& writer,
     , in_spec_(in_spec)
     , out_spec_(out_spec)
     , valid_(false) {
+    if (!in_spec_.is_valid() || !out_spec_.is_valid()) {
+        roc_panic("channel mapper writer: invalid sample spec: input=%s output=%s",
+                  sample_spec_to_str(in_spec).c_str(),
+                  sample_spec_to_str(out_spec).c_str());
+    }
+
     if (in_spec_.sample_rate() != out_spec_.sample_rate()) {
         roc_panic("channel mapper writer: input and output sample rate should be equal:"
                   " in_spec=%s out_spec=%s",
