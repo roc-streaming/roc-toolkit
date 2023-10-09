@@ -444,6 +444,10 @@ bool resampler_backend_from_user(audio::ResamplerBackend& out, roc_resampler_bac
     case ROC_RESAMPLER_BACKEND_SPEEX:
         out = audio::ResamplerBackend_Speex;
         return true;
+
+    case ROC_RESAMPLER_BACKEND_SPEEXDEC:
+        out = audio::ResamplerBackend_SpeexDec;
+        return true;
     }
 
     return false;
