@@ -17,7 +17,7 @@
 namespace roc {
 namespace status {
 
-//! Get human-readable message for status code.
+//! Get string name of status code.
 const char* code_to_str(StatusCode code);
 
 } // namespace status

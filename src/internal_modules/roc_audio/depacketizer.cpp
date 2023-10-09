@@ -266,7 +266,7 @@ packet::PacketPtr Depacketizer::read_packet_() {
     if (code != status::StatusOK) {
         if (code != status::StatusNoData) {
             // TODO: forward status (gh-302)
-            roc_log(LogError, "depacketizer: failed to read packet: %s",
+            roc_log(LogError, "depacketizer: failed to read packet: status=%s",
                     status::code_to_str(code));
         }
 

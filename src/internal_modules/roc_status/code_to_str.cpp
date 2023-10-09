@@ -16,14 +16,12 @@ const char* code_to_str(StatusCode code) {
     case StatusOK:
         return "OK";
     case StatusUnknown:
-        return "unknown status";
+        return "Unknown";
     case StatusNoData:
-        return "no data";
-    default:
-        break;
+        return "NoData";
     }
 
-    return "invalid status code";
+    return "<invalid>";
 }
 
 } // namespace status
