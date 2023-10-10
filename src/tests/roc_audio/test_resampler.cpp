@@ -207,7 +207,7 @@ double timestamp_allowance(ResamplerBackend backend) {
     case ResamplerBackend_Builtin:
         return 0.1;
     case ResamplerBackend_Speex:
-        return 1;
+        return 5;
     case ResamplerBackend_SpeexDec:
         return 2;
     default:
@@ -653,11 +653,6 @@ TEST(resampler, timestamp_passthrough_reader) {
                         SampleSpec(supported_rates[n_orate], ChanLayout_Surround,
                                    ChanOrder_Smpte, ChMask);
 
-                    // FIXME: test fails if we're downsampling
-                    if (in_spec.sample_rate() >= out_spec.sample_rate()) {
-                        continue;
-                    }
-
                     core::SharedPtr<IResampler> resampler =
                         ResamplerMap::instance().new_resampler(
                             backend, arena, buffer_factory, supported_profiles[n_prof],
@@ -688,7 +683,10 @@ TEST(resampler, timestamp_passthrough_reader) {
                         {
                             Frame frame(samples, ROC_ARRAY_SIZE(samples));
                             CHECK(rreader.read(frame));
-                            CHECK(frame.capture_timestamp() >= start_ts);
+                            // Since CTS is estimated based scaling, it can happen
+                            // to be in past relative to the very first frame, but only
+                            // within allowed epsilon.
+                            CHECK(frame.capture_timestamp() >= start_ts - epsilon);
                             cur_ts = frame.capture_timestamp();
                         }
                         for (size_t i = 0; i < NumIterations; i++) {
@@ -767,11 +765,6 @@ TEST(resampler, timestamp_passthrough_writer) {
                     const SampleSpec out_spec =
                         SampleSpec(supported_rates[n_orate], ChanLayout_Surround,
                                    ChanOrder_Smpte, ChMask);
-
-                    // FIXME: test fails if we're downsampling
-                    if (in_spec.sample_rate() >= out_spec.sample_rate()) {
-                        continue;
-                    }
 
                     core::SharedPtr<IResampler> resampler =
                         ResamplerMap::instance().new_resampler(

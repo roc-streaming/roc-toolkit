@@ -80,6 +80,12 @@ private:
     // Counts how many output samples to throw away in order to
     // compensate resampler's inner latency.
     size_t startup_countdown_;
+    // Stores initial latency in order to track its further changes.
+    size_t initial_input_latency_;
+    // Stores how much speex resampler latency changed from the start, in order to
+    // reflect it in n_left_to_process() for better precision in capture timestamp
+    // calculations.
+    ssize_t current_input_latency_diff_;
 
     core::RateLimiter rate_limiter_;
 
