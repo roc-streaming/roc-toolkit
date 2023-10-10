@@ -6,15 +6,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_audio/channel_layout.h"
+#include "roc_audio/channel_defs.h"
 
 namespace roc {
 namespace audio {
 
 const char* channel_layout_to_str(ChannelLayout layout) {
     switch (layout) {
-    case ChanLayout_Invalid:
-        break;
+    case ChanLayout_None:
+        return "none";
 
     case ChanLayout_Surround:
         return "surround";
@@ -23,7 +23,25 @@ const char* channel_layout_to_str(ChannelLayout layout) {
         return "multitrack";
     }
 
-    return "invalid";
+    return "?";
+}
+
+const char* channel_order_to_str(ChannelOrder order) {
+    switch (order) {
+    case ChanOrder_None:
+        return "none";
+
+    case ChanOrder_Smpte:
+        return "smpte";
+
+    case ChanOrder_Alsa:
+        return "alsa";
+
+    case ChanOrder_Max:
+        break;
+    }
+
+    return "?";
 }
 
 const char* channel_position_to_str(ChannelPosition position) {

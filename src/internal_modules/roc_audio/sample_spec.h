@@ -12,7 +12,6 @@
 #ifndef ROC_AUDIO_SAMPLE_SPEC_H_
 #define ROC_AUDIO_SAMPLE_SPEC_H_
 
-#include "roc_audio/channel_layout.h"
 #include "roc_audio/channel_set.h"
 #include "roc_audio/sample.h"
 #include "roc_core/stddefs.h"
@@ -38,6 +37,7 @@ public:
     //!  describe channels. Otherwise, use overload that accepts ChannelSet.
     SampleSpec(size_t sample_rate,
                ChannelLayout channel_layout,
+               ChannelOrder channel_order,
                ChannelMask channel_mask);
 
     //! @name Equality

@@ -12,7 +12,7 @@
 #ifndef ROC_AUDIO_CHANNEL_MAPPER_TABLE_H_
 #define ROC_AUDIO_CHANNEL_MAPPER_TABLE_H_
 
-#include "roc_audio/channel_layout.h"
+#include "roc_audio/channel_defs.h"
 #include "roc_audio/sample.h"
 
 namespace roc {

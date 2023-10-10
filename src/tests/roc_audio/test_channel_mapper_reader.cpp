@@ -10,7 +10,6 @@
 
 #include "test_helpers/mock_reader.h"
 
-#include "roc_audio/channel_layout.h"
 #include "roc_audio/channel_mapper_reader.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
@@ -79,8 +78,10 @@ TEST_GROUP(channel_mapper_reader) {};
 TEST(channel_mapper_reader, small_frame_upmix) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec in_spec(MaxSz, ChanLayout_Surround, ChanMask_Surround_Mono);
-    const SampleSpec out_spec(MaxSz, ChanLayout_Surround, ChanMask_Surround_Stereo);
+    const SampleSpec in_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
+                             ChanMask_Surround_Mono);
+    const SampleSpec out_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
+                              ChanMask_Surround_Stereo);
 
     const core::nanoseconds_t start_ts = 1000000;
 
@@ -109,8 +110,10 @@ TEST(channel_mapper_reader, small_frame_upmix) {
 TEST(channel_mapper_reader, small_frame_downmix) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec in_spec(MaxSz, ChanLayout_Surround, ChanMask_Surround_Stereo);
-    const SampleSpec out_spec(MaxSz, ChanLayout_Surround, ChanMask_Surround_Mono);
+    const SampleSpec in_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
+                             ChanMask_Surround_Stereo);
+    const SampleSpec out_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
+                              ChanMask_Surround_Mono);
 
     const core::nanoseconds_t start_ts = 1000000;
 
@@ -139,8 +142,10 @@ TEST(channel_mapper_reader, small_frame_downmix) {
 TEST(channel_mapper_reader, small_frame_nocts) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec in_spec(MaxSz, ChanLayout_Surround, ChanMask_Surround_Stereo);
-    const SampleSpec out_spec(MaxSz, ChanLayout_Surround, ChanMask_Surround_Mono);
+    const SampleSpec in_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
+                             ChanMask_Surround_Stereo);
+    const SampleSpec out_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
+                              ChanMask_Surround_Mono);
 
     test::MockReader mock_reader;
     ChannelMapperReader mapper_reader(mock_reader, buffer_factory, in_spec, out_spec);
@@ -166,8 +171,10 @@ TEST(channel_mapper_reader, small_frame_nocts) {
 TEST(channel_mapper_reader, large_frame_upmix) {
     enum { FrameSz = MaxSz * 4 };
 
-    const SampleSpec in_spec(MaxSz, ChanLayout_Surround, ChanMask_Surround_Mono);
-    const SampleSpec out_spec(MaxSz, ChanLayout_Surround, ChanMask_Surround_Stereo);
+    const SampleSpec in_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
+                             ChanMask_Surround_Mono);
+    const SampleSpec out_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
+                              ChanMask_Surround_Stereo);
 
     const core::nanoseconds_t start_ts = 1000000;
 
@@ -198,8 +205,10 @@ TEST(channel_mapper_reader, large_frame_upmix) {
 TEST(channel_mapper_reader, large_frame_downmix) {
     enum { FrameSz = MaxSz };
 
-    const SampleSpec in_spec(MaxSz, ChanLayout_Surround, ChanMask_Surround_Stereo);
-    const SampleSpec out_spec(MaxSz, ChanLayout_Surround, ChanMask_Surround_Mono);
+    const SampleSpec in_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
+                             ChanMask_Surround_Stereo);
+    const SampleSpec out_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
+                              ChanMask_Surround_Mono);
 
     const core::nanoseconds_t start_ts = 1000000;
 
@@ -230,8 +239,10 @@ TEST(channel_mapper_reader, large_frame_downmix) {
 TEST(channel_mapper_reader, large_frame_nocts) {
     enum { FrameSz = MaxSz };
 
-    const SampleSpec in_spec(MaxSz, ChanLayout_Surround, ChanMask_Surround_Stereo);
-    const SampleSpec out_spec(MaxSz, ChanLayout_Surround, ChanMask_Surround_Mono);
+    const SampleSpec in_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
+                             ChanMask_Surround_Stereo);
+    const SampleSpec out_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
+                              ChanMask_Surround_Mono);
 
     test::MockReader mock_reader;
     ChannelMapperReader mapper_reader(mock_reader, buffer_factory, in_spec, out_spec);

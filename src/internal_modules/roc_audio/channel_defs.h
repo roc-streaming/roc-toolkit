@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_audio/channel_layout.h
-//! @brief Channel layout and numbers.
+//! @file roc_audio/channel_defs.h
+//! @brief Channel layout, order, and positions.
 
-#ifndef ROC_AUDIO_CHANNEL_LAYOUT_H_
-#define ROC_AUDIO_CHANNEL_LAYOUT_H_
+#ifndef ROC_AUDIO_CHANNEL_DEFS_H_
+#define ROC_AUDIO_CHANNEL_DEFS_H_
 
 #include "roc_core/stddefs.h"
 
@@ -21,10 +21,10 @@ namespace audio {
 //! Defines meaning of channels in ChannelSet.
 //! ChannelMapper uses channel layout to decide how to perform mapping.
 enum ChannelLayout {
-    //! Invalid value.
+    //! Channel layout is not set.
     //! @remarks
-    //!  Indicates that channel layout was not set.
-    ChanLayout_Invalid,
+    //!  This is never valid and indicates that ChannelSet is not fully initialized.
+    ChanLayout_None,
 
     //! Multi-channel mono / stereo / surround sound.
     //! @remarks
@@ -42,7 +42,41 @@ enum ChannelLayout {
     ChanLayout_Multitrack
 };
 
-//! Channel position.
+//! Surround channel order.
+//! @remarks
+//!  Should be used with ChannelLayout_Surround.
+//!  Defines order in which channels from ChannelSet are (de)serialized.
+enum ChannelOrder {
+    //! Channel order is not set.
+    //! @remarks
+    //!  For ChanLayout_Surround, this is never valid and indicates that ChannelSet
+    //!  is not fully initialized. For ChanLayout_Multitrack, in contrast, this is
+    //!  the only valid value.
+    ChanOrder_None,
+
+    //! ITU/SMPTE channel order.
+    //! Order: FL, FR, FC, LFE, BL, BR, BC, SL, SR, TFL, TFR, TBL, TBR, TML, TMR.
+    //! @remarks
+    //!  This order is actually a superset of what is defined by SMPTE, but when
+    //!  fileterd by actual masks like 5.1 or 7.1, it produces orderings equal
+    //!  to what is defined in the standard.
+    //!  When used with masks 2.x - 5.x (but not 6.x), it is also compatible with
+    //!  the channel order from AIFF-C, which is used by default in RTP/AVP, as
+    //!  defined in RFC 3551.
+    ChanOrder_Smpte,
+
+    //! ALSA channel order.
+    //! Order: FL, FR, BL, BR, FC, LFE, SL, SR, BC.
+    //! @remarks
+    //!  This order is used by ALSA hardware devices.
+    //!  ALSA supports only 9 channels.
+    ChanOrder_Alsa,
+
+    //! Maximum value of enum.
+    ChanOrder_Max
+};
+
+//! Surround channel position.
 //! @remarks
 //!  Should be used with ChannelLayout_Surround.
 //!  Defines meaning of channel indicies for mono / stereo / surround sound.
@@ -99,7 +133,7 @@ enum ChannelPosition {
     //!  Also known as "subwoofer" or "SW" speaker.
     ChanPos_LowFrequency,
 
-    //! Maximum channel number.
+    //! Maximum value of enum.
     ChanPos_Max
 };
 
@@ -348,10 +382,13 @@ static const ChannelMask ChanMask_Surround_7_1_4 = //
 //! Get string name of channel layout.
 const char* channel_layout_to_str(ChannelLayout);
 
+//! Get string name of channel order.
+const char* channel_order_to_str(ChannelOrder);
+
 //! Get string name of channel position.
 const char* channel_position_to_str(ChannelPosition);
 
 } // namespace audio
 } // namespace roc
 
-#endif // ROC_AUDIO_CHANNEL_LAYOUT_H_
+#endif // ROC_AUDIO_CHANNEL_DEFS_H_

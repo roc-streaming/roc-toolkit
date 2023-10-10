@@ -7,7 +7,6 @@
  */
 
 #include "roc_audio/channel_mapper.h"
-#include "roc_audio/channel_layout.h"
 #include "roc_audio/channel_mapper_table.h"
 #include "roc_audio/channel_set_to_str.h"
 #include "roc_core/macro_helpers.h"
@@ -150,12 +149,12 @@ void ChannelMapper::map_multitrack_multitrack_(const sample_t* in_samples,
 
 void ChannelMapper::setup_map_func_() {
     switch (in_chans_.layout()) {
-    case ChanLayout_Invalid:
+    case ChanLayout_None:
         break;
 
     case ChanLayout_Surround:
         switch (out_chans_.layout()) {
-        case ChanLayout_Invalid:
+        case ChanLayout_None:
             break;
 
         case ChanLayout_Surround:
@@ -170,7 +169,7 @@ void ChannelMapper::setup_map_func_() {
 
     case ChanLayout_Multitrack:
         switch (out_chans_.layout()) {
-        case ChanLayout_Invalid:
+        case ChanLayout_None:
             break;
 
         case ChanLayout_Surround:

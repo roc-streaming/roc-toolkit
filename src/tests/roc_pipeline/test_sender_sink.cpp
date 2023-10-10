@@ -93,10 +93,12 @@ TEST_GROUP(sender_sink) {
               int packet_sample_rate, audio::ChannelMask packet_channels) {
         input_sample_spec.set_sample_rate((size_t)input_sample_rate);
         input_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
+        input_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
         input_sample_spec.channel_set().set_channel_mask(input_channels);
 
         packet_sample_spec.set_sample_rate((size_t)packet_sample_rate);
         packet_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
+        packet_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
         packet_sample_spec.channel_set().set_channel_mask(packet_channels);
 
         source_proto = address::Proto_RTP;

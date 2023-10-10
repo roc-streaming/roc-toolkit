@@ -31,7 +31,8 @@ enum {
     NumChans = 2
 };
 
-const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, ChMask);
+const audio::SampleSpec
+    SampleSpecs(SampleRate, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, ChMask);
 
 const core::nanoseconds_t FrameDuration = FrameSize * core::Second
     / core::nanoseconds_t(SampleSpecs.sample_rate() * SampleSpecs.num_channels());
@@ -46,12 +47,12 @@ TEST_GROUP(sox_source) {
     Config source_config;
 
     void setup() {
-        sink_config.sample_spec =
-            audio::SampleSpec(SampleRate, audio::ChanLayout_Surround, ChMask);
+        sink_config.sample_spec = audio::SampleSpec(
+            SampleRate, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, ChMask);
         sink_config.frame_length = FrameDuration;
 
-        source_config.sample_spec =
-            audio::SampleSpec(SampleRate, audio::ChanLayout_Surround, ChMask);
+        source_config.sample_spec = audio::SampleSpec(
+            SampleRate, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, ChMask);
         source_config.frame_length = FrameDuration;
     }
 };

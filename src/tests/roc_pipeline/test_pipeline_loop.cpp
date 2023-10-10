@@ -41,7 +41,8 @@ const uint64_t DefaultThread = 1, ProcessingThread = 2, BackgroundThread = 3;
 
 const float Epsilon = 1e6f;
 
-const audio::SampleSpec SampleSpecs(SampleRate, audio::ChanLayout_Surround, Chans);
+const audio::SampleSpec
+    SampleSpecs(SampleRate, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, Chans);
 
 class TestPipeline : public PipelineLoop, private IPipelineTaskScheduler {
 public:

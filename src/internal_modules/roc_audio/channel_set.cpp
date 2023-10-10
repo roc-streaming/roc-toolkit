@@ -7,7 +7,6 @@
  */
 
 #include "roc_audio/channel_set.h"
-#include "roc_audio/channel_layout.h"
 #include "roc_core/panic.h"
 
 namespace roc {
@@ -17,17 +16,27 @@ ChannelSet::ChannelSet()
     : num_chans_(0)
     , first_chan_(0)
     , last_chan_(0)
-    , layout_(ChanLayout_Invalid) {
+    , layout_(ChanLayout_None)
+    , order_(ChanOrder_None) {
     memset(words_, 0, sizeof(words_));
 }
 
-ChannelSet::ChannelSet(const ChannelLayout layout, const ChannelMask mask)
+ChannelSet::ChannelSet(const ChannelLayout layout,
+                       ChannelOrder order,
+                       const ChannelMask mask)
     : num_chans_(0)
     , first_chan_(0)
     , last_chan_(0)
-    , layout_(layout) {
-    if (layout == ChanLayout_Invalid) {
+    , layout_(layout)
+    , order_(order) {
+    if (layout == ChanLayout_None) {
         roc_panic("channel set: invalid channel layout");
+    }
+
+    if (!(layout == ChanLayout_Surround ? order != ChanOrder_None
+                                        : order == ChanOrder_None)) {
+        roc_panic("channel set: invalid channel order: layout=%s order=%s",
+                  channel_layout_to_str(layout), channel_order_to_str(order));
     }
 
     if (mask == 0) {
@@ -44,7 +53,8 @@ ChannelSet::ChannelSet(const ChannelLayout layout, const ChannelMask mask)
 }
 
 bool ChannelSet::operator==(const ChannelSet& other) const {
-    return layout_ == other.layout_ && memcmp(words_, other.words_, sizeof(words_)) == 0;
+    return layout_ == other.layout_ && order_ == other.order_
+        && memcmp(words_, other.words_, sizeof(words_)) == 0;
 }
 
 bool ChannelSet::operator!=(const ChannelSet& other) const {
@@ -53,15 +63,38 @@ bool ChannelSet::operator!=(const ChannelSet& other) const {
 
 bool ChannelSet::is_valid() const {
     switch (layout_) {
-    case ChanLayout_Invalid:
-        break;
+    case ChanLayout_None:
+        return false;
 
     case ChanLayout_Surround:
+        if (order_ == ChanOrder_None) {
+            return false;
+        }
+        if (num_chans_ == 0) {
+            return false;
+        }
+        break;
+
     case ChanLayout_Multitrack:
-        return num_chans_ != 0;
+        if (order_ != ChanOrder_None) {
+            return false;
+        }
+        if (num_chans_ == 0) {
+            return false;
+        }
+        break;
     }
 
-    return false;
+    return true;
+}
+
+void ChannelSet::clear() {
+    layout_ = ChanLayout_None;
+    order_ = ChanOrder_None;
+
+    memset(words_, 0, sizeof(words_));
+
+    update_();
 }
 
 ChannelLayout ChannelSet::layout() const {
@@ -69,11 +102,19 @@ ChannelLayout ChannelSet::layout() const {
 }
 
 void ChannelSet::set_layout(const ChannelLayout layout) {
-    if (layout == ChanLayout_Invalid) {
+    if (layout == ChanLayout_None) {
         roc_panic("channel set: invalid channel layout");
     }
 
     layout_ = layout;
+}
+
+ChannelOrder ChannelSet::order() const {
+    return order_;
+}
+
+void ChannelSet::set_order(const ChannelOrder order) {
+    order_ = order;
 }
 
 size_t ChannelSet::max_channels() {
@@ -173,12 +214,6 @@ void ChannelSet::set_channel_mask(const ChannelMask mask) {
     for (size_t n = 1; n < NumWords; n++) {
         words_[n] = 0;
     }
-
-    update_();
-}
-
-void ChannelSet::clear_channels() {
-    memset(words_, 0, sizeof(words_));
 
     update_();
 }

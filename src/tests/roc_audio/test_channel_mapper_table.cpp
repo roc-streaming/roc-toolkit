@@ -8,7 +8,6 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_audio/channel_layout.h"
 #include "roc_audio/channel_mapper_table.h"
 #include "roc_core/macro_helpers.h"
 

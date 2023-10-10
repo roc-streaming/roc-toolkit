@@ -24,8 +24,10 @@ namespace {
 enum { SampleRate = 1000, NumSamples = 100, NumPackets = 30 };
 
 const core::nanoseconds_t NsPerSample = core::Second / SampleRate;
-const audio::SampleSpec
-    SampleSpecs(SampleRate, audio::ChanLayout_Surround, audio::ChanMask_Surround_Stereo);
+const audio::SampleSpec SampleSpecs(SampleRate,
+                                    audio::ChanLayout_Surround,
+                                    audio::ChanOrder_Smpte,
+                                    audio::ChanMask_Surround_Stereo);
 
 core::HeapArena arena;
 PacketFactory packet_factory(arena);

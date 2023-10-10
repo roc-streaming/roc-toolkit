@@ -49,7 +49,7 @@ TEST_GROUP(timestamp_extractor) {};
 TEST(timestamp_extractor, single_write) {
     // 1 second = 1000 samples
     const audio::SampleSpec sample_spec =
-        audio::SampleSpec(1000, audio::ChanLayout_Surround, 0x1);
+        audio::SampleSpec(1000, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, 0x1);
 
     const core::nanoseconds_t cts = 1691499037871419405;
     const packet::stream_timestamp_t rts = 2222;
