@@ -126,7 +126,7 @@ void expect_flags(Depacketizer& depacketizer,
 
 class TestReader : public packet::IReader {
 public:
-    TestReader(packet::IReader& reader)
+    explicit TestReader(packet::IReader& reader)
         : reader_(reader)
         , call_count_(0)
         , code_enabled_(false)
