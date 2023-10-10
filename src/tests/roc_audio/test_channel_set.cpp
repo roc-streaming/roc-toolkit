@@ -8,7 +8,6 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_audio/channel_layout.h"
 #include "roc_audio/channel_set.h"
 #include "roc_audio/channel_set_to_str.h"
 
@@ -20,11 +19,21 @@ TEST_GROUP(channel_set) {};
 TEST(channel_set, layout) {
     ChannelSet ch_set;
 
-    LONGS_EQUAL(ChanLayout_Invalid, ch_set.layout());
+    LONGS_EQUAL(ChanLayout_None, ch_set.layout());
 
     ch_set.set_layout(ChanLayout_Surround);
 
     LONGS_EQUAL(ChanLayout_Surround, ch_set.layout());
+}
+
+TEST(channel_set, order) {
+    ChannelSet ch_set;
+
+    LONGS_EQUAL(ChanOrder_None, ch_set.order());
+
+    ch_set.set_order(ChanOrder_Smpte);
+
+    LONGS_EQUAL(ChanOrder_Smpte, ch_set.order());
 }
 
 TEST(channel_set, empty) {
@@ -199,7 +208,7 @@ TEST(channel_set, overwrite_with_channel_mask) {
 }
 
 TEST(channel_set, construct_from_channel_mask) {
-    ChannelSet ch_set(ChanLayout_Surround, (1 << 11) | (1 << 22));
+    ChannelSet ch_set(ChanLayout_Surround, ChanOrder_Smpte, (1 << 11) | (1 << 22));
 
     LONGS_EQUAL(ChanLayout_Surround, ch_set.layout());
 
@@ -217,68 +226,120 @@ TEST(channel_set, construct_from_channel_mask) {
     UNSIGNED_LONGS_EQUAL(22, ch_set.last_channel());
 }
 
-TEST(channel_set, clear_channels) {
+TEST(channel_set, is_valid) {
+    { // no layout, no order, no channels (bad)
+        ChannelSet ch_set;
+        CHECK(!ch_set.is_valid());
+    }
+    { // no layout, no order, has channels (bad)
+        ChannelSet ch_set;
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_channel(11, true);
+        CHECK(!ch_set.is_valid());
+    }
+    { // no layout, has order, has channels (bad)
+        ChannelSet ch_set;
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_order(ChanOrder_Smpte);
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_channel(11, true);
+        CHECK(!ch_set.is_valid());
+    }
+    { // surround layout, no order, has channels (bad)
+        ChannelSet ch_set;
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_layout(ChanLayout_Surround);
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_channel(11, true);
+        CHECK(!ch_set.is_valid());
+    }
+    { // surround layout, has order, no channels (bad)
+        ChannelSet ch_set;
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_layout(ChanLayout_Surround);
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_order(ChanOrder_Smpte);
+        CHECK(!ch_set.is_valid());
+    }
+    { // surround layout, has order, has channels (good)
+        ChannelSet ch_set;
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_layout(ChanLayout_Surround);
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_order(ChanOrder_Smpte);
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_channel(11, true);
+        CHECK(ch_set.is_valid());
+    }
+    { // multitrack layout, no order, no channels (bad)
+        ChannelSet ch_set;
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_layout(ChanLayout_Multitrack);
+        CHECK(!ch_set.is_valid());
+    }
+    { // multitrack layout, has order, has channels (bad)
+        ChannelSet ch_set;
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_layout(ChanLayout_Multitrack);
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_order(ChanOrder_Smpte);
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_channel(11, true);
+        CHECK(!ch_set.is_valid());
+    }
+    { // multitrack layout, no order, has channels (good)
+        ChannelSet ch_set;
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_layout(ChanLayout_Multitrack);
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_channel(11, true);
+        CHECK(ch_set.is_valid());
+    }
+}
+
+TEST(channel_set, clear) {
     ChannelSet ch_set;
+
+    ch_set.set_layout(ChanLayout_Surround);
+    ch_set.set_order(ChanOrder_Smpte);
 
     ch_set.set_channel(11, true);
     ch_set.set_channel(101, true);
 
+    CHECK(ch_set.is_valid());
+
+    LONGS_EQUAL(ChanLayout_Surround, ch_set.layout());
+    LONGS_EQUAL(ChanOrder_Smpte, ch_set.order());
+
     UNSIGNED_LONGS_EQUAL(2, ch_set.num_channels());
 
-    ch_set.clear_channels();
+    ch_set.clear();
+
+    CHECK(!ch_set.is_valid());
+
+    LONGS_EQUAL(ChanLayout_None, ch_set.layout());
+    LONGS_EQUAL(ChanOrder_None, ch_set.order());
 
     UNSIGNED_LONGS_EQUAL(0, ch_set.num_channels());
 
     for (size_t n = 0; n < ch_set.max_channels(); n++) {
         CHECK(!ch_set.has_channel(n));
-    }
-}
-
-TEST(channel_set, is_valid) {
-    { // no layout, no channels (invalid)
-        ChannelSet ch_set;
-        CHECK(!ch_set.is_valid());
-    }
-    { // no layout, only channels (invalid)
-        ChannelSet ch_set;
-        CHECK(!ch_set.is_valid());
-
-        ch_set.set_channel(11, true);
-        CHECK(!ch_set.is_valid());
-    }
-    { // surround, no channels (invalid)
-        ChannelSet ch_set;
-        CHECK(!ch_set.is_valid());
-
-        ch_set.set_layout(ChanLayout_Surround);
-        CHECK(!ch_set.is_valid());
-    }
-    { // multitrack, no channels (invalid)
-        ChannelSet ch_set;
-        CHECK(!ch_set.is_valid());
-
-        ch_set.set_layout(ChanLayout_Multitrack);
-        CHECK(!ch_set.is_valid());
-    }
-    { // surround and 1 channel (valid)
-        ChannelSet ch_set;
-        CHECK(!ch_set.is_valid());
-
-        ch_set.set_layout(ChanLayout_Surround);
-        CHECK(!ch_set.is_valid());
-
-        ch_set.set_channel(11, true);
-        CHECK(ch_set.is_valid());
-    }
-    { // multitrack and 1 channel (valid)
-        ChannelSet ch_set;
-        CHECK(!ch_set.is_valid());
-
-        ch_set.set_layout(ChanLayout_Multitrack);
-        CHECK(!ch_set.is_valid());
-
-        ch_set.set_channel(11, true);
-        CHECK(ch_set.is_valid());
     }
 }
 
@@ -423,17 +484,24 @@ TEST(channel_set, to_string) {
     {
         ChannelSet ch_set;
 
-        STRCMP_EQUAL("<invalid n_ch=0>", channel_set_to_str(ch_set).c_str());
+        STRCMP_EQUAL("<none n_ch=0>", channel_set_to_str(ch_set).c_str());
     }
     {
-        ChannelSet ch_set(ChanLayout_Surround, ChanMask_Surround_Mono);
+        ChannelSet ch_set(ChanLayout_Surround, ChanOrder_Smpte, ChanMask_Surround_Mono);
 
-        STRCMP_EQUAL("<surround n_ch=1 ch=FC>", channel_set_to_str(ch_set).c_str());
+        STRCMP_EQUAL("<surround smpte n_ch=1 ch=FC>", channel_set_to_str(ch_set).c_str());
     }
     {
-        ChannelSet ch_set(ChanLayout_Surround, ChanMask_Surround_Stereo);
+        ChannelSet ch_set(ChanLayout_Surround, ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
-        STRCMP_EQUAL("<surround n_ch=2 ch=FL,FR>", channel_set_to_str(ch_set).c_str());
+        STRCMP_EQUAL("<surround smpte n_ch=2 ch=FL,FR>",
+                     channel_set_to_str(ch_set).c_str());
+    }
+    {
+        ChannelSet ch_set(ChanLayout_Surround, ChanOrder_Alsa, ChanMask_Surround_Stereo);
+
+        STRCMP_EQUAL("<surround alsa n_ch=2 ch=FL,FR>",
+                     channel_set_to_str(ch_set).c_str());
     }
     {
         ChannelSet ch_set;

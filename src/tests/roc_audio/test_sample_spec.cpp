@@ -24,7 +24,7 @@ TEST(sample_spec, ns_2_nsamples) {
 
     for (size_t numChans = 1; numChans < 32; ++numChans) {
         const SampleSpec sample_spec =
-            SampleSpec((size_t)SampleRate, ChanLayout_Surround,
+            SampleSpec((size_t)SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
                        ChannelMask(((uint64_t)1 << numChans) - 1));
 
         // num_channels
@@ -72,7 +72,7 @@ TEST(sample_spec, nsamples_2_ns) {
 
     for (size_t numChans = 1; numChans < 32; ++numChans) {
         const SampleSpec sample_spec =
-            SampleSpec((size_t)SampleRate, ChanLayout_Surround,
+            SampleSpec((size_t)SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
                        ChannelMask(((uint64_t)1 << numChans) - 1));
 
         const core::nanoseconds_t sampling_period =
@@ -115,8 +115,8 @@ TEST(sample_spec, nsamples_2_ns) {
 TEST(sample_spec, saturation) {
 #if ROC_CPU_BITS == 32
     {
-        const SampleSpec sample_spec =
-            SampleSpec(1000000000, ChanLayout_Surround, ChanMask_Surround_Stereo);
+        const SampleSpec sample_spec = SampleSpec(
+            1000000000, ChanLayout_Surround, ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
         // ns_2_samples_per_chan
         CHECK_EQUAL(ROC_MAX_OF(size_t),
@@ -124,8 +124,8 @@ TEST(sample_spec, saturation) {
     }
 #endif
     {
-        const SampleSpec sample_spec =
-            SampleSpec(1000000000, ChanLayout_Surround, ChanMask_Surround_Stereo);
+        const SampleSpec sample_spec = SampleSpec(
+            1000000000, ChanLayout_Surround, ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
         // ns_2_samples_overall
         // (-1 because result is always multiple of channel count)
@@ -135,7 +135,7 @@ TEST(sample_spec, saturation) {
 #if ROC_CPU_BITS == 64
     {
         const SampleSpec sample_spec =
-            SampleSpec(1, ChanLayout_Surround, ChanMask_Surround_Stereo);
+            SampleSpec(1, ChanLayout_Surround, ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
         // samples_per_chan_2_ns
         CHECK_EQUAL(ROC_MAX_OF(core::nanoseconds_t),
@@ -157,7 +157,7 @@ TEST(sample_spec, saturation) {
 #endif
     {
         const SampleSpec sample_spec =
-            SampleSpec(1, ChanLayout_Surround, ChanMask_Surround_Stereo);
+            SampleSpec(1, ChanLayout_Surround, ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
         // ns_2_stream_timestamp_delta
         CHECK_EQUAL(

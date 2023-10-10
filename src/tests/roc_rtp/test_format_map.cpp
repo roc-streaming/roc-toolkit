@@ -8,7 +8,6 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_audio/channel_layout.h"
 #include "roc_audio/pcm_decoder.h"
 #include "roc_audio/pcm_encoder.h"
 #include "roc_audio/pcm_format.h"
@@ -42,6 +41,7 @@ TEST(format_map, find_by_pt) {
         CHECK(fmt->sample_spec.is_valid());
         CHECK(fmt->sample_spec
               == audio::SampleSpec(44100, audio::ChanLayout_Surround,
+                                   audio::ChanOrder_Smpte,
                                    audio::ChanMask_Surround_Mono));
 
         CHECK(fmt->packet_flags & packet::Packet::FlagAudio);
@@ -62,6 +62,7 @@ TEST(format_map, find_by_pt) {
         CHECK(fmt->sample_spec.is_valid());
         CHECK(fmt->sample_spec
               == audio::SampleSpec(44100, audio::ChanLayout_Surround,
+                                   audio::ChanOrder_Smpte,
                                    audio::ChanMask_Surround_Stereo));
 
         CHECK(fmt->packet_flags & packet::Packet::FlagAudio);
@@ -75,15 +76,17 @@ TEST(format_map, find_by_spec) {
     FormatMap fmt_map(arena);
 
     {
-        const Format* fmt = fmt_map.find_by_spec(audio::SampleSpec(
-            48000, audio::ChanLayout_Surround, audio::ChanMask_Surround_Mono));
+        const Format* fmt = fmt_map.find_by_spec(
+            audio::SampleSpec(48000, audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
+                              audio::ChanMask_Surround_Mono));
 
         CHECK(!fmt);
     }
 
     {
-        const Format* fmt = fmt_map.find_by_spec(audio::SampleSpec(
-            44100, audio::ChanLayout_Surround, audio::ChanMask_Surround_Mono));
+        const Format* fmt = fmt_map.find_by_spec(
+            audio::SampleSpec(44100, audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
+                              audio::ChanMask_Surround_Mono));
 
         CHECK(fmt);
 
@@ -91,8 +94,9 @@ TEST(format_map, find_by_spec) {
     }
 
     {
-        const Format* fmt = fmt_map.find_by_spec(audio::SampleSpec(
-            44100, audio::ChanLayout_Surround, audio::ChanMask_Surround_Stereo));
+        const Format* fmt = fmt_map.find_by_spec(
+            audio::SampleSpec(44100, audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
+                              audio::ChanMask_Surround_Stereo));
 
         CHECK(fmt);
 
@@ -109,8 +113,9 @@ TEST(format_map, add_format) {
         fmt.packet_flags = packet::Packet::FlagAudio;
         fmt.pcm_format =
             audio::PcmFormat(audio::PcmEncoding_Float32, audio::PcmEndian_Native);
-        fmt.sample_spec = audio::SampleSpec(48000, audio::ChanLayout_Surround,
-                                            audio::ChanMask_Surround_Stereo);
+        fmt.sample_spec =
+            audio::SampleSpec(48000, audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
+                              audio::ChanMask_Surround_Stereo);
         fmt.new_encoder = &audio::PcmEncoder::construct;
         fmt.new_decoder = &audio::PcmDecoder::construct;
 
@@ -128,6 +133,7 @@ TEST(format_map, add_format) {
 
         CHECK(fmt->sample_spec
               == audio::SampleSpec(48000, audio::ChanLayout_Surround,
+                                   audio::ChanOrder_Smpte,
                                    audio::ChanMask_Surround_Stereo));
 
         CHECK(fmt->packet_flags == packet::Packet::FlagAudio);
@@ -137,8 +143,9 @@ TEST(format_map, add_format) {
     }
 
     {
-        const Format* fmt = fmt_map.find_by_spec(audio::SampleSpec(
-            48000, audio::ChanLayout_Surround, audio::ChanMask_Surround_Stereo));
+        const Format* fmt = fmt_map.find_by_spec(
+            audio::SampleSpec(48000, audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
+                              audio::ChanMask_Surround_Stereo));
         CHECK(fmt);
 
         LONGS_EQUAL(100, fmt->payload_type);
@@ -148,6 +155,7 @@ TEST(format_map, add_format) {
 
         CHECK(fmt->sample_spec
               == audio::SampleSpec(48000, audio::ChanLayout_Surround,
+                                   audio::ChanOrder_Smpte,
                                    audio::ChanMask_Surround_Stereo));
 
         CHECK(fmt->packet_flags == packet::Packet::FlagAudio);

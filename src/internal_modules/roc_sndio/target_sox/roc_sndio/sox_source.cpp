@@ -7,7 +7,6 @@
  */
 
 #include "roc_sndio/sox_source.h"
-#include "roc_audio/channel_layout.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_sndio/backend_map.h"
@@ -182,12 +181,12 @@ audio::SampleSpec SoxSource::sample_spec() const {
 
     if (input_->signal.channels == 1) {
         return audio::SampleSpec(size_t(input_->signal.rate), audio::ChanLayout_Surround,
-                                 audio::ChanMask_Surround_Mono);
+                                 audio::ChanOrder_Smpte, audio::ChanMask_Surround_Mono);
     }
 
     if (input_->signal.channels == 2) {
         return audio::SampleSpec(size_t(input_->signal.rate), audio::ChanLayout_Surround,
-                                 audio::ChanMask_Surround_Stereo);
+                                 audio::ChanOrder_Smpte, audio::ChanMask_Surround_Stereo);
     }
 
     roc_panic("sox source: unsupported channel count");

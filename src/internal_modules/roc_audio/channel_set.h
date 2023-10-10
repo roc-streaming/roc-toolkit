@@ -12,7 +12,7 @@
 #ifndef ROC_AUDIO_CHANNEL_SET_H_
 #define ROC_AUDIO_CHANNEL_SET_H_
 
-#include "roc_audio/channel_layout.h"
+#include "roc_audio/channel_defs.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/string_builder.h"
 
@@ -22,6 +22,7 @@ namespace audio {
 //! Channel set.
 //! Multi-word bitmask with bits corresponding to enabled channels.
 //! Meaning of each channel is defined by ChannelLayout.
+//! Order of serialized channels is defined by ChannelOrder.
 class ChannelSet {
 public:
     //! Construct empty channel set.
@@ -31,8 +32,8 @@ public:
     //! @remarks
     //!  The mask defines only first 32 channels. All channels outside of 0-31
     //!  range will be disabled. If you need more channels, construct empty
-    //!  channel set and enable channels or channel ranges using its methods.
-    ChannelSet(ChannelLayout layout, ChannelMask mask);
+    //!  channel set and enable channels or channel ranges using setters.
+    ChannelSet(ChannelLayout layout, ChannelOrder order, ChannelMask mask);
 
     //! Check two channel sets for equality.
     bool operator==(const ChannelSet& other) const;
@@ -40,16 +41,28 @@ public:
     //! Check two channel sets for equality.
     bool operator!=(const ChannelSet& other) const;
 
-    //! Check if channel set has valid layout and non-zero channels.
+    //! Check if channel set has valid layout and order, and non-zero channels.
     bool is_valid() const;
+
+    //! Unset all fields.
+    void clear();
 
     //! Get channel layout.
     //! @remarks
-    //!  Channel layout defines meaning of channel numbers.
+    //!  Defines meaning of channel numbers (e.g. that channel 0 is front-left).
     ChannelLayout layout() const;
 
     //! Set layout of the channel set.
     void set_layout(ChannelLayout layout);
+
+    //! Get channel order.
+    //! @remarks
+    //!  Defines order of serialized channels
+    //!  (e.g. that front-left goes before front-right).
+    ChannelOrder order() const;
+
+    //! Set order of the channel set.
+    void set_order(ChannelOrder order);
 
     //! Get maximum possible number of channels.
     static size_t max_channels();
@@ -94,9 +107,6 @@ public:
     //!  range will be disabled.
     void set_channel_mask(ChannelMask mask);
 
-    //! Set all channels to disables.
-    void clear_channels();
-
     //! Set channel set to result of bitwise AND operation with another set.
     //! @remarks
     //!  Similar to "&=".
@@ -137,6 +147,7 @@ private:
     uint16_t last_chan_;
 
     ChannelLayout layout_;
+    ChannelOrder order_;
 };
 
 //! Format ChannelSet to string.

@@ -35,7 +35,7 @@ enum {
     SamplesSize = SamplesPerPacket * NumCh
 };
 
-const SampleSpec SampleSpecs(SampleRate, ChanLayout_Surround, ChMask);
+const SampleSpec SampleSpecs(SampleRate, ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 const PcmFormat PcmFmt(PcmEncoding_SInt16, PcmEndian_Big);
 const core::nanoseconds_t NsPerPacket = SampleSpecs.samples_overall_2_ns(SamplesSize);
 const core::nanoseconds_t Now = 1691499037871419405;

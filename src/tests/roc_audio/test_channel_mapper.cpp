@@ -8,7 +8,6 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_audio/channel_layout.h"
 #include "roc_audio/channel_mapper.h"
 #include "roc_core/macro_helpers.h"
 
@@ -25,15 +24,19 @@ void check(sample_t* input,
            sample_t* output,
            size_t n_samples,
            ChannelLayout in_layout,
+           ChannelOrder in_order,
            ChannelMask in_mask,
            ChannelLayout out_layout,
+           ChannelOrder out_order,
            ChannelMask out_mask) {
     ChannelSet in_chans;
     in_chans.set_layout(in_layout);
+    in_chans.set_order(in_order);
     in_chans.set_channel_mask(in_mask);
 
     ChannelSet out_chans;
     out_chans.set_layout(out_layout);
+    out_chans.set_order(out_order);
     out_chans.set_channel_mask(out_mask);
 
     sample_t actual_output[MaxSamples] = {};
@@ -74,8 +77,8 @@ TEST(channel_mapper, mono_mono) {
         0.5f, //
     };
 
-    check(input, output, NumSamples, ChanLayout_Surround, InChans, ChanLayout_Surround,
-          OutChans);
+    check(input, output, NumSamples, ChanLayout_Surround, ChanOrder_Smpte, InChans,
+          ChanLayout_Surround, ChanOrder_Smpte, OutChans);
 }
 
 TEST(channel_mapper, mono_stereo) {
@@ -101,8 +104,8 @@ TEST(channel_mapper, mono_stereo) {
         0.5f, 0.5f, //
     };
 
-    check(input, output, NumSamples, ChanLayout_Surround, InChans, ChanLayout_Surround,
-          OutChans);
+    check(input, output, NumSamples, ChanLayout_Surround, ChanOrder_Smpte, InChans,
+          ChanLayout_Surround, ChanOrder_Smpte, OutChans);
 }
 
 TEST(channel_mapper, stereo_mono) {
@@ -128,8 +131,8 @@ TEST(channel_mapper, stereo_mono) {
         0.6f, //
     };
 
-    check(input, output, NumSamples, ChanLayout_Surround, InChans, ChanLayout_Surround,
-          OutChans);
+    check(input, output, NumSamples, ChanLayout_Surround, ChanOrder_Smpte, InChans,
+          ChanLayout_Surround, ChanOrder_Smpte, OutChans);
 }
 
 TEST(channel_mapper, stereo_stereo) {
@@ -155,8 +158,8 @@ TEST(channel_mapper, stereo_stereo) {
         0.5f, 0.7f, //
     };
 
-    check(input, output, NumSamples, ChanLayout_Surround, InChans, ChanLayout_Surround,
-          OutChans);
+    check(input, output, NumSamples, ChanLayout_Surround, ChanOrder_Smpte, InChans,
+          ChanLayout_Surround, ChanOrder_Smpte, OutChans);
 }
 
 TEST(channel_mapper, surround_61_41) {
@@ -211,8 +214,8 @@ TEST(channel_mapper, surround_61_41) {
         0.47f,                       // LFE
     };
 
-    check(input, output, NumSamples, ChanLayout_Surround, InChans, ChanLayout_Surround,
-          OutChans);
+    check(input, output, NumSamples, ChanLayout_Surround, ChanOrder_Smpte, InChans,
+          ChanLayout_Surround, ChanOrder_Smpte, OutChans);
 }
 
 TEST(channel_mapper, surround_60_41) {
@@ -267,8 +270,8 @@ TEST(channel_mapper, surround_60_41) {
         0.f,                         // LFE
     };
 
-    check(input, output, NumSamples, ChanLayout_Surround, InChans, ChanLayout_Surround,
-          OutChans);
+    check(input, output, NumSamples, ChanLayout_Surround, ChanOrder_Smpte, InChans,
+          ChanLayout_Surround, ChanOrder_Smpte, OutChans);
 }
 
 TEST(channel_mapper, surround_61_40) {
@@ -318,8 +321,8 @@ TEST(channel_mapper, surround_61_40) {
         clev * 0.46f + slev * 0.45f, // BR
     };
 
-    check(input, output, NumSamples, ChanLayout_Surround, InChans, ChanLayout_Surround,
-          OutChans);
+    check(input, output, NumSamples, ChanLayout_Surround, ChanOrder_Smpte, InChans,
+          ChanLayout_Surround, ChanOrder_Smpte, OutChans);
 }
 
 TEST(channel_mapper, surround_6x_4x) {
@@ -369,8 +372,8 @@ TEST(channel_mapper, surround_6x_4x) {
         clev * 0.46f + slev * 0.45f, // BR
     };
 
-    check(input, output, NumSamples, ChanLayout_Surround, InChans, ChanLayout_Surround,
-          OutChans);
+    check(input, output, NumSamples, ChanLayout_Surround, ChanOrder_Smpte, InChans,
+          ChanLayout_Surround, ChanOrder_Smpte, OutChans);
 }
 
 TEST(channel_mapper, surround_41_61) {
@@ -434,8 +437,8 @@ TEST(channel_mapper, surround_41_61) {
         0.45f,                     // LFE
     };
 
-    check(input, output, NumSamples, ChanLayout_Surround, InChans, ChanLayout_Surround,
-          OutChans);
+    check(input, output, NumSamples, ChanLayout_Surround, ChanOrder_Smpte, InChans,
+          ChanLayout_Surround, ChanOrder_Smpte, OutChans);
 }
 
 TEST(channel_mapper, surround_1ch) {
@@ -467,10 +470,12 @@ TEST(channel_mapper, surround_1ch) {
         for (size_t j = 0; j < ROC_ARRAY_SIZE(masks); j++) {
             ChannelSet in_chans;
             in_chans.set_layout(ChanLayout_Surround);
+            in_chans.set_order(ChanOrder_Smpte);
             in_chans.set_channel_mask(masks[i]);
 
             ChannelSet out_chans;
             out_chans.set_layout(ChanLayout_Surround);
+            out_chans.set_order(ChanOrder_Smpte);
             out_chans.set_channel_mask(masks[j]);
 
             for (size_t ch = 0; ch < ChanPos_Max; ch++) {
@@ -536,8 +541,8 @@ TEST(channel_mapper, mono_multitrack) {
         0.5f, 0.0f, //
     };
 
-    check(input, output, NumSamples, ChanLayout_Surround, InChans, ChanLayout_Multitrack,
-          OutChans);
+    check(input, output, NumSamples, ChanLayout_Surround, ChanOrder_Smpte, InChans,
+          ChanLayout_Multitrack, ChanOrder_None, OutChans);
 }
 
 TEST(channel_mapper, stereo_multitrack) {
@@ -559,8 +564,8 @@ TEST(channel_mapper, stereo_multitrack) {
         0.5f, -0.5f, 0.0f, //
     };
 
-    check(input, output, NumSamples, ChanLayout_Surround, InChans, ChanLayout_Multitrack,
-          OutChans);
+    check(input, output, NumSamples, ChanLayout_Surround, ChanOrder_Smpte, InChans,
+          ChanLayout_Multitrack, ChanOrder_None, OutChans);
 }
 
 TEST(channel_mapper, multitrack_mono) {
@@ -582,8 +587,8 @@ TEST(channel_mapper, multitrack_mono) {
         0.5f, //
     };
 
-    check(input, output, NumSamples, ChanLayout_Multitrack, InChans, ChanLayout_Surround,
-          OutChans);
+    check(input, output, NumSamples, ChanLayout_Multitrack, ChanOrder_None, InChans,
+          ChanLayout_Surround, ChanOrder_Smpte, OutChans);
 }
 
 TEST(channel_mapper, multitrack_stereo) {
@@ -605,8 +610,8 @@ TEST(channel_mapper, multitrack_stereo) {
         0.5f, -0.5f, //
     };
 
-    check(input, output, NumSamples, ChanLayout_Multitrack, InChans, ChanLayout_Surround,
-          OutChans);
+    check(input, output, NumSamples, ChanLayout_Multitrack, ChanOrder_None, InChans,
+          ChanLayout_Surround, ChanOrder_Smpte, OutChans);
 }
 
 TEST(channel_mapper, multitrack_same) {
@@ -628,8 +633,8 @@ TEST(channel_mapper, multitrack_same) {
         0.9f, 1.0f, //
     };
 
-    check(input, output, NumSamples, ChanLayout_Multitrack, InChans,
-          ChanLayout_Multitrack, OutChans);
+    check(input, output, NumSamples, ChanLayout_Multitrack, ChanOrder_None, InChans,
+          ChanLayout_Multitrack, ChanOrder_None, OutChans);
 }
 
 TEST(channel_mapper, multitrack_subset) {
@@ -651,8 +656,8 @@ TEST(channel_mapper, multitrack_subset) {
         0.0f, 0.5f, //
     };
 
-    check(input, output, NumSamples, ChanLayout_Multitrack, InChans,
-          ChanLayout_Multitrack, OutChans);
+    check(input, output, NumSamples, ChanLayout_Multitrack, ChanOrder_None, InChans,
+          ChanLayout_Multitrack, ChanOrder_None, OutChans);
 }
 
 TEST(channel_mapper, multitrack_superset) {
@@ -674,8 +679,8 @@ TEST(channel_mapper, multitrack_superset) {
         -0.5f, 0.5f, //
     };
 
-    check(input, output, NumSamples, ChanLayout_Multitrack, InChans,
-          ChanLayout_Multitrack, OutChans);
+    check(input, output, NumSamples, ChanLayout_Multitrack, ChanOrder_None, InChans,
+          ChanLayout_Multitrack, ChanOrder_None, OutChans);
 }
 
 TEST(channel_mapper, multitrack_overlap) {
@@ -697,8 +702,8 @@ TEST(channel_mapper, multitrack_overlap) {
         -0.5f, 0.0f, //
     };
 
-    check(input, output, NumSamples, ChanLayout_Multitrack, InChans,
-          ChanLayout_Multitrack, OutChans);
+    check(input, output, NumSamples, ChanLayout_Multitrack, ChanOrder_None, InChans,
+          ChanLayout_Multitrack, ChanOrder_None, OutChans);
 }
 
 } // namespace audio

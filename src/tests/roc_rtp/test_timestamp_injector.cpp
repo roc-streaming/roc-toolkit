@@ -52,8 +52,8 @@ TEST(timestamp_injector, failed_to_read_packet) {
         SampleRate = 10000,
     };
 
-    const audio::SampleSpec sample_spec =
-        audio::SampleSpec(SampleRate, audio::ChanLayout_Surround, ChMask);
+    const audio::SampleSpec sample_spec = audio::SampleSpec(
+        SampleRate, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, ChMask);
 
     const status::StatusCode codes[] = {
         status::StatusUnknown,
@@ -79,8 +79,8 @@ TEST(timestamp_injector, negative_and_positive_dn) {
     };
 
     const float sample_rate = 48000.;
-    const audio::SampleSpec sample_spec =
-        audio::SampleSpec((size_t)sample_rate, audio::ChanLayout_Surround, ChMask);
+    const audio::SampleSpec sample_spec = audio::SampleSpec(
+        (size_t)sample_rate, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, ChMask);
 
     packet::stream_timestamp_t rtp_ts = 2222;
     packet::stream_timestamp_t packet_rtp_ts = (packet::stream_timestamp_t)-4444;

@@ -29,8 +29,8 @@ const audio::PcmFormat PcmFmt(audio::PcmEncoding_SInt16, audio::PcmEndian_Big);
 
 enum { ChMask = 3, PacketSz = 128, SampleRate = 10000 };
 
-const audio::SampleSpec SampleSpec =
-    audio::SampleSpec(SampleRate, audio::ChanLayout_Surround, ChMask);
+const audio::SampleSpec SampleSpec = audio::SampleSpec(
+    SampleRate, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, ChMask);
 
 core::HeapArena arena;
 packet::PacketFactory packet_factory(arena);

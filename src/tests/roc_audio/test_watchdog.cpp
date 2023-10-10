@@ -32,7 +32,7 @@ enum {
     BreakageWindow = SamplesPerFrame,
     BreakageWindowsPerTimeout = BrokenPlaybackTimeout / BreakageWindow
 };
-const SampleSpec SampleSpecs(SampleRate, ChanLayout_Surround, ChMask);
+const SampleSpec SampleSpecs(SampleRate, ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
 core::HeapArena arena;
 core::BufferFactory<sample_t> sample_buffer_factory(arena, MaxBufSize);

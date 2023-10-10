@@ -14,6 +14,12 @@ namespace audio {
 void format_channel_set(const ChannelSet& ch_set, core::StringBuilder& bld) {
     bld.append_str("<");
     bld.append_str(channel_layout_to_str(ch_set.layout()));
+
+    if (ch_set.order() != ChanOrder_None) {
+        bld.append_str(" ");
+        bld.append_str(channel_order_to_str(ch_set.order()));
+    }
+
     bld.append_str(" n_ch=");
     bld.append_uint(ch_set.num_channels(), 10);
 
