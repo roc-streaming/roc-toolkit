@@ -673,8 +673,10 @@ TEST(resampler, timestamp_passthrough_reader) {
                         {
                             Frame frame(samples, ROC_ARRAY_SIZE(samples));
                             CHECK(rreader.read(frame));
-                            // FIXME: Fails on SpeexDec
-                            // CHECK(frame.capture_timestamp() >= start_ts);
+                            // Since CTS is estimated based scaling, it can happen
+                            // to be in past relative to the very first frame, but only
+                            // within allowed epsilon.
+                            CHECK(frame.capture_timestamp() >= start_ts - epsilon);
                             cur_ts = frame.capture_timestamp();
                         }
                         for (size_t i = 0; i < NumIterations; i++) {

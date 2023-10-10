@@ -102,8 +102,8 @@ SpeexResampler::SpeexResampler(core::IArena& arena,
     }
 
     startup_countdown_ = (size_t)speex_resampler_get_output_latency(speex_state_);
-    initial_spx_input_latency_ = (size_t)speex_resampler_get_input_latency(speex_state_);
-    current_inp_latency_diff_ = 0;
+    initial_input_latency_ = (size_t)speex_resampler_get_input_latency(speex_state_);
+    current_input_latency_diff_ = 0;
 
     valid_ = true;
 }
@@ -188,7 +188,7 @@ bool SpeexResampler::set_scaling(size_t input_rate, size_t output_rate, float mu
     }
 
     const ssize_t latency = (ssize_t)speex_resampler_get_input_latency(speex_state_);
-    current_inp_latency_diff_ = latency - (ssize_t)initial_spx_input_latency_;
+    current_input_latency_diff_ = latency - (ssize_t)initial_input_latency_;
 
     return true;
 }
@@ -259,7 +259,7 @@ size_t SpeexResampler::pop_output(sample_t* out_buf, size_t out_bufsz) {
 float SpeexResampler::n_left_to_process() const {
     roc_panic_if_not(is_valid());
 
-    return float(in_frame_size_ - in_frame_pos_) + float(current_inp_latency_diff_);
+    return float(in_frame_size_ - in_frame_pos_) + float(current_input_latency_diff_);
 }
 
 void SpeexResampler::report_stats_() {
@@ -280,14 +280,13 @@ void SpeexResampler::report_stats_() {
     speex_resampler_get_rate(speex_state_, &in_rate, &out_rate);
 
     const int in_latency = speex_resampler_get_input_latency(speex_state_);
-    const int out_latency = speex_resampler_get_output_latency(speex_state_);
 
     roc_log(
         LogDebug,
         "speex resampler:"
-        " ratio_num=%u ratio_den=%u in_rate=%u out_rate=%u in_latency=%d out_latency=%d",
+        " ratio_num=%u ratio_den=%u in_rate=%u out_rate=%u in_latency=%d latency_diff=%d",
         (unsigned int)ratio_num, (unsigned int)ratio_den, (unsigned int)in_rate,
-        (unsigned int)out_rate, (int)in_latency, (int)out_latency);
+        (unsigned int)out_rate, (int)in_latency, (int)current_input_latency_diff_);
 }
 
 } // namespace audio
