@@ -409,7 +409,7 @@ TEST(resampler, invalid_scalings) {
 // Set scaling, continously resample, and check that actual
 // scaling eventually becomes close to configured scaling.
 TEST(resampler, scaling_trend) {
-    enum { ChMask = 0x1, WaitSamples = 5000 };
+    enum { ChMask = 0x1, WaitSamples = 3000 };
 
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         for (size_t n_irate = 0; n_irate < ROC_ARRAY_SIZE(supported_rates); n_irate++) {
