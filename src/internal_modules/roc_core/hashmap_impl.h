@@ -55,19 +55,11 @@ public:
 
     size_t capacity() const;
     size_t size() const;
+
     bool contains(const HashmapNode::HashmapNodeData* node) const;
 
-    size_t buckets_capacity_(size_t n_buckets) const;
-
     HashmapNode::HashmapNodeData*
-    find_node_(hashsum_t hash,
-               void* key,
-               key_equals_callback callback) const;
-    HashmapNode::HashmapNodeData* find_in_bucket_(
-        const Bucket& bucket,
-        hashsum_t hash,
-        void* key,
-        key_equals_callback callback) const;
+    find_node(hashsum_t hash, void* key, key_equals_callback callback) const;
 
     HashmapNode::HashmapNodeData* front() const;
     HashmapNode::HashmapNodeData* back() const;
@@ -84,6 +76,13 @@ public:
     void release_all(node_release_callback callback);
 
 private:
+    HashmapNode::HashmapNodeData* find_in_bucket_(const Bucket& bucket,
+                                                  hashsum_t hash,
+                                                  void* key,
+                                                  key_equals_callback callback) const;
+
+    size_t buckets_capacity_(size_t n_buckets) const;
+
     bool realloc_buckets_(size_t n_buckets);
     void dealloc_buckets_();
 
@@ -100,10 +99,9 @@ private:
     void migrate_node_(HashmapNode::HashmapNodeData* node);
     size_t get_next_bucket_size_(size_t current_count);
 
-    void
-    release_bucket_array_(Bucket* buckets,
-                          size_t n_buckets,
-                          node_release_callback callback);
+    void release_bucket_array_(Bucket* buckets,
+                               size_t n_buckets,
+                               node_release_callback callback);
 
     void* preallocated_data_;
     size_t preallocated_size_;

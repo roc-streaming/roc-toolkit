@@ -107,8 +107,7 @@ public:
 
     //! Release ownership of all elements.
     ~Hashmap() {
-        impl_.release_all(
-            &Hashmap<T, EmbeddedCapacity, OwnershipPolicy>::node_release);
+        impl_.release_all(&Hashmap<T, EmbeddedCapacity, OwnershipPolicy>::node_release);
     }
 
     //! Get maximum number of elements that can be added to hashmap before
@@ -150,7 +149,7 @@ public:
     //!  The worst case is achieved when the hash function produces many collisions.
     template <class Key> Pointer find(const Key& key) const {
         const hashsum_t hash = T::key_hash(key);
-        HashmapNode::HashmapNodeData* node = impl_.find_node_(
+        HashmapNode::HashmapNodeData* node = impl_.find_node(
             hash, (void*)&key,
             &Hashmap<T, EmbeddedCapacity, OwnershipPolicy>::key_equals<Key>);
         if (!node) {
