@@ -38,6 +38,8 @@ public:
         HashmapNode::HashmapNodeData* head;
     };
 
+    typedef bool (*key_equals_callback)(HashmapNode::HashmapNodeData* node, void* key);
+
     HashmapImpl(void* preallocated_data,
                 size_t preallocated_size,
                 size_t num_embedded_buckets);
@@ -58,12 +60,12 @@ public:
     HashmapNode::HashmapNodeData*
     find_node_(hashsum_t hash,
                void* key,
-               bool (*key_equal)(HashmapNode::HashmapNodeData* node, void* key)) const;
+               key_equals_callback callback) const;
     HashmapNode::HashmapNodeData* find_in_bucket_(
         const Bucket& bucket,
         hashsum_t hash,
         void* key,
-        bool (*key_equal)(HashmapNode::HashmapNodeData* node, void* key)) const;
+        key_equals_callback callback) const;
 
     HashmapNode::HashmapNodeData* front() const;
     HashmapNode::HashmapNodeData* back() const;
@@ -72,7 +74,7 @@ public:
     void insert(HashmapNode::HashmapNodeData* node,
                 hashsum_t hash,
                 void* key,
-                bool (*key_equal)(HashmapNode::HashmapNodeData* node, void* key));
+                key_equals_callback callback);
     void remove(HashmapNode::HashmapNodeData* node);
 
     ROC_ATTR_NODISCARD bool grow();

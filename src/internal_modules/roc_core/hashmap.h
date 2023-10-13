@@ -27,18 +27,6 @@
 namespace roc {
 namespace core {
 
-template<class T>
-T* container_of_(HashmapNode::HashmapNodeData* data) {
-    return static_cast<T*>(data->container_of());
-}
-
-template <class T, class Key>
-bool key_equal_callback(HashmapNode::HashmapNodeData* node, void* key) {
-    T* elem = container_of_<T>(node);
-    const Key& keyRef = *(Key*)key;
-    return T::key_equal(elem->key(), keyRef);
-}
-
 //! Intrusive hash table.
 //!
 //! Characteristics:
@@ -146,7 +134,6 @@ public:
     //!  - doesn't compute key hashes
     bool contains(const T& element) const {
         const HashmapNode::HashmapNodeData* node = element.hashmap_node_data();
-
         return impl_.contains(node);
     }
 
@@ -163,12 +150,13 @@ public:
     //!  The worst case is achieved when the hash function produces many collisions.
     template <class Key> Pointer find(const Key& key) const {
         const hashsum_t hash = T::key_hash(key);
-
-        HashmapNode::HashmapNodeData* node =  impl_.find_node_(hash, (void*)&key, &key_equal_callback<T, Key>);
+        HashmapNode::HashmapNodeData* node = impl_.find_node_(
+            hash, (void*)&key,
+            &Hashmap<T, EmbeddedCapacity, OwnershipPolicy>::key_equals<Key>);
         if (!node) {
             return NULL;
         }
-        return container_of_<T>(node);
+        return container_of_(node);
     }
 
     //! Get first element in hashmap.
@@ -180,7 +168,7 @@ public:
         if (!node) {
             return NULL;
         }
-        return container_of_<T>(node);
+        return container_of_(node);
     }
 
     //! Get last element in hashmap.
@@ -192,7 +180,7 @@ public:
         if (!node) {
             return NULL;
         }
-        return container_of_<T>(node);
+        return container_of_(node);
     }
 
     //! Get hashmap element next to given one.
@@ -207,11 +195,10 @@ public:
     Pointer nextof(T& element) const {
         HashmapNode::HashmapNodeData* node = element.hashmap_node_data();
         HashmapNode::HashmapNodeData* next_node = impl_.nextof(node);
-
         if (!next_node) {
             return NULL;
         }
-        return container_of_<T>(next_node);
+        return container_of_(next_node);
     }
 
     //! Insert element into hashmap.
@@ -236,16 +223,10 @@ public:
     //!  the incremental rehashing algorithm.
     void insert(T& element) {
         HashmapNode::HashmapNodeData* node = element.hashmap_node_data();
-
-        insert_(node, element.key());
-
+        insert_(element.key(), node);
         OwnershipPolicy<T>::acquire(element);
     }
 
-    template <class Key> void insert_(HashmapNode::HashmapNodeData* node, const Key& key) {
-        const hashsum_t hash = T::key_hash(key);
-        impl_.insert(node, hash, (void*)&key, &key_equal_callback<T, Key>);
-    }
     //! Remove element from hashmap.
     //!
     //! @remarks
@@ -261,7 +242,6 @@ public:
     //!  - proceedes lazy rehashing
     void remove(T& element) {
         HashmapNode::HashmapNodeData* node = element.hashmap_node_data();
-
         impl_.remove(node);
         OwnershipPolicy<T>::release(element);
     }
@@ -297,10 +277,27 @@ private:
             / HashmapImpl::LoadFactorNum * 2
     };
 
+    static T* container_of_(HashmapNode::HashmapNodeData* data) {
+        return static_cast<T*>(data->container_of());
+    }
+
+    template <class Key>
+    static bool key_equals(HashmapNode::HashmapNodeData* node, void* key) {
+        T* elem = container_of_(node);
+        const Key& key_ref = *(Key*)key;
+        return T::key_equal(elem->key(), key_ref);
+    }
 
     static void release_callback(HashmapNode::HashmapNodeData* node) {
-        T* elem = container_of_<T>(node);
+        T* elem = container_of_(node);
         OwnershipPolicy<T>::release(*elem);
+    }
+
+    template <class Key>
+    void insert_(const Key& key, HashmapNode::HashmapNodeData* node) {
+        const hashsum_t hash = T::key_hash(key);
+        impl_.insert(node, hash, (void*)&key,
+                     &Hashmap<T, EmbeddedCapacity, OwnershipPolicy>::key_equals<Key>);
     }
 
     HashmapImpl impl_;
