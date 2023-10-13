@@ -49,7 +49,7 @@ HashmapImpl::HashmapImpl(void* preallocated_data,
 }
 
 HashmapImpl::~HashmapImpl() {
-    release_all(NULL);
+    // release_all(NULL);
 }
 
 size_t HashmapImpl::capacity() const {
@@ -76,12 +76,13 @@ size_t HashmapImpl::buckets_capacity_(size_t n_buckets) const {
     return n_buckets * LoadFactorNum / LoadFactorDen;
 }
 
-HashmapNode::HashmapNodeData*
-HashmapImpl::find_node_(hashsum_t hash,
-                        bool (*key_equal)(HashmapNode::HashmapNodeData* node)) const {
+HashmapNode::HashmapNodeData* HashmapImpl::find_node_(
+    hashsum_t hash,
+    void* key,
+    bool (*key_equal)(HashmapNode::HashmapNodeData* node, void* key)) const {
     if (n_curr_buckets_ != 0) {
         HashmapNode::HashmapNodeData* elem =
-            find_in_bucket_(curr_buckets_[hash % n_curr_buckets_], hash, key_equal);
+            find_in_bucket_(curr_buckets_[hash % n_curr_buckets_], hash, key, key_equal);
         if (elem) {
             return elem;
         }
@@ -89,7 +90,7 @@ HashmapImpl::find_node_(hashsum_t hash,
 
     if (n_prev_buckets_ != 0) {
         HashmapNode::HashmapNodeData* elem =
-            find_in_bucket_(prev_buckets_[hash % n_prev_buckets_], hash, key_equal);
+            find_in_bucket_(prev_buckets_[hash % n_prev_buckets_], hash, key, key_equal);
         if (elem) {
             return elem;
         }
@@ -101,13 +102,15 @@ HashmapImpl::find_node_(hashsum_t hash,
 HashmapNode::HashmapNodeData* HashmapImpl::find_in_bucket_(
     const Bucket& bucket,
     hashsum_t hash,
-    bool (*key_equal)(HashmapNode::HashmapNodeData* node)) const {
+    void* key,
+
+    bool (*key_equal)(HashmapNode::HashmapNodeData* node, void* key)) const {
     HashmapNode::HashmapNodeData* node = bucket.head;
 
     if (node != NULL) {
         do {
             if (node->hash == hash) {
-                if (key_equal(node)) {
+                if (key_equal(node, key)) {
                     return node;
                 }
             }
@@ -150,7 +153,9 @@ HashmapImpl::nextof(HashmapNode::HashmapNodeData* node) const {
 
 void HashmapImpl::insert(HashmapNode::HashmapNodeData* node,
                          hashsum_t hash,
-                         bool (*key_equal)(HashmapNode::HashmapNodeData* node)) {
+                         void* key,
+                         bool (*key_equal)(HashmapNode::HashmapNodeData* node,
+                                           void* key)) {
     if (size_ >= buckets_capacity_(n_curr_buckets_)) {
         roc_panic("hashmap: attempt to insert into full hashmap before calling grow()");
     }
@@ -161,7 +166,7 @@ void HashmapImpl::insert(HashmapNode::HashmapNodeData* node,
                   contains(node) ? "this" : "another");
     }
 
-    if (find_node_(hash, key_equal)) {
+    if (find_node_(hash, key, key_equal)) {
         roc_panic("hashmap: attempt to insert an element with duplicate key");
     }
 
@@ -446,8 +451,7 @@ void HashmapImpl::release_bucket_array_(
         HashmapNode::HashmapNodeData* node = buckets[n].head;
 
         while (node) {
-            if (release_callback)
-                release_callback(node);
+            HashmapNode::HashmapNodeData* node_to_release = node;
 
             node->bucket = NULL;
 
@@ -455,6 +459,8 @@ void HashmapImpl::release_bucket_array_(
             if (node == buckets[n].head) {
                 node = NULL;
             }
+            if (release_callback)
+                release_callback(node_to_release);
         }
     }
 }

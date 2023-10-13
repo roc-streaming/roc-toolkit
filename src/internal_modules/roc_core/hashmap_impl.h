@@ -57,11 +57,13 @@ public:
 
     HashmapNode::HashmapNodeData*
     find_node_(hashsum_t hash,
-               bool (*key_equal)(HashmapNode::HashmapNodeData* node)) const;
-    HashmapNode::HashmapNodeData*
-    find_in_bucket_(const Bucket& bucket,
-                    hashsum_t hash,
-                    bool (*key_equal)(HashmapNode::HashmapNodeData* node)) const;
+               void* key,
+               bool (*key_equal)(HashmapNode::HashmapNodeData* node, void* key)) const;
+    HashmapNode::HashmapNodeData* find_in_bucket_(
+        const Bucket& bucket,
+        hashsum_t hash,
+        void* key,
+        bool (*key_equal)(HashmapNode::HashmapNodeData* node, void* key)) const;
 
     HashmapNode::HashmapNodeData* front() const;
     HashmapNode::HashmapNodeData* back() const;
@@ -69,7 +71,8 @@ public:
 
     void insert(HashmapNode::HashmapNodeData* node,
                 hashsum_t hash,
-                bool (*key_equal)(HashmapNode::HashmapNodeData* node));
+                void* key,
+                bool (*key_equal)(HashmapNode::HashmapNodeData* node, void* key));
     void remove(HashmapNode::HashmapNodeData* node);
 
     ROC_ATTR_NODISCARD bool grow();

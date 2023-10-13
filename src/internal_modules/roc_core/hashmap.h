@@ -27,6 +27,18 @@
 namespace roc {
 namespace core {
 
+template<class T>
+T* container_of_(HashmapNode::HashmapNodeData* data) {
+    return static_cast<T*>(data->container_of());
+}
+
+template <class T, class Key>
+bool key_equal_callback(HashmapNode::HashmapNodeData* node, void* key) {
+    T* elem = container_of_<T>(node);
+    const Key& keyRef = *(Key*)key;
+    return T::key_equal(elem->key(), keyRef);
+}
+
 //! Intrusive hash table.
 //!
 //! Characteristics:
@@ -86,14 +98,6 @@ public:
     //! @remarks
     //!  either raw or smart pointer depending on the ownership policy.
     typedef typename OwnershipPolicy<T>::Pointer Pointer;
-
-    template <class Key> struct KeyMatcher {
-        const Key& key;
-        bool key_equal(HashmapNode::HashmapNodeData* node) const {
-            T* elem = container_of_(node);
-            return T::key_equal(elem->key(), key);
-        }
-    };
 
     //! Initialize empty hashmap without arena.
     //! @remarks
@@ -159,9 +163,12 @@ public:
     //!  The worst case is achieved when the hash function produces many collisions.
     template <class Key> Pointer find(const Key& key) const {
         const hashsum_t hash = T::key_hash(key);
-        KeyMatcher<Key> key_matcher(key);
 
-        return impl_.find_node_(hash, &key_matcher.key_equal);
+        HashmapNode::HashmapNodeData* node =  impl_.find_node_(hash, (void*)&key, &key_equal_callback<T, Key>);
+        if (!node) {
+            return NULL;
+        }
+        return container_of_<T>(node);
     }
 
     //! Get first element in hashmap.
@@ -173,7 +180,7 @@ public:
         if (!node) {
             return NULL;
         }
-        return container_of_(node);
+        return container_of_<T>(node);
     }
 
     //! Get last element in hashmap.
@@ -185,7 +192,7 @@ public:
         if (!node) {
             return NULL;
         }
-        return container_of_(node);
+        return container_of_<T>(node);
     }
 
     //! Get hashmap element next to given one.
@@ -204,7 +211,7 @@ public:
         if (!next_node) {
             return NULL;
         }
-        return container_of_(next_node);
+        return container_of_<T>(next_node);
     }
 
     //! Insert element into hashmap.
@@ -229,15 +236,16 @@ public:
     //!  the incremental rehashing algorithm.
     void insert(T& element) {
         HashmapNode::HashmapNodeData* node = element.hashmap_node_data();
-        const typename T::Key& key = element.key();
-        const hashsum_t hash = T::key_hash(key);
-        KeyMatcher<typename T::Key> key_matcher(key);
 
-        impl_.insert(node, hash, &key_matcher.key_equal);
+        insert_(node, element.key());
 
         OwnershipPolicy<T>::acquire(element);
     }
 
+    template <class Key> void insert_(HashmapNode::HashmapNodeData* node, const Key& key) {
+        const hashsum_t hash = T::key_hash(key);
+        impl_.insert(node, hash, (void*)&key, &key_equal_callback<T, Key>);
+    }
     //! Remove element from hashmap.
     //!
     //! @remarks
@@ -289,12 +297,9 @@ private:
             / HashmapImpl::LoadFactorNum * 2
     };
 
-    static T* container_of_(HashmapNode::HashmapNodeData* data) {
-        return static_cast<T*>(data->container_of());
-    }
 
     static void release_callback(HashmapNode::HashmapNodeData* node) {
-        T* elem = container_of_(node);
+        T* elem = container_of_<T>(node);
         OwnershipPolicy<T>::release(*elem);
     }
 
