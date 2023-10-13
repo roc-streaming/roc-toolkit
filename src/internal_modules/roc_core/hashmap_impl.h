@@ -28,14 +28,23 @@ namespace core {
 
 class HashmapImpl {
 public:
+    enum {
+        // rehash happens when n_elements >= n_buckets * LoadFactorNum / LoadFactorDen
+        LoadFactorNum = 13,
+        LoadFactorDen = 2,
+    };
+
     struct Bucket {
         HashmapNode::HashmapNodeData* head;
     };
 
-    HashmapImpl(void* preallocated_data, size_t preallocated_size);
+    HashmapImpl(void* preallocated_data,
+                size_t preallocated_size,
+                size_t num_embedded_buckets);
 
     explicit HashmapImpl(void* preallocated_data,
                          size_t preallocated_size,
+                         size_t num_embedded_buckets,
                          IArena& arena);
 
     ~HashmapImpl();
@@ -44,13 +53,54 @@ public:
     size_t size() const;
     bool contains(const HashmapNode::HashmapNodeData* node) const;
 
+    size_t buckets_capacity_(size_t n_buckets) const;
+
+    HashmapNode::HashmapNodeData*
+    find_node_(hashsum_t hash,
+               bool (*key_equal)(HashmapNode::HashmapNodeData* node)) const;
+    HashmapNode::HashmapNodeData*
+    find_in_bucket_(const Bucket& bucket,
+                    hashsum_t hash,
+                    bool (*key_equal)(HashmapNode::HashmapNodeData* node)) const;
+
+    HashmapNode::HashmapNodeData* front() const;
+    HashmapNode::HashmapNodeData* back() const;
+    HashmapNode::HashmapNodeData* nextof(HashmapNode::HashmapNodeData* node) const;
+
+    void insert(HashmapNode::HashmapNodeData* node,
+                hashsum_t hash,
+                bool (*key_equal)(HashmapNode::HashmapNodeData* node));
+    void remove(HashmapNode::HashmapNodeData* node);
+
+    ROC_ATTR_NODISCARD bool grow();
+
+    void release_all(void (*release_callback)(HashmapNode::HashmapNodeData* node));
+
 private:
+    bool realloc_buckets_(size_t n_buckets);
+    void dealloc_buckets_();
+
     bool member_of_bucket_array_(Bucket* buckets,
                                  size_t n_buckets,
                                  const HashmapNode::HashmapNodeData* node) const;
 
+    Bucket& select_bucket_(hashsum_t hash) const;
+    void bucket_insert_(Bucket& bucket, HashmapNode::HashmapNodeData* node);
+    void bucket_remove_(HashmapNode::HashmapNodeData* node);
+    void all_list_insert_(HashmapNode::HashmapNodeData* node);
+    void all_list_remove_(HashmapNode::HashmapNodeData* node);
+    void proceed_rehash_(bool in_insert);
+    void migrate_node_(HashmapNode::HashmapNodeData* node);
+    size_t get_next_bucket_size_(size_t current_count);
+
+    void
+    release_bucket_array_(Bucket* buckets,
+                          size_t n_buckets,
+                          void (*release_callback)(HashmapNode::HashmapNodeData* node));
+
     void* preallocated_data_;
     size_t preallocated_size_;
+    size_t num_embedded_buckets_;
 
     Bucket* curr_buckets_;
     size_t n_curr_buckets_;
