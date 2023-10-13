@@ -11,11 +11,8 @@
 namespace roc {
 namespace core {
 
-HashmapImpl::HashmapImpl(void* preallocated_data,
-                         size_t preallocated_size,
-                         size_t num_embedded_buckets)
+HashmapImpl::HashmapImpl(void* preallocated_data, size_t num_embedded_buckets)
     : preallocated_data_(preallocated_data)
-    , preallocated_size_(preallocated_size)
     , num_embedded_buckets_(num_embedded_buckets)
     , curr_buckets_(NULL)
     , n_curr_buckets_(0)
@@ -30,11 +27,9 @@ HashmapImpl::HashmapImpl(void* preallocated_data,
 }
 
 HashmapImpl::HashmapImpl(void* preallocated_data,
-                         size_t preallocated_size,
                          size_t num_embedded_buckets,
                          IArena& arena)
     : preallocated_data_(preallocated_data)
-    , preallocated_size_(preallocated_size)
     , num_embedded_buckets_(num_embedded_buckets)
     , curr_buckets_(NULL)
     , n_curr_buckets_(0)

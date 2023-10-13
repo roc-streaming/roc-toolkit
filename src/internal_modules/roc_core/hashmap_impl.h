@@ -42,12 +42,9 @@ public:
     typedef bool (*key_equals_callback)(HashmapNode::HashmapNodeData* node, void* key);
     typedef void (*node_release_callback)(HashmapNode::HashmapNodeData* node);
 
-    HashmapImpl(void* preallocated_data,
-                size_t preallocated_size,
-                size_t num_embedded_buckets);
+    HashmapImpl(void* preallocated_data, size_t num_embedded_buckets);
 
     explicit HashmapImpl(void* preallocated_data,
-                         size_t preallocated_size,
                          size_t num_embedded_buckets,
                          IArena& arena);
 
@@ -104,7 +101,6 @@ private:
                                node_release_callback callback);
 
     void* preallocated_data_;
-    size_t preallocated_size_;
     size_t num_embedded_buckets_;
 
     Bucket* curr_buckets_;

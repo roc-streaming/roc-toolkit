@@ -91,18 +91,14 @@ public:
     //! @remarks
     //!  Hashmap capacity will be limited to the embedded capacity.
     Hashmap()
-        : impl_(
-            embedded_buckets_.memory(), embedded_buckets_.size(), NumEmbeddedBuckets) {
+        : impl_(embedded_buckets_.memory(), NumEmbeddedBuckets) {
     }
 
     //! Initialize empty hashmap with arena.
     //! @remarks
     //!  Hashmap capacity may grow using arena.
     explicit Hashmap(IArena& arena)
-        : impl_(embedded_buckets_.memory(),
-                embedded_buckets_.size(),
-                NumEmbeddedBuckets,
-                arena) {
+        : impl_(embedded_buckets_.memory(), NumEmbeddedBuckets, arena) {
     }
 
     //! Release ownership of all elements.
@@ -299,9 +295,9 @@ private:
                      &Hashmap<T, EmbeddedCapacity, OwnershipPolicy>::key_equals<Key>);
     }
 
-    HashmapImpl impl_;
-
     AlignedStorage<NumEmbeddedBuckets * sizeof(HashmapImpl::Bucket)> embedded_buckets_;
+
+    HashmapImpl impl_;
 };
 
 } // namespace core
