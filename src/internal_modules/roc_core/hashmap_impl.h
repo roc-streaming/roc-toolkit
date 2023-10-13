@@ -35,41 +35,64 @@ public:
         LoadFactorDen = 2,
     };
 
+    //! Bucket container.
     struct Bucket {
+        //! Pointer to head node.
         HashmapNode::HashmapNodeData* head;
     };
 
+    //! Callback function pointer type for key equality check.
     typedef bool (*key_equals_callback)(HashmapNode::HashmapNodeData* node, void* key);
+
+    //! Callback function pointer type for releasing nodes.
     typedef void (*node_release_callback)(HashmapNode::HashmapNodeData* node);
 
+    //! Initialize empty hashmap without arena.
     HashmapImpl(void* preallocated_data, size_t num_embedded_buckets);
 
+    //! Initialize empty hashmap with arena.
     explicit HashmapImpl(void* preallocated_data,
                          size_t num_embedded_buckets,
                          IArena& arena);
 
     ~HashmapImpl();
 
+    //! Get maximum number of nodes that can be added to hashmap before
+    //! grow() should be called.
     size_t capacity() const;
+
+    //! Get number of nodes added to hashmap.
     size_t size() const;
 
+    //! Check if node belongs to hashmap.
     bool contains(const HashmapNode::HashmapNodeData* node) const;
 
+    //! Find node in the hashmap.
     HashmapNode::HashmapNodeData*
     find_node(hashsum_t hash, void* key, key_equals_callback callback) const;
 
+    //! Get first node in hashmap.
     HashmapNode::HashmapNodeData* front() const;
+
+    //! Get last node in hashmap.
     HashmapNode::HashmapNodeData* back() const;
+
+    //! Get hashmap node next to given one.
     HashmapNode::HashmapNodeData* nextof(HashmapNode::HashmapNodeData* node) const;
 
+    //! Insert node into hashmap.
     void insert(HashmapNode::HashmapNodeData* node,
                 hashsum_t hash,
                 void* key,
                 key_equals_callback callback);
+
+    //! Remove node from hashmap.
     void remove(HashmapNode::HashmapNodeData* node);
 
+    //! Grow hashtable capacity.
     ROC_ATTR_NODISCARD bool grow();
 
+    //! Release all nodes from the hashmap.
     void release_all(node_release_callback callback);
 
 private:
