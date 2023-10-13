@@ -108,7 +108,7 @@ public:
     //! Release ownership of all elements.
     ~Hashmap() {
         impl_.release_all(
-            &Hashmap<T, EmbeddedCapacity, OwnershipPolicy>::release_callback);
+            &Hashmap<T, EmbeddedCapacity, OwnershipPolicy>::node_release);
     }
 
     //! Get maximum number of elements that can be added to hashmap before
@@ -288,7 +288,7 @@ private:
         return T::key_equal(elem->key(), key_ref);
     }
 
-    static void release_callback(HashmapNode::HashmapNodeData* node) {
+    static void node_release(HashmapNode::HashmapNodeData* node) {
         T* elem = container_of_(node);
         OwnershipPolicy<T>::release(*elem);
     }

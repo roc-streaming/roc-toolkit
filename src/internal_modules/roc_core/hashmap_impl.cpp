@@ -49,7 +49,9 @@ HashmapImpl::HashmapImpl(void* preallocated_data,
 }
 
 HashmapImpl::~HashmapImpl() {
-    // release_all(NULL);
+    if (size_ > 0) {
+        // roc_panic("hashmap: implementation not cleaned up");
+    }
 }
 
 size_t HashmapImpl::capacity() const {
@@ -76,10 +78,8 @@ size_t HashmapImpl::buckets_capacity_(size_t n_buckets) const {
     return n_buckets * LoadFactorNum / LoadFactorDen;
 }
 
-HashmapNode::HashmapNodeData* HashmapImpl::find_node_(
-    hashsum_t hash,
-    void* key,
-    key_equals_callback key_equals) const {
+HashmapNode::HashmapNodeData*
+HashmapImpl::find_node_(hashsum_t hash, void* key, key_equals_callback key_equals) const {
     if (n_curr_buckets_ != 0) {
         HashmapNode::HashmapNodeData* elem =
             find_in_bucket_(curr_buckets_[hash % n_curr_buckets_], hash, key, key_equals);
@@ -99,11 +99,11 @@ HashmapNode::HashmapNodeData* HashmapImpl::find_node_(
     return NULL;
 }
 
-HashmapNode::HashmapNodeData* HashmapImpl::find_in_bucket_(
-    const Bucket& bucket,
-    hashsum_t hash,
-    void* key,
-    key_equals_callback key_equals) const {
+HashmapNode::HashmapNodeData*
+HashmapImpl::find_in_bucket_(const Bucket& bucket,
+                             hashsum_t hash,
+                             void* key,
+                             key_equals_callback key_equals) const {
     HashmapNode::HashmapNodeData* node = bucket.head;
 
     if (node != NULL) {
@@ -213,10 +213,9 @@ ROC_ATTR_NODISCARD bool HashmapImpl::grow() {
     return true;
 }
 
-void HashmapImpl::release_all(
-    void (*release_callback)(HashmapNode::HashmapNodeData* node)) {
-    release_bucket_array_(curr_buckets_, n_curr_buckets_, release_callback);
-    release_bucket_array_(prev_buckets_, n_prev_buckets_, release_callback);
+void HashmapImpl::release_all(node_release_callback callback) {
+    release_bucket_array_(curr_buckets_, n_curr_buckets_, callback);
+    release_bucket_array_(prev_buckets_, n_prev_buckets_, callback);
 
     dealloc_buckets_();
 }
@@ -437,10 +436,9 @@ size_t HashmapImpl::get_next_bucket_size_(size_t current_count) {
     return current_count * 3;
 }
 
-void HashmapImpl::release_bucket_array_(
-    Bucket* buckets,
-    size_t n_buckets,
-    void (*release_callback)(HashmapNode::HashmapNodeData* node)) {
+void HashmapImpl::release_bucket_array_(Bucket* buckets,
+                                        size_t n_buckets,
+                                        node_release_callback callback) {
     if (n_buckets == 0) {
         return;
     }
@@ -457,8 +455,7 @@ void HashmapImpl::release_bucket_array_(
             if (node == buckets[n].head) {
                 node = NULL;
             }
-            if (release_callback)
-                release_callback(node_to_release);
+            callback(node_to_release);
         }
     }
 }

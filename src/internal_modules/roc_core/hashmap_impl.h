@@ -26,6 +26,7 @@
 namespace roc {
 namespace core {
 
+//! Intrusive hash table internal implementation.
 class HashmapImpl {
 public:
     enum {
@@ -39,6 +40,7 @@ public:
     };
 
     typedef bool (*key_equals_callback)(HashmapNode::HashmapNodeData* node, void* key);
+    typedef void (*node_release_callback)(HashmapNode::HashmapNodeData* node);
 
     HashmapImpl(void* preallocated_data,
                 size_t preallocated_size,
@@ -79,7 +81,7 @@ public:
 
     ROC_ATTR_NODISCARD bool grow();
 
-    void release_all(void (*release_callback)(HashmapNode::HashmapNodeData* node));
+    void release_all(node_release_callback callback);
 
 private:
     bool realloc_buckets_(size_t n_buckets);
@@ -101,7 +103,7 @@ private:
     void
     release_bucket_array_(Bucket* buckets,
                           size_t n_buckets,
-                          void (*release_callback)(HashmapNode::HashmapNodeData* node));
+                          node_release_callback callback);
 
     void* preallocated_data_;
     size_t preallocated_size_;
