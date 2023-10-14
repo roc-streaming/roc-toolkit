@@ -7,7 +7,7 @@
  */
 
 //! @file roc_core/align_ops.h
-//! @brief TODO.
+//! @brief Alignment operations.
 
 #ifndef ROC_CORE_ALIGN_OPS_H_
 #define ROC_CORE_ALIGN_OPS_H_
