@@ -4,6 +4,7 @@ import os
 import string
 import textwrap
 import xml.etree.ElementTree as ElementTree
+from dataclasses import dataclass
 
 CONFIG_FILE_PATH = "../build/docs/public_api/xml/config_8h.xml"
 
@@ -19,28 +20,35 @@ def to_camel_case(name):
     return ''.join(x.capitalize() for x in name.split('_'))
 
 
+@dataclass
+class DocItem:
+    type: string
+    text: string = None
+    values: list[list['DocItem']] = None
+
+
+@dataclass
 class DocComment:
-    def __init__(self, items: list):
-        self.items: list = items
+    items: list[list[DocItem]]
 
 
+@dataclass
 class EnumValue:
-    def __init__(self, name: string, value: string, doc: DocComment):
-        self.name: string = name
-        self.value: string = value
-        self.doc: DocComment = doc
+    name: string
+    value: string
+    doc: DocComment
 
 
+@dataclass
 class EnumDefinition:
-    def __init__(self, name: string, values: list[EnumValue], doc: DocComment):
-        self.name: string = name
-        self.values: list[EnumValue] = values
-        self.doc: DocComment = doc
+    name: string
+    values: list[EnumValue]
+    doc: DocComment
 
 
 class EnumGenerator:
     def generate_enum(self, enum_definition: EnumDefinition):
-        pass
+        raise NotImplementedError
 
 
 class JavaEnumGenerator(EnumGenerator):
@@ -100,11 +108,11 @@ class JavaEnumGenerator(EnumGenerator):
 
         doc_string = indent + "/**\n"
 
-        for i, item in enumerate(doc.items):
+        for i, items in enumerate(doc.items):
             if i != 0:
                 doc_string += indent + " * <p>\n"
 
-            text = self.doc_item_to_string(item)
+            text = self.doc_item_to_string(items)
             for t in text.split("\n"):
                 lines = textwrap.wrap(t, width=80,
                                       break_on_hyphens=False,
@@ -116,17 +124,17 @@ class JavaEnumGenerator(EnumGenerator):
         doc_string += indent + " */\n"
         return doc_string
 
-    def doc_item_to_string(self, doc_item):
+    def doc_item_to_string(self, items: list[DocItem]):
         result = []
-        for item in doc_item:
-            t = item['type']
+        for item in items:
+            t = item.type
             if t == "text":
-                result.append(item['text'])
+                result.append(item.text)
             elif t == "ref" or t == "code":
-                result.append(self.ref_to_string(item['text']))
+                result.append(self.ref_to_string(item.text))
             elif t == "list":
                 ul = "<ul>\n"
-                for li in item['values']:
+                for li in item.values:
                     ul += f"<li>{self.doc_item_to_string(li)}</li>\n"
                 ul += "</ul>\n"
                 result.append(ul)
@@ -149,7 +157,7 @@ class JavaEnumGenerator(EnumGenerator):
 
 class GoEnumGenerator(EnumGenerator):
 
-    def __init__(self, base_path:string, name_prefixes: dict[str, str]):
+    def __init__(self, base_path: string, name_prefixes: dict[str, str]):
         self.base_path = base_path
         self.name_prefixes: dict[str, str] = name_prefixes
 
@@ -167,7 +175,8 @@ class GoEnumGenerator(EnumGenerator):
         enum_file.write("//\n")
         roc_prefix = self.name_prefixes[enum_definition.name]
         go_prefix = to_camel_case(roc_prefix.lower().removeprefix('roc_').removesuffix('_'))
-        enum_file.write(f"//go:generate stringer -type {go_type_name} -trimprefix {go_prefix} -output {go_name}_string.go\n")
+        enum_file.write(
+            f"//go:generate stringer -type {go_type_name} -trimprefix {go_prefix} -output {go_name}_string.go\n")
         enum_file.write(f"type {go_type_name} int\n\n")
 
         enum_file.write("const (\n")
@@ -188,11 +197,11 @@ class GoEnumGenerator(EnumGenerator):
         indent_line = indent + "// "
         doc_string = ""
 
-        for i, item in enumerate(doc.items):
+        for i, items in enumerate(doc.items):
             if i != 0:
                 doc_string += indent_line.rstrip() + "\n"
 
-            text = self.doc_item_to_string(item)
+            text = self.doc_item_to_string(items)
             for t in text.split("\n"):
                 lines = textwrap.wrap(t, width=80,
                                       break_on_hyphens=False,
@@ -203,17 +212,17 @@ class GoEnumGenerator(EnumGenerator):
 
         return doc_string
 
-    def doc_item_to_string(self, doc_item):
+    def doc_item_to_string(self, doc_item: list[DocItem]):
         result = []
         for item in doc_item:
-            t = item['type']
+            t = item.type
             if t == "text":
-                result.append(item['text'])
+                result.append(item.text)
             elif t == "ref" or t == "code":
-                result.append(self.ref_to_string(item['text']))
+                result.append(self.ref_to_string(item.text))
             elif t == "list":
                 ul = "\n"
-                for li in item['values']:
+                for li in item.values:
                     ul += f" - {self.doc_item_to_string(li)}\n"
                 ul += "\n"
                 result.append(ul)
@@ -244,7 +253,7 @@ def parse_config_xml():
         exit(1)
 
 
-def get_enums(root):
+def get_enums(root) -> list[EnumDefinition]:
     enum_definitions = []
     enum_memberdefs = root.findall('.//sectiondef[@kind="enum"]/memberdef[@kind="enum"]')
     for member_def in enum_memberdefs:
@@ -264,7 +273,7 @@ def get_enums(root):
     return enum_definitions
 
 
-def parse_doc(elem):
+def parse_doc(elem) -> DocComment:
     items = []
     brief = elem.find('briefdescription/para')
     items.append(parse_doc_elem(brief))
@@ -283,20 +292,20 @@ def strip_text(text):
     return None
 
 
-def parse_doc_elem(elem: ElementTree.Element):
+def parse_doc_elem(elem: ElementTree.Element) -> list[DocItem]:
     items = []
     tag = elem.tag
     parse_children = True
     text = strip_text(elem.text)
     if tag == "para":
         if text:
-            items.append({"type": "text", "text": text})
+            items.append(DocItem("text", text))
     elif tag == "ref":
         if text:
-            items.append({"type": "ref", "text": text})
+            items.append(DocItem("ref", text))
     elif tag == "computeroutput":
         if text:
-            items.append({"type": "code", "text": text})
+            items.append(DocItem("code", text))
     elif tag == "itemizedlist":
         values = []
         for li in elem.findall("listitem"):
@@ -304,7 +313,7 @@ def parse_doc_elem(elem: ElementTree.Element):
             for e in li:
                 li_values.extend(parse_doc_elem(e))
             values.append(li_values)
-        items.append({"type": "list", "values": values})
+        items.append(DocItem("list", values=values))
         parse_children = False
     else:
         print(f"unknown tag = {tag}, consider adding it to parse_doc_elem")
@@ -314,7 +323,7 @@ def parse_doc_elem(elem: ElementTree.Element):
             if item.tail:
                 strip = item.tail.strip()
                 if strip:
-                    items.append({"type": "text", "text": strip})
+                    items.append(DocItem("text", text=strip))
     return items
 
 
