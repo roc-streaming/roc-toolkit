@@ -35,10 +35,28 @@ enum { DefaultHeapArenaFlags = (HeapArenaFlag_EnableGuards) };
 //!
 //! Uses malloc() and free().
 //!
-//! Supports memory "poisoning" to make memory-related bugs (out of bound writes, use
-//! after free, etc) more noticeable.
+//! The memory is always maximum aligned.
 //!
-//! The memory is always maximum aligned. Thread-safe.
+//! Implements three safety measures:
+//!  - to catch double-free and other logical bugs, inserts link to owning arena before
+//!    user data, and panics if it differs when memory is returned to arena
+//!  - to catch buffer overflow bugs, inserts "canary guards" before and after user
+//!    data, and panics if they are overwritten when memory is returned to arena
+//!  - to catch uninitialized-access and use-after-free bugs, "poisons" memory when it
+//!    returned to user, and when it returned back to the arena
+//!
+//! Allocated chunks have the following format:
+//! @code
+//!  +-------------+-------------+-----------+-------------+
+//!  | ChunkHeader | ChunkCanary | user data | ChunkCanary |
+//!  +-------------+-------------+-----------+-------------+
+//! @endcode
+//!
+//! ChunkHeader contains pointer to the owning arena, checked when returning memory to
+//! arena. ChunkCanary contains magic bytes filled when returning memory to user, and
+//! checked when returning memory to arena.
+//!
+//! Thread-safe.
 class HeapArena : public IArena, public NonCopyable<> {
 public:
     //! Initialize.
@@ -65,19 +83,20 @@ public:
 
 private:
     struct ChunkHeader {
-        size_t size;
-        //! The heap arena that the chunk belongs to.
+        // The heap arena that the chunk belongs to.
         HeapArena* owner;
+        // Data size, excluding canary guards.
+        size_t size;
+        // Data surrounded with canary guards.
         AlignMax data[];
     };
 
     typedef AlignMax ChunkCanary;
 
     Atomic<int> num_allocations_;
+    Atomic<size_t> num_guard_failures_;
 
     static size_t flags_;
-
-    size_t num_guard_failures_;
 };
 
 } // namespace core
