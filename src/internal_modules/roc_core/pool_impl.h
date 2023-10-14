@@ -28,19 +28,16 @@ namespace core {
 //! This is non-template class that implements all pool logic, to avoid
 //! polluting header file.
 //!
-//! Allocated slot have the following format:
+//! Allocated slots have the following format:
 //! @code
 //!  +------------+------------+-----------+------------+
 //!  | SlotHeader | SlotCanary | user data | SlotCanary |
 //!  +------------+------------+-----------+------------+
 //! @endcode
 //!
-//! SlotHeader contains pointer to the owning pool. It is used to ensure
-//! integrity of allocation and deallocation calls.
-//!
-//! SlotCanary contains magic bytes filled when returning slot to user,
-//! and checked when returning slot to pool. They are used to detect
-//! buffer overflow bugs.
+//! SlotHeader contains pointer to the owning pool, checked when returning memory to
+//! pool. SlotCanary contains magic bytes filled when returning memory to user, and
+//! checked when returning memory to pool.
 //!
 //! If user data requires padding to be maximum-aligned, this padding
 //! also becomes part of the trailing canary guard.

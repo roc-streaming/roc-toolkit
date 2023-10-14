@@ -45,8 +45,13 @@ enum { DefaultPoolFlags = (PoolFlag_EnableGuards) };
 //!
 //! The returned memory is always maximum-aligned.
 //!
-//! Supports memory "poisoning" to make memory-related bugs (out of bound writes, use
-//! after free, etc) more noticeable.
+//! Implements three safety measures:
+//!  - to catch double-free and other logical bugs, inserts link to owning pool before
+//!    user data, and panics if it differs when memory is returned to pool
+//!  - to catch buffer overflow bugs, inserts "canary guards" before and after user
+//!    data, and panics if they are overwritten when memory is returned to pool
+//!  - to catch uninitialized-access and use-after-free bugs, "poisons" memory when it
+//!    returned to user, and when it returned back to the pool
 //!
 //! @tparam T defines pool object type. It is used to determine allocation size. If
 //! runtime size is different from static size of T, it can be provided via constructor.

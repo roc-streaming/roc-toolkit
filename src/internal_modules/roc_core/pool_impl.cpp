@@ -117,6 +117,8 @@ void PoolImpl::deallocate(void* memory) {
 }
 
 size_t PoolImpl::num_guard_failures() const {
+    Mutex::Lock lock(mutex_);
+
     return num_guard_failures_;
 }
 
@@ -142,6 +144,18 @@ PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
     SlotHeader* slot_hdr =
         ROC_CONTAINER_OF((char*)memory - sizeof(SlotCanary), SlotHeader, data);
 
+    const bool is_owner = slot_hdr->owner == this;
+
+    if (!is_owner) {
+        num_guard_failures_++;
+        if (flags_ & PoolFlag_EnableGuards) {
+            roc_panic("pool: attempt to deallocate slot not belonging to this pool:"
+                      " name=%s this_pool=%p slot_pool=%p",
+                      name_, (const void*)this, (const void*)slot_hdr->owner);
+        }
+        return NULL;
+    }
+
     void* canary_before = (char*)slot_hdr->data;
     void* canary_after = (char*)slot_hdr->data + sizeof(SlotCanary) + object_size_;
 
@@ -156,18 +170,6 @@ PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
             roc_panic("pool: detected memory violation: name=%s ok_before=%d ok_after=%d",
                       name_, (int)canary_before_ok, (int)canary_after_ok);
         }
-    }
-
-    const bool is_owner = slot_hdr->owner == this;
-
-    if (!is_owner) {
-        num_guard_failures_++;
-        if (flags_ & PoolFlag_EnableGuards) {
-            roc_panic("pool: attempt to deallocate slot not belonging to this pool:"
-                      " name=%s this_pool=%p slot_pool=%p",
-                      name_, (const void*)this, (const void*)slot_hdr->owner);
-        }
-        return NULL;
     }
 
     MemoryOps::poison_after_use(memory, object_size_);

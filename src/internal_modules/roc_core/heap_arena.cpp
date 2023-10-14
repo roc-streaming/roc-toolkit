@@ -26,7 +26,7 @@ HeapArena::HeapArena()
 HeapArena::~HeapArena() {
     if (num_allocations_ != 0) {
         if (AtomicOps::load_seq_cst(flags_) & HeapArenaFlag_EnableLeakDetection) {
-            roc_panic("heap arena: detected leak(s): %d objects was not freed",
+            roc_panic("heap arena: detected leak(s): %d chunks were not freed",
                       (int)num_allocations_);
         }
     }
@@ -75,6 +75,19 @@ void HeapArena::deallocate(void* ptr) {
     ChunkHeader* chunk =
         ROC_CONTAINER_OF((char*)ptr - sizeof(ChunkCanary), ChunkHeader, data);
 
+    const bool is_owner = chunk->owner == this;
+
+    if (!is_owner) {
+        num_guard_failures_++;
+        if (AtomicOps::load_seq_cst(flags_) & HeapArenaFlag_EnableGuards) {
+            roc_panic("heap arena:"
+                      " attempt to deallocate chunk not belonging to this arena:"
+                      " this_arena=%p chunk_arena=%p",
+                      (const void*)this, (const void*)chunk->owner);
+        }
+        return;
+    }
+
     size_t size = chunk->size;
 
     char* canary_before = (char*)chunk->data;
@@ -92,19 +105,6 @@ void HeapArena::deallocate(void* ptr) {
             roc_panic("heap arena: detected memory violation: ok_before=%d ok_after=%d",
                       (int)canary_before_ok, (int)canary_after_ok);
         }
-    }
-
-    const bool is_owner = chunk->owner == this;
-
-    if (!is_owner) {
-        num_guard_failures_++;
-        if (AtomicOps::load_seq_cst(flags_) & HeapArenaFlag_EnableGuards) {
-            roc_panic("heap arena: attempt to deallocate chunk not belonging to this "
-                      "heap arena:"
-                      " this_pool=%p chunk_pool=%p",
-                      (const void*)this, (const void*)chunk->owner);
-        }
-        return;
     }
 
     const int n = num_allocations_--;
