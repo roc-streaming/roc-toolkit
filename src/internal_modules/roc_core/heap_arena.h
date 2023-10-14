@@ -66,6 +66,8 @@ public:
 private:
     struct ChunkHeader {
         size_t size;
+        //! The heap arena that the chunk belongs to.
+        HeapArena* owner;
         AlignMax data[];
     };
 

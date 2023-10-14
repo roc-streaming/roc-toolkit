@@ -52,6 +52,8 @@ void* HeapArena::allocate(size_t size) {
 
     ChunkHeader* chunk = (ChunkHeader*)malloc(chunk_size);
 
+    chunk->owner = this;
+
     char* canary_before = (char*)chunk->data;
     char* memory = (char*)chunk->data + sizeof(ChunkCanary);
     char* canary_after = (char*)chunk->data + sizeof(ChunkCanary) + size;
@@ -68,12 +70,6 @@ void* HeapArena::allocate(size_t size) {
 void HeapArena::deallocate(void* ptr) {
     if (!ptr) {
         roc_panic("heap arena: null pointer");
-    }
-
-    const int n = num_allocations_--;
-
-    if (n == 0) {
-        roc_panic("heap arena: unpaired deallocate");
     }
 
     ChunkHeader* chunk =
@@ -96,6 +92,25 @@ void HeapArena::deallocate(void* ptr) {
             roc_panic("heap arena: detected memory violation: ok_before=%d ok_after=%d",
                       (int)canary_before_ok, (int)canary_after_ok);
         }
+    }
+
+    const bool is_owner = chunk->owner == this;
+
+    if (!is_owner) {
+        num_guard_failures_++;
+        if (AtomicOps::load_seq_cst(flags_) & HeapArenaFlag_EnableGuards) {
+            roc_panic("heap arena: attempt to deallocate chunk not belonging to this "
+                      "heap arena:"
+                      " this_pool=%p chunk_pool=%p",
+                      (const void*)this, (const void*)chunk->owner);
+        }
+        return;
+    }
+
+    const int n = num_allocations_--;
+
+    if (n == 0) {
+        roc_panic("heap arena: unpaired deallocate");
     }
 
     MemoryOps::poison_after_use(memory, chunk->size);
