@@ -7,7 +7,7 @@
  */
 
 //! @file roc_core/align_ops.h
-//! @brief Alignment operations.
+//! @brief TODO.
 
 #ifndef ROC_CORE_ALIGN_OPS_H_
 #define ROC_CORE_ALIGN_OPS_H_
@@ -28,46 +28,19 @@ union AlignMax {
 class AlignOps {
 public:
     //! Get maximum alignment for current platform.
-    static inline size_t max_alignment() {
-        return sizeof(AlignMax);
-    }
+    static size_t max_alignment();
 
     //! Return size aligned to maximum alignment.
-    static inline size_t align_max(size_t size) {
-        return align_as(size, max_alignment());
-    }
+    static size_t align_max(size_t size);
 
     //! Return size aligned to given alignment.
-    static inline size_t align_as(size_t size, size_t alignment) {
-        if (alignment == 0) {
-            return size;
-        }
-
-        if (size % alignment != 0) {
-            size += alignment - size % alignment;
-        }
-
-        return size;
-    }
+    static size_t align_as(size_t size, size_t alignment);
 
     //! Return padding needed for maximum alignment.
-    static inline size_t pad_max(size_t size) {
-        return pad_as(size, max_alignment());
-    }
+    static size_t pad_max(size_t size);
 
     //! Return padding needed for given alignment.
-    static inline size_t pad_as(size_t size, size_t alignment) {
-        if (alignment == 0) {
-            return 0;
-        }
-
-        size_t new_size = size / alignment * alignment;
-        if (new_size < size) {
-            new_size += alignment;
-        }
-
-        return (new_size - size);
-    }
+    static size_t pad_as(size_t size, size_t alignment);
 };
 
 } // namespace core
