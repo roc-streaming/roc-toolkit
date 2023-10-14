@@ -70,5 +70,19 @@ TEST(heap_arena, guard_object_violations) {
     CHECK(arena.num_guard_failures() == 2);
 }
 
+TEST(heap_arena, ownership_guard) {
+    HeapArena arena0;
+    HeapArena arena1;
+
+    void* pointer = arena0.allocate(128);
+    CHECK(pointer);
+
+    arena1.deallocate(pointer);
+    CHECK(arena1.num_guard_failures() == 1);
+
+    arena0.deallocate(pointer);
+    CHECK(arena0.num_guard_failures() == 0);
+}
+
 } // namespace core
 } // namespace roc
