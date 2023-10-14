@@ -2,6 +2,7 @@
 import argparse
 import os
 import string
+import sys
 import textwrap
 import xml.etree.ElementTree as ElementTree
 from dataclasses import dataclass
@@ -246,10 +247,10 @@ def parse_config_xml():
         tree = ElementTree.parse(CONFIG_FILE_PATH)
         return tree.getroot()
     except FileNotFoundError:
-        print(f"File not found: {CONFIG_FILE_PATH}")
+        print(f"File not found: {CONFIG_FILE_PATH}", file=sys.stderr)
         exit(1)
     except ElementTree.ParseError:
-        print(f"Error parsing XML file: {CONFIG_FILE_PATH}")
+        print(f"Error parsing XML file: {CONFIG_FILE_PATH}", file=sys.stderr)
         exit(1)
 
 
@@ -327,7 +328,21 @@ def parse_doc_elem(elem: ElementTree.Element) -> list[DocItem]:
     return items
 
 
-def generate_enums(generator: EnumGenerator, enum_definitions: list[EnumDefinition]):
+def get_name_prefixes(enum_definitions):
+    name_prefixes = {}
+    for enum_definition in enum_definitions:
+        name = enum_definition.name
+        prefix = ODD_PREFIXES.get(name, name.upper() + "_")
+        name_prefixes[name] = prefix
+    return name_prefixes
+
+
+def generate_enums(generator_construct, output_dir, name_prefixes, enum_definitions: list[EnumDefinition]):
+    if not os.path.isdir(output_dir):
+        print(f"Directory does not exist: {output_dir}. Can't generate enums {generator_construct.__name__}",
+              file=sys.stderr)
+        exit(1)
+    generator = generator_construct(output_dir, name_prefixes)
     for enum_definition in enum_definitions:
         generator.generate_enum(enum_definition)
 
@@ -347,18 +362,13 @@ def main():
 
     xml_doc = parse_config_xml()
     enum_definitions = get_enums(xml_doc)
-
-    name_prefixes = {}
-    for enum_definition in enum_definitions:
-        name = enum_definition.name
-        prefix = ODD_PREFIXES.get(name, name.upper() + "_")
-        name_prefixes[name] = prefix
+    name_prefixes = get_name_prefixes(enum_definitions)
 
     if args.type == "all" or args.type == "java":
-        generate_enums(JavaEnumGenerator(args.java_output_dir, name_prefixes), enum_definitions)
+        generate_enums(JavaEnumGenerator, args.java_output_dir, name_prefixes, enum_definitions)
 
     if args.type == "all" or args.type == "go":
-        generate_enums(GoEnumGenerator(args.go_output_dir, name_prefixes), enum_definitions)
+        generate_enums(GoEnumGenerator, args.go_output_dir, name_prefixes, enum_definitions)
 
 
 if __name__ == '__main__':
