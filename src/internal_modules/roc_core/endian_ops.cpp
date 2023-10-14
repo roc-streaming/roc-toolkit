@@ -48,6 +48,10 @@ int64_t EndianOps::reverse_octets_(int64_t v) {
 }
 
 float EndianOps::reverse_octets_(float v) {
+    struct TypeCheck {
+        int f : sizeof(float) == sizeof(uint32_t) ? 1 : -1;
+    };
+
     union {
         float f;
         uint32_t i;
@@ -60,6 +64,10 @@ float EndianOps::reverse_octets_(float v) {
 }
 
 double EndianOps::reverse_octets_(double v) {
+    struct TypeCheck {
+        int f : sizeof(double) == sizeof(uint64_t) ? 1 : -1;
+    };
+
     union {
         double f;
         uint64_t i;
