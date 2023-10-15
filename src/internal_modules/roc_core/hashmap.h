@@ -153,7 +153,7 @@ public:
     template <class Key> Pointer find(const Key& key) const {
         const hashsum_t hash = T::key_hash(key);
         HashmapNode::HashmapNodeData* node = impl_.find_node(
-            hash, (void*)&key,
+            hash, (void*)&const_cast<Key&>(key),
             &Hashmap<T, EmbeddedCapacity, OwnershipPolicy>::key_equals<Key>);
         if (!node) {
             return NULL;
@@ -293,7 +293,7 @@ private:
     template <class Key>
     void insert_(const Key& key, HashmapNode::HashmapNodeData* node) {
         const hashsum_t hash = T::key_hash(key);
-        impl_.insert(node, hash, (void*)&key,
+        impl_.insert(node, hash, (void*)&const_cast<Key&>(key),
                      &Hashmap<T, EmbeddedCapacity, OwnershipPolicy>::key_equals<Key>);
     }
 
