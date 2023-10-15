@@ -44,9 +44,7 @@ HashmapImpl::HashmapImpl(void* preallocated_data,
 }
 
 HashmapImpl::~HashmapImpl() {
-    if (size_ > 0) {
-        // roc_panic("hashmap: implementation not cleaned up");
-    }
+    dealloc_buckets_();
 }
 
 size_t HashmapImpl::capacity() const {
@@ -180,13 +178,6 @@ ROC_ATTR_NODISCARD bool HashmapImpl::grow() {
     }
 
     return true;
-}
-
-void HashmapImpl::release_all(node_release_callback callback) {
-    release_bucket_array_(curr_buckets_, n_curr_buckets_, callback);
-    release_bucket_array_(prev_buckets_, n_prev_buckets_, callback);
-
-    dealloc_buckets_();
 }
 
 HashmapNode::HashmapNodeData*
@@ -429,30 +420,6 @@ size_t HashmapImpl::get_next_bucket_size_(size_t current_count) {
     // fallback for unrealistically large counts
     roc_panic_if(current_count * 3 < current_count);
     return current_count * 3;
-}
-
-void HashmapImpl::release_bucket_array_(Bucket* buckets,
-                                        size_t n_buckets,
-                                        node_release_callback callback) {
-    if (n_buckets == 0) {
-        return;
-    }
-
-    for (size_t n = 0; n < n_buckets; n++) {
-        HashmapNode::HashmapNodeData* node = buckets[n].head;
-
-        while (node) {
-            HashmapNode::HashmapNodeData* node_to_release = node;
-
-            node->bucket = NULL;
-
-            node = node->bucket_next;
-            if (node == buckets[n].head) {
-                node = NULL;
-            }
-            callback(node_to_release);
-        }
-    }
 }
 
 } // namespace core

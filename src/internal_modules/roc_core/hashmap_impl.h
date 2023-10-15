@@ -92,9 +92,6 @@ public:
     //! Grow hashtable capacity.
     ROC_ATTR_NODISCARD bool grow();
 
-    //! Release all nodes from the hashmap.
-    void release_all(node_release_callback callback);
-
 private:
     HashmapNode::HashmapNodeData* find_in_bucket_(const Bucket& bucket,
                                                   hashsum_t hash,

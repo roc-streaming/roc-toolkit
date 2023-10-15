@@ -103,7 +103,14 @@ public:
 
     //! Release ownership of all elements.
     ~Hashmap() {
-        impl_.release_all(&Hashmap<T, EmbeddedCapacity, OwnershipPolicy>::node_release);
+        HashmapNode::HashmapNodeData* node = impl_.front();
+
+        while (node != NULL) {
+            impl_.remove(node);
+            T* elem = container_of_(node);
+            OwnershipPolicy<T>::release(*elem);
+            node = impl_.front();
+        }
     }
 
     //! Get maximum number of elements that can be added to hashmap before
@@ -281,11 +288,6 @@ private:
         T* elem = container_of_(node);
         const Key& key_ref = *(Key*)key;
         return T::key_equal(elem->key(), key_ref);
-    }
-
-    static void node_release(HashmapNode::HashmapNodeData* node) {
-        T* elem = container_of_(node);
-        OwnershipPolicy<T>::release(*elem);
     }
 
     template <class Key>
