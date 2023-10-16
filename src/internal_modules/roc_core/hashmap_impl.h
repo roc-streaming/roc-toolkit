@@ -42,18 +42,13 @@ public:
     };
 
     //! Callback function pointer type for key equality check.
-    typedef bool (*key_equals_callback)(HashmapNode::HashmapNodeData* node, void* key);
-
-    //! Callback function pointer type for releasing nodes.
-    typedef void (*node_release_callback)(HashmapNode::HashmapNodeData* node);
-
-    //! Initialize empty hashmap without arena.
-    HashmapImpl(void* preallocated_data, size_t num_embedded_buckets);
+    typedef bool (*key_equals_callback)(HashmapNode::HashmapNodeData* node,
+                                        const void* key);
 
     //! Initialize empty hashmap with arena.
     explicit HashmapImpl(void* preallocated_data,
                          size_t num_embedded_buckets,
-                         IArena& arena);
+                         IArena* arena);
 
     ~HashmapImpl();
 
@@ -69,7 +64,7 @@ public:
 
     //! Find node in the hashmap.
     HashmapNode::HashmapNodeData*
-    find_node(hashsum_t hash, void* key, key_equals_callback callback) const;
+    find_node(hashsum_t hash, const void* key, key_equals_callback callback) const;
 
     //! Get first node in hashmap.
     HashmapNode::HashmapNodeData* front() const;
@@ -83,11 +78,11 @@ public:
     //! Insert node into hashmap.
     void insert(HashmapNode::HashmapNodeData* node,
                 hashsum_t hash,
-                void* key,
+                const void* key,
                 key_equals_callback callback);
 
     //! Remove node from hashmap.
-    void remove(HashmapNode::HashmapNodeData* node);
+    void remove(HashmapNode::HashmapNodeData* node, bool skip_rehash);
 
     //! Grow hashtable capacity.
     ROC_ATTR_NODISCARD bool grow();
@@ -95,7 +90,7 @@ public:
 private:
     HashmapNode::HashmapNodeData* find_in_bucket_(const Bucket& bucket,
                                                   hashsum_t hash,
-                                                  void* key,
+                                                  const void* key,
                                                   key_equals_callback callback) const;
 
     size_t buckets_capacity_(size_t n_buckets) const;
@@ -116,12 +111,8 @@ private:
     void migrate_node_(HashmapNode::HashmapNodeData* node);
     size_t get_next_bucket_size_(size_t current_count);
 
-    void release_bucket_array_(Bucket* buckets,
-                               size_t n_buckets,
-                               node_release_callback callback);
-
     void* preallocated_data_;
-    size_t num_embedded_buckets_;
+    size_t num_preallocated_buckets_;
 
     Bucket* curr_buckets_;
     size_t n_curr_buckets_;

@@ -11,26 +11,11 @@
 namespace roc {
 namespace core {
 
-HashmapImpl::HashmapImpl(void* preallocated_data, size_t num_embedded_buckets)
-    : preallocated_data_(preallocated_data)
-    , num_embedded_buckets_(num_embedded_buckets)
-    , curr_buckets_(NULL)
-    , n_curr_buckets_(0)
-    , prev_buckets_(NULL)
-    , n_prev_buckets_(0)
-    , size_(0)
-    , rehash_pos_(0)
-    , rehash_remain_nodes_(0)
-    , arena_(NULL) {
-    all_head_.all_prev = &all_head_;
-    all_head_.all_next = &all_head_;
-}
-
 HashmapImpl::HashmapImpl(void* preallocated_data,
-                         size_t num_embedded_buckets,
-                         IArena& arena)
+                         size_t num_preallocated_buckets,
+                         IArena* arena)
     : preallocated_data_(preallocated_data)
-    , num_embedded_buckets_(num_embedded_buckets)
+    , num_preallocated_buckets_(num_preallocated_buckets)
     , curr_buckets_(NULL)
     , n_curr_buckets_(0)
     , prev_buckets_(NULL)
@@ -38,7 +23,7 @@ HashmapImpl::HashmapImpl(void* preallocated_data,
     , size_(0)
     , rehash_pos_(0)
     , rehash_remain_nodes_(0)
-    , arena_(&arena) {
+    , arena_(arena) {
     all_head_.all_prev = &all_head_;
     all_head_.all_next = &all_head_;
 }
@@ -67,8 +52,8 @@ bool HashmapImpl::contains(const HashmapNode::HashmapNodeData* node) const {
     return false;
 }
 
-HashmapNode::HashmapNodeData*
-HashmapImpl::find_node(hashsum_t hash, void* key, key_equals_callback key_equals) const {
+HashmapNode::HashmapNodeData* HashmapImpl::find_node(
+    hashsum_t hash, const void* key, key_equals_callback key_equals) const {
     if (n_curr_buckets_ != 0) {
         HashmapNode::HashmapNodeData* elem =
             find_in_bucket_(curr_buckets_[hash % n_curr_buckets_], hash, key, key_equals);
@@ -119,7 +104,7 @@ HashmapImpl::nextof(HashmapNode::HashmapNodeData* node) const {
 
 void HashmapImpl::insert(HashmapNode::HashmapNodeData* node,
                          hashsum_t hash,
-                         void* key,
+                         const void* key,
                          key_equals_callback key_equals) {
     if (size_ >= buckets_capacity_(n_curr_buckets_)) {
         roc_panic("hashmap: attempt to insert into full hashmap before calling grow()");
@@ -145,7 +130,7 @@ void HashmapImpl::insert(HashmapNode::HashmapNodeData* node,
     proceed_rehash_(true);
 }
 
-void HashmapImpl::remove(HashmapNode::HashmapNodeData* node) {
+void HashmapImpl::remove(HashmapNode::HashmapNodeData* node, bool skip_rehash) {
     if (!contains(node)) {
         roc_panic("hashmap:"
                   " attempt to remove an element which is not a member of %s hashmap",
@@ -156,7 +141,9 @@ void HashmapImpl::remove(HashmapNode::HashmapNodeData* node) {
     all_list_remove_(node);
     size_--;
 
-    proceed_rehash_(false);
+    if (!skip_rehash) {
+        proceed_rehash_(false);
+    }
 }
 
 ROC_ATTR_NODISCARD bool HashmapImpl::grow() {
@@ -183,7 +170,7 @@ ROC_ATTR_NODISCARD bool HashmapImpl::grow() {
 HashmapNode::HashmapNodeData*
 HashmapImpl::find_in_bucket_(const Bucket& bucket,
                              hashsum_t hash,
-                             void* key,
+                             const void* key,
                              key_equals_callback key_equals) const {
     HashmapNode::HashmapNodeData* node = bucket.head;
 
@@ -213,7 +200,7 @@ bool HashmapImpl::realloc_buckets_(size_t n_buckets) {
     roc_panic_if_not(rehash_remain_nodes_ == 0);
 
     Bucket* buckets;
-    if (n_buckets <= num_embedded_buckets_
+    if (n_buckets <= num_preallocated_buckets_
         && curr_buckets_ != (Bucket*)preallocated_data_) {
         buckets = (Bucket*)preallocated_data_;
     } else if (arena_) {
@@ -391,15 +378,15 @@ size_t HashmapImpl::get_next_bucket_size_(size_t current_count) {
     // minimum bucket count when allocating from arena
     const size_t min_arena_count = 23;
 
-    if ((ssize_t)current_count < (ssize_t)num_embedded_buckets_) {
+    if ((ssize_t)current_count < (ssize_t)num_preallocated_buckets_) {
         // we are allocating from embedded capacity
         // find maximum prime count above current and below capacity
         for (size_t n = 0; n < ROC_ARRAY_SIZE(prime_counts) - 1; n++) {
-            if (prime_counts[n] > num_embedded_buckets_) {
+            if (prime_counts[n] > num_preallocated_buckets_) {
                 break;
             }
             if (prime_counts[n] > current_count
-                && prime_counts[n + 1] > num_embedded_buckets_) {
+                && prime_counts[n + 1] > num_preallocated_buckets_) {
                 return prime_counts[n];
             }
         }

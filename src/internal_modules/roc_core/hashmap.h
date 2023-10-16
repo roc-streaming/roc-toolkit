@@ -91,14 +91,14 @@ public:
     //! @remarks
     //!  Hashmap capacity will be limited to the embedded capacity.
     Hashmap()
-        : impl_(embedded_buckets_.memory(), NumEmbeddedBuckets) {
+        : impl_(embedded_buckets_.memory(), NumEmbeddedBuckets, NULL) {
     }
 
     //! Initialize empty hashmap with arena.
     //! @remarks
     //!  Hashmap capacity may grow using arena.
     explicit Hashmap(IArena& arena)
-        : impl_(embedded_buckets_.memory(), NumEmbeddedBuckets, arena) {
+        : impl_(embedded_buckets_.memory(), NumEmbeddedBuckets, &arena) {
     }
 
     //! Release ownership of all elements.
@@ -106,7 +106,7 @@ public:
         HashmapNode::HashmapNodeData* node = impl_.front();
 
         while (node != NULL) {
-            impl_.remove(node);
+            impl_.remove(node, true);
             T* elem = container_of_(node);
             OwnershipPolicy<T>::release(*elem);
             node = impl_.front();
@@ -153,7 +153,7 @@ public:
     template <class Key> Pointer find(const Key& key) const {
         const hashsum_t hash = T::key_hash(key);
         HashmapNode::HashmapNodeData* node = impl_.find_node(
-            hash, (void*)&const_cast<Key&>(key),
+            hash, (const void*)&key,
             &Hashmap<T, EmbeddedCapacity, OwnershipPolicy>::key_equals<Key>);
         if (!node) {
             return NULL;
@@ -244,7 +244,7 @@ public:
     //!  - proceedes lazy rehashing
     void remove(T& element) {
         HashmapNode::HashmapNodeData* node = element.hashmap_node_data();
-        impl_.remove(node);
+        impl_.remove(node, false);
         OwnershipPolicy<T>::release(element);
     }
 
@@ -284,16 +284,16 @@ private:
     }
 
     template <class Key>
-    static bool key_equals(HashmapNode::HashmapNodeData* node, void* key) {
+    static bool key_equals(HashmapNode::HashmapNodeData* node, const void* key) {
         T* elem = container_of_(node);
-        const Key& key_ref = *(Key*)key;
+        const Key& key_ref = *(const Key*)key;
         return T::key_equal(elem->key(), key_ref);
     }
 
     template <class Key>
     void insert_(const Key& key, HashmapNode::HashmapNodeData* node) {
         const hashsum_t hash = T::key_hash(key);
-        impl_.insert(node, hash, (void*)&const_cast<Key&>(key),
+        impl_.insert(node, hash, (const void*)&key,
                      &Hashmap<T, EmbeddedCapacity, OwnershipPolicy>::key_equals<Key>);
     }
 
