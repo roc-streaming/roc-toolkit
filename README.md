@@ -27,7 +27,7 @@ Key features:
 * portability;
 * relying on open, standard protocols.
 
-Besides toolkit, Roc Streaming provides:
+Besides library and tools, toolkit provides:
 
 * [bindings](https://roc-streaming.org/toolkit/docs/api/bindings.html) for other programming languages
 * [modules](https://roc-streaming.org/toolkit/docs/tools/sound_server_modules.html) for sound servers like PulseAudio and PipeWire
@@ -80,7 +80,7 @@ See here:
 Community
 ---------
 
-We have a mailing list and an Matrix room. See details [here](https://roc-streaming.org/toolkit/docs/about_project/contacts.html).
+We have a mailing list and an Matrix chat room. See details [here](https://roc-streaming.org/toolkit/docs/about_project/contacts.html).
 
 Contributing
 ------------
