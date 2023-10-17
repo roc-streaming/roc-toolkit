@@ -154,7 +154,7 @@ public:
         const hashsum_t hash = T::key_hash(key);
         HashmapNode::HashmapNodeData* node = impl_.find_node(
             hash, (const void*)&key,
-            &Hashmap<T, EmbeddedCapacity, OwnershipPolicy>::key_equals<Key>);
+            &Hashmap<T, EmbeddedCapacity, OwnershipPolicy>::key_equal<Key>);
         if (!node) {
             return NULL;
         }
@@ -284,7 +284,7 @@ private:
     }
 
     template <class Key>
-    static bool key_equals(HashmapNode::HashmapNodeData* node, const void* key) {
+    static bool key_equal(HashmapNode::HashmapNodeData* node, const void* key) {
         T* elem = container_of_(node);
         const Key& key_ref = *(const Key*)key;
         return T::key_equal(elem->key(), key_ref);
@@ -294,7 +294,7 @@ private:
     void insert_(const Key& key, HashmapNode::HashmapNodeData* node) {
         const hashsum_t hash = T::key_hash(key);
         impl_.insert(node, hash, (const void*)&key,
-                     &Hashmap<T, EmbeddedCapacity, OwnershipPolicy>::key_equals<Key>);
+                     &Hashmap<T, EmbeddedCapacity, OwnershipPolicy>::key_equal<Key>);
     }
 
     AlignedStorage<NumEmbeddedBuckets * sizeof(HashmapImpl::Bucket)> embedded_buckets_;

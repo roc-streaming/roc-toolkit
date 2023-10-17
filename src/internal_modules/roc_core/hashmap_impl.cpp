@@ -29,6 +29,9 @@ HashmapImpl::HashmapImpl(void* preallocated_data,
 }
 
 HashmapImpl::~HashmapImpl() {
+    if (size_ != 0) {
+        roc_panic("hashmap: hashmap isn't empty on destruct");
+    }
     dealloc_buckets_();
 }
 
@@ -146,7 +149,7 @@ void HashmapImpl::remove(HashmapNode::HashmapNodeData* node, bool skip_rehash) {
     }
 }
 
-ROC_ATTR_NODISCARD bool HashmapImpl::grow() {
+bool HashmapImpl::grow() {
     const size_t cap = buckets_capacity_(n_curr_buckets_);
     roc_panic_if_not(size_ <= cap);
 
