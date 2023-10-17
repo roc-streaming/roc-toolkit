@@ -190,14 +190,14 @@ TEST(io_uri, small_buffer) {
         core::StringBuilder b(buf, sizeof(buf));
 
         CHECK(format_io_uri(u, b));
-        CHECK(b.ok());
+        CHECK(b.is_ok());
     }
 
     for (size_t i = 0; i < sizeof(buf); i++) {
         core::StringBuilder b(buf, i);
 
         CHECK(format_io_uri(u, b));
-        CHECK(!b.ok());
+        CHECK(!b.is_ok());
     }
 }
 

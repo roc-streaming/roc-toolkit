@@ -130,7 +130,7 @@ size_t StringBuilder::actual_size() const {
     return n_written_ + 1;
 }
 
-bool StringBuilder::ok() const {
+bool StringBuilder::is_ok() const {
     return !truncation_error_ && !write_error_;
 }
 
@@ -216,7 +216,7 @@ bool StringBuilder::append_(const char* str, size_t str_size, bool grow) {
         if (grow) {
             if (!writer_->grow_by(str_size)) {
                 write_error_ = true;
-                return ok();
+                return is_ok();
             }
         }
 
@@ -225,7 +225,7 @@ bool StringBuilder::append_(const char* str, size_t str_size, bool grow) {
 
             if (write_size < 0) {
                 write_error_ = true;
-                return ok();
+                return is_ok();
             }
 
             if (write_size > 0) {
@@ -241,7 +241,7 @@ bool StringBuilder::append_(const char* str, size_t str_size, bool grow) {
         }
     }
 
-    return ok();
+    return is_ok();
 }
 
 } // namespace core

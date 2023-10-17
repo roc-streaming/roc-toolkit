@@ -468,14 +468,14 @@ TEST(endpoint_uri, small_buffer) {
         core::StringBuilder b(buf, sizeof(buf));
 
         CHECK(format_endpoint_uri(u, EndpointUri::Subset_Full, b));
-        CHECK(b.ok());
+        CHECK(b.is_ok());
     }
 
     for (size_t i = 0; i < sizeof(buf); i++) {
         core::StringBuilder b(buf, i);
 
         CHECK(format_endpoint_uri(u, EndpointUri::Subset_Full, b));
-        CHECK(!b.ok());
+        CHECK(!b.is_ok());
     }
 }
 

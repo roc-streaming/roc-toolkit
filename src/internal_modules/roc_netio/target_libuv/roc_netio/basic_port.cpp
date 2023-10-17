@@ -34,7 +34,7 @@ void BasicPort::update_descriptor() {
 
     format_descriptor(b);
 
-    if (!b.ok() || b.actual_size() == 0) {
+    if (!b.is_ok() || b.actual_size() == 0) {
         roc_panic("basic port: failed to format descriptor");
     }
 }

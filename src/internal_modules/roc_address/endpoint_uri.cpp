@@ -362,7 +362,7 @@ bool EndpointUri::set_encoded_path(const char* str, size_t str_len) {
         return false;
     }
 
-    if (!b.ok()) {
+    if (!b.is_ok()) {
         set_invalid_(PartPath);
         return false;
     }
