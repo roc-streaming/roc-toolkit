@@ -73,11 +73,10 @@ public:
     size_t actual_size() const;
 
     //! Check for errors.
-    //!
-    //! @remark
-    //!  Error flag is raised if any of the methods fail, and is resetted
+    //! @remarks
+    //!  Error flag is raised if any of the methods fail, and is cleared
     //!  if an assign* method succeeds.
-    bool ok() const;
+    bool is_ok() const;
 
     //! Overwrite result with given string.
     //! If there is not enough space, truncates the string and returns false.

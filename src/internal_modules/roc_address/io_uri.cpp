@@ -80,7 +80,7 @@ bool IoUri::set_encoded_path(const char* str, size_t str_len) {
         return false;
     }
 
-    if (!b.ok()) {
+    if (!b.is_ok()) {
         path_.clear();
         return false;
     }

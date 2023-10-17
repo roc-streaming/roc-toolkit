@@ -67,7 +67,7 @@ TEST_GROUP(hashmap) {
         StringBuilder b(key, keysz);
         CHECK(b.append_str("key"));
         CHECK(b.append_uint((uint64_t)n, 10));
-        CHECK(b.ok());
+        CHECK(b.is_ok());
     }
 
     template <size_t Capacity> void test_embedded_capacity() {

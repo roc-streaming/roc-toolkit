@@ -23,7 +23,7 @@ ssize_t encode(char* dst, size_t dst_sz, const char* src, size_t src_sz, PctMode
         return -1;
     }
 
-    if (!b.ok()) {
+    if (!b.is_ok()) {
         return -1;
     }
 
@@ -37,7 +37,7 @@ ssize_t decode(char* dst, size_t dst_sz, const char* src, size_t src_sz) {
         return -1;
     }
 
-    if (!b.ok()) {
+    if (!b.is_ok()) {
         return -1;
     }
 

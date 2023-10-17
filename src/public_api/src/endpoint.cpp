@@ -152,7 +152,7 @@ int roc_endpoint_get_uri(const roc_endpoint* endpoint, char* buf, size_t* bufsz)
         return -1;
     }
 
-    if (!b.ok()) {
+    if (!b.is_ok()) {
         roc_log(LogError,
                 "roc_endpoint_get_uri(): buffer too small: provided=%lu needed=%lu",
                 (unsigned long)*bufsz, (unsigned long)b.needed_size());
@@ -213,7 +213,7 @@ int roc_endpoint_get_host(const roc_endpoint* endpoint, char* buf, size_t* bufsz
         return -1;
     }
 
-    if (!b.ok()) {
+    if (!b.is_ok()) {
         roc_log(LogError,
                 "roc_endpoint_get_host(): buffer too small: provided=%lu needed=%lu",
                 (unsigned long)*bufsz, (unsigned long)b.needed_size());
@@ -269,7 +269,7 @@ int roc_endpoint_get_resource(const roc_endpoint* endpoint, char* buf, size_t* b
         return -1;
     }
 
-    if (!b.ok()) {
+    if (!b.is_ok()) {
         roc_log(LogError,
                 "roc_endpoint_get_resource(): buffer too small: provided=%lu needed=%lu",
                 (unsigned long)*bufsz, (unsigned long)b.needed_size());
