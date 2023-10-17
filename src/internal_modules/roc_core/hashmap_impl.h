@@ -45,11 +45,10 @@ public:
     typedef bool (*key_equals_callback)(HashmapNode::HashmapNodeData* node,
                                         const void* key);
 
-    //! Initialize empty hashmap with arena.
-    explicit HashmapImpl(void* preallocated_data,
-                         size_t num_embedded_buckets,
-                         IArena* arena);
+    //! Initialize empty hashmap.
+    HashmapImpl(void* preallocated_data, size_t num_embedded_buckets, IArena* arena);
 
+    //! Deinitialize.
     ~HashmapImpl();
 
     //! Get maximum number of nodes that can be added to hashmap before
