@@ -44,7 +44,7 @@ public:
 
     //! Parse and process incoming packet.
     //! Invokes session hooks methods during processing.
-    void process_packet(const packet::PacketPtr& packet);
+    ROC_ATTR_NODISCARD status::StatusCode process_packet(const packet::PacketPtr& packet);
 
     //! When we should generate packets next time.
     //! Returns absolute time.
@@ -54,7 +54,8 @@ public:
     //! Generate and send packet(s).
     //! Should be called accroding to generation_deadline().
     //! @p current_time is current time in nanoseconds since Unix epoch.
-    void generate_packets(core::nanoseconds_t current_time);
+    status::StatusCode ROC_ATTR_NODISCARD
+    generate_packets(core::nanoseconds_t current_time);
 
 private:
     void parse_events_(const Traverser& traverser);
@@ -66,9 +67,10 @@ private:
     void parse_receiver_report_(const header::ReceiverReportPacket& rr);
     void parse_reception_block_(const header::ReceptionReportBlock& blk);
 
-    packet::PacketPtr generate_packet_(core::nanoseconds_t current_time);
+    status::StatusCode generate_packet_(core::nanoseconds_t current_time,
+                                        packet::PacketPtr& packet);
 
-    bool build_packet_(core::Slice<uint8_t>& data, core::nanoseconds_t report_time);
+    void build_packet_(core::Slice<uint8_t>& data, core::nanoseconds_t report_time);
     void build_sender_report_(Builder& bld, core::nanoseconds_t report_time);
     void build_receiver_report_(Builder& bld, core::nanoseconds_t report_time);
     header::ReceptionReportBlock build_reception_block_(const ReceptionMetrics& metrics);

@@ -39,8 +39,8 @@ public:
         , n_control_(0) {
     }
 
-    virtual void write(const packet::PacketPtr& pp) {
-        queue_.write(pp);
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr& pp) {
+        return queue_.write(pp);
     }
 
     size_t n_source() const {
@@ -66,15 +66,18 @@ public:
 
             if (pp->flags() & packet::Packet::FlagControl) {
                 CHECK(control_writer_);
-                control_writer_->write(copy_packet_(pp));
+                UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                                     control_writer_->write(copy_packet_(pp)));
                 n_control_++;
             } else if (pp->flags() & packet::Packet::FlagRepair) {
                 CHECK(repair_writer_);
-                repair_writer_->write(copy_packet_(pp));
+                UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                                     repair_writer_->write(copy_packet_(pp)));
                 n_repair_++;
             } else {
                 CHECK(source_writer_);
-                source_writer_->write(copy_packet_(pp));
+                UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                                     source_writer_->write(copy_packet_(pp)));
                 n_source_++;
                 np++;
             }

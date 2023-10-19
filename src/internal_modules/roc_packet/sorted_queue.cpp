@@ -28,7 +28,7 @@ status::StatusCode SortedQueue::read(PacketPtr& packet) {
     return status::StatusNoData;
 }
 
-void SortedQueue::write(const PacketPtr& packet) {
+status::StatusCode SortedQueue::write(const PacketPtr& packet) {
     if (!packet) {
         roc_panic("sorted queue: attempting to add null packet");
     }
@@ -38,7 +38,7 @@ void SortedQueue::write(const PacketPtr& packet) {
                 "sorted queue: queue is full, dropping packet:"
                 " max_size=%u",
                 (unsigned)max_size_);
-        return;
+        return status::StatusOK;
     }
 
     if (!latest_ || latest_->compare(*packet) <= 0) {
@@ -56,7 +56,7 @@ void SortedQueue::write(const PacketPtr& packet) {
 
         if (cmp == 0) {
             roc_log(LogDebug, "sorted queue: dropping duplicate packet");
-            return;
+            return status::StatusOK;
         }
 
         break;
@@ -67,6 +67,8 @@ void SortedQueue::write(const PacketPtr& packet) {
     } else {
         list_.push_back(*packet);
     }
+
+    return status::StatusOK;
 }
 
 size_t SortedQueue::size() const {

@@ -41,7 +41,7 @@ struct TestWriter : core::Thread {
 
     virtual void run() {
         core::sleep_for(core::ClockMonotonic, core::Microsecond * 10);
-        queue.write(packet);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(packet));
     }
 };
 
@@ -54,7 +54,7 @@ TEST(concurrent_queue, blocking_write_one_read_one) {
 
     for (size_t i = 0; i < 100; i++) {
         PacketPtr wp = new_packet();
-        queue.write(wp);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         PacketPtr rp;
         UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp));
@@ -73,7 +73,7 @@ TEST(concurrent_queue, blocking_write_many_read_many) {
         }
 
         for (size_t j = 0; j < ROC_ARRAY_SIZE(packets); j++) {
-            queue.write(packets[j]);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(packets[j]));
         }
 
         for (size_t j = 0; j < ROC_ARRAY_SIZE(packets); j++) {
@@ -105,7 +105,7 @@ TEST(concurrent_queue, nonblocking_write_one_read_one) {
 
     for (size_t i = 0; i < 100; i++) {
         PacketPtr wp = new_packet();
-        queue.write(wp);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         PacketPtr rp;
         UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp));
@@ -124,7 +124,7 @@ TEST(concurrent_queue, nonblocking_write_many_read_many) {
         }
 
         for (size_t j = 0; j < ROC_ARRAY_SIZE(packets); j++) {
-            queue.write(packets[j]);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(packets[j]));
         }
 
         for (size_t j = 0; j < ROC_ARRAY_SIZE(packets); j++) {
@@ -140,7 +140,7 @@ TEST(concurrent_queue, nonblocking_read_empty) {
 
     for (size_t i = 0; i < 100; i++) {
         PacketPtr wp = new_packet();
-        queue.write(wp);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         PacketPtr rp;
         UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp));

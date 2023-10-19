@@ -57,7 +57,7 @@ public:
         bld.begin_sr(sr);
         bld.end_sr();
 
-        writer_.write(new_packet_(buff));
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, writer_.write(new_packet_(buff)));
     }
 
     void set_source(packet::stream_source_t source) {

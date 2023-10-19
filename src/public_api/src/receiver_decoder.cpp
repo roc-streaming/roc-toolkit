@@ -16,6 +16,7 @@
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
 #include "roc_node/receiver_decoder.h"
+#include "roc_status/code_to_str.h"
 
 using namespace roc;
 
@@ -197,8 +198,13 @@ int roc_receiver_decoder_push(roc_receiver_decoder* decoder,
     imp_packet->add_flags(packet::Packet::FlagUDP);
     imp_packet->set_data(imp_slice);
 
-    if (!imp_decoder->write(imp_iface, imp_packet)) {
-        roc_log(LogError, "roc_receiver_decoder_push(): can't write packet to decoder");
+    const status::StatusCode code = imp_decoder->write(imp_iface, imp_packet);
+    if (code != status::StatusOK) {
+        // TODO: forward status code to user (gh-183)
+        roc_log(LogError,
+                "roc_receiver_decoder_push(): can't write packet to decoder: status=%s",
+                status::code_to_str(code));
+
         return -1;
     }
 

@@ -125,7 +125,8 @@ TEST(udp_io, one_sender_one_receiver_single_thread_non_blocking_disabled) {
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
-            tx_writer->write(new_packet(tx_config, rx_config, p));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                                 tx_writer->write(new_packet(tx_config, rx_config, p)));
         }
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
@@ -152,7 +153,8 @@ TEST(udp_io, one_sender_one_receiver_single_loop) {
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
-            tx_writer->write(new_packet(tx_config, rx_config, p));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                                 tx_writer->write(new_packet(tx_config, rx_config, p)));
         }
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
@@ -181,7 +183,8 @@ TEST(udp_io, one_sender_one_receiver_separate_loops) {
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
-            tx_writer->write(new_packet(tx_config, rx_config, p));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                                 tx_writer->write(new_packet(tx_config, rx_config, p)));
         }
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
@@ -220,9 +223,15 @@ TEST(udp_io, one_sender_many_receivers) {
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
-            tx_writer->write(new_packet(tx_config, rx_config1, p * 10));
-            tx_writer->write(new_packet(tx_config, rx_config2, p * 20));
-            tx_writer->write(new_packet(tx_config, rx_config3, p * 30));
+            UNSIGNED_LONGS_EQUAL(
+                status::StatusOK,
+                tx_writer->write(new_packet(tx_config, rx_config1, p * 10)));
+            UNSIGNED_LONGS_EQUAL(
+                status::StatusOK,
+                tx_writer->write(new_packet(tx_config, rx_config2, p * 20)));
+            UNSIGNED_LONGS_EQUAL(
+                status::StatusOK,
+                tx_writer->write(new_packet(tx_config, rx_config3, p * 30)));
         }
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp1;
@@ -273,7 +282,9 @@ TEST(udp_io, many_senders_one_receiver) {
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
-            tx_writer1->write(new_packet(tx_config1, rx_config, p * 10));
+            UNSIGNED_LONGS_EQUAL(
+                status::StatusOK,
+                tx_writer1->write(new_packet(tx_config1, rx_config, p * 10)));
         }
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
@@ -281,7 +292,9 @@ TEST(udp_io, many_senders_one_receiver) {
             check_packet(pp, tx_config1, rx_config, p * 10);
         }
         for (int p = 0; p < NumPackets; p++) {
-            tx_writer2->write(new_packet(tx_config2, rx_config, p * 20));
+            UNSIGNED_LONGS_EQUAL(
+                status::StatusOK,
+                tx_writer2->write(new_packet(tx_config2, rx_config, p * 20)));
         }
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
@@ -289,7 +302,9 @@ TEST(udp_io, many_senders_one_receiver) {
             check_packet(pp, tx_config2, rx_config, p * 20);
         }
         for (int p = 0; p < NumPackets; p++) {
-            tx_writer3->write(new_packet(tx_config3, rx_config, p * 30));
+            UNSIGNED_LONGS_EQUAL(
+                status::StatusOK,
+                tx_writer3->write(new_packet(tx_config3, rx_config, p * 30)));
         }
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;

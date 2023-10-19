@@ -9,6 +9,7 @@
 #include "roc_packet/interleaver.h"
 #include "roc_core/fast_random.h"
 #include "roc_core/log.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace packet {
@@ -46,30 +47,44 @@ bool Interleaver::is_valid() const {
     return valid_;
 }
 
-void Interleaver::write(const PacketPtr& p) {
+status::StatusCode Interleaver::write(const PacketPtr& p) {
     roc_panic_if_not(is_valid());
 
     packets_[next_2_put_] = p;
     next_2_put_ = (next_2_put_ + 1) % block_size_;
 
     while (packets_[send_seq_[next_2_send_]]) {
-        writer_.write(packets_[send_seq_[next_2_send_]]);
+        const status::StatusCode code = writer_.write(packets_[send_seq_[next_2_send_]]);
+        if (code != status::StatusOK) {
+            return code;
+        }
+
         packets_[send_seq_[next_2_send_]] = NULL;
         next_2_send_ = (next_2_send_ + 1) % block_size_;
     }
+
+    return status::StatusOK;
 }
 
-void Interleaver::flush() {
+status::StatusCode Interleaver::flush() {
     roc_panic_if_not(is_valid());
 
     for (size_t i = 0; i < block_size_; ++i) {
-        if (packets_[i]) {
-            writer_.write(packets_[i]);
-            packets_[i] = NULL;
+        if (!packets_[i]) {
+            continue;
         }
+
+        const status::StatusCode code = writer_.write(packets_[i]);
+        if (code != status::StatusOK) {
+            return code;
+        }
+
+        packets_[i] = NULL;
     }
 
     next_2_put_ = next_2_send_ = 0;
+
+    return status::StatusOK;
 }
 
 size_t Interleaver::block_size() const {
