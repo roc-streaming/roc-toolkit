@@ -39,7 +39,7 @@ TEST(router, no_routes) {
 
     PacketPtr p = new_packet(0, Packet::FlagAudio);
 
-    router.write(p);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, router.write(p));
 
     LONGS_EQUAL(1, p->getref());
 }
@@ -56,11 +56,11 @@ TEST(router, one_route) {
     PacketPtr pf1 = new_packet(0, Packet::FlagFEC);
     PacketPtr pf2 = new_packet(0, Packet::FlagFEC);
 
-    router.write(wpa1);
-    router.write(wpa2);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, router.write(wpa1));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, router.write(wpa2));
 
-    router.write(pf1);
-    router.write(pf2);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, router.write(pf1));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, router.write(pf2));
 
     LONGS_EQUAL(2, wpa1->getref());
     LONGS_EQUAL(2, wpa2->getref());
@@ -95,11 +95,11 @@ TEST(router, two_routes) {
     PacketPtr wpf1 = new_packet(0, Packet::FlagFEC);
     PacketPtr wpf2 = new_packet(0, Packet::FlagFEC);
 
-    router.write(wpa1);
-    router.write(wpa2);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, router.write(wpa1));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, router.write(wpa2));
 
-    router.write(wpf1);
-    router.write(wpf2);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, router.write(wpf1));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, router.write(wpf2));
 
     LONGS_EQUAL(2, wpa1->getref());
     LONGS_EQUAL(2, wpa2->getref());
@@ -136,13 +136,16 @@ TEST(router, same_route_different_sources) {
     Queue queue;
     CHECK(router.add_route(queue, Packet::FlagAudio));
 
-    router.write(new_packet(11, Packet::FlagAudio));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                         router.write(new_packet(11, Packet::FlagAudio)));
     UNSIGNED_LONGS_EQUAL(1, queue.size());
 
-    router.write(new_packet(22, Packet::FlagAudio));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                         router.write(new_packet(22, Packet::FlagAudio)));
     UNSIGNED_LONGS_EQUAL(1, queue.size());
 
-    router.write(new_packet(11, Packet::FlagAudio));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                         router.write(new_packet(11, Packet::FlagAudio)));
     UNSIGNED_LONGS_EQUAL(2, queue.size());
 }
 
@@ -155,8 +158,9 @@ TEST(router, different_routes_same_source) {
     Queue queue_f;
     CHECK(router.add_route(queue_f, Packet::FlagFEC));
 
-    router.write(new_packet(11, Packet::FlagAudio));
-    router.write(new_packet(11, Packet::FlagFEC));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                         router.write(new_packet(11, Packet::FlagAudio)));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, router.write(new_packet(11, Packet::FlagFEC)));
 
     UNSIGNED_LONGS_EQUAL(1, queue_a.size());
     UNSIGNED_LONGS_EQUAL(1, queue_f.size());
@@ -171,8 +175,9 @@ TEST(router, different_routes_different_sources) {
     Queue queue_f;
     CHECK(router.add_route(queue_f, Packet::FlagFEC));
 
-    router.write(new_packet(11, Packet::FlagAudio));
-    router.write(new_packet(22, Packet::FlagFEC));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                         router.write(new_packet(11, Packet::FlagAudio)));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, router.write(new_packet(22, Packet::FlagFEC)));
 
     UNSIGNED_LONGS_EQUAL(1, queue_a.size());
     UNSIGNED_LONGS_EQUAL(1, queue_f.size());

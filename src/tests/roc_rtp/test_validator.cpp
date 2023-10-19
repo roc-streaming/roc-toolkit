@@ -86,14 +86,14 @@ TEST(validator, normal) {
     Validator validator(queue, config, SampleSpecs);
 
     packet::PacketPtr wp1 = new_packet(Pt1, Src1, 1, 1, 0);
-    queue.write(wp1);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp1));
 
     packet::PacketPtr rp1;
     UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp1));
     CHECK(wp1 == rp1);
 
     packet::PacketPtr wp2 = new_packet(Pt1, Src1, 2, 2, 0);
-    queue.write(wp2);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp2));
 
     packet::PacketPtr rp2;
     UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp2));
@@ -109,14 +109,14 @@ TEST(validator, payload_id_jump) {
     Validator validator(queue, config, SampleSpecs);
 
     packet::PacketPtr wp1 = new_packet(Pt1, Src1, 1, 1, 0);
-    queue.write(wp1);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp1));
 
     packet::PacketPtr rp1;
     UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp1));
     CHECK(wp1 == rp1);
 
     packet::PacketPtr wp2 = new_packet(Pt2, Src1, 2, 2, 0);
-    queue.write(wp2);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp2));
 
     packet::PacketPtr rp2;
     UNSIGNED_LONGS_EQUAL(status::StatusNoData, validator.read(rp2));
@@ -132,14 +132,14 @@ TEST(validator, source_id_jump) {
     Validator validator(queue, config, SampleSpecs);
 
     packet::PacketPtr wp1 = new_packet(Pt1, Src1, 1, 1, 0);
-    queue.write(wp1);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp1));
 
     packet::PacketPtr rp1;
     UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp1));
     CHECK(wp1 == rp1);
 
     packet::PacketPtr wp2 = new_packet(Pt1, Src2, 2, 2, 0);
-    queue.write(wp2);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp2));
 
     packet::PacketPtr rp2;
     UNSIGNED_LONGS_EQUAL(status::StatusNoData, validator.read(rp2));
@@ -163,14 +163,14 @@ TEST(validator, seqnum_no_jump) {
         Validator validator(queue, config, SampleSpecs);
 
         packet::PacketPtr wp1 = new_packet(Pt1, Src1, sn1, 1, 0);
-        queue.write(wp1);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp1));
 
         packet::PacketPtr rp1;
         UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp1));
         CHECK(wp1 == rp1);
 
         packet::PacketPtr wp2 = new_packet(Pt1, Src1, sn2, 2, 0);
-        queue.write(wp2);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp2));
 
         packet::PacketPtr rp2;
         UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp2));
@@ -195,14 +195,14 @@ TEST(validator, seqnum_jump_up) {
         Validator validator(queue, config, SampleSpecs);
 
         packet::PacketPtr wp1 = new_packet(Pt1, Src1, sn1, 1, 0);
-        queue.write(wp1);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp1));
 
         packet::PacketPtr rp1;
         UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp1));
         CHECK(wp1 == rp1);
 
         packet::PacketPtr wp2 = new_packet(Pt1, Src1, sn2, 2, 0);
-        queue.write(wp2);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp2));
 
         packet::PacketPtr rp2;
         UNSIGNED_LONGS_EQUAL(status::StatusNoData, validator.read(rp2));
@@ -227,14 +227,14 @@ TEST(validator, seqnum_jump_down) {
         Validator validator(queue, config, SampleSpecs);
 
         packet::PacketPtr wp1 = new_packet(Pt1, Src1, sn2, 1, 0);
-        queue.write(wp1);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp1));
 
         packet::PacketPtr rp1;
         UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp1));
         CHECK(wp1 == rp1);
 
         packet::PacketPtr wp2 = new_packet(Pt1, Src1, sn1, 2, 0);
-        queue.write(wp2);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp2));
 
         packet::PacketPtr rp2;
         UNSIGNED_LONGS_EQUAL(status::StatusNoData, validator.read(rp2));
@@ -255,21 +255,21 @@ TEST(validator, seqnum_late) {
     Validator validator(queue, config, SampleSpecs);
 
     packet::PacketPtr wp1 = new_packet(Pt1, Src1, sn1, 1, 0);
-    queue.write(wp1);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp1));
 
     packet::PacketPtr rp1;
     UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp1));
     CHECK(wp1 == rp1);
 
     packet::PacketPtr wp2 = new_packet(Pt1, Src1, sn2, 2, 0);
-    queue.write(wp2);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp2));
 
     packet::PacketPtr rp2;
     UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp2));
     CHECK(wp2 == rp2);
 
     packet::PacketPtr wp3 = new_packet(Pt1, Src1, sn3, 3, 0);
-    queue.write(wp3);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp3));
 
     packet::PacketPtr rp3;
     UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp3));
@@ -293,14 +293,14 @@ TEST(validator, timestamp_no_jump) {
         Validator validator(queue, config, SampleSpecs);
 
         packet::PacketPtr wp1 = new_packet(Pt1, Src1, 1, ts1, 0);
-        queue.write(wp1);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp1));
 
         packet::PacketPtr rp1;
         UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp1));
         CHECK(wp1 == rp1);
 
         packet::PacketPtr wp2 = new_packet(Pt1, Src1, 2, ts2, 0);
-        queue.write(wp2);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp2));
 
         packet::PacketPtr rp2;
         UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp2));
@@ -325,14 +325,14 @@ TEST(validator, timestamp_jump_up) {
         Validator validator(queue, config, SampleSpecs);
 
         packet::PacketPtr wp1 = new_packet(Pt1, Src1, 1, ts1, 0);
-        queue.write(wp1);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp1));
 
         packet::PacketPtr rp1;
         UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp1));
         CHECK(wp1 == rp1);
 
         packet::PacketPtr wp2 = new_packet(Pt1, Src1, 2, ts2, 0);
-        queue.write(wp2);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp2));
 
         packet::PacketPtr rp2;
         UNSIGNED_LONGS_EQUAL(status::StatusNoData, validator.read(rp2));
@@ -357,14 +357,14 @@ TEST(validator, timestamp_jump_down) {
         Validator validator(queue, config, SampleSpecs);
 
         packet::PacketPtr wp1 = new_packet(Pt1, Src1, 1, ts2, 0);
-        queue.write(wp1);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp1));
 
         packet::PacketPtr rp1;
         UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp1));
         CHECK(wp1 == rp1);
 
         packet::PacketPtr wp2 = new_packet(Pt1, Src1, 2, ts1, 0);
-        queue.write(wp2);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp2));
 
         packet::PacketPtr rp2;
         UNSIGNED_LONGS_EQUAL(status::StatusNoData, validator.read(rp2));
@@ -385,21 +385,21 @@ TEST(validator, timestamp_late) {
     Validator validator(queue, config, SampleSpecs);
 
     packet::PacketPtr wp1 = new_packet(Pt1, Src1, 2, ts1, 0);
-    queue.write(wp1);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp1));
 
     packet::PacketPtr rp1;
     UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp1));
     CHECK(wp1 == rp1);
 
     packet::PacketPtr wp2 = new_packet(Pt1, Src1, 1, ts2, 0);
-    queue.write(wp2);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp2));
 
     packet::PacketPtr rp2;
     UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp2));
     CHECK(wp2 == rp2);
 
     packet::PacketPtr wp3 = new_packet(Pt1, Src1, 3, ts3, 0);
-    queue.write(wp3);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp3));
 
     packet::PacketPtr rp3;
     UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp3));
@@ -415,28 +415,28 @@ TEST(validator, cts_positive) {
     Validator validator(queue, config, SampleSpecs);
 
     packet::PacketPtr wp1 = new_packet(Pt1, Src1, 1, 1, 100);
-    queue.write(wp1);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp1));
 
     packet::PacketPtr rp1;
     UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp1));
     CHECK(wp1 == rp1);
 
     packet::PacketPtr wp2 = new_packet(Pt1, Src1, 2, 2, 50);
-    queue.write(wp2);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp2));
 
     packet::PacketPtr rp2;
     UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp2));
     CHECK(wp2 == rp2);
 
     packet::PacketPtr wp3 = new_packet(Pt1, Src1, 3, 3, 200);
-    queue.write(wp3);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp3));
 
     packet::PacketPtr rp3;
     UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp3));
     CHECK(wp3 == rp3);
 
     packet::PacketPtr wp4 = new_packet(Pt1, Src1, 4, 4, 150);
-    queue.write(wp4);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp4));
 
     packet::PacketPtr rp4;
     UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp4));
@@ -452,28 +452,28 @@ TEST(validator, cts_negative) {
     Validator validator(queue, config, SampleSpecs);
 
     packet::PacketPtr wp1 = new_packet(Pt1, Src1, 1, 1, 100);
-    queue.write(wp1);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp1));
 
     packet::PacketPtr rp1;
     UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp1));
     CHECK(wp1 == rp1);
 
     packet::PacketPtr wp2 = new_packet(Pt1, Src1, 2, 2, -100);
-    queue.write(wp2);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp2));
 
     packet::PacketPtr rp2;
     UNSIGNED_LONGS_EQUAL(status::StatusNoData, validator.read(rp2));
     CHECK(!rp2);
 
     packet::PacketPtr wp3 = new_packet(Pt1, Src1, 3, 3, 200);
-    queue.write(wp3);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp3));
 
     packet::PacketPtr rp3;
     UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp3));
     CHECK(wp3 == rp3);
 
     packet::PacketPtr wp4 = new_packet(Pt1, Src1, 4, 4, -200);
-    queue.write(wp4);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp4));
 
     packet::PacketPtr rp4;
     UNSIGNED_LONGS_EQUAL(status::StatusNoData, validator.read(rp4));
@@ -489,28 +489,28 @@ TEST(validator, cts_zero) {
     Validator validator(queue, config, SampleSpecs);
 
     packet::PacketPtr wp1 = new_packet(Pt1, Src1, 1, 1, 100);
-    queue.write(wp1);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp1));
 
     packet::PacketPtr rp1;
     UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp1));
     CHECK(wp1 == rp1);
 
     packet::PacketPtr wp2 = new_packet(Pt1, Src1, 2, 2, 0);
-    queue.write(wp2);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp2));
 
     packet::PacketPtr rp2;
     UNSIGNED_LONGS_EQUAL(status::StatusNoData, validator.read(rp2));
     CHECK(!rp2);
 
     packet::PacketPtr wp3 = new_packet(Pt1, Src1, 3, 3, 200);
-    queue.write(wp3);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp3));
 
     packet::PacketPtr rp3;
     UNSIGNED_LONGS_EQUAL(status::StatusOK, validator.read(rp3));
     CHECK(wp3 == rp3);
 
     packet::PacketPtr wp4 = new_packet(Pt1, Src1, 4, 4, 0);
-    queue.write(wp4);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp4));
 
     packet::PacketPtr rp4;
     UNSIGNED_LONGS_EQUAL(status::StatusNoData, validator.read(rp4));

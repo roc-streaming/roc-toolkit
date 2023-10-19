@@ -21,11 +21,12 @@ status::StatusCode Queue::read(PacketPtr& packet) {
     return status::StatusOK;
 }
 
-void Queue::write(const PacketPtr& packet) {
+status::StatusCode Queue::write(const PacketPtr& packet) {
     if (!packet) {
         roc_panic("queue: null packet");
     }
     list_.push_back(*packet);
+    return status::StatusOK;
 }
 
 size_t Queue::size() const {

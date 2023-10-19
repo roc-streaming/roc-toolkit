@@ -30,7 +30,7 @@ public:
     //! Add packet to the queue.
     //! @remarks
     //!  Adds packet to the end of the queue.
-    virtual void write(const PacketPtr& packet);
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(const PacketPtr& packet);
 
     //! Get number of packets in queue.
     size_t size() const;

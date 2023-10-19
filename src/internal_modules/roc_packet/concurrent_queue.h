@@ -45,7 +45,7 @@ public:
 
     //! Add packet to the queue.
     //! Wait-free operation.
-    virtual void write(const PacketPtr& packet);
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(const PacketPtr& packet);
 
 private:
     core::Optional<core::Semaphore> write_sem_;

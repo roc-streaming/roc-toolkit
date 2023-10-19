@@ -19,6 +19,7 @@
 #include "roc_core/scoped_ptr.h"
 #include "roc_packet/icomposer.h"
 #include "roc_packet/iwriter.h"
+#include "roc_packet/shipper.h"
 #include "roc_pipeline/config.h"
 #include "roc_rtcp/composer.h"
 #include "roc_rtp/composer.h"
@@ -30,7 +31,7 @@ namespace pipeline {
 //!
 //! Contains:
 //!  - a pipeline for processing packets for single network endpoint
-class SenderEndpoint : public core::NonCopyable<>, private packet::IWriter {
+class SenderEndpoint : public core::NonCopyable<> {
 public:
     //! Initialize.
     //!  - @p dest_address specifies destination address that is assigned to the
@@ -59,18 +60,14 @@ public:
     packet::IWriter& writer();
 
 private:
-    virtual void write(const packet::PacketPtr& packet);
-
     const address::Protocol proto_;
-
-    packet::IWriter& dst_writer_;
-    address::SocketAddr dst_address_;
 
     packet::IComposer* composer_;
 
     core::Optional<rtp::Composer> rtp_composer_;
     core::ScopedPtr<packet::IComposer> fec_composer_;
     core::Optional<rtcp::Composer> rtcp_composer_;
+    core::Optional<packet::Shipper> packet_shipper_;
 };
 
 } // namespace pipeline

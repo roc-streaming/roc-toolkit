@@ -10,6 +10,7 @@
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace pipeline {
@@ -37,13 +38,12 @@ ReceiverSessionGroup::~ReceiverSessionGroup() {
     remove_all_sessions_();
 }
 
-void ReceiverSessionGroup::route_packet(const packet::PacketPtr& packet) {
+status::StatusCode ReceiverSessionGroup::write(const packet::PacketPtr& packet) {
     if (packet->rtcp()) {
-        route_control_packet_(packet);
-        return;
+        return route_control_packet_(packet);
     }
 
-    route_transport_packet_(packet);
+    return route_transport_packet_(packet);
 }
 
 core::nanoseconds_t
@@ -153,21 +153,27 @@ void ReceiverSessionGroup::on_add_link_metrics(const rtcp::LinkMetrics& metrics)
     }
 }
 
-void ReceiverSessionGroup::route_transport_packet_(const packet::PacketPtr& packet) {
+status::StatusCode
+ReceiverSessionGroup::route_transport_packet_(const packet::PacketPtr& packet) {
     core::SharedPtr<ReceiverSession> sess;
 
     for (sess = sessions_.front(); sess; sess = sessions_.nextof(*sess)) {
-        if (sess->handle(packet)) {
-            return;
+        const status::StatusCode code = sess->write(packet);
+        if (code == status::StatusOK) {
+            return code;
         }
     }
 
-    if (can_create_session_(packet)) {
-        create_session_(packet);
+    if (!can_create_session_(packet)) {
+        // TODO: return StatusBadArg (gh-183)
+        return status::StatusOK;
     }
+
+    return create_session_(packet);
 }
 
-void ReceiverSessionGroup::route_control_packet_(const packet::PacketPtr& packet) {
+status::StatusCode
+ReceiverSessionGroup::route_control_packet_(const packet::PacketPtr& packet) {
     if (!rtcp_composer_) {
         rtcp_composer_.reset(new (rtcp_composer_) rtcp::Composer());
     }
@@ -178,11 +184,12 @@ void ReceiverSessionGroup::route_control_packet_(const packet::PacketPtr& packet
     }
 
     if (!rtcp_session_->is_valid()) {
-        return;
+        // TODO: return StatusDead (gh-183)
+        return status::StatusOK;
     }
 
     // This will invoke IReceiverController methods implemented by us.
-    rtcp_session_->process_packet(packet);
+    return rtcp_session_->process_packet(packet);
 }
 
 bool ReceiverSessionGroup::can_create_session_(const packet::PacketPtr& packet) {
@@ -194,17 +201,20 @@ bool ReceiverSessionGroup::can_create_session_(const packet::PacketPtr& packet) 
     return true;
 }
 
-void ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
+status::StatusCode
+ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
     if (!packet->udp()) {
         roc_log(LogError,
                 "session group: can't create session, unexpected non-udp packet");
-        return;
+        // TODO: return StatusBadArg (gh-183)
+        return status::StatusOK;
     }
 
     if (!packet->rtp()) {
         roc_log(LogError,
                 "session group: can't create session, unexpected non-rtp packet");
-        return;
+        // TODO: return StatusBadArg (gh-183)
+        return status::StatusOK;
     }
 
     const ReceiverSessionConfig sess_config = make_session_config_(packet);
@@ -222,19 +232,26 @@ void ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
 
     if (!sess || !sess->is_valid()) {
         roc_log(LogError, "session group: can't create session, initialization failed");
-        return;
+        // TODO: return StatusNoMem (gh-183)
+        return status::StatusOK;
     }
 
-    if (!sess->handle(packet)) {
-        roc_log(LogError,
-                "session group: can't create session, can't handle first packet");
-        return;
+    const status::StatusCode code = sess->write(packet);
+    if (code != status::StatusOK) {
+        roc_log(
+            LogError,
+            "session group: can't create session, can't handle first packet: status=%s",
+            status::code_to_str(code));
+        // TODO: return code (gh-183)
+        return status::StatusOK;
     }
 
     mixer_.add_input(sess->reader());
     sessions_.push_back(*sess);
 
     receiver_state_.add_sessions(+1);
+
+    return status::StatusOK;
 }
 
 void ReceiverSessionGroup::remove_session_(ReceiverSession& sess) {

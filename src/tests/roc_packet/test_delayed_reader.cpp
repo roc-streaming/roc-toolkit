@@ -87,7 +87,7 @@ TEST(delayed_reader, no_delay) {
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         PacketPtr wp = new_packet(n);
-        queue.write(wp);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         PacketPtr rp;
         UNSIGNED_LONGS_EQUAL(status::StatusOK, dr.read(rp));
@@ -107,7 +107,7 @@ TEST(delayed_reader, delay) {
         CHECK(!p);
 
         packets[n] = new_packet(n);
-        queue.write(packets[n]);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(packets[n]));
     }
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
@@ -122,7 +122,7 @@ TEST(delayed_reader, delay) {
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         PacketPtr wp = new_packet(NumPackets + n);
-        queue.write(wp);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         PacketPtr rp;
         UNSIGNED_LONGS_EQUAL(status::StatusOK, dr.read(rp));
@@ -141,7 +141,7 @@ TEST(delayed_reader, instant) {
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         packets[n] = new_packet(n);
-        queue.write(packets[n]);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(packets[n]));
     }
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
@@ -163,7 +163,7 @@ TEST(delayed_reader, trim) {
 
     for (seqnum_t n = 0; n < NumPackets * 2; n++) {
         packets[n] = new_packet(n);
-        queue.write(packets[n]);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(packets[n]));
     }
 
     for (seqnum_t n = NumPackets; n < NumPackets * 2; n++) {
@@ -185,7 +185,7 @@ TEST(delayed_reader, late_duplicates) {
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         packets[n] = new_packet(n);
-        queue.write(packets[n]);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(packets[n]));
     }
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
@@ -196,7 +196,7 @@ TEST(delayed_reader, late_duplicates) {
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         PacketPtr wp = new_packet(n);
-        queue.write(wp);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         PacketPtr rp;
         UNSIGNED_LONGS_EQUAL(status::StatusOK, dr.read(rp));

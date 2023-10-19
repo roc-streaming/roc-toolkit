@@ -32,7 +32,7 @@ TimestampExtractor::TimestampExtractor(packet::IWriter& writer,
 TimestampExtractor::~TimestampExtractor() {
 }
 
-void TimestampExtractor::write(const packet::PacketPtr& pkt) {
+status::StatusCode TimestampExtractor::write(const packet::PacketPtr& pkt) {
     if (!pkt) {
         roc_panic("timestamp extractor: unexpected null packet");
     }
@@ -52,7 +52,7 @@ void TimestampExtractor::write(const packet::PacketPtr& pkt) {
         rtp_ts_ = pkt->rtp()->stream_timestamp;
     }
 
-    writer_.write(pkt);
+    return writer_.write(pkt);
 }
 
 bool TimestampExtractor::has_mapping() {

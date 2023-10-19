@@ -20,8 +20,6 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto,
                                packet::IWriter& dest_writer,
                                core::IArena& arena)
     : proto_(proto)
-    , dst_writer_(dest_writer)
-    , dst_address_(dest_address)
     , composer_(NULL) {
     packet::IComposer* composer = NULL;
 
@@ -99,10 +97,16 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto,
     }
 
     composer_ = composer;
+    if (!composer_) {
+        return;
+    }
+
+    packet_shipper_.reset(new (packet_shipper_)
+                              packet::Shipper(dest_address, *composer_, dest_writer));
 }
 
 bool SenderEndpoint::is_valid() const {
-    return composer_;
+    return composer_ && packet_shipper_;
 }
 
 address::Protocol SenderEndpoint::proto() const {
@@ -120,29 +124,7 @@ packet::IComposer& SenderEndpoint::composer() {
 packet::IWriter& SenderEndpoint::writer() {
     roc_panic_if(!is_valid());
 
-    return *this;
-}
-
-void SenderEndpoint::write(const packet::PacketPtr& packet) {
-    roc_panic_if(!is_valid());
-
-    if (dst_address_.has_host_port()) {
-        packet->add_flags(packet::Packet::FlagUDP);
-        packet->udp()->dst_addr = dst_address_;
-    }
-
-    if (!packet->has_flags(packet::Packet::FlagPrepared)) {
-        roc_panic("sender endpoint: unexpected packet: should be prepared");
-    }
-
-    if (!packet->has_flags(packet::Packet::FlagComposed)) {
-        if (!composer_->compose(*packet)) {
-            roc_panic("sender endpoint: can't compose packet");
-        }
-        packet->add_flags(packet::Packet::FlagComposed);
-    }
-
-    dst_writer_.write(packet);
+    return *packet_shipper_;
 }
 
 } // namespace pipeline

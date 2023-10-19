@@ -184,7 +184,8 @@ core::nanoseconds_t SenderSession::refresh(core::nanoseconds_t current_time) {
     }
 
     if (timestamp_extractor_ && timestamp_extractor_->has_mapping()) {
-        rtcp_session_->generate_packets(current_time);
+        const status::StatusCode code = rtcp_session_->generate_packets(current_time);
+        roc_panic_if(code != status::StatusOK);
     }
 
     return rtcp_session_->generation_deadline(current_time);

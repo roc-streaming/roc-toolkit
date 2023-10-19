@@ -33,7 +33,7 @@ public:
     virtual ~TimestampExtractor();
 
     //! Passes pkt downstream and remembers its capture and rtp timestamps.
-    virtual void write(const packet::PacketPtr& pkt);
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr& pkt);
 
     //! Check if mapping already available.
     bool has_mapping();

@@ -18,13 +18,13 @@ namespace pipeline {
 
 ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
                                    ReceiverState& receiver_state,
-                                   ReceiverSessionGroup& session_group,
+                                   packet::IWriter& writer,
                                    const rtp::FormatMap& format_map,
                                    core::IArena& arena)
     : core::RefCounted<ReceiverEndpoint, core::ArenaAllocation>(arena)
     , proto_(proto)
     , receiver_state_(receiver_state)
-    , session_group_(session_group)
+    , writer_(writer)
     , parser_(NULL) {
     packet::IParser* parser = NULL;
 
@@ -118,7 +118,7 @@ packet::IWriter& ReceiverEndpoint::writer() {
     return *this;
 }
 
-void ReceiverEndpoint::pull_packets() {
+status::StatusCode ReceiverEndpoint::pull_packets() {
     roc_panic_if(!is_valid());
 
     // Using try_pop_front_exclusive() makes this method lock-free and wait-free.
@@ -131,13 +131,17 @@ void ReceiverEndpoint::pull_packets() {
             continue;
         }
 
-        session_group_.route_packet(packet);
-
+        const status::StatusCode code = writer_.write(packet);
         receiver_state_.add_pending_packets(-1);
+        if (code != status::StatusOK) {
+            return code;
+        }
     }
+
+    return status::StatusOK;
 }
 
-void ReceiverEndpoint::write(const packet::PacketPtr& packet) {
+status::StatusCode ReceiverEndpoint::write(const packet::PacketPtr& packet) {
     roc_panic_if(!is_valid());
 
     if (!packet) {
@@ -147,6 +151,8 @@ void ReceiverEndpoint::write(const packet::PacketPtr& packet) {
     receiver_state_.add_pending_packets(+1);
 
     queue_.push_back(*packet);
+
+    return status::StatusOK;
 }
 
 } // namespace pipeline

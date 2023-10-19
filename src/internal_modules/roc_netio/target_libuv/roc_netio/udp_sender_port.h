@@ -77,7 +77,7 @@ public:
     //! Write packet.
     //! @remarks
     //!  May be called from any thread.
-    virtual void write(const packet::PacketPtr&);
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr&);
 
 protected:
     //! Format descriptor.

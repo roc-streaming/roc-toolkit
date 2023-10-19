@@ -16,6 +16,7 @@
 #include "roc_core/iarena.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
+#include "roc_packet/iwriter.h"
 #include "roc_pipeline/metrics.h"
 #include "roc_pipeline/receiver_session.h"
 #include "roc_pipeline/receiver_state.h"
@@ -29,7 +30,9 @@ namespace pipeline {
 //!
 //! Contains:
 //!  - a set of related receiver sessions
-class ReceiverSessionGroup : public core::NonCopyable<>, private rtcp::IReceiverHooks {
+class ReceiverSessionGroup : public packet::IWriter,
+                             public core::NonCopyable<>,
+                             private rtcp::IReceiverHooks {
 public:
     //! Initialize.
     ReceiverSessionGroup(const ReceiverConfig& receiver_config,
@@ -44,7 +47,7 @@ public:
     ~ReceiverSessionGroup();
 
     //! Route packet to session.
-    void route_packet(const packet::PacketPtr& packet);
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr& packet);
 
     //! Refresh pipeline according to current time.
     //! @returns
@@ -79,12 +82,12 @@ private:
     virtual void on_add_sending_metrics(const rtcp::SendingMetrics& metrics);
     virtual void on_add_link_metrics(const rtcp::LinkMetrics& metrics);
 
-    void route_transport_packet_(const packet::PacketPtr& packet);
-    void route_control_packet_(const packet::PacketPtr& packet);
+    status::StatusCode route_transport_packet_(const packet::PacketPtr& packet);
+    status::StatusCode route_control_packet_(const packet::PacketPtr& packet);
 
     bool can_create_session_(const packet::PacketPtr& packet);
 
-    void create_session_(const packet::PacketPtr& packet);
+    status::StatusCode create_session_(const packet::PacketPtr& packet);
     void remove_session_(ReceiverSession& sess);
     void remove_all_sessions_();
 

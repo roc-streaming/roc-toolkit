@@ -12,6 +12,7 @@
 #include "roc_core/panic.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_core/string_builder.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace netio {
@@ -289,7 +290,8 @@ void UdpReceiverPort::recv_cb_(uv_udp_t* handle,
 
     pp->set_data(core::Slice<uint8_t>(*bp, 0, (size_t)nread));
 
-    self.writer_.write(pp);
+    const status::StatusCode code = self.writer_.write(pp);
+    roc_panic_if(code != status::StatusOK);
 }
 
 bool UdpReceiverPort::join_multicast_group_() {
