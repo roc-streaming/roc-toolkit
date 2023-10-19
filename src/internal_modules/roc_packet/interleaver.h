@@ -37,10 +37,10 @@ public:
     //! @remarks
     //!  Packets are written to internal buffer. Buffered packets are
     //!  then reordered and sent to output writer.
-    virtual void write(const PacketPtr& packet);
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(const PacketPtr& packet);
 
     //! Send all buffered packets to output writer.
-    void flush();
+    ROC_ATTR_NODISCARD status::StatusCode flush();
 
     //! Maximum delay between writing packet and moment we get it in output
     //! in terms of packets number.

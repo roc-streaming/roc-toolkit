@@ -14,11 +14,13 @@
 
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
+#include "roc_core/attributes.h"
 #include "roc_core/mutex.h"
 #include "roc_node/context.h"
 #include "roc_node/node.h"
 #include "roc_pipeline/ipipeline_task_scheduler.h"
 #include "roc_pipeline/receiver_loop.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace node {
@@ -54,7 +56,8 @@ public:
                      void* sess_metrics_arg);
 
     //! Write packet for decoding.
-    bool write(address::Interface iface, const packet::PacketPtr& packet);
+    ROC_ATTR_NODISCARD status::StatusCode write(address::Interface iface,
+                                                const packet::PacketPtr& packet);
 
     //! Source for reading decoded frames.
     sndio::ISource& source();

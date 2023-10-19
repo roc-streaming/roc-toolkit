@@ -254,7 +254,7 @@ TEST(writer_reader, no_losses) {
         fill_all_packets(0);
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            writer.write(source_packets[i]);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
         }
         dispatcher.push_stocks();
 
@@ -304,7 +304,7 @@ TEST(writer_reader, 1_loss) {
         dispatcher.lose(11);
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            writer.write(source_packets[i]);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
         }
         dispatcher.push_stocks();
 
@@ -353,14 +353,14 @@ TEST(writer_reader, lost_first_packet_in_first_block) {
         fill_all_packets(0);
         dispatcher.lose(0);
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            writer.write(source_packets[i]);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
         }
 
         // Sending second block lossless.
         dispatcher.clear_losses();
         fill_all_packets(NumSourcePackets);
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            writer.write(source_packets[i]);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
         }
         dispatcher.push_stocks();
 
@@ -415,7 +415,7 @@ TEST(writer_reader, lost_one_source_and_all_repair_packets) {
         }
         fill_all_packets(0);
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            writer.write(source_packets[i]);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
         }
         dispatcher.push_stocks();
 
@@ -424,7 +424,7 @@ TEST(writer_reader, lost_one_source_and_all_repair_packets) {
         dispatcher.lose(5);
         fill_all_packets(NumSourcePackets);
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            writer.write(source_packets[i]);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
         }
         dispatcher.push_stocks();
 
@@ -491,7 +491,7 @@ TEST(writer_reader, multiple_blocks_1_loss) {
             fill_all_packets(NumSourcePackets * block_num);
 
             for (size_t i = 0; i < NumSourcePackets; ++i) {
-                writer.write(source_packets[i]);
+                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             }
             dispatcher.push_stocks();
 
@@ -560,7 +560,7 @@ TEST(writer_reader, multiple_blocks_in_queue) {
             fill_all_packets(NumSourcePackets * block_num);
 
             for (size_t i = 0; i < NumSourcePackets; ++i) {
-                writer.write(source_packets[i]);
+                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             }
         }
         dispatcher.push_stocks();
@@ -620,11 +620,11 @@ TEST(writer_reader, interleaved_packets) {
 
         for (size_t i = 0; i < NumPackets; ++i) {
             many_packets[i] = fill_one_packet(i);
-            writer.write(many_packets[i]);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(many_packets[i]));
         }
         dispatcher.push_stocks();
 
-        intrlvr.flush();
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, intrlvr.flush());
 
         for (size_t i = 0; i < NumPackets; ++i) {
             packet::PacketPtr p;
@@ -672,7 +672,7 @@ TEST(writer_reader, delayed_packets) {
         fill_all_packets(0);
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            writer.write(source_packets[i]);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
         }
 
         CHECK(NumSourcePackets > 10);
@@ -753,7 +753,7 @@ TEST(writer_reader, late_out_of_order_packets) {
         }
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            writer.write(source_packets[i]);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
         }
 
         // Deliver packets 0-6 and 11-20
@@ -830,7 +830,7 @@ TEST(writer_reader, repair_packets_before_source_packets) {
 
         // Encode first block.
         for (size_t i = 0; i < writer_config.n_source_packets; ++i) {
-            writer.write(fill_one_packet(wr_sn));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(wr_sn)));
             wr_sn++;
         }
 
@@ -849,7 +849,7 @@ TEST(writer_reader, repair_packets_before_source_packets) {
 
         // Encode second block.
         for (size_t i = 0; i < writer_config.n_source_packets; ++i) {
-            writer.write(fill_one_packet(wr_sn));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(wr_sn)));
             wr_sn++;
         }
 
@@ -918,7 +918,7 @@ TEST(writer_reader, repair_packets_mixed_with_source_packets) {
 
         // Encode first block.
         for (size_t i = 0; i < writer_config.n_source_packets; ++i) {
-            writer.write(fill_one_packet(wr_sn));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(wr_sn)));
             wr_sn++;
         }
 
@@ -942,7 +942,7 @@ TEST(writer_reader, repair_packets_mixed_with_source_packets) {
 
         // Encode second block.
         for (size_t i = 0; i < writer_config.n_source_packets; ++i) {
-            writer.write(fill_one_packet(wr_sn));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(wr_sn)));
             wr_sn++;
         }
 
@@ -1021,7 +1021,7 @@ TEST(writer_reader, multiple_repair_attempts) {
         dispatcher.lose(15);
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            writer.write(source_packets[i]);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             if (i != 5 && i != 15) {
                 dispatcher.push_source_stock(1);
             }
@@ -1031,7 +1031,7 @@ TEST(writer_reader, multiple_repair_attempts) {
 
         fill_all_packets(NumSourcePackets);
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            writer.write(source_packets[i]);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             dispatcher.push_source_stock(1);
         }
 
@@ -1100,19 +1100,19 @@ TEST(writer_reader, drop_outdated_block) {
         // Send first block.
         fill_all_packets(NumSourcePackets);
         for (size_t n = 0; n < NumSourcePackets; ++n) {
-            writer.write(source_packets[n]);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[n]));
         }
 
         // Send outdated block.
         fill_all_packets(0);
         for (size_t n = 0; n < NumSourcePackets; ++n) {
-            writer.write(source_packets[n]);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[n]));
         }
 
         // Send next block.
         fill_all_packets(NumSourcePackets * 2);
         for (size_t n = 0; n < NumSourcePackets; ++n) {
-            writer.write(source_packets[n]);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[n]));
         }
 
         dispatcher.push_stocks();
@@ -1178,7 +1178,7 @@ TEST(writer_reader, repaired_block_numbering) {
         dispatcher.lose(lost_packet_n);
 
         for (size_t n = 0; n < NumSourcePackets; ++n) {
-            writer.write(source_packets[n]);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[n]));
         }
 
         dispatcher.clear_losses();
@@ -1187,7 +1187,7 @@ TEST(writer_reader, repaired_block_numbering) {
         fill_all_packets(NumSourcePackets);
 
         for (size_t n = 0; n < NumSourcePackets; ++n) {
-            writer.write(source_packets[n]);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[n]));
         }
 
         dispatcher.push_stocks();
@@ -1267,7 +1267,7 @@ TEST(writer_reader, invalid_esi) {
 
             // encode packets and write to queue
             for (size_t i = 0; i < NumSourcePackets; ++i) {
-                writer.write(source_packets[i]);
+                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             }
 
             // write packets from queue to dispatcher
@@ -1290,7 +1290,7 @@ TEST(writer_reader, invalid_esi) {
                     p->fec()->encoding_symbol_id = NumSourcePackets + NumRepairPackets;
                     recompose_packet(p);
                 }
-                dispatcher.write(p);
+                UNSIGNED_LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
             }
 
             // deliver packets from dispatcher to reader
@@ -1350,7 +1350,7 @@ TEST(writer_reader, invalid_sbl) {
 
             // encode packets and write to queue
             for (size_t i = 0; i < NumSourcePackets; ++i) {
-                writer.write(source_packets[i]);
+                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             }
 
             // write packets from queue to dispatcher
@@ -1368,7 +1368,7 @@ TEST(writer_reader, invalid_sbl) {
                     p->fec()->source_block_length = NumSourcePackets + 1;
                     recompose_packet(p);
                 }
-                dispatcher.write(p);
+                UNSIGNED_LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
             }
 
             // deliver packets from dispatcher to reader
@@ -1428,7 +1428,7 @@ TEST(writer_reader, invalid_nes) {
 
             // encode packets and write to queue
             for (size_t i = 0; i < NumSourcePackets; ++i) {
-                writer.write(source_packets[i]);
+                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             }
 
             // write packets from queue to dispatcher
@@ -1446,7 +1446,7 @@ TEST(writer_reader, invalid_nes) {
                     p->fec()->block_length = NumSourcePackets + NumRepairPackets + 1;
                     recompose_packet(p);
                 }
-                dispatcher.write(p);
+                UNSIGNED_LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
             }
 
             // deliver packets from dispatcher to reader
@@ -1502,7 +1502,7 @@ TEST(writer_reader, invalid_payload_size) {
 
             // encode packets and write to writer_queue
             for (size_t i = 0; i < NumSourcePackets; ++i) {
-                writer.write(source_packets[i]);
+                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             }
 
             // read packets from writer_queue queue, spoil some packets, and
@@ -1532,9 +1532,9 @@ TEST(writer_reader, invalid_payload_size) {
                 }
 
                 if (p->flags() & packet::Packet::FlagRepair) {
-                    repair_queue.write(p);
+                    UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_queue.write(p));
                 } else {
-                    source_queue.write(p);
+                    UNSIGNED_LONGS_EQUAL(status::StatusOK, source_queue.write(p));
                 }
             }
 
@@ -1592,7 +1592,7 @@ TEST(writer_reader, zero_source_packets) {
 
             // encode packets and write to queue
             for (size_t i = 0; i < NumSourcePackets; ++i) {
-                writer.write(source_packets[i]);
+                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             }
 
             // lose source packet #5
@@ -1610,7 +1610,7 @@ TEST(writer_reader, zero_source_packets) {
                     recompose_packet(p);
                 }
 
-                dispatcher.write(p);
+                UNSIGNED_LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
             }
 
             // check we have processed all packets
@@ -1677,7 +1677,9 @@ TEST(writer_reader, zero_repair_packets) {
         for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
             // encode packets and write to queue
             for (size_t i = 0; i < NumSourcePackets; ++i) {
-                writer.write(fill_one_packet(i, FECPayloadSize, &ldpc_source_composer));
+                UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                                     writer.write(fill_one_packet(
+                                         i, FECPayloadSize, &ldpc_source_composer)));
             }
 
             // lose source packet #5
@@ -1695,7 +1697,7 @@ TEST(writer_reader, zero_repair_packets) {
                     ldpc_repair_composer.compose(*p);
                 }
 
-                dispatcher.write(p);
+                UNSIGNED_LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
             }
 
             // check we have processed all packets
@@ -1758,7 +1760,7 @@ TEST(writer_reader, zero_payload_size) {
 
             // encode packets and write to writer_queue
             for (size_t i = 0; i < NumSourcePackets; ++i) {
-                writer.write(source_packets[i]);
+                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             }
 
             // read packets from writer_queue queue, spoil some packets, and
@@ -1779,9 +1781,9 @@ TEST(writer_reader, zero_payload_size) {
                 }
 
                 if (p->flags() & packet::Packet::FlagRepair) {
-                    repair_queue.write(p);
+                    UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_queue.write(p));
                 } else {
-                    source_queue.write(p);
+                    UNSIGNED_LONGS_EQUAL(status::StatusOK, source_queue.write(p));
                 }
             }
 
@@ -1850,7 +1852,7 @@ TEST(writer_reader, sbn_jump) {
             fill_all_packets(NumSourcePackets * n);
 
             for (size_t i = 0; i < NumSourcePackets; ++i) {
-                writer.write(source_packets[i]);
+                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             }
         }
 
@@ -1859,7 +1861,7 @@ TEST(writer_reader, sbn_jump) {
             packet::PacketPtr p;
             UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(p));
             CHECK(p);
-            dispatcher.write(p);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
         }
 
         // deliver packets from dispatcher to reader
@@ -1886,7 +1888,7 @@ TEST(writer_reader, sbn_jump) {
             p->fec()->source_block_number += MaxSbnJump;
             recompose_packet(p);
 
-            dispatcher.write(p);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
         }
 
         // deliver packets from dispatcher to reader
@@ -1913,7 +1915,7 @@ TEST(writer_reader, sbn_jump) {
             p->fec()->source_block_number += MaxSbnJump * 2 + 1;
             recompose_packet(p);
 
-            dispatcher.write(p);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
         }
 
         // deliver packets from dispatcher to reader
@@ -1971,7 +1973,8 @@ TEST(writer_reader, writer_encode_blocks) {
                 }
 
                 for (size_t i = 0; i < NumSourcePackets; ++i) {
-                    writer.write(source_packets[i]);
+                    UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                                         writer.write(source_packets[i]));
                 }
                 dispatcher.push_stocks();
 
@@ -2068,7 +2071,7 @@ TEST(writer_reader, writer_resize_blocks) {
             for (size_t i = 0; i < source_sizes[n]; ++i) {
                 packet::PacketPtr p = fill_one_packet(wr_sn, payload_sizes[n]);
                 wr_sn++;
-                writer.write(p);
+                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(p));
             }
 
             UNSIGNED_LONGS_EQUAL(source_sizes[n], dispatcher.source_size());
@@ -2139,7 +2142,7 @@ TEST(writer_reader, resize_block_begin) {
             for (size_t i = 0; i < source_sizes[n]; ++i) {
                 packet::PacketPtr p = fill_one_packet(wr_sn, payload_sizes[n]);
                 wr_sn++;
-                writer.write(p);
+                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(p));
             }
 
             UNSIGNED_LONGS_EQUAL(source_sizes[n], dispatcher.source_size());
@@ -2224,7 +2227,7 @@ TEST(writer_reader, resize_block_middle) {
 
             // Write first half of the packets.
             for (size_t i = 0; i < prev_sblen / 2; ++i) {
-                writer.write(packets[i]);
+                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(packets[i]));
             }
 
             // Update source block size.
@@ -2232,7 +2235,7 @@ TEST(writer_reader, resize_block_middle) {
 
             // Write the remaining packets.
             for (size_t i = prev_sblen / 2; i < prev_sblen; ++i) {
-                writer.write(packets[i]);
+                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(packets[i]));
             }
 
             UNSIGNED_LONGS_EQUAL(prev_sblen, dispatcher.source_size());
@@ -2315,7 +2318,7 @@ TEST(writer_reader, resize_block_losses) {
             for (size_t i = 0; i < source_sizes[n]; ++i) {
                 packet::PacketPtr p = fill_one_packet(wr_sn, payload_sizes[n]);
                 wr_sn++;
-                writer.write(p);
+                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(p));
             }
 
             UNSIGNED_LONGS_EQUAL(source_sizes[n] - 1, dispatcher.source_size());
@@ -2372,7 +2375,7 @@ TEST(writer_reader, resize_block_repair_first) {
 
         // Encode first block.
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            writer.write(fill_one_packet(wr_sn));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(wr_sn)));
             wr_sn++;
         }
 
@@ -2398,7 +2401,9 @@ TEST(writer_reader, resize_block_repair_first) {
 
         // Encode second block.
         for (size_t i = 0; i < NumSourcePackets * 2; ++i) {
-            writer.write(fill_one_packet(wr_sn, FECPayloadSize * 2));
+            UNSIGNED_LONGS_EQUAL(
+                status::StatusOK,
+                writer.write(fill_one_packet(wr_sn, FECPayloadSize * 2)));
             wr_sn++;
         }
 
@@ -2457,7 +2462,7 @@ TEST(writer_reader, error_writer_resize_block) {
         CHECK(writer.resize(NumSourcePackets, BlockSize1));
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            writer.write(fill_one_packet(sn++));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(sn++)));
         }
 
         CHECK(writer.is_alive());
@@ -2472,7 +2477,8 @@ TEST(writer_reader, error_writer_resize_block) {
         CHECK(writer.resize(NumSourcePackets, BlockSize2));
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            writer.write(fill_one_packet(sn++));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(sn++)));
+
             CHECK(!writer.is_alive());
         }
 
@@ -2509,7 +2515,7 @@ TEST(writer_reader, error_writer_encode_packet) {
         CHECK(writer.resize(BlockSize1, NumRepairPackets));
 
         for (size_t i = 0; i < BlockSize1; ++i) {
-            writer.write(fill_one_packet(sn++));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(sn++)));
         }
 
         CHECK(writer.is_alive());
@@ -2520,10 +2526,11 @@ TEST(writer_reader, error_writer_encode_packet) {
         CHECK(writer.resize(BlockSize2, NumRepairPackets));
 
         for (size_t i = 0; i < BlockSize2; ++i) {
-            writer.write(fill_one_packet(sn++));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(sn++)));
+
+            CHECK(!writer.is_alive());
         }
 
-        CHECK(!writer.is_alive());
         CHECK(dispatcher.source_size() == BlockSize1);
         CHECK(dispatcher.repair_size() == NumRepairPackets);
     }
@@ -2566,7 +2573,7 @@ TEST(writer_reader, error_reader_resize_block) {
         // write first block
         CHECK(writer.resize(BlockSize1, NumRepairPackets));
         for (size_t i = 0; i < BlockSize1; ++i) {
-            writer.write(fill_one_packet(sn++));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(sn++)));
         }
 
         // deliver first block
@@ -2584,7 +2591,7 @@ TEST(writer_reader, error_reader_resize_block) {
         // write second block
         CHECK(writer.resize(BlockSize2, NumRepairPackets));
         for (size_t i = 0; i < BlockSize2; ++i) {
-            writer.write(fill_one_packet(sn++));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(sn++)));
         }
 
         // deliver second block
@@ -2639,7 +2646,7 @@ TEST(writer_reader, error_reader_decode_packet) {
         // write first block
         CHECK(writer.resize(BlockSize1, NumRepairPackets));
         for (size_t i = 0; i < BlockSize1; ++i) {
-            writer.write(fill_one_packet(sn++));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(sn++)));
         }
 
         // deliver first block
@@ -2661,7 +2668,7 @@ TEST(writer_reader, error_reader_decode_packet) {
         // write second block
         CHECK(writer.resize(BlockSize2, NumRepairPackets));
         for (size_t i = 0; i < BlockSize2; ++i) {
-            writer.write(fill_one_packet(sn++));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(sn++)));
         }
 
         // deliver second block
@@ -2728,7 +2735,7 @@ TEST(writer_reader, writer_oversized_block) {
 
             // write packets to dispatcher
             for (size_t i = 0; i < NumSourcePackets; ++i) {
-                writer.write(source_packets[i]);
+                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             }
 
             // deliver packets from dispatcher to reader
@@ -2793,7 +2800,9 @@ TEST(writer_reader, reader_oversized_source_block) {
 
         // encode packets and write to queue
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            writer.write(fill_one_packet(i, FECPayloadSize, &ldpc_source_composer));
+            UNSIGNED_LONGS_EQUAL(
+                status::StatusOK,
+                writer.write(fill_one_packet(i, FECPayloadSize, &ldpc_source_composer)));
         }
 
         // write packets from queue to dispatcher
@@ -2809,7 +2818,7 @@ TEST(writer_reader, reader_oversized_source_block) {
                 ldpc_source_composer.compose(*p);
             }
 
-            dispatcher.write(p);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
         }
 
         // deliver packets from dispatcher to reader
@@ -2863,7 +2872,9 @@ TEST(writer_reader, reader_oversized_repair_block) {
 
         // encode packets and write to queue
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            writer.write(fill_one_packet(i, FECPayloadSize, &ldpc_source_composer));
+            UNSIGNED_LONGS_EQUAL(
+                status::StatusOK,
+                writer.write(fill_one_packet(i, FECPayloadSize, &ldpc_source_composer)));
         }
 
         // write packets from queue to dispatcher
@@ -2879,7 +2890,7 @@ TEST(writer_reader, reader_oversized_repair_block) {
                 ldpc_repair_composer.compose(*p);
             }
 
-            dispatcher.write(p);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
         }
 
         // deliver packets from dispatcher to reader
@@ -2917,7 +2928,8 @@ TEST(writer_reader, writer_invalid_payload_size_change) {
 
         // write the first block with the same payload size
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            writer.write(fill_one_packet(sn++, FECPayloadSize));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                                 writer.write(fill_one_packet(sn++, FECPayloadSize)));
         }
 
         CHECK(writer.is_alive());
@@ -2926,7 +2938,8 @@ TEST(writer_reader, writer_invalid_payload_size_change) {
 
         // write a half of the second block with another payload size
         for (size_t i = 0; i < NumSourcePackets / 2; ++i) {
-            writer.write(fill_one_packet(sn++, FECPayloadSize - 1));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                                 writer.write(fill_one_packet(sn++, FECPayloadSize - 1)));
         }
 
         CHECK(writer.is_alive());
@@ -2935,7 +2948,8 @@ TEST(writer_reader, writer_invalid_payload_size_change) {
         UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
 
         // write a packet with different payload size
-        writer.write(fill_one_packet(sn, FECPayloadSize));
+        UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                             writer.write(fill_one_packet(sn, FECPayloadSize)));
 
         // writer should be terminated
         CHECK(!writer.is_alive());
@@ -2974,7 +2988,7 @@ TEST(writer_reader, reader_invalid_fec_scheme_source_packet) {
 
         // encode packets and write to queue
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            writer.write(fill_one_packet(i));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(i)));
         }
         UNSIGNED_LONGS_EQUAL(NumSourcePackets + NumRepairPackets, writer_queue.size());
 
@@ -2984,7 +2998,7 @@ TEST(writer_reader, reader_invalid_fec_scheme_source_packet) {
             UNSIGNED_LONGS_EQUAL(status::StatusOK, writer_queue.read(p));
             CHECK(p);
             CHECK((p->flags() & packet::Packet::FlagRepair) == 0);
-            source_queue.write(p);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, source_queue.write(p));
         }
         UNSIGNED_LONGS_EQUAL(NumSourcePackets / 2, source_queue.size());
 
@@ -3004,7 +3018,7 @@ TEST(writer_reader, reader_invalid_fec_scheme_source_packet) {
             CHECK((p->flags() & packet::Packet::FlagRepair) == 0);
             p->fec()->fec_scheme = CodecMap::instance().nth_scheme(
                 (n_scheme + 1) % CodecMap::instance().num_schemes());
-            source_queue.write(p);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, source_queue.write(p));
             UNSIGNED_LONGS_EQUAL(1, source_queue.size());
         }
 
@@ -3046,7 +3060,7 @@ TEST(writer_reader, reader_invalid_fec_scheme_repair_packet) {
 
         // encode packets and write to queue
         for (size_t i = 0; i < NumSourcePackets * 2; ++i) {
-            writer.write(fill_one_packet(i));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(i)));
         }
         UNSIGNED_LONGS_EQUAL((NumSourcePackets + NumRepairPackets) * 2,
                              writer_queue.size());
@@ -3057,7 +3071,7 @@ TEST(writer_reader, reader_invalid_fec_scheme_repair_packet) {
             UNSIGNED_LONGS_EQUAL(status::StatusOK, writer_queue.read(p));
             CHECK(p);
             CHECK((p->flags() & packet::Packet::FlagRepair) == 0);
-            source_queue.write(p);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, source_queue.write(p));
         }
         UNSIGNED_LONGS_EQUAL(NumSourcePackets, source_queue.size());
 
@@ -3067,7 +3081,7 @@ TEST(writer_reader, reader_invalid_fec_scheme_repair_packet) {
             UNSIGNED_LONGS_EQUAL(status::StatusOK, writer_queue.read(p));
             CHECK(p);
             CHECK((p->flags() & packet::Packet::FlagRepair) != 0);
-            repair_queue.write(p);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_queue.write(p));
         }
         UNSIGNED_LONGS_EQUAL(NumRepairPackets / 2, repair_queue.size());
 
@@ -3088,7 +3102,7 @@ TEST(writer_reader, reader_invalid_fec_scheme_repair_packet) {
             CHECK((p->flags() & packet::Packet::FlagRepair) != 0);
             p->fec()->fec_scheme = CodecMap::instance().nth_scheme(
                 (n_scheme + 1) % CodecMap::instance().num_schemes());
-            repair_queue.write(p);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_queue.write(p));
             UNSIGNED_LONGS_EQUAL(1, repair_queue.size());
         }
 
@@ -3106,7 +3120,7 @@ TEST(writer_reader, reader_invalid_fec_scheme_repair_packet) {
             UNSIGNED_LONGS_EQUAL(status::StatusOK, writer_queue.read(p));
             CHECK(p);
             CHECK((p->flags() & packet::Packet::FlagRepair) == 0);
-            source_queue.write(p);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, source_queue.write(p));
         }
         UNSIGNED_LONGS_EQUAL(NumSourcePackets, source_queue.size());
 
@@ -3155,7 +3169,7 @@ TEST(writer_reader, failed_to_read_source_packet) {
 
             fill_all_packets(0);
             for (size_t i = 0; i < NumSourcePackets; ++i) {
-                writer.write(source_packets[i]);
+                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             }
 
             for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
@@ -3164,7 +3178,7 @@ TEST(writer_reader, failed_to_read_source_packet) {
                 CHECK(pp);
 
                 if (pp->flags() & packet::Packet::FlagRepair) {
-                    repair_reader.write(pp);
+                    UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_reader.write(pp));
                 }
             }
 
@@ -3205,7 +3219,7 @@ TEST(writer_reader, failed_to_read_repair_packet) {
 
         fill_all_packets(0);
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            writer.write(source_packets[i]);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
         }
 
         for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
@@ -3214,7 +3228,7 @@ TEST(writer_reader, failed_to_read_repair_packet) {
             CHECK(pp);
 
             if (pp->flags() & packet::Packet::FlagAudio) {
-                source_reader.write(pp);
+                UNSIGNED_LONGS_EQUAL(status::StatusOK, source_reader.write(pp));
             }
         }
 

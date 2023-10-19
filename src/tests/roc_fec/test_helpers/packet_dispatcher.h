@@ -45,12 +45,14 @@ public:
         reset();
     }
 
-    virtual void write(const packet::PacketPtr& p) {
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr& p) {
         store_(p);
 
         if (++packet_num_ >= num_source_ + num_repair_) {
             packet_num_ = 0;
         }
+
+        return status::StatusOK;
     }
 
     packet::IReader& source_reader() {
@@ -176,9 +178,9 @@ private:
         }
 
         if (p->flags() & packet::Packet::FlagAudio) {
-            source_stock_.write(p);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, source_stock_.write(p));
         } else if (p->flags() & packet::Packet::FlagRepair) {
-            repair_stock_.write(p);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_stock_.write(p));
         } else {
             FAIL("unexpected packet type");
         }
@@ -188,9 +190,11 @@ private:
         CHECK(p);
 
         if (p->flags() & packet::Packet::FlagAudio) {
-            source_queue_.write(reparse_packet_(source_parser_, p));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                                 source_queue_.write(reparse_packet_(source_parser_, p)));
         } else if (p->flags() & packet::Packet::FlagRepair) {
-            repair_queue_.write(reparse_packet_(repair_parser_, p));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                                 repair_queue_.write(reparse_packet_(repair_parser_, p)));
         } else {
             FAIL("unexpected packet type");
         }

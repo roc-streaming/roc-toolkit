@@ -77,7 +77,7 @@ public:
     //! @remarks
     //!  - writes the given source packet to the output writer
     //!  - generates repair packets and also writes them to the output writer
-    virtual void write(const packet::PacketPtr&);
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr&);
 
 private:
     bool begin_block_(const packet::PacketPtr& pp);
@@ -86,12 +86,12 @@ private:
 
     bool apply_sizes_(size_t sblen, size_t rblen, size_t payload_size);
 
-    void write_source_packet_(const packet::PacketPtr&);
+    status::StatusCode write_source_packet_(const packet::PacketPtr&);
     void make_repair_packets_();
     packet::PacketPtr make_repair_packet_(packet::seqnum_t n);
     void encode_repair_packets_();
     void compose_repair_packets_();
-    void write_repair_packets_();
+    status::StatusCode write_repair_packets_();
     void fill_packet_fec_fields_(const packet::PacketPtr& packet, packet::seqnum_t n);
 
     void validate_fec_packet_(const packet::PacketPtr&);

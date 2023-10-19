@@ -26,6 +26,20 @@ namespace rtp {
 
 namespace {
 
+class StatusWriter : public packet::IWriter, public core::NonCopyable<> {
+public:
+    explicit StatusWriter(status::StatusCode code)
+        : code_(code) {
+    }
+
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr&) {
+        return code_;
+    }
+
+private:
+    status::StatusCode code_;
+};
+
 core::HeapArena arena;
 static packet::PacketFactory packet_factory(arena);
 
@@ -62,7 +76,7 @@ TEST(timestamp_extractor, single_write) {
 
     // write packet
     packet::PacketPtr wp = new_packet(555, rts, cts);
-    extractor.write(wp);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, extractor.write(wp));
 
     // ensure packet was passed to inner writer
     CHECK_EQUAL(1, queue.size());
@@ -81,6 +95,25 @@ TEST(timestamp_extractor, single_write) {
     // get mapping for time in past
     CHECK_TRUE(extractor.has_mapping());
     CHECK_EQUAL(rts - 1000, extractor.get_mapping(cts - core::Second));
+}
+
+TEST(timestamp_extractor, failed_to_write_packet) {
+    // 1 second = 1000 samples
+    const audio::SampleSpec sample_spec =
+        audio::SampleSpec(1000, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, 0x1);
+
+    const status::StatusCode codes[] = {
+        status::StatusUnknown,
+        status::StatusNoData,
+    };
+
+    for (size_t n = 0; n < ROC_ARRAY_SIZE(codes); ++n) {
+        StatusWriter writer(codes[n]);
+        TimestampExtractor extractor(writer, sample_spec);
+
+        packet::PacketPtr pp = new_packet(555, 0, 0);
+        UNSIGNED_LONGS_EQUAL(codes[n], extractor.write(pp));
+    }
 }
 
 } // namespace rtp

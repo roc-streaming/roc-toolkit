@@ -216,20 +216,21 @@ bool ReceiverSession::is_valid() const {
     return audio_reader_;
 }
 
-bool ReceiverSession::handle(const packet::PacketPtr& packet) {
+status::StatusCode ReceiverSession::write(const packet::PacketPtr& packet) {
     roc_panic_if(!is_valid());
 
     packet::UDP* udp = packet->udp();
     if (!udp) {
-        return false;
+        // TODO: return StatusBadArg (gh-183)
+        return status::StatusUnknown;
     }
 
     if (udp->src_addr != src_address_) {
-        return false;
+        // TODO: return StatusBadArg (gh-183)
+        return status::StatusUnknown;
     }
 
-    queue_router_->write(packet);
-    return true;
+    return queue_router_->write(packet);
 }
 
 bool ReceiverSession::refresh(core::nanoseconds_t current_time,

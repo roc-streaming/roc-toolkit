@@ -10,6 +10,7 @@
 #include "roc_address/interface.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace node {
@@ -134,7 +135,8 @@ bool ReceiverDecoder::get_metrics(pipeline::ReceiverSlotMetrics& slot_metrics,
     return true;
 }
 
-bool ReceiverDecoder::write(address::Interface iface, const packet::PacketPtr& packet) {
+status::StatusCode ReceiverDecoder::write(address::Interface iface,
+                                          const packet::PacketPtr& packet) {
     roc_panic_if_not(is_valid());
 
     roc_panic_if(iface < 0);
@@ -146,11 +148,11 @@ bool ReceiverDecoder::write(address::Interface iface, const packet::PacketPtr& p
                 "receiver decoder node:"
                 " can't write to %s interface: interface not activated",
                 address::interface_to_str(iface));
-        return false;
+        // TODO: return StatusNotFound (gh-183)
+        return status::StatusUnknown;
     }
 
-    writer->write(packet);
-    return true;
+    return writer->write(packet);
 }
 
 sndio::ISource& ReceiverDecoder::source() {

@@ -56,8 +56,10 @@ TEST(receiver_decoder, write) {
 
     packet::PacketPtr pp = packet_factory.new_packet();
 
-    CHECK(!receiver_decoder.write(address::Iface_AudioSource, pp));
-    CHECK(!receiver_decoder.write(address::Iface_AudioRepair, pp));
+    UNSIGNED_LONGS_EQUAL(status::StatusUnknown,
+                         receiver_decoder.write(address::Iface_AudioSource, pp));
+    UNSIGNED_LONGS_EQUAL(status::StatusUnknown,
+                         receiver_decoder.write(address::Iface_AudioRepair, pp));
 }
 
 TEST(receiver_decoder, activate_no_fec) {

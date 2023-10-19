@@ -81,7 +81,7 @@ TEST(populator, empty_duration) {
     const packet::stream_timestamp_t expected_duration = 32;
 
     packet::PacketPtr wp = new_packet(packet_duration);
-    queue.write(wp);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
     packet::PacketPtr rp;
     LONGS_EQUAL(0, populator.read(rp));
@@ -101,7 +101,7 @@ TEST(populator, non_empty_duration) {
     core::Slice<uint8_t> buffer = buffer_factory.new_buffer();
     CHECK(buffer);
     packet::PacketPtr wp = new_packet(duration);
-    queue.write(wp);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
     packet::PacketPtr rp;
     LONGS_EQUAL(0, populator.read(rp));

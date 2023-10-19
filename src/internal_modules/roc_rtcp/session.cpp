@@ -49,18 +49,21 @@ bool Session::is_valid() const {
     return valid_;
 }
 
-void Session::process_packet(const packet::PacketPtr& packet) {
+status::StatusCode Session::process_packet(const packet::PacketPtr& packet) {
     roc_panic_if_msg(!packet, "rtcp session: null packet");
     roc_panic_if_msg(!packet->rtcp(), "rtcp session: non-rtcp packet");
 
     Traverser traverser(packet->rtcp()->data);
     if (!traverser.parse()) {
         roc_log(LogTrace, "rtcp session: can't parse rtcp packet");
-        return;
+        // TODO: return StatusBadArg (gh-183)
+        return status::StatusOK;
     }
 
     parse_events_(traverser);
     parse_reports_(traverser);
+
+    return status::StatusOK;
 }
 
 core::nanoseconds_t Session::generation_deadline(core::nanoseconds_t current_time) {
@@ -73,7 +76,7 @@ core::nanoseconds_t Session::generation_deadline(core::nanoseconds_t current_tim
     return next_deadline_;
 }
 
-void Session::generate_packets(core::nanoseconds_t current_time) {
+status::StatusCode Session::generate_packets(core::nanoseconds_t current_time) {
     roc_panic_if_msg(!packet_writer_, "rtcp session: packet writer not set");
 
     if (next_deadline_ == 0) {
@@ -81,7 +84,7 @@ void Session::generate_packets(core::nanoseconds_t current_time) {
     }
 
     if (next_deadline_ > current_time) {
-        return;
+        return status::StatusOK;
     }
 
     do {
@@ -89,11 +92,13 @@ void Session::generate_packets(core::nanoseconds_t current_time) {
         next_deadline_ += core::Millisecond * 200;
     } while (next_deadline_ <= current_time);
 
-    packet::PacketPtr packet = generate_packet_(current_time);
-
-    if (packet) {
-        packet_writer_->write(packet);
+    packet::PacketPtr packet;
+    const status::StatusCode code = generate_packet_(current_time, packet);
+    if (code != status::StatusOK) {
+        return code;
     }
+
+    return packet_writer_->write(packet);
 }
 
 void Session::parse_events_(const Traverser& traverser) {
@@ -223,28 +228,28 @@ void Session::parse_reception_block_(const header::ReceptionReportBlock& blk) {
     }
 }
 
-packet::PacketPtr Session::generate_packet_(core::nanoseconds_t current_time) {
-    packet::PacketPtr packet = packet_factory_.new_packet();
+status::StatusCode Session::generate_packet_(core::nanoseconds_t current_time,
+                                             packet::PacketPtr& packet) {
+    packet = packet_factory_.new_packet();
     if (!packet) {
         roc_log(LogError, "rtcp session: can't create packet");
-        return NULL;
+        // TODO: return StatusNoMem (gh-183)
+        return status::StatusOK;
     }
 
     // will hold composed RTCP packet
     core::Slice<uint8_t> rtcp_data = buffer_factory_.new_buffer();
     if (!rtcp_data) {
         roc_log(LogError, "rtcp session: can't create buffer");
-        return NULL;
+        // TODO: return StatusNoMem (gh-183)
+        return status::StatusOK;
     }
 
     // reset slice
     rtcp_data.reslice(0, 0);
 
     // fill RTCP packet
-    if (!build_packet_(rtcp_data, current_time)) {
-        roc_log(LogError, "rtcp session: can't build packet");
-        return NULL;
-    }
+    build_packet_(rtcp_data, current_time);
 
     // will hold whole packet data; if RTCP composer is nested into another
     // composer, packet_data may hold additionals headers or footers around
@@ -253,7 +258,8 @@ packet::PacketPtr Session::generate_packet_(core::nanoseconds_t current_time) {
     core::Slice<uint8_t> packet_data = buffer_factory_.new_buffer();
     if (!packet_data) {
         roc_log(LogError, "rtcp session: can't create buffer");
-        return NULL;
+        // TODO: return StatusNoMem (gh-183)
+        return status::StatusOK;
     }
 
     // reset slice
@@ -262,7 +268,8 @@ packet::PacketPtr Session::generate_packet_(core::nanoseconds_t current_time) {
     // prepare packet to be able to hold our RTCP packet
     if (!packet_composer_.prepare(*packet, packet_data, rtcp_data.size())) {
         roc_log(LogError, "rtcp session: can't prepare packet");
-        return NULL;
+        // TODO: return StatusInvalidState|StatusDead (gh-183)
+        return status::StatusOK;
     }
     packet->add_flags(packet::Packet::FlagPrepared);
 
@@ -274,16 +281,17 @@ packet::PacketPtr Session::generate_packet_(core::nanoseconds_t current_time) {
     if (!packet->rtcp() || !packet->rtcp()->data
         || packet->rtcp()->data.size() != rtcp_data.size()) {
         roc_log(LogError, "rtcp session: composer prepared invalid packet");
-        return NULL;
+        // TODO: return StatusInvalidState|StatusDead (gh-183)
+        return status::StatusOK;
     }
 
     // copy our RTCP packet into that sub-slice
     memcpy(packet->rtcp()->data.data(), rtcp_data.data(), rtcp_data.size());
 
-    return packet;
+    return status::StatusOK;
 }
 
-bool Session::build_packet_(core::Slice<uint8_t>& data, core::nanoseconds_t report_time) {
+void Session::build_packet_(core::Slice<uint8_t>& data, core::nanoseconds_t report_time) {
     Builder bld(data);
 
     if (send_hooks_) {
@@ -295,8 +303,6 @@ bool Session::build_packet_(core::Slice<uint8_t>& data, core::nanoseconds_t repo
     }
 
     build_session_description_(bld);
-
-    return true;
 }
 
 void Session::build_sender_report_(Builder& bld, core::nanoseconds_t report_time) {

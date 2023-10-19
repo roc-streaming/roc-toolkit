@@ -9,6 +9,7 @@
 #include "roc_packet/delayed_reader.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_status/code_to_str.h"
 #include "roc_status/status_code.h"
 
 namespace roc {
@@ -44,7 +45,7 @@ status::StatusCode DelayedReader::read(PacketPtr& ptr) {
 status::StatusCode DelayedReader::fetch_packets_() {
     PacketPtr pp;
     for (;;) {
-        const status::StatusCode code = reader_.read(pp);
+        status::StatusCode code = reader_.read(pp);
         if (code != status::StatusOK) {
             if (code == status::StatusNoData) {
                 break;
@@ -52,7 +53,8 @@ status::StatusCode DelayedReader::fetch_packets_() {
             return code;
         }
 
-        queue_.write(pp);
+        code = queue_.write(pp);
+        roc_panic_if(code != status::StatusOK);
     }
 
     const stream_timestamp_t qs = queue_size_();
