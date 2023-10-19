@@ -11,6 +11,7 @@
 #include "roc_core/fast_random.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace audio {
@@ -131,7 +132,8 @@ void Packetizer::end_packet_() {
         pad_packet_();
     }
 
-    writer_.write(packet_);
+    const status::StatusCode code = writer_.write(packet_);
+    roc_panic_if(code != status::StatusOK);
 
     seqnum_++;
     stream_ts_ += (packet::stream_timestamp_t)packet_pos_;

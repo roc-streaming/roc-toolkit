@@ -54,8 +54,8 @@ TEST(sorted_queue, two_packets) {
     PacketPtr wp1 = new_packet(1);
     PacketPtr wp2 = new_packet(2);
 
-    queue.write(wp2);
-    queue.write(wp1);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp2));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp1));
 
     LONGS_EQUAL(2, queue.size());
 
@@ -99,7 +99,8 @@ TEST(sorted_queue, many_packets) {
     }
 
     for (ssize_t n = 0; n < NumPackets; n++) {
-        queue.write(packets[(n + NumPackets / 2) % NumPackets]);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                             queue.write(packets[(n + NumPackets / 2) % NumPackets]));
     }
 
     LONGS_EQUAL(NumPackets, queue.size());
@@ -122,7 +123,7 @@ TEST(sorted_queue, out_of_order) {
     PacketPtr wp1 = new_packet(1);
     PacketPtr wp2 = new_packet(2);
 
-    queue.write(wp2);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp2));
 
     LONGS_EQUAL(1, queue.size());
 
@@ -135,7 +136,7 @@ TEST(sorted_queue, out_of_order) {
 
     LONGS_EQUAL(0, queue.size());
 
-    queue.write(wp1);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp1));
 
     LONGS_EQUAL(1, queue.size());
 
@@ -160,11 +161,11 @@ TEST(sorted_queue, out_of_order_many_packets) {
     SortedQueue queue(0);
 
     for (packet::seqnum_t n = 0; n < 7; ++n) {
-        queue.write(new_packet(n));
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(new_packet(n)));
     }
 
     for (packet::seqnum_t n = 11; n < NumPackets; ++n) {
-        queue.write(new_packet(n));
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(new_packet(n)));
     }
 
     for (packet::seqnum_t n = 0; n < 7; ++n) {
@@ -175,8 +176,8 @@ TEST(sorted_queue, out_of_order_many_packets) {
         CHECK(p->rtp()->seqnum == n);
     }
 
-    queue.write(new_packet(9));
-    queue.write(new_packet(10));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(new_packet(9)));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(new_packet(10)));
 
     for (packet::seqnum_t n = 9; n < NumPackets; ++n) {
         packet::PacketPtr p;
@@ -185,8 +186,8 @@ TEST(sorted_queue, out_of_order_many_packets) {
         CHECK(p->rtp()->seqnum == n);
 
         if (n == 10) {
-            queue.write(new_packet(8));
-            queue.write(new_packet(7));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(new_packet(8)));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(new_packet(7)));
 
             UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(p));
             UNSIGNED_LONGS_EQUAL(7, p->rtp()->seqnum);
@@ -203,8 +204,8 @@ TEST(sorted_queue, one_duplicate) {
     PacketPtr wp1 = new_packet(1);
     PacketPtr wp2 = new_packet(1);
 
-    queue.write(wp1);
-    queue.write(wp2);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp1));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp2));
 
     LONGS_EQUAL(1, queue.size());
 
@@ -231,13 +232,13 @@ TEST(sorted_queue, many_duplicates) {
     SortedQueue queue(0);
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
-        queue.write(new_packet(n));
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(new_packet(n)));
     }
 
     LONGS_EQUAL(NumPackets, queue.size());
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
-        queue.write(new_packet(n));
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(new_packet(n)));
     }
 
     LONGS_EQUAL(NumPackets, queue.size());
@@ -258,9 +259,9 @@ TEST(sorted_queue, max_size) {
     PacketPtr wp2 = new_packet(2);
     PacketPtr wp3 = new_packet(3);
 
-    queue.write(wp1);
-    queue.write(wp2);
-    queue.write(wp3);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp1));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp2));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp3));
 
     LONGS_EQUAL(2, queue.size());
 
@@ -273,7 +274,7 @@ TEST(sorted_queue, max_size) {
 
     LONGS_EQUAL(1, queue.size());
 
-    queue.write(wp3);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp3));
 
     LONGS_EQUAL(2, queue.size());
 
@@ -290,9 +291,9 @@ TEST(sorted_queue, overflow_ordered1) {
     PacketPtr wp2 = new_packet(sn);
     PacketPtr wp3 = new_packet(seqnum_t(sn + 10));
 
-    queue.write(wp1);
-    queue.write(wp2);
-    queue.write(wp3);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp1));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp2));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp3));
 
     LONGS_EQUAL(3, queue.size());
 
@@ -322,9 +323,9 @@ TEST(sorted_queue, overflow_ordered2) {
     PacketPtr wp2 = new_packet(sn);
     PacketPtr wp3 = new_packet(seqnum_t(sn + 10));
 
-    queue.write(wp1);
-    queue.write(wp2);
-    queue.write(wp3);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp1));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp2));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp3));
 
     LONGS_EQUAL(3, queue.size());
 
@@ -354,9 +355,9 @@ TEST(sorted_queue, overflow_sorting) {
     PacketPtr wp2 = new_packet(sn);
     PacketPtr wp3 = new_packet(seqnum_t(sn + 10));
 
-    queue.write(wp2);
-    queue.write(wp1);
-    queue.write(wp3);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp2));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp1));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp3));
 
     LONGS_EQUAL(3, queue.size());
 
@@ -386,7 +387,7 @@ TEST(sorted_queue, overflow_out_of_order) {
     PacketPtr wp2 = new_packet(sn);
     PacketPtr wp3 = new_packet(sn / 2);
 
-    queue.write(wp1);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp1));
 
     LONGS_EQUAL(1, queue.size());
     PacketPtr rp1;
@@ -394,7 +395,7 @@ TEST(sorted_queue, overflow_out_of_order) {
     CHECK(wp1 == rp1);
     LONGS_EQUAL(0, queue.size());
 
-    queue.write(wp2);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp2));
 
     LONGS_EQUAL(1, queue.size());
     PacketPtr rp2;
@@ -402,7 +403,7 @@ TEST(sorted_queue, overflow_out_of_order) {
     CHECK(wp2 == rp2);
     LONGS_EQUAL(0, queue.size());
 
-    queue.write(wp3);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp3));
 
     LONGS_EQUAL(1, queue.size());
     PacketPtr rp3;
@@ -426,15 +427,15 @@ TEST(sorted_queue, latest) {
     LONGS_EQUAL(0, queue.size());
     CHECK(!queue.latest());
 
-    queue.write(wp1);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp1));
     LONGS_EQUAL(1, queue.size());
     CHECK(queue.latest() == wp1);
 
-    queue.write(wp2);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp2));
     LONGS_EQUAL(2, queue.size());
     CHECK(queue.latest() == wp2);
 
-    queue.write(wp3);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp3));
     LONGS_EQUAL(3, queue.size());
     CHECK(queue.latest() == wp2);
 
@@ -465,7 +466,7 @@ TEST(sorted_queue, latest) {
     LONGS_EQUAL(0, queue.size());
     CHECK(queue.latest() == wp2);
 
-    queue.write(wp4);
+    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp4));
     LONGS_EQUAL(1, queue.size());
     CHECK(queue.latest() == wp4);
 }

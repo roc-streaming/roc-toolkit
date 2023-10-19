@@ -22,7 +22,6 @@
 #include "roc_packet/iparser.h"
 #include "roc_packet/iwriter.h"
 #include "roc_pipeline/config.h"
-#include "roc_pipeline/receiver_session_group.h"
 #include "roc_pipeline/receiver_state.h"
 #include "roc_rtcp/parser.h"
 #include "roc_rtp/format_map.h"
@@ -41,9 +40,10 @@ class ReceiverEndpoint : public core::RefCounted<ReceiverEndpoint, core::ArenaAl
                          private packet::IWriter {
 public:
     //! Initialize.
+    //!  - @p writer to handle packets received on netio thread.
     ReceiverEndpoint(address::Protocol proto,
                      ReceiverState& receiver_state,
-                     ReceiverSessionGroup& session_group,
+                     packet::IWriter& writer,
                      const rtp::FormatMap& format_map,
                      core::IArena& arena);
 
@@ -61,15 +61,15 @@ public:
     packet::IWriter& writer();
 
     //! Pull packets writter to endpoint writer.
-    void pull_packets();
+    ROC_ATTR_NODISCARD status::StatusCode pull_packets();
 
 private:
-    virtual void write(const packet::PacketPtr& packet);
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr& packet);
 
     const address::Protocol proto_;
 
     ReceiverState& receiver_state_;
-    ReceiverSessionGroup& session_group_;
+    packet::IWriter& writer_;
 
     packet::IParser* parser_;
 

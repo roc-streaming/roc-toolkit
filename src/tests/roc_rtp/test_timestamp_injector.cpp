@@ -100,9 +100,10 @@ TEST(timestamp_injector, negative_and_positive_dn) {
 
     LONGS_EQUAL(0, queue.size());
     for (size_t i = 0; i < NPackets; i++) {
-        queue.write(
-            new_packet((packet::seqnum_t)i,
-                       (packet::stream_timestamp_t)(packet_rtp_ts + i * PacketSz)));
+        UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                             queue.write(new_packet((packet::seqnum_t)i,
+                                                    (packet::stream_timestamp_t)(
+                                                        packet_rtp_ts + i * PacketSz))));
     }
     LONGS_EQUAL(NPackets, queue.size());
 

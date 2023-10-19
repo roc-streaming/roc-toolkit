@@ -154,7 +154,7 @@ AsyncOperationStatus UdpSenderPort::async_close(ICloseHandler& handler,
     return AsyncOp_Started;
 }
 
-void UdpSenderPort::write(const packet::PacketPtr& pp) {
+status::StatusCode UdpSenderPort::write(const packet::PacketPtr& pp) {
     if (!pp) {
         roc_panic("udp sender: %s: unexpected null packet", descriptor());
     }
@@ -174,6 +174,8 @@ void UdpSenderPort::write(const packet::PacketPtr& pp) {
     write_(pp);
 
     report_stats_();
+
+    return status::StatusOK;
 }
 
 void UdpSenderPort::write_(const packet::PacketPtr& pp) {

@@ -11,6 +11,7 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_packet/fec_scheme_to_str.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace fec {
@@ -92,12 +93,13 @@ bool Writer::resize(size_t sblen, size_t rblen) {
     return true;
 }
 
-void Writer::write(const packet::PacketPtr& pp) {
+status::StatusCode Writer::write(const packet::PacketPtr& pp) {
     roc_panic_if_not(is_valid());
     roc_panic_if_not(pp);
 
     if (!alive_) {
-        return;
+        // TODO: return StatusDead (gh-183)
+        return status::StatusOK;
     }
 
     validate_fec_packet_(pp);
@@ -108,15 +110,18 @@ void Writer::write(const packet::PacketPtr& pp) {
 
     if (cur_packet_ == 0) {
         if (!begin_block_(pp)) {
-            return;
+            // TODO: return StatusDead (gh-183)
+            return status::StatusOK;
         }
     }
 
     if (!validate_source_packet_(pp)) {
-        return;
+        // TODO: return StatusDead (gh-183)
+        return status::StatusOK;
     }
 
-    write_source_packet_(pp);
+    const status::StatusCode code = write_source_packet_(pp);
+    roc_panic_if(code != status::StatusOK);
 
     cur_packet_++;
 
@@ -124,6 +129,8 @@ void Writer::write(const packet::PacketPtr& pp) {
         end_block_();
         next_block_();
     }
+
+    return status::StatusOK;
 }
 
 bool Writer::begin_block_(const packet::PacketPtr& pp) {
@@ -185,17 +192,18 @@ bool Writer::apply_sizes_(size_t sblen, size_t rblen, size_t payload_size) {
     return true;
 }
 
-void Writer::write_source_packet_(const packet::PacketPtr& pp) {
+status::StatusCode Writer::write_source_packet_(const packet::PacketPtr& pp) {
     encoder_.set(cur_packet_, pp->fec()->payload);
 
     fill_packet_fec_fields_(pp, (packet::seqnum_t)cur_packet_);
 
     if (!source_composer_.compose(*pp)) {
+        // TODO: return StatusBadArg (gh-183)
         roc_panic("fec writer: can't compose source packet");
     }
     pp->add_flags(packet::Packet::FlagComposed);
 
-    writer_.write(pp);
+    return writer_.write(pp);
 }
 
 void Writer::make_repair_packets_() {
@@ -263,20 +271,27 @@ void Writer::compose_repair_packets_() {
         }
 
         if (!repair_composer_.compose(*rp)) {
+            // TODO: return StatusBadArg (gh-183)
             roc_panic("fec writer: can't compose repair packet");
         }
         rp->add_flags(packet::Packet::FlagComposed);
     }
 }
 
-void Writer::write_repair_packets_() {
+status::StatusCode Writer::write_repair_packets_() {
     for (size_t i = 0; i < cur_rblen_; i++) {
         packet::PacketPtr rp = repair_block_[i];
-        if (rp) {
-            writer_.write(repair_block_[i]);
-            repair_block_[i] = NULL;
+        if (!rp) {
+            continue;
         }
+
+        const status::StatusCode code = writer_.write(repair_block_[i]);
+        roc_panic_if(code != status::StatusOK);
+
+        repair_block_[i] = NULL;
     }
+
+    return status::StatusOK;
 }
 
 void Writer::fill_packet_fec_fields_(const packet::PacketPtr& packet,
@@ -300,10 +315,12 @@ void Writer::validate_fec_packet_(const packet::PacketPtr& pp) {
 
     const packet::FEC* fec = pp->fec();
     if (!fec) {
+        // TODO: return StatusBadArg (gh-183)
         roc_panic("fec writer: unexpected non-fec packet");
     }
 
     if (fec->fec_scheme != fec_scheme_) {
+        // TODO: return StatusBadArg (gh-183)
         roc_panic("fec writer: unexpected packet fec scheme:"
                   " packet_scheme=%s session_scheme=%s",
                   packet::fec_scheme_to_str(fec->fec_scheme),

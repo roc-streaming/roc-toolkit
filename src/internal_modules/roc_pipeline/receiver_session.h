@@ -33,6 +33,7 @@
 #include "roc_packet/delayed_reader.h"
 #include "roc_packet/iparser.h"
 #include "roc_packet/ireader.h"
+#include "roc_packet/iwriter.h"
 #include "roc_packet/packet.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/router.h"
@@ -55,7 +56,8 @@ namespace pipeline {
 //!  - a pipeline for processing packets from single sender and converting
 //!    them into audio frames
 class ReceiverSession : public core::RefCounted<ReceiverSession, core::ArenaAllocation>,
-                        public core::ListNode {
+                        public core::ListNode,
+                        public packet::IWriter {
 public:
     //! Initialize.
     ReceiverSession(const ReceiverSessionConfig& session_config,
@@ -71,9 +73,7 @@ public:
     bool is_valid() const;
 
     //! Try to route a packet to this session.
-    //! @returns
-    //!  true if the packet is dedicated for this session
-    bool handle(const packet::PacketPtr& packet);
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr& packet);
 
     //! Refresh pipeline according to current time.
     //! @remarks

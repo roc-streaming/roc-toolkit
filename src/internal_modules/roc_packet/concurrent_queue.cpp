@@ -34,7 +34,7 @@ status::StatusCode ConcurrentQueue::read(PacketPtr& ptr) {
     return status::StatusOK;
 }
 
-void ConcurrentQueue::write(const PacketPtr& packet) {
+status::StatusCode ConcurrentQueue::write(const PacketPtr& packet) {
     if (!packet) {
         roc_panic("concurrent queue: packet is null");
     }
@@ -44,6 +44,8 @@ void ConcurrentQueue::write(const PacketPtr& packet) {
     if (write_sem_) {
         write_sem_->post();
     }
+
+    return status::StatusOK;
 }
 
 } // namespace packet

@@ -9,6 +9,7 @@
 #include "roc_packet/router.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace packet {
@@ -33,7 +34,7 @@ bool Router::add_route(IWriter& writer, unsigned flags) {
     return true;
 }
 
-void Router::write(const PacketPtr& packet) {
+status::StatusCode Router::write(const PacketPtr& packet) {
     if (!packet) {
         roc_panic("router: unexpected null packet");
     }
@@ -63,11 +64,12 @@ void Router::write(const PacketPtr& packet) {
                     (unsigned long)r.source, (unsigned int)r.flags);
         }
 
-        r.writer->write(packet);
-        return;
+        return r.writer->write(packet);
     }
 
     roc_log(LogDebug, "router: can't route packet, dropping");
+    // TODO: return StatusNotFound (gh-183)
+    return status::StatusOK;
 }
 
 } // namespace packet

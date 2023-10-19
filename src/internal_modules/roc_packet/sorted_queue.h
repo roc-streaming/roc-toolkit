@@ -36,7 +36,7 @@ public:
     //!  - if the maximum queue size is reached, packet is dropped
     //!  - if packet is equal to another packet in the queue, it is dropped
     //!  - otherwise, packet is inserted into the queue, keeping the queue sorted
-    virtual void write(const PacketPtr& packet);
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(const PacketPtr& packet);
 
     //! Read next packet.
     //!

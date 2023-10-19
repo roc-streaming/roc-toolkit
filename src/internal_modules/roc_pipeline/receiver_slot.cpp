@@ -9,6 +9,7 @@
 #include "roc_pipeline/receiver_slot.h"
 #include "roc_core/log.h"
 #include "roc_pipeline/endpoint_helpers.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace pipeline {
@@ -60,15 +61,18 @@ ReceiverEndpoint* ReceiverSlot::add_endpoint(address::Interface iface,
 
 core::nanoseconds_t ReceiverSlot::refresh(core::nanoseconds_t current_time) {
     if (source_endpoint_) {
-        source_endpoint_->pull_packets();
+        const status::StatusCode code = source_endpoint_->pull_packets();
+        roc_panic_if(code != status::StatusOK);
     }
 
     if (repair_endpoint_) {
-        repair_endpoint_->pull_packets();
+        const status::StatusCode code = repair_endpoint_->pull_packets();
+        roc_panic_if(code != status::StatusOK);
     }
 
     if (control_endpoint_) {
-        control_endpoint_->pull_packets();
+        const status::StatusCode code = control_endpoint_->pull_packets();
+        roc_panic_if(code != status::StatusOK);
     }
 
     return session_group_.refresh_sessions(current_time);

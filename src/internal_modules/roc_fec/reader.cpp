@@ -288,7 +288,7 @@ status::StatusCode Reader::fetch_packets_(packet::IReader& reader,
     for (;;) {
         packet::PacketPtr pp;
 
-        const status::StatusCode code = reader.read(pp);
+        status::StatusCode code = reader.read(pp);
         if (code != status::StatusOK) {
             if (code == status::StatusNoData) {
                 break;
@@ -300,7 +300,8 @@ status::StatusCode Reader::fetch_packets_(packet::IReader& reader,
             break;
         }
 
-        writer.write(pp);
+        code = writer.write(pp);
+        roc_panic_if(code != status::StatusOK);
     }
 
     return status::StatusOK;

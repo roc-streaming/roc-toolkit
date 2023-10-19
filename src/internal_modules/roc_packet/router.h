@@ -37,7 +37,7 @@ public:
     //! Write next packet.
     //! @remarks
     //!  Route @p packet to a writer or drop it if no routes found.
-    virtual void write(const PacketPtr& packet);
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(const PacketPtr& packet);
 
 private:
     struct Route {

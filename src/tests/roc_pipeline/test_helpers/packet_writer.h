@@ -101,7 +101,6 @@ public:
         for (size_t np = 0; np < num_packets; np++) {
             packet::PacketPtr pp = create_packet_(samples_per_packet, sample_spec);
             CHECK(pp);
-
             deliver_packet_(pp);
         }
     }
@@ -223,23 +222,26 @@ private:
             // note that we're calling copy_packet_() only after fec_writer, because
             // fec writer normally lives in the middle of the pipeline and expects
             // packets to have all necessary meta-information
-            fec_writer_->write(pp);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, fec_writer_->write(pp));
 
             // compose and "deliver" source and repair packets produced by fec_writer
             packet::PacketPtr fp;
             while (fec_queue_.read(fp) == status::StatusOK) {
                 if (fp->has_flags(packet::Packet::FlagAudio)) {
                     CHECK(source_composer_->compose(*fp));
-                    source_writer_->write(copy_packet_(fp));
+                    UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                                         source_writer_->write(copy_packet_(fp)));
                 } else {
                     CHECK(repair_composer_->compose(*fp));
-                    repair_writer_->write(copy_packet_(fp));
+                    UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                                         repair_writer_->write(copy_packet_(fp)));
                 }
             }
         } else {
             // compose and "deliver" packet
             CHECK(source_composer_->compose(*pp));
-            source_writer_->write(copy_packet_(pp));
+            UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                                 source_writer_->write(copy_packet_(pp)));
         }
     }
 

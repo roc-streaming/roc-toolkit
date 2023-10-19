@@ -18,6 +18,7 @@
 #include "roc_netio/network_loop.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
+#include "roc_status/status_code.h"
 
 #include "roc/endpoint.h"
 
@@ -119,47 +120,66 @@ public:
     }
 
 private:
-    virtual void write(const packet::PacketPtr& pp) {
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr& pp) {
         pp->udp()->src_addr = send_config_.bind_address;
 
         if (pp->udp()->dst_addr == recv_source_config_.bind_address) {
             pp->udp()->dst_addr = receiver_source_endp_;
-            source_queue_.write(pp);
+
+            const status::StatusCode code = source_queue_.write(pp);
+            if (code != status::StatusOK) {
+                return code;
+            }
         } else {
             pp->udp()->dst_addr = receiver_repair_endp_;
-            repair_queue_.write(pp);
+
+            const status::StatusCode code = repair_queue_.write(pp);
+            if (code != status::StatusOK) {
+                return code;
+            }
         }
 
         for (;;) {
             const size_t block_pos = pos_ % (n_source_packets_ + n_repair_packets_);
 
             if (block_pos < n_source_packets_) {
-                if (!send_packet_(source_queue_, block_pos == 1)) {
-                    return;
+                const status::StatusCode code =
+                    send_packet_(source_queue_, block_pos == 1);
+                if (code != status::StatusOK) {
+                    if (code == status::StatusNoData) {
+                        break;
+                    }
+                    return code;
                 }
             } else {
-                if (!send_packet_(repair_queue_, false)) {
-                    return;
+                const status::StatusCode code = send_packet_(repair_queue_, false);
+                if (code != status::StatusOK) {
+                    if (code == status::StatusNoData) {
+                        break;
+                    }
+                    return code;
                 }
             }
         }
+
+        return status::StatusOK;
     }
 
-    bool send_packet_(packet::IReader& reader, bool drop) {
+    status::StatusCode send_packet_(packet::IReader& reader, bool drop) {
         packet::PacketPtr pp;
-        const status::StatusCode code = reader.read(pp);
+        status::StatusCode code = reader.read(pp);
         if (code != status::StatusOK) {
             CHECK(!pp);
-            return false;
+            return code;
         }
         UNSIGNED_LONGS_EQUAL(status::StatusOK, code);
         CHECK(pp);
 
         pos_++;
         if (!drop) {
-            writer_->write(pp);
+            code = writer_->write(pp);
         }
-        return true;
+        return code;
     }
 
     netio::UdpSenderConfig send_config_;

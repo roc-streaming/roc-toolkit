@@ -226,7 +226,7 @@ void filter_packets(int flags, packet::IReader& reader, packet::IWriter& writer)
             }
         }
 
-        writer.write(pp);
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(pp));
     }
 }
 
