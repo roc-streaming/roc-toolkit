@@ -23,7 +23,7 @@ namespace audio {
 class PcmMapper : public core::NonCopyable<> {
 public:
     //! Initialize.
-    explicit PcmMapper(const PcmFormat& input_fmt, const PcmFormat& output_fmt);
+    PcmMapper(const PcmFormat& input_fmt, const PcmFormat& output_fmt);
 
     //! Get input format.
     const PcmFormat& input_format() const;
