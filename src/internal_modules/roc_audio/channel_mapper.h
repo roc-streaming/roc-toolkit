@@ -12,6 +12,7 @@
 #ifndef ROC_AUDIO_CHANNEL_MAPPER_H_
 #define ROC_AUDIO_CHANNEL_MAPPER_H_
 
+#include "roc_audio/channel_mapper_matrix.h"
 #include "roc_audio/channel_set.h"
 #include "roc_audio/frame.h"
 #include "roc_core/buffer_factory.h"
@@ -48,14 +49,13 @@ private:
                                     sample_t* out_samples,
                                     size_t n_samples);
 
-    void setup_map_matrix_();
     void setup_map_func_();
 
     const ChannelSet in_chans_;
     const ChannelSet out_chans_;
     ChannelSet inout_chans_;
 
-    sample_t map_matrix_[ChanPos_Max][ChanPos_Max];
+    ChannelMapperMatrix matrix_;
     map_func_t map_func_;
 };
 
