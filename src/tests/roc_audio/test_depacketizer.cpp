@@ -133,7 +133,7 @@ public:
         , code_(default_code_) {
     }
 
-    virtual status::StatusCode read(packet::PacketPtr& pp) {
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(packet::PacketPtr& pp) {
         ++call_count_;
 
         if (code_enabled_) {
