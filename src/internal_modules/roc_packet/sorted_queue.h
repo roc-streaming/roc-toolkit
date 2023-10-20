@@ -42,7 +42,7 @@ public:
     //!
     //! @remarks
     //!  Removes returned packet from the queue.
-    virtual status::StatusCode read(PacketPtr& packet);
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr& packet);
 
     //! Get number of packets in queue.
     size_t size() const;

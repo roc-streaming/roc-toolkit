@@ -38,7 +38,7 @@ public:
                   const audio::SampleSpec& sample_spec);
 
     //! Read packet.
-    virtual status::StatusCode read(PacketPtr&);
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr&);
 
 private:
     status::StatusCode fetch_packets_();

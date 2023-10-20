@@ -41,7 +41,7 @@ public:
     //! If reads are not concurrent, and queue is non-blocking, then
     //! reads are wait-free. Otherwise they may block.
     //! @see Mode.
-    virtual status::StatusCode read(PacketPtr&);
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr&);
 
     //! Add packet to the queue.
     //! Wait-free operation.

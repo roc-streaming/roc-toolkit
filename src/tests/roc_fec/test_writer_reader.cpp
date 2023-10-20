@@ -69,7 +69,7 @@ public:
         : code_(code) {
     }
 
-    virtual status::StatusCode read(packet::PacketPtr&) {
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(packet::PacketPtr&) {
         return code_;
     }
 

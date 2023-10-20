@@ -51,7 +51,7 @@ public:
     //!
     //! @remarks
     //!  Reads packet from the underlying reader and validates it.
-    virtual status::StatusCode read(packet::PacketPtr& pp);
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(packet::PacketPtr& pp);
 
 private:
     bool validate_(const packet::RTP& prev, const packet::RTP& next) const;
