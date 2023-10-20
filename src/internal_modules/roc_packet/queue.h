@@ -25,7 +25,7 @@ namespace packet {
 class Queue : public IReader, public IWriter, public core::NonCopyable<> {
 public:
     //! Read next packet.
-    virtual status::StatusCode read(PacketPtr& packet);
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr& packet);
 
     //! Add packet to the queue.
     //! @remarks
