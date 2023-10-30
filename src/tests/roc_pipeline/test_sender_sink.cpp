@@ -384,8 +384,6 @@ TEST(sender_sink, timestamp_mapping_remixing_packet_reader) {
         InputChans = Chans_Stereo,
         PacketChans = Chans_Mono
     };
-    const core::nanoseconds_t eps_resampled =
-        core::nanoseconds_t(1.f / PacketRate * core::Second);
 
     init(InputRate, InputChans, PacketRate, PacketChans);
 
@@ -428,7 +426,8 @@ TEST(sender_sink, timestamp_mapping_remixing_packet_reader) {
             CHECK(cts >= unix_base);
         } else {
             test::expect_capture_timestamp(cts, pp->rtp()->capture_timestamp,
-                                           eps_resampled);
+                                           packet_sample_spec,
+                                           test::TimestampEpsilonSmpls);
         }
         cts += packet_sample_spec.samples_per_chan_2_ns(pp->rtp()->duration);
     }

@@ -186,7 +186,7 @@ private:
                 base_ts + sample_spec.samples_per_chan_2_ns(abs_offset_);
 
             expect_capture_timestamp(capture_ts, pkt.rtp()->capture_timestamp,
-                                     TimestampEpsilon);
+                                     sample_spec, TimestampEpsilonSmpls);
         }
     }
 

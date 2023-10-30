@@ -1774,9 +1774,9 @@ TEST(receiver_source, recv_timestamp_mapping_remixing) {
                 const core::nanoseconds_t expected_capture_ts = first_ts
                     + output_sample_spec.samples_overall_2_ns(frame_num * frame_size);
 
-                test::expect_capture_timestamp(expected_capture_ts,
-                                               frame.capture_timestamp(),
-                                               test::TimestampEpsilon);
+                test::expect_capture_timestamp(
+                    expected_capture_ts, frame.capture_timestamp(), output_sample_spec,
+                    test::TimestampEpsilonSmpls);
 
                 frame_num++;
             }
