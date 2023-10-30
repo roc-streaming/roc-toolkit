@@ -132,8 +132,8 @@ private:
             const core::nanoseconds_t capture_ts =
                 base_ts + sample_spec.samples_per_chan_2_ns(abs_offset_);
 
-            expect_capture_timestamp(capture_ts, frame.capture_timestamp(),
-                                     TimestampEpsilon);
+            expect_capture_timestamp(capture_ts, frame.capture_timestamp(), sample_spec,
+                                     TimestampEpsilonSmpls);
         }
     }
 
