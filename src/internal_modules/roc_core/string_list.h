@@ -44,9 +44,17 @@ public:
     //! @returns
     //!  the first string of the given string or NULL if it is the last string.
     //! @remarks
-    //!  @p str should be a pointer returned by front() or nextof(). These
-    //!  pointers are invalidated by methods that modify the list.
+    //!  @p str should be a pointer returned by front(), nextof(), or prevof().
+    //!  These pointers are invalidated by methods that modify the list.
     const char* nextof(const char* str) const;
+
+    //! Get previous string.
+    //! @returns
+    //!  the last string of the given string or NULL if it is the first string.
+    //! @remarks
+    //!  @p str should be a pointer returned by back(), nextof(), or prevof().
+    //!  These pointers are invalidated by methods that modify the list.
+    const char* prevof(const char* str) const;
 
     //! Clear the list.
     void clear();
@@ -65,27 +73,33 @@ public:
     //!  false if allocation failed.
     ROC_ATTR_NODISCARD bool push_back(const char* str_begin, const char* str_end);
 
-    //! Append string to the list if it's not in the list already.
-    //! @remarks
-    //!  Reallocates memory if necessary.
+    //! Find string in the list.
     //! @returns
-    //!  false if allocation failed.
-    ROC_ATTR_NODISCARD bool push_unique(const char* str);
+    //!  the string in the list or NULL if it is not found.
+    ROC_ATTR_NODISCARD const char* find(const char* str);
 
-    //! Append string from a range to the list if it's not in the list already.
-    //! @remarks
-    //!  Reallocates memory if necessary.
+    //! Find string in the list.
     //! @returns
-    //!  false if allocation failed.
-    ROC_ATTR_NODISCARD bool push_unique(const char* str_begin, const char* str_end);
+    //!  the string in the list or NULL if it is not found.
+    ROC_ATTR_NODISCARD const char* find(const char* str_begin, const char* str_end);
 
 private:
     enum { MinCapacity = 128 };
 
     bool grow_(size_t size);
 
+    struct Header {
+        uint32_t len;
+        char str[];
+    };
+
+    struct Footer {
+        uint32_t len;
+    };
+
     core::Array<char> data_;
-    const char* back_;
+    Header* front_;
+    Header* back_;
     size_t size_;
 };
 
