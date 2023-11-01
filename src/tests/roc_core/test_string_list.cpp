@@ -71,6 +71,30 @@ TEST(string_list, nextof) {
     CHECK(str == NULL);
 }
 
+TEST(string_list, prevof) {
+    StringList sl(arena);
+
+    CHECK(sl.push_back("foo"));
+    CHECK(sl.push_back("bar"));
+    CHECK(sl.push_back("baz"));
+
+    LONGS_EQUAL(3, sl.size());
+
+    const char* str = NULL;
+
+    str = sl.back();
+    STRCMP_EQUAL("baz", str);
+
+    str = sl.prevof(str);
+    STRCMP_EQUAL("bar", str);
+
+    str = sl.prevof(str);
+    STRCMP_EQUAL("foo", str);
+
+    str = sl.prevof(str);
+    CHECK(str == NULL);
+}
+
 TEST(string_list, copy) {
     StringList sl(arena);
 
@@ -116,7 +140,7 @@ TEST(string_list, empty_strings) {
     CHECK(str == NULL);
 }
 
-TEST(string_list, uniq) {
+TEST(string_list, find) {
     StringList sl(arena);
 
     CHECK(sl.push_back("foo"));
@@ -125,10 +149,10 @@ TEST(string_list, uniq) {
 
     LONGS_EQUAL(3, sl.size());
 
-    CHECK(sl.push_unique("bar"));
-    CHECK(sl.push_unique("qux"));
+    CHECK(sl.find("bar"));
+    CHECK(!sl.find("qux"));
 
-    LONGS_EQUAL(4, sl.size());
+    LONGS_EQUAL(3, sl.size());
 
     const char* str = NULL;
 
@@ -140,9 +164,6 @@ TEST(string_list, uniq) {
 
     str = sl.nextof(str);
     STRCMP_EQUAL("baz", str);
-
-    str = sl.nextof(str);
-    STRCMP_EQUAL("qux", str);
 
     str = sl.nextof(str);
     CHECK(str == NULL);
@@ -195,10 +216,11 @@ TEST(string_list, exponential_growth) {
     int num_reallocs = 0;
 
     int expected_reallocs[] = {
-        1, 1, 1, 1,                                    //
-        2, 2, 2, 2,                                    //
-        3, 3, 3, 3, 3, 3, 3, 3,                        //
-        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 //
+        1, 1, 1,                               //
+        2, 2, 2,                               //
+        3, 3, 3, 3, 3, 3,                      //
+        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, //
+        5, 5, 5, 5, 5, 5, 5                    //
     };
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(expected_reallocs); n++) {
