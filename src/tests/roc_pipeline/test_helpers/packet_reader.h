@@ -10,7 +10,6 @@
 #define ROC_PIPELINE_TEST_HELPERS_PACKET_READER_H_
 
 #include <CppUTest/TestHarness.h>
-#include <CppUTest/UtestMacros.h>
 
 #include "test_helpers/utils.h"
 
@@ -21,24 +20,23 @@
 #include "roc_packet/ireader.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_rtp/format_map.h"
+#include "roc_rtp/parser.h"
 #include "roc_status/status_code.h"
 
 namespace roc {
 namespace pipeline {
 namespace test {
 
+//! Reads, parses, and validates packets.
 class PacketReader : public core::NonCopyable<> {
 public:
     PacketReader(core::IArena& arena,
                  packet::IReader& reader,
-                 packet::IParser& parser,
                  rtp::FormatMap& format_map,
                  packet::PacketFactory& packet_factory,
-                 rtp::PayloadType pt,
-                 const address::SocketAddr& dst_addr)
+                 const address::SocketAddr& dst_addr,
+                 rtp::PayloadType pt)
         : reader_(reader)
-        , parser_(parser)
-        , payload_decoder_(new_decoder_(arena, format_map, pt), arena)
         , packet_factory_(packet_factory)
         , dst_addr_(dst_addr)
         , source_(0)
@@ -48,6 +46,7 @@ public:
         , offset_(0)
         , abs_offset_(0)
         , first_(true) {
+        construct_(arena, format_map, pt);
     }
 
     void read_packet(size_t samples_per_packet,
@@ -113,12 +112,17 @@ public:
 private:
     enum { MaxSamples = 4096 };
 
-    static audio::IFrameDecoder*
-    new_decoder_(core::IArena& arena, rtp::FormatMap& format_map, rtp::PayloadType pt) {
+    void
+    construct_(core::IArena& arena, rtp::FormatMap& format_map, rtp::PayloadType pt) {
+        // payload decoder
         const rtp::Format* fmt = format_map.find_by_pt(pt);
         CHECK(fmt);
+        payload_decoder_.reset(fmt->new_decoder(arena, fmt->pcm_format, fmt->sample_spec),
+                               arena);
+        CHECK(payload_decoder_);
 
-        return fmt->new_decoder(arena, fmt->pcm_format, fmt->sample_spec);
+        // rtp parser
+        parser_.reset(new (arena) rtp::Parser(format_map, NULL), arena);
     }
 
     packet::PacketPtr read_packet_() {
@@ -140,7 +144,7 @@ private:
         packet::PacketPtr pp = packet_factory_.new_packet();
         CHECK(pp);
 
-        CHECK(parser_.parse(*pp, bp));
+        CHECK(parser_->parse(*pp, bp));
         CHECK(pp->flags() & packet::Packet::FlagRTP);
 
         if (first_) {
@@ -186,7 +190,7 @@ private:
 
     packet::IReader& reader_;
 
-    packet::IParser& parser_;
+    core::ScopedPtr<packet::IParser> parser_;
     core::ScopedPtr<audio::IFrameDecoder> payload_decoder_;
 
     packet::PacketFactory& packet_factory_;

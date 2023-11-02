@@ -6,8 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_PIPELINE_TEST_HELPERS_PACKET_SENDER_H_
-#define ROC_PIPELINE_TEST_HELPERS_PACKET_SENDER_H_
+#ifndef ROC_PIPELINE_TEST_HELPERS_PACKET_PROXY_H_
+#define ROC_PIPELINE_TEST_HELPERS_PACKET_PROXY_H_
 
 #include <CppUTest/TestHarness.h>
 
@@ -21,12 +21,12 @@ namespace roc {
 namespace pipeline {
 namespace test {
 
-class PacketSender : public packet::IWriter, core::NonCopyable<> {
+class PacketProxy : public packet::IWriter, core::NonCopyable<> {
 public:
-    PacketSender(packet::PacketFactory& packet_factory,
-                 packet::IWriter* source_writer,
-                 packet::IWriter* repair_writer,
-                 packet::IWriter* control_writer)
+    PacketProxy(packet::PacketFactory& packet_factory,
+                packet::IWriter* source_writer,
+                packet::IWriter* repair_writer,
+                packet::IWriter* control_writer)
         : packet_factory_(packet_factory)
         , source_writer_(source_writer)
         , repair_writer_(repair_writer)
@@ -112,4 +112,4 @@ private:
 } // namespace pipeline
 } // namespace roc
 
-#endif // ROC_PIPELINE_TEST_HELPERS_PACKET_SENDER_H_
+#endif // ROC_PIPELINE_TEST_HELPERS_PACKET_PROXY_H_

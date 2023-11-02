@@ -8,14 +8,14 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_address/interface.h"
-#include "roc_core/time.h"
 #include "test_helpers/frame_reader.h"
 #include "test_helpers/frame_writer.h"
-#include "test_helpers/packet_sender.h"
+#include "test_helpers/packet_proxy.h"
 
+#include "roc_address/interface.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
+#include "roc_core/time.h"
 #include "roc_fec/codec_map.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
@@ -303,15 +303,15 @@ void send_receive(int flags,
         sender.refresh(frame_writer.last_capture_ts());
     }
 
-    test::PacketSender packet_sender(packet_factory, receiver_source_endpoint_writer,
-                                     receiver_repair_endpoint_writer,
-                                     receiver_control_endpoint_writer);
+    test::PacketProxy packet_proxy(packet_factory, receiver_source_endpoint_writer,
+                                   receiver_repair_endpoint_writer,
+                                   receiver_control_endpoint_writer);
 
-    filter_packets(flags, queue, packet_sender);
+    filter_packets(flags, queue, packet_proxy);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
-    packet_sender.deliver(Latency / SamplesPerPacket);
+    packet_proxy.deliver(Latency / SamplesPerPacket);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
@@ -329,25 +329,25 @@ void send_receive(int flags,
             UNSIGNED_LONGS_EQUAL(num_sessions, receiver.num_sessions());
         }
 
-        packet_sender.deliver(1);
+        packet_proxy.deliver(1);
     }
 
     if ((flags & FlagDropSource) == 0) {
-        CHECK(packet_sender.n_source() > 0);
+        CHECK(packet_proxy.n_source() > 0);
     } else {
-        CHECK(packet_sender.n_source() == 0);
+        CHECK(packet_proxy.n_source() == 0);
     }
 
     if ((flags & FlagDropRepair) == 0 && (flags & (FlagReedSolomon | FlagLDPC)) != 0) {
-        CHECK(packet_sender.n_repair() > 0);
+        CHECK(packet_proxy.n_repair() > 0);
     } else {
-        CHECK(packet_sender.n_repair() == 0);
+        CHECK(packet_proxy.n_repair() == 0);
     }
 
     if ((flags & FlagRTCP) != 0) {
-        CHECK(packet_sender.n_control() > 0);
+        CHECK(packet_proxy.n_control() > 0);
     } else {
-        CHECK(packet_sender.n_control() == 0);
+        CHECK(packet_proxy.n_control() == 0);
     }
 }
 
