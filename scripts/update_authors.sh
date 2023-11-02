@@ -34,6 +34,14 @@ function find_email() {
     then
         echo "${github_email}"
     fi
+
+    local reflog_email="$(git reflog --pretty=format:"%an <%ae>" | sort -u | \
+        grep -vF users.noreply.github.com | grep -F "$1" | sed -re 's,.*<(.*)>,\1,')"
+
+    if [[ "${reflog_email}" != "" ]]
+    then
+        echo "${reflog_email}"
+    fi
 }
 
 function add_if_new() {
@@ -109,8 +117,9 @@ function add_contributors() {
         return
     fi
 
-    GIT_DIR="${repo_dir}"/.git \
-           git log --encoding=utf-8 --full-history --reverse "--format=format:%at,%an,%ae" \
+    pushd "${repo_dir}" >/dev/null
+
+    git log --encoding=utf-8 --full-history --reverse "--format=format:%at,%an,%ae" \
         | sort -u -t, -k3,3 \
         | sort -t, -k1n \
         | while read line
@@ -120,6 +129,8 @@ function add_contributors() {
 
         add_if_new "${out_file}" "${name}" "${email}" "${repo_name}" >> "${out_file}"
     done
+
+    popd >/dev/null
 }
 
 function update_sphinx() {
