@@ -11,8 +11,6 @@
 #include "test_helpers/frame_writer.h"
 #include "test_helpers/packet_reader.h"
 
-#include "roc_audio/pcm_decoder.h"
-#include "roc_core/atomic.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/time.h"
@@ -20,8 +18,6 @@
 #include "roc_packet/queue.h"
 #include "roc_pipeline/sender_sink.h"
 #include "roc_rtp/format_map.h"
-#include "roc_rtp/headers.h"
-#include "roc_rtp/parser.h"
 
 namespace roc {
 namespace pipeline {
@@ -52,7 +48,6 @@ core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize);
 packet::PacketFactory packet_factory(arena);
 
 rtp::FormatMap format_map(arena);
-rtp::Parser rtp_parser(format_map, NULL);
 
 } // namespace
 
@@ -131,8 +126,8 @@ TEST(sender_sink, write) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, rtp_parser, format_map, packet_factory,
-                                     PayloadType_Ch2, dst_addr);
+    test::PacketReader packet_reader(arena, queue, format_map, packet_factory, dst_addr,
+                                     PayloadType_Ch2);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
@@ -172,8 +167,8 @@ TEST(sender_sink, frame_size_small) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, rtp_parser, format_map, packet_factory,
-                                     PayloadType_Ch2, dst_addr);
+    test::PacketReader packet_reader(arena, queue, format_map, packet_factory, dst_addr,
+                                     PayloadType_Ch2);
 
     for (size_t np = 0; np < ManySmallFrames / SmallFramesPerPacket; np++) {
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
@@ -213,8 +208,8 @@ TEST(sender_sink, frame_size_large) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, rtp_parser, format_map, packet_factory,
-                                     PayloadType_Ch2, dst_addr);
+    test::PacketReader packet_reader(arena, queue, format_map, packet_factory, dst_addr,
+                                     PayloadType_Ch2);
 
     for (size_t np = 0; np < ManyLargeFrames * PacketsPerLargeFrame; np++) {
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
@@ -248,8 +243,8 @@ TEST(sender_sink, channel_mapping_stereo_to_mono) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, rtp_parser, format_map, packet_factory,
-                                     PayloadType_Ch1, dst_addr);
+    test::PacketReader packet_reader(arena, queue, format_map, packet_factory, dst_addr,
+                                     PayloadType_Ch1);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
@@ -283,8 +278,8 @@ TEST(sender_sink, channel_mapping_mono_to_stereo) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, rtp_parser, format_map, packet_factory,
-                                     PayloadType_Ch2, dst_addr);
+    test::PacketReader packet_reader(arena, queue, format_map, packet_factory, dst_addr,
+                                     PayloadType_Ch2);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
@@ -321,8 +316,8 @@ TEST(sender_sink, sample_rate_mapping) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, rtp_parser, format_map, packet_factory,
-                                     PayloadType_Ch2, dst_addr);
+    test::PacketReader packet_reader(arena, queue, format_map, packet_factory, dst_addr,
+                                     PayloadType_Ch2);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket - 5; np++) {
         packet_reader.read_nonzero_packet(SamplesPerPacket, packet_sample_spec);
@@ -356,8 +351,8 @@ TEST(sender_sink, timestamp_mapping) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, rtp_parser, format_map, packet_factory,
-                                     PayloadType_Ch2, dst_addr);
+    test::PacketReader packet_reader(arena, queue, format_map, packet_factory, dst_addr,
+                                     PayloadType_Ch2);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec, unix_base);
@@ -401,8 +396,8 @@ IGNORE_TEST(sender_sink, timestamp_mapping_remixing) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, rtp_parser, format_map, packet_factory,
-                                     PayloadType_Ch1, dst_addr);
+    test::PacketReader packet_reader(arena, queue, format_map, packet_factory, dst_addr,
+                                     PayloadType_Ch1);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket - 5; np++) {
         packet_reader.read_nonzero_packet(SamplesPerPacket, packet_sample_spec,

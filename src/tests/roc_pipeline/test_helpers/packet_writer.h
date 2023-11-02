@@ -11,46 +11,86 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_packet/units.h"
 #include "test_helpers/utils.h"
 
 #include "roc_audio/iframe_encoder.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_fec/codec_map.h"
+#include "roc_fec/composer.h"
+#include "roc_fec/iblock_encoder.h"
+#include "roc_fec/writer.h"
+#include "roc_packet/fec.h"
 #include "roc_packet/icomposer.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_factory.h"
+#include "roc_packet/queue.h"
+#include "roc_rtp/composer.h"
 #include "roc_rtp/format_map.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace pipeline {
 namespace test {
 
+//! Generates and writes packets.
 class PacketWriter : public core::NonCopyable<> {
 public:
+    //! Initialize without FEC.
     PacketWriter(core::IArena& arena,
-                 packet::IWriter& writer,
-                 packet::IComposer& composer,
+                 packet::IWriter& dst_writer,
                  rtp::FormatMap& format_map,
                  packet::PacketFactory& packet_factory,
                  core::BufferFactory<uint8_t>& buffer_factory,
-                 rtp::PayloadType pt,
                  const address::SocketAddr& src_addr,
-                 const address::SocketAddr& dst_addr)
-        : writer_(writer)
-        , composer_(composer)
-        , payload_encoder_(new_encoder_(arena, format_map, pt), arena)
+                 const address::SocketAddr& dst_addr,
+                 rtp::PayloadType pt)
+        : source_writer_(&dst_writer)
+        , repair_writer_(NULL)
         , packet_factory_(packet_factory)
         , buffer_factory_(buffer_factory)
         , src_addr_(src_addr)
-        , dst_addr_(dst_addr)
+        , source_dst_addr_(dst_addr)
+        , repair_dst_addr_()
         , source_(0)
         , seqnum_(0)
         , timestamp_(0)
         , pt_(pt)
         , offset_(0)
         , corrupt_(false) {
+        construct_(arena, packet_factory, buffer_factory, format_map, pt,
+                   packet::FEC_None, fec::WriterConfig());
+    }
+
+    //! Initialize with FEC.
+    PacketWriter(core::IArena& arena,
+                 packet::IWriter& source_dst_writer,
+                 packet::IWriter& repair_dst_writer,
+                 rtp::FormatMap& format_map,
+                 packet::PacketFactory& packet_factory,
+                 core::BufferFactory<uint8_t>& buffer_factory,
+                 const address::SocketAddr& src_addr,
+                 const address::SocketAddr& source_dst_addr,
+                 const address::SocketAddr& repair_dst_addr,
+                 rtp::PayloadType pt,
+                 packet::FecScheme fec_scheme,
+                 fec::WriterConfig fec_config)
+        : source_writer_(&source_dst_writer)
+        , repair_writer_(&repair_dst_writer)
+        , packet_factory_(packet_factory)
+        , buffer_factory_(buffer_factory)
+        , src_addr_(src_addr)
+        , source_dst_addr_(source_dst_addr)
+        , repair_dst_addr_(repair_dst_addr)
+        , source_(0)
+        , seqnum_(0)
+        , timestamp_(0)
+        , pt_(pt)
+        , offset_(0)
+        , corrupt_(false) {
+        construct_(arena, packet_factory, buffer_factory, format_map, pt, fec_scheme,
+                   fec_config);
     }
 
     void write_packets(size_t num_packets,
@@ -59,7 +99,10 @@ public:
         CHECK(num_packets > 0);
 
         for (size_t np = 0; np < num_packets; np++) {
-            writer_.write(new_packet_(samples_per_packet, sample_spec));
+            packet::PacketPtr pp = create_packet_(samples_per_packet, sample_spec);
+            CHECK(pp);
+
+            deliver_packet_(pp);
         }
     }
 
@@ -108,44 +151,128 @@ public:
 private:
     enum { MaxSamples = 4096 };
 
-    static audio::IFrameEncoder*
-    new_encoder_(core::IArena& arena, rtp::FormatMap& format_map, rtp::PayloadType pt) {
+    void construct_(core::IArena& arena,
+                    packet::PacketFactory& packet_factory,
+                    core::BufferFactory<uint8_t>& buffer_factory,
+                    rtp::FormatMap& format_map,
+                    rtp::PayloadType pt,
+                    packet::FecScheme fec_scheme,
+                    fec::WriterConfig fec_config) {
+        // payload encoder
         const rtp::Format* fmt = format_map.find_by_pt(pt);
         CHECK(fmt);
+        payload_encoder_.reset(fmt->new_encoder(arena, fmt->pcm_format, fmt->sample_spec),
+                               arena);
+        CHECK(payload_encoder_);
 
-        return fmt->new_encoder(arena, fmt->pcm_format, fmt->sample_spec);
+        if (fec_scheme == packet::FEC_None) {
+            // rtp composer
+            source_composer_.reset(new (arena) rtp::Composer(NULL), arena);
+        } else {
+            if (fec_scheme == packet::FEC_ReedSolomon_M8) {
+                // rs8m composers
+                payload_composer_.reset(new (arena) rtp::Composer(NULL), arena);
+
+                source_composer_.reset(
+                    new (arena)
+                        fec::Composer<fec::RS8M_PayloadID, fec::Source, fec::Footer>(
+                            payload_composer_.get()),
+                    arena);
+
+                repair_composer_.reset(
+                    new (arena)
+                        fec::Composer<fec::RS8M_PayloadID, fec::Repair, fec::Header>(
+                            NULL),
+                    arena);
+            } else if (fec_scheme == packet::FEC_LDPC_Staircase) {
+                // ldpc composers
+                payload_composer_.reset(new (arena) rtp::Composer(NULL), arena);
+
+                source_composer_.reset(
+                    new (arena) fec::Composer<fec::LDPC_Source_PayloadID, fec::Source,
+                                              fec::Footer>(payload_composer_.get()),
+                    arena);
+
+                repair_composer_.reset(new (arena)
+                                           fec::Composer<fec::LDPC_Repair_PayloadID,
+                                                         fec::Repair, fec::Header>(NULL),
+                                       arena);
+            }
+
+            // fec encoder
+            fec::CodecConfig codec_config;
+            codec_config.scheme = fec_scheme;
+            fec_encoder_.reset(fec::CodecMap::instance().new_encoder(
+                                   codec_config, buffer_factory, arena),
+                               arena);
+            CHECK(fec_encoder_);
+
+            // fec writer
+            fec_writer_.reset(
+                new (arena) fec::Writer(fec_config, fec_scheme, *fec_encoder_, fec_queue_,
+                                        *source_composer_, *repair_composer_,
+                                        packet_factory, buffer_factory, arena),
+                arena);
+            CHECK(fec_writer_->is_valid());
+        }
     }
 
-    packet::PacketPtr new_packet_(size_t samples_per_packet,
-                                  const audio::SampleSpec& sample_spec) {
-        packet::PacketPtr pp = packet_factory_.new_packet();
-        CHECK(pp);
+    void deliver_packet_(const packet::PacketPtr& pp) {
+        if (fec_writer_) {
+            // fec_writer will produce source and repair packets and store in fec_queue
+            fec_writer_->write(pp);
 
-        pp->add_flags(packet::Packet::FlagUDP);
+            // deliver produced packets
+            packet::PacketPtr fp;
+            while (fec_queue_.read(fp) == status::StatusOK) {
+                if (fp->has_flags(packet::Packet::FlagAudio)) {
+                    CHECK(source_composer_->compose(*fp));
+                    source_writer_->write(copy_packet_(fp));
+                } else {
+                    CHECK(repair_composer_->compose(*fp));
+                    repair_writer_->write(copy_packet_(fp));
+                }
+            }
+        } else {
+            CHECK(source_composer_->compose(*pp));
+            source_writer_->write(copy_packet_(pp));
+        }
+    }
 
-        pp->udp()->src_addr = src_addr_;
-        pp->udp()->dst_addr = dst_addr_;
+    // creates a new packet with the same buffer, clearing all meta-information
+    // like flags, parsed fields, etc; this way we simulate delivering packet
+    // over network
+    packet::PacketPtr copy_packet_(const packet::PacketPtr& pa) {
+        packet::PacketPtr pb = packet_factory_.new_packet();
+        CHECK(pb);
 
-        pp->set_data(new_buffer_(samples_per_packet, sample_spec));
+        pb->add_flags(packet::Packet::FlagUDP);
+        pb->udp()->src_addr = src_addr_;
+        pb->udp()->dst_addr = source_dst_addr_;
+
+        pb->set_data(pa->data());
 
         if (corrupt_) {
-            pp->data().data()[0] = 0;
+            pb->data().data()[0] = 0;
         }
 
-        return pp;
+        return pb;
     }
 
-    core::Slice<uint8_t> new_buffer_(size_t samples_per_packet,
+    // creates next source packet
+    packet::PacketPtr create_packet_(size_t samples_per_packet,
                                      const audio::SampleSpec& sample_spec) {
         CHECK(samples_per_packet * sample_spec.num_channels() < MaxSamples);
 
         packet::PacketPtr pp = packet_factory_.new_packet();
         CHECK(pp);
 
+        pp->add_flags(packet::Packet::FlagAudio);
+
         core::Slice<uint8_t> bp = buffer_factory_.new_buffer();
         CHECK(bp);
 
-        CHECK(composer_.prepare(
+        CHECK(source_composer_->prepare(
             *pp, bp, payload_encoder_->encoded_byte_count(samples_per_packet)));
 
         pp->set_data(bp);
@@ -173,21 +300,28 @@ private:
 
         payload_encoder_->end();
 
-        CHECK(composer_.compose(*pp));
-
-        return pp->data();
+        return pp;
     }
 
-    packet::IWriter& writer_;
+    packet::IWriter* source_writer_;
+    packet::IWriter* repair_writer_;
 
-    packet::IComposer& composer_;
+    core::ScopedPtr<packet::IComposer> payload_composer_;
+    core::ScopedPtr<packet::IComposer> source_composer_;
+    core::ScopedPtr<packet::IComposer> repair_composer_;
+
+    core::ScopedPtr<fec::IBlockEncoder> fec_encoder_;
+    core::ScopedPtr<fec::Writer> fec_writer_;
+    packet::Queue fec_queue_;
+
     core::ScopedPtr<audio::IFrameEncoder> payload_encoder_;
 
     packet::PacketFactory& packet_factory_;
     core::BufferFactory<uint8_t>& buffer_factory_;
 
     address::SocketAddr src_addr_;
-    address::SocketAddr dst_addr_;
+    address::SocketAddr source_dst_addr_;
+    address::SocketAddr repair_dst_addr_;
 
     packet::stream_source_t source_;
     packet::seqnum_t seqnum_;
