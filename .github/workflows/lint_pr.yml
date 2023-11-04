@@ -1,0 +1,55 @@
+name: "lint pr"
+
+on:
+  pull_request:
+    types:
+      - opened
+
+jobs:
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Check linked issue
+        id: linked-issues
+        uses: nearform-actions/github-action-check-linked-issues@v1.4.28
+        continue-on-error: true
+        with:
+          comment: ""
+
+      - name: Check mentioned issue
+        id: mentioned-issues
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          result-encoding: string
+          script: |
+            const pattern1 = new RegExp(
+                String.raw`(^|\s)(#|gh-|roc-streaming/[\w-]+#)\d+($|\s)`, "i");
+            const pattern2 = new RegExp(
+                String.raw`(^|\s)https?://github.com/roc-streaming/[\w-]+/issues/\d+($|\s)`, "i");
+            const body = context.payload.pull_request.body;
+            return pattern1.test(body) || pattern2.test(body) ? "true" : "false";
+
+      - name: Echo results
+        run: |
+          echo "linked-issues: ${{ steps.linked-issues.outputs.issues }}"
+          echo "mentioned-issues: ${{ steps.mentioned-issues.outputs.result }}"
+
+      - name: Post Comment
+        if: |
+          steps.linked-issues.outputs.issues == '[]' &&
+          steps.mentioned-issues.outputs.result == 'false'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: 'Upon creation, pull request description does not have a link to an issue.'+
+                 ' If there is a related issue, please add it to the description'+
+                 ' using any of the [supported formats](https://docs.github.com/en/get-started/'+
+                 'writing-on-github/working-with-advanced-formatting/autolinked-references-and-urls).'
+            })

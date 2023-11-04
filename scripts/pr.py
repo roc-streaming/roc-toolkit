@@ -433,10 +433,12 @@ def merge_pr(org, repo, pr_number):
 parser = argparse.ArgumentParser(prog='pr.py')
 
 common_parser = argparse.ArgumentParser(add_help=False)
-common_parser.add_argument('--org', default='roc-streaming', help='github org')
-common_parser.add_argument('--repo', default='roc-toolkit', help='github repo')
+common_parser.add_argument('--org', default='roc-streaming',
+                           help='github org')
+common_parser.add_argument('--repo', default='roc-toolkit',
+                           help='github repo')
 common_parser.add_argument('--issue', type=int, dest='issue_number',
-                    help='manually specify issue to link with')
+                    help='overwrite issue to link with')
 common_parser.add_argument('--no-push', action='store_true', dest='no_push',
                     help="don't actually push anything")
 common_parser.add_argument('-n', '--dry-run', action='store_true', dest='dry_run',
@@ -446,16 +448,24 @@ common_parser.add_argument('-f', '--force', action='store_true', dest='force',
 
 subparsers = parser.add_subparsers(dest='command')
 
-status_parser = subparsers.add_parser('show', parents=[common_parser])
-status_parser.add_argument('pr_number', type=int)
+show_parser = subparsers.add_parser(
+    'show', parents=[common_parser],
+    help='show pull request info')
+show_parser.add_argument('pr_number', type=int)
 
-link_parser = subparsers.add_parser('link', parents=[common_parser])
+link_parser = subparsers.add_parser(
+    'link', parents=[common_parser],
+    help='link pull request description and commits to issue')
 link_parser.add_argument('pr_number', type=int)
 
-unlink_parser = subparsers.add_parser('unlink', parents=[common_parser])
+unlink_parser = subparsers.add_parser(
+    'unlink', parents=[common_parser],
+    help='unlink pull request commits from issue')
 unlink_parser.add_argument('pr_number', type=int)
 
-merge_parser = subparsers.add_parser('merge', parents=[common_parser])
+merge_parser = subparsers.add_parser(
+    'merge', parents=[common_parser],
+    help='link and merge pull request')
 merge_parser.add_argument('--rebase', action='store_true',
                           help='merge using rebase')
 merge_parser.add_argument('--squash', action='store_true',
