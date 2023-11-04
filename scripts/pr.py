@@ -10,6 +10,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 
 DRY_RUN = False
 
@@ -144,6 +145,8 @@ def query_pr_info(org, repo, pr_number):
         'pr_url': response['html_url'],
         'pr_state': response['state'],
         'pr_draft': response['draft'],
+        'pr_mergeable': response['mergeable'],
+        'pr_rebaseable': response['rebaseable'],
         'source_branch': response['head']['ref'],
         'source_sha': response['head']['sha'],
         'source_remote': response['head']['repo']['ssh_url'],
@@ -218,6 +221,17 @@ def query_pr_commits(org, repo, pr_number):
 
     return results
 
+def wait_pr(org, repo, pr_number):
+    while True:
+        query_pr_info.cache_clear()
+
+        pr_info = query_pr_info(org, repo, pr_number)
+        if pr_info['pr_mergeable'] is not None \
+            and pr_info['pr_rebaseable'] is not None:
+            break
+
+        time.sleep(0.1)
+
 def show_pr(org, repo, pr_number):
     pr_info = query_pr_info(org, repo, pr_number)
 
@@ -245,6 +259,12 @@ def show_pr(org, repo, pr_number):
           Fore.MAGENTA if pr_info['pr_state'] == 'open' else Fore.RED)
     keyval('draft', str(pr_info['pr_draft']).lower(),
           Fore.MAGENTA if not pr_info['pr_draft'] else Fore.RED)
+    keyval('mergeable', str(pr_info['pr_mergeable'] \
+                            if pr_info['pr_mergeable'] is not None else 'unknown').lower(),
+          Fore.MAGENTA if pr_info['pr_mergeable'] == True else Fore.RED)
+    keyval('rebaseable', str(pr_info['pr_rebaseable'] \
+                            if pr_info['pr_rebaseable'] is not None else 'unknown').lower(),
+          Fore.MAGENTA if pr_info['pr_rebaseable'] == True else Fore.RED)
 
     section('issue')
     if pr_info['issue_link']:
@@ -325,7 +345,7 @@ def update_pr(org, repo, pr_number, issue_number):
 
     body = '{}\n\n{}'.format(
         make_prefix(org, repo, (org, repo, issue_number)),
-        response['body'].lstrip())
+        (response['body'] or '').lstrip())
 
     run_cmd([
         'gh', 'pr', 'edit',
@@ -488,12 +508,13 @@ if args.command == 'merge':
         update_pr(args.org, args.repo, args.pr_number, args.issue_number)
         if args.rebase:
             rebase_pr(args.org, args.repo, args.pr_number, args.remote)
-            link_pr(args.org, args.repo, args.pr_number)
+            link_pr(args.org, args.repo, args.pr_number, 'link')
         else:
             squash_pr(args.org, args.repo, args.pr_number, args.remote)
         log_pr(args.org, args.repo, args.pr_number, args.remote)
         if not args.no_push:
             push_pr(args.org, args.repo, args.pr_number, args.remote)
+            wait_pr(args.org, args.repo, args.pr_number)
             merge_pr(args.org, args.repo, args.pr_number)
             merged = True
     finally:
