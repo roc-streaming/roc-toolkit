@@ -2,7 +2,8 @@ name: "assign project"
 
 on:
   issues:
-    types: [opened]
+    types:
+      - opened
 
 jobs:
   assign-project:
