@@ -221,17 +221,6 @@ def query_pr_commits(org, repo, pr_number):
 
     return results
 
-def wait_pr(org, repo, pr_number):
-    while True:
-        query_pr_info.cache_clear()
-
-        pr_info = query_pr_info(org, repo, pr_number)
-        if pr_info['pr_mergeable'] is not None \
-            and pr_info['pr_rebaseable'] is not None:
-            break
-
-        time.sleep(0.1)
-
 def show_pr(org, repo, pr_number):
     pr_info = query_pr_info(org, repo, pr_number)
 
@@ -311,15 +300,11 @@ def verify_pr(org, repo, pr_number, issue_number, force):
             if action_result != 'success':
                 error("can't proceed on pr with failed checks")
 
-def checkout_pr(org, repo, pr_number, remote):
+def checkout_pr(org, repo, pr_number):
     pr_info = query_pr_info(org, repo, pr_number)
 
     local_branch = os.path.basename(os.getcwd())
     target_branch = pr_info['target_branch']
-
-    run_cmd([
-        'git', 'fetch', '-v', remote, target_branch
-        ])
 
     run_cmd([
         'gh', 'pr', 'checkout',
@@ -375,23 +360,23 @@ def link_pr(org, repo, pr_number, action):
         ],
         env={'FILTER_BRANCH_SQUELCH_WARNING':'1'})
 
-def rebase_pr(org, repo, pr_number, remote):
+def rebase_pr(org, repo, pr_number):
     pr_info = query_pr_info(org, repo, pr_number)
 
-    branch = pr_info['target_branch']
+    target_sha = pr_info['target_sha']
 
     run_cmd([
-        'git', 'rebase', f'{remote}/{branch}',
+        'git', 'rebase', target_sha,
         ])
 
-def squash_pr(org, repo, pr_number, remote):
+def squash_pr(org, repo, pr_number):
     pr_info = query_pr_info(org, repo, pr_number)
 
-    branch = pr_info['target_branch']
-    message = make_message(org, repo, pr_info['issue_link'], pr_info['pr_title'])
+    target_sha = pr_info['target_sha']
+    commit_message = make_message(org, repo, pr_info['issue_link'], pr_info['pr_title'])
 
     run_cmd([
-        'git', 'rebase', '-i', f'{remote}/{branch}',
+        'git', 'rebase', '-i', target_sha,
         ],
         env={
             'GIT_EDITOR': ':',
@@ -399,20 +384,20 @@ def squash_pr(org, repo, pr_number, remote):
         })
 
     run_cmd([
-        'git', 'commit', '--amend', '--no-edit', '-m', message
+        'git', 'commit', '--amend', '--no-edit', '-m', commit_message,
         ])
 
-def log_pr(org, repo, pr_number, remote):
+def log_pr(org, repo, pr_number):
     pr_info = query_pr_info(org, repo, pr_number)
 
-    branch = pr_info['target_branch']
+    target_sha = pr_info['target_sha']
 
     run_cmd([
         'git', 'log', '--format=%h %s (%an <%ae>)',
-        f'{remote}/{branch}..HEAD',
+        f'{target_sha}..HEAD',
         ])
 
-def push_pr(org, repo, pr_number, remote):
+def push_pr(org, repo, pr_number):
     pr_info = query_pr_info(org, repo, pr_number)
 
     local_branch = os.path.basename(os.getcwd())
@@ -424,6 +409,17 @@ def push_pr(org, repo, pr_number, remote):
         source_remote,
         f'{local_branch}:{source_branch}'
         ])
+
+def wait_pr(org, repo, pr_number):
+    while True:
+        query_pr_info.cache_clear()
+
+        pr_info = query_pr_info(org, repo, pr_number)
+        if pr_info['pr_mergeable'] is not None \
+            and pr_info['pr_rebaseable'] is not None:
+            break
+
+        time.sleep(0.1)
 
 def merge_pr(org, repo, pr_number):
     run_cmd([
@@ -439,7 +435,6 @@ parser = argparse.ArgumentParser(prog='pr.py')
 common_parser = argparse.ArgumentParser(add_help=False)
 common_parser.add_argument('--org', default='roc-streaming', help='github org')
 common_parser.add_argument('--repo', default='roc-toolkit', help='github repo')
-common_parser.add_argument('--remote', default='origin', help='remote name of github repo')
 common_parser.add_argument('--issue', type=int, dest='issue_number',
                     help='manually specify issue to link with')
 common_parser.add_argument('--no-push', action='store_true', dest='no_push',
@@ -482,13 +477,13 @@ if args.command == 'link' or args.command == 'unlink':
     orig_path = enter_worktree()
     pushed = False
     try:
-        checkout_pr(args.org, args.repo, args.pr_number, args.remote)
+        checkout_pr(args.org, args.repo, args.pr_number)
         pr_ref = remember_ref()
         update_pr(args.org, args.repo, args.pr_number, args.issue_number)
         link_pr(args.org, args.repo, args.pr_number, args.command)
-        log_pr(args.org, args.repo, args.pr_number, args.remote)
+        log_pr(args.org, args.repo, args.pr_number)
         if not args.no_push:
-            push_pr(args.org, args.repo, args.pr_number, args.remote)
+            push_pr(args.org, args.repo, args.pr_number)
             pushed = True
     finally:
         leave_worktree(orig_path)
@@ -503,17 +498,17 @@ if args.command == 'merge':
     orig_path = enter_worktree()
     merged = False
     try:
-        checkout_pr(args.org, args.repo, args.pr_number, args.remote)
+        checkout_pr(args.org, args.repo, args.pr_number)
         pr_ref = remember_ref()
         update_pr(args.org, args.repo, args.pr_number, args.issue_number)
         if args.rebase:
-            rebase_pr(args.org, args.repo, args.pr_number, args.remote)
+            rebase_pr(args.org, args.repo, args.pr_number)
             link_pr(args.org, args.repo, args.pr_number, 'link')
         else:
-            squash_pr(args.org, args.repo, args.pr_number, args.remote)
-        log_pr(args.org, args.repo, args.pr_number, args.remote)
+            squash_pr(args.org, args.repo, args.pr_number)
+        log_pr(args.org, args.repo, args.pr_number)
         if not args.no_push:
-            push_pr(args.org, args.repo, args.pr_number, args.remote)
+            push_pr(args.org, args.repo, args.pr_number)
             wait_pr(args.org, args.repo, args.pr_number)
             merge_pr(args.org, args.repo, args.pr_number)
             merged = True
