@@ -70,7 +70,7 @@ Contributors
 * Dhanu Saputra <andreasdhanu@gmail.com>
 * Piotr Lewandowski <lewandowski323@gmail.com>
 * Darrel Idiagbor <idiagbordarrel@gmail.com>
-* Sergio Vemic <https://github.com/fastbyte>
+* Fastbyte <aldeerayan@gmail.com>
 * Paras Raba <parasgadhvi12345@gmail.com>
 * Wataru Ito <https://github.com/Wataru>
 * DieMass <diemass1908@gmail.com>
@@ -82,3 +82,4 @@ Contributors
 * Geoffrey Jount <gjount@scaleway.com>
 * Ashutosh Soni <m.ashutoshsoni@gmail.com>
 * ForeverASilver <https://github.com/ForeverASilver>
+* JJ <https://github.com/computerscienceiscool>
