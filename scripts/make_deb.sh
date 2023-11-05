@@ -41,7 +41,7 @@ case "$action" in
 esac
 
 if [ "$action" = "build" ] || [ "$action" = "" ] ; then
-    run_cmd ./scripts/update_changelog.py
+    run_cmd ./scripts/update_packages.py
     docker_cmd "$build_image" \
         scripts/make_deb.sh build_in_docker
     print_msg "Packages built."
