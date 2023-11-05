@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 
 function find_login() {
-    local github_login="$(curl -s "https://api.github.com/search/users?q=$1" \
-        | jq -r '.items[0].login' 2>/dev/null)"
+    local github_login=""
+
+    if echo "$1" | grep -q users.noreply.github.com
+    then
+        github_login="$(echo "$1" | sed -re 's,^([0-9]+\+)?(.*)@users.noreply.github.com,\2,')"
+    else
+        github_login="$(gh api "/search/users?q=$1" --jq '.items[0].login')"
+    fi
 
     if [[ "${github_login}" != "" ]] && [[ "${github_login}" != "null" ]]
     then
@@ -11,9 +17,8 @@ function find_login() {
 }
 
 function find_name() {
-    local github_name="$(curl -s "https://api.github.com/users/$1" \
-        | jq -r .name 2>/dev/null \
-        | sed -r -e 's,^\s*,,' -e 's,\s*$,,')"
+    local github_name="$(gh api "/users/$1" --jq .name \
+        | sed -re 's,^\s*,,' -e 's,\s*$,,')"
 
     if [[ "${github_name}" != "" ]] && [[ "${github_name}" != "null" ]]
     then
@@ -22,161 +27,178 @@ function find_name() {
 }
 
 function find_email() {
-    local github_email="$(curl -s "https://api.github.com/users/$1/events/public" \
-        | jq -r \
-    '((.[].payload.commits | select(. != null))[].author | select(.name == "'$1'")).email' \
-    2>/dev/null \
-        | sort -u \
-        | grep -v users.noreply.github.com \
-        | head -1)"
-
-    if [[ "${github_email}" != "" ]] && [[ "${github_email}" != "null" ]]
+    if [[ ! -z "${1:-}" ]]
     then
-        echo "${github_email}"
+        local github_email="$(gh api "/users/$1/events/public" \
+            --jq '(.[].payload.commits | select(. != null))[].author.email' \
+            | grep -v users.noreply.github.com \
+            | sort -u \
+            | head -1)"
+
+        if [[ "${github_email}" != "" ]] && [[ "${github_email}" != "null" ]]
+        then
+            echo "${github_email}"
+        fi
     fi
 
-    local reflog_email="$(git reflog --pretty=format:"%an <%ae>" | sort -u | \
-        grep -vF users.noreply.github.com | grep -F "$1" | sed -re 's,.*<(.*)>,\1,')"
-
-    if [[ "${reflog_email}" != "" ]]
+    if [[ ! -z "${2:-}" ]]
     then
-        echo "${reflog_email}"
+        local gitlog_email="$(git log --all --pretty=format:"%an <%ae>" | sort -u | \
+            grep -vF users.noreply.github.com | grep -F "$2" | sed -re 's,.*<(.*)>,\1,')"
+
+        if [[ "${gitlog_email}" != "" ]]
+        then
+            echo "${gitlog_email}"
+        fi
     fi
 }
 
-function add_if_new() {
-    local file="$1"
-
+function update_author() {
+    local authors_file="$1"
     local commit_name="$2"
     local commit_email="$3"
-
     local repo_name="$4"
 
-    if grep -qiF "${commit_name}" "${file}" || grep -qiF "${commit_email}" "${file}"
+    if grep -qiF "${commit_name}" "${authors_file}" || grep -qiF "${commit_email}" "${authors_file}"
     then
         return
     fi
 
     local github_login="$(find_login "${commit_email}")"
-    if [ -z "${github_login}" ]
+    if [[ -z "${github_login}" ]]
     then
         github_login="$(find_login "${commit_name}")"
     fi
-    if [[ -z "${github_login}" ]]
-    then
-        if echo "${commit_email}" | grep -q users.noreply.github.com
-        then
-            github_login="$(echo "${commit_email}" | sed -re 's,^([0-9]+\+)?([^@]+).*$,\2,')"
-        fi
-    fi
 
-    local print_name="$(find_name "${github_login}")"
-    if [ -z "${print_name}" ]
+    local contact_name="$(find_name "${github_login}")"
+    if [ -z "${contact_name}" ]
     then
-        print_name="${commit_name}"
+        contact_name="${commit_name}"
     fi
-    print_name="$(echo "${print_name}" | sed -re 's/\S+/\u&/g')"
+    contact_name="$(echo "${contact_name}" | sed -re 's,(\S+)\s+(\S+),\u\1 \u\2,g')"
 
-    local print_addr=""
-    if echo "${commit_email}" | grep -q users.noreply.github.com
+    local contact_addr=""
+    if [[ -z "${commit_email}" ]] || echo "${commit_email}" | grep -q users.noreply.github.com
     then
-        if [[ ! -z "${github_login}" ]]
-        then
-            print_addr="$(find_email "${github_login}")"
-        fi
+        contact_addr="$(find_email "${github_login}" "${commit_name}")"
     else
-        print_addr="${commit_email}"
+        contact_addr="${commit_email}"
     fi
-    if [[ -z "${print_addr}" && ! -z "${github_login}" ]]
+    if [[ -z "${contact_addr}" ]] && [[ ! -z "${github_login}" ]]
     then
-        print_addr="https://github.com/${github_login}"
+        contact_addr="https://github.com/${github_login}"
     fi
 
-    if grep -qiF "${print_addr}" "${file}"
+    if grep -qiF "${contact_name}" "${authors_file}"
+    then
+        return
+    fi
+    if [ ! -z "${contact_addr}" ] && grep -qiF "${contact_addr}" "${authors_file}"
     then
         return
     fi
 
-    if [ -z "${print_addr}" ]
+    local result="${contact_name}"
+    if [ ! -z "${contact_addr}" ]
     then
-        echo "[${repo_name}] adding ${print_name}" 1>&2
-        echo "* ${print_name}"
-    else
-        echo "[${repo_name}] adding ${print_name} <${print_addr}>" 1>&2
-        echo "* ${print_name} <${print_addr}>"
+        result="${result} <${contact_addr}>"
     fi
+
+    echo "${repo_name}: adding ${result}" 1>&2
+    echo "* ${result}"
 }
 
-function add_contributors() {
-    out_file="$1"
-    repo_dir="../$2"
-    repo_name="$(basename "$2")"
+function update_repo() {
+    local authors_file="$1"
+    local org_name="$2"
+    local repo_name="$3"
+    local repo_dir="${HOME}/.cache/authors/${org_name}/${repo_name}"
 
-    if [ ! -d "${repo_dir}" ]
+    if [ -d "${repo_dir}" ]
     then
-        return
+        echo "${repo_name}: updating repo" 1>&2
+        pushd "${repo_dir}" >/dev/null
+        git fetch -q
+    else
+        echo "${repo_name}: cloning repo" 1>&2
+        mkdir -p "$(dirname "${repo_dir}")"
+        git clone -q --bare "git@github.com:${org_name}/${repo_name}.git" "${repo_dir}"
+        pushd "${repo_dir}" >/dev/null
     fi
 
-    pushd "${repo_dir}" >/dev/null
+    gh pr list -s all --json number --jq '.[].number' | while read pr_num
+    do
+        local branch="pr${pr_num}"
+        if git rev-parse --verify "${branch}" >/dev/null 2>&1
+        then
+            continue
+        fi
 
-    git log --encoding=utf-8 --full-history --reverse "--format=format:%at,%an,%ae" \
+        local json="$(gh api "/repos/${org_name}/${repo_name}/pulls/${pr_num}")"
+
+        local state="$(echo "${json}" | jq -r .state)"
+        local merged="$(echo "${json}" | jq -r .merged)"
+        local remote="$(echo "${json}" | jq -r .head.repo.ssh_url)"
+        local commit="$(echo "${json}" | jq -r .head.sha)"
+
+        if [[ "${state}" != "closed" ]]
+        then
+            echo "${repo_name}: skipping pr ${pr_num}" 1>&2
+            continue
+        fi
+
+        if [[ "${merged}" == "false" ]]
+        then
+            echo "${repo_name}: dismissing pr ${pr_num} (not merged)" 1>&2
+            git branch "${branch}" HEAD
+            continue
+        fi
+
+        echo "${repo_name}: fetching pr ${pr_num}" 1>&2
+
+        if [[ "${remote}" == "null" ]] || \
+               ! git fetch -q "${remote}" "${commit}" >/dev/null 2>&1
+        then
+            echo "${repo_name}: dismissing pr ${pr_num} (no remote)" 1>&2
+            git branch "${branch}" HEAD
+            continue
+        fi
+
+        git branch "${branch}" "${commit}"
+    done
+
+    git log --all --full-history --reverse \
+        --format="format:%at,%an,%ae" \
+        --encoding=utf-8 \
         | sort -u -t, -k3,3 \
         | sort -t, -k1n \
         | while read line
     do
-        name="$(echo "${line}" | cut -d, -f2)"
-        email="$(echo "${line}" | cut -d, -f3)"
-
-        add_if_new "${out_file}" "${name}" "${email}" "${repo_name}" >> "${out_file}"
+        local name="$(echo "${line}" | cut -d, -f2)"
+        local email="$(echo "${line}" | cut -d, -f3)"
+        update_author "${authors_file}" "${name}" "${email}" "${repo_name}" >> "${authors_file}"
     done
 
     popd >/dev/null
 }
 
-function update_sphinx() {
-    file="$1"
-    temp="$(mktemp)"
-
-    cat "${file}" > "${temp}"
-
-    add_contributors "${temp}" "$(basename "$(pwd)")"
-    add_contributors "${temp}" "$(basename "$(pwd)")/3rdparty/_distfiles"
-    add_contributors "${temp}" "rt-tests"
-    add_contributors "${temp}" "roc-pulse"
-    add_contributors "${temp}" "roc-vad"
-    add_contributors "${temp}" "roc-go"
-    add_contributors "${temp}" "roc-java"
-    add_contributors "${temp}" "roc-droid"
-    add_contributors "${temp}" "openfec"
-    add_contributors "${temp}" "dockerfiles"
-    add_contributors "${temp}" "roc-streaming.github.io"
-
-    cat "$temp" > "${file}"
-    rm "${temp}"
-}
-
-function update_debian() {
-    from="$1"
-    to="$2"
-    temp="$(mktemp)"
-
-    cat "${to}" | sed '/^Copyright:/q' > "${temp}"
-    cat "${from}" | grep -F '* ' | sed -re 's,\*\s*,  ,' >> "${temp}"
-    cat "${to}" | sed -n '/^License:/,$p' >> "${temp}"
-
-    cat "${temp}" > "${to}"
-    rm "${temp}"
-}
-
 cd "$(dirname "$0")/.."
 
-sphinx="docs/sphinx/about_project/authors.rst"
-debian="debian/copyright"
+authors_file="docs/sphinx/about_project/authors.rst"
+temp_file="$(mktemp)"
+org_name="roc-streaming"
 
-echo "Updating ${sphinx}..."
-update_sphinx "${sphinx}"
+echo "updating ${authors_file}" 1>&2
 
-echo "Updating ${debian}..."
-update_debian "${sphinx}" "${debian}"
+cat "${authors_file}" > "${temp_file}"
 
-echo "Done."
+gh repo list "${org_name}" --json name --jq '.[].name' \
+    | grep -E "${1:-.*}" | while read repo_name
+do
+    update_repo "${temp_file}" "${org_name}" "${repo_name}"
+done
+
+cat "${temp_file}" > "${authors_file}"
+rm "${temp_file}"
+
+echo "all done" 1>&2
