@@ -88,4 +88,7 @@ if [ "$action" = "check_in_docker" ]; then
         ./dist/roc_*_amd64.deb
 
     run_cmd dpkg -L libroc-dev libroc roc
+
+    run_cmd roc-send --version
+    run_cmd roc-recv --version
 fi
