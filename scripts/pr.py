@@ -1,4 +1,5 @@
 #! /usr/bin/env python3
+
 from colorama import Fore, Style
 import argparse
 import colorama
