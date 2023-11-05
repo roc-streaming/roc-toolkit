@@ -20,6 +20,16 @@ Changelog
     Tests
     Documentation
 
+Version 0.2.6 (Nov 05, 2023)
+============================
+
+Packaging
+---------
+
+* build debian packages on debian:bullseye
+* in debian packages, statically link all dependencies except ``libc``, ``libasound``, ``libpulse``
+* ensure that packages are installable on debian:oldstable, debian:stable, ubuntu:20.04, ubuntu:22.04, ubuntu:latest
+
 Version 0.2.5 (Jul 28, 2023)
 ============================
 

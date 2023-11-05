@@ -1,3 +1,14 @@
+roc-toolkit (0.2.6) unstable; urgency=low
+
+  [ Packaging ]
+  * build debian packages on debian:bullseye
+  * in debian packages, statically link all dependencies except ``libc``,
+    ``libasound``, ``libpulse``
+  * ensure that packages are installable on debian:oldstable, debian:stable,
+    ubuntu:20.04, ubuntu:22.04, ubuntu:latest
+
+ -- Roc Streaming authors <roc@freelists.org>  Sun, 05 Nov 2023 00:00:00 +0000
+
 roc-toolkit (0.2.5) unstable; urgency=low
 
   [ Bug fixes ]
