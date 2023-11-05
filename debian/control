@@ -2,7 +2,7 @@ Source: roc-toolkit
 Section: unknown
 Priority: optional
 Maintainer: unknown <pi@d0>
-Build-Depends: debhelper (>= 13), g++, pkg-config, scons, ragel, gengetopt, cmake, make, libuv1-dev, libunwind-dev, libspeexdsp-dev, libsox-dev, libssl-dev, libpulse-dev, libasound2-dev
+Build-Depends: debhelper (>= 13), g++, pkg-config, scons, ragel, gengetopt, cmake, make, libpulse-dev, libasound2-dev
 Standards-Version: 4.1.3
 Homepage: https://roc-streaming.org
 Vcs-Browser: https://github.com/roc-streaming/roc-toolkit
