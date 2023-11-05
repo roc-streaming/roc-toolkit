@@ -1,6 +1,7 @@
 # build results
 /bin
 /build
+/dist
 /docs/html
 
 # scons
@@ -42,6 +43,17 @@ TODO.org
 # ctags
 /tags
 
-# other
+# deb
+debian/.debhelper
+debian/debhelper-build-stamp
+debian/files
+debian/tmp
+debian/*.substvars
+debian/*.debhelper.log
+debian/libroc
+debian/libroc-dev
+debian/roc
+
+# personal
 /Makefile
 .unisonignore

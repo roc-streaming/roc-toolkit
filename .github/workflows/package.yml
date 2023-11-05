@@ -18,26 +18,24 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Version
+    - name: Detect version
       id: ver
       run: |
         echo "GIT_TAG=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
 
-    - name: Debian package
-      id: deb
-      uses: gavv/debianise@HEAD
-      with:
-        image: debian:stable
-        package: roc-toolkit
-        create_changelog: true
-        install_build_depends: true
+    - name: Build deb packages
+      run: script/make_deb.sh build
 
-    - name: Publish
+    - name: Check deb packages
+      run: script/make_deb.sh check
+
+    - name: Publish release
       uses: softprops/action-gh-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        files: ${{ steps.deb.outputs.files }}
+        files: |
+          dist/*.deb
         name: ${{ steps.ver.outputs.GIT_TAG }}
         tag_name: ${{ steps.ver.outputs.GIT_TAG }}
         fail_on_unmatched_files: true
