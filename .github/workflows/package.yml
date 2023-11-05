@@ -24,10 +24,10 @@ jobs:
         echo "GIT_TAG=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
 
     - name: Build deb packages
-      run: script/make_deb.sh build
+      run: scripts/make_deb.sh build
 
     - name: Check deb packages
-      run: script/make_deb.sh check
+      run: scripts/make_deb.sh check
 
     - name: Publish release
       uses: softprops/action-gh-release@v1
