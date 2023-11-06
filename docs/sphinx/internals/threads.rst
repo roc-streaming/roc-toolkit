@@ -14,36 +14,36 @@ Roc nodes (senders and receivers) typically employ several threads.
 
   Network event loop thread. Sends packets from outgoing queue. Receives packets and stores into incoming queue.
 
-  Implemented by ``NetworkLoop`` class of ``roc_netio`` module.
+  Implemented by `NetworkLoop <https://roc-streaming.org/toolkit/doxygen/classroc_1_1netio_1_1NetworkLoop.html>`_ class from ``roc_netio`` module.
 
 * **Sound I/O thread**
 
   Audio input or output thread. Sends audio frames to sound card, or receives frames from it.
 
-  Implemented by sink and source classes in ``roc_sndio`` module.
+  Implemented by `sinks <https://roc-streaming.org/toolkit/doxygen/classroc_1_1sndio_1_1ISink.html>`_ and `sources <https://roc-streaming.org/toolkit/doxygen/classroc_1_1sndio_1_1ISource.html>`_ from ``roc_sndio`` module.
 
 * **Pipeline thread**
 
   Processing thread. Converts a stream of network packets into a stream of audio frames (on receiver), or vice versa (on sender).
 
-  Implemented by ``PipelineLoop`` and its derived classes in ``roc_pipeline`` module.
+  Implemented by `PipelineLoop <https://roc-streaming.org/toolkit/doxygen/classroc_1_1pipeline_1_1PipelineLoop.html>`_ and its derived classes from ``roc_pipeline`` module.
 
 * **Control thread**
 
   Control task event loop. Executes asynchronous tasks for signaling protocols and background work.
 
-  Implemented by ``ControlLoop`` class of ``roc_ctl`` module.
+  Implemented by `ControlLoop <https://roc-streaming.org/toolkit/doxygen/classroc_1_1ctl_1_1ControlLoop.html>`_ class from ``roc_ctl`` module.
 
 Depending on sound system in use, sound I/O thread and pipeline thread may be the same thread. For example, on ALSA a single thread perform audio I/O and processing, and on PulseAudio, there are separate threads for I/O and processing.
 
-When the user uses ``roc_sender`` or ``roc_receiver`` from the C library, Roc does not manage sound I/O. It also does not create dedicated pipeline thread - instead, the user invokes pipeline processing on their own thread.
+When the user uses ``roc_sender`` or ``roc_receiver`` from the :doc:`C library </api/reference>`, Roc does not manage sound I/O. It also does not create dedicated pipeline thread - instead, the user invokes pipeline processing on their own thread.
 
 Network and control threads belong to context. Sound I/O and pipeline threads, in contrast, belong to node (sender or receiver). When multiple nodes share a single context, they, among other things, share network and control threads as well. The user is free to decide whether to use one context for everything or create an individual context for each node.
 
 Queues
 ======
 
-Threads in Roc typically don't share much state and mostly communicate via packet and task queues. With this approach, most components does not have to both with synchronization.
+Threads in Roc typically don't have a lot of shared state. They are very isolated and communicate only via packet and task queues. With this approach, most components do not have to bother with synchronization.
 
 The queues between threads are usually lock-free and on some platforms also wait-free, which helps to avoid priority inversion problems (when real-time or high-priority thread is blocked or delayed by low-priority threads).
 

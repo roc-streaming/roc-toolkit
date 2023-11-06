@@ -8,7 +8,7 @@ Timestamps
 Types of timestamps
 ===================
 
-Packets and frames have two major types of timestamps:
+:doc:`Packets and frames </internals/packets_frames>` have two major types of timestamps:
 
 * STS - stream timestamp
 * CTS - capture timestamp

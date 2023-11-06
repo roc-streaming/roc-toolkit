@@ -26,7 +26,7 @@ FEC codes has the following advantages:
 
 and the following costs:
 
-* the latency is increased (in proportion to the block size; see below);
+* the latency (jitter buffer size) can not be least than fec block size;
 * the traffic is increased (in proportion to the redundancy level).
 
 FECFRAME
@@ -45,23 +45,23 @@ Roc implements the FECFRAME specification with several FEC schemes. The packet l
 
 Roc currently supports the following FEC schemes:
 
-* `Reed-Solomon <https://tools.ietf.org/html/rfc6865>`_, suitable for smaller block sizes and latency (`wikipedia <https://en.wikipedia.org/wiki/Reed%E2%80%93Solomon_error_correction>`_);
+* `Reed-Solomon <https://tools.ietf.org/html/rfc6865>`_, suitable for smaller block sizes and latency (`Wikipedia <https://en.wikipedia.org/wiki/Reed%E2%80%93Solomon_error_correction>`_);
 * `LDPC-Staircase <https://tools.ietf.org/html/rfc6816>`_, suitable for larger block sizes and latency.
 
 FEC scheme implementations are encapsulated by an interface and new schemes can be added easily enough.
 
 FEC packet fields
-===================
+=================
 
 The following fields are present in the source and repair packets:
 
-* ESI(encoding symbol id) -- number of a packet (source or repair) in a block;
-* SBN(source block number) -- number of a source block in a packet stream;
-* SBL(source block length) -- number of source packets in a block;
-* BLEN(block length), or NEC(number encoding symbols) -- number of source and repair packets in a block.
+* ESI (encoding symbol id) -- number of a packet (source or repair) in a block;
+* SBN (source block number) -- number of a source block in a packet stream;
+* SBL (source block length) -- number of source packets in a block;
+* BLEN (block length), or NEC (number encoding symbols) -- number of source and repair packets in a block.
 
-Sender
-======
+FEC on sender
+=============
 
 The diagram below shows a piece of the sender pipeline responsible for FEC.
 
@@ -81,8 +81,8 @@ The diagram below shows a piece of the sender pipeline responsible for FEC.
 
 encoder and composer are encapsulated by an interface, implementations are chosen depending on the FEC scheme.
 
-Receiver
-========
+FEC on receiver
+===============
 
 The diagram below shows a piece of the receiver pipeline responsible for FEC.
 
