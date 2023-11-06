@@ -23,6 +23,7 @@ namespace roc {
 namespace pipeline {
 namespace test {
 
+// Read audio frames from source and validate
 class FrameReader : public core::NonCopyable<> {
 public:
     FrameReader(sndio::ISource& source,

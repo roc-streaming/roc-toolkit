@@ -34,10 +34,10 @@ namespace roc {
 namespace pipeline {
 namespace test {
 
-//! Generates and writes packets.
+// Generates source and repair packets and pass them to destination writers
 class PacketWriter : public core::NonCopyable<> {
 public:
-    //! Initialize without FEC.
+    // Initialize without FEC (produce only source packets)
     PacketWriter(core::IArena& arena,
                  packet::IWriter& dst_writer,
                  rtp::FormatMap& format_map,
@@ -63,7 +63,7 @@ public:
                    packet::FEC_None, fec::WriterConfig());
     }
 
-    //! Initialize with FEC.
+    // Initialize with FEC (produce source + repair packets)
     PacketWriter(core::IArena& arena,
                  packet::IWriter& source_dst_writer,
                  packet::IWriter& repair_dst_writer,
@@ -220,9 +220,12 @@ private:
     void deliver_packet_(const packet::PacketPtr& pp) {
         if (fec_writer_) {
             // fec_writer will produce source and repair packets and store in fec_queue
+            // note that we're calling copy_packet_() only after fec_writer, because
+            // fec writer normally lives in the middle of the pipeline and expects
+            // packets to have all necessary meta-information
             fec_writer_->write(pp);
 
-            // deliver produced packets
+            // compose and "deliver" source and repair packets produced by fec_writer
             packet::PacketPtr fp;
             while (fec_queue_.read(fp) == status::StatusOK) {
                 if (fp->has_flags(packet::Packet::FlagAudio)) {
@@ -234,14 +237,16 @@ private:
                 }
             }
         } else {
+            // compose and "deliver" packet
             CHECK(source_composer_->compose(*pp));
             source_writer_->write(copy_packet_(pp));
         }
     }
 
-    // creates a new packet with the same buffer, clearing all meta-information
-    // like flags, parsed fields, etc; this way we simulate delivering packet
-    // over network
+    // creates a new packet with the same buffer, without copying any meta-information
+    // like flags, parsed fields, etc; this way we simulate that packet was "delivered"
+    // over network - packets enters receiver's pipeline without any meta-information,
+    // and receiver fills that meta-information using packet parsers
     packet::PacketPtr copy_packet_(const packet::PacketPtr& pa) {
         packet::PacketPtr pb = packet_factory_.new_packet();
         CHECK(pb);

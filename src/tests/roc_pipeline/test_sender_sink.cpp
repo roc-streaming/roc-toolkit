@@ -19,6 +19,22 @@
 #include "roc_pipeline/sender_sink.h"
 #include "roc_rtp/format_map.h"
 
+// This file contains tests for SenderSink. SenderSink can be seen as a big
+// composite processor (consisting of chanined smaller processors) that transforms
+// audio frames into network packets. Typically, sound card thread writes frames
+// to SenderSink, and it in turn writes packets to network thread.
+//
+// Each test in this file prepares a sequence of input frames and checks what sequence
+// of output packets sender produces in response. Each test checks one aspect of
+// pipeline behavior, e.g. splitting frames into packets, transcoding, etc.
+//
+// The tests mostly use two helper classes:
+//  - test::FrameWriter - to produce frames
+//  - test::PacketReader - to retrieve and validate packets
+//
+// test::FrameWriter simulates local sound card that produces frames, and
+// test::PacketReader simulates remote receiver that consumes packets.
+
 namespace roc {
 namespace pipeline {
 

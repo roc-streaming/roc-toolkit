@@ -27,7 +27,7 @@ namespace roc {
 namespace pipeline {
 namespace test {
 
-//! Reads, parses, and validates packets.
+// Read, parse, and validates packets
 class PacketReader : public core::NonCopyable<> {
 public:
     PacketReader(core::IArena& arena,
