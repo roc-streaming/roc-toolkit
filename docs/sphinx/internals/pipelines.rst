@@ -10,14 +10,14 @@ Overview
 
 Media pipelines are implemented in ``roc_pipeline`` module. There are two major pipeline types:
 
-* sender pipeline, implemented in ``SenderSink``
-* receiver pipeline, implemented in ``ReceiverSource``
+* sender pipeline, implemented in `SenderSink <https://roc-streaming.org/toolkit/doxygen/classroc_1_1pipeline_1_1SenderSink.html>`_
+* receiver pipeline, implemented in `ReceiverSource <https://roc-streaming.org/toolkit/doxygen/classroc_1_1pipeline_1_1ReceiverSource.html>`_
 
-Essentially, pipeline class constructs chain of packet and frame processors from ``roc_packet``, ``roc_audio``, and other modules, forming a big composite processor. Sender pipeline can be seen as a processor that consumes audio frames and produces network packets. Receiver pipeline, accordingly, consumes packets and produces frames.
+Essentially, pipeline class constructs chain of :doc:`packet and frame </internals/packets_frames>` processors from ``roc_packet``, ``roc_audio``, and other modules, forming a big composite processor. Sender pipeline can be seen as a processor that consumes audio frames and produces network packets. Receiver pipeline, accordingly, consumes packets and produces frames.
 
-Sender and receiver pipelines implement ``ISink`` and ``ISource`` interfaces, respectively. Sink interface allows to write audio frames to it (sender pipeline input), and source interface allows to read audio frames from it (receiver pipeline output).
+Sender and receiver pipelines implement `ISink <https://roc-streaming.org/toolkit/doxygen/classroc_1_1sndio_1_1ISink.html>`_ and `ISource <https://roc-streaming.org/toolkit/doxygen/classroc_1_1sndio_1_1ISource.html>`_ interfaces, respectively. Sink interface allows to write audio frames to it (sender pipeline input), and source interface allows to read audio frames from it (receiver pipeline output).
 
-Except reading and writing frames, we need to be able to change pipeline configuration on fly. To achieve this, pipelines provide task-based interface for configuration operations. The foundation for task processing is implemented in ``PipelineLoop`` class, which allows to schedule tasks for execution in between frames. ``SenderLoop`` and ``ReceiverLoop`` inherit this class and provide a set of tasks suitable for configuration of corresponding pipelines.
+Except reading and writing frames, we need to be able to change pipeline configuration on fly. To achieve this, pipelines provide task-based interface for configuration operations. The foundation for task processing is implemented in `PipelineLoop <https://roc-streaming.org/toolkit/doxygen/classroc_1_1pipeline_1_1PipelineLoop.html>`_ class, which allows to schedule tasks for execution in between frames. `SenderLoop <https://roc-streaming.org/toolkit/doxygen/classroc_1_1pipeline_1_1SenderLoop.html>`_ and `ReceiverLoop <https://roc-streaming.org/toolkit/doxygen/classroc_1_1pipeline_1_1ReceiverLoop.html>`_ inherit this class and provide a set of tasks suitable for configuration of corresponding pipelines.
 
 ``SenderLoop`` and ``ReceiverLoop`` are used by ``roc_node`` module. It is a top-level module that combines together ``roc_pipeline`` (processing), ``roc_netio`` (network I/O), and ``roc_sndio`` (sound I/O). It uses ``SenderLoop`` and ``ReceiverLoop`` to configure pipeline and to retrieve ``ISink`` or ``ISource`` (which under the hood is implemented by ``SenderSink`` or ``ReceiverSource``). The latter is then used to transform audio frames retrieved from ``roc_sndio`` into network packets passed to ``roc_netio``, or vice versa.
 
@@ -89,13 +89,13 @@ The diagram below shows the structure of sender pipeline.
 
 Sender pipeline is composed from several classes:
 
-* ``SenderSink`` - top-level class, represents the whole sender pipeline; contains one or several slots, and a fanout
+* `SenderSink <https://roc-streaming.org/toolkit/doxygen/classroc_1_1pipeline_1_1SenderSink.html>`_ - top-level class, represents the whole sender pipeline; contains one or several slots, and a fanout
 
-* ``SenderSlot`` - represents one slot of the sender; contains a set of related endpoints (e.g. source, repair, and control) and one sender session
+* `SenderSlot <https://roc-streaming.org/toolkit/doxygen/classroc_1_1pipeline_1_1SenderSlot.html>`_ - represents one slot of the sender; contains a set of related endpoints (e.g. source, repair, and control) and one sender session
 
-* ``SenderEndpoint`` - represents endpoint sub-pipeline; implements packet processing specific to endpoint
+* `SenderEndpoint <https://roc-streaming.org/toolkit/doxygen/classroc_1_1pipeline_1_1SenderEndpoint.html>`_ - represents endpoint sub-pipeline; implements packet processing specific to endpoint
 
-* ``SenderSession`` - represents session sub-pipeline; implements the main part of sender processing
+* `SenderSession <https://roc-streaming.org/toolkit/doxygen/classroc_1_1pipeline_1_1SenderSession.html>`_ - represents session sub-pipeline; implements the main part of sender processing
 
 .. image:: ../_images/sender_pipeline.png
     :align: center
@@ -136,15 +136,15 @@ The diagram below shows the structure of receiver pipeline.
 
 Receiver pipeline is composed from several classes:
 
-* ``ReceiverSource`` - top-level class, represents the whole receiver pipeline; contains one or several slots, and a mixer
+* `ReceiverSource <https://roc-streaming.org/toolkit/doxygen/classroc_1_1pipeline_1_1ReceiverSource.html>`_ - top-level class, represents the whole receiver pipeline; contains one or several slots, and a mixer
 
-* ``ReceiverSlot`` - represents one slot of the receiver; contains a set of related endpoints (e.g. source, repair, and control) and a session group
+* `ReceiverSlot <https://roc-streaming.org/toolkit/doxygen/classroc_1_1pipeline_1_1ReceiverSource.html>`_ - represents one slot of the receiver; contains a set of related endpoints (e.g. source, repair, and control) and a session group
 
-* ``ReceiverEndpoint`` - represents endpoint sub-pipeline; implements packet processing specific to endpoint
+* `ReceiverEndpoint <https://roc-streaming.org/toolkit/doxygen/classroc_1_1pipeline_1_1ReceiverEndpoint.html>`_ - represents endpoint sub-pipeline; implements packet processing specific to endpoint
 
-* ``ReceiverSessionGroup`` - represents a set of sessions belonging to one slot; implements routing of packets to sessions
+* `ReceiverSessionGroup <https://roc-streaming.org/toolkit/doxygen/classroc_1_1pipeline_1_1ReceiverSessionGroup.html>`_ - represents a set of sessions belonging to one slot; implements routing of packets to sessions
 
-* ``ReceiverSession`` - represents session sub-pipeline; created for every sender connected to receiver; implements processing specific to that session
+* `ReceiverSession <https://roc-streaming.org/toolkit/doxygen/classroc_1_1pipeline_1_1ReceiverSession.html>`_ - represents session sub-pipeline; created for every sender connected to receiver; implements processing specific to that session
 
 .. image:: ../_images/receiver_pipeline.png
     :align: center

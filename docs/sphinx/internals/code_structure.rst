@@ -70,20 +70,36 @@ Here is the full list of available modules:
 ================= =================================
 module            description
 ================= =================================
-roc_core          General-purpose building blocks (containers, memory management, multithreading, etc)
-roc_address       Network URIs and addresses
-roc_packet        Network packets and packet processing
-roc_rtp           RTP support
-roc_rtcp          RTCP support
-roc_fec           FEC support
-roc_sdp           SDP support
-roc_audio         Audio frames and audio processing
-roc_pipeline      Pipeline loop that arranges packet and frame processors into a chain
-roc_ctl           Control loop that handles signaling protocols and background tasks
-roc_netio         Network I/O loop
-roc_sndio         Sound I/O loop
-roc_node          Top-level module that glues everything together
+`roc_core`_       General-purpose building blocks (containers, memory management, multithreading, etc)
+`roc_status`_     Status codes
+`roc_address`_    Network URIs and addresses
+`roc_packet`_     Network packets and packet processing
+`roc_rtp`_        RTP support
+`roc_rtcp`_       RTCP support
+`roc_fec`_        FEC support
+`roc_sdp`_        SDP support
+`roc_audio`_      Audio frames and audio processing
+`roc_pipeline`_   Pipeline loop that arranges all packet and frame processors into a chain
+`roc_ctl`_        Control loop that handles signaling protocols and background tasks
+`roc_netio`_      Network I/O loop
+`roc_sndio`_      Sound I/O loop
+`roc_node`_       Top-level module that glues everything together
 ================= =================================
+
+.. _roc_core: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1core.html
+.. _roc_status: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1status.html
+.. _roc_address: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1address.html
+.. _roc_packet: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1packet.html
+.. _roc_rtp: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1rtp.html
+.. _roc_rtcp: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1rtcp.html
+.. _roc_fec: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1fec.html
+.. _roc_sdp: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1sdp.html
+.. _roc_audio: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1audio.html
+.. _roc_pipeline: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1pipeline.html
+.. _roc_ctl: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1ctl.html
+.. _roc_netio: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1netio.html
+.. _roc_sndio: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1sndio.html
+.. _roc_node: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1node.html
 
 .. _targets:
 
