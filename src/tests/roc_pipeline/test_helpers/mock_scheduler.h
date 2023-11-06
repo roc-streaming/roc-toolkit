@@ -6,8 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_PIPELINE_TEST_HELPERS_SCHEDULER_H_
-#define ROC_PIPELINE_TEST_HELPERS_SCHEDULER_H_
+#ifndef ROC_PIPELINE_TEST_HELPERS_MOCK_SCHEDULER_H_
+#define ROC_PIPELINE_TEST_HELPERS_MOCK_SCHEDULER_H_
 
 #include <CppUTest/TestHarness.h>
 
@@ -21,28 +21,28 @@ namespace roc {
 namespace pipeline {
 namespace test {
 
-class Scheduler : public pipeline::IPipelineTaskScheduler,
-                  public ctl::ControlTaskExecutor<Scheduler> {
+class MockScheduler : public pipeline::IPipelineTaskScheduler,
+                      public ctl::ControlTaskExecutor<MockScheduler> {
     class ProcessingTask : public ctl::ControlTask {
     public:
         ProcessingTask(PipelineLoop& pipeline)
-            : ControlTask(&Scheduler::do_processing_)
+            : ControlTask(&MockScheduler::do_processing_)
             , pipeline_(pipeline) {
         }
 
     private:
-        friend class Scheduler;
+        friend class MockScheduler;
 
         PipelineLoop& pipeline_;
     };
 
 public:
-    Scheduler()
+    MockScheduler()
         : task_(NULL) {
         CHECK(queue_.is_valid());
     }
 
-    ~Scheduler() {
+    ~MockScheduler() {
         if (task_) {
             FAIL("wait_done() was not called before desctructor");
         }
@@ -97,4 +97,4 @@ private:
 } // namespace pipeline
 } // namespace roc
 
-#endif // ROC_PIPELINE_TEST_HELPERS_SCHEDULER_H_
+#endif // ROC_PIPELINE_TEST_HELPERS_MOCK_SCHEDULER_H_
