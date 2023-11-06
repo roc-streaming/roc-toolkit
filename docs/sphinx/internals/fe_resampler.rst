@@ -29,9 +29,9 @@ So Roc needs to adjust somehow receiver's frequency to the sender's frequency. I
 
 This task is broken into three parts:
 
-1. measure current latency - the latency monitor;
-2. acquire frequencies factor - the frequency estimator;
-3. adjust the frequency - the resampler.
+1. measure current latency - the `latency monitor <https://roc-streaming.org/toolkit/doxygen/classroc_1_1audio_1_1LatencyMonitor.html>`_;
+2. acquire frequencies factor - the `frequency estimator <https://roc-streaming.org/toolkit/doxygen/classroc_1_1audio_1_1FreqEstimator.html>`_;
+3. adjust the frequency - the `resampler <https://roc-streaming.org/toolkit/doxygen/classroc_1_1audio_1_1ResamplerReader.html>`_.
 
 Frequency estimator is on duty of reporting more or less credible frequencies factor to the resampler. Resampler is continuously taking input samples and producing output samples a slightly faster or slower depending on its setting.
 
@@ -64,7 +64,24 @@ Frequency estimator directly affects sound quality. It must operate very smoothl
 Resampler
 =========
 
-The main idea of current resampler's implementation was taken from `this paper <https://ccrma.stanford.edu/~jos/resample/resample.pdf>`_. It's pretty hard to compete with this paper in clarity so if you're fond of DSP and such kind of things we'll refer to this paper for the algorithm details. It'd be better to describe the rest technical stuff here.
+Resampler is used for two purposes:
+
+* to compensate for the frequency difference between the sender and receiver, as described above;
+* to convert the network sample rate to the soundcard sample rate, e.g. 44100 to 48000.
+
+To achieve this, the scaling factor passed to resampler is actually a product of two ratios:
+
+* dynamic ratio computed by frequency estimator;
+* static ratio computed from the network and soundcard sample rates.
+
+There are several resampler backends available, each offering their own trade-offs and suitable for different situations.
+
+Built-in resampler backend
+==========================
+
+``BUILTIN`` resampler backend offers good quality and scaling precision, at the cost of rather high CPU usage, especially on high-quality profile.
+
+The implementation is based on Bandlimited Interpolation `described in this paper <https://ccrma.stanford.edu/~jos/resample/resample.pdf>`_. It's pretty hard to compete with this paper in clarity so if you're fond of DSP and such kind of things we'll refer to this paper for the algorithm details and describe the rest technical stuff here.
 
 Internally, resampler operates a moving *window*. An output sample is a function of all samples in the window. The window is implemented on top of three *frames*, stored in a circular buffer. Resampler reads samples from the pipeline frame-by-frame. When the window moves outside the middle frame boundaries, the circular buffer is rotated and the next frame is requested from the pipeline.
 
@@ -77,14 +94,19 @@ Resampler is configured with two parameters:
 
 In order to hide these details from the user, there are three predefined profiles ("low", "medium", "high"), offering different compromises between the quality and resource consumption.
 
-Finally, it's worth to mention that the resampler is actually used for two purposes:
+Speex-based resampler backends
+==============================
 
-* to compensate for the frequency difference between the sender and receiver, as described above;
-* to convert the network sample rate to the soundcard sample rate, e.g. 44100 to 48000.
+In addition to ``BUILTIN`` backend, two more backends are available:
 
-To achieve this, the scaling factor passed to resampler is actually a product of two ratios:
+* ``SPEEX`` - Implements resampling using `SpeexDSP <https://gitlab.xiph.org/xiph/speexdsp>`_ library.
 
-* dynamic ratio computed by frequency estimator;
-* static ratio computed from the network and soundcard sample rates.
+  Compared to ``BUILTIN`` backend, it is very fast and works well even on cheap CPUs. It offers good quality as well. However, it follows scaling factor with noticeably lower precision. Frequency estimator is able to compensate it, but it causes latency oscillations which makes this backend less suitable for very low latencies or when synchronization error should be very small.
 
-The resampler can also be used on the sender, but solely for the static ratio conversion.
+* ``SPEEXDEC`` - Combines SpeexDSP for static ratio and decimation for dynamic ratio.
+
+  This backend also uses SpeexDSP, but only to convert between network and sound card rates (static part of scaling factor, e.g. from 44100 to 48000). If these rates are equal, SpeexDSP is not used at all.
+
+  To compensate clock drift (dynamic part of scaling factor), this backend applies simple decimation/expansion on top of SpeexDSP, i.e. it just drops or duplicates samples. Typical decimation rate needed to compensate clock drift is below 0.5ms/second (20 samples/second on 48000 Hz), which gives tolerable quality despite usage of decimation.
+
+  The quality of ``SPEEXDEC`` backend is lower than with ``SPEEX``, however the scaling precision is better (though still no so good as with ``BUILTIN`` backend). When network and sound card rates are same, ``SPEEXDEC`` efficiently becomes fasted possible backend, working almost as fast as ``memcpy()``.
