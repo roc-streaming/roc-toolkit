@@ -21,6 +21,24 @@
 #include "roc_pipeline/receiver_source.h"
 #include "roc_rtp/format_map.h"
 
+// This file contains tests for ReceiverSource. ReceiverSource can be seen as a big
+// composite processor (consisting of chanined smaller processors) that transforms
+// network packets into audio frames. Typically, network thread writes packets into
+// ReceiverSource, and sound card thread read frames from it.
+//
+// Each test in this file prepares a sequence of input packets and checks what sequence
+// of output frames receiver produces in response. Each test checks one aspect of
+// pipeline behavior, e.g. handling packet reordering, recovering lost packets, mixing
+// multiple sessions, etc.
+//
+// The tests mostly use three helper classes:
+//  - test::PacketWriter - to produce source (RTP) and repair (FEC) packets
+//  - test::ControlWriter - to produce control packets (RTCP)
+//  - test::FrameReader - to retrieve and validate audio frames
+//
+// test::PacketWriter and test::ControlWriter simulate remote sender that produces
+// packets, and test::FrameReader simulates local sound card that consumes frames.
+
 namespace roc {
 namespace pipeline {
 
@@ -2059,7 +2077,6 @@ TEST(receiver_source, metrics_truncation) {
 
         UNSIGNED_LONGS_EQUAL(2, slot_metrics.num_sessions);
         UNSIGNED_LONGS_EQUAL(2, sess_metrics_size);
-
         CHECK(sess_metrics[0].latency.niq_latency > 0);
         CHECK(sess_metrics[1].latency.niq_latency > 0);
         CHECK(sess_metrics[2].latency.niq_latency == 0);
