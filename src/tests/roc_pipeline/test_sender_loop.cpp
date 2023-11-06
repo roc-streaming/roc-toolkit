@@ -8,7 +8,7 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "test_helpers/scheduler.h"
+#include "test_helpers/mock_scheduler.h"
 
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
@@ -105,7 +105,7 @@ private:
 } // namespace
 
 TEST_GROUP(sender_loop) {
-    test::Scheduler scheduler;
+    test::MockScheduler scheduler;
 
     SenderConfig config;
 };
