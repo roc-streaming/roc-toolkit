@@ -188,12 +188,12 @@ bool Writer::apply_sizes_(size_t sblen, size_t rblen, size_t payload_size) {
 void Writer::write_source_packet_(const packet::PacketPtr& pp) {
     encoder_.set(cur_packet_, pp->fec()->payload);
 
-    pp->add_flags(packet::Packet::FlagComposed);
     fill_packet_fec_fields_(pp, (packet::seqnum_t)cur_packet_);
 
     if (!source_composer_.compose(*pp)) {
         roc_panic("fec writer: can't compose source packet");
     }
+    pp->add_flags(packet::Packet::FlagComposed);
 
     writer_.write(pp);
 }
@@ -230,6 +230,7 @@ packet::PacketPtr Writer::make_repair_packet_(packet::seqnum_t pack_n) {
         roc_log(LogError, "fec writer: can't prepare packet");
         return NULL;
     }
+    packet->add_flags(packet::Packet::FlagPrepared);
 
     if (!packet->fec()) {
         roc_log(LogError, "fec writer: unexpected non-fec packet");
@@ -261,11 +262,10 @@ void Writer::compose_repair_packets_() {
             continue;
         }
 
-        rp->add_flags(packet::Packet::FlagComposed);
-
         if (!repair_composer_.compose(*rp)) {
             roc_panic("fec writer: can't compose repair packet");
         }
+        rp->add_flags(packet::Packet::FlagComposed);
     }
 }
 
@@ -290,8 +290,15 @@ void Writer::fill_packet_fec_fields_(const packet::PacketPtr& packet,
 }
 
 void Writer::validate_fec_packet_(const packet::PacketPtr& pp) {
-    const packet::FEC* fec = pp->fec();
+    if (!pp->has_flags(packet::Packet::FlagPrepared)) {
+        roc_panic("fec writer: unexpected packet: should be prepared");
+    }
 
+    if (pp->has_flags(packet::Packet::FlagComposed)) {
+        roc_panic("fec writer: unexpected packet: should not be composed");
+    }
+
+    const packet::FEC* fec = pp->fec();
     if (!fec) {
         roc_panic("fec writer: unexpected non-fec packet");
     }
