@@ -26,6 +26,27 @@
 namespace roc {
 namespace pipeline {
 
+// This file contains integration tests that combine SenderSink and ReceiverSource.
+//
+// SenderSink consumes audio frames and produces network packets. ReceiverSource
+// consumes network packets and produces audio frames.
+//
+// Each test in this file prepares a sequence of input frames, passes it to
+// SenderSink, transfers packets produced by SenderSink to ReceiverSource, and
+// checks what sequence of output frames ReceiverSource produced in response.
+//
+// Normally SenderSink and ReceiverSource are not connected directly. We simulate
+// delivering packets over network by re-creating packets for receiver with the
+// same buffer but with stripped meta-information.
+//
+// The tests use three helper classes:
+//  - test::FrameWriter - to produce frames
+//  - test::PacketProxy - to simulate delivery of packets from sender to receiver
+//  - test::FrameReader - to retrieve and validate frames
+//
+// test::FrameWriter simulates sender sound card that produces frames, and
+// test::FrameReader simulates receiver sound card that consumes frames.
+
 namespace {
 
 const audio::ChannelMask Chans_Mono = audio::ChanMask_Surround_Mono;

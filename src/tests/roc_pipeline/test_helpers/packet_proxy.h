@@ -21,6 +21,9 @@ namespace roc {
 namespace pipeline {
 namespace test {
 
+// Copy sequence of packets to multiple writers
+// Routes packet by type
+// Clears packet meta-data as if packet was delivered over network
 class PacketProxy : public packet::IWriter, core::NonCopyable<> {
 public:
     PacketProxy(packet::PacketFactory& packet_factory,
@@ -79,9 +82,10 @@ public:
     }
 
 private:
-    // creates a new packet with the same buffer, clearing all meta-information
-    // like flags, parsed fields, etc; this way we simulate delivering packet
-    // over network
+    // creates a new packet with the same buffer, without copying any meta-information
+    // like flags, parsed fields, etc; this way we simulate that packet was "delivered"
+    // over network - packets enters receiver's pipeline without any meta-information,
+    // and receiver fills that meta-information using packet parsers
     packet::PacketPtr copy_packet_(const packet::PacketPtr& pa) {
         packet::PacketPtr pb = packet_factory_.new_packet();
         CHECK(pb);

@@ -24,6 +24,7 @@ namespace roc {
 namespace pipeline {
 namespace test {
 
+// Generates control packets and pass them to destination writer
 class ControlWriter : public core::NonCopyable<> {
 public:
     ControlWriter(packet::IWriter& writer,

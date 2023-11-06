@@ -22,6 +22,7 @@ namespace roc {
 namespace pipeline {
 namespace test {
 
+// Generate audio frames and write to sink
 class FrameWriter : public core::NonCopyable<> {
 public:
     FrameWriter(sndio::ISink& sink, core::BufferFactory<audio::sample_t>& buffer_factory)
