@@ -73,7 +73,8 @@ public:
         UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(pp));
         CHECK(pp);
 
-        UNSIGNED_LONGS_EQUAL(packet::Packet::FlagRTP | packet::Packet::FlagAudio,
+        UNSIGNED_LONGS_EQUAL(packet::Packet::FlagRTP | packet::Packet::FlagAudio
+                                 | packet::Packet::FlagPrepared,
                              pp->flags());
 
         if (pos_ == 0) {

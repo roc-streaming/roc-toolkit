@@ -49,8 +49,9 @@ public:
         FlagAudio = (1 << 4),    //!< Packet contains audio samples.
         FlagRepair = (1 << 5),   //!< Packet contains repair FEC symbols.
         FlagControl = (1 << 6),  //!< Packet contains control message.
-        FlagComposed = (1 << 7), //!< Packet is already composed.
-        FlagRestored = (1 << 8)  //!< Packet was restored using FEC decoder.
+        FlagPrepared = (1 << 7), //!< Packet was prepared for composing.
+        FlagComposed = (1 << 8), //!< Packet was composed.
+        FlagRestored = (1 << 9)  //!< Packet was restored using FEC decoder.
     };
 
     //! Add flags.

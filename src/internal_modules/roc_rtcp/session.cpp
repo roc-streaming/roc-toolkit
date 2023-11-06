@@ -264,6 +264,7 @@ packet::PacketPtr Session::generate_packet_(core::nanoseconds_t current_time) {
         roc_log(LogError, "rtcp session: can't prepare packet");
         return NULL;
     }
+    packet->add_flags(packet::Packet::FlagPrepared);
 
     // attach prepared packet data to the packet
     packet->set_data(packet_data);

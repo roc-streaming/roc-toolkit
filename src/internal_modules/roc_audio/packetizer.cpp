@@ -173,6 +173,7 @@ packet::PacketPtr Packetizer::create_packet_() {
         roc_log(LogError, "packetizer: can't prepare packet");
         return NULL;
     }
+    packet->add_flags(packet::Packet::FlagPrepared);
 
     packet->set_data(data);
 

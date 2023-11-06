@@ -131,7 +131,11 @@ void SenderEndpoint::write(const packet::PacketPtr& packet) {
         packet->udp()->dst_addr = dst_address_;
     }
 
-    if ((packet->flags() & packet::Packet::FlagComposed) == 0) {
+    if (!packet->has_flags(packet::Packet::FlagPrepared)) {
+        roc_panic("sender endpoint: unexpected packet: should be prepared");
+    }
+
+    if (!packet->has_flags(packet::Packet::FlagComposed)) {
         if (!composer_->compose(*packet)) {
             roc_panic("sender endpoint: can't compose packet");
         }

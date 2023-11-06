@@ -170,7 +170,7 @@ TEST_GROUP(writer_reader) {
         UNSIGNED_LONGS_EQUAL(rtp_payload_size, pp->rtp()->payload.size());
         UNSIGNED_LONGS_EQUAL(fec_payload_size, pp->fec()->payload.size());
 
-        pp->add_flags(packet::Packet::FlagAudio);
+        pp->add_flags(packet::Packet::FlagAudio | packet::Packet::FlagPrepared);
 
         pp->rtp()->source = SourceID;
         pp->rtp()->payload_type = PayloadType;
