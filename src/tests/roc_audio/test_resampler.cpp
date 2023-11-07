@@ -73,37 +73,50 @@ public:
                      const core::nanoseconds_t epsilon,
                      const audio::SampleSpec& sample_spec)
         : capt_ts_(capt_ts)
+        , last_ts_(0)
         , epsilon_(epsilon)
         , sample_spec_(sample_spec)
         , scale_(1.f)
-        , start_(true) {
+        , started_(false) {
     }
 
     void set_scaling(const sample_t scale) {
         scale_ = scale;
     }
 
+    void set_cts(core::nanoseconds_t cts) {
+        capt_ts_ = cts;
+    }
+
+    core::nanoseconds_t last_cts() {
+        return last_ts_;
+    }
+
     virtual void write(Frame& frame) {
+        last_ts_ = frame.capture_timestamp();
         if (capt_ts_ && epsilon_) {
-            if (start_) {
-                start_ = false;
+            if (!started_ && frame.capture_timestamp() != 0) {
+                started_ = true;
                 CHECK(frame.capture_timestamp() >= capt_ts_);
                 capt_ts_ = frame.capture_timestamp();
-            } else {
-                expect_capture_timestamp(capt_ts_, frame.capture_timestamp(), epsilon_);
             }
-            capt_ts_ += core::nanoseconds_t(
-                sample_spec_.samples_overall_2_ns(frame.num_samples()) * scale_);
+            if (started_) {
+                expect_capture_timestamp(capt_ts_, frame.capture_timestamp(), epsilon_);
+                capt_ts_ += core::nanoseconds_t(
+                    sample_spec_.samples_overall_2_ns(frame.num_samples()) * scale_);
+            }
+        } else {
+            CHECK(frame.capture_timestamp() == 0);
         }
     }
 
 private:
     core::nanoseconds_t capt_ts_;
+    core::nanoseconds_t last_ts_;
     core::nanoseconds_t epsilon_;
     const audio::SampleSpec& sample_spec_;
     sample_t scale_;
-
-    bool start_;
+    bool started_;
 };
 
 void generate_sine(sample_t* out, size_t num_samples, size_t num_padding) {
@@ -634,7 +647,7 @@ TEST(resampler, upscale_downscale_stereo) {
 
 // Testing how resampler deals with timestamps: output frame timestamp must accumulate
 // number of previous sammples multiplid by immediate sample rate.
-TEST(resampler, timestamp_passthrough_reader) {
+TEST(resampler, reader_timestamp_passthrough) {
     enum { NumCh = 2, ChMask = 0x3, FrameLen = 178, NumIterations = 20 };
 
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
@@ -660,7 +673,7 @@ TEST(resampler, timestamp_passthrough_reader) {
 
                     const core::nanoseconds_t start_ts = 1691499037871419405;
                     core::nanoseconds_t cur_ts = start_ts;
-                    core::nanoseconds_t ts_step;
+                    core::nanoseconds_t ts_step = 0;
 
                     const core::nanoseconds_t epsilon =
                         core::nanoseconds_t(1. / in_spec.sample_rate() * core::Second
@@ -677,7 +690,7 @@ TEST(resampler, timestamp_passthrough_reader) {
                     ts_step = core::nanoseconds_t(out_spec.samples_overall_2_ns(FrameLen)
                                                   * scale);
 
-                    sample_t samples[FrameLen];
+                    sample_t samples[FrameLen] = {};
 
                     {
                         {
@@ -698,6 +711,7 @@ TEST(resampler, timestamp_passthrough_reader) {
                         }
                     }
 
+                    // Change scaling.
                     scale = 0.95f;
                     rreader.set_scaling(scale);
                     {
@@ -719,6 +733,7 @@ TEST(resampler, timestamp_passthrough_reader) {
                         }
                     }
 
+                    // Change scaling.
                     scale = 1.05f;
                     rreader.set_scaling(scale);
                     {
@@ -747,8 +762,14 @@ TEST(resampler, timestamp_passthrough_reader) {
 
 // Tests resampler writer ability to pass through capture timestamps of frames.
 // It copies the method from the same test for resampler reader.
-TEST(resampler, timestamp_passthrough_writer) {
-    enum { NumCh = 2, ChMask = 0x3, FrameLen = 178, NumIterations = 20 };
+TEST(resampler, writer_timestamp_passthrough) {
+    enum {
+        NumCh = 2,
+        ChMask = 0x3,
+        FrameLen = 178,
+        NumIterations = 20,
+        MaxZeroCtsFrames = 3
+    };
 
     for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
         for (size_t n_prof = 0; n_prof < ROC_ARRAY_SIZE(supported_profiles); n_prof++) {
@@ -773,7 +794,7 @@ TEST(resampler, timestamp_passthrough_writer) {
 
                     const core::nanoseconds_t start_ts = 1691499037871419405;
                     core::nanoseconds_t cur_ts = start_ts;
-                    core::nanoseconds_t ts_step;
+                    core::nanoseconds_t ts_step = 0;
 
                     const core::nanoseconds_t epsilon =
                         core::nanoseconds_t(1. / in_spec.sample_rate() * core::Second
@@ -789,22 +810,29 @@ TEST(resampler, timestamp_passthrough_writer) {
                     CHECK(rwriter.set_scaling(scale));
                     ts_step = core::nanoseconds_t(in_spec.samples_overall_2_ns(FrameLen));
 
-                    sample_t samples[FrameLen];
+                    sample_t samples[FrameLen] = {};
+
                     {
                         {
                             Frame frame(samples, ROC_ARRAY_SIZE(samples));
                             frame.set_capture_timestamp(cur_ts);
                             rwriter.write(frame);
                             cur_ts = frame.capture_timestamp();
+                            CHECK(ts_checker.last_cts() >= 0);
                         }
                         for (size_t i = 0; i < NumIterations; i++) {
                             Frame frame(samples, ROC_ARRAY_SIZE(samples));
                             cur_ts += ts_step;
                             frame.set_capture_timestamp(cur_ts);
                             rwriter.write(frame);
+                            CHECK(ts_checker.last_cts() >= 0);
+                            if (i >= MaxZeroCtsFrames) {
+                                CHECK(ts_checker.last_cts() > 0);
+                            }
                         }
                     }
 
+                    // Change scaling.
                     scale = 0.95f;
                     rwriter.set_scaling(scale);
                     ts_checker.set_scaling(scale);
@@ -814,15 +842,18 @@ TEST(resampler, timestamp_passthrough_writer) {
                             cur_ts += ts_step;
                             frame.set_capture_timestamp(cur_ts);
                             rwriter.write(frame);
+                            CHECK(ts_checker.last_cts() > 0);
                         }
                         for (size_t i = 0; i < NumIterations; i++) {
                             Frame frame(samples, ROC_ARRAY_SIZE(samples));
                             cur_ts += ts_step;
                             frame.set_capture_timestamp(cur_ts);
                             rwriter.write(frame);
+                            CHECK(ts_checker.last_cts() > 0);
                         }
                     }
 
+                    // Change scaling.
                     scale = 1.05f;
                     rwriter.set_scaling(scale);
                     ts_checker.set_scaling(scale);
@@ -832,12 +863,177 @@ TEST(resampler, timestamp_passthrough_writer) {
                             cur_ts += ts_step;
                             frame.set_capture_timestamp(cur_ts);
                             rwriter.write(frame);
+                            CHECK(ts_checker.last_cts() > 0);
                         }
                         for (size_t i = 0; i < NumIterations; i++) {
                             Frame frame(samples, ROC_ARRAY_SIZE(samples));
                             cur_ts += ts_step;
                             frame.set_capture_timestamp(cur_ts);
                             rwriter.write(frame);
+                            CHECK(ts_checker.last_cts() > 0);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Tests how ResamplerReader handles the case when CTS is at first zero and then
+// becomes non-zero, but starts with small value close to Unix Epoch. It should
+// never produce negative CTS and return zero CTS instead.
+TEST(resampler, reader_timestamp_zero_or_small) {
+    enum {
+        NumCh = 2,
+        ChMask = 0x3,
+        FrameLen = 178,
+        SmallCts = 5, // close to unix epoch
+        NumIterations = 20
+    };
+
+    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
+        for (size_t n_prof = 0; n_prof < ROC_ARRAY_SIZE(supported_profiles); n_prof++) {
+            for (size_t n_irate = 0; n_irate < ROC_ARRAY_SIZE(supported_rates);
+                 n_irate++) {
+                for (size_t n_orate = 0; n_orate < ROC_ARRAY_SIZE(supported_rates);
+                     n_orate++) {
+                    const ResamplerBackend backend =
+                        ResamplerMap::instance().nth_backend(n_back);
+
+                    const SampleSpec in_spec =
+                        SampleSpec(supported_rates[n_irate], ChanLayout_Surround,
+                                   ChanOrder_Smpte, ChMask);
+                    const SampleSpec out_spec =
+                        SampleSpec(supported_rates[n_orate], ChanLayout_Surround,
+                                   ChanOrder_Smpte, ChMask);
+
+                    core::SharedPtr<IResampler> resampler =
+                        ResamplerMap::instance().new_resampler(
+                            backend, arena, buffer_factory, supported_profiles[n_prof],
+                            in_spec, out_spec);
+
+                    test::MockReader input_reader;
+                    input_reader.add_zero_samples();
+
+                    ResamplerReader rreader(input_reader, *resampler, in_spec, out_spec);
+
+                    // Set scaling.
+                    float scale = 1.05f;
+                    rreader.set_scaling(scale);
+
+                    // At first, cts is zero.
+                    for (size_t i = 0; i < NumIterations; i++) {
+                        sample_t samples[FrameLen] = {};
+                        Frame frame(samples, ROC_ARRAY_SIZE(samples));
+                        CHECK(rreader.read(frame));
+                        CHECK(frame.capture_timestamp() == 0);
+                    }
+
+                    // Then we switch to non-zero (but very small) cts.
+                    const core::nanoseconds_t start_ts = SmallCts;
+                    core::nanoseconds_t cur_ts = 0;
+                    core::nanoseconds_t ts_step = core::nanoseconds_t(
+                        out_spec.samples_overall_2_ns(FrameLen) * scale);
+
+                    const core::nanoseconds_t epsilon =
+                        core::nanoseconds_t(1. / in_spec.sample_rate() * core::Second
+                                            * timestamp_allowance(backend));
+
+                    input_reader.enable_timestamps(start_ts, in_spec);
+
+                    for (size_t i = 0; i < NumIterations; i++) {
+                        sample_t samples[FrameLen] = {};
+                        Frame frame(samples, ROC_ARRAY_SIZE(samples));
+                        CHECK(rreader.read(frame));
+                        if (cur_ts == 0) {
+                            if (frame.capture_timestamp() != 0) {
+                                cur_ts = frame.capture_timestamp();
+                                CHECK(cur_ts >= start_ts - epsilon);
+                                CHECK(cur_ts <= start_ts + ts_step);
+                            }
+                        } else {
+                            cur_ts += ts_step;
+                            expect_capture_timestamp(cur_ts, frame.capture_timestamp(),
+                                                     epsilon);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Same as previous test, but for writer.
+TEST(resampler, writer_timestamp_zero_or_small) {
+    enum {
+        NumCh = 2,
+        ChMask = 0x3,
+        FrameLen = 178,
+        SmallCts = 5, // close to unix epoch
+        NumIterations = 20,
+        MaxZeroCtsFrames = 3,
+    };
+
+    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
+        for (size_t n_prof = 0; n_prof < ROC_ARRAY_SIZE(supported_profiles); n_prof++) {
+            for (size_t n_irate = 0; n_irate < ROC_ARRAY_SIZE(supported_rates);
+                 n_irate++) {
+                for (size_t n_orate = 0; n_orate < ROC_ARRAY_SIZE(supported_rates);
+                     n_orate++) {
+                    const ResamplerBackend backend =
+                        ResamplerMap::instance().nth_backend(n_back);
+
+                    const SampleSpec in_spec =
+                        SampleSpec(supported_rates[n_irate], ChanLayout_Surround,
+                                   ChanOrder_Smpte, ChMask);
+                    const SampleSpec out_spec =
+                        SampleSpec(supported_rates[n_orate], ChanLayout_Surround,
+                                   ChanOrder_Smpte, ChMask);
+
+                    core::SharedPtr<IResampler> resampler =
+                        ResamplerMap::instance().new_resampler(
+                            backend, arena, buffer_factory, supported_profiles[n_prof],
+                            in_spec, out_spec);
+
+                    const core::nanoseconds_t epsilon =
+                        core::nanoseconds_t(1. / in_spec.sample_rate() * core::Second
+                                            * timestamp_allowance(backend));
+
+                    TimestampChecker ts_checker(0, epsilon, out_spec);
+
+                    ResamplerWriter rwriter(ts_checker, *resampler, buffer_factory,
+                                            in_spec, out_spec);
+
+                    // Set scaling.
+                    float scale = 1.05f;
+                    ts_checker.set_scaling(scale);
+                    rwriter.set_scaling(scale);
+
+                    // At first, cts is zero.
+                    for (size_t i = 0; i < NumIterations; i++) {
+                        sample_t samples[FrameLen] = {};
+                        Frame frame(samples, ROC_ARRAY_SIZE(samples));
+                        frame.set_capture_timestamp(0);
+                        rwriter.write(frame);
+                        CHECK(ts_checker.last_cts() == 0);
+                    }
+
+                    // Then we switch to non-zero (but very small) cts.
+                    const core::nanoseconds_t start_ts = SmallCts;
+                    core::nanoseconds_t cur_ts = start_ts;
+                    core::nanoseconds_t ts_step = in_spec.samples_overall_2_ns(FrameLen);
+
+                    ts_checker.set_cts(start_ts);
+
+                    for (size_t i = 0; i < NumIterations; i++) {
+                        sample_t samples[FrameLen] = {};
+                        Frame frame(samples, ROC_ARRAY_SIZE(samples));
+                        frame.set_capture_timestamp(cur_ts);
+                        cur_ts += ts_step;
+                        rwriter.write(frame);
+                        CHECK(ts_checker.last_cts() >= 0);
+                        if (i >= MaxZeroCtsFrames) {
+                            CHECK(ts_checker.last_cts() > 0);
                         }
                     }
                 }

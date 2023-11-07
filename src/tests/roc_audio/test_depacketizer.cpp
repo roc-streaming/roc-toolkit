@@ -19,6 +19,7 @@
 #include "roc_core/time.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
+#include "roc_packet/units.h"
 #include "roc_rtp/composer.h"
 #include "roc_status/status_code.h"
 
@@ -679,6 +680,81 @@ TEST(depacketizer, timestamp) {
     }
 }
 
+TEST(depacketizer, timestamp_fract_frame_per_packet) {
+    enum {
+        StartTimestamp = 1000,
+        NumPackets = 3,
+        SamplesPerFrame = SamplesPerPacket + 50
+    };
+
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
+
+    packet::Queue queue;
+    Depacketizer dp(queue, decoder, SampleSpecs, false);
+    CHECK(dp.is_valid());
+
+    core::nanoseconds_t capt_ts =
+        Now + SampleSpecs.samples_overall_2_ns(SamplesPerPacket);
+    // 1st packet in the frame has 0 capture ts, and the next
+    CHECK_EQUAL(status::StatusOK,
+                queue.write(new_packet(encoder, StartTimestamp, 0.1f, 0)));
+    CHECK_EQUAL(status::StatusOK,
+                queue.write(new_packet(encoder, StartTimestamp + SamplesPerPacket / NumCh,
+                                       0.1f, capt_ts)));
+    expect_output(dp, SamplesPerFrame, 0.1f, Now);
+}
+
+TEST(depacketizer, timestamp_small_non_zero_cts) {
+    enum {
+        StartTimestamp = 1000,
+        StartCts = 5, // very close to unix epoch
+        PacketsPerFrame = 10
+    };
+
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
+
+    packet::Queue queue;
+    Depacketizer dp(queue, decoder, SampleSpecs, false);
+    CHECK(dp.is_valid());
+
+    // 1st packet in frame has 0 capture ts
+    packet::stream_timestamp_t stream_ts = StartTimestamp;
+    LONGS_EQUAL(status::StatusOK,
+                queue.write(new_packet(encoder, StartTimestamp, 0.1f, 0)));
+    stream_ts += SamplesPerPacket;
+
+    // starting from 2nd packet, there is CTS, but it starts from very
+    // small value (close to unix epoch)
+    core::nanoseconds_t capt_ts = StartCts;
+    for (size_t n = 1; n < PacketsPerFrame; n++) {
+        LONGS_EQUAL(status::StatusOK,
+                    queue.write(new_packet(encoder, stream_ts, 0.1f, capt_ts)));
+        stream_ts += SamplesPerPacket;
+        capt_ts += SampleSpecs.samples_overall_2_ns(SamplesPerPacket);
+    }
+
+    // remember cts that should be used for second frame
+    const core::nanoseconds_t second_frame_capt_ts = capt_ts;
+
+    // second frame
+    for (size_t n = 0; n < PacketsPerFrame; n++) {
+        LONGS_EQUAL(status::StatusOK,
+                    queue.write(new_packet(encoder, stream_ts, 0.2f, capt_ts)));
+        stream_ts += SamplesPerPacket;
+        capt_ts += SampleSpecs.samples_overall_2_ns(SamplesPerPacket);
+    }
+
+    // first frame has zero cts
+    // if depacketizer couldn't handle small cts properly, it would
+    // produce negative cts instead
+    expect_output(dp, SamplesPerPacket * PacketsPerFrame, 0.1f, 0);
+
+    // second frame has non-zero cts
+    expect_output(dp, SamplesPerPacket * PacketsPerFrame, 0.2f, second_frame_capt_ts);
+}
+
 TEST(depacketizer, read_after_error) {
     const status::StatusCode codes[] = {
         status::StatusUnknown,
@@ -709,31 +785,6 @@ TEST(depacketizer, read_after_error) {
         UNSIGNED_LONGS_EQUAL(2, reader.call_count());
         CHECK(dp.is_valid());
     }
-}
-
-TEST(depacketizer, timestamp_fract_frame_per_packet) {
-    enum {
-        StartTimestamp = 1000,
-        NumPackets = 3,
-        SamplesPerFrame = SamplesPerPacket + 50
-    };
-
-    PcmEncoder encoder(PcmFmt, SampleSpecs);
-    PcmDecoder decoder(PcmFmt, SampleSpecs);
-
-    packet::Queue queue;
-    Depacketizer dp(queue, decoder, SampleSpecs, false);
-    CHECK(dp.is_valid());
-
-    core::nanoseconds_t capt_ts =
-        Now + SampleSpecs.samples_overall_2_ns(SamplesPerPacket);
-    // 1st packet in the frame has 0 capture ts, and the next
-    CHECK_EQUAL(status::StatusOK,
-                queue.write(new_packet(encoder, StartTimestamp, 0.1f, 0)));
-    CHECK_EQUAL(status::StatusOK,
-                queue.write(new_packet(encoder, StartTimestamp + SamplesPerPacket / NumCh,
-                                       0.1f, capt_ts)));
-    expect_output(dp, SamplesPerFrame, 0.1f, Now);
 }
 
 } // namespace audio
