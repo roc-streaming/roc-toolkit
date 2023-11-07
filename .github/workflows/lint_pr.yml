@@ -1,7 +1,7 @@
 name: "lint pr"
 
 on:
-  pull_request:
+  pull_request_target:
     types:
       - opened
 
@@ -41,15 +41,9 @@ jobs:
         if: |
           steps.linked-issues.outputs.issues == '[]' &&
           steps.mentioned-issues.outputs.result == 'false'
-        uses: actions/github-script@v6
+        uses: thollander/actions-comment-pull-request@v2
         with:
-          script: |
-            github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              body: 'Upon creation, pull request description does not have a link to an issue.'+
-                 ' If there is a related issue, please add it to the description'+
-                 ' using any of the [supported formats](https://docs.github.com/en/get-started/'+
-                 'writing-on-github/working-with-advanced-formatting/autolinked-references-and-urls).'
-            })
+          message: "Upon creation, pull request description does not have a link to an issue.
+            If there is a related issue, please add it to the description
+            using any of the [supported formats](https://docs.github.com/en/get-started/\
+            writing-on-github/working-with-advanced-formatting/autolinked-references-and-urls)."
