@@ -185,6 +185,7 @@ core::nanoseconds_t SenderSession::refresh(core::nanoseconds_t current_time) {
 
     if (timestamp_extractor_ && timestamp_extractor_->has_mapping()) {
         const status::StatusCode code = rtcp_session_->generate_packets(current_time);
+        // TODO(gh-183): forward status
         roc_panic_if(code != status::StatusOK);
     }
 

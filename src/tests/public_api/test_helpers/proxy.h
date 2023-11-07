@@ -125,39 +125,22 @@ private:
 
         if (pp->udp()->dst_addr == recv_source_config_.bind_address) {
             pp->udp()->dst_addr = receiver_source_endp_;
-
-            const status::StatusCode code = source_queue_.write(pp);
-            if (code != status::StatusOK) {
-                return code;
-            }
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, source_queue_.write(pp));
         } else {
             pp->udp()->dst_addr = receiver_repair_endp_;
-
-            const status::StatusCode code = repair_queue_.write(pp);
-            if (code != status::StatusOK) {
-                return code;
-            }
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_queue_.write(pp));
         }
 
         for (;;) {
             const size_t block_pos = pos_ % (n_source_packets_ + n_repair_packets_);
 
             if (block_pos < n_source_packets_) {
-                const status::StatusCode code =
-                    send_packet_(source_queue_, block_pos == 1);
-                if (code != status::StatusOK) {
-                    if (code == status::StatusNoData) {
-                        break;
-                    }
-                    return code;
+                if (!send_packet_(source_queue_, block_pos == 1)) {
+                    break;
                 }
             } else {
-                const status::StatusCode code = send_packet_(repair_queue_, false);
-                if (code != status::StatusOK) {
-                    if (code == status::StatusNoData) {
-                        break;
-                    }
-                    return code;
+                if (!send_packet_(repair_queue_, false)) {
+                    break;
                 }
             }
         }
@@ -165,21 +148,20 @@ private:
         return status::StatusOK;
     }
 
-    status::StatusCode send_packet_(packet::IReader& reader, bool drop) {
+    bool send_packet_(packet::IReader& reader, bool drop) {
         packet::PacketPtr pp;
         status::StatusCode code = reader.read(pp);
         if (code != status::StatusOK) {
+            UNSIGNED_LONGS_EQUAL(status::StatusNoData, code);
             CHECK(!pp);
-            return code;
+            return false;
         }
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, code);
         CHECK(pp);
-
         pos_++;
         if (!drop) {
-            code = writer_->write(pp);
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer_->write(pp));
         }
-        return code;
+        return true;
     }
 
     netio::UdpSenderConfig send_config_;

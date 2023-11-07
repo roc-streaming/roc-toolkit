@@ -18,13 +18,13 @@ namespace pipeline {
 
 ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
                                    ReceiverState& receiver_state,
-                                   packet::IWriter& writer,
+                                   ReceiverSessionGroup& session_group,
                                    const rtp::FormatMap& format_map,
                                    core::IArena& arena)
     : core::RefCounted<ReceiverEndpoint, core::ArenaAllocation>(arena)
     , proto_(proto)
     , receiver_state_(receiver_state)
-    , writer_(writer)
+    , session_group_(session_group)
     , parser_(NULL) {
     packet::IParser* parser = NULL;
 
@@ -131,7 +131,7 @@ status::StatusCode ReceiverEndpoint::pull_packets() {
             continue;
         }
 
-        const status::StatusCode code = writer_.write(packet);
+        const status::StatusCode code = session_group_.route_packet(packet);
         receiver_state_.add_pending_packets(-1);
         if (code != status::StatusOK) {
             return code;

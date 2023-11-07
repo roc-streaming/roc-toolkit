@@ -38,7 +38,7 @@ ReceiverSessionGroup::~ReceiverSessionGroup() {
     remove_all_sessions_();
 }
 
-status::StatusCode ReceiverSessionGroup::write(const packet::PacketPtr& packet) {
+status::StatusCode ReceiverSessionGroup::route_packet(const packet::PacketPtr& packet) {
     if (packet->rtcp()) {
         return route_control_packet_(packet);
     }
@@ -158,14 +158,15 @@ ReceiverSessionGroup::route_transport_packet_(const packet::PacketPtr& packet) {
     core::SharedPtr<ReceiverSession> sess;
 
     for (sess = sessions_.front(); sess; sess = sessions_.nextof(*sess)) {
-        const status::StatusCode code = sess->write(packet);
+        const status::StatusCode code = sess->route(packet);
         if (code == status::StatusOK) {
+            // TODO(gh-183): hadle StatusNoRoute vs other error
             return code;
         }
     }
 
     if (!can_create_session_(packet)) {
-        // TODO: return StatusBadArg (gh-183)
+        // TODO(gh-183): return status
         return status::StatusOK;
     }
 
@@ -184,7 +185,7 @@ ReceiverSessionGroup::route_control_packet_(const packet::PacketPtr& packet) {
     }
 
     if (!rtcp_session_->is_valid()) {
-        // TODO: return StatusDead (gh-183)
+        // TODO(gh-183): return status
         return status::StatusOK;
     }
 
@@ -206,14 +207,14 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
     if (!packet->udp()) {
         roc_log(LogError,
                 "session group: can't create session, unexpected non-udp packet");
-        // TODO: return StatusBadArg (gh-183)
+        // TODO(gh-183): return status
         return status::StatusOK;
     }
 
     if (!packet->rtp()) {
         roc_log(LogError,
                 "session group: can't create session, unexpected non-rtp packet");
-        // TODO: return StatusBadArg (gh-183)
+        // TODO(gh-183): return status
         return status::StatusOK;
     }
 
@@ -232,17 +233,17 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
 
     if (!sess || !sess->is_valid()) {
         roc_log(LogError, "session group: can't create session, initialization failed");
-        // TODO: return StatusNoMem (gh-183)
+        // TODO(gh-183): return status
         return status::StatusOK;
     }
 
-    const status::StatusCode code = sess->write(packet);
+    const status::StatusCode code = sess->route(packet);
     if (code != status::StatusOK) {
         roc_log(
             LogError,
             "session group: can't create session, can't handle first packet: status=%s",
             status::code_to_str(code));
-        // TODO: return code (gh-183)
+        // TODO(gh-183): handle and return status
         return status::StatusOK;
     }
 

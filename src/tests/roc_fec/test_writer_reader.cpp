@@ -1923,7 +1923,7 @@ TEST(writer_reader, sbn_jump) {
 
         // the reader should detect sbn jump and shutdown
         packet::PacketPtr pp;
-        // TODO: compare with StatusDead (gh-183)
+        // TODO(gh-183): compare with StatusDead
         UNSIGNED_LONGS_EQUAL(status::StatusNoData, reader.read(pp));
         CHECK(!pp);
         CHECK(!reader.is_alive());
@@ -1931,7 +1931,7 @@ TEST(writer_reader, sbn_jump) {
         CHECK(dispatcher.source_size() == 0);
         CHECK(dispatcher.repair_size() == 0);
 
-        // TODO: compare with StatusDead (gh-183)
+        // TODO(gh-183): compare with StatusDead
         UNSIGNED_LONGS_EQUAL(status::StatusNoData, reader.read(pp));
     }
 }

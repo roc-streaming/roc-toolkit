@@ -133,6 +133,7 @@ void Packetizer::end_packet_() {
     }
 
     const status::StatusCode code = writer_.write(packet_);
+    // TODO(gh-183): forward status
     roc_panic_if(code != status::StatusOK);
 
     seqnum_++;
