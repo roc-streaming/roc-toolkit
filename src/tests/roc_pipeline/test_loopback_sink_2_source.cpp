@@ -374,21 +374,21 @@ void send_receive(int flags,
 
 } // namespace
 
-TEST_GROUP(sender_sink_receiver_source) {};
+TEST_GROUP(loopback_sink_2_source) {};
 
-TEST(sender_sink_receiver_source, bare_rtp) {
+TEST(loopback_sink_2_source, bare_rtp) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
     send_receive(FlagNone, NumSess, Chans, Chans);
 }
 
-TEST(sender_sink_receiver_source, interleaving) {
+TEST(loopback_sink_2_source, interleaving) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
     send_receive(FlagInterleaving, NumSess, Chans, Chans);
 }
 
-TEST(sender_sink_receiver_source, fec_rs) {
+TEST(loopback_sink_2_source, fec_rs) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
     if (is_fec_supported(FlagReedSolomon)) {
@@ -396,7 +396,7 @@ TEST(sender_sink_receiver_source, fec_rs) {
     }
 }
 
-TEST(sender_sink_receiver_source, fec_ldpc) {
+TEST(loopback_sink_2_source, fec_ldpc) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
     if (is_fec_supported(FlagLDPC)) {
@@ -404,7 +404,7 @@ TEST(sender_sink_receiver_source, fec_ldpc) {
     }
 }
 
-TEST(sender_sink_receiver_source, fec_interleaving) {
+TEST(loopback_sink_2_source, fec_interleaving) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
     if (is_fec_supported(FlagReedSolomon)) {
@@ -412,7 +412,7 @@ TEST(sender_sink_receiver_source, fec_interleaving) {
     }
 }
 
-TEST(sender_sink_receiver_source, fec_loss) {
+TEST(loopback_sink_2_source, fec_loss) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
     if (is_fec_supported(FlagReedSolomon)) {
@@ -420,7 +420,7 @@ TEST(sender_sink_receiver_source, fec_loss) {
     }
 }
 
-TEST(sender_sink_receiver_source, fec_drop_source) {
+TEST(loopback_sink_2_source, fec_drop_source) {
     enum { Chans = Chans_Stereo, NumSess = 0 };
 
     if (is_fec_supported(FlagReedSolomon)) {
@@ -428,7 +428,7 @@ TEST(sender_sink_receiver_source, fec_drop_source) {
     }
 }
 
-TEST(sender_sink_receiver_source, fec_drop_repair) {
+TEST(loopback_sink_2_source, fec_drop_repair) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
     if (is_fec_supported(FlagReedSolomon)) {
@@ -436,25 +436,25 @@ TEST(sender_sink_receiver_source, fec_drop_repair) {
     }
 }
 
-TEST(sender_sink_receiver_source, channel_mapping_stereo_to_mono) {
+TEST(loopback_sink_2_source, channel_mapping_stereo_to_mono) {
     enum { FrameChans = Chans_Stereo, PacketChans = Chans_Mono, NumSess = 1 };
 
     send_receive(FlagNone, NumSess, FrameChans, PacketChans);
 }
 
-TEST(sender_sink_receiver_source, channel_mapping_mono_to_stereo) {
+TEST(loopback_sink_2_source, channel_mapping_mono_to_stereo) {
     enum { FrameChans = Chans_Mono, PacketChans = Chans_Stereo, NumSess = 1 };
 
     send_receive(FlagNone, NumSess, FrameChans, PacketChans);
 }
 
-TEST(sender_sink_receiver_source, timestamp_mapping) {
+TEST(loopback_sink_2_source, timestamp_mapping) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
     send_receive(FlagRTCP | FlagCTS, NumSess, Chans, Chans);
 }
 
-TEST(sender_sink_receiver_source, timestamp_mapping_remixing) {
+TEST(loopback_sink_2_source, timestamp_mapping_remixing) {
     enum { FrameChans = Chans_Mono, PacketChans = Chans_Stereo, NumSess = 1 };
 
     send_receive(FlagRTCP | FlagCTS, NumSess, FrameChans, PacketChans);
