@@ -15,6 +15,7 @@
 #include "roc_audio/pcm_encoder.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
+#include "roc_core/time.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_rtp/composer.h"
@@ -88,7 +89,9 @@ public:
         }
         CHECK(core::ns_equal_delta(pp->rtp()->capture_timestamp, capture_ts_,
                                    core::Microsecond));
-        capture_ts_ += SampleSpecs.samples_per_chan_2_ns(n_samples);
+        if (capture_ts_) {
+            capture_ts_ += SampleSpecs.samples_per_chan_2_ns(n_samples);
+        }
         UNSIGNED_LONGS_EQUAL(n_samples, pp->rtp()->duration);
         UNSIGNED_LONGS_EQUAL(PayloadType, pp->rtp()->payload_type);
 
@@ -154,7 +157,9 @@ public:
 
         Frame frame(buf.data(), buf.size());
         frame.set_capture_timestamp(capture_ts_);
-        capture_ts_ += SampleSpecs.samples_per_chan_2_ns(num_samples);
+        if (capture_ts_) {
+            capture_ts_ += SampleSpecs.samples_per_chan_2_ns(num_samples);
+        }
         writer.write(frame);
     }
 
@@ -303,6 +308,37 @@ TEST(packetizer, flush) {
 
         UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
     }
+}
+
+TEST(packetizer, timestamp_zero_cts) {
+    enum {
+        NumFrames = 10,
+        NumSamples = (SamplesPerPacket - 1),
+        NumPackets = (NumSamples * NumFrames / SamplesPerPacket)
+    };
+
+    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmDecoder decoder(PcmFmt, SampleSpecs);
+
+    packet::Queue packet_queue;
+
+    Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_factory,
+                          byte_buffer_factory, PacketDuration, SampleSpecs, PayloadType);
+
+    const core::nanoseconds_t zero_cts = 0;
+
+    FrameMaker frame_maker(zero_cts);
+    PacketChecker packet_checker(decoder, zero_cts);
+
+    for (size_t fn = 0; fn < NumFrames; fn++) {
+        frame_maker.write(packetizer, NumSamples);
+    }
+
+    for (size_t pn = 0; pn < NumPackets; pn++) {
+        packet_checker.read(packet_queue, SamplesPerPacket);
+    }
+
+    UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
 }
 
 } // namespace audio
