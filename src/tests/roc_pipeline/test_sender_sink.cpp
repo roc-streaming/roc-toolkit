@@ -377,7 +377,7 @@ TEST(sender_sink, timestamp_mapping) {
     packet_reader.read_eof();
 }
 
-TEST(sender_sink, timestamp_mapping_remixing_packet_reader) {
+TEST(sender_sink, timestamp_mapping_remixing) {
     enum {
         InputRate = 48000,
         PacketRate = 44100,
@@ -424,6 +424,7 @@ TEST(sender_sink, timestamp_mapping_remixing_packet_reader) {
         if (np == 0) {
             cts = pp->rtp()->capture_timestamp;
             CHECK(cts >= unix_base);
+            CHECK(cts < unix_base + core::Millisecond);
         } else {
             test::expect_capture_timestamp(cts, pp->rtp()->capture_timestamp,
                                            packet_sample_spec,
