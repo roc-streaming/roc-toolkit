@@ -291,6 +291,7 @@ void UdpReceiverPort::recv_cb_(uv_udp_t* handle,
     pp->set_data(core::Slice<uint8_t>(*bp, 0, (size_t)nread));
 
     const status::StatusCode code = self.writer_.write(pp);
+    // TODO(gh-183): handle or log status
     roc_panic_if(code != status::StatusOK);
 }
 

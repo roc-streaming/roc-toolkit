@@ -149,7 +149,7 @@ TEST(session, failed_to_write_packet) {
     core::Slice<uint8_t> buf = buffer_factory.new_buffer();
     pp->rtcp()->data = buf;
 
-    // TODO: Compare with status::StatusBadArg (gh-183)
+    // TODO(gh-183): compare with status::StatusBadArg
     UNSIGNED_LONGS_EQUAL(0, receiver_hooks.sending_metrics.origin_time);
     UNSIGNED_LONGS_EQUAL(status::StatusOK, session.process_packet(pp));
     UNSIGNED_LONGS_EQUAL(0, receiver_hooks.sending_metrics.origin_time);

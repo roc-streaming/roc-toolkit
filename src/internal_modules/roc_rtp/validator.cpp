@@ -31,12 +31,12 @@ status::StatusCode Validator::read(packet::PacketPtr& pp) {
 
     if (!next_packet->rtp()) {
         roc_log(LogDebug, "rtp validator: unexpected non-rtp packet");
-        // TODO: return StatusAgain (gh-183)
+        // TODO(gh-183): return StatusAgain
         return status::StatusNoData;
     }
 
     if (has_prev_packet_ && !validate_(prev_packet_rtp_, *next_packet->rtp())) {
-        // TODO: return StatusAgain (gh-183)
+        // TODO(gh-183): return StatusAgain
         return status::StatusNoData;
     }
 

@@ -200,7 +200,7 @@ int roc_receiver_decoder_push(roc_receiver_decoder* decoder,
 
     const status::StatusCode code = imp_decoder->write(imp_iface, imp_packet);
     if (code != status::StatusOK) {
-        // TODO: forward status code to user (gh-183)
+        // TODO(gh-183): forward status code to user
         roc_log(LogError,
                 "roc_receiver_decoder_push(): can't write packet to decoder: status=%s",
                 status::code_to_str(code));

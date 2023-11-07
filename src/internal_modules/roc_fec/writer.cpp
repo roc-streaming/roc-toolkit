@@ -98,7 +98,7 @@ status::StatusCode Writer::write(const packet::PacketPtr& pp) {
     roc_panic_if_not(pp);
 
     if (!alive_) {
-        // TODO: return StatusDead (gh-183)
+        // TODO(gh-183): return StatusDead
         return status::StatusOK;
     }
 
@@ -110,17 +110,18 @@ status::StatusCode Writer::write(const packet::PacketPtr& pp) {
 
     if (cur_packet_ == 0) {
         if (!begin_block_(pp)) {
-            // TODO: return StatusDead (gh-183)
+            // TODO(gh-183): return status
             return status::StatusOK;
         }
     }
 
     if (!validate_source_packet_(pp)) {
-        // TODO: return StatusDead (gh-183)
+        // TODO(gh-183): return status
         return status::StatusOK;
     }
 
     const status::StatusCode code = write_source_packet_(pp);
+    // TODO(gh-183): forward status
     roc_panic_if(code != status::StatusOK);
 
     cur_packet_++;
@@ -198,7 +199,7 @@ status::StatusCode Writer::write_source_packet_(const packet::PacketPtr& pp) {
     fill_packet_fec_fields_(pp, (packet::seqnum_t)cur_packet_);
 
     if (!source_composer_.compose(*pp)) {
-        // TODO: return StatusBadArg (gh-183)
+        // TODO(gh-183): return status from composer
         roc_panic("fec writer: can't compose source packet");
     }
     pp->add_flags(packet::Packet::FlagComposed);
@@ -226,24 +227,22 @@ packet::PacketPtr Writer::make_repair_packet_(packet::seqnum_t pack_n) {
     core::Slice<uint8_t> data = buffer_factory_.new_buffer();
     if (!data) {
         roc_log(LogError, "fec writer: can't allocate buffer");
+        // TODO(gh-183): return StatusNoMem
         return NULL;
     }
 
     if (!repair_composer_.align(data, 0, encoder_.alignment())) {
         roc_log(LogError, "fec writer: can't align packet buffer");
+        // TODO(gh-183): return status from composer
         return NULL;
     }
 
     if (!repair_composer_.prepare(*packet, data, cur_payload_size_)) {
         roc_log(LogError, "fec writer: can't prepare packet");
+        // TODO(gh-183): return status from composer
         return NULL;
     }
     packet->add_flags(packet::Packet::FlagPrepared);
-
-    if (!packet->fec()) {
-        roc_log(LogError, "fec writer: unexpected non-fec packet");
-        return NULL;
-    }
 
     packet->set_data(data);
 
@@ -271,7 +270,7 @@ void Writer::compose_repair_packets_() {
         }
 
         if (!repair_composer_.compose(*rp)) {
-            // TODO: return StatusBadArg (gh-183)
+            // TODO(gh-183): return status from composer
             roc_panic("fec writer: can't compose repair packet");
         }
         rp->add_flags(packet::Packet::FlagComposed);
@@ -286,6 +285,7 @@ status::StatusCode Writer::write_repair_packets_() {
         }
 
         const status::StatusCode code = writer_.write(repair_block_[i]);
+        // TODO(gh-183): forward status
         roc_panic_if(code != status::StatusOK);
 
         repair_block_[i] = NULL;
@@ -315,12 +315,10 @@ void Writer::validate_fec_packet_(const packet::PacketPtr& pp) {
 
     const packet::FEC* fec = pp->fec();
     if (!fec) {
-        // TODO: return StatusBadArg (gh-183)
         roc_panic("fec writer: unexpected non-fec packet");
     }
 
     if (fec->fec_scheme != fec_scheme_) {
-        // TODO: return StatusBadArg (gh-183)
         roc_panic("fec writer: unexpected packet fec scheme:"
                   " packet_scheme=%s session_scheme=%s",
                   packet::fec_scheme_to_str(fec->fec_scheme),
@@ -337,6 +335,7 @@ bool Writer::validate_source_packet_(const packet::PacketPtr& pp) {
                 " sbn=%lu esi=%lu old_size=%lu new_size=%lu",
                 (unsigned long)cur_sbn_, (unsigned long)cur_packet_,
                 (unsigned long)cur_payload_size_, (unsigned long)payload_size);
+        // TODO(gh-183): return status
         return (alive_ = false);
     }
 

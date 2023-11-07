@@ -9,6 +9,8 @@
 #ifndef ROC_FEC_TEST_HELPERS_PACKET_DISPATCHER_H_
 #define ROC_FEC_TEST_HELPERS_PACKET_DISPATCHER_H_
 
+#include <CppUTest/TestHarness.h>
+
 #include "roc_core/macro_helpers.h"
 #include "roc_packet/fec.h"
 #include "roc_packet/iparser.h"

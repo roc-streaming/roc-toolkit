@@ -56,8 +56,7 @@ namespace pipeline {
 //!  - a pipeline for processing packets from single sender and converting
 //!    them into audio frames
 class ReceiverSession : public core::RefCounted<ReceiverSession, core::ArenaAllocation>,
-                        public core::ListNode,
-                        public packet::IWriter {
+                        public core::ListNode {
 public:
     //! Initialize.
     ReceiverSession(const ReceiverSessionConfig& session_config,
@@ -73,7 +72,7 @@ public:
     bool is_valid() const;
 
     //! Try to route a packet to this session.
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr& packet);
+    ROC_ATTR_NODISCARD status::StatusCode route(const packet::PacketPtr& packet);
 
     //! Refresh pipeline according to current time.
     //! @remarks
