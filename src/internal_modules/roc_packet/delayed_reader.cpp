@@ -54,6 +54,7 @@ status::StatusCode DelayedReader::fetch_packets_() {
         }
 
         code = queue_.write(pp);
+        // TODO(gh-183): forward status
         roc_panic_if(code != status::StatusOK);
     }
 

@@ -16,6 +16,7 @@
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/macro_helpers.h"
+#include "roc_core/time.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_rtp/composer.h"
@@ -388,12 +389,15 @@ TEST(depacketizer, zeros_between_packets) {
     Depacketizer dp(queue, decoder, SampleSpecs, false);
     CHECK(dp.is_valid());
 
+    const core::nanoseconds_t capt_ts1 = Now;
+    const core::nanoseconds_t capt_ts2 = Now + NsPerPacket * 2;
+
     UNSIGNED_LONGS_EQUAL(
         status::StatusOK,
-        queue.write(new_packet(encoder, 1 * SamplesPerPacket, 0.11f, Now)));
-    UNSIGNED_LONGS_EQUAL(status::StatusOK,
-                         queue.write(new_packet(encoder, 3 * SamplesPerPacket, 0.33f,
-                                                Now + NsPerPacket * 2)));
+        queue.write(new_packet(encoder, 1 * SamplesPerPacket, 0.11f, capt_ts1)));
+    UNSIGNED_LONGS_EQUAL(
+        status::StatusOK,
+        queue.write(new_packet(encoder, 3 * SamplesPerPacket, 0.33f, capt_ts2)));
 
     expect_output(dp, SamplesPerPacket, 0.11f, Now);
     expect_output(dp, SamplesPerPacket, 0.00f, Now + NsPerPacket);
@@ -479,17 +483,20 @@ TEST(depacketizer, overlapping_packets) {
     Depacketizer dp(queue, decoder, SampleSpecs, false);
     CHECK(dp.is_valid());
 
-    packet::stream_timestamp_t ts1 = 0;
-    packet::stream_timestamp_t ts2 = SamplesPerPacket / 2;
-    packet::stream_timestamp_t ts3 = SamplesPerPacket;
+    const packet::stream_timestamp_t ts1 = 0;
+    const packet::stream_timestamp_t ts2 = SamplesPerPacket / 2;
+    const packet::stream_timestamp_t ts3 = SamplesPerPacket;
+
+    const core::nanoseconds_t capt_ts1 = Now;
+    const core::nanoseconds_t capt_ts2 = Now + NsPerPacket / 2;
+    const core::nanoseconds_t capt_ts3 = Now + NsPerPacket;
 
     UNSIGNED_LONGS_EQUAL(status::StatusOK,
-                         queue.write(new_packet(encoder, ts1, 0.11f, Now)));
-    UNSIGNED_LONGS_EQUAL(
-        status::StatusOK,
-        queue.write(new_packet(encoder, ts2, 0.22f, Now + NsPerPacket / 2)));
+                         queue.write(new_packet(encoder, ts1, 0.11f, capt_ts1)));
     UNSIGNED_LONGS_EQUAL(status::StatusOK,
-                         queue.write(new_packet(encoder, ts3, 0.33f, Now + NsPerPacket)));
+                         queue.write(new_packet(encoder, ts2, 0.22f, capt_ts2)));
+    UNSIGNED_LONGS_EQUAL(status::StatusOK,
+                         queue.write(new_packet(encoder, ts3, 0.33f, capt_ts3)));
 
     expect_output(dp, SamplesPerPacket, 0.11f, Now);
     expect_output(dp, SamplesPerPacket / 2, 0.22f, Now + NsPerPacket);

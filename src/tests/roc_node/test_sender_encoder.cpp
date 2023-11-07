@@ -50,7 +50,7 @@ TEST(sender_encoder, read) {
 
     packet::PacketPtr pp;
 
-    // TODO: compare with StatusNotFound (gh-183)
+    // TODO(gh-183): compare with StatusNotFound
     UNSIGNED_LONGS_EQUAL(status::StatusNoData,
                          sender_encoder.read(address::Iface_AudioSource, pp));
     UNSIGNED_LONGS_EQUAL(status::StatusNoData,
