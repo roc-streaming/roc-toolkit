@@ -84,7 +84,7 @@ core::BufferFactory<uint8_t> buffer_factory(arena, PacketSz);
 
 TEST_GROUP(shipper) {};
 
-TEST(shipper, verify_proxy_write_status_code_as_is) {
+TEST(shipper, forward_write_status) {
     const status::StatusCode codes[] = {
         status::StatusOK,
         status::StatusUnknown,
@@ -103,7 +103,7 @@ TEST(shipper, verify_proxy_write_status_code_as_is) {
     }
 }
 
-TEST(shipper, verify_flags_if_port_and_host_is_not_set) {
+TEST(shipper, without_host_port) {
     address::SocketAddr addr;
     TestComposer composer;
     Queue queue;
@@ -125,7 +125,7 @@ TEST(shipper, verify_flags_if_port_and_host_is_not_set) {
     CHECK(wp == rp);
 }
 
-TEST(shipper, verify_flags_if_port_and_host_is_set) {
+TEST(shipper, with_host_port) {
     address::SocketAddr addr;
     CHECK(addr.set_host_port_auto("127.0.0.1", 0));
 
@@ -149,7 +149,7 @@ TEST(shipper, verify_flags_if_port_and_host_is_set) {
     CHECK(wp == rp);
 }
 
-TEST(shipper, verify_flags_if_packet_is_composed) {
+TEST(shipper, packet_already_composed) {
     address::SocketAddr addr;
     TestComposer composer;
     Queue queue;
@@ -172,7 +172,7 @@ TEST(shipper, verify_flags_if_packet_is_composed) {
     CHECK(wp == rp);
 }
 
-TEST(shipper, verify_flags_if_packet_is_not_composed) {
+TEST(shipper, packet_not_composed) {
     address::SocketAddr addr;
     TestComposer composer;
     Queue queue;

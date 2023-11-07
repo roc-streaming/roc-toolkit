@@ -68,7 +68,7 @@ status::StatusCode Router::write(const PacketPtr& packet) {
     }
 
     roc_log(LogDebug, "router: can't route packet, dropping");
-    // TODO: return StatusNotFound (gh-183)
+    // TODO(gh-183): return status
     return status::StatusOK;
 }
 

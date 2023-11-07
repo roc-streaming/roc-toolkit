@@ -64,7 +64,7 @@ status::StatusCode Reader::read(packet::PacketPtr& pp) {
     roc_panic_if_not(is_valid());
 
     if (!alive_) {
-        // TODO: return StatusDead (gh-183)
+        // TODO(gh-183): return StatusDead
         return status::StatusNoData;
     }
 
@@ -74,7 +74,7 @@ status::StatusCode Reader::read(packet::PacketPtr& pp) {
     }
     if (!alive_) {
         pp = NULL;
-        // TODO: return StatusDead (gh-183)
+        // TODO(gh-183): return StatusDead
         return status::StatusNoData;
     }
 
@@ -301,6 +301,7 @@ status::StatusCode Reader::fetch_packets_(packet::IReader& reader,
         }
 
         code = writer.write(pp);
+        // TODO(gh-183): forward status
         roc_panic_if(code != status::StatusOK);
     }
 

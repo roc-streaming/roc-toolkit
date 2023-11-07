@@ -22,6 +22,7 @@
 #include "roc_packet/iparser.h"
 #include "roc_packet/iwriter.h"
 #include "roc_pipeline/config.h"
+#include "roc_pipeline/receiver_session_group.h"
 #include "roc_pipeline/receiver_state.h"
 #include "roc_rtcp/parser.h"
 #include "roc_rtp/format_map.h"
@@ -43,7 +44,7 @@ public:
     //!  - @p writer to handle packets received on netio thread.
     ReceiverEndpoint(address::Protocol proto,
                      ReceiverState& receiver_state,
-                     packet::IWriter& writer,
+                     ReceiverSessionGroup& session_group,
                      const rtp::FormatMap& format_map,
                      core::IArena& arena);
 
@@ -69,7 +70,7 @@ private:
     const address::Protocol proto_;
 
     ReceiverState& receiver_state_;
-    packet::IWriter& writer_;
+    ReceiverSessionGroup& session_group_;
 
     packet::IParser* parser_;
 

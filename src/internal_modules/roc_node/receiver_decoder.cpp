@@ -148,7 +148,7 @@ status::StatusCode ReceiverDecoder::write(address::Interface iface,
                 "receiver decoder node:"
                 " can't write to %s interface: interface not activated",
                 address::interface_to_str(iface));
-        // TODO: return StatusNotFound (gh-183)
+        // TODO(gh-183): return StatusNotFound
         return status::StatusUnknown;
     }
 

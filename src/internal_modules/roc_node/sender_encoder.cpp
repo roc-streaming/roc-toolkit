@@ -151,7 +151,7 @@ status::StatusCode SenderEncoder::read(address::Interface iface,
                 "sender encoder node:"
                 " can't read from %s interface: interface not activated",
                 address::interface_to_str(iface));
-        // TODO: return StatusNotFound (gh-183)
+        // TODO(gh-183): return StatusNotFound
         return status::StatusNoData;
     }
 

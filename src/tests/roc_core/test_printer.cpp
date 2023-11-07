@@ -7,7 +7,6 @@
  */
 
 #include <CppUTest/TestHarness.h>
-#include <CppUTest/UtestMacros.h>
 
 #include "roc_core/printer.h"
 

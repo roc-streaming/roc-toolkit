@@ -30,9 +30,7 @@ namespace pipeline {
 //!
 //! Contains:
 //!  - a set of related receiver sessions
-class ReceiverSessionGroup : public packet::IWriter,
-                             public core::NonCopyable<>,
-                             private rtcp::IReceiverHooks {
+class ReceiverSessionGroup : public core::NonCopyable<>, private rtcp::IReceiverHooks {
 public:
     //! Initialize.
     ReceiverSessionGroup(const ReceiverConfig& receiver_config,
@@ -47,7 +45,7 @@ public:
     ~ReceiverSessionGroup();
 
     //! Route packet to session.
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr& packet);
+    ROC_ATTR_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet);
 
     //! Refresh pipeline according to current time.
     //! @returns

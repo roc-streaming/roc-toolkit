@@ -34,7 +34,7 @@ Session::Session(IReceiverHooks* recv_hooks,
     ssrc_ =
         (packet::stream_source_t)core::fast_random_range(0, packet::stream_source_t(-1));
 
-    // TODO
+    // TODO(gh-14): fill cname
     strcpy(cname_, "TODO");
 
     roc_log(LogDebug,
@@ -56,7 +56,7 @@ status::StatusCode Session::process_packet(const packet::PacketPtr& packet) {
     Traverser traverser(packet->rtcp()->data);
     if (!traverser.parse()) {
         roc_log(LogTrace, "rtcp session: can't parse rtcp packet");
-        // TODO: return StatusBadArg (gh-183)
+        // TODO(gh-183): return status
         return status::StatusOK;
     }
 
@@ -88,7 +88,7 @@ status::StatusCode Session::generate_packets(core::nanoseconds_t current_time) {
     }
 
     do {
-        // TODO: use IntervalComputer
+        // TODO(gh-14): use IntervalComputer
         next_deadline_ += core::Millisecond * 200;
     } while (next_deadline_ <= current_time);
 
@@ -233,7 +233,7 @@ status::StatusCode Session::generate_packet_(core::nanoseconds_t current_time,
     packet = packet_factory_.new_packet();
     if (!packet) {
         roc_log(LogError, "rtcp session: can't create packet");
-        // TODO: return StatusNoMem (gh-183)
+        // TODO(gh-183): return StatusNoMem
         return status::StatusOK;
     }
 
@@ -241,7 +241,7 @@ status::StatusCode Session::generate_packet_(core::nanoseconds_t current_time,
     core::Slice<uint8_t> rtcp_data = buffer_factory_.new_buffer();
     if (!rtcp_data) {
         roc_log(LogError, "rtcp session: can't create buffer");
-        // TODO: return StatusNoMem (gh-183)
+        // TODO(gh-183): return StatusNoMem
         return status::StatusOK;
     }
 
@@ -258,7 +258,7 @@ status::StatusCode Session::generate_packet_(core::nanoseconds_t current_time,
     core::Slice<uint8_t> packet_data = buffer_factory_.new_buffer();
     if (!packet_data) {
         roc_log(LogError, "rtcp session: can't create buffer");
-        // TODO: return StatusNoMem (gh-183)
+        // TODO(gh-183): return StatusNoMem
         return status::StatusOK;
     }
 
@@ -268,7 +268,7 @@ status::StatusCode Session::generate_packet_(core::nanoseconds_t current_time,
     // prepare packet to be able to hold our RTCP packet
     if (!packet_composer_.prepare(*packet, packet_data, rtcp_data.size())) {
         roc_log(LogError, "rtcp session: can't prepare packet");
-        // TODO: return StatusInvalidState|StatusDead (gh-183)
+        // TODO(gh-183): return status
         return status::StatusOK;
     }
     packet->add_flags(packet::Packet::FlagPrepared);
@@ -281,7 +281,7 @@ status::StatusCode Session::generate_packet_(core::nanoseconds_t current_time,
     if (!packet->rtcp() || !packet->rtcp()->data
         || packet->rtcp()->data.size() != rtcp_data.size()) {
         roc_log(LogError, "rtcp session: composer prepared invalid packet");
-        // TODO: return StatusInvalidState|StatusDead (gh-183)
+        // TODO(gh-183): return status
         return status::StatusOK;
     }
 

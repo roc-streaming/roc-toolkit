@@ -216,17 +216,17 @@ bool ReceiverSession::is_valid() const {
     return audio_reader_;
 }
 
-status::StatusCode ReceiverSession::write(const packet::PacketPtr& packet) {
+status::StatusCode ReceiverSession::route(const packet::PacketPtr& packet) {
     roc_panic_if(!is_valid());
 
     packet::UDP* udp = packet->udp();
     if (!udp) {
-        // TODO: return StatusBadArg (gh-183)
+        // TODO(gh-183): return StatusNoRoute
         return status::StatusUnknown;
     }
 
     if (udp->src_addr != src_address_) {
-        // TODO: return StatusBadArg (gh-183)
+        // TODO(gh-183): return StatusNoRoute
         return status::StatusUnknown;
     }
 
