@@ -24,6 +24,10 @@ size_t StringList::size() const {
     return size_;
 }
 
+bool StringList::is_empty() const {
+    return size_ == 0;
+}
+
 const char* StringList::front() const {
     if (size_) {
         return front_->str;
@@ -45,16 +49,7 @@ const char* StringList::nextof(const char* str) const {
         roc_panic("stringlist: string is null");
     }
 
-    if (size_ == 0) {
-        roc_panic("stringlist: list is empty");
-    }
-
-    const char* begin = &data_[0];
-    const char* end = &data_[0] + data_.size();
-
-    if (str < begin || str >= end) {
-        roc_panic("stringlist: string doesn't belong to the list");
-    }
+    check_member_(str);
 
     const Header* str_header = ROC_CONTAINER_OF(const_cast<char*>(str), Header, str);
 
@@ -72,16 +67,7 @@ const char* StringList::prevof(const char* str) const {
         roc_panic("stringlist: string is null");
     }
 
-    if (size_ == 0) {
-        roc_panic("stringlist: list is empty");
-    }
-
-    const char* begin = &data_[0];
-    const char* end = &data_[0] + data_.size();
-
-    if (str < begin || str >= end) {
-        roc_panic("stringlist: string doesn't belong to the list");
-    }
+    check_member_(str);
 
     const Header* str_header = ROC_CONTAINER_OF(const_cast<char*>(str), Header, str);
 
@@ -98,6 +84,7 @@ const char* StringList::prevof(const char* str) const {
 
 void StringList::clear() {
     data_.clear();
+    front_ = NULL;
     back_ = NULL;
     size_ = 0;
 }
@@ -110,62 +97,38 @@ bool StringList::push_back(const char* str) {
     return push_back(str, str + strlen(str));
 }
 
-bool StringList::push_back(const char* begin, const char* end) {
-    if (begin == NULL || end == NULL || begin > end) {
+bool StringList::push_back(const char* str_begin, const char* str_end) {
+    if (str_begin == NULL || str_end == NULL || str_begin > str_end) {
         roc_panic("stringlist: invalid range");
     }
 
-    const size_t cur_sz = data_.size();
-    const size_t str_sz = (size_t)(end - begin) + 1;
-    const size_t add_sz =
-        sizeof(Header) + AlignOps::align_as(str_sz, sizeof(Header)) + sizeof(Footer);
+    const size_t str_sz = (size_t)(str_end - str_begin);
+    const size_t blk_sz =
+        sizeof(Header) + AlignOps::align_as(str_sz + 1, sizeof(Header)) + sizeof(Footer);
 
-    if (!grow_(cur_sz + add_sz)) {
+    if (!grow_(data_.size() + blk_sz)) {
         return false;
     }
 
-    if (!data_.resize(cur_sz + add_sz)) {
+    if (!data_.resize(data_.size() + blk_sz)) {
         return false;
     }
 
     front_ = (Header*)(data_.data());
-    back_ = (Header*)(data_.data() + cur_sz);
+    back_ = (Header*)(data_.data() + data_.size() - blk_sz);
+    size_++;
 
     Header* str_header = back_;
-    str_header->len = static_cast<uint32_t>(add_sz);
+    str_header->len = (uint32_t)blk_sz;
 
-    memcpy(&data_[cur_sz + sizeof(Header)], begin, str_sz - 1); // copy string
-    data_[cur_sz + sizeof(Header) + str_sz - 1] = '\0';         // add null
+    memcpy(str_header->str, str_begin, str_sz); // copy string
+    str_header->str[str_sz] = '\0';             // add null
 
-    Footer* str_footer = (Footer*)(data_.data() + cur_sz + add_sz - sizeof(Footer));
-    str_footer->len = static_cast<uint32_t>(add_sz);
-    size_++;
+    Footer* str_footer = (Footer*)((char*)back_ + blk_sz - sizeof(Footer));
+    str_footer->len = (uint32_t)blk_sz;
 
     return true;
 }
-
-// bool StringList::push_unique(const char* str) {
-//     if (str == NULL) {
-//         roc_panic("stringlist: string is null");
-//     }
-
-//     return push_unique(str, str + strlen(str));
-// }
-
-// bool StringList::push_unique(const char* begin, const char* end) {
-//     if (begin == NULL || end == NULL || begin > end) {
-//         roc_panic("stringlist: invalid range");
-//     }
-
-//     for (const char* s = front(); s; s = nextof(s)) {
-//         const size_t s_len = strlen(s);
-//         if (s_len == size_t(end - begin) && memcmp(s, begin, s_len) == 0) {
-//             return true;
-//         }
-//     }
-
-//     return push_back(begin, end);
-// }
 
 const char* StringList::find(const char* str) {
     if (str == NULL) {
@@ -175,22 +138,43 @@ const char* StringList::find(const char* str) {
     return find(str, str + strlen(str));
 }
 
-const char* StringList::find(const char* begin, const char* end) {
-    if (begin == NULL || end == NULL || begin > end) {
+const char* StringList::find(const char* str_begin, const char* str_end) {
+    if (str_begin == NULL || str_end == NULL || str_begin > str_end) {
         roc_panic("stringlist: invalid range");
     }
 
-    const size_t str_len = (size_t)(end - begin);
-    const size_t find_sz =
-        sizeof(Header) + AlignOps::align_as(str_len + 1, sizeof(Header)) + sizeof(Footer);
-    for (const char* s = front(); s; s = nextof(s)) {
-        const Header* s_header = ROC_CONTAINER_OF(const_cast<char*>(s), Header, str);
-        if (s_header->len == find_sz && memcmp(s, begin, str_len) == 0) {
-            return s;
+    if (size_ != 0) {
+        const size_t str_sz = (size_t)(str_end - str_begin);
+        const size_t blk_sz = sizeof(Header)
+            + AlignOps::align_as(str_sz + 1, sizeof(Header)) + sizeof(Footer);
+
+        const Header* s_header = front_;
+        for (;;) {
+            if (s_header->len == blk_sz
+                && memcmp(s_header->str, str_begin, str_sz) == 0) {
+                return s_header->str;
+            }
+            if (s_header == back_) {
+                break;
+            }
+            s_header = (const Header*)((const char*)s_header + s_header->len);
         }
     }
 
     return NULL;
+}
+
+void StringList::check_member_(const char* str) const {
+    if (size_ == 0) {
+        roc_panic("stringlist: list is empty");
+    }
+
+    const char* begin = &data_[0];
+    const char* end = &data_[0] + data_.size();
+
+    if (str < begin || str >= end) {
+        roc_panic("stringlist: string doesn't belong to the list");
+    }
 }
 
 bool StringList::grow_(size_t new_size) {
