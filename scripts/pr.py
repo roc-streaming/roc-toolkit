@@ -7,7 +7,9 @@ import functools
 import json
 import os
 import os.path
+import random
 import re
+import string
 import subprocess
 import sys
 import tempfile
@@ -23,24 +25,46 @@ def print_cmd(cmd):
     pretty = ' '.join(['"'+c+'"' if ' ' in c else c for c in map(str, cmd)])
     print(f'{Fore.YELLOW}{pretty}{Style.RESET_ALL}')
 
-def run_cmd(cmd, input=None, env=None):
+def run_cmd(cmd, input=None, env=None, retry_fn=None):
     cmd = [str(c) for c in cmd]
+
     print_cmd(cmd)
+    if DRY_RUN:
+        return
+
     if input:
         input = input.encode()
     if env:
         e = os.environ.copy()
         e.update(env)
         env = e
-    try:
-        if not DRY_RUN:
-            subprocess.run(cmd, input=input, env=env, check=True)
-    except subprocess.CalledProcessError as e:
-        error('command failed')
+    stdout = None
+    if retry_fn:
+        stdout = subprocess.PIPE
+
+    while True:
+        try:
+            subprocess.run(cmd, input=input, stdout=stdout, env=env, check=True)
+            if stdout is not None:
+                output = stdout.read().decode()
+                print(output, end='')
+        except subprocess.CalledProcessError as e:
+            if retry_fn is not None and retry_fn(output):
+                time.sleep(0.5)
+                continue
+            error('command failed')
+        break
+
+def random_worktree():
+    while True:
+        path = '/tmp/prpy_' + ''.join(random.choice(string.ascii_lowercase + string.digits)
+            for _ in range(8))
+        if not os.path.exists(path):
+            return path
 
 def enter_worktree():
     old_path = os.path.abspath(os.getcwd())
-    new_path = tempfile.mkdtemp()
+    new_path = random_worktree()
 
     run_cmd([
         'git', 'worktree', 'add', '--no-checkout', new_path
@@ -423,13 +447,17 @@ def wait_pr(org, repo, pr_number):
         time.sleep(0.1)
 
 def merge_pr(org, repo, pr_number):
+    def retry_fn(output):
+        return 'GraphQL: Base branch was modified.' in output
+
     run_cmd([
         'gh', 'pr', 'merge',
         '--repo', f'{org}/{repo}',
         '--rebase',
         '--delete-branch',
         pr_number,
-        ])
+        ],
+        retry_fn=retry_fn)
 
 parser = argparse.ArgumentParser(prog='pr.py')
 
