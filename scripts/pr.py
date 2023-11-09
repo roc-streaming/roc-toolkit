@@ -28,10 +28,6 @@ def print_cmd(cmd):
 def run_cmd(cmd, input=None, env=None, retry_fn=None):
     cmd = [str(c) for c in cmd]
 
-    print_cmd(cmd)
-    if DRY_RUN:
-        return
-
     if input:
         input = input.encode()
     if env:
@@ -44,16 +40,19 @@ def run_cmd(cmd, input=None, env=None, retry_fn=None):
 
     while True:
         try:
-            subprocess.run(cmd, input=input, stdout=stdout, env=env, check=True)
+            print_cmd(cmd)
+            if DRY_RUN:
+                return
+            proc = subprocess.run(cmd, input=input, stdout=stdout, env=env, check=True)
             if stdout is not None:
-                output = stdout.read().decode()
+                output = proc.stdout.decode()
                 print(output, end='')
         except subprocess.CalledProcessError as e:
             if retry_fn is not None and retry_fn(output):
                 time.sleep(0.5)
                 continue
             error('command failed')
-        break
+        return
 
 def random_worktree():
     while True:
