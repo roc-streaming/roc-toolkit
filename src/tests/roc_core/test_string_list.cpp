@@ -47,6 +47,27 @@ TEST(string_list, push_back) {
     STRCMP_EQUAL("bar", sl.back());
 }
 
+TEST(string_list, push_back_range) {
+    StringList sl(arena);
+
+    LONGS_EQUAL(0, sl.size());
+    CHECK(sl.front() == NULL);
+
+    const char* str = "foobarbaz";
+
+    CHECK(sl.push_back(str, str + 3));
+
+    LONGS_EQUAL(1, sl.size());
+    STRCMP_EQUAL("foo", sl.front());
+    STRCMP_EQUAL("foo", sl.back());
+
+    CHECK(sl.push_back(str + 3, str + 6));
+
+    LONGS_EQUAL(2, sl.size());
+    STRCMP_EQUAL("foo", sl.front());
+    STRCMP_EQUAL("bar", sl.back());
+}
+
 TEST(string_list, nextof) {
     StringList sl(arena);
 
@@ -169,25 +190,20 @@ TEST(string_list, find) {
     CHECK(str == NULL);
 }
 
-TEST(string_list, push_back_range) {
+TEST(string_list, find_range) {
     StringList sl(arena);
 
-    LONGS_EQUAL(0, sl.size());
-    CHECK(sl.front() == NULL);
-
-    const char* str = "foobar";
-    const char* end_1 = str + 3;
-    const char* end_2 = str + 6;
-
-    CHECK(sl.push_back(str, end_1));
-
-    LONGS_EQUAL(1, sl.size());
-    STRCMP_EQUAL("foo", sl.front());
-
-    CHECK(sl.push_back(end_1, end_2));
+    CHECK(sl.push_back("foo"));
+    CHECK(sl.push_back("bar"));
 
     LONGS_EQUAL(2, sl.size());
-    STRCMP_EQUAL("bar", sl.nextof(sl.front()));
+
+    const char* str = "foobarbaz";
+
+    STRCMP_EQUAL("foo", sl.find(str, str + 3));
+    STRCMP_EQUAL("bar", sl.find(str + 3, str + 6));
+
+    CHECK(sl.find(str + 6, str + 9) == NULL);
 }
 
 TEST(string_list, clear) {
