@@ -355,41 +355,53 @@ if GetOption('help'):
     Return()
 
 # clean* targets
-cleanfiles = [
-    env.DeleteFile('#compile_commands.json'),
-    env.DeleteFile('#config.log'),
-    env.DeleteDir('#.sconf_temp'),
-]
+clean_build = []
+for p in ['bin', 'build/src']:
+    for d in env.GlobDirs(p):
+        clean_build += [env.DeleteDir(d)]
 
-for f in env.Glob('.sconsign*.dblite'):
-    cleanfiles += [env.DeleteFile(f)]
+clean_doc = []
+for p in ['build/docs', 'docs/html']:
+    for d in env.GlobDirs(p):
+        clean_doc += [env.DeleteDir(d)]
 
-cleanbuild = [
-    env.DeleteDir('#bin'),
-    env.DeleteDir('#build/src'),
-] + cleanfiles
+clean_all = []
+for p in ['bin',
+          'build',
+          'dist',
+          'docs/html',
+          'compile_commands.json',
+          'config.log',
+          '.sconsign*.dblite',
+          '.sconf_temp',
+          'debian/.debhelper',
+          'debian/tmp',
+          'debian/libroc',
+          'debian/libroc-dev',
+          'debian/roc',
+          'debian/*.substvars',
+          'debian/*.debhelper.log',
+          'debian/debhelper-*',
+          'debian/files',
+          ]:
+    for d in env.GlobDirs(p):
+        clean_all += [env.DeleteDir(d)]
+    for f in env.GlobFiles(p):
+        clean_all += [env.DeleteFile(f)]
 
-cleandocs = [
-    env.DeleteDir('#build/docs'),
-    env.DeleteDir('#docs/html'),
-]
-
-cleanall = [
-    env.DeleteDir('#bin'),
-    env.DeleteDir('#build'),
-    env.DeleteDir('#docs/html'),
-] + cleanfiles
-
-env.AlwaysBuild(env.Alias('clean', [], cleanall))
-env.AlwaysBuild(env.Alias('cleanbuild', [], cleanbuild))
-env.AlwaysBuild(env.Alias('cleandocs', [], cleandocs))
+env.AlwaysBuild(env.Alias('clean', [], clean_all))
+env.AlwaysBuild(env.Alias('cleanbuild', [], clean_build))
+env.AlwaysBuild(env.Alias('cleandocs', [], clean_doc))
 
 if set(COMMAND_LINE_TARGETS).intersection(['clean', 'cleanbuild', 'cleandocs']) or \
   env.GetOption('clean'):
     if set(COMMAND_LINE_TARGETS) - set(['clean', 'cleanbuild', 'cleandocs']):
         env.Die("combining 'clean*' targets with other targets is not allowed")
     if env.GetOption('clean'):
-        env.Execute(cleanall)
+        if clean_all:
+            env.Execute(clean_all)
+        else:
+            print("scons: Nothing to be done for `clean'.")
     Return()
 
 # fmt target
