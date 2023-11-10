@@ -57,7 +57,7 @@ See details here:
 
 * [GitHub releases](https://github.com/roc-streaming/roc-toolkit/releases)
 * [Changelog](https://roc-streaming.org/toolkit/docs/development/changelog.html)
-* [Version control](https://roc-streaming.org/toolkit/docs/development/version_control.html)
+* [Development workflow](https://roc-streaming.org/toolkit/docs/development/workflow.html)
 
 Platforms
 ---------
