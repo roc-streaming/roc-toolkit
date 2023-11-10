@@ -8,5 +8,6 @@ Development
    development/roadmap
    development/contribution_guidelines
    development/coding_guidelines
-   development/version_control
+   development/workflow
+   development/maintainer_notes
    development/continuous_integration
