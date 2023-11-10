@@ -25,7 +25,7 @@ Compilers:
 What is tested
 --------------
 
-The following specific platform configurations are tested on a regular basis, partly :doc:`on CI </development/continuous_integration>`, partly :doc:`on hardware </portability/tested_devices>`.
+The following specific platform configurations are tested on a **regular basis**, partially :doc:`on CI </development/continuous_integration>`, and partially :doc:`on hardware </portability/tested_devices>`.
 
 Linux distributions:
 
@@ -54,6 +54,6 @@ Hardware architectures:
 
 * x86_64
 * i686
+* ARMv8-A (Cortex-A 64-bit, Apple M1)
+* ARMv7-A (Cortex-A 32-bit)
 * ARMv6
-* ARMv7 (Cortex-A 32-bit)
-* ARMv8 (Cortex-A 64-bit, Apple M1)
