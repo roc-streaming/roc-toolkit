@@ -48,13 +48,13 @@ rocstreaming/env-alpine             alpine:latest         x86_64        distro d
 Linux toolchains
 ----------------
 
-============================================================== ============= =========
+============================================================== ============= ==========================
 Image                                                          Architecture  Compilers
-============================================================== ============= =========
-rocstreaming/toolchain-aarch64-linux-gnu:gcc-7.4               armv8         gcc-7.4
-rocstreaming/toolchain-arm-linux-gnueabihf:gcc-4.9             armv7         gcc-4.9
+============================================================== ============= ==========================
+rocstreaming/toolchain-aarch64-linux-gnu:gcc-7.4               armv8-a       gcc-7.4, gcc-10.3
+rocstreaming/toolchain-arm-linux-gnueabihf:gcc-4.9             armv7-a       gcc-4.9, gcc-7.4, gcc-10.3
 rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi:gcc-4.7 armv6         gcc-4.7
-============================================================== ============= =========
+============================================================== ============= ==========================
 
 Android toolchains
 ------------------
@@ -71,6 +71,7 @@ Full Android environment
 ========================================== ===============================
 Image                                      JDK
 ========================================== ===============================
+rocstreaming/env-android:jdk15             openjdk:15.0.2-jdk-slim-buster
 rocstreaming/env-android:jdk11             openjdk:11.0.7-jdk-slim-buster
 rocstreaming/env-android:jdk8              openjdk:8u252-jdk-slim-buster
 ========================================== ===============================
@@ -101,11 +102,35 @@ Example:
 
 This file defines three tags: ``gcc-4.9``, ``gcc-7.4``, and ``latest``. Each tag uses the same ``Dockerfile`` and different arguments ``MAJOR``, ``MINOR``, and ``DATE``.
 
-You can build an image locally using:
+You can build an image(s) locally using:
 
 .. code::
 
-   ./make.sh images/<image_name>
+   ./make.sh [OPTIONS...] [IMAGE[:TAG]...]
+
+For example, to build all tags of ``env-ubuntu`` image:
+
+.. code::
+
+   ./make.sh env-ubuntu
+
+To build all tags of ``env-fedora`` image and two specific tags of ``env-ubuntu`` image:
+
+.. code::
+
+   ./make.sh env-fedora env-ubuntu:20.04 env-ubuntu:22.04
+
+To build all images:
+
+.. code::
+
+   ./make.sh
+
+For the full list of available options, run:
+
+.. code::
+
+   ./make.sh --help
 
 Running CI steps locally
 ========================
