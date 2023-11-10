@@ -47,6 +47,7 @@ Options
 --host=HOST                                    system name where Roc will run, e.g. 'arm-linux-gnueabihf', auto-detected by default
 --platform=PLATFORM                            platform name where Roc will run, supported values: empty (detect from host), 'linux', 'unix', 'darwin', 'android'
 --compiler=COMPILER                            compiler name and optional version, e.g. 'gcc-4.9', supported names: empty (detect what available), 'clang', 'gcc', 'cc'
+--compiler-launcher=COMPILER_LAUNCHER          optional launching tool for c and c++ compilers, e.g. 'ccache'
 --sanitizers=SANITIZERS                        list of gcc/clang sanitizers, supported names: empty (no sanitizers), 'all', 'undefined', 'address'
 --enable-debug                                 enable debug build for Roc
 --enable-debug-3rdparty                        enable debug build for 3rdparty libraries

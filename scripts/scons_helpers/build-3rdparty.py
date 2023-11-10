@@ -253,6 +253,12 @@ def execute_cmake(ctx, src_dir, args=None):
             '-DCMAKE_RANLIB=' + quote(find_tool(_getvar('RANLIB', 'ranlib'))),
         ]
 
+    if ctx.env.get('COMPILER_LAUNCHER', None):
+        args += [
+            '-DCMAKE_CXX_COMPILER_LAUNCHER=' + quote(ctx.env['COMPILER_LAUNCHER']),
+            '-DCMAKE_C_COMPILER_LAUNCHER=' + quote(ctx.env['COMPILER_LAUNCHER']),
+        ]
+
     args += [
         '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
     ]
@@ -375,10 +381,18 @@ def apply_patch(ctx, dir_path, patch_url, patch_name):
         dir_path,
         '../' + patch_name), ignore_error=True)
 
-def format_vars(ctx):
+def format_vars(ctx, disable_launcher=False):
     ret = []
-    for e in ctx.unparsed_env:
-        ret.append(quote(e))
+    for k, v in ctx.env.items():
+        if k == 'COMPILER_LAUNCHER':
+            continue
+        elif k in ['CC', 'CXX'] and not disable_launcher:
+            if ctx.env.get('COMPILER_LAUNCHER', None):
+                ret.append(quote('{}={} {}'.format(k, ctx.env['COMPILER_LAUNCHER'], v)))
+            else:
+                ret.append(quote('{}={}'.format(k, v)))
+        else:
+            ret.append(quote('{}={}'.format(k, v)))
     return ' '.join(ret)
 
 def format_flags(ctx, cflags='', ldflags='', pthread=False):
@@ -448,8 +462,14 @@ def generate_meson_crossfile(ctx, pc_dir, cross_file):
             s = s.replace(k, v)
         return "'" + s + "'"
 
-    def _meson_flags(flags):
-        return '[{}]'.format(', '.join(map(_meson_string, flags)))
+    def _meson_list(l):
+        return '[{}]'.format(', '.join(map(_meson_string, l)))
+
+    def _meson_compiler(compiler, launcher):
+        if launcher:
+            return _meson_list([launcher, compiler])
+        else:
+            return _meson_string(compiler)
 
     msg('[generate] {}', cross_file)
 
@@ -516,8 +536,10 @@ def generate_meson_crossfile(ctx, pc_dir, cross_file):
                 cpp = {cxx}
                 ar = {ar}
         """).format(
-            cc=_meson_string(ctx.env['CC']),
-            cxx=_meson_string(ctx.env['CXX']),
+            cc=_meson_compiler(ctx.env['CC'],
+                ctx.env.get('COMPILER_LAUNCHER', None)),
+            cxx=_meson_compiler(ctx.env['CXX'],
+                ctx.env.get('COMPILER_LAUNCHER', None)),
             ar=_meson_string(ctx.env['AR'])))
 
         if pkg_config:
@@ -543,8 +565,8 @@ def generate_meson_crossfile(ctx, pc_dir, cross_file):
                 cpp_args = {cflags}
                 cpp_link_args = {ldflags}
             """).format(
-                cflags=_meson_flags(cflags),
-                ldflags=_meson_flags(ldflags)))
+                cflags=_meson_list(cflags),
+                ldflags=_meson_list(ldflags)))
 
         if ctx.toolchain:
             fp.write(textwrap.dedent("""\
@@ -1153,7 +1175,7 @@ elif ctx.pkg_name == 'openssl':
     changedir(ctx, 'src/openssl-{ctx.pkg_ver}')
     # see https://github.com/openssl/openssl/blob/master/INSTALL.md#configuration-options
     execute(ctx, '{vars} {flags} ./Configure {platform} {variant} {options}'.format(
-        vars=format_vars(ctx),
+        vars=format_vars(ctx, disable_launcher=True),
         flags=format_flags(ctx),
         platform=detect_openssl_platform(ctx.host),
         variant='--debug' if ctx.variant == 'debug' else '--release',
