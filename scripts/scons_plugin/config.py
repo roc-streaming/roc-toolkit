@@ -160,6 +160,20 @@ def CheckCompilerOptionSupported(context, opt, language):
         context.Result('no')
         return False
 
+def FindProgram(context, var, tool):
+    if tool:
+        context.Message("Searching {} executable ... ".format(var))
+
+        tool_path = context.env.Which(tool)
+        if tool_path:
+            context.env[var] = tool_path[0]
+        else:
+            context.env[var] = tool
+
+        context.Result(context.env[var])
+
+    return True
+
 def FindTool(context, var, toolchains, commands,
              compiler_dir=None, prepend_path=[], required=True):
     env = context.env
@@ -501,6 +515,7 @@ def init(env):
         'CheckProg': CheckProg,
         'CheckCanRunProgs': CheckCanRunProgs,
         'CheckCompilerOptionSupported': CheckCompilerOptionSupported,
+        'FindProgram': FindProgram,
         'FindTool': FindTool,
         'FindClangFormat': FindClangFormat,
         'FindLLVMDir': FindLLVMDir,

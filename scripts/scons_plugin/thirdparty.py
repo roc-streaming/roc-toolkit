@@ -28,6 +28,9 @@ def _build_thirdparty(env, versions, name, deps, is_native):
         'RANLIB=' + quote(env['RANLIB']),
     ]
 
+    if 'COMPILER_LAUNCHER' in env.Dictionary():
+        env_vars += ['COMPILER_LAUNCHER=' + quote(env['COMPILER_LAUNCHER'])]
+
     if 'PKG_CONFIG' in env.Dictionary():
         env_vars += ['PKG_CONFIG=' + quote(env['PKG_CONFIG'])]
 
