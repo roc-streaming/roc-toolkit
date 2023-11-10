@@ -31,6 +31,92 @@ If necessary, you can override build tool names and options by setting variables
 
 See :doc:`/building/scons_options` page for the full list of options and variables.
 
+.. _aarch64-linux-gnu:
+
+Arm.com / Linaro ARMv8-A 64-bit toolchain
+=========================================
+
+Arm Developer Hub and Linaro project provide several `toolchains <https://www.linaro.org/downloads/>`_ for different architectures and GCC versions.
+
+The ``aarch64-linux-gnu`` is a 64-bit ARMv8-A little-endian toolchain. It can be used with 64-bit ARMv8 boards, including 64-bit Raspberry Pi and Orange Pi models. It *can't* be used with ARMv6, ARMv7, and 32-bit ARMv8 boards, or 64-bit ARMv8 boards running 32-bit kernel.
+
+Here is how you can build Roc with this toolchain using `rocstreaming/toolchain-aarch64-linux-gnu <https://hub.docker.com/r/rocstreaming/toolchain-aarch64-linux-gnu/>`_ Docker image:
+
+.. code::
+
+    $ cd /path/to/roc
+    $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
+        rocstreaming/toolchain-aarch64-linux-gnu \
+          scons \
+            --host=aarch64-linux-gnu \
+            --build-3rdparty=all
+
+Alternatively, you can install the toolchain manually:
+
+.. code::
+
+    # setup directories
+    $ TOOLCHAIN_DIR=/path/to/toolchain
+    $ ROC_DIR=/path/to/roc
+
+    # for Roc
+    $ apt-get install g++ scons ragel gengetopt
+
+    # for 3rd-parties
+    $ apt-get install libtool autoconf automake make cmake
+
+    # download toolchain
+    $ wget http://releases.linaro.org/components/toolchain/binaries/7.4-2019.02/aarch64-linux-gnu/gcc-linaro-7.4.1-2019.02-x86_64_aarch64-linux-gnu.tar.xz
+    $ tar -C "${TOOLCHAIN_DIR}" -Jf gcc-linaro-7.4.1-2019.02-x86_64_aarch64-linux-gnu.tar.xz
+    $ export PATH="${TOOLCHAIN_DIR}/gcc-linaro-7.4.1-2019.02-x86_64_aarch64-linux-gnu/bin:${PATH}"
+
+    # build Roc
+    $ cd "${ROC_DIR}"
+    $ scons --host=aarch64-linux-gnu --build-3rdparty=all
+
+.. _arm-linux-gnueabihf:
+
+Arm.com / Linaro ARMv7-A 32-bit toolchain
+=========================================
+
+Arm Developer Hub and Linaro project provide several `toolchains <https://www.linaro.org/downloads/>`_ for different architectures and GCC versions.
+
+The ``arm-linux-gnueabihf`` is a 32-bit ARMv7-A hard-float little-endian toolchain. It can be used with ARMv7 boards, including 32-bit Raspberry Pi and Orange Pi models. It also can be used with 32-bit and 64-bit ARMv8 boards running 32-bit kernels. It *can't* be used with ARMv6 boards, e.g. Raspberry Pi 1 or Raspberry Pi Zero.
+
+Here is how you can build Roc with this toolchain using `rocstreaming/toolchain-arm-linux-gnueabihf <https://hub.docker.com/r/rocstreaming/toolchain-arm-linux-gnueabihf/>`_ Docker image:
+
+.. code::
+
+    $ cd /path/to/roc
+    $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
+        rocstreaming/toolchain-arm-linux-gnueabihf \
+          scons \
+            --host=arm-linux-gnueabihf \
+            --build-3rdparty=all
+
+Alternatively, you can install the toolchain manually:
+
+.. code::
+
+    # setup directories
+    $ TOOLCHAIN_DIR=/path/to/toolchain
+    $ ROC_DIR=/path/to/roc
+
+    # for Roc
+    $ apt-get install g++ scons ragel gengetopt
+
+    # for 3rd-parties
+    $ apt-get install libtool autoconf automake make cmake
+
+    # download toolchain
+    $ wget http://releases.linaro.org/components/toolchain/binaries/4.9-2016.02/arm-linux-gnueabihf/gcc-linaro-4.9-2016.02-x86_64_arm-linux-gnueabihf.tar.xz
+    $ tar -C "${TOOLCHAIN_DIR}" -Jf gcc-linaro-4.9-2016.02-x86_64_arm-linux-gnueabihf.tar.xz
+    $ export PATH="${TOOLCHAIN_DIR}/gcc-linaro-4.9-2016.02-x86_64_arm-linux-gnueabihf/bin:${PATH}"
+
+    # build Roc
+    $ cd "${ROC_DIR}"
+    $ scons --host=arm-linux-gnueabihf --build-3rdparty=all
+
 .. _arm-bcm2708hardfp-linux-gnueabi:
 
 Raspberry Pi ARMv6 BCM-2708 toolchain
@@ -78,94 +164,6 @@ Alternatively, you can install the toolchain manually:
     $ cd "${ROC_DIR}"
     $ scons --host=arm-bcm2708hardfp-linux-gnueabi --build-3rdparty=all
 
-.. _arm-linux-gnueabihf:
-
-Linaro ARMv7 32-bit toolchain
-=============================
-
-The Linaro project provides several `toolchains <https://www.linaro.org/downloads/>`_ for different architectures and GCC versions.
-
-The ``arm-linux-gnueabihf`` is a 32-bit ARMv7 Cortex-A hard-float little-endian toolchain. It can be used with ARMv7 boards, including Raspberry Pi 2 and Orange Pi 32-bit models based on Allwinner H2 and H3 chips (see `Orange Pi Models <https://sebastien.andrivet.com/en/posts/orange-pi-models/>`_ and `Allwinner SoC Family <http://linux-sunxi.org/Allwinner_SoC_Family>`_). It also can be used with 32-bit ARMv8 boards and 64-bit ARMv8 boards running 32-bit kernels, including Raspberry Pi 3. It can't be used with ARMv6 boards, e.g. Raspberry Pi 1 and Zero.
-
-Here is how you can build Roc with this toolchain using `rocstreaming/toolchain-arm-linux-gnueabihf <https://hub.docker.com/r/rocstreaming/toolchain-arm-linux-gnueabihf/>`_ Docker image:
-
-.. code::
-
-    $ cd /path/to/roc
-    $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocstreaming/toolchain-arm-linux-gnueabihf \
-          scons \
-            --host=arm-linux-gnueabihf \
-            --build-3rdparty=all
-
-Alternatively, you can install the toolchain manually:
-
-.. code::
-
-    # setup directories
-    $ TOOLCHAIN_DIR=/path/to/toolchain
-    $ ROC_DIR=/path/to/roc
-
-    # for Roc
-    $ apt-get install g++ scons ragel gengetopt
-
-    # for 3rd-parties
-    $ apt-get install libtool autoconf automake make cmake
-
-    # download toolchain
-    $ wget http://releases.linaro.org/components/toolchain/binaries/4.9-2016.02/arm-linux-gnueabihf/gcc-linaro-4.9-2016.02-x86_64_arm-linux-gnueabihf.tar.xz
-    $ tar -C "${TOOLCHAIN_DIR}" -Jf gcc-linaro-4.9-2016.02-x86_64_arm-linux-gnueabihf.tar.xz
-    $ export PATH="${TOOLCHAIN_DIR}/gcc-linaro-4.9-2016.02-x86_64_arm-linux-gnueabihf/bin:${PATH}"
-
-    # build Roc
-    $ cd "${ROC_DIR}"
-    $ scons --host=arm-linux-gnueabihf --build-3rdparty=all
-
-.. _aarch64-linux-gnu:
-
-Linaro ARMv8 64-bit toolchain
-=============================
-
-The Linaro project provides several `toolchains <https://www.linaro.org/downloads/>`_ for different architectures and GCC versions.
-
-The ``aarch64-linux-gnu`` is a 64-bit ARMv8 Cortex-A little-endian toolchain. It can be used with 64-bit ARMv8 boards, including Orange Pi 64-bit models based on Allwinner H5, H6, and A64 chips (see `Orange Pi Models <https://sebastien.andrivet.com/en/posts/orange-pi-models/>`_ and `Allwinner SoC Family <http://linux-sunxi.org/Allwinner_SoC_Family>`_). It can't be used with ARMv6, ARMv7, and 32-bit ARMv8 boards, and 64-bit ARMv8 boards running 32-bit kernel.
-
-Here is how you can build Roc with this toolchain using `rocstreaming/toolchain-aarch64-linux-gnu <https://hub.docker.com/r/rocstreaming/toolchain-aarch64-linux-gnu/>`_ Docker image:
-
-.. code::
-
-    $ cd /path/to/roc
-    $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocstreaming/toolchain-aarch64-linux-gnu \
-          scons \
-            --host=aarch64-linux-gnu \
-            --build-3rdparty=all
-
-Alternatively, you can install the toolchain manually:
-
-.. code::
-
-    # setup directories
-    $ TOOLCHAIN_DIR=/path/to/toolchain
-    $ ROC_DIR=/path/to/roc
-
-    # for Roc
-    $ apt-get install g++ scons ragel gengetopt
-
-    # for 3rd-parties
-    $ apt-get install libtool autoconf automake make cmake
-
-    # download toolchain
-    $ wget http://releases.linaro.org/components/toolchain/binaries/7.4-2019.02/aarch64-linux-gnu/gcc-linaro-7.4.1-2019.02-x86_64_aarch64-linux-gnu.tar.xz
-    $ tar -C "${TOOLCHAIN_DIR}" -Jf gcc-linaro-7.4.1-2019.02-x86_64_aarch64-linux-gnu.tar.xz
-    $ export PATH="${TOOLCHAIN_DIR}/gcc-linaro-7.4.1-2019.02-x86_64_aarch64-linux-gnu/bin:${PATH}"
-
-    # build Roc
-    $ cd "${ROC_DIR}"
-    $ scons --host=aarch64-linux-gnu --build-3rdparty=all
-
-.. _aarch64-linux-android:
-
 Debian and Ubuntu toolchains
 ============================
 
@@ -201,6 +199,8 @@ Here is how you can build Roc with this toolchain on Ubuntu:
     # build Roc
     $ cd /path/to/roc
     $ scons --host=arm-linux-gnueabihf --build-3rdparty=all
+
+.. _aarch64-linux-android:
 
 Android NDK toolchains
 ======================
