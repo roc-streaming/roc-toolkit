@@ -113,6 +113,13 @@ AddOption('--compiler',
                 " supported names: empty (detect what available), {}".format(
                 ', '.join(["'{}'".format(s) for s in supported_compilers]))))
 
+AddOption('--compiler-launcher',
+          dest='compiler_launcher',
+          action='store',
+          type='string',
+          help=("optional launching tool for c and c++ compilers,"
+              " e.g. 'ccache'"))
+
 AddOption('--sanitizers',
           dest='sanitizers',
           action='store',
@@ -630,6 +637,9 @@ elif meta.compiler == 'cc':
 conf.env['LINK'] = env['CXXLD']
 conf.env['SHLINK'] = env['CXXLD']
 
+if GetOption('compiler_launcher'):
+    conf.FindProgram('COMPILER_LAUNCHER', GetOption('compiler_launcher'))
+
 if meta.platform == 'darwin':
     conf.FindTool('LIPO', [''], [('lipo', None)], required=False)
     conf.FindTool('INSTALL_NAME_TOOL', [''], [('install_name_tool', None)], required=False)
@@ -1101,11 +1111,17 @@ env.Append(LIBPATH=[env['ROC_BUILDDIR']])
 for senv in subenvs.all:
     senv.MergeFrom(env)
 
+# enable compiler launcher
+for senv in subenvs.all:
+    if 'COMPILER_LAUNCHER' in senv.Dictionary():
+        for var in ['CC', 'CXX']:
+            senv[var] = env.WrapLauncher(senv[var], senv['COMPILER_LAUNCHER'])
+
 # enable generation of compile_commands.json (a.k.a. clangdb)
 if meta.compiler in ['gcc', 'clang']:
     for senv in subenvs.all:
         for var in ['CC', 'CXX']:
-            senv[var] = env.GetClangDbWriter(senv[var], env['ROC_BUILDDIR'])
+            senv[var] = env.WrapClangDb(senv[var], env['ROC_BUILDDIR'])
 
     compile_commands = '{}/compile_commands.json'.format(env['ROC_BUILDDIR'])
 

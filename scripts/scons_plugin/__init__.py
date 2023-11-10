@@ -1,5 +1,4 @@
 import scons_plugin.arguments
-import scons_plugin.clangdb
 import scons_plugin.commands
 import scons_plugin.config
 import scons_plugin.distfiles
@@ -11,6 +10,7 @@ import scons_plugin.sconsutils
 import scons_plugin.systemdeps
 import scons_plugin.tests
 import scons_plugin.thirdparty
+import scons_plugin.wrapper
 
 # workaround for python3
 import SCons.Subst
@@ -22,7 +22,6 @@ except:
 def generate(env):
     modules = [
         scons_plugin.arguments,
-        scons_plugin.clangdb,
         scons_plugin.commands,
         scons_plugin.config,
         scons_plugin.distfiles,
@@ -34,6 +33,7 @@ def generate(env):
         scons_plugin.systemdeps,
         scons_plugin.tests,
         scons_plugin.thirdparty,
+        scons_plugin.wrapper,
     ]
     for m in modules:
         m.init(env)

@@ -8,7 +8,7 @@ Developer cookbook
 Build options
 =============
 
-Developer build:
+Full developer build:
 
 .. code::
 
@@ -20,18 +20,18 @@ Explanation:
 
 * ``-Q`` enables compact colored build output
 * ``--build-3rdparty`` specifies the list of dependencies to be downloaded and built automatically
-* ``--enable-werror`` turns compiler and Doxygen warnings into error
+* ``--enable-werror`` turns compiler and Doxygen warnings into error (CI requires no warnings)
 * ``--enable-debug`` enables debug build
-* ``--enable-tests`` enables building of unit tests
-* ``--enable-benchmarks`` enables building of micro benchmarks
-* ``--enable-examples`` enables building of API usage examples
-* ``--enable-doxygen`` enables running Doxygen and producing warnings for undocumented members
+* ``--enable-tests`` enables building of unit tests (CI requires all tests to pass)
+* ``--enable-benchmarks`` enables building of micro benchmarks (not needed most time)
+* ``--enable-examples`` enables building of API usage examples (not needed most time)
+* ``--enable-doxygen`` enables running Doxygen and producing warnings for undocumented members (CI requires no warnings)
 * ``test`` is the target to run unit tests
 * ``bench`` is the target to run micro benchmarks
 
 For ``--build-3rdparty`` option, see :doc:`/building/user_cookbook`.
 
-For developer build, you may also want to automatically download and build CppUTest (for unut tests) and Google Benchmark (for micro behcmarks):
+For developer build, you may want to automatically download and build CppUTest (for unit tests) and Google Benchmark (for micro behcmarks):
 
 .. code::
 
@@ -103,6 +103,19 @@ or:
     $ scons -Q ...
 
 The full list of the available options and variables is documented in :doc:`/building/scons_options`.
+
+Compiler launcher
+=================
+
+To speed up fresh build (i.e. subsequent builds after full clean), you can enable `ccache <https://ccache.dev/>`_.
+
+.. code::
+
+    $ scons -Q --compiler-launcher=ccache ...
+
+Here, ``--compiler-launcher`` option defines launcher program that should be used for C and C++ compilers. For example, ``gcc <args>`` will be replaced with ``ccache gcc <args>``.
+
+When ``--build-3rdparty`` is used, the specified launcher will be passed to third-party libraries as well.
 
 macOS options
 =============
