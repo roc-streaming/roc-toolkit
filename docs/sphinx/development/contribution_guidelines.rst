@@ -18,7 +18,7 @@ How you can help
 
 * **Writing**
 
-  If you've built Roc for a niche OS or hardware, or tweaked settings to make it work better for your needs, we'd love if you share your experience with the community. If you wrote a guide, you can send it to us to be added to the :doc:`publications page </about_project/publications>`.
+  If you've built Roc for a niche OS or hardware, or tweaked settings to make it work better for your needs, or used it in your project, we'd love if you share your experience with the community. If you wrote a post, you can send it to us to be added to the :doc:`publications page </about_project/publications>`.
 
 Becoming a contributor
 ======================
@@ -58,8 +58,8 @@ The guide bellow will help you to prepare your first patch.
 
 * **Step 5: Create pull request!**
 
-  Please remember that pull requests should be always rebased on ``develop`` branch and should be targeted to it, as :doc:`described here </development/version_control>`.
+  See :doc:`/development/workflow` page for rules of pull request creation and its life-cycle.
 
-  Before submitting PR, don't forget to run code formatting, as described in coding guidelines.
+  Please remember that pull requests should be always rebased on ``develop`` branch and should be targeted to it!
 
-  Please ensure that all CI checks pass on your PR and fix them if needed.
+  Before submitting PR, don't forget to run code formatting, as described in coding guidelines. After submitting, ensure that all CI checks pass on your PR and fix them if needed.
