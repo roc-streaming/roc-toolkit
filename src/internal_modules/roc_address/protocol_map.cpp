@@ -129,21 +129,21 @@ void ProtocolMap::add_proto_(const ProtocolAttrs& proto) {
     protos_[proto.protocol] = proto;
 }
 
-bool ProtocolMap::get_supported_interfaces(core::Array<Interface>& interfaceArray) {
-    interfaceArray.clear();
-    bool interfacesExist = false;
+bool ProtocolMap::get_supported_interfaces(core::Array<Interface>& interface_array) {
+    interface_array.clear();
+    bool interfaces_exist = false;
 
     for (size_t x = Iface_Consolidated + 1; x != Iface_Max; x++) {
         for (size_t y = 0; y < MaxProtos; y++) {
             if (x == protos_[y].iface) {
-                interfaceArray.push_back(protos_[y].iface);
-                interfacesExist = true;
+                interface_array.push_back(protos_[y].iface);
+                interfaces_exist = true;
                 break;
             }
         }
     }
 
-    return interfacesExist;
+    return interfaces_exist;
 }
 
 bool ProtocolMap::get_supported_protocols(Interface interface, core::StringList& list) {
