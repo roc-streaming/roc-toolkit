@@ -52,7 +52,6 @@ bool print_supported(ProtocolMap& protocol_map, core::IArena& arena) {
     core::Array<Interface> interface_array(arena);
     core::StringList list(arena);
 
-    // TODO: FIGURE OUT BETTER SOLUTION THAN HARDCODING RESIZE
     if (!interface_array.resize(Iface_Max)) {
         return false;
     }
