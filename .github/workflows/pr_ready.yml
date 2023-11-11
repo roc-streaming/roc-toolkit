@@ -1,0 +1,15 @@
+name: "pr_ready"
+
+on:
+  pull_request_target:
+    types:
+      - review_requested
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: andymckay/labeler@1.0.4
+        with:
+          add-labels: 'ready for review'
+          remove-labels: 'work in progress,needs revision'

@@ -1,14 +1,16 @@
-name: "set dashboard columns"
+name: "assign_project_columns"
 
 on:
   issues:
-    types: [labeled]
+    types:
+      - labeled
 
 jobs:
   main:
     runs-on: ubuntu-latest
     steps:
     - uses: konradpabjan/move-labeled-or-milestoned-issue@v2.0
+      continue-on-error: true
       with:
         action-token: "${{ secrets.REPO_MANAGEMENT }}"
         project-url: "https://github.com/roc-streaming/roc-toolkit/projects/2"

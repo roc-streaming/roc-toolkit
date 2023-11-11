@@ -1,0 +1,14 @@
+name: "pr_closed"
+
+on:
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: andymckay/labeler@1.0.4
+        with:
+          remove-labels: 'work in progress,ready for review,review in progress,needs revision,needs rebase'

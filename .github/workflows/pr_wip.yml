@@ -1,0 +1,16 @@
+name: "pr_wip"
+
+on:
+  pull_request_target:
+    types:
+      - converted_to_draft
+      - review_request_removed
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: andymckay/labeler@1.0.4
+        with:
+          add-labels: 'work in progress'
+          remove-labels: 'ready for review,needs revision'
