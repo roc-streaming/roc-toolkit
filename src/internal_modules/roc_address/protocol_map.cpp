@@ -133,7 +133,7 @@ bool ProtocolMap::get_supported_interfaces(core::Array<Interface>& interface_arr
     interface_array.clear();
     bool interfaces_exist = false;
 
-    for (size_t x = Iface_Consolidated + 1; x != Iface_Max; x++) {
+    for (int x = Iface_Consolidated + 1; x != Iface_Max; x++) {
         for (size_t y = 0; y < MaxProtos; y++) {
             if (x == protos_[y].iface) {
                 interface_array.push_back(protos_[y].iface);
