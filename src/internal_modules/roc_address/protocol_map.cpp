@@ -133,9 +133,9 @@ bool ProtocolMap::get_supported_interfaces(core::Array<Interface>& interface_arr
     interface_array.clear();
     bool interfaces_exist = false;
 
-    for (int x = Iface_Consolidated + 1; x != Iface_Max; x++) {
+    for (unsigned x = (unsigned)Iface_Consolidated + 1; x != (unsigned)Iface_Max; x++) {
         for (size_t y = 0; y < MaxProtos; y++) {
-            if (x == protos_[y].iface) {
+            if (x == (unsigned)protos_[y].iface) {
                 interface_array.push_back(protos_[y].iface);
                 interfaces_exist = true;
                 break;
