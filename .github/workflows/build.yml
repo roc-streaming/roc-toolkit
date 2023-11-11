@@ -2,20 +2,8 @@ name: "build"
 
 on:
   push:
-    branches:
-      - master
-      - develop
-      - feature/*
-    tags:
-      - v*
-
   pull_request:
-    branches:
-      - master
-      - develop
-
   workflow_dispatch:
-
   schedule:
     - cron: '0 0 * * 1'
 
@@ -124,13 +112,13 @@ jobs:
       matrix:
         include:
           - script: linux-checks/conditional-build
-            image: rocstreaming/env-ubuntu-minimal
+            image: rocstreaming/env-ubuntu:nolibs
 
           - script: linux-checks/static-shared
-            image: rocstreaming/env-ubuntu-minimal
+            image: rocstreaming/env-ubuntu:nolibs
 
           - script: linux-checks/debug-build
-            image: rocstreaming/env-ubuntu-minimal
+            image: rocstreaming/env-ubuntu:nolibs
 
           - script: linux-checks/sanitizers
             image: rocstreaming/env-ubuntu
