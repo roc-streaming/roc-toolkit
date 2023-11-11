@@ -129,5 +129,40 @@ void ProtocolMap::add_proto_(const ProtocolAttrs& proto) {
     protos_[proto.protocol] = proto;
 }
 
+bool ProtocolMap::get_supported_interfaces(core::Array<Interface>& interfaceArray) {
+    interfaceArray.clear();
+    bool interfacesExist = false;
+
+    for (size_t x = Iface_Consolidated + 1; x != Iface_Max; x++) {
+        for (size_t y = 0; y < MaxProtos; y++) {
+            if (x == protos_[y].iface) {
+                interfaceArray.push_back(protos_[y].iface);
+                interfacesExist = true;
+                break;
+            }
+        }
+    }
+
+    return interfacesExist;
+}
+
+bool ProtocolMap::get_supported_protocols(Interface interface, core::StringList& list) {
+    list.clear();
+
+    bool protocolsExist = false;
+
+    for (size_t x = 0; x < MaxProtos; x++) {
+        if (interface == ProtocolMap::instance().protos_[x].iface) {
+            if (!list.push_unique(
+                    proto_to_str(ProtocolMap::instance().protos_[x].protocol))) {
+                return false;
+            }
+            protocolsExist = true;
+        }
+    }
+
+    return protocolsExist;
+}
+
 } // namespace address
 } // namespace roc
