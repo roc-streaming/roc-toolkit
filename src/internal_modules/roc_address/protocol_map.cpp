@@ -153,11 +153,10 @@ bool ProtocolMap::get_supported_protocols(Interface interface, core::StringList&
 
     for (size_t x = 0; x < MaxProtos; x++) {
         if (interface == ProtocolMap::instance().protos_[x].iface) {
-            
-            const char * proto_name = proto_to_str(ProtocolMap::instance().protos_[x].protocol);
-            
-            if(!list.find(proto_name))
-            {
+            const char* proto_name =
+                proto_to_str(ProtocolMap::instance().protos_[x].protocol);
+
+            if (!list.find(proto_name)) {
                 if (!list.push_back(proto_name)) {
                     return false;
                 }
