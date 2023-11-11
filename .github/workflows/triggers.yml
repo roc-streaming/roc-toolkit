@@ -6,8 +6,7 @@ on:
       - master
 
 jobs:
-
-  triggers:
+  main:
     if: |
       github.repository_owner == 'roc-streaming'
 

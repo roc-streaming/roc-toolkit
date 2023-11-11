@@ -1,4 +1,4 @@
-name: "lint pr"
+name: "pr_opened"
 
 on:
   pull_request_target:
@@ -6,11 +6,9 @@ on:
       - opened
 
 jobs:
-
-  lint:
+  main:
     runs-on: ubuntu-latest
     steps:
-
       - name: Check linked issue
         id: linked-issues
         uses: nearform-actions/github-action-check-linked-issues@v1.4.28
@@ -43,7 +41,7 @@ jobs:
           steps.mentioned-issues.outputs.result == 'false'
         uses: thollander/actions-comment-pull-request@v2
         with:
-          message: "Upon creation, pull request description does not have a link to an issue.
+          message: ":robot: Upon creation, pull request description does not have a link to an issue.
             If there is a related issue, please add it to the description
             using any of the [supported formats](https://docs.github.com/en/get-started/\
             writing-on-github/working-with-advanced-formatting/autolinked-references-and-urls)."

@@ -1,4 +1,4 @@
-name: "detect conflicts"
+name: "detect_conflicts"
 
 on:
   push:
@@ -6,15 +6,17 @@ on:
       - "*"
     tags:
       - "!*"
-  pull_request:
-    types: synchronize
+  pull_request_target:
+    types:
+      - synchronize
 
 jobs:
   main:
     runs-on: ubuntu-latest
     steps:
-      - name: Run the action to detect unmergeable PRs
-        uses: cats-oss/github-action-detect-unmergeable@v2.1.1
-        env:
-          LABEL_NEED_REBASE: "needs rebase"
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+      - uses: eps1lon/actions-label-merge-conflict@v2.1.0
+        with:
+          dirtyLabel: "needs rebase"
+          repoToken: "${{ secrets.GITHUB_TOKEN }}"
+          commentOnDirty: ":robot: The latest upstream change made this pull request unmergeable.
+            Please resolve the merge conflicts."
