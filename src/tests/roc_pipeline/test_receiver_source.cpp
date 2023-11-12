@@ -2108,6 +2108,62 @@ TEST(receiver_source, timestamp_mapping_remixing) {
     CHECK(first_ts);
 }
 
+TEST(receiver_source, packet_buffer) {
+    enum { Rate = SampleRate, Chans = Chans_Stereo, MaxPackets = 10 };
+
+    init(Rate, Chans, Rate, Chans);
+
+    ReceiverConfig config = make_config();
+    config.default_session.prebuf_len = 0;
+    ReceiverSource receiver(config, format_map, packet_factory, byte_buffer_factory,
+                            sample_buffer_factory, arena);
+    CHECK(receiver.is_valid());
+
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
+
+    packet::Queue queue;
+    packet::Queue source_queue;
+    packet::Queue repair_queue;
+
+    packet::IWriter* source_endpoint_writer =
+        create_endpoint(slot, address::Iface_AudioSource, address::Proto_RTP_RS8M_Source);
+    CHECK(source_endpoint_writer);
+
+    packet::IWriter* repair_endpoint_writer =
+        create_endpoint(slot, address::Iface_AudioRepair, address::Proto_RS8M_Repair);
+    CHECK(repair_endpoint_writer);
+
+    fec::WriterConfig fec_config;
+
+    test::PacketWriter packet_writer(
+        arena, queue, queue, format_map, packet_factory, byte_buffer_factory, src1, dst1,
+        dst2, PayloadType_Ch2, packet::FEC_ReedSolomon_M8, fec_config);
+
+    // setup reader
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+
+    packet_writer.write_packets(fec_config.n_source_packets, SamplesPerPacket,
+                                output_sample_spec);
+
+    for (int i = 0; i < ManyPackets; ++i) {
+        packet::PacketPtr pp;
+        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(pp));
+        CHECK(pp);
+
+        if (pp->flags() & packet::Packet::FlagAudio) {
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, source_queue.write(pp));
+        }
+        if (pp->flags() & packet::Packet::FlagRepair) {
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_queue.write(pp));
+        }
+    }
+
+    receiver.refresh(frame_reader.refresh_ts());
+    frame_reader.read_nonzero_samples(SamplesPerFrame, output_sample_spec);
+    UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
+}
+
 // Check receiver metrics for multiple remote participants (senders).
 TEST(receiver_source, metrics_participants) {
     enum { Rate = SampleRate, Chans = Chans_Stereo, MaxParties = 10 };

@@ -153,6 +153,19 @@ int main(int argc, char** argv) {
         }
     }
 
+    if (args.prebuf_len_given) {
+        core::nanoseconds_t prebuf_len = 0;
+        if (!core::parse_duration(args.prebuf_len_arg, prebuf_len)) {
+            roc_log(LogError, "invalid --prebuf-len");
+            return 1;
+        }
+        receiver_config.default_session.prebuf_len =
+            (core::nanoseconds_t)args.prebuf_len_arg;
+    } else {
+        receiver_config.default_session.prebuf_len =
+            receiver_config.default_session.target_latency;
+    }
+
     if (args.choppy_play_timeout_given) {
         if (!core::parse_duration(
                 args.choppy_play_timeout_arg,

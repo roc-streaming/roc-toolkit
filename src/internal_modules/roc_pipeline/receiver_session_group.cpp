@@ -314,6 +314,7 @@ ReceiverSessionGroup::route_transport_packet_(const packet::PacketPtr& packet) {
     }
 
     if (sess) {
+        enqueue_prebuf_packet_(packet);
         // Session found, route packet to it.
         return sess->route_packet(packet);
     }
@@ -325,6 +326,48 @@ ReceiverSessionGroup::route_transport_packet_(const packet::PacketPtr& packet) {
 
     // TODO(gh-183): return status
     return status::StatusOK;
+}
+
+void ReceiverSessionGroup::enqueue_prebuf_packet_(const packet::PacketPtr& packet_ptr) {
+    prebuf_packets_.push_back(*packet_ptr.get());
+
+    core::nanoseconds_t now = core::timestamp(core::ClockMonotonic);
+
+    while (prebuf_packets_.size() > 0) {
+        core::nanoseconds_t received = prebuf_packets_.front()->udp()->receive_timestamp;
+        if (now - received > receiver_config_.default_session.prebuf_len) {
+            prebuf_packets_.remove(*prebuf_packets_.front());
+        } else {
+            break;
+        }
+    }
+}
+
+void ReceiverSessionGroup::dequeue_prebuf_packets_(ReceiverSession& sess) {
+    packet::PacketPtr curr, next;
+
+    if (prebuf_packets_.size() == 0) {
+        return;
+    }
+
+    core::nanoseconds_t now = core::timestamp(core::ClockMonotonic);
+
+    for (curr = prebuf_packets_.front(); curr; curr = next) {
+        next = prebuf_packets_.nextof(*curr);
+
+        // if packet is too old, remove it from the queue
+        core::nanoseconds_t received = curr->udp()->receive_timestamp;
+        if (now - received > receiver_config_.default_session.prebuf_len) {
+            prebuf_packets_.remove(*curr);
+            continue;
+        }
+
+        // if session handles the packet, remove it from the queue
+        const status::StatusCode code = sess.route(curr);
+        if (code == status::StatusOK) {
+            prebuf_packets_.remove(*curr);
+        }
+    }
 }
 
 status::StatusCode
@@ -408,6 +451,8 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
     sessions_.push_back(*sess);
 
     state_tracker_.add_active_sessions(+1);
+
+    dequeue_prebuf_packets_(*sess);
 
     return status::StatusOK;
 }
