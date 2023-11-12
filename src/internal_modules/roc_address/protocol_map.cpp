@@ -121,6 +121,56 @@ const ProtocolAttrs* ProtocolMap::find_by_scheme(const char* scheme) const {
     return NULL;
 }
 
+bool ProtocolMap::get_supported_interfaces(core::Array<Interface>& interface_array) {
+    interface_array.clear();
+    bool interfaces_exist = false;
+
+    for (unsigned n_iface = (unsigned)Iface_Consolidated; n_iface != (unsigned)Iface_Max;
+         n_iface++) {
+        for (size_t n_proto = 0; n_proto < MaxProtos; n_proto++) {
+            if (protos_[n_proto].protocol == Proto_None) {
+                continue;
+            }
+
+            if (n_iface == (unsigned)protos_[n_proto].iface) {
+                if (!interface_array.grow(interface_array.size() + 1)) {
+                    return false;
+                }
+                interface_array.push_back(protos_[n_proto].iface);
+                interfaces_exist = true;
+                break;
+            }
+        }
+    }
+
+    return interfaces_exist;
+}
+
+bool ProtocolMap::get_supported_protocols(Interface interface, core::StringList& list) {
+    list.clear();
+
+    bool protocols_exist = false;
+
+    for (size_t n_proto = 0; n_proto < MaxProtos; n_proto++) {
+        if (protos_[n_proto].protocol == Proto_None) {
+            continue;
+        }
+
+        if (interface == ProtocolMap::instance().protos_[n_proto].iface) {
+            const char* proto_name = protos_[n_proto].scheme_name;
+
+            if (!list.find(proto_name)) {
+                if (!list.push_back(proto_name)) {
+                    return false;
+                }
+            }
+            protocols_exist = true;
+        }
+    }
+
+    return protocols_exist;
+}
+
 void ProtocolMap::add_proto_(const ProtocolAttrs& proto) {
     roc_panic_if((int)proto.protocol < 0);
     roc_panic_if((int)proto.protocol >= MaxProtos);
