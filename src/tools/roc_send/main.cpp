@@ -15,7 +15,7 @@
 #include "roc_core/crash_handler.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/log.h"
-#include "roc_core/parse_duration.h"
+#include "roc_core/parse_units.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_netio/network_loop.h"
 #include "roc_netio/udp_sender_port.h"
@@ -63,22 +63,60 @@ int main(int argc, char** argv) {
         break;
     }
 
-    node::ContextConfig context_config;
+    pipeline::SenderConfig sender_config;
 
-    if (args.packet_limit_given) {
-        if (args.packet_limit_arg <= 0) {
-            roc_log(LogError, "invalid --packet-limit: should be > 0");
+    sndio::Config io_config;
+    io_config.sample_spec.set_channel_set(sender_config.input_sample_spec.channel_set());
+
+    if (args.packet_len_given) {
+        if (!core::parse_duration(args.packet_len_arg, sender_config.packet_length)) {
+            roc_log(LogError, "invalid --packet-len");
             return 1;
         }
-        context_config.max_packet_size = (size_t)args.packet_limit_arg;
     }
 
-    if (args.frame_limit_given) {
-        if (args.frame_limit_arg <= 0) {
-            roc_log(LogError, "invalid --frame-limit: should be > 0");
+    if (args.frame_len_given) {
+        if (!core::parse_duration(args.frame_len_arg, io_config.frame_length)) {
+            roc_log(LogError, "invalid --frame-len: bad format");
             return 1;
         }
-        context_config.max_frame_size = (size_t)args.frame_limit_arg;
+        if (sender_config.input_sample_spec.ns_2_samples_overall(io_config.frame_length)
+            <= 0) {
+            roc_log(LogError, "invalid --frame-len: should be > 0");
+            return 1;
+        }
+    }
+
+    node::ContextConfig context_config;
+
+    if (args.max_packet_size_given) {
+        if (!core::parse_size(args.max_packet_size_arg, context_config.max_packet_size)) {
+            roc_log(LogError, "invalid --max-packet-size");
+            return 1;
+        }
+        if (context_config.max_packet_size == 0) {
+            roc_log(LogError, "invalid --max-packet-size: should be > 0");
+            return 1;
+        }
+    } else {
+        size_t extra_space = 64;
+        // TODO(gh-608): take size from --packet-encoding instead of assuming 2 bytes per
+        // sample
+        context_config.max_packet_size = 2
+                * sender_config.input_sample_spec.ns_2_samples_overall(
+                    sender_config.packet_length)
+            + extra_space;
+    }
+
+    if (args.max_frame_size_given) {
+        if (!core::parse_size(args.max_frame_size_arg, context_config.max_frame_size)) {
+            roc_log(LogError, "invalid --max-frame-size");
+            return 1;
+        }
+        if (context_config.max_frame_size == 0) {
+            roc_log(LogError, "invalid --max-frame-size: should be > 0");
+            return 1;
+        }
     }
 
     core::HeapArena heap_arena;
@@ -100,30 +138,6 @@ int main(int argc, char** argv) {
         }
 
         return 0;
-    }
-
-    pipeline::SenderConfig sender_config;
-
-    sndio::Config io_config;
-    io_config.sample_spec.set_channel_set(sender_config.input_sample_spec.channel_set());
-
-    if (args.packet_length_given) {
-        if (!core::parse_duration(args.packet_length_arg, sender_config.packet_length)) {
-            roc_log(LogError, "invalid --packet-length");
-            return 1;
-        }
-    }
-
-    if (args.frame_length_given) {
-        if (!core::parse_duration(args.frame_length_arg, io_config.frame_length)) {
-            roc_log(LogError, "invalid --frame-length: bad format");
-            return 1;
-        }
-        if (sender_config.input_sample_spec.ns_2_samples_overall(io_config.frame_length)
-            <= 0) {
-            roc_log(LogError, "invalid --frame-length: should be > 0");
-            return 1;
-        }
     }
 
     sndio::BackendMap::instance().set_frame_size(io_config.frame_length,
