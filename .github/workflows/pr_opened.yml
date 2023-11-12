@@ -9,36 +9,19 @@ jobs:
   main:
     runs-on: ubuntu-latest
     steps:
-      - name: Check linked issue
-        id: linked-issues
-        uses: nearform-actions/github-action-check-linked-issues@v1.4.28
-        continue-on-error: true
-        with:
-          comment: ""
+      - name: Checkout
+        uses: actions/checkout@v3
 
-      - name: Check mentioned issue
-        id: mentioned-issues
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          result-encoding: string
-          script: |
-            const pattern1 = new RegExp(
-                String.raw`(^|\s)(#|gh-|roc-streaming/[\w-]+#)\d+($|\s)`, "i");
-            const pattern2 = new RegExp(
-                String.raw`(^|\s)https?://github.com/roc-streaming/[\w-]+/issues/\d+($|\s)`, "i");
-            const body = context.payload.pull_request.body;
-            return pattern1.test(body) || pattern2.test(body) ? "true" : "false";
-
-      - name: Echo results
+      - name: Check issue
+        id: issue
         run: |
-          echo "linked-issues: ${{ steps.linked-issues.outputs.issues }}"
-          echo "mentioned-issues: ${{ steps.mentioned-issues.outputs.result }}"
+          echo url=$(scripts/pr.py show ${{ github.event.pull_request.number }} --json \
+            | jq -r .issue.url) >> "$GITHUB_OUTPUT"
 
       - name: Post Comment
         if: |
-          steps.linked-issues.outputs.issues == '[]' &&
-          steps.mentioned-issues.outputs.result == 'false'
+          steps.issue.outputs.url == '' ||
+          steps.issue.outputs.url == 'null'
         uses: thollander/actions-comment-pull-request@v2
         with:
           message: ":robot: Upon creation, pull request description does not have a link to an issue.
