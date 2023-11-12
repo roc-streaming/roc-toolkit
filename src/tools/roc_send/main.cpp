@@ -8,6 +8,7 @@
 
 #include "roc_address/endpoint_uri.h"
 #include "roc_address/io_uri.h"
+#include "roc_address/print_supported.h"
 #include "roc_address/protocol_map.h"
 #include "roc_audio/resampler_profile.h"
 #include "roc_core/array.h"
@@ -93,6 +94,12 @@ int main(int argc, char** argv) {
         if (!sndio::print_supported(backend_dispatcher, context.arena())) {
             return 1;
         }
+
+        if (!address::print_supported(address::ProtocolMap::instance(),
+                                      context.arena())) {
+            return 1;
+        }
+
         return 0;
     }
 

@@ -16,7 +16,7 @@ namespace sndio {
 
 namespace {
 
-enum { ArraySize = 100, LineSize = 70 };
+enum { LineSize = 70 };
 
 void print_string_list(core::Printer& prn,
                        const core::StringList& list,
