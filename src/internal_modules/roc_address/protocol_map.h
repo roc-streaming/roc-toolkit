@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Roc Streaming authors
+ * Copyright (c) 2023 Roc Streaming authors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,9 +14,11 @@
 
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
+#include "roc_core/array.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/singleton.h"
 #include "roc_core/stddefs.h"
+#include "roc_core/string_list.h"
 #include "roc_packet/fec.h"
 
 namespace roc {
@@ -65,6 +67,12 @@ public:
 
     //! Get protocol attributes by scheme name.
     const ProtocolAttrs* find_by_scheme(const char* scheme) const;
+
+    //! Get list of interfaces with at least one protocol.
+    ROC_ATTR_NODISCARD bool get_supported_interfaces(core::Array<Interface>&);
+
+    //! Get all supported protocols.
+    ROC_ATTR_NODISCARD bool get_supported_protocols(Interface, core::StringList&);
 
 private:
     friend class core::Singleton<ProtocolMap>;
