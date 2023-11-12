@@ -287,6 +287,7 @@ void UdpReceiverPort::recv_cb_(uv_udp_t* handle,
 
     pp->udp()->src_addr = src_addr;
     pp->udp()->dst_addr = self.config_.bind_address;
+    pp->udp()->receive_timestamp = core::timestamp(core::ClockUnix);
 
     pp->set_data(core::Slice<uint8_t>(*bp, 0, (size_t)nread));
 

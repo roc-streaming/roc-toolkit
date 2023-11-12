@@ -159,6 +159,9 @@ struct ReceiverSessionConfig {
     //! Target latency, nanoseconds.
     core::nanoseconds_t target_latency;
 
+    //! Packet prebuffer length, nanoseconds.
+    core::nanoseconds_t prebuf_len;
+
     //! Packet payload type.
     unsigned int payload_type;
 
@@ -185,6 +188,7 @@ struct ReceiverSessionConfig {
 
     ReceiverSessionConfig()
         : target_latency(DefaultLatency)
+        , prebuf_len(DefaultLatency)
         , payload_type(0)
         , resampler_backend(audio::ResamplerBackend_Default)
         , resampler_profile(audio::ResamplerProfile_Medium) {
@@ -224,6 +228,9 @@ struct ReceiverCommonConfig {
 
     //! Insert weird beeps instead of silence on packet loss.
     bool enable_beeping;
+
+    //! Maximum number of packets per session.
+    size_t max_session_packets;
 
     ReceiverCommonConfig()
         : output_sample_spec(DefaultSampleSpec)

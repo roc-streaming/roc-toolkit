@@ -31,6 +31,9 @@ struct UDP {
 
     //! Sender request state.
     uv_udp_send_t request;
+
+    //! Received Timestamp.
+    core::nanoseconds_t receive_timestamp;
 };
 
 } // namespace packet

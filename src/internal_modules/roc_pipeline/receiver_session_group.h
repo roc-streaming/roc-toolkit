@@ -82,6 +82,8 @@ private:
 
     status::StatusCode route_transport_packet_(const packet::PacketPtr& packet);
     status::StatusCode route_control_packet_(const packet::PacketPtr& packet);
+    void enqueue_prebuf_packet_(const packet::PacketPtr& packet);
+    void dequeue_prebuf_packets_(ReceiverSession& sess);
 
     bool can_create_session_(const packet::PacketPtr& packet);
 
@@ -108,6 +110,7 @@ private:
     core::Optional<rtcp::Session> rtcp_session_;
 
     core::List<ReceiverSession> sessions_;
+    core::List<packet::Packet> prebuf_packets_;
 };
 
 } // namespace pipeline
