@@ -11,7 +11,7 @@
 #include "roc_core/crash_handler.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/log.h"
-#include "roc_core/parse_duration.h"
+#include "roc_core/parse_units.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_pipeline/transcoder_sink.h"
 #include "roc_sndio/backend_dispatcher.h"

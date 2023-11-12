@@ -16,7 +16,7 @@
 #include "roc_core/crash_handler.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/log.h"
-#include "roc_core/parse_duration.h"
+#include "roc_core/parse_units.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_netio/network_loop.h"
 #include "roc_node/context.h"
@@ -64,63 +64,38 @@ int main(int argc, char** argv) {
         break;
     }
 
-    node::ContextConfig context_config;
-
-    if (args.packet_limit_given) {
-        if (args.packet_limit_arg <= 0) {
-            roc_log(LogError, "invalid --packet-limit: should be > 0");
-            return 1;
-        }
-        context_config.max_packet_size = (size_t)args.packet_limit_arg;
-    }
-
-    if (args.frame_limit_given) {
-        if (args.frame_limit_arg <= 0) {
-            roc_log(LogError, "invalid --frame-limit: should be > 0");
-            return 1;
-        }
-        context_config.max_frame_size = (size_t)args.frame_limit_arg;
-    }
-
-    core::HeapArena heap_arena;
-
-    node::Context context(context_config, heap_arena);
-    if (!context.is_valid()) {
-        roc_log(LogError, "can't initialize node context");
-        return 1;
-    }
-
-    sndio::BackendDispatcher backend_dispatcher(context.arena());
-
-    if (args.list_supported_given) {
-        if (!address::print_supported(context.arena())) {
-            return 1;
-        }
-
-        if (!sndio::print_supported(backend_dispatcher, context.arena())) {
-            return 1;
-        }
-
-        return 0;
-    }
-
     pipeline::ReceiverConfig receiver_config;
 
     sndio::Config io_config;
     io_config.sample_spec.set_channel_set(
         receiver_config.common.output_sample_spec.channel_set());
 
-    if (args.frame_length_given) {
-        if (!core::parse_duration(args.frame_length_arg, io_config.frame_length)) {
-            roc_log(LogError, "invalid --frame-length: bad format");
+    if (args.frame_len_given) {
+        if (!core::parse_duration(args.frame_len_arg, io_config.frame_length)) {
+            roc_log(LogError, "invalid --frame-len: bad format");
             return 1;
         }
         if (receiver_config.common.output_sample_spec.ns_2_samples_overall(
                 io_config.frame_length)
             <= 0) {
-            roc_log(LogError, "invalid --frame-length: should be > 0");
+            roc_log(LogError, "invalid --frame-len: should be > 0");
             return 1;
         }
+    }
+
+    if (args.io_latency_given) {
+        if (!core::parse_duration(args.io_latency_arg, io_config.latency)) {
+            roc_log(LogError, "invalid --io-latency");
+            return 1;
+        }
+    }
+
+    if (args.rate_given) {
+        if (args.rate_arg <= 0) {
+            roc_log(LogError, "invalid --rate: should be > 0");
+            return 1;
+        }
+        io_config.sample_spec.set_sample_rate((size_t)args.rate_arg);
     }
 
     sndio::BackendMap::instance().set_frame_size(
@@ -235,19 +210,62 @@ int main(int argc, char** argv) {
     receiver_config.common.enable_profiling = args.profiling_flag;
     receiver_config.common.enable_beeping = args.beep_flag;
 
-    if (args.io_latency_given) {
-        if (!core::parse_duration(args.io_latency_arg, io_config.latency)) {
-            roc_log(LogError, "invalid --io-latency");
+    node::ContextConfig context_config;
+
+    if (args.max_packet_size_given) {
+        if (!core::parse_size(args.max_packet_size_arg, context_config.max_packet_size)) {
+            roc_log(LogError, "invalid --max-packet-size");
+            return 1;
+        }
+        if (context_config.max_packet_size == 0) {
+            roc_log(LogError, "invalid --max-packet-size: should be > 0");
             return 1;
         }
     }
 
-    if (args.rate_given) {
-        if (args.rate_arg <= 0) {
-            roc_log(LogError, "invalid --rate: should be > 0");
+    if (args.max_frame_size_given) {
+        if (!core::parse_size(args.max_frame_size_arg, context_config.max_frame_size)) {
+            roc_log(LogError, "invalid --max-frame-size");
             return 1;
         }
-        io_config.sample_spec.set_sample_rate((size_t)args.rate_arg);
+        if (context_config.max_frame_size == 0) {
+            roc_log(LogError, "invalid --max-frame-size: should be > 0");
+            return 1;
+        }
+    } else {
+        audio::SampleSpec spec = io_config.sample_spec;
+        if (spec.sample_rate() == 0) {
+            spec.set_sample_rate(48000);
+        }
+        if (spec.num_channels() == 0) {
+            spec.set_channel_set(audio::ChannelSet(audio::ChanLayout_Surround,
+                                                   audio::ChanOrder_Smpte,
+                                                   audio::ChanMask_Surround_7_1_4));
+        }
+        context_config.max_frame_size =
+            spec.ns_2_samples_overall(io_config.frame_length) * sizeof(audio::sample_t);
+    }
+
+    core::HeapArena heap_arena;
+
+    node::Context context(context_config, heap_arena);
+    if (!context.is_valid()) {
+        roc_log(LogError, "can't initialize node context");
+        return 1;
+    }
+
+    sndio::BackendDispatcher backend_dispatcher(context.arena());
+
+    if (args.list_supported_given) {
+        if (!address::print_supported(context.arena())) {
+            return 1;
+        }
+
+        if (!sndio::print_supported(backend_dispatcher, context.arena())) {
+            return 1;
+        }
+
+        return 0;
     }
 
     address::IoUri output_uri(context.arena());

@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/parse_duration.h"
+#include "roc_core/parse_units.h"
 #include "roc_core/log.h"
 #include "roc_core/stddefs.h"
 
@@ -81,6 +81,68 @@ bool parse_duration(const char* str, nanoseconds_t& result) {
     }
 
     result = nanoseconds_t(number) * multiplier;
+    return true;
+}
+
+bool parse_size(const char* str, size_t& result) {
+    if (str == NULL) {
+        roc_log(LogError, "parse size: string is null");
+        return false;
+    }
+
+    const size_t kibibyte = 1024;
+    const size_t mebibyte = 1024 * kibibyte;
+    const size_t gibibyte = 1024 * mebibyte;
+
+    size_t multiplier = 1;
+
+    const size_t str_len = strlen(str);
+    const char* suffix;
+
+    // suffix is optional.
+    if ((suffix = find_suffix(str, str_len, "G"))) {
+        multiplier = gibibyte;
+    } else if ((suffix = find_suffix(str, str_len, "M"))) {
+        multiplier = mebibyte;
+    } else if ((suffix = find_suffix(str, str_len, "K"))) {
+        multiplier = kibibyte;
+    }
+
+    if (!isdigit(*str)) {
+        roc_log(LogError,
+                "parse size: invalid format, not a number, expected <number>[<suffix>], "
+                "where suffix=<K|M|G>");
+        return false;
+    }
+
+    char* number_end = NULL;
+    unsigned long long number = strtoull(str, &number_end, 10);
+
+    if (number == ULLONG_MAX || (!suffix && *number_end != '\0')
+        || (suffix && number_end != suffix)) {
+        roc_log(LogError,
+                "parse size: invalid format, can't parse number, expected "
+                "<number>[<suffix>], where suffix=<K|M|G>");
+        return false;
+    }
+
+    size_t number_converted = number;
+    if (number_converted < number) {
+        roc_log(LogError,
+                "parse size: too large, can't parse number, expected "
+                "<number>[<suffix>], where suffix=<K|M|G>");
+        return false;
+    }
+
+    size_t output = number_converted * multiplier;
+    if (output / multiplier != number_converted) {
+        roc_log(LogError,
+                "parse size: too large, can't parse number, expected "
+                "<number>[<suffix>], where suffix=<K|M|G>");
+        return false;
+    }
+
+    result = output;
     return true;
 }
 

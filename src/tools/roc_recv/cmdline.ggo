@@ -44,14 +44,14 @@ section "Options"
     option "choppy-play-timeout" - "Choppy playback timeout, TIME units"
         string optional
 
-    option "packet-limit" - "Maximum packet size, in bytes"
-        int optional
-
-    option "frame-limit" - "Maximum internal frame size, in bytes"
-        int optional
-
-    option "frame-length" - "Duration of the internal frames, TIME units"
+    option "frame-len" - "Duration of the internal frames, TIME units"
         typestr="TIME" string optional
+
+    option "max-packet-size" - "Maximum packet size, in SIZE units"
+        typestr="SIZE" string optional
+
+    option "max-frame-size" - "Maximum internal frame size, in SIZE units"
+        typestr="SIZE" string optional
 
     option "rate" - "Override output sample rate, Hz"
         int optional
@@ -91,6 +91,9 @@ FILE_FORMAT is the output file format name, e.g.:
 
 TIME is an integer number with a suffix, e.g.:
   123ns; 123us; 123ms; 123s; 123m; 123h;
+
+SIZE is an integer number with an optional suffix, e.g.:
+  123; 123K; 123M; 123G;
 
 Use --list-supported option to print the list of the supported
 URI schemes and file formats.
