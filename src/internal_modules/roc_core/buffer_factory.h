@@ -15,8 +15,8 @@
 #include "roc_core/allocation_policy.h"
 #include "roc_core/buffer.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/pool.h"
 #include "roc_core/shared_ptr.h"
+#include "roc_core/slab_pool.h"
 
 namespace roc {
 namespace core {
@@ -44,7 +44,7 @@ public:
     }
 
 private:
-    Pool<Buffer<T> > buffer_pool_;
+    SlabPool<Buffer<T> > buffer_pool_;
     const size_t buffer_size_;
 };
 

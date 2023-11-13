@@ -6,31 +6,31 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/pool.h
+//! @file roc_core/slab_pool.h
 //! @brief Memory pool.
 
-#ifndef ROC_CORE_POOL_H_
-#define ROC_CORE_POOL_H_
+#ifndef ROC_CORE_SLAB_POOL_H_
+#define ROC_CORE_SLAB_POOL_H_
 
 #include "roc_core/aligned_storage.h"
 #include "roc_core/attributes.h"
 #include "roc_core/iarena.h"
 #include "roc_core/ipool.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/pool_impl.h"
+#include "roc_core/slab_pool_impl.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
 namespace core {
 
 //! Memory pool flags.
-enum PoolFlags {
+enum SlabPoolFlags {
     //! Enable guards for buffer overflow, invalid ownership, etc.
-    PoolFlag_EnableGuards = (1 << 0),
+    SlabPoolFlag_EnableGuards = (1 << 0),
 };
 
 //! Default memory pool flags.
-enum { DefaultPoolFlags = (PoolFlag_EnableGuards) };
+enum { DefaultSlabPoolFlags = (SlabPoolFlag_EnableGuards) };
 
 //! Memory pool.
 //!
@@ -56,13 +56,13 @@ enum { DefaultPoolFlags = (PoolFlag_EnableGuards) };
 //! @tparam T defines pool object type. It is used to determine allocation size. If
 //! runtime size is different from static size of T, it can be provided via constructor.
 //!
-//! @tparam EmbeddedCapacity defines number of slots embedded directly into Pool
+//! @tparam EmbeddedCapacity defines number of slots embedded directly into SlabPool
 //! instance. If non-zero, this memory will be used for first allocations, before
 //! using memory arena.
 //!
 //! Thread-safe.
 template <class T, size_t EmbeddedCapacity = 0>
-class Pool : public IPool, public NonCopyable<> {
+class SlabPool : public IPool, public NonCopyable<> {
 public:
     //! Initialize.
     //!
@@ -72,13 +72,13 @@ public:
     //!  - @p object_size defines size of single object in bytes
     //!  - @p min_alloc_bytes defines minimum size in bytes per request to arena
     //!  - @p max_alloc_bytes defines maximum size in bytes per request to arena
-    //!  - @p flags defines options to modify behaviour as indicated in PoolFlags
-    explicit Pool(const char* name,
-                  IArena& arena,
-                  size_t object_size = sizeof(T),
-                  size_t min_alloc_bytes = 0,
-                  size_t max_alloc_bytes = 0,
-                  size_t flags = DefaultPoolFlags)
+    //!  - @p flags defines options to modify behaviour as indicated in SlabPoolFlags
+    explicit SlabPool(const char* name,
+                      IArena& arena,
+                      size_t object_size = sizeof(T),
+                      size_t min_alloc_bytes = 0,
+                      size_t max_alloc_bytes = 0,
+                      size_t flags = DefaultSlabPoolFlags)
         : impl_(name,
                 arena,
                 object_size,
@@ -116,15 +116,15 @@ public:
 
 private:
     enum {
-        SlotSize = (sizeof(PoolImpl::SlotHeader) + sizeof(PoolImpl::SlotCanary)
-                    + sizeof(T) + sizeof(PoolImpl::SlotCanary) + sizeof(AlignMax) - 1)
+        SlotSize = (sizeof(SlabPoolImpl::SlotHeader) + sizeof(SlabPoolImpl::SlotCanary)
+                    + sizeof(T) + sizeof(SlabPoolImpl::SlotCanary) + sizeof(AlignMax) - 1)
             / sizeof(AlignMax) * sizeof(AlignMax)
     };
     AlignedStorage<EmbeddedCapacity * SlotSize> embedded_data_;
-    PoolImpl impl_;
+    SlabPoolImpl impl_;
 };
 
 } // namespace core
 } // namespace roc
 
-#endif // ROC_CORE_POOL_H_
+#endif // ROC_CORE_SLAB_POOL_H_

@@ -6,12 +6,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/pool_impl.h"
+#include "roc_core/slab_pool_impl.h"
 #include "roc_core/align_ops.h"
 #include "roc_core/log.h"
 #include "roc_core/memory_ops.h"
 #include "roc_core/panic.h"
-#include "roc_core/pool.h"
+#include "roc_core/slab_pool.h"
 
 namespace roc {
 namespace core {
@@ -30,14 +30,14 @@ size_t clamp(size_t value, size_t lower_limit, size_t upper_limit) {
 
 } // namespace
 
-PoolImpl::PoolImpl(const char* name,
-                   IArena& arena,
-                   size_t object_size,
-                   size_t min_alloc_bytes,
-                   size_t max_alloc_bytes,
-                   void* preallocated_data,
-                   size_t preallocated_size,
-                   size_t flags)
+SlabPoolImpl::SlabPoolImpl(const char* name,
+                           IArena& arena,
+                           size_t object_size,
+                           size_t min_alloc_bytes,
+                           size_t max_alloc_bytes,
+                           void* preallocated_data,
+                           size_t preallocated_size,
+                           size_t flags)
     : name_(name)
     , arena_(arena)
     , n_used_slots_(0)
@@ -68,21 +68,21 @@ PoolImpl::PoolImpl(const char* name,
     }
 }
 
-PoolImpl::~PoolImpl() {
+SlabPoolImpl::~SlabPoolImpl() {
     deallocate_everything_();
 }
 
-size_t PoolImpl::object_size() const {
+size_t SlabPoolImpl::object_size() const {
     return object_size_;
 }
 
-bool PoolImpl::reserve(size_t n_objects) {
+bool SlabPoolImpl::reserve(size_t n_objects) {
     Mutex::Lock lock(mutex_);
 
     return reserve_slots_(n_objects);
 }
 
-void* PoolImpl::allocate() {
+void* SlabPoolImpl::allocate() {
     Slot* slot;
 
     {
@@ -98,7 +98,7 @@ void* PoolImpl::allocate() {
     return give_slot_to_user_(slot);
 }
 
-void PoolImpl::deallocate(void* memory) {
+void SlabPoolImpl::deallocate(void* memory) {
     if (memory == NULL) {
         roc_panic("pool: deallocating null pointer: name=%s", name_);
     }
@@ -116,13 +116,13 @@ void PoolImpl::deallocate(void* memory) {
     }
 }
 
-size_t PoolImpl::num_guard_failures() const {
+size_t SlabPoolImpl::num_guard_failures() const {
     Mutex::Lock lock(mutex_);
 
     return num_guard_failures_;
 }
 
-void* PoolImpl::give_slot_to_user_(Slot* slot) {
+void* SlabPoolImpl::give_slot_to_user_(Slot* slot) {
     slot->~Slot();
 
     SlotHeader* slot_hdr = (SlotHeader*)slot;
@@ -140,7 +140,7 @@ void* PoolImpl::give_slot_to_user_(Slot* slot) {
     return memory;
 }
 
-PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
+SlabPoolImpl::Slot* SlabPoolImpl::take_slot_from_user_(void* memory) {
     SlotHeader* slot_hdr =
         ROC_CONTAINER_OF((char*)memory - sizeof(SlotCanary), SlotHeader, data);
 
@@ -148,7 +148,7 @@ PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
 
     if (!is_owner) {
         num_guard_failures_++;
-        if (flags_ & PoolFlag_EnableGuards) {
+        if (flags_ & SlabPoolFlag_EnableGuards) {
             roc_panic("pool: attempt to deallocate slot not belonging to this pool:"
                       " name=%s this_pool=%p slot_pool=%p",
                       name_, (const void*)this, (const void*)slot_hdr->owner);
@@ -166,7 +166,7 @@ PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
 
     if (!canary_before_ok || !canary_after_ok) {
         num_guard_failures_++;
-        if (flags_ & PoolFlag_EnableGuards) {
+        if (flags_ & SlabPoolFlag_EnableGuards) {
             roc_panic("pool: detected memory violation: name=%s ok_before=%d ok_after=%d",
                       name_, (int)canary_before_ok, (int)canary_after_ok);
         }
@@ -177,7 +177,7 @@ PoolImpl::Slot* PoolImpl::take_slot_from_user_(void* memory) {
     return new (slot_hdr) Slot;
 }
 
-PoolImpl::Slot* PoolImpl::acquire_slot_() {
+SlabPoolImpl::Slot* SlabPoolImpl::acquire_slot_() {
     if (free_slots_.is_empty()) {
         allocate_new_slab_();
     }
@@ -191,7 +191,7 @@ PoolImpl::Slot* PoolImpl::acquire_slot_() {
     return slot;
 }
 
-void PoolImpl::release_slot_(Slot* slot) {
+void SlabPoolImpl::release_slot_(Slot* slot) {
     if (n_used_slots_ == 0) {
         roc_panic("pool: unpaired deallocation: name=%s", name_);
     }
@@ -200,7 +200,7 @@ void PoolImpl::release_slot_(Slot* slot) {
     free_slots_.push_front(*slot);
 }
 
-bool PoolImpl::reserve_slots_(size_t desired_slots) {
+bool SlabPoolImpl::reserve_slots_(size_t desired_slots) {
     if (desired_slots > free_slots_.size()) {
         increase_slab_size_(desired_slots - free_slots_.size());
 
@@ -214,7 +214,7 @@ bool PoolImpl::reserve_slots_(size_t desired_slots) {
     return true;
 }
 
-void PoolImpl::increase_slab_size_(size_t desired_slots) {
+void SlabPoolImpl::increase_slab_size_(size_t desired_slots) {
     if (desired_slots > slab_max_slots_ && slab_max_slots_ != 0) {
         desired_slots = slab_max_slots_;
     }
@@ -229,7 +229,7 @@ void PoolImpl::increase_slab_size_(size_t desired_slots) {
     }
 }
 
-bool PoolImpl::allocate_new_slab_() {
+bool SlabPoolImpl::allocate_new_slab_() {
     const size_t slab_size_bytes = slot_offset_(slab_cur_slots_);
 
     void* memory = arena_.allocate(slab_size_bytes);
@@ -249,7 +249,7 @@ bool PoolImpl::allocate_new_slab_() {
     return true;
 }
 
-void PoolImpl::deallocate_everything_() {
+void SlabPoolImpl::deallocate_everything_() {
     if (n_used_slots_ != 0) {
         roc_panic("pool: detected memory leak: name=%s n_used=%lu n_free=%lu", name_,
                   (unsigned long)n_used_slots_, (unsigned long)free_slots_.size());
@@ -265,7 +265,7 @@ void PoolImpl::deallocate_everything_() {
     }
 }
 
-void PoolImpl::add_preallocated_memory_(void* memory, size_t memory_size) {
+void SlabPoolImpl::add_preallocated_memory_(void* memory, size_t memory_size) {
     if (memory == NULL) {
         roc_panic("pool: preallocated memory is null: name=%s", name_);
     }
@@ -278,7 +278,7 @@ void PoolImpl::add_preallocated_memory_(void* memory, size_t memory_size) {
     }
 }
 
-size_t PoolImpl::slots_per_slab_(size_t slab_size, bool round_up) const {
+size_t SlabPoolImpl::slots_per_slab_(size_t slab_size, bool round_up) const {
     roc_panic_if(slot_size_ == 0);
 
     if (slab_size < slab_hdr_size_) {
@@ -293,7 +293,7 @@ size_t PoolImpl::slots_per_slab_(size_t slab_size, bool round_up) const {
         / slot_size_;
 }
 
-size_t PoolImpl::slot_offset_(size_t slot_index) const {
+size_t SlabPoolImpl::slot_offset_(size_t slot_index) const {
     return slab_hdr_size_ + slot_index * slot_size_;
 }
 

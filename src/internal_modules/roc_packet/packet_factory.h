@@ -14,8 +14,8 @@
 
 #include "roc_core/allocation_policy.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/pool.h"
 #include "roc_core/shared_ptr.h"
+#include "roc_core/slab_pool.h"
 #include "roc_packet/packet.h"
 
 namespace roc {
@@ -31,7 +31,7 @@ public:
     core::SharedPtr<Packet> new_packet();
 
 private:
-    core::Pool<Packet> pool_;
+    core::SlabPool<Packet> pool_;
 };
 
 } // namespace packet

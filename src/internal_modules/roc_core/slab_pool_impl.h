@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/pool_impl.h
+//! @file roc_core/slab_pool_impl.h
 //! @brief Memory pool implementation class.
 
-#ifndef ROC_CORE_POOL_IMPL_H_
-#define ROC_CORE_POOL_IMPL_H_
+#ifndef ROC_CORE_SLAB_POOL_IMPL_H_
+#define ROC_CORE_SLAB_POOL_IMPL_H_
 
 #include "roc_core/align_ops.h"
 #include "roc_core/attributes.h"
@@ -42,13 +42,13 @@ namespace core {
 //! If user data requires padding to be maximum-aligned, this padding
 //! also becomes part of the trailing canary guard.
 //!
-//! @see Pool.
-class PoolImpl : public NonCopyable<> {
+//! @see SlabPool.
+class SlabPoolImpl : public NonCopyable<> {
 public:
     //! Slot header.
     struct SlotHeader {
         //! The pool that the slot belongs to.
-        PoolImpl* owner;
+        SlabPoolImpl* owner;
         //! Variable-length data surrounded by canary guard.
         AlignMax data[];
     };
@@ -57,17 +57,17 @@ public:
     typedef AlignMax SlotCanary;
 
     //! Initialize.
-    PoolImpl(const char* name,
-             IArena& arena,
-             size_t object_size,
-             size_t min_alloc_bytes,
-             size_t max_alloc_bytes,
-             void* preallocated_data,
-             size_t preallocated_size,
-             size_t flags);
+    SlabPoolImpl(const char* name,
+                 IArena& arena,
+                 size_t object_size,
+                 size_t min_alloc_bytes,
+                 size_t max_alloc_bytes,
+                 void* preallocated_data,
+                 size_t preallocated_size,
+                 size_t flags);
 
     //! Deinitialize.
-    ~PoolImpl();
+    ~SlabPoolImpl();
 
     //! Get size of objects in pool.
     size_t object_size() const;
@@ -133,4 +133,4 @@ private:
 } // namespace core
 } // namespace roc
 
-#endif // ROC_CORE_POOL_IMPL_H_
+#endif // ROC_CORE_SLAB_POOL_IMPL_H_
