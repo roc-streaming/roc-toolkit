@@ -18,9 +18,9 @@
 #include "roc_core/allocation_policy.h"
 #include "roc_core/hashmap.h"
 #include "roc_core/mutex.h"
-#include "roc_core/pool.h"
 #include "roc_core/ref_counted.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_core/slab_pool.h"
 #include "roc_core/stddefs.h"
 #include "roc_node/context.h"
 #include "roc_node/node.h"
@@ -138,7 +138,7 @@ private:
     pipeline::SenderLoop pipeline_;
     ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
 
-    core::Pool<Slot> slot_pool_;
+    core::SlabPool<Slot> slot_pool_;
     core::Hashmap<Slot> slot_map_;
 
     bool used_interfaces_[address::Iface_Max];

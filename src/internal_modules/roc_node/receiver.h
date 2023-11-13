@@ -17,8 +17,8 @@
 #include "roc_address/protocol.h"
 #include "roc_core/hashmap.h"
 #include "roc_core/mutex.h"
-#include "roc_core/pool.h"
 #include "roc_core/ref_counted.h"
+#include "roc_core/slab_pool.h"
 #include "roc_core/stddefs.h"
 #include "roc_ctl/control_loop.h"
 #include "roc_node/context.h"
@@ -132,7 +132,7 @@ private:
     pipeline::ReceiverLoop pipeline_;
     ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
 
-    core::Pool<Slot> slot_pool_;
+    core::SlabPool<Slot> slot_pool_;
     core::Hashmap<Slot> slot_map_;
 
     bool used_interfaces_[address::Iface_Max];
