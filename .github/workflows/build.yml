@@ -2,6 +2,11 @@ name: "build"
 
 on:
   push:
+    branches:
+      - master
+      - develop
+    tags:
+      - v*
   pull_request:
   workflow_dispatch:
   schedule:
