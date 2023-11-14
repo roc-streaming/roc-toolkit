@@ -113,17 +113,17 @@ Add new release to :doc:`changelog page </development/changelog>`.
 
 Update version number in `version header <https://github.com/roc-streaming/roc-toolkit/blob/develop/src/public_api/include/roc/version.h>`_.
 
-Update specs for debian and rpm packages:
-
-.. code::
-
-   scripts/update_packages.py
-
 Update authors page:
 
 .. code::
 
    scripts/update_authors.sh
+
+Update specs for debian and rpm packages:
+
+.. code::
+
+   scripts/update_packages.py
 
 Create and push tag:
 

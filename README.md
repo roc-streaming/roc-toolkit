@@ -10,7 +10,6 @@ You can read about the project here:
 
 * [Overview](https://roc-streaming.org/toolkit/docs/about_project/overview.html)
 * [Features](https://roc-streaming.org/toolkit/docs/about_project/features.html)
-* [Usage](https://roc-streaming.org/toolkit/docs/about_project/usage.html)
 
 Summary
 -------
