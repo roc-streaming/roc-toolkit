@@ -60,6 +60,6 @@ The guide bellow will help you to prepare your first patch.
 
   See :doc:`/development/workflow` page for rules of pull request creation and its life-cycle.
 
-  Please remember that pull requests should be always rebased on ``develop`` branch and should be targeted to it!
+  Please remember that pull requests should be always based on ``develop`` branch!
 
   Before submitting PR, don't forget to run code formatting, as described in coding guidelines. After submitting, ensure that all CI checks pass on your PR and fix them if needed.

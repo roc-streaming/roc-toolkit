@@ -37,11 +37,23 @@ New changes always reach ``develop`` branch first. Sometimes, specific commits m
 Pull requests
 =============
 
-All pull-requests should be **targeted to develop** branch. Pull request should be rebased on the latest commit from that branch.
+Please follow a few simple rules to ease maintainers work:
+
+* Pull request should be **targeted to develop** branch and rebased on it.
+
+* Add a **reference to the issue** to pull request description.
+
+* Until pull request is ready for review, **mark it draft**.
+
+* When pull request becomes ready, use GitHub **request review** feature.
+
+* When you submit updated version after review, don't forget to **re-request review**.
+
+* When you adderess issues raised during review, please **don't resolve discussions** by yourself. Instead, leave a comment or thumbs up on that discussion.
 
 It's recommended to group independent changes, like formatting, refactoring, bug fixes, and new features into separate commits. Bonus points if build and tests pass on every commit. This helps a lot when bisecting a regression.
 
-To be merged, a pull request should pass the  :doc:`continuous integration </development/continuous_integration>` checks and code review.
+Before submitting PR, don't forget to run code formatting, as described in :doc:`coding guidelines </development/coding_guidelines>`. After submitting, ensure that all :doc:`continuous integration </development/continuous_integration>` checks pass on your PR and fix them if needed.
 
 Review cycle
 ============
@@ -54,4 +66,4 @@ The following labels are used during code review to indicate pull request state:
 - ``needs revision`` -- maintainer finished review and requested updates or clarifications from author
 - ``needs rebase`` -- automatically added when CI detects that there are unresolved conflicts; author should rebase PR on fresh develop branch
 
-When you have finished doing changes in PR, please **don't forget to "request review"** using corresponding button, or just leave a comment. Otherwise maintainers don't know whether pull request is ready for (re-)review or not.
+These labels are usually assigned automatically by GitHub actions, or manually by maintainer.
