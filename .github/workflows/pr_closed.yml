@@ -5,6 +5,9 @@ on:
     types:
       - closed
 
+concurrency:
+  group: pr-${{ github.event.pull_request.number || github.ref }}
+
 jobs:
   main:
     runs-on: ubuntu-latest

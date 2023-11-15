@@ -3,8 +3,11 @@ name: "pr_wip"
 on:
   pull_request_target:
     types:
-      - converted_to_draft
       - review_request_removed
+      - converted_to_draft
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number || github.ref }}
 
 jobs:
   main:

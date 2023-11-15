@@ -5,8 +5,24 @@ on:
     types:
       - opened
 
+concurrency:
+  group: pr-${{ github.event.pull_request.number || github.ref }}
+
 jobs:
-  main:
+  check-ready:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: andymckay/labeler@1.0.4
+        if: github.event.pull_request.draft == true
+        with:
+          add-labels: 'work in progress'
+
+      - uses: andymckay/labeler@1.0.4
+        if: tojson(github.event.pull_request.requested_reviewers) != '[]'
+        with:
+          add-labels: 'ready for review'
+
+  check-issue:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
