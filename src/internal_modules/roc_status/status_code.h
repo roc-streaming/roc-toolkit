@@ -17,7 +17,7 @@ namespace status {
 
 //! Status code.
 enum StatusCode {
-    StatusOK = 0,  //!< Status indicating a success of an operation.
+    StatusOK,      //!< Status indicating a success of an operation.
     StatusUnknown, //!< Unknown status.
     StatusNoData,  //!< There is no enough data to perform an operation.
 };
