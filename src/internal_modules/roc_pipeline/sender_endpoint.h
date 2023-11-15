@@ -13,7 +13,6 @@
 #define ROC_PIPELINE_SENDER_ENDPOINT_H_
 
 #include "roc_core/iarena.h"
-#include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
 #include "roc_core/scoped_ptr.h"
