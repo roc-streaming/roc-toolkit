@@ -25,7 +25,7 @@ namespace audio {
 // The opposite is also true: if some channel is missing from the order's
 // list, it is considered unsupported by the order and is zeroized.
 
-const ChannelList chan_orders[ChanOrder_Max] = {
+const ChannelOrderTable chan_order_tables[ChanOrder_Max] = {
     // ChanOrder_None
     {
         {
@@ -99,7 +99,7 @@ const ChannelList chan_orders[ChanOrder_Max] = {
 //  https://trac.ffmpeg.org/wiki/AudioChannelManipulation
 //  https://superuser.com/questions/852400
 
-const ChannelMap chan_maps[chan_map_count] = {
+const ChannelMapTable chan_map_tables[chan_map_table_count] = {
     // 2.1->...
     {
         "2.1->1.0",

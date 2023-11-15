@@ -7,7 +7,7 @@
  */
 
 //! @file roc_audio/channel_mapper_matrix.h
-//! @brief Surround to surround conversation coefficients.
+//! @brief Channel mapping matrix.
 
 #ifndef ROC_AUDIO_CHANNEL_MAPPER_MATRIX_H_
 #define ROC_AUDIO_CHANNEL_MAPPER_MATRIX_H_
@@ -19,50 +19,72 @@
 namespace roc {
 namespace audio {
 
-//! Contain conversation coefficients while mapping surround to surround.
+//! Channel mapping matrix.
+//!
+//! Used for mapping between two surround layouts. Not used if one or both
+//! layouts are multitrack.
+//!
+//! In surround mapping, every output channel is calculated as a sum of every
+//! input channel multiplied by a coefficient from this matrix.
+//!
+//! Matrix coefficients are defined for physical channel indicies in frame,
+//! e.g. coeff(1, 2) defines coefficient for second channel in output frame
+//! and third channel in input frame, no matter what is the logical position
+//! of the channels (L, R, ...).
+//!
+//! This  allows to use this matrix not just for mapping between different
+//! channel masks, but also for different channel orders, in one operation.
 class ChannelMapperMatrix : public core::NonCopyable<> {
 public:
-    //! Initialize.
-    //!
-    //! @remarks
-    //!  Should be used only when mapping surround to surround.
-    ChannelMapperMatrix(const ChannelSet& in_chans, const ChannelSet& out_chans);
+    ChannelMapperMatrix();
 
-    //! Return a conversation coefficient for input and output channels.
-    sample_t coeff(size_t out_ch, size_t in_ch) const;
+    //! Build matrix.
+    //! @remarks
+    //!   Builds matrix based on three tables:
+    //!     - two channel order tables
+    //!       (define order of input and output channels)
+    //!     - channel mapping table
+    //!       (defines mapping coefficients between input and output channels)
+    void build(const ChannelSet& in_chans, const ChannelSet& out_chans);
+
+    //! Returns coefficient for a pair of input and output indicies.
+    //! @remarks
+    //!  @p out_index and @p in_index define physical channel offsets
+    //!  in audio frame, not their logical positions.
+    sample_t coeff(size_t out_index, size_t in_index) const {
+        return matrix_[out_index][in_index];
+    }
 
 private:
-    //! Contain mapping of a channel to its position in matrix.
-    struct Mapping : public core::NonCopyable<> {
-        //! Map channels from @p chs to its position in matrix, taking into account
-        //! the channel order. @see ChannelOrder.
-        explicit Mapping(const ChannelSet& chs);
-
+    struct IndexMap {
         ChannelSet index_set;
         size_t index_map[ChanPos_Max];
+
+        IndexMap() {
+            memset(index_map, 0, sizeof(index_map));
+        }
     };
 
-    static const ChannelMap* find_channel_map_(const Mapping& out_mapping,
-                                               const Mapping& in_mapping,
-                                               bool& is_reverse);
+    const ChannelMapTable* select_mapping_table_(const IndexMap& out_mapping,
+                                                 const IndexMap& in_mapping,
+                                                 bool& map_reversed);
 
-    //! Each channel is mapped only to itself.
-    void set_fallback_(const Mapping& out_mapping, const Mapping& in_mapping);
+    void build_index_mapping_(IndexMap& mapping, const ChannelSet& ch_set);
 
-    //! Fill mapping matrix based on rules from @p map.
-    void set_map_(const ChannelMap& map,
-                  bool is_reverse,
-                  const Mapping& out_mapping,
-                  const Mapping& in_mapping);
+    void build_table_matrix_(const ChannelMapTable& map_table,
+                             bool map_reversed,
+                             const IndexMap& out_mapping,
+                             const IndexMap& in_mapping);
 
-    //! Normalize mapping matrix.
-    void normalize_();
+    void build_diagonal_matrix_(const IndexMap& out_mapping, const IndexMap& in_mapping);
 
-    void set_(size_t out_ch,
-              size_t in_ch,
-              sample_t value,
-              const Mapping& out_mapping,
-              const Mapping& in_mapping);
+    void normalize_matrix_();
+
+    void set_coeff_(size_t out_ch,
+                    size_t in_ch,
+                    sample_t value,
+                    const IndexMap& out_mapping,
+                    const IndexMap& in_mapping);
 
     sample_t matrix_[ChanPos_Max][ChanPos_Max];
 };

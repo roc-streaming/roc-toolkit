@@ -7,6 +7,7 @@
  */
 
 #include "roc_audio/channel_mapper.h"
+#include "roc_audio/channel_set_to_str.h"
 #include "roc_core/panic.h"
 
 namespace roc {
@@ -15,9 +16,25 @@ namespace audio {
 ChannelMapper::ChannelMapper(const ChannelSet& in_chans, const ChannelSet& out_chans)
     : in_chans_(in_chans)
     , out_chans_(out_chans)
-    , inout_chans_(in_chans)
-    , matrix_(in_chans_, out_chans_) {
+    , map_func_(NULL) {
+    if (!in_chans_.is_valid()) {
+        roc_panic("channel mapper matrix: invalid input channel set: %s",
+                  channel_set_to_str(in_chans_).c_str());
+    }
+
+    if (!out_chans_.is_valid()) {
+        roc_panic("channel mapper matrix: invalid output channel set: %s",
+                  channel_set_to_str(out_chans_).c_str());
+    }
+
+    inout_chans_ = in_chans;
     inout_chans_.bitwise_or(out_chans);
+
+    if (in_chans_.layout() == ChanLayout_Surround
+        && out_chans_.layout() == ChanLayout_Surround) {
+        map_matrix_.build(in_chans_, out_chans_);
+    }
+
     setup_map_func_();
 }
 
@@ -68,7 +85,7 @@ void ChannelMapper::map_surround_surround_(const sample_t* in_samples,
             sample_t out_s = 0;
 
             for (size_t in_ch = 0; in_ch < in_chans_.num_channels(); in_ch++) {
-                out_s += in_samples[in_ch] * matrix_.coeff(out_ch, in_ch);
+                out_s += in_samples[in_ch] * map_matrix_.coeff(out_ch, in_ch);
             }
 
             out_s = std::min(out_s, SampleMax);

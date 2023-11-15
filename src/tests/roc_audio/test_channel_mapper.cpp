@@ -502,10 +502,11 @@ TEST(channel_mapper, surround_1ch) {
                 if (in_chans.has_channel(ch) && out_chans.has_channel(ch)) {
                     size_t in_off = 0;
                     for (size_t order_off = 0;
-                         chan_orders[ChanOrder_Smpte].chans[order_off] != ChanPos_Max;
+                         chan_order_tables[ChanOrder_Smpte].chans[order_off]
+                         != ChanPos_Max;
                          order_off++) {
                         const ChannelPosition in_ch =
-                            chan_orders[ChanOrder_Smpte].chans[order_off];
+                            chan_order_tables[ChanOrder_Smpte].chans[order_off];
                         if (in_ch == (ChannelPosition)ch) {
                             break;
                         }
@@ -516,10 +517,11 @@ TEST(channel_mapper, surround_1ch) {
 
                     size_t out_off = 0;
                     for (size_t order_off = 0;
-                         chan_orders[ChanOrder_Smpte].chans[order_off] != ChanPos_Max;
+                         chan_order_tables[ChanOrder_Smpte].chans[order_off]
+                         != ChanPos_Max;
                          order_off++) {
                         const ChannelPosition out_ch =
-                            chan_orders[ChanOrder_Smpte].chans[order_off];
+                            chan_order_tables[ChanOrder_Smpte].chans[order_off];
                         if (out_ch == (ChannelPosition)ch) {
                             break;
                         }

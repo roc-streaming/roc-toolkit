@@ -30,7 +30,7 @@ struct ChannelMapRule {
 //! output and input channel numbers and corresponding coefficients.
 //! Such representation allows more compact definition in the source
 //! code. The actual matrix is built by channel mapper at runtime.
-struct ChannelMap {
+struct ChannelMapTable {
     const char* name; //!< Mapping name.
 
     ChannelMask in_mask;  //!< Channel mask of input stream.
@@ -42,21 +42,23 @@ struct ChannelMap {
 };
 
 //! Defines ordered list of channels.
-struct ChannelList {
-    ChannelPosition chans[ChanPos_Max + 1]; //!< Channels.
+struct ChannelOrderTable {
+    //! List of channels.
+    //! Last channel is equal to ChanPos_Max.
+    ChannelPosition chans[ChanPos_Max + 1];
 };
 
-//! Number of defined channel mappings.
-const size_t chan_map_count = 40;
+//! Number of defined channel mapping tables.
+const size_t chan_map_table_count = 40;
 
 //! Defines list of mappings between all supported surround channel mask pairs.
 //! Channel mapper will search for appropriate mapping in this list,
 //! based on input and output channel masks.
-extern const ChannelMap chan_maps[chan_map_count];
+extern const ChannelMapTable chan_map_tables[chan_map_table_count];
 
 //! Defines mapping of channel order identifier to list of channel positions
 //! in corresponding order.
-extern const ChannelList chan_orders[ChanOrder_Max];
+extern const ChannelOrderTable chan_order_tables[ChanOrder_Max];
 
 } // namespace audio
 } // namespace roc
