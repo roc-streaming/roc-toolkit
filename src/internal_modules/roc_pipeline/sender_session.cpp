@@ -212,7 +212,7 @@ packet::stream_source_t SenderSession::on_get_sending_source(size_t source_index
         return 456;
     }
 
-    roc_panic("sender slot: source index out of bounds: source_index=%lu",
+    roc_panic("sender session: source index out of bounds: source_index=%lu",
               (unsigned long)source_index);
 }
 
