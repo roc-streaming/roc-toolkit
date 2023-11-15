@@ -3138,56 +3138,48 @@ TEST(writer_reader, failed_to_read_source_packet) {
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); ++n_scheme) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
-        const status::StatusCode codes[] = {
-            status::StatusUnknown,
-        };
+        core::ScopedPtr<IBlockEncoder> encoder(
+            CodecMap::instance().new_encoder(codec_config, buffer_factory, arena), arena);
 
-        for (size_t n_code = 0; n_code < ROC_ARRAY_SIZE(codes); ++n_code) {
-            core::ScopedPtr<IBlockEncoder> encoder(
-                CodecMap::instance().new_encoder(codec_config, buffer_factory, arena),
-                arena);
+        core::ScopedPtr<IBlockDecoder> decoder(
+            CodecMap::instance().new_decoder(codec_config, buffer_factory, arena), arena);
 
-            core::ScopedPtr<IBlockDecoder> decoder(
-                CodecMap::instance().new_decoder(codec_config, buffer_factory, arena),
-                arena);
+        CHECK(encoder);
+        CHECK(decoder);
 
-            CHECK(encoder);
-            CHECK(decoder);
+        packet::Queue writer_queue;
+        StatusReader source_reader(status::StatusUnknown);
+        packet::Queue repair_reader;
 
-            packet::Queue writer_queue;
-            StatusReader source_reader(codes[n_code]);
-            packet::Queue repair_reader;
+        Writer writer(writer_config, codec_config.scheme, *encoder, writer_queue,
+                      source_composer(), repair_composer(), packet_factory,
+                      buffer_factory, arena);
 
-            Writer writer(writer_config, codec_config.scheme, *encoder, writer_queue,
-                          source_composer(), repair_composer(), packet_factory,
-                          buffer_factory, arena);
+        Reader reader(reader_config, codec_config.scheme, *decoder, source_reader,
+                      repair_reader, rtp_parser, packet_factory, arena);
 
-            Reader reader(reader_config, codec_config.scheme, *decoder, source_reader,
-                          repair_reader, rtp_parser, packet_factory, arena);
+        CHECK(reader.is_valid());
 
-            CHECK(reader.is_valid());
-
-            fill_all_packets(0);
-            for (size_t i = 0; i < NumSourcePackets; ++i) {
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
-            }
-
-            for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
-                packet::PacketPtr pp;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer_queue.read(pp));
-                CHECK(pp);
-
-                if (pp->flags() & packet::Packet::FlagRepair) {
-                    UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_reader.write(pp));
-                }
-            }
-
-            packet::PacketPtr pp;
-            UNSIGNED_LONGS_EQUAL(codes[n_code], reader.read(pp));
-            CHECK(!pp);
-
-            CHECK(reader.is_valid());
+        fill_all_packets(0);
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
         }
+
+        for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
+            packet::PacketPtr pp;
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer_queue.read(pp));
+            CHECK(pp);
+
+            if (pp->flags() & packet::Packet::FlagRepair) {
+                UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_reader.write(pp));
+            }
+        }
+
+        packet::PacketPtr pp;
+        UNSIGNED_LONGS_EQUAL(status::StatusUnknown, reader.read(pp));
+        CHECK(!pp);
+
+        CHECK(reader.is_valid());
     }
 }
 
