@@ -49,7 +49,7 @@ def run_cmd(cmd, input=None, env=None, retry_fn=None):
                 output = proc.stdout.decode()
                 print(output, end='')
         except subprocess.CalledProcessError as e:
-            if retry_fn is not None and retry_fn(output):
+            if retry_fn is not None and retry_fn(e.output):
                 time.sleep(0.5)
                 continue
             error('command failed')
@@ -510,7 +510,7 @@ def rebase_pr(org, repo, pr_number):
         ])
 
     run_cmd([
-        'git', 'rebase', base_sha,
+        'git', 'rebase', '--onto', base_sha, pr_info['target_sha'],
         ])
 
 def squash_pr(org, repo, pr_number, no_issue):
