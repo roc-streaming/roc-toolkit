@@ -7,22 +7,26 @@
  */
 
 //! @file roc_audio/channel_mapper.h
-//! @brief Mixer.
+//! @brief Channel mapper.
 
 #ifndef ROC_AUDIO_CHANNEL_MAPPER_H_
 #define ROC_AUDIO_CHANNEL_MAPPER_H_
 
 #include "roc_audio/channel_mapper_matrix.h"
 #include "roc_audio/channel_set.h"
-#include "roc_audio/frame.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/noncopyable.h"
 
 namespace roc {
 namespace audio {
 
 //! Channel mapper.
-//! Converts between frames with specified channel masks.
+//!
+//! Converts between input and output samples with specified channel sets.
+//!
+//! Supports converting between:
+//!  - different channel layouts (e.g. surround, multitrack)
+//!  - different channel orders (e.g. smpte, alsa)
+//!  - different channel masks (e.g. stereo, mono)
 class ChannelMapper : public core::NonCopyable<> {
 public:
     //! Initialize.
@@ -55,8 +59,10 @@ private:
     const ChannelSet out_chans_;
     ChannelSet inout_chans_;
 
-    ChannelMapperMatrix matrix_;
     map_func_t map_func_;
+
+    // use for surround <=> surround mapping
+    ChannelMapperMatrix map_matrix_;
 };
 
 } // namespace audio

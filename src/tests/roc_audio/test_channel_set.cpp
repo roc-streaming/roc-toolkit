@@ -268,6 +268,19 @@ TEST(channel_set, is_valid) {
         ch_set.set_order(ChanOrder_Smpte);
         CHECK(!ch_set.is_valid());
     }
+    { // surround layout, has order, channel out of bounds (bad)
+        ChannelSet ch_set;
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_layout(ChanLayout_Surround);
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_order(ChanOrder_Smpte);
+        CHECK(!ch_set.is_valid());
+
+        ch_set.set_channel(100, true);
+        CHECK(!ch_set.is_valid());
+    }
     { // surround layout, has order, has channels (good)
         ChannelSet ch_set;
         CHECK(!ch_set.is_valid());
@@ -320,14 +333,13 @@ TEST(channel_set, clear) {
     ch_set.set_order(ChanOrder_Smpte);
 
     ch_set.set_channel(11, true);
-    ch_set.set_channel(101, true);
 
     CHECK(ch_set.is_valid());
 
     LONGS_EQUAL(ChanLayout_Surround, ch_set.layout());
     LONGS_EQUAL(ChanOrder_Smpte, ch_set.order());
 
-    UNSIGNED_LONGS_EQUAL(2, ch_set.num_channels());
+    UNSIGNED_LONGS_EQUAL(1, ch_set.num_channels());
 
     ch_set.clear();
 

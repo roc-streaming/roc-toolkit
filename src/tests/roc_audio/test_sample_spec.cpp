@@ -22,7 +22,7 @@ TEST_GROUP(sample_spec) {};
 TEST(sample_spec, ns_2_nsamples) {
     const double SampleRate = 44100;
 
-    for (size_t numChans = 1; numChans < 32; ++numChans) {
+    for (size_t numChans = 1; numChans < ChanPos_Max; ++numChans) {
         const SampleSpec sample_spec =
             SampleSpec((size_t)SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
                        ChannelMask(((uint64_t)1 << numChans) - 1));
@@ -70,7 +70,7 @@ TEST(sample_spec, nsamples_2_ns) {
 
     core::nanoseconds_t epsilon = core::nanoseconds_t(0.01 / SampleRate * core::Second);
 
-    for (size_t numChans = 1; numChans < 32; ++numChans) {
+    for (size_t numChans = 1; numChans < ChanPos_Max; ++numChans) {
         const SampleSpec sample_spec =
             SampleSpec((size_t)SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
                        ChannelMask(((uint64_t)1 << numChans) - 1));

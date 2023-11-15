@@ -67,10 +67,13 @@ bool ChannelSet::is_valid() const {
         return false;
 
     case ChanLayout_Surround:
-        if (order_ == ChanOrder_None) {
+        if (order_ <= ChanOrder_None || order_ >= ChanOrder_Max) {
             return false;
         }
         if (num_chans_ == 0) {
+            return false;
+        }
+        if (last_chan_ >= ChanPos_Max) {
             return false;
         }
         break;
