@@ -16,6 +16,6 @@ If you or your company wants to sponsor development of a particular feature, you
 Corporate sponsors
 ==================
 
-.. image:: https://i.imgur.com/qdWkfkK.png
+.. image:: https://roc-streaming.org/images/sponsors/boring_tech.png
    :height: 150px
    :target: https://www.boring.tech/

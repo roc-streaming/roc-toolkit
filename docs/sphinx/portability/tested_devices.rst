@@ -25,7 +25,7 @@ Raspberry Pi 4 Model B
 * RAM: 4GB
 * Wi-Fi: 802.11ac
 
-.. image:: https://i.imgur.com/6RzCawM.jpg
+.. image:: https://roc-streaming.org/images/tested_devices/raspberry_pi_4_model_b.jpg
    :width: 300px
 
 Raspberry Pi 3 Model B
@@ -38,7 +38,7 @@ Raspberry Pi 3 Model B
 * RAM: 1GB
 * Wi-Fi: 802.11n
 
-.. image:: https://i.imgur.com/lV5oA2w.jpg
+.. image:: https://roc-streaming.org/images/tested_devices/raspberry_pi_3_model_b.jpg
    :width: 300px
 
 Raspberry Pi Zero W
@@ -51,7 +51,7 @@ Raspberry Pi Zero W
 * RAM: 512MB
 * Wi-Fi: 802.11 b/g/n
 
-.. image:: https://i.imgur.com/vtxdcim.jpg
+.. image:: https://roc-streaming.org/images/tested_devices/raspberry_pi_zero_w.jpg
    :width: 300px
 
 Orange Pi Lite 2
@@ -64,23 +64,23 @@ Orange Pi Lite 2
 * RAM: 1GB
 * Wi-Fi: 802.11 ac/b/g/n
 
-.. image:: https://i.imgur.com/buarXAG.jpg
+.. image:: https://roc-streaming.org/images/tested_devices/orange_pi_lite_2.jpg
    :width: 300px
 
 Linux desktop computers
 =======================
 
-HP ProBook 440 G4
------------------
+Dell XPS 15 9520
+----------------
 
-* Website: https://support.hp.com/us-en/product/hp-probook-440-g4-notebook-pc/10477248/document/c05273730
-* OS: Debian 11.5 (bullseye)
+* Website: https://www.dell.com/en-us/shop/cty/pdp/spd/xps-15-9520-laptop/nbxn9520fyvlh
+* OS: Debian 12.2 (bookworm)
 * Toolchain: ``x86_64-pc-linux-gnu``
-* CPU: Intel Core i7-7500U 2-core 2.7 GHz
-* RAM: 16GB
-* Wi-Fi: 802.11 b/g/n
+* CPU: Intel Core i9-12900HK 14-core 5 GHz
+* RAM: 64GB
+* Wi-Fi: 802.11 a/b/g/n/ac/ax
 
-.. image:: https://i.imgur.com/oNuTDJp.png
+.. image:: https://roc-streaming.org/images/tested_devices/dell_xps_15.jpg
    :width: 300px
 
 Apple desktop computers
@@ -96,7 +96,7 @@ MacBook Pro 2018
 * RAM: 16GB
 * Wi-Fi: 802.11ac
 
-.. image:: https://i.imgur.com/urKO61D.jpg
+.. image:: https://roc-streaming.org/images/tested_devices/macbook_pro_2018.jpg
    :width: 300px
 
 MacBook Air M1 2020
@@ -109,5 +109,5 @@ MacBook Air M1 2020
 * RAM: 8GB
 * Wi-Fi: 802.11ax
 
-.. image:: https://i.imgur.com/eKX8G2j.jpg
+.. image:: https://roc-streaming.org/images/tested_devices/macbook_air_m1_2020.jpg
    :width: 300px
