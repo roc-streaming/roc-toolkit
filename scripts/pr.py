@@ -39,6 +39,8 @@ def run_cmd(cmd, input=None, env=None, retry_fn=None):
     if retry_fn:
         stdout = subprocess.PIPE
 
+    max_tries = 6
+
     while True:
         try:
             print_cmd(cmd)
@@ -49,7 +51,11 @@ def run_cmd(cmd, input=None, env=None, retry_fn=None):
                 output = proc.stdout.decode()
                 print(output, end='')
         except subprocess.CalledProcessError as e:
-            if retry_fn is not None and retry_fn(e.output):
+            output = ''
+            if e.output:
+                output = e.output.decode()
+            if retry_fn is not None and retry_fn(output) and max_tries > 0:
+                max_tries -= 1
                 time.sleep(0.5)
                 continue
             error('command failed')
@@ -369,7 +375,8 @@ def show_pr(org, repo, pr_number, show_json):
 
     end()
 
-def verify_pr(org, repo, pr_number, issue_number, issue_miletsone, force, no_issue):
+def verify_pr(org, repo, pr_number, issue_number, issue_miletsone, force,
+              no_issue, no_milestone):
     pr_info = query_pr_info(org, repo, pr_number)
 
     if not no_issue:
@@ -382,9 +389,10 @@ def verify_pr(org, repo, pr_number, issue_number, issue_miletsone, force, no_iss
             error("can't determine issue associated with pr\n"
                   "add issue number to pr description or use --issue or --no-issue")
 
-        if not issue_miletsone and not issue_info['issue_milestone']:
-            error("can't determine milestone associated with issue\n"
-                  "assign milestone to issue or use --milestone")
+        if not no_milestone:
+            if not issue_miletsone and not issue_info['issue_milestone']:
+                error("can't determine milestone associated with issue\n"
+                      "assign milestone to issue or use --milestone or --no-milestone")
 
     if not force:
         if pr_info['pr_state'] != 'open':
@@ -414,7 +422,8 @@ def checkout_pr(org, repo, pr_number):
         pr_number,
         ])
 
-def update_pr(org, repo, pr_number, issue_number, issue_milestone, no_issue):
+def update_pr(org, repo, pr_number, issue_number, issue_milestone,
+              no_issue, no_milestone):
     def update_link_to_issue():
         pr_info = query_pr_info(org, repo, pr_number)
 
@@ -474,7 +483,9 @@ def update_pr(org, repo, pr_number, issue_number, issue_milestone, no_issue):
 
     if not no_issue:
         update_link_to_issue()
-        update_milestone_of_issue()
+
+        if not no_milestone:
+            update_milestone_of_issue()
 
 def link_pr(org, repo, pr_number, action, no_issue):
     pr_info = query_pr_info(org, repo, pr_number)
@@ -574,7 +585,8 @@ def wait_pr(org, repo, pr_number):
 
 def merge_pr(org, repo, pr_number):
     def retry_fn(output):
-        return 'GraphQL: Base branch was modified.' in output
+        return 'GraphQL: Base branch was modified' in output or \
+            'GraphQL: Pull Request is not mergeable' in output
 
     run_cmd([
         'gh', 'pr', 'merge',
@@ -596,10 +608,12 @@ common_parser.add_argument('--repo', default='roc-toolkit',
 action_parser = argparse.ArgumentParser(add_help=False)
 action_parser.add_argument('--issue', type=int, dest='issue_number',
                     help="overwrite issue to link with")
-action_parser.add_argument('-m', '--milestone', type=str, dest='milestone_name',
-                    help="overwrite issue milestone")
 action_parser.add_argument('--no-issue', action='store_true', dest='no_issue',
                     help="don't link issue")
+action_parser.add_argument('-m', '--milestone', type=str, dest='milestone_name',
+                    help="overwrite issue milestone")
+action_parser.add_argument('-M', '--no-milestone', action='store_true', dest='no_milestone',
+                    help="don't set issue milestone")
 action_parser.add_argument('--no-push', action='store_true', dest='no_push',
                     help="don't actually push anything")
 action_parser.add_argument('-n', '--dry-run', action='store_true', dest='dry_run',
@@ -670,14 +684,14 @@ if args.command == 'rebase':
 
 if args.command == 'link' or args.command == 'unlink':
     verify_pr(args.org, args.repo, args.pr_number, args.issue_number,
-              args.milestone_name, args.force, args.no_issue)
+              args.milestone_name, args.force, args.no_issue, args.no_milestone)
     orig_path = enter_worktree()
     pushed = False
     try:
         checkout_pr(args.org, args.repo, args.pr_number)
         pr_ref = remember_ref()
         update_pr(args.org, args.repo, args.pr_number, args.issue_number,
-                  args.milestone_name, args.no_issue)
+                  args.milestone_name, args.no_issue, args.no_milestone)
         rebase_pr(args.org, args.repo, args.pr_number)
         link_pr(args.org, args.repo, args.pr_number, args.command, args.no_issue)
         log_pr(args.org, args.repo, args.pr_number)
@@ -694,14 +708,14 @@ if args.command == 'merge':
     if int(bool(args.rebase)) + int(bool(args.squash)) != 1:
         error("either --rebase or --squash should be specified")
     verify_pr(args.org, args.repo, args.pr_number, args.issue_number,
-              args.milestone_name, args.force, args.no_issue)
+              args.milestone_name, args.force, args.no_issue, args.no_milestone)
     orig_path = enter_worktree()
     merged = False
     try:
         checkout_pr(args.org, args.repo, args.pr_number)
         pr_ref = remember_ref()
         update_pr(args.org, args.repo, args.pr_number, args.issue_number,
-                  args.milestone_name, args.no_issue)
+                  args.milestone_name, args.no_issue, args.no_milestone)
         rebase_pr(args.org, args.repo, args.pr_number)
         if args.rebase:
             link_pr(args.org, args.repo, args.pr_number, 'link', args.no_issue)
