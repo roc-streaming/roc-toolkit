@@ -338,13 +338,11 @@ core::SharedPtr<Sender::Slot> Sender::get_slot_(slot_index_t slot_index,
                 return NULL;
             }
 
-            if (!slot_map_.grow()) {
+            if (!slot_map_.insert(*slot)) {
                 roc_log(LogError, "sender node: failed to create slot %lu",
                         (unsigned long)slot_index);
                 return NULL;
             }
-
-            slot_map_.insert(*slot);
         } else {
             roc_log(LogError, "sender node: failed to find slot %lu",
                     (unsigned long)slot_index);

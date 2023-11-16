@@ -23,14 +23,12 @@ PulseaudioBackend::PulseaudioBackend() {
 
 void PulseaudioBackend::discover_drivers(
     core::Array<DriverInfo, MaxDrivers>& driver_list) {
-    if (!driver_list.grow(driver_list.size() + 1)) {
-        roc_panic("pulseaudio backend: can't grow drivers array");
+    if (!driver_list.push_back(DriverInfo("pulse", DriverType_Device,
+                                          DriverFlag_IsDefault | DriverFlag_SupportsSink
+                                              | DriverFlag_SupportsSource,
+                                          this))) {
+        roc_panic("pulseaudio backend: can't add driver");
     }
-
-    driver_list.push_back(DriverInfo("pulse", DriverType_Device,
-                                     DriverFlag_IsDefault | DriverFlag_SupportsSink
-                                         | DriverFlag_SupportsSource,
-                                     this));
 }
 
 IDevice* PulseaudioBackend::open_device(DeviceType device_type,

@@ -123,15 +123,17 @@ public:
     }
 
     //! Append element to array.
-    //! @pre
-    //!  Array size() should be less than max_size().
-    void push_back(const T& value) {
-        if (size_ >= max_size_) {
-            roc_panic("array: attempting to append element to full array: size=%lu",
-                      (unsigned long)size_);
+    //! @returns
+    //!  false if the allocation failed
+    ROC_ATTR_NODISCARD bool push_back(const T& value) {
+        if (!grow_exp(size() + 1)) {
+            return false;
         }
+
         new (data_ + size_) T(value);
         size_++;
+
+        return true;
     }
 
     //! Set array size.

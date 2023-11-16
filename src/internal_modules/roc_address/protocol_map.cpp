@@ -133,10 +133,9 @@ bool ProtocolMap::get_supported_interfaces(core::Array<Interface>& interface_arr
             }
 
             if (n_iface == (unsigned)protos_[n_proto].iface) {
-                if (!interface_array.grow(interface_array.size() + 1)) {
+                if (!interface_array.push_back(protos_[n_proto].iface)) {
                     return false;
                 }
-                interface_array.push_back(protos_[n_proto].iface);
                 interfaces_exist = true;
                 break;
             }

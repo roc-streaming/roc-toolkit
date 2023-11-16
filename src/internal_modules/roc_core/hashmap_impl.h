@@ -75,7 +75,7 @@ public:
     HashmapNode::HashmapNodeData* nextof(HashmapNode::HashmapNodeData* node) const;
 
     //! Insert node into hashmap.
-    void insert(HashmapNode::HashmapNodeData* node,
+    bool insert(HashmapNode::HashmapNodeData* node,
                 hashsum_t hash,
                 const void* key,
                 key_equals_callback callback);

@@ -46,23 +46,25 @@ void BackendMap::set_frame_size(core::nanoseconds_t frame_length,
 }
 
 void BackendMap::register_backends_() {
-    if (!backends_.grow(MaxBackends)) {
-        roc_panic("backend map: can't grow backends array");
-    }
-
 #ifdef ROC_TARGET_PULSEAUDIO
     pulseaudio_backend_.reset(new (pulseaudio_backend_) PulseaudioBackend);
-    backends_.push_back(pulseaudio_backend_.get());
+    add_backend_(pulseaudio_backend_.get());
 #endif // ROC_TARGET_PULSEAUDIO
 #ifdef ROC_TARGET_SOX
     sox_backend_.reset(new (sox_backend_) SoxBackend);
-    backends_.push_back(sox_backend_.get());
+    add_backend_(sox_backend_.get());
 #endif // ROC_TARGET_SOX
 }
 
 void BackendMap::register_drivers_() {
     for (size_t n = 0; n < backends_.size(); n++) {
         backends_[n]->discover_drivers(drivers_);
+    }
+}
+
+void BackendMap::add_backend_(IBackend* backend) {
+    if (!backends_.push_back(backend)) {
+        roc_panic("backend map: can't register backend");
     }
 }
 

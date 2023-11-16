@@ -87,7 +87,7 @@ TEST_GROUP(hashmap) {
             format_key(key, sizeof(key), n);
 
             SharedPtr<Object> obj = new Object(key);
-            hashmap.insert(*obj);
+            CHECK(hashmap.insert(*obj));
         }
 
         CHECK((ssize_t)n >= (ssize_t)Capacity);
@@ -113,7 +113,7 @@ TEST(hashmap, insert) {
 
     CHECK(hashmap.grow());
 
-    hashmap.insert(*obj);
+    CHECK(hashmap.insert(*obj));
     UNSIGNED_LONGS_EQUAL(1, hashmap.size());
 
     CHECK(hashmap.find("foo") == obj);
@@ -129,7 +129,7 @@ TEST(hashmap, remove) {
 
     CHECK(hashmap.grow());
 
-    hashmap.insert(*obj);
+    CHECK(hashmap.insert(*obj));
     UNSIGNED_LONGS_EQUAL(1, hashmap.size());
 
     CHECK(hashmap.find("foo"));
@@ -159,7 +159,7 @@ TEST(hashmap, insert_remove_many) {
                 CHECK(hashmap.size() < hashmap.capacity());
             }
 
-            hashmap.insert(*obj);
+            CHECK(hashmap.insert(*obj));
         }
 
         UNSIGNED_LONGS_EQUAL(NumElements, hashmap.size());
@@ -212,7 +212,7 @@ TEST(hashmap, grow_rapidly) {
             format_key(key, sizeof(key), n_elems++);
 
             SharedPtr<Object> obj = new Object(key);
-            hashmap.insert(*obj);
+            CHECK(hashmap.insert(*obj));
 
             UNSIGNED_LONGS_EQUAL(n_elems, hashmap.size());
         }
@@ -238,7 +238,7 @@ TEST(hashmap, grow_rapidly_embedding) {
             format_key(key, sizeof(key), n_elems++);
 
             SharedPtr<Object> obj = new Object(key);
-            hashmap.insert(*obj);
+            CHECK(hashmap.insert(*obj));
         }
 
         UNSIGNED_LONGS_EQUAL(n_elems, hashmap.size());
@@ -280,7 +280,7 @@ TEST(hashmap, grow_slowly) {
                 CHECK(hashmap.size() < hashmap.capacity());
             }
 
-            hashmap.insert(*obj);
+            CHECK(hashmap.insert(*obj));
         }
 
         if (n > StartSize && n % GrowthRatio != 0) {
@@ -309,8 +309,8 @@ TEST(hashmap, refcounting) {
 
         CHECK(hashmap.grow());
 
-        hashmap.insert(*obj1);
-        hashmap.insert(*obj2);
+        CHECK(hashmap.insert(*obj1));
+        CHECK(hashmap.insert(*obj2));
 
         UNSIGNED_LONGS_EQUAL(2, obj1->getref());
         UNSIGNED_LONGS_EQUAL(2, obj2->getref());
@@ -352,7 +352,7 @@ TEST(hashmap, iterate) {
         SharedPtr<Object> obj = new Object(key);
 
         CHECK(hashmap.grow());
-        hashmap.insert(*obj);
+        CHECK(hashmap.insert(*obj));
 
         objects[n] = obj;
 
@@ -387,7 +387,7 @@ TEST(hashmap, iterate_modify) {
         SharedPtr<Object> obj = new Object(key);
 
         CHECK(hashmap.grow());
-        hashmap.insert(*obj);
+        CHECK(hashmap.insert(*obj));
 
         objects[n] = obj;
 
@@ -411,7 +411,7 @@ TEST(hashmap, iterate_modify) {
             SharedPtr<Object> new_obj = new Object(key);
 
             CHECK(hashmap.grow());
-            hashmap.insert(*new_obj);
+            CHECK(hashmap.insert(*new_obj));
 
             objects[NumElements - 1] = new_obj;
         }

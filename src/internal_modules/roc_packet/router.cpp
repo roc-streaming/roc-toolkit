@@ -19,18 +19,17 @@ Router::Router(core::IArena& arena)
 }
 
 bool Router::add_route(IWriter& writer, unsigned flags) {
-    if (!routes_.grow_exp(routes_.size() + 1)) {
-        roc_log(LogError, "router: can't allocate route");
-        return false;
-    }
-
     Route r;
     r.writer = &writer;
     r.flags = flags;
     r.source = 0;
     r.has_source = false;
 
-    routes_.push_back(r);
+    if (!routes_.push_back(r)) {
+        roc_log(LogError, "router: can't allocate route");
+        return false;
+    }
+
     return true;
 }
 

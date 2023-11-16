@@ -85,12 +85,6 @@ bool FormatMap::add_format(const Format& fmt) {
         roc_panic("format map: bad format: invalid codec functions");
     }
 
-    if (!node_map_.grow()) {
-        roc_log(LogError,
-                "format map: failed to register format: hashmap allocation failed");
-        return false;
-    }
-
     if (node_map_.find(fmt.payload_type)) {
         roc_log(LogError,
                 "format map: failed to register format: payload type %u already exists",
@@ -106,7 +100,11 @@ bool FormatMap::add_format(const Format& fmt) {
         return false;
     }
 
-    node_map_.insert(*node);
+    if (!node_map_.insert(*node)) {
+        roc_log(LogError,
+                "format map: failed to register format: hashmap allocation failed");
+        return false;
+    }
 
     return true;
 }

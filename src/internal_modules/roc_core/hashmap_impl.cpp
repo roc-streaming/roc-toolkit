@@ -105,12 +105,14 @@ HashmapImpl::nextof(HashmapNode::HashmapNodeData* node) const {
     return node->all_next;
 }
 
-void HashmapImpl::insert(HashmapNode::HashmapNodeData* node,
+bool HashmapImpl::insert(HashmapNode::HashmapNodeData* node,
                          hashsum_t hash,
                          const void* key,
                          key_equals_callback key_equals) {
     if (size_ >= buckets_capacity_(n_curr_buckets_)) {
-        roc_panic("hashmap: attempt to insert into full hashmap before calling grow()");
+        if (!grow()) {
+            return false;
+        }
     }
 
     if (node->bucket != NULL) {
@@ -131,6 +133,8 @@ void HashmapImpl::insert(HashmapNode::HashmapNodeData* node,
     size_++;
 
     proceed_rehash_(true);
+
+    return true;
 }
 
 void HashmapImpl::remove(HashmapNode::HashmapNodeData* node, bool skip_rehash) {

@@ -97,11 +97,10 @@ bool MediaDescription::set_nb_ports(long nb_ports) {
 }
 
 bool MediaDescription::add_payload_id(unsigned payload_id) {
-    if (!payload_ids_.grow_exp(payload_ids_.size() + 1)) {
+    if (!payload_ids_.push_back(payload_id)) {
         return false;
     }
 
-    payload_ids_.push_back(payload_id);
     return true;
 }
 
@@ -114,11 +113,10 @@ bool MediaDescription::add_connection_data(address::AddrFamily addrtype,
         return false;
     }
 
-    if (!connection_data_.grow_exp(connection_data_.size() + 1)) {
+    if (!connection_data_.push_back(c)) {
         return false;
     }
 
-    connection_data_.push_back(c);
     return true;
 }
 

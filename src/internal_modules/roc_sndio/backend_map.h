@@ -61,6 +61,8 @@ private:
     void register_backends_();
     void register_drivers_();
 
+    void add_backend_(IBackend*);
+
 #ifdef ROC_TARGET_PULSEAUDIO
     core::Optional<PulseaudioBackend> pulseaudio_backend_;
 #endif // ROC_TARGET_PULSEAUDIO

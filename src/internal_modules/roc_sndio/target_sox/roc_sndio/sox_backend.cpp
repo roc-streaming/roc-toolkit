@@ -192,14 +192,13 @@ void SoxBackend::discover_drivers(core::Array<DriverInfo, MaxDrivers>& driver_li
 
         const char* driver = map_from_sox_driver(default_drivers[n]);
 
-        if (!driver_list.grow(driver_list.size() + 1)) {
-            roc_panic("sox backend: can't grow drivers array");
+        if (!driver_list.push_back(DriverInfo(driver, DriverType_Device,
+                                              DriverFlag_IsDefault
+                                                  | DriverFlag_SupportsSource
+                                                  | DriverFlag_SupportsSink,
+                                              this))) {
+            roc_panic("sox backend: can't add driver");
         }
-
-        driver_list.push_back(DriverInfo(driver, DriverType_Device,
-                                         DriverFlag_IsDefault | DriverFlag_SupportsSource
-                                             | DriverFlag_SupportsSink,
-                                         this));
     }
 
     const sox_format_tab_t* formats = sox_get_format_fns();
@@ -215,14 +214,13 @@ void SoxBackend::discover_drivers(core::Array<DriverInfo, MaxDrivers>& driver_li
                 continue;
             }
 
-            if (!driver_list.grow(driver_list.size() + 1)) {
-                roc_panic("sox backend: can't grow drivers array");
+            if (!driver_list.push_back(DriverInfo(
+                    driver,
+                    (handler->flags & SOX_FILE_DEVICE) ? DriverType_Device
+                                                       : DriverType_File,
+                    DriverFlag_SupportsSource | DriverFlag_SupportsSink, this))) {
+                roc_panic("sox backend: can't add driver");
             }
-
-            driver_list.push_back(DriverInfo(
-                driver,
-                (handler->flags & SOX_FILE_DEVICE) ? DriverType_Device : DriverType_File,
-                DriverFlag_SupportsSource | DriverFlag_SupportsSink, this));
         }
     }
 }

@@ -120,7 +120,7 @@ TEST(array, push_back) {
     CHECK(array.grow(NumObjects));
 
     for (size_t n = 0; n < NumObjects; n++) {
-        array.push_back(Object(n));
+        CHECK(array.push_back(Object(n)));
 
         LONGS_EQUAL(NumObjects, array.capacity());
         LONGS_EQUAL(n + 1, array.size());
@@ -174,9 +174,9 @@ TEST(array, constructor_destructor) {
 
         CHECK(array.grow(3));
 
-        array.push_back(Object(1));
-        array.push_back(Object(2));
-        array.push_back(Object(3));
+        CHECK(array.push_back(Object(1)));
+        CHECK(array.push_back(Object(2)));
+        CHECK(array.push_back(Object(3)));
 
         LONGS_EQUAL(0, arena.num_allocations());
         LONGS_EQUAL(3, Object::n_objects);
@@ -186,8 +186,8 @@ TEST(array, constructor_destructor) {
         LONGS_EQUAL(1, arena.num_allocations());
         LONGS_EQUAL(3, Object::n_objects);
 
-        array.push_back(Object(4));
-        array.push_back(Object(5));
+        CHECK(array.push_back(Object(4)));
+        CHECK(array.push_back(Object(5)));
 
         LONGS_EQUAL(1, arena.num_allocations());
         LONGS_EQUAL(5, Object::n_objects);
