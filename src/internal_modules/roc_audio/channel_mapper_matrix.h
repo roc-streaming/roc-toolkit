@@ -12,8 +12,8 @@
 #ifndef ROC_AUDIO_CHANNEL_MAPPER_MATRIX_H_
 #define ROC_AUDIO_CHANNEL_MAPPER_MATRIX_H_
 
-#include "roc_audio/channel_mapper_table.h"
 #include "roc_audio/channel_set.h"
+#include "roc_audio/channel_tables.h"
 #include "roc_core/noncopyable.h"
 
 namespace roc {

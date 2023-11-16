@@ -34,7 +34,7 @@ void format_channel_set(const ChannelSet& ch_set, core::StringBuilder& bld) {
                 if (ch != ch_set.first_channel()) {
                     bld.append_str(",");
                 }
-                bld.append_str(channel_position_to_str((ChannelPosition)ch));
+                bld.append_str(channel_pos_to_str((ChannelPosition)ch));
             }
         } else {
             bld.append_str(" ch=0x");

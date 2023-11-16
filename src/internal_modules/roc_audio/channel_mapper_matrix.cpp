@@ -7,7 +7,6 @@
  */
 
 #include "roc_audio/channel_mapper_matrix.h"
-#include "roc_audio/channel_mapper_table.h"
 #include "roc_audio/channel_set_to_str.h"
 
 namespace roc {
@@ -65,8 +64,8 @@ const ChannelMapTable* ChannelMapperMatrix::select_mapping_table_(
     const IndexMap& out_mapping, const IndexMap& in_mapping, bool& map_reversed) {
     // Find first downmixing table that covers both output and input masks.
     // We assume that tables are sorted from "smaller" to "larger" channel masks.
-    for (size_t n = 0; n < ROC_ARRAY_SIZE(chan_map_tables); n++) {
-        const ChannelMapTable& tbl = chan_map_tables[n];
+    for (size_t n = 0; n < ROC_ARRAY_SIZE(ChanMapTables); n++) {
+        const ChannelMapTable& tbl = ChanMapTables[n];
 
         // Table covers our pair of masks directly,
         // which means that we're downmixing.
@@ -90,7 +89,7 @@ const ChannelMapTable* ChannelMapperMatrix::select_mapping_table_(
 
 void ChannelMapperMatrix::build_index_mapping_(IndexMap& mapping,
                                                const ChannelSet& ch_set) {
-    const ChannelOrderTable& order_table = chan_order_tables[ch_set.order()];
+    const ChannelOrderTable& order_table = ChanOrderTables[ch_set.order()];
 
     size_t ch_index = 0; // Physical index of channel in frame.
     size_t ord_n = 0;

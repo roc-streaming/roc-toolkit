@@ -385,8 +385,17 @@ const char* channel_layout_to_str(ChannelLayout);
 //! Get string name of channel order.
 const char* channel_order_to_str(ChannelOrder);
 
-//! Get string name of channel position.
-const char* channel_position_to_str(ChannelPosition);
+//! Get string name from channel position.
+const char* channel_pos_to_str(ChannelPosition);
+
+//! Get channel position from string name.
+ChannelPosition channel_pos_from_str(const char*);
+
+//! Get string name from channel mask.
+const char* channel_mask_to_str(ChannelMask);
+
+//! Get channel mask from string name.
+ChannelMask channel_mask_from_str(const char*);
 
 } // namespace audio
 } // namespace roc

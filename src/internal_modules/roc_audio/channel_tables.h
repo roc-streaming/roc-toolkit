@@ -6,17 +6,29 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_audio/channel_mapper_table.h
-//! @brief Channel mapping tables.
+//! @file roc_audio/channel_tables.h
+//! @brief Channel tables.
 
-#ifndef ROC_AUDIO_CHANNEL_MAPPER_TABLE_H_
-#define ROC_AUDIO_CHANNEL_MAPPER_TABLE_H_
+#ifndef ROC_AUDIO_CHANNEL_TABLES_H_
+#define ROC_AUDIO_CHANNEL_TABLES_H_
 
 #include "roc_audio/channel_defs.h"
 #include "roc_audio/sample.h"
 
 namespace roc {
 namespace audio {
+
+//! Defines string name for channel position.
+struct ChannelPositionName {
+    const char* name;    //!< Name.
+    ChannelPosition pos; //!< Numeric ID.
+};
+
+//! Defines string name for pre-defined channel mask.
+struct ChannelMaskName {
+    const char* name; //!< Name.
+    ChannelMask mask; //!< Bitmask.
+};
 
 //! Defines multiplication coefficient for a pair of channels.
 struct ChannelMapRule {
@@ -48,19 +60,22 @@ struct ChannelOrderTable {
     ChannelPosition chans[ChanPos_Max + 1];
 };
 
-//! Number of defined channel mapping tables.
-const size_t chan_map_table_count = 40;
+//! Defines mapping between channel position and its name.
+extern const ChannelPositionName ChanPositionNames[ChanPos_Max];
+
+//! Defines mapping between channel mask and its name.
+extern const ChannelMaskName ChanMaskNames[17];
+
+//! Defines mapping of channel order identifier to list of channel positions
+//! in corresponding order.
+extern const ChannelOrderTable ChanOrderTables[ChanOrder_Max];
 
 //! Defines list of mappings between all supported surround channel mask pairs.
 //! Channel mapper will search for appropriate mapping in this list,
 //! based on input and output channel masks.
-extern const ChannelMapTable chan_map_tables[chan_map_table_count];
-
-//! Defines mapping of channel order identifier to list of channel positions
-//! in corresponding order.
-extern const ChannelOrderTable chan_order_tables[ChanOrder_Max];
+extern const ChannelMapTable ChanMapTables[40];
 
 } // namespace audio
 } // namespace roc
 
-#endif // ROC_AUDIO_CHANNEL_MAPPER_TABLE_H_
+#endif // ROC_AUDIO_CHANNEL_TABLES_H_

@@ -6,10 +6,51 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_audio/channel_mapper_table.h"
+#include "roc_audio/channel_tables.h"
+#include "roc_core/macro_helpers.h"
 
 namespace roc {
 namespace audio {
+
+// Table of channel position names.
+const ChannelPositionName ChanPositionNames[ROC_ARRAY_SIZE(ChanPositionNames)] = {
+    { "FL", ChanPos_FrontLeft },      //
+    { "FC", ChanPos_FrontCenter },    //
+    { "FR", ChanPos_FrontRight },     //
+    { "SL", ChanPos_SideLeft },       //
+    { "SR", ChanPos_SideRight },      //
+    { "BL", ChanPos_BackLeft },       //
+    { "BC", ChanPos_BackCenter },     //
+    { "BR", ChanPos_BackRight },      //
+    { "TFL", ChanPos_TopFrontLeft },  //
+    { "TFR", ChanPos_TopFrontRight }, //
+    { "TML", ChanPos_TopMidLeft },    //
+    { "TMR", ChanPos_TopMidRight },   //
+    { "TBL", ChanPos_TopBackLeft },   //
+    { "TBR", ChanPos_TopBackRight },  //
+    { "LFE", ChanPos_LowFrequency },  //
+};
+
+// Table of channel mask names.
+const ChannelMaskName ChanMaskNames[ROC_ARRAY_SIZE(ChanMaskNames)] = {
+    { "mono", ChanMask_Surround_Mono },           //
+    { "stereo", ChanMask_Surround_Stereo },       //
+    { "surround2.1", ChanMask_Surround_2_1 },     //
+    { "surround3.0", ChanMask_Surround_3_0 },     //
+    { "surround3.1", ChanMask_Surround_3_1 },     //
+    { "surround4.0", ChanMask_Surround_4_0 },     //
+    { "surround4.1", ChanMask_Surround_4_1 },     //
+    { "surround5.0", ChanMask_Surround_5_0 },     //
+    { "surround5.1", ChanMask_Surround_5_1 },     //
+    { "surround5.1.2", ChanMask_Surround_5_1_2 }, //
+    { "surround5.1.4", ChanMask_Surround_5_1_4 }, //
+    { "surround6.0", ChanMask_Surround_6_0 },     //
+    { "surround6.1", ChanMask_Surround_6_1 },     //
+    { "surround7.0", ChanMask_Surround_7_0 },     //
+    { "surround7.1", ChanMask_Surround_7_1 },     //
+    { "surround7.1.2", ChanMask_Surround_7_1_2 }, //
+    { "surround7.1.4", ChanMask_Surround_7_1_4 }, //
+};
 
 // These tables define supported channel orders.
 //
@@ -25,7 +66,7 @@ namespace audio {
 // The opposite is also true: if some channel is missing from the order's
 // list, it is considered unsupported by the order and is zeroized.
 
-const ChannelOrderTable chan_order_tables[ChanOrder_Max] = {
+const ChannelOrderTable ChanOrderTables[ROC_ARRAY_SIZE(ChanOrderTables)] = {
     // ChanOrder_None
     {
         {
@@ -99,7 +140,7 @@ const ChannelOrderTable chan_order_tables[ChanOrder_Max] = {
 //  https://trac.ffmpeg.org/wiki/AudioChannelManipulation
 //  https://superuser.com/questions/852400
 
-const ChannelMapTable chan_map_tables[chan_map_table_count] = {
+const ChannelMapTable ChanMapTables[ROC_ARRAY_SIZE(ChanMapTables)] = {
     // 2.1->...
     {
         "2.1->1.0",

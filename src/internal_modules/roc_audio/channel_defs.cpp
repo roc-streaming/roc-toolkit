@@ -7,6 +7,8 @@
  */
 
 #include "roc_audio/channel_defs.h"
+#include "roc_audio/channel_tables.h"
+#include "roc_core/macro_helpers.h"
 
 namespace roc {
 namespace audio {
@@ -44,58 +46,44 @@ const char* channel_order_to_str(ChannelOrder order) {
     return "?";
 }
 
-const char* channel_position_to_str(ChannelPosition position) {
-    switch (position) {
-    case ChanPos_FrontLeft:
-        return "FL";
-
-    case ChanPos_FrontCenter:
-        return "FC";
-
-    case ChanPos_FrontRight:
-        return "FR";
-
-    case ChanPos_SideLeft:
-        return "SL";
-
-    case ChanPos_SideRight:
-        return "SR";
-
-    case ChanPos_BackLeft:
-        return "BL";
-
-    case ChanPos_BackCenter:
-        return "BC";
-
-    case ChanPos_BackRight:
-        return "BR";
-
-    case ChanPos_TopFrontLeft:
-        return "TFL";
-
-    case ChanPos_TopFrontRight:
-        return "TFR";
-
-    case ChanPos_TopMidLeft:
-        return "TML";
-
-    case ChanPos_TopMidRight:
-        return "TMR";
-
-    case ChanPos_TopBackLeft:
-        return "TBL";
-
-    case ChanPos_TopBackRight:
-        return "TBR";
-
-    case ChanPos_LowFrequency:
-        return "LFE";
-
-    case ChanPos_Max:
-        break;
+const char* channel_pos_to_str(ChannelPosition pos) {
+    for (size_t i = 0; i < ROC_ARRAY_SIZE(ChanPositionNames); i++) {
+        if (ChanPositionNames[i].pos == pos) {
+            return ChanPositionNames[i].name;
+        }
     }
 
-    return "?";
+    return NULL;
+}
+
+ChannelPosition channel_pos_from_str(const char* name) {
+    for (size_t i = 0; i < ROC_ARRAY_SIZE(ChanPositionNames); i++) {
+        if (strcmp(ChanPositionNames[i].name, name) == 0) {
+            return ChanPositionNames[i].pos;
+        }
+    }
+
+    return ChanPos_Max;
+}
+
+const char* channel_mask_to_str(ChannelMask mask) {
+    for (size_t i = 0; i < ROC_ARRAY_SIZE(ChanMaskNames); i++) {
+        if (ChanMaskNames[i].mask == mask) {
+            return ChanMaskNames[i].name;
+        }
+    }
+
+    return NULL;
+}
+
+ChannelMask channel_mask_from_str(const char* name) {
+    for (size_t i = 0; i < ROC_ARRAY_SIZE(ChanMaskNames); i++) {
+        if (strcmp(ChanMaskNames[i].name, name) == 0) {
+            return ChanMaskNames[i].mask;
+        }
+    }
+
+    return 0;
 }
 
 } // namespace audio
