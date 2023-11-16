@@ -812,69 +812,73 @@ struct pcm_mapper {
     }
 };
 
-// Sample mapping function
-typedef void (*pcm_mapper_func_t)(
+// Mapping function
+typedef void (*pcm_map_func_t)(
     const uint8_t* in_data,
     size_t& in_bit_off,
     uint8_t* out_data,
     size_t& out_bit_off,
     size_t n_samples);
 
-// Select mapper function
+// Select mapping function
 template <PcmCode InCode, PcmCode OutCode, PcmEndian InEndian, PcmEndian OutEndian>
-pcm_mapper_func_t pcm_mapper_func() {
+pcm_map_func_t pcm_map_func() {
     return &pcm_mapper<InCode, OutCode, InEndian, OutEndian>::map;
 }
 
-// Select mapper function
+// Select mapping function
 template <PcmCode InCode, PcmCode OutCode, PcmEndian InEndian>
-pcm_mapper_func_t pcm_mapper_func(PcmEndian out_endian) {
+pcm_map_func_t pcm_map_func(PcmEndian out_endian) {
     switch (out_endian) {
-{% for e in ENDIANS %}
-    case PcmEndian_{{ e }}:
-{% if e == 'Native' %}
+{% for endian in ENDIANS %}
+    case PcmEndian_{{ endian }}:
+{% if endian == 'Native' %}
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        return pcm_mapper_func<InCode, OutCode, InEndian, PcmEndian_Big>();
+        return pcm_map_func<InCode, OutCode, InEndian, PcmEndian_Big>();
 #else
-        return pcm_mapper_func<InCode, OutCode, InEndian, PcmEndian_Little>();
+        return pcm_map_func<InCode, OutCode, InEndian, PcmEndian_Little>();
 #endif
 {% else %}
-        return pcm_mapper_func<InCode, OutCode, InEndian, PcmEndian_{{ e }}>();
+        return pcm_map_func<InCode, OutCode, InEndian, PcmEndian_{{ endian }}>();
 {% endif %}
 {% endfor %}
+    case PcmEndian_Max:
+        break;
     }
     return NULL;
 }
 
-// Select mapper function
+// Select mapping function
 template <PcmCode InCode, PcmCode OutCode>
-pcm_mapper_func_t pcm_mapper_func(PcmEndian in_endian, PcmEndian out_endian) {
+pcm_map_func_t pcm_map_func(PcmEndian in_endian, PcmEndian out_endian) {
     switch (in_endian) {
-{% for e in ENDIANS %}
-    case PcmEndian_{{ e }}:
-{% if e == 'Native' %}
+{% for endian in ENDIANS %}
+    case PcmEndian_{{ endian }}:
+{% if endian == 'Native' %}
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        return pcm_mapper_func<InCode, OutCode, PcmEndian_Big>(out_endian);
+        return pcm_map_func<InCode, OutCode, PcmEndian_Big>(out_endian);
 #else
-        return pcm_mapper_func<InCode, OutCode, PcmEndian_Little>(out_endian);
+        return pcm_map_func<InCode, OutCode, PcmEndian_Little>(out_endian);
 #endif
 {% else %}
-        return pcm_mapper_func<InCode, OutCode, PcmEndian_{{ e }}>(out_endian);
+        return pcm_map_func<InCode, OutCode, PcmEndian_{{ endian }}>(out_endian);
 {% endif %}
 {% endfor %}
+    case PcmEndian_Max:
+        break;
     }
     return NULL;
 }
 
-// Select mapper function
+// Select mapping function
 template <PcmCode InCode>
-inline pcm_mapper_func_t pcm_mapper_func(PcmCode out_code,
-                                         PcmEndian in_endian,
-                                         PcmEndian out_endian) {
+inline pcm_map_func_t pcm_map_func(PcmCode out_code,
+                                   PcmEndian in_endian,
+                                   PcmEndian out_endian) {
     switch (out_code) {
-{% for e in CODES %}
-    case PcmCode_{{ e.code }}:
-        return pcm_mapper_func<InCode, PcmCode_{{ e.code }}>(in_endian, out_endian);
+{% for code in CODES %}
+    case PcmCode_{{ code.code }}:
+        return pcm_map_func<InCode, PcmCode_{{ code.code }}>(in_endian, out_endian);
 {% endfor %}
     case PcmCode_Max:
         break;
@@ -882,15 +886,15 @@ inline pcm_mapper_func_t pcm_mapper_func(PcmCode out_code,
     return NULL;
 }
 
-// Select mapper function
-inline pcm_mapper_func_t pcm_mapper_func(PcmCode in_code,
-                                         PcmCode out_code,
-                                         PcmEndian in_endian,
-                                         PcmEndian out_endian) {
+// Select mapping function
+inline pcm_map_func_t pcm_map_func(PcmCode in_code,
+                                   PcmCode out_code,
+                                   PcmEndian in_endian,
+                                   PcmEndian out_endian) {
     switch (in_code) {
-{% for e in CODES %}
-    case PcmCode_{{ e.code }}:
-        return pcm_mapper_func<PcmCode_{{ e.code }}>(out_code, \
+{% for code in CODES %}
+    case PcmCode_{{ code.code }}:
+        return pcm_map_func<PcmCode_{{ code.code }}>(out_code, \
 in_endian, out_endian);
 {% endfor %}
     case PcmCode_Max:
@@ -902,9 +906,9 @@ in_endian, out_endian);
 // Get number of meaningful bits per sample
 inline size_t pcm_bit_depth(PcmCode code) {
     switch (code) {
-{% for e in CODES %}
-    case PcmCode_{{ e.code }}:
-        return {{ e.width }};
+{% for code in CODES %}
+    case PcmCode_{{ code.code }}:
+        return {{ code.width }};
 {% endfor %}
     case PcmCode_Max:
         break;
@@ -915,9 +919,9 @@ inline size_t pcm_bit_depth(PcmCode code) {
 // Get number of total bits per sample
 inline size_t pcm_bit_width(PcmCode code) {
     switch (code) {
-{% for e in CODES %}
-    case PcmCode_{{ e.code }}:
-        return {{ e.packed_width }};
+{% for code in CODES %}
+    case PcmCode_{{ code.code }}:
+        return {{ code.packed_width }};
 {% endfor %}
     case PcmCode_Max:
         break;
@@ -928,9 +932,9 @@ inline size_t pcm_bit_width(PcmCode code) {
 // Check if code is integer
 inline size_t pcm_is_integer(PcmCode code) {
     switch (code) {
-{% for e in CODES %}
-    case PcmCode_{{ e.code }}:
-        return {{ str(e.is_integer).lower() }};
+{% for code in CODES %}
+    case PcmCode_{{ code.code }}:
+        return {{ str(code.is_integer).lower() }};
 {% endfor %}
     case PcmCode_Max:
         break;
@@ -941,9 +945,9 @@ inline size_t pcm_is_integer(PcmCode code) {
 // Check if code is signed
 inline size_t pcm_is_signed(PcmCode code) {
     switch (code) {
-{% for e in CODES %}
-    case PcmCode_{{ e.code }}:
-        return {{ str(e.is_signed).lower() }};
+{% for code in CODES %}
+    case PcmCode_{{ code.code }}:
+        return {{ str(code.is_signed).lower() }};
 {% endfor %}
     case PcmCode_Max:
         break;
@@ -961,6 +965,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
         case PcmEndian_{{ endian }}:
             return "{{ short_name(code, endian) }}";
 {% endfor %}
+        case PcmEndian_Max:
+            break;
         }
         break;
 {% endfor %}

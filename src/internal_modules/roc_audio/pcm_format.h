@@ -54,7 +54,9 @@ enum PcmCode {
 enum PcmEndian {
     PcmEndian_Native, //!< Endian native to current CPU.
     PcmEndian_Big,    //!< Big endian.
-    PcmEndian_Little  //!< Little endian.
+    PcmEndian_Little, //!< Little endian.
+
+    PcmEndian_Max //!< Maximum value.
 };
 
 //! PCM format description.

@@ -12736,178 +12736,182 @@ struct pcm_mapper {
     }
 };
 
-// Sample mapping function
-typedef void (*pcm_mapper_func_t)(
+// Mapping function
+typedef void (*pcm_map_func_t)(
     const uint8_t* in_data,
     size_t& in_bit_off,
     uint8_t* out_data,
     size_t& out_bit_off,
     size_t n_samples);
 
-// Select mapper function
+// Select mapping function
 template <PcmCode InCode, PcmCode OutCode, PcmEndian InEndian, PcmEndian OutEndian>
-pcm_mapper_func_t pcm_mapper_func() {
+pcm_map_func_t pcm_map_func() {
     return &pcm_mapper<InCode, OutCode, InEndian, OutEndian>::map;
 }
 
-// Select mapper function
+// Select mapping function
 template <PcmCode InCode, PcmCode OutCode, PcmEndian InEndian>
-pcm_mapper_func_t pcm_mapper_func(PcmEndian out_endian) {
+pcm_map_func_t pcm_map_func(PcmEndian out_endian) {
     switch (out_endian) {
     case PcmEndian_Native:
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        return pcm_mapper_func<InCode, OutCode, InEndian, PcmEndian_Big>();
+        return pcm_map_func<InCode, OutCode, InEndian, PcmEndian_Big>();
 #else
-        return pcm_mapper_func<InCode, OutCode, InEndian, PcmEndian_Little>();
+        return pcm_map_func<InCode, OutCode, InEndian, PcmEndian_Little>();
 #endif
     case PcmEndian_Big:
-        return pcm_mapper_func<InCode, OutCode, InEndian, PcmEndian_Big>();
+        return pcm_map_func<InCode, OutCode, InEndian, PcmEndian_Big>();
     case PcmEndian_Little:
-        return pcm_mapper_func<InCode, OutCode, InEndian, PcmEndian_Little>();
+        return pcm_map_func<InCode, OutCode, InEndian, PcmEndian_Little>();
+    case PcmEndian_Max:
+        break;
     }
     return NULL;
 }
 
-// Select mapper function
+// Select mapping function
 template <PcmCode InCode, PcmCode OutCode>
-pcm_mapper_func_t pcm_mapper_func(PcmEndian in_endian, PcmEndian out_endian) {
+pcm_map_func_t pcm_map_func(PcmEndian in_endian, PcmEndian out_endian) {
     switch (in_endian) {
     case PcmEndian_Native:
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        return pcm_mapper_func<InCode, OutCode, PcmEndian_Big>(out_endian);
+        return pcm_map_func<InCode, OutCode, PcmEndian_Big>(out_endian);
 #else
-        return pcm_mapper_func<InCode, OutCode, PcmEndian_Little>(out_endian);
+        return pcm_map_func<InCode, OutCode, PcmEndian_Little>(out_endian);
 #endif
     case PcmEndian_Big:
-        return pcm_mapper_func<InCode, OutCode, PcmEndian_Big>(out_endian);
+        return pcm_map_func<InCode, OutCode, PcmEndian_Big>(out_endian);
     case PcmEndian_Little:
-        return pcm_mapper_func<InCode, OutCode, PcmEndian_Little>(out_endian);
+        return pcm_map_func<InCode, OutCode, PcmEndian_Little>(out_endian);
+    case PcmEndian_Max:
+        break;
     }
     return NULL;
 }
 
-// Select mapper function
+// Select mapping function
 template <PcmCode InCode>
-inline pcm_mapper_func_t pcm_mapper_func(PcmCode out_code,
-                                         PcmEndian in_endian,
-                                         PcmEndian out_endian) {
+inline pcm_map_func_t pcm_map_func(PcmCode out_code,
+                                   PcmEndian in_endian,
+                                   PcmEndian out_endian) {
     switch (out_code) {
     case PcmCode_SInt8:
-        return pcm_mapper_func<InCode, PcmCode_SInt8>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_SInt8>(in_endian, out_endian);
     case PcmCode_UInt8:
-        return pcm_mapper_func<InCode, PcmCode_UInt8>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_UInt8>(in_endian, out_endian);
     case PcmCode_SInt16:
-        return pcm_mapper_func<InCode, PcmCode_SInt16>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_SInt16>(in_endian, out_endian);
     case PcmCode_UInt16:
-        return pcm_mapper_func<InCode, PcmCode_UInt16>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_UInt16>(in_endian, out_endian);
     case PcmCode_SInt18:
-        return pcm_mapper_func<InCode, PcmCode_SInt18>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_SInt18>(in_endian, out_endian);
     case PcmCode_UInt18:
-        return pcm_mapper_func<InCode, PcmCode_UInt18>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_UInt18>(in_endian, out_endian);
     case PcmCode_SInt18_3:
-        return pcm_mapper_func<InCode, PcmCode_SInt18_3>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_SInt18_3>(in_endian, out_endian);
     case PcmCode_UInt18_3:
-        return pcm_mapper_func<InCode, PcmCode_UInt18_3>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_UInt18_3>(in_endian, out_endian);
     case PcmCode_SInt18_4:
-        return pcm_mapper_func<InCode, PcmCode_SInt18_4>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_SInt18_4>(in_endian, out_endian);
     case PcmCode_UInt18_4:
-        return pcm_mapper_func<InCode, PcmCode_UInt18_4>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_UInt18_4>(in_endian, out_endian);
     case PcmCode_SInt20:
-        return pcm_mapper_func<InCode, PcmCode_SInt20>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_SInt20>(in_endian, out_endian);
     case PcmCode_UInt20:
-        return pcm_mapper_func<InCode, PcmCode_UInt20>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_UInt20>(in_endian, out_endian);
     case PcmCode_SInt20_3:
-        return pcm_mapper_func<InCode, PcmCode_SInt20_3>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_SInt20_3>(in_endian, out_endian);
     case PcmCode_UInt20_3:
-        return pcm_mapper_func<InCode, PcmCode_UInt20_3>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_UInt20_3>(in_endian, out_endian);
     case PcmCode_SInt20_4:
-        return pcm_mapper_func<InCode, PcmCode_SInt20_4>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_SInt20_4>(in_endian, out_endian);
     case PcmCode_UInt20_4:
-        return pcm_mapper_func<InCode, PcmCode_UInt20_4>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_UInt20_4>(in_endian, out_endian);
     case PcmCode_SInt24:
-        return pcm_mapper_func<InCode, PcmCode_SInt24>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_SInt24>(in_endian, out_endian);
     case PcmCode_UInt24:
-        return pcm_mapper_func<InCode, PcmCode_UInt24>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_UInt24>(in_endian, out_endian);
     case PcmCode_SInt24_4:
-        return pcm_mapper_func<InCode, PcmCode_SInt24_4>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_SInt24_4>(in_endian, out_endian);
     case PcmCode_UInt24_4:
-        return pcm_mapper_func<InCode, PcmCode_UInt24_4>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_UInt24_4>(in_endian, out_endian);
     case PcmCode_SInt32:
-        return pcm_mapper_func<InCode, PcmCode_SInt32>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_SInt32>(in_endian, out_endian);
     case PcmCode_UInt32:
-        return pcm_mapper_func<InCode, PcmCode_UInt32>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_UInt32>(in_endian, out_endian);
     case PcmCode_SInt64:
-        return pcm_mapper_func<InCode, PcmCode_SInt64>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_SInt64>(in_endian, out_endian);
     case PcmCode_UInt64:
-        return pcm_mapper_func<InCode, PcmCode_UInt64>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_UInt64>(in_endian, out_endian);
     case PcmCode_Float32:
-        return pcm_mapper_func<InCode, PcmCode_Float32>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_Float32>(in_endian, out_endian);
     case PcmCode_Float64:
-        return pcm_mapper_func<InCode, PcmCode_Float64>(in_endian, out_endian);
+        return pcm_map_func<InCode, PcmCode_Float64>(in_endian, out_endian);
     case PcmCode_Max:
         break;
     }
     return NULL;
 }
 
-// Select mapper function
-inline pcm_mapper_func_t pcm_mapper_func(PcmCode in_code,
-                                         PcmCode out_code,
-                                         PcmEndian in_endian,
-                                         PcmEndian out_endian) {
+// Select mapping function
+inline pcm_map_func_t pcm_map_func(PcmCode in_code,
+                                   PcmCode out_code,
+                                   PcmEndian in_endian,
+                                   PcmEndian out_endian) {
     switch (in_code) {
     case PcmCode_SInt8:
-        return pcm_mapper_func<PcmCode_SInt8>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_SInt8>(out_code, in_endian, out_endian);
     case PcmCode_UInt8:
-        return pcm_mapper_func<PcmCode_UInt8>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_UInt8>(out_code, in_endian, out_endian);
     case PcmCode_SInt16:
-        return pcm_mapper_func<PcmCode_SInt16>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_SInt16>(out_code, in_endian, out_endian);
     case PcmCode_UInt16:
-        return pcm_mapper_func<PcmCode_UInt16>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_UInt16>(out_code, in_endian, out_endian);
     case PcmCode_SInt18:
-        return pcm_mapper_func<PcmCode_SInt18>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_SInt18>(out_code, in_endian, out_endian);
     case PcmCode_UInt18:
-        return pcm_mapper_func<PcmCode_UInt18>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_UInt18>(out_code, in_endian, out_endian);
     case PcmCode_SInt18_3:
-        return pcm_mapper_func<PcmCode_SInt18_3>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_SInt18_3>(out_code, in_endian, out_endian);
     case PcmCode_UInt18_3:
-        return pcm_mapper_func<PcmCode_UInt18_3>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_UInt18_3>(out_code, in_endian, out_endian);
     case PcmCode_SInt18_4:
-        return pcm_mapper_func<PcmCode_SInt18_4>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_SInt18_4>(out_code, in_endian, out_endian);
     case PcmCode_UInt18_4:
-        return pcm_mapper_func<PcmCode_UInt18_4>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_UInt18_4>(out_code, in_endian, out_endian);
     case PcmCode_SInt20:
-        return pcm_mapper_func<PcmCode_SInt20>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_SInt20>(out_code, in_endian, out_endian);
     case PcmCode_UInt20:
-        return pcm_mapper_func<PcmCode_UInt20>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_UInt20>(out_code, in_endian, out_endian);
     case PcmCode_SInt20_3:
-        return pcm_mapper_func<PcmCode_SInt20_3>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_SInt20_3>(out_code, in_endian, out_endian);
     case PcmCode_UInt20_3:
-        return pcm_mapper_func<PcmCode_UInt20_3>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_UInt20_3>(out_code, in_endian, out_endian);
     case PcmCode_SInt20_4:
-        return pcm_mapper_func<PcmCode_SInt20_4>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_SInt20_4>(out_code, in_endian, out_endian);
     case PcmCode_UInt20_4:
-        return pcm_mapper_func<PcmCode_UInt20_4>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_UInt20_4>(out_code, in_endian, out_endian);
     case PcmCode_SInt24:
-        return pcm_mapper_func<PcmCode_SInt24>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_SInt24>(out_code, in_endian, out_endian);
     case PcmCode_UInt24:
-        return pcm_mapper_func<PcmCode_UInt24>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_UInt24>(out_code, in_endian, out_endian);
     case PcmCode_SInt24_4:
-        return pcm_mapper_func<PcmCode_SInt24_4>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_SInt24_4>(out_code, in_endian, out_endian);
     case PcmCode_UInt24_4:
-        return pcm_mapper_func<PcmCode_UInt24_4>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_UInt24_4>(out_code, in_endian, out_endian);
     case PcmCode_SInt32:
-        return pcm_mapper_func<PcmCode_SInt32>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_SInt32>(out_code, in_endian, out_endian);
     case PcmCode_UInt32:
-        return pcm_mapper_func<PcmCode_UInt32>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_UInt32>(out_code, in_endian, out_endian);
     case PcmCode_SInt64:
-        return pcm_mapper_func<PcmCode_SInt64>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_SInt64>(out_code, in_endian, out_endian);
     case PcmCode_UInt64:
-        return pcm_mapper_func<PcmCode_UInt64>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_UInt64>(out_code, in_endian, out_endian);
     case PcmCode_Float32:
-        return pcm_mapper_func<PcmCode_Float32>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_Float32>(out_code, in_endian, out_endian);
     case PcmCode_Float64:
-        return pcm_mapper_func<PcmCode_Float64>(out_code, in_endian, out_endian);
+        return pcm_map_func<PcmCode_Float64>(out_code, in_endian, out_endian);
     case PcmCode_Max:
         break;
     }
@@ -13169,6 +13173,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "s8_be";
         case PcmEndian_Little:
             return "s8_le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_UInt8:
@@ -13179,6 +13185,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "u8_be";
         case PcmEndian_Little:
             return "u8_le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_SInt16:
@@ -13189,6 +13197,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "s16_be";
         case PcmEndian_Little:
             return "s16_le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_UInt16:
@@ -13199,6 +13209,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "u16_be";
         case PcmEndian_Little:
             return "u16_le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_SInt18:
@@ -13209,6 +13221,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "s18_be";
         case PcmEndian_Little:
             return "s18_le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_UInt18:
@@ -13219,6 +13233,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "u18_be";
         case PcmEndian_Little:
             return "u18_le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_SInt18_3:
@@ -13229,6 +13245,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "s18_3be";
         case PcmEndian_Little:
             return "s18_3le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_UInt18_3:
@@ -13239,6 +13257,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "u18_3be";
         case PcmEndian_Little:
             return "u18_3le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_SInt18_4:
@@ -13249,6 +13269,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "s18_4be";
         case PcmEndian_Little:
             return "s18_4le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_UInt18_4:
@@ -13259,6 +13281,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "u18_4be";
         case PcmEndian_Little:
             return "u18_4le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_SInt20:
@@ -13269,6 +13293,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "s20_be";
         case PcmEndian_Little:
             return "s20_le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_UInt20:
@@ -13279,6 +13305,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "u20_be";
         case PcmEndian_Little:
             return "u20_le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_SInt20_3:
@@ -13289,6 +13317,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "s20_3be";
         case PcmEndian_Little:
             return "s20_3le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_UInt20_3:
@@ -13299,6 +13329,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "u20_3be";
         case PcmEndian_Little:
             return "u20_3le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_SInt20_4:
@@ -13309,6 +13341,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "s20_4be";
         case PcmEndian_Little:
             return "s20_4le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_UInt20_4:
@@ -13319,6 +13353,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "u20_4be";
         case PcmEndian_Little:
             return "u20_4le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_SInt24:
@@ -13329,6 +13365,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "s24_be";
         case PcmEndian_Little:
             return "s24_le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_UInt24:
@@ -13339,6 +13377,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "u24_be";
         case PcmEndian_Little:
             return "u24_le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_SInt24_4:
@@ -13349,6 +13389,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "s24_4be";
         case PcmEndian_Little:
             return "s24_4le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_UInt24_4:
@@ -13359,6 +13401,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "u24_4be";
         case PcmEndian_Little:
             return "u24_4le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_SInt32:
@@ -13369,6 +13413,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "s32_be";
         case PcmEndian_Little:
             return "s32_le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_UInt32:
@@ -13379,6 +13425,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "u32_be";
         case PcmEndian_Little:
             return "u32_le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_SInt64:
@@ -13389,6 +13437,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "s64_be";
         case PcmEndian_Little:
             return "s64_le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_UInt64:
@@ -13399,6 +13449,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "u64_be";
         case PcmEndian_Little:
             return "u64_le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_Float32:
@@ -13409,6 +13461,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "f32_be";
         case PcmEndian_Little:
             return "f32_le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_Float64:
@@ -13419,6 +13473,8 @@ inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
             return "f64_be";
         case PcmEndian_Little:
             return "f64_le";
+        case PcmEndian_Max:
+            break;
         }
         break;
     case PcmCode_Max:
