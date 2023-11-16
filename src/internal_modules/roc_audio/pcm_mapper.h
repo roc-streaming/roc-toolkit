@@ -14,6 +14,7 @@
 
 #include "roc_audio/pcm_format.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace audio {

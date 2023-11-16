@@ -14,7 +14,7 @@ namespace test {
 static SampleInfo sample_pcm_sint8_le = {
   /* name */ "pcm_sint8_le",
 
-  /* encoding  */ PcmEncoding_SInt8,
+  /* encoding  */ PcmCode_SInt8,
   /* endian    */ PcmEndian_Little,
 
   /* num_samples */ 240,

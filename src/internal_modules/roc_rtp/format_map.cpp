@@ -20,8 +20,7 @@ FormatMap::FormatMap(core::IArena& arena)
     {
         Format fmt;
         fmt.payload_type = PayloadType_L16_Mono;
-        fmt.pcm_format =
-            audio::PcmFormat(audio::PcmEncoding_SInt16, audio::PcmEndian_Big);
+        fmt.pcm_format = audio::PcmFormat(audio::PcmCode_SInt16, audio::PcmEndian_Big);
         fmt.sample_spec =
             audio::SampleSpec(44100, audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
                               audio::ChanMask_Surround_Mono);
@@ -34,8 +33,7 @@ FormatMap::FormatMap(core::IArena& arena)
     {
         Format fmt;
         fmt.payload_type = PayloadType_L16_Stereo;
-        fmt.pcm_format =
-            audio::PcmFormat(audio::PcmEncoding_SInt16, audio::PcmEndian_Big);
+        fmt.pcm_format = audio::PcmFormat(audio::PcmCode_SInt16, audio::PcmEndian_Big);
         fmt.sample_spec =
             audio::SampleSpec(44100, audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
                               audio::ChanMask_Surround_Stereo);

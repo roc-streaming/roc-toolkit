@@ -25,7 +25,7 @@ namespace rtp {
 
 namespace {
 
-const audio::PcmFormat PcmFmt(audio::PcmEncoding_SInt16, audio::PcmEndian_Big);
+const audio::PcmFormat PcmFmt(audio::PcmCode_SInt16, audio::PcmEndian_Big);
 
 enum { ChMask = 3, PacketSz = 128, SampleRate = 10000 };
 

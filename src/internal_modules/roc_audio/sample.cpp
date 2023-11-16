@@ -8,7 +8,7 @@
 
 #include "roc_audio/sample.h"
 
-const roc::audio::PcmFormat roc::audio::SampleFormat(roc::audio::PcmEncoding_Float32,
+const roc::audio::PcmFormat roc::audio::SampleFormat(roc::audio::PcmCode_Float32,
                                                      roc::audio::PcmEndian_Native);
 
 const roc::audio::sample_t roc::audio::SampleMin = -1;

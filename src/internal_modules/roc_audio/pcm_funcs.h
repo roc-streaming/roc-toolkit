@@ -1,9 +1,9 @@
 /*
- * THIS FILE IS AUTO-GENERATED USING `pcm_mapper_func_gen.py'
+ * THIS FILE IS AUTO-GENERATED USING `pcm_funcs_gen.py'. DO NOT EDIT!
  */
 
-#ifndef ROC_AUDIO_PCM_MAPPER_FUNC_H_
-#define ROC_AUDIO_PCM_MAPPER_FUNC_H_
+#ifndef ROC_AUDIO_PCM_FUNCS_H_
+#define ROC_AUDIO_PCM_FUNCS_H_
 
 #include "roc_audio/pcm_format.h"
 #include "roc_core/attributes.h"
@@ -37,21 +37,21 @@ const int32_t pcm_sint18_max = 131071;
 const uint32_t pcm_uint18_min = 0u;
 const uint32_t pcm_uint18_max = 262143u;
 
-// SInt18_3B value range
-const int32_t pcm_sint18_3b_min = -131071 - 1;
-const int32_t pcm_sint18_3b_max = 131071;
+// SInt18_3 value range
+const int32_t pcm_sint18_3_min = -131071 - 1;
+const int32_t pcm_sint18_3_max = 131071;
 
-// UInt18_3B value range
-const uint32_t pcm_uint18_3b_min = 0u;
-const uint32_t pcm_uint18_3b_max = 262143u;
+// UInt18_3 value range
+const uint32_t pcm_uint18_3_min = 0u;
+const uint32_t pcm_uint18_3_max = 262143u;
 
-// SInt18_4B value range
-const int32_t pcm_sint18_4b_min = -131071 - 1;
-const int32_t pcm_sint18_4b_max = 131071;
+// SInt18_4 value range
+const int32_t pcm_sint18_4_min = -131071 - 1;
+const int32_t pcm_sint18_4_max = 131071;
 
-// UInt18_4B value range
-const uint32_t pcm_uint18_4b_min = 0u;
-const uint32_t pcm_uint18_4b_max = 262143u;
+// UInt18_4 value range
+const uint32_t pcm_uint18_4_min = 0u;
+const uint32_t pcm_uint18_4_max = 262143u;
 
 // SInt20 value range
 const int32_t pcm_sint20_min = -524287 - 1;
@@ -61,21 +61,21 @@ const int32_t pcm_sint20_max = 524287;
 const uint32_t pcm_uint20_min = 0u;
 const uint32_t pcm_uint20_max = 1048575u;
 
-// SInt20_3B value range
-const int32_t pcm_sint20_3b_min = -524287 - 1;
-const int32_t pcm_sint20_3b_max = 524287;
+// SInt20_3 value range
+const int32_t pcm_sint20_3_min = -524287 - 1;
+const int32_t pcm_sint20_3_max = 524287;
 
-// UInt20_3B value range
-const uint32_t pcm_uint20_3b_min = 0u;
-const uint32_t pcm_uint20_3b_max = 1048575u;
+// UInt20_3 value range
+const uint32_t pcm_uint20_3_min = 0u;
+const uint32_t pcm_uint20_3_max = 1048575u;
 
-// SInt20_4B value range
-const int32_t pcm_sint20_4b_min = -524287 - 1;
-const int32_t pcm_sint20_4b_max = 524287;
+// SInt20_4 value range
+const int32_t pcm_sint20_4_min = -524287 - 1;
+const int32_t pcm_sint20_4_max = 524287;
 
-// UInt20_4B value range
-const uint32_t pcm_uint20_4b_min = 0u;
-const uint32_t pcm_uint20_4b_max = 1048575u;
+// UInt20_4 value range
+const uint32_t pcm_uint20_4_min = 0u;
+const uint32_t pcm_uint20_4_max = 1048575u;
 
 // SInt24 value range
 const int32_t pcm_sint24_min = -8388607 - 1;
@@ -85,13 +85,13 @@ const int32_t pcm_sint24_max = 8388607;
 const uint32_t pcm_uint24_min = 0u;
 const uint32_t pcm_uint24_max = 16777215u;
 
-// SInt24_4B value range
-const int32_t pcm_sint24_4b_min = -8388607 - 1;
-const int32_t pcm_sint24_4b_max = 8388607;
+// SInt24_4 value range
+const int32_t pcm_sint24_4_min = -8388607 - 1;
+const int32_t pcm_sint24_4_max = 8388607;
 
-// UInt24_4B value range
-const uint32_t pcm_uint24_4b_min = 0u;
-const uint32_t pcm_uint24_4b_max = 16777215u;
+// UInt24_4 value range
+const uint32_t pcm_uint24_4_min = 0u;
+const uint32_t pcm_uint24_4_max = 16777215u;
 
 // SInt32 value range
 const int32_t pcm_sint32_min = -2147483647l - 1;
@@ -110,10 +110,10 @@ const uint64_t pcm_uint64_min = 0ull;
 const uint64_t pcm_uint64_max = 18446744073709551615ull;
 
 // Convert between signed and unsigned samples
-template <PcmEncoding> struct pcm_sign_converter;
+template <PcmCode> struct pcm_sign_converter;
 
 // Convert SInt8 from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_SInt8> {
+template <> struct pcm_sign_converter<PcmCode_SInt8> {
     // SInt8 from unsigned value
     static inline int8_t from_unsigned(uint8_t arg) {
         if (arg < uint8_t(pcm_sint8_max) + 1) {
@@ -132,7 +132,7 @@ template <> struct pcm_sign_converter<PcmEncoding_SInt8> {
 };
 
 // Convert UInt8 from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_UInt8> {
+template <> struct pcm_sign_converter<PcmCode_UInt8> {
     // UInt8 from signed value
     static inline uint8_t from_signed(int8_t arg) {
         if (arg >= 0) {
@@ -151,7 +151,7 @@ template <> struct pcm_sign_converter<PcmEncoding_UInt8> {
 };
 
 // Convert SInt16 from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_SInt16> {
+template <> struct pcm_sign_converter<PcmCode_SInt16> {
     // SInt16 from unsigned value
     static inline int16_t from_unsigned(uint16_t arg) {
         if (arg < uint16_t(pcm_sint16_max) + 1) {
@@ -170,7 +170,7 @@ template <> struct pcm_sign_converter<PcmEncoding_SInt16> {
 };
 
 // Convert UInt16 from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_UInt16> {
+template <> struct pcm_sign_converter<PcmCode_UInt16> {
     // UInt16 from signed value
     static inline uint16_t from_signed(int16_t arg) {
         if (arg >= 0) {
@@ -189,7 +189,7 @@ template <> struct pcm_sign_converter<PcmEncoding_UInt16> {
 };
 
 // Convert SInt18 from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_SInt18> {
+template <> struct pcm_sign_converter<PcmCode_SInt18> {
     // SInt18 from unsigned value
     static inline int32_t from_unsigned(uint32_t arg) {
         if (arg < uint32_t(pcm_sint18_max) + 1) {
@@ -208,7 +208,7 @@ template <> struct pcm_sign_converter<PcmEncoding_SInt18> {
 };
 
 // Convert UInt18 from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_UInt18> {
+template <> struct pcm_sign_converter<PcmCode_UInt18> {
     // UInt18 from signed value
     static inline uint32_t from_signed(int32_t arg) {
         if (arg >= 0) {
@@ -226,84 +226,84 @@ template <> struct pcm_sign_converter<PcmEncoding_UInt18> {
     }
 };
 
-// Convert SInt18_3B from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_SInt18_3B> {
-    // SInt18_3B from unsigned value
+// Convert SInt18_3 from/to signed/unsigned
+template <> struct pcm_sign_converter<PcmCode_SInt18_3> {
+    // SInt18_3 from unsigned value
     static inline int32_t from_unsigned(uint32_t arg) {
-        if (arg < uint32_t(pcm_sint18_3b_max) + 1) {
-            return int32_t(arg) - pcm_sint18_3b_max - 1;
+        if (arg < uint32_t(pcm_sint18_3_max) + 1) {
+            return int32_t(arg) - pcm_sint18_3_max - 1;
         }
-        return int32_t(arg - uint32_t(pcm_sint18_3b_max) - 1);
+        return int32_t(arg - uint32_t(pcm_sint18_3_max) - 1);
     }
 
-    // SInt18_3B to unsigned value
+    // SInt18_3 to unsigned value
     static inline uint32_t to_unsigned(int32_t arg) {
         if (arg >= 0) {
-            return uint32_t(arg) + pcm_sint18_3b_max + 1;
+            return uint32_t(arg) + pcm_sint18_3_max + 1;
         }
-        return uint32_t(arg + pcm_sint18_3b_max + 1);
+        return uint32_t(arg + pcm_sint18_3_max + 1);
     }
 };
 
-// Convert UInt18_3B from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_UInt18_3B> {
-    // UInt18_3B from signed value
+// Convert UInt18_3 from/to signed/unsigned
+template <> struct pcm_sign_converter<PcmCode_UInt18_3> {
+    // UInt18_3 from signed value
     static inline uint32_t from_signed(int32_t arg) {
         if (arg >= 0) {
-            return uint32_t(arg) + pcm_sint18_3b_max + 1;
+            return uint32_t(arg) + pcm_sint18_3_max + 1;
         }
-        return uint32_t(arg + pcm_sint18_3b_max + 1);
+        return uint32_t(arg + pcm_sint18_3_max + 1);
     }
 
-    // UInt18_3B to signed value
+    // UInt18_3 to signed value
     static inline int32_t to_signed(uint32_t arg) {
-        if (arg >= uint32_t(pcm_sint18_3b_max) + 1) {
-            return int32_t(arg - uint32_t(pcm_sint18_3b_max) - 1);
+        if (arg >= uint32_t(pcm_sint18_3_max) + 1) {
+            return int32_t(arg - uint32_t(pcm_sint18_3_max) - 1);
         }
-        return int32_t(arg - uint32_t(pcm_sint18_3b_max) - 1);
+        return int32_t(arg - uint32_t(pcm_sint18_3_max) - 1);
     }
 };
 
-// Convert SInt18_4B from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_SInt18_4B> {
-    // SInt18_4B from unsigned value
+// Convert SInt18_4 from/to signed/unsigned
+template <> struct pcm_sign_converter<PcmCode_SInt18_4> {
+    // SInt18_4 from unsigned value
     static inline int32_t from_unsigned(uint32_t arg) {
-        if (arg < uint32_t(pcm_sint18_4b_max) + 1) {
-            return int32_t(arg) - pcm_sint18_4b_max - 1;
+        if (arg < uint32_t(pcm_sint18_4_max) + 1) {
+            return int32_t(arg) - pcm_sint18_4_max - 1;
         }
-        return int32_t(arg - uint32_t(pcm_sint18_4b_max) - 1);
+        return int32_t(arg - uint32_t(pcm_sint18_4_max) - 1);
     }
 
-    // SInt18_4B to unsigned value
+    // SInt18_4 to unsigned value
     static inline uint32_t to_unsigned(int32_t arg) {
         if (arg >= 0) {
-            return uint32_t(arg) + pcm_sint18_4b_max + 1;
+            return uint32_t(arg) + pcm_sint18_4_max + 1;
         }
-        return uint32_t(arg + pcm_sint18_4b_max + 1);
+        return uint32_t(arg + pcm_sint18_4_max + 1);
     }
 };
 
-// Convert UInt18_4B from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_UInt18_4B> {
-    // UInt18_4B from signed value
+// Convert UInt18_4 from/to signed/unsigned
+template <> struct pcm_sign_converter<PcmCode_UInt18_4> {
+    // UInt18_4 from signed value
     static inline uint32_t from_signed(int32_t arg) {
         if (arg >= 0) {
-            return uint32_t(arg) + pcm_sint18_4b_max + 1;
+            return uint32_t(arg) + pcm_sint18_4_max + 1;
         }
-        return uint32_t(arg + pcm_sint18_4b_max + 1);
+        return uint32_t(arg + pcm_sint18_4_max + 1);
     }
 
-    // UInt18_4B to signed value
+    // UInt18_4 to signed value
     static inline int32_t to_signed(uint32_t arg) {
-        if (arg >= uint32_t(pcm_sint18_4b_max) + 1) {
-            return int32_t(arg - uint32_t(pcm_sint18_4b_max) - 1);
+        if (arg >= uint32_t(pcm_sint18_4_max) + 1) {
+            return int32_t(arg - uint32_t(pcm_sint18_4_max) - 1);
         }
-        return int32_t(arg - uint32_t(pcm_sint18_4b_max) - 1);
+        return int32_t(arg - uint32_t(pcm_sint18_4_max) - 1);
     }
 };
 
 // Convert SInt20 from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_SInt20> {
+template <> struct pcm_sign_converter<PcmCode_SInt20> {
     // SInt20 from unsigned value
     static inline int32_t from_unsigned(uint32_t arg) {
         if (arg < uint32_t(pcm_sint20_max) + 1) {
@@ -322,7 +322,7 @@ template <> struct pcm_sign_converter<PcmEncoding_SInt20> {
 };
 
 // Convert UInt20 from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_UInt20> {
+template <> struct pcm_sign_converter<PcmCode_UInt20> {
     // UInt20 from signed value
     static inline uint32_t from_signed(int32_t arg) {
         if (arg >= 0) {
@@ -340,84 +340,84 @@ template <> struct pcm_sign_converter<PcmEncoding_UInt20> {
     }
 };
 
-// Convert SInt20_3B from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_SInt20_3B> {
-    // SInt20_3B from unsigned value
+// Convert SInt20_3 from/to signed/unsigned
+template <> struct pcm_sign_converter<PcmCode_SInt20_3> {
+    // SInt20_3 from unsigned value
     static inline int32_t from_unsigned(uint32_t arg) {
-        if (arg < uint32_t(pcm_sint20_3b_max) + 1) {
-            return int32_t(arg) - pcm_sint20_3b_max - 1;
+        if (arg < uint32_t(pcm_sint20_3_max) + 1) {
+            return int32_t(arg) - pcm_sint20_3_max - 1;
         }
-        return int32_t(arg - uint32_t(pcm_sint20_3b_max) - 1);
+        return int32_t(arg - uint32_t(pcm_sint20_3_max) - 1);
     }
 
-    // SInt20_3B to unsigned value
+    // SInt20_3 to unsigned value
     static inline uint32_t to_unsigned(int32_t arg) {
         if (arg >= 0) {
-            return uint32_t(arg) + pcm_sint20_3b_max + 1;
+            return uint32_t(arg) + pcm_sint20_3_max + 1;
         }
-        return uint32_t(arg + pcm_sint20_3b_max + 1);
+        return uint32_t(arg + pcm_sint20_3_max + 1);
     }
 };
 
-// Convert UInt20_3B from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_UInt20_3B> {
-    // UInt20_3B from signed value
+// Convert UInt20_3 from/to signed/unsigned
+template <> struct pcm_sign_converter<PcmCode_UInt20_3> {
+    // UInt20_3 from signed value
     static inline uint32_t from_signed(int32_t arg) {
         if (arg >= 0) {
-            return uint32_t(arg) + pcm_sint20_3b_max + 1;
+            return uint32_t(arg) + pcm_sint20_3_max + 1;
         }
-        return uint32_t(arg + pcm_sint20_3b_max + 1);
+        return uint32_t(arg + pcm_sint20_3_max + 1);
     }
 
-    // UInt20_3B to signed value
+    // UInt20_3 to signed value
     static inline int32_t to_signed(uint32_t arg) {
-        if (arg >= uint32_t(pcm_sint20_3b_max) + 1) {
-            return int32_t(arg - uint32_t(pcm_sint20_3b_max) - 1);
+        if (arg >= uint32_t(pcm_sint20_3_max) + 1) {
+            return int32_t(arg - uint32_t(pcm_sint20_3_max) - 1);
         }
-        return int32_t(arg - uint32_t(pcm_sint20_3b_max) - 1);
+        return int32_t(arg - uint32_t(pcm_sint20_3_max) - 1);
     }
 };
 
-// Convert SInt20_4B from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_SInt20_4B> {
-    // SInt20_4B from unsigned value
+// Convert SInt20_4 from/to signed/unsigned
+template <> struct pcm_sign_converter<PcmCode_SInt20_4> {
+    // SInt20_4 from unsigned value
     static inline int32_t from_unsigned(uint32_t arg) {
-        if (arg < uint32_t(pcm_sint20_4b_max) + 1) {
-            return int32_t(arg) - pcm_sint20_4b_max - 1;
+        if (arg < uint32_t(pcm_sint20_4_max) + 1) {
+            return int32_t(arg) - pcm_sint20_4_max - 1;
         }
-        return int32_t(arg - uint32_t(pcm_sint20_4b_max) - 1);
+        return int32_t(arg - uint32_t(pcm_sint20_4_max) - 1);
     }
 
-    // SInt20_4B to unsigned value
+    // SInt20_4 to unsigned value
     static inline uint32_t to_unsigned(int32_t arg) {
         if (arg >= 0) {
-            return uint32_t(arg) + pcm_sint20_4b_max + 1;
+            return uint32_t(arg) + pcm_sint20_4_max + 1;
         }
-        return uint32_t(arg + pcm_sint20_4b_max + 1);
+        return uint32_t(arg + pcm_sint20_4_max + 1);
     }
 };
 
-// Convert UInt20_4B from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_UInt20_4B> {
-    // UInt20_4B from signed value
+// Convert UInt20_4 from/to signed/unsigned
+template <> struct pcm_sign_converter<PcmCode_UInt20_4> {
+    // UInt20_4 from signed value
     static inline uint32_t from_signed(int32_t arg) {
         if (arg >= 0) {
-            return uint32_t(arg) + pcm_sint20_4b_max + 1;
+            return uint32_t(arg) + pcm_sint20_4_max + 1;
         }
-        return uint32_t(arg + pcm_sint20_4b_max + 1);
+        return uint32_t(arg + pcm_sint20_4_max + 1);
     }
 
-    // UInt20_4B to signed value
+    // UInt20_4 to signed value
     static inline int32_t to_signed(uint32_t arg) {
-        if (arg >= uint32_t(pcm_sint20_4b_max) + 1) {
-            return int32_t(arg - uint32_t(pcm_sint20_4b_max) - 1);
+        if (arg >= uint32_t(pcm_sint20_4_max) + 1) {
+            return int32_t(arg - uint32_t(pcm_sint20_4_max) - 1);
         }
-        return int32_t(arg - uint32_t(pcm_sint20_4b_max) - 1);
+        return int32_t(arg - uint32_t(pcm_sint20_4_max) - 1);
     }
 };
 
 // Convert SInt24 from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_SInt24> {
+template <> struct pcm_sign_converter<PcmCode_SInt24> {
     // SInt24 from unsigned value
     static inline int32_t from_unsigned(uint32_t arg) {
         if (arg < uint32_t(pcm_sint24_max) + 1) {
@@ -436,7 +436,7 @@ template <> struct pcm_sign_converter<PcmEncoding_SInt24> {
 };
 
 // Convert UInt24 from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_UInt24> {
+template <> struct pcm_sign_converter<PcmCode_UInt24> {
     // UInt24 from signed value
     static inline uint32_t from_signed(int32_t arg) {
         if (arg >= 0) {
@@ -454,46 +454,46 @@ template <> struct pcm_sign_converter<PcmEncoding_UInt24> {
     }
 };
 
-// Convert SInt24_4B from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_SInt24_4B> {
-    // SInt24_4B from unsigned value
+// Convert SInt24_4 from/to signed/unsigned
+template <> struct pcm_sign_converter<PcmCode_SInt24_4> {
+    // SInt24_4 from unsigned value
     static inline int32_t from_unsigned(uint32_t arg) {
-        if (arg < uint32_t(pcm_sint24_4b_max) + 1) {
-            return int32_t(arg) - pcm_sint24_4b_max - 1;
+        if (arg < uint32_t(pcm_sint24_4_max) + 1) {
+            return int32_t(arg) - pcm_sint24_4_max - 1;
         }
-        return int32_t(arg - uint32_t(pcm_sint24_4b_max) - 1);
+        return int32_t(arg - uint32_t(pcm_sint24_4_max) - 1);
     }
 
-    // SInt24_4B to unsigned value
+    // SInt24_4 to unsigned value
     static inline uint32_t to_unsigned(int32_t arg) {
         if (arg >= 0) {
-            return uint32_t(arg) + pcm_sint24_4b_max + 1;
+            return uint32_t(arg) + pcm_sint24_4_max + 1;
         }
-        return uint32_t(arg + pcm_sint24_4b_max + 1);
+        return uint32_t(arg + pcm_sint24_4_max + 1);
     }
 };
 
-// Convert UInt24_4B from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_UInt24_4B> {
-    // UInt24_4B from signed value
+// Convert UInt24_4 from/to signed/unsigned
+template <> struct pcm_sign_converter<PcmCode_UInt24_4> {
+    // UInt24_4 from signed value
     static inline uint32_t from_signed(int32_t arg) {
         if (arg >= 0) {
-            return uint32_t(arg) + pcm_sint24_4b_max + 1;
+            return uint32_t(arg) + pcm_sint24_4_max + 1;
         }
-        return uint32_t(arg + pcm_sint24_4b_max + 1);
+        return uint32_t(arg + pcm_sint24_4_max + 1);
     }
 
-    // UInt24_4B to signed value
+    // UInt24_4 to signed value
     static inline int32_t to_signed(uint32_t arg) {
-        if (arg >= uint32_t(pcm_sint24_4b_max) + 1) {
-            return int32_t(arg - uint32_t(pcm_sint24_4b_max) - 1);
+        if (arg >= uint32_t(pcm_sint24_4_max) + 1) {
+            return int32_t(arg - uint32_t(pcm_sint24_4_max) - 1);
         }
-        return int32_t(arg - uint32_t(pcm_sint24_4b_max) - 1);
+        return int32_t(arg - uint32_t(pcm_sint24_4_max) - 1);
     }
 };
 
 // Convert SInt32 from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_SInt32> {
+template <> struct pcm_sign_converter<PcmCode_SInt32> {
     // SInt32 from unsigned value
     static inline int32_t from_unsigned(uint32_t arg) {
         if (arg < uint32_t(pcm_sint32_max) + 1) {
@@ -512,7 +512,7 @@ template <> struct pcm_sign_converter<PcmEncoding_SInt32> {
 };
 
 // Convert UInt32 from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_UInt32> {
+template <> struct pcm_sign_converter<PcmCode_UInt32> {
     // UInt32 from signed value
     static inline uint32_t from_signed(int32_t arg) {
         if (arg >= 0) {
@@ -531,7 +531,7 @@ template <> struct pcm_sign_converter<PcmEncoding_UInt32> {
 };
 
 // Convert SInt64 from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_SInt64> {
+template <> struct pcm_sign_converter<PcmCode_SInt64> {
     // SInt64 from unsigned value
     static inline int64_t from_unsigned(uint64_t arg) {
         if (arg < uint64_t(pcm_sint64_max) + 1) {
@@ -550,7 +550,7 @@ template <> struct pcm_sign_converter<PcmEncoding_SInt64> {
 };
 
 // Convert UInt64 from/to signed/unsigned
-template <> struct pcm_sign_converter<PcmEncoding_UInt64> {
+template <> struct pcm_sign_converter<PcmCode_UInt64> {
     // UInt64 from signed value
     static inline uint64_t from_signed(int64_t arg) {
         if (arg >= 0) {
@@ -568,21 +568,21 @@ template <> struct pcm_sign_converter<PcmEncoding_UInt64> {
     }
 };
 
-// Convert between unpacked encodings
-template <PcmEncoding InEnc, PcmEncoding OutEnc> struct pcm_encoding_converter;
+// Convert between unpacked CODES
+template <PcmCode InCode, PcmCode OutCode> struct pcm_code_converter;
 
 // Convert SInt8 to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_SInt8> {
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_SInt8> {
     static inline int8_t convert(int8_t arg) {
         return arg;
     }
 };
 
 // Convert UInt8 to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt8> {
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_SInt8> {
     static inline int8_t convert(uint8_t arg) {
         // convert to signed
-        int8_t in = pcm_sign_converter<PcmEncoding_UInt8>::to_signed(arg);
+        int8_t in = pcm_sign_converter<PcmCode_UInt8>::to_signed(arg);
 
         int8_t out;
         out = in;
@@ -592,7 +592,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt8> 
 };
 
 // Convert SInt16 to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_SInt8> {
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_SInt8> {
     static inline int8_t convert(int16_t arg) {
         int16_t in = arg;
 
@@ -610,10 +610,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_SInt8>
 };
 
 // Convert UInt16 to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt8> {
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_SInt8> {
     static inline int8_t convert(uint16_t arg) {
         // convert to signed
-        int16_t in = pcm_sign_converter<PcmEncoding_UInt16>::to_signed(arg);
+        int16_t in = pcm_sign_converter<PcmCode_UInt16>::to_signed(arg);
 
         int8_t out;
         // downscale signed integer
@@ -629,7 +629,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt8>
 };
 
 // Convert SInt18 to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_SInt8> {
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_SInt8> {
     static inline int8_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -647,10 +647,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_SInt8>
 };
 
 // Convert UInt18 to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt8> {
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_SInt8> {
     static inline int8_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18>::to_signed(arg);
 
         int8_t out;
         // downscale signed integer
@@ -665,14 +665,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt8>
     }
 };
 
-// Convert SInt18_3B to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_SInt8> {
+// Convert SInt18_3 to SInt8
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_SInt8> {
     static inline int8_t convert(int32_t arg) {
         int32_t in = arg;
 
         int8_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint18_3b_max - (int32_t(1) << 9))) {
+        if (in > int32_t(pcm_sint18_3_max - (int32_t(1) << 9))) {
             // clip
             out = pcm_sint8_max;
         } else {
@@ -683,15 +683,15 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt18_3B to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SInt8> {
+// Convert UInt18_3 to SInt8
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_SInt8> {
     static inline int8_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_3>::to_signed(arg);
 
         int8_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint18_3b_max - (int32_t(1) << 9))) {
+        if (in > int32_t(pcm_sint18_3_max - (int32_t(1) << 9))) {
             // clip
             out = pcm_sint8_max;
         } else {
@@ -702,14 +702,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt18_4B to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_SInt8> {
+// Convert SInt18_4 to SInt8
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_SInt8> {
     static inline int8_t convert(int32_t arg) {
         int32_t in = arg;
 
         int8_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint18_4b_max - (int32_t(1) << 9))) {
+        if (in > int32_t(pcm_sint18_4_max - (int32_t(1) << 9))) {
             // clip
             out = pcm_sint8_max;
         } else {
@@ -720,15 +720,15 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt18_4B to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SInt8> {
+// Convert UInt18_4 to SInt8
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_SInt8> {
     static inline int8_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_4>::to_signed(arg);
 
         int8_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint18_4b_max - (int32_t(1) << 9))) {
+        if (in > int32_t(pcm_sint18_4_max - (int32_t(1) << 9))) {
             // clip
             out = pcm_sint8_max;
         } else {
@@ -740,7 +740,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SIn
 };
 
 // Convert SInt20 to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt8> {
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_SInt8> {
     static inline int8_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -758,10 +758,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt8>
 };
 
 // Convert UInt20 to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_SInt8> {
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_SInt8> {
     static inline int8_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20>::to_signed(arg);
 
         int8_t out;
         // downscale signed integer
@@ -776,14 +776,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_SInt8>
     }
 };
 
-// Convert SInt20_3B to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_SInt8> {
+// Convert SInt20_3 to SInt8
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_SInt8> {
     static inline int8_t convert(int32_t arg) {
         int32_t in = arg;
 
         int8_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_3b_max - (int32_t(1) << 11))) {
+        if (in > int32_t(pcm_sint20_3_max - (int32_t(1) << 11))) {
             // clip
             out = pcm_sint8_max;
         } else {
@@ -794,15 +794,15 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt20_3B to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SInt8> {
+// Convert UInt20_3 to SInt8
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_SInt8> {
     static inline int8_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_3>::to_signed(arg);
 
         int8_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_3b_max - (int32_t(1) << 11))) {
+        if (in > int32_t(pcm_sint20_3_max - (int32_t(1) << 11))) {
             // clip
             out = pcm_sint8_max;
         } else {
@@ -813,14 +813,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt20_4B to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_SInt8> {
+// Convert SInt20_4 to SInt8
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_SInt8> {
     static inline int8_t convert(int32_t arg) {
         int32_t in = arg;
 
         int8_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_4b_max - (int32_t(1) << 11))) {
+        if (in > int32_t(pcm_sint20_4_max - (int32_t(1) << 11))) {
             // clip
             out = pcm_sint8_max;
         } else {
@@ -831,15 +831,15 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt20_4B to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SInt8> {
+// Convert UInt20_4 to SInt8
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_SInt8> {
     static inline int8_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_4>::to_signed(arg);
 
         int8_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_4b_max - (int32_t(1) << 11))) {
+        if (in > int32_t(pcm_sint20_4_max - (int32_t(1) << 11))) {
             // clip
             out = pcm_sint8_max;
         } else {
@@ -851,7 +851,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SIn
 };
 
 // Convert SInt24 to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt8> {
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_SInt8> {
     static inline int8_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -869,10 +869,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt8>
 };
 
 // Convert UInt24 to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt8> {
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_SInt8> {
     static inline int8_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24>::to_signed(arg);
 
         int8_t out;
         // downscale signed integer
@@ -887,14 +887,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt8>
     }
 };
 
-// Convert SInt24_4B to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_SInt8> {
+// Convert SInt24_4 to SInt8
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_SInt8> {
     static inline int8_t convert(int32_t arg) {
         int32_t in = arg;
 
         int8_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 15))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 15))) {
             // clip
             out = pcm_sint8_max;
         } else {
@@ -905,15 +905,15 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt24_4B to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SInt8> {
+// Convert UInt24_4 to SInt8
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_SInt8> {
     static inline int8_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24_4>::to_signed(arg);
 
         int8_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 15))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 15))) {
             // clip
             out = pcm_sint8_max;
         } else {
@@ -925,7 +925,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SIn
 };
 
 // Convert SInt32 to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt8> {
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_SInt8> {
     static inline int8_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -943,10 +943,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt8>
 };
 
 // Convert UInt32 to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt8> {
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_SInt8> {
     static inline int8_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt32>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt32>::to_signed(arg);
 
         int8_t out;
         // downscale signed integer
@@ -962,7 +962,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt8>
 };
 
 // Convert SInt64 to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt8> {
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_SInt8> {
     static inline int8_t convert(int64_t arg) {
         int64_t in = arg;
 
@@ -980,10 +980,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt8>
 };
 
 // Convert UInt64 to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt8> {
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_SInt8> {
     static inline int8_t convert(uint64_t arg) {
         // convert to signed
-        int64_t in = pcm_sign_converter<PcmEncoding_UInt64>::to_signed(arg);
+        int64_t in = pcm_sign_converter<PcmCode_UInt64>::to_signed(arg);
 
         int8_t out;
         // downscale signed integer
@@ -999,7 +999,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt8>
 };
 
 // Convert Float32 to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt8> {
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_SInt8> {
     static inline int8_t convert(float arg) {
         float in = arg;
 
@@ -1021,7 +1021,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt8
 };
 
 // Convert Float64 to SInt8
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt8> {
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_SInt8> {
     static inline int8_t convert(double arg) {
         double in = arg;
 
@@ -1043,7 +1043,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt8
 };
 
 // Convert SInt8 to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt8> {
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_UInt8> {
     static inline uint8_t convert(int8_t arg) {
         int8_t in = arg;
 
@@ -1051,19 +1051,19 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt8> 
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt8>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt8>::from_signed(out);
     }
 };
 
 // Convert UInt8 to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_UInt8> {
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_UInt8> {
     static inline uint8_t convert(uint8_t arg) {
         return arg;
     }
 };
 
 // Convert SInt16 to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt8> {
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_UInt8> {
     static inline uint8_t convert(int16_t arg) {
         int16_t in = arg;
 
@@ -1077,12 +1077,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt8>
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt8>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt8>::from_signed(out);
     }
 };
 
 // Convert UInt16 to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_UInt8> {
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_UInt8> {
     static inline uint8_t convert(uint16_t arg) {
         uint16_t in = arg;
 
@@ -1095,7 +1095,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_UInt8>
 };
 
 // Convert SInt18 to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt8> {
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_UInt8> {
     static inline uint8_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -1109,12 +1109,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt8>
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt8>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt8>::from_signed(out);
     }
 };
 
 // Convert UInt18 to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_UInt8> {
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_UInt8> {
     static inline uint8_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -1126,14 +1126,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_UInt8>
     }
 };
 
-// Convert SInt18_3B to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UInt8> {
+// Convert SInt18_3 to UInt8
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_UInt8> {
     static inline uint8_t convert(int32_t arg) {
         int32_t in = arg;
 
         int8_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint18_3b_max - (int32_t(1) << 9))) {
+        if (in > int32_t(pcm_sint18_3_max - (int32_t(1) << 9))) {
             // clip
             out = pcm_sint8_max;
         } else {
@@ -1141,12 +1141,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UIn
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt8>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt8>::from_signed(out);
     }
 };
 
-// Convert UInt18_3B to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_UInt8> {
+// Convert UInt18_3 to UInt8
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_UInt8> {
     static inline uint8_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -1158,14 +1158,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt18_4B to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UInt8> {
+// Convert SInt18_4 to UInt8
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_UInt8> {
     static inline uint8_t convert(int32_t arg) {
         int32_t in = arg;
 
         int8_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint18_4b_max - (int32_t(1) << 9))) {
+        if (in > int32_t(pcm_sint18_4_max - (int32_t(1) << 9))) {
             // clip
             out = pcm_sint8_max;
         } else {
@@ -1173,12 +1173,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UIn
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt8>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt8>::from_signed(out);
     }
 };
 
-// Convert UInt18_4B to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_UInt8> {
+// Convert UInt18_4 to UInt8
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_UInt8> {
     static inline uint8_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -1191,7 +1191,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_UIn
 };
 
 // Convert SInt20 to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt8> {
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_UInt8> {
     static inline uint8_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -1205,12 +1205,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt8>
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt8>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt8>::from_signed(out);
     }
 };
 
 // Convert UInt20 to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_UInt8> {
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_UInt8> {
     static inline uint8_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -1222,14 +1222,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_UInt8>
     }
 };
 
-// Convert SInt20_3B to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_UInt8> {
+// Convert SInt20_3 to UInt8
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_UInt8> {
     static inline uint8_t convert(int32_t arg) {
         int32_t in = arg;
 
         int8_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_3b_max - (int32_t(1) << 11))) {
+        if (in > int32_t(pcm_sint20_3_max - (int32_t(1) << 11))) {
             // clip
             out = pcm_sint8_max;
         } else {
@@ -1237,12 +1237,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_UIn
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt8>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt8>::from_signed(out);
     }
 };
 
-// Convert UInt20_3B to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_UInt8> {
+// Convert UInt20_3 to UInt8
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_UInt8> {
     static inline uint8_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -1254,14 +1254,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt20_4B to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_UInt8> {
+// Convert SInt20_4 to UInt8
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_UInt8> {
     static inline uint8_t convert(int32_t arg) {
         int32_t in = arg;
 
         int8_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_4b_max - (int32_t(1) << 11))) {
+        if (in > int32_t(pcm_sint20_4_max - (int32_t(1) << 11))) {
             // clip
             out = pcm_sint8_max;
         } else {
@@ -1269,12 +1269,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_UIn
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt8>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt8>::from_signed(out);
     }
 };
 
-// Convert UInt20_4B to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_UInt8> {
+// Convert UInt20_4 to UInt8
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_UInt8> {
     static inline uint8_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -1287,7 +1287,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_UIn
 };
 
 // Convert SInt24 to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt8> {
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_UInt8> {
     static inline uint8_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -1301,12 +1301,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt8>
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt8>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt8>::from_signed(out);
     }
 };
 
 // Convert UInt24 to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_UInt8> {
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_UInt8> {
     static inline uint8_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -1318,14 +1318,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_UInt8>
     }
 };
 
-// Convert SInt24_4B to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_UInt8> {
+// Convert SInt24_4 to UInt8
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_UInt8> {
     static inline uint8_t convert(int32_t arg) {
         int32_t in = arg;
 
         int8_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 15))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 15))) {
             // clip
             out = pcm_sint8_max;
         } else {
@@ -1333,12 +1333,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_UIn
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt8>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt8>::from_signed(out);
     }
 };
 
-// Convert UInt24_4B to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_UInt8> {
+// Convert UInt24_4 to UInt8
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_UInt8> {
     static inline uint8_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -1351,7 +1351,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_UIn
 };
 
 // Convert SInt32 to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt8> {
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_UInt8> {
     static inline uint8_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -1365,12 +1365,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt8>
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt8>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt8>::from_signed(out);
     }
 };
 
 // Convert UInt32 to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_UInt8> {
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_UInt8> {
     static inline uint8_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -1383,7 +1383,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_UInt8>
 };
 
 // Convert SInt64 to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt8> {
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_UInt8> {
     static inline uint8_t convert(int64_t arg) {
         int64_t in = arg;
 
@@ -1397,12 +1397,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt8>
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt8>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt8>::from_signed(out);
     }
 };
 
 // Convert UInt64 to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_UInt8> {
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_UInt8> {
     static inline uint8_t convert(uint64_t arg) {
         uint64_t in = arg;
 
@@ -1415,7 +1415,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_UInt8>
 };
 
 // Convert Float32 to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt8> {
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_UInt8> {
     static inline uint8_t convert(float arg) {
         float in = arg;
 
@@ -1433,12 +1433,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt8
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt8>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt8>::from_signed(out);
     }
 };
 
 // Convert Float64 to UInt8
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt8> {
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_UInt8> {
     static inline uint8_t convert(double arg) {
         double in = arg;
 
@@ -1456,12 +1456,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt8
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt8>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt8>::from_signed(out);
     }
 };
 
 // Convert SInt8 to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_SInt16> {
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_SInt16> {
     static inline int16_t convert(int8_t arg) {
         int8_t in = arg;
 
@@ -1474,10 +1474,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_SInt16>
 };
 
 // Convert UInt8 to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt16> {
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_SInt16> {
     static inline int16_t convert(uint8_t arg) {
         // convert to signed
-        int8_t in = pcm_sign_converter<PcmEncoding_UInt8>::to_signed(arg);
+        int8_t in = pcm_sign_converter<PcmCode_UInt8>::to_signed(arg);
 
         int16_t out;
         // upscale signed integer
@@ -1488,17 +1488,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt16>
 };
 
 // Convert SInt16 to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_SInt16> {
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_SInt16> {
     static inline int16_t convert(int16_t arg) {
         return arg;
     }
 };
 
 // Convert UInt16 to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt16> {
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_SInt16> {
     static inline int16_t convert(uint16_t arg) {
         // convert to signed
-        int16_t in = pcm_sign_converter<PcmEncoding_UInt16>::to_signed(arg);
+        int16_t in = pcm_sign_converter<PcmCode_UInt16>::to_signed(arg);
 
         int16_t out;
         out = in;
@@ -1508,7 +1508,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt16
 };
 
 // Convert SInt18 to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_SInt16> {
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_SInt16> {
     static inline int16_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -1526,10 +1526,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_SInt16
 };
 
 // Convert UInt18 to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt16> {
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_SInt16> {
     static inline int16_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18>::to_signed(arg);
 
         int16_t out;
         // downscale signed integer
@@ -1544,14 +1544,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt16
     }
 };
 
-// Convert SInt18_3B to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_SInt16> {
+// Convert SInt18_3 to SInt16
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_SInt16> {
     static inline int16_t convert(int32_t arg) {
         int32_t in = arg;
 
         int16_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint18_3b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint18_3_max - (int32_t(1) << 1))) {
             // clip
             out = pcm_sint16_max;
         } else {
@@ -1562,15 +1562,15 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt18_3B to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SInt16> {
+// Convert UInt18_3 to SInt16
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_SInt16> {
     static inline int16_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_3>::to_signed(arg);
 
         int16_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint18_3b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint18_3_max - (int32_t(1) << 1))) {
             // clip
             out = pcm_sint16_max;
         } else {
@@ -1581,14 +1581,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt18_4B to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_SInt16> {
+// Convert SInt18_4 to SInt16
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_SInt16> {
     static inline int16_t convert(int32_t arg) {
         int32_t in = arg;
 
         int16_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint18_4b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint18_4_max - (int32_t(1) << 1))) {
             // clip
             out = pcm_sint16_max;
         } else {
@@ -1599,15 +1599,15 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt18_4B to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SInt16> {
+// Convert UInt18_4 to SInt16
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_SInt16> {
     static inline int16_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_4>::to_signed(arg);
 
         int16_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint18_4b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint18_4_max - (int32_t(1) << 1))) {
             // clip
             out = pcm_sint16_max;
         } else {
@@ -1619,7 +1619,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SIn
 };
 
 // Convert SInt20 to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt16> {
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_SInt16> {
     static inline int16_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -1637,10 +1637,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt16
 };
 
 // Convert UInt20 to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_SInt16> {
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_SInt16> {
     static inline int16_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20>::to_signed(arg);
 
         int16_t out;
         // downscale signed integer
@@ -1655,14 +1655,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_SInt16
     }
 };
 
-// Convert SInt20_3B to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_SInt16> {
+// Convert SInt20_3 to SInt16
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_SInt16> {
     static inline int16_t convert(int32_t arg) {
         int32_t in = arg;
 
         int16_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_3b_max - (int32_t(1) << 3))) {
+        if (in > int32_t(pcm_sint20_3_max - (int32_t(1) << 3))) {
             // clip
             out = pcm_sint16_max;
         } else {
@@ -1673,15 +1673,15 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt20_3B to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SInt16> {
+// Convert UInt20_3 to SInt16
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_SInt16> {
     static inline int16_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_3>::to_signed(arg);
 
         int16_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_3b_max - (int32_t(1) << 3))) {
+        if (in > int32_t(pcm_sint20_3_max - (int32_t(1) << 3))) {
             // clip
             out = pcm_sint16_max;
         } else {
@@ -1692,14 +1692,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt20_4B to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_SInt16> {
+// Convert SInt20_4 to SInt16
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_SInt16> {
     static inline int16_t convert(int32_t arg) {
         int32_t in = arg;
 
         int16_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_4b_max - (int32_t(1) << 3))) {
+        if (in > int32_t(pcm_sint20_4_max - (int32_t(1) << 3))) {
             // clip
             out = pcm_sint16_max;
         } else {
@@ -1710,15 +1710,15 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt20_4B to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SInt16> {
+// Convert UInt20_4 to SInt16
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_SInt16> {
     static inline int16_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_4>::to_signed(arg);
 
         int16_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_4b_max - (int32_t(1) << 3))) {
+        if (in > int32_t(pcm_sint20_4_max - (int32_t(1) << 3))) {
             // clip
             out = pcm_sint16_max;
         } else {
@@ -1730,7 +1730,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SIn
 };
 
 // Convert SInt24 to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt16> {
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_SInt16> {
     static inline int16_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -1748,10 +1748,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt16
 };
 
 // Convert UInt24 to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt16> {
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_SInt16> {
     static inline int16_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24>::to_signed(arg);
 
         int16_t out;
         // downscale signed integer
@@ -1766,14 +1766,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt16
     }
 };
 
-// Convert SInt24_4B to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_SInt16> {
+// Convert SInt24_4 to SInt16
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_SInt16> {
     static inline int16_t convert(int32_t arg) {
         int32_t in = arg;
 
         int16_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 7))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 7))) {
             // clip
             out = pcm_sint16_max;
         } else {
@@ -1784,15 +1784,15 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt24_4B to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SInt16> {
+// Convert UInt24_4 to SInt16
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_SInt16> {
     static inline int16_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24_4>::to_signed(arg);
 
         int16_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 7))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 7))) {
             // clip
             out = pcm_sint16_max;
         } else {
@@ -1804,7 +1804,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SIn
 };
 
 // Convert SInt32 to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt16> {
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_SInt16> {
     static inline int16_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -1822,10 +1822,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt16
 };
 
 // Convert UInt32 to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt16> {
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_SInt16> {
     static inline int16_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt32>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt32>::to_signed(arg);
 
         int16_t out;
         // downscale signed integer
@@ -1841,7 +1841,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt16
 };
 
 // Convert SInt64 to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt16> {
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_SInt16> {
     static inline int16_t convert(int64_t arg) {
         int64_t in = arg;
 
@@ -1859,10 +1859,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt16
 };
 
 // Convert UInt64 to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt16> {
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_SInt16> {
     static inline int16_t convert(uint64_t arg) {
         // convert to signed
-        int64_t in = pcm_sign_converter<PcmEncoding_UInt64>::to_signed(arg);
+        int64_t in = pcm_sign_converter<PcmCode_UInt64>::to_signed(arg);
 
         int16_t out;
         // downscale signed integer
@@ -1878,7 +1878,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt16
 };
 
 // Convert Float32 to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt16> {
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_SInt16> {
     static inline int16_t convert(float arg) {
         float in = arg;
 
@@ -1900,7 +1900,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt1
 };
 
 // Convert Float64 to SInt16
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt16> {
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_SInt16> {
     static inline int16_t convert(double arg) {
         double in = arg;
 
@@ -1922,7 +1922,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt1
 };
 
 // Convert SInt8 to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt16> {
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_UInt16> {
     static inline uint16_t convert(int8_t arg) {
         int8_t in = arg;
 
@@ -1931,12 +1931,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt16>
         out = int16_t(uint16_t(in) << 8);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt16>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt16>::from_signed(out);
     }
 };
 
 // Convert UInt8 to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_UInt16> {
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_UInt16> {
     static inline uint16_t convert(uint8_t arg) {
         uint8_t in = arg;
 
@@ -1949,7 +1949,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_UInt16>
 };
 
 // Convert SInt16 to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt16> {
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_UInt16> {
     static inline uint16_t convert(int16_t arg) {
         int16_t in = arg;
 
@@ -1957,19 +1957,19 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt16
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt16>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt16>::from_signed(out);
     }
 };
 
 // Convert UInt16 to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_UInt16> {
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_UInt16> {
     static inline uint16_t convert(uint16_t arg) {
         return arg;
     }
 };
 
 // Convert SInt18 to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt16> {
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_UInt16> {
     static inline uint16_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -1983,12 +1983,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt16
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt16>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt16>::from_signed(out);
     }
 };
 
 // Convert UInt18 to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_UInt16> {
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_UInt16> {
     static inline uint16_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -2000,14 +2000,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_UInt16
     }
 };
 
-// Convert SInt18_3B to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UInt16> {
+// Convert SInt18_3 to UInt16
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_UInt16> {
     static inline uint16_t convert(int32_t arg) {
         int32_t in = arg;
 
         int16_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint18_3b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint18_3_max - (int32_t(1) << 1))) {
             // clip
             out = pcm_sint16_max;
         } else {
@@ -2015,12 +2015,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UIn
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt16>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt16>::from_signed(out);
     }
 };
 
-// Convert UInt18_3B to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_UInt16> {
+// Convert UInt18_3 to UInt16
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_UInt16> {
     static inline uint16_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -2032,14 +2032,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt18_4B to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UInt16> {
+// Convert SInt18_4 to UInt16
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_UInt16> {
     static inline uint16_t convert(int32_t arg) {
         int32_t in = arg;
 
         int16_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint18_4b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint18_4_max - (int32_t(1) << 1))) {
             // clip
             out = pcm_sint16_max;
         } else {
@@ -2047,12 +2047,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UIn
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt16>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt16>::from_signed(out);
     }
 };
 
-// Convert UInt18_4B to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_UInt16> {
+// Convert UInt18_4 to UInt16
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_UInt16> {
     static inline uint16_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -2065,7 +2065,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_UIn
 };
 
 // Convert SInt20 to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt16> {
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_UInt16> {
     static inline uint16_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -2079,12 +2079,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt16
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt16>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt16>::from_signed(out);
     }
 };
 
 // Convert UInt20 to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_UInt16> {
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_UInt16> {
     static inline uint16_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -2096,14 +2096,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_UInt16
     }
 };
 
-// Convert SInt20_3B to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_UInt16> {
+// Convert SInt20_3 to UInt16
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_UInt16> {
     static inline uint16_t convert(int32_t arg) {
         int32_t in = arg;
 
         int16_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_3b_max - (int32_t(1) << 3))) {
+        if (in > int32_t(pcm_sint20_3_max - (int32_t(1) << 3))) {
             // clip
             out = pcm_sint16_max;
         } else {
@@ -2111,12 +2111,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_UIn
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt16>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt16>::from_signed(out);
     }
 };
 
-// Convert UInt20_3B to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_UInt16> {
+// Convert UInt20_3 to UInt16
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_UInt16> {
     static inline uint16_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -2128,14 +2128,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt20_4B to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_UInt16> {
+// Convert SInt20_4 to UInt16
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_UInt16> {
     static inline uint16_t convert(int32_t arg) {
         int32_t in = arg;
 
         int16_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_4b_max - (int32_t(1) << 3))) {
+        if (in > int32_t(pcm_sint20_4_max - (int32_t(1) << 3))) {
             // clip
             out = pcm_sint16_max;
         } else {
@@ -2143,12 +2143,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_UIn
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt16>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt16>::from_signed(out);
     }
 };
 
-// Convert UInt20_4B to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_UInt16> {
+// Convert UInt20_4 to UInt16
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_UInt16> {
     static inline uint16_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -2161,7 +2161,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_UIn
 };
 
 // Convert SInt24 to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt16> {
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_UInt16> {
     static inline uint16_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -2175,12 +2175,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt16
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt16>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt16>::from_signed(out);
     }
 };
 
 // Convert UInt24 to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_UInt16> {
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_UInt16> {
     static inline uint16_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -2192,14 +2192,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_UInt16
     }
 };
 
-// Convert SInt24_4B to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_UInt16> {
+// Convert SInt24_4 to UInt16
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_UInt16> {
     static inline uint16_t convert(int32_t arg) {
         int32_t in = arg;
 
         int16_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 7))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 7))) {
             // clip
             out = pcm_sint16_max;
         } else {
@@ -2207,12 +2207,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_UIn
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt16>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt16>::from_signed(out);
     }
 };
 
-// Convert UInt24_4B to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_UInt16> {
+// Convert UInt24_4 to UInt16
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_UInt16> {
     static inline uint16_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -2225,7 +2225,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_UIn
 };
 
 // Convert SInt32 to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt16> {
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_UInt16> {
     static inline uint16_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -2239,12 +2239,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt16
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt16>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt16>::from_signed(out);
     }
 };
 
 // Convert UInt32 to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_UInt16> {
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_UInt16> {
     static inline uint16_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -2257,7 +2257,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_UInt16
 };
 
 // Convert SInt64 to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt16> {
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_UInt16> {
     static inline uint16_t convert(int64_t arg) {
         int64_t in = arg;
 
@@ -2271,12 +2271,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt16
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt16>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt16>::from_signed(out);
     }
 };
 
 // Convert UInt64 to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_UInt16> {
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_UInt16> {
     static inline uint16_t convert(uint64_t arg) {
         uint64_t in = arg;
 
@@ -2289,7 +2289,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_UInt16
 };
 
 // Convert Float32 to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt16> {
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_UInt16> {
     static inline uint16_t convert(float arg) {
         float in = arg;
 
@@ -2307,12 +2307,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt1
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt16>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt16>::from_signed(out);
     }
 };
 
 // Convert Float64 to UInt16
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt16> {
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_UInt16> {
     static inline uint16_t convert(double arg) {
         double in = arg;
 
@@ -2330,12 +2330,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt1
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt16>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt16>::from_signed(out);
     }
 };
 
 // Convert SInt8 to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_SInt18> {
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_SInt18> {
     static inline int32_t convert(int8_t arg) {
         int8_t in = arg;
 
@@ -2348,10 +2348,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_SInt18>
 };
 
 // Convert UInt8 to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt18> {
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_SInt18> {
     static inline int32_t convert(uint8_t arg) {
         // convert to signed
-        int8_t in = pcm_sign_converter<PcmEncoding_UInt8>::to_signed(arg);
+        int8_t in = pcm_sign_converter<PcmCode_UInt8>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -2362,7 +2362,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt18>
 };
 
 // Convert SInt16 to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_SInt18> {
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_SInt18> {
     static inline int32_t convert(int16_t arg) {
         int16_t in = arg;
 
@@ -2375,10 +2375,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_SInt18
 };
 
 // Convert UInt16 to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt18> {
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_SInt18> {
     static inline int32_t convert(uint16_t arg) {
         // convert to signed
-        int16_t in = pcm_sign_converter<PcmEncoding_UInt16>::to_signed(arg);
+        int16_t in = pcm_sign_converter<PcmCode_UInt16>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -2389,17 +2389,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt18
 };
 
 // Convert SInt18 to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_SInt18> {
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_SInt18> {
     static inline int32_t convert(int32_t arg) {
         return arg;
     }
 };
 
 // Convert UInt18 to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt18> {
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_SInt18> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18>::to_signed(arg);
 
         int32_t out;
         out = in;
@@ -2408,8 +2408,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt18
     }
 };
 
-// Convert SInt18_3B to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_SInt18> {
+// Convert SInt18_3 to SInt18
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_SInt18> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -2420,11 +2420,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt18_3B to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SInt18> {
+// Convert UInt18_3 to SInt18
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_SInt18> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_3>::to_signed(arg);
 
         int32_t out;
         out = in;
@@ -2433,8 +2433,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt18_4B to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_SInt18> {
+// Convert SInt18_4 to SInt18
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_SInt18> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -2445,11 +2445,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt18_4B to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SInt18> {
+// Convert UInt18_4 to SInt18
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_SInt18> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_4>::to_signed(arg);
 
         int32_t out;
         out = in;
@@ -2459,7 +2459,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SIn
 };
 
 // Convert SInt20 to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt18> {
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_SInt18> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -2477,10 +2477,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt18
 };
 
 // Convert UInt20 to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_SInt18> {
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_SInt18> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
@@ -2495,14 +2495,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_SInt18
     }
 };
 
-// Convert SInt20_3B to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_SInt18> {
+// Convert SInt20_3 to SInt18
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_SInt18> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_3b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint20_3_max - (int32_t(1) << 1))) {
             // clip
             out = pcm_sint18_max;
         } else {
@@ -2513,15 +2513,15 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt20_3B to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SInt18> {
+// Convert UInt20_3 to SInt18
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_SInt18> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_3>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_3b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint20_3_max - (int32_t(1) << 1))) {
             // clip
             out = pcm_sint18_max;
         } else {
@@ -2532,14 +2532,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt20_4B to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_SInt18> {
+// Convert SInt20_4 to SInt18
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_SInt18> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_4b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint20_4_max - (int32_t(1) << 1))) {
             // clip
             out = pcm_sint18_max;
         } else {
@@ -2550,15 +2550,15 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt20_4B to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SInt18> {
+// Convert UInt20_4 to SInt18
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_SInt18> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_4>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_4b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint20_4_max - (int32_t(1) << 1))) {
             // clip
             out = pcm_sint18_max;
         } else {
@@ -2570,7 +2570,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SIn
 };
 
 // Convert SInt24 to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt18> {
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_SInt18> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -2588,10 +2588,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt18
 };
 
 // Convert UInt24 to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt18> {
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_SInt18> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
@@ -2606,14 +2606,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt18
     }
 };
 
-// Convert SInt24_4B to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_SInt18> {
+// Convert SInt24_4 to SInt18
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_SInt18> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 5))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 5))) {
             // clip
             out = pcm_sint18_max;
         } else {
@@ -2624,15 +2624,15 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt24_4B to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SInt18> {
+// Convert UInt24_4 to SInt18
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_SInt18> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24_4>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 5))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 5))) {
             // clip
             out = pcm_sint18_max;
         } else {
@@ -2644,7 +2644,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SIn
 };
 
 // Convert SInt32 to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt18> {
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_SInt18> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -2662,10 +2662,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt18
 };
 
 // Convert UInt32 to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt18> {
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_SInt18> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt32>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt32>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
@@ -2681,7 +2681,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt18
 };
 
 // Convert SInt64 to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt18> {
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_SInt18> {
     static inline int32_t convert(int64_t arg) {
         int64_t in = arg;
 
@@ -2699,10 +2699,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt18
 };
 
 // Convert UInt64 to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt18> {
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_SInt18> {
     static inline int32_t convert(uint64_t arg) {
         // convert to signed
-        int64_t in = pcm_sign_converter<PcmEncoding_UInt64>::to_signed(arg);
+        int64_t in = pcm_sign_converter<PcmCode_UInt64>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
@@ -2718,7 +2718,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt18
 };
 
 // Convert Float32 to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt18> {
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_SInt18> {
     static inline int32_t convert(float arg) {
         float in = arg;
 
@@ -2740,7 +2740,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt1
 };
 
 // Convert Float64 to SInt18
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt18> {
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_SInt18> {
     static inline int32_t convert(double arg) {
         double in = arg;
 
@@ -2762,7 +2762,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt1
 };
 
 // Convert SInt8 to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt18> {
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_UInt18> {
     static inline uint32_t convert(int8_t arg) {
         int8_t in = arg;
 
@@ -2771,12 +2771,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt18>
         out = int32_t(uint32_t(in) << 10);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18>::from_signed(out);
     }
 };
 
 // Convert UInt8 to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_UInt18> {
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_UInt18> {
     static inline uint32_t convert(uint8_t arg) {
         uint8_t in = arg;
 
@@ -2789,7 +2789,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_UInt18>
 };
 
 // Convert SInt16 to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt18> {
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_UInt18> {
     static inline uint32_t convert(int16_t arg) {
         int16_t in = arg;
 
@@ -2798,12 +2798,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt18
         out = int32_t(uint32_t(in) << 2);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18>::from_signed(out);
     }
 };
 
 // Convert UInt16 to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_UInt18> {
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_UInt18> {
     static inline uint32_t convert(uint16_t arg) {
         uint16_t in = arg;
 
@@ -2816,7 +2816,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_UInt18
 };
 
 // Convert SInt18 to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt18> {
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_UInt18> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -2824,19 +2824,19 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt18
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18>::from_signed(out);
     }
 };
 
 // Convert UInt18 to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_UInt18> {
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_UInt18> {
     static inline uint32_t convert(uint32_t arg) {
         return arg;
     }
 };
 
-// Convert SInt18_3B to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UInt18> {
+// Convert SInt18_3 to UInt18
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_UInt18> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -2844,12 +2844,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UIn
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18>::from_signed(out);
     }
 };
 
-// Convert UInt18_3B to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_UInt18> {
+// Convert UInt18_3 to UInt18
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_UInt18> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -2860,8 +2860,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt18_4B to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UInt18> {
+// Convert SInt18_4 to UInt18
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_UInt18> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -2869,12 +2869,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UIn
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18>::from_signed(out);
     }
 };
 
-// Convert UInt18_4B to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_UInt18> {
+// Convert UInt18_4 to UInt18
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_UInt18> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -2886,7 +2886,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_UIn
 };
 
 // Convert SInt20 to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt18> {
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_UInt18> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -2900,12 +2900,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt18
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18>::from_signed(out);
     }
 };
 
 // Convert UInt20 to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_UInt18> {
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_UInt18> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -2917,14 +2917,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_UInt18
     }
 };
 
-// Convert SInt20_3B to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_UInt18> {
+// Convert SInt20_3 to UInt18
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_UInt18> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_3b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint20_3_max - (int32_t(1) << 1))) {
             // clip
             out = pcm_sint18_max;
         } else {
@@ -2932,12 +2932,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_UIn
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18>::from_signed(out);
     }
 };
 
-// Convert UInt20_3B to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_UInt18> {
+// Convert UInt20_3 to UInt18
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_UInt18> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -2949,14 +2949,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt20_4B to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_UInt18> {
+// Convert SInt20_4 to UInt18
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_UInt18> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_4b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint20_4_max - (int32_t(1) << 1))) {
             // clip
             out = pcm_sint18_max;
         } else {
@@ -2964,12 +2964,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_UIn
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18>::from_signed(out);
     }
 };
 
-// Convert UInt20_4B to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_UInt18> {
+// Convert UInt20_4 to UInt18
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_UInt18> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -2982,7 +2982,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_UIn
 };
 
 // Convert SInt24 to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt18> {
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_UInt18> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -2996,12 +2996,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt18
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18>::from_signed(out);
     }
 };
 
 // Convert UInt24 to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_UInt18> {
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_UInt18> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -3013,14 +3013,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_UInt18
     }
 };
 
-// Convert SInt24_4B to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_UInt18> {
+// Convert SInt24_4 to UInt18
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_UInt18> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 5))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 5))) {
             // clip
             out = pcm_sint18_max;
         } else {
@@ -3028,12 +3028,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_UIn
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18>::from_signed(out);
     }
 };
 
-// Convert UInt24_4B to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_UInt18> {
+// Convert UInt24_4 to UInt18
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_UInt18> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -3046,7 +3046,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_UIn
 };
 
 // Convert SInt32 to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt18> {
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_UInt18> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -3060,12 +3060,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt18
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18>::from_signed(out);
     }
 };
 
 // Convert UInt32 to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_UInt18> {
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_UInt18> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -3078,7 +3078,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_UInt18
 };
 
 // Convert SInt64 to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt18> {
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_UInt18> {
     static inline uint32_t convert(int64_t arg) {
         int64_t in = arg;
 
@@ -3092,12 +3092,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt18
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18>::from_signed(out);
     }
 };
 
 // Convert UInt64 to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_UInt18> {
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_UInt18> {
     static inline uint32_t convert(uint64_t arg) {
         uint64_t in = arg;
 
@@ -3110,7 +3110,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_UInt18
 };
 
 // Convert Float32 to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt18> {
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_UInt18> {
     static inline uint32_t convert(float arg) {
         float in = arg;
 
@@ -3128,12 +3128,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt1
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18>::from_signed(out);
     }
 };
 
 // Convert Float64 to UInt18
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt18> {
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_UInt18> {
     static inline uint32_t convert(double arg) {
         double in = arg;
 
@@ -3151,12 +3151,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt1
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18>::from_signed(out);
     }
 };
 
-// Convert SInt8 to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_SInt18_3B> {
+// Convert SInt8 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_SInt18_3> {
     static inline int32_t convert(int8_t arg) {
         int8_t in = arg;
 
@@ -3168,11 +3168,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_SInt18_
     }
 };
 
-// Convert UInt8 to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt18_3B> {
+// Convert UInt8 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_SInt18_3> {
     static inline int32_t convert(uint8_t arg) {
         // convert to signed
-        int8_t in = pcm_sign_converter<PcmEncoding_UInt8>::to_signed(arg);
+        int8_t in = pcm_sign_converter<PcmCode_UInt8>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -3182,8 +3182,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt18_
     }
 };
 
-// Convert SInt16 to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_SInt18_3B> {
+// Convert SInt16 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_SInt18_3> {
     static inline int32_t convert(int16_t arg) {
         int16_t in = arg;
 
@@ -3195,11 +3195,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_SInt18
     }
 };
 
-// Convert UInt16 to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt18_3B> {
+// Convert UInt16 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_SInt18_3> {
     static inline int32_t convert(uint16_t arg) {
         // convert to signed
-        int16_t in = pcm_sign_converter<PcmEncoding_UInt16>::to_signed(arg);
+        int16_t in = pcm_sign_converter<PcmCode_UInt16>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -3209,8 +3209,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt18
     }
 };
 
-// Convert SInt18 to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_SInt18_3B> {
+// Convert SInt18 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_SInt18_3> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -3221,11 +3221,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_SInt18
     }
 };
 
-// Convert UInt18 to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt18_3B> {
+// Convert UInt18 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_SInt18_3> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18>::to_signed(arg);
 
         int32_t out;
         out = in;
@@ -3234,18 +3234,18 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt18
     }
 };
 
-// Convert SInt18_3B to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_SInt18_3B> {
+// Convert SInt18_3 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_SInt18_3> {
     static inline int32_t convert(int32_t arg) {
         return arg;
     }
 };
 
-// Convert UInt18_3B to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SInt18_3B> {
+// Convert UInt18_3 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_SInt18_3> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_3>::to_signed(arg);
 
         int32_t out;
         out = in;
@@ -3254,8 +3254,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt18_4B to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_SInt18_3B> {
+// Convert SInt18_4 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_SInt18_3> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -3266,11 +3266,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt18_4B to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SInt18_3B> {
+// Convert UInt18_4 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_SInt18_3> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_4>::to_signed(arg);
 
         int32_t out;
         out = in;
@@ -3279,8 +3279,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt20 to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt18_3B> {
+// Convert SInt20 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_SInt18_3> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -3288,7 +3288,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt18
         // downscale signed integer
         if (in > int32_t(pcm_sint20_max - (int32_t(1) << 1))) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 1)) >> 2);
         }
@@ -3297,17 +3297,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt18
     }
 };
 
-// Convert UInt20 to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_SInt18_3B> {
+// Convert UInt20 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_SInt18_3> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
         if (in > int32_t(pcm_sint20_max - (int32_t(1) << 1))) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 1)) >> 2);
         }
@@ -3316,16 +3316,16 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_SInt18
     }
 };
 
-// Convert SInt20_3B to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_SInt18_3B> {
+// Convert SInt20_3 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_SInt18_3> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_3b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint20_3_max - (int32_t(1) << 1))) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 1)) >> 2);
         }
@@ -3334,17 +3334,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt20_3B to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SInt18_3B> {
+// Convert UInt20_3 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_SInt18_3> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_3>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_3b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint20_3_max - (int32_t(1) << 1))) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 1)) >> 2);
         }
@@ -3353,16 +3353,16 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt20_4B to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_SInt18_3B> {
+// Convert SInt20_4 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_SInt18_3> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_4b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint20_4_max - (int32_t(1) << 1))) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 1)) >> 2);
         }
@@ -3371,17 +3371,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt20_4B to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SInt18_3B> {
+// Convert UInt20_4 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_SInt18_3> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_4>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_4b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint20_4_max - (int32_t(1) << 1))) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 1)) >> 2);
         }
@@ -3390,8 +3390,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt24 to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt18_3B> {
+// Convert SInt24 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_SInt18_3> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -3399,7 +3399,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt18
         // downscale signed integer
         if (in > int32_t(pcm_sint24_max - (int32_t(1) << 5))) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 5)) >> 6);
         }
@@ -3408,17 +3408,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt18
     }
 };
 
-// Convert UInt24 to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt18_3B> {
+// Convert UInt24 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_SInt18_3> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
         if (in > int32_t(pcm_sint24_max - (int32_t(1) << 5))) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 5)) >> 6);
         }
@@ -3427,16 +3427,16 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt18
     }
 };
 
-// Convert SInt24_4B to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_SInt18_3B> {
+// Convert SInt24_4 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_SInt18_3> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 5))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 5))) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 5)) >> 6);
         }
@@ -3445,17 +3445,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt24_4B to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SInt18_3B> {
+// Convert UInt24_4 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_SInt18_3> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24_4>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 5))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 5))) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 5)) >> 6);
         }
@@ -3464,8 +3464,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt32 to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt18_3B> {
+// Convert SInt32 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_SInt18_3> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -3473,7 +3473,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt18
         // downscale signed integer
         if (in > int32_t(pcm_sint32_max - (int32_t(1) << 13))) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 13)) >> 14);
         }
@@ -3482,17 +3482,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt18
     }
 };
 
-// Convert UInt32 to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt18_3B> {
+// Convert UInt32 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_SInt18_3> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt32>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt32>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
         if (in > int32_t(pcm_sint32_max - (int32_t(1) << 13))) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 13)) >> 14);
         }
@@ -3501,8 +3501,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt18
     }
 };
 
-// Convert SInt64 to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt18_3B> {
+// Convert SInt64 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_SInt18_3> {
     static inline int32_t convert(int64_t arg) {
         int64_t in = arg;
 
@@ -3510,7 +3510,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt18
         // downscale signed integer
         if (in > int64_t(pcm_sint64_max - (int64_t(1) << 45))) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(uint64_t(in + (int64_t(1) << 45)) >> 46);
         }
@@ -3519,17 +3519,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt18
     }
 };
 
-// Convert UInt64 to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt18_3B> {
+// Convert UInt64 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_SInt18_3> {
     static inline int32_t convert(uint64_t arg) {
         // convert to signed
-        int64_t in = pcm_sign_converter<PcmEncoding_UInt64>::to_signed(arg);
+        int64_t in = pcm_sign_converter<PcmCode_UInt64>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
         if (in > int64_t(pcm_sint64_max - (int64_t(1) << 45))) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(uint64_t(in + (int64_t(1) << 45)) >> 46);
         }
@@ -3538,20 +3538,20 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt18
     }
 };
 
-// Convert Float32 to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt18_3B> {
+// Convert Float32 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_SInt18_3> {
     static inline int32_t convert(float arg) {
         float in = arg;
 
         int32_t out;
         // float to integer
-        const double d = double(in) * ((double)pcm_sint18_3b_max + 1.0);
-        if (d < pcm_sint18_3b_min) {
+        const double d = double(in) * ((double)pcm_sint18_3_max + 1.0);
+        if (d < pcm_sint18_3_min) {
             // clip
-            out = pcm_sint18_3b_min;
-        } else if (d >= (double)pcm_sint18_3b_max + 1.0) {
+            out = pcm_sint18_3_min;
+        } else if (d >= (double)pcm_sint18_3_max + 1.0) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(d);
         }
@@ -3560,20 +3560,20 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt1
     }
 };
 
-// Convert Float64 to SInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt18_3B> {
+// Convert Float64 to SInt18_3
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_SInt18_3> {
     static inline int32_t convert(double arg) {
         double in = arg;
 
         int32_t out;
         // float to integer
-        const double d = double(in) * ((double)pcm_sint18_3b_max + 1.0);
-        if (d < pcm_sint18_3b_min) {
+        const double d = double(in) * ((double)pcm_sint18_3_max + 1.0);
+        if (d < pcm_sint18_3_min) {
             // clip
-            out = pcm_sint18_3b_min;
-        } else if (d >= (double)pcm_sint18_3b_max + 1.0) {
+            out = pcm_sint18_3_min;
+        } else if (d >= (double)pcm_sint18_3_max + 1.0) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(d);
         }
@@ -3582,8 +3582,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt1
     }
 };
 
-// Convert SInt8 to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt18_3B> {
+// Convert SInt8 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_UInt18_3> {
     static inline uint32_t convert(int8_t arg) {
         int8_t in = arg;
 
@@ -3592,12 +3592,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt18_
         out = int32_t(uint32_t(in) << 10);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_3>::from_signed(out);
     }
 };
 
-// Convert UInt8 to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_UInt18_3B> {
+// Convert UInt8 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_UInt18_3> {
     static inline uint32_t convert(uint8_t arg) {
         uint8_t in = arg;
 
@@ -3609,8 +3609,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_UInt18_
     }
 };
 
-// Convert SInt16 to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt18_3B> {
+// Convert SInt16 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_UInt18_3> {
     static inline uint32_t convert(int16_t arg) {
         int16_t in = arg;
 
@@ -3619,12 +3619,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt18
         out = int32_t(uint32_t(in) << 2);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_3>::from_signed(out);
     }
 };
 
-// Convert UInt16 to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_UInt18_3B> {
+// Convert UInt16 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_UInt18_3> {
     static inline uint32_t convert(uint16_t arg) {
         uint16_t in = arg;
 
@@ -3636,8 +3636,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_UInt18
     }
 };
 
-// Convert SInt18 to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt18_3B> {
+// Convert SInt18 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_UInt18_3> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -3645,12 +3645,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt18
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_3>::from_signed(out);
     }
 };
 
-// Convert UInt18 to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_UInt18_3B> {
+// Convert UInt18 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_UInt18_3> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -3661,8 +3661,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_UInt18
     }
 };
 
-// Convert SInt18_3B to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UInt18_3B> {
+// Convert SInt18_3 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_UInt18_3> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -3670,19 +3670,19 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UIn
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_3>::from_signed(out);
     }
 };
 
-// Convert UInt18_3B to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_UInt18_3B> {
+// Convert UInt18_3 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_UInt18_3> {
     static inline uint32_t convert(uint32_t arg) {
         return arg;
     }
 };
 
-// Convert SInt18_4B to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UInt18_3B> {
+// Convert SInt18_4 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_UInt18_3> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -3690,12 +3690,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UIn
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_3>::from_signed(out);
     }
 };
 
-// Convert UInt18_4B to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_UInt18_3B> {
+// Convert UInt18_4 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_UInt18_3> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -3706,8 +3706,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt20 to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt18_3B> {
+// Convert SInt20 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_UInt18_3> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -3715,18 +3715,18 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt18
         // downscale signed integer
         if (in > int32_t(pcm_sint20_max - (int32_t(1) << 1))) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 1)) >> 2);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_3>::from_signed(out);
     }
 };
 
-// Convert UInt20 to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_UInt18_3B> {
+// Convert UInt20 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_UInt18_3> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -3738,27 +3738,27 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_UInt18
     }
 };
 
-// Convert SInt20_3B to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_UInt18_3B> {
+// Convert SInt20_3 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_UInt18_3> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_3b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint20_3_max - (int32_t(1) << 1))) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 1)) >> 2);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_3>::from_signed(out);
     }
 };
 
-// Convert UInt20_3B to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_UInt18_3B> {
+// Convert UInt20_3 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_UInt18_3> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -3770,27 +3770,27 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt20_4B to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_UInt18_3B> {
+// Convert SInt20_4 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_UInt18_3> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_4b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint20_4_max - (int32_t(1) << 1))) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 1)) >> 2);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_3>::from_signed(out);
     }
 };
 
-// Convert UInt20_4B to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_UInt18_3B> {
+// Convert UInt20_4 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_UInt18_3> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -3802,8 +3802,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt24 to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt18_3B> {
+// Convert SInt24 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_UInt18_3> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -3811,18 +3811,18 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt18
         // downscale signed integer
         if (in > int32_t(pcm_sint24_max - (int32_t(1) << 5))) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 5)) >> 6);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_3>::from_signed(out);
     }
 };
 
-// Convert UInt24 to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_UInt18_3B> {
+// Convert UInt24 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_UInt18_3> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -3834,27 +3834,27 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_UInt18
     }
 };
 
-// Convert SInt24_4B to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_UInt18_3B> {
+// Convert SInt24_4 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_UInt18_3> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 5))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 5))) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 5)) >> 6);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_3>::from_signed(out);
     }
 };
 
-// Convert UInt24_4B to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_UInt18_3B> {
+// Convert UInt24_4 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_UInt18_3> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -3866,8 +3866,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt32 to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt18_3B> {
+// Convert SInt32 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_UInt18_3> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -3875,18 +3875,18 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt18
         // downscale signed integer
         if (in > int32_t(pcm_sint32_max - (int32_t(1) << 13))) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 13)) >> 14);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_3>::from_signed(out);
     }
 };
 
-// Convert UInt32 to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_UInt18_3B> {
+// Convert UInt32 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_UInt18_3> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -3898,8 +3898,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_UInt18
     }
 };
 
-// Convert SInt64 to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt18_3B> {
+// Convert SInt64 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_UInt18_3> {
     static inline uint32_t convert(int64_t arg) {
         int64_t in = arg;
 
@@ -3907,18 +3907,18 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt18
         // downscale signed integer
         if (in > int64_t(pcm_sint64_max - (int64_t(1) << 45))) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(uint64_t(in + (int64_t(1) << 45)) >> 46);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_3>::from_signed(out);
     }
 };
 
-// Convert UInt64 to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_UInt18_3B> {
+// Convert UInt64 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_UInt18_3> {
     static inline uint32_t convert(uint64_t arg) {
         uint64_t in = arg;
 
@@ -3930,54 +3930,54 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_UInt18
     }
 };
 
-// Convert Float32 to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt18_3B> {
+// Convert Float32 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_UInt18_3> {
     static inline uint32_t convert(float arg) {
         float in = arg;
 
         int32_t out;
         // float to integer
-        const double d = double(in) * ((double)pcm_sint18_3b_max + 1.0);
-        if (d < pcm_sint18_3b_min) {
+        const double d = double(in) * ((double)pcm_sint18_3_max + 1.0);
+        if (d < pcm_sint18_3_min) {
             // clip
-            out = pcm_sint18_3b_min;
-        } else if (d >= (double)pcm_sint18_3b_max + 1.0) {
+            out = pcm_sint18_3_min;
+        } else if (d >= (double)pcm_sint18_3_max + 1.0) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(d);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_3>::from_signed(out);
     }
 };
 
-// Convert Float64 to UInt18_3B
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt18_3B> {
+// Convert Float64 to UInt18_3
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_UInt18_3> {
     static inline uint32_t convert(double arg) {
         double in = arg;
 
         int32_t out;
         // float to integer
-        const double d = double(in) * ((double)pcm_sint18_3b_max + 1.0);
-        if (d < pcm_sint18_3b_min) {
+        const double d = double(in) * ((double)pcm_sint18_3_max + 1.0);
+        if (d < pcm_sint18_3_min) {
             // clip
-            out = pcm_sint18_3b_min;
-        } else if (d >= (double)pcm_sint18_3b_max + 1.0) {
+            out = pcm_sint18_3_min;
+        } else if (d >= (double)pcm_sint18_3_max + 1.0) {
             // clip
-            out = pcm_sint18_3b_max;
+            out = pcm_sint18_3_max;
         } else {
             out = int32_t(d);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_3>::from_signed(out);
     }
 };
 
-// Convert SInt8 to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_SInt18_4B> {
+// Convert SInt8 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_SInt18_4> {
     static inline int32_t convert(int8_t arg) {
         int8_t in = arg;
 
@@ -3989,11 +3989,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_SInt18_
     }
 };
 
-// Convert UInt8 to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt18_4B> {
+// Convert UInt8 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_SInt18_4> {
     static inline int32_t convert(uint8_t arg) {
         // convert to signed
-        int8_t in = pcm_sign_converter<PcmEncoding_UInt8>::to_signed(arg);
+        int8_t in = pcm_sign_converter<PcmCode_UInt8>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -4003,8 +4003,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt18_
     }
 };
 
-// Convert SInt16 to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_SInt18_4B> {
+// Convert SInt16 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_SInt18_4> {
     static inline int32_t convert(int16_t arg) {
         int16_t in = arg;
 
@@ -4016,11 +4016,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_SInt18
     }
 };
 
-// Convert UInt16 to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt18_4B> {
+// Convert UInt16 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_SInt18_4> {
     static inline int32_t convert(uint16_t arg) {
         // convert to signed
-        int16_t in = pcm_sign_converter<PcmEncoding_UInt16>::to_signed(arg);
+        int16_t in = pcm_sign_converter<PcmCode_UInt16>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -4030,8 +4030,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt18
     }
 };
 
-// Convert SInt18 to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_SInt18_4B> {
+// Convert SInt18 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_SInt18_4> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -4042,11 +4042,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_SInt18
     }
 };
 
-// Convert UInt18 to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt18_4B> {
+// Convert UInt18 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_SInt18_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18>::to_signed(arg);
 
         int32_t out;
         out = in;
@@ -4055,8 +4055,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt18
     }
 };
 
-// Convert SInt18_3B to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_SInt18_4B> {
+// Convert SInt18_3 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_SInt18_4> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -4067,11 +4067,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt18_3B to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SInt18_4B> {
+// Convert UInt18_3 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_SInt18_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_3>::to_signed(arg);
 
         int32_t out;
         out = in;
@@ -4080,18 +4080,18 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt18_4B to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_SInt18_4B> {
+// Convert SInt18_4 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_SInt18_4> {
     static inline int32_t convert(int32_t arg) {
         return arg;
     }
 };
 
-// Convert UInt18_4B to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SInt18_4B> {
+// Convert UInt18_4 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_SInt18_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_4>::to_signed(arg);
 
         int32_t out;
         out = in;
@@ -4100,8 +4100,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt20 to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt18_4B> {
+// Convert SInt20 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_SInt18_4> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -4109,7 +4109,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt18
         // downscale signed integer
         if (in > int32_t(pcm_sint20_max - (int32_t(1) << 1))) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 1)) >> 2);
         }
@@ -4118,17 +4118,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt18
     }
 };
 
-// Convert UInt20 to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_SInt18_4B> {
+// Convert UInt20 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_SInt18_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
         if (in > int32_t(pcm_sint20_max - (int32_t(1) << 1))) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 1)) >> 2);
         }
@@ -4137,16 +4137,16 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_SInt18
     }
 };
 
-// Convert SInt20_3B to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_SInt18_4B> {
+// Convert SInt20_3 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_SInt18_4> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_3b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint20_3_max - (int32_t(1) << 1))) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 1)) >> 2);
         }
@@ -4155,17 +4155,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt20_3B to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SInt18_4B> {
+// Convert UInt20_3 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_SInt18_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_3>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_3b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint20_3_max - (int32_t(1) << 1))) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 1)) >> 2);
         }
@@ -4174,16 +4174,16 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt20_4B to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_SInt18_4B> {
+// Convert SInt20_4 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_SInt18_4> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_4b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint20_4_max - (int32_t(1) << 1))) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 1)) >> 2);
         }
@@ -4192,17 +4192,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt20_4B to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SInt18_4B> {
+// Convert UInt20_4 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_SInt18_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_4>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_4b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint20_4_max - (int32_t(1) << 1))) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 1)) >> 2);
         }
@@ -4211,8 +4211,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt24 to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt18_4B> {
+// Convert SInt24 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_SInt18_4> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -4220,7 +4220,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt18
         // downscale signed integer
         if (in > int32_t(pcm_sint24_max - (int32_t(1) << 5))) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 5)) >> 6);
         }
@@ -4229,17 +4229,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt18
     }
 };
 
-// Convert UInt24 to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt18_4B> {
+// Convert UInt24 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_SInt18_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
         if (in > int32_t(pcm_sint24_max - (int32_t(1) << 5))) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 5)) >> 6);
         }
@@ -4248,16 +4248,16 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt18
     }
 };
 
-// Convert SInt24_4B to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_SInt18_4B> {
+// Convert SInt24_4 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_SInt18_4> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 5))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 5))) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 5)) >> 6);
         }
@@ -4266,17 +4266,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt24_4B to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SInt18_4B> {
+// Convert UInt24_4 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_SInt18_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24_4>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 5))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 5))) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 5)) >> 6);
         }
@@ -4285,8 +4285,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt32 to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt18_4B> {
+// Convert SInt32 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_SInt18_4> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -4294,7 +4294,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt18
         // downscale signed integer
         if (in > int32_t(pcm_sint32_max - (int32_t(1) << 13))) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 13)) >> 14);
         }
@@ -4303,17 +4303,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt18
     }
 };
 
-// Convert UInt32 to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt18_4B> {
+// Convert UInt32 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_SInt18_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt32>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt32>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
         if (in > int32_t(pcm_sint32_max - (int32_t(1) << 13))) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 13)) >> 14);
         }
@@ -4322,8 +4322,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt18
     }
 };
 
-// Convert SInt64 to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt18_4B> {
+// Convert SInt64 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_SInt18_4> {
     static inline int32_t convert(int64_t arg) {
         int64_t in = arg;
 
@@ -4331,7 +4331,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt18
         // downscale signed integer
         if (in > int64_t(pcm_sint64_max - (int64_t(1) << 45))) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(uint64_t(in + (int64_t(1) << 45)) >> 46);
         }
@@ -4340,17 +4340,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt18
     }
 };
 
-// Convert UInt64 to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt18_4B> {
+// Convert UInt64 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_SInt18_4> {
     static inline int32_t convert(uint64_t arg) {
         // convert to signed
-        int64_t in = pcm_sign_converter<PcmEncoding_UInt64>::to_signed(arg);
+        int64_t in = pcm_sign_converter<PcmCode_UInt64>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
         if (in > int64_t(pcm_sint64_max - (int64_t(1) << 45))) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(uint64_t(in + (int64_t(1) << 45)) >> 46);
         }
@@ -4359,20 +4359,20 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt18
     }
 };
 
-// Convert Float32 to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt18_4B> {
+// Convert Float32 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_SInt18_4> {
     static inline int32_t convert(float arg) {
         float in = arg;
 
         int32_t out;
         // float to integer
-        const double d = double(in) * ((double)pcm_sint18_4b_max + 1.0);
-        if (d < pcm_sint18_4b_min) {
+        const double d = double(in) * ((double)pcm_sint18_4_max + 1.0);
+        if (d < pcm_sint18_4_min) {
             // clip
-            out = pcm_sint18_4b_min;
-        } else if (d >= (double)pcm_sint18_4b_max + 1.0) {
+            out = pcm_sint18_4_min;
+        } else if (d >= (double)pcm_sint18_4_max + 1.0) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(d);
         }
@@ -4381,20 +4381,20 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt1
     }
 };
 
-// Convert Float64 to SInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt18_4B> {
+// Convert Float64 to SInt18_4
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_SInt18_4> {
     static inline int32_t convert(double arg) {
         double in = arg;
 
         int32_t out;
         // float to integer
-        const double d = double(in) * ((double)pcm_sint18_4b_max + 1.0);
-        if (d < pcm_sint18_4b_min) {
+        const double d = double(in) * ((double)pcm_sint18_4_max + 1.0);
+        if (d < pcm_sint18_4_min) {
             // clip
-            out = pcm_sint18_4b_min;
-        } else if (d >= (double)pcm_sint18_4b_max + 1.0) {
+            out = pcm_sint18_4_min;
+        } else if (d >= (double)pcm_sint18_4_max + 1.0) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(d);
         }
@@ -4403,8 +4403,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt1
     }
 };
 
-// Convert SInt8 to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt18_4B> {
+// Convert SInt8 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_UInt18_4> {
     static inline uint32_t convert(int8_t arg) {
         int8_t in = arg;
 
@@ -4413,12 +4413,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt18_
         out = int32_t(uint32_t(in) << 10);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_4>::from_signed(out);
     }
 };
 
-// Convert UInt8 to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_UInt18_4B> {
+// Convert UInt8 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_UInt18_4> {
     static inline uint32_t convert(uint8_t arg) {
         uint8_t in = arg;
 
@@ -4430,8 +4430,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_UInt18_
     }
 };
 
-// Convert SInt16 to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt18_4B> {
+// Convert SInt16 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_UInt18_4> {
     static inline uint32_t convert(int16_t arg) {
         int16_t in = arg;
 
@@ -4440,12 +4440,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt18
         out = int32_t(uint32_t(in) << 2);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_4>::from_signed(out);
     }
 };
 
-// Convert UInt16 to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_UInt18_4B> {
+// Convert UInt16 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_UInt18_4> {
     static inline uint32_t convert(uint16_t arg) {
         uint16_t in = arg;
 
@@ -4457,8 +4457,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_UInt18
     }
 };
 
-// Convert SInt18 to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt18_4B> {
+// Convert SInt18 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_UInt18_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -4466,12 +4466,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt18
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_4>::from_signed(out);
     }
 };
 
-// Convert UInt18 to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_UInt18_4B> {
+// Convert UInt18 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_UInt18_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -4482,8 +4482,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_UInt18
     }
 };
 
-// Convert SInt18_3B to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UInt18_4B> {
+// Convert SInt18_3 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_UInt18_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -4491,12 +4491,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UIn
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_4>::from_signed(out);
     }
 };
 
-// Convert UInt18_3B to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_UInt18_4B> {
+// Convert UInt18_3 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_UInt18_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -4507,8 +4507,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt18_4B to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UInt18_4B> {
+// Convert SInt18_4 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_UInt18_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -4516,19 +4516,19 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UIn
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_4>::from_signed(out);
     }
 };
 
-// Convert UInt18_4B to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_UInt18_4B> {
+// Convert UInt18_4 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_UInt18_4> {
     static inline uint32_t convert(uint32_t arg) {
         return arg;
     }
 };
 
-// Convert SInt20 to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt18_4B> {
+// Convert SInt20 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_UInt18_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -4536,18 +4536,18 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt18
         // downscale signed integer
         if (in > int32_t(pcm_sint20_max - (int32_t(1) << 1))) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 1)) >> 2);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_4>::from_signed(out);
     }
 };
 
-// Convert UInt20 to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_UInt18_4B> {
+// Convert UInt20 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_UInt18_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -4559,27 +4559,27 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_UInt18
     }
 };
 
-// Convert SInt20_3B to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_UInt18_4B> {
+// Convert SInt20_3 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_UInt18_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_3b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint20_3_max - (int32_t(1) << 1))) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 1)) >> 2);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_4>::from_signed(out);
     }
 };
 
-// Convert UInt20_3B to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_UInt18_4B> {
+// Convert UInt20_3 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_UInt18_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -4591,27 +4591,27 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt20_4B to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_UInt18_4B> {
+// Convert SInt20_4 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_UInt18_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint20_4b_max - (int32_t(1) << 1))) {
+        if (in > int32_t(pcm_sint20_4_max - (int32_t(1) << 1))) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 1)) >> 2);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_4>::from_signed(out);
     }
 };
 
-// Convert UInt20_4B to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_UInt18_4B> {
+// Convert UInt20_4 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_UInt18_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -4623,8 +4623,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt24 to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt18_4B> {
+// Convert SInt24 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_UInt18_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -4632,18 +4632,18 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt18
         // downscale signed integer
         if (in > int32_t(pcm_sint24_max - (int32_t(1) << 5))) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 5)) >> 6);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_4>::from_signed(out);
     }
 };
 
-// Convert UInt24 to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_UInt18_4B> {
+// Convert UInt24 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_UInt18_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -4655,27 +4655,27 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_UInt18
     }
 };
 
-// Convert SInt24_4B to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_UInt18_4B> {
+// Convert SInt24_4 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_UInt18_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 5))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 5))) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 5)) >> 6);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_4>::from_signed(out);
     }
 };
 
-// Convert UInt24_4B to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_UInt18_4B> {
+// Convert UInt24_4 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_UInt18_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -4687,8 +4687,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt32 to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt18_4B> {
+// Convert SInt32 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_UInt18_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -4696,18 +4696,18 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt18
         // downscale signed integer
         if (in > int32_t(pcm_sint32_max - (int32_t(1) << 13))) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 13)) >> 14);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_4>::from_signed(out);
     }
 };
 
-// Convert UInt32 to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_UInt18_4B> {
+// Convert UInt32 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_UInt18_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -4719,8 +4719,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_UInt18
     }
 };
 
-// Convert SInt64 to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt18_4B> {
+// Convert SInt64 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_UInt18_4> {
     static inline uint32_t convert(int64_t arg) {
         int64_t in = arg;
 
@@ -4728,18 +4728,18 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt18
         // downscale signed integer
         if (in > int64_t(pcm_sint64_max - (int64_t(1) << 45))) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(uint64_t(in + (int64_t(1) << 45)) >> 46);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_4>::from_signed(out);
     }
 };
 
-// Convert UInt64 to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_UInt18_4B> {
+// Convert UInt64 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_UInt18_4> {
     static inline uint32_t convert(uint64_t arg) {
         uint64_t in = arg;
 
@@ -4751,54 +4751,54 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_UInt18
     }
 };
 
-// Convert Float32 to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt18_4B> {
+// Convert Float32 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_UInt18_4> {
     static inline uint32_t convert(float arg) {
         float in = arg;
 
         int32_t out;
         // float to integer
-        const double d = double(in) * ((double)pcm_sint18_4b_max + 1.0);
-        if (d < pcm_sint18_4b_min) {
+        const double d = double(in) * ((double)pcm_sint18_4_max + 1.0);
+        if (d < pcm_sint18_4_min) {
             // clip
-            out = pcm_sint18_4b_min;
-        } else if (d >= (double)pcm_sint18_4b_max + 1.0) {
+            out = pcm_sint18_4_min;
+        } else if (d >= (double)pcm_sint18_4_max + 1.0) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(d);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_4>::from_signed(out);
     }
 };
 
-// Convert Float64 to UInt18_4B
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt18_4B> {
+// Convert Float64 to UInt18_4
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_UInt18_4> {
     static inline uint32_t convert(double arg) {
         double in = arg;
 
         int32_t out;
         // float to integer
-        const double d = double(in) * ((double)pcm_sint18_4b_max + 1.0);
-        if (d < pcm_sint18_4b_min) {
+        const double d = double(in) * ((double)pcm_sint18_4_max + 1.0);
+        if (d < pcm_sint18_4_min) {
             // clip
-            out = pcm_sint18_4b_min;
-        } else if (d >= (double)pcm_sint18_4b_max + 1.0) {
+            out = pcm_sint18_4_min;
+        } else if (d >= (double)pcm_sint18_4_max + 1.0) {
             // clip
-            out = pcm_sint18_4b_max;
+            out = pcm_sint18_4_max;
         } else {
             out = int32_t(d);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt18_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt18_4>::from_signed(out);
     }
 };
 
 // Convert SInt8 to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_SInt20> {
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_SInt20> {
     static inline int32_t convert(int8_t arg) {
         int8_t in = arg;
 
@@ -4811,10 +4811,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_SInt20>
 };
 
 // Convert UInt8 to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt20> {
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_SInt20> {
     static inline int32_t convert(uint8_t arg) {
         // convert to signed
-        int8_t in = pcm_sign_converter<PcmEncoding_UInt8>::to_signed(arg);
+        int8_t in = pcm_sign_converter<PcmCode_UInt8>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -4825,7 +4825,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt20>
 };
 
 // Convert SInt16 to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_SInt20> {
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_SInt20> {
     static inline int32_t convert(int16_t arg) {
         int16_t in = arg;
 
@@ -4838,10 +4838,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_SInt20
 };
 
 // Convert UInt16 to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt20> {
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_SInt20> {
     static inline int32_t convert(uint16_t arg) {
         // convert to signed
-        int16_t in = pcm_sign_converter<PcmEncoding_UInt16>::to_signed(arg);
+        int16_t in = pcm_sign_converter<PcmCode_UInt16>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -4852,7 +4852,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt20
 };
 
 // Convert SInt18 to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_SInt20> {
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_SInt20> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -4865,10 +4865,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_SInt20
 };
 
 // Convert UInt18 to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt20> {
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_SInt20> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -4878,8 +4878,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt20
     }
 };
 
-// Convert SInt18_3B to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_SInt20> {
+// Convert SInt18_3 to SInt20
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_SInt20> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -4891,11 +4891,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt18_3B to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SInt20> {
+// Convert UInt18_3 to SInt20
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_SInt20> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_3>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -4905,8 +4905,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt18_4B to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_SInt20> {
+// Convert SInt18_4 to SInt20
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_SInt20> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -4918,11 +4918,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt18_4B to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SInt20> {
+// Convert UInt18_4 to SInt20
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_SInt20> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_4>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -4933,17 +4933,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SIn
 };
 
 // Convert SInt20 to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt20> {
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_SInt20> {
     static inline int32_t convert(int32_t arg) {
         return arg;
     }
 };
 
 // Convert UInt20 to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_SInt20> {
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_SInt20> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20>::to_signed(arg);
 
         int32_t out;
         out = in;
@@ -4952,8 +4952,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_SInt20
     }
 };
 
-// Convert SInt20_3B to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_SInt20> {
+// Convert SInt20_3 to SInt20
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_SInt20> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -4964,11 +4964,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt20_3B to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SInt20> {
+// Convert UInt20_3 to SInt20
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_SInt20> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_3>::to_signed(arg);
 
         int32_t out;
         out = in;
@@ -4977,8 +4977,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt20_4B to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_SInt20> {
+// Convert SInt20_4 to SInt20
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_SInt20> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -4989,11 +4989,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt20_4B to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SInt20> {
+// Convert UInt20_4 to SInt20
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_SInt20> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_4>::to_signed(arg);
 
         int32_t out;
         out = in;
@@ -5003,7 +5003,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SIn
 };
 
 // Convert SInt24 to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt20> {
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_SInt20> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -5021,10 +5021,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt20
 };
 
 // Convert UInt24 to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt20> {
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_SInt20> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
@@ -5039,14 +5039,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt20
     }
 };
 
-// Convert SInt24_4B to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_SInt20> {
+// Convert SInt24_4 to SInt20
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_SInt20> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 3))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 3))) {
             // clip
             out = pcm_sint20_max;
         } else {
@@ -5057,15 +5057,15 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt24_4B to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SInt20> {
+// Convert UInt24_4 to SInt20
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_SInt20> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24_4>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 3))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 3))) {
             // clip
             out = pcm_sint20_max;
         } else {
@@ -5077,7 +5077,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SIn
 };
 
 // Convert SInt32 to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt20> {
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_SInt20> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -5095,10 +5095,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt20
 };
 
 // Convert UInt32 to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt20> {
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_SInt20> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt32>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt32>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
@@ -5114,7 +5114,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt20
 };
 
 // Convert SInt64 to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt20> {
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_SInt20> {
     static inline int32_t convert(int64_t arg) {
         int64_t in = arg;
 
@@ -5132,10 +5132,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt20
 };
 
 // Convert UInt64 to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt20> {
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_SInt20> {
     static inline int32_t convert(uint64_t arg) {
         // convert to signed
-        int64_t in = pcm_sign_converter<PcmEncoding_UInt64>::to_signed(arg);
+        int64_t in = pcm_sign_converter<PcmCode_UInt64>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
@@ -5151,7 +5151,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt20
 };
 
 // Convert Float32 to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt20> {
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_SInt20> {
     static inline int32_t convert(float arg) {
         float in = arg;
 
@@ -5173,7 +5173,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt2
 };
 
 // Convert Float64 to SInt20
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt20> {
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_SInt20> {
     static inline int32_t convert(double arg) {
         double in = arg;
 
@@ -5195,7 +5195,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt2
 };
 
 // Convert SInt8 to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt20> {
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_UInt20> {
     static inline uint32_t convert(int8_t arg) {
         int8_t in = arg;
 
@@ -5204,12 +5204,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt20>
         out = int32_t(uint32_t(in) << 12);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20>::from_signed(out);
     }
 };
 
 // Convert UInt8 to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_UInt20> {
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_UInt20> {
     static inline uint32_t convert(uint8_t arg) {
         uint8_t in = arg;
 
@@ -5222,7 +5222,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_UInt20>
 };
 
 // Convert SInt16 to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt20> {
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_UInt20> {
     static inline uint32_t convert(int16_t arg) {
         int16_t in = arg;
 
@@ -5231,12 +5231,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt20
         out = int32_t(uint32_t(in) << 4);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20>::from_signed(out);
     }
 };
 
 // Convert UInt16 to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_UInt20> {
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_UInt20> {
     static inline uint32_t convert(uint16_t arg) {
         uint16_t in = arg;
 
@@ -5249,7 +5249,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_UInt20
 };
 
 // Convert SInt18 to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt20> {
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_UInt20> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -5258,12 +5258,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt20
         out = int32_t(uint32_t(in) << 2);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20>::from_signed(out);
     }
 };
 
 // Convert UInt18 to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_UInt20> {
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_UInt20> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -5275,8 +5275,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_UInt20
     }
 };
 
-// Convert SInt18_3B to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UInt20> {
+// Convert SInt18_3 to UInt20
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_UInt20> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -5285,12 +5285,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UIn
         out = int32_t(uint32_t(in) << 2);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20>::from_signed(out);
     }
 };
 
-// Convert UInt18_3B to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_UInt20> {
+// Convert UInt18_3 to UInt20
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_UInt20> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -5302,8 +5302,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt18_4B to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UInt20> {
+// Convert SInt18_4 to UInt20
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_UInt20> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -5312,12 +5312,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UIn
         out = int32_t(uint32_t(in) << 2);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20>::from_signed(out);
     }
 };
 
-// Convert UInt18_4B to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_UInt20> {
+// Convert UInt18_4 to UInt20
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_UInt20> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -5330,7 +5330,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_UIn
 };
 
 // Convert SInt20 to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt20> {
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_UInt20> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -5338,19 +5338,19 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt20
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20>::from_signed(out);
     }
 };
 
 // Convert UInt20 to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_UInt20> {
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_UInt20> {
     static inline uint32_t convert(uint32_t arg) {
         return arg;
     }
 };
 
-// Convert SInt20_3B to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_UInt20> {
+// Convert SInt20_3 to UInt20
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_UInt20> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -5358,12 +5358,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_UIn
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20>::from_signed(out);
     }
 };
 
-// Convert UInt20_3B to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_UInt20> {
+// Convert UInt20_3 to UInt20
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_UInt20> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -5374,8 +5374,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt20_4B to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_UInt20> {
+// Convert SInt20_4 to UInt20
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_UInt20> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -5383,12 +5383,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_UIn
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20>::from_signed(out);
     }
 };
 
-// Convert UInt20_4B to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_UInt20> {
+// Convert UInt20_4 to UInt20
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_UInt20> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -5400,7 +5400,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_UIn
 };
 
 // Convert SInt24 to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt20> {
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_UInt20> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -5414,12 +5414,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt20
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20>::from_signed(out);
     }
 };
 
 // Convert UInt24 to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_UInt20> {
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_UInt20> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -5431,14 +5431,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_UInt20
     }
 };
 
-// Convert SInt24_4B to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_UInt20> {
+// Convert SInt24_4 to UInt20
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_UInt20> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 3))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 3))) {
             // clip
             out = pcm_sint20_max;
         } else {
@@ -5446,12 +5446,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_UIn
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20>::from_signed(out);
     }
 };
 
-// Convert UInt24_4B to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_UInt20> {
+// Convert UInt24_4 to UInt20
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_UInt20> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -5464,7 +5464,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_UIn
 };
 
 // Convert SInt32 to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt20> {
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_UInt20> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -5478,12 +5478,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt20
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20>::from_signed(out);
     }
 };
 
 // Convert UInt32 to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_UInt20> {
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_UInt20> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -5496,7 +5496,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_UInt20
 };
 
 // Convert SInt64 to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt20> {
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_UInt20> {
     static inline uint32_t convert(int64_t arg) {
         int64_t in = arg;
 
@@ -5510,12 +5510,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt20
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20>::from_signed(out);
     }
 };
 
 // Convert UInt64 to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_UInt20> {
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_UInt20> {
     static inline uint32_t convert(uint64_t arg) {
         uint64_t in = arg;
 
@@ -5528,7 +5528,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_UInt20
 };
 
 // Convert Float32 to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt20> {
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_UInt20> {
     static inline uint32_t convert(float arg) {
         float in = arg;
 
@@ -5546,12 +5546,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt2
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20>::from_signed(out);
     }
 };
 
 // Convert Float64 to UInt20
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt20> {
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_UInt20> {
     static inline uint32_t convert(double arg) {
         double in = arg;
 
@@ -5569,12 +5569,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt2
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20>::from_signed(out);
     }
 };
 
-// Convert SInt8 to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_SInt20_3B> {
+// Convert SInt8 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_SInt20_3> {
     static inline int32_t convert(int8_t arg) {
         int8_t in = arg;
 
@@ -5586,11 +5586,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_SInt20_
     }
 };
 
-// Convert UInt8 to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt20_3B> {
+// Convert UInt8 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_SInt20_3> {
     static inline int32_t convert(uint8_t arg) {
         // convert to signed
-        int8_t in = pcm_sign_converter<PcmEncoding_UInt8>::to_signed(arg);
+        int8_t in = pcm_sign_converter<PcmCode_UInt8>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -5600,8 +5600,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt20_
     }
 };
 
-// Convert SInt16 to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_SInt20_3B> {
+// Convert SInt16 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_SInt20_3> {
     static inline int32_t convert(int16_t arg) {
         int16_t in = arg;
 
@@ -5613,11 +5613,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_SInt20
     }
 };
 
-// Convert UInt16 to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt20_3B> {
+// Convert UInt16 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_SInt20_3> {
     static inline int32_t convert(uint16_t arg) {
         // convert to signed
-        int16_t in = pcm_sign_converter<PcmEncoding_UInt16>::to_signed(arg);
+        int16_t in = pcm_sign_converter<PcmCode_UInt16>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -5627,8 +5627,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt20
     }
 };
 
-// Convert SInt18 to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_SInt20_3B> {
+// Convert SInt18 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_SInt20_3> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -5640,11 +5640,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_SInt20
     }
 };
 
-// Convert UInt18 to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt20_3B> {
+// Convert UInt18 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_SInt20_3> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -5654,8 +5654,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt20
     }
 };
 
-// Convert SInt18_3B to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_SInt20_3B> {
+// Convert SInt18_3 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_SInt20_3> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -5667,11 +5667,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt18_3B to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SInt20_3B> {
+// Convert UInt18_3 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_SInt20_3> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_3>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -5681,8 +5681,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt18_4B to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_SInt20_3B> {
+// Convert SInt18_4 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_SInt20_3> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -5694,11 +5694,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt18_4B to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SInt20_3B> {
+// Convert UInt18_4 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_SInt20_3> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_4>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -5708,8 +5708,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt20 to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt20_3B> {
+// Convert SInt20 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_SInt20_3> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -5720,11 +5720,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt20
     }
 };
 
-// Convert UInt20 to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_SInt20_3B> {
+// Convert UInt20 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_SInt20_3> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20>::to_signed(arg);
 
         int32_t out;
         out = in;
@@ -5733,18 +5733,18 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_SInt20
     }
 };
 
-// Convert SInt20_3B to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_SInt20_3B> {
+// Convert SInt20_3 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_SInt20_3> {
     static inline int32_t convert(int32_t arg) {
         return arg;
     }
 };
 
-// Convert UInt20_3B to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SInt20_3B> {
+// Convert UInt20_3 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_SInt20_3> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_3>::to_signed(arg);
 
         int32_t out;
         out = in;
@@ -5753,8 +5753,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt20_4B to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_SInt20_3B> {
+// Convert SInt20_4 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_SInt20_3> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -5765,11 +5765,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt20_4B to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SInt20_3B> {
+// Convert UInt20_4 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_SInt20_3> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_4>::to_signed(arg);
 
         int32_t out;
         out = in;
@@ -5778,8 +5778,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt24 to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt20_3B> {
+// Convert SInt24 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_SInt20_3> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -5787,7 +5787,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt20
         // downscale signed integer
         if (in > int32_t(pcm_sint24_max - (int32_t(1) << 3))) {
             // clip
-            out = pcm_sint20_3b_max;
+            out = pcm_sint20_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 3)) >> 4);
         }
@@ -5796,17 +5796,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt20
     }
 };
 
-// Convert UInt24 to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt20_3B> {
+// Convert UInt24 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_SInt20_3> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
         if (in > int32_t(pcm_sint24_max - (int32_t(1) << 3))) {
             // clip
-            out = pcm_sint20_3b_max;
+            out = pcm_sint20_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 3)) >> 4);
         }
@@ -5815,16 +5815,16 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt20
     }
 };
 
-// Convert SInt24_4B to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_SInt20_3B> {
+// Convert SInt24_4 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_SInt20_3> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 3))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 3))) {
             // clip
-            out = pcm_sint20_3b_max;
+            out = pcm_sint20_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 3)) >> 4);
         }
@@ -5833,17 +5833,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt24_4B to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SInt20_3B> {
+// Convert UInt24_4 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_SInt20_3> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24_4>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 3))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 3))) {
             // clip
-            out = pcm_sint20_3b_max;
+            out = pcm_sint20_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 3)) >> 4);
         }
@@ -5852,8 +5852,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt32 to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt20_3B> {
+// Convert SInt32 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_SInt20_3> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -5861,7 +5861,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt20
         // downscale signed integer
         if (in > int32_t(pcm_sint32_max - (int32_t(1) << 11))) {
             // clip
-            out = pcm_sint20_3b_max;
+            out = pcm_sint20_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 11)) >> 12);
         }
@@ -5870,17 +5870,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt20
     }
 };
 
-// Convert UInt32 to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt20_3B> {
+// Convert UInt32 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_SInt20_3> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt32>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt32>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
         if (in > int32_t(pcm_sint32_max - (int32_t(1) << 11))) {
             // clip
-            out = pcm_sint20_3b_max;
+            out = pcm_sint20_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 11)) >> 12);
         }
@@ -5889,8 +5889,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt20
     }
 };
 
-// Convert SInt64 to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt20_3B> {
+// Convert SInt64 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_SInt20_3> {
     static inline int32_t convert(int64_t arg) {
         int64_t in = arg;
 
@@ -5898,7 +5898,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt20
         // downscale signed integer
         if (in > int64_t(pcm_sint64_max - (int64_t(1) << 43))) {
             // clip
-            out = pcm_sint20_3b_max;
+            out = pcm_sint20_3_max;
         } else {
             out = int32_t(uint64_t(in + (int64_t(1) << 43)) >> 44);
         }
@@ -5907,17 +5907,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt20
     }
 };
 
-// Convert UInt64 to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt20_3B> {
+// Convert UInt64 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_SInt20_3> {
     static inline int32_t convert(uint64_t arg) {
         // convert to signed
-        int64_t in = pcm_sign_converter<PcmEncoding_UInt64>::to_signed(arg);
+        int64_t in = pcm_sign_converter<PcmCode_UInt64>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
         if (in > int64_t(pcm_sint64_max - (int64_t(1) << 43))) {
             // clip
-            out = pcm_sint20_3b_max;
+            out = pcm_sint20_3_max;
         } else {
             out = int32_t(uint64_t(in + (int64_t(1) << 43)) >> 44);
         }
@@ -5926,20 +5926,20 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt20
     }
 };
 
-// Convert Float32 to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt20_3B> {
+// Convert Float32 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_SInt20_3> {
     static inline int32_t convert(float arg) {
         float in = arg;
 
         int32_t out;
         // float to integer
-        const double d = double(in) * ((double)pcm_sint20_3b_max + 1.0);
-        if (d < pcm_sint20_3b_min) {
+        const double d = double(in) * ((double)pcm_sint20_3_max + 1.0);
+        if (d < pcm_sint20_3_min) {
             // clip
-            out = pcm_sint20_3b_min;
-        } else if (d >= (double)pcm_sint20_3b_max + 1.0) {
+            out = pcm_sint20_3_min;
+        } else if (d >= (double)pcm_sint20_3_max + 1.0) {
             // clip
-            out = pcm_sint20_3b_max;
+            out = pcm_sint20_3_max;
         } else {
             out = int32_t(d);
         }
@@ -5948,20 +5948,20 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt2
     }
 };
 
-// Convert Float64 to SInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt20_3B> {
+// Convert Float64 to SInt20_3
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_SInt20_3> {
     static inline int32_t convert(double arg) {
         double in = arg;
 
         int32_t out;
         // float to integer
-        const double d = double(in) * ((double)pcm_sint20_3b_max + 1.0);
-        if (d < pcm_sint20_3b_min) {
+        const double d = double(in) * ((double)pcm_sint20_3_max + 1.0);
+        if (d < pcm_sint20_3_min) {
             // clip
-            out = pcm_sint20_3b_min;
-        } else if (d >= (double)pcm_sint20_3b_max + 1.0) {
+            out = pcm_sint20_3_min;
+        } else if (d >= (double)pcm_sint20_3_max + 1.0) {
             // clip
-            out = pcm_sint20_3b_max;
+            out = pcm_sint20_3_max;
         } else {
             out = int32_t(d);
         }
@@ -5970,8 +5970,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt2
     }
 };
 
-// Convert SInt8 to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt20_3B> {
+// Convert SInt8 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_UInt20_3> {
     static inline uint32_t convert(int8_t arg) {
         int8_t in = arg;
 
@@ -5980,12 +5980,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt20_
         out = int32_t(uint32_t(in) << 12);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_3>::from_signed(out);
     }
 };
 
-// Convert UInt8 to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_UInt20_3B> {
+// Convert UInt8 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_UInt20_3> {
     static inline uint32_t convert(uint8_t arg) {
         uint8_t in = arg;
 
@@ -5997,8 +5997,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_UInt20_
     }
 };
 
-// Convert SInt16 to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt20_3B> {
+// Convert SInt16 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_UInt20_3> {
     static inline uint32_t convert(int16_t arg) {
         int16_t in = arg;
 
@@ -6007,12 +6007,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt20
         out = int32_t(uint32_t(in) << 4);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_3>::from_signed(out);
     }
 };
 
-// Convert UInt16 to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_UInt20_3B> {
+// Convert UInt16 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_UInt20_3> {
     static inline uint32_t convert(uint16_t arg) {
         uint16_t in = arg;
 
@@ -6024,8 +6024,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_UInt20
     }
 };
 
-// Convert SInt18 to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt20_3B> {
+// Convert SInt18 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_UInt20_3> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -6034,12 +6034,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt20
         out = int32_t(uint32_t(in) << 2);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_3>::from_signed(out);
     }
 };
 
-// Convert UInt18 to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_UInt20_3B> {
+// Convert UInt18 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_UInt20_3> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -6051,8 +6051,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_UInt20
     }
 };
 
-// Convert SInt18_3B to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UInt20_3B> {
+// Convert SInt18_3 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_UInt20_3> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -6061,12 +6061,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UIn
         out = int32_t(uint32_t(in) << 2);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_3>::from_signed(out);
     }
 };
 
-// Convert UInt18_3B to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_UInt20_3B> {
+// Convert UInt18_3 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_UInt20_3> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -6078,8 +6078,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt18_4B to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UInt20_3B> {
+// Convert SInt18_4 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_UInt20_3> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -6088,12 +6088,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UIn
         out = int32_t(uint32_t(in) << 2);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_3>::from_signed(out);
     }
 };
 
-// Convert UInt18_4B to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_UInt20_3B> {
+// Convert UInt18_4 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_UInt20_3> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -6105,8 +6105,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt20 to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt20_3B> {
+// Convert SInt20 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_UInt20_3> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -6114,12 +6114,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt20
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_3>::from_signed(out);
     }
 };
 
-// Convert UInt20 to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_UInt20_3B> {
+// Convert UInt20 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_UInt20_3> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -6130,8 +6130,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_UInt20
     }
 };
 
-// Convert SInt20_3B to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_UInt20_3B> {
+// Convert SInt20_3 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_UInt20_3> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -6139,19 +6139,19 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_UIn
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_3>::from_signed(out);
     }
 };
 
-// Convert UInt20_3B to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_UInt20_3B> {
+// Convert UInt20_3 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_UInt20_3> {
     static inline uint32_t convert(uint32_t arg) {
         return arg;
     }
 };
 
-// Convert SInt20_4B to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_UInt20_3B> {
+// Convert SInt20_4 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_UInt20_3> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -6159,12 +6159,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_UIn
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_3>::from_signed(out);
     }
 };
 
-// Convert UInt20_4B to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_UInt20_3B> {
+// Convert UInt20_4 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_UInt20_3> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -6175,8 +6175,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt24 to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt20_3B> {
+// Convert SInt24 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_UInt20_3> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -6184,18 +6184,18 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt20
         // downscale signed integer
         if (in > int32_t(pcm_sint24_max - (int32_t(1) << 3))) {
             // clip
-            out = pcm_sint20_3b_max;
+            out = pcm_sint20_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 3)) >> 4);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_3>::from_signed(out);
     }
 };
 
-// Convert UInt24 to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_UInt20_3B> {
+// Convert UInt24 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_UInt20_3> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -6207,27 +6207,27 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_UInt20
     }
 };
 
-// Convert SInt24_4B to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_UInt20_3B> {
+// Convert SInt24_4 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_UInt20_3> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 3))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 3))) {
             // clip
-            out = pcm_sint20_3b_max;
+            out = pcm_sint20_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 3)) >> 4);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_3>::from_signed(out);
     }
 };
 
-// Convert UInt24_4B to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_UInt20_3B> {
+// Convert UInt24_4 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_UInt20_3> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -6239,8 +6239,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt32 to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt20_3B> {
+// Convert SInt32 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_UInt20_3> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -6248,18 +6248,18 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt20
         // downscale signed integer
         if (in > int32_t(pcm_sint32_max - (int32_t(1) << 11))) {
             // clip
-            out = pcm_sint20_3b_max;
+            out = pcm_sint20_3_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 11)) >> 12);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_3>::from_signed(out);
     }
 };
 
-// Convert UInt32 to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_UInt20_3B> {
+// Convert UInt32 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_UInt20_3> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -6271,8 +6271,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_UInt20
     }
 };
 
-// Convert SInt64 to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt20_3B> {
+// Convert SInt64 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_UInt20_3> {
     static inline uint32_t convert(int64_t arg) {
         int64_t in = arg;
 
@@ -6280,18 +6280,18 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt20
         // downscale signed integer
         if (in > int64_t(pcm_sint64_max - (int64_t(1) << 43))) {
             // clip
-            out = pcm_sint20_3b_max;
+            out = pcm_sint20_3_max;
         } else {
             out = int32_t(uint64_t(in + (int64_t(1) << 43)) >> 44);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_3>::from_signed(out);
     }
 };
 
-// Convert UInt64 to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_UInt20_3B> {
+// Convert UInt64 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_UInt20_3> {
     static inline uint32_t convert(uint64_t arg) {
         uint64_t in = arg;
 
@@ -6303,54 +6303,54 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_UInt20
     }
 };
 
-// Convert Float32 to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt20_3B> {
+// Convert Float32 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_UInt20_3> {
     static inline uint32_t convert(float arg) {
         float in = arg;
 
         int32_t out;
         // float to integer
-        const double d = double(in) * ((double)pcm_sint20_3b_max + 1.0);
-        if (d < pcm_sint20_3b_min) {
+        const double d = double(in) * ((double)pcm_sint20_3_max + 1.0);
+        if (d < pcm_sint20_3_min) {
             // clip
-            out = pcm_sint20_3b_min;
-        } else if (d >= (double)pcm_sint20_3b_max + 1.0) {
+            out = pcm_sint20_3_min;
+        } else if (d >= (double)pcm_sint20_3_max + 1.0) {
             // clip
-            out = pcm_sint20_3b_max;
+            out = pcm_sint20_3_max;
         } else {
             out = int32_t(d);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_3>::from_signed(out);
     }
 };
 
-// Convert Float64 to UInt20_3B
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt20_3B> {
+// Convert Float64 to UInt20_3
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_UInt20_3> {
     static inline uint32_t convert(double arg) {
         double in = arg;
 
         int32_t out;
         // float to integer
-        const double d = double(in) * ((double)pcm_sint20_3b_max + 1.0);
-        if (d < pcm_sint20_3b_min) {
+        const double d = double(in) * ((double)pcm_sint20_3_max + 1.0);
+        if (d < pcm_sint20_3_min) {
             // clip
-            out = pcm_sint20_3b_min;
-        } else if (d >= (double)pcm_sint20_3b_max + 1.0) {
+            out = pcm_sint20_3_min;
+        } else if (d >= (double)pcm_sint20_3_max + 1.0) {
             // clip
-            out = pcm_sint20_3b_max;
+            out = pcm_sint20_3_max;
         } else {
             out = int32_t(d);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_3B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_3>::from_signed(out);
     }
 };
 
-// Convert SInt8 to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_SInt20_4B> {
+// Convert SInt8 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_SInt20_4> {
     static inline int32_t convert(int8_t arg) {
         int8_t in = arg;
 
@@ -6362,11 +6362,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_SInt20_
     }
 };
 
-// Convert UInt8 to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt20_4B> {
+// Convert UInt8 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_SInt20_4> {
     static inline int32_t convert(uint8_t arg) {
         // convert to signed
-        int8_t in = pcm_sign_converter<PcmEncoding_UInt8>::to_signed(arg);
+        int8_t in = pcm_sign_converter<PcmCode_UInt8>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -6376,8 +6376,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt20_
     }
 };
 
-// Convert SInt16 to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_SInt20_4B> {
+// Convert SInt16 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_SInt20_4> {
     static inline int32_t convert(int16_t arg) {
         int16_t in = arg;
 
@@ -6389,11 +6389,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_SInt20
     }
 };
 
-// Convert UInt16 to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt20_4B> {
+// Convert UInt16 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_SInt20_4> {
     static inline int32_t convert(uint16_t arg) {
         // convert to signed
-        int16_t in = pcm_sign_converter<PcmEncoding_UInt16>::to_signed(arg);
+        int16_t in = pcm_sign_converter<PcmCode_UInt16>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -6403,8 +6403,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt20
     }
 };
 
-// Convert SInt18 to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_SInt20_4B> {
+// Convert SInt18 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_SInt20_4> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -6416,11 +6416,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_SInt20
     }
 };
 
-// Convert UInt18 to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt20_4B> {
+// Convert UInt18 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_SInt20_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -6430,8 +6430,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt20
     }
 };
 
-// Convert SInt18_3B to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_SInt20_4B> {
+// Convert SInt18_3 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_SInt20_4> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -6443,11 +6443,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt18_3B to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SInt20_4B> {
+// Convert UInt18_3 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_SInt20_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_3>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -6457,8 +6457,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt18_4B to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_SInt20_4B> {
+// Convert SInt18_4 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_SInt20_4> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -6470,11 +6470,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt18_4B to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SInt20_4B> {
+// Convert UInt18_4 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_SInt20_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_4>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -6484,33 +6484,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt20 to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt20_4B> {
-    static inline int32_t convert(int32_t arg) {
-        int32_t in = arg;
-
-        int32_t out;
-        out = in;
-
-        return out;
-    }
-};
-
-// Convert UInt20 to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_SInt20_4B> {
-    static inline int32_t convert(uint32_t arg) {
-        // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20>::to_signed(arg);
-
-        int32_t out;
-        out = in;
-
-        return out;
-    }
-};
-
-// Convert SInt20_3B to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_SInt20_4B> {
+// Convert SInt20 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_SInt20_4> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -6521,11 +6496,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt20_3B to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SInt20_4B> {
+// Convert UInt20 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_SInt20_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20>::to_signed(arg);
 
         int32_t out;
         out = in;
@@ -6534,18 +6509,43 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt20_4B to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_SInt20_4B> {
+// Convert SInt20_3 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_SInt20_4> {
+    static inline int32_t convert(int32_t arg) {
+        int32_t in = arg;
+
+        int32_t out;
+        out = in;
+
+        return out;
+    }
+};
+
+// Convert UInt20_3 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_SInt20_4> {
+    static inline int32_t convert(uint32_t arg) {
+        // convert to signed
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_3>::to_signed(arg);
+
+        int32_t out;
+        out = in;
+
+        return out;
+    }
+};
+
+// Convert SInt20_4 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_SInt20_4> {
     static inline int32_t convert(int32_t arg) {
         return arg;
     }
 };
 
-// Convert UInt20_4B to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SInt20_4B> {
+// Convert UInt20_4 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_SInt20_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_4>::to_signed(arg);
 
         int32_t out;
         out = in;
@@ -6554,8 +6554,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt24 to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt20_4B> {
+// Convert SInt24 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_SInt20_4> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -6563,7 +6563,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt20
         // downscale signed integer
         if (in > int32_t(pcm_sint24_max - (int32_t(1) << 3))) {
             // clip
-            out = pcm_sint20_4b_max;
+            out = pcm_sint20_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 3)) >> 4);
         }
@@ -6572,17 +6572,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt20
     }
 };
 
-// Convert UInt24 to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt20_4B> {
+// Convert UInt24 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_SInt20_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
         if (in > int32_t(pcm_sint24_max - (int32_t(1) << 3))) {
             // clip
-            out = pcm_sint20_4b_max;
+            out = pcm_sint20_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 3)) >> 4);
         }
@@ -6591,16 +6591,16 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt20
     }
 };
 
-// Convert SInt24_4B to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_SInt20_4B> {
+// Convert SInt24_4 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_SInt20_4> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 3))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 3))) {
             // clip
-            out = pcm_sint20_4b_max;
+            out = pcm_sint20_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 3)) >> 4);
         }
@@ -6609,17 +6609,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt24_4B to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SInt20_4B> {
+// Convert UInt24_4 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_SInt20_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24_4>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 3))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 3))) {
             // clip
-            out = pcm_sint20_4b_max;
+            out = pcm_sint20_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 3)) >> 4);
         }
@@ -6628,8 +6628,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt32 to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt20_4B> {
+// Convert SInt32 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_SInt20_4> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -6637,7 +6637,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt20
         // downscale signed integer
         if (in > int32_t(pcm_sint32_max - (int32_t(1) << 11))) {
             // clip
-            out = pcm_sint20_4b_max;
+            out = pcm_sint20_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 11)) >> 12);
         }
@@ -6646,17 +6646,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt20
     }
 };
 
-// Convert UInt32 to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt20_4B> {
+// Convert UInt32 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_SInt20_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt32>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt32>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
         if (in > int32_t(pcm_sint32_max - (int32_t(1) << 11))) {
             // clip
-            out = pcm_sint20_4b_max;
+            out = pcm_sint20_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 11)) >> 12);
         }
@@ -6665,8 +6665,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt20
     }
 };
 
-// Convert SInt64 to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt20_4B> {
+// Convert SInt64 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_SInt20_4> {
     static inline int32_t convert(int64_t arg) {
         int64_t in = arg;
 
@@ -6674,7 +6674,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt20
         // downscale signed integer
         if (in > int64_t(pcm_sint64_max - (int64_t(1) << 43))) {
             // clip
-            out = pcm_sint20_4b_max;
+            out = pcm_sint20_4_max;
         } else {
             out = int32_t(uint64_t(in + (int64_t(1) << 43)) >> 44);
         }
@@ -6683,17 +6683,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt20
     }
 };
 
-// Convert UInt64 to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt20_4B> {
+// Convert UInt64 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_SInt20_4> {
     static inline int32_t convert(uint64_t arg) {
         // convert to signed
-        int64_t in = pcm_sign_converter<PcmEncoding_UInt64>::to_signed(arg);
+        int64_t in = pcm_sign_converter<PcmCode_UInt64>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
         if (in > int64_t(pcm_sint64_max - (int64_t(1) << 43))) {
             // clip
-            out = pcm_sint20_4b_max;
+            out = pcm_sint20_4_max;
         } else {
             out = int32_t(uint64_t(in + (int64_t(1) << 43)) >> 44);
         }
@@ -6702,20 +6702,20 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt20
     }
 };
 
-// Convert Float32 to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt20_4B> {
+// Convert Float32 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_SInt20_4> {
     static inline int32_t convert(float arg) {
         float in = arg;
 
         int32_t out;
         // float to integer
-        const double d = double(in) * ((double)pcm_sint20_4b_max + 1.0);
-        if (d < pcm_sint20_4b_min) {
+        const double d = double(in) * ((double)pcm_sint20_4_max + 1.0);
+        if (d < pcm_sint20_4_min) {
             // clip
-            out = pcm_sint20_4b_min;
-        } else if (d >= (double)pcm_sint20_4b_max + 1.0) {
+            out = pcm_sint20_4_min;
+        } else if (d >= (double)pcm_sint20_4_max + 1.0) {
             // clip
-            out = pcm_sint20_4b_max;
+            out = pcm_sint20_4_max;
         } else {
             out = int32_t(d);
         }
@@ -6724,20 +6724,20 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt2
     }
 };
 
-// Convert Float64 to SInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt20_4B> {
+// Convert Float64 to SInt20_4
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_SInt20_4> {
     static inline int32_t convert(double arg) {
         double in = arg;
 
         int32_t out;
         // float to integer
-        const double d = double(in) * ((double)pcm_sint20_4b_max + 1.0);
-        if (d < pcm_sint20_4b_min) {
+        const double d = double(in) * ((double)pcm_sint20_4_max + 1.0);
+        if (d < pcm_sint20_4_min) {
             // clip
-            out = pcm_sint20_4b_min;
-        } else if (d >= (double)pcm_sint20_4b_max + 1.0) {
+            out = pcm_sint20_4_min;
+        } else if (d >= (double)pcm_sint20_4_max + 1.0) {
             // clip
-            out = pcm_sint20_4b_max;
+            out = pcm_sint20_4_max;
         } else {
             out = int32_t(d);
         }
@@ -6746,8 +6746,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt2
     }
 };
 
-// Convert SInt8 to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt20_4B> {
+// Convert SInt8 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_UInt20_4> {
     static inline uint32_t convert(int8_t arg) {
         int8_t in = arg;
 
@@ -6756,12 +6756,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt20_
         out = int32_t(uint32_t(in) << 12);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_4>::from_signed(out);
     }
 };
 
-// Convert UInt8 to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_UInt20_4B> {
+// Convert UInt8 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_UInt20_4> {
     static inline uint32_t convert(uint8_t arg) {
         uint8_t in = arg;
 
@@ -6773,8 +6773,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_UInt20_
     }
 };
 
-// Convert SInt16 to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt20_4B> {
+// Convert SInt16 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_UInt20_4> {
     static inline uint32_t convert(int16_t arg) {
         int16_t in = arg;
 
@@ -6783,12 +6783,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt20
         out = int32_t(uint32_t(in) << 4);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_4>::from_signed(out);
     }
 };
 
-// Convert UInt16 to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_UInt20_4B> {
+// Convert UInt16 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_UInt20_4> {
     static inline uint32_t convert(uint16_t arg) {
         uint16_t in = arg;
 
@@ -6800,8 +6800,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_UInt20
     }
 };
 
-// Convert SInt18 to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt20_4B> {
+// Convert SInt18 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_UInt20_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -6810,12 +6810,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt20
         out = int32_t(uint32_t(in) << 2);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_4>::from_signed(out);
     }
 };
 
-// Convert UInt18 to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_UInt20_4B> {
+// Convert UInt18 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_UInt20_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -6827,8 +6827,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_UInt20
     }
 };
 
-// Convert SInt18_3B to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UInt20_4B> {
+// Convert SInt18_3 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_UInt20_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -6837,12 +6837,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UIn
         out = int32_t(uint32_t(in) << 2);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_4>::from_signed(out);
     }
 };
 
-// Convert UInt18_3B to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_UInt20_4B> {
+// Convert UInt18_3 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_UInt20_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -6854,8 +6854,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt18_4B to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UInt20_4B> {
+// Convert SInt18_4 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_UInt20_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -6864,12 +6864,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UIn
         out = int32_t(uint32_t(in) << 2);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_4>::from_signed(out);
     }
 };
 
-// Convert UInt18_4B to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_UInt20_4B> {
+// Convert UInt18_4 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_UInt20_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -6881,8 +6881,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt20 to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt20_4B> {
+// Convert SInt20 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_UInt20_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -6890,12 +6890,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt20
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_4>::from_signed(out);
     }
 };
 
-// Convert UInt20 to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_UInt20_4B> {
+// Convert UInt20 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_UInt20_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -6906,8 +6906,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_UInt20
     }
 };
 
-// Convert SInt20_3B to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_UInt20_4B> {
+// Convert SInt20_3 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_UInt20_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -6915,12 +6915,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_UIn
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_4>::from_signed(out);
     }
 };
 
-// Convert UInt20_3B to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_UInt20_4B> {
+// Convert UInt20_3 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_UInt20_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -6931,8 +6931,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt20_4B to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_UInt20_4B> {
+// Convert SInt20_4 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_UInt20_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -6940,19 +6940,19 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_UIn
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_4>::from_signed(out);
     }
 };
 
-// Convert UInt20_4B to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_UInt20_4B> {
+// Convert UInt20_4 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_UInt20_4> {
     static inline uint32_t convert(uint32_t arg) {
         return arg;
     }
 };
 
-// Convert SInt24 to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt20_4B> {
+// Convert SInt24 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_UInt20_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -6960,18 +6960,18 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt20
         // downscale signed integer
         if (in > int32_t(pcm_sint24_max - (int32_t(1) << 3))) {
             // clip
-            out = pcm_sint20_4b_max;
+            out = pcm_sint20_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 3)) >> 4);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_4>::from_signed(out);
     }
 };
 
-// Convert UInt24 to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_UInt20_4B> {
+// Convert UInt24 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_UInt20_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -6983,27 +6983,27 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_UInt20
     }
 };
 
-// Convert SInt24_4B to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_UInt20_4B> {
+// Convert SInt24_4 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_UInt20_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
         int32_t out;
         // downscale signed integer
-        if (in > int32_t(pcm_sint24_4b_max - (int32_t(1) << 3))) {
+        if (in > int32_t(pcm_sint24_4_max - (int32_t(1) << 3))) {
             // clip
-            out = pcm_sint20_4b_max;
+            out = pcm_sint20_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 3)) >> 4);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_4>::from_signed(out);
     }
 };
 
-// Convert UInt24_4B to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_UInt20_4B> {
+// Convert UInt24_4 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_UInt20_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -7015,8 +7015,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt32 to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt20_4B> {
+// Convert SInt32 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_UInt20_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -7024,18 +7024,18 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt20
         // downscale signed integer
         if (in > int32_t(pcm_sint32_max - (int32_t(1) << 11))) {
             // clip
-            out = pcm_sint20_4b_max;
+            out = pcm_sint20_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 11)) >> 12);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_4>::from_signed(out);
     }
 };
 
-// Convert UInt32 to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_UInt20_4B> {
+// Convert UInt32 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_UInt20_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -7047,8 +7047,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_UInt20
     }
 };
 
-// Convert SInt64 to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt20_4B> {
+// Convert SInt64 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_UInt20_4> {
     static inline uint32_t convert(int64_t arg) {
         int64_t in = arg;
 
@@ -7056,18 +7056,18 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt20
         // downscale signed integer
         if (in > int64_t(pcm_sint64_max - (int64_t(1) << 43))) {
             // clip
-            out = pcm_sint20_4b_max;
+            out = pcm_sint20_4_max;
         } else {
             out = int32_t(uint64_t(in + (int64_t(1) << 43)) >> 44);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_4>::from_signed(out);
     }
 };
 
-// Convert UInt64 to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_UInt20_4B> {
+// Convert UInt64 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_UInt20_4> {
     static inline uint32_t convert(uint64_t arg) {
         uint64_t in = arg;
 
@@ -7079,54 +7079,54 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_UInt20
     }
 };
 
-// Convert Float32 to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt20_4B> {
+// Convert Float32 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_UInt20_4> {
     static inline uint32_t convert(float arg) {
         float in = arg;
 
         int32_t out;
         // float to integer
-        const double d = double(in) * ((double)pcm_sint20_4b_max + 1.0);
-        if (d < pcm_sint20_4b_min) {
+        const double d = double(in) * ((double)pcm_sint20_4_max + 1.0);
+        if (d < pcm_sint20_4_min) {
             // clip
-            out = pcm_sint20_4b_min;
-        } else if (d >= (double)pcm_sint20_4b_max + 1.0) {
+            out = pcm_sint20_4_min;
+        } else if (d >= (double)pcm_sint20_4_max + 1.0) {
             // clip
-            out = pcm_sint20_4b_max;
+            out = pcm_sint20_4_max;
         } else {
             out = int32_t(d);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_4>::from_signed(out);
     }
 };
 
-// Convert Float64 to UInt20_4B
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt20_4B> {
+// Convert Float64 to UInt20_4
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_UInt20_4> {
     static inline uint32_t convert(double arg) {
         double in = arg;
 
         int32_t out;
         // float to integer
-        const double d = double(in) * ((double)pcm_sint20_4b_max + 1.0);
-        if (d < pcm_sint20_4b_min) {
+        const double d = double(in) * ((double)pcm_sint20_4_max + 1.0);
+        if (d < pcm_sint20_4_min) {
             // clip
-            out = pcm_sint20_4b_min;
-        } else if (d >= (double)pcm_sint20_4b_max + 1.0) {
+            out = pcm_sint20_4_min;
+        } else if (d >= (double)pcm_sint20_4_max + 1.0) {
             // clip
-            out = pcm_sint20_4b_max;
+            out = pcm_sint20_4_max;
         } else {
             out = int32_t(d);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt20_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt20_4>::from_signed(out);
     }
 };
 
 // Convert SInt8 to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_SInt24> {
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_SInt24> {
     static inline int32_t convert(int8_t arg) {
         int8_t in = arg;
 
@@ -7139,10 +7139,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_SInt24>
 };
 
 // Convert UInt8 to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt24> {
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_SInt24> {
     static inline int32_t convert(uint8_t arg) {
         // convert to signed
-        int8_t in = pcm_sign_converter<PcmEncoding_UInt8>::to_signed(arg);
+        int8_t in = pcm_sign_converter<PcmCode_UInt8>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -7153,7 +7153,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt24>
 };
 
 // Convert SInt16 to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_SInt24> {
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_SInt24> {
     static inline int32_t convert(int16_t arg) {
         int16_t in = arg;
 
@@ -7166,10 +7166,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_SInt24
 };
 
 // Convert UInt16 to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt24> {
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_SInt24> {
     static inline int32_t convert(uint16_t arg) {
         // convert to signed
-        int16_t in = pcm_sign_converter<PcmEncoding_UInt16>::to_signed(arg);
+        int16_t in = pcm_sign_converter<PcmCode_UInt16>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -7180,7 +7180,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt24
 };
 
 // Convert SInt18 to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_SInt24> {
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_SInt24> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -7193,10 +7193,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_SInt24
 };
 
 // Convert UInt18 to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt24> {
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_SInt24> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -7206,8 +7206,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt24
     }
 };
 
-// Convert SInt18_3B to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_SInt24> {
+// Convert SInt18_3 to SInt24
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_SInt24> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -7219,11 +7219,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt18_3B to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SInt24> {
+// Convert UInt18_3 to SInt24
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_SInt24> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_3>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -7233,8 +7233,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt18_4B to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_SInt24> {
+// Convert SInt18_4 to SInt24
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_SInt24> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -7246,11 +7246,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt18_4B to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SInt24> {
+// Convert UInt18_4 to SInt24
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_SInt24> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_4>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -7261,7 +7261,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SIn
 };
 
 // Convert SInt20 to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt24> {
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_SInt24> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -7274,10 +7274,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt24
 };
 
 // Convert UInt20 to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_SInt24> {
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_SInt24> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -7287,8 +7287,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_SInt24
     }
 };
 
-// Convert SInt20_3B to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_SInt24> {
+// Convert SInt20_3 to SInt24
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_SInt24> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -7300,11 +7300,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt20_3B to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SInt24> {
+// Convert UInt20_3 to SInt24
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_SInt24> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_3>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -7314,8 +7314,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt20_4B to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_SInt24> {
+// Convert SInt20_4 to SInt24
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_SInt24> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -7327,11 +7327,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt20_4B to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SInt24> {
+// Convert UInt20_4 to SInt24
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_SInt24> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_4>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -7342,17 +7342,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SIn
 };
 
 // Convert SInt24 to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt24> {
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_SInt24> {
     static inline int32_t convert(int32_t arg) {
         return arg;
     }
 };
 
 // Convert UInt24 to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt24> {
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_SInt24> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24>::to_signed(arg);
 
         int32_t out;
         out = in;
@@ -7361,8 +7361,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt24
     }
 };
 
-// Convert SInt24_4B to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_SInt24> {
+// Convert SInt24_4 to SInt24
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_SInt24> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -7373,11 +7373,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt24_4B to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SInt24> {
+// Convert UInt24_4 to SInt24
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_SInt24> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24_4>::to_signed(arg);
 
         int32_t out;
         out = in;
@@ -7387,7 +7387,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SIn
 };
 
 // Convert SInt32 to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt24> {
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_SInt24> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -7405,10 +7405,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt24
 };
 
 // Convert UInt32 to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt24> {
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_SInt24> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt32>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt32>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
@@ -7424,7 +7424,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt24
 };
 
 // Convert SInt64 to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt24> {
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_SInt24> {
     static inline int32_t convert(int64_t arg) {
         int64_t in = arg;
 
@@ -7442,10 +7442,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt24
 };
 
 // Convert UInt64 to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt24> {
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_SInt24> {
     static inline int32_t convert(uint64_t arg) {
         // convert to signed
-        int64_t in = pcm_sign_converter<PcmEncoding_UInt64>::to_signed(arg);
+        int64_t in = pcm_sign_converter<PcmCode_UInt64>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
@@ -7461,7 +7461,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt24
 };
 
 // Convert Float32 to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt24> {
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_SInt24> {
     static inline int32_t convert(float arg) {
         float in = arg;
 
@@ -7483,7 +7483,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt2
 };
 
 // Convert Float64 to SInt24
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt24> {
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_SInt24> {
     static inline int32_t convert(double arg) {
         double in = arg;
 
@@ -7505,7 +7505,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt2
 };
 
 // Convert SInt8 to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt24> {
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_UInt24> {
     static inline uint32_t convert(int8_t arg) {
         int8_t in = arg;
 
@@ -7514,12 +7514,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt24>
         out = int32_t(uint32_t(in) << 16);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24>::from_signed(out);
     }
 };
 
 // Convert UInt8 to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_UInt24> {
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_UInt24> {
     static inline uint32_t convert(uint8_t arg) {
         uint8_t in = arg;
 
@@ -7532,7 +7532,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_UInt24>
 };
 
 // Convert SInt16 to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt24> {
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_UInt24> {
     static inline uint32_t convert(int16_t arg) {
         int16_t in = arg;
 
@@ -7541,12 +7541,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt24
         out = int32_t(uint32_t(in) << 8);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24>::from_signed(out);
     }
 };
 
 // Convert UInt16 to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_UInt24> {
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_UInt24> {
     static inline uint32_t convert(uint16_t arg) {
         uint16_t in = arg;
 
@@ -7559,7 +7559,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_UInt24
 };
 
 // Convert SInt18 to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt24> {
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_UInt24> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -7568,12 +7568,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt24
         out = int32_t(uint32_t(in) << 6);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24>::from_signed(out);
     }
 };
 
 // Convert UInt18 to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_UInt24> {
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_UInt24> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -7585,8 +7585,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_UInt24
     }
 };
 
-// Convert SInt18_3B to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UInt24> {
+// Convert SInt18_3 to UInt24
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_UInt24> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -7595,12 +7595,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UIn
         out = int32_t(uint32_t(in) << 6);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24>::from_signed(out);
     }
 };
 
-// Convert UInt18_3B to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_UInt24> {
+// Convert UInt18_3 to UInt24
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_UInt24> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -7612,8 +7612,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt18_4B to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UInt24> {
+// Convert SInt18_4 to UInt24
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_UInt24> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -7622,12 +7622,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UIn
         out = int32_t(uint32_t(in) << 6);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24>::from_signed(out);
     }
 };
 
-// Convert UInt18_4B to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_UInt24> {
+// Convert UInt18_4 to UInt24
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_UInt24> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -7640,7 +7640,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_UIn
 };
 
 // Convert SInt20 to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt24> {
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_UInt24> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -7649,12 +7649,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt24
         out = int32_t(uint32_t(in) << 4);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24>::from_signed(out);
     }
 };
 
 // Convert UInt20 to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_UInt24> {
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_UInt24> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -7666,8 +7666,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_UInt24
     }
 };
 
-// Convert SInt20_3B to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_UInt24> {
+// Convert SInt20_3 to UInt24
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_UInt24> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -7676,12 +7676,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_UIn
         out = int32_t(uint32_t(in) << 4);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24>::from_signed(out);
     }
 };
 
-// Convert UInt20_3B to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_UInt24> {
+// Convert UInt20_3 to UInt24
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_UInt24> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -7693,8 +7693,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt20_4B to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_UInt24> {
+// Convert SInt20_4 to UInt24
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_UInt24> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -7703,12 +7703,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_UIn
         out = int32_t(uint32_t(in) << 4);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24>::from_signed(out);
     }
 };
 
-// Convert UInt20_4B to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_UInt24> {
+// Convert UInt20_4 to UInt24
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_UInt24> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -7721,7 +7721,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_UIn
 };
 
 // Convert SInt24 to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt24> {
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_UInt24> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -7729,19 +7729,19 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt24
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24>::from_signed(out);
     }
 };
 
 // Convert UInt24 to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_UInt24> {
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_UInt24> {
     static inline uint32_t convert(uint32_t arg) {
         return arg;
     }
 };
 
-// Convert SInt24_4B to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_UInt24> {
+// Convert SInt24_4 to UInt24
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_UInt24> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -7749,12 +7749,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_UIn
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24>::from_signed(out);
     }
 };
 
-// Convert UInt24_4B to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_UInt24> {
+// Convert UInt24_4 to UInt24
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_UInt24> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -7766,7 +7766,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_UIn
 };
 
 // Convert SInt32 to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt24> {
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_UInt24> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -7780,12 +7780,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt24
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24>::from_signed(out);
     }
 };
 
 // Convert UInt32 to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_UInt24> {
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_UInt24> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -7798,7 +7798,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_UInt24
 };
 
 // Convert SInt64 to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt24> {
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_UInt24> {
     static inline uint32_t convert(int64_t arg) {
         int64_t in = arg;
 
@@ -7812,12 +7812,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt24
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24>::from_signed(out);
     }
 };
 
 // Convert UInt64 to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_UInt24> {
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_UInt24> {
     static inline uint32_t convert(uint64_t arg) {
         uint64_t in = arg;
 
@@ -7830,7 +7830,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_UInt24
 };
 
 // Convert Float32 to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt24> {
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_UInt24> {
     static inline uint32_t convert(float arg) {
         float in = arg;
 
@@ -7848,12 +7848,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt2
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24>::from_signed(out);
     }
 };
 
 // Convert Float64 to UInt24
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt24> {
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_UInt24> {
     static inline uint32_t convert(double arg) {
         double in = arg;
 
@@ -7871,12 +7871,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt2
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24>::from_signed(out);
     }
 };
 
-// Convert SInt8 to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_SInt24_4B> {
+// Convert SInt8 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_SInt24_4> {
     static inline int32_t convert(int8_t arg) {
         int8_t in = arg;
 
@@ -7888,11 +7888,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_SInt24_
     }
 };
 
-// Convert UInt8 to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt24_4B> {
+// Convert UInt8 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_SInt24_4> {
     static inline int32_t convert(uint8_t arg) {
         // convert to signed
-        int8_t in = pcm_sign_converter<PcmEncoding_UInt8>::to_signed(arg);
+        int8_t in = pcm_sign_converter<PcmCode_UInt8>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -7902,8 +7902,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt24_
     }
 };
 
-// Convert SInt16 to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_SInt24_4B> {
+// Convert SInt16 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_SInt24_4> {
     static inline int32_t convert(int16_t arg) {
         int16_t in = arg;
 
@@ -7915,11 +7915,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_SInt24
     }
 };
 
-// Convert UInt16 to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt24_4B> {
+// Convert UInt16 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_SInt24_4> {
     static inline int32_t convert(uint16_t arg) {
         // convert to signed
-        int16_t in = pcm_sign_converter<PcmEncoding_UInt16>::to_signed(arg);
+        int16_t in = pcm_sign_converter<PcmCode_UInt16>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -7929,8 +7929,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt24
     }
 };
 
-// Convert SInt18 to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_SInt24_4B> {
+// Convert SInt18 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_SInt24_4> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -7942,11 +7942,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_SInt24
     }
 };
 
-// Convert UInt18 to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt24_4B> {
+// Convert UInt18 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_SInt24_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -7956,8 +7956,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt24
     }
 };
 
-// Convert SInt18_3B to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_SInt24_4B> {
+// Convert SInt18_3 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_SInt24_4> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -7969,11 +7969,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt18_3B to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SInt24_4B> {
+// Convert UInt18_3 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_SInt24_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_3>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -7983,8 +7983,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt18_4B to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_SInt24_4B> {
+// Convert SInt18_4 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_SInt24_4> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -7996,11 +7996,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt18_4B to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SInt24_4B> {
+// Convert UInt18_4 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_SInt24_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_4>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -8010,8 +8010,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt20 to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt24_4B> {
+// Convert SInt20 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_SInt24_4> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -8023,11 +8023,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt24
     }
 };
 
-// Convert UInt20 to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_SInt24_4B> {
+// Convert UInt20 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_SInt24_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -8037,8 +8037,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_SInt24
     }
 };
 
-// Convert SInt20_3B to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_SInt24_4B> {
+// Convert SInt20_3 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_SInt24_4> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -8050,11 +8050,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt20_3B to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SInt24_4B> {
+// Convert UInt20_3 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_SInt24_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_3>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -8064,8 +8064,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt20_4B to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_SInt24_4B> {
+// Convert SInt20_4 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_SInt24_4> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -8077,11 +8077,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt20_4B to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SInt24_4B> {
+// Convert UInt20_4 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_SInt24_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_4>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -8091,8 +8091,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt24 to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt24_4B> {
+// Convert SInt24 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_SInt24_4> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -8103,11 +8103,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt24
     }
 };
 
-// Convert UInt24 to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt24_4B> {
+// Convert UInt24 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_SInt24_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24>::to_signed(arg);
 
         int32_t out;
         out = in;
@@ -8116,18 +8116,18 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt24
     }
 };
 
-// Convert SInt24_4B to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_SInt24_4B> {
+// Convert SInt24_4 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_SInt24_4> {
     static inline int32_t convert(int32_t arg) {
         return arg;
     }
 };
 
-// Convert UInt24_4B to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SInt24_4B> {
+// Convert UInt24_4 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_SInt24_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24_4>::to_signed(arg);
 
         int32_t out;
         out = in;
@@ -8136,8 +8136,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt32 to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt24_4B> {
+// Convert SInt32 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_SInt24_4> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -8145,7 +8145,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt24
         // downscale signed integer
         if (in > int32_t(pcm_sint32_max - (int32_t(1) << 7))) {
             // clip
-            out = pcm_sint24_4b_max;
+            out = pcm_sint24_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 7)) >> 8);
         }
@@ -8154,17 +8154,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt24
     }
 };
 
-// Convert UInt32 to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt24_4B> {
+// Convert UInt32 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_SInt24_4> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt32>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt32>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
         if (in > int32_t(pcm_sint32_max - (int32_t(1) << 7))) {
             // clip
-            out = pcm_sint24_4b_max;
+            out = pcm_sint24_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 7)) >> 8);
         }
@@ -8173,8 +8173,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt24
     }
 };
 
-// Convert SInt64 to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt24_4B> {
+// Convert SInt64 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_SInt24_4> {
     static inline int32_t convert(int64_t arg) {
         int64_t in = arg;
 
@@ -8182,7 +8182,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt24
         // downscale signed integer
         if (in > int64_t(pcm_sint64_max - (int64_t(1) << 39))) {
             // clip
-            out = pcm_sint24_4b_max;
+            out = pcm_sint24_4_max;
         } else {
             out = int32_t(uint64_t(in + (int64_t(1) << 39)) >> 40);
         }
@@ -8191,17 +8191,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt24
     }
 };
 
-// Convert UInt64 to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt24_4B> {
+// Convert UInt64 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_SInt24_4> {
     static inline int32_t convert(uint64_t arg) {
         // convert to signed
-        int64_t in = pcm_sign_converter<PcmEncoding_UInt64>::to_signed(arg);
+        int64_t in = pcm_sign_converter<PcmCode_UInt64>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
         if (in > int64_t(pcm_sint64_max - (int64_t(1) << 39))) {
             // clip
-            out = pcm_sint24_4b_max;
+            out = pcm_sint24_4_max;
         } else {
             out = int32_t(uint64_t(in + (int64_t(1) << 39)) >> 40);
         }
@@ -8210,20 +8210,20 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt24
     }
 };
 
-// Convert Float32 to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt24_4B> {
+// Convert Float32 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_SInt24_4> {
     static inline int32_t convert(float arg) {
         float in = arg;
 
         int32_t out;
         // float to integer
-        const double d = double(in) * ((double)pcm_sint24_4b_max + 1.0);
-        if (d < pcm_sint24_4b_min) {
+        const double d = double(in) * ((double)pcm_sint24_4_max + 1.0);
+        if (d < pcm_sint24_4_min) {
             // clip
-            out = pcm_sint24_4b_min;
-        } else if (d >= (double)pcm_sint24_4b_max + 1.0) {
+            out = pcm_sint24_4_min;
+        } else if (d >= (double)pcm_sint24_4_max + 1.0) {
             // clip
-            out = pcm_sint24_4b_max;
+            out = pcm_sint24_4_max;
         } else {
             out = int32_t(d);
         }
@@ -8232,20 +8232,20 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt2
     }
 };
 
-// Convert Float64 to SInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt24_4B> {
+// Convert Float64 to SInt24_4
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_SInt24_4> {
     static inline int32_t convert(double arg) {
         double in = arg;
 
         int32_t out;
         // float to integer
-        const double d = double(in) * ((double)pcm_sint24_4b_max + 1.0);
-        if (d < pcm_sint24_4b_min) {
+        const double d = double(in) * ((double)pcm_sint24_4_max + 1.0);
+        if (d < pcm_sint24_4_min) {
             // clip
-            out = pcm_sint24_4b_min;
-        } else if (d >= (double)pcm_sint24_4b_max + 1.0) {
+            out = pcm_sint24_4_min;
+        } else if (d >= (double)pcm_sint24_4_max + 1.0) {
             // clip
-            out = pcm_sint24_4b_max;
+            out = pcm_sint24_4_max;
         } else {
             out = int32_t(d);
         }
@@ -8254,8 +8254,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt2
     }
 };
 
-// Convert SInt8 to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt24_4B> {
+// Convert SInt8 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_UInt24_4> {
     static inline uint32_t convert(int8_t arg) {
         int8_t in = arg;
 
@@ -8264,12 +8264,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt24_
         out = int32_t(uint32_t(in) << 16);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24_4>::from_signed(out);
     }
 };
 
-// Convert UInt8 to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_UInt24_4B> {
+// Convert UInt8 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_UInt24_4> {
     static inline uint32_t convert(uint8_t arg) {
         uint8_t in = arg;
 
@@ -8281,8 +8281,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_UInt24_
     }
 };
 
-// Convert SInt16 to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt24_4B> {
+// Convert SInt16 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_UInt24_4> {
     static inline uint32_t convert(int16_t arg) {
         int16_t in = arg;
 
@@ -8291,12 +8291,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt24
         out = int32_t(uint32_t(in) << 8);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24_4>::from_signed(out);
     }
 };
 
-// Convert UInt16 to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_UInt24_4B> {
+// Convert UInt16 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_UInt24_4> {
     static inline uint32_t convert(uint16_t arg) {
         uint16_t in = arg;
 
@@ -8308,8 +8308,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_UInt24
     }
 };
 
-// Convert SInt18 to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt24_4B> {
+// Convert SInt18 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_UInt24_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -8318,12 +8318,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt24
         out = int32_t(uint32_t(in) << 6);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24_4>::from_signed(out);
     }
 };
 
-// Convert UInt18 to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_UInt24_4B> {
+// Convert UInt18 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_UInt24_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -8335,8 +8335,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_UInt24
     }
 };
 
-// Convert SInt18_3B to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UInt24_4B> {
+// Convert SInt18_3 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_UInt24_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -8345,12 +8345,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UIn
         out = int32_t(uint32_t(in) << 6);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24_4>::from_signed(out);
     }
 };
 
-// Convert UInt18_3B to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_UInt24_4B> {
+// Convert UInt18_3 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_UInt24_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -8362,8 +8362,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt18_4B to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UInt24_4B> {
+// Convert SInt18_4 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_UInt24_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -8372,12 +8372,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UIn
         out = int32_t(uint32_t(in) << 6);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24_4>::from_signed(out);
     }
 };
 
-// Convert UInt18_4B to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_UInt24_4B> {
+// Convert UInt18_4 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_UInt24_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -8389,8 +8389,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt20 to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt24_4B> {
+// Convert SInt20 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_UInt24_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -8399,12 +8399,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt24
         out = int32_t(uint32_t(in) << 4);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24_4>::from_signed(out);
     }
 };
 
-// Convert UInt20 to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_UInt24_4B> {
+// Convert UInt20 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_UInt24_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -8416,8 +8416,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_UInt24
     }
 };
 
-// Convert SInt20_3B to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_UInt24_4B> {
+// Convert SInt20_3 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_UInt24_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -8426,12 +8426,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_UIn
         out = int32_t(uint32_t(in) << 4);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24_4>::from_signed(out);
     }
 };
 
-// Convert UInt20_3B to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_UInt24_4B> {
+// Convert UInt20_3 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_UInt24_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -8443,8 +8443,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt20_4B to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_UInt24_4B> {
+// Convert SInt20_4 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_UInt24_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -8453,12 +8453,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_UIn
         out = int32_t(uint32_t(in) << 4);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24_4>::from_signed(out);
     }
 };
 
-// Convert UInt20_4B to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_UInt24_4B> {
+// Convert UInt20_4 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_UInt24_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -8470,8 +8470,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt24 to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt24_4B> {
+// Convert SInt24 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_UInt24_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -8479,12 +8479,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt24
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24_4>::from_signed(out);
     }
 };
 
-// Convert UInt24 to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_UInt24_4B> {
+// Convert UInt24 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_UInt24_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -8495,8 +8495,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_UInt24
     }
 };
 
-// Convert SInt24_4B to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_UInt24_4B> {
+// Convert SInt24_4 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_UInt24_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -8504,19 +8504,19 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_UIn
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24_4>::from_signed(out);
     }
 };
 
-// Convert UInt24_4B to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_UInt24_4B> {
+// Convert UInt24_4 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_UInt24_4> {
     static inline uint32_t convert(uint32_t arg) {
         return arg;
     }
 };
 
-// Convert SInt32 to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt24_4B> {
+// Convert SInt32 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_UInt24_4> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -8524,18 +8524,18 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt24
         // downscale signed integer
         if (in > int32_t(pcm_sint32_max - (int32_t(1) << 7))) {
             // clip
-            out = pcm_sint24_4b_max;
+            out = pcm_sint24_4_max;
         } else {
             out = int32_t(uint32_t(in + (int32_t(1) << 7)) >> 8);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24_4>::from_signed(out);
     }
 };
 
-// Convert UInt32 to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_UInt24_4B> {
+// Convert UInt32 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_UInt24_4> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -8547,8 +8547,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_UInt24
     }
 };
 
-// Convert SInt64 to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt24_4B> {
+// Convert SInt64 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_UInt24_4> {
     static inline uint32_t convert(int64_t arg) {
         int64_t in = arg;
 
@@ -8556,18 +8556,18 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt24
         // downscale signed integer
         if (in > int64_t(pcm_sint64_max - (int64_t(1) << 39))) {
             // clip
-            out = pcm_sint24_4b_max;
+            out = pcm_sint24_4_max;
         } else {
             out = int32_t(uint64_t(in + (int64_t(1) << 39)) >> 40);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24_4>::from_signed(out);
     }
 };
 
-// Convert UInt64 to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_UInt24_4B> {
+// Convert UInt64 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_UInt24_4> {
     static inline uint32_t convert(uint64_t arg) {
         uint64_t in = arg;
 
@@ -8579,54 +8579,54 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_UInt24
     }
 };
 
-// Convert Float32 to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt24_4B> {
+// Convert Float32 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_UInt24_4> {
     static inline uint32_t convert(float arg) {
         float in = arg;
 
         int32_t out;
         // float to integer
-        const double d = double(in) * ((double)pcm_sint24_4b_max + 1.0);
-        if (d < pcm_sint24_4b_min) {
+        const double d = double(in) * ((double)pcm_sint24_4_max + 1.0);
+        if (d < pcm_sint24_4_min) {
             // clip
-            out = pcm_sint24_4b_min;
-        } else if (d >= (double)pcm_sint24_4b_max + 1.0) {
+            out = pcm_sint24_4_min;
+        } else if (d >= (double)pcm_sint24_4_max + 1.0) {
             // clip
-            out = pcm_sint24_4b_max;
+            out = pcm_sint24_4_max;
         } else {
             out = int32_t(d);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24_4>::from_signed(out);
     }
 };
 
-// Convert Float64 to UInt24_4B
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt24_4B> {
+// Convert Float64 to UInt24_4
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_UInt24_4> {
     static inline uint32_t convert(double arg) {
         double in = arg;
 
         int32_t out;
         // float to integer
-        const double d = double(in) * ((double)pcm_sint24_4b_max + 1.0);
-        if (d < pcm_sint24_4b_min) {
+        const double d = double(in) * ((double)pcm_sint24_4_max + 1.0);
+        if (d < pcm_sint24_4_min) {
             // clip
-            out = pcm_sint24_4b_min;
-        } else if (d >= (double)pcm_sint24_4b_max + 1.0) {
+            out = pcm_sint24_4_min;
+        } else if (d >= (double)pcm_sint24_4_max + 1.0) {
             // clip
-            out = pcm_sint24_4b_max;
+            out = pcm_sint24_4_max;
         } else {
             out = int32_t(d);
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt24_4B>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt24_4>::from_signed(out);
     }
 };
 
 // Convert SInt8 to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_SInt32> {
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_SInt32> {
     static inline int32_t convert(int8_t arg) {
         int8_t in = arg;
 
@@ -8639,10 +8639,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_SInt32>
 };
 
 // Convert UInt8 to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt32> {
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_SInt32> {
     static inline int32_t convert(uint8_t arg) {
         // convert to signed
-        int8_t in = pcm_sign_converter<PcmEncoding_UInt8>::to_signed(arg);
+        int8_t in = pcm_sign_converter<PcmCode_UInt8>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -8653,7 +8653,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt32>
 };
 
 // Convert SInt16 to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_SInt32> {
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_SInt32> {
     static inline int32_t convert(int16_t arg) {
         int16_t in = arg;
 
@@ -8666,10 +8666,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_SInt32
 };
 
 // Convert UInt16 to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt32> {
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_SInt32> {
     static inline int32_t convert(uint16_t arg) {
         // convert to signed
-        int16_t in = pcm_sign_converter<PcmEncoding_UInt16>::to_signed(arg);
+        int16_t in = pcm_sign_converter<PcmCode_UInt16>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -8680,7 +8680,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt32
 };
 
 // Convert SInt18 to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_SInt32> {
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_SInt32> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -8693,10 +8693,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_SInt32
 };
 
 // Convert UInt18 to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt32> {
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_SInt32> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -8706,8 +8706,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt32
     }
 };
 
-// Convert SInt18_3B to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_SInt32> {
+// Convert SInt18_3 to SInt32
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_SInt32> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -8719,11 +8719,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt18_3B to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SInt32> {
+// Convert UInt18_3 to SInt32
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_SInt32> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_3>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -8733,8 +8733,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt18_4B to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_SInt32> {
+// Convert SInt18_4 to SInt32
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_SInt32> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -8746,11 +8746,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt18_4B to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SInt32> {
+// Convert UInt18_4 to SInt32
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_SInt32> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_4>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -8761,7 +8761,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SIn
 };
 
 // Convert SInt20 to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt32> {
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_SInt32> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -8774,10 +8774,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt32
 };
 
 // Convert UInt20 to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_SInt32> {
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_SInt32> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -8787,8 +8787,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_SInt32
     }
 };
 
-// Convert SInt20_3B to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_SInt32> {
+// Convert SInt20_3 to SInt32
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_SInt32> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -8800,11 +8800,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt20_3B to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SInt32> {
+// Convert UInt20_3 to SInt32
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_SInt32> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_3>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -8814,8 +8814,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt20_4B to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_SInt32> {
+// Convert SInt20_4 to SInt32
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_SInt32> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -8827,11 +8827,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt20_4B to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SInt32> {
+// Convert UInt20_4 to SInt32
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_SInt32> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_4>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -8842,7 +8842,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SIn
 };
 
 // Convert SInt24 to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt32> {
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_SInt32> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -8855,10 +8855,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt32
 };
 
 // Convert UInt24 to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt32> {
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_SInt32> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -8868,8 +8868,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt32
     }
 };
 
-// Convert SInt24_4B to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_SInt32> {
+// Convert SInt24_4 to SInt32
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_SInt32> {
     static inline int32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -8881,11 +8881,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt24_4B to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SInt32> {
+// Convert UInt24_4 to SInt32
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_SInt32> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24_4>::to_signed(arg);
 
         int32_t out;
         // upscale signed integer
@@ -8896,17 +8896,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SIn
 };
 
 // Convert SInt32 to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt32> {
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_SInt32> {
     static inline int32_t convert(int32_t arg) {
         return arg;
     }
 };
 
 // Convert UInt32 to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt32> {
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_SInt32> {
     static inline int32_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt32>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt32>::to_signed(arg);
 
         int32_t out;
         out = in;
@@ -8916,7 +8916,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt32
 };
 
 // Convert SInt64 to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt32> {
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_SInt32> {
     static inline int32_t convert(int64_t arg) {
         int64_t in = arg;
 
@@ -8934,10 +8934,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt32
 };
 
 // Convert UInt64 to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt32> {
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_SInt32> {
     static inline int32_t convert(uint64_t arg) {
         // convert to signed
-        int64_t in = pcm_sign_converter<PcmEncoding_UInt64>::to_signed(arg);
+        int64_t in = pcm_sign_converter<PcmCode_UInt64>::to_signed(arg);
 
         int32_t out;
         // downscale signed integer
@@ -8953,7 +8953,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt32
 };
 
 // Convert Float32 to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt32> {
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_SInt32> {
     static inline int32_t convert(float arg) {
         float in = arg;
 
@@ -8975,7 +8975,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt3
 };
 
 // Convert Float64 to SInt32
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt32> {
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_SInt32> {
     static inline int32_t convert(double arg) {
         double in = arg;
 
@@ -8997,7 +8997,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt3
 };
 
 // Convert SInt8 to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt32> {
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_UInt32> {
     static inline uint32_t convert(int8_t arg) {
         int8_t in = arg;
 
@@ -9006,12 +9006,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt32>
         out = int32_t(uint32_t(in) << 24);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt32>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt32>::from_signed(out);
     }
 };
 
 // Convert UInt8 to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_UInt32> {
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_UInt32> {
     static inline uint32_t convert(uint8_t arg) {
         uint8_t in = arg;
 
@@ -9024,7 +9024,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_UInt32>
 };
 
 // Convert SInt16 to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt32> {
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_UInt32> {
     static inline uint32_t convert(int16_t arg) {
         int16_t in = arg;
 
@@ -9033,12 +9033,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt32
         out = int32_t(uint32_t(in) << 16);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt32>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt32>::from_signed(out);
     }
 };
 
 // Convert UInt16 to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_UInt32> {
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_UInt32> {
     static inline uint32_t convert(uint16_t arg) {
         uint16_t in = arg;
 
@@ -9051,7 +9051,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_UInt32
 };
 
 // Convert SInt18 to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt32> {
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_UInt32> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9060,12 +9060,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt32
         out = int32_t(uint32_t(in) << 14);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt32>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt32>::from_signed(out);
     }
 };
 
 // Convert UInt18 to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_UInt32> {
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_UInt32> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -9077,8 +9077,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_UInt32
     }
 };
 
-// Convert SInt18_3B to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UInt32> {
+// Convert SInt18_3 to UInt32
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_UInt32> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9087,12 +9087,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UIn
         out = int32_t(uint32_t(in) << 14);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt32>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt32>::from_signed(out);
     }
 };
 
-// Convert UInt18_3B to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_UInt32> {
+// Convert UInt18_3 to UInt32
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_UInt32> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -9104,8 +9104,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt18_4B to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UInt32> {
+// Convert SInt18_4 to UInt32
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_UInt32> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9114,12 +9114,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UIn
         out = int32_t(uint32_t(in) << 14);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt32>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt32>::from_signed(out);
     }
 };
 
-// Convert UInt18_4B to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_UInt32> {
+// Convert UInt18_4 to UInt32
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_UInt32> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -9132,7 +9132,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_UIn
 };
 
 // Convert SInt20 to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt32> {
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_UInt32> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9141,12 +9141,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt32
         out = int32_t(uint32_t(in) << 12);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt32>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt32>::from_signed(out);
     }
 };
 
 // Convert UInt20 to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_UInt32> {
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_UInt32> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -9158,8 +9158,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_UInt32
     }
 };
 
-// Convert SInt20_3B to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_UInt32> {
+// Convert SInt20_3 to UInt32
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_UInt32> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9168,12 +9168,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_UIn
         out = int32_t(uint32_t(in) << 12);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt32>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt32>::from_signed(out);
     }
 };
 
-// Convert UInt20_3B to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_UInt32> {
+// Convert UInt20_3 to UInt32
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_UInt32> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -9185,8 +9185,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt20_4B to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_UInt32> {
+// Convert SInt20_4 to UInt32
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_UInt32> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9195,12 +9195,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_UIn
         out = int32_t(uint32_t(in) << 12);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt32>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt32>::from_signed(out);
     }
 };
 
-// Convert UInt20_4B to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_UInt32> {
+// Convert UInt20_4 to UInt32
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_UInt32> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -9213,7 +9213,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_UIn
 };
 
 // Convert SInt24 to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt32> {
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_UInt32> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9222,12 +9222,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt32
         out = int32_t(uint32_t(in) << 8);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt32>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt32>::from_signed(out);
     }
 };
 
 // Convert UInt24 to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_UInt32> {
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_UInt32> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -9239,8 +9239,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_UInt32
     }
 };
 
-// Convert SInt24_4B to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_UInt32> {
+// Convert SInt24_4 to UInt32
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_UInt32> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9249,12 +9249,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_UIn
         out = int32_t(uint32_t(in) << 8);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt32>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt32>::from_signed(out);
     }
 };
 
-// Convert UInt24_4B to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_UInt32> {
+// Convert UInt24_4 to UInt32
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_UInt32> {
     static inline uint32_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -9267,7 +9267,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_UIn
 };
 
 // Convert SInt32 to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt32> {
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_UInt32> {
     static inline uint32_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9275,19 +9275,19 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt32
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt32>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt32>::from_signed(out);
     }
 };
 
 // Convert UInt32 to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_UInt32> {
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_UInt32> {
     static inline uint32_t convert(uint32_t arg) {
         return arg;
     }
 };
 
 // Convert SInt64 to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt32> {
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_UInt32> {
     static inline uint32_t convert(int64_t arg) {
         int64_t in = arg;
 
@@ -9301,12 +9301,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt32
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt32>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt32>::from_signed(out);
     }
 };
 
 // Convert UInt64 to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_UInt32> {
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_UInt32> {
     static inline uint32_t convert(uint64_t arg) {
         uint64_t in = arg;
 
@@ -9319,7 +9319,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_UInt32
 };
 
 // Convert Float32 to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt32> {
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_UInt32> {
     static inline uint32_t convert(float arg) {
         float in = arg;
 
@@ -9337,12 +9337,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt3
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt32>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt32>::from_signed(out);
     }
 };
 
 // Convert Float64 to UInt32
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt32> {
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_UInt32> {
     static inline uint32_t convert(double arg) {
         double in = arg;
 
@@ -9360,12 +9360,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt3
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt32>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt32>::from_signed(out);
     }
 };
 
 // Convert SInt8 to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_SInt64> {
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_SInt64> {
     static inline int64_t convert(int8_t arg) {
         int8_t in = arg;
 
@@ -9378,10 +9378,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_SInt64>
 };
 
 // Convert UInt8 to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt64> {
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_SInt64> {
     static inline int64_t convert(uint8_t arg) {
         // convert to signed
-        int8_t in = pcm_sign_converter<PcmEncoding_UInt8>::to_signed(arg);
+        int8_t in = pcm_sign_converter<PcmCode_UInt8>::to_signed(arg);
 
         int64_t out;
         // upscale signed integer
@@ -9392,7 +9392,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_SInt64>
 };
 
 // Convert SInt16 to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_SInt64> {
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_SInt64> {
     static inline int64_t convert(int16_t arg) {
         int16_t in = arg;
 
@@ -9405,10 +9405,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_SInt64
 };
 
 // Convert UInt16 to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt64> {
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_SInt64> {
     static inline int64_t convert(uint16_t arg) {
         // convert to signed
-        int16_t in = pcm_sign_converter<PcmEncoding_UInt16>::to_signed(arg);
+        int16_t in = pcm_sign_converter<PcmCode_UInt16>::to_signed(arg);
 
         int64_t out;
         // upscale signed integer
@@ -9419,7 +9419,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_SInt64
 };
 
 // Convert SInt18 to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_SInt64> {
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_SInt64> {
     static inline int64_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9432,10 +9432,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_SInt64
 };
 
 // Convert UInt18 to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt64> {
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_SInt64> {
     static inline int64_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18>::to_signed(arg);
 
         int64_t out;
         // upscale signed integer
@@ -9445,8 +9445,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_SInt64
     }
 };
 
-// Convert SInt18_3B to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_SInt64> {
+// Convert SInt18_3 to SInt64
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_SInt64> {
     static inline int64_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9458,11 +9458,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt18_3B to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SInt64> {
+// Convert UInt18_3 to SInt64
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_SInt64> {
     static inline int64_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_3>::to_signed(arg);
 
         int64_t out;
         // upscale signed integer
@@ -9472,8 +9472,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt18_4B to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_SInt64> {
+// Convert SInt18_4 to SInt64
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_SInt64> {
     static inline int64_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9485,11 +9485,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt18_4B to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SInt64> {
+// Convert UInt18_4 to SInt64
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_SInt64> {
     static inline int64_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_4>::to_signed(arg);
 
         int64_t out;
         // upscale signed integer
@@ -9500,7 +9500,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_SIn
 };
 
 // Convert SInt20 to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt64> {
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_SInt64> {
     static inline int64_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9513,10 +9513,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_SInt64
 };
 
 // Convert UInt20 to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_SInt64> {
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_SInt64> {
     static inline int64_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20>::to_signed(arg);
 
         int64_t out;
         // upscale signed integer
@@ -9526,8 +9526,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_SInt64
     }
 };
 
-// Convert SInt20_3B to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_SInt64> {
+// Convert SInt20_3 to SInt64
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_SInt64> {
     static inline int64_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9539,11 +9539,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt20_3B to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SInt64> {
+// Convert UInt20_3 to SInt64
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_SInt64> {
     static inline int64_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_3>::to_signed(arg);
 
         int64_t out;
         // upscale signed integer
@@ -9553,8 +9553,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_SIn
     }
 };
 
-// Convert SInt20_4B to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_SInt64> {
+// Convert SInt20_4 to SInt64
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_SInt64> {
     static inline int64_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9566,11 +9566,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt20_4B to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SInt64> {
+// Convert UInt20_4 to SInt64
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_SInt64> {
     static inline int64_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_4>::to_signed(arg);
 
         int64_t out;
         // upscale signed integer
@@ -9581,7 +9581,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_SIn
 };
 
 // Convert SInt24 to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt64> {
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_SInt64> {
     static inline int64_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9594,10 +9594,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_SInt64
 };
 
 // Convert UInt24 to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt64> {
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_SInt64> {
     static inline int64_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24>::to_signed(arg);
 
         int64_t out;
         // upscale signed integer
@@ -9607,8 +9607,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_SInt64
     }
 };
 
-// Convert SInt24_4B to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_SInt64> {
+// Convert SInt24_4 to SInt64
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_SInt64> {
     static inline int64_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9620,11 +9620,11 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_SIn
     }
 };
 
-// Convert UInt24_4B to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SInt64> {
+// Convert UInt24_4 to SInt64
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_SInt64> {
     static inline int64_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24_4>::to_signed(arg);
 
         int64_t out;
         // upscale signed integer
@@ -9635,7 +9635,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_SIn
 };
 
 // Convert SInt32 to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt64> {
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_SInt64> {
     static inline int64_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9648,10 +9648,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_SInt64
 };
 
 // Convert UInt32 to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt64> {
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_SInt64> {
     static inline int64_t convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt32>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt32>::to_signed(arg);
 
         int64_t out;
         // upscale signed integer
@@ -9662,17 +9662,17 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_SInt64
 };
 
 // Convert SInt64 to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_SInt64> {
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_SInt64> {
     static inline int64_t convert(int64_t arg) {
         return arg;
     }
 };
 
 // Convert UInt64 to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt64> {
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_SInt64> {
     static inline int64_t convert(uint64_t arg) {
         // convert to signed
-        int64_t in = pcm_sign_converter<PcmEncoding_UInt64>::to_signed(arg);
+        int64_t in = pcm_sign_converter<PcmCode_UInt64>::to_signed(arg);
 
         int64_t out;
         out = in;
@@ -9682,7 +9682,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_SInt64
 };
 
 // Convert Float32 to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt64> {
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_SInt64> {
     static inline int64_t convert(float arg) {
         float in = arg;
 
@@ -9704,7 +9704,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_SInt6
 };
 
 // Convert Float64 to SInt64
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt64> {
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_SInt64> {
     static inline int64_t convert(double arg) {
         double in = arg;
 
@@ -9726,7 +9726,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_SInt6
 };
 
 // Convert SInt8 to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt64> {
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_UInt64> {
     static inline uint64_t convert(int8_t arg) {
         int8_t in = arg;
 
@@ -9735,12 +9735,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_UInt64>
         out = int64_t(uint64_t(in) << 56);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt64>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt64>::from_signed(out);
     }
 };
 
 // Convert UInt8 to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_UInt64> {
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_UInt64> {
     static inline uint64_t convert(uint8_t arg) {
         uint8_t in = arg;
 
@@ -9753,7 +9753,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_UInt64>
 };
 
 // Convert SInt16 to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt64> {
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_UInt64> {
     static inline uint64_t convert(int16_t arg) {
         int16_t in = arg;
 
@@ -9762,12 +9762,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_UInt64
         out = int64_t(uint64_t(in) << 48);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt64>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt64>::from_signed(out);
     }
 };
 
 // Convert UInt16 to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_UInt64> {
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_UInt64> {
     static inline uint64_t convert(uint16_t arg) {
         uint16_t in = arg;
 
@@ -9780,7 +9780,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_UInt64
 };
 
 // Convert SInt18 to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt64> {
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_UInt64> {
     static inline uint64_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9789,12 +9789,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_UInt64
         out = int64_t(uint64_t(in) << 46);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt64>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt64>::from_signed(out);
     }
 };
 
 // Convert UInt18 to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_UInt64> {
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_UInt64> {
     static inline uint64_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -9806,8 +9806,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_UInt64
     }
 };
 
-// Convert SInt18_3B to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UInt64> {
+// Convert SInt18_3 to UInt64
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_UInt64> {
     static inline uint64_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9816,12 +9816,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_UIn
         out = int64_t(uint64_t(in) << 46);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt64>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt64>::from_signed(out);
     }
 };
 
-// Convert UInt18_3B to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_UInt64> {
+// Convert UInt18_3 to UInt64
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_UInt64> {
     static inline uint64_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -9833,8 +9833,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt18_4B to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UInt64> {
+// Convert SInt18_4 to UInt64
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_UInt64> {
     static inline uint64_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9843,12 +9843,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_UIn
         out = int64_t(uint64_t(in) << 46);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt64>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt64>::from_signed(out);
     }
 };
 
-// Convert UInt18_4B to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_UInt64> {
+// Convert UInt18_4 to UInt64
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_UInt64> {
     static inline uint64_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -9861,7 +9861,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_UIn
 };
 
 // Convert SInt20 to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt64> {
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_UInt64> {
     static inline uint64_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9870,12 +9870,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_UInt64
         out = int64_t(uint64_t(in) << 44);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt64>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt64>::from_signed(out);
     }
 };
 
 // Convert UInt20 to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_UInt64> {
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_UInt64> {
     static inline uint64_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -9887,8 +9887,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_UInt64
     }
 };
 
-// Convert SInt20_3B to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_UInt64> {
+// Convert SInt20_3 to UInt64
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_UInt64> {
     static inline uint64_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9897,12 +9897,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_UIn
         out = int64_t(uint64_t(in) << 44);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt64>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt64>::from_signed(out);
     }
 };
 
-// Convert UInt20_3B to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_UInt64> {
+// Convert UInt20_3 to UInt64
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_UInt64> {
     static inline uint64_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -9914,8 +9914,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_UIn
     }
 };
 
-// Convert SInt20_4B to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_UInt64> {
+// Convert SInt20_4 to UInt64
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_UInt64> {
     static inline uint64_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9924,12 +9924,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_UIn
         out = int64_t(uint64_t(in) << 44);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt64>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt64>::from_signed(out);
     }
 };
 
-// Convert UInt20_4B to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_UInt64> {
+// Convert UInt20_4 to UInt64
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_UInt64> {
     static inline uint64_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -9942,7 +9942,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_UIn
 };
 
 // Convert SInt24 to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt64> {
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_UInt64> {
     static inline uint64_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9951,12 +9951,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_UInt64
         out = int64_t(uint64_t(in) << 40);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt64>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt64>::from_signed(out);
     }
 };
 
 // Convert UInt24 to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_UInt64> {
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_UInt64> {
     static inline uint64_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -9968,8 +9968,8 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_UInt64
     }
 };
 
-// Convert SInt24_4B to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_UInt64> {
+// Convert SInt24_4 to UInt64
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_UInt64> {
     static inline uint64_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -9978,12 +9978,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_UIn
         out = int64_t(uint64_t(in) << 40);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt64>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt64>::from_signed(out);
     }
 };
 
-// Convert UInt24_4B to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_UInt64> {
+// Convert UInt24_4 to UInt64
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_UInt64> {
     static inline uint64_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -9996,7 +9996,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_UIn
 };
 
 // Convert SInt32 to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt64> {
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_UInt64> {
     static inline uint64_t convert(int32_t arg) {
         int32_t in = arg;
 
@@ -10005,12 +10005,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_UInt64
         out = int64_t(uint64_t(in) << 32);
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt64>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt64>::from_signed(out);
     }
 };
 
 // Convert UInt32 to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_UInt64> {
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_UInt64> {
     static inline uint64_t convert(uint32_t arg) {
         uint32_t in = arg;
 
@@ -10023,7 +10023,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_UInt64
 };
 
 // Convert SInt64 to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt64> {
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_UInt64> {
     static inline uint64_t convert(int64_t arg) {
         int64_t in = arg;
 
@@ -10031,19 +10031,19 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_UInt64
         out = in;
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt64>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt64>::from_signed(out);
     }
 };
 
 // Convert UInt64 to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_UInt64> {
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_UInt64> {
     static inline uint64_t convert(uint64_t arg) {
         return arg;
     }
 };
 
 // Convert Float32 to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt64> {
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_UInt64> {
     static inline uint64_t convert(float arg) {
         float in = arg;
 
@@ -10061,12 +10061,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_UInt6
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt64>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt64>::from_signed(out);
     }
 };
 
 // Convert Float64 to UInt64
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt64> {
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_UInt64> {
     static inline uint64_t convert(double arg) {
         double in = arg;
 
@@ -10084,12 +10084,12 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_UInt6
         }
 
         // convert to unsigned
-        return pcm_sign_converter<PcmEncoding_UInt64>::from_signed(out);
+        return pcm_sign_converter<PcmCode_UInt64>::from_signed(out);
     }
 };
 
 // Convert SInt8 to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_Float32> {
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_Float32> {
     static inline float convert(int8_t arg) {
         int8_t in = arg;
 
@@ -10102,10 +10102,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_Float32
 };
 
 // Convert UInt8 to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_Float32> {
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_Float32> {
     static inline float convert(uint8_t arg) {
         // convert to signed
-        int8_t in = pcm_sign_converter<PcmEncoding_UInt8>::to_signed(arg);
+        int8_t in = pcm_sign_converter<PcmCode_UInt8>::to_signed(arg);
 
         float out;
         // integer to float
@@ -10116,7 +10116,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_Float32
 };
 
 // Convert SInt16 to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_Float32> {
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_Float32> {
     static inline float convert(int16_t arg) {
         int16_t in = arg;
 
@@ -10129,10 +10129,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_Float3
 };
 
 // Convert UInt16 to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_Float32> {
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_Float32> {
     static inline float convert(uint16_t arg) {
         // convert to signed
-        int16_t in = pcm_sign_converter<PcmEncoding_UInt16>::to_signed(arg);
+        int16_t in = pcm_sign_converter<PcmCode_UInt16>::to_signed(arg);
 
         float out;
         // integer to float
@@ -10143,7 +10143,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_Float3
 };
 
 // Convert SInt18 to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_Float32> {
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_Float32> {
     static inline float convert(int32_t arg) {
         int32_t in = arg;
 
@@ -10156,10 +10156,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_Float3
 };
 
 // Convert UInt18 to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_Float32> {
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_Float32> {
     static inline float convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18>::to_signed(arg);
 
         float out;
         // integer to float
@@ -10169,62 +10169,62 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_Float3
     }
 };
 
-// Convert SInt18_3B to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_Float32> {
+// Convert SInt18_3 to Float32
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_Float32> {
     static inline float convert(int32_t arg) {
         int32_t in = arg;
 
         float out;
         // integer to float
-        out = float(in * (1.0 / ((double)pcm_sint18_3b_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint18_3_max + 1.0)));
 
         return out;
     }
 };
 
-// Convert UInt18_3B to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_Float32> {
+// Convert UInt18_3 to Float32
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_Float32> {
     static inline float convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_3>::to_signed(arg);
 
         float out;
         // integer to float
-        out = float(in * (1.0 / ((double)pcm_sint18_3b_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint18_3_max + 1.0)));
 
         return out;
     }
 };
 
-// Convert SInt18_4B to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_Float32> {
+// Convert SInt18_4 to Float32
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_Float32> {
     static inline float convert(int32_t arg) {
         int32_t in = arg;
 
         float out;
         // integer to float
-        out = float(in * (1.0 / ((double)pcm_sint18_4b_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint18_4_max + 1.0)));
 
         return out;
     }
 };
 
-// Convert UInt18_4B to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_Float32> {
+// Convert UInt18_4 to Float32
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_Float32> {
     static inline float convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_4>::to_signed(arg);
 
         float out;
         // integer to float
-        out = float(in * (1.0 / ((double)pcm_sint18_4b_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint18_4_max + 1.0)));
 
         return out;
     }
 };
 
 // Convert SInt20 to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_Float32> {
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_Float32> {
     static inline float convert(int32_t arg) {
         int32_t in = arg;
 
@@ -10237,10 +10237,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_Float3
 };
 
 // Convert UInt20 to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_Float32> {
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_Float32> {
     static inline float convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20>::to_signed(arg);
 
         float out;
         // integer to float
@@ -10250,62 +10250,62 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_Float3
     }
 };
 
-// Convert SInt20_3B to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_Float32> {
+// Convert SInt20_3 to Float32
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_Float32> {
     static inline float convert(int32_t arg) {
         int32_t in = arg;
 
         float out;
         // integer to float
-        out = float(in * (1.0 / ((double)pcm_sint20_3b_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint20_3_max + 1.0)));
 
         return out;
     }
 };
 
-// Convert UInt20_3B to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_Float32> {
+// Convert UInt20_3 to Float32
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_Float32> {
     static inline float convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_3>::to_signed(arg);
 
         float out;
         // integer to float
-        out = float(in * (1.0 / ((double)pcm_sint20_3b_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint20_3_max + 1.0)));
 
         return out;
     }
 };
 
-// Convert SInt20_4B to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_Float32> {
+// Convert SInt20_4 to Float32
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_Float32> {
     static inline float convert(int32_t arg) {
         int32_t in = arg;
 
         float out;
         // integer to float
-        out = float(in * (1.0 / ((double)pcm_sint20_4b_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint20_4_max + 1.0)));
 
         return out;
     }
 };
 
-// Convert UInt20_4B to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_Float32> {
+// Convert UInt20_4 to Float32
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_Float32> {
     static inline float convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_4>::to_signed(arg);
 
         float out;
         // integer to float
-        out = float(in * (1.0 / ((double)pcm_sint20_4b_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint20_4_max + 1.0)));
 
         return out;
     }
 };
 
 // Convert SInt24 to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_Float32> {
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_Float32> {
     static inline float convert(int32_t arg) {
         int32_t in = arg;
 
@@ -10318,10 +10318,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_Float3
 };
 
 // Convert UInt24 to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_Float32> {
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_Float32> {
     static inline float convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24>::to_signed(arg);
 
         float out;
         // integer to float
@@ -10331,35 +10331,35 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_Float3
     }
 };
 
-// Convert SInt24_4B to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_Float32> {
+// Convert SInt24_4 to Float32
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_Float32> {
     static inline float convert(int32_t arg) {
         int32_t in = arg;
 
         float out;
         // integer to float
-        out = float(in * (1.0 / ((double)pcm_sint24_4b_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint24_4_max + 1.0)));
 
         return out;
     }
 };
 
-// Convert UInt24_4B to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_Float32> {
+// Convert UInt24_4 to Float32
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_Float32> {
     static inline float convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24_4>::to_signed(arg);
 
         float out;
         // integer to float
-        out = float(in * (1.0 / ((double)pcm_sint24_4b_max + 1.0)));
+        out = float(in * (1.0 / ((double)pcm_sint24_4_max + 1.0)));
 
         return out;
     }
 };
 
 // Convert SInt32 to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_Float32> {
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_Float32> {
     static inline float convert(int32_t arg) {
         int32_t in = arg;
 
@@ -10372,10 +10372,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_Float3
 };
 
 // Convert UInt32 to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_Float32> {
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_Float32> {
     static inline float convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt32>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt32>::to_signed(arg);
 
         float out;
         // integer to float
@@ -10386,7 +10386,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_Float3
 };
 
 // Convert SInt64 to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_Float32> {
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_Float32> {
     static inline float convert(int64_t arg) {
         int64_t in = arg;
 
@@ -10399,10 +10399,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_Float3
 };
 
 // Convert UInt64 to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_Float32> {
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_Float32> {
     static inline float convert(uint64_t arg) {
         // convert to signed
-        int64_t in = pcm_sign_converter<PcmEncoding_UInt64>::to_signed(arg);
+        int64_t in = pcm_sign_converter<PcmCode_UInt64>::to_signed(arg);
 
         float out;
         // integer to float
@@ -10413,14 +10413,14 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_Float3
 };
 
 // Convert Float32 to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_Float32> {
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_Float32> {
     static inline float convert(float arg) {
         return arg;
     }
 };
 
 // Convert Float64 to Float32
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_Float32> {
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_Float32> {
     static inline float convert(double arg) {
         double in = arg;
 
@@ -10433,7 +10433,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_Float
 };
 
 // Convert SInt8 to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_Float64> {
+template <> struct pcm_code_converter<PcmCode_SInt8, PcmCode_Float64> {
     static inline double convert(int8_t arg) {
         int8_t in = arg;
 
@@ -10446,10 +10446,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt8, PcmEncoding_Float64
 };
 
 // Convert UInt8 to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_Float64> {
+template <> struct pcm_code_converter<PcmCode_UInt8, PcmCode_Float64> {
     static inline double convert(uint8_t arg) {
         // convert to signed
-        int8_t in = pcm_sign_converter<PcmEncoding_UInt8>::to_signed(arg);
+        int8_t in = pcm_sign_converter<PcmCode_UInt8>::to_signed(arg);
 
         double out;
         // integer to float
@@ -10460,7 +10460,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt8, PcmEncoding_Float64
 };
 
 // Convert SInt16 to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_Float64> {
+template <> struct pcm_code_converter<PcmCode_SInt16, PcmCode_Float64> {
     static inline double convert(int16_t arg) {
         int16_t in = arg;
 
@@ -10473,10 +10473,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt16, PcmEncoding_Float6
 };
 
 // Convert UInt16 to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_Float64> {
+template <> struct pcm_code_converter<PcmCode_UInt16, PcmCode_Float64> {
     static inline double convert(uint16_t arg) {
         // convert to signed
-        int16_t in = pcm_sign_converter<PcmEncoding_UInt16>::to_signed(arg);
+        int16_t in = pcm_sign_converter<PcmCode_UInt16>::to_signed(arg);
 
         double out;
         // integer to float
@@ -10487,7 +10487,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt16, PcmEncoding_Float6
 };
 
 // Convert SInt18 to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_Float64> {
+template <> struct pcm_code_converter<PcmCode_SInt18, PcmCode_Float64> {
     static inline double convert(int32_t arg) {
         int32_t in = arg;
 
@@ -10500,10 +10500,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt18, PcmEncoding_Float6
 };
 
 // Convert UInt18 to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_Float64> {
+template <> struct pcm_code_converter<PcmCode_UInt18, PcmCode_Float64> {
     static inline double convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18>::to_signed(arg);
 
         double out;
         // integer to float
@@ -10513,62 +10513,62 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt18, PcmEncoding_Float6
     }
 };
 
-// Convert SInt18_3B to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_3B, PcmEncoding_Float64> {
+// Convert SInt18_3 to Float64
+template <> struct pcm_code_converter<PcmCode_SInt18_3, PcmCode_Float64> {
     static inline double convert(int32_t arg) {
         int32_t in = arg;
 
         double out;
         // integer to float
-        out = double(in * (1.0 / ((double)pcm_sint18_3b_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint18_3_max + 1.0)));
 
         return out;
     }
 };
 
-// Convert UInt18_3B to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_3B, PcmEncoding_Float64> {
+// Convert UInt18_3 to Float64
+template <> struct pcm_code_converter<PcmCode_UInt18_3, PcmCode_Float64> {
     static inline double convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_3>::to_signed(arg);
 
         double out;
         // integer to float
-        out = double(in * (1.0 / ((double)pcm_sint18_3b_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint18_3_max + 1.0)));
 
         return out;
     }
 };
 
-// Convert SInt18_4B to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt18_4B, PcmEncoding_Float64> {
+// Convert SInt18_4 to Float64
+template <> struct pcm_code_converter<PcmCode_SInt18_4, PcmCode_Float64> {
     static inline double convert(int32_t arg) {
         int32_t in = arg;
 
         double out;
         // integer to float
-        out = double(in * (1.0 / ((double)pcm_sint18_4b_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint18_4_max + 1.0)));
 
         return out;
     }
 };
 
-// Convert UInt18_4B to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt18_4B, PcmEncoding_Float64> {
+// Convert UInt18_4 to Float64
+template <> struct pcm_code_converter<PcmCode_UInt18_4, PcmCode_Float64> {
     static inline double convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt18_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt18_4>::to_signed(arg);
 
         double out;
         // integer to float
-        out = double(in * (1.0 / ((double)pcm_sint18_4b_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint18_4_max + 1.0)));
 
         return out;
     }
 };
 
 // Convert SInt20 to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_Float64> {
+template <> struct pcm_code_converter<PcmCode_SInt20, PcmCode_Float64> {
     static inline double convert(int32_t arg) {
         int32_t in = arg;
 
@@ -10581,10 +10581,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt20, PcmEncoding_Float6
 };
 
 // Convert UInt20 to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_Float64> {
+template <> struct pcm_code_converter<PcmCode_UInt20, PcmCode_Float64> {
     static inline double convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20>::to_signed(arg);
 
         double out;
         // integer to float
@@ -10594,62 +10594,62 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt20, PcmEncoding_Float6
     }
 };
 
-// Convert SInt20_3B to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_3B, PcmEncoding_Float64> {
+// Convert SInt20_3 to Float64
+template <> struct pcm_code_converter<PcmCode_SInt20_3, PcmCode_Float64> {
     static inline double convert(int32_t arg) {
         int32_t in = arg;
 
         double out;
         // integer to float
-        out = double(in * (1.0 / ((double)pcm_sint20_3b_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint20_3_max + 1.0)));
 
         return out;
     }
 };
 
-// Convert UInt20_3B to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_3B, PcmEncoding_Float64> {
+// Convert UInt20_3 to Float64
+template <> struct pcm_code_converter<PcmCode_UInt20_3, PcmCode_Float64> {
     static inline double convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_3B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_3>::to_signed(arg);
 
         double out;
         // integer to float
-        out = double(in * (1.0 / ((double)pcm_sint20_3b_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint20_3_max + 1.0)));
 
         return out;
     }
 };
 
-// Convert SInt20_4B to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt20_4B, PcmEncoding_Float64> {
+// Convert SInt20_4 to Float64
+template <> struct pcm_code_converter<PcmCode_SInt20_4, PcmCode_Float64> {
     static inline double convert(int32_t arg) {
         int32_t in = arg;
 
         double out;
         // integer to float
-        out = double(in * (1.0 / ((double)pcm_sint20_4b_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint20_4_max + 1.0)));
 
         return out;
     }
 };
 
-// Convert UInt20_4B to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt20_4B, PcmEncoding_Float64> {
+// Convert UInt20_4 to Float64
+template <> struct pcm_code_converter<PcmCode_UInt20_4, PcmCode_Float64> {
     static inline double convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt20_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt20_4>::to_signed(arg);
 
         double out;
         // integer to float
-        out = double(in * (1.0 / ((double)pcm_sint20_4b_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint20_4_max + 1.0)));
 
         return out;
     }
 };
 
 // Convert SInt24 to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_Float64> {
+template <> struct pcm_code_converter<PcmCode_SInt24, PcmCode_Float64> {
     static inline double convert(int32_t arg) {
         int32_t in = arg;
 
@@ -10662,10 +10662,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt24, PcmEncoding_Float6
 };
 
 // Convert UInt24 to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_Float64> {
+template <> struct pcm_code_converter<PcmCode_UInt24, PcmCode_Float64> {
     static inline double convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24>::to_signed(arg);
 
         double out;
         // integer to float
@@ -10675,35 +10675,35 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt24, PcmEncoding_Float6
     }
 };
 
-// Convert SInt24_4B to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt24_4B, PcmEncoding_Float64> {
+// Convert SInt24_4 to Float64
+template <> struct pcm_code_converter<PcmCode_SInt24_4, PcmCode_Float64> {
     static inline double convert(int32_t arg) {
         int32_t in = arg;
 
         double out;
         // integer to float
-        out = double(in * (1.0 / ((double)pcm_sint24_4b_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint24_4_max + 1.0)));
 
         return out;
     }
 };
 
-// Convert UInt24_4B to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt24_4B, PcmEncoding_Float64> {
+// Convert UInt24_4 to Float64
+template <> struct pcm_code_converter<PcmCode_UInt24_4, PcmCode_Float64> {
     static inline double convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt24_4B>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt24_4>::to_signed(arg);
 
         double out;
         // integer to float
-        out = double(in * (1.0 / ((double)pcm_sint24_4b_max + 1.0)));
+        out = double(in * (1.0 / ((double)pcm_sint24_4_max + 1.0)));
 
         return out;
     }
 };
 
 // Convert SInt32 to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_Float64> {
+template <> struct pcm_code_converter<PcmCode_SInt32, PcmCode_Float64> {
     static inline double convert(int32_t arg) {
         int32_t in = arg;
 
@@ -10716,10 +10716,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt32, PcmEncoding_Float6
 };
 
 // Convert UInt32 to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_Float64> {
+template <> struct pcm_code_converter<PcmCode_UInt32, PcmCode_Float64> {
     static inline double convert(uint32_t arg) {
         // convert to signed
-        int32_t in = pcm_sign_converter<PcmEncoding_UInt32>::to_signed(arg);
+        int32_t in = pcm_sign_converter<PcmCode_UInt32>::to_signed(arg);
 
         double out;
         // integer to float
@@ -10730,7 +10730,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt32, PcmEncoding_Float6
 };
 
 // Convert SInt64 to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_Float64> {
+template <> struct pcm_code_converter<PcmCode_SInt64, PcmCode_Float64> {
     static inline double convert(int64_t arg) {
         int64_t in = arg;
 
@@ -10743,10 +10743,10 @@ template <> struct pcm_encoding_converter<PcmEncoding_SInt64, PcmEncoding_Float6
 };
 
 // Convert UInt64 to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_Float64> {
+template <> struct pcm_code_converter<PcmCode_UInt64, PcmCode_Float64> {
     static inline double convert(uint64_t arg) {
         // convert to signed
-        int64_t in = pcm_sign_converter<PcmEncoding_UInt64>::to_signed(arg);
+        int64_t in = pcm_sign_converter<PcmCode_UInt64>::to_signed(arg);
 
         double out;
         // integer to float
@@ -10757,7 +10757,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_UInt64, PcmEncoding_Float6
 };
 
 // Convert Float32 to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_Float64> {
+template <> struct pcm_code_converter<PcmCode_Float32, PcmCode_Float64> {
     static inline double convert(float arg) {
         float in = arg;
 
@@ -10770,7 +10770,7 @@ template <> struct pcm_encoding_converter<PcmEncoding_Float32, PcmEncoding_Float
 };
 
 // Convert Float64 to Float64
-template <> struct pcm_encoding_converter<PcmEncoding_Float64, PcmEncoding_Float64> {
+template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_Float64> {
     static inline double convert(double arg) {
         return arg;
     }
@@ -10969,10 +10969,10 @@ pcm_unaligned_read(const uint8_t* buffer, size_t& bit_offset, size_t bit_length)
 }
 
 // Sample packer / unpacker
-template <PcmEncoding, PcmEndian> struct pcm_packer;
+template <PcmCode, PcmEndian> struct pcm_packer;
 
 // SInt8 Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt8, PcmEndian_Big> {
+template <> struct pcm_packer<PcmCode_SInt8, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int8_t arg) {
         // native-endian view of octets
@@ -10996,7 +10996,7 @@ template <> struct pcm_packer<PcmEncoding_SInt8, PcmEndian_Big> {
 };
 
 // SInt8 Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt8, PcmEndian_Little> {
+template <> struct pcm_packer<PcmCode_SInt8, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int8_t arg) {
         // native-endian view of octets
@@ -11020,7 +11020,7 @@ template <> struct pcm_packer<PcmEncoding_SInt8, PcmEndian_Little> {
 };
 
 // UInt8 Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt8, PcmEndian_Big> {
+template <> struct pcm_packer<PcmCode_UInt8, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint8_t arg) {
         // native-endian view of octets
@@ -11044,7 +11044,7 @@ template <> struct pcm_packer<PcmEncoding_UInt8, PcmEndian_Big> {
 };
 
 // UInt8 Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt8, PcmEndian_Little> {
+template <> struct pcm_packer<PcmCode_UInt8, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint8_t arg) {
         // native-endian view of octets
@@ -11068,7 +11068,7 @@ template <> struct pcm_packer<PcmEncoding_UInt8, PcmEndian_Little> {
 };
 
 // SInt16 Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt16, PcmEndian_Big> {
+template <> struct pcm_packer<PcmCode_SInt16, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int16_t arg) {
         // native-endian view of octets
@@ -11094,7 +11094,7 @@ template <> struct pcm_packer<PcmEncoding_SInt16, PcmEndian_Big> {
 };
 
 // SInt16 Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt16, PcmEndian_Little> {
+template <> struct pcm_packer<PcmCode_SInt16, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int16_t arg) {
         // native-endian view of octets
@@ -11120,7 +11120,7 @@ template <> struct pcm_packer<PcmEncoding_SInt16, PcmEndian_Little> {
 };
 
 // UInt16 Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt16, PcmEndian_Big> {
+template <> struct pcm_packer<PcmCode_UInt16, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint16_t arg) {
         // native-endian view of octets
@@ -11146,7 +11146,7 @@ template <> struct pcm_packer<PcmEncoding_UInt16, PcmEndian_Big> {
 };
 
 // UInt16 Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt16, PcmEndian_Little> {
+template <> struct pcm_packer<PcmCode_UInt16, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint16_t arg) {
         // native-endian view of octets
@@ -11172,7 +11172,7 @@ template <> struct pcm_packer<PcmEncoding_UInt16, PcmEndian_Little> {
 };
 
 // SInt18 Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt18, PcmEndian_Big> {
+template <> struct pcm_packer<PcmCode_SInt18, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
@@ -11206,7 +11206,7 @@ template <> struct pcm_packer<PcmEncoding_SInt18, PcmEndian_Big> {
 };
 
 // SInt18 Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt18, PcmEndian_Little> {
+template <> struct pcm_packer<PcmCode_SInt18, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
@@ -11240,7 +11240,7 @@ template <> struct pcm_packer<PcmEncoding_SInt18, PcmEndian_Little> {
 };
 
 // UInt18 Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt18, PcmEndian_Big> {
+template <> struct pcm_packer<PcmCode_UInt18, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
@@ -11269,7 +11269,7 @@ template <> struct pcm_packer<PcmEncoding_UInt18, PcmEndian_Big> {
 };
 
 // UInt18 Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt18, PcmEndian_Little> {
+template <> struct pcm_packer<PcmCode_UInt18, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
@@ -11297,8 +11297,8 @@ template <> struct pcm_packer<PcmEncoding_UInt18, PcmEndian_Little> {
     }
 };
 
-// SInt18_3B Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt18_3B, PcmEndian_Big> {
+// SInt18_3 Big-Endian packer / unpacker
+template <> struct pcm_packer<PcmCode_SInt18_3, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
@@ -11337,8 +11337,8 @@ template <> struct pcm_packer<PcmEncoding_SInt18_3B, PcmEndian_Big> {
     }
 };
 
-// SInt18_3B Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt18_3B, PcmEndian_Little> {
+// SInt18_3 Little-Endian packer / unpacker
+template <> struct pcm_packer<PcmCode_SInt18_3, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
@@ -11377,8 +11377,8 @@ template <> struct pcm_packer<PcmEncoding_SInt18_3B, PcmEndian_Little> {
     }
 };
 
-// UInt18_3B Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt18_3B, PcmEndian_Big> {
+// UInt18_3 Big-Endian packer / unpacker
+template <> struct pcm_packer<PcmCode_UInt18_3, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
@@ -11412,8 +11412,8 @@ template <> struct pcm_packer<PcmEncoding_UInt18_3B, PcmEndian_Big> {
     }
 };
 
-// UInt18_3B Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt18_3B, PcmEndian_Little> {
+// UInt18_3 Little-Endian packer / unpacker
+template <> struct pcm_packer<PcmCode_UInt18_3, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
@@ -11447,8 +11447,8 @@ template <> struct pcm_packer<PcmEncoding_UInt18_3B, PcmEndian_Little> {
     }
 };
 
-// SInt18_4B Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt18_4B, PcmEndian_Big> {
+// SInt18_4 Big-Endian packer / unpacker
+template <> struct pcm_packer<PcmCode_SInt18_4, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
@@ -11488,8 +11488,8 @@ template <> struct pcm_packer<PcmEncoding_SInt18_4B, PcmEndian_Big> {
     }
 };
 
-// SInt18_4B Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt18_4B, PcmEndian_Little> {
+// SInt18_4 Little-Endian packer / unpacker
+template <> struct pcm_packer<PcmCode_SInt18_4, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
@@ -11529,8 +11529,8 @@ template <> struct pcm_packer<PcmEncoding_SInt18_4B, PcmEndian_Little> {
     }
 };
 
-// UInt18_4B Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt18_4B, PcmEndian_Big> {
+// UInt18_4 Big-Endian packer / unpacker
+template <> struct pcm_packer<PcmCode_UInt18_4, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
@@ -11565,8 +11565,8 @@ template <> struct pcm_packer<PcmEncoding_UInt18_4B, PcmEndian_Big> {
     }
 };
 
-// UInt18_4B Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt18_4B, PcmEndian_Little> {
+// UInt18_4 Little-Endian packer / unpacker
+template <> struct pcm_packer<PcmCode_UInt18_4, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
@@ -11602,7 +11602,7 @@ template <> struct pcm_packer<PcmEncoding_UInt18_4B, PcmEndian_Little> {
 };
 
 // SInt20 Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt20, PcmEndian_Big> {
+template <> struct pcm_packer<PcmCode_SInt20, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
@@ -11636,7 +11636,7 @@ template <> struct pcm_packer<PcmEncoding_SInt20, PcmEndian_Big> {
 };
 
 // SInt20 Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt20, PcmEndian_Little> {
+template <> struct pcm_packer<PcmCode_SInt20, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
@@ -11670,7 +11670,7 @@ template <> struct pcm_packer<PcmEncoding_SInt20, PcmEndian_Little> {
 };
 
 // UInt20 Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt20, PcmEndian_Big> {
+template <> struct pcm_packer<PcmCode_UInt20, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
@@ -11699,7 +11699,7 @@ template <> struct pcm_packer<PcmEncoding_UInt20, PcmEndian_Big> {
 };
 
 // UInt20 Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt20, PcmEndian_Little> {
+template <> struct pcm_packer<PcmCode_UInt20, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
@@ -11727,8 +11727,8 @@ template <> struct pcm_packer<PcmEncoding_UInt20, PcmEndian_Little> {
     }
 };
 
-// SInt20_3B Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt20_3B, PcmEndian_Big> {
+// SInt20_3 Big-Endian packer / unpacker
+template <> struct pcm_packer<PcmCode_SInt20_3, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
@@ -11767,8 +11767,8 @@ template <> struct pcm_packer<PcmEncoding_SInt20_3B, PcmEndian_Big> {
     }
 };
 
-// SInt20_3B Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt20_3B, PcmEndian_Little> {
+// SInt20_3 Little-Endian packer / unpacker
+template <> struct pcm_packer<PcmCode_SInt20_3, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
@@ -11807,8 +11807,8 @@ template <> struct pcm_packer<PcmEncoding_SInt20_3B, PcmEndian_Little> {
     }
 };
 
-// UInt20_3B Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt20_3B, PcmEndian_Big> {
+// UInt20_3 Big-Endian packer / unpacker
+template <> struct pcm_packer<PcmCode_UInt20_3, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
@@ -11842,8 +11842,8 @@ template <> struct pcm_packer<PcmEncoding_UInt20_3B, PcmEndian_Big> {
     }
 };
 
-// UInt20_3B Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt20_3B, PcmEndian_Little> {
+// UInt20_3 Little-Endian packer / unpacker
+template <> struct pcm_packer<PcmCode_UInt20_3, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
@@ -11877,8 +11877,8 @@ template <> struct pcm_packer<PcmEncoding_UInt20_3B, PcmEndian_Little> {
     }
 };
 
-// SInt20_4B Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt20_4B, PcmEndian_Big> {
+// SInt20_4 Big-Endian packer / unpacker
+template <> struct pcm_packer<PcmCode_SInt20_4, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
@@ -11918,8 +11918,8 @@ template <> struct pcm_packer<PcmEncoding_SInt20_4B, PcmEndian_Big> {
     }
 };
 
-// SInt20_4B Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt20_4B, PcmEndian_Little> {
+// SInt20_4 Little-Endian packer / unpacker
+template <> struct pcm_packer<PcmCode_SInt20_4, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
@@ -11959,8 +11959,8 @@ template <> struct pcm_packer<PcmEncoding_SInt20_4B, PcmEndian_Little> {
     }
 };
 
-// UInt20_4B Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt20_4B, PcmEndian_Big> {
+// UInt20_4 Big-Endian packer / unpacker
+template <> struct pcm_packer<PcmCode_UInt20_4, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
@@ -11995,8 +11995,8 @@ template <> struct pcm_packer<PcmEncoding_UInt20_4B, PcmEndian_Big> {
     }
 };
 
-// UInt20_4B Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt20_4B, PcmEndian_Little> {
+// UInt20_4 Little-Endian packer / unpacker
+template <> struct pcm_packer<PcmCode_UInt20_4, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
@@ -12032,7 +12032,7 @@ template <> struct pcm_packer<PcmEncoding_UInt20_4B, PcmEndian_Little> {
 };
 
 // SInt24 Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt24, PcmEndian_Big> {
+template <> struct pcm_packer<PcmCode_SInt24, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
@@ -12066,7 +12066,7 @@ template <> struct pcm_packer<PcmEncoding_SInt24, PcmEndian_Big> {
 };
 
 // SInt24 Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt24, PcmEndian_Little> {
+template <> struct pcm_packer<PcmCode_SInt24, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
@@ -12100,7 +12100,7 @@ template <> struct pcm_packer<PcmEncoding_SInt24, PcmEndian_Little> {
 };
 
 // UInt24 Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt24, PcmEndian_Big> {
+template <> struct pcm_packer<PcmCode_UInt24, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
@@ -12129,7 +12129,7 @@ template <> struct pcm_packer<PcmEncoding_UInt24, PcmEndian_Big> {
 };
 
 // UInt24 Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt24, PcmEndian_Little> {
+template <> struct pcm_packer<PcmCode_UInt24, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
@@ -12157,8 +12157,8 @@ template <> struct pcm_packer<PcmEncoding_UInt24, PcmEndian_Little> {
     }
 };
 
-// SInt24_4B Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt24_4B, PcmEndian_Big> {
+// SInt24_4 Big-Endian packer / unpacker
+template <> struct pcm_packer<PcmCode_SInt24_4, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
@@ -12198,8 +12198,8 @@ template <> struct pcm_packer<PcmEncoding_SInt24_4B, PcmEndian_Big> {
     }
 };
 
-// SInt24_4B Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt24_4B, PcmEndian_Little> {
+// SInt24_4 Little-Endian packer / unpacker
+template <> struct pcm_packer<PcmCode_SInt24_4, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
@@ -12239,8 +12239,8 @@ template <> struct pcm_packer<PcmEncoding_SInt24_4B, PcmEndian_Little> {
     }
 };
 
-// UInt24_4B Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt24_4B, PcmEndian_Big> {
+// UInt24_4 Big-Endian packer / unpacker
+template <> struct pcm_packer<PcmCode_UInt24_4, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
@@ -12275,8 +12275,8 @@ template <> struct pcm_packer<PcmEncoding_UInt24_4B, PcmEndian_Big> {
     }
 };
 
-// UInt24_4B Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt24_4B, PcmEndian_Little> {
+// UInt24_4 Little-Endian packer / unpacker
+template <> struct pcm_packer<PcmCode_UInt24_4, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
@@ -12312,7 +12312,7 @@ template <> struct pcm_packer<PcmEncoding_UInt24_4B, PcmEndian_Little> {
 };
 
 // SInt32 Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt32, PcmEndian_Big> {
+template <> struct pcm_packer<PcmCode_SInt32, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
@@ -12342,7 +12342,7 @@ template <> struct pcm_packer<PcmEncoding_SInt32, PcmEndian_Big> {
 };
 
 // SInt32 Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt32, PcmEndian_Little> {
+template <> struct pcm_packer<PcmCode_SInt32, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int32_t arg) {
         // native-endian view of octets
@@ -12372,7 +12372,7 @@ template <> struct pcm_packer<PcmEncoding_SInt32, PcmEndian_Little> {
 };
 
 // UInt32 Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt32, PcmEndian_Big> {
+template <> struct pcm_packer<PcmCode_UInt32, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
@@ -12402,7 +12402,7 @@ template <> struct pcm_packer<PcmEncoding_UInt32, PcmEndian_Big> {
 };
 
 // UInt32 Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt32, PcmEndian_Little> {
+template <> struct pcm_packer<PcmCode_UInt32, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint32_t arg) {
         // native-endian view of octets
@@ -12432,7 +12432,7 @@ template <> struct pcm_packer<PcmEncoding_UInt32, PcmEndian_Little> {
 };
 
 // SInt64 Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt64, PcmEndian_Big> {
+template <> struct pcm_packer<PcmCode_SInt64, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int64_t arg) {
         // native-endian view of octets
@@ -12470,7 +12470,7 @@ template <> struct pcm_packer<PcmEncoding_SInt64, PcmEndian_Big> {
 };
 
 // SInt64 Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_SInt64, PcmEndian_Little> {
+template <> struct pcm_packer<PcmCode_SInt64, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, int64_t arg) {
         // native-endian view of octets
@@ -12508,7 +12508,7 @@ template <> struct pcm_packer<PcmEncoding_SInt64, PcmEndian_Little> {
 };
 
 // UInt64 Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt64, PcmEndian_Big> {
+template <> struct pcm_packer<PcmCode_UInt64, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint64_t arg) {
         // native-endian view of octets
@@ -12546,7 +12546,7 @@ template <> struct pcm_packer<PcmEncoding_UInt64, PcmEndian_Big> {
 };
 
 // UInt64 Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_UInt64, PcmEndian_Little> {
+template <> struct pcm_packer<PcmCode_UInt64, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, uint64_t arg) {
         // native-endian view of octets
@@ -12584,7 +12584,7 @@ template <> struct pcm_packer<PcmEncoding_UInt64, PcmEndian_Little> {
 };
 
 // Float32 Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_Float32, PcmEndian_Big> {
+template <> struct pcm_packer<PcmCode_Float32, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, float arg) {
         // native-endian view of octets
@@ -12614,7 +12614,7 @@ template <> struct pcm_packer<PcmEncoding_Float32, PcmEndian_Big> {
 };
 
 // Float32 Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_Float32, PcmEndian_Little> {
+template <> struct pcm_packer<PcmCode_Float32, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, float arg) {
         // native-endian view of octets
@@ -12644,7 +12644,7 @@ template <> struct pcm_packer<PcmEncoding_Float32, PcmEndian_Little> {
 };
 
 // Float64 Big-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_Float64, PcmEndian_Big> {
+template <> struct pcm_packer<PcmCode_Float64, PcmEndian_Big> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, double arg) {
         // native-endian view of octets
@@ -12682,7 +12682,7 @@ template <> struct pcm_packer<PcmEncoding_Float64, PcmEndian_Big> {
 };
 
 // Float64 Little-Endian packer / unpacker
-template <> struct pcm_packer<PcmEncoding_Float64, PcmEndian_Little> {
+template <> struct pcm_packer<PcmCode_Float64, PcmEndian_Little> {
     // Pack next sample to buffer
     static inline void pack(uint8_t* buffer, size_t& bit_offset, double arg) {
         // native-endian view of octets
@@ -12719,8 +12719,8 @@ template <> struct pcm_packer<PcmEncoding_Float64, PcmEndian_Little> {
     }
 };
 
-// Map encoding and endian of samples
-template <PcmEncoding InEnc, PcmEncoding OutEnc, PcmEndian InEnd, PcmEndian OutEnd>
+// Map code and endian of samples
+template <PcmCode InCode, PcmCode OutCode, PcmEndian InEndian, PcmEndian OutEndian>
 struct pcm_mapper {
     static inline void map(const uint8_t* in_data,
                            size_t& in_bit_off,
@@ -12728,10 +12728,10 @@ struct pcm_mapper {
                            size_t& out_bit_off,
                            size_t n_samples) {
         for (size_t n = 0; n < n_samples; n++) {
-            pcm_packer<OutEnc, OutEnd>::pack(
+            pcm_packer<OutCode, OutEndian>::pack(
                 out_data, out_bit_off,
-                pcm_encoding_converter<InEnc, OutEnc>::convert(
-                    pcm_packer<InEnc, InEnd>::unpack(in_data, in_bit_off)));
+                pcm_code_converter<InCode, OutCode>::convert(
+                    pcm_packer<InCode, InEndian>::unpack(in_data, in_bit_off)));
         }
     }
 };
@@ -12745,231 +12745,1181 @@ typedef void (*pcm_mapper_func_t)(
     size_t n_samples);
 
 // Select mapper function
-template <PcmEncoding InEnc, PcmEncoding OutEnc, PcmEndian InEnd, PcmEndian OutEnd>
+template <PcmCode InCode, PcmCode OutCode, PcmEndian InEndian, PcmEndian OutEndian>
 pcm_mapper_func_t pcm_mapper_func() {
-    return &pcm_mapper<InEnc, OutEnc, InEnd, OutEnd>::map;
+    return &pcm_mapper<InCode, OutCode, InEndian, OutEndian>::map;
 }
 
 // Select mapper function
-template <PcmEncoding InEnc, PcmEncoding OutEnc, PcmEndian InEnd>
+template <PcmCode InCode, PcmCode OutCode, PcmEndian InEndian>
 pcm_mapper_func_t pcm_mapper_func(PcmEndian out_endian) {
     switch (out_endian) {
     case PcmEndian_Native:
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        return pcm_mapper_func<InEnc, OutEnc, InEnd, PcmEndian_Big>();
+        return pcm_mapper_func<InCode, OutCode, InEndian, PcmEndian_Big>();
 #else
-        return pcm_mapper_func<InEnc, OutEnc, InEnd, PcmEndian_Little>();
+        return pcm_mapper_func<InCode, OutCode, InEndian, PcmEndian_Little>();
 #endif
     case PcmEndian_Big:
-        return pcm_mapper_func<InEnc, OutEnc, InEnd, PcmEndian_Big>();
+        return pcm_mapper_func<InCode, OutCode, InEndian, PcmEndian_Big>();
     case PcmEndian_Little:
-        return pcm_mapper_func<InEnc, OutEnc, InEnd, PcmEndian_Little>();
+        return pcm_mapper_func<InCode, OutCode, InEndian, PcmEndian_Little>();
     }
     return NULL;
 }
 
 // Select mapper function
-template <PcmEncoding InEnc, PcmEncoding OutEnc>
+template <PcmCode InCode, PcmCode OutCode>
 pcm_mapper_func_t pcm_mapper_func(PcmEndian in_endian, PcmEndian out_endian) {
     switch (in_endian) {
     case PcmEndian_Native:
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        return pcm_mapper_func<InEnc, OutEnc, PcmEndian_Big>(out_endian);
+        return pcm_mapper_func<InCode, OutCode, PcmEndian_Big>(out_endian);
 #else
-        return pcm_mapper_func<InEnc, OutEnc, PcmEndian_Little>(out_endian);
+        return pcm_mapper_func<InCode, OutCode, PcmEndian_Little>(out_endian);
 #endif
     case PcmEndian_Big:
-        return pcm_mapper_func<InEnc, OutEnc, PcmEndian_Big>(out_endian);
+        return pcm_mapper_func<InCode, OutCode, PcmEndian_Big>(out_endian);
     case PcmEndian_Little:
-        return pcm_mapper_func<InEnc, OutEnc, PcmEndian_Little>(out_endian);
+        return pcm_mapper_func<InCode, OutCode, PcmEndian_Little>(out_endian);
     }
     return NULL;
 }
 
 // Select mapper function
-template <PcmEncoding InEnc>
-inline pcm_mapper_func_t pcm_mapper_func(PcmEncoding out_encoding,
+template <PcmCode InCode>
+inline pcm_mapper_func_t pcm_mapper_func(PcmCode out_code,
                                          PcmEndian in_endian,
                                          PcmEndian out_endian) {
-    switch (out_encoding) {
-    case PcmEncoding_SInt8:
-        return pcm_mapper_func<InEnc, PcmEncoding_SInt8>(in_endian, out_endian);
-    case PcmEncoding_UInt8:
-        return pcm_mapper_func<InEnc, PcmEncoding_UInt8>(in_endian, out_endian);
-    case PcmEncoding_SInt16:
-        return pcm_mapper_func<InEnc, PcmEncoding_SInt16>(in_endian, out_endian);
-    case PcmEncoding_UInt16:
-        return pcm_mapper_func<InEnc, PcmEncoding_UInt16>(in_endian, out_endian);
-    case PcmEncoding_SInt18:
-        return pcm_mapper_func<InEnc, PcmEncoding_SInt18>(in_endian, out_endian);
-    case PcmEncoding_UInt18:
-        return pcm_mapper_func<InEnc, PcmEncoding_UInt18>(in_endian, out_endian);
-    case PcmEncoding_SInt18_3B:
-        return pcm_mapper_func<InEnc, PcmEncoding_SInt18_3B>(in_endian, out_endian);
-    case PcmEncoding_UInt18_3B:
-        return pcm_mapper_func<InEnc, PcmEncoding_UInt18_3B>(in_endian, out_endian);
-    case PcmEncoding_SInt18_4B:
-        return pcm_mapper_func<InEnc, PcmEncoding_SInt18_4B>(in_endian, out_endian);
-    case PcmEncoding_UInt18_4B:
-        return pcm_mapper_func<InEnc, PcmEncoding_UInt18_4B>(in_endian, out_endian);
-    case PcmEncoding_SInt20:
-        return pcm_mapper_func<InEnc, PcmEncoding_SInt20>(in_endian, out_endian);
-    case PcmEncoding_UInt20:
-        return pcm_mapper_func<InEnc, PcmEncoding_UInt20>(in_endian, out_endian);
-    case PcmEncoding_SInt20_3B:
-        return pcm_mapper_func<InEnc, PcmEncoding_SInt20_3B>(in_endian, out_endian);
-    case PcmEncoding_UInt20_3B:
-        return pcm_mapper_func<InEnc, PcmEncoding_UInt20_3B>(in_endian, out_endian);
-    case PcmEncoding_SInt20_4B:
-        return pcm_mapper_func<InEnc, PcmEncoding_SInt20_4B>(in_endian, out_endian);
-    case PcmEncoding_UInt20_4B:
-        return pcm_mapper_func<InEnc, PcmEncoding_UInt20_4B>(in_endian, out_endian);
-    case PcmEncoding_SInt24:
-        return pcm_mapper_func<InEnc, PcmEncoding_SInt24>(in_endian, out_endian);
-    case PcmEncoding_UInt24:
-        return pcm_mapper_func<InEnc, PcmEncoding_UInt24>(in_endian, out_endian);
-    case PcmEncoding_SInt24_4B:
-        return pcm_mapper_func<InEnc, PcmEncoding_SInt24_4B>(in_endian, out_endian);
-    case PcmEncoding_UInt24_4B:
-        return pcm_mapper_func<InEnc, PcmEncoding_UInt24_4B>(in_endian, out_endian);
-    case PcmEncoding_SInt32:
-        return pcm_mapper_func<InEnc, PcmEncoding_SInt32>(in_endian, out_endian);
-    case PcmEncoding_UInt32:
-        return pcm_mapper_func<InEnc, PcmEncoding_UInt32>(in_endian, out_endian);
-    case PcmEncoding_SInt64:
-        return pcm_mapper_func<InEnc, PcmEncoding_SInt64>(in_endian, out_endian);
-    case PcmEncoding_UInt64:
-        return pcm_mapper_func<InEnc, PcmEncoding_UInt64>(in_endian, out_endian);
-    case PcmEncoding_Float32:
-        return pcm_mapper_func<InEnc, PcmEncoding_Float32>(in_endian, out_endian);
-    case PcmEncoding_Float64:
-        return pcm_mapper_func<InEnc, PcmEncoding_Float64>(in_endian, out_endian);
+    switch (out_code) {
+    case PcmCode_SInt8:
+        return pcm_mapper_func<InCode, PcmCode_SInt8>(in_endian, out_endian);
+    case PcmCode_UInt8:
+        return pcm_mapper_func<InCode, PcmCode_UInt8>(in_endian, out_endian);
+    case PcmCode_SInt16:
+        return pcm_mapper_func<InCode, PcmCode_SInt16>(in_endian, out_endian);
+    case PcmCode_UInt16:
+        return pcm_mapper_func<InCode, PcmCode_UInt16>(in_endian, out_endian);
+    case PcmCode_SInt18:
+        return pcm_mapper_func<InCode, PcmCode_SInt18>(in_endian, out_endian);
+    case PcmCode_UInt18:
+        return pcm_mapper_func<InCode, PcmCode_UInt18>(in_endian, out_endian);
+    case PcmCode_SInt18_3:
+        return pcm_mapper_func<InCode, PcmCode_SInt18_3>(in_endian, out_endian);
+    case PcmCode_UInt18_3:
+        return pcm_mapper_func<InCode, PcmCode_UInt18_3>(in_endian, out_endian);
+    case PcmCode_SInt18_4:
+        return pcm_mapper_func<InCode, PcmCode_SInt18_4>(in_endian, out_endian);
+    case PcmCode_UInt18_4:
+        return pcm_mapper_func<InCode, PcmCode_UInt18_4>(in_endian, out_endian);
+    case PcmCode_SInt20:
+        return pcm_mapper_func<InCode, PcmCode_SInt20>(in_endian, out_endian);
+    case PcmCode_UInt20:
+        return pcm_mapper_func<InCode, PcmCode_UInt20>(in_endian, out_endian);
+    case PcmCode_SInt20_3:
+        return pcm_mapper_func<InCode, PcmCode_SInt20_3>(in_endian, out_endian);
+    case PcmCode_UInt20_3:
+        return pcm_mapper_func<InCode, PcmCode_UInt20_3>(in_endian, out_endian);
+    case PcmCode_SInt20_4:
+        return pcm_mapper_func<InCode, PcmCode_SInt20_4>(in_endian, out_endian);
+    case PcmCode_UInt20_4:
+        return pcm_mapper_func<InCode, PcmCode_UInt20_4>(in_endian, out_endian);
+    case PcmCode_SInt24:
+        return pcm_mapper_func<InCode, PcmCode_SInt24>(in_endian, out_endian);
+    case PcmCode_UInt24:
+        return pcm_mapper_func<InCode, PcmCode_UInt24>(in_endian, out_endian);
+    case PcmCode_SInt24_4:
+        return pcm_mapper_func<InCode, PcmCode_SInt24_4>(in_endian, out_endian);
+    case PcmCode_UInt24_4:
+        return pcm_mapper_func<InCode, PcmCode_UInt24_4>(in_endian, out_endian);
+    case PcmCode_SInt32:
+        return pcm_mapper_func<InCode, PcmCode_SInt32>(in_endian, out_endian);
+    case PcmCode_UInt32:
+        return pcm_mapper_func<InCode, PcmCode_UInt32>(in_endian, out_endian);
+    case PcmCode_SInt64:
+        return pcm_mapper_func<InCode, PcmCode_SInt64>(in_endian, out_endian);
+    case PcmCode_UInt64:
+        return pcm_mapper_func<InCode, PcmCode_UInt64>(in_endian, out_endian);
+    case PcmCode_Float32:
+        return pcm_mapper_func<InCode, PcmCode_Float32>(in_endian, out_endian);
+    case PcmCode_Float64:
+        return pcm_mapper_func<InCode, PcmCode_Float64>(in_endian, out_endian);
+    case PcmCode_Max:
+        break;
     }
     return NULL;
 }
 
 // Select mapper function
-inline pcm_mapper_func_t pcm_mapper_func(PcmEncoding in_encoding,
-                                         PcmEncoding out_encoding,
+inline pcm_mapper_func_t pcm_mapper_func(PcmCode in_code,
+                                         PcmCode out_code,
                                          PcmEndian in_endian,
                                          PcmEndian out_endian) {
-    switch (in_encoding) {
-    case PcmEncoding_SInt8:
-        return pcm_mapper_func<PcmEncoding_SInt8>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_UInt8:
-        return pcm_mapper_func<PcmEncoding_UInt8>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_SInt16:
-        return pcm_mapper_func<PcmEncoding_SInt16>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_UInt16:
-        return pcm_mapper_func<PcmEncoding_UInt16>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_SInt18:
-        return pcm_mapper_func<PcmEncoding_SInt18>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_UInt18:
-        return pcm_mapper_func<PcmEncoding_UInt18>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_SInt18_3B:
-        return pcm_mapper_func<PcmEncoding_SInt18_3B>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_UInt18_3B:
-        return pcm_mapper_func<PcmEncoding_UInt18_3B>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_SInt18_4B:
-        return pcm_mapper_func<PcmEncoding_SInt18_4B>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_UInt18_4B:
-        return pcm_mapper_func<PcmEncoding_UInt18_4B>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_SInt20:
-        return pcm_mapper_func<PcmEncoding_SInt20>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_UInt20:
-        return pcm_mapper_func<PcmEncoding_UInt20>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_SInt20_3B:
-        return pcm_mapper_func<PcmEncoding_SInt20_3B>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_UInt20_3B:
-        return pcm_mapper_func<PcmEncoding_UInt20_3B>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_SInt20_4B:
-        return pcm_mapper_func<PcmEncoding_SInt20_4B>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_UInt20_4B:
-        return pcm_mapper_func<PcmEncoding_UInt20_4B>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_SInt24:
-        return pcm_mapper_func<PcmEncoding_SInt24>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_UInt24:
-        return pcm_mapper_func<PcmEncoding_UInt24>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_SInt24_4B:
-        return pcm_mapper_func<PcmEncoding_SInt24_4B>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_UInt24_4B:
-        return pcm_mapper_func<PcmEncoding_UInt24_4B>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_SInt32:
-        return pcm_mapper_func<PcmEncoding_SInt32>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_UInt32:
-        return pcm_mapper_func<PcmEncoding_UInt32>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_SInt64:
-        return pcm_mapper_func<PcmEncoding_SInt64>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_UInt64:
-        return pcm_mapper_func<PcmEncoding_UInt64>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_Float32:
-        return pcm_mapper_func<PcmEncoding_Float32>(out_encoding, in_endian, out_endian);
-    case PcmEncoding_Float64:
-        return pcm_mapper_func<PcmEncoding_Float64>(out_encoding, in_endian, out_endian);
+    switch (in_code) {
+    case PcmCode_SInt8:
+        return pcm_mapper_func<PcmCode_SInt8>(out_code, in_endian, out_endian);
+    case PcmCode_UInt8:
+        return pcm_mapper_func<PcmCode_UInt8>(out_code, in_endian, out_endian);
+    case PcmCode_SInt16:
+        return pcm_mapper_func<PcmCode_SInt16>(out_code, in_endian, out_endian);
+    case PcmCode_UInt16:
+        return pcm_mapper_func<PcmCode_UInt16>(out_code, in_endian, out_endian);
+    case PcmCode_SInt18:
+        return pcm_mapper_func<PcmCode_SInt18>(out_code, in_endian, out_endian);
+    case PcmCode_UInt18:
+        return pcm_mapper_func<PcmCode_UInt18>(out_code, in_endian, out_endian);
+    case PcmCode_SInt18_3:
+        return pcm_mapper_func<PcmCode_SInt18_3>(out_code, in_endian, out_endian);
+    case PcmCode_UInt18_3:
+        return pcm_mapper_func<PcmCode_UInt18_3>(out_code, in_endian, out_endian);
+    case PcmCode_SInt18_4:
+        return pcm_mapper_func<PcmCode_SInt18_4>(out_code, in_endian, out_endian);
+    case PcmCode_UInt18_4:
+        return pcm_mapper_func<PcmCode_UInt18_4>(out_code, in_endian, out_endian);
+    case PcmCode_SInt20:
+        return pcm_mapper_func<PcmCode_SInt20>(out_code, in_endian, out_endian);
+    case PcmCode_UInt20:
+        return pcm_mapper_func<PcmCode_UInt20>(out_code, in_endian, out_endian);
+    case PcmCode_SInt20_3:
+        return pcm_mapper_func<PcmCode_SInt20_3>(out_code, in_endian, out_endian);
+    case PcmCode_UInt20_3:
+        return pcm_mapper_func<PcmCode_UInt20_3>(out_code, in_endian, out_endian);
+    case PcmCode_SInt20_4:
+        return pcm_mapper_func<PcmCode_SInt20_4>(out_code, in_endian, out_endian);
+    case PcmCode_UInt20_4:
+        return pcm_mapper_func<PcmCode_UInt20_4>(out_code, in_endian, out_endian);
+    case PcmCode_SInt24:
+        return pcm_mapper_func<PcmCode_SInt24>(out_code, in_endian, out_endian);
+    case PcmCode_UInt24:
+        return pcm_mapper_func<PcmCode_UInt24>(out_code, in_endian, out_endian);
+    case PcmCode_SInt24_4:
+        return pcm_mapper_func<PcmCode_SInt24_4>(out_code, in_endian, out_endian);
+    case PcmCode_UInt24_4:
+        return pcm_mapper_func<PcmCode_UInt24_4>(out_code, in_endian, out_endian);
+    case PcmCode_SInt32:
+        return pcm_mapper_func<PcmCode_SInt32>(out_code, in_endian, out_endian);
+    case PcmCode_UInt32:
+        return pcm_mapper_func<PcmCode_UInt32>(out_code, in_endian, out_endian);
+    case PcmCode_SInt64:
+        return pcm_mapper_func<PcmCode_SInt64>(out_code, in_endian, out_endian);
+    case PcmCode_UInt64:
+        return pcm_mapper_func<PcmCode_UInt64>(out_code, in_endian, out_endian);
+    case PcmCode_Float32:
+        return pcm_mapper_func<PcmCode_Float32>(out_code, in_endian, out_endian);
+    case PcmCode_Float64:
+        return pcm_mapper_func<PcmCode_Float64>(out_code, in_endian, out_endian);
+    case PcmCode_Max:
+        break;
     }
     return NULL;
 }
 
-// Get number of bits per sample in packed format
-inline size_t pcm_sample_bits(PcmEncoding encoding) {
-    switch (encoding) {
-    case PcmEncoding_SInt8:
+// Get number of meaningful bits per sample
+inline size_t pcm_bit_depth(PcmCode code) {
+    switch (code) {
+    case PcmCode_SInt8:
         return 8;
-    case PcmEncoding_UInt8:
+    case PcmCode_UInt8:
         return 8;
-    case PcmEncoding_SInt16:
+    case PcmCode_SInt16:
         return 16;
-    case PcmEncoding_UInt16:
+    case PcmCode_UInt16:
         return 16;
-    case PcmEncoding_SInt18:
+    case PcmCode_SInt18:
         return 18;
-    case PcmEncoding_UInt18:
+    case PcmCode_UInt18:
         return 18;
-    case PcmEncoding_SInt18_3B:
-        return 24;
-    case PcmEncoding_UInt18_3B:
-        return 24;
-    case PcmEncoding_SInt18_4B:
-        return 32;
-    case PcmEncoding_UInt18_4B:
-        return 32;
-    case PcmEncoding_SInt20:
+    case PcmCode_SInt18_3:
+        return 18;
+    case PcmCode_UInt18_3:
+        return 18;
+    case PcmCode_SInt18_4:
+        return 18;
+    case PcmCode_UInt18_4:
+        return 18;
+    case PcmCode_SInt20:
         return 20;
-    case PcmEncoding_UInt20:
+    case PcmCode_UInt20:
         return 20;
-    case PcmEncoding_SInt20_3B:
+    case PcmCode_SInt20_3:
+        return 20;
+    case PcmCode_UInt20_3:
+        return 20;
+    case PcmCode_SInt20_4:
+        return 20;
+    case PcmCode_UInt20_4:
+        return 20;
+    case PcmCode_SInt24:
         return 24;
-    case PcmEncoding_UInt20_3B:
+    case PcmCode_UInt24:
         return 24;
-    case PcmEncoding_SInt20_4B:
-        return 32;
-    case PcmEncoding_UInt20_4B:
-        return 32;
-    case PcmEncoding_SInt24:
+    case PcmCode_SInt24_4:
         return 24;
-    case PcmEncoding_UInt24:
+    case PcmCode_UInt24_4:
         return 24;
-    case PcmEncoding_SInt24_4B:
+    case PcmCode_SInt32:
         return 32;
-    case PcmEncoding_UInt24_4B:
+    case PcmCode_UInt32:
         return 32;
-    case PcmEncoding_SInt32:
-        return 32;
-    case PcmEncoding_UInt32:
-        return 32;
-    case PcmEncoding_SInt64:
+    case PcmCode_SInt64:
         return 64;
-    case PcmEncoding_UInt64:
+    case PcmCode_UInt64:
         return 64;
-    case PcmEncoding_Float32:
+    case PcmCode_Float32:
         return 32;
-    case PcmEncoding_Float64:
+    case PcmCode_Float64:
         return 64;
+    case PcmCode_Max:
+        break;
     }
     return 0;
+}
+
+// Get number of total bits per sample
+inline size_t pcm_bit_width(PcmCode code) {
+    switch (code) {
+    case PcmCode_SInt8:
+        return 8;
+    case PcmCode_UInt8:
+        return 8;
+    case PcmCode_SInt16:
+        return 16;
+    case PcmCode_UInt16:
+        return 16;
+    case PcmCode_SInt18:
+        return 18;
+    case PcmCode_UInt18:
+        return 18;
+    case PcmCode_SInt18_3:
+        return 24;
+    case PcmCode_UInt18_3:
+        return 24;
+    case PcmCode_SInt18_4:
+        return 32;
+    case PcmCode_UInt18_4:
+        return 32;
+    case PcmCode_SInt20:
+        return 20;
+    case PcmCode_UInt20:
+        return 20;
+    case PcmCode_SInt20_3:
+        return 24;
+    case PcmCode_UInt20_3:
+        return 24;
+    case PcmCode_SInt20_4:
+        return 32;
+    case PcmCode_UInt20_4:
+        return 32;
+    case PcmCode_SInt24:
+        return 24;
+    case PcmCode_UInt24:
+        return 24;
+    case PcmCode_SInt24_4:
+        return 32;
+    case PcmCode_UInt24_4:
+        return 32;
+    case PcmCode_SInt32:
+        return 32;
+    case PcmCode_UInt32:
+        return 32;
+    case PcmCode_SInt64:
+        return 64;
+    case PcmCode_UInt64:
+        return 64;
+    case PcmCode_Float32:
+        return 32;
+    case PcmCode_Float64:
+        return 64;
+    case PcmCode_Max:
+        break;
+    }
+    return 0;
+}
+
+// Check if code is integer
+inline size_t pcm_is_integer(PcmCode code) {
+    switch (code) {
+    case PcmCode_SInt8:
+        return true;
+    case PcmCode_UInt8:
+        return true;
+    case PcmCode_SInt16:
+        return true;
+    case PcmCode_UInt16:
+        return true;
+    case PcmCode_SInt18:
+        return true;
+    case PcmCode_UInt18:
+        return true;
+    case PcmCode_SInt18_3:
+        return true;
+    case PcmCode_UInt18_3:
+        return true;
+    case PcmCode_SInt18_4:
+        return true;
+    case PcmCode_UInt18_4:
+        return true;
+    case PcmCode_SInt20:
+        return true;
+    case PcmCode_UInt20:
+        return true;
+    case PcmCode_SInt20_3:
+        return true;
+    case PcmCode_UInt20_3:
+        return true;
+    case PcmCode_SInt20_4:
+        return true;
+    case PcmCode_UInt20_4:
+        return true;
+    case PcmCode_SInt24:
+        return true;
+    case PcmCode_UInt24:
+        return true;
+    case PcmCode_SInt24_4:
+        return true;
+    case PcmCode_UInt24_4:
+        return true;
+    case PcmCode_SInt32:
+        return true;
+    case PcmCode_UInt32:
+        return true;
+    case PcmCode_SInt64:
+        return true;
+    case PcmCode_UInt64:
+        return true;
+    case PcmCode_Float32:
+        return false;
+    case PcmCode_Float64:
+        return false;
+    case PcmCode_Max:
+        break;
+    }
+    return false;
+}
+
+// Check if code is signed
+inline size_t pcm_is_signed(PcmCode code) {
+    switch (code) {
+    case PcmCode_SInt8:
+        return true;
+    case PcmCode_UInt8:
+        return false;
+    case PcmCode_SInt16:
+        return true;
+    case PcmCode_UInt16:
+        return false;
+    case PcmCode_SInt18:
+        return true;
+    case PcmCode_UInt18:
+        return false;
+    case PcmCode_SInt18_3:
+        return true;
+    case PcmCode_UInt18_3:
+        return false;
+    case PcmCode_SInt18_4:
+        return true;
+    case PcmCode_UInt18_4:
+        return false;
+    case PcmCode_SInt20:
+        return true;
+    case PcmCode_UInt20:
+        return false;
+    case PcmCode_SInt20_3:
+        return true;
+    case PcmCode_UInt20_3:
+        return false;
+    case PcmCode_SInt20_4:
+        return true;
+    case PcmCode_UInt20_4:
+        return false;
+    case PcmCode_SInt24:
+        return true;
+    case PcmCode_UInt24:
+        return false;
+    case PcmCode_SInt24_4:
+        return true;
+    case PcmCode_UInt24_4:
+        return false;
+    case PcmCode_SInt32:
+        return true;
+    case PcmCode_UInt32:
+        return false;
+    case PcmCode_SInt64:
+        return true;
+    case PcmCode_UInt64:
+        return false;
+    case PcmCode_Float32:
+        return true;
+    case PcmCode_Float64:
+        return true;
+    case PcmCode_Max:
+        break;
+    }
+    return false;
+}
+
+// Code and endian to string
+inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
+    switch (code) {
+    case PcmCode_SInt8:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "s8";
+        case PcmEndian_Big:
+            return "s8_be";
+        case PcmEndian_Little:
+            return "s8_le";
+        }
+        break;
+    case PcmCode_UInt8:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "u8";
+        case PcmEndian_Big:
+            return "u8_be";
+        case PcmEndian_Little:
+            return "u8_le";
+        }
+        break;
+    case PcmCode_SInt16:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "s16";
+        case PcmEndian_Big:
+            return "s16_be";
+        case PcmEndian_Little:
+            return "s16_le";
+        }
+        break;
+    case PcmCode_UInt16:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "u16";
+        case PcmEndian_Big:
+            return "u16_be";
+        case PcmEndian_Little:
+            return "u16_le";
+        }
+        break;
+    case PcmCode_SInt18:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "s18";
+        case PcmEndian_Big:
+            return "s18_be";
+        case PcmEndian_Little:
+            return "s18_le";
+        }
+        break;
+    case PcmCode_UInt18:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "u18";
+        case PcmEndian_Big:
+            return "u18_be";
+        case PcmEndian_Little:
+            return "u18_le";
+        }
+        break;
+    case PcmCode_SInt18_3:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "s18_3";
+        case PcmEndian_Big:
+            return "s18_3be";
+        case PcmEndian_Little:
+            return "s18_3le";
+        }
+        break;
+    case PcmCode_UInt18_3:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "u18_3";
+        case PcmEndian_Big:
+            return "u18_3be";
+        case PcmEndian_Little:
+            return "u18_3le";
+        }
+        break;
+    case PcmCode_SInt18_4:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "s18_4";
+        case PcmEndian_Big:
+            return "s18_4be";
+        case PcmEndian_Little:
+            return "s18_4le";
+        }
+        break;
+    case PcmCode_UInt18_4:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "u18_4";
+        case PcmEndian_Big:
+            return "u18_4be";
+        case PcmEndian_Little:
+            return "u18_4le";
+        }
+        break;
+    case PcmCode_SInt20:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "s20";
+        case PcmEndian_Big:
+            return "s20_be";
+        case PcmEndian_Little:
+            return "s20_le";
+        }
+        break;
+    case PcmCode_UInt20:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "u20";
+        case PcmEndian_Big:
+            return "u20_be";
+        case PcmEndian_Little:
+            return "u20_le";
+        }
+        break;
+    case PcmCode_SInt20_3:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "s20_3";
+        case PcmEndian_Big:
+            return "s20_3be";
+        case PcmEndian_Little:
+            return "s20_3le";
+        }
+        break;
+    case PcmCode_UInt20_3:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "u20_3";
+        case PcmEndian_Big:
+            return "u20_3be";
+        case PcmEndian_Little:
+            return "u20_3le";
+        }
+        break;
+    case PcmCode_SInt20_4:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "s20_4";
+        case PcmEndian_Big:
+            return "s20_4be";
+        case PcmEndian_Little:
+            return "s20_4le";
+        }
+        break;
+    case PcmCode_UInt20_4:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "u20_4";
+        case PcmEndian_Big:
+            return "u20_4be";
+        case PcmEndian_Little:
+            return "u20_4le";
+        }
+        break;
+    case PcmCode_SInt24:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "s24";
+        case PcmEndian_Big:
+            return "s24_be";
+        case PcmEndian_Little:
+            return "s24_le";
+        }
+        break;
+    case PcmCode_UInt24:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "u24";
+        case PcmEndian_Big:
+            return "u24_be";
+        case PcmEndian_Little:
+            return "u24_le";
+        }
+        break;
+    case PcmCode_SInt24_4:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "s24_4";
+        case PcmEndian_Big:
+            return "s24_4be";
+        case PcmEndian_Little:
+            return "s24_4le";
+        }
+        break;
+    case PcmCode_UInt24_4:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "u24_4";
+        case PcmEndian_Big:
+            return "u24_4be";
+        case PcmEndian_Little:
+            return "u24_4le";
+        }
+        break;
+    case PcmCode_SInt32:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "s32";
+        case PcmEndian_Big:
+            return "s32_be";
+        case PcmEndian_Little:
+            return "s32_le";
+        }
+        break;
+    case PcmCode_UInt32:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "u32";
+        case PcmEndian_Big:
+            return "u32_be";
+        case PcmEndian_Little:
+            return "u32_le";
+        }
+        break;
+    case PcmCode_SInt64:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "s64";
+        case PcmEndian_Big:
+            return "s64_be";
+        case PcmEndian_Little:
+            return "s64_le";
+        }
+        break;
+    case PcmCode_UInt64:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "u64";
+        case PcmEndian_Big:
+            return "u64_be";
+        case PcmEndian_Little:
+            return "u64_le";
+        }
+        break;
+    case PcmCode_Float32:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "f32";
+        case PcmEndian_Big:
+            return "f32_be";
+        case PcmEndian_Little:
+            return "f32_le";
+        }
+        break;
+    case PcmCode_Float64:
+        switch (endian) {
+        case PcmEndian_Native:
+            return "f64";
+        case PcmEndian_Big:
+            return "f64_be";
+        case PcmEndian_Little:
+            return "f64_le";
+        }
+        break;
+    case PcmCode_Max:
+        break;
+    }
+    return NULL;
+}
+
+// Code and endian from string
+inline bool pcm_from_str(const char* str, PcmCode& code, PcmEndian& endian) {
+    if (str[0] == 'f') {
+        if (str[1] == '3') {
+            if (str[2] == '2') {
+                if (strcmp(str, "f32") == 0) {
+                    code = PcmCode_Float32;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "f32_be") == 0) {
+                    code = PcmCode_Float32;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "f32_le") == 0) {
+                    code = PcmCode_Float32;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+            }
+            return false;
+        }
+        if (str[1] == '6') {
+            if (str[2] == '4') {
+                if (strcmp(str, "f64") == 0) {
+                    code = PcmCode_Float64;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "f64_be") == 0) {
+                    code = PcmCode_Float64;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "f64_le") == 0) {
+                    code = PcmCode_Float64;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+            }
+            return false;
+        }
+        return false;
+    }
+    if (str[0] == 's') {
+        if (str[1] == '1') {
+            if (str[2] == '6') {
+                if (strcmp(str, "s16") == 0) {
+                    code = PcmCode_SInt16;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "s16_be") == 0) {
+                    code = PcmCode_SInt16;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "s16_le") == 0) {
+                    code = PcmCode_SInt16;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+            }
+            if (str[2] == '8') {
+                if (strcmp(str, "s18") == 0) {
+                    code = PcmCode_SInt18;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "s18_be") == 0) {
+                    code = PcmCode_SInt18;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "s18_le") == 0) {
+                    code = PcmCode_SInt18;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+                if (strcmp(str, "s18_3") == 0) {
+                    code = PcmCode_SInt18_3;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "s18_3be") == 0) {
+                    code = PcmCode_SInt18_3;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "s18_3le") == 0) {
+                    code = PcmCode_SInt18_3;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+                if (strcmp(str, "s18_4") == 0) {
+                    code = PcmCode_SInt18_4;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "s18_4be") == 0) {
+                    code = PcmCode_SInt18_4;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "s18_4le") == 0) {
+                    code = PcmCode_SInt18_4;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+            }
+            return false;
+        }
+        if (str[1] == '2') {
+            if (str[2] == '0') {
+                if (strcmp(str, "s20") == 0) {
+                    code = PcmCode_SInt20;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "s20_be") == 0) {
+                    code = PcmCode_SInt20;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "s20_le") == 0) {
+                    code = PcmCode_SInt20;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+                if (strcmp(str, "s20_3") == 0) {
+                    code = PcmCode_SInt20_3;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "s20_3be") == 0) {
+                    code = PcmCode_SInt20_3;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "s20_3le") == 0) {
+                    code = PcmCode_SInt20_3;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+                if (strcmp(str, "s20_4") == 0) {
+                    code = PcmCode_SInt20_4;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "s20_4be") == 0) {
+                    code = PcmCode_SInt20_4;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "s20_4le") == 0) {
+                    code = PcmCode_SInt20_4;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+            }
+            if (str[2] == '4') {
+                if (strcmp(str, "s24") == 0) {
+                    code = PcmCode_SInt24;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "s24_be") == 0) {
+                    code = PcmCode_SInt24;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "s24_le") == 0) {
+                    code = PcmCode_SInt24;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+                if (strcmp(str, "s24_4") == 0) {
+                    code = PcmCode_SInt24_4;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "s24_4be") == 0) {
+                    code = PcmCode_SInt24_4;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "s24_4le") == 0) {
+                    code = PcmCode_SInt24_4;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+            }
+            return false;
+        }
+        if (str[1] == '3') {
+            if (str[2] == '2') {
+                if (strcmp(str, "s32") == 0) {
+                    code = PcmCode_SInt32;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "s32_be") == 0) {
+                    code = PcmCode_SInt32;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "s32_le") == 0) {
+                    code = PcmCode_SInt32;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+            }
+            return false;
+        }
+        if (str[1] == '6') {
+            if (str[2] == '4') {
+                if (strcmp(str, "s64") == 0) {
+                    code = PcmCode_SInt64;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "s64_be") == 0) {
+                    code = PcmCode_SInt64;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "s64_le") == 0) {
+                    code = PcmCode_SInt64;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+            }
+            return false;
+        }
+        if (str[1] == '8') {
+            if (strcmp(str, "s8") == 0) {
+                code = PcmCode_SInt8;
+                endian = PcmEndian_Native;
+                return true;
+            }
+            if (strcmp(str, "s8_be") == 0) {
+                code = PcmCode_SInt8;
+                endian = PcmEndian_Big;
+                return true;
+            }
+            if (strcmp(str, "s8_le") == 0) {
+                code = PcmCode_SInt8;
+                endian = PcmEndian_Little;
+                return true;
+            }
+            return false;
+        }
+        return false;
+    }
+    if (str[0] == 'u') {
+        if (str[1] == '1') {
+            if (str[2] == '6') {
+                if (strcmp(str, "u16") == 0) {
+                    code = PcmCode_UInt16;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "u16_be") == 0) {
+                    code = PcmCode_UInt16;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "u16_le") == 0) {
+                    code = PcmCode_UInt16;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+            }
+            if (str[2] == '8') {
+                if (strcmp(str, "u18") == 0) {
+                    code = PcmCode_UInt18;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "u18_be") == 0) {
+                    code = PcmCode_UInt18;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "u18_le") == 0) {
+                    code = PcmCode_UInt18;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+                if (strcmp(str, "u18_3") == 0) {
+                    code = PcmCode_UInt18_3;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "u18_3be") == 0) {
+                    code = PcmCode_UInt18_3;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "u18_3le") == 0) {
+                    code = PcmCode_UInt18_3;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+                if (strcmp(str, "u18_4") == 0) {
+                    code = PcmCode_UInt18_4;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "u18_4be") == 0) {
+                    code = PcmCode_UInt18_4;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "u18_4le") == 0) {
+                    code = PcmCode_UInt18_4;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+            }
+            return false;
+        }
+        if (str[1] == '2') {
+            if (str[2] == '0') {
+                if (strcmp(str, "u20") == 0) {
+                    code = PcmCode_UInt20;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "u20_be") == 0) {
+                    code = PcmCode_UInt20;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "u20_le") == 0) {
+                    code = PcmCode_UInt20;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+                if (strcmp(str, "u20_3") == 0) {
+                    code = PcmCode_UInt20_3;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "u20_3be") == 0) {
+                    code = PcmCode_UInt20_3;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "u20_3le") == 0) {
+                    code = PcmCode_UInt20_3;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+                if (strcmp(str, "u20_4") == 0) {
+                    code = PcmCode_UInt20_4;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "u20_4be") == 0) {
+                    code = PcmCode_UInt20_4;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "u20_4le") == 0) {
+                    code = PcmCode_UInt20_4;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+            }
+            if (str[2] == '4') {
+                if (strcmp(str, "u24") == 0) {
+                    code = PcmCode_UInt24;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "u24_be") == 0) {
+                    code = PcmCode_UInt24;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "u24_le") == 0) {
+                    code = PcmCode_UInt24;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+                if (strcmp(str, "u24_4") == 0) {
+                    code = PcmCode_UInt24_4;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "u24_4be") == 0) {
+                    code = PcmCode_UInt24_4;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "u24_4le") == 0) {
+                    code = PcmCode_UInt24_4;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+            }
+            return false;
+        }
+        if (str[1] == '3') {
+            if (str[2] == '2') {
+                if (strcmp(str, "u32") == 0) {
+                    code = PcmCode_UInt32;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "u32_be") == 0) {
+                    code = PcmCode_UInt32;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "u32_le") == 0) {
+                    code = PcmCode_UInt32;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+            }
+            return false;
+        }
+        if (str[1] == '6') {
+            if (str[2] == '4') {
+                if (strcmp(str, "u64") == 0) {
+                    code = PcmCode_UInt64;
+                    endian = PcmEndian_Native;
+                    return true;
+                }
+                if (strcmp(str, "u64_be") == 0) {
+                    code = PcmCode_UInt64;
+                    endian = PcmEndian_Big;
+                    return true;
+                }
+                if (strcmp(str, "u64_le") == 0) {
+                    code = PcmCode_UInt64;
+                    endian = PcmEndian_Little;
+                    return true;
+                }
+                return false;
+            }
+            return false;
+        }
+        if (str[1] == '8') {
+            if (strcmp(str, "u8") == 0) {
+                code = PcmCode_UInt8;
+                endian = PcmEndian_Native;
+                return true;
+            }
+            if (strcmp(str, "u8_be") == 0) {
+                code = PcmCode_UInt8;
+                endian = PcmEndian_Big;
+                return true;
+            }
+            if (strcmp(str, "u8_le") == 0) {
+                code = PcmCode_UInt8;
+                endian = PcmEndian_Little;
+                return true;
+            }
+            return false;
+        }
+        return false;
+    }
+    return false;
 }
 
 } // namespace audio
 } // namespace roc
 
-#endif // ROC_AUDIO_PCM_MAPPER_FUNC_H_
+#endif // ROC_AUDIO_PCM_FUNCS_H_

@@ -12,7 +12,7 @@ FILE_PATTERNS           = *.h *.dox
 
 EXCLUDE                 =                         \
     roc_core/target_posix/roc_core/cpu_traits.h   \
-    roc_audio/pcm_mapper_func.h
+    roc_audio/pcm_funcs.h
 
 FULL_PATH_NAMES         = YES
 SOURCE_BROWSER          = YES

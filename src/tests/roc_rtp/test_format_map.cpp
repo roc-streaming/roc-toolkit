@@ -36,7 +36,7 @@ TEST(format_map, find_by_pt) {
         LONGS_EQUAL(PayloadType_L16_Mono, fmt->payload_type);
 
         CHECK(fmt->pcm_format
-              == audio::PcmFormat(audio::PcmEncoding_SInt16, audio::PcmEndian_Big));
+              == audio::PcmFormat(audio::PcmCode_SInt16, audio::PcmEndian_Big));
 
         CHECK(fmt->sample_spec.is_valid());
         CHECK(fmt->sample_spec
@@ -57,7 +57,7 @@ TEST(format_map, find_by_pt) {
         LONGS_EQUAL(PayloadType_L16_Stereo, fmt->payload_type);
 
         CHECK(fmt->pcm_format
-              == audio::PcmFormat(audio::PcmEncoding_SInt16, audio::PcmEndian_Big));
+              == audio::PcmFormat(audio::PcmCode_SInt16, audio::PcmEndian_Big));
 
         CHECK(fmt->sample_spec.is_valid());
         CHECK(fmt->sample_spec
@@ -112,7 +112,7 @@ TEST(format_map, add_format) {
         fmt.payload_type = (PayloadType)100;
         fmt.packet_flags = packet::Packet::FlagAudio;
         fmt.pcm_format =
-            audio::PcmFormat(audio::PcmEncoding_Float32, audio::PcmEndian_Native);
+            audio::PcmFormat(audio::PcmCode_Float32, audio::PcmEndian_Native);
         fmt.sample_spec =
             audio::SampleSpec(48000, audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
                               audio::ChanMask_Surround_Stereo);
@@ -129,7 +129,7 @@ TEST(format_map, add_format) {
         LONGS_EQUAL(100, fmt->payload_type);
 
         CHECK(fmt->pcm_format
-              == audio::PcmFormat(audio::PcmEncoding_Float32, audio::PcmEndian_Native));
+              == audio::PcmFormat(audio::PcmCode_Float32, audio::PcmEndian_Native));
 
         CHECK(fmt->sample_spec
               == audio::SampleSpec(48000, audio::ChanLayout_Surround,
@@ -151,7 +151,7 @@ TEST(format_map, add_format) {
         LONGS_EQUAL(100, fmt->payload_type);
 
         CHECK(fmt->pcm_format
-              == audio::PcmFormat(audio::PcmEncoding_Float32, audio::PcmEndian_Native));
+              == audio::PcmFormat(audio::PcmCode_Float32, audio::PcmEndian_Native));
 
         CHECK(fmt->sample_spec
               == audio::SampleSpec(48000, audio::ChanLayout_Surround,

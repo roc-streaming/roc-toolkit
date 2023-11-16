@@ -59,11 +59,11 @@ TEST(pcm_samples, decode) {
         roc_log(LogDebug, "mapping %s to native", test_samples[idx]->name);
 
         PcmFormat in_fmt;
-        in_fmt.encoding = test_samples[idx]->encoding;
+        in_fmt.code = test_samples[idx]->encoding;
         in_fmt.endian = test_samples[idx]->endian;
 
         PcmFormat out_fmt;
-        out_fmt.encoding = PcmEncoding_Float64;
+        out_fmt.code = PcmCode_Float64;
         out_fmt.endian = PcmEndian_Native;
 
         PcmMapper mapper(in_fmt, out_fmt);
@@ -110,11 +110,11 @@ TEST(pcm_samples, recode) {
                         test_samples[idx2]->name);
 
                 PcmFormat in_fmt;
-                in_fmt.encoding = test_samples[idx1]->encoding;
+                in_fmt.code = test_samples[idx1]->encoding;
                 in_fmt.endian = test_samples[idx1]->endian;
 
                 PcmFormat out_fmt;
-                out_fmt.encoding = test_samples[idx2]->encoding;
+                out_fmt.code = test_samples[idx2]->encoding;
                 out_fmt.endian = test_samples[idx2]->endian;
 
                 PcmMapper mapper(in_fmt, out_fmt);
@@ -155,11 +155,11 @@ TEST(pcm_samples, recode) {
                 roc_log(LogDebug, "mapping %s to native", test_samples[idx2]->name);
 
                 PcmFormat in_fmt;
-                in_fmt.encoding = test_samples[idx2]->encoding;
+                in_fmt.code = test_samples[idx2]->encoding;
                 in_fmt.endian = test_samples[idx2]->endian;
 
                 PcmFormat out_fmt;
-                out_fmt.encoding = PcmEncoding_Float64;
+                out_fmt.code = PcmCode_Float64;
                 out_fmt.endian = PcmEndian_Native;
 
                 PcmMapper mapper(in_fmt, out_fmt);

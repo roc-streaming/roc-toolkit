@@ -50,25 +50,25 @@ IFrameEncoder* new_encoder(size_t id) {
     switch (id) {
     case Codec_PCM_SInt16_1ch:
         return new (arena)
-            PcmEncoder(PcmFormat(PcmEncoding_SInt16, PcmEndian_Big),
+            PcmEncoder(PcmFormat(PcmCode_SInt16, PcmEndian_Big),
                        SampleSpec(SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
                                   ChanMask_Surround_Mono));
 
     case Codec_PCM_SInt16_2ch:
         return new (arena)
-            PcmEncoder(PcmFormat(PcmEncoding_SInt16, PcmEndian_Big),
+            PcmEncoder(PcmFormat(PcmCode_SInt16, PcmEndian_Big),
                        SampleSpec(SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
                                   ChanMask_Surround_Stereo));
 
     case Codec_PCM_SInt24_1ch:
         return new (arena)
-            PcmEncoder(PcmFormat(PcmEncoding_SInt24, PcmEndian_Big),
+            PcmEncoder(PcmFormat(PcmCode_SInt24, PcmEndian_Big),
                        SampleSpec(SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
                                   ChanMask_Surround_Mono));
 
     case Codec_PCM_SInt24_2ch:
         return new (arena)
-            PcmEncoder(PcmFormat(PcmEncoding_SInt24, PcmEndian_Big),
+            PcmEncoder(PcmFormat(PcmCode_SInt24, PcmEndian_Big),
                        SampleSpec(SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
                                   ChanMask_Surround_Stereo));
 
@@ -83,25 +83,25 @@ IFrameDecoder* new_decoder(size_t id) {
     switch (id) {
     case Codec_PCM_SInt16_1ch:
         return new (arena)
-            PcmDecoder(PcmFormat(PcmEncoding_SInt16, PcmEndian_Big),
+            PcmDecoder(PcmFormat(PcmCode_SInt16, PcmEndian_Big),
                        SampleSpec(SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
                                   ChanMask_Surround_Mono));
 
     case Codec_PCM_SInt16_2ch:
         return new (arena)
-            PcmDecoder(PcmFormat(PcmEncoding_SInt16, PcmEndian_Big),
+            PcmDecoder(PcmFormat(PcmCode_SInt16, PcmEndian_Big),
                        SampleSpec(SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
                                   ChanMask_Surround_Stereo));
 
     case Codec_PCM_SInt24_1ch:
         return new (arena)
-            PcmDecoder(PcmFormat(PcmEncoding_SInt24, PcmEndian_Big),
+            PcmDecoder(PcmFormat(PcmCode_SInt24, PcmEndian_Big),
                        SampleSpec(SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
                                   ChanMask_Surround_Mono));
 
     case Codec_PCM_SInt24_2ch:
         return new (arena)
-            PcmDecoder(PcmFormat(PcmEncoding_SInt24, PcmEndian_Big),
+            PcmDecoder(PcmFormat(PcmCode_SInt24, PcmEndian_Big),
                        SampleSpec(SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
                                   ChanMask_Surround_Stereo));
 

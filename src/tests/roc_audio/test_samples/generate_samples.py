@@ -89,7 +89,7 @@ namespace test {{
 static SampleInfo sample_{name} = {{
   /* name */ "{name}",
 
-  /* encoding  */ PcmEncoding_{encoding['pcm_encoding']},
+  /* encoding  */ PcmCode_{encoding['pcm_encoding']},
   /* endian    */ PcmEndian_{endian['pcm_endian']},
 
   /* num_samples */ {len(samples)},

@@ -7,7 +7,7 @@
  */
 
 #include "roc_audio/pcm_mapper.h"
-#include "roc_audio/pcm_mapper_func.h"
+#include "roc_audio/pcm_funcs.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
 
@@ -17,12 +17,10 @@ namespace audio {
 PcmMapper::PcmMapper(const PcmFormat& input_fmt, const PcmFormat& output_fmt)
     : input_fmt_(input_fmt)
     , output_fmt_(output_fmt)
-    , input_sample_bits_(pcm_sample_bits(input_fmt.encoding))
-    , output_sample_bits_(pcm_sample_bits(output_fmt.encoding))
-    , map_func_(pcm_mapper_func(input_fmt_.encoding,
-                                output_fmt_.encoding,
-                                input_fmt_.endian,
-                                output_fmt_.endian)) {
+    , input_sample_bits_(pcm_bit_width(input_fmt.code))
+    , output_sample_bits_(pcm_bit_width(output_fmt.code))
+    , map_func_(pcm_mapper_func(
+          input_fmt_.code, output_fmt_.code, input_fmt_.endian, output_fmt_.endian)) {
     if (!map_func_) {
         roc_panic("pcm mapper: unable to select mapper function");
     }

@@ -14,7 +14,7 @@ namespace test {
 static SampleInfo sample_pcm_float32_le = {
   /* name */ "pcm_float32_le",
 
-  /* encoding  */ PcmEncoding_Float32,
+  /* encoding  */ PcmCode_Float32,
   /* endian    */ PcmEndian_Little,
 
   /* num_samples */ 240,

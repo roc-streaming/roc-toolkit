@@ -21,7 +21,7 @@ struct SampleInfo {
 
     const char* name;
 
-    PcmEncoding encoding;
+    PcmCode encoding;
     PcmEndian endian;
 
     size_t num_samples;
