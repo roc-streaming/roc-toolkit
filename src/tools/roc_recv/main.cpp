@@ -93,12 +93,11 @@ int main(int argc, char** argv) {
     sndio::BackendDispatcher backend_dispatcher(context.arena());
 
     if (args.list_supported_given) {
-        if (!sndio::print_supported(backend_dispatcher, context.arena())) {
+        if (!address::print_supported(context.arena())) {
             return 1;
         }
 
-        if (!address::print_supported(address::ProtocolMap::instance(),
-                                      context.arena())) {
+        if (!sndio::print_supported(backend_dispatcher, context.arena())) {
             return 1;
         }
 

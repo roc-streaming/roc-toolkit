@@ -95,8 +95,7 @@ int main(int argc, char** argv) {
             return 1;
         }
 
-        if (!address::print_supported(address::ProtocolMap::instance(),
-                                      context.arena())) {
+        if (!address::print_supported(context.arena())) {
             return 1;
         }
 

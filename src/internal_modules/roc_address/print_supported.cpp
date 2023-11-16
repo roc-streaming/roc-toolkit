@@ -28,7 +28,7 @@ void print_interface_protos(core::Printer& prn,
 
         size_t size = 0;
 
-        prn.writef(" %s:", interface_to_str(interface));
+        prn.writef(" %-12s ", interface_to_str(interface));
 
         while (size < LineSize) {
             size += prn.writef(" %s%s%s", "", str, "://");
@@ -45,24 +45,25 @@ void print_interface_protos(core::Printer& prn,
 
 } // namespace
 
-bool print_supported(ProtocolMap& protocol_map, core::IArena& arena) {
+bool print_supported(core::IArena& arena) {
     core::Printer prn;
     core::Array<Interface> interface_array(arena);
     core::StringList list(arena);
 
-    if (!protocol_map.get_supported_interfaces(interface_array)) {
+    if (!address::ProtocolMap::instance().get_supported_interfaces(interface_array)) {
         roc_log(LogError, "can't retrieve interface array");
         return false;
     }
 
     for (size_t n_interface = 0; n_interface < interface_array.size(); n_interface++) {
-        if (!protocol_map.get_supported_protocols(interface_array[n_interface], list)) {
+        if (!address::ProtocolMap::instance().get_supported_protocols(
+                interface_array[n_interface], list)) {
             roc_log(LogError, "can't retrieve protocols list");
             return false;
         }
 
         if (n_interface == 0) {
-            prn.writef("\nsupported network protocols:\n");
+            prn.writef("supported schemes for network endpoints:\n");
         }
 
         print_interface_protos(prn, interface_array[n_interface], list);

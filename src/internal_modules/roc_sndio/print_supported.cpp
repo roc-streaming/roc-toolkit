@@ -52,7 +52,7 @@ bool print_supported(BackendDispatcher& backend_dispatcher, core::IArena& arena)
         return false;
     }
 
-    prn.writef("supported schemes for audio devices and files:\n");
+    prn.writef("\nsupported schemes for audio devices and files:\n");
     print_string_list(prn, list, "", "://");
 
     if (!backend_dispatcher.get_supported_formats(list)) {
