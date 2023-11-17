@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 function find_login() {
     local github_login=""
 
@@ -7,7 +9,8 @@ function find_login() {
     then
         github_login="$(echo "$1" | sed -re 's,^([0-9]+\+)?(.*)@users.noreply.github.com,\2,')"
     else
-        github_login="$(gh api "/search/users?q=$1" --jq '.items[0].login')"
+        github_login="$(gh api "/search/users?q=$(echo -n "$1" | jq -sRr @uri)" \
+            --jq '.items[0].login')"
     fi
 
     if [[ "${github_login}" != "" ]] && [[ "${github_login}" != "null" ]]
@@ -71,7 +74,7 @@ function update_author() {
     fi
 
     local contact_name="$(find_name "${github_login}")"
-    if [ -z "${contact_name}" ]
+    if [ -z "${contact_name}" ] || [[ "${contact_name}" != *" "* && "${commit_name}" = *" "* ]]
     then
         contact_name="${commit_name}"
     fi
