@@ -83,3 +83,4 @@ Contributors
 * Ashutosh Soni <m.ashutoshsoni@gmail.com>
 * ForeverASilver <https://github.com/ForeverASilver>
 * JJ <https://github.com/computerscienceiscool>
+* Hunter Rick <hunter.ellis.rick@gmail.com>
