@@ -107,7 +107,7 @@ Then fast-forward ``master`` to ``develop``:
 Creating release
 ================
 
-Rename ``next`` milestone to ``v1.2.3`` and close it. Create new ``next`` milestone.
+Rename ``next`` milestone to ``1.2.3`` and close it. Create new ``next`` milestone.
 
 Add new release to :doc:`changelog page </development/changelog>`.
 

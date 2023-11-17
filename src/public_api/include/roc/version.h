@@ -26,11 +26,11 @@ extern "C" {
 
 /** Minor version component.
  */
-#define ROC_VERSION_MINOR 2
+#define ROC_VERSION_MINOR 3
 
 /** Patch version component.
  */
-#define ROC_VERSION_PATCH 6
+#define ROC_VERSION_PATCH 0
 
 /** Convert version triple to numeric version code.
  * Version codes can be compared direcrly, e.g.:
