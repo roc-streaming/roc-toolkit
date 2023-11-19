@@ -1,3 +1,143 @@
+roc-toolkit (0.3.0) unstable; urgency=low
+
+  [ Features ]
+  * support lower latencies, up to 7ms in our tests
+  * add new clock synchronization profile (``responsive``) suitable for lower
+    latencies
+  * major improvements in C API (network-less API, metrics API, many small
+    improvements)
+  * more flexible packet encoding configuration (currently available only via C
+    API):
+  * more channel layouts: mono, stereo, multitrack (up to 1024 channels)
+  * custom smaple rate
+  * improve scaling precision of ``speex`` resampler
+  * implement new ``speexdec`` resampler, combining SpeexDSP for base rate
+    conversion and decimation for clock drift compensation, which has better
+    scaling precision than ``speex`` and is very cheap when base rates are equal
+
+  [ C API ]
+  * implement new encoder / decoder API (``roc_sender_encoder`` and
+    ``roc_receiver_decoder``), which is network-less version of sender /
+    receiver API (encoder produces packets, decoder consumes packets, and user
+    is responsible for delivering packets)
+  * implement initial metrics API:
+  * add ``roc_session_metrics``, ``roc_receiver_metrics``, and
+    ``roc_sender_metrics`` structs (currently they support ``niq_latency`` and
+    ``e2e_latency``)
+  * add ``roc_sender_query()``, ``roc_receiver_query()``,
+    ``roc_sender_encoder_query()``, ``roc_receiver_decoder_query()`` to query
+    metrics
+  * improvements in slot support:
+  * support deleting slots on fly using ``roc_sender_unlink()`` and
+    ``roc_receiver_unlink()``
+  * refine error handling rules: if error happens during slot configuration,
+    slot is marked broken and excluded from pipeline, but needs manual removal
+    by user
+  * slot identifiers are now arbitrary ``long long`` numbers (not necessary
+    continuous)
+  * simplify receiver configuration:
+  * replace ``max_latency_overrun`` + ``max_latency_underrun`` with one
+    parameter ``latency_tolerance``
+  * rename ``broken_playback_timeout`` to ``choppy_playback_timeout``
+  * remove ``breakage_detection_window`` (automatically derive it from
+    ``choppy_playback_timeout``)
+  * simplify interface configuration:
+  * introduce ``roc_interface_config`` struct, which holds all per-interface
+    options
+  * replace ``roc_sender_set_outgoing_address()`` and
+    ``roc_sender_set_reuseaddr()`` with ``roc_sender_configure()`` (which uses
+    ``roc_interface_config``)
+  * replace ``roc_receiver_set_multicast_group()`` and
+    ``roc_receiver_set_reuseaddr()`` with ``roc_receiver_configure()`` (which
+    uses ``roc_interface_config``)
+  * rework encoding configuration:
+  * rename ``roc_frame_encoding`` enum to ``roc_format`` (in API, "encoding" now
+    means format + rate + channels, which is now true for both frame encoding
+    and packet encoding)
+  * add ``roc_media_encoding`` struct which defines format + rate + channels
+  * use ``roc_media_encoding`` instead of ``frame_encoding`` +
+    ``frame_sample_rate`` + ``frame_channels`` in ``roc_sender_config`` and
+    ``roc_receiver_config``
+  * rename ``roc_channel_set`` to ``roc_channel_layout``
+  * remove ``packet_sample_rate`` and ``packet_channels`` (these parameters are
+    now derived from ``packet_encoding``)
+  * if ``packet_encoding`` is not set, automatically choose one that matches
+    ``frame_encoding`` (among built-in and registered packet encodings)
+  * support channel layouts:
+  * ``ROC_CHANNEL_LAYOUT_MONO``
+  * ``ROC_CHANNEL_LAYOUT_STEREO``
+  * ``ROC_CHANNEL_LAYOUT_MULTITRACK`` - up to 1024 channels without special
+    meaning
+  * support packet encodings:
+  * ``ROC_PACKET_ENCODING_AVP_L16_MONO``
+  * ``ROC_PACKET_ENCODING_AVP_L16_STEREO``
+  * support registering custom packet encodings using
+    ``roc_context_register_encoding()``
+  * add ``roc_clock_sync_backend`` parameter, with two values:
+  * ``ROC_CLOCK_SYNC_BACKEND_DISABLE`` - do not adjust receiver clock
+  * ``ROC_CLOCK_SYNC_BACKEND_NIQ`` - adjust receiver clock based on network
+    incoming queue size (current behavior)
+  * add ``roc_clock_sync_profile`` parameter with three values:
+  * ``ROC_CLOCK_SYNC_PROFILE_GRADUAL`` - adjust clock smoothly (old behavior,
+    good for high jitter and high latency)
+  * ``ROC_CLOCK_SYNC_PROFILE_RESPONSIVE`` - adjust clock smoothly (good for low
+    jitter and low latency)
+  * rename ``ROC_CLOCK_EXTERNAL`` / ``ROC_CLOCK_INTERNAL`` to
+    ``ROC_CLOCK_SOURCE_EXTERNAL`` / ``ROC_CLOCK_SOURCE_INTERNAL``
+  * add ``ROC_RESAMPLER_BACKEND_SPEEXDEC`` backend
+  * add ``ROC_VERSION`` and ``ROC_VERSION_CODE()``
+
+  [ Bindings ]
+  * add script for generating enums in bindings repos (java, go)
+
+  [ Command-line tools ]
+  * replace ``--min-latency`` + ``--max-latency`` with ``--latency-tolerance``
+  * remove ``--no-resampling`` (use ``--clock-backend=disable`` instead)
+  * add ``--clock-backend`` and ``--clock-profile``
+  * rename ``--np-timeout`` to ``--no-play-timeout``
+  * replace ``--bp-timeout`` + ``--bp-window`` with ``--choppy-play-timeout``
+  * rename ``--beeping`` to ``--beep``
+  * rename ``roc-conv`` tool to ``roc-copy``
+  * list supported endpoint schemes in ``--print-supported``
+
+  [ Bug fixes ]
+  * fix NTP 2036 year problem
+  * fix latency reported in logs
+
+  [ Internals ]
+  * change default packet length from ``7ms`` to ``2.5ms``
+  * get rid of hard-coded frame length in pipeline components (now they work
+    with any requested frame length), which allows to handle latencies lower
+    than default frame length
+  * support capture timestamps (CTS) in packets and frames (based on RTCP + NTP)
+    and forward them through the pipeline, needed for end-to-end latency
+    calculation
+  * start work on calculation of end-to-end latency (overall delay from sender
+    to receiver, including I/O and network)
+  * start work for automatic mapping between different channel layouts and
+    orders (including mono, stereo, surround, and multitrack layouts)
+  * start work for reporting and forwarding error codes through the pipeline
+  * implement fast lock-free PRNG
+  * optimize task processing: process pipeline tasks in-place when they're
+    scheduled from I/O thread, to avoid unnecessary delays
+  * improve memory protection:
+  * always employ memory poisoning in arenas and pools
+  * implement buffer overflow protection using canary guards in arenas and pools
+  * implement ownership checks in arenas and pools
+  * module ``roc_peer`` renamed to ``roc_node`` (because it now has non-peer
+    nodes)
+
+  [ Build system ]
+  * add ``--compiler-launcher`` scons option (may be used for ``ccache``)
+  * correctly handle ``--enable-debug-3rdparty`` for all dependencies
+
+  [ Documentation ]
+  * improve C API doxygen comments
+  * fix pulseaudio C API examples
+  * numerous improvements and updates in sphinx documentation
+
+ -- Roc Streaming authors <roc@freelists.org>  Mon, 20 Nov 2023 00:00:00 +0000
+
 roc-toolkit (0.2.6) unstable; urgency=low
 
   [ Packaging ]
