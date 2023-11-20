@@ -120,7 +120,7 @@ TEST_GROUP(sender_encoder_receiver_decoder) {
             {
                 // simulate small network delay, so that receiver will calculate
                 // non-zero latency
-                core::sleep_for(core::ClockMonotonic, core::Microsecond);
+                core::sleep_for(core::ClockMonotonic, core::Microsecond * 50);
             }
             { // read encoded packets from encoder and write to decoder
                 uint8_t bytes[test::MaxBufSize] = {};
