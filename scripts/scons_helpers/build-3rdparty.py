@@ -597,7 +597,7 @@ def generate_pc_files(ctx, pc_dir):
             for lib in glob.glob(os.path.join(ctx.work_dir, dep, 'lib', 'lib*')):
                 lib = os.path.basename(lib)
                 lib = re.sub('^lib', '', lib)
-                lib = re.sub('\.[a-z]+$', '', lib)
+                lib = re.sub(r'\.[a-z]+$', '', lib)
 
                 ldflags += ' -l' + lib
 

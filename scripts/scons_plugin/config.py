@@ -191,7 +191,7 @@ def FindTool(context, var, toolchains, commands,
             toolchains += [tc.replace('-pc-', '-')]
 
         if 'android' in tc:
-            m = re.search('((android(eabi)?)\d+)$', tc)
+            m = re.search(r'((android(eabi)?)\d+)$', tc)
             if m:
                 tc = tc.replace(m.group(1), m.group(2))
                 toolchains += [tc]

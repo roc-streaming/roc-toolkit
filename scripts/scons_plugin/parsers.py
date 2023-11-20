@@ -135,7 +135,7 @@ def ParseLinkDirs(env, linker):
         return []
 
     for line in text.splitlines():
-        m = re.search('^\s*libraries:\s*=(.*)$', line)
+        m = re.search(r'^\s*libraries:\s*=(.*)$', line)
         if m:
             ret = []
             for libdir in m.group(1).split(':'):

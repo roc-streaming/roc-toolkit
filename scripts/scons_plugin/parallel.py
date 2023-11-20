@@ -35,6 +35,6 @@ def _cpu_count():
 
 def init(env):
     for arg in sys.argv:
-        if re.match('^(-j|--jobs=?)\d*$', arg):
+        if re.match(r'^(-j|--jobs=?)\d*$', arg):
             return
     SCons.Script.SetOption('num_jobs', _cpu_count())
