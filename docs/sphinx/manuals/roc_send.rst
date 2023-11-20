@@ -33,7 +33,7 @@ Options
 --frame-length=TIME         Duration of the internal frames, TIME units
 --rate=INT                  Override input sample rate, Hz
 --no-resampling             Disable resampling  (default=off)
---resampler-backend=ENUM    Resampler backend  (possible values="default", "builtin", "speex" default=`default')
+--resampler-backend=ENUM    Resampler backend  (possible values="default", "builtin", "speex", "speexdec" default=`default')
 --resampler-profile=ENUM    Resampler profile  (possible values="low", "medium", "high" default=`medium')
 --interleaving              Enable packet interleaving  (default=off)
 --profiling                 Enable self profiling  (default=off)

@@ -38,7 +38,7 @@ Options
 --rate=INT                    Override output sample rate, Hz
 --clock-backend=ENUM          Clock synchronization backend  (possible values="disable", "niq" default=`niq')
 --clock-profile=ENUM          Clock synchronization profile  (possible values="default", "responsive", "gradual" default=`default')
---resampler-backend=ENUM      Resampler backend  (possible values="default", "builtin", "speex" default=`default')
+--resampler-backend=ENUM      Resampler backend  (possible values="default", "builtin", "speex", "speexdec" default=`default')
 --resampler-profile=ENUM      Resampler profile  (possible values="low", "medium", "high" default=`medium')
 -1, --oneshot                 Exit when last connected client disconnects (default=off)
 --profiling                   Enable self-profiling  (default=off)

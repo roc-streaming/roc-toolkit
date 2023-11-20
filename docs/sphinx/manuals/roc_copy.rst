@@ -24,7 +24,7 @@ Options
 --output-format=FILE_FORMAT  Force output file format
 --frame-length=TIME          Duration of the internal frames, TIME units
 -r, --rate=INT               Output sample rate, Hz
---resampler-backend=ENUM     Resampler backend  (possible values="default", "builtin", "speex" default=`default')
+--resampler-backend=ENUM     Resampler backend  (possible values="default", "builtin", "speex", "speexdec" default=`default')
 --resampler-profile=ENUM     Resampler profile  (possible values="low", "medium", "high" default=`medium')
 --profiling                  Enable self profiling  (default=off)
 --color=ENUM                 Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
