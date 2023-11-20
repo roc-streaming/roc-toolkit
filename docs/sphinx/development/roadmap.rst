@@ -63,6 +63,7 @@ Codecs
 - |:ballot_box_with_check:| PCM
 - |:white_large_square:| Opus
 - |:white_large_square:| Vorbis
+- |:white_large_square:| FLAC
 - |:ballot_box_with_check:| Reed-Solomon FEC
 - |:ballot_box_with_check:| LDPC-Staircase FEC
 - |:white_large_square:| RaptorQ FEC
