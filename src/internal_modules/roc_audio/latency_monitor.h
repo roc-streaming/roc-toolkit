@@ -39,30 +39,25 @@ struct LatencyMonitorConfig {
     //! How often to run FreqEstimator and update Resampler scaling.
     core::nanoseconds_t fe_update_interval;
 
-    //! Minimum allowed latency, nanoseconds.
+    //! Maximum allowed deviation from target latency, nanoseconds.
     //! If the latency goes out of bounds, the session is terminated.
-    core::nanoseconds_t min_latency;
+    core::nanoseconds_t latency_tolerance;
 
-    //! Maximum allowed latency, nanoseconds.
-    //! If the latency goes out of bounds, the session is terminated.
-    core::nanoseconds_t max_latency;
-
-    //! Maximum allowed freq_coeff delta around one.
+    //! Maximum allowed deviation of freq_coeff from 1.0.
     //! If the scaling goes out of bounds, it is trimmed.
     //! For example, 0.01 allows freq_coeff values in range [0.99; 1.01].
-    float max_scaling_delta;
+    float scaling_tolerance;
 
     LatencyMonitorConfig()
         : fe_enable(true)
         , fe_profile(FreqEstimatorProfile_Responsive)
         , fe_update_interval(5 * core::Millisecond)
-        , min_latency(0)
-        , max_latency(0)
-        , max_scaling_delta(0.005f) {
+        , latency_tolerance(0)
+        , scaling_tolerance(0.005f) {
     }
 
     //! Automatically deduce FreqEstimator profile from target latency.
-    void deduce_fe_profile(core::nanoseconds_t target_latency) {
+    void deduce_fe_profile(const core::nanoseconds_t target_latency) {
         fe_profile = target_latency < 30 * core::Millisecond
             // prefer responsive profile on low latencies, because gradual profile
             // won't do it at all
@@ -72,14 +67,9 @@ struct LatencyMonitorConfig {
             : FreqEstimatorProfile_Gradual;
     }
 
-    //! Automatically deduce min_latency from target_latency.
-    void deduce_min_latency(core::nanoseconds_t target_latency) {
-        min_latency = target_latency - target_latency;
-    }
-
-    //! Automatically deduce max_latency from target_latency.
-    void deduce_max_latency(core::nanoseconds_t target_latency) {
-        max_latency = target_latency + target_latency;
+    //! Automatically deduce latency_tolerance from target_latency.
+    void deduce_latency_tolerance(const core::nanoseconds_t target_latency) {
+        latency_tolerance = target_latency * 2;
     }
 };
 

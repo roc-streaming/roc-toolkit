@@ -143,18 +143,10 @@ bool receiver_config_from_user(node::Context&,
     }
 
     if (in.latency_tolerance != 0) {
-        out.default_session.latency_monitor.min_latency =
-            out.default_session.target_latency
-            - (core::nanoseconds_t)in.latency_tolerance;
-
-        out.default_session.latency_monitor.max_latency =
-            out.default_session.target_latency
-            + (core::nanoseconds_t)in.latency_tolerance;
+        out.default_session.latency_monitor.latency_tolerance =
+            (core::nanoseconds_t)in.latency_tolerance;
     } else {
-        out.default_session.latency_monitor.deduce_min_latency(
-            out.default_session.target_latency);
-
-        out.default_session.latency_monitor.deduce_max_latency(
+        out.default_session.latency_monitor.deduce_latency_tolerance(
             out.default_session.target_latency);
     }
 

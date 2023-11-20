@@ -53,9 +53,11 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
     , has_niq_latency_(false)
     , has_e2e_latency_(false)
     , target_latency_(input_sample_spec.ns_2_stream_timestamp_delta(target_latency))
-    , min_latency_(input_sample_spec.ns_2_stream_timestamp_delta(config.min_latency))
-    , max_latency_(input_sample_spec.ns_2_stream_timestamp_delta(config.max_latency))
-    , max_scaling_delta_(config.max_scaling_delta)
+    , min_latency_(input_sample_spec.ns_2_stream_timestamp_delta(
+          target_latency - config.latency_tolerance))
+    , max_latency_(input_sample_spec.ns_2_stream_timestamp_delta(
+          target_latency + config.latency_tolerance))
+    , max_scaling_delta_(config.scaling_tolerance)
     , input_sample_spec_(input_sample_spec)
     , output_sample_spec_(output_sample_spec)
     , alive_(true)
@@ -72,12 +74,12 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
             timestamp_to_ms(input_sample_spec_,
                             (packet::stream_timestamp_diff_t)update_interval_));
 
-    if (target_latency < config.min_latency || target_latency > config.max_latency
+    if (target_latency_ < min_latency_ || target_latency_ > max_latency_
         || target_latency <= 0) {
         roc_log(LogError,
                 "latency monitor: invalid config:"
-                " target_latency=%ldns min_latency=%ldns max_latency=%ldns",
-                (long)target_latency, (long)config.min_latency, (long)config.max_latency);
+                " target_latency=%ldns latency_tolerance=%ldns",
+                (long)target_latency, (long)config.latency_tolerance);
         return;
     }
 

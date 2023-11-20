@@ -141,16 +141,10 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --latency-tolerance");
             return 1;
         }
-        receiver_config.default_session.latency_monitor.min_latency =
-            receiver_config.default_session.target_latency
-            - (core::nanoseconds_t)latency_tolerance;
-        receiver_config.default_session.latency_monitor.max_latency =
-            receiver_config.default_session.target_latency
-            + (core::nanoseconds_t)latency_tolerance;
+        receiver_config.default_session.latency_monitor.latency_tolerance =
+            (core::nanoseconds_t)latency_tolerance;
     } else {
-        receiver_config.default_session.latency_monitor.deduce_min_latency(
-            receiver_config.default_session.target_latency);
-        receiver_config.default_session.latency_monitor.deduce_max_latency(
+        receiver_config.default_session.latency_monitor.deduce_latency_tolerance(
             receiver_config.default_session.target_latency);
     }
 

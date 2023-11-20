@@ -115,11 +115,8 @@ TEST_GROUP(receiver_source) {
         config.default_session.latency_monitor.fe_enable = false;
         config.default_session.target_latency =
             Latency * core::Second / (int)output_sample_spec.sample_rate();
-
-        config.default_session.latency_monitor.min_latency =
-            -Timeout * 10 * core::Second / (int)output_sample_spec.sample_rate();
-        config.default_session.latency_monitor.max_latency =
-            +Timeout * 10 * core::Second / (int)output_sample_spec.sample_rate();
+        config.default_session.latency_monitor.latency_tolerance =
+            Timeout * 10 * core::Second / (int)output_sample_spec.sample_rate();
 
         config.default_session.watchdog.no_playback_timeout =
             Timeout * core::Second / (int)output_sample_spec.sample_rate();
