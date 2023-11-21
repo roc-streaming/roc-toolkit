@@ -20,7 +20,7 @@ Changelog
     Tests
     Documentation
 
-Version 0.3.0 (Nov 20, 2023)
+Version 0.3.0 (Nov 22, 2023)
 ============================
 
 Features

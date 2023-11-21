@@ -544,7 +544,7 @@ typedef enum roc_resampler_backend {
      *
      * When frame and packet rates are different, usage of this backend compared to
      * \c ROC_RESAMPLER_BACKEND_SPEEX allows to sacrify some quality, but somewhat
-     * improve scaling precision in return.
+     * improve scaling precision and CPU usage in return.
      *
      * This backend is available only when SpeexDSP was enabled at build time.
      *

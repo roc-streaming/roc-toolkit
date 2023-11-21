@@ -136,7 +136,7 @@ roc-toolkit (0.3.0) unstable; urgency=low
   * fix pulseaudio C API examples
   * numerous improvements and updates in sphinx documentation
 
- -- Roc Streaming authors <roc@freelists.org>  Mon, 20 Nov 2023 00:00:00 +0000
+ -- Roc Streaming authors <roc@freelists.org>  Wed, 22 Nov 2023 00:00:00 +0000
 
 roc-toolkit (0.2.6) unstable; urgency=low
 
