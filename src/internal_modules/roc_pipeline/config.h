@@ -44,16 +44,13 @@ static const audio::SampleSpec DefaultSampleSpec(DefaultSampleRate,
 
 //! Default packet length.
 //! @remarks
-//!  2.5ms gives 110 samples on 44100Hz and 120 samples on 48000Hz, which correspond,
-//!  respectively, to 458 and 498 bytes UDP packets on 2-channel 16-bit PCM packed into
-//!  RTP + FECFRAME. This packet sizes are chosen because they both are smaller than
-//!  508 bytes, the maximum UDP payload size that is typically not fragmented when sent
-//!  over Internet.
-const core::nanoseconds_t DefaultPacketLength = 2500 * core::Microsecond;
+//!  5ms works well on majority Wi-Fi networks and allows rather low latencies. However,
+//!  a lower length may be required depending on network MTU, e.g. for Internet.
+const core::nanoseconds_t DefaultPacketLength = 5 * core::Millisecond;
 
 //! Default latency.
 //! @remarks
-//!  200ms work well on majority Wi-Fi networks and is not too annoying. However, many
+//!  200ms works well on majority Wi-Fi networks and is not too annoying. However, many
 //!  networks allow lower latencies, and some networks require higher.
 const core::nanoseconds_t DefaultLatency = 200 * core::Millisecond;
 

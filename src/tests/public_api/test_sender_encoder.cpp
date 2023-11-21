@@ -185,14 +185,14 @@ TEST(sender_encoder, pop_args) {
           == 0);
 
     {
-        float samples[4096] = {};
+        float samples[8192] = {};
         roc_frame frame;
         frame.samples = samples;
         frame.samples_size = ROC_ARRAY_SIZE(samples);
         CHECK(roc_sender_encoder_push(encoder, &frame) == 0);
     }
 
-    float bytes[4096] = {};
+    float bytes[8192] = {};
 
     { // null encoder
         roc_packet packet;

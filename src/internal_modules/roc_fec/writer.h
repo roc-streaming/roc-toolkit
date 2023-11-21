@@ -35,7 +35,7 @@ struct WriterConfig {
     size_t n_repair_packets;
 
     WriterConfig()
-        : n_source_packets(20)
+        : n_source_packets(18)
         , n_repair_packets(10) {
     }
 };
