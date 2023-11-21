@@ -136,13 +136,12 @@ int main(int argc, char** argv) {
     }
 
     if (args.latency_tolerance_given) {
-        core::nanoseconds_t latency_tolerance = 0;
-        if (!core::parse_duration(args.latency_tolerance_arg, latency_tolerance)) {
+        if (!core::parse_duration(
+                args.latency_tolerance_arg,
+                receiver_config.default_session.latency_monitor.latency_tolerance)) {
             roc_log(LogError, "invalid --latency-tolerance");
             return 1;
         }
-        receiver_config.default_session.latency_monitor.latency_tolerance =
-            (core::nanoseconds_t)latency_tolerance;
     } else {
         receiver_config.default_session.latency_monitor.deduce_latency_tolerance(
             receiver_config.default_session.target_latency);
@@ -155,6 +154,9 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --no-play-timeout");
             return 1;
         }
+    } else {
+        receiver_config.default_session.watchdog.deduce_no_playback_timeout(
+            receiver_config.default_session.target_latency);
     }
 
     if (args.choppy_play_timeout_given) {

@@ -62,17 +62,21 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
     , output_sample_spec_(output_sample_spec)
     , alive_(true)
     , valid_(false) {
-    roc_log(LogDebug,
-            "latency monitor: initializing:"
-            " target_latency=%lu(%.3fms) in_rate=%lu out_rate=%lu"
-            " fe_enable=%d fe_profile=%s fe_interval=%.3fms",
-            (unsigned long)target_latency_,
-            timestamp_to_ms(input_sample_spec_, target_latency_),
-            (unsigned long)input_sample_spec_.sample_rate(),
-            (unsigned long)output_sample_spec_.sample_rate(), (int)config.fe_enable,
-            fe_profile_to_str(config.fe_profile),
-            timestamp_to_ms(input_sample_spec_,
-                            (packet::stream_timestamp_diff_t)update_interval_));
+    roc_log(
+        LogDebug,
+        "latency monitor: initializing:"
+        " target=%lu(%.3fms) min=%lu(%.3fms) max=%lu(%.3fms)"
+        " in_rate=%lu out_rate=%lu"
+        " fe_enable=%d fe_profile=%s fe_interval=%.3fms",
+        (unsigned long)target_latency_,
+        timestamp_to_ms(input_sample_spec_, target_latency_), (unsigned long)min_latency_,
+        timestamp_to_ms(input_sample_spec_, min_latency_), (unsigned long)max_latency_,
+        timestamp_to_ms(input_sample_spec_, max_latency_),
+        (unsigned long)input_sample_spec_.sample_rate(),
+        (unsigned long)output_sample_spec_.sample_rate(), (int)config.fe_enable,
+        fe_profile_to_str(config.fe_profile),
+        timestamp_to_ms(input_sample_spec_,
+                        (packet::stream_timestamp_diff_t)update_interval_));
 
     if (target_latency_ < min_latency_ || target_latency_ > max_latency_
         || target_latency <= 0) {
@@ -153,7 +157,7 @@ bool LatencyMonitor::read(Frame& frame) {
     return true;
 }
 
-bool LatencyMonitor::reclock(core::nanoseconds_t playback_timestamp) {
+bool LatencyMonitor::reclock(const core::nanoseconds_t playback_timestamp) {
     roc_panic_if(!is_valid());
 
     if (playback_timestamp < 0) {
@@ -190,7 +194,7 @@ void LatencyMonitor::compute_niq_latency_() {
     has_niq_latency_ = true;
 }
 
-void LatencyMonitor::compute_e2e_latency_(core::nanoseconds_t playback_timestamp) {
+void LatencyMonitor::compute_e2e_latency_(const core::nanoseconds_t playback_timestamp) {
     if (stream_cts_ == 0) {
         return;
     }
@@ -225,29 +229,37 @@ bool LatencyMonitor::update_() {
     return true;
 }
 
-bool LatencyMonitor::check_bounds_(packet::stream_timestamp_diff_t latency) const {
-    if (latency < min_latency_) {
-        roc_log(
-            LogDebug,
-            "latency monitor: latency out of bounds: latency=%ld(%.3fms) min=%ld(%.3fms)",
-            (long)latency, timestamp_to_ms(input_sample_spec_, latency),
-            (long)min_latency_, timestamp_to_ms(input_sample_spec_, min_latency_));
-        return false;
+bool LatencyMonitor::check_bounds_(const packet::stream_timestamp_diff_t latency) const {
+    if (latency < min_latency_ && incoming_queue_.size() == 0) {
+        // Sharp latency decrease often appears on burst packet delays or drops,
+        // when depacketizer goes quite ahead of the last retrieved packet, and there
+        // are no new packets. If such burst is short, pipeline can easily recover from
+        // it, and terminating session would only harm. Hence, while the queue is empty,
+        // latency monitor does not terminate the session and leaves decision to the
+        // watchdog. If the burst was short, watchdog will keep session, otherwise
+        // no_playback_timeout will trigger and watchdog will terminate session.
+        return true;
     }
 
-    if (latency > max_latency_) {
-        roc_log(
-            LogDebug,
-            "latency monitor: latency out of bounds: latency=%ld(%.3fms) max=%ld(%.3fms)",
-            (long)latency, timestamp_to_ms(input_sample_spec_, latency),
-            (long)max_latency_, timestamp_to_ms(input_sample_spec_, max_latency_));
+    if (latency < min_latency_ || latency > max_latency_) {
+        roc_log(LogDebug,
+                "latency monitor: latency out of bounds:"
+                " latency=%ld(%.3fms) target=%ld(%.3fms)"
+                " min=%ld(%.3fms) max=%ld(%.3fms) q_size=%lu",
+                (long)latency, timestamp_to_ms(input_sample_spec_, latency),
+                (long)target_latency_,
+                timestamp_to_ms(input_sample_spec_, target_latency_), (long)min_latency_,
+                timestamp_to_ms(input_sample_spec_, min_latency_), (long)max_latency_,
+                timestamp_to_ms(input_sample_spec_, max_latency_),
+                (unsigned long)incoming_queue_.size());
         return false;
     }
 
     return true;
 }
 
-bool LatencyMonitor::init_scaling_(size_t input_sample_rate, size_t output_sample_rate) {
+bool LatencyMonitor::init_scaling_(const size_t input_sample_rate,
+                                   const size_t output_sample_rate) {
     roc_panic_if_not(resampler_);
 
     if (input_sample_rate == 0 || output_sample_rate == 0) {

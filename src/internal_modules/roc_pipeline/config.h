@@ -189,6 +189,7 @@ struct ReceiverSessionConfig {
         , resampler_backend(audio::ResamplerBackend_Default)
         , resampler_profile(audio::ResamplerProfile_Medium) {
         latency_monitor.deduce_latency_tolerance(DefaultLatency);
+        watchdog.deduce_no_playback_timeout(DefaultLatency);
     }
 
     //! Automatically deduce resampler backend from FreqEstimator config.

@@ -154,6 +154,9 @@ bool receiver_config_from_user(node::Context&,
         out.default_session.watchdog.no_playback_timeout = 0;
     } else if (in.no_playback_timeout > 0) {
         out.default_session.watchdog.no_playback_timeout = in.no_playback_timeout;
+    } else {
+        out.default_session.watchdog.deduce_no_playback_timeout(
+            out.default_session.target_latency);
     }
 
     if (in.choppy_playback_timeout < 0) {

@@ -55,10 +55,15 @@ struct WatchdogConfig {
 
     //! Initialize config with default values.
     WatchdogConfig()
-        : no_playback_timeout(2 * core::Second)
+        : no_playback_timeout(0)
         , choppy_playback_timeout(2 * core::Second)
         , choppy_playback_window(300 * core::Millisecond)
         , frame_status_window(20) {
+    }
+
+    //! Automatically deduce no_playback_timeout from target_latency.
+    void deduce_no_playback_timeout(core::nanoseconds_t target_latency) {
+        no_playback_timeout = target_latency * 4 / 3;
     }
 
     //! Automatically deduce choppy_playback_window from choppy_playback_timeout.

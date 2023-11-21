@@ -68,8 +68,20 @@ struct LatencyMonitorConfig {
     }
 
     //! Automatically deduce latency_tolerance from target_latency.
-    void deduce_latency_tolerance(const core::nanoseconds_t target_latency) {
-        latency_tolerance = target_latency * 2;
+    void deduce_latency_tolerance(core::nanoseconds_t target_latency) {
+        // this formula returns target_latency * N, where N starts with larger
+        // number and approaches 0.5 as target_latency grows
+        // examples:
+        //  target=1ms -> tolerance=8ms (x8)
+        //  target=10ms -> tolerance=20ms (x2)
+        //  target=200ms -> tolerance=200ms (x1)
+        //  target=2000ms -> tolerance=1444ms (x0.722)
+        if (target_latency < core::Millisecond) {
+            target_latency = core::Millisecond;
+        }
+        latency_tolerance = core::nanoseconds_t(
+            target_latency
+            * (std::log((200 * core::Millisecond) * 2) / std::log(target_latency * 2)));
     }
 };
 
