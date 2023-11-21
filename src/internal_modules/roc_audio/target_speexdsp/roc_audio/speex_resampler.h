@@ -71,21 +71,25 @@ private:
 
     SpeexResamplerState* speex_state_;
 
-    core::Slice<sample_t> in_frame_;
-    const spx_uint32_t in_frame_size_;
-    spx_uint32_t in_frame_pos_;
-
+    // Channel count.
     const spx_uint32_t num_ch_;
+
+    // Frame with input samples.
+    core::Slice<sample_t> in_frame_;
+    spx_uint32_t in_frame_size_;
+    spx_uint32_t in_frame_pos_;
 
     // Counts how many output samples to throw away in order to
     // compensate resampler's inner latency.
-    size_t startup_countdown_;
+    size_t initial_out_countdown_;
+
     // Stores initial latency in order to track its further changes.
-    size_t initial_input_latency_;
+    size_t initial_in_latency_;
+
     // Stores how much speex resampler latency changed from the start, in order to
     // reflect it in n_left_to_process() for better precision in capture timestamp
     // calculations.
-    ssize_t current_input_latency_diff_;
+    ssize_t in_latency_diff_;
 
     core::RateLimiter rate_limiter_;
 

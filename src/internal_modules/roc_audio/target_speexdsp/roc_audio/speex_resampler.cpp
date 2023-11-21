@@ -20,8 +20,6 @@ namespace {
 
 const core::nanoseconds_t LogReportInterval = 20 * core::Second;
 
-const spx_uint32_t InputFrameSize = 16;
-
 inline const char* get_error_msg(int err) {
     if (err == 5) {
         // this code is missing from speex_resampler_strerror()
@@ -54,12 +52,12 @@ SpeexResampler::SpeexResampler(core::IArena& arena,
                                const audio::SampleSpec& out_spec)
     : IResampler(arena)
     , speex_state_(NULL)
-    , in_frame_size_(InputFrameSize * in_spec.num_channels())
-    , in_frame_pos_(in_frame_size_)
     , num_ch_((spx_uint32_t)in_spec.num_channels())
-    , startup_countdown_(0)
-    , initial_input_latency_(0)
-    , current_input_latency_diff_(0)
+    , in_frame_size_(0)
+    , in_frame_pos_(0)
+    , initial_out_countdown_(0)
+    , initial_in_latency_(0)
+    , in_latency_diff_(0)
     , rate_limiter_(LogReportInterval)
     , valid_(false) {
     if (!in_spec.is_valid() || !out_spec.is_valid()) {
@@ -82,17 +80,6 @@ SpeexResampler::SpeexResampler(core::IArena& arena,
 
     const int quality = get_quality(profile);
 
-    roc_log(LogDebug,
-            "speex resampler: initializing:"
-            " quality=%d frame_size=%lu channels_num=%lu",
-            quality, (unsigned long)in_frame_size_, (unsigned long)num_ch_);
-
-    if (!(in_frame_ = buffer_factory.new_buffer())) {
-        roc_log(LogError, "speex resampler: can't allocate frame buffer");
-        return;
-    }
-    in_frame_.reslice(0, in_frame_size_);
-
     int err = 0;
     speex_state_ =
         speex_resampler_init(num_ch_, (spx_uint32_t)in_spec.sample_rate(),
@@ -103,8 +90,22 @@ SpeexResampler::SpeexResampler(core::IArena& arena,
         return;
     }
 
-    startup_countdown_ = (size_t)speex_resampler_get_output_latency(speex_state_);
-    initial_input_latency_ = (size_t)speex_resampler_get_input_latency(speex_state_);
+    initial_out_countdown_ = (size_t)speex_resampler_get_output_latency(speex_state_);
+    initial_in_latency_ = (size_t)speex_resampler_get_input_latency(speex_state_);
+
+    in_frame_size_ = in_frame_pos_ = std::min(
+        initial_in_latency_ * in_spec.num_channels(), buffer_factory.buffer_size());
+
+    roc_log(LogDebug,
+            "speex resampler: initializing:"
+            " quality=%d frame_size=%lu channels_num=%lu",
+            quality, (unsigned long)in_frame_size_, (unsigned long)num_ch_);
+
+    if (!(in_frame_ = buffer_factory.new_buffer())) {
+        roc_log(LogError, "speex resampler: can't allocate frame buffer");
+        return;
+    }
+    in_frame_.reslice(0, in_frame_size_);
 
     valid_ = true;
 }
@@ -188,8 +189,8 @@ bool SpeexResampler::set_scaling(size_t input_rate, size_t output_rate, float mu
         return false;
     }
 
-    const ssize_t latency = (ssize_t)speex_resampler_get_input_latency(speex_state_);
-    current_input_latency_diff_ = latency - (ssize_t)initial_input_latency_;
+    in_latency_diff_ = (ssize_t)speex_resampler_get_input_latency(speex_state_)
+        - (ssize_t)initial_in_latency_;
 
     return true;
 }
@@ -239,11 +240,12 @@ size_t SpeexResampler::pop_output(sample_t* out_buf, size_t out_bufsz) {
         //
         // Here we adjust speex behavior to be in-line with other backends. It allows
         // us to perform latency and timestamp calculations uniformely for all backends.
-        if (startup_countdown_) {
-            const size_t n_samples = std::min((size_t)remaining_out, startup_countdown_);
+        if (initial_out_countdown_) {
+            const size_t n_samples =
+                std::min((size_t)remaining_out, initial_out_countdown_);
 
             remaining_out -= n_samples;
-            startup_countdown_ -= n_samples;
+            initial_out_countdown_ -= n_samples;
         }
 
         out_frame_pos += remaining_out * num_ch_;
@@ -260,7 +262,7 @@ size_t SpeexResampler::pop_output(sample_t* out_buf, size_t out_bufsz) {
 float SpeexResampler::n_left_to_process() const {
     roc_panic_if_not(is_valid());
 
-    return float(in_frame_size_ - in_frame_pos_) + float(current_input_latency_diff_);
+    return float(in_frame_size_ - in_frame_pos_) + float(in_latency_diff_);
 }
 
 void SpeexResampler::report_stats_() {
@@ -286,7 +288,7 @@ void SpeexResampler::report_stats_() {
             "speex resampler:"
             " ratio=%u/%u rates=%u/%u latency=%d latency_diff=%d",
             (unsigned int)ratio_num, (unsigned int)ratio_den, (unsigned int)in_rate,
-            (unsigned int)out_rate, (int)in_latency, (int)current_input_latency_diff_);
+            (unsigned int)out_rate, (int)in_latency, (int)in_latency_diff_);
 }
 
 } // namespace audio
