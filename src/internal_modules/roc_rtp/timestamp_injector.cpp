@@ -65,7 +65,7 @@ void TimestampInjector::update_mapping(core::nanoseconds_t capture_ts,
     if (rate_limiter_.allow()) {
         roc_log(LogDebug,
                 "timestamp injector: received mapping:"
-                " old=unix:%lld/rtp:%llu new=unix:%lld/rtp:%llu has_ts=%d n_drops=%lu",
+                " old=cts:%lld/sts:%llu new=cts:%lld/sts:%llu has_ts=%d n_drops=%lu",
                 (long long)capt_ts_, (unsigned long long)rtp_ts_, (long long)capture_ts,
                 (unsigned long long)rtp_ts, (int)has_ts_, (unsigned long)n_drops_);
     }

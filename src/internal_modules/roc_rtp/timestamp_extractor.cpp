@@ -78,7 +78,7 @@ TimestampExtractor::get_mapping(core::nanoseconds_t capture_ts) {
     const packet::stream_timestamp_t rtp_ts = rtp_ts_ + (packet::stream_timestamp_t)dn;
 
     if (rate_limiter_.allow()) {
-        roc_log(LogDebug, "timestamp extractor: returning mapping: unix:%lld/rtp:%llu",
+        roc_log(LogDebug, "timestamp extractor: returning mapping: cts:%lld/sts:%llu",
                 (long long)capture_ts, (unsigned long long)rtp_ts);
     }
 
