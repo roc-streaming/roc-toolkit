@@ -1176,7 +1176,7 @@ elif ctx.pkg_name == 'openssl':
     # see https://github.com/openssl/openssl/blob/master/INSTALL.md#configuration-options
     execute(ctx, '{vars} {flags} ./Configure {platform} {variant} {options}'.format(
         vars=format_vars(ctx, disable_launcher=True),
-        flags=format_flags(ctx, cflags='-fPIC'),
+        flags=format_flags(ctx),
         platform=detect_openssl_platform(ctx.host),
         variant='--debug' if ctx.variant == 'debug' else '--release',
         options=' '.join([
