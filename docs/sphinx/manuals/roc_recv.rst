@@ -172,47 +172,52 @@ Bind one bare RTP endpoint on all IPv4 interfaces:
 
     $ roc-recv -vv -s rtp://0.0.0.0:10001
 
-Bind two source and repair endpoints to all IPv4 interfaces (but not IPv6):
+Bind source, repair, and control endpoints to all IPv4 interfaces (but not IPv6):
 
 .. code::
 
-    $ roc-recv -vv -s rtp+rs8m://0.0.0.0:10001 -r rs8m://0.0.0.0:10002
+    $ roc-recv -vv -s rtp+rs8m://0.0.0.0:10001 -r rs8m://0.0.0.0:10002 \
+        -c rtcp://0.0.0.0:10003
 
-Bind two source and repair endpoints to all IPv6 interfaces (but not IPv4):
-
-.. code::
-
-    $ roc-recv -vv -s rtp+rs8m://[::]:10001 -r rs8m://[::]:10002
-
-Bind two source and repair endpoints to a particular network interface:
+Bind source, repair, and control endpoints to all IPv6 interfaces (but not IPv4):
 
 .. code::
 
-    $ roc-recv -vv -s rtp+rs8m://192.168.0.3:10001 -r rs8m://192.168.0.3:10002
+    $ roc-recv -vv -s rtp+rs8m://[::]:10001 -r rs8m://[::]:10002 -c rtcp://[::]:10003
 
-Bind three source, repair, and control endpoints:
-
-.. code::
-
-    $ roc-recv -vv \
-        -s rtp+rs8m://192.168.0.3:10001 -r rs8m://192.168.0.3:10002 -c rtcp://192.168.0.3:10003
-
-Bind two source and repair endpoints to a particular multicast address and join to a multicast group on a particular network interface:
+Bind source, repair, and control endpoints to a particular network interface:
 
 .. code::
 
-    $ roc-recv -vv -s rtp+rs8m://225.1.2.3:10001 -r rs8m://225.1.2.3:10002 --miface 192.168.0.3
+    $ roc-recv -vv -s rtp+rs8m://192.168.0.3:10001 -r rs8m://192.168.0.3:10002 \
+        -c rtcp://192.168.0.3:10003
 
-Bind two sets of source, repair, and control endpoints:
+Bind endpoints to a particular multicast address and join to a multicast group on a particular network interface:
+
+.. code::
+
+    $ roc-recv -vv -s rtp+rs8m://225.1.2.3:10001 -r rs8m://225.1.2.3:10002 \
+        -c rtcp://225.1.2.3:10003 \
+        --miface 192.168.0.3
+
+Bind two sets of source, repair, and control endpoints (six endpoints in total):
 
 .. code::
 
     $ roc-recv -vv \
-        -s rtp+rs8m://192.168.0.3:10001 -r rs8m://192.168.0.3:10002 -c rtcp://192.168.0.3:10003 \
-        -s rtp+rs8m://198.214.0.7:10001 -r rs8m://198.214.0.7:10002 -c rtcp://198.214.0.7:10003
+        -s rtp+rs8m://192.168.0.3:10001 -r rs8m://192.168.0.3:10002 \
+            -c rtcp://192.168.0.3:10003 \
+        -s rtp+rs8m://198.214.0.7:10001 -r rs8m://198.214.0.7:10002 \
+            -c rtcp://198.214.0.7:10003
 
 I/O examples
 ------------
+
+Output to the default device (omit ``-o``):
+
+.. code::
+
+    $ roc-recv -vv -s rtp://0.0.0.0:10001
 
 Output to the default ALSA device:
 
@@ -236,7 +241,7 @@ Output to a file in WAV format (specify format manually):
 
 .. code::
 
-    $ roc-recv -vv -s rtp://0.0.0.0:10001 -o file:./output --output-format wav
+    $ roc-recv -vv -s rtp://0.0.0.0:10001 -o file:./output.file --output-format wav
 
 Output to stdout in WAV format:
 
@@ -269,28 +274,43 @@ Select the LDPC-Staircase FEC scheme:
 
 .. code::
 
-    $ roc-recv -vv -s rtp+ldpc://0.0.0.0:10001 -r ldpc://0.0.0.0:10002
+    $ roc-recv -vv -s rtp+ldpc://0.0.0.0:10001 -r ldpc://0.0.0.0:10002 \
+        -c rtcp://0.0.0.0:10003
 
-Select higher session latency and timeouts:
+Select lower session latency:
+
+.. code::
+
+    $ roc-recv -vv -s rtp://0.0.0.0:10001 --sess-latency=50ms
+
+Select lower I/O latency and frame length:
 
 .. code::
 
     $ roc-recv -vv -s rtp://0.0.0.0:10001 \
-        --sess-latency=5s --min-latency=-1s --max-latency=10s --np-timeout=10s --bp-timeout=10s
+        --io-latency=20ms --frame-length 4ms
 
-Select higher I/O latency:
-
-.. code::
-
-    $ roc-recv -vv -s rtp://0.0.0.0:10001 \
-        --io-latency=200ms
-
-Select resampler profile:
+Manually specify thresholds and timeouts:
 
 .. code::
 
     $ roc-recv -vv -s rtp://0.0.0.0:10001 \
-        --resampler-profile=high
+        --sess-latency=50ms --latency-tolerance=20ms \
+        --no-play-timeout=200s --choppy-play-timeout=500ms
+
+Manually specify resampling parameters:
+
+.. code::
+
+    $ roc-recv -vv -s rtp://0.0.0.0:10001 \
+        --resampler-backend=speex --resampler-profile=high
+
+Manually specify clock synchronization parameters:
+
+.. code::
+
+    $ roc-recv -vv -s rtp://0.0.0.0:10001 \
+        --clock-backend=niq --clock-profile=gradual
 
 SEE ALSO
 ========

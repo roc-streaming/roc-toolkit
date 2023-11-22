@@ -277,81 +277,86 @@ $ roc\-recv \-vv \-s rtp://0.0.0.0:10001
 .UNINDENT
 .UNINDENT
 .sp
-Bind two source and repair endpoints to all IPv4 interfaces (but not IPv6):
+Bind source, repair, and control endpoints to all IPv4 interfaces (but not IPv6):
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
-$ roc\-recv \-vv \-s rtp+rs8m://0.0.0.0:10001 \-r rs8m://0.0.0.0:10002
+$ roc\-recv \-vv \-s rtp+rs8m://0.0.0.0:10001 \-r rs8m://0.0.0.0:10002 \e
+    \-c rtcp://0.0.0.0:10003
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .sp
-Bind two source and repair endpoints to all IPv6 interfaces (but not IPv4):
+Bind source, repair, and control endpoints to all IPv6 interfaces (but not IPv4):
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
-$ roc\-recv \-vv \-s rtp+rs8m://[::]:10001 \-r rs8m://[::]:10002
+$ roc\-recv \-vv \-s rtp+rs8m://[::]:10001 \-r rs8m://[::]:10002 \-c rtcp://[::]:10003
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .sp
-Bind two source and repair endpoints to a particular network interface:
+Bind source, repair, and control endpoints to a particular network interface:
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
-$ roc\-recv \-vv \-s rtp+rs8m://192.168.0.3:10001 \-r rs8m://192.168.0.3:10002
+$ roc\-recv \-vv \-s rtp+rs8m://192.168.0.3:10001 \-r rs8m://192.168.0.3:10002 \e
+    \-c rtcp://192.168.0.3:10003
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .sp
-Bind three source, repair, and control endpoints:
+Bind endpoints to a particular multicast address and join to a multicast group on a particular network interface:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp+rs8m://225.1.2.3:10001 \-r rs8m://225.1.2.3:10002 \e
+    \-c rtcp://225.1.2.3:10003 \e
+    \-\-miface 192.168.0.3
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Bind two sets of source, repair, and control endpoints (six endpoints in total):
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
 $ roc\-recv \-vv \e
-    \-s rtp+rs8m://192.168.0.3:10001 \-r rs8m://192.168.0.3:10002 \-c rtcp://192.168.0.3:10003
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-Bind two source and repair endpoints to a particular multicast address and join to a multicast group on a particular network interface:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-$ roc\-recv \-vv \-s rtp+rs8m://225.1.2.3:10001 \-r rs8m://225.1.2.3:10002 \-\-miface 192.168.0.3
-.ft P
-.fi
-.UNINDENT
-.UNINDENT
-.sp
-Bind two sets of source, repair, and control endpoints:
-.INDENT 0.0
-.INDENT 3.5
-.sp
-.nf
-.ft C
-$ roc\-recv \-vv \e
-    \-s rtp+rs8m://192.168.0.3:10001 \-r rs8m://192.168.0.3:10002 \-c rtcp://192.168.0.3:10003 \e
-    \-s rtp+rs8m://198.214.0.7:10001 \-r rs8m://198.214.0.7:10002 \-c rtcp://198.214.0.7:10003
+    \-s rtp+rs8m://192.168.0.3:10001 \-r rs8m://192.168.0.3:10002 \e
+        \-c rtcp://192.168.0.3:10003 \e
+    \-s rtp+rs8m://198.214.0.7:10001 \-r rs8m://198.214.0.7:10002 \e
+        \-c rtcp://198.214.0.7:10003
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .SS I/O examples
+.sp
+Output to the default device (omit \fB\-o\fP):
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp://0.0.0.0:10001
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
 .sp
 Output to the default ALSA device:
 .INDENT 0.0
@@ -395,7 +400,7 @@ Output to a file in WAV format (specify format manually):
 .sp
 .nf
 .ft C
-$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \-o file:./output \-\-output\-format wav
+$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \-o file:./output.file \-\-output\-format wav
 .ft P
 .fi
 .UNINDENT
@@ -456,46 +461,73 @@ Select the LDPC\-Staircase FEC scheme:
 .sp
 .nf
 .ft C
-$ roc\-recv \-vv \-s rtp+ldpc://0.0.0.0:10001 \-r ldpc://0.0.0.0:10002
+$ roc\-recv \-vv \-s rtp+ldpc://0.0.0.0:10001 \-r ldpc://0.0.0.0:10002 \e
+    \-c rtcp://0.0.0.0:10003
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .sp
-Select higher session latency and timeouts:
+Select lower session latency:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \-\-sess\-latency=50ms
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Select lower I/O latency and frame length:
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
 $ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \e
-    \-\-sess\-latency=5s \-\-min\-latency=\-1s \-\-max\-latency=10s \-\-np\-timeout=10s \-\-bp\-timeout=10s
+    \-\-io\-latency=20ms \-\-frame\-length 4ms
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .sp
-Select higher I/O latency:
+Manually specify thresholds and timeouts:
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
 $ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \e
-    \-\-io\-latency=200ms
+    \-\-sess\-latency=50ms \-\-latency\-tolerance=20ms \e
+    \-\-no\-play\-timeout=200s \-\-choppy\-play\-timeout=500ms
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .sp
-Select resampler profile:
+Manually specify resampling parameters:
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
 $ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \e
-    \-\-resampler\-profile=high
+    \-\-resampler\-backend=speex \-\-resampler\-profile=high
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Manually specify clock synchronization parameters:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \e
+    \-\-clock\-backend=niq \-\-clock\-profile=gradual
 .ft P
 .fi
 .UNINDENT

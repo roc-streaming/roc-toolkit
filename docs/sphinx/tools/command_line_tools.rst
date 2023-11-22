@@ -30,7 +30,7 @@ Here is an example of starting the receiver that listens on all interfaces on tw
 
 .. code::
 
-    $ roc-recv -vv -s rtp+rs8m://0.0.0.0:10001 -r rs8m://0.0.0.0:10002
+    $ roc-recv -vv -s rtp+rs8m://0.0.0.0:10001 -r rs8m://0.0.0.0:10002 -c rtcp://0.0.0.0:10003
     15:23:09.147 [6447] [dbg] roc_peer: pool: initializing: object_size=632 poison=0
     15:23:09.147 [6447] [dbg] roc_peer: pool: initializing: object_size=2064 poison=0
     15:23:09.147 [6447] [dbg] roc_peer: pool: initializing: object_size=4112 poison=0
@@ -85,7 +85,7 @@ Here is an example of starting the sender reads audio stream from a WAV file and
 
 .. code::
 
-    $ roc-send -vv -i file:./input.wav -s rtp+rs8m://127.0.0.1:10001 -r rs8m://127.0.0.1:10002
+    $ roc-send -vv -i file:./input.wav -s rtp+rs8m://127.0.0.1:10001 -r rs8m://127.0.0.1:10002 -c rtcp://127.0.0.1:10003
     15:23:13.896 [6450] [dbg] roc_peer: pool: initializing: object_size=632 poison=0
     15:23:13.896 [6450] [dbg] roc_peer: pool: initializing: object_size=2064 poison=0
     15:23:13.896 [6450] [dbg] roc_peer: pool: initializing: object_size=4112 poison=0

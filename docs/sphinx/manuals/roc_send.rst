@@ -32,7 +32,6 @@ Options
 --frame-limit=INT           Maximum internal frame size, in bytes
 --frame-length=TIME         Duration of the internal frames, TIME units
 --rate=INT                  Override input sample rate, Hz
---no-resampling             Disable resampling  (default=off)
 --resampler-backend=ENUM    Resampler backend  (possible values="default", "builtin", "speex", "speexdec" default=`default')
 --resampler-profile=ENUM    Resampler profile  (possible values="low", "medium", "high" default=`medium')
 --interleaving              Enable packet interleaving  (default=off)
@@ -149,24 +148,19 @@ Send file to receiver with one bare RTP endpoint:
 
     $ roc-send -vv -i file:./input.wav -s rtp://192.168.0.3:10001
 
-Send file to receiver with two IPv4 source and repair endpoints:
+Send file to receiver with IPv4 source, repair, and control endpoints:
 
 .. code::
 
-    $ roc-send -vv -i file:./input.wav -s rtp+rs8m://192.168.0.3:10001 -r rs8m://192.168.0.3:10002
+    $ roc-send -vv -i file:./input.wav -s rtp+rs8m://192.168.0.3:10001 \
+        -r rs8m://192.168.0.3:10002 -c rtcp://192.168.0.3:10003
 
-Send file to receiver with two IPv6 source and repair endpoints:
-
-.. code::
-
-    $ roc-send -vv -i file:./input.wav -s rtp+rs8m://[2001:db8::]:10001 -r rs8m://[2001:db8::]:10002
-
-Send file to receiver with three IPv4 source, repair, and control endpoints:
+Send file to receiver with IPv6 source, repair, and control endpoints:
 
 .. code::
 
-    $ roc-send -vv -i file:./input.wav \
-        -s rtp+rs8m://192.168.0.3:10001 -r rs8m://192.168.0.3:10002 -c rtcp://192.168.0.3:10003
+    $ roc-send -vv -i file:./input.wav -s rtp+rs8m://[2001:db8::]:10001 \
+        -r rs8m://[2001:db8::]:10002 -r rtcp://[2001:db8::]:10003
 
 Send file to two receivers, each with three endpoints:
 
@@ -174,8 +168,10 @@ Send file to two receivers, each with three endpoints:
 
     $ roc-send -vv \
         -i file:./input.wav \
-        -s rtp+rs8m://192.168.0.3:10001 -r rs8m://192.168.0.3:10002 -c rtcp://192.168.0.3:10003 \
-        -s rtp+rs8m://198.214.0.7:10001 -r rs8m://198.214.0.7:10002 -c rtcp://198.214.0.7:10003
+        -s rtp+rs8m://192.168.0.3:10001 -r rs8m://192.168.0.3:10002 \
+            -c rtcp://192.168.0.3:10003 \
+        -s rtp+rs8m://198.214.0.7:10001 -r rs8m://198.214.0.7:10002 \
+            -c rtcp://198.214.0.7:10003
 
 I/O examples
 ------------
@@ -198,11 +194,17 @@ Capture sound from a specific PulseAudio device:
 
     $ roc-send -vv -s rtp://192.168.0.3:10001 -i pulse://alsa_input.pci-0000_00_1f.3.analog-stereo
 
-Send WAV file, specify format manually:
+Send WAV file (guess format by extension):
 
 .. code::
 
-    $ roc-send -vv -s rtp://192.168.0.3:10001 -i file:./input --input-format wav
+    $ roc-send -vv -s rtp://192.168.0.3:10001 -i file:./input.wav
+
+Send WAV file (specify format manually):
+
+.. code::
+
+    $ roc-send -vv -s rtp://192.168.0.3:10001 -i file:./input.file --input-format wav
 
 Send WAV from stdin:
 
@@ -210,7 +212,7 @@ Send WAV from stdin:
 
     $ roc-send -vv -s rtp://192.168.0.3:10001 -i file:- --input-format wav <./input.wav
 
-Send WAV file, specify full URI:
+Send WAV file (specify absolute path):
 
 .. code::
 
@@ -229,15 +231,30 @@ Select the LDPC-Staircase FEC scheme and a larger block size:
 
 .. code::
 
-    $ roc-send -vv -i file:./input.wav \
-        -s rtp+ldpc://192.168.0.3:10001 -r ldpc://192.168.0.3:10002 \
+    $ roc-send -vv -i file:./input.wav -s rtp+ldpc://192.168.0.3:10001 \
+        -r ldpc://192.168.0.3:10002 -c ldpc://192.168.0.3:10003 \
         --nbsrc=1000 --nbrpr=500
 
-Select resampler profile:
+Select lower packet length:
 
 .. code::
 
-    $ roc-send -vv -s rtp://192.168.0.3:10001 --resampler-profile=high
+    $ roc-send -vv -i file:./input.wav -s rtp+ldpc://192.168.0.3:10001 \
+        --packet-length 2500us
+
+Select lower I/O latency and frame length:
+
+.. code::
+
+    $ roc-send -vv -s rtp://192.168.0.3:10001 \
+        --io-latency=20ms --frame-length 4ms
+
+Manually specify resampling parameters:
+
+.. code::
+
+    $ roc-send -vv -s rtp://192.168.0.3:10001 \
+        --resampler-backend=speex --resampler-profile=high
 
 SEE ALSO
 ========

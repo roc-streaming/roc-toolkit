@@ -78,7 +78,8 @@ Input from stdin, output to stdout:
 
 .. code::
 
-    $ roc-copy -vv --input-format=wav -i file:- --output-format=wav -o file:- >./output.wav <./input.wav
+    $ roc-copy -vv --input-format=wav -i file:- \
+        --output-format=wav -o file:- >./output.wav <./input.wav
 
 SEE ALSO
 ========
