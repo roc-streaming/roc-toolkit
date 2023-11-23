@@ -16,14 +16,14 @@ namespace roc {
 namespace pipeline {
 
 SenderSession::SenderSession(const SenderConfig& config,
-                             const rtp::FormatMap& format_map,
+                             const rtp::EncodingMap& encoding_map,
                              packet::PacketFactory& packet_factory,
                              core::BufferFactory<uint8_t>& byte_buffer_factory,
                              core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                              core::IArena& arena)
     : arena_(arena)
     , config_(config)
-    , format_map_(format_map)
+    , encoding_map_(encoding_map)
     , packet_factory_(packet_factory)
     , byte_buffer_factory_(byte_buffer_factory)
     , sample_buffer_factory_(sample_buffer_factory)
@@ -44,8 +44,8 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         num_sources_++;
     }
 
-    const rtp::Format* format = format_map_.find_by_pt(config_.payload_type);
-    if (!format) {
+    const rtp::Encoding* encoding = encoding_map_.find_by_pt(config_.payload_type);
+    if (!encoding) {
         return false;
     }
 
@@ -93,21 +93,22 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
     }
 
     timestamp_extractor_.reset(new (timestamp_extractor_) rtp::TimestampExtractor(
-        *pwriter, format->sample_spec));
+        *pwriter, encoding->sample_spec));
     if (!timestamp_extractor_) {
         return false;
     }
     pwriter = timestamp_extractor_.get();
 
     payload_encoder_.reset(
-        format->new_encoder(arena_, format->pcm_format, format->sample_spec), arena_);
+        encoding->new_encoder(arena_, encoding->pcm_format, encoding->sample_spec),
+        arena_);
     if (!payload_encoder_) {
         return false;
     }
 
     packetizer_.reset(new (packetizer_) audio::Packetizer(
         *pwriter, source_endpoint->composer(), *payload_encoder_, packet_factory_,
-        byte_buffer_factory_, config_.packet_length, format->sample_spec,
+        byte_buffer_factory_, config_.packet_length, encoding->sample_spec,
         config_.payload_type));
     if (!packetizer_ || !packetizer_->is_valid()) {
         return false;
@@ -115,24 +116,24 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
 
     audio::IFrameWriter* awriter = packetizer_.get();
 
-    if (format->sample_spec.channel_set() != config_.input_sample_spec.channel_set()) {
+    if (encoding->sample_spec.channel_set() != config_.input_sample_spec.channel_set()) {
         channel_mapper_writer_.reset(
             new (channel_mapper_writer_) audio::ChannelMapperWriter(
                 *awriter, sample_buffer_factory_,
-                audio::SampleSpec(format->sample_spec.sample_rate(),
+                audio::SampleSpec(encoding->sample_spec.sample_rate(),
                                   config_.input_sample_spec.channel_set()),
-                format->sample_spec));
+                encoding->sample_spec));
         if (!channel_mapper_writer_ || !channel_mapper_writer_->is_valid()) {
             return false;
         }
         awriter = channel_mapper_writer_.get();
     }
 
-    if (format->sample_spec.sample_rate() != config_.input_sample_spec.sample_rate()) {
+    if (encoding->sample_spec.sample_rate() != config_.input_sample_spec.sample_rate()) {
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
             config_.resampler_backend, arena_, sample_buffer_factory_,
             config_.resampler_profile, config_.input_sample_spec,
-            audio::SampleSpec(format->sample_spec.sample_rate(),
+            audio::SampleSpec(encoding->sample_spec.sample_rate(),
                               config_.input_sample_spec.channel_set())));
 
         if (!resampler_) {
@@ -141,7 +142,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
 
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
             *awriter, *resampler_, sample_buffer_factory_, config_.input_sample_spec,
-            audio::SampleSpec(format->sample_spec.sample_rate(),
+            audio::SampleSpec(encoding->sample_spec.sample_rate(),
                               config_.input_sample_spec.channel_set())));
 
         if (!resampler_writer_ || !resampler_writer_->is_valid()) {

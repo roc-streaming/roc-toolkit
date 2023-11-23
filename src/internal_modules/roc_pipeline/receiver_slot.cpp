@@ -17,18 +17,18 @@ namespace pipeline {
 ReceiverSlot::ReceiverSlot(const ReceiverConfig& receiver_config,
                            ReceiverState& receiver_state,
                            audio::Mixer& mixer,
-                           const rtp::FormatMap& format_map,
+                           const rtp::EncodingMap& encoding_map,
                            packet::PacketFactory& packet_factory,
                            core::BufferFactory<uint8_t>& byte_buffer_factory,
                            core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                            core::IArena& arena)
     : core::RefCounted<ReceiverSlot, core::ArenaAllocation>(arena)
-    , format_map_(format_map)
+    , encoding_map_(encoding_map)
     , receiver_state_(receiver_state)
     , session_group_(receiver_config,
                      receiver_state,
                      mixer,
-                     format_map,
+                     encoding_map,
                      packet_factory,
                      byte_buffer_factory,
                      sample_buffer_factory,
@@ -117,7 +117,7 @@ ReceiverEndpoint* ReceiverSlot::create_source_endpoint_(address::Protocol proto)
     }
 
     source_endpoint_.reset(new (source_endpoint_) ReceiverEndpoint(
-        proto, receiver_state_, session_group_, format_map_, arena()));
+        proto, receiver_state_, session_group_, encoding_map_, arena()));
 
     if (!source_endpoint_ || !source_endpoint_->is_valid()) {
         roc_log(LogError, "receiver slot: can't create source endpoint");
@@ -145,7 +145,7 @@ ReceiverEndpoint* ReceiverSlot::create_repair_endpoint_(address::Protocol proto)
     }
 
     repair_endpoint_.reset(new (repair_endpoint_) ReceiverEndpoint(
-        proto, receiver_state_, session_group_, format_map_, arena()));
+        proto, receiver_state_, session_group_, encoding_map_, arena()));
 
     if (!repair_endpoint_ || !repair_endpoint_->is_valid()) {
         roc_log(LogError, "receiver slot: can't create repair endpoint");
@@ -167,7 +167,7 @@ ReceiverEndpoint* ReceiverSlot::create_control_endpoint_(address::Protocol proto
     }
 
     control_endpoint_.reset(new (control_endpoint_) ReceiverEndpoint(
-        proto, receiver_state_, session_group_, format_map_, arena()));
+        proto, receiver_state_, session_group_, encoding_map_, arena()));
 
     if (!control_endpoint_ || !control_endpoint_->is_valid()) {
         roc_log(LogError, "receiver slot: can't create control endpoint");

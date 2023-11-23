@@ -239,8 +239,8 @@ TEST(composer_parser, rtp_ldpc_source) {
     rtp::Composer rtp_composer(NULL);
     Composer<LDPC_Source_PayloadID, Source, Footer> ldpc_composer(&rtp_composer);
 
-    rtp::FormatMap rtp_format_map(arena);
-    rtp::Parser rtp_parser(rtp_format_map, NULL);
+    rtp::EncodingMap rtp_encoding_map(arena);
+    rtp::Parser rtp_parser(rtp_encoding_map, NULL);
     Parser<LDPC_Source_PayloadID, Source, Footer> ldpc_parser(&rtp_parser);
 
     PacketTest test;
@@ -275,8 +275,8 @@ TEST(composer_parser, rtp_rs8m_source) {
     rtp::Composer rtp_composer(NULL);
     Composer<RS8M_PayloadID, Source, Footer> rs8m_composer(&rtp_composer);
 
-    rtp::FormatMap rtp_format_map(arena);
-    rtp::Parser rtp_parser(rtp_format_map, NULL);
+    rtp::EncodingMap rtp_encoding_map(arena);
+    rtp::Parser rtp_parser(rtp_encoding_map, NULL);
     Parser<RS8M_PayloadID, Source, Footer> rs8m_parser(&rtp_parser);
 
     PacketTest test;

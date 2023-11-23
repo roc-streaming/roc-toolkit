@@ -25,7 +25,7 @@
 #include "roc_pipeline/receiver_session_group.h"
 #include "roc_pipeline/receiver_state.h"
 #include "roc_rtcp/parser.h"
-#include "roc_rtp/format_map.h"
+#include "roc_rtp/encoding_map.h"
 #include "roc_rtp/parser.h"
 
 namespace roc {
@@ -45,7 +45,7 @@ public:
     ReceiverEndpoint(address::Protocol proto,
                      ReceiverState& receiver_state,
                      ReceiverSessionGroup& session_group,
-                     const rtp::FormatMap& format_map,
+                     const rtp::EncodingMap& encoding_map,
                      core::IArena& arena);
 
     //! Check if the port pipeline was succefully constructed.

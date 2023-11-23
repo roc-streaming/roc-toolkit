@@ -17,12 +17,12 @@ namespace pipeline {
 
 ReceiverSource::ReceiverSource(
     const ReceiverConfig& config,
-    const rtp::FormatMap& format_map,
+    const rtp::EncodingMap& encoding_map,
     packet::PacketFactory& packet_factory,
     core::BufferFactory<uint8_t>& byte_buffer_factory,
     core::BufferFactory<audio::sample_t>& sample_buffer_factory,
     core::IArena& arena)
-    : format_map_(format_map)
+    : encoding_map_(encoding_map)
     , packet_factory_(packet_factory)
     , byte_buffer_factory_(byte_buffer_factory)
     , sample_buffer_factory_(sample_buffer_factory)
@@ -63,9 +63,9 @@ ReceiverSlot* ReceiverSource::create_slot() {
 
     roc_log(LogInfo, "receiver source: adding slot");
 
-    core::SharedPtr<ReceiverSlot> slot =
-        new (arena_) ReceiverSlot(config_, state_, *mixer_, format_map_, packet_factory_,
-                                  byte_buffer_factory_, sample_buffer_factory_, arena_);
+    core::SharedPtr<ReceiverSlot> slot = new (arena_)
+        ReceiverSlot(config_, state_, *mixer_, encoding_map_, packet_factory_,
+                     byte_buffer_factory_, sample_buffer_factory_, arena_);
 
     if (!slot) {
         return NULL;

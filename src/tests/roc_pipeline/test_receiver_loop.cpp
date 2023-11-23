@@ -15,7 +15,7 @@
 #include "roc_fec/codec_map.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_pipeline/receiver_loop.h"
-#include "roc_rtp/format_map.h"
+#include "roc_rtp/encoding_map.h"
 
 namespace roc {
 namespace pipeline {
@@ -29,7 +29,7 @@ core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, MaxBufSize);
 core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize);
 packet::PacketFactory packet_factory(arena);
 
-rtp::FormatMap format_map(arena);
+rtp::EncodingMap encoding_map(arena);
 
 class TaskIssuer : public IPipelineTaskCompleter {
 public:
@@ -111,7 +111,7 @@ TEST_GROUP(receiver_loop) {
 };
 
 TEST(receiver_loop, endpoints_sync) {
-    ReceiverLoop receiver(scheduler, config, format_map, packet_factory,
+    ReceiverLoop receiver(scheduler, config, encoding_map, packet_factory,
                           byte_buffer_factory, sample_buffer_factory, arena);
 
     CHECK(receiver.is_valid());
@@ -143,7 +143,7 @@ TEST(receiver_loop, endpoints_sync) {
 }
 
 TEST(receiver_loop, endpoints_async) {
-    ReceiverLoop receiver(scheduler, config, format_map, packet_factory,
+    ReceiverLoop receiver(scheduler, config, encoding_map, packet_factory,
                           byte_buffer_factory, sample_buffer_factory, arena);
 
     CHECK(receiver.is_valid());

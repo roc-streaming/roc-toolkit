@@ -19,7 +19,7 @@ ReceiverSessionGroup::ReceiverSessionGroup(
     const ReceiverConfig& receiver_config,
     ReceiverState& receiver_state,
     audio::Mixer& mixer,
-    const rtp::FormatMap& format_map,
+    const rtp::EncodingMap& encoding_map,
     packet::PacketFactory& packet_factory,
     core::BufferFactory<uint8_t>& byte_buffer_factory,
     core::BufferFactory<audio::sample_t>& sample_buffer_factory,
@@ -28,7 +28,7 @@ ReceiverSessionGroup::ReceiverSessionGroup(
     , packet_factory_(packet_factory)
     , byte_buffer_factory_(byte_buffer_factory)
     , sample_buffer_factory_(sample_buffer_factory)
-    , format_map_(format_map)
+    , encoding_map_(encoding_map)
     , mixer_(mixer)
     , receiver_state_(receiver_state)
     , receiver_config_(receiver_config) {
@@ -228,7 +228,7 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
             address::socket_addr_to_str(dst_address).c_str());
 
     core::SharedPtr<ReceiverSession> sess = new (arena_) ReceiverSession(
-        sess_config, receiver_config_.common, src_address, format_map_, packet_factory_,
+        sess_config, receiver_config_.common, src_address, encoding_map_, packet_factory_,
         byte_buffer_factory_, sample_buffer_factory_, arena_);
 
     if (!sess || !sess->is_valid()) {

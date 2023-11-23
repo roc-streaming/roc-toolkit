@@ -84,14 +84,14 @@ SenderLoop::EndpointHandle SenderLoop::Tasks::AddEndpoint::get_handle() const {
 
 SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
                        const SenderConfig& config,
-                       const rtp::FormatMap& format_map,
+                       const rtp::EncodingMap& encoding_map,
                        packet::PacketFactory& packet_factory,
                        core::BufferFactory<uint8_t>& byte_buffer_factory,
                        core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                        core::IArena& arena)
     : PipelineLoop(scheduler, config.tasks, config.input_sample_spec)
     , sink_(config,
-            format_map,
+            encoding_map,
             packet_factory,
             byte_buffer_factory,
             sample_buffer_factory,

@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_rtp/format_map.h
-//! @brief RTP payload format map.
+//! @file roc_rtp/encoding_map.h
+//! @brief RTP encoding map.
 
-#ifndef ROC_RTP_FORMAT_MAP_H_
-#define ROC_RTP_FORMAT_MAP_H_
+#ifndef ROC_RTP_ENCODING_MAP_H_
+#define ROC_RTP_ENCODING_MAP_H_
 
 #include "roc_audio/sample_spec.h"
 #include "roc_core/allocation_policy.h"
@@ -21,51 +21,51 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/ref_counted.h"
 #include "roc_core/slab_pool.h"
-#include "roc_rtp/format.h"
+#include "roc_rtp/encoding.h"
 
 namespace roc {
 namespace rtp {
 
-//! RTP payload format map.
+//! RTP encoding map.
 //! Thread-safe.
-//! Returned formats are immutable and can be safely used from
+//! Returned encodings are immutable and can be safely used from
 //! any thread.
-class FormatMap : public core::NonCopyable<> {
+class EncodingMap : public core::NonCopyable<> {
 public:
     //! Initialize.
-    FormatMap(core::IArena& arena);
+    EncodingMap(core::IArena& arena);
 
-    //! Find format by payload type.
+    //! Find encoding by payload type.
     //! @returns
-    //!  pointer to the format structure or null if there is no format
+    //!  pointer to the encoding structure or null if there is no encoding
     //!  registered for this payload type.
-    const Format* find_by_pt(unsigned int pt) const;
+    const Encoding* find_by_pt(unsigned int pt) const;
 
-    //! Find format by sample specification.
+    //! Find encoding by sample specification.
     //! @returns
-    //!  pointer to the format structure or null if there is no format
+    //!  pointer to the encoding structure or null if there is no encoding
     //!  with matching specification.
-    const Format* find_by_spec(const audio::SampleSpec& spec) const;
+    const Encoding* find_by_spec(const audio::SampleSpec& spec) const;
 
-    //! Add format to the map.
+    //! Add encoding to the map.
     //! @returns
-    //!  true if successfully added or false if another format with the same
+    //!  true if successfully added or false if another encoding with the same
     //!  payload type already exists.
-    ROC_ATTR_NODISCARD bool add_format(const Format& fmt);
+    ROC_ATTR_NODISCARD bool add_encoding(const Encoding& enc);
 
 private:
     enum { PreallocatedNodes = 16 };
 
     struct Node : core::RefCounted<Node, core::PoolAllocation>, core::HashmapNode {
-        Node(core::IPool& pool, const Format& format)
+        Node(core::IPool& pool, const Encoding& encoding)
             : core::RefCounted<Node, core::PoolAllocation>(pool)
-            , format(format) {
+            , encoding(encoding) {
         }
 
-        Format format;
+        Encoding encoding;
 
         unsigned int key() const {
-            return format.payload_type;
+            return encoding.payload_type;
         }
 
         static core::hashsum_t key_hash(unsigned int pt) {
@@ -77,7 +77,7 @@ private:
         }
     };
 
-    void add_builtin_(const Format& fmt);
+    void add_builtin_(const Encoding& enc);
 
     core::Mutex mutex_;
 
@@ -88,4 +88,4 @@ private:
 } // namespace rtp
 } // namespace roc
 
-#endif // ROC_RTP_FORMAT_MAP_H_
+#endif // ROC_RTP_ENCODING_MAP_H_

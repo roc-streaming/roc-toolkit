@@ -41,7 +41,7 @@
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/metrics.h"
 #include "roc_rtcp/metrics.h"
-#include "roc_rtp/format_map.h"
+#include "roc_rtp/encoding_map.h"
 #include "roc_rtp/parser.h"
 #include "roc_rtp/populator.h"
 #include "roc_rtp/timestamp_injector.h"
@@ -62,7 +62,7 @@ public:
     ReceiverSession(const ReceiverSessionConfig& session_config,
                     const ReceiverCommonConfig& common_config,
                     const address::SocketAddr& src_address,
-                    const rtp::FormatMap& format_map,
+                    const rtp::EncodingMap& encoding_map,
                     packet::PacketFactory& packet_factory,
                     core::BufferFactory<uint8_t>& byte_buffer_factory,
                     core::BufferFactory<audio::sample_t>& sample_buffer_factory,

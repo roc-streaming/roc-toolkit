@@ -28,7 +28,7 @@
 #include "roc_pipeline/receiver_endpoint.h"
 #include "roc_pipeline/receiver_slot.h"
 #include "roc_pipeline/receiver_state.h"
-#include "roc_rtp/format_map.h"
+#include "roc_rtp/encoding_map.h"
 #include "roc_sndio/isource.h"
 
 namespace roc {
@@ -47,7 +47,7 @@ class ReceiverSource : public sndio::ISource, public core::NonCopyable<> {
 public:
     //! Initialize.
     ReceiverSource(const ReceiverConfig& config,
-                   const rtp::FormatMap& format_map,
+                   const rtp::EncodingMap& encoding_map,
                    packet::PacketFactory& packet_factory,
                    core::BufferFactory<uint8_t>& byte_buffer_factory,
                    core::BufferFactory<audio::sample_t>& sample_buffer_factory,
@@ -112,7 +112,7 @@ public:
     virtual bool read(audio::Frame&);
 
 private:
-    const rtp::FormatMap& format_map_;
+    const rtp::EncodingMap& encoding_map_;
 
     packet::PacketFactory& packet_factory_;
     core::BufferFactory<uint8_t>& byte_buffer_factory_;

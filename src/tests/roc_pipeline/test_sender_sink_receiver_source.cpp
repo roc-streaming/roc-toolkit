@@ -21,7 +21,7 @@
 #include "roc_packet/queue.h"
 #include "roc_pipeline/receiver_source.h"
 #include "roc_pipeline/sender_sink.h"
-#include "roc_rtp/format_map.h"
+#include "roc_rtp/encoding_map.h"
 
 namespace roc {
 namespace pipeline {
@@ -106,7 +106,7 @@ core::HeapArena arena;
 core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, MaxBufSize);
 core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize);
 packet::PacketFactory packet_factory(arena);
-rtp::FormatMap format_map(arena);
+rtp::EncodingMap encoding_map(arena);
 
 SenderConfig make_sender_config(int flags,
                                 audio::ChannelMask frame_channels,
@@ -247,7 +247,7 @@ void send_receive(int flags,
     SenderConfig sender_config =
         make_sender_config(flags, frame_channels, packet_channels);
 
-    SenderSink sender(sender_config, format_map, packet_factory, byte_buffer_factory,
+    SenderSink sender(sender_config, encoding_map, packet_factory, byte_buffer_factory,
                       sample_buffer_factory, arena);
     CHECK(sender.is_valid());
 
@@ -277,7 +277,7 @@ void send_receive(int flags,
     ReceiverConfig receiver_config =
         make_receiver_config(frame_channels, packet_channels);
 
-    ReceiverSource receiver(receiver_config, format_map, packet_factory,
+    ReceiverSource receiver(receiver_config, encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 

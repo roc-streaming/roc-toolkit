@@ -19,7 +19,7 @@
 #include "roc_core/stddefs.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_rtp/composer.h"
-#include "roc_rtp/format_map.h"
+#include "roc_rtp/encoding_map.h"
 #include "roc_rtp/parser.h"
 
 namespace roc {
@@ -52,11 +52,11 @@ void check_packet_info(const test::PacketInfo& pi) {
                              + pi.padding_size);
 }
 
-void check_format_info(const Format& format, const test::PacketInfo& pi) {
-    UNSIGNED_LONGS_EQUAL(packet::Packet::FlagAudio, format.packet_flags);
-    UNSIGNED_LONGS_EQUAL(pi.pt, format.payload_type);
-    UNSIGNED_LONGS_EQUAL(pi.samplerate, format.sample_spec.sample_rate());
-    UNSIGNED_LONGS_EQUAL(pi.num_channels, format.sample_spec.num_channels());
+void check_format_info(const Encoding& enc, const test::PacketInfo& pi) {
+    UNSIGNED_LONGS_EQUAL(packet::Packet::FlagAudio, enc.packet_flags);
+    UNSIGNED_LONGS_EQUAL(pi.pt, enc.payload_type);
+    UNSIGNED_LONGS_EQUAL(pi.samplerate, enc.sample_spec.sample_rate());
+    UNSIGNED_LONGS_EQUAL(pi.num_channels, enc.sample_spec.num_channels());
 }
 
 void check_packet_fields(const packet::Packet& packet, const test::PacketInfo& pi) {
@@ -158,7 +158,7 @@ void encode_samples(audio::IFrameEncoder& encoder,
 }
 
 void check_parse_decode(const test::PacketInfo& pi) {
-    FormatMap format_map(arena);
+    EncodingMap encoding_map(arena);
 
     core::Slice<uint8_t> buffer = new_buffer(pi.raw_data, pi.packet_size);
     CHECK(buffer);
@@ -168,17 +168,17 @@ void check_parse_decode(const test::PacketInfo& pi) {
 
     packet->set_data(buffer);
 
-    Parser parser(format_map, NULL);
+    Parser parser(encoding_map, NULL);
     CHECK(parser.parse(*packet, packet->data()));
 
-    const Format* format = format_map.find_by_pt(packet->rtp()->payload_type);
-    CHECK(format);
+    const Encoding* encoding = encoding_map.find_by_pt(packet->rtp()->payload_type);
+    CHECK(encoding);
 
     core::ScopedPtr<audio::IFrameDecoder> decoder(
-        format->new_decoder(arena, format->pcm_format, format->sample_spec), arena);
+        encoding->new_decoder(arena, encoding->pcm_format, encoding->sample_spec), arena);
     CHECK(decoder);
 
-    check_format_info(*format, pi);
+    check_format_info(*encoding, pi);
     check_packet_fields(*packet, pi);
     check_packet_data(*packet, pi);
 
@@ -186,7 +186,7 @@ void check_parse_decode(const test::PacketInfo& pi) {
 }
 
 void check_compose_encode(const test::PacketInfo& pi) {
-    FormatMap format_map(arena);
+    EncodingMap encoding_map(arena);
 
     core::Slice<uint8_t> buffer = new_buffer(NULL, 0);
     CHECK(buffer);
@@ -196,11 +196,11 @@ void check_compose_encode(const test::PacketInfo& pi) {
 
     packet->add_flags(packet::Packet::FlagAudio);
 
-    const Format* format = format_map.find_by_pt(pi.pt);
-    CHECK(format);
+    const Encoding* encoding = encoding_map.find_by_pt(pi.pt);
+    CHECK(encoding);
 
     core::ScopedPtr<audio::IFrameEncoder> encoder(
-        format->new_encoder(arena, format->pcm_format, format->sample_spec), arena);
+        encoding->new_encoder(arena, encoding->pcm_format, encoding->sample_spec), arena);
     CHECK(encoder);
 
     Composer composer(NULL);
@@ -217,7 +217,7 @@ void check_compose_encode(const test::PacketInfo& pi) {
 
     CHECK(composer.compose(*packet));
 
-    check_format_info(*format, pi);
+    check_format_info(*encoding, pi);
     check_packet_fields(*packet, pi);
     check_packet_data(*packet, pi);
 }

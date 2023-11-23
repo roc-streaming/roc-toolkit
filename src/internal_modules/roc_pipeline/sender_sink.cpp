@@ -17,13 +17,13 @@ namespace roc {
 namespace pipeline {
 
 SenderSink::SenderSink(const SenderConfig& config,
-                       const rtp::FormatMap& format_map,
+                       const rtp::EncodingMap& encoding_map,
                        packet::PacketFactory& packet_factory,
                        core::BufferFactory<uint8_t>& byte_buffer_factory,
                        core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                        core::IArena& arena)
     : config_(config)
-    , format_map_(format_map)
+    , encoding_map_(encoding_map)
     , packet_factory_(packet_factory)
     , byte_buffer_factory_(byte_buffer_factory)
     , sample_buffer_factory_(sample_buffer_factory)
@@ -53,7 +53,7 @@ SenderSlot* SenderSink::create_slot() {
     roc_log(LogInfo, "sender sink: adding slot");
 
     core::SharedPtr<SenderSlot> slot =
-        new (arena_) SenderSlot(config_, format_map_, fanout_, packet_factory_,
+        new (arena_) SenderSlot(config_, encoding_map_, fanout_, packet_factory_,
                                 byte_buffer_factory_, sample_buffer_factory_, arena_);
 
     if (!slot) {

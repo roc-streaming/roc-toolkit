@@ -82,25 +82,25 @@ int roc_context_register_encoding(roc_context* context,
 
     node::Context* imp_context = (node::Context*)context;
 
-    rtp::Format fmt;
+    rtp::Encoding enc;
 
-    fmt.payload_type = (unsigned)encoding_id;
-    fmt.packet_flags = packet::Packet::FlagAudio;
+    enc.payload_type = (unsigned)encoding_id;
+    enc.packet_flags = packet::Packet::FlagAudio;
 
-    fmt.pcm_format.code = audio::PcmCode_SInt16;
-    fmt.pcm_format.endian = audio::PcmEndian_Big;
+    enc.pcm_format.code = audio::PcmCode_SInt16;
+    enc.pcm_format.endian = audio::PcmEndian_Big;
 
-    if (!api::sample_spec_from_user(fmt.sample_spec, *encoding)) {
+    if (!api::sample_spec_from_user(enc.sample_spec, *encoding)) {
         roc_log(
             LogError,
             "roc_context_register_encoding(): invalid arguments: encoding is invalid");
         return -1;
     }
 
-    fmt.new_encoder = &audio::PcmEncoder::construct;
-    fmt.new_decoder = &audio::PcmDecoder::construct;
+    enc.new_encoder = &audio::PcmEncoder::construct;
+    enc.new_decoder = &audio::PcmDecoder::construct;
 
-    if (!imp_context->format_map().add_format(fmt)) {
+    if (!imp_context->encoding_map().add_encoding(enc)) {
         roc_log(LogError, "roc_context_register_encoding(): failed to register encoding");
         return -1;
     }

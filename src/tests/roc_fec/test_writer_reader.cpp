@@ -25,7 +25,7 @@
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_rtp/composer.h"
-#include "roc_rtp/format_map.h"
+#include "roc_rtp/encoding_map.h"
 #include "roc_rtp/headers.h"
 #include "roc_rtp/parser.h"
 #include "roc_status/status_code.h"
@@ -49,8 +49,8 @@ core::HeapArena arena;
 core::BufferFactory<uint8_t> buffer_factory(arena, MaxBuffSize);
 packet::PacketFactory packet_factory(arena);
 
-rtp::FormatMap format_map(arena);
-rtp::Parser rtp_parser(format_map, NULL);
+rtp::EncodingMap encoding_map(arena);
+rtp::Parser rtp_parser(encoding_map, NULL);
 
 Parser<RS8M_PayloadID, Source, Footer> rs8m_source_parser(&rtp_parser);
 Parser<RS8M_PayloadID, Repair, Header> rs8m_repair_parser(NULL);

@@ -33,7 +33,7 @@
 #include "roc_pipeline/sender_endpoint.h"
 #include "roc_rtcp/composer.h"
 #include "roc_rtcp/session.h"
-#include "roc_rtp/format_map.h"
+#include "roc_rtp/encoding_map.h"
 #include "roc_rtp/timestamp_extractor.h"
 
 namespace roc {
@@ -48,7 +48,7 @@ class SenderSession : public core::NonCopyable<>, private rtcp::ISenderHooks {
 public:
     //! Initialize.
     SenderSession(const SenderConfig& config,
-                  const rtp::FormatMap& format_map,
+                  const rtp::EncodingMap& encoding_map,
                   packet::PacketFactory& packet_factory,
                   core::BufferFactory<uint8_t>& byte_buffer_factory,
                   core::BufferFactory<audio::sample_t>& sample_buffer_factory,
@@ -86,7 +86,7 @@ private:
 
     const SenderConfig& config_;
 
-    const rtp::FormatMap& format_map_;
+    const rtp::EncodingMap& encoding_map_;
 
     packet::PacketFactory& packet_factory_;
     core::BufferFactory<uint8_t>& byte_buffer_factory_;

@@ -15,7 +15,7 @@ namespace roc {
 namespace pipeline {
 
 SenderSlot::SenderSlot(const SenderConfig& config,
-                       const rtp::FormatMap& format_map,
+                       const rtp::EncodingMap& encoding_map,
                        audio::Fanout& fanout,
                        packet::PacketFactory& packet_factory,
                        core::BufferFactory<uint8_t>& byte_buffer_factory,
@@ -25,7 +25,7 @@ SenderSlot::SenderSlot(const SenderConfig& config,
     , config_(config)
     , fanout_(fanout)
     , session_(config,
-               format_map,
+               encoding_map,
                packet_factory,
                byte_buffer_factory,
                sample_buffer_factory,

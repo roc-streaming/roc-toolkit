@@ -82,14 +82,14 @@ packet::IWriter* ReceiverLoop::Tasks::AddEndpoint::get_writer() const {
 
 ReceiverLoop::ReceiverLoop(IPipelineTaskScheduler& scheduler,
                            const ReceiverConfig& config,
-                           const rtp::FormatMap& format_map,
+                           const rtp::EncodingMap& encoding_map,
                            packet::PacketFactory& packet_factory,
                            core::BufferFactory<uint8_t>& byte_buffer_factory,
                            core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                            core::IArena& arena)
     : PipelineLoop(scheduler, config.tasks, config.common.output_sample_spec)
     , source_(config,
-              format_map,
+              encoding_map,
               packet_factory,
               byte_buffer_factory,
               sample_buffer_factory,

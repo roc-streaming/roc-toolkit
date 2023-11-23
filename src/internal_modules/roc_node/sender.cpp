@@ -20,7 +20,7 @@ Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
     : Node(context)
     , pipeline_(*this,
                 pipeline_config,
-                context.format_map(),
+                context.encoding_map(),
                 context.packet_factory(),
                 context.byte_buffer_factory(),
                 context.sample_buffer_factory(),

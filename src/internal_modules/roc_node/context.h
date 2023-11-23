@@ -21,7 +21,7 @@
 #include "roc_ctl/control_loop.h"
 #include "roc_netio/network_loop.h"
 #include "roc_packet/packet_factory.h"
-#include "roc_rtp/format_map.h"
+#include "roc_rtp/encoding_map.h"
 
 namespace roc {
 namespace node {
@@ -64,8 +64,8 @@ public:
     //! Get sample buffer factory.
     core::BufferFactory<audio::sample_t>& sample_buffer_factory();
 
-    //! Get format map.
-    rtp::FormatMap& format_map();
+    //! Get encoding map.
+    rtp::EncodingMap& encoding_map();
 
     //! Get network event loop.
     netio::NetworkLoop& network_loop();
@@ -80,7 +80,7 @@ private:
     core::BufferFactory<uint8_t> byte_buffer_factory_;
     core::BufferFactory<audio::sample_t> sample_buffer_factory_;
 
-    rtp::FormatMap format_map_;
+    rtp::EncodingMap encoding_map_;
 
     netio::NetworkLoop network_loop_;
     ctl::ControlLoop control_loop_;

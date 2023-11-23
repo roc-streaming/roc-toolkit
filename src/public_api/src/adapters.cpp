@@ -68,8 +68,9 @@ bool sender_config_from_user(node::Context& context,
                     " should be zero or valid encoding id");
             return false;
         }
-        const rtp::Format* format = context.format_map().find_by_pt(out.payload_type);
-        if (!format) {
+        const rtp::Encoding* encoding =
+            context.encoding_map().find_by_pt(out.payload_type);
+        if (!encoding) {
             roc_log(LogError,
                     "bad configuration: invalid roc_sender_config.packet_encoding:"
                     " no built-in or registered encoding found with id %u",
@@ -77,16 +78,16 @@ bool sender_config_from_user(node::Context& context,
             return false;
         }
     } else {
-        const rtp::Format* format =
-            context.format_map().find_by_spec(out.input_sample_spec);
-        if (!format) {
+        const rtp::Encoding* encoding =
+            context.encoding_map().find_by_spec(out.input_sample_spec);
+        if (!encoding) {
             roc_log(LogError,
                     "bad configuration:"
                     " failed to select packet_encoding matching frame_encoding,"
                     " set roc_sender_config.packet_encoding manually");
             return false;
         }
-        out.payload_type = format->payload_type;
+        out.payload_type = encoding->payload_type;
     }
 
     if (in.packet_length != 0) {

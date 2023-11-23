@@ -13,8 +13,8 @@
 namespace roc {
 namespace rtp {
 
-Parser::Parser(const FormatMap& format_map, packet::IParser* inner_parser)
-    : format_map_(format_map)
+Parser::Parser(const EncodingMap& encoding_map, packet::IParser* inner_parser)
+    : encoding_map_(encoding_map)
     , inner_parser_(inner_parser) {
 }
 
@@ -103,8 +103,8 @@ bool Parser::parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer) {
         rtp.padding = buffer.subslice(payload_end, payload_end + pad_size);
     }
 
-    if (const Format* format = format_map_.find_by_pt(header.payload_type())) {
-        packet.add_flags(format->packet_flags);
+    if (const Encoding* encoding = encoding_map_.find_by_pt(header.payload_type())) {
+        packet.add_flags(encoding->packet_flags);
     }
 
     if (inner_parser_) {

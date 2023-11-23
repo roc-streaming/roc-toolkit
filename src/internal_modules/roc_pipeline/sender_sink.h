@@ -29,7 +29,7 @@
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/sender_endpoint.h"
 #include "roc_pipeline/sender_slot.h"
-#include "roc_rtp/format_map.h"
+#include "roc_rtp/encoding_map.h"
 #include "roc_sndio/isink.h"
 
 namespace roc {
@@ -48,7 +48,7 @@ class SenderSink : public sndio::ISink, public core::NonCopyable<> {
 public:
     //! Initialize.
     SenderSink(const SenderConfig& config,
-               const rtp::FormatMap& format_map,
+               const rtp::EncodingMap& encoding_map,
                packet::PacketFactory& packet_factory,
                core::BufferFactory<uint8_t>& byte_buffer_factory,
                core::BufferFactory<audio::sample_t>& sample_buffer_factory,
@@ -106,7 +106,7 @@ public:
 private:
     const SenderConfig config_;
 
-    const rtp::FormatMap& format_map_;
+    const rtp::EncodingMap& encoding_map_;
 
     packet::PacketFactory& packet_factory_;
     core::BufferFactory<uint8_t>& byte_buffer_factory_;

@@ -19,7 +19,7 @@ namespace pipeline {
 ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
                                    ReceiverState& receiver_state,
                                    ReceiverSessionGroup& session_group,
-                                   const rtp::FormatMap& format_map,
+                                   const rtp::EncodingMap& encoding_map,
                                    core::IArena& arena)
     : core::RefCounted<ReceiverEndpoint, core::ArenaAllocation>(arena)
     , proto_(proto)
@@ -32,7 +32,7 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
     case address::Proto_RTP:
     case address::Proto_RTP_LDPC_Source:
     case address::Proto_RTP_RS8M_Source:
-        rtp_parser_.reset(new (rtp_parser_) rtp::Parser(format_map, NULL));
+        rtp_parser_.reset(new (rtp_parser_) rtp::Parser(encoding_map, NULL));
         if (!rtp_parser_) {
             return;
         }

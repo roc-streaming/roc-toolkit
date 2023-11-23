@@ -17,7 +17,7 @@
 #include "roc_packet/queue.h"
 #include "roc_packet/units.h"
 #include "roc_rtp/composer.h"
-#include "roc_rtp/format_map.h"
+#include "roc_rtp/encoding_map.h"
 #include "roc_rtp/parser.h"
 #include "roc_rtp/timestamp_injector.h"
 #include "roc_status/status_code.h"

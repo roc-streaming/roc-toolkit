@@ -17,7 +17,7 @@
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_pipeline/sender_sink.h"
-#include "roc_rtp/format_map.h"
+#include "roc_rtp/encoding_map.h"
 
 // This file contains tests for SenderSink. SenderSink can be seen as a big
 // composite processor (consisting of chanined smaller processors) that transforms
@@ -63,7 +63,7 @@ core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, MaxBufSize);
 core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize);
 packet::PacketFactory packet_factory(arena);
 
-rtp::FormatMap format_map(arena);
+rtp::EncodingMap encoding_map(arena);
 
 } // namespace
 
@@ -124,7 +124,7 @@ TEST(sender_sink, write) {
 
     packet::Queue queue;
 
-    SenderSink sender(make_config(), format_map, packet_factory, byte_buffer_factory,
+    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
                       sample_buffer_factory, arena);
     CHECK(sender.is_valid());
 
@@ -142,7 +142,7 @@ TEST(sender_sink, write) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, format_map, packet_factory, dst_addr,
+    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory, dst_addr,
                                      PayloadType_Ch2);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
@@ -165,7 +165,7 @@ TEST(sender_sink, frame_size_small) {
 
     packet::Queue queue;
 
-    SenderSink sender(make_config(), format_map, packet_factory, byte_buffer_factory,
+    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
                       sample_buffer_factory, arena);
     CHECK(sender.is_valid());
 
@@ -183,7 +183,7 @@ TEST(sender_sink, frame_size_small) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, format_map, packet_factory, dst_addr,
+    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory, dst_addr,
                                      PayloadType_Ch2);
 
     for (size_t np = 0; np < ManySmallFrames / SmallFramesPerPacket; np++) {
@@ -206,7 +206,7 @@ TEST(sender_sink, frame_size_large) {
 
     packet::Queue queue;
 
-    SenderSink sender(make_config(), format_map, packet_factory, byte_buffer_factory,
+    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
                       sample_buffer_factory, arena);
     CHECK(sender.is_valid());
 
@@ -224,7 +224,7 @@ TEST(sender_sink, frame_size_large) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, format_map, packet_factory, dst_addr,
+    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory, dst_addr,
                                      PayloadType_Ch2);
 
     for (size_t np = 0; np < ManyLargeFrames * PacketsPerLargeFrame; np++) {
@@ -241,7 +241,7 @@ TEST(sender_sink, channel_mapping_stereo_to_mono) {
 
     packet::Queue queue;
 
-    SenderSink sender(make_config(), format_map, packet_factory, byte_buffer_factory,
+    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
                       sample_buffer_factory, arena);
     CHECK(sender.is_valid());
 
@@ -259,7 +259,7 @@ TEST(sender_sink, channel_mapping_stereo_to_mono) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, format_map, packet_factory, dst_addr,
+    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory, dst_addr,
                                      PayloadType_Ch1);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
@@ -276,7 +276,7 @@ TEST(sender_sink, channel_mapping_mono_to_stereo) {
 
     packet::Queue queue;
 
-    SenderSink sender(make_config(), format_map, packet_factory, byte_buffer_factory,
+    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
                       sample_buffer_factory, arena);
     CHECK(sender.is_valid());
 
@@ -294,7 +294,7 @@ TEST(sender_sink, channel_mapping_mono_to_stereo) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, format_map, packet_factory, dst_addr,
+    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory, dst_addr,
                                      PayloadType_Ch2);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
@@ -311,7 +311,7 @@ TEST(sender_sink, sample_rate_mapping) {
 
     packet::Queue queue;
 
-    SenderSink sender(make_config(), format_map, packet_factory, byte_buffer_factory,
+    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
                       sample_buffer_factory, arena);
     CHECK(sender.is_valid());
 
@@ -332,7 +332,7 @@ TEST(sender_sink, sample_rate_mapping) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, format_map, packet_factory, dst_addr,
+    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory, dst_addr,
                                      PayloadType_Ch2);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket - 5; np++) {
@@ -347,7 +347,7 @@ TEST(sender_sink, timestamp_mapping) {
 
     packet::Queue queue;
 
-    SenderSink sender(make_config(), format_map, packet_factory, byte_buffer_factory,
+    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
                       sample_buffer_factory, arena);
     CHECK(sender.is_valid());
 
@@ -367,7 +367,7 @@ TEST(sender_sink, timestamp_mapping) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, format_map, packet_factory, dst_addr,
+    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory, dst_addr,
                                      PayloadType_Ch2);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
@@ -389,7 +389,7 @@ IGNORE_TEST(sender_sink, timestamp_mapping_remixing) {
 
     packet::Queue queue;
 
-    SenderSink sender(make_config(), format_map, packet_factory, byte_buffer_factory,
+    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
                       sample_buffer_factory, arena);
     CHECK(sender.is_valid());
 
@@ -412,7 +412,7 @@ IGNORE_TEST(sender_sink, timestamp_mapping_remixing) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, format_map, packet_factory, dst_addr,
+    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory, dst_addr,
                                      PayloadType_Ch1);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket - 5; np++) {

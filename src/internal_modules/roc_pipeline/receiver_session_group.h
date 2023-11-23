@@ -36,7 +36,7 @@ public:
     ReceiverSessionGroup(const ReceiverConfig& receiver_config,
                          ReceiverState& receiver_state,
                          audio::Mixer& mixer,
-                         const rtp::FormatMap& format_map,
+                         const rtp::EncodingMap& encoding_map,
                          packet::PacketFactory& packet_factory,
                          core::BufferFactory<uint8_t>& byte_buffer_factory,
                          core::BufferFactory<audio::sample_t>& sample_buffer_factory,
@@ -97,7 +97,7 @@ private:
     core::BufferFactory<uint8_t>& byte_buffer_factory_;
     core::BufferFactory<audio::sample_t>& sample_buffer_factory_;
 
-    const rtp::FormatMap& format_map_;
+    const rtp::EncodingMap& encoding_map_;
 
     audio::Mixer& mixer_;
 

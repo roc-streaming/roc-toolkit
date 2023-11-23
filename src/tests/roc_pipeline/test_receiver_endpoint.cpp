@@ -45,32 +45,32 @@ core::BufferFactory<audio::sample_t> sample_factory(arena, PacketSz);
 TEST_GROUP(receiver_endpoint) {};
 
 TEST(receiver_endpoint, valid) {
-    rtp::FormatMap fmt_map(arena);
+    rtp::EncodingMap encoding_map(arena);
     audio::Mixer mixer(sample_factory, false);
 
     ReceiverState receiver_state;
     ReceiverConfig receiver_config;
-    ReceiverSessionGroup session_group(receiver_config, receiver_state, mixer, fmt_map,
-                                       packet_factory, buffer_factory, sample_factory,
-                                       arena);
+    ReceiverSessionGroup session_group(receiver_config, receiver_state, mixer,
+                                       encoding_map, packet_factory, buffer_factory,
+                                       sample_factory, arena);
 
-    ReceiverEndpoint endpoint(address::Proto_RTP, receiver_state, session_group, fmt_map,
-                              arena);
+    ReceiverEndpoint endpoint(address::Proto_RTP, receiver_state, session_group,
+                              encoding_map, arena);
     CHECK(endpoint.is_valid());
 }
 
 TEST(receiver_endpoint, invalid_proto) {
-    rtp::FormatMap fmt_map(arena);
+    rtp::EncodingMap encoding_map(arena);
     audio::Mixer mixer(sample_factory, false);
 
     ReceiverState receiver_state;
     ReceiverConfig receiver_config;
-    ReceiverSessionGroup session_group(receiver_config, receiver_state, mixer, fmt_map,
-                                       packet_factory, buffer_factory, sample_factory,
-                                       arena);
+    ReceiverSessionGroup session_group(receiver_config, receiver_state, mixer,
+                                       encoding_map, packet_factory, buffer_factory,
+                                       sample_factory, arena);
 
-    ReceiverEndpoint endpoint(address::Proto_None, receiver_state, session_group, fmt_map,
-                              arena);
+    ReceiverEndpoint endpoint(address::Proto_None, receiver_state, session_group,
+                              encoding_map, arena);
     CHECK(!endpoint.is_valid());
 }
 
@@ -85,16 +85,16 @@ TEST(receiver_endpoint, no_memory) {
     NoMemArena nomem_arena;
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(protos); ++n) {
-        rtp::FormatMap fmt_map(nomem_arena);
+        rtp::EncodingMap encoding_map(nomem_arena);
         audio::Mixer mixer(sample_factory, false);
 
         ReceiverState receiver_state;
         ReceiverConfig receiver_config;
         ReceiverSessionGroup session_group(receiver_config, receiver_state, mixer,
-                                           fmt_map, packet_factory, buffer_factory,
+                                           encoding_map, packet_factory, buffer_factory,
                                            sample_factory, nomem_arena);
 
-        ReceiverEndpoint endpoint(protos[n], receiver_state, session_group, fmt_map,
+        ReceiverEndpoint endpoint(protos[n], receiver_state, session_group, encoding_map,
                                   nomem_arena);
 
         CHECK(!endpoint.is_valid());

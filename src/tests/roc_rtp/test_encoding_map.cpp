@@ -12,156 +12,156 @@
 #include "roc_audio/pcm_encoder.h"
 #include "roc_audio/pcm_format.h"
 #include "roc_core/heap_arena.h"
-#include "roc_rtp/format_map.h"
+#include "roc_rtp/encoding_map.h"
 
 namespace roc {
 namespace rtp {
 
 core::HeapArena arena;
 
-TEST_GROUP(format_map) {};
+TEST_GROUP(encoding_map) {};
 
-TEST(format_map, find_by_pt) {
-    FormatMap fmt_map(arena);
+TEST(encoding_map, find_by_pt) {
+    EncodingMap enc_map(arena);
 
     {
-        const Format* fmt = fmt_map.find_by_pt(99);
-        CHECK(!fmt);
+        const Encoding* enc = enc_map.find_by_pt(99);
+        CHECK(!enc);
     }
 
     {
-        const Format* fmt = fmt_map.find_by_pt(PayloadType_L16_Mono);
-        CHECK(fmt);
+        const Encoding* enc = enc_map.find_by_pt(PayloadType_L16_Mono);
+        CHECK(enc);
 
-        LONGS_EQUAL(PayloadType_L16_Mono, fmt->payload_type);
+        LONGS_EQUAL(PayloadType_L16_Mono, enc->payload_type);
 
-        CHECK(fmt->pcm_format
+        CHECK(enc->pcm_format
               == audio::PcmFormat(audio::PcmCode_SInt16, audio::PcmEndian_Big));
 
-        CHECK(fmt->sample_spec.is_valid());
-        CHECK(fmt->sample_spec
+        CHECK(enc->sample_spec.is_valid());
+        CHECK(enc->sample_spec
               == audio::SampleSpec(44100, audio::ChanLayout_Surround,
                                    audio::ChanOrder_Smpte,
                                    audio::ChanMask_Surround_Mono));
 
-        CHECK(fmt->packet_flags & packet::Packet::FlagAudio);
+        CHECK(enc->packet_flags & packet::Packet::FlagAudio);
 
-        CHECK(fmt->new_encoder);
-        CHECK(fmt->new_decoder);
+        CHECK(enc->new_encoder);
+        CHECK(enc->new_decoder);
     }
 
     {
-        const Format* fmt = fmt_map.find_by_pt(PayloadType_L16_Stereo);
-        CHECK(fmt);
+        const Encoding* enc = enc_map.find_by_pt(PayloadType_L16_Stereo);
+        CHECK(enc);
 
-        LONGS_EQUAL(PayloadType_L16_Stereo, fmt->payload_type);
+        LONGS_EQUAL(PayloadType_L16_Stereo, enc->payload_type);
 
-        CHECK(fmt->pcm_format
+        CHECK(enc->pcm_format
               == audio::PcmFormat(audio::PcmCode_SInt16, audio::PcmEndian_Big));
 
-        CHECK(fmt->sample_spec.is_valid());
-        CHECK(fmt->sample_spec
+        CHECK(enc->sample_spec.is_valid());
+        CHECK(enc->sample_spec
               == audio::SampleSpec(44100, audio::ChanLayout_Surround,
                                    audio::ChanOrder_Smpte,
                                    audio::ChanMask_Surround_Stereo));
 
-        CHECK(fmt->packet_flags & packet::Packet::FlagAudio);
+        CHECK(enc->packet_flags & packet::Packet::FlagAudio);
 
-        CHECK(fmt->new_encoder);
-        CHECK(fmt->new_decoder);
+        CHECK(enc->new_encoder);
+        CHECK(enc->new_decoder);
     }
 }
 
-TEST(format_map, find_by_spec) {
-    FormatMap fmt_map(arena);
+TEST(encoding_map, find_by_spec) {
+    EncodingMap enc_map(arena);
 
     {
-        const Format* fmt = fmt_map.find_by_spec(
+        const Encoding* enc = enc_map.find_by_spec(
             audio::SampleSpec(48000, audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
                               audio::ChanMask_Surround_Mono));
 
-        CHECK(!fmt);
+        CHECK(!enc);
     }
 
     {
-        const Format* fmt = fmt_map.find_by_spec(
+        const Encoding* enc = enc_map.find_by_spec(
             audio::SampleSpec(44100, audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
                               audio::ChanMask_Surround_Mono));
 
-        CHECK(fmt);
+        CHECK(enc);
 
-        LONGS_EQUAL(PayloadType_L16_Mono, fmt->payload_type);
+        LONGS_EQUAL(PayloadType_L16_Mono, enc->payload_type);
     }
 
     {
-        const Format* fmt = fmt_map.find_by_spec(
+        const Encoding* enc = enc_map.find_by_spec(
             audio::SampleSpec(44100, audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
                               audio::ChanMask_Surround_Stereo));
 
-        CHECK(fmt);
+        CHECK(enc);
 
-        LONGS_EQUAL(PayloadType_L16_Stereo, fmt->payload_type);
+        LONGS_EQUAL(PayloadType_L16_Stereo, enc->payload_type);
     }
 }
 
-TEST(format_map, add_format) {
-    FormatMap fmt_map(arena);
+TEST(encoding_map, add_encoding) {
+    EncodingMap enc_map(arena);
 
     {
-        Format fmt;
-        fmt.payload_type = (PayloadType)100;
-        fmt.packet_flags = packet::Packet::FlagAudio;
-        fmt.pcm_format =
+        Encoding enc;
+        enc.payload_type = (PayloadType)100;
+        enc.packet_flags = packet::Packet::FlagAudio;
+        enc.pcm_format =
             audio::PcmFormat(audio::PcmCode_Float32, audio::PcmEndian_Native);
-        fmt.sample_spec =
+        enc.sample_spec =
             audio::SampleSpec(48000, audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
                               audio::ChanMask_Surround_Stereo);
-        fmt.new_encoder = &audio::PcmEncoder::construct;
-        fmt.new_decoder = &audio::PcmDecoder::construct;
+        enc.new_encoder = &audio::PcmEncoder::construct;
+        enc.new_decoder = &audio::PcmDecoder::construct;
 
-        CHECK(fmt_map.add_format(fmt));
+        CHECK(enc_map.add_encoding(enc));
     }
 
     {
-        const Format* fmt = fmt_map.find_by_pt(100);
-        CHECK(fmt);
+        const Encoding* enc = enc_map.find_by_pt(100);
+        CHECK(enc);
 
-        LONGS_EQUAL(100, fmt->payload_type);
+        LONGS_EQUAL(100, enc->payload_type);
 
-        CHECK(fmt->pcm_format
+        CHECK(enc->pcm_format
               == audio::PcmFormat(audio::PcmCode_Float32, audio::PcmEndian_Native));
 
-        CHECK(fmt->sample_spec
+        CHECK(enc->sample_spec
               == audio::SampleSpec(48000, audio::ChanLayout_Surround,
                                    audio::ChanOrder_Smpte,
                                    audio::ChanMask_Surround_Stereo));
 
-        CHECK(fmt->packet_flags == packet::Packet::FlagAudio);
+        CHECK(enc->packet_flags == packet::Packet::FlagAudio);
 
-        CHECK(fmt->new_encoder);
-        CHECK(fmt->new_decoder);
+        CHECK(enc->new_encoder);
+        CHECK(enc->new_decoder);
     }
 
     {
-        const Format* fmt = fmt_map.find_by_spec(
+        const Encoding* enc = enc_map.find_by_spec(
             audio::SampleSpec(48000, audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
                               audio::ChanMask_Surround_Stereo));
-        CHECK(fmt);
+        CHECK(enc);
 
-        LONGS_EQUAL(100, fmt->payload_type);
+        LONGS_EQUAL(100, enc->payload_type);
 
-        CHECK(fmt->pcm_format
+        CHECK(enc->pcm_format
               == audio::PcmFormat(audio::PcmCode_Float32, audio::PcmEndian_Native));
 
-        CHECK(fmt->sample_spec
+        CHECK(enc->sample_spec
               == audio::SampleSpec(48000, audio::ChanLayout_Surround,
                                    audio::ChanOrder_Smpte,
                                    audio::ChanMask_Surround_Stereo));
 
-        CHECK(fmt->packet_flags == packet::Packet::FlagAudio);
+        CHECK(enc->packet_flags == packet::Packet::FlagAudio);
 
-        CHECK(fmt->new_encoder);
-        CHECK(fmt->new_decoder);
+        CHECK(enc->new_encoder);
+        CHECK(enc->new_decoder);
     }
 }
 

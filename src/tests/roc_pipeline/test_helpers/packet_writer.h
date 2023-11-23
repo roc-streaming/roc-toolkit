@@ -27,7 +27,7 @@
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_rtp/composer.h"
-#include "roc_rtp/format_map.h"
+#include "roc_rtp/encoding_map.h"
 #include "roc_status/status_code.h"
 
 namespace roc {
@@ -40,7 +40,7 @@ public:
     // Initialize without FEC (produce only source packets)
     PacketWriter(core::IArena& arena,
                  packet::IWriter& dst_writer,
-                 rtp::FormatMap& format_map,
+                 rtp::EncodingMap& encoding_map,
                  packet::PacketFactory& packet_factory,
                  core::BufferFactory<uint8_t>& buffer_factory,
                  const address::SocketAddr& src_addr,
@@ -59,7 +59,7 @@ public:
         , pt_(pt)
         , offset_(0)
         , corrupt_(false) {
-        construct_(arena, packet_factory, buffer_factory, format_map, pt,
+        construct_(arena, packet_factory, buffer_factory, encoding_map, pt,
                    packet::FEC_None, fec::WriterConfig());
     }
 
@@ -67,7 +67,7 @@ public:
     PacketWriter(core::IArena& arena,
                  packet::IWriter& source_dst_writer,
                  packet::IWriter& repair_dst_writer,
-                 rtp::FormatMap& format_map,
+                 rtp::EncodingMap& encoding_map,
                  packet::PacketFactory& packet_factory,
                  core::BufferFactory<uint8_t>& buffer_factory,
                  const address::SocketAddr& src_addr,
@@ -89,7 +89,7 @@ public:
         , pt_(pt)
         , offset_(0)
         , corrupt_(false) {
-        construct_(arena, packet_factory, buffer_factory, format_map, pt, fec_scheme,
+        construct_(arena, packet_factory, buffer_factory, encoding_map, pt, fec_scheme,
                    fec_config);
     }
 
@@ -153,14 +153,14 @@ private:
     void construct_(core::IArena& arena,
                     packet::PacketFactory& packet_factory,
                     core::BufferFactory<uint8_t>& buffer_factory,
-                    rtp::FormatMap& format_map,
+                    rtp::EncodingMap& encoding_map,
                     rtp::PayloadType pt,
                     packet::FecScheme fec_scheme,
                     fec::WriterConfig fec_config) {
         // payload encoder
-        const rtp::Format* fmt = format_map.find_by_pt(pt);
-        CHECK(fmt);
-        payload_encoder_.reset(fmt->new_encoder(arena, fmt->pcm_format, fmt->sample_spec),
+        const rtp::Encoding* enc = encoding_map.find_by_pt(pt);
+        CHECK(enc);
+        payload_encoder_.reset(enc->new_encoder(arena, enc->pcm_format, enc->sample_spec),
                                arena);
         CHECK(payload_encoder_);
 

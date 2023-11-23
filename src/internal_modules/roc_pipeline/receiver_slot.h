@@ -24,7 +24,7 @@
 #include "roc_pipeline/receiver_endpoint.h"
 #include "roc_pipeline/receiver_session_group.h"
 #include "roc_pipeline/receiver_state.h"
-#include "roc_rtp/format_map.h"
+#include "roc_rtp/encoding_map.h"
 
 namespace roc {
 namespace pipeline {
@@ -41,7 +41,7 @@ public:
     ReceiverSlot(const ReceiverConfig& receiver_config,
                  ReceiverState& receiver_state,
                  audio::Mixer& mixer,
-                 const rtp::FormatMap& format_map,
+                 const rtp::EncodingMap& encoding_map,
                  packet::PacketFactory& packet_factory,
                  core::BufferFactory<uint8_t>& byte_buffer_factory,
                  core::BufferFactory<audio::sample_t>& sample_buffer_factory,
@@ -75,7 +75,7 @@ private:
     ReceiverEndpoint* create_repair_endpoint_(address::Protocol proto);
     ReceiverEndpoint* create_control_endpoint_(address::Protocol proto);
 
-    const rtp::FormatMap& format_map_;
+    const rtp::EncodingMap& encoding_map_;
 
     ReceiverState& receiver_state_;
     ReceiverSessionGroup session_group_;

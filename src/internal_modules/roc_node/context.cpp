@@ -18,7 +18,7 @@ Context::Context(const ContextConfig& config, core::IArena& arena)
     , packet_factory_(arena_)
     , byte_buffer_factory_(arena_, config.max_packet_size)
     , sample_buffer_factory_(arena_, config.max_frame_size / sizeof(audio::sample_t))
-    , format_map_(arena_)
+    , encoding_map_(arena_)
     , network_loop_(packet_factory_, byte_buffer_factory_, arena_)
     , control_loop_(network_loop_, arena_) {
     roc_log(LogDebug, "context: initializing");
@@ -48,8 +48,8 @@ core::BufferFactory<audio::sample_t>& Context::sample_buffer_factory() {
     return sample_buffer_factory_;
 }
 
-rtp::FormatMap& Context::format_map() {
-    return format_map_;
+rtp::EncodingMap& Context::encoding_map() {
+    return encoding_map_;
 }
 
 netio::NetworkLoop& Context::network_loop() {

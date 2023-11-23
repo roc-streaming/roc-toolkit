@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_rtp/format.h
-//! @brief RTP payload format.
+//! @file roc_rtp/encoding.h
+//! @brief RTP encoding.
 
-#ifndef ROC_RTP_FORMAT_H_
-#define ROC_RTP_FORMAT_H_
+#ifndef ROC_RTP_ENCODING_H_
+#define ROC_RTP_ENCODING_H_
 
 #include "roc_audio/iframe_decoder.h"
 #include "roc_audio/iframe_encoder.h"
@@ -22,16 +22,16 @@
 namespace roc {
 namespace rtp {
 
-//! RTP payload format.
-struct Format {
+//! RTP encoding.
+struct Encoding {
     //! Payload type.
     unsigned int payload_type;
 
+    //! Encoding specification.
+    audio::SampleSpec sample_spec;
+
     //! Sample encoding and endian.
     audio::PcmFormat pcm_format;
-
-    //! Sample rate and channel mask.
-    audio::SampleSpec sample_spec;
 
     //! Packet flags.
     unsigned packet_flags;
@@ -47,7 +47,7 @@ struct Format {
                                          const audio::SampleSpec& sample_spec);
 
     //! Initialize.
-    Format()
+    Encoding()
         : payload_type(0)
         , packet_flags(0)
         , new_encoder(NULL)
@@ -58,4 +58,4 @@ struct Format {
 } // namespace rtp
 } // namespace roc
 
-#endif // ROC_RTP_FORMAT_H_
+#endif // ROC_RTP_ENCODING_H_

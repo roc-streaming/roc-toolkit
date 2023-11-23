@@ -39,7 +39,7 @@ class SenderSlot : public core::RefCounted<SenderSlot, core::ArenaAllocation>,
 public:
     //! Initialize.
     SenderSlot(const SenderConfig& config,
-               const rtp::FormatMap& format_map,
+               const rtp::EncodingMap& encoding_map,
                audio::Fanout& fanout,
                packet::PacketFactory& packet_factory,
                core::BufferFactory<uint8_t>& byte_buffer_factory,

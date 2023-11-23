@@ -120,7 +120,7 @@ public:
     //! Initialize.
     SenderLoop(IPipelineTaskScheduler& scheduler,
                const SenderConfig& config,
-               const rtp::FormatMap& format_map,
+               const rtp::EncodingMap& encoding_map,
                packet::PacketFactory& packet_factory,
                core::BufferFactory<uint8_t>& byte_buffer_factory,
                core::BufferFactory<audio::sample_t>& sample_buffer_factory,

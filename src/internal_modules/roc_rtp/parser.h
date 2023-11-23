@@ -14,7 +14,7 @@
 
 #include "roc_core/noncopyable.h"
 #include "roc_packet/iparser.h"
-#include "roc_rtp/format_map.h"
+#include "roc_rtp/encoding_map.h"
 
 namespace roc {
 namespace rtp {
@@ -25,17 +25,17 @@ public:
     //! Initialization.
     //!
     //! @b Parameters
-    //!  - @p format_map is used to get packet parameters by its
+    //!  - @p encoding_map is used to get packet parameters by its
     //!    payload type
     //!  - if @p inner_parser is not NULL, it is used to parse the
     //!    packet payload
-    Parser(const FormatMap& format_map, packet::IParser* inner_parser);
+    Parser(const EncodingMap& encoding_map, packet::IParser* inner_parser);
 
     //! Parse packet from buffer.
     virtual bool parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer);
 
 private:
-    const FormatMap& format_map_;
+    const EncodingMap& encoding_map_;
     packet::IParser* inner_parser_;
 };
 
