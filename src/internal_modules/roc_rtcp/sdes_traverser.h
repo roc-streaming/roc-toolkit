@@ -38,28 +38,35 @@ public:
         //! Advance iterator.
         State next();
 
+        //! Check if there were any parsing errors.
+        bool error() const;
+
         //! Get SDES chunk.
         //! @pre Can be used if next() returned CHUNK.
-        SdesChunk chunk() const;
+        SdesChunk get_chunk() const;
 
         //! Get SDES item.
         //! Item is valid only until next() call.
         //! @pre Can be used if next() returned ITEM.
-        SdesItem item() const;
+        SdesItem get_item() const;
 
     private:
         friend class SdesTraverser;
 
         explicit Iterator(const SdesTraverser& traverser);
+        void next_element_();
         void parse_chunk_();
         void parse_item_();
 
         const SdesTraverser& traverser_;
 
         State state_;
-        core::Slice<uint8_t> data_;
-        uint8_t* pcur_;
+        const core::Slice<uint8_t> buf_;
+        size_t cur_pos_;
         size_t cur_chunk_;
+        const header::SdesItemHeader* cur_item_header_;
+        size_t cur_item_len_;
+        bool error_;
 
         packet::stream_source_t parsed_ssrc_;
         header::SdesItemType parsed_item_type_;
@@ -68,7 +75,7 @@ public:
 
     //! Initialize traverser.
     //! It will parse and iterate provided buffer.
-    explicit SdesTraverser(const core::Slice<uint8_t>& data);
+    explicit SdesTraverser(const core::Slice<uint8_t>& buf);
 
     //! Parse packet from buffer.
     bool parse();
@@ -81,7 +88,7 @@ public:
     size_t chunks_count() const;
 
 private:
-    const core::Slice<uint8_t> data_;
+    const core::Slice<uint8_t> buf_;
     bool parsed_;
     size_t packet_len_;
     size_t chunks_count_;

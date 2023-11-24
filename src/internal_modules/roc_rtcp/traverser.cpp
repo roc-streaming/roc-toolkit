@@ -13,87 +13,16 @@
 namespace roc {
 namespace rtcp {
 
-Traverser::Traverser(const core::Slice<uint8_t>& data)
-    : data_(data)
+Traverser::Traverser(const core::Slice<uint8_t>& buf)
+    : buf_(buf)
     , parsed_(false) {
-    roc_panic_if_msg(!data, "traverser: slice is null");
-}
-
-bool Traverser::validate() const {
-    // RFC 3550, Page 82:
-    //
-    // o  RTP version field must equal 2.
-    //
-    // o  The payload type field of the first RTCP packet in a compound
-    //    packet must be equal to SR or RR.
-    //
-    // o  The padding bit (P) should be zero for the first packet of a
-    //    compound RTCP packet because padding should only be applied, if it
-    //    is needed, to the last packet.
-    //
-    // o  The length fields of the individual RTCP packets must add up to
-    //    the overall length of the compound RTCP packet as received. This
-    //    is a fairly strong check.
-
-    if (data_.size() < sizeof(header::PacketHeader)) {
-        roc_log(LogDebug, "rtcp traverser: bad packet: size<%d (rtcp header)",
-                (int)sizeof(header::PacketHeader));
-        return false;
-    }
-
-    size_t offset = 0;
-    size_t pkt_index = 0;
-
-    while (offset < data_.size()) {
-        const header::PacketHeader& header = *(const header::PacketHeader*)&data_[offset];
-
-        if (header.version() != header::V2) {
-            roc_log(LogDebug, "rtcp traverser: bad version: get=%d expected=%d",
-                    (int)header.version(), (int)header::V2);
-            return false;
-        }
-
-        if (pkt_index == 0) {
-            if (header.type() != header::RTCP_SR && header.type() != header::RTCP_RR) {
-                roc_log(LogDebug,
-                        "rtcp traverser:"
-                        " bad packet: first subpacket should be sr or rr");
-                return false;
-            }
-            if (header.has_padding()) {
-                roc_log(LogDebug,
-                        "rtcp traverser:"
-                        " bad packet: first subpacket should not have padding");
-                return false;
-            }
-        }
-
-        offset += header.len_bytes();
-
-        if (offset > data_.size()) {
-            roc_log(LogDebug,
-                    "rtcp traverser:"
-                    " bad packet: subpacket length out of bounds");
-            return false;
-        }
-
-        if (offset & 0x03) {
-            roc_log(LogDebug,
-                    "rtcp traverser:"
-                    " bad packet: subpacket is not aligned");
-            return false;
-        }
-
-        pkt_index++;
-    }
-
-    return true;
+    roc_panic_if_msg(!buf, "rtcp traverser: null slice");
 }
 
 bool Traverser::parse() {
-    parsed_ = false;
+    roc_panic_if_msg(parsed_, "rtcp traverser: packet already parsed");
 
-    if (data_.size() < sizeof(header::PacketHeader)) {
+    if (buf_.size() < sizeof(header::PacketHeader)) {
         return false;
     }
 
@@ -102,9 +31,7 @@ bool Traverser::parse() {
 }
 
 Traverser::Iterator Traverser::iter() const {
-    roc_panic_if_msg(!parsed_,
-                     "traverser:"
-                     " iter() called before parse() or parse() returned false");
+    roc_panic_if_msg(!parsed_, "rtcp traverser: packet not parsed");
 
     Iterator res(*this);
     return res;
@@ -112,10 +39,11 @@ Traverser::Iterator Traverser::iter() const {
 
 Traverser::Iterator::Iterator(const Traverser& traverser)
     : state_(BEGIN)
-    , data_(traverser.data_)
+    , buf_(traverser.buf_)
+    , cur_pos_(0)
     , cur_pkt_header_(NULL)
     , cur_pkt_len_(0)
-    , cur_i_(0) {
+    , error_(false) {
 }
 
 Traverser::Iterator::State Traverser::Iterator::next() {
@@ -123,84 +51,153 @@ Traverser::Iterator::State Traverser::Iterator::next() {
     return state_;
 }
 
+bool Traverser::Iterator::error() const {
+    return error_;
+}
+
 void Traverser::Iterator::next_packet_() {
-    if (cur_i_ >= data_.size() || state_ == END) {
-        state_ = END;
+    if (state_ == END) {
         return;
     }
 
     if (state_ != BEGIN) {
-        skip_packet_();
+        // Go to next packet.
+        cur_pos_ += cur_pkt_len_;
     }
 
-    cur_pkt_header_ = (header::PacketHeader*)&data_[cur_i_];
-    cur_pkt_len_ = cur_pkt_header_->len_bytes();
+    // Skip packets until found known type.
+    for (;;) {
+        if (cur_pos_ == buf_.size()) {
+            // Last packet.
+            state_ = END;
+            return;
+        }
 
-    if (cur_i_ + cur_pkt_len_ > data_.size()) {
-        cur_i_ = data_.size();
-        state_ = END;
-        return;
-    }
+        if (cur_pos_ + sizeof(header::PacketHeader) > buf_.size()) {
+            // Packet header larger than remaining buffer.
+            error_ = true;
+            state_ = END;
+            return;
+        }
 
-    cur_slice_ = data_.subslice(cur_i_, cur_i_ + cur_pkt_len_);
+        cur_pkt_header_ = (const header::PacketHeader*)&buf_[cur_pos_];
+        cur_pkt_len_ = cur_pkt_header_->len_bytes();
 
-    switch (cur_pkt_header_->type()) {
-    case header::RTCP_SR:
-        state_ = SR;
-        return;
-    case header::RTCP_RR:
-        state_ = RR;
-        return;
-    case header::RTCP_SDES:
-        state_ = SDES;
-        return;
-    case header::RTCP_BYE:
-        state_ = BYE;
-        return;
-    case header::RTCP_XR:
-        state_ = XR;
-        return;
-    // Unknown packet type.
-    case header::RTCP_APP:
-    default:
-        skip_packet_();
-        return;
+        if (cur_pkt_header_->version() != header::V2) {
+            // Packet has unexpected version.
+            error_ = true;
+            state_ = END;
+            return;
+        }
+
+        if (cur_pos_ + cur_pkt_len_ > buf_.size()) {
+            // Packet length larger than remaining buffer.
+            error_ = true;
+            state_ = END;
+            return;
+        }
+
+        cur_pkt_slice_ = buf_.subslice(cur_pos_, cur_pos_ + cur_pkt_len_);
+
+        switch (cur_pkt_header_->type()) {
+        case header::RTCP_SR:
+            if (!check_sr_()) {
+                // Skipping invalid SR packet.
+                error_ = true;
+                break;
+            }
+            state_ = SR;
+            return;
+        case header::RTCP_RR:
+            if (!check_rr_()) {
+                // Skipping invalid RR packet.
+                error_ = true;
+                break;
+            }
+            state_ = RR;
+            return;
+        case header::RTCP_SDES:
+            state_ = SDES;
+            return;
+        case header::RTCP_BYE:
+            state_ = BYE;
+            return;
+        case header::RTCP_XR:
+            state_ = XR;
+            return;
+        default:
+            // Unknown packet type.
+            break;
+        }
+
+        // Skip to next packet.
+        cur_pos_ += cur_pkt_len_;
     }
 }
 
-void Traverser::Iterator::skip_packet_() {
-    roc_panic_if(cur_slice_.data_end() < data_.data());
+bool Traverser::Iterator::check_sr_() {
+    const header::SenderReportPacket* sr =
+        (const header::SenderReportPacket*)cur_pkt_slice_.data();
 
-    cur_i_ = (size_t)(cur_slice_.data_end() - data_.data());
+    if (cur_pkt_len_ < sizeof(header::SenderReportPacket)
+            + sr->num_blocks() * sizeof(header::ReceptionReportBlock)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool Traverser::Iterator::check_rr_() {
+    const header::ReceiverReportPacket* rr =
+        (const header::ReceiverReportPacket*)cur_pkt_slice_.data();
+
+    if (cur_pkt_len_ < sizeof(header::ReceiverReportPacket)
+            + rr->num_blocks() * sizeof(header::ReceptionReportBlock)) {
+        return false;
+    }
+
+    return true;
 }
 
 const header::SenderReportPacket& Traverser::Iterator::get_sr() const {
-    roc_panic_if_not(state_ == SR);
-    header::SenderReportPacket* sr = (header::SenderReportPacket*)cur_slice_.data();
+    roc_panic_if_msg(state_ != SR, "rtcp traverser: get_sr() called in wrong state %d",
+                     (int)state_);
+
+    const header::SenderReportPacket* sr =
+        (const header::SenderReportPacket*)cur_pkt_slice_.data();
     return *sr;
 }
 
 const header::ReceiverReportPacket& Traverser::Iterator::get_rr() const {
-    roc_panic_if_not(state_ == RR);
-    header::ReceiverReportPacket* rr = (header::ReceiverReportPacket*)cur_slice_.data();
+    roc_panic_if_msg(state_ != RR, "rtcp traverser: get_rr() called in wrong state %d",
+                     (int)state_);
+
+    const header::ReceiverReportPacket* rr =
+        (const header::ReceiverReportPacket*)cur_pkt_slice_.data();
     return *rr;
 }
 
 XrTraverser Traverser::Iterator::get_xr() const {
-    roc_panic_if_not(state_ == XR);
-    XrTraverser xr(cur_slice_);
+    roc_panic_if_msg(state_ != XR, "rtcp traverser: get_xr() called in wrong state %d",
+                     (int)state_);
+
+    XrTraverser xr(cur_pkt_slice_);
     return xr;
 }
 
 SdesTraverser Traverser::Iterator::get_sdes() {
-    roc_panic_if_not(state_ == SDES);
-    SdesTraverser sdes(cur_slice_);
+    roc_panic_if_msg(state_ != SDES,
+                     "rtcp traverser: get_sdes() called in wrong state %d", (int)state_);
+
+    SdesTraverser sdes(cur_pkt_slice_);
     return sdes;
 }
 
 ByeTraverser Traverser::Iterator::get_bye() {
-    roc_panic_if_not(state_ == BYE);
-    ByeTraverser bye(cur_slice_);
+    roc_panic_if_msg(state_ != BYE, "rtcp traverser: get_bye() called in wrong state %d",
+                     (int)state_);
+
+    ByeTraverser bye(cur_pkt_slice_);
     return bye;
 }
 

@@ -29,12 +29,15 @@ public:
         enum State {
             BEGIN,      //!< Iterator created.
             RRTR_BLOCK, //!< RRTR block (receiver reference time).
-            DRLL_BLOCK, //!< DLRR block (delay since last receiver report).
+            DLRR_BLOCK, //!< DLRR block (delay since last receiver report).
             END         //!< Parsed whole packet.
         };
 
         //! Advance iterator.
         State next();
+
+        //! Check if there were any parsing errors.
+        bool error() const;
 
         //! Get RRTR block (receiver reference time).
         //! @pre Can be used if next() returned RRTR_BLOCK.
@@ -48,15 +51,21 @@ public:
         friend class XrTraverser;
 
         explicit Iterator(const XrTraverser& traverser);
+        void next_block_();
+        bool check_rrtr_();
+        bool check_dlrr_();
 
         State state_;
-        core::Slice<uint8_t> data_;
-        uint8_t* pcur_;
+        const core::Slice<uint8_t> buf_;
+        size_t cur_pos_;
+        const header::XrBlockHeader* cur_blk_header_;
+        size_t cur_blk_len_;
+        bool error_;
     };
 
     //! Initialize traverser.
     //! It will parse and iterate provided buffer.
-    explicit XrTraverser(const core::Slice<uint8_t>& data);
+    explicit XrTraverser(const core::Slice<uint8_t>& buf);
 
     //! Parse packet from buffer.
     bool parse();
@@ -72,7 +81,7 @@ public:
     const header::XrPacket& packet() const;
 
 private:
-    const core::Slice<uint8_t> data_;
+    const core::Slice<uint8_t> buf_;
     bool parsed_;
     size_t packet_len_;
     size_t blocks_count_;

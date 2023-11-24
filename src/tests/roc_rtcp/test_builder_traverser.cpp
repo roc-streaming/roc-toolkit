@@ -10,12 +10,7 @@
 
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
-#include "roc_core/scoped_ptr.h"
-#include "roc_core/stddefs.h"
-#include "roc_packet/packet_factory.h"
-
 #include "roc_rtcp/builder.h"
-#include "roc_rtcp/bye_traverser.h"
 #include "roc_rtcp/traverser.h"
 
 namespace roc {
@@ -26,24 +21,71 @@ enum { MaxBufSize = 1492 };
 
 core::HeapArena arena;
 core::BufferFactory<uint8_t> buffer_factory(arena, MaxBufSize);
-packet::PacketFactory packet_factory(arena);
 
-core::Slice<uint8_t> new_buffer(const uint8_t* data, size_t datasz) {
-    core::Slice<uint8_t> buf = buffer_factory.new_buffer();
-    if (data) {
-        buf.reslice(0, datasz);
-        memcpy(buf.data(), data, datasz);
+core::Slice<uint8_t> new_buffer() {
+    core::Slice<uint8_t> buff = buffer_factory.new_buffer();
+    CHECK(buff);
+    return buff.subslice(0, 0);
+}
+
+void validate_buffer(const core::Slice<uint8_t>& buff) {
+    // RFC 3550, Page 82:
+    //
+    // o  RTP version field must equal 2.
+    //
+    // o  The payload type field of the first RTCP packet in a compound
+    //    packet must be equal to SR or RR.
+    //
+    // o  The padding bit (P) should be zero for the first packet of a
+    //    compound RTCP packet because padding should only be applied, if it
+    //    is needed, to the last packet.
+    //
+    // o  The length fields of the individual RTCP packets must add up to
+    //    the overall length of the compound RTCP packet as received. This
+    //    is a fairly strong check.
+
+    CHECK(buff.size() >= sizeof(header::PacketHeader));
+
+    size_t offset = 0;
+    size_t pkt_index = 0;
+
+    for (;;) {
+        const header::PacketHeader& header = *(const header::PacketHeader*)&buff[offset];
+
+        CHECK(header.version() == header::V2);
+
+        CHECK(header.type() == header::RTCP_SR || header.type() == header::RTCP_RR
+              || header.type() == header::RTCP_XR || header.type() == header::RTCP_SDES
+              || header.type() == header::RTCP_BYE);
+
+        if (pkt_index == 0) {
+            // First packet should be SR or RR.
+            CHECK(header.type() == header::RTCP_SR || header.type() == header::RTCP_RR);
+        }
+
+        offset += header.len_bytes();
+        // Boundary check.
+        CHECK(offset <= buff.size());
+        // Each packet should be 4-byte aligned.
+        CHECK((offset & 0x03) == 0);
+
+        if (offset == buff.size()) {
+            break; // Last packet.
+        }
+
+        // Only last packet can have padding.
+        CHECK(!header.has_padding());
+
+        pkt_index++;
     }
-    return buf;
 }
 
 } // namespace
 
-TEST_GROUP(rtcp) {};
+TEST_GROUP(builder_traverser) {};
 
-TEST(rtcp, loopback_sr_sdes) {
-    core::Slice<uint8_t> buff = new_buffer(NULL, 0).subslice(0, 0);
-    Builder builder(buff);
+TEST(builder_traverser, sr_sdes) {
+    core::Slice<uint8_t> buff = new_buffer();
 
     header::SenderReportPacket sr;
     sr.set_ssrc(1);
@@ -71,6 +113,8 @@ TEST(rtcp, loopback_sr_sdes) {
 
     // Synthesize part
 
+    Builder builder(buff);
+
     // SR
     builder.begin_sr(sr);
     builder.add_sr_report(sender_report1);
@@ -90,12 +134,16 @@ TEST(rtcp, loopback_sr_sdes) {
     builder.end_sdes_chunk();
     builder.end_sdes();
 
+    // Validation part
+
+    validate_buffer(buff);
+
     // Parsing part
 
-    Traverser parser(buff);
-    CHECK(parser.parse());
+    Traverser traverser(buff);
+    CHECK(traverser.parse());
 
-    Traverser::Iterator it = parser.iter();
+    Traverser::Iterator it = traverser.iter();
     CHECK_EQUAL(Traverser::Iterator::SR, it.next());
     CHECK_EQUAL(sr.ssrc(), it.get_sr().ssrc());
     CHECK_EQUAL(sr.ntp_timestamp(), it.get_sr().ntp_timestamp());
@@ -126,22 +174,23 @@ TEST(rtcp, loopback_sr_sdes) {
     CHECK_EQUAL(1, sdes.chunks_count());
 
     CHECK_EQUAL(SdesTraverser::Iterator::CHUNK, sdes_it.next());
-    SdesChunk sdes_chunk_recv = sdes_it.chunk();
+    SdesChunk sdes_chunk_recv = sdes_it.get_chunk();
     CHECK_EQUAL(666, sdes_chunk_recv.ssrc);
 
     CHECK_EQUAL(SdesTraverser::Iterator::ITEM, sdes_it.next());
-    SdesItem sdes_item_recv = sdes_it.item();
+    SdesItem sdes_item_recv = sdes_it.get_item();
     CHECK_EQUAL(sdes_item_send.type, sdes_item_recv.type);
     STRCMP_EQUAL(sdes_item_send.text, sdes_item_recv.text);
     STRCMP_EQUAL(cname, sdes_item_recv.text);
     CHECK_EQUAL(SdesTraverser::Iterator::END, sdes_it.next());
+    CHECK_FALSE(sdes_it.error());
 
     CHECK_EQUAL(Traverser::Iterator::END, it.next());
+    CHECK_FALSE(it.error());
 }
 
-TEST(rtcp, loopback_rr_sdes) {
-    core::Slice<uint8_t> buff = new_buffer(NULL, 0).subslice(0, 0);
-    Builder builder(buff);
+TEST(builder_traverser, rr_sdes) {
+    core::Slice<uint8_t> buff = new_buffer();
 
     header::ReceiverReportPacket rr;
     rr.set_ssrc(1);
@@ -164,6 +213,8 @@ TEST(rtcp, loopback_rr_sdes) {
     receiver_report_2.set_delay_last_sr(6 + 10);
 
     // Synthesize part
+
+    Builder builder(buff);
 
     // RR
     builder.begin_rr(rr);
@@ -189,12 +240,16 @@ TEST(rtcp, loopback_rr_sdes) {
     builder.end_sdes_chunk();
     builder.end_sdes();
 
+    // Validation part
+
+    validate_buffer(buff);
+
     // Parsing part
 
-    Traverser parser(buff);
-    CHECK(parser.parse());
+    Traverser traverser(buff);
+    CHECK(traverser.parse());
 
-    Traverser::Iterator it = parser.iter();
+    Traverser::Iterator it = traverser.iter();
     CHECK_EQUAL(Traverser::Iterator::RR, it.next());
     CHECK_EQUAL(rr.ssrc(), it.get_rr().ssrc());
 
@@ -228,26 +283,27 @@ TEST(rtcp, loopback_rr_sdes) {
     SdesItem sdes_item_recv;
 
     CHECK_EQUAL(SdesTraverser::Iterator::CHUNK, sdes_it.next());
-    sdes_chunk_recv = sdes_it.chunk();
+    sdes_chunk_recv = sdes_it.get_chunk();
     CHECK_EQUAL(666, sdes_chunk_recv.ssrc);
 
     CHECK_EQUAL(SdesTraverser::Iterator::ITEM, sdes_it.next());
-    sdes_item_recv = sdes_it.item();
+    sdes_item_recv = sdes_it.get_item();
     CHECK_EQUAL(sdes_item_send_1.type, sdes_item_recv.type);
     STRCMP_EQUAL(sdes_item_send_1.text, sdes_item_recv.text);
 
     CHECK_EQUAL(SdesTraverser::Iterator::ITEM, sdes_it.next());
-    sdes_item_recv = sdes_it.item();
+    sdes_item_recv = sdes_it.get_item();
     CHECK_EQUAL(sdes_item_send_2.type, sdes_item_recv.type);
     STRCMP_EQUAL(sdes_item_send_2.text, sdes_item_recv.text);
     CHECK_EQUAL(SdesTraverser::Iterator::END, sdes_it.next());
+    CHECK_FALSE(sdes_it.error());
 
     CHECK_EQUAL(Traverser::Iterator::END, it.next());
+    CHECK_FALSE(it.error());
 }
 
-TEST(rtcp, loopback_rr_sdes_xr) {
-    core::Slice<uint8_t> buff = new_buffer(NULL, 0).subslice(0, 0);
-    Builder builder(buff);
+TEST(builder_traverser, rr_sdes_xr) {
+    core::Slice<uint8_t> buff = new_buffer();
 
     header::ReceiverReportPacket rr;
     rr.set_ssrc(1);
@@ -269,7 +325,6 @@ TEST(rtcp, loopback_rr_sdes_xr) {
     receiver_report_2.set_last_sr(5 + 10);
     receiver_report_2.set_delay_last_sr(6 + 10);
 
-    // Xr packet
     header::XrPacket xr;
     xr.set_ssrc(111);
     header::XrRrtrBlock ref_time;
@@ -280,11 +335,13 @@ TEST(rtcp, loopback_rr_sdes_xr) {
     dlrr_repblock_1.set_delay_last_rr(333);
     dlrr_repblock_1.set_last_rr(444);
     header::XrDlrrSubblock dlrr_repblock_2;
-    dlrr_repblock_1.set_ssrc(555);
-    dlrr_repblock_1.set_delay_last_rr(666);
-    dlrr_repblock_1.set_last_rr(777);
+    dlrr_repblock_2.set_ssrc(555);
+    dlrr_repblock_2.set_delay_last_rr(666);
+    dlrr_repblock_2.set_last_rr(777);
 
     // Synthesize part
+
+    Builder builder(buff);
 
     // RR
     builder.begin_rr(rr);
@@ -319,12 +376,16 @@ TEST(rtcp, loopback_rr_sdes_xr) {
     builder.end_xr_dlrr();
     builder.end_xr();
 
+    // Validation part
+
+    validate_buffer(buff);
+
     // Parsing part
 
-    Traverser parser(buff);
-    CHECK(parser.parse());
+    Traverser traverser(buff);
+    CHECK(traverser.parse());
 
-    Traverser::Iterator it = parser.iter();
+    Traverser::Iterator it = traverser.iter();
     CHECK_EQUAL(Traverser::Iterator::RR, it.next());
     CHECK_EQUAL(rr.ssrc(), it.get_rr().ssrc());
 
@@ -357,29 +418,30 @@ TEST(rtcp, loopback_rr_sdes_xr) {
     SdesItem sdes_item_recv;
 
     CHECK_EQUAL(SdesTraverser::Iterator::CHUNK, sdes_it.next());
-    sdes_chunk_recv = sdes_it.chunk();
+    sdes_chunk_recv = sdes_it.get_chunk();
     CHECK_EQUAL(666, sdes_chunk_recv.ssrc);
 
     CHECK_EQUAL(SdesTraverser::Iterator::ITEM, sdes_it.next());
-    sdes_item_recv = sdes_it.item();
+    sdes_item_recv = sdes_it.get_item();
     CHECK_EQUAL(sdes_item_send_1.type, sdes_item_recv.type);
     STRCMP_EQUAL(sdes_item_send_1.text, sdes_item_recv.text);
 
     CHECK_EQUAL(SdesTraverser::Iterator::ITEM, sdes_it.next());
-    sdes_item_recv = sdes_it.item();
+    sdes_item_recv = sdes_it.get_item();
     CHECK_EQUAL(sdes_item_send_2.type, sdes_item_recv.type);
     STRCMP_EQUAL(sdes_item_send_2.text, sdes_item_recv.text);
     CHECK_EQUAL(SdesTraverser::Iterator::END, sdes_it.next());
+    CHECK_FALSE(sdes_it.error());
 
     CHECK_EQUAL(Traverser::Iterator::XR, it.next());
     XrTraverser xr_tr = it.get_xr();
     CHECK(xr_tr.parse());
-    UNSIGNED_LONGS_EQUAL(xr_tr.blocks_count(), 2);
-    UNSIGNED_LONGS_EQUAL(xr_tr.packet().ssrc(), 111);
+    CHECK_EQUAL(2, xr_tr.blocks_count());
+    CHECK_EQUAL(111, xr_tr.packet().ssrc());
     XrTraverser::Iterator xr_it = xr_tr.iter();
     CHECK_EQUAL(XrTraverser::Iterator::RRTR_BLOCK, xr_it.next());
     CHECK_EQUAL(ref_time.ntp_timestamp(), xr_it.get_rrtr().ntp_timestamp());
-    CHECK_EQUAL(XrTraverser::Iterator::DRLL_BLOCK, xr_it.next());
+    CHECK_EQUAL(XrTraverser::Iterator::DLRR_BLOCK, xr_it.next());
     const header::XrDlrrBlock& pdlrr = xr_it.get_dlrr();
 
     CHECK_EQUAL(2, pdlrr.num_subblocks());
@@ -390,22 +452,29 @@ TEST(rtcp, loopback_rr_sdes_xr) {
     CHECK_EQUAL(dlrr_repblock_2.delay_last_rr(), pdlrr.get_subblock(1).delay_last_rr());
     CHECK_EQUAL(dlrr_repblock_2.last_rr(), pdlrr.get_subblock(1).last_rr());
     CHECK_EQUAL(XrTraverser::Iterator::END, xr_it.next());
+    CHECK_FALSE(xr_it.error());
+
     CHECK_EQUAL(Traverser::Iterator::END, it.next());
+    CHECK_FALSE(it.error());
 }
 
-// Check bye.
-TEST(rtcp, loopback_bye) {
-    core::Slice<uint8_t> buff = new_buffer(NULL, 0).subslice(0, 0);
-    Builder builder(buff);
+TEST(builder_traverser, bye) {
+    core::Slice<uint8_t> buff = new_buffer();
 
     header::ReceiverReportPacket rr;
     rr.set_ssrc(1);
 
-    // Empty RR -- RFC3550 Page 21.
-    builder.begin_rr(rr);
-    builder.end_rr();
     const char* s_reason = "Reason to live";
 
+    // Synthesize part
+
+    Builder builder(buff);
+
+    // Empty RR (RFC3550 Page 21)
+    builder.begin_rr(rr);
+    builder.end_rr();
+
+    // BYE
     builder.begin_bye();
     builder.add_bye_ssrc(222);
     builder.add_bye_ssrc(333);
@@ -414,10 +483,16 @@ TEST(rtcp, loopback_bye) {
     builder.add_bye_reason(s_reason);
     builder.end_bye();
 
-    Traverser parser(buff);
-    CHECK(parser.parse());
+    // Validation part
 
-    Traverser::Iterator it = parser.iter();
+    validate_buffer(buff);
+
+    // Parsing part
+
+    Traverser traverser(buff);
+    CHECK(traverser.parse());
+
+    Traverser::Iterator it = traverser.iter();
     CHECK_EQUAL(Traverser::Iterator::RR, it.next());
     CHECK_EQUAL(Traverser::Iterator::BYE, it.next());
     ByeTraverser bye_recv = it.get_bye();
@@ -426,22 +501,21 @@ TEST(rtcp, loopback_bye) {
     CHECK_EQUAL(4, bye_recv.ssrc_count());
     ByeTraverser::Iterator bye_it = bye_recv.iter();
     CHECK_EQUAL(ByeTraverser::Iterator::SSRC, bye_it.next());
-    CHECK_EQUAL(222, bye_it.ssrc());
+    CHECK_EQUAL(222, bye_it.get_ssrc());
     CHECK_EQUAL(ByeTraverser::Iterator::SSRC, bye_it.next());
-    CHECK_EQUAL(333, bye_it.ssrc());
+    CHECK_EQUAL(333, bye_it.get_ssrc());
     CHECK_EQUAL(ByeTraverser::Iterator::SSRC, bye_it.next());
-    CHECK_EQUAL(444, bye_it.ssrc());
+    CHECK_EQUAL(444, bye_it.get_ssrc());
     CHECK_EQUAL(ByeTraverser::Iterator::SSRC, bye_it.next());
-    CHECK_EQUAL(555, bye_it.ssrc());
+    CHECK_EQUAL(555, bye_it.get_ssrc());
     CHECK_EQUAL(ByeTraverser::Iterator::REASON, bye_it.next());
-    STRCMP_EQUAL(s_reason, bye_it.reason());
+    STRCMP_EQUAL(s_reason, bye_it.get_reason());
     CHECK_EQUAL(ByeTraverser::Iterator::END, bye_it.next());
+    CHECK_FALSE(bye_it.error());
 
     CHECK_EQUAL(Traverser::Iterator::END, it.next());
+    CHECK_FALSE(it.error());
 }
-
-// Check unknown xr blocks.
-// Check unknown rtcp packet type.
 
 } // namespace rtcp
 } // namespace roc

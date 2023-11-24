@@ -160,11 +160,11 @@ void Session::parse_session_description_(const SdesTraverser& sdes) {
     while ((state = iter.next()) != SdesTraverser::Iterator::END) {
         switch (state) {
         case SdesTraverser::Iterator::CHUNK: {
-            chunk = iter.chunk();
+            chunk = iter.get_chunk();
         } break;
 
         case SdesTraverser::Iterator::ITEM: {
-            const SdesItem item = iter.item();
+            const SdesItem item = iter.get_item();
             if (item.type != header::SDES_CNAME) {
                 continue;
             }
@@ -188,7 +188,7 @@ void Session::parse_goodbye_(const ByeTraverser& bye) {
         switch (state) {
         case ByeTraverser::Iterator::SSRC:
             if (recv_hooks_) {
-                recv_hooks_->on_remove_source(iter.ssrc());
+                recv_hooks_->on_remove_source(iter.get_ssrc());
             }
             break;
 

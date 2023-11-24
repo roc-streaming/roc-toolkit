@@ -38,29 +38,34 @@ public:
         //! Advance iterator.
         State next();
 
+        //! Check if there were any parsing errors.
+        bool error() const;
+
         //! Get SSRC element.
         //! @pre Can be used if next() returned SSRC.
-        packet::stream_source_t ssrc() const;
+        packet::stream_source_t get_ssrc() const;
 
         //! Get REASON element.
         //! Zero-terminated UTF-8 string.
-        //! String is valid only until next() call.
+        //! Pointer is valid only until next() call.
         //! @pre Can be used if next() returned REASON.
-        const char* reason() const;
+        const char* get_reason() const;
 
     private:
         friend class ByeTraverser;
 
         explicit Iterator(const ByeTraverser& traverser);
+        void next_element_();
         void parse_ssrc_();
         void parse_reason_();
 
         const ByeTraverser& traverser_;
 
         State state_;
-        core::Slice<uint8_t> data_;
-        uint8_t* pcur_;
+        const core::Slice<uint8_t> buf_;
+        size_t cur_pos_;
         size_t cur_ssrc_;
+        bool error_;
 
         packet::stream_source_t parsed_ssrc_;
         char parsed_reason_[header::ByeReasonHeader::MaxTextLen + 1];
@@ -68,7 +73,7 @@ public:
 
     //! Initialize traverser.
     //! It will parse and iterate provided buffer.
-    explicit ByeTraverser(const core::Slice<uint8_t>& data);
+    explicit ByeTraverser(const core::Slice<uint8_t>& buf);
 
     //! Parse packet from buffer.
     bool parse();
@@ -81,7 +86,7 @@ public:
     size_t ssrc_count() const;
 
 private:
-    const core::Slice<uint8_t> data_;
+    const core::Slice<uint8_t> buf_;
     bool parsed_;
     size_t packet_len_;
     size_t ssrc_count_;

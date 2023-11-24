@@ -39,6 +39,7 @@ void set_bitfield(T& v0, const T v1, const size_t shift, const size_t mask) {
 inline uint16_t size_t_2_rtcp_length(const size_t x) {
     roc_panic_if(x < 4);
     roc_panic_if(x > uint16_t(-1));
+    roc_panic_if(x % 4 != 0);
     return (uint16_t)x / 4 - 1;
 }
 
@@ -125,10 +126,10 @@ public:
 
     //! Get NTP timestamp value.
     packet::ntp_timestamp_t value() const {
-        uint64_t tmp =
+        uint64_t res =
             (((uint64_t)core::ntoh32u(high_ntp_) << NTP_HIGH_shift) & NTP_HIGH_mask)
             | (((uint64_t)core::ntoh32u(low_ntp_) << NTP_LOW_shift) & NTP_LOW_mask);
-        return (packet::ntp_timestamp_t)tmp;
+        return (packet::ntp_timestamp_t)res;
     }
 
     //! Set NTP timestamp value.
@@ -169,15 +170,14 @@ private:
         // @}
     };
 
-    //! Protocol version.
-    //! Padding flag.
+    //! Protocol version, padding flag, and block/chunk counter.
     //! Varies by packet type.
     uint8_t count_;
 
     //! RTCP packet type.
     uint8_t type_;
 
-    //! Packet length in words, w/o common packet header word.
+    //! Packet length in 4-byte words, w/o common packet header word.
     uint16_t length_;
 
 public:
@@ -291,21 +291,23 @@ private:
         //! @name Fraction lost since last SR/RR.
         // @{
         Losses_FractLost_shift = 24,
-        Losses_FractLost_mask = 0x0F,
+        Losses_FractLoss_width = 8,
+        Losses_FractLost_mask = 0xFF,
         // @}
 
-        //! @name cumul. no. pkts lost (signed!).
+        //! @name Cumulative number of packets lost since the beginning.
         // @{
-        Losses_CumLoss_shift = 24,
-        Losses_CumLoss_mask = 0x0FFF
+        Losses_CumLoss_shift = 0,
+        Losses_CumLoss_width = 24,
+        Losses_CumLoss_mask = 0xFFFFFF
         // @}
     };
 
     //! Data source being reported.
     uint32_t ssrc_;
 
-    //! Fraction lost since last SR/RR.
-    //! cumul. no. pkts lost (signed!).
+    //! Fraction lost since last SR/RR and cumulative number of
+    //! packets lost since the beginning of reception (signed!).
     uint32_t losses_;
 
     //! Extended last seq. no. received.
@@ -342,9 +344,10 @@ public:
 
     //! Get fraction lost.
     float fract_loss() const {
-        const uint32_t tmp = core::ntoh32u(losses_);
-        uint8_t losses8 = (tmp >> Losses_FractLost_shift) & Losses_FractLost_mask;
-        float res = float(losses8) / float(1 << Losses_FractLost_shift);
+        const uint32_t losses = core::ntoh32u(losses_);
+        const uint8_t fract_loss8 =
+            (losses >> Losses_FractLost_shift) & Losses_FractLost_mask;
+        const float res = float(fract_loss8) / float(1 << Losses_FractLoss_width);
 
         return res;
     }
@@ -353,18 +356,19 @@ public:
     //!
     //! Fractional loss is stored in Q.8 format.
     void set_fract_loss(const ssize_t nlost, const size_t noverall) {
-        uint8_t l8;
-
+        uint8_t fract_loss8;
         if (nlost <= 0 || noverall == 0) {
-            l8 = 0;
+            fract_loss8 = 0;
         } else if ((size_t)nlost >= noverall) {
-            l8 = (uint8_t)-1;
+            fract_loss8 = (uint8_t)-1;
         } else {
-            l8 = (uint8_t)((uint32_t)(nlost << 8) / noverall);
+            fract_loss8 =
+                (uint8_t)(((uint32_t)nlost << Losses_FractLoss_width) / noverall);
         }
 
         uint32_t losses = core::ntoh32u(losses_);
-        set_bitfield<uint32_t>(losses, l8, Losses_FractLost_shift, Losses_FractLost_mask);
+        set_bitfield<uint32_t>(losses, fract_loss8, Losses_FractLost_shift,
+                               Losses_FractLost_mask);
         losses_ = core::hton32u(losses);
     }
 
@@ -372,28 +376,28 @@ public:
     //!
     //! May be negative in case of packet repeats.
     int32_t cumloss() const {
-        uint32_t res = core::ntoh32u(losses_) & Losses_CumLoss_mask;
+        uint32_t res =
+            (core::ntoh32u(losses_) >> Losses_CumLoss_shift) & Losses_CumLoss_mask;
         // If res is negative
-        if (res & (1 << (Losses_CumLoss_shift - 1))) {
+        if (res & (1 << (Losses_CumLoss_width - 1))) {
             // Make whole leftest byte filled with 1.
             res |= ~(uint32_t)Losses_CumLoss_mask;
         }
-        return int32_t(res);
+        return (int32_t)res;
     }
 
     //! Set cumulative loss.
     //!
     //! May be negative in case of packet repeats.
-    void set_cumloss(int32_t l) {
+    void set_cumloss(int32_t cumloss) {
         uint32_t losses = core::ntoh32u(losses_);
 
-        if (l > Losses_CumLoss_mask) {
-            l = Losses_CumLoss_mask;
-        } else if (l < -(int32_t)Losses_CumLoss_mask) {
-            l = -Losses_CumLoss_mask;
+        if (cumloss > Losses_CumLoss_mask) {
+            cumloss = Losses_CumLoss_mask;
+        } else if (cumloss < -(int32_t)Losses_CumLoss_mask) {
+            cumloss = -Losses_CumLoss_mask;
         }
-        set_bitfield<uint32_t>(losses, (uint32_t)l,
-                               sizeof(losses_) * 8 - Losses_CumLoss_shift,
+        set_bitfield<uint32_t>(losses, (uint32_t)cumloss, Losses_CumLoss_shift,
                                Losses_CumLoss_mask);
 
         losses_ = core::hton32u(losses);
@@ -635,23 +639,23 @@ public:
     }
 
     //! Get packet count.
-    size_t packet_count() const {
+    uint32_t packet_count() const {
         return core::ntoh32u(packet_cnt_);
     }
 
     //! Set packet count.
-    void set_packet_count(const size_t cnt) {
-        packet_cnt_ = core::hton32u((uint32_t)cnt);
+    void set_packet_count(const uint32_t cnt) {
+        packet_cnt_ = core::hton32u(cnt);
     }
 
     //! Get byte count.
-    size_t byte_count() const {
+    uint32_t byte_count() const {
         return core::ntoh32u(bytes_cnt_);
     }
 
     //! Set byte count.
-    void set_byte_count(const size_t cnt) {
-        bytes_cnt_ = core::hton32u((uint32_t)cnt);
+    void set_byte_count(const uint32_t cnt) {
+        bytes_cnt_ = core::hton32u(cnt);
     }
 
     //! Get number of blocks.
@@ -756,6 +760,7 @@ public:
 
     //! Set type.
     void set_type(const SdesItemType t) {
+        roc_panic_if_not(t == 0 || (t >= SDES_CNAME && t <= SDES_PRIV));
         type_ = t;
     }
 

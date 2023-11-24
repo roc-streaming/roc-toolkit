@@ -40,6 +40,9 @@ public:
         //! Advance iterator.
         State next();
 
+        //! Check if there were any parsing errors.
+        bool error() const;
+
         //! Get SR packet.
         //! @pre Can be used if next() returned SR.
         const header::SenderReportPacket& get_sr() const;
@@ -65,22 +68,21 @@ public:
 
         explicit Iterator(const Traverser& traverser);
         void next_packet_();
-        void skip_packet_();
+        bool check_sr_();
+        bool check_rr_();
 
         State state_;
-        const core::Slice<uint8_t> data_;
-        core::Slice<uint8_t> cur_slice_;
-        header::PacketHeader* cur_pkt_header_;
+        const core::Slice<uint8_t> buf_;
+        size_t cur_pos_;
+        const header::PacketHeader* cur_pkt_header_;
         size_t cur_pkt_len_;
-        size_t cur_i_;
+        core::Slice<uint8_t> cur_pkt_slice_;
+        bool error_;
     };
 
     //! Initialize traverser.
     //! It will parse and iterate provided buffer.
-    explicit Traverser(const core::Slice<uint8_t>& data);
-
-    //! Validate packet for strict correctness according to the RFC.
-    bool validate() const;
+    explicit Traverser(const core::Slice<uint8_t>& buf);
 
     //! Parse packet from buffer.
     bool parse();
@@ -90,7 +92,7 @@ public:
     Iterator iter() const;
 
 private:
-    core::Slice<uint8_t> data_;
+    const core::Slice<uint8_t> buf_;
     bool parsed_;
 };
 

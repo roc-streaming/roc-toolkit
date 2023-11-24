@@ -145,7 +145,7 @@ void print_xr(core::Printer& p, const XrTraverser& xr) {
             print_xr_rrtr(p, iter.get_rrtr());
             break;
 
-        case XrTraverser::Iterator::DRLL_BLOCK:
+        case XrTraverser::Iterator::DLRR_BLOCK:
             print_xr_dlrr(p, iter.get_dlrr());
             break;
         }
@@ -165,13 +165,13 @@ void print_sdes(core::Printer& p, const SdesTraverser& sdes) {
             break;
 
         case SdesTraverser::Iterator::CHUNK: {
-            const SdesChunk chunk = iter.chunk();
+            const SdesChunk chunk = iter.get_chunk();
             p.writef("|- chunk:\n");
             p.writef("|-- ssrc: %lu\n", (unsigned long)chunk.ssrc);
         } break;
 
         case SdesTraverser::Iterator::ITEM: {
-            const SdesItem item = iter.item();
+            const SdesItem item = iter.get_item();
             p.writef("|-- item:\n");
             p.writef("|--- type: %s (%d)\n", item_type_to_str(item.type), (int)item.type);
             p.writef("|--- text: %s\n", item.text);
@@ -193,11 +193,11 @@ void print_bye(core::Printer& p, const ByeTraverser& bye) {
             break;
 
         case ByeTraverser::Iterator::SSRC:
-            p.writef("|- ssrc: %lu\n", (unsigned long)iter.ssrc());
+            p.writef("|- ssrc: %lu\n", (unsigned long)iter.get_ssrc());
             break;
 
         case ByeTraverser::Iterator::REASON:
-            p.writef("|- reason: %s\n", iter.reason());
+            p.writef("|- reason: %s\n", iter.get_reason());
             break;
         }
     }

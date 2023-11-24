@@ -10,7 +10,6 @@
 #include "roc_core/align_ops.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_rtcp/traverser.h"
 
 namespace roc {
 namespace rtcp {
@@ -72,13 +71,6 @@ bool Composer::compose(packet::Packet& packet) {
 
     if (packet.rtcp()->data.size() == 0) {
         roc_log(LogError, "rtcp composer: unexpected zero data");
-        return false;
-    }
-
-    // Ensure that we always send strictly valid packets.
-    Traverser traverser(packet.rtcp()->data);
-    if (!traverser.validate()) {
-        roc_log(LogError, "rtcp composer: unexpected invalid rtcp packet");
         return false;
     }
 
