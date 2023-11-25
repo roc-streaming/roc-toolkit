@@ -55,8 +55,9 @@ def run_cmd(cmd, input=None, env=None, retry_fn=None):
             if e.output:
                 output = e.output.decode()
             if retry_fn is not None and retry_fn(output) and max_tries > 0:
+                print('Retrying...')
                 max_tries -= 1
-                time.sleep(0.5)
+                time.sleep(1)
                 continue
             error('command failed')
         return
@@ -215,6 +216,11 @@ def query_pr_info(org, repo, pr_number):
         'target_remote': response['base']['repo']['ssh_url'],
     }
 
+    if response['milestone']:
+        pr_info['pr_milestone'] = response['milestone']['title']
+    else:
+        pr_info['pr_milestone'] = None
+
     pr_info['issue_link'] = None
 
     if 'body' in response:
@@ -230,6 +236,12 @@ def query_pr_info(org, repo, pr_number):
     if pr_info['issue_link']:
         issue_info = query_issue_info(*pr_info['issue_link'])
         pr_info.update(issue_info)
+
+    pr_info['base_sha'], pr_info['base_ref'] = subprocess.run(
+        ['git', 'ls-remote', pr_info['target_remote'], pr_info['target_branch']],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=True).stdout.decode().strip().split()
 
     return pr_info
 
@@ -333,6 +345,8 @@ def show_pr(org, repo, pr_number, show_json):
     section('pull request')
     keyval('title', pr_info['pr_title'], Fore.BLUE)
     keyval('url', pr_info['pr_url'])
+    keyval('milestone', str(pr_info['pr_milestone']).lower(),
+           Fore.MAGENTA if pr_info['pr_milestone'] is not None else Fore.RED)
     keyval('source', pr_info['source_branch'], Fore.CYAN)
     keyval('target', pr_info['target_branch'], Fore.CYAN)
     keyval('state', pr_info['pr_state'],
@@ -481,11 +495,44 @@ def update_pr(org, repo, pr_number, issue_number, issue_milestone,
         query_issue_info.cache_clear()
         query_pr_info.cache_clear()
 
+    def update_milestone_of_pr():
+        pr_info = query_pr_info(org, repo, pr_number)
+
+        is_uptodate = pr_info['pr_milestone'] and \
+            pr_info['pr_milestone'] == pr_info['issue_milestone']
+
+        if is_uptodate:
+            return
+
+        run_cmd([
+            'gh', 'pr', 'edit',
+            '--repo', f'{org}/{repo}',
+            '--milestone', pr_info['issue_milestone'],
+            pr_number,
+            ])
+
+        query_pr_info.cache_clear()
+
     if not no_issue:
         update_link_to_issue()
 
         if not no_milestone:
             update_milestone_of_issue()
+            update_milestone_of_pr()
+
+def fetch_pr(org, repo, pr_number):
+    pr_info = query_pr_info(org, repo, pr_number)
+
+    run_cmd([
+        'git', 'fetch', pr_info['target_remote'], pr_info['base_sha'],
+        ])
+
+def rebase_pr(org, repo, pr_number):
+    pr_info = query_pr_info(org, repo, pr_number)
+
+    run_cmd([
+        'git', 'rebase', '--onto', pr_info['base_sha'], pr_info['target_sha'],
+        ])
 
 def link_pr(org, repo, pr_number, action, no_issue):
     pr_info = query_pr_info(org, repo, pr_number)
@@ -497,44 +544,26 @@ def link_pr(org, repo, pr_number, action, no_issue):
     elif action == 'unlink':
         commit_prefix = ''
 
-    target_sha = pr_info['target_sha']
+    base_sha = pr_info['base_sha']
 
     run_cmd([
         'git', 'filter-branch', '-f', '--msg-filter',
         f"sed -r -e '1s,^(gh-[0-9]+ +|{org}/[^ ]+ +)?,{commit_prefix},'"+
           " -e '1s,\s*\(#[0-9]+\)$,,'",
-        f'{target_sha}..HEAD',
+        f'{base_sha}..HEAD',
         ],
         env={'FILTER_BRANCH_SQUELCH_WARNING':'1'})
-
-def rebase_pr(org, repo, pr_number):
-    pr_info = query_pr_info(org, repo, pr_number)
-
-    base_sha, base_ref = subprocess.run(
-        ['git', 'ls-remote', pr_info['target_remote'], pr_info['target_branch']],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        check=True).stdout.decode().strip().split()
-
-    run_cmd([
-        'git', 'fetch', pr_info['target_remote'], base_sha,
-        ])
-
-    run_cmd([
-        'git', 'rebase', '--onto', base_sha, pr_info['target_sha'],
-        ])
 
 def squash_pr(org, repo, pr_number, no_issue):
     pr_info = query_pr_info(org, repo, pr_number)
 
-    target_sha = pr_info['target_sha']
     commit_message = make_message(
         org, repo,
         pr_info['issue_link'] if not no_issue else None,
         pr_info['pr_title'])
 
     run_cmd([
-        'git', 'rebase', '-i', target_sha,
+        'git', 'rebase', '-i', pr_info['base_sha'],
         ],
         env={
             'GIT_EDITOR': ':',
@@ -548,11 +577,7 @@ def squash_pr(org, repo, pr_number, no_issue):
 def log_pr(org, repo, pr_number):
     pr_info = query_pr_info(org, repo, pr_number)
 
-    base_sha, base_ref = subprocess.run(
-        ['git', 'ls-remote', pr_info['target_remote'], pr_info['target_branch']],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        check=True).stdout.decode().strip().split()
+    base_sha = pr_info['base_sha']
 
     run_cmd([
         'git', 'log', '--format=%h %s (%an <%ae>)',
@@ -587,6 +612,8 @@ def merge_pr(org, repo, pr_number):
     def retry_fn(output):
         return 'GraphQL: Base branch was modified' in output or \
             'GraphQL: Pull Request is not mergeable' in output
+
+    time.sleep(1)
 
     run_cmd([
         'gh', 'pr', 'merge',
@@ -671,6 +698,7 @@ if args.command == 'rebase':
     try:
         checkout_pr(args.org, args.repo, args.pr_number)
         pr_ref = remember_ref()
+        fetch_pr(args.org, args.repo, args.pr_number)
         rebase_pr(args.org, args.repo, args.pr_number)
         log_pr(args.org, args.repo, args.pr_number)
         if not args.no_push:
@@ -692,6 +720,7 @@ if args.command == 'link' or args.command == 'unlink':
         pr_ref = remember_ref()
         update_pr(args.org, args.repo, args.pr_number, args.issue_number,
                   args.milestone_name, args.no_issue, args.no_milestone)
+        fetch_pr(args.org, args.repo, args.pr_number)
         rebase_pr(args.org, args.repo, args.pr_number)
         link_pr(args.org, args.repo, args.pr_number, args.command, args.no_issue)
         log_pr(args.org, args.repo, args.pr_number)
@@ -716,6 +745,7 @@ if args.command == 'merge':
         pr_ref = remember_ref()
         update_pr(args.org, args.repo, args.pr_number, args.issue_number,
                   args.milestone_name, args.no_issue, args.no_milestone)
+        fetch_pr(args.org, args.repo, args.pr_number)
         rebase_pr(args.org, args.repo, args.pr_number)
         if args.rebase:
             link_pr(args.org, args.repo, args.pr_number, 'link', args.no_issue)
