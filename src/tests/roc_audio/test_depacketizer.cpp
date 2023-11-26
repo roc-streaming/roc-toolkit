@@ -728,9 +728,11 @@ TEST(depacketizer, timestamp_fract_frame_per_packet) {
     core::nanoseconds_t capt_ts =
         Now + SampleSpecs.samples_overall_2_ns(SamplesPerPacket);
     // 1st packet in the frame has 0 capture ts, and the next
-    queue.write(new_packet(encoder, StartTimestamp, 0.1f, 0));
-    queue.write(
-        new_packet(encoder, StartTimestamp + SamplesPerPacket / NumCh, 0.1f, capt_ts));
+    CHECK_EQUAL(status::StatusOK,
+                queue.write(new_packet(encoder, StartTimestamp, 0.1f, 0)));
+    CHECK_EQUAL(status::StatusOK,
+                queue.write(new_packet(encoder, StartTimestamp + SamplesPerPacket / NumCh,
+                                       0.1f, capt_ts)));
     expect_output(dp, SamplesPerFrame, 0.1f, Now);
 }
 
