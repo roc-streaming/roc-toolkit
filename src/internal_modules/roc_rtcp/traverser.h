@@ -68,6 +68,7 @@ public:
 
         explicit Iterator(const Traverser& traverser);
         void next_packet_();
+        bool remove_padding_();
         bool check_sr_();
         bool check_rr_();
 

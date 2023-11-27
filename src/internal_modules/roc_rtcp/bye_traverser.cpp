@@ -18,7 +18,6 @@ namespace rtcp {
 ByeTraverser::ByeTraverser(const core::Slice<uint8_t>& buf)
     : buf_(buf)
     , parsed_(false)
-    , packet_len_(0)
     , ssrc_count_(0) {
     roc_panic_if_msg(!buf, "bye traverser: null slice");
 }
@@ -35,17 +34,23 @@ bool ByeTraverser::parse() {
         return false;
     }
 
-    packet_len_ = bye->header().len_bytes();
-    if (packet_len_ > buf_.size()) {
-        packet_len_ = 0;
+    const size_t packet_len = bye->header().len_bytes();
+    if (packet_len > buf_.size()) {
         return false;
     }
 
     ssrc_count_ = bye->header().counter();
     if (ssrc_count_ > header::PacketMaxBlocks) {
-        packet_len_ = 0;
-        ssrc_count_ = 0;
         return false;
+    }
+
+    // Remove padding.
+    if (bye->header().has_padding()) {
+        const uint8_t padding_len = buf_[packet_len - 1];
+        if (padding_len < 1 || padding_len > packet_len - sizeof(header::ByePacket)) {
+            return false;
+        }
+        buf_ = buf_.subslice(0, packet_len - padding_len);
     }
 
     parsed_ = true;

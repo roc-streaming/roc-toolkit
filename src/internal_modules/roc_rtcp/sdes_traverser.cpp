@@ -16,7 +16,6 @@ namespace rtcp {
 SdesTraverser::SdesTraverser(const core::Slice<uint8_t>& buf)
     : buf_(buf)
     , parsed_(false)
-    , packet_len_(0)
     , chunks_count_(0) {
     roc_panic_if_msg(!buf, "sdes traverser: null slice");
 }
@@ -33,17 +32,23 @@ bool SdesTraverser::parse() {
         return false;
     }
 
-    packet_len_ = sdes->header().len_bytes();
-    if (packet_len_ > buf_.size()) {
-        packet_len_ = 0;
+    const size_t packet_len = sdes->header().len_bytes();
+    if (packet_len > buf_.size()) {
         return false;
     }
 
     chunks_count_ = sdes->header().counter();
     if (chunks_count_ > header::PacketMaxBlocks) {
-        packet_len_ = 0;
-        chunks_count_ = 0;
         return false;
+    }
+
+    // Remove padding.
+    if (sdes->header().has_padding()) {
+        const uint8_t padding_len = buf_[packet_len - 1];
+        if (padding_len < 1 || padding_len > packet_len - sizeof(header::SdesPacket)) {
+            return false;
+        }
+        buf_ = buf_.subslice(0, packet_len - padding_len);
     }
 
     parsed_ = true;

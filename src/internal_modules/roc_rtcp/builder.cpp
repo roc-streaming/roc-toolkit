@@ -277,12 +277,28 @@ void Builder::add_report_(const header::ReceptionReportBlock& report) {
 
 void Builder::end_packet_() {
     header_->set_len_bytes(cur_slice_.size());
-    header_ = NULL;
 
     data_.extend(cur_slice_.size());
     cur_slice_ = core::Slice<uint8_t>();
 
     state_ = NONE;
+}
+
+void Builder::add_padding(size_t padding_len) {
+    roc_panic_if_not(state_ == NONE);
+    roc_panic_if_not(header_);
+    roc_panic_if_not(!header_->has_padding());
+    roc_panic_if_not(padding_len % 4 == 0 && padding_len >= 1 && padding_len <= 255);
+
+    header_->set_padding(true);
+    header_->set_len_bytes(header_->len_bytes() + padding_len);
+
+    uint8_t* p = data_.extend(padding_len);
+
+    if (padding_len > 1) {
+        memset(p, 0, padding_len - 1);
+    }
+    p[padding_len - 1] = (uint8_t)padding_len;
 }
 
 } // namespace rtcp

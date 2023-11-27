@@ -100,7 +100,6 @@ TEST(traverser, no_packets) {
 
 TEST(traverser, sr_iteration) {
     header::SenderReportPacket sr;
-    sr.header().set_type(header::RTCP_SR);
     sr.header().set_counter(2);
     sr.header().set_len_bytes(sizeof(header::SenderReportPacket)
                               + sizeof(header::ReceptionReportBlock) * 2);
@@ -258,12 +257,88 @@ TEST(traverser, sr_iteration) {
     }
 }
 
+TEST(traverser, sr_padding) {
+    char packet_padding[16] = {};
+    packet_padding[15] = 16;
+
+    header::SenderReportPacket sr;
+    sr.header().set_padding(true);
+    sr.header().set_counter(2);
+    sr.header().set_len_bytes(sizeof(header::SenderReportPacket)
+                              + sizeof(header::ReceptionReportBlock) * 2
+                              + sizeof(packet_padding));
+    sr.set_ssrc(111);
+
+    header::ReceptionReportBlock blk1;
+    blk1.set_ssrc(222);
+    header::ReceptionReportBlock blk2;
+    blk2.set_ssrc(333);
+
+    { // good
+        core::Slice<uint8_t> buff = new_buffer();
+
+        append_buffer(buff, &sr, sizeof(sr));
+        append_buffer(buff, &blk1, sizeof(blk1));
+        append_buffer(buff, &blk2, sizeof(blk2));
+        append_buffer(buff, &packet_padding, sizeof(packet_padding));
+
+        Traverser traverser(buff);
+        CHECK(traverser.parse());
+
+        Traverser::Iterator it = traverser.iter();
+
+        CHECK_EQUAL(Traverser::Iterator::SR, it.next());
+        CHECK_EQUAL(2, it.get_sr().num_blocks());
+        CHECK_EQUAL(111, it.get_sr().ssrc());
+        CHECK_EQUAL(222, it.get_sr().get_block(0).ssrc());
+        CHECK_EQUAL(333, it.get_sr().get_block(1).ssrc());
+
+        CHECK_EQUAL(Traverser::Iterator::END, it.next());
+        CHECK_FALSE(it.error());
+    }
+    { // padding length is zero
+        char bad_padding[16] = {};
+        bad_padding[15] = 0;
+
+        core::Slice<uint8_t> buff = new_buffer();
+
+        append_buffer(buff, &sr, sizeof(sr));
+        append_buffer(buff, &blk1, sizeof(blk1));
+        append_buffer(buff, &blk2, sizeof(blk2));
+        append_buffer(buff, &bad_padding, sizeof(bad_padding));
+
+        Traverser traverser(buff);
+        CHECK(traverser.parse());
+
+        Traverser::Iterator it = traverser.iter();
+        CHECK_EQUAL(Traverser::Iterator::END, it.next());
+        CHECK_TRUE(it.error());
+    }
+    { // padding length is too big
+        char bad_padding[16] = {};
+        bad_padding[15] = 127;
+
+        core::Slice<uint8_t> buff = new_buffer();
+
+        append_buffer(buff, &sr, sizeof(sr));
+        append_buffer(buff, &blk1, sizeof(blk1));
+        append_buffer(buff, &blk2, sizeof(blk2));
+        append_buffer(buff, &bad_padding, sizeof(bad_padding));
+
+        Traverser traverser(buff);
+        CHECK(traverser.parse());
+
+        Traverser::Iterator it = traverser.iter();
+        CHECK_EQUAL(Traverser::Iterator::END, it.next());
+        CHECK_TRUE(it.error());
+    }
+}
+
 TEST(traverser, sr_fields) {
     core::Slice<uint8_t> buff = new_buffer();
 
     {
         header::SenderReportPacket sr;
-        sr.header().set_type(header::RTCP_SR);
         sr.header().set_counter(2);
         sr.header().set_len_bytes(sizeof(header::SenderReportPacket)
                                   + sizeof(header::ReceptionReportBlock) * 2);
@@ -332,7 +407,6 @@ TEST(traverser, sr_fields) {
 
 TEST(traverser, rr_iteration) {
     header::ReceiverReportPacket rr;
-    rr.header().set_type(header::RTCP_RR);
     rr.header().set_counter(2);
     rr.header().set_len_bytes(sizeof(header::ReceiverReportPacket)
                               + sizeof(header::ReceptionReportBlock) * 2);
@@ -490,12 +564,88 @@ TEST(traverser, rr_iteration) {
     }
 }
 
+TEST(traverser, rr_padding) {
+    char packet_padding[16] = {};
+    packet_padding[15] = 16;
+
+    header::ReceiverReportPacket rr;
+    rr.header().set_padding(true);
+    rr.header().set_counter(2);
+    rr.header().set_len_bytes(sizeof(header::ReceiverReportPacket)
+                              + sizeof(header::ReceptionReportBlock) * 2
+                              + sizeof(packet_padding));
+    rr.set_ssrc(111);
+
+    header::ReceptionReportBlock blk1;
+    blk1.set_ssrc(222);
+    header::ReceptionReportBlock blk2;
+    blk2.set_ssrc(333);
+
+    { // good
+        core::Slice<uint8_t> buff = new_buffer();
+
+        append_buffer(buff, &rr, sizeof(rr));
+        append_buffer(buff, &blk1, sizeof(blk1));
+        append_buffer(buff, &blk2, sizeof(blk2));
+        append_buffer(buff, &packet_padding, sizeof(packet_padding));
+
+        Traverser traverser(buff);
+        CHECK(traverser.parse());
+
+        Traverser::Iterator it = traverser.iter();
+
+        CHECK_EQUAL(Traverser::Iterator::RR, it.next());
+        CHECK_EQUAL(2, it.get_rr().num_blocks());
+        CHECK_EQUAL(111, it.get_rr().ssrc());
+        CHECK_EQUAL(222, it.get_rr().get_block(0).ssrc());
+        CHECK_EQUAL(333, it.get_rr().get_block(1).ssrc());
+
+        CHECK_EQUAL(Traverser::Iterator::END, it.next());
+        CHECK_FALSE(it.error());
+    }
+    { // padding length is zero
+        char bad_padding[16] = {};
+        bad_padding[15] = 0;
+
+        core::Slice<uint8_t> buff = new_buffer();
+
+        append_buffer(buff, &rr, sizeof(rr));
+        append_buffer(buff, &blk1, sizeof(blk1));
+        append_buffer(buff, &blk2, sizeof(blk2));
+        append_buffer(buff, &bad_padding, sizeof(bad_padding));
+
+        Traverser traverser(buff);
+        CHECK(traverser.parse());
+
+        Traverser::Iterator it = traverser.iter();
+        CHECK_EQUAL(Traverser::Iterator::END, it.next());
+        CHECK_TRUE(it.error());
+    }
+    { // padding length is too big
+        char bad_padding[16] = {};
+        bad_padding[15] = 127;
+
+        core::Slice<uint8_t> buff = new_buffer();
+
+        append_buffer(buff, &rr, sizeof(rr));
+        append_buffer(buff, &blk1, sizeof(blk1));
+        append_buffer(buff, &blk2, sizeof(blk2));
+        append_buffer(buff, &bad_padding, sizeof(bad_padding));
+
+        Traverser traverser(buff);
+        CHECK(traverser.parse());
+
+        Traverser::Iterator it = traverser.iter();
+        CHECK_EQUAL(Traverser::Iterator::END, it.next());
+        CHECK_TRUE(it.error());
+    }
+}
+
 TEST(traverser, rr_fields) {
     core::Slice<uint8_t> buff = new_buffer();
 
     {
         header::ReceiverReportPacket rr;
-        rr.header().set_type(header::RTCP_RR);
         rr.header().set_counter(2);
         rr.header().set_len_bytes(sizeof(header::ReceiverReportPacket)
                                   + sizeof(header::ReceptionReportBlock) * 2);
@@ -556,7 +706,6 @@ TEST(traverser, rr_fields) {
 
 TEST(traverser, xr_iteration) {
     header::XrPacket xr;
-    xr.header().set_type(header::RTCP_XR);
     xr.header().set_len_bytes(sizeof(header::XrPacket) + sizeof(header::XrRrtrBlock)
                               + sizeof(header::XrDlrrBlock)
                               + sizeof(header::XrDlrrSubblock) * 2);
@@ -894,12 +1043,122 @@ TEST(traverser, xr_iteration) {
     }
 }
 
+TEST(traverser, xr_padding) {
+    char packet_padding[16] = {};
+    packet_padding[15] = 16;
+
+    header::XrPacket xr;
+    xr.header().set_padding(true);
+    xr.header().set_len_bytes(sizeof(header::XrPacket) + sizeof(header::XrDlrrBlock)
+                              + sizeof(header::XrDlrrSubblock) * 2
+                              + sizeof(packet_padding));
+    xr.set_ssrc(111);
+
+    header::XrDlrrBlock dlrr;
+    dlrr.header().set_len_bytes(sizeof(header::XrDlrrBlock)
+                                + sizeof(header::XrDlrrSubblock) * 2);
+
+    header::XrDlrrSubblock dlrr_sblk1;
+    dlrr_sblk1.set_ssrc(222);
+    header::XrDlrrSubblock dlrr_sblk2;
+    dlrr_sblk2.set_ssrc(333);
+
+    { // good
+        core::Slice<uint8_t> buff = new_buffer();
+
+        append_buffer(buff, &xr, sizeof(xr));
+        append_buffer(buff, &dlrr, sizeof(dlrr));
+        append_buffer(buff, &dlrr_sblk1, sizeof(dlrr_sblk1));
+        append_buffer(buff, &dlrr_sblk2, sizeof(dlrr_sblk2));
+        append_buffer(buff, &packet_padding, sizeof(packet_padding));
+
+        Traverser traverser(buff);
+        CHECK(traverser.parse());
+
+        Traverser::Iterator it = traverser.iter();
+
+        CHECK_EQUAL(Traverser::Iterator::XR, it.next());
+
+        {
+            XrTraverser xr_tr = it.get_xr();
+            CHECK(xr_tr.parse());
+
+            CHECK_EQUAL(1, xr_tr.blocks_count());
+            CHECK_EQUAL(111, xr_tr.packet().ssrc());
+
+            XrTraverser::Iterator xr_it = xr_tr.iter();
+            CHECK_EQUAL(XrTraverser::Iterator::DLRR_BLOCK, xr_it.next());
+            CHECK_EQUAL(2, xr_it.get_dlrr().num_subblocks());
+            CHECK_EQUAL(222, xr_it.get_dlrr().get_subblock(0).ssrc());
+            CHECK_EQUAL(333, xr_it.get_dlrr().get_subblock(1).ssrc());
+            CHECK_EQUAL(XrTraverser::Iterator::END, xr_it.next());
+            CHECK_FALSE(xr_it.error());
+        }
+
+        CHECK_EQUAL(Traverser::Iterator::END, it.next());
+        CHECK_FALSE(it.error());
+    }
+    { // padding length is zero
+        char bad_padding[16] = {};
+        bad_padding[15] = 0;
+
+        core::Slice<uint8_t> buff = new_buffer();
+
+        append_buffer(buff, &xr, sizeof(xr));
+        append_buffer(buff, &dlrr, sizeof(dlrr));
+        append_buffer(buff, &dlrr_sblk1, sizeof(dlrr_sblk1));
+        append_buffer(buff, &dlrr_sblk2, sizeof(dlrr_sblk2));
+        append_buffer(buff, &bad_padding, sizeof(bad_padding));
+
+        Traverser traverser(buff);
+        CHECK(traverser.parse());
+
+        Traverser::Iterator it = traverser.iter();
+
+        CHECK_EQUAL(Traverser::Iterator::XR, it.next());
+
+        {
+            XrTraverser xr_tr = it.get_xr();
+            CHECK(!xr_tr.parse());
+        }
+
+        CHECK_EQUAL(Traverser::Iterator::END, it.next());
+        CHECK_FALSE(it.error());
+    }
+    { // padding length is too big
+        char bad_padding[16] = {};
+        bad_padding[15] = 127;
+
+        core::Slice<uint8_t> buff = new_buffer();
+
+        append_buffer(buff, &xr, sizeof(xr));
+        append_buffer(buff, &dlrr, sizeof(dlrr));
+        append_buffer(buff, &dlrr_sblk1, sizeof(dlrr_sblk1));
+        append_buffer(buff, &dlrr_sblk2, sizeof(dlrr_sblk2));
+        append_buffer(buff, &bad_padding, sizeof(bad_padding));
+
+        Traverser traverser(buff);
+        CHECK(traverser.parse());
+
+        Traverser::Iterator it = traverser.iter();
+
+        CHECK_EQUAL(Traverser::Iterator::XR, it.next());
+
+        {
+            XrTraverser xr_tr = it.get_xr();
+            CHECK(!xr_tr.parse());
+        }
+
+        CHECK_EQUAL(Traverser::Iterator::END, it.next());
+        CHECK_FALSE(it.error());
+    }
+}
+
 TEST(traverser, xr_fields) {
     core::Slice<uint8_t> buff = new_buffer();
 
     {
         header::XrPacket xr;
-        xr.header().set_type(header::RTCP_XR);
         xr.header().set_len_bytes(sizeof(header::XrPacket) + sizeof(header::XrRrtrBlock)
                                   + sizeof(header::XrDlrrBlock)
                                   + sizeof(header::XrDlrrSubblock) * 2);
@@ -975,7 +1234,6 @@ TEST(traverser, sdes_iteration) {
     const char chunk2_padding[4] = { '\0', 'x', 'x', 'x' };
 
     header::SdesPacket sdes;
-    sdes.header().set_type(header::RTCP_SDES);
     sdes.header().set_counter(2);
     sdes.header().set_len_bytes(sizeof(header::SdesPacket)
                                 // chunk 1
@@ -1413,6 +1671,120 @@ TEST(traverser, sdes_iteration) {
     }
 }
 
+TEST(traverser, sdes_padding) {
+    char packet_padding[16] = {};
+    packet_padding[15] = 16;
+
+    const char cname[4] = { 'a', 'b', 'c', 'd' };
+    const char cname_padding[2] = { '\0', 'x' };
+
+    header::SdesPacket sdes;
+    sdes.header().set_padding(true);
+    sdes.header().set_counter(1);
+    sdes.header().set_len_bytes(sizeof(header::SdesPacket)
+                                + sizeof(header::SdesChunkHeader)
+                                + sizeof(header::SdesItemHeader) + sizeof(cname)
+                                + sizeof(cname_padding) + sizeof(packet_padding));
+
+    header::SdesChunkHeader sdes_chunk;
+    sdes_chunk.set_ssrc(111);
+
+    header::SdesItemHeader sdes_item;
+    sdes_item.set_type(header::SDES_CNAME);
+    sdes_item.set_text_len(sizeof(cname));
+
+    { // good
+        core::Slice<uint8_t> buff = new_buffer();
+
+        append_buffer(buff, &sdes, sizeof(sdes));
+        append_buffer(buff, &sdes_chunk, sizeof(sdes_chunk));
+        append_buffer(buff, &sdes_item, sizeof(sdes_item));
+        append_buffer(buff, &cname, sizeof(cname));
+        append_buffer(buff, &cname_padding, sizeof(cname_padding));
+        append_buffer(buff, &packet_padding, sizeof(packet_padding));
+
+        Traverser traverser(buff);
+        CHECK(traverser.parse());
+
+        Traverser::Iterator it = traverser.iter();
+        CHECK_EQUAL(Traverser::Iterator::SDES, it.next());
+
+        {
+            SdesTraverser sdes_tr = it.get_sdes();
+            CHECK(sdes_tr.parse());
+
+            CHECK_EQUAL(1, sdes_tr.chunks_count());
+
+            SdesTraverser::Iterator sdes_it = sdes_tr.iter();
+
+            CHECK_EQUAL(SdesTraverser::Iterator::CHUNK, sdes_it.next());
+            CHECK_EQUAL(111, sdes_it.get_chunk().ssrc);
+            CHECK_EQUAL(SdesTraverser::Iterator::ITEM, sdes_it.next());
+            STRCMP_EQUAL("abcd", sdes_it.get_item().text);
+
+            CHECK_EQUAL(SdesTraverser::Iterator::END, sdes_it.next());
+            CHECK_FALSE(sdes_it.error());
+        }
+
+        CHECK_EQUAL(Traverser::Iterator::END, it.next());
+        CHECK_FALSE(it.error());
+    }
+    { // padding length is zero
+        char bad_padding[16] = {};
+        bad_padding[15] = 0;
+
+        core::Slice<uint8_t> buff = new_buffer();
+
+        append_buffer(buff, &sdes, sizeof(sdes));
+        append_buffer(buff, &sdes_chunk, sizeof(sdes_chunk));
+        append_buffer(buff, &sdes_item, sizeof(sdes_item));
+        append_buffer(buff, &cname, sizeof(cname));
+        append_buffer(buff, &cname_padding, sizeof(cname_padding));
+        append_buffer(buff, &bad_padding, sizeof(bad_padding));
+
+        Traverser traverser(buff);
+        CHECK(traverser.parse());
+
+        Traverser::Iterator it = traverser.iter();
+        CHECK_EQUAL(Traverser::Iterator::SDES, it.next());
+
+        {
+            SdesTraverser sdes_tr = it.get_sdes();
+            CHECK(!sdes_tr.parse());
+        }
+
+        CHECK_EQUAL(Traverser::Iterator::END, it.next());
+        CHECK_FALSE(it.error());
+    }
+    { // padding length is too big
+        char bad_padding[16] = {};
+        bad_padding[15] = 127;
+
+        core::Slice<uint8_t> buff = new_buffer();
+
+        append_buffer(buff, &sdes, sizeof(sdes));
+        append_buffer(buff, &sdes_chunk, sizeof(sdes_chunk));
+        append_buffer(buff, &sdes_item, sizeof(sdes_item));
+        append_buffer(buff, &cname, sizeof(cname));
+        append_buffer(buff, &cname_padding, sizeof(cname_padding));
+        append_buffer(buff, &bad_padding, sizeof(bad_padding));
+
+        Traverser traverser(buff);
+        CHECK(traverser.parse());
+
+        Traverser::Iterator it = traverser.iter();
+        CHECK_EQUAL(Traverser::Iterator::SDES, it.next());
+
+        {
+            SdesTraverser sdes_tr = it.get_sdes();
+            CHECK(!sdes_tr.parse());
+        }
+
+        CHECK_EQUAL(Traverser::Iterator::END, it.next());
+        CHECK_FALSE(it.error());
+    }
+}
+
 TEST(traverser, sdes_fields) {
     core::Slice<uint8_t> buff = new_buffer();
 
@@ -1426,7 +1798,6 @@ TEST(traverser, sdes_fields) {
         const char chunk2_padding[4] = { '\0', 'y', 'y', 'y' };
 
         header::SdesPacket sdes;
-        sdes.header().set_type(header::RTCP_SDES);
         sdes.header().set_counter(2);
         sdes.header().set_len_bytes(
             sizeof(header::SdesPacket)
@@ -1517,14 +1888,14 @@ TEST(traverser, sdes_fields) {
 }
 
 TEST(traverser, bye_iteration) {
-    const char reason_text[7] = { '1', '2', '3', '4', '5', '6', '7' };
+    const char reason_text[5] = { '1', '2', '3', '4', '5' };
+    const char reason_padding[2] = { 'x', 'x' };
 
     header::ByePacket bye;
-    bye.header().set_type(header::RTCP_BYE);
     bye.header().set_counter(2);
-    bye.header().set_len_bytes(sizeof(header::ByePacket)
-                               + sizeof(header::ByeSourceHeader) * 2
-                               + sizeof(header::ByeReasonHeader) + sizeof(reason_text));
+    bye.header().set_len_bytes(
+        sizeof(header::ByePacket) + sizeof(header::ByeSourceHeader) * 2
+        + sizeof(header::ByeReasonHeader) + sizeof(reason_text) + sizeof(reason_padding));
 
     header::ByeSourceHeader src1;
     src1.set_ssrc(111);
@@ -1542,6 +1913,7 @@ TEST(traverser, bye_iteration) {
         append_buffer(buff, &src2, sizeof(src2));
         append_buffer(buff, &reason, sizeof(reason));
         append_buffer(buff, &reason_text, sizeof(reason_text));
+        append_buffer(buff, &reason_padding, sizeof(reason_padding));
 
         Traverser traverser(buff);
         CHECK(traverser.parse());
@@ -1562,7 +1934,7 @@ TEST(traverser, bye_iteration) {
             CHECK_EQUAL(ByeTraverser::Iterator::SSRC, bye_it.next());
             CHECK_EQUAL(222, bye_it.get_ssrc());
             CHECK_EQUAL(ByeTraverser::Iterator::REASON, bye_it.next());
-            STRCMP_EQUAL("1234567", bye_it.get_reason());
+            STRCMP_EQUAL("12345", bye_it.get_reason());
 
             CHECK_EQUAL(ByeTraverser::Iterator::END, bye_it.next());
             CHECK_FALSE(bye_it.error());
@@ -1586,7 +1958,8 @@ TEST(traverser, bye_iteration) {
         append_buffer(buff, &src1, sizeof(src1));
         append_buffer(buff, &src2, sizeof(src2));
         append_buffer(buff, &reason, sizeof(reason));
-        append_buffer(buff, &reason_text, sizeof(reason_text) - 1);
+        append_buffer(buff, &reason_text, sizeof(reason_text));
+        append_buffer(buff, &reason_padding, sizeof(reason_padding) - 1);
 
         Traverser traverser(buff);
         CHECK(traverser.parse());
@@ -1607,6 +1980,7 @@ TEST(traverser, bye_iteration) {
         append_buffer(buff, &src2, sizeof(src2));
         append_buffer(buff, &reason, sizeof(reason));
         append_buffer(buff, &reason_text, sizeof(reason_text));
+        append_buffer(buff, &reason_padding, sizeof(reason_padding));
 
         Traverser traverser(buff);
         CHECK(traverser.parse());
@@ -1626,6 +2000,7 @@ TEST(traverser, bye_iteration) {
         append_buffer(buff, &src2, sizeof(src2));
         append_buffer(buff, &reason, sizeof(reason));
         append_buffer(buff, &reason_text, sizeof(reason_text));
+        append_buffer(buff, &reason_padding, sizeof(reason_padding));
 
         Traverser traverser(buff);
         CHECK(traverser.parse());
@@ -1662,6 +2037,7 @@ TEST(traverser, bye_iteration) {
         append_buffer(buff, &src2, sizeof(src2));
         append_buffer(buff, &reason, sizeof(reason));
         append_buffer(buff, &reason_text, sizeof(reason_text));
+        append_buffer(buff, &reason_padding, sizeof(reason_padding));
 
         Traverser traverser(buff);
         CHECK(traverser.parse());
@@ -1696,11 +2072,12 @@ TEST(traverser, bye_iteration) {
         bye_copy.header().set_counter(0);
         bye_copy.header().set_len_bytes(sizeof(header::ByePacket)
                                         + sizeof(header::ByeReasonHeader)
-                                        + sizeof(reason_text));
+                                        + sizeof(reason_text) + sizeof(reason_padding));
 
         append_buffer(buff, &bye_copy, sizeof(bye_copy));
         append_buffer(buff, &reason, sizeof(reason));
         append_buffer(buff, &reason_text, sizeof(reason_text));
+        append_buffer(buff, &reason_padding, sizeof(reason_padding));
 
         Traverser traverser(buff);
         CHECK(traverser.parse());
@@ -1717,7 +2094,7 @@ TEST(traverser, bye_iteration) {
             ByeTraverser::Iterator bye_it = bye_tr.iter();
 
             CHECK_EQUAL(ByeTraverser::Iterator::REASON, bye_it.next());
-            STRCMP_EQUAL("1234567", bye_it.get_reason());
+            STRCMP_EQUAL("12345", bye_it.get_reason());
 
             CHECK_EQUAL(ByeTraverser::Iterator::END, bye_it.next());
             CHECK_FALSE(bye_it.error());
@@ -1842,18 +2219,131 @@ TEST(traverser, bye_iteration) {
     }
 }
 
+TEST(traverser, bye_padding) {
+    char packet_padding[16] = {};
+    packet_padding[15] = 16;
+
+    const char reason_text[5] = { '1', '2', '3', '4', '5' };
+    const char reason_padding[2] = { 'x', 'x' };
+
+    header::ByePacket bye;
+    bye.header().set_padding(true);
+    bye.header().set_counter(1);
+    bye.header().set_len_bytes(sizeof(header::ByePacket) + sizeof(header::ByeSourceHeader)
+                               + sizeof(header::ByeReasonHeader) + sizeof(reason_text)
+                               + sizeof(reason_padding) + sizeof(packet_padding));
+
+    header::ByeSourceHeader src;
+    src.set_ssrc(111);
+
+    header::ByeReasonHeader reason;
+    reason.set_text_len(sizeof(reason_text));
+
+    { // good
+        core::Slice<uint8_t> buff = new_buffer();
+
+        append_buffer(buff, &bye, sizeof(bye));
+        append_buffer(buff, &src, sizeof(src));
+        append_buffer(buff, &reason, sizeof(reason));
+        append_buffer(buff, &reason_text, sizeof(reason_text));
+        append_buffer(buff, &reason_padding, sizeof(reason_padding));
+        append_buffer(buff, &packet_padding, sizeof(packet_padding));
+
+        Traverser traverser(buff);
+        CHECK(traverser.parse());
+
+        Traverser::Iterator it = traverser.iter();
+        CHECK_EQUAL(Traverser::Iterator::BYE, it.next());
+
+        {
+            ByeTraverser bye_tr = it.get_bye();
+            CHECK(bye_tr.parse());
+
+            CHECK_EQUAL(1, bye_tr.ssrc_count());
+
+            ByeTraverser::Iterator bye_it = bye_tr.iter();
+
+            CHECK_EQUAL(ByeTraverser::Iterator::SSRC, bye_it.next());
+            CHECK_EQUAL(111, bye_it.get_ssrc());
+            CHECK_EQUAL(ByeTraverser::Iterator::REASON, bye_it.next());
+            STRCMP_EQUAL("12345", bye_it.get_reason());
+
+            CHECK_EQUAL(ByeTraverser::Iterator::END, bye_it.next());
+            CHECK_FALSE(bye_it.error());
+        }
+
+        CHECK_EQUAL(Traverser::Iterator::END, it.next());
+        CHECK_FALSE(it.error());
+    }
+    { // padding length is zero
+        char bad_padding[16] = {};
+        bad_padding[15] = 0;
+
+        core::Slice<uint8_t> buff = new_buffer();
+
+        append_buffer(buff, &bye, sizeof(bye));
+        append_buffer(buff, &src, sizeof(src));
+        append_buffer(buff, &reason, sizeof(reason));
+        append_buffer(buff, &reason_text, sizeof(reason_text));
+        append_buffer(buff, &reason_padding, sizeof(reason_padding));
+        append_buffer(buff, &bad_padding, sizeof(bad_padding));
+
+        Traverser traverser(buff);
+        CHECK(traverser.parse());
+
+        Traverser::Iterator it = traverser.iter();
+        CHECK_EQUAL(Traverser::Iterator::BYE, it.next());
+
+        {
+            ByeTraverser bye_tr = it.get_bye();
+            CHECK(!bye_tr.parse());
+        }
+
+        CHECK_EQUAL(Traverser::Iterator::END, it.next());
+        CHECK_FALSE(it.error());
+    }
+    { // padding length is too big
+        char bad_padding[16] = {};
+        bad_padding[15] = 127;
+
+        core::Slice<uint8_t> buff = new_buffer();
+
+        append_buffer(buff, &bye, sizeof(bye));
+        append_buffer(buff, &src, sizeof(src));
+        append_buffer(buff, &reason, sizeof(reason));
+        append_buffer(buff, &reason_text, sizeof(reason_text));
+        append_buffer(buff, &reason_padding, sizeof(reason_padding));
+        append_buffer(buff, &bad_padding, sizeof(bad_padding));
+
+        Traverser traverser(buff);
+        CHECK(traverser.parse());
+
+        Traverser::Iterator it = traverser.iter();
+        CHECK_EQUAL(Traverser::Iterator::BYE, it.next());
+
+        {
+            ByeTraverser bye_tr = it.get_bye();
+            CHECK(!bye_tr.parse());
+        }
+
+        CHECK_EQUAL(Traverser::Iterator::END, it.next());
+        CHECK_FALSE(it.error());
+    }
+}
+
 TEST(traverser, bye_fields) {
     core::Slice<uint8_t> buff = new_buffer();
 
     {
-        const char reason_text[3] = { 'a', 'b', 'c' };
+        const char reason_text[5] = { 'a', 'b', 'c', 'd', 'e' };
+        const char reason_padding[2] = { 'x', 'x' };
 
         header::ByePacket bye;
-        bye.header().set_type(header::RTCP_BYE);
         bye.header().set_counter(2);
-        bye.header().set_len_bytes(
-            sizeof(header::ByePacket) + sizeof(header::ByeSourceHeader) * 2
-            + sizeof(header::ByeReasonHeader) + sizeof(reason_text));
+        bye.header().set_len_bytes(sizeof(header::ByePacket)
+                                   + sizeof(header::ByeSourceHeader) * 2
+                                   + sizeof(header::ByeReasonHeader) + sizeof(reason_text)
+                                   + sizeof(reason_padding));
 
         header::ByeSourceHeader src1;
         src1.set_ssrc(111);
@@ -1868,6 +2358,7 @@ TEST(traverser, bye_fields) {
         append_buffer(buff, &src2, sizeof(src2));
         append_buffer(buff, &reason, sizeof(reason));
         append_buffer(buff, &reason_text, sizeof(reason_text));
+        append_buffer(buff, &reason_padding, sizeof(reason_padding));
     }
 
     Traverser traverser(buff);
@@ -1889,10 +2380,138 @@ TEST(traverser, bye_fields) {
         CHECK_EQUAL(ByeTraverser::Iterator::SSRC, bye_it.next());
         CHECK_EQUAL(222, bye_it.get_ssrc());
         CHECK_EQUAL(ByeTraverser::Iterator::REASON, bye_it.next());
-        STRCMP_EQUAL("abc", bye_it.get_reason());
+        STRCMP_EQUAL("abcde", bye_it.get_reason());
 
         CHECK_EQUAL(ByeTraverser::Iterator::END, bye_it.next());
         CHECK_FALSE(bye_it.error());
+    }
+
+    CHECK_EQUAL(Traverser::Iterator::END, it.next());
+    CHECK_FALSE(it.error());
+}
+
+TEST(traverser, multiple_packets) {
+    core::Slice<uint8_t> buff = new_buffer();
+
+    {
+        header::ReceiverReportPacket rr;
+        rr.header().set_counter(2);
+        rr.header().set_len_bytes(sizeof(header::ReceiverReportPacket)
+                                  + sizeof(header::ReceptionReportBlock) * 2);
+        rr.set_ssrc(111);
+
+        header::ReceptionReportBlock rr_block1;
+        rr_block1.set_ssrc(222);
+        header::ReceptionReportBlock rr_block2;
+        rr_block2.set_ssrc(333);
+
+        const char cname[4] = { 'a', 'b', 'c', 'd' };
+        const char cname_padding[2] = { '\0', 'x' };
+
+        header::SdesPacket sdes;
+        sdes.header().set_counter(1);
+        sdes.header().set_len_bytes(
+            sizeof(header::SdesPacket) + sizeof(header::SdesChunkHeader)
+            + sizeof(header::SdesItemHeader) + sizeof(cname) + sizeof(cname_padding));
+
+        header::SdesChunkHeader sdes_chunk;
+        sdes_chunk.set_ssrc(444);
+
+        header::SdesItemHeader sdes_item;
+        sdes_item.set_type(header::SDES_CNAME);
+        sdes_item.set_text_len(sizeof(cname));
+
+        char xr_padding[32] = {};
+        xr_padding[31] = 32;
+
+        header::XrPacket xr;
+        xr.header().set_padding(true);
+        xr.header().set_len_bytes(sizeof(header::XrPacket) + sizeof(header::XrRrtrBlock)
+                                  + sizeof(header::XrDlrrBlock)
+                                  + sizeof(header::XrDlrrSubblock) * 2
+                                  + sizeof(xr_padding));
+        xr.set_ssrc(555);
+
+        header::XrRrtrBlock rrtr;
+        rrtr.header().set_type_specific(66);
+        rrtr.header().set_len_bytes(sizeof(header::XrRrtrBlock));
+
+        header::XrDlrrBlock dlrr;
+        dlrr.header().set_type_specific(77);
+        dlrr.header().set_len_bytes(sizeof(header::XrDlrrBlock)
+                                    + sizeof(header::XrDlrrSubblock) * 2);
+
+        header::XrDlrrSubblock dlrr_subblock1;
+        dlrr_subblock1.set_ssrc(888);
+
+        header::XrDlrrSubblock dlrr_subblock2;
+        dlrr_subblock2.set_ssrc(999);
+
+        append_buffer(buff, &rr, sizeof(rr));
+        append_buffer(buff, &rr_block1, sizeof(rr_block1));
+        append_buffer(buff, &rr_block2, sizeof(rr_block2));
+        append_buffer(buff, &sdes, sizeof(sdes));
+        append_buffer(buff, &sdes_chunk, sizeof(sdes_chunk));
+        append_buffer(buff, &sdes_item, sizeof(sdes_item));
+        append_buffer(buff, &cname, sizeof(cname));
+        append_buffer(buff, &cname_padding, sizeof(cname_padding));
+        append_buffer(buff, &xr, sizeof(xr));
+        append_buffer(buff, &rrtr, sizeof(rrtr));
+        append_buffer(buff, &dlrr, sizeof(dlrr));
+        append_buffer(buff, &dlrr_subblock1, sizeof(dlrr_subblock1));
+        append_buffer(buff, &dlrr_subblock2, sizeof(dlrr_subblock2));
+        append_buffer(buff, &xr_padding, sizeof(xr_padding));
+    }
+
+    Traverser traverser(buff);
+    CHECK(traverser.parse());
+
+    Traverser::Iterator it = traverser.iter();
+
+    CHECK_EQUAL(Traverser::Iterator::RR, it.next());
+    CHECK_EQUAL(111, it.get_rr().ssrc());
+    CHECK_EQUAL(2, it.get_rr().num_blocks());
+    CHECK_EQUAL(222, it.get_rr().get_block(0).ssrc());
+    CHECK_EQUAL(333, it.get_rr().get_block(1).ssrc());
+
+    CHECK_EQUAL(Traverser::Iterator::SDES, it.next());
+
+    {
+        SdesTraverser sdes_tr = it.get_sdes();
+        CHECK(sdes_tr.parse());
+
+        CHECK_EQUAL(1, sdes_tr.chunks_count());
+
+        SdesTraverser::Iterator sdes_it = sdes_tr.iter();
+
+        CHECK_EQUAL(SdesTraverser::Iterator::CHUNK, sdes_it.next());
+        CHECK_EQUAL(444, sdes_it.get_chunk().ssrc);
+        CHECK_EQUAL(SdesTraverser::Iterator::ITEM, sdes_it.next());
+        STRCMP_EQUAL("abcd", sdes_it.get_item().text);
+
+        CHECK_EQUAL(SdesTraverser::Iterator::END, sdes_it.next());
+        CHECK_FALSE(sdes_it.error());
+    }
+
+    CHECK_EQUAL(Traverser::Iterator::XR, it.next());
+
+    {
+        XrTraverser xr_tr = it.get_xr();
+        CHECK(xr_tr.parse());
+
+        CHECK_EQUAL(2, xr_tr.blocks_count());
+        CHECK_EQUAL(555, xr_tr.packet().ssrc());
+
+        XrTraverser::Iterator xr_it = xr_tr.iter();
+        CHECK_EQUAL(XrTraverser::Iterator::RRTR_BLOCK, xr_it.next());
+        CHECK_EQUAL(66, xr_it.get_rrtr().header().type_specific());
+        CHECK_EQUAL(XrTraverser::Iterator::DLRR_BLOCK, xr_it.next());
+        CHECK_EQUAL(2, xr_it.get_dlrr().num_subblocks());
+        CHECK_EQUAL(77, xr_it.get_dlrr().header().type_specific());
+        CHECK_EQUAL(888, xr_it.get_dlrr().get_subblock(0).ssrc());
+        CHECK_EQUAL(999, xr_it.get_dlrr().get_subblock(1).ssrc());
+        CHECK_EQUAL(XrTraverser::Iterator::END, xr_it.next());
+        CHECK_FALSE(xr_it.error());
     }
 
     CHECK_EQUAL(Traverser::Iterator::END, it.next());

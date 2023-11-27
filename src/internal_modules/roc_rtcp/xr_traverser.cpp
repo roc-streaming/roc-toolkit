@@ -14,7 +14,6 @@ namespace rtcp {
 XrTraverser::XrTraverser(const core::Slice<uint8_t>& buf)
     : buf_(buf)
     , parsed_(false)
-    , packet_len_(0)
     , blocks_count_(0) {
     roc_panic_if_msg(!buf, "xr traverser: null slice");
 }
@@ -31,10 +30,18 @@ bool XrTraverser::parse() {
         return false;
     }
 
-    packet_len_ = xr->header().len_bytes();
-    if (packet_len_ > buf_.size()) {
-        packet_len_ = 0;
+    const size_t packet_len = xr->header().len_bytes();
+    if (packet_len > buf_.size()) {
         return false;
+    }
+
+    // Remove padding.
+    if (xr->header().has_padding()) {
+        const uint8_t padding_len = buf_[packet_len - 1];
+        if (padding_len < 1 || padding_len > packet_len - sizeof(header::XrPacket)) {
+            return false;
+        }
+        buf_ = buf_.subslice(0, packet_len - padding_len);
     }
 
     // XR packets don't use counter field of the packet header,

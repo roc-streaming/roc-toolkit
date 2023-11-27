@@ -88,9 +88,8 @@ public:
     size_t chunks_count() const;
 
 private:
-    const core::Slice<uint8_t> buf_;
+    core::Slice<uint8_t> buf_;
     bool parsed_;
-    size_t packet_len_;
     size_t chunks_count_;
 };
 

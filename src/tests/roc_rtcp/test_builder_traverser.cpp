@@ -458,6 +458,104 @@ TEST(builder_traverser, rr_sdes_xr) {
     CHECK_FALSE(it.error());
 }
 
+TEST(builder_traverser, rr_xr_padding) {
+    core::Slice<uint8_t> buff = new_buffer();
+
+    header::ReceiverReportPacket rr;
+    rr.set_ssrc(1);
+
+    header::ReceptionReportBlock receiver_report;
+    receiver_report.set_ssrc(1);
+    receiver_report.set_fract_loss(1, 8);
+    receiver_report.set_cumloss(2);
+    receiver_report.set_last_seqnum(3);
+    receiver_report.set_jitter(4);
+    receiver_report.set_last_sr(5);
+    receiver_report.set_delay_last_sr(6);
+
+    header::XrPacket xr;
+    xr.set_ssrc(111);
+    header::XrRrtrBlock ref_time;
+    ref_time.set_ntp_timestamp(0xFFFFFFFFFFFFFFFF);
+    header::XrDlrrBlock dlrr;
+    header::XrDlrrSubblock dlrr_repblock_1;
+    dlrr_repblock_1.set_ssrc(222);
+    dlrr_repblock_1.set_delay_last_rr(333);
+    dlrr_repblock_1.set_last_rr(444);
+    header::XrDlrrSubblock dlrr_repblock_2;
+    dlrr_repblock_2.set_ssrc(555);
+    dlrr_repblock_2.set_delay_last_rr(666);
+    dlrr_repblock_2.set_last_rr(777);
+
+    // Synthesize part
+
+    Builder builder(buff);
+
+    // RR
+    builder.begin_rr(rr);
+    builder.add_rr_report(receiver_report);
+    builder.end_rr();
+
+    // XR
+    builder.begin_xr(xr);
+    builder.add_xr_rrtr(ref_time);
+    builder.begin_xr_dlrr(dlrr);
+    builder.add_xr_dlrr_report(dlrr_repblock_1);
+    builder.add_xr_dlrr_report(dlrr_repblock_2);
+    builder.end_xr_dlrr();
+    builder.end_xr();
+
+    // Padding
+    builder.add_padding(64);
+
+    // Validation part
+
+    validate_buffer(buff);
+
+    // Parsing part
+
+    Traverser traverser(buff);
+    CHECK(traverser.parse());
+
+    Traverser::Iterator it = traverser.iter();
+    CHECK_EQUAL(Traverser::Iterator::RR, it.next());
+    CHECK_EQUAL(rr.ssrc(), it.get_rr().ssrc());
+
+    CHECK_EQUAL(receiver_report.ssrc(), it.get_rr().get_block(0).ssrc());
+    DOUBLES_EQUAL(receiver_report.fract_loss(), it.get_rr().get_block(0).fract_loss(),
+                  1e-8);
+    CHECK_EQUAL(receiver_report.cumloss(), it.get_rr().get_block(0).cumloss());
+    CHECK_EQUAL(receiver_report.last_seqnum(), it.get_rr().get_block(0).last_seqnum());
+    CHECK_EQUAL(receiver_report.jitter(), it.get_rr().get_block(0).jitter());
+    CHECK_EQUAL(receiver_report.last_sr(), it.get_rr().get_block(0).last_sr());
+    CHECK_EQUAL(receiver_report.delay_last_sr(),
+                it.get_rr().get_block(0).delay_last_sr());
+
+    CHECK_EQUAL(Traverser::Iterator::XR, it.next());
+    XrTraverser xr_tr = it.get_xr();
+    CHECK(xr_tr.parse());
+    CHECK_EQUAL(2, xr_tr.blocks_count());
+    CHECK_EQUAL(111, xr_tr.packet().ssrc());
+    XrTraverser::Iterator xr_it = xr_tr.iter();
+    CHECK_EQUAL(XrTraverser::Iterator::RRTR_BLOCK, xr_it.next());
+    CHECK_EQUAL(ref_time.ntp_timestamp(), xr_it.get_rrtr().ntp_timestamp());
+    CHECK_EQUAL(XrTraverser::Iterator::DLRR_BLOCK, xr_it.next());
+    const header::XrDlrrBlock& pdlrr = xr_it.get_dlrr();
+
+    CHECK_EQUAL(2, pdlrr.num_subblocks());
+    CHECK_EQUAL(dlrr_repblock_1.ssrc(), pdlrr.get_subblock(0).ssrc());
+    CHECK_EQUAL(dlrr_repblock_1.delay_last_rr(), pdlrr.get_subblock(0).delay_last_rr());
+    CHECK_EQUAL(dlrr_repblock_1.last_rr(), pdlrr.get_subblock(0).last_rr());
+    CHECK_EQUAL(dlrr_repblock_2.ssrc(), pdlrr.get_subblock(1).ssrc());
+    CHECK_EQUAL(dlrr_repblock_2.delay_last_rr(), pdlrr.get_subblock(1).delay_last_rr());
+    CHECK_EQUAL(dlrr_repblock_2.last_rr(), pdlrr.get_subblock(1).last_rr());
+    CHECK_EQUAL(XrTraverser::Iterator::END, xr_it.next());
+    CHECK_FALSE(xr_it.error());
+
+    CHECK_EQUAL(Traverser::Iterator::END, it.next());
+    CHECK_FALSE(it.error());
+}
+
 TEST(builder_traverser, bye) {
     core::Slice<uint8_t> buff = new_buffer();
 

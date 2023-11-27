@@ -117,6 +117,14 @@ public:
 
     //! @}
 
+    //! @name Packet padding
+    //! @{
+
+    //! Add given number of padding bytes to last packet.
+    void add_padding(size_t padding_len);
+
+    //! @}
+
 private:
     void add_report_(const header::ReceptionReportBlock& report);
     void end_packet_();

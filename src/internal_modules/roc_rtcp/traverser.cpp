@@ -101,7 +101,7 @@ void Traverser::Iterator::next_packet_() {
 
         switch (cur_pkt_header_->type()) {
         case header::RTCP_SR:
-            if (!check_sr_()) {
+            if (!remove_padding_() || !check_sr_()) {
                 // Skipping invalid SR packet.
                 error_ = true;
                 break;
@@ -109,7 +109,7 @@ void Traverser::Iterator::next_packet_() {
             state_ = SR;
             return;
         case header::RTCP_RR:
-            if (!check_rr_()) {
+            if (!remove_padding_() || !check_rr_()) {
                 // Skipping invalid RR packet.
                 error_ = true;
                 break;
@@ -135,12 +135,25 @@ void Traverser::Iterator::next_packet_() {
     }
 }
 
+bool Traverser::Iterator::remove_padding_() {
+    if (cur_pkt_header_->has_padding()) {
+        const uint8_t padding_len = cur_pkt_slice_[cur_pkt_len_ - 1];
+        if (padding_len < 1
+            || padding_len > cur_pkt_len_ - sizeof(header::PacketHeader)) {
+            return false;
+        }
+        cur_pkt_slice_ = buf_.subslice(0, cur_pkt_len_ - padding_len);
+    }
+    return true;
+}
+
 bool Traverser::Iterator::check_sr_() {
     const header::SenderReportPacket* sr =
         (const header::SenderReportPacket*)cur_pkt_slice_.data();
 
-    if (cur_pkt_len_ < sizeof(header::SenderReportPacket)
-            + sr->num_blocks() * sizeof(header::ReceptionReportBlock)) {
+    if (sizeof(header::SenderReportPacket)
+            + sr->num_blocks() * sizeof(header::ReceptionReportBlock)
+        > cur_pkt_slice_.size()) {
         return false;
     }
 
@@ -151,8 +164,9 @@ bool Traverser::Iterator::check_rr_() {
     const header::ReceiverReportPacket* rr =
         (const header::ReceiverReportPacket*)cur_pkt_slice_.data();
 
-    if (cur_pkt_len_ < sizeof(header::ReceiverReportPacket)
-            + rr->num_blocks() * sizeof(header::ReceptionReportBlock)) {
+    if (sizeof(header::ReceiverReportPacket)
+            + rr->num_blocks() * sizeof(header::ReceptionReportBlock)
+        > cur_pkt_slice_.size()) {
         return false;
     }
 
