@@ -35,6 +35,8 @@ int main(int argc, char** argv) {
     core::HeapArena::set_flags(core::DefaultHeapArenaFlags
                                | core::HeapArenaFlag_EnableLeakDetection);
 
+    core::HeapArena heap_arena;
+
     core::CrashHandler crash_handler;
 
     gengetopt_args_info args;
@@ -68,13 +70,6 @@ int main(int argc, char** argv) {
     sndio::Config io_config;
     io_config.sample_spec.set_channel_set(sender_config.input_sample_spec.channel_set());
 
-    if (args.packet_len_given) {
-        if (!core::parse_duration(args.packet_len_arg, sender_config.packet_length)) {
-            roc_log(LogError, "invalid --packet-len");
-            return 1;
-        }
-    }
-
     if (args.frame_len_given) {
         if (!core::parse_duration(args.frame_len_arg, io_config.frame_length)) {
             roc_log(LogError, "invalid --frame-len: bad format");
@@ -87,64 +82,33 @@ int main(int argc, char** argv) {
         }
     }
 
-    node::ContextConfig context_config;
-
-    if (args.max_packet_size_given) {
-        if (!core::parse_size(args.max_packet_size_arg, context_config.max_packet_size)) {
-            roc_log(LogError, "invalid --max-packet-size");
-            return 1;
-        }
-        if (context_config.max_packet_size == 0) {
-            roc_log(LogError, "invalid --max-packet-size: should be > 0");
-            return 1;
-        }
-    } else {
-        size_t extra_space = 64;
-        // TODO(gh-608): take size from --packet-encoding instead of assuming 2 bytes per
-        // sample
-        context_config.max_packet_size = 2
-                * sender_config.input_sample_spec.ns_2_samples_overall(
-                    sender_config.packet_length)
-            + extra_space;
-    }
-
-    if (args.max_frame_size_given) {
-        if (!core::parse_size(args.max_frame_size_arg, context_config.max_frame_size)) {
-            roc_log(LogError, "invalid --max-frame-size");
-            return 1;
-        }
-        if (context_config.max_frame_size == 0) {
-            roc_log(LogError, "invalid --max-frame-size: should be > 0");
+    if (args.io_latency_given) {
+        if (!core::parse_duration(args.io_latency_arg, io_config.latency)) {
+            roc_log(LogError, "invalid --io-latency");
             return 1;
         }
     }
 
-    core::HeapArena heap_arena;
-
-    node::Context context(context_config, heap_arena);
-    if (!context.is_valid()) {
-        roc_log(LogError, "can't initialize node context");
-        return 1;
-    }
-
-    sndio::BackendDispatcher backend_dispatcher(context.arena());
-    if (args.list_supported_given) {
-        if (!address::print_supported(context.arena())) {
+    if (args.rate_given) {
+        if (args.rate_arg <= 0) {
+            roc_log(LogError, "invalid --rate: should be > 0");
             return 1;
         }
-
-        if (!sndio::print_supported(backend_dispatcher, context.arena())) {
-            return 1;
-        }
-
-        return 0;
+        io_config.sample_spec.set_sample_rate((size_t)args.rate_arg);
     }
 
     sndio::BackendMap::instance().set_frame_size(io_config.frame_length,
                                                  sender_config.input_sample_spec);
 
+    if (args.packet_len_given) {
+        if (!core::parse_duration(args.packet_len_arg, sender_config.packet_length)) {
+            roc_log(LogError, "invalid --packet-len");
+            return 1;
+        }
+    }
+
     if (args.source_given) {
-        address::EndpointUri source_endpoint(context.arena());
+        address::EndpointUri source_endpoint(heap_arena);
         if (!address::parse_endpoint_uri(
                 args.source_arg[0], address::EndpointUri::Subset_Full, source_endpoint)) {
             roc_log(LogError, "can't parse --source endpoint: %s", args.source_arg[0]);
@@ -216,19 +180,55 @@ int main(int argc, char** argv) {
     sender_config.enable_interleaving = args.interleaving_flag;
     sender_config.enable_profiling = args.profiling_flag;
 
-    if (args.io_latency_given) {
-        if (!core::parse_duration(args.io_latency_arg, io_config.latency)) {
-            roc_log(LogError, "invalid --io-latency");
+    node::ContextConfig context_config;
+
+    if (args.max_packet_size_given) {
+        if (!core::parse_size(args.max_packet_size_arg, context_config.max_packet_size)) {
+            roc_log(LogError, "invalid --max-packet-size");
+            return 1;
+        }
+        if (context_config.max_packet_size == 0) {
+            roc_log(LogError, "invalid --max-packet-size: should be > 0");
+            return 1;
+        }
+    } else {
+        const size_t extra_space = 64;
+        // TODO(gh-608): take size from --packet-encoding instead of assuming
+        // 2 bytes per sample
+        context_config.max_packet_size = 2
+                * sender_config.input_sample_spec.ns_2_samples_overall(
+                    sender_config.packet_length)
+            + extra_space;
+    }
+
+    if (args.max_frame_size_given) {
+        if (!core::parse_size(args.max_frame_size_arg, context_config.max_frame_size)) {
+            roc_log(LogError, "invalid --max-frame-size");
+            return 1;
+        }
+        if (context_config.max_frame_size == 0) {
+            roc_log(LogError, "invalid --max-frame-size: should be > 0");
             return 1;
         }
     }
 
-    if (args.rate_given) {
-        if (args.rate_arg <= 0) {
-            roc_log(LogError, "invalid --rate: should be > 0");
+    node::Context context(context_config, heap_arena);
+    if (!context.is_valid()) {
+        roc_log(LogError, "can't initialize node context");
+        return 1;
+    }
+
+    sndio::BackendDispatcher backend_dispatcher(context.arena());
+    if (args.list_supported_given) {
+        if (!address::print_supported(context.arena())) {
             return 1;
         }
-        io_config.sample_spec.set_sample_rate((size_t)args.rate_arg);
+
+        if (!sndio::print_supported(backend_dispatcher, context.arena())) {
+            return 1;
+        }
+
+        return 0;
     }
 
     address::IoUri input_uri(context.arena());

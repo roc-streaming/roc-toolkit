@@ -36,6 +36,8 @@ int main(int argc, char** argv) {
     core::HeapArena::set_flags(core::DefaultHeapArenaFlags
                                | core::HeapArenaFlag_EnableLeakDetection);
 
+    core::HeapArena heap_arena;
+
     core::CrashHandler crash_handler;
 
     gengetopt_args_info args;
@@ -245,8 +247,6 @@ int main(int argc, char** argv) {
         context_config.max_frame_size =
             spec.ns_2_samples_overall(io_config.frame_length) * sizeof(audio::sample_t);
     }
-
-    core::HeapArena heap_arena;
 
     node::Context context(context_config, heap_arena);
     if (!context.is_valid()) {
