@@ -32,9 +32,9 @@ Options
 --latency-tolerance=STRING    Maximum latency deviation, TIME units
 --no-play-timeout=STRING      No playback timeout, TIME units
 --choppy-play-timeout=STRING  Choppy playback timeout, TIME units
---packet-limit=INT            Maximum packet size, in bytes
---frame-limit=INT             Maximum internal frame size, in bytes
---frame-length=TIME           Duration of the internal frames, TIME units
+--frame-len=TIME              Duration of the internal frames, TIME units
+--max-packet-size=SIZE        Maximum packet size, in SIZE units
+--max-frame-size=SIZE         Maximum internal frame size, in SIZE units
 --rate=INT                    Override output sample rate, Hz
 --clock-backend=ENUM          Clock synchronization backend  (possible values="disable", "niq" default=`niq')
 --clock-profile=ENUM          Clock synchronization profile  (possible values="default", "responsive", "gradual" default=`default')
@@ -159,6 +159,12 @@ Time units
 
 *TIME* should have one of the following forms:
   123ns, 123us, 123ms, 123s, 123m, 123h
+
+Size units
+----------
+
+*SIZE* should have one of the following forms:
+  123; 123K; 123M; 123G;
 
 EXAMPLES
 ========
@@ -288,7 +294,7 @@ Select lower I/O latency and frame length:
 .. code::
 
     $ roc-recv -vv -s rtp://0.0.0.0:10001 \
-        --io-latency=20ms --frame-length 4ms
+        --io-latency=20ms --frame-len 4ms
 
 Manually specify thresholds and timeouts:
 

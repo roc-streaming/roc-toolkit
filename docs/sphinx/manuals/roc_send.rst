@@ -27,10 +27,10 @@ Options
 --io-latency=STRING         Recording target latency, TIME units
 --nbsrc=INT                 Number of source packets in FEC block
 --nbrpr=INT                 Number of repair packets in FEC block
---packet-length=STRING      Outgoing packet length, TIME units
---packet-limit=INT          Maximum packet size, in bytes
---frame-limit=INT           Maximum internal frame size, in bytes
---frame-length=TIME         Duration of the internal frames, TIME units
+--packet-len=STRING         Outgoing packet length, TIME units
+--frame-len=TIME            Duration of the internal frames, TIME units
+--max-packet-size=SIZE      Maximum packet size, in SIZE units
+--max-frame-size=SIZE       Maximum internal frame size, in SIZE units
 --rate=INT                  Override input sample rate, Hz
 --resampler-backend=ENUM    Resampler backend  (possible values="default", "builtin", "speex", "speexdec" default=`default')
 --resampler-profile=ENUM    Resampler profile  (possible values="low", "medium", "high" default=`medium')
@@ -136,6 +136,12 @@ Time units
 *TIME* should have one of the following forms:
   123ns, 123us, 123ms, 123s, 123m, 123h
 
+Size units
+----------
+
+*SIZE* should have one of the following forms:
+  123; 123K; 123M; 123G;
+
 EXAMPLES
 ========
 
@@ -240,14 +246,14 @@ Select lower packet length:
 .. code::
 
     $ roc-send -vv -i file:./input.wav -s rtp+ldpc://192.168.0.3:10001 \
-        --packet-length 2500us
+        --packet-len 2500us
 
 Select lower I/O latency and frame length:
 
 .. code::
 
     $ roc-send -vv -s rtp://192.168.0.3:10001 \
-        --io-latency=20ms --frame-length 4ms
+        --io-latency=20ms --frame-len 4ms
 
 Manually specify resampling parameters:
 

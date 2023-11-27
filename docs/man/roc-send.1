@@ -78,17 +78,17 @@ Number of source packets in FEC block
 .BI \-\-nbrpr\fB= INT
 Number of repair packets in FEC block
 .TP
-.BI \-\-packet\-length\fB= STRING
+.BI \-\-packet\-len\fB= STRING
 Outgoing packet length, TIME units
 .TP
-.BI \-\-packet\-limit\fB= INT
-Maximum packet size, in bytes
-.TP
-.BI \-\-frame\-limit\fB= INT
-Maximum internal frame size, in bytes
-.TP
-.BI \-\-frame\-length\fB= TIME
+.BI \-\-frame\-len\fB= TIME
 Duration of the internal frames, TIME units
+.TP
+.BI \-\-max\-packet\-size\fB= SIZE
+Maximum packet size, in SIZE units
+.TP
+.BI \-\-max\-frame\-size\fB= SIZE
+Maximum internal frame size, in SIZE units
 .TP
 .BI \-\-rate\fB= INT
 Override input sample rate, Hz
@@ -227,6 +227,12 @@ Regardless of the option, \fBSO_REUSEADDR\fP is always disabled when binding to 
 .TP
 .B \fITIME\fP should have one of the following forms:
 123ns, 123us, 123ms, 123s, 123m, 123h
+.UNINDENT
+.SS Size units
+.INDENT 0.0
+.TP
+.B \fISIZE\fP should have one of the following forms:
+123; 123K; 123M; 123G;
 .UNINDENT
 .SH EXAMPLES
 .SS Endpoint examples
@@ -405,7 +411,7 @@ Select lower packet length:
 .nf
 .ft C
 $ roc\-send \-vv \-i file:./input.wav \-s rtp+ldpc://192.168.0.3:10001 \e
-    \-\-packet\-length 2500us
+    \-\-packet\-len 2500us
 .ft P
 .fi
 .UNINDENT
@@ -418,7 +424,7 @@ Select lower I/O latency and frame length:
 .nf
 .ft C
 $ roc\-send \-vv \-s rtp://192.168.0.3:10001 \e
-    \-\-io\-latency=20ms \-\-frame\-length 4ms
+    \-\-io\-latency=20ms \-\-frame\-len 4ms
 .ft P
 .fi
 .UNINDENT

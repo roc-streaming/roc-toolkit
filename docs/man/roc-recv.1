@@ -93,14 +93,14 @@ No playback timeout, TIME units
 .BI \-\-choppy\-play\-timeout\fB= STRING
 Choppy playback timeout, TIME units
 .TP
-.BI \-\-packet\-limit\fB= INT
-Maximum packet size, in bytes
-.TP
-.BI \-\-frame\-limit\fB= INT
-Maximum internal frame size, in bytes
-.TP
-.BI \-\-frame\-length\fB= TIME
+.BI \-\-frame\-len\fB= TIME
 Duration of the internal frames, TIME units
+.TP
+.BI \-\-max\-packet\-size\fB= SIZE
+Maximum packet size, in SIZE units
+.TP
+.BI \-\-max\-frame\-size\fB= SIZE
+Maximum internal frame size, in SIZE units
 .TP
 .BI \-\-rate\fB= INT
 Override output sample rate, Hz
@@ -261,6 +261,12 @@ Backup file is restarted from the beginning each time when the last session disc
 .TP
 .B \fITIME\fP should have one of the following forms:
 123ns, 123us, 123ms, 123s, 123m, 123h
+.UNINDENT
+.SS Size units
+.INDENT 0.0
+.TP
+.B \fISIZE\fP should have one of the following forms:
+123; 123K; 123M; 123G;
 .UNINDENT
 .SH EXAMPLES
 .SS Endpoint examples
@@ -487,7 +493,7 @@ Select lower I/O latency and frame length:
 .nf
 .ft C
 $ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \e
-    \-\-io\-latency=20ms \-\-frame\-length 4ms
+    \-\-io\-latency=20ms \-\-frame\-len 4ms
 .ft P
 .fi
 .UNINDENT
