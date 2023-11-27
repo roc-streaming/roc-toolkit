@@ -13,7 +13,7 @@ namespace roc {
 namespace rtcp {
 
 Builder::Builder(core::Slice<uint8_t>& data)
-    : state_(NONE)
+    : state_(TOP)
     , data_(data)
     , header_(NULL)
     , xr_header_(NULL)
@@ -23,7 +23,7 @@ Builder::Builder(core::Slice<uint8_t>& data)
 }
 
 void Builder::begin_sr(const header::SenderReportPacket& sr) {
-    roc_panic_if_not(state_ == NONE);
+    roc_panic_if_msg(state_ != TOP, "rtcp builder: wrong call order");
 
     cur_slice_ = data_.subslice(data_.size(), data_.size());
     header::SenderReportPacket* p = (header::SenderReportPacket*)cur_slice_.extend(
@@ -36,7 +36,8 @@ void Builder::begin_sr(const header::SenderReportPacket& sr) {
 }
 
 void Builder::add_sr_report(const header::ReceptionReportBlock& report) {
-    roc_panic_if_not(state_ == SR_HEAD || state_ == SR_REPORT);
+    roc_panic_if_msg(state_ != SR_HEAD && state_ != SR_REPORT,
+                     "rtcp builder: wrong call order");
 
     add_report_(report);
 
@@ -44,13 +45,14 @@ void Builder::add_sr_report(const header::ReceptionReportBlock& report) {
 }
 
 void Builder::end_sr() {
-    roc_panic_if_not(state_ == SR_HEAD || state_ == SR_REPORT);
+    roc_panic_if_msg(state_ != SR_HEAD && state_ != SR_REPORT,
+                     "rtcp builder: wrong call order");
 
     end_packet_();
 }
 
 void Builder::begin_rr(const header::ReceiverReportPacket& rr) {
-    roc_panic_if_not(state_ == NONE);
+    roc_panic_if_msg(state_ != TOP, "rtcp builder: wrong call order");
 
     cur_slice_ = data_.subslice(data_.size(), data_.size());
     header::ReceiverReportPacket* p = (header::ReceiverReportPacket*)cur_slice_.extend(
@@ -63,7 +65,8 @@ void Builder::begin_rr(const header::ReceiverReportPacket& rr) {
 }
 
 void Builder::add_rr_report(const header::ReceptionReportBlock& report) {
-    roc_panic_if_not(state_ == RR_HEAD || state_ == RR_REPORT);
+    roc_panic_if_msg(state_ != RR_HEAD && state_ != RR_REPORT,
+                     "rtcp builder: wrong call order");
 
     add_report_(report);
 
@@ -71,16 +74,16 @@ void Builder::add_rr_report(const header::ReceptionReportBlock& report) {
 }
 
 void Builder::end_rr() {
-    roc_panic_if_not(state_ == RR_REPORT || state_ == RR_HEAD);
+    roc_panic_if_msg(state_ != RR_HEAD && state_ != RR_REPORT,
+                     "rtcp builder: wrong call order");
 
     end_packet_();
 }
 
 void Builder::begin_sdes() {
-    roc_panic_if_not(state_ == NONE);
+    roc_panic_if_msg(state_ != TOP, "rtcp builder: wrong call order");
 
-    roc_panic_if_msg(!report_written_,
-                     "rtcp builder: sdes should come only after sr or rr");
+    roc_panic_if_msg(!report_written_, "rtcp builder: first packet should be SR or RR");
 
     cur_slice_ = data_.subslice(data_.size(), data_.size());
     header::SdesPacket* p =
@@ -92,7 +95,7 @@ void Builder::begin_sdes() {
 }
 
 void Builder::begin_sdes_chunk(const SdesChunk& chunk) {
-    roc_panic_if_not(state_ == SDES_HEAD);
+    roc_panic_if_msg(state_ != SDES_HEAD, "rtcp builder: wrong call order");
 
     header::SdesChunkHeader* p =
         (header::SdesChunkHeader*)cur_slice_.extend(sizeof(header::SdesChunkHeader));
@@ -105,9 +108,9 @@ void Builder::begin_sdes_chunk(const SdesChunk& chunk) {
 }
 
 void Builder::add_sdes_item(const SdesItem& item) {
-    roc_panic_if_not(state_ == SDES_CHUNK);
+    roc_panic_if_msg(state_ != SDES_CHUNK, "rtcp builder: wrong call order");
 
-    roc_panic_if_msg(!item.text, "rtcp builder: item text can't be null");
+    roc_panic_if_msg(!item.text, "rtcp builder: SDES item text can't be null");
 
     const size_t text_size = strnlen(item.text, header::SdesItemHeader::MaxTextLen);
     const size_t total_size = sizeof(header::SdesItemHeader) + text_size;
@@ -124,21 +127,19 @@ void Builder::add_sdes_item(const SdesItem& item) {
     if (item.type == header::SDES_CNAME) {
         roc_panic_if_msg(
             cname_written_,
-            "rtcp builder: each sdes chunk should have one and only one cname item");
-
+            "rtcp builder: each SDES chunk should have exactly one CNAME item");
         cname_written_ = true;
     }
 }
 
 void Builder::end_sdes_chunk() {
-    roc_panic_if_not(state_ == SDES_CHUNK);
+    roc_panic_if_msg(state_ != SDES_CHUNK, "rtcp builder: wrong call order");
 
-    roc_panic_if_msg(
-        !cname_written_,
-        "rtcp builder: each sdes chunk should have one and only one cname item");
+    roc_panic_if_msg(!cname_written_,
+                     "rtcp builder: each SDES chunk should have exactly one CNAME item");
 
     // Adds at least one byte with zero value and aligns the end with 32 bit border.
-    size_t padding_size = header::padding_len(cur_slice_.size(), 1);
+    const size_t padding_size = header::padding_len(cur_slice_.size(), 1);
     uint8_t* p = cur_slice_.extend(padding_size);
     memset(p, 0, padding_size);
 
@@ -146,16 +147,15 @@ void Builder::end_sdes_chunk() {
 }
 
 void Builder::end_sdes() {
-    roc_panic_if_not(state_ == SDES_HEAD);
+    roc_panic_if_msg(state_ != SDES_HEAD, "rtcp builder: wrong call order");
 
     end_packet_();
 }
 
 void Builder::begin_bye() {
-    roc_panic_if_not(state_ == NONE);
+    roc_panic_if_msg(state_ != TOP, "rtcp builder: wrong call order");
 
-    roc_panic_if_msg(!report_written_,
-                     "rtcp builder: bye should come only after sr or rr");
+    roc_panic_if_msg(!report_written_, "rtcp builder: first packet should be SR or RR");
 
     cur_slice_ = data_.subslice(data_.size(), data_.size());
     header::ByePacket* p =
@@ -167,7 +167,8 @@ void Builder::begin_bye() {
 }
 
 void Builder::add_bye_ssrc(const packet::stream_source_t ssrc) {
-    roc_panic_if_not(state_ == BYE_HEAD || state_ == BYE_SSRC);
+    roc_panic_if_msg(state_ != BYE_HEAD && state_ != BYE_SSRC,
+                     "rtcp builder: wrong call order");
 
     header::ByeSourceHeader* p =
         (header::ByeSourceHeader*)cur_slice_.extend(sizeof(header::ByeSourceHeader));
@@ -179,9 +180,9 @@ void Builder::add_bye_ssrc(const packet::stream_source_t ssrc) {
 }
 
 void Builder::add_bye_reason(const char* reason) {
-    roc_panic_if_not(state_ == BYE_SSRC);
+    roc_panic_if_msg(state_ != BYE_SSRC, "rtcp builder: wrong call order");
 
-    roc_panic_if_msg(!reason, "rtcp builder: bye reason can't be null");
+    roc_panic_if_msg(!reason, "rtcp builder: BYE reason can't be null");
 
     const size_t text_size = strnlen(reason, header::ByeReasonHeader::MaxTextLen);
     const size_t total_size = sizeof(header::ByeReasonHeader) + text_size;
@@ -203,16 +204,16 @@ void Builder::add_bye_reason(const char* reason) {
 }
 
 void Builder::end_bye() {
-    roc_panic_if_not(state_ == BYE_SSRC || state_ == BYE_REASON);
+    roc_panic_if_msg(state_ != BYE_SSRC && state_ != BYE_REASON,
+                     "rtcp builder: wrong call order");
 
     end_packet_();
 }
 
 void Builder::begin_xr(const header::XrPacket& xr) {
-    roc_panic_if_not(state_ == NONE);
+    roc_panic_if_msg(state_ != TOP, "rtcp builder: wrong call order");
 
-    roc_panic_if_msg(!report_written_,
-                     "rtcp builder: xr should come only after sr or rr");
+    roc_panic_if_msg(!report_written_, "rtcp builder: first packet should be SR or RR");
 
     cur_slice_ = data_.subslice(data_.size(), data_.size());
     header::XrPacket* p = (header::XrPacket*)cur_slice_.extend(sizeof(header::XrPacket));
@@ -223,7 +224,7 @@ void Builder::begin_xr(const header::XrPacket& xr) {
 }
 
 void Builder::add_xr_rrtr(const header::XrRrtrBlock& rrtr) {
-    roc_panic_if_not(state_ == XR_HEAD);
+    roc_panic_if_msg(state_ != XR_HEAD, "rtcp builder: wrong call order");
 
     header::XrRrtrBlock* p =
         (header::XrRrtrBlock*)cur_slice_.extend(sizeof(header::XrRrtrBlock));
@@ -233,7 +234,7 @@ void Builder::add_xr_rrtr(const header::XrRrtrBlock& rrtr) {
 }
 
 void Builder::begin_xr_dlrr(const header::XrDlrrBlock& dlrr) {
-    roc_panic_if_not(state_ == XR_HEAD);
+    roc_panic_if_msg(state_ != XR_HEAD, "rtcp builder: wrong call order");
 
     header::XrDlrrBlock* p =
         (header::XrDlrrBlock*)cur_slice_.extend(sizeof(header::XrDlrrBlock));
@@ -244,7 +245,8 @@ void Builder::begin_xr_dlrr(const header::XrDlrrBlock& dlrr) {
 }
 
 void Builder::add_xr_dlrr_report(const header::XrDlrrSubblock& report) {
-    roc_panic_if_not(state_ == XR_DLRR_HEAD || state_ == XR_DLRR_REPORT);
+    roc_panic_if_msg(state_ != XR_DLRR_HEAD && state_ != XR_DLRR_REPORT,
+                     "rtcp builder: wrong call order");
 
     header::XrDlrrSubblock* p =
         (header::XrDlrrSubblock*)cur_slice_.extend(sizeof(header::XrDlrrSubblock));
@@ -254,7 +256,7 @@ void Builder::add_xr_dlrr_report(const header::XrDlrrSubblock& report) {
 }
 
 void Builder::end_xr_dlrr() {
-    roc_panic_if_not(state_ == XR_DLRR_REPORT);
+    roc_panic_if_msg(state_ != XR_DLRR_REPORT, "rtcp builder: wrong call order");
 
     xr_header_->set_len_bytes(size_t(cur_slice_.data_end() - (uint8_t*)xr_header_));
 
@@ -262,7 +264,7 @@ void Builder::end_xr_dlrr() {
 }
 
 void Builder::end_xr() {
-    roc_panic_if_not(state_ == XR_HEAD);
+    roc_panic_if_msg(state_ != XR_HEAD, "rtcp builder: wrong call order");
 
     end_packet_();
 }
@@ -281,24 +283,27 @@ void Builder::end_packet_() {
     data_.extend(cur_slice_.size());
     cur_slice_ = core::Slice<uint8_t>();
 
-    state_ = NONE;
+    state_ = TOP;
 }
 
 void Builder::add_padding(size_t padding_len) {
-    roc_panic_if_not(state_ == NONE);
-    roc_panic_if_not(header_);
-    roc_panic_if_not(!header_->has_padding());
-    roc_panic_if_not(padding_len % 4 == 0 && padding_len >= 1 && padding_len <= 255);
+    roc_panic_if_msg(state_ != TOP || !header_, "rtcp builder: wrong call order");
+
+    roc_panic_if_msg(padding_len % 4 != 0 || padding_len < 1 || padding_len > 255,
+                     "rtcp builder: bad packet padding:"
+                     " should be multiple of 4 in range [1; 255], got %lu",
+                     (unsigned long)padding_len);
 
     header_->set_padding(true);
     header_->set_len_bytes(header_->len_bytes() + padding_len);
 
     uint8_t* p = data_.extend(padding_len);
-
     if (padding_len > 1) {
         memset(p, 0, padding_len - 1);
     }
     p[padding_len - 1] = (uint8_t)padding_len;
+
+    state_ = END;
 }
 
 } // namespace rtcp

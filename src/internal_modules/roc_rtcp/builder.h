@@ -23,6 +23,13 @@ namespace roc {
 namespace rtcp {
 
 //! RTCP compound packet builder.
+//!
+//! Builder will panic if any of the following rules is violated
+//! (mandated by RFC 3550):
+//!  - First packet should be SR or RR.
+//!  - At least one packet should be present.
+//!  - Each SDES chunk should have exactly one CNAME item.
+//!  - Padding can be added only to last packet.
 class Builder : public core::NonCopyable<> {
 public:
     //! Initialize builder.
@@ -121,6 +128,7 @@ public:
     //! @{
 
     //! Add given number of padding bytes to last packet.
+    //! Padding should be multiple of 4 in range [1; 255].
     void add_padding(size_t padding_len);
 
     //! @}
@@ -130,7 +138,7 @@ private:
     void end_packet_();
 
     enum State {
-        NONE,
+        TOP,
         SR_HEAD,
         SR_REPORT,
         RR_HEAD,
@@ -142,7 +150,8 @@ private:
         SDES_CHUNK,
         BYE_HEAD,
         BYE_SSRC,
-        BYE_REASON
+        BYE_REASON,
+        END
     };
 
     State state_;
