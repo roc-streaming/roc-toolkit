@@ -10,6 +10,7 @@
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_rtcp/communicator.h"
 #include "roc_status/code_to_str.h"
 
 namespace roc {
@@ -38,9 +39,10 @@ ReceiverSessionGroup::~ReceiverSessionGroup() {
     remove_all_sessions_();
 }
 
-status::StatusCode ReceiverSessionGroup::route_packet(const packet::PacketPtr& packet) {
+status::StatusCode ReceiverSessionGroup::route_packet(const packet::PacketPtr& packet,
+                                                      core::nanoseconds_t current_time) {
     if (packet->rtcp()) {
-        return route_control_packet_(packet);
+        return route_control_packet_(packet, current_time);
     }
 
     return route_transport_packet_(packet);
@@ -111,46 +113,49 @@ void ReceiverSessionGroup::get_metrics(ReceiverSessionMetrics* metrics,
     }
 }
 
-void ReceiverSessionGroup::on_update_source(packet::stream_source_t ssrc,
-                                            const char* cname) {
+const char* ReceiverSessionGroup::cname() {
     // TODO
-    (void)ssrc;
-    (void)cname;
+    return "todo";
 }
 
-void ReceiverSessionGroup::on_remove_source(packet::stream_source_t ssrc) {
+packet::stream_source_t ReceiverSessionGroup::source_id() {
     // TODO
-    (void)ssrc;
+    return 456;
 }
 
-size_t ReceiverSessionGroup::on_get_num_sources() {
+void ReceiverSessionGroup::change_source_id() {
+    // TODO
+}
+
+size_t ReceiverSessionGroup::num_recv_steams() {
     // TODO
     return 0;
 }
 
-rtcp::ReceptionMetrics
-ReceiverSessionGroup::on_get_reception_metrics(size_t source_index) {
+rtcp::RecvReport
+ReceiverSessionGroup::query_recv_stream(size_t recv_stream_index,
+                                        core::nanoseconds_t report_time) {
     // TODO
-    (void)source_index;
-    return rtcp::ReceptionMetrics();
+    rtcp::RecvReport report;
+    report.receiver_cname = cname();
+    report.receiver_source_id = source_id();
+    report.sender_source_id = 123;
+    report.report_timestamp = report_time;
+    return report;
 }
 
-void ReceiverSessionGroup::on_add_sending_metrics(const rtcp::SendingMetrics& metrics) {
+void ReceiverSessionGroup::notify_recv_stream(packet::stream_source_t send_source_id,
+                                              const rtcp::SendReport& send_report) {
+    // TODO: match session by SSRC/CNAME
     core::SharedPtr<ReceiverSession> sess;
 
-    // TODO: match session by SSRC/CNAME
     for (sess = sessions_.front(); sess; sess = sessions_.nextof(*sess)) {
-        sess->add_sending_metrics(metrics);
+        sess->process_report(send_report);
     }
 }
 
-void ReceiverSessionGroup::on_add_link_metrics(const rtcp::LinkMetrics& metrics) {
-    core::SharedPtr<ReceiverSession> sess;
-
-    // TODO: match session by SSRC/CNAME
-    for (sess = sessions_.front(); sess; sess = sessions_.nextof(*sess)) {
-        sess->add_link_metrics(metrics);
-    }
+void ReceiverSessionGroup::halt_recv_stream(packet::stream_source_t send_source_id) {
+    // TODO
 }
 
 status::StatusCode
@@ -158,7 +163,7 @@ ReceiverSessionGroup::route_transport_packet_(const packet::PacketPtr& packet) {
     core::SharedPtr<ReceiverSession> sess;
 
     for (sess = sessions_.front(); sess; sess = sessions_.nextof(*sess)) {
-        const status::StatusCode code = sess->route(packet);
+        const status::StatusCode code = sess->route_packet(packet);
         if (code == status::StatusOK) {
             // TODO(gh-183): hadle StatusNoRoute vs other error
             return code;
@@ -174,23 +179,25 @@ ReceiverSessionGroup::route_transport_packet_(const packet::PacketPtr& packet) {
 }
 
 status::StatusCode
-ReceiverSessionGroup::route_control_packet_(const packet::PacketPtr& packet) {
+ReceiverSessionGroup::route_control_packet_(const packet::PacketPtr& packet,
+                                            core::nanoseconds_t current_time) {
     if (!rtcp_composer_) {
         rtcp_composer_.reset(new (rtcp_composer_) rtcp::Composer());
     }
 
-    if (!rtcp_session_) {
-        rtcp_session_.reset(new (rtcp_session_) rtcp::Session(
-            this, NULL, NULL, *rtcp_composer_, packet_factory_, byte_buffer_factory_));
+    if (!rtcp_communicator_) {
+        rtcp_communicator_.reset(new (rtcp_communicator_) rtcp::Communicator(
+            receiver_config_.common.rtcp_config, *this, NULL, *rtcp_composer_,
+            packet_factory_, byte_buffer_factory_, arena_));
     }
 
-    if (!rtcp_session_->is_valid()) {
+    if (!rtcp_communicator_->is_valid()) {
         // TODO(gh-183): return status
         return status::StatusOK;
     }
 
     // This will invoke IReceiverController methods implemented by us.
-    return rtcp_session_->process_packet(packet);
+    return rtcp_communicator_->process_packet(packet, current_time);
 }
 
 bool ReceiverSessionGroup::can_create_session_(const packet::PacketPtr& packet) {
@@ -237,7 +244,7 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
         return status::StatusOK;
     }
 
-    const status::StatusCode code = sess->route(packet);
+    const status::StatusCode code = sess->route_packet(packet);
     if (code != status::StatusOK) {
         roc_log(
             LogError,

@@ -52,7 +52,7 @@ void print_reception_block(core::Printer& p, const header::ReceptionReportBlock&
     p.writef("|- block:\n");
     p.writef("|-- ssrc: %lu\n", (unsigned long)blk.ssrc());
     p.writef("|-- fract_loss: %f\n", (double)blk.fract_loss());
-    p.writef("|-- cumloss: %d\n", (int)blk.cumloss());
+    p.writef("|-- cum_loss: %d\n", (int)blk.cum_loss());
     p.writef("|-- last_seqnum: %lu\n", (unsigned long)blk.last_seqnum());
     p.writef("|-- jitter: %lu\n", (unsigned long)blk.jitter());
     p.writef("|-- lsr: %lu\n", (unsigned long)blk.last_sr());

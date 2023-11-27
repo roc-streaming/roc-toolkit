@@ -41,6 +41,7 @@ struct SdesItem {
 
     //! Item text.
     //! Zero-terminated UTF-8 string.
+    //! Can't be larger than SdesItemHeader::MaxTextLen.
     const char* text;
 };
 

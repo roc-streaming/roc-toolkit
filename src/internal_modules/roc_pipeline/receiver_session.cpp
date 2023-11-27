@@ -220,7 +220,7 @@ bool ReceiverSession::is_valid() const {
     return audio_reader_;
 }
 
-status::StatusCode ReceiverSession::route(const packet::PacketPtr& packet) {
+status::StatusCode ReceiverSession::route_packet(const packet::PacketPtr& packet) {
     roc_panic_if(!is_valid());
 
     packet::UDP* udp = packet->udp();
@@ -266,6 +266,12 @@ bool ReceiverSession::reclock(core::nanoseconds_t playback_time) {
     return latency_monitor_->reclock(playback_time);
 }
 
+void ReceiverSession::process_report(const rtcp::SendReport& report) {
+    roc_panic_if(!is_valid());
+
+    timestamp_injector_->update_mapping(report.report_timestamp, report.stream_timestamp);
+}
+
 ReceiverSessionMetrics ReceiverSession::get_metrics() const {
     roc_panic_if(!is_valid());
 
@@ -279,17 +285,6 @@ audio::IFrameReader& ReceiverSession::reader() {
     roc_panic_if(!is_valid());
 
     return *audio_reader_;
-}
-
-void ReceiverSession::add_sending_metrics(const rtcp::SendingMetrics& metrics) {
-    roc_panic_if(!is_valid());
-
-    timestamp_injector_->update_mapping(metrics.origin_time, metrics.origin_rtp);
-}
-
-void ReceiverSession::add_link_metrics(const rtcp::LinkMetrics& metrics) {
-    // TODO
-    (void)metrics;
 }
 
 } // namespace pipeline

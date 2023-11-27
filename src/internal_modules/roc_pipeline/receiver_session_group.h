@@ -20,8 +20,9 @@
 #include "roc_pipeline/metrics.h"
 #include "roc_pipeline/receiver_session.h"
 #include "roc_pipeline/receiver_state.h"
+#include "roc_rtcp/communicator.h"
 #include "roc_rtcp/composer.h"
-#include "roc_rtcp/session.h"
+#include "roc_rtcp/istream_controller.h"
 
 namespace roc {
 namespace pipeline {
@@ -30,7 +31,7 @@ namespace pipeline {
 //!
 //! Contains:
 //!  - a set of related receiver sessions
-class ReceiverSessionGroup : public core::NonCopyable<>, private rtcp::IReceiverHooks {
+class ReceiverSessionGroup : public core::NonCopyable<>, private rtcp::IStreamController {
 public:
     //! Initialize.
     ReceiverSessionGroup(const ReceiverConfig& receiver_config,
@@ -45,7 +46,8 @@ public:
     ~ReceiverSessionGroup();
 
     //! Route packet to session.
-    ROC_ATTR_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet);
+    ROC_ATTR_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet,
+                                                       core::nanoseconds_t current_time);
 
     //! Refresh pipeline according to current time.
     //! @returns
@@ -71,17 +73,21 @@ public:
     void get_metrics(ReceiverSessionMetrics* metrics, size_t* metrics_size) const;
 
 private:
-    // Implementation of rtcp::IReceiverHooks interface.
-    // These methods are invoked by rtcp::Session.
-    virtual void on_update_source(packet::stream_source_t ssrc, const char* cname);
-    virtual void on_remove_source(packet::stream_source_t ssrc);
-    virtual size_t on_get_num_sources();
-    virtual rtcp::ReceptionMetrics on_get_reception_metrics(size_t source_index);
-    virtual void on_add_sending_metrics(const rtcp::SendingMetrics& metrics);
-    virtual void on_add_link_metrics(const rtcp::LinkMetrics& metrics);
+    // Implementation of rtcp::IStreamController interface.
+    // These methods are invoked by rtcp::Communicator.
+    virtual const char* cname();
+    virtual packet::stream_source_t source_id();
+    virtual void change_source_id();
+    virtual size_t num_recv_steams();
+    virtual rtcp::RecvReport query_recv_stream(size_t recv_stream_index,
+                                               core::nanoseconds_t report_time);
+    virtual void notify_recv_stream(packet::stream_source_t send_source_id,
+                                    const rtcp::SendReport& send_report);
+    virtual void halt_recv_stream(packet::stream_source_t send_source_id);
 
     status::StatusCode route_transport_packet_(const packet::PacketPtr& packet);
-    status::StatusCode route_control_packet_(const packet::PacketPtr& packet);
+    status::StatusCode route_control_packet_(const packet::PacketPtr& packet,
+                                             core::nanoseconds_t current_time);
 
     bool can_create_session_(const packet::PacketPtr& packet);
 
@@ -105,7 +111,7 @@ private:
     const ReceiverConfig& receiver_config_;
 
     core::Optional<rtcp::Composer> rtcp_composer_;
-    core::Optional<rtcp::Session> rtcp_session_;
+    core::Optional<rtcp::Communicator> rtcp_communicator_;
 
     core::List<ReceiverSession> sessions_;
 };

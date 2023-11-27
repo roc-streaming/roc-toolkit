@@ -40,7 +40,7 @@
 #include "roc_packet/sorted_queue.h"
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/metrics.h"
-#include "roc_rtcp/metrics.h"
+#include "roc_rtcp/reports.h"
 #include "roc_rtp/encoding_map.h"
 #include "roc_rtp/parser.h"
 #include "roc_rtp/populator.h"
@@ -72,7 +72,7 @@ public:
     bool is_valid() const;
 
     //! Try to route a packet to this session.
-    ROC_ATTR_NODISCARD status::StatusCode route(const packet::PacketPtr& packet);
+    ROC_ATTR_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet);
 
     //! Refresh pipeline according to current time.
     //! @remarks
@@ -90,17 +90,14 @@ public:
     //!  false if the session is ended
     bool reclock(core::nanoseconds_t playback_time);
 
+    //! Process RTCP report obtained from sender.
+    void process_report(const rtcp::SendReport& report);
+
     //! Get session metrics.
     ReceiverSessionMetrics get_metrics() const;
 
     //! Get audio reader.
     audio::IFrameReader& reader();
-
-    //! Handle metrics obtained from sender.
-    void add_sending_metrics(const rtcp::SendingMetrics& metrics);
-
-    //! Handle estimated link metrics.
-    void add_link_metrics(const rtcp::LinkMetrics& metrics);
 
 private:
     const address::SocketAddr src_address_;

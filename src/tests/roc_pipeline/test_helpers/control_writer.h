@@ -47,15 +47,28 @@ public:
 
         buff.reslice(0, 0);
 
-        rtcp::Builder bld(buff);
+        rtcp::Config cfg;
+        rtcp::Builder bld(cfg, buff);
 
         rtcp::header::SenderReportPacket sr;
         sr.set_ssrc(source_);
         sr.set_ntp_timestamp(ntp_ts);
         sr.set_rtp_timestamp(rtp_ts);
 
+        rtcp::SdesChunk chunk;
+        chunk.ssrc = source_;
+        rtcp::SdesItem item;
+        item.type = rtcp::header::SDES_CNAME;
+        item.text = "test_cname";
+
         bld.begin_sr(sr);
         bld.end_sr();
+
+        bld.begin_sdes();
+        bld.begin_sdes_chunk(chunk);
+        bld.add_sdes_item(item);
+        bld.end_sdes_chunk();
+        bld.end_sdes();
 
         UNSIGNED_LONGS_EQUAL(status::StatusOK, writer_.write(new_packet_(buff)));
     }

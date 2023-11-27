@@ -23,9 +23,6 @@
 #include "roc_pipeline/sender_sink.h"
 #include "roc_rtp/encoding_map.h"
 
-namespace roc {
-namespace pipeline {
-
 // This file contains integration tests that combine SenderSink and ReceiverSource.
 //
 // SenderSink consumes audio frames and produces network packets. ReceiverSource
@@ -46,6 +43,9 @@ namespace pipeline {
 //
 // test::FrameWriter simulates sender sound card that produces frames, and
 // test::FrameReader simulates receiver sound card that consumes frames.
+
+namespace roc {
+namespace pipeline {
 
 namespace {
 
@@ -146,6 +146,8 @@ SenderConfig make_sender_config(int flags,
     config.enable_timing = false;
     config.enable_profiling = true;
 
+    config.rtcp_config.inactivity_timeout = Timeout * core::Second / SampleRate;
+
     return config;
 }
 
@@ -161,6 +163,8 @@ ReceiverConfig make_receiver_config(audio::ChannelMask frame_channels,
     config.common.output_sample_spec.channel_set().set_channel_mask(frame_channels);
 
     config.common.enable_timing = false;
+
+    config.common.rtcp_config.inactivity_timeout = Timeout * core::Second / SampleRate;
 
     config.default_session.latency_monitor.fe_enable = false;
     config.default_session.target_latency = Latency * core::Second / SampleRate;
@@ -338,12 +342,12 @@ void send_receive(int flags,
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
-            receiver.refresh(frame_reader.refresh_ts());
-
             core::nanoseconds_t recv_base_cts = -1;
             if (flags & FlagCTS) {
                 recv_base_cts = send_base_cts;
             }
+
+            receiver.refresh(frame_reader.refresh_ts(recv_base_cts));
 
             frame_reader.read_samples(SamplesPerFrame, num_sessions,
                                       receiver_config.common.output_sample_spec,

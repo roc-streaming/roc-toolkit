@@ -1013,6 +1013,8 @@ if meta.compiler == 'gcc':
             '-Wno-stringop-overflow',
             '-Wno-system-headers',
             '-Wno-unused-const-variable',
+            '-Wno-unused-function',
+            '-Wno-unused-parameter',
         ]})
 
     env.Append(CXXFLAGS=[
@@ -1063,6 +1065,8 @@ if meta.compiler == 'clang':
             '-Wno-shadow',
             '-Wno-system-headers',
             '-Wno-unused-const-variable',
+            '-Wno-unused-function',
+            '-Wno-unused-parameter',
         ]})
 
     env.Append(CXXFLAGS=[

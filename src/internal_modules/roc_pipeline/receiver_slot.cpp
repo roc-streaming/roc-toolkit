@@ -61,19 +61,19 @@ ReceiverEndpoint* ReceiverSlot::add_endpoint(address::Interface iface,
 
 core::nanoseconds_t ReceiverSlot::refresh(core::nanoseconds_t current_time) {
     if (source_endpoint_) {
-        const status::StatusCode code = source_endpoint_->pull_packets();
+        const status::StatusCode code = source_endpoint_->pull_packets(current_time);
         // TODO(gh-183): forward status
         roc_panic_if(code != status::StatusOK);
     }
 
     if (repair_endpoint_) {
-        const status::StatusCode code = repair_endpoint_->pull_packets();
+        const status::StatusCode code = repair_endpoint_->pull_packets(current_time);
         // TODO(gh-183): forward status
         roc_panic_if(code != status::StatusOK);
     }
 
     if (control_endpoint_) {
-        const status::StatusCode code = control_endpoint_->pull_packets();
+        const status::StatusCode code = control_endpoint_->pull_packets(current_time);
         // TODO(gh-183): forward status
         roc_panic_if(code != status::StatusOK);
     }

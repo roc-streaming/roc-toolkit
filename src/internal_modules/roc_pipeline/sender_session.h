@@ -31,8 +31,9 @@
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/metrics.h"
 #include "roc_pipeline/sender_endpoint.h"
+#include "roc_rtcp/communicator.h"
 #include "roc_rtcp/composer.h"
-#include "roc_rtcp/session.h"
+#include "roc_rtcp/istream_controller.h"
 #include "roc_rtp/encoding_map.h"
 #include "roc_rtp/timestamp_extractor.h"
 
@@ -44,7 +45,7 @@ namespace pipeline {
 //! Contains:
 //!  - a pipeline for processing audio frames from single sender and converting
 //!    them into packets
-class SenderSession : public core::NonCopyable<>, private rtcp::ISenderHooks {
+class SenderSession : public core::NonCopyable<>, private rtcp::IStreamController {
 public:
     //! Initialize.
     SenderSession(const SenderConfig& config,
@@ -74,13 +75,15 @@ public:
     SenderSessionMetrics get_metrics() const;
 
 private:
-    // Implementation of rtcp::ISenderHooks interface.
-    // These methods are invoked by rtcp::Session.
-    virtual size_t on_get_num_sources();
-    virtual packet::stream_source_t on_get_sending_source(size_t source_index);
-    virtual rtcp::SendingMetrics on_get_sending_metrics(core::nanoseconds_t report_time);
-    virtual void on_add_reception_metrics(const rtcp::ReceptionMetrics& metrics);
-    virtual void on_add_link_metrics(const rtcp::LinkMetrics& metrics);
+    // Implementation of rtcp::IStreamController interface.
+    // These methods are invoked by rtcp::Communicator.
+    virtual const char* cname();
+    virtual packet::stream_source_t source_id();
+    virtual void change_source_id();
+    virtual bool has_send_stream();
+    virtual rtcp::SendReport query_send_stream(core::nanoseconds_t report_time);
+    virtual void notify_send_stream(packet::stream_source_t recv_source_id,
+                                    const rtcp::RecvReport& recv_report);
 
     core::IArena& arena_;
 
@@ -110,7 +113,7 @@ private:
     core::SharedPtr<audio::IResampler> resampler_;
 
     core::Optional<rtcp::Composer> rtcp_composer_;
-    core::Optional<rtcp::Session> rtcp_session_;
+    core::Optional<rtcp::Communicator> rtcp_communicator_;
 
     audio::IFrameWriter* audio_writer_;
 

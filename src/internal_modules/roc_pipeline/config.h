@@ -27,6 +27,7 @@
 #include "roc_fec/reader.h"
 #include "roc_fec/writer.h"
 #include "roc_packet/units.h"
+#include "roc_rtcp/config.h"
 #include "roc_rtp/headers.h"
 #include "roc_rtp/validator.h"
 
@@ -140,6 +141,9 @@ struct SenderConfig {
     //! Profiler configuration.
     audio::ProfilerConfig profiler_config;
 
+    //! RTCP config.
+    rtcp::Config rtcp_config;
+
     SenderConfig()
         : resampler_backend(audio::ResamplerBackend_Default)
         , resampler_profile(audio::ResamplerProfile_Medium)
@@ -225,6 +229,9 @@ struct ReceiverCommonConfig {
 
     //! Insert weird beeps instead of silence on packet loss.
     bool enable_beeping;
+
+    //! RTCP config.
+    rtcp::Config rtcp_config;
 
     ReceiverCommonConfig()
         : output_sample_spec(DefaultSampleSpec)

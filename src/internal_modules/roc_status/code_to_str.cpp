@@ -19,6 +19,10 @@ const char* code_to_str(StatusCode code) {
         return "Unknown";
     case StatusNoData:
         return "NoData";
+    case StatusNoMem:
+        return "NoMem";
+    case StatusNoSpace:
+        return "NoSpace";
     }
 
     return "<invalid>";

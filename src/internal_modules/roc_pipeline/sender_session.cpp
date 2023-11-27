@@ -11,6 +11,7 @@
 #include "roc_core/panic.h"
 #include "roc_core/time.h"
 #include "roc_fec/codec_map.h"
+#include "roc_rtcp/communicator.h"
 
 namespace roc {
 namespace pipeline {
@@ -160,7 +161,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
 }
 
 bool SenderSession::create_control_pipeline(SenderEndpoint* control_endpoint) {
-    roc_panic_if(rtcp_session_);
+    roc_panic_if(rtcp_communicator_);
     roc_panic_if(!control_endpoint);
 
     rtcp_composer_.reset(new (rtcp_composer_) rtcp::Composer());
@@ -168,10 +169,10 @@ bool SenderSession::create_control_pipeline(SenderEndpoint* control_endpoint) {
         return false;
     }
 
-    rtcp_session_.reset(new (rtcp_session_) rtcp::Session(
-        NULL, this, &control_endpoint->writer(), *rtcp_composer_, packet_factory_,
-        byte_buffer_factory_));
-    if (!rtcp_session_ || !rtcp_session_->is_valid()) {
+    rtcp_communicator_.reset(new (rtcp_communicator_) rtcp::Communicator(
+        config_.rtcp_config, *this, &control_endpoint->writer(), *rtcp_composer_,
+        packet_factory_, byte_buffer_factory_, arena_));
+    if (!rtcp_communicator_ || !rtcp_communicator_->is_valid()) {
         return false;
     }
 
@@ -183,17 +184,19 @@ audio::IFrameWriter* SenderSession::writer() const {
 }
 
 core::nanoseconds_t SenderSession::refresh(core::nanoseconds_t current_time) {
-    if (!rtcp_session_) {
+    if (!rtcp_communicator_) {
         return 0;
     }
 
     if (timestamp_extractor_ && timestamp_extractor_->has_mapping()) {
-        const status::StatusCode code = rtcp_session_->generate_packets(current_time);
+        const status::StatusCode code =
+            rtcp_communicator_->generate_reports(current_time);
+
         // TODO(gh-183): forward status
         roc_panic_if(code != status::StatusOK);
     }
 
-    return rtcp_session_->generation_deadline(current_time);
+    return rtcp_communicator_->generation_deadline(current_time);
 }
 
 SenderSessionMetrics SenderSession::get_metrics() const {
@@ -201,42 +204,37 @@ SenderSessionMetrics SenderSession::get_metrics() const {
     return metrics;
 }
 
-size_t SenderSession::on_get_num_sources() {
-    return num_sources_;
-}
-
-packet::stream_source_t SenderSession::on_get_sending_source(size_t source_index) {
-    switch (source_index) {
-    case 0:
-        // TODO
-        return 123;
-
-    case 1:
-        // TODO
-        return 456;
-    }
-
-    roc_panic("sender session: source index out of bounds: source_index=%lu",
-              (unsigned long)source_index);
-}
-
-rtcp::SendingMetrics
-SenderSession::on_get_sending_metrics(core::nanoseconds_t report_time) {
-    rtcp::SendingMetrics metrics;
-    metrics.origin_time = report_time;
-    metrics.origin_rtp = timestamp_extractor_->get_mapping(report_time);
-
-    return metrics;
-}
-
-void SenderSession::on_add_reception_metrics(const rtcp::ReceptionMetrics& metrics) {
+const char* SenderSession::cname() {
     // TODO
-    (void)metrics;
+    return "todo";
 }
 
-void SenderSession::on_add_link_metrics(const rtcp::LinkMetrics& metrics) {
+packet::stream_source_t SenderSession::source_id() {
     // TODO
-    (void)metrics;
+    return 123;
+}
+
+void SenderSession::change_source_id() {
+    // TODO
+}
+
+bool SenderSession::has_send_stream() {
+    return true;
+}
+
+rtcp::SendReport SenderSession::query_send_stream(core::nanoseconds_t report_time) {
+    // TODO
+    rtcp::SendReport report;
+    report.sender_cname = cname();
+    report.sender_source_id = source_id();
+    report.report_timestamp = report_time;
+    report.stream_timestamp = timestamp_extractor_->get_mapping(report_time);
+    return report;
+}
+
+void SenderSession::notify_send_stream(packet::stream_source_t recv_source_id,
+                                       const rtcp::RecvReport& recv_report) {
+    // TODO
 }
 
 } // namespace pipeline

@@ -118,7 +118,7 @@ packet::IWriter& ReceiverEndpoint::writer() {
     return *this;
 }
 
-status::StatusCode ReceiverEndpoint::pull_packets() {
+status::StatusCode ReceiverEndpoint::pull_packets(core::nanoseconds_t current_time) {
     roc_panic_if(!is_valid());
 
     // Using try_pop_front_exclusive() makes this method lock-free and wait-free.
@@ -131,7 +131,7 @@ status::StatusCode ReceiverEndpoint::pull_packets() {
             continue;
         }
 
-        const status::StatusCode code = session_group_.route_packet(packet);
+        const status::StatusCode code = session_group_.route_packet(packet, current_time);
         receiver_state_.add_pending_packets(-1);
         if (code != status::StatusOK) {
             return code;

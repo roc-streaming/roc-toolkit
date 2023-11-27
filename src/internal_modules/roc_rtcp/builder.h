@@ -16,6 +16,7 @@
 #include "roc_core/stddefs.h"
 #include "roc_packet/units.h"
 #include "roc_rtcp/bye_traverser.h"
+#include "roc_rtcp/config.h"
 #include "roc_rtcp/headers.h"
 #include "roc_rtcp/sdes.h"
 
@@ -26,15 +27,27 @@ namespace rtcp {
 //!
 //! Builder will panic if any of the following rules is violated
 //! (mandated by RFC 3550):
-//!  - First packet should be SR or RR.
 //!  - At least one packet should be present.
+//!  - First packet should be SR or RR.
+//!  - SDES packet with CNAME item should be present.
 //!  - Each SDES chunk should have exactly one CNAME item.
 //!  - Padding can be added only to last packet.
+//!
+//! If the packet does not fit into resulting slice, builder will raise
+//! error flags, and all its method will become no-op.
+//!
+//! Some of these rules may be disabled via config struct, which is used
+//! in tests when we need to produce not strictly correct RTCP packets.
 class Builder : public core::NonCopyable<> {
 public:
     //! Initialize builder.
     //! It will write data to the given slice.
-    explicit Builder(core::Slice<uint8_t>& data);
+    Builder(const Config& config, core::Slice<uint8_t>& result);
+    ~Builder();
+
+    //! Check for errors.
+    //! @returns false if the packet did not fit into the slice.
+    bool is_ok() const;
 
     //! @name Sender Report (SR)
     //! @{
@@ -134,7 +147,8 @@ public:
     //! @}
 
 private:
-    void add_report_(const header::ReceptionReportBlock& report);
+    header::PacketHeader* begin_packet_(size_t size);
+    void* add_block_(size_t size);
     void end_packet_();
 
     enum State {
@@ -151,16 +165,24 @@ private:
         BYE_HEAD,
         BYE_SSRC,
         BYE_REASON,
-        END
+        LAST
     };
 
     State state_;
-    core::Slice<uint8_t>& data_;
-    header::PacketHeader* header_;
-    header::XrBlockHeader* xr_header_;
-    core::Slice<uint8_t> cur_slice_;
-    bool report_written_;
+
+    core::Slice<uint8_t>& result_slice_;
+
+    core::Slice<uint8_t> cur_pkt_slice_;
+    header::PacketHeader* cur_pkt_header_;
+    header::XrBlockHeader* cur_xr_block_header_;
+
+    bool sr_written_;
+    bool rr_written_;
     bool cname_written_;
+
+    bool truncated_;
+
+    const Config config_;
 };
 
 } // namespace rtcp

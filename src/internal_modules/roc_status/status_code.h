@@ -20,6 +20,8 @@ enum StatusCode {
     StatusOK,      //!< Status indicating a success of an operation.
     StatusUnknown, //!< Unknown status.
     StatusNoData,  //!< There is no enough data to perform an operation.
+    StatusNoMem,   //!< Allocation failed during operation.
+    StatusNoSpace  //!< Not enough space in buffer.
 };
 
 } // namespace status

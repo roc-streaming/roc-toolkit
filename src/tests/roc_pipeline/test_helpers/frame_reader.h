@@ -57,7 +57,8 @@ public:
         }
         abs_offset_ += num_samples;
 
-        refresh_ts_ += sample_spec.samples_per_chan_2_ns(num_samples);
+        refresh_ts_ = (base_capture_ts >= 0 ? base_capture_ts : 0)
+            + sample_spec.samples_per_chan_2_ns(abs_offset_);
     }
 
     void read_nonzero_samples(size_t num_samples,
@@ -78,7 +79,8 @@ public:
         CHECK(non_zero > 0);
         abs_offset_ += num_samples;
 
-        refresh_ts_ += sample_spec.samples_per_chan_2_ns(num_samples);
+        refresh_ts_ = (base_capture_ts >= 0 ? base_capture_ts : 0)
+            + sample_spec.samples_per_chan_2_ns(abs_offset_);
     }
 
     void read_zero_samples(size_t num_samples,
@@ -95,10 +97,14 @@ public:
         }
         abs_offset_ += num_samples;
 
-        refresh_ts_ += sample_spec.samples_per_chan_2_ns(num_samples);
+        refresh_ts_ = (base_capture_ts >= 0 ? base_capture_ts : 0)
+            + sample_spec.samples_per_chan_2_ns(abs_offset_);
     }
 
-    core::nanoseconds_t refresh_ts() const {
+    core::nanoseconds_t refresh_ts(core::nanoseconds_t base_capture_ts = -1) {
+        if (refresh_ts_ == 0 && base_capture_ts > 0) {
+            refresh_ts_ = base_capture_ts;
+        }
         return refresh_ts_;
     }
 

@@ -62,7 +62,7 @@ public:
     packet::IWriter& writer();
 
     //! Pull packets writter to endpoint writer.
-    ROC_ATTR_NODISCARD status::StatusCode pull_packets();
+    ROC_ATTR_NODISCARD status::StatusCode pull_packets(core::nanoseconds_t current_time);
 
 private:
     virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr& packet);
