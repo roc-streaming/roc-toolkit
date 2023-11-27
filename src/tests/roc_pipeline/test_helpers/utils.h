@@ -13,9 +13,9 @@
 
 #include "roc_address/socket_addr.h"
 #include "roc_audio/sample.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/time.h"
-#include "roc_pipeline/config.h"
 
 namespace roc {
 namespace pipeline {
