@@ -39,27 +39,26 @@ void format_channel_set(const ChannelSet& ch_set, core::StringBuilder& bld) {
         } else {
             bld.append_str(" ch=0x");
 
-            // Find last non-zero byte.
             size_t last_byte = 0;
+
             for (size_t n = 0; n < ch_set.num_bytes(); n++) {
                 if (ch_set.byte_at(n) != 0) {
                     last_byte = n;
                 }
             }
 
-            // Format bitmask from LSB to MSB in hex.
-            for (size_t n = 0; n <= last_byte; n++) {
+            size_t n = last_byte;
+            do {
                 const uint8_t byte = ch_set.byte_at(n);
 
                 const uint8_t lo = (byte & 0xf);
                 const uint8_t hi = ((byte >> 4) & 0xf);
 
-                bld.append_uint(lo, 16);
-
                 if (hi != 0 || n != last_byte) {
                     bld.append_uint(hi, 16);
                 }
-            }
+                bld.append_uint(lo, 16);
+            } while (n-- != 0);
         }
     }
 

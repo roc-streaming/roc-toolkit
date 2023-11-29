@@ -343,7 +343,7 @@ TEST(string_builder, append_uint) {
         enum { Size = 9 };
 
         char dst[] = "xxxxxxxx";
-        char res[] = "----dead";
+        char res[] = "----DEAD";
 
         StringBuilder b(dst, Size);
 

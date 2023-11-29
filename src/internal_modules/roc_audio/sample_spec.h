@@ -15,6 +15,7 @@
 #include "roc_audio/channel_set.h"
 #include "roc_audio/sample.h"
 #include "roc_core/stddefs.h"
+#include "roc_core/string_builder.h"
 #include "roc_core/time.h"
 #include "roc_packet/units.h"
 
@@ -56,6 +57,9 @@ public:
 
     //! Check if sample spec has non-zero rate and valid channel set.
     bool is_valid() const;
+
+    //! Unset all fields.
+    void clear();
 
     //! Get sample rate.
     //! @remarks
@@ -147,6 +151,12 @@ private:
     size_t sample_rate_;
     ChannelSet channel_set_;
 };
+
+//! Parse sample spec from string.
+bool parse_sample_spec(const char* str, SampleSpec& result);
+
+//! Format sample spec to string.
+void format_sample_spec(const SampleSpec& sample_spec, core::StringBuilder& bld);
 
 } // namespace audio
 } // namespace roc

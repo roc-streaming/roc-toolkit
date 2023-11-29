@@ -175,7 +175,7 @@ bool StringBuilder::append_uint(uint64_t number, unsigned int base) {
     char tmp[128]; // 128 is enough for any base in case of 64-bit ints
     size_t tmp_pos = sizeof(tmp) - 1;
     do {
-        tmp[tmp_pos] = "0123456789abcdef"[number % base];
+        tmp[tmp_pos] = "0123456789ABCDEF"[number % base];
         tmp_pos--;
         number = number / base;
     } while (number > 0);

@@ -153,6 +153,14 @@ size_t ChannelSet::last_channel() const {
     return last_chan_;
 }
 
+bool ChannelSet::is_equal(ChannelMask mask) const {
+    if (last_chan_ >= WordBits) {
+        return false;
+    }
+
+    return (words_[0] == mask);
+}
+
 bool ChannelSet::is_subset(ChannelMask mask) const {
     if (last_chan_ >= WordBits) {
         return false;

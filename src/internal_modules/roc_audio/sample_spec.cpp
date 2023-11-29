@@ -97,6 +97,11 @@ bool SampleSpec::is_valid() const {
     return sample_rate_ != 0 && channel_set_.is_valid();
 }
 
+void SampleSpec::clear() {
+    sample_rate_ = 0;
+    channel_set_.clear();
+}
+
 size_t SampleSpec::sample_rate() const {
     return sample_rate_;
 }

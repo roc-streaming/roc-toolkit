@@ -83,6 +83,12 @@ public:
     //!  Panics if there are no enabled channels.
     size_t last_channel() const;
 
+    //! Check if channel set is equal to given mask.
+    //! @remarks
+    //!  The mask defines only first 32 channels. If any channels outside of 0-31
+    //!  range are enabled in channel set, the method will fail.
+    bool is_equal(ChannelMask mask) const;
+
     //! Check if channel set is sub-set of given mask, or equal to it.
     //! @remarks
     //!  The mask defines only first 32 channels. If any channels outside of 0-31

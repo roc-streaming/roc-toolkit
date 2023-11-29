@@ -56,16 +56,6 @@ const char* channel_pos_to_str(ChannelPosition pos) {
     return NULL;
 }
 
-ChannelPosition channel_pos_from_str(const char* name) {
-    for (size_t i = 0; i < ROC_ARRAY_SIZE(ChanPositionNames); i++) {
-        if (strcmp(ChanPositionNames[i].name, name) == 0) {
-            return ChanPositionNames[i].pos;
-        }
-    }
-
-    return ChanPos_Max;
-}
-
 const char* channel_mask_to_str(ChannelMask mask) {
     for (size_t i = 0; i < ROC_ARRAY_SIZE(ChanMaskNames); i++) {
         if (ChanMaskNames[i].mask == mask) {
@@ -74,16 +64,6 @@ const char* channel_mask_to_str(ChannelMask mask) {
     }
 
     return NULL;
-}
-
-ChannelMask channel_mask_from_str(const char* name) {
-    for (size_t i = 0; i < ROC_ARRAY_SIZE(ChanMaskNames); i++) {
-        if (strcmp(ChanMaskNames[i].name, name) == 0) {
-            return ChanMaskNames[i].mask;
-        }
-    }
-
-    return 0;
 }
 
 } // namespace audio

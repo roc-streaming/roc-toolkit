@@ -8,6 +8,7 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_audio/channel_defs.h"
 #include "roc_audio/channel_set.h"
 #include "roc_audio/channel_set_to_str.h"
 
@@ -355,15 +356,17 @@ TEST(channel_set, clear) {
     }
 }
 
-TEST(channel_set, subset_superset) {
+TEST(channel_set, equal_subset_superset) {
     { // empty
         ChannelSet ch_set;
 
         ch_set.set_layout(ChanLayout_Surround);
 
+        CHECK(ch_set.is_equal(0x0));
         CHECK(ch_set.is_subset(0x0));
         CHECK(ch_set.is_superset(0x0));
 
+        CHECK(!ch_set.is_equal(0xffffffff));
         CHECK(ch_set.is_subset(0xffffffff));
         CHECK(!ch_set.is_superset(0xffffffff));
     }
@@ -373,18 +376,23 @@ TEST(channel_set, subset_superset) {
         ch_set.set_layout(ChanLayout_Surround);
         ch_set.set_channel_mask(0x5);
 
+        CHECK(ch_set.is_equal(0x5));
         CHECK(ch_set.is_subset(0x5));
         CHECK(ch_set.is_superset(0x5));
 
+        CHECK(!ch_set.is_equal(0x7));
         CHECK(ch_set.is_subset(0x7));
         CHECK(!ch_set.is_superset(0x7));
 
+        CHECK(!ch_set.is_equal(0x4));
         CHECK(!ch_set.is_subset(0x4));
         CHECK(ch_set.is_superset(0x4));
 
+        CHECK(!ch_set.is_equal(0x0));
         CHECK(!ch_set.is_subset(0x0));
         CHECK(ch_set.is_superset(0x0));
 
+        CHECK(!ch_set.is_equal(0xffffffff));
         CHECK(ch_set.is_subset(0xffffffff));
         CHECK(!ch_set.is_superset(0xffffffff));
     }
@@ -394,12 +402,15 @@ TEST(channel_set, subset_superset) {
         ch_set.set_channel(2, true);
         ch_set.set_channel(101, true);
 
+        CHECK(!ch_set.is_equal(0x2));
         CHECK(!ch_set.is_subset(0x2));
         CHECK(ch_set.is_superset(0x2));
 
+        CHECK(!ch_set.is_equal(0x0));
         CHECK(!ch_set.is_subset(0x0));
         CHECK(ch_set.is_superset(0x0));
 
+        CHECK(!ch_set.is_equal(0xffffffff));
         CHECK(!ch_set.is_subset(0xffffffff));
         CHECK(ch_set.is_superset(0xffffffff));
     }
@@ -499,6 +510,13 @@ TEST(channel_set, to_string) {
         STRCMP_EQUAL("<none n_ch=0>", channel_set_to_str(ch_set).c_str());
     }
     {
+        ChannelSet ch_set;
+        ch_set.set_layout(ChanLayout_Surround);
+        ch_set.set_order(ChanOrder_Smpte);
+
+        STRCMP_EQUAL("<surround smpte n_ch=0>", channel_set_to_str(ch_set).c_str());
+    }
+    {
         ChannelSet ch_set(ChanLayout_Surround, ChanOrder_Smpte, ChanMask_Surround_Mono);
 
         STRCMP_EQUAL("<surround smpte n_ch=1 ch=FC>", channel_set_to_str(ch_set).c_str());
@@ -517,36 +535,36 @@ TEST(channel_set, to_string) {
     }
     {
         ChannelSet ch_set;
+        ch_set.set_layout(ChanLayout_Multitrack);
 
+        STRCMP_EQUAL("<multitrack n_ch=0>", channel_set_to_str(ch_set).c_str());
+    }
+    {
+        ChannelSet ch_set;
         ch_set.set_layout(ChanLayout_Multitrack);
         ch_set.set_channel_range(0, 7, true);
 
-        STRCMP_EQUAL("<multitrack n_ch=8 ch=0xff>", channel_set_to_str(ch_set).c_str());
+        STRCMP_EQUAL("<multitrack n_ch=8 ch=0xFF>", channel_set_to_str(ch_set).c_str());
     }
     {
         ChannelSet ch_set;
-
         ch_set.set_layout(ChanLayout_Multitrack);
-        ch_set.set_channel(4, true);
+        ch_set.set_channel(2, true);
+        ch_set.set_channel(3, true);
+        ch_set.set_channel(5, true);
         ch_set.set_channel(7, true);
-        ch_set.set_channel_range(8, 11, true);
 
-        // 256-bit mask is formatted from LSB to MSB in hex
-        // trailing zeros are truncated
-
-        // channel:    0-3   4-7  8-11
-        // bitmask:   0000  1001  1111
-        // hex:        0x0   0x9   0xf
-
-        STRCMP_EQUAL("<multitrack n_ch=6 ch=0x09f>", channel_set_to_str(ch_set).c_str());
+        STRCMP_EQUAL("<multitrack n_ch=4 ch=0xAC>", channel_set_to_str(ch_set).c_str());
     }
     {
         ChannelSet ch_set;
-
         ch_set.set_layout(ChanLayout_Multitrack);
-        ch_set.set_channel_range(68, 70, true);
+        ch_set.set_channel(2, true);
+        ch_set.set_channel(3, true);
+        ch_set.set_channel(85, true);
+        ch_set.set_channel(87, true);
 
-        STRCMP_EQUAL("<multitrack n_ch=3 ch=0x000000000000000007>",
+        STRCMP_EQUAL("<multitrack n_ch=4 ch=0xA00000000000000000000C>",
                      channel_set_to_str(ch_set).c_str());
     }
 }
