@@ -13,3 +13,4 @@ Internals
    internals/fec
    internals/fe_resampler
    internals/network_protocols
+   internals/audio_backends
