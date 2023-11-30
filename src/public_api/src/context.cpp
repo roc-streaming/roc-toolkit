@@ -87,8 +87,7 @@ int roc_context_register_encoding(roc_context* context,
     enc.payload_type = (unsigned)encoding_id;
     enc.packet_flags = packet::Packet::FlagAudio;
 
-    enc.pcm_format.code = audio::PcmCode_SInt16;
-    enc.pcm_format.endian = audio::PcmEndian_Big;
+    enc.pcm_format = audio::PcmFormat_SInt16_Be;
 
     if (!api::sample_spec_from_user(enc.sample_spec, *encoding)) {
         roc_log(

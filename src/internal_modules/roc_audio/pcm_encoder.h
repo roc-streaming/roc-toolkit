@@ -24,12 +24,11 @@ namespace audio {
 class PcmEncoder : public IFrameEncoder, public core::NonCopyable<> {
 public:
     //! Construction function.
-    static IFrameEncoder* construct(core::IArena& arena,
-                                    const PcmFormat& pcm_format,
-                                    const SampleSpec& sample_spec);
+    static IFrameEncoder*
+    construct(core::IArena& arena, PcmFormat pcm_format, const SampleSpec& sample_spec);
 
     //! Initialize.
-    PcmEncoder(const PcmFormat& pcm_format, const SampleSpec& sample_spec);
+    PcmEncoder(PcmFormat pcm_format, const SampleSpec& sample_spec);
 
     //! Get encoded frame size in bytes for given number of samples per channel.
     virtual size_t encoded_byte_count(size_t num_samples) const;

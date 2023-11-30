@@ -10,6 +10,7 @@
 #include "roc_audio/channel_defs.h"
 #include "roc_audio/channel_tables.h"
 #include "roc_audio/pcm_format.h"
+#include "roc_audio/sample_format.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/printer.h"
 
@@ -18,32 +19,53 @@ namespace audio {
 
 namespace {
 
-void print_pcm_codes(core::Printer& prn) {
+void print_pcm_formats(core::Printer& prn) {
     PcmTraits prev_traits, curr_traits;
 
-    for (int code = 0; code < PcmCode_Max; code++) {
-        for (int endian = 0; endian < PcmEndian_Max; endian++) {
-            PcmFormat fmt;
-            fmt.code = (PcmCode)code;
-            fmt.endian = (PcmEndian)endian;
+    for (int n = 0; n < PcmFormat_Max; n++) {
+        const PcmFormat fmt = (PcmFormat)n;
 
-            curr_traits = pcm_format_traits(fmt);
-
-            if (prev_traits.bit_depth != curr_traits.bit_depth
-                || prev_traits.bit_width != curr_traits.bit_width) {
-                if (curr_traits.bit_width % 8 == 0) {
-                    prn.writef("\n  %2d bit (%d byte)    ", (int)curr_traits.bit_depth,
-                               (int)curr_traits.bit_width / 8);
-                } else {
-                    prn.writef("\n  %d bit (%.2f byte) ", (int)curr_traits.bit_depth,
-                               (double)curr_traits.bit_width / 8.);
-                }
-            }
-
-            prev_traits = curr_traits;
-
-            prn.writef(" %s", pcm_format_to_str(fmt));
+        curr_traits = pcm_format_traits(fmt);
+        if (!curr_traits.is_valid) {
+            continue;
         }
+
+        if (prev_traits.bit_depth != curr_traits.bit_depth
+            || prev_traits.bit_width != curr_traits.bit_width) {
+            if (curr_traits.bit_width % 8 == 0) {
+                prn.writef("\n  %2d bit (%d byte)    ", (int)curr_traits.bit_depth,
+                           (int)curr_traits.bit_width / 8);
+            } else {
+                prn.writef("\n  %d bit (%.2f byte) ", (int)curr_traits.bit_depth,
+                           (double)curr_traits.bit_width / 8.);
+            }
+        }
+
+        prev_traits = curr_traits;
+
+        prn.writef(" %s", pcm_format_to_str(fmt));
+    }
+}
+
+void print_channel_masks(core::Printer& prn) {
+    for (size_t i = 0; i < ROC_ARRAY_SIZE(ChanMaskNames); i++) {
+        const ChannelMask ch_mask = ChanMaskNames[i].mask;
+
+        prn.writef("  %-13s  (", channel_mask_to_str(ch_mask));
+
+        bool first = true;
+
+        for (int ch = 0; ch < ChanPos_Max; ch++) {
+            if (ch_mask & (1 << ch)) {
+                if (!first) {
+                    prn.writef(" ");
+                }
+                first = false;
+                prn.writef("%s", channel_pos_to_str((ChannelPosition)ch));
+            }
+        }
+
+        prn.writef(")\n");
     }
 }
 
@@ -57,45 +79,19 @@ void print_channel_names(core::Printer& prn) {
     prn.writef("  low freq   LFE\n");
 }
 
-void print_channel_mask(core::Printer& prn, ChannelMask ch_mask) {
-    prn.writef("  %-13s  (", channel_mask_to_str(ch_mask));
-
-    bool first = true;
-
-    for (int ch = 0; ch < ChanPos_Max; ch++) {
-        if (ch_mask & (1 << ch)) {
-            if (!first) {
-                prn.writef(" ");
-            }
-            first = false;
-            prn.writef("%s", channel_pos_to_str((ChannelPosition)ch));
-        }
-    }
-
-    prn.writef(")\n");
-}
-
 } // namespace
 
 bool print_supported() {
     core::Printer prn;
 
-    prn.writef("\nsupported formats for audio devices:\n");
-    prn.writef("  pcm\n");
+    prn.writef("\nsupported pcm formats:");
+    print_pcm_formats(prn);
 
-    prn.writef("\nsupported formats for network packets:\n");
-    prn.writef("  pcm\n");
+    prn.writef("\npre-defined channel layouts:\n");
+    print_channel_masks(prn);
 
-    prn.writef("\nsupported pcm codes:");
-    print_pcm_codes(prn);
-
-    prn.writef("\n\nsupported channel names:\n");
+    prn.writef("\n\npre-defined channel names:\n");
     print_channel_names(prn);
-
-    prn.writef("\npre-defined channel masks:\n");
-    for (size_t i = 0; i < ROC_ARRAY_SIZE(ChanMaskNames); i++) {
-        print_channel_mask(prn, ChanMaskNames[i].mask);
-    }
 
     return true;
 }

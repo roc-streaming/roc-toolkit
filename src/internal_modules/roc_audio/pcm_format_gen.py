@@ -87,12 +87,28 @@ def compute_octets(code):
 
     return significant_octets, packed_octets, unpacked_octets
 
-# generate short name for pcm code + endianess
+# generate enum name for pcm code + endian
 # e.g.:
-#  sint18_3, native => s18_3
-#  sint18_3, little => s18_3le
-#  sint18_3, big => s18_3be
-def short_name(code, endian):
+#  SInt18_3, Native => PcmFormat_SInt18_3
+#  SInt18_3, Little => PcmFormat_SInt18_3_Le
+#  SInt18_3, Big => PcmFormat_SInt18_3_Be
+def make_enum_name(code, endian):
+    name = code['code']
+
+    if endian != 'Native':
+        if endian == 'Little':
+            name += '_Le'
+        if endian == 'Big':
+            name += '_Be'
+
+    return 'PcmFormat_' + name
+
+# generate string name for pcm code + endian
+# e.g.:
+#  SInt18_3, Native => s18_3
+#  SInt18_3, Little => s18_3le
+#  SInt18_3, Big => s18_3be
+def make_str_name(code, endian):
     name = code['short_name']
 
     if endian != 'Native':
@@ -500,11 +516,8 @@ env = jinja2.Environment(
 
 template = env.from_string('''
 /*
- * THIS FILE IS AUTO-GENERATED USING `pcm_funcs_gen.py'. DO NOT EDIT!
+ * THIS FILE IS AUTO-GENERATED USING `pcm_format_gen.py'. DO NOT EDIT!
  */
-
-#ifndef ROC_AUDIO_PCM_FUNCS_H_
-#define ROC_AUDIO_PCM_FUNCS_H_
 
 #include "roc_audio/pcm_format.h"
 #include "roc_core/attributes.h"
@@ -513,6 +526,24 @@ template = env.from_string('''
 
 namespace roc {
 namespace audio {
+
+namespace {
+
+// PCM codes.
+enum PcmCode {
+{% for code in CODES %}
+    PcmCode_{{ code.code }},
+{% endfor %}
+    PcmCode_Max
+};
+
+// PCM endians.
+enum PcmEndian {
+{% for endian in ENDIANS %}
+    PcmEndian_{{ endian }},
+{% endfor %}
+    PcmEndian_Max
+};
 
 {% for code in CODES %}
 {% if code.is_integer %}
@@ -795,14 +826,14 @@ template <> struct pcm_packer<PcmCode_{{ code.code }}, PcmEndian_{{ endian }}> {
 
 {% endfor %}
 {% endfor %}
-// Map code and endian of samples
-template <PcmCode InCode, PcmCode OutCode, PcmEndian InEndian, PcmEndian OutEndian>
+// Mapping function implementation
+template <PcmCode InCode, PcmEndian InEndian, PcmCode OutCode, PcmEndian OutEndian>
 struct pcm_mapper {
-    static inline void map(const uint8_t* in_data,
-                           size_t& in_bit_off,
-                           uint8_t* out_data,
-                           size_t& out_bit_off,
-                           size_t n_samples) {
+    static void map(const uint8_t* in_data,
+                    size_t& in_bit_off,
+                    uint8_t* out_data,
+                    size_t& out_bit_off,
+                    size_t n_samples) {
         for (size_t n = 0; n < n_samples; n++) {
             pcm_packer<OutCode, OutEndian>::pack(
                 out_data, out_bit_off,
@@ -812,172 +843,112 @@ struct pcm_mapper {
     }
 };
 
-// Mapping function
-typedef void (*pcm_map_func_t)(
-    const uint8_t* in_data,
-    size_t& in_bit_off,
-    uint8_t* out_data,
-    size_t& out_bit_off,
-    size_t n_samples);
-
 // Select mapping function
-template <PcmCode InCode, PcmCode OutCode, PcmEndian InEndian, PcmEndian OutEndian>
-pcm_map_func_t pcm_map_func() {
-    return &pcm_mapper<InCode, OutCode, InEndian, OutEndian>::map;
+template <PcmCode InCode, PcmEndian InEndian, PcmCode OutCode, PcmEndian OutEndian>
+PcmMapFn pcm_format_mapfn() {
+    return &pcm_mapper<InCode, InEndian, OutCode, OutEndian>::map;
 }
 
 // Select mapping function
-template <PcmCode InCode, PcmCode OutCode, PcmEndian InEndian>
-pcm_map_func_t pcm_map_func(PcmEndian out_endian) {
-    switch (out_endian) {
+template <PcmCode InCode, PcmEndian InEndian>
+PcmMapFn pcm_format_mapfn(PcmFormat out_format) {
+    switch (out_format) {
+{% for code in CODES %}
 {% for endian in ENDIANS %}
-    case PcmEndian_{{ endian }}:
+    case {{ make_enum_name(code, endian) }}:
 {% if endian == 'Native' %}
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        return pcm_map_func<InCode, OutCode, InEndian, PcmEndian_Big>();
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_{{ code.code }}, PcmEndian_Big>();
 #else
-        return pcm_map_func<InCode, OutCode, InEndian, PcmEndian_Little>();
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_{{ code.code }}, PcmEndian_Little>();
 #endif
 {% else %}
-        return pcm_map_func<InCode, OutCode, InEndian, PcmEndian_{{ endian }}>();
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_{{ code.code }}, PcmEndian_{{ endian }}>();
 {% endif %}
 {% endfor %}
-    case PcmEndian_Max:
+{% endfor %}
+    default:
         break;
     }
     return NULL;
 }
 
+} // namespace
+
 // Select mapping function
-template <PcmCode InCode, PcmCode OutCode>
-pcm_map_func_t pcm_map_func(PcmEndian in_endian, PcmEndian out_endian) {
-    switch (in_endian) {
+PcmMapFn pcm_format_mapfn(PcmFormat in_format, PcmFormat out_format) {
+    switch (in_format) {
+{% for code in CODES %}
 {% for endian in ENDIANS %}
-    case PcmEndian_{{ endian }}:
+    case {{ make_enum_name(code, endian) }}:
 {% if endian == 'Native' %}
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        return pcm_map_func<InCode, OutCode, PcmEndian_Big>(out_endian);
+        return pcm_format_mapfn<PcmCode_{{ code.code }}, PcmEndian_Big>(out_format);
 #else
-        return pcm_map_func<InCode, OutCode, PcmEndian_Little>(out_endian);
+        return pcm_format_mapfn<PcmCode_{{ code.code }}, PcmEndian_Little>(out_format);
 #endif
 {% else %}
-        return pcm_map_func<InCode, OutCode, PcmEndian_{{ endian }}>(out_endian);
+        return pcm_format_mapfn<PcmCode_{{ code.code }}, PcmEndian_{{ endian }}>(out_format);
 {% endif %}
 {% endfor %}
-    case PcmEndian_Max:
+{% endfor %}
+    default:
         break;
     }
     return NULL;
 }
 
-// Select mapping function
-template <PcmCode InCode>
-inline pcm_map_func_t pcm_map_func(PcmCode out_code,
-                                   PcmEndian in_endian,
-                                   PcmEndian out_endian) {
-    switch (out_code) {
-{% for code in CODES %}
-    case PcmCode_{{ code.code }}:
-        return pcm_map_func<InCode, PcmCode_{{ code.code }}>(in_endian, out_endian);
-{% endfor %}
-    case PcmCode_Max:
-        break;
-    }
-    return NULL;
-}
+// Get format traits
+PcmTraits pcm_format_traits(PcmFormat format) {
+    PcmTraits traits;
 
-// Select mapping function
-inline pcm_map_func_t pcm_map_func(PcmCode in_code,
-                                   PcmCode out_code,
-                                   PcmEndian in_endian,
-                                   PcmEndian out_endian) {
-    switch (in_code) {
+    switch (format) {
 {% for code in CODES %}
-    case PcmCode_{{ code.code }}:
-        return pcm_map_func<PcmCode_{{ code.code }}>(out_code, \
-in_endian, out_endian);
-{% endfor %}
-    case PcmCode_Max:
-        break;
-    }
-    return NULL;
-}
-
-// Get number of meaningful bits per sample
-inline size_t pcm_bit_depth(PcmCode code) {
-    switch (code) {
-{% for code in CODES %}
-    case PcmCode_{{ code.code }}:
-        return {{ code.width }};
-{% endfor %}
-    case PcmCode_Max:
-        break;
-    }
-    return 0;
-}
-
-// Get number of total bits per sample
-inline size_t pcm_bit_width(PcmCode code) {
-    switch (code) {
-{% for code in CODES %}
-    case PcmCode_{{ code.code }}:
-        return {{ code.packed_width }};
-{% endfor %}
-    case PcmCode_Max:
-        break;
-    }
-    return 0;
-}
-
-// Check if code is integer
-inline size_t pcm_is_integer(PcmCode code) {
-    switch (code) {
-{% for code in CODES %}
-    case PcmCode_{{ code.code }}:
-        return {{ str(code.is_integer).lower() }};
-{% endfor %}
-    case PcmCode_Max:
-        break;
-    }
-    return false;
-}
-
-// Check if code is signed
-inline size_t pcm_is_signed(PcmCode code) {
-    switch (code) {
-{% for code in CODES %}
-    case PcmCode_{{ code.code }}:
-        return {{ str(code.is_signed).lower() }};
-{% endfor %}
-    case PcmCode_Max:
-        break;
-    }
-    return false;
-}
-
-// Code and endian to string
-inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
-    switch (code) {
-{% for code in CODES %}
-    case PcmCode_{{ code.code }}:
-        switch (endian) {
 {% for endian in ENDIANS %}
-        case PcmEndian_{{ endian }}:
-            return "{{ short_name(code, endian) }}";
-{% endfor %}
-        case PcmEndian_Max:
-            break;
-        }
+    case {{ make_enum_name(code, endian) }}:
+        traits.is_valid = true;
+        traits.is_integer = {{ str(code.is_integer).lower() }};
+        traits.is_signed = {{ str(code.is_signed).lower() }};
+{% if endian == 'Native' %}
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+{% else %}
+        traits.is_little = {{ str(endian == 'Little').lower() }};
+{% endif %}
+        traits.bit_depth = {{ code.width }};
+        traits.bit_width = {{ code.packed_width }};
         break;
+
 {% endfor %}
-    case PcmCode_Max:
+{% endfor %}
+    default:
+        break;
+    }
+
+    return traits;
+}
+
+const char* pcm_format_to_str(PcmFormat format) {
+    switch (format) {
+{% for code in CODES %}
+{% for endian in ENDIANS %}
+    case {{ make_enum_name(code, endian) }}:
+        return "{{ make_str_name(code, endian) }}";
+{% endfor %}
+{% endfor %}
+    default:
         break;
     }
     return NULL;
 }
 
-// Code and endian from string
-inline bool pcm_from_str(const char* str, PcmCode& code, PcmEndian& endian) {
+PcmFormat pcm_format_from_str(const char* str) {
+    if (!str) {
+        return PcmFormat_Invalid;
+    }
 {% for c0 in nth_chars(CODES) %}
     if (str[0] == '{{ c0 }}') {
 {% for c1 in nth_chars(CODES, (c0,)) %}
@@ -987,13 +958,11 @@ inline bool pcm_from_str(const char* str, PcmCode& code, PcmEndian& endian) {
 {% for code in CODES %}
 {% if tuple(code.short_name[:3]) == (c0, c1, c2) %}
 {% for endian in ENDIANS %}
-                if (strcmp(str, "{{ short_name(code, endian) }}") == 0) {
-                    code = PcmCode_{{ code.code }};
-                    endian = PcmEndian_{{ endian }};
-                    return true;
+                if (strcmp(str, "{{ make_str_name(code, endian) }}") == 0) {
+                    return {{ make_enum_name(code, endian) }};
                 }
 {% endfor %}
-                return false;
+                return PcmFormat_Invalid;
 {% endif %}
 {% endfor %}
             }
@@ -1001,27 +970,23 @@ inline bool pcm_from_str(const char* str, PcmCode& code, PcmEndian& endian) {
 {% for code in CODES %}
 {% if tuple(code.short_name) == (c0, c1) %}
 {% for endian in ENDIANS %}
-            if (strcmp(str, "{{ short_name(code, endian) }}") == 0) {
-                code = PcmCode_{{ code.code }};
-                endian = PcmEndian_{{ endian }};
-                return true;
+            if (strcmp(str, "{{ make_str_name(code, endian) }}") == 0) {
+                return {{ make_enum_name(code, endian) }};
             }
 {% endfor %}
 {% endif %}
 {% endfor %}
-            return false;
+            return PcmFormat_Invalid;
         }
 {% endfor %}
-        return false;
+        return PcmFormat_Invalid;
     }
 {% endfor %}
-    return false;
+    return PcmFormat_Invalid;
 }
 
 } // namespace audio
 } // namespace roc
-
-#endif // ROC_AUDIO_PCM_FUNCS_H_
 '''.strip())
 
 text = template.render(
@@ -1030,5 +995,5 @@ text = template.render(
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-with open('pcm_funcs.h', 'w') as fp:
+with open('pcm_format.cpp', 'w') as fp:
     print(text, file=fp)

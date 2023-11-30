@@ -7,55 +7,59 @@
  */
 
 #include "roc_audio/pcm_mapper.h"
-#include "roc_audio/pcm_funcs.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
 namespace audio {
 
-PcmMapper::PcmMapper(const PcmFormat& input_fmt, const PcmFormat& output_fmt)
+PcmMapper::PcmMapper(PcmFormat input_fmt, PcmFormat output_fmt)
     : input_fmt_(input_fmt)
     , output_fmt_(output_fmt)
-    , input_sample_bits_(pcm_bit_width(input_fmt.code))
-    , output_sample_bits_(pcm_bit_width(output_fmt.code))
-    , map_func_(pcm_map_func(
-          input_fmt_.code, output_fmt_.code, input_fmt_.endian, output_fmt_.endian)) {
+    , input_traits_(pcm_format_traits(input_fmt))
+    , output_traits_(pcm_format_traits(output_fmt))
+    , map_func_(pcm_format_mapfn(input_fmt, output_fmt)) {
+    if (!input_traits_.is_valid) {
+        roc_panic("pcm mapper: input format is not a pcm format");
+    }
+    if (!output_traits_.is_valid) {
+        roc_panic("pcm mapper: output format is not a pcm format");
+    }
     if (!map_func_) {
         roc_panic("pcm mapper: unable to select mapping function");
     }
 }
 
-const PcmFormat& PcmMapper::input_format() const {
+PcmFormat PcmMapper::input_format() const {
     return input_fmt_;
 }
 
-const PcmFormat& PcmMapper::output_format() const {
+PcmFormat PcmMapper::output_format() const {
     return output_fmt_;
 }
 
 size_t PcmMapper::input_sample_count(size_t input_bytes) const {
-    return input_bytes * 8 / input_sample_bits_;
+    return input_bytes * 8 / input_traits_.bit_width;
 }
 
 size_t PcmMapper::output_sample_count(size_t output_bytes) const {
-    return output_bytes * 8 / output_sample_bits_;
+    return output_bytes * 8 / output_traits_.bit_width;
 }
 
 size_t PcmMapper::input_byte_count(size_t input_samples) const {
-    return (input_samples * input_sample_bits_ + 7) / 8;
+    return (input_samples * input_traits_.bit_width + 7) / 8;
 }
 
 size_t PcmMapper::output_byte_count(size_t output_samples) const {
-    return (output_samples * output_sample_bits_ + 7) / 8;
+    return (output_samples * output_traits_.bit_width + 7) / 8;
 }
 
 size_t PcmMapper::input_bit_count(size_t input_samples) const {
-    return input_samples * input_sample_bits_;
+    return input_samples * input_traits_.bit_width;
 }
 
 size_t PcmMapper::output_bit_count(size_t output_samples) const {
-    return output_samples * output_sample_bits_;
+    return output_samples * output_traits_.bit_width;
 }
 
 size_t PcmMapper::map(const void* in_data,
@@ -73,9 +77,10 @@ size_t PcmMapper::map(const void* in_data,
     roc_panic_if_msg(out_bit_off > out_byte_size * 8,
                      "pcm mapper: output offset out of bounds");
 
-    n_samples = std::min(n_samples, (in_byte_size * 8 - in_bit_off) / input_sample_bits_);
     n_samples =
-        std::min(n_samples, (out_byte_size * 8 - out_bit_off) / output_sample_bits_);
+        std::min(n_samples, (in_byte_size * 8 - in_bit_off) / input_traits_.bit_width);
+    n_samples =
+        std::min(n_samples, (out_byte_size * 8 - out_bit_off) / output_traits_.bit_width);
 
     if (n_samples != 0) {
         map_func_((const uint8_t*)in_data, in_bit_off, (uint8_t*)out_data, out_bit_off,

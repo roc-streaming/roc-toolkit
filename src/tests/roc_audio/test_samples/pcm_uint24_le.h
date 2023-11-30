@@ -14,8 +14,7 @@ namespace test {
 static SampleInfo sample_pcm_uint24_le = {
   /* name */ "pcm_uint24_le",
 
-  /* encoding  */ PcmCode_UInt24,
-  /* endian    */ PcmEndian_Little,
+  /* format */ PcmFormat_UInt24_Le,
 
   /* num_samples */ 240,
   /* samples     */ {

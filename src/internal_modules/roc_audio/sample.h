@@ -12,22 +12,22 @@
 #ifndef ROC_AUDIO_SAMPLE_H_
 #define ROC_AUDIO_SAMPLE_H_
 
-#include "roc_audio/pcm_format.h"
+#include "roc_audio/sample_format.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
 namespace audio {
 
-//! Audio sample.
+//! Raw audio sample.
 typedef float sample_t;
 
-//! Sample format description.
-extern const PcmFormat SampleFormat;
+//! Format description for raw audio samples.
+extern const PcmFormat SampleFmt;
 
-//! Minimum possible value of a sample.
+//! Minimum possible value of a raw sample.
 extern const sample_t SampleMin;
 
-//! Maximum possible value of a sample.
+//! Maximum possible value of a raw sample.
 extern const sample_t SampleMax;
 
 } // namespace audio

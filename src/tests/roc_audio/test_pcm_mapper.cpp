@@ -28,18 +28,8 @@ void map(const void* input,
          size_t in_bytes,
          size_t out_bytes,
          size_t n_samples,
-         PcmCode in_encoding,
-         PcmCode out_encoding,
-         PcmEndian in_endian = PcmEndian_Native,
-         PcmEndian out_endian = PcmEndian_Native) {
-    PcmFormat in_fmt;
-    in_fmt.code = in_encoding;
-    in_fmt.endian = in_endian;
-
-    PcmFormat out_fmt;
-    out_fmt.code = out_encoding;
-    out_fmt.endian = out_endian;
-
+         PcmFormat in_fmt,
+         PcmFormat out_fmt) {
     PcmMapper mapper(in_fmt, out_fmt);
 
     UNSIGNED_LONGS_EQUAL(n_samples, mapper.input_sample_count(in_bytes));
@@ -117,7 +107,7 @@ TEST(pcm_mapper, int16_to_int16) {
     int16_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt16, PcmCode_SInt16);
+        PcmFormat_SInt16, PcmFormat_SInt16);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -135,7 +125,7 @@ TEST(pcm_mapper, int16_to_int8) {
     int8_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt16, PcmCode_SInt8);
+        PcmFormat_SInt16, PcmFormat_SInt8);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -153,7 +143,7 @@ TEST(pcm_mapper, int8_to_int16) {
     int16_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt8, PcmCode_SInt16);
+        PcmFormat_SInt8, PcmFormat_SInt16);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -171,7 +161,7 @@ TEST(pcm_mapper, int16_to_int32) {
     int32_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt16, PcmCode_SInt32);
+        PcmFormat_SInt16, PcmFormat_SInt32);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -199,7 +189,7 @@ TEST(pcm_mapper, int32_to_int16) {
     int16_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt32, PcmCode_SInt16);
+        PcmFormat_SInt32, PcmFormat_SInt16);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -225,7 +215,7 @@ TEST(pcm_mapper, int16_to_int64) {
     int64_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt16, PcmCode_SInt64);
+        PcmFormat_SInt16, PcmFormat_SInt64);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -251,7 +241,7 @@ TEST(pcm_mapper, int64_to_int16) {
     int16_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt64, PcmCode_SInt16);
+        PcmFormat_SInt64, PcmFormat_SInt16);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -269,7 +259,7 @@ TEST(pcm_mapper, int16_to_float32) {
     float actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt16, PcmCode_Float32);
+        PcmFormat_SInt16, PcmFormat_Float32);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -287,7 +277,7 @@ TEST(pcm_mapper, float32_to_int16) {
     int16_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_Float32, PcmCode_SInt16);
+        PcmFormat_Float32, PcmFormat_SInt16);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -317,7 +307,7 @@ TEST(pcm_mapper, int32_to_float32) {
     float actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt32, PcmCode_Float32);
+        PcmFormat_SInt32, PcmFormat_Float32);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -345,7 +335,7 @@ TEST(pcm_mapper, float32_to_int32) {
     int32_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_Float32, PcmCode_SInt32);
+        PcmFormat_Float32, PcmFormat_SInt32);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -375,7 +365,7 @@ TEST(pcm_mapper, int32_to_float64) {
     double actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt32, PcmCode_Float64);
+        PcmFormat_SInt32, PcmFormat_Float64);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -403,7 +393,7 @@ TEST(pcm_mapper, float64_to_int32) {
     int32_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_Float64, PcmCode_SInt32);
+        PcmFormat_Float64, PcmFormat_SInt32);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -425,7 +415,7 @@ TEST(pcm_mapper, uint16_to_uint32) {
     uint32_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_UInt16, PcmCode_UInt32);
+        PcmFormat_UInt16, PcmFormat_UInt32);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -449,7 +439,7 @@ TEST(pcm_mapper, uint32_to_uint16) {
     uint16_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_UInt32, PcmCode_UInt16);
+        PcmFormat_UInt32, PcmFormat_UInt16);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -471,7 +461,7 @@ TEST(pcm_mapper, uint16_to_int32) {
     int32_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_UInt16, PcmCode_SInt32);
+        PcmFormat_UInt16, PcmFormat_SInt32);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -495,7 +485,7 @@ TEST(pcm_mapper, int16_to_uint32) {
     uint32_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt16, PcmCode_UInt32);
+        PcmFormat_SInt16, PcmFormat_UInt32);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -513,7 +503,7 @@ TEST(pcm_mapper, uint32_to_int16) {
     int16_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_UInt32, PcmCode_SInt16);
+        PcmFormat_UInt32, PcmFormat_SInt16);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -537,7 +527,7 @@ TEST(pcm_mapper, int32_to_uint16) {
     uint16_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt32, PcmCode_UInt16);
+        PcmFormat_SInt32, PcmFormat_UInt16);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -562,7 +552,7 @@ TEST(pcm_mapper, int16_to_int18b4) {
     uint8_t actual_output[NumOutputBytes] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt16, PcmCode_SInt18_4, PcmEndian_Native, PcmEndian_Big);
+        PcmFormat_SInt16, PcmFormat_SInt18_4_Be);
 
     compare(expected_output, actual_output, NumOutputBytes);
 }
@@ -587,7 +577,7 @@ TEST(pcm_mapper, int18b4_to_int16) {
     int16_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt18_4, PcmCode_SInt16, PcmEndian_Big, PcmEndian_Native);
+        PcmFormat_SInt18_4_Be, PcmFormat_SInt16);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -612,7 +602,7 @@ TEST(pcm_mapper, int16_to_int20b4) {
     uint8_t actual_output[NumOutputBytes] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt16, PcmCode_SInt20_4, PcmEndian_Native, PcmEndian_Big);
+        PcmFormat_SInt16, PcmFormat_SInt20_4_Be);
 
     compare(expected_output, actual_output, NumOutputBytes);
 }
@@ -634,7 +624,7 @@ TEST(pcm_mapper, int20b4_to_int16) {
     int16_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt20_4, PcmCode_SInt16, PcmEndian_Big, PcmEndian_Native);
+        PcmFormat_SInt20_4_Be, PcmFormat_SInt16);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -659,7 +649,7 @@ TEST(pcm_mapper, int16_to_int24b4) {
     uint8_t actual_output[NumOutputBytes] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt16, PcmCode_SInt24_4, PcmEndian_Native, PcmEndian_Big);
+        PcmFormat_SInt16, PcmFormat_SInt24_4_Be);
 
     compare(expected_output, actual_output, NumOutputBytes);
 }
@@ -681,7 +671,7 @@ TEST(pcm_mapper, int24b4_to_int16) {
     int16_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt24_4, PcmCode_SInt16, PcmEndian_Big, PcmEndian_Native);
+        PcmFormat_SInt24_4_Be, PcmFormat_SInt16);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -705,7 +695,7 @@ TEST(pcm_mapper, uint24b4_to_int20b4) {
     uint8_t actual_output[NumBytes] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_UInt24_4, PcmCode_SInt20_4, PcmEndian_Big, PcmEndian_Big);
+        PcmFormat_UInt24_4_Be, PcmFormat_SInt20_4_Be);
 
     compare(expected_output, actual_output, NumBytes);
 }
@@ -729,7 +719,7 @@ TEST(pcm_mapper, int20b4_to_uint24b4) {
     uint8_t actual_output[NumBytes] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt20_4, PcmCode_UInt24_4, PcmEndian_Big, PcmEndian_Big);
+        PcmFormat_SInt20_4_Be, PcmFormat_UInt24_4_Be);
 
     compare(expected_output, actual_output, NumBytes);
 }
@@ -764,7 +754,7 @@ TEST(pcm_mapper, int32_to_int20) {
     uint8_t actual_output[NumOutputBytes] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt32, PcmCode_SInt20, PcmEndian_Native, PcmEndian_Big);
+        PcmFormat_SInt32, PcmFormat_SInt20_Be);
 
     compare(expected_output, actual_output, NumOutputBytes);
 }
@@ -796,7 +786,7 @@ TEST(pcm_mapper, int20_to_int16) {
     int32_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt20, PcmCode_SInt32, PcmEndian_Big, PcmEndian_Native);
+        PcmFormat_SInt20_Be, PcmFormat_SInt32);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -821,7 +811,7 @@ TEST(pcm_mapper, int16_to_int20b3) {
     uint8_t actual_output[NumOutputBytes] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt16, PcmCode_SInt20_3, PcmEndian_Native, PcmEndian_Big);
+        PcmFormat_SInt16, PcmFormat_SInt20_3_Be);
 
     compare(expected_output, actual_output, NumOutputBytes);
 }
@@ -843,7 +833,7 @@ TEST(pcm_mapper, int20b3_to_int16) {
     int16_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt20_3, PcmCode_SInt16, PcmEndian_Big, PcmEndian_Native);
+        PcmFormat_SInt20_3_Be, PcmFormat_SInt16);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -868,7 +858,7 @@ TEST(pcm_mapper, int16_to_int24) {
     uint8_t actual_output[NumOutputBytes] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt16, PcmCode_SInt24, PcmEndian_Native, PcmEndian_Big);
+        PcmFormat_SInt16, PcmFormat_SInt24_Be);
 
     compare(expected_output, actual_output, NumOutputBytes);
 }
@@ -890,7 +880,7 @@ TEST(pcm_mapper, int24_to_int16) {
     int16_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt24, PcmCode_SInt16, PcmEndian_Big, PcmEndian_Native);
+        PcmFormat_SInt24_Be, PcmFormat_SInt16);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -915,7 +905,7 @@ TEST(pcm_mapper, native_to_be) {
     uint8_t actual_output[NumOutputBytes] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt16, PcmCode_SInt16, PcmEndian_Native, PcmEndian_Big);
+        PcmFormat_SInt16, PcmFormat_SInt16_Be);
 
     compare(expected_output, actual_output, NumOutputBytes);
 }
@@ -940,7 +930,7 @@ TEST(pcm_mapper, native_to_le) {
     uint8_t actual_output[NumOutputBytes] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt16, PcmCode_SInt16, PcmEndian_Native, PcmEndian_Little);
+        PcmFormat_SInt16, PcmFormat_SInt16_Le);
 
     compare(expected_output, actual_output, NumOutputBytes);
 }
@@ -962,7 +952,7 @@ TEST(pcm_mapper, be_to_native) {
     int16_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt16, PcmCode_SInt16, PcmEndian_Big, PcmEndian_Native);
+        PcmFormat_SInt16_Be, PcmFormat_SInt16);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -984,7 +974,7 @@ TEST(pcm_mapper, le_to_native) {
     int16_t actual_output[NumSamples] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt16, PcmCode_SInt16, PcmEndian_Little, PcmEndian_Native);
+        PcmFormat_SInt16_Le, PcmFormat_SInt16);
 
     compare(expected_output, actual_output, NumSamples);
 }
@@ -1013,7 +1003,7 @@ TEST(pcm_mapper, be_to_le) {
     uint8_t actual_output[NumOutputBytes] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt16, PcmCode_SInt16, PcmEndian_Big, PcmEndian_Little);
+        PcmFormat_SInt16_Be, PcmFormat_SInt16_Le);
 
     compare(expected_output, actual_output, NumOutputBytes);
 }
@@ -1042,7 +1032,7 @@ TEST(pcm_mapper, le_to_be) {
     uint8_t actual_output[NumOutputBytes] = {};
 
     map(input, actual_output, sizeof(input), sizeof(actual_output), NumSamples,
-        PcmCode_SInt16, PcmCode_SInt16, PcmEndian_Little, PcmEndian_Big);
+        PcmFormat_SInt16_Le, PcmFormat_SInt16_Be);
 
     compare(expected_output, actual_output, NumOutputBytes);
 }

@@ -24,13 +24,15 @@ namespace audio {
 class PcmMapper : public core::NonCopyable<> {
 public:
     //! Initialize.
-    PcmMapper(const PcmFormat& input_fmt, const PcmFormat& output_fmt);
+    //! @pre
+    //!  @p input_fmt and @p output_fmt should be PCM formats.
+    PcmMapper(PcmFormat input_fmt, PcmFormat output_fmt);
 
     //! Get input format.
-    const PcmFormat& input_format() const;
+    PcmFormat input_format() const;
 
     //! Get output format.
-    const PcmFormat& output_format() const;
+    PcmFormat output_format() const;
 
     //! Get number of input samples per channel for given number of bytes.
     size_t input_sample_count(size_t input_bytes) const;
@@ -76,14 +78,10 @@ private:
     const PcmFormat input_fmt_;
     const PcmFormat output_fmt_;
 
-    const size_t input_sample_bits_;
-    const size_t output_sample_bits_;
+    const PcmTraits input_traits_;
+    const PcmTraits output_traits_;
 
-    void (*const map_func_)(const uint8_t* in_data,
-                            size_t& in_bit_off,
-                            uint8_t* out_data,
-                            size_t& out_bit_off,
-                            size_t n_samples);
+    PcmMapFn map_func_;
 };
 
 } // namespace audio

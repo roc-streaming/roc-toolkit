@@ -25,12 +25,12 @@ namespace rtp {
 
 namespace {
 
-const audio::PcmFormat PcmFmt(audio::PcmCode_SInt16, audio::PcmEndian_Big);
-
 enum { ChMask = 3, PacketSz = 128, SampleRate = 10000 };
 
 const audio::SampleSpec SampleSpec = audio::SampleSpec(
     SampleRate, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, ChMask);
+
+const audio::PcmFormat PcmFmt = audio::PcmFormat_SInt16_Be;
 
 core::HeapArena arena;
 packet::PacketFactory packet_factory(arena);

@@ -1,9 +1,6 @@
 /*
- * THIS FILE IS AUTO-GENERATED USING `pcm_funcs_gen.py'. DO NOT EDIT!
+ * THIS FILE IS AUTO-GENERATED USING `pcm_format_gen.py'. DO NOT EDIT!
  */
-
-#ifndef ROC_AUDIO_PCM_FUNCS_H_
-#define ROC_AUDIO_PCM_FUNCS_H_
 
 #include "roc_audio/pcm_format.h"
 #include "roc_core/attributes.h"
@@ -12,6 +9,47 @@
 
 namespace roc {
 namespace audio {
+
+namespace {
+
+// PCM codes.
+enum PcmCode {
+    PcmCode_SInt8,
+    PcmCode_UInt8,
+    PcmCode_SInt16,
+    PcmCode_UInt16,
+    PcmCode_SInt18,
+    PcmCode_UInt18,
+    PcmCode_SInt18_3,
+    PcmCode_UInt18_3,
+    PcmCode_SInt18_4,
+    PcmCode_UInt18_4,
+    PcmCode_SInt20,
+    PcmCode_UInt20,
+    PcmCode_SInt20_3,
+    PcmCode_UInt20_3,
+    PcmCode_SInt20_4,
+    PcmCode_UInt20_4,
+    PcmCode_SInt24,
+    PcmCode_UInt24,
+    PcmCode_SInt24_4,
+    PcmCode_UInt24_4,
+    PcmCode_SInt32,
+    PcmCode_UInt32,
+    PcmCode_SInt64,
+    PcmCode_UInt64,
+    PcmCode_Float32,
+    PcmCode_Float64,
+    PcmCode_Max
+};
+
+// PCM endians.
+enum PcmEndian {
+    PcmEndian_Native,
+    PcmEndian_Big,
+    PcmEndian_Little,
+    PcmEndian_Max
+};
 
 // SInt8 value range
 const int8_t pcm_sint8_min = -127 - 1;
@@ -12719,14 +12757,14 @@ template <> struct pcm_packer<PcmCode_Float64, PcmEndian_Little> {
     }
 };
 
-// Map code and endian of samples
-template <PcmCode InCode, PcmCode OutCode, PcmEndian InEndian, PcmEndian OutEndian>
+// Mapping function implementation
+template <PcmCode InCode, PcmEndian InEndian, PcmCode OutCode, PcmEndian OutEndian>
 struct pcm_mapper {
-    static inline void map(const uint8_t* in_data,
-                           size_t& in_bit_off,
-                           uint8_t* out_data,
-                           size_t& out_bit_off,
-                           size_t n_samples) {
+    static void map(const uint8_t* in_data,
+                    size_t& in_bit_off,
+                    uint8_t* out_data,
+                    size_t& out_bit_off,
+                    size_t n_samples) {
         for (size_t n = 0; n < n_samples; n++) {
             pcm_packer<OutCode, OutEndian>::pack(
                 out_data, out_bit_off,
@@ -12736,1246 +12774,1872 @@ struct pcm_mapper {
     }
 };
 
-// Mapping function
-typedef void (*pcm_map_func_t)(
-    const uint8_t* in_data,
-    size_t& in_bit_off,
-    uint8_t* out_data,
-    size_t& out_bit_off,
-    size_t n_samples);
-
 // Select mapping function
-template <PcmCode InCode, PcmCode OutCode, PcmEndian InEndian, PcmEndian OutEndian>
-pcm_map_func_t pcm_map_func() {
-    return &pcm_mapper<InCode, OutCode, InEndian, OutEndian>::map;
+template <PcmCode InCode, PcmEndian InEndian, PcmCode OutCode, PcmEndian OutEndian>
+PcmMapFn pcm_format_mapfn() {
+    return &pcm_mapper<InCode, InEndian, OutCode, OutEndian>::map;
 }
 
 // Select mapping function
-template <PcmCode InCode, PcmCode OutCode, PcmEndian InEndian>
-pcm_map_func_t pcm_map_func(PcmEndian out_endian) {
-    switch (out_endian) {
-    case PcmEndian_Native:
+template <PcmCode InCode, PcmEndian InEndian>
+PcmMapFn pcm_format_mapfn(PcmFormat out_format) {
+    switch (out_format) {
+    case PcmFormat_SInt8:
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        return pcm_map_func<InCode, OutCode, InEndian, PcmEndian_Big>();
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt8, PcmEndian_Big>();
 #else
-        return pcm_map_func<InCode, OutCode, InEndian, PcmEndian_Little>();
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt8, PcmEndian_Little>();
 #endif
-    case PcmEndian_Big:
-        return pcm_map_func<InCode, OutCode, InEndian, PcmEndian_Big>();
-    case PcmEndian_Little:
-        return pcm_map_func<InCode, OutCode, InEndian, PcmEndian_Little>();
-    case PcmEndian_Max:
-        break;
-    }
-    return NULL;
-}
-
-// Select mapping function
-template <PcmCode InCode, PcmCode OutCode>
-pcm_map_func_t pcm_map_func(PcmEndian in_endian, PcmEndian out_endian) {
-    switch (in_endian) {
-    case PcmEndian_Native:
+    case PcmFormat_SInt8_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt8, PcmEndian_Big>();
+    case PcmFormat_SInt8_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt8, PcmEndian_Little>();
+    case PcmFormat_UInt8:
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        return pcm_map_func<InCode, OutCode, PcmEndian_Big>(out_endian);
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt8, PcmEndian_Big>();
 #else
-        return pcm_map_func<InCode, OutCode, PcmEndian_Little>(out_endian);
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt8, PcmEndian_Little>();
 #endif
-    case PcmEndian_Big:
-        return pcm_map_func<InCode, OutCode, PcmEndian_Big>(out_endian);
-    case PcmEndian_Little:
-        return pcm_map_func<InCode, OutCode, PcmEndian_Little>(out_endian);
-    case PcmEndian_Max:
+    case PcmFormat_UInt8_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt8, PcmEndian_Big>();
+    case PcmFormat_UInt8_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt8, PcmEndian_Little>();
+    case PcmFormat_SInt16:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt16, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt16, PcmEndian_Little>();
+#endif
+    case PcmFormat_SInt16_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt16, PcmEndian_Big>();
+    case PcmFormat_SInt16_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt16, PcmEndian_Little>();
+    case PcmFormat_UInt16:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt16, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt16, PcmEndian_Little>();
+#endif
+    case PcmFormat_UInt16_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt16, PcmEndian_Big>();
+    case PcmFormat_UInt16_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt16, PcmEndian_Little>();
+    case PcmFormat_SInt18:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt18, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt18, PcmEndian_Little>();
+#endif
+    case PcmFormat_SInt18_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt18, PcmEndian_Big>();
+    case PcmFormat_SInt18_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt18, PcmEndian_Little>();
+    case PcmFormat_UInt18:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt18, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt18, PcmEndian_Little>();
+#endif
+    case PcmFormat_UInt18_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt18, PcmEndian_Big>();
+    case PcmFormat_UInt18_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt18, PcmEndian_Little>();
+    case PcmFormat_SInt18_3:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt18_3, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt18_3, PcmEndian_Little>();
+#endif
+    case PcmFormat_SInt18_3_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt18_3, PcmEndian_Big>();
+    case PcmFormat_SInt18_3_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt18_3, PcmEndian_Little>();
+    case PcmFormat_UInt18_3:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt18_3, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt18_3, PcmEndian_Little>();
+#endif
+    case PcmFormat_UInt18_3_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt18_3, PcmEndian_Big>();
+    case PcmFormat_UInt18_3_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt18_3, PcmEndian_Little>();
+    case PcmFormat_SInt18_4:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt18_4, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt18_4, PcmEndian_Little>();
+#endif
+    case PcmFormat_SInt18_4_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt18_4, PcmEndian_Big>();
+    case PcmFormat_SInt18_4_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt18_4, PcmEndian_Little>();
+    case PcmFormat_UInt18_4:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt18_4, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt18_4, PcmEndian_Little>();
+#endif
+    case PcmFormat_UInt18_4_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt18_4, PcmEndian_Big>();
+    case PcmFormat_UInt18_4_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt18_4, PcmEndian_Little>();
+    case PcmFormat_SInt20:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt20, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt20, PcmEndian_Little>();
+#endif
+    case PcmFormat_SInt20_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt20, PcmEndian_Big>();
+    case PcmFormat_SInt20_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt20, PcmEndian_Little>();
+    case PcmFormat_UInt20:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt20, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt20, PcmEndian_Little>();
+#endif
+    case PcmFormat_UInt20_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt20, PcmEndian_Big>();
+    case PcmFormat_UInt20_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt20, PcmEndian_Little>();
+    case PcmFormat_SInt20_3:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt20_3, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt20_3, PcmEndian_Little>();
+#endif
+    case PcmFormat_SInt20_3_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt20_3, PcmEndian_Big>();
+    case PcmFormat_SInt20_3_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt20_3, PcmEndian_Little>();
+    case PcmFormat_UInt20_3:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt20_3, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt20_3, PcmEndian_Little>();
+#endif
+    case PcmFormat_UInt20_3_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt20_3, PcmEndian_Big>();
+    case PcmFormat_UInt20_3_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt20_3, PcmEndian_Little>();
+    case PcmFormat_SInt20_4:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt20_4, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt20_4, PcmEndian_Little>();
+#endif
+    case PcmFormat_SInt20_4_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt20_4, PcmEndian_Big>();
+    case PcmFormat_SInt20_4_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt20_4, PcmEndian_Little>();
+    case PcmFormat_UInt20_4:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt20_4, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt20_4, PcmEndian_Little>();
+#endif
+    case PcmFormat_UInt20_4_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt20_4, PcmEndian_Big>();
+    case PcmFormat_UInt20_4_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt20_4, PcmEndian_Little>();
+    case PcmFormat_SInt24:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt24, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt24, PcmEndian_Little>();
+#endif
+    case PcmFormat_SInt24_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt24, PcmEndian_Big>();
+    case PcmFormat_SInt24_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt24, PcmEndian_Little>();
+    case PcmFormat_UInt24:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt24, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt24, PcmEndian_Little>();
+#endif
+    case PcmFormat_UInt24_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt24, PcmEndian_Big>();
+    case PcmFormat_UInt24_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt24, PcmEndian_Little>();
+    case PcmFormat_SInt24_4:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt24_4, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt24_4, PcmEndian_Little>();
+#endif
+    case PcmFormat_SInt24_4_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt24_4, PcmEndian_Big>();
+    case PcmFormat_SInt24_4_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt24_4, PcmEndian_Little>();
+    case PcmFormat_UInt24_4:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt24_4, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt24_4, PcmEndian_Little>();
+#endif
+    case PcmFormat_UInt24_4_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt24_4, PcmEndian_Big>();
+    case PcmFormat_UInt24_4_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt24_4, PcmEndian_Little>();
+    case PcmFormat_SInt32:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt32, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt32, PcmEndian_Little>();
+#endif
+    case PcmFormat_SInt32_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt32, PcmEndian_Big>();
+    case PcmFormat_SInt32_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt32, PcmEndian_Little>();
+    case PcmFormat_UInt32:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt32, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt32, PcmEndian_Little>();
+#endif
+    case PcmFormat_UInt32_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt32, PcmEndian_Big>();
+    case PcmFormat_UInt32_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt32, PcmEndian_Little>();
+    case PcmFormat_SInt64:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt64, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt64, PcmEndian_Little>();
+#endif
+    case PcmFormat_SInt64_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt64, PcmEndian_Big>();
+    case PcmFormat_SInt64_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_SInt64, PcmEndian_Little>();
+    case PcmFormat_UInt64:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt64, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt64, PcmEndian_Little>();
+#endif
+    case PcmFormat_UInt64_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt64, PcmEndian_Big>();
+    case PcmFormat_UInt64_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_UInt64, PcmEndian_Little>();
+    case PcmFormat_Float32:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_Float32, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_Float32, PcmEndian_Little>();
+#endif
+    case PcmFormat_Float32_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_Float32, PcmEndian_Big>();
+    case PcmFormat_Float32_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_Float32, PcmEndian_Little>();
+    case PcmFormat_Float64:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_Float64, PcmEndian_Big>();
+#else
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_Float64, PcmEndian_Little>();
+#endif
+    case PcmFormat_Float64_Be:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_Float64, PcmEndian_Big>();
+    case PcmFormat_Float64_Le:
+        return pcm_format_mapfn<InCode, InEndian, PcmCode_Float64, PcmEndian_Little>();
+    default:
         break;
     }
     return NULL;
 }
+
+} // namespace
 
 // Select mapping function
-template <PcmCode InCode>
-inline pcm_map_func_t pcm_map_func(PcmCode out_code,
-                                   PcmEndian in_endian,
-                                   PcmEndian out_endian) {
-    switch (out_code) {
-    case PcmCode_SInt8:
-        return pcm_map_func<InCode, PcmCode_SInt8>(in_endian, out_endian);
-    case PcmCode_UInt8:
-        return pcm_map_func<InCode, PcmCode_UInt8>(in_endian, out_endian);
-    case PcmCode_SInt16:
-        return pcm_map_func<InCode, PcmCode_SInt16>(in_endian, out_endian);
-    case PcmCode_UInt16:
-        return pcm_map_func<InCode, PcmCode_UInt16>(in_endian, out_endian);
-    case PcmCode_SInt18:
-        return pcm_map_func<InCode, PcmCode_SInt18>(in_endian, out_endian);
-    case PcmCode_UInt18:
-        return pcm_map_func<InCode, PcmCode_UInt18>(in_endian, out_endian);
-    case PcmCode_SInt18_3:
-        return pcm_map_func<InCode, PcmCode_SInt18_3>(in_endian, out_endian);
-    case PcmCode_UInt18_3:
-        return pcm_map_func<InCode, PcmCode_UInt18_3>(in_endian, out_endian);
-    case PcmCode_SInt18_4:
-        return pcm_map_func<InCode, PcmCode_SInt18_4>(in_endian, out_endian);
-    case PcmCode_UInt18_4:
-        return pcm_map_func<InCode, PcmCode_UInt18_4>(in_endian, out_endian);
-    case PcmCode_SInt20:
-        return pcm_map_func<InCode, PcmCode_SInt20>(in_endian, out_endian);
-    case PcmCode_UInt20:
-        return pcm_map_func<InCode, PcmCode_UInt20>(in_endian, out_endian);
-    case PcmCode_SInt20_3:
-        return pcm_map_func<InCode, PcmCode_SInt20_3>(in_endian, out_endian);
-    case PcmCode_UInt20_3:
-        return pcm_map_func<InCode, PcmCode_UInt20_3>(in_endian, out_endian);
-    case PcmCode_SInt20_4:
-        return pcm_map_func<InCode, PcmCode_SInt20_4>(in_endian, out_endian);
-    case PcmCode_UInt20_4:
-        return pcm_map_func<InCode, PcmCode_UInt20_4>(in_endian, out_endian);
-    case PcmCode_SInt24:
-        return pcm_map_func<InCode, PcmCode_SInt24>(in_endian, out_endian);
-    case PcmCode_UInt24:
-        return pcm_map_func<InCode, PcmCode_UInt24>(in_endian, out_endian);
-    case PcmCode_SInt24_4:
-        return pcm_map_func<InCode, PcmCode_SInt24_4>(in_endian, out_endian);
-    case PcmCode_UInt24_4:
-        return pcm_map_func<InCode, PcmCode_UInt24_4>(in_endian, out_endian);
-    case PcmCode_SInt32:
-        return pcm_map_func<InCode, PcmCode_SInt32>(in_endian, out_endian);
-    case PcmCode_UInt32:
-        return pcm_map_func<InCode, PcmCode_UInt32>(in_endian, out_endian);
-    case PcmCode_SInt64:
-        return pcm_map_func<InCode, PcmCode_SInt64>(in_endian, out_endian);
-    case PcmCode_UInt64:
-        return pcm_map_func<InCode, PcmCode_UInt64>(in_endian, out_endian);
-    case PcmCode_Float32:
-        return pcm_map_func<InCode, PcmCode_Float32>(in_endian, out_endian);
-    case PcmCode_Float64:
-        return pcm_map_func<InCode, PcmCode_Float64>(in_endian, out_endian);
-    case PcmCode_Max:
+PcmMapFn pcm_format_mapfn(PcmFormat in_format, PcmFormat out_format) {
+    switch (in_format) {
+    case PcmFormat_SInt8:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_SInt8, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_SInt8, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_SInt8_Be:
+        return pcm_format_mapfn<PcmCode_SInt8, PcmEndian_Big>(out_format);
+    case PcmFormat_SInt8_Le:
+        return pcm_format_mapfn<PcmCode_SInt8, PcmEndian_Little>(out_format);
+    case PcmFormat_UInt8:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_UInt8, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_UInt8, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_UInt8_Be:
+        return pcm_format_mapfn<PcmCode_UInt8, PcmEndian_Big>(out_format);
+    case PcmFormat_UInt8_Le:
+        return pcm_format_mapfn<PcmCode_UInt8, PcmEndian_Little>(out_format);
+    case PcmFormat_SInt16:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_SInt16, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_SInt16, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_SInt16_Be:
+        return pcm_format_mapfn<PcmCode_SInt16, PcmEndian_Big>(out_format);
+    case PcmFormat_SInt16_Le:
+        return pcm_format_mapfn<PcmCode_SInt16, PcmEndian_Little>(out_format);
+    case PcmFormat_UInt16:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_UInt16, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_UInt16, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_UInt16_Be:
+        return pcm_format_mapfn<PcmCode_UInt16, PcmEndian_Big>(out_format);
+    case PcmFormat_UInt16_Le:
+        return pcm_format_mapfn<PcmCode_UInt16, PcmEndian_Little>(out_format);
+    case PcmFormat_SInt18:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_SInt18, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_SInt18, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_SInt18_Be:
+        return pcm_format_mapfn<PcmCode_SInt18, PcmEndian_Big>(out_format);
+    case PcmFormat_SInt18_Le:
+        return pcm_format_mapfn<PcmCode_SInt18, PcmEndian_Little>(out_format);
+    case PcmFormat_UInt18:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_UInt18, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_UInt18, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_UInt18_Be:
+        return pcm_format_mapfn<PcmCode_UInt18, PcmEndian_Big>(out_format);
+    case PcmFormat_UInt18_Le:
+        return pcm_format_mapfn<PcmCode_UInt18, PcmEndian_Little>(out_format);
+    case PcmFormat_SInt18_3:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_SInt18_3, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_SInt18_3, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_SInt18_3_Be:
+        return pcm_format_mapfn<PcmCode_SInt18_3, PcmEndian_Big>(out_format);
+    case PcmFormat_SInt18_3_Le:
+        return pcm_format_mapfn<PcmCode_SInt18_3, PcmEndian_Little>(out_format);
+    case PcmFormat_UInt18_3:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_UInt18_3, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_UInt18_3, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_UInt18_3_Be:
+        return pcm_format_mapfn<PcmCode_UInt18_3, PcmEndian_Big>(out_format);
+    case PcmFormat_UInt18_3_Le:
+        return pcm_format_mapfn<PcmCode_UInt18_3, PcmEndian_Little>(out_format);
+    case PcmFormat_SInt18_4:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_SInt18_4, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_SInt18_4, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_SInt18_4_Be:
+        return pcm_format_mapfn<PcmCode_SInt18_4, PcmEndian_Big>(out_format);
+    case PcmFormat_SInt18_4_Le:
+        return pcm_format_mapfn<PcmCode_SInt18_4, PcmEndian_Little>(out_format);
+    case PcmFormat_UInt18_4:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_UInt18_4, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_UInt18_4, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_UInt18_4_Be:
+        return pcm_format_mapfn<PcmCode_UInt18_4, PcmEndian_Big>(out_format);
+    case PcmFormat_UInt18_4_Le:
+        return pcm_format_mapfn<PcmCode_UInt18_4, PcmEndian_Little>(out_format);
+    case PcmFormat_SInt20:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_SInt20, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_SInt20, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_SInt20_Be:
+        return pcm_format_mapfn<PcmCode_SInt20, PcmEndian_Big>(out_format);
+    case PcmFormat_SInt20_Le:
+        return pcm_format_mapfn<PcmCode_SInt20, PcmEndian_Little>(out_format);
+    case PcmFormat_UInt20:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_UInt20, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_UInt20, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_UInt20_Be:
+        return pcm_format_mapfn<PcmCode_UInt20, PcmEndian_Big>(out_format);
+    case PcmFormat_UInt20_Le:
+        return pcm_format_mapfn<PcmCode_UInt20, PcmEndian_Little>(out_format);
+    case PcmFormat_SInt20_3:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_SInt20_3, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_SInt20_3, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_SInt20_3_Be:
+        return pcm_format_mapfn<PcmCode_SInt20_3, PcmEndian_Big>(out_format);
+    case PcmFormat_SInt20_3_Le:
+        return pcm_format_mapfn<PcmCode_SInt20_3, PcmEndian_Little>(out_format);
+    case PcmFormat_UInt20_3:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_UInt20_3, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_UInt20_3, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_UInt20_3_Be:
+        return pcm_format_mapfn<PcmCode_UInt20_3, PcmEndian_Big>(out_format);
+    case PcmFormat_UInt20_3_Le:
+        return pcm_format_mapfn<PcmCode_UInt20_3, PcmEndian_Little>(out_format);
+    case PcmFormat_SInt20_4:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_SInt20_4, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_SInt20_4, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_SInt20_4_Be:
+        return pcm_format_mapfn<PcmCode_SInt20_4, PcmEndian_Big>(out_format);
+    case PcmFormat_SInt20_4_Le:
+        return pcm_format_mapfn<PcmCode_SInt20_4, PcmEndian_Little>(out_format);
+    case PcmFormat_UInt20_4:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_UInt20_4, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_UInt20_4, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_UInt20_4_Be:
+        return pcm_format_mapfn<PcmCode_UInt20_4, PcmEndian_Big>(out_format);
+    case PcmFormat_UInt20_4_Le:
+        return pcm_format_mapfn<PcmCode_UInt20_4, PcmEndian_Little>(out_format);
+    case PcmFormat_SInt24:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_SInt24, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_SInt24, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_SInt24_Be:
+        return pcm_format_mapfn<PcmCode_SInt24, PcmEndian_Big>(out_format);
+    case PcmFormat_SInt24_Le:
+        return pcm_format_mapfn<PcmCode_SInt24, PcmEndian_Little>(out_format);
+    case PcmFormat_UInt24:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_UInt24, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_UInt24, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_UInt24_Be:
+        return pcm_format_mapfn<PcmCode_UInt24, PcmEndian_Big>(out_format);
+    case PcmFormat_UInt24_Le:
+        return pcm_format_mapfn<PcmCode_UInt24, PcmEndian_Little>(out_format);
+    case PcmFormat_SInt24_4:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_SInt24_4, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_SInt24_4, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_SInt24_4_Be:
+        return pcm_format_mapfn<PcmCode_SInt24_4, PcmEndian_Big>(out_format);
+    case PcmFormat_SInt24_4_Le:
+        return pcm_format_mapfn<PcmCode_SInt24_4, PcmEndian_Little>(out_format);
+    case PcmFormat_UInt24_4:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_UInt24_4, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_UInt24_4, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_UInt24_4_Be:
+        return pcm_format_mapfn<PcmCode_UInt24_4, PcmEndian_Big>(out_format);
+    case PcmFormat_UInt24_4_Le:
+        return pcm_format_mapfn<PcmCode_UInt24_4, PcmEndian_Little>(out_format);
+    case PcmFormat_SInt32:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_SInt32, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_SInt32, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_SInt32_Be:
+        return pcm_format_mapfn<PcmCode_SInt32, PcmEndian_Big>(out_format);
+    case PcmFormat_SInt32_Le:
+        return pcm_format_mapfn<PcmCode_SInt32, PcmEndian_Little>(out_format);
+    case PcmFormat_UInt32:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_UInt32, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_UInt32, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_UInt32_Be:
+        return pcm_format_mapfn<PcmCode_UInt32, PcmEndian_Big>(out_format);
+    case PcmFormat_UInt32_Le:
+        return pcm_format_mapfn<PcmCode_UInt32, PcmEndian_Little>(out_format);
+    case PcmFormat_SInt64:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_SInt64, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_SInt64, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_SInt64_Be:
+        return pcm_format_mapfn<PcmCode_SInt64, PcmEndian_Big>(out_format);
+    case PcmFormat_SInt64_Le:
+        return pcm_format_mapfn<PcmCode_SInt64, PcmEndian_Little>(out_format);
+    case PcmFormat_UInt64:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_UInt64, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_UInt64, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_UInt64_Be:
+        return pcm_format_mapfn<PcmCode_UInt64, PcmEndian_Big>(out_format);
+    case PcmFormat_UInt64_Le:
+        return pcm_format_mapfn<PcmCode_UInt64, PcmEndian_Little>(out_format);
+    case PcmFormat_Float32:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_Float32, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_Float32, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_Float32_Be:
+        return pcm_format_mapfn<PcmCode_Float32, PcmEndian_Big>(out_format);
+    case PcmFormat_Float32_Le:
+        return pcm_format_mapfn<PcmCode_Float32, PcmEndian_Little>(out_format);
+    case PcmFormat_Float64:
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        return pcm_format_mapfn<PcmCode_Float64, PcmEndian_Big>(out_format);
+#else
+        return pcm_format_mapfn<PcmCode_Float64, PcmEndian_Little>(out_format);
+#endif
+    case PcmFormat_Float64_Be:
+        return pcm_format_mapfn<PcmCode_Float64, PcmEndian_Big>(out_format);
+    case PcmFormat_Float64_Le:
+        return pcm_format_mapfn<PcmCode_Float64, PcmEndian_Little>(out_format);
+    default:
         break;
     }
     return NULL;
 }
 
-// Select mapping function
-inline pcm_map_func_t pcm_map_func(PcmCode in_code,
-                                   PcmCode out_code,
-                                   PcmEndian in_endian,
-                                   PcmEndian out_endian) {
-    switch (in_code) {
-    case PcmCode_SInt8:
-        return pcm_map_func<PcmCode_SInt8>(out_code, in_endian, out_endian);
-    case PcmCode_UInt8:
-        return pcm_map_func<PcmCode_UInt8>(out_code, in_endian, out_endian);
-    case PcmCode_SInt16:
-        return pcm_map_func<PcmCode_SInt16>(out_code, in_endian, out_endian);
-    case PcmCode_UInt16:
-        return pcm_map_func<PcmCode_UInt16>(out_code, in_endian, out_endian);
-    case PcmCode_SInt18:
-        return pcm_map_func<PcmCode_SInt18>(out_code, in_endian, out_endian);
-    case PcmCode_UInt18:
-        return pcm_map_func<PcmCode_UInt18>(out_code, in_endian, out_endian);
-    case PcmCode_SInt18_3:
-        return pcm_map_func<PcmCode_SInt18_3>(out_code, in_endian, out_endian);
-    case PcmCode_UInt18_3:
-        return pcm_map_func<PcmCode_UInt18_3>(out_code, in_endian, out_endian);
-    case PcmCode_SInt18_4:
-        return pcm_map_func<PcmCode_SInt18_4>(out_code, in_endian, out_endian);
-    case PcmCode_UInt18_4:
-        return pcm_map_func<PcmCode_UInt18_4>(out_code, in_endian, out_endian);
-    case PcmCode_SInt20:
-        return pcm_map_func<PcmCode_SInt20>(out_code, in_endian, out_endian);
-    case PcmCode_UInt20:
-        return pcm_map_func<PcmCode_UInt20>(out_code, in_endian, out_endian);
-    case PcmCode_SInt20_3:
-        return pcm_map_func<PcmCode_SInt20_3>(out_code, in_endian, out_endian);
-    case PcmCode_UInt20_3:
-        return pcm_map_func<PcmCode_UInt20_3>(out_code, in_endian, out_endian);
-    case PcmCode_SInt20_4:
-        return pcm_map_func<PcmCode_SInt20_4>(out_code, in_endian, out_endian);
-    case PcmCode_UInt20_4:
-        return pcm_map_func<PcmCode_UInt20_4>(out_code, in_endian, out_endian);
-    case PcmCode_SInt24:
-        return pcm_map_func<PcmCode_SInt24>(out_code, in_endian, out_endian);
-    case PcmCode_UInt24:
-        return pcm_map_func<PcmCode_UInt24>(out_code, in_endian, out_endian);
-    case PcmCode_SInt24_4:
-        return pcm_map_func<PcmCode_SInt24_4>(out_code, in_endian, out_endian);
-    case PcmCode_UInt24_4:
-        return pcm_map_func<PcmCode_UInt24_4>(out_code, in_endian, out_endian);
-    case PcmCode_SInt32:
-        return pcm_map_func<PcmCode_SInt32>(out_code, in_endian, out_endian);
-    case PcmCode_UInt32:
-        return pcm_map_func<PcmCode_UInt32>(out_code, in_endian, out_endian);
-    case PcmCode_SInt64:
-        return pcm_map_func<PcmCode_SInt64>(out_code, in_endian, out_endian);
-    case PcmCode_UInt64:
-        return pcm_map_func<PcmCode_UInt64>(out_code, in_endian, out_endian);
-    case PcmCode_Float32:
-        return pcm_map_func<PcmCode_Float32>(out_code, in_endian, out_endian);
-    case PcmCode_Float64:
-        return pcm_map_func<PcmCode_Float64>(out_code, in_endian, out_endian);
-    case PcmCode_Max:
+// Get format traits
+PcmTraits pcm_format_traits(PcmFormat format) {
+    PcmTraits traits;
+
+    switch (format) {
+    case PcmFormat_SInt8:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 8;
+        traits.bit_width = 8;
+        break;
+
+    case PcmFormat_SInt8_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = false;
+        traits.bit_depth = 8;
+        traits.bit_width = 8;
+        break;
+
+    case PcmFormat_SInt8_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = true;
+        traits.bit_depth = 8;
+        traits.bit_width = 8;
+        break;
+
+    case PcmFormat_UInt8:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 8;
+        traits.bit_width = 8;
+        break;
+
+    case PcmFormat_UInt8_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = false;
+        traits.bit_depth = 8;
+        traits.bit_width = 8;
+        break;
+
+    case PcmFormat_UInt8_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = true;
+        traits.bit_depth = 8;
+        traits.bit_width = 8;
+        break;
+
+    case PcmFormat_SInt16:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 16;
+        traits.bit_width = 16;
+        break;
+
+    case PcmFormat_SInt16_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = false;
+        traits.bit_depth = 16;
+        traits.bit_width = 16;
+        break;
+
+    case PcmFormat_SInt16_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = true;
+        traits.bit_depth = 16;
+        traits.bit_width = 16;
+        break;
+
+    case PcmFormat_UInt16:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 16;
+        traits.bit_width = 16;
+        break;
+
+    case PcmFormat_UInt16_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = false;
+        traits.bit_depth = 16;
+        traits.bit_width = 16;
+        break;
+
+    case PcmFormat_UInt16_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = true;
+        traits.bit_depth = 16;
+        traits.bit_width = 16;
+        break;
+
+    case PcmFormat_SInt18:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 18;
+        traits.bit_width = 18;
+        break;
+
+    case PcmFormat_SInt18_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = false;
+        traits.bit_depth = 18;
+        traits.bit_width = 18;
+        break;
+
+    case PcmFormat_SInt18_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = true;
+        traits.bit_depth = 18;
+        traits.bit_width = 18;
+        break;
+
+    case PcmFormat_UInt18:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 18;
+        traits.bit_width = 18;
+        break;
+
+    case PcmFormat_UInt18_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = false;
+        traits.bit_depth = 18;
+        traits.bit_width = 18;
+        break;
+
+    case PcmFormat_UInt18_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = true;
+        traits.bit_depth = 18;
+        traits.bit_width = 18;
+        break;
+
+    case PcmFormat_SInt18_3:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 18;
+        traits.bit_width = 24;
+        break;
+
+    case PcmFormat_SInt18_3_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = false;
+        traits.bit_depth = 18;
+        traits.bit_width = 24;
+        break;
+
+    case PcmFormat_SInt18_3_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = true;
+        traits.bit_depth = 18;
+        traits.bit_width = 24;
+        break;
+
+    case PcmFormat_UInt18_3:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 18;
+        traits.bit_width = 24;
+        break;
+
+    case PcmFormat_UInt18_3_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = false;
+        traits.bit_depth = 18;
+        traits.bit_width = 24;
+        break;
+
+    case PcmFormat_UInt18_3_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = true;
+        traits.bit_depth = 18;
+        traits.bit_width = 24;
+        break;
+
+    case PcmFormat_SInt18_4:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 18;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_SInt18_4_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = false;
+        traits.bit_depth = 18;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_SInt18_4_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = true;
+        traits.bit_depth = 18;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_UInt18_4:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 18;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_UInt18_4_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = false;
+        traits.bit_depth = 18;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_UInt18_4_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = true;
+        traits.bit_depth = 18;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_SInt20:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 20;
+        traits.bit_width = 20;
+        break;
+
+    case PcmFormat_SInt20_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = false;
+        traits.bit_depth = 20;
+        traits.bit_width = 20;
+        break;
+
+    case PcmFormat_SInt20_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = true;
+        traits.bit_depth = 20;
+        traits.bit_width = 20;
+        break;
+
+    case PcmFormat_UInt20:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 20;
+        traits.bit_width = 20;
+        break;
+
+    case PcmFormat_UInt20_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = false;
+        traits.bit_depth = 20;
+        traits.bit_width = 20;
+        break;
+
+    case PcmFormat_UInt20_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = true;
+        traits.bit_depth = 20;
+        traits.bit_width = 20;
+        break;
+
+    case PcmFormat_SInt20_3:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 20;
+        traits.bit_width = 24;
+        break;
+
+    case PcmFormat_SInt20_3_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = false;
+        traits.bit_depth = 20;
+        traits.bit_width = 24;
+        break;
+
+    case PcmFormat_SInt20_3_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = true;
+        traits.bit_depth = 20;
+        traits.bit_width = 24;
+        break;
+
+    case PcmFormat_UInt20_3:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 20;
+        traits.bit_width = 24;
+        break;
+
+    case PcmFormat_UInt20_3_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = false;
+        traits.bit_depth = 20;
+        traits.bit_width = 24;
+        break;
+
+    case PcmFormat_UInt20_3_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = true;
+        traits.bit_depth = 20;
+        traits.bit_width = 24;
+        break;
+
+    case PcmFormat_SInt20_4:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 20;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_SInt20_4_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = false;
+        traits.bit_depth = 20;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_SInt20_4_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = true;
+        traits.bit_depth = 20;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_UInt20_4:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 20;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_UInt20_4_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = false;
+        traits.bit_depth = 20;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_UInt20_4_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = true;
+        traits.bit_depth = 20;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_SInt24:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 24;
+        traits.bit_width = 24;
+        break;
+
+    case PcmFormat_SInt24_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = false;
+        traits.bit_depth = 24;
+        traits.bit_width = 24;
+        break;
+
+    case PcmFormat_SInt24_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = true;
+        traits.bit_depth = 24;
+        traits.bit_width = 24;
+        break;
+
+    case PcmFormat_UInt24:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 24;
+        traits.bit_width = 24;
+        break;
+
+    case PcmFormat_UInt24_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = false;
+        traits.bit_depth = 24;
+        traits.bit_width = 24;
+        break;
+
+    case PcmFormat_UInt24_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = true;
+        traits.bit_depth = 24;
+        traits.bit_width = 24;
+        break;
+
+    case PcmFormat_SInt24_4:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 24;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_SInt24_4_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = false;
+        traits.bit_depth = 24;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_SInt24_4_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = true;
+        traits.bit_depth = 24;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_UInt24_4:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 24;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_UInt24_4_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = false;
+        traits.bit_depth = 24;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_UInt24_4_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = true;
+        traits.bit_depth = 24;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_SInt32:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 32;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_SInt32_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = false;
+        traits.bit_depth = 32;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_SInt32_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = true;
+        traits.bit_depth = 32;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_UInt32:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 32;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_UInt32_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = false;
+        traits.bit_depth = 32;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_UInt32_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = true;
+        traits.bit_depth = 32;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_SInt64:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 64;
+        traits.bit_width = 64;
+        break;
+
+    case PcmFormat_SInt64_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = false;
+        traits.bit_depth = 64;
+        traits.bit_width = 64;
+        break;
+
+    case PcmFormat_SInt64_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = true;
+        traits.is_little = true;
+        traits.bit_depth = 64;
+        traits.bit_width = 64;
+        break;
+
+    case PcmFormat_UInt64:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 64;
+        traits.bit_width = 64;
+        break;
+
+    case PcmFormat_UInt64_Be:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = false;
+        traits.bit_depth = 64;
+        traits.bit_width = 64;
+        break;
+
+    case PcmFormat_UInt64_Le:
+        traits.is_valid = true;
+        traits.is_integer = true;
+        traits.is_signed = false;
+        traits.is_little = true;
+        traits.bit_depth = 64;
+        traits.bit_width = 64;
+        break;
+
+    case PcmFormat_Float32:
+        traits.is_valid = true;
+        traits.is_integer = false;
+        traits.is_signed = true;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 32;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_Float32_Be:
+        traits.is_valid = true;
+        traits.is_integer = false;
+        traits.is_signed = true;
+        traits.is_little = false;
+        traits.bit_depth = 32;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_Float32_Le:
+        traits.is_valid = true;
+        traits.is_integer = false;
+        traits.is_signed = true;
+        traits.is_little = true;
+        traits.bit_depth = 32;
+        traits.bit_width = 32;
+        break;
+
+    case PcmFormat_Float64:
+        traits.is_valid = true;
+        traits.is_integer = false;
+        traits.is_signed = true;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.is_little = false;
+#else
+        traits.is_little = true;
+#endif
+        traits.bit_depth = 64;
+        traits.bit_width = 64;
+        break;
+
+    case PcmFormat_Float64_Be:
+        traits.is_valid = true;
+        traits.is_integer = false;
+        traits.is_signed = true;
+        traits.is_little = false;
+        traits.bit_depth = 64;
+        traits.bit_width = 64;
+        break;
+
+    case PcmFormat_Float64_Le:
+        traits.is_valid = true;
+        traits.is_integer = false;
+        traits.is_signed = true;
+        traits.is_little = true;
+        traits.bit_depth = 64;
+        traits.bit_width = 64;
+        break;
+
+    default:
+        break;
+    }
+
+    return traits;
+}
+
+const char* pcm_format_to_str(PcmFormat format) {
+    switch (format) {
+    case PcmFormat_SInt8:
+        return "s8";
+    case PcmFormat_SInt8_Be:
+        return "s8_be";
+    case PcmFormat_SInt8_Le:
+        return "s8_le";
+    case PcmFormat_UInt8:
+        return "u8";
+    case PcmFormat_UInt8_Be:
+        return "u8_be";
+    case PcmFormat_UInt8_Le:
+        return "u8_le";
+    case PcmFormat_SInt16:
+        return "s16";
+    case PcmFormat_SInt16_Be:
+        return "s16_be";
+    case PcmFormat_SInt16_Le:
+        return "s16_le";
+    case PcmFormat_UInt16:
+        return "u16";
+    case PcmFormat_UInt16_Be:
+        return "u16_be";
+    case PcmFormat_UInt16_Le:
+        return "u16_le";
+    case PcmFormat_SInt18:
+        return "s18";
+    case PcmFormat_SInt18_Be:
+        return "s18_be";
+    case PcmFormat_SInt18_Le:
+        return "s18_le";
+    case PcmFormat_UInt18:
+        return "u18";
+    case PcmFormat_UInt18_Be:
+        return "u18_be";
+    case PcmFormat_UInt18_Le:
+        return "u18_le";
+    case PcmFormat_SInt18_3:
+        return "s18_3";
+    case PcmFormat_SInt18_3_Be:
+        return "s18_3be";
+    case PcmFormat_SInt18_3_Le:
+        return "s18_3le";
+    case PcmFormat_UInt18_3:
+        return "u18_3";
+    case PcmFormat_UInt18_3_Be:
+        return "u18_3be";
+    case PcmFormat_UInt18_3_Le:
+        return "u18_3le";
+    case PcmFormat_SInt18_4:
+        return "s18_4";
+    case PcmFormat_SInt18_4_Be:
+        return "s18_4be";
+    case PcmFormat_SInt18_4_Le:
+        return "s18_4le";
+    case PcmFormat_UInt18_4:
+        return "u18_4";
+    case PcmFormat_UInt18_4_Be:
+        return "u18_4be";
+    case PcmFormat_UInt18_4_Le:
+        return "u18_4le";
+    case PcmFormat_SInt20:
+        return "s20";
+    case PcmFormat_SInt20_Be:
+        return "s20_be";
+    case PcmFormat_SInt20_Le:
+        return "s20_le";
+    case PcmFormat_UInt20:
+        return "u20";
+    case PcmFormat_UInt20_Be:
+        return "u20_be";
+    case PcmFormat_UInt20_Le:
+        return "u20_le";
+    case PcmFormat_SInt20_3:
+        return "s20_3";
+    case PcmFormat_SInt20_3_Be:
+        return "s20_3be";
+    case PcmFormat_SInt20_3_Le:
+        return "s20_3le";
+    case PcmFormat_UInt20_3:
+        return "u20_3";
+    case PcmFormat_UInt20_3_Be:
+        return "u20_3be";
+    case PcmFormat_UInt20_3_Le:
+        return "u20_3le";
+    case PcmFormat_SInt20_4:
+        return "s20_4";
+    case PcmFormat_SInt20_4_Be:
+        return "s20_4be";
+    case PcmFormat_SInt20_4_Le:
+        return "s20_4le";
+    case PcmFormat_UInt20_4:
+        return "u20_4";
+    case PcmFormat_UInt20_4_Be:
+        return "u20_4be";
+    case PcmFormat_UInt20_4_Le:
+        return "u20_4le";
+    case PcmFormat_SInt24:
+        return "s24";
+    case PcmFormat_SInt24_Be:
+        return "s24_be";
+    case PcmFormat_SInt24_Le:
+        return "s24_le";
+    case PcmFormat_UInt24:
+        return "u24";
+    case PcmFormat_UInt24_Be:
+        return "u24_be";
+    case PcmFormat_UInt24_Le:
+        return "u24_le";
+    case PcmFormat_SInt24_4:
+        return "s24_4";
+    case PcmFormat_SInt24_4_Be:
+        return "s24_4be";
+    case PcmFormat_SInt24_4_Le:
+        return "s24_4le";
+    case PcmFormat_UInt24_4:
+        return "u24_4";
+    case PcmFormat_UInt24_4_Be:
+        return "u24_4be";
+    case PcmFormat_UInt24_4_Le:
+        return "u24_4le";
+    case PcmFormat_SInt32:
+        return "s32";
+    case PcmFormat_SInt32_Be:
+        return "s32_be";
+    case PcmFormat_SInt32_Le:
+        return "s32_le";
+    case PcmFormat_UInt32:
+        return "u32";
+    case PcmFormat_UInt32_Be:
+        return "u32_be";
+    case PcmFormat_UInt32_Le:
+        return "u32_le";
+    case PcmFormat_SInt64:
+        return "s64";
+    case PcmFormat_SInt64_Be:
+        return "s64_be";
+    case PcmFormat_SInt64_Le:
+        return "s64_le";
+    case PcmFormat_UInt64:
+        return "u64";
+    case PcmFormat_UInt64_Be:
+        return "u64_be";
+    case PcmFormat_UInt64_Le:
+        return "u64_le";
+    case PcmFormat_Float32:
+        return "f32";
+    case PcmFormat_Float32_Be:
+        return "f32_be";
+    case PcmFormat_Float32_Le:
+        return "f32_le";
+    case PcmFormat_Float64:
+        return "f64";
+    case PcmFormat_Float64_Be:
+        return "f64_be";
+    case PcmFormat_Float64_Le:
+        return "f64_le";
+    default:
         break;
     }
     return NULL;
 }
 
-// Get number of meaningful bits per sample
-inline size_t pcm_bit_depth(PcmCode code) {
-    switch (code) {
-    case PcmCode_SInt8:
-        return 8;
-    case PcmCode_UInt8:
-        return 8;
-    case PcmCode_SInt16:
-        return 16;
-    case PcmCode_UInt16:
-        return 16;
-    case PcmCode_SInt18:
-        return 18;
-    case PcmCode_UInt18:
-        return 18;
-    case PcmCode_SInt18_3:
-        return 18;
-    case PcmCode_UInt18_3:
-        return 18;
-    case PcmCode_SInt18_4:
-        return 18;
-    case PcmCode_UInt18_4:
-        return 18;
-    case PcmCode_SInt20:
-        return 20;
-    case PcmCode_UInt20:
-        return 20;
-    case PcmCode_SInt20_3:
-        return 20;
-    case PcmCode_UInt20_3:
-        return 20;
-    case PcmCode_SInt20_4:
-        return 20;
-    case PcmCode_UInt20_4:
-        return 20;
-    case PcmCode_SInt24:
-        return 24;
-    case PcmCode_UInt24:
-        return 24;
-    case PcmCode_SInt24_4:
-        return 24;
-    case PcmCode_UInt24_4:
-        return 24;
-    case PcmCode_SInt32:
-        return 32;
-    case PcmCode_UInt32:
-        return 32;
-    case PcmCode_SInt64:
-        return 64;
-    case PcmCode_UInt64:
-        return 64;
-    case PcmCode_Float32:
-        return 32;
-    case PcmCode_Float64:
-        return 64;
-    case PcmCode_Max:
-        break;
+PcmFormat pcm_format_from_str(const char* str) {
+    if (!str) {
+        return PcmFormat_Invalid;
     }
-    return 0;
-}
-
-// Get number of total bits per sample
-inline size_t pcm_bit_width(PcmCode code) {
-    switch (code) {
-    case PcmCode_SInt8:
-        return 8;
-    case PcmCode_UInt8:
-        return 8;
-    case PcmCode_SInt16:
-        return 16;
-    case PcmCode_UInt16:
-        return 16;
-    case PcmCode_SInt18:
-        return 18;
-    case PcmCode_UInt18:
-        return 18;
-    case PcmCode_SInt18_3:
-        return 24;
-    case PcmCode_UInt18_3:
-        return 24;
-    case PcmCode_SInt18_4:
-        return 32;
-    case PcmCode_UInt18_4:
-        return 32;
-    case PcmCode_SInt20:
-        return 20;
-    case PcmCode_UInt20:
-        return 20;
-    case PcmCode_SInt20_3:
-        return 24;
-    case PcmCode_UInt20_3:
-        return 24;
-    case PcmCode_SInt20_4:
-        return 32;
-    case PcmCode_UInt20_4:
-        return 32;
-    case PcmCode_SInt24:
-        return 24;
-    case PcmCode_UInt24:
-        return 24;
-    case PcmCode_SInt24_4:
-        return 32;
-    case PcmCode_UInt24_4:
-        return 32;
-    case PcmCode_SInt32:
-        return 32;
-    case PcmCode_UInt32:
-        return 32;
-    case PcmCode_SInt64:
-        return 64;
-    case PcmCode_UInt64:
-        return 64;
-    case PcmCode_Float32:
-        return 32;
-    case PcmCode_Float64:
-        return 64;
-    case PcmCode_Max:
-        break;
-    }
-    return 0;
-}
-
-// Check if code is integer
-inline size_t pcm_is_integer(PcmCode code) {
-    switch (code) {
-    case PcmCode_SInt8:
-        return true;
-    case PcmCode_UInt8:
-        return true;
-    case PcmCode_SInt16:
-        return true;
-    case PcmCode_UInt16:
-        return true;
-    case PcmCode_SInt18:
-        return true;
-    case PcmCode_UInt18:
-        return true;
-    case PcmCode_SInt18_3:
-        return true;
-    case PcmCode_UInt18_3:
-        return true;
-    case PcmCode_SInt18_4:
-        return true;
-    case PcmCode_UInt18_4:
-        return true;
-    case PcmCode_SInt20:
-        return true;
-    case PcmCode_UInt20:
-        return true;
-    case PcmCode_SInt20_3:
-        return true;
-    case PcmCode_UInt20_3:
-        return true;
-    case PcmCode_SInt20_4:
-        return true;
-    case PcmCode_UInt20_4:
-        return true;
-    case PcmCode_SInt24:
-        return true;
-    case PcmCode_UInt24:
-        return true;
-    case PcmCode_SInt24_4:
-        return true;
-    case PcmCode_UInt24_4:
-        return true;
-    case PcmCode_SInt32:
-        return true;
-    case PcmCode_UInt32:
-        return true;
-    case PcmCode_SInt64:
-        return true;
-    case PcmCode_UInt64:
-        return true;
-    case PcmCode_Float32:
-        return false;
-    case PcmCode_Float64:
-        return false;
-    case PcmCode_Max:
-        break;
-    }
-    return false;
-}
-
-// Check if code is signed
-inline size_t pcm_is_signed(PcmCode code) {
-    switch (code) {
-    case PcmCode_SInt8:
-        return true;
-    case PcmCode_UInt8:
-        return false;
-    case PcmCode_SInt16:
-        return true;
-    case PcmCode_UInt16:
-        return false;
-    case PcmCode_SInt18:
-        return true;
-    case PcmCode_UInt18:
-        return false;
-    case PcmCode_SInt18_3:
-        return true;
-    case PcmCode_UInt18_3:
-        return false;
-    case PcmCode_SInt18_4:
-        return true;
-    case PcmCode_UInt18_4:
-        return false;
-    case PcmCode_SInt20:
-        return true;
-    case PcmCode_UInt20:
-        return false;
-    case PcmCode_SInt20_3:
-        return true;
-    case PcmCode_UInt20_3:
-        return false;
-    case PcmCode_SInt20_4:
-        return true;
-    case PcmCode_UInt20_4:
-        return false;
-    case PcmCode_SInt24:
-        return true;
-    case PcmCode_UInt24:
-        return false;
-    case PcmCode_SInt24_4:
-        return true;
-    case PcmCode_UInt24_4:
-        return false;
-    case PcmCode_SInt32:
-        return true;
-    case PcmCode_UInt32:
-        return false;
-    case PcmCode_SInt64:
-        return true;
-    case PcmCode_UInt64:
-        return false;
-    case PcmCode_Float32:
-        return true;
-    case PcmCode_Float64:
-        return true;
-    case PcmCode_Max:
-        break;
-    }
-    return false;
-}
-
-// Code and endian to string
-inline const char* pcm_to_str(PcmCode code, PcmEndian endian) {
-    switch (code) {
-    case PcmCode_SInt8:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "s8";
-        case PcmEndian_Big:
-            return "s8_be";
-        case PcmEndian_Little:
-            return "s8_le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_UInt8:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "u8";
-        case PcmEndian_Big:
-            return "u8_be";
-        case PcmEndian_Little:
-            return "u8_le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_SInt16:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "s16";
-        case PcmEndian_Big:
-            return "s16_be";
-        case PcmEndian_Little:
-            return "s16_le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_UInt16:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "u16";
-        case PcmEndian_Big:
-            return "u16_be";
-        case PcmEndian_Little:
-            return "u16_le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_SInt18:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "s18";
-        case PcmEndian_Big:
-            return "s18_be";
-        case PcmEndian_Little:
-            return "s18_le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_UInt18:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "u18";
-        case PcmEndian_Big:
-            return "u18_be";
-        case PcmEndian_Little:
-            return "u18_le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_SInt18_3:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "s18_3";
-        case PcmEndian_Big:
-            return "s18_3be";
-        case PcmEndian_Little:
-            return "s18_3le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_UInt18_3:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "u18_3";
-        case PcmEndian_Big:
-            return "u18_3be";
-        case PcmEndian_Little:
-            return "u18_3le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_SInt18_4:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "s18_4";
-        case PcmEndian_Big:
-            return "s18_4be";
-        case PcmEndian_Little:
-            return "s18_4le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_UInt18_4:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "u18_4";
-        case PcmEndian_Big:
-            return "u18_4be";
-        case PcmEndian_Little:
-            return "u18_4le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_SInt20:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "s20";
-        case PcmEndian_Big:
-            return "s20_be";
-        case PcmEndian_Little:
-            return "s20_le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_UInt20:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "u20";
-        case PcmEndian_Big:
-            return "u20_be";
-        case PcmEndian_Little:
-            return "u20_le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_SInt20_3:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "s20_3";
-        case PcmEndian_Big:
-            return "s20_3be";
-        case PcmEndian_Little:
-            return "s20_3le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_UInt20_3:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "u20_3";
-        case PcmEndian_Big:
-            return "u20_3be";
-        case PcmEndian_Little:
-            return "u20_3le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_SInt20_4:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "s20_4";
-        case PcmEndian_Big:
-            return "s20_4be";
-        case PcmEndian_Little:
-            return "s20_4le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_UInt20_4:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "u20_4";
-        case PcmEndian_Big:
-            return "u20_4be";
-        case PcmEndian_Little:
-            return "u20_4le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_SInt24:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "s24";
-        case PcmEndian_Big:
-            return "s24_be";
-        case PcmEndian_Little:
-            return "s24_le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_UInt24:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "u24";
-        case PcmEndian_Big:
-            return "u24_be";
-        case PcmEndian_Little:
-            return "u24_le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_SInt24_4:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "s24_4";
-        case PcmEndian_Big:
-            return "s24_4be";
-        case PcmEndian_Little:
-            return "s24_4le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_UInt24_4:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "u24_4";
-        case PcmEndian_Big:
-            return "u24_4be";
-        case PcmEndian_Little:
-            return "u24_4le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_SInt32:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "s32";
-        case PcmEndian_Big:
-            return "s32_be";
-        case PcmEndian_Little:
-            return "s32_le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_UInt32:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "u32";
-        case PcmEndian_Big:
-            return "u32_be";
-        case PcmEndian_Little:
-            return "u32_le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_SInt64:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "s64";
-        case PcmEndian_Big:
-            return "s64_be";
-        case PcmEndian_Little:
-            return "s64_le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_UInt64:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "u64";
-        case PcmEndian_Big:
-            return "u64_be";
-        case PcmEndian_Little:
-            return "u64_le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_Float32:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "f32";
-        case PcmEndian_Big:
-            return "f32_be";
-        case PcmEndian_Little:
-            return "f32_le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_Float64:
-        switch (endian) {
-        case PcmEndian_Native:
-            return "f64";
-        case PcmEndian_Big:
-            return "f64_be";
-        case PcmEndian_Little:
-            return "f64_le";
-        case PcmEndian_Max:
-            break;
-        }
-        break;
-    case PcmCode_Max:
-        break;
-    }
-    return NULL;
-}
-
-// Code and endian from string
-inline bool pcm_from_str(const char* str, PcmCode& code, PcmEndian& endian) {
     if (str[0] == 'f') {
         if (str[1] == '3') {
             if (str[2] == '2') {
                 if (strcmp(str, "f32") == 0) {
-                    code = PcmCode_Float32;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_Float32;
                 }
                 if (strcmp(str, "f32_be") == 0) {
-                    code = PcmCode_Float32;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_Float32_Be;
                 }
                 if (strcmp(str, "f32_le") == 0) {
-                    code = PcmCode_Float32;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_Float32_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
             }
-            return false;
+            return PcmFormat_Invalid;
         }
         if (str[1] == '6') {
             if (str[2] == '4') {
                 if (strcmp(str, "f64") == 0) {
-                    code = PcmCode_Float64;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_Float64;
                 }
                 if (strcmp(str, "f64_be") == 0) {
-                    code = PcmCode_Float64;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_Float64_Be;
                 }
                 if (strcmp(str, "f64_le") == 0) {
-                    code = PcmCode_Float64;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_Float64_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
             }
-            return false;
+            return PcmFormat_Invalid;
         }
-        return false;
+        return PcmFormat_Invalid;
     }
     if (str[0] == 's') {
         if (str[1] == '1') {
             if (str[2] == '6') {
                 if (strcmp(str, "s16") == 0) {
-                    code = PcmCode_SInt16;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_SInt16;
                 }
                 if (strcmp(str, "s16_be") == 0) {
-                    code = PcmCode_SInt16;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_SInt16_Be;
                 }
                 if (strcmp(str, "s16_le") == 0) {
-                    code = PcmCode_SInt16;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_SInt16_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
             }
             if (str[2] == '8') {
                 if (strcmp(str, "s18") == 0) {
-                    code = PcmCode_SInt18;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_SInt18;
                 }
                 if (strcmp(str, "s18_be") == 0) {
-                    code = PcmCode_SInt18;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_SInt18_Be;
                 }
                 if (strcmp(str, "s18_le") == 0) {
-                    code = PcmCode_SInt18;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_SInt18_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
                 if (strcmp(str, "s18_3") == 0) {
-                    code = PcmCode_SInt18_3;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_SInt18_3;
                 }
                 if (strcmp(str, "s18_3be") == 0) {
-                    code = PcmCode_SInt18_3;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_SInt18_3_Be;
                 }
                 if (strcmp(str, "s18_3le") == 0) {
-                    code = PcmCode_SInt18_3;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_SInt18_3_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
                 if (strcmp(str, "s18_4") == 0) {
-                    code = PcmCode_SInt18_4;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_SInt18_4;
                 }
                 if (strcmp(str, "s18_4be") == 0) {
-                    code = PcmCode_SInt18_4;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_SInt18_4_Be;
                 }
                 if (strcmp(str, "s18_4le") == 0) {
-                    code = PcmCode_SInt18_4;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_SInt18_4_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
             }
-            return false;
+            return PcmFormat_Invalid;
         }
         if (str[1] == '2') {
             if (str[2] == '0') {
                 if (strcmp(str, "s20") == 0) {
-                    code = PcmCode_SInt20;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_SInt20;
                 }
                 if (strcmp(str, "s20_be") == 0) {
-                    code = PcmCode_SInt20;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_SInt20_Be;
                 }
                 if (strcmp(str, "s20_le") == 0) {
-                    code = PcmCode_SInt20;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_SInt20_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
                 if (strcmp(str, "s20_3") == 0) {
-                    code = PcmCode_SInt20_3;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_SInt20_3;
                 }
                 if (strcmp(str, "s20_3be") == 0) {
-                    code = PcmCode_SInt20_3;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_SInt20_3_Be;
                 }
                 if (strcmp(str, "s20_3le") == 0) {
-                    code = PcmCode_SInt20_3;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_SInt20_3_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
                 if (strcmp(str, "s20_4") == 0) {
-                    code = PcmCode_SInt20_4;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_SInt20_4;
                 }
                 if (strcmp(str, "s20_4be") == 0) {
-                    code = PcmCode_SInt20_4;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_SInt20_4_Be;
                 }
                 if (strcmp(str, "s20_4le") == 0) {
-                    code = PcmCode_SInt20_4;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_SInt20_4_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
             }
             if (str[2] == '4') {
                 if (strcmp(str, "s24") == 0) {
-                    code = PcmCode_SInt24;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_SInt24;
                 }
                 if (strcmp(str, "s24_be") == 0) {
-                    code = PcmCode_SInt24;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_SInt24_Be;
                 }
                 if (strcmp(str, "s24_le") == 0) {
-                    code = PcmCode_SInt24;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_SInt24_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
                 if (strcmp(str, "s24_4") == 0) {
-                    code = PcmCode_SInt24_4;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_SInt24_4;
                 }
                 if (strcmp(str, "s24_4be") == 0) {
-                    code = PcmCode_SInt24_4;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_SInt24_4_Be;
                 }
                 if (strcmp(str, "s24_4le") == 0) {
-                    code = PcmCode_SInt24_4;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_SInt24_4_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
             }
-            return false;
+            return PcmFormat_Invalid;
         }
         if (str[1] == '3') {
             if (str[2] == '2') {
                 if (strcmp(str, "s32") == 0) {
-                    code = PcmCode_SInt32;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_SInt32;
                 }
                 if (strcmp(str, "s32_be") == 0) {
-                    code = PcmCode_SInt32;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_SInt32_Be;
                 }
                 if (strcmp(str, "s32_le") == 0) {
-                    code = PcmCode_SInt32;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_SInt32_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
             }
-            return false;
+            return PcmFormat_Invalid;
         }
         if (str[1] == '6') {
             if (str[2] == '4') {
                 if (strcmp(str, "s64") == 0) {
-                    code = PcmCode_SInt64;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_SInt64;
                 }
                 if (strcmp(str, "s64_be") == 0) {
-                    code = PcmCode_SInt64;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_SInt64_Be;
                 }
                 if (strcmp(str, "s64_le") == 0) {
-                    code = PcmCode_SInt64;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_SInt64_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
             }
-            return false;
+            return PcmFormat_Invalid;
         }
         if (str[1] == '8') {
             if (strcmp(str, "s8") == 0) {
-                code = PcmCode_SInt8;
-                endian = PcmEndian_Native;
-                return true;
+                return PcmFormat_SInt8;
             }
             if (strcmp(str, "s8_be") == 0) {
-                code = PcmCode_SInt8;
-                endian = PcmEndian_Big;
-                return true;
+                return PcmFormat_SInt8_Be;
             }
             if (strcmp(str, "s8_le") == 0) {
-                code = PcmCode_SInt8;
-                endian = PcmEndian_Little;
-                return true;
+                return PcmFormat_SInt8_Le;
             }
-            return false;
+            return PcmFormat_Invalid;
         }
-        return false;
+        return PcmFormat_Invalid;
     }
     if (str[0] == 'u') {
         if (str[1] == '1') {
             if (str[2] == '6') {
                 if (strcmp(str, "u16") == 0) {
-                    code = PcmCode_UInt16;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_UInt16;
                 }
                 if (strcmp(str, "u16_be") == 0) {
-                    code = PcmCode_UInt16;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_UInt16_Be;
                 }
                 if (strcmp(str, "u16_le") == 0) {
-                    code = PcmCode_UInt16;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_UInt16_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
             }
             if (str[2] == '8') {
                 if (strcmp(str, "u18") == 0) {
-                    code = PcmCode_UInt18;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_UInt18;
                 }
                 if (strcmp(str, "u18_be") == 0) {
-                    code = PcmCode_UInt18;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_UInt18_Be;
                 }
                 if (strcmp(str, "u18_le") == 0) {
-                    code = PcmCode_UInt18;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_UInt18_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
                 if (strcmp(str, "u18_3") == 0) {
-                    code = PcmCode_UInt18_3;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_UInt18_3;
                 }
                 if (strcmp(str, "u18_3be") == 0) {
-                    code = PcmCode_UInt18_3;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_UInt18_3_Be;
                 }
                 if (strcmp(str, "u18_3le") == 0) {
-                    code = PcmCode_UInt18_3;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_UInt18_3_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
                 if (strcmp(str, "u18_4") == 0) {
-                    code = PcmCode_UInt18_4;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_UInt18_4;
                 }
                 if (strcmp(str, "u18_4be") == 0) {
-                    code = PcmCode_UInt18_4;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_UInt18_4_Be;
                 }
                 if (strcmp(str, "u18_4le") == 0) {
-                    code = PcmCode_UInt18_4;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_UInt18_4_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
             }
-            return false;
+            return PcmFormat_Invalid;
         }
         if (str[1] == '2') {
             if (str[2] == '0') {
                 if (strcmp(str, "u20") == 0) {
-                    code = PcmCode_UInt20;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_UInt20;
                 }
                 if (strcmp(str, "u20_be") == 0) {
-                    code = PcmCode_UInt20;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_UInt20_Be;
                 }
                 if (strcmp(str, "u20_le") == 0) {
-                    code = PcmCode_UInt20;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_UInt20_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
                 if (strcmp(str, "u20_3") == 0) {
-                    code = PcmCode_UInt20_3;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_UInt20_3;
                 }
                 if (strcmp(str, "u20_3be") == 0) {
-                    code = PcmCode_UInt20_3;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_UInt20_3_Be;
                 }
                 if (strcmp(str, "u20_3le") == 0) {
-                    code = PcmCode_UInt20_3;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_UInt20_3_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
                 if (strcmp(str, "u20_4") == 0) {
-                    code = PcmCode_UInt20_4;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_UInt20_4;
                 }
                 if (strcmp(str, "u20_4be") == 0) {
-                    code = PcmCode_UInt20_4;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_UInt20_4_Be;
                 }
                 if (strcmp(str, "u20_4le") == 0) {
-                    code = PcmCode_UInt20_4;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_UInt20_4_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
             }
             if (str[2] == '4') {
                 if (strcmp(str, "u24") == 0) {
-                    code = PcmCode_UInt24;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_UInt24;
                 }
                 if (strcmp(str, "u24_be") == 0) {
-                    code = PcmCode_UInt24;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_UInt24_Be;
                 }
                 if (strcmp(str, "u24_le") == 0) {
-                    code = PcmCode_UInt24;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_UInt24_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
                 if (strcmp(str, "u24_4") == 0) {
-                    code = PcmCode_UInt24_4;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_UInt24_4;
                 }
                 if (strcmp(str, "u24_4be") == 0) {
-                    code = PcmCode_UInt24_4;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_UInt24_4_Be;
                 }
                 if (strcmp(str, "u24_4le") == 0) {
-                    code = PcmCode_UInt24_4;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_UInt24_4_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
             }
-            return false;
+            return PcmFormat_Invalid;
         }
         if (str[1] == '3') {
             if (str[2] == '2') {
                 if (strcmp(str, "u32") == 0) {
-                    code = PcmCode_UInt32;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_UInt32;
                 }
                 if (strcmp(str, "u32_be") == 0) {
-                    code = PcmCode_UInt32;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_UInt32_Be;
                 }
                 if (strcmp(str, "u32_le") == 0) {
-                    code = PcmCode_UInt32;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_UInt32_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
             }
-            return false;
+            return PcmFormat_Invalid;
         }
         if (str[1] == '6') {
             if (str[2] == '4') {
                 if (strcmp(str, "u64") == 0) {
-                    code = PcmCode_UInt64;
-                    endian = PcmEndian_Native;
-                    return true;
+                    return PcmFormat_UInt64;
                 }
                 if (strcmp(str, "u64_be") == 0) {
-                    code = PcmCode_UInt64;
-                    endian = PcmEndian_Big;
-                    return true;
+                    return PcmFormat_UInt64_Be;
                 }
                 if (strcmp(str, "u64_le") == 0) {
-                    code = PcmCode_UInt64;
-                    endian = PcmEndian_Little;
-                    return true;
+                    return PcmFormat_UInt64_Le;
                 }
-                return false;
+                return PcmFormat_Invalid;
             }
-            return false;
+            return PcmFormat_Invalid;
         }
         if (str[1] == '8') {
             if (strcmp(str, "u8") == 0) {
-                code = PcmCode_UInt8;
-                endian = PcmEndian_Native;
-                return true;
+                return PcmFormat_UInt8;
             }
             if (strcmp(str, "u8_be") == 0) {
-                code = PcmCode_UInt8;
-                endian = PcmEndian_Big;
-                return true;
+                return PcmFormat_UInt8_Be;
             }
             if (strcmp(str, "u8_le") == 0) {
-                code = PcmCode_UInt8;
-                endian = PcmEndian_Little;
-                return true;
+                return PcmFormat_UInt8_Le;
             }
-            return false;
+            return PcmFormat_Invalid;
         }
-        return false;
+        return PcmFormat_Invalid;
     }
-    return false;
+    return PcmFormat_Invalid;
 }
 
 } // namespace audio
 } // namespace roc
-
-#endif // ROC_AUDIO_PCM_FUNCS_H_

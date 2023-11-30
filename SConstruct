@@ -1012,6 +1012,7 @@ if meta.compiler == 'gcc':
             '-Wno-shadow',
             '-Wno-stringop-overflow',
             '-Wno-system-headers',
+            '-Wno-unused-const-variable',
         ]})
 
     env.Append(CXXFLAGS=[
@@ -1061,6 +1062,7 @@ if meta.compiler == 'clang':
             '-Wno-psabi',
             '-Wno-shadow',
             '-Wno-system-headers',
+            '-Wno-unused-const-variable',
         ]})
 
     env.Append(CXXFLAGS=[

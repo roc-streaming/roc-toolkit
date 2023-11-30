@@ -35,8 +35,7 @@ TEST(encoding_map, find_by_pt) {
 
         LONGS_EQUAL(PayloadType_L16_Mono, enc->payload_type);
 
-        CHECK(enc->pcm_format
-              == audio::PcmFormat(audio::PcmCode_SInt16, audio::PcmEndian_Big));
+        CHECK(enc->pcm_format == audio::PcmFormat_SInt16_Be);
 
         CHECK(enc->sample_spec.is_valid());
         CHECK(enc->sample_spec
@@ -56,8 +55,7 @@ TEST(encoding_map, find_by_pt) {
 
         LONGS_EQUAL(PayloadType_L16_Stereo, enc->payload_type);
 
-        CHECK(enc->pcm_format
-              == audio::PcmFormat(audio::PcmCode_SInt16, audio::PcmEndian_Big));
+        CHECK(enc->pcm_format == audio::PcmFormat_SInt16_Be);
 
         CHECK(enc->sample_spec.is_valid());
         CHECK(enc->sample_spec
@@ -111,8 +109,7 @@ TEST(encoding_map, add_encoding) {
         Encoding enc;
         enc.payload_type = (PayloadType)100;
         enc.packet_flags = packet::Packet::FlagAudio;
-        enc.pcm_format =
-            audio::PcmFormat(audio::PcmCode_Float32, audio::PcmEndian_Native);
+        enc.pcm_format = audio::PcmFormat_Float32;
         enc.sample_spec =
             audio::SampleSpec(48000, audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
                               audio::ChanMask_Surround_Stereo);
@@ -128,8 +125,7 @@ TEST(encoding_map, add_encoding) {
 
         LONGS_EQUAL(100, enc->payload_type);
 
-        CHECK(enc->pcm_format
-              == audio::PcmFormat(audio::PcmCode_Float32, audio::PcmEndian_Native));
+        CHECK(enc->pcm_format == audio::PcmFormat_Float32);
 
         CHECK(enc->sample_spec
               == audio::SampleSpec(48000, audio::ChanLayout_Surround,
@@ -150,8 +146,7 @@ TEST(encoding_map, add_encoding) {
 
         LONGS_EQUAL(100, enc->payload_type);
 
-        CHECK(enc->pcm_format
-              == audio::PcmFormat(audio::PcmCode_Float32, audio::PcmEndian_Native));
+        CHECK(enc->pcm_format == audio::PcmFormat_Float32);
 
         CHECK(enc->sample_spec
               == audio::SampleSpec(48000, audio::ChanLayout_Surround,

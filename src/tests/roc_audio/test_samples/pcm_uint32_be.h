@@ -14,8 +14,7 @@ namespace test {
 static SampleInfo sample_pcm_uint32_be = {
   /* name */ "pcm_uint32_be",
 
-  /* encoding  */ PcmCode_UInt32,
-  /* endian    */ PcmEndian_Big,
+  /* format */ PcmFormat_UInt32_Be,
 
   /* num_samples */ 240,
   /* samples     */ {

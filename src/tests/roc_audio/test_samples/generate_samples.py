@@ -3,6 +3,10 @@ import os
 import os.path
 import subprocess
 
+def format_name(encoding, endian):
+    return 'PcmFormat_' + \
+        encoding['pcm_encoding'] + '_' + endian['pcm_endian']
+
 def format_array(array, maxlen=8, indent=1):
     if len(array) > maxlen:
         ret = "{\n"
@@ -89,8 +93,7 @@ namespace test {{
 static SampleInfo sample_{name} = {{
   /* name */ "{name}",
 
-  /* encoding  */ PcmCode_{encoding['pcm_encoding']},
-  /* endian    */ PcmEndian_{endian['pcm_endian']},
+  /* format */ {format_name(encoding, endian)},
 
   /* num_samples */ {len(samples)},
   /* samples     */ {format_samples(samples)},
@@ -156,11 +159,11 @@ encodings = [
 
 endians = [
     {
-        'pcm_endian': 'Big',
+        'pcm_endian': 'Be',
         'sox_endian': 'big',
     },
     {
-        'pcm_endian': 'Little',
+        'pcm_endian': 'Le',
         'sox_endian': 'little',
     },
 ]

@@ -21,8 +21,7 @@ struct SampleInfo {
 
     const char* name;
 
-    PcmCode encoding;
-    PcmEndian endian;
+    PcmFormat format;
 
     size_t num_samples;
     double samples[MaxSamples];
