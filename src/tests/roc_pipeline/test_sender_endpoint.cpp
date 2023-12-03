@@ -31,6 +31,14 @@ struct NoMemArena : public core::IArena, public core::NonCopyable<> {
 
     virtual void deallocate(void*) {
     }
+
+    virtual size_t compute_allocated_size(size_t) const {
+        return 0;
+    }
+
+    virtual size_t allocated_size(void*) const {
+        return 0;
+    }
 };
 
 enum { PacketSz = 512 };

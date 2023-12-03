@@ -79,7 +79,16 @@ public:
     virtual void* allocate(size_t size);
 
     //! Deallocate previously allocated memory.
-    virtual void deallocate(void*);
+    virtual void deallocate(void* ptr);
+
+    //! Computes how many bytes will be actually allocated if allocate() is called with
+    //! given size. Covers all internal overhead, if any.
+    virtual size_t compute_allocated_size(size_t size) const;
+
+    //! Returns how many bytes was allocated for given pointer returned by allocate().
+    //! Covers all internal overhead, if any.
+    //! Returns same value as computed by compute_allocated_size(size).
+    virtual size_t allocated_size(void* ptr) const;
 
 private:
     struct ChunkHeader {

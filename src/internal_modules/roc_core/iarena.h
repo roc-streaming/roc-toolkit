@@ -31,7 +31,16 @@ public:
     virtual void* allocate(size_t size) = 0;
 
     //! Deallocate previously allocated memory.
-    virtual void deallocate(void*) = 0;
+    virtual void deallocate(void* ptr) = 0;
+
+    //! Computes how many bytes will be actually allocated if allocate() is called with
+    //! given size. Covers all internal overhead, if any.
+    virtual size_t compute_allocated_size(size_t size) const = 0;
+
+    //! Returns how many bytes was allocated for given pointer returned by allocate().
+    //! Covers all internal overhead, if any.
+    //! Returns same value as computed by compute_allocated_size(size).
+    virtual size_t allocated_size(void* ptr) const = 0;
 
     //! Destroy object and deallocate its memory.
     template <class T> void destroy_object(T& object) {

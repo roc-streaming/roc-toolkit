@@ -24,8 +24,8 @@ class IPool {
 public:
     virtual ~IPool();
 
-    //! Get size of object allocated by pool.
-    virtual size_t object_size() const = 0;
+    //! Get size of the allocation per object.
+    virtual size_t allocation_size() const = 0;
 
     //! Reserve memory for given number of objects.
     //! @returns
@@ -54,8 +54,7 @@ public:
 //! Placement new for core::IPool.
 //! @note
 //!  nothrow forces compiler to check for NULL return value before calling ctor.
-inline void* operator new(size_t size, roc::core::IPool& pool) throw() {
-    roc_panic_if_not(size <= pool.object_size());
+inline void* operator new(size_t, roc::core::IPool& pool) throw() {
     return pool.allocate();
 }
 

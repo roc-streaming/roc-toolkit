@@ -43,11 +43,11 @@ struct TestObject {
 
 TEST_GROUP(slab_pool) {};
 
-TEST(slab_pool, object_size) {
+TEST(slab_pool, allocation_size) {
     TestArena arena;
     SlabPool<TestObject> pool("test", arena);
 
-    LONGS_EQUAL(sizeof(TestObject), pool.object_size());
+    CHECK(sizeof(TestObject) < pool.allocation_size());
 }
 
 TEST(slab_pool, allocate_deallocate) {

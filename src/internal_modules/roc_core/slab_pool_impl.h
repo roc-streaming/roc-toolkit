@@ -69,9 +69,6 @@ public:
     //! Deinitialize.
     ~SlabPoolImpl();
 
-    //! Get size of objects in pool.
-    size_t object_size() const;
-
     //! Reserve memory for given number of objects.
     ROC_ATTR_NODISCARD bool reserve(size_t n_objects);
 
@@ -83,6 +80,11 @@ public:
 
     //! Get number of guard failures.
     size_t num_guard_failures() const;
+
+    //! Get size of the allocation per object.
+    size_t allocation_size() const {
+        return slot_size_;
+    }
 
 private:
     struct Slab : ListNode {};
