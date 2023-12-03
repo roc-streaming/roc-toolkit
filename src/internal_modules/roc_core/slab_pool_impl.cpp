@@ -72,10 +72,6 @@ SlabPoolImpl::~SlabPoolImpl() {
     deallocate_everything_();
 }
 
-size_t SlabPoolImpl::object_size() const {
-    return object_size_;
-}
-
 bool SlabPoolImpl::reserve(size_t n_objects) {
     Mutex::Lock lock(mutex_);
 

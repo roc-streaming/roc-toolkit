@@ -300,6 +300,14 @@ public:
         ha_.deallocate(ptr);
     }
 
+    virtual size_t compute_allocated_size(size_t size) const {
+        return ha_.compute_allocated_size(size);
+    }
+
+    virtual size_t allocated_size(void* ptr) const {
+        return ha_.allocated_size(ptr);
+    }
+
     void set_fail(bool fail) {
         fail_ = fail;
     }

@@ -118,5 +118,31 @@ void HeapArena::deallocate(void* ptr) {
     free(chunk);
 }
 
+size_t HeapArena::compute_allocated_size(size_t size) const {
+    return sizeof(ChunkHeader) + sizeof(ChunkCanary) + size + sizeof(ChunkCanary);
+}
+
+size_t HeapArena::allocated_size(void* ptr) const {
+    if (!ptr) {
+        roc_panic("heap arena: null pointer");
+    }
+
+    ChunkHeader* chunk =
+        ROC_CONTAINER_OF((char*)ptr - sizeof(ChunkCanary), ChunkHeader, data);
+
+    const bool is_owner = chunk->owner == this;
+
+    if (!is_owner) {
+        if (AtomicOps::load_seq_cst(flags_) & HeapArenaFlag_EnableGuards) {
+            roc_panic("heap arena: attempt to get allocated size of chunk not belonging "
+                      "to this arena: this_arena=%p chunk_arena=%p",
+                      (const void*)this, (const void*)chunk->owner);
+        }
+        return 0;
+    }
+
+    return compute_allocated_size(chunk->size);
+}
+
 } // namespace core
 } // namespace roc

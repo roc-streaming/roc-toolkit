@@ -26,16 +26,30 @@ TEST_GROUP(heap_arena) {
 };
 // clang-format on
 
+TEST(heap_arena, allocated_size) {
+    HeapArena arena;
+    void* pointer = NULL;
+
+    CHECK(arena.compute_allocated_size(128) > 128);
+
+    pointer = arena.allocate(128);
+    CHECK(pointer);
+
+    CHECK(arena.allocated_size(pointer) > 128);
+
+    arena.deallocate(pointer);
+}
+
 TEST(heap_arena, guard_object) {
     HeapArena arena;
     void* pointer = NULL;
 
-    pointer = arena.allocate(127);
+    pointer = arena.allocate(128);
     CHECK(pointer);
 
     char* data = (char*)pointer;
     char* before_data = data - 1;
-    char* after_data = data + 127;
+    char* after_data = data + 128;
     CHECK(*before_data == MemoryOps::Pattern_Canary);
     CHECK(*after_data == MemoryOps::Pattern_Canary);
 

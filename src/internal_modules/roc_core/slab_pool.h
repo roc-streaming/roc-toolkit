@@ -89,9 +89,9 @@ public:
                 flags) {
     }
 
-    //! Get size of objects in pool.
-    size_t object_size() const {
-        return impl_.object_size();
+    //! Get size of the allocation per object.
+    size_t allocation_size() const {
+        return impl_.allocation_size();
     }
 
     //! Reserve memory for given number of objects.
