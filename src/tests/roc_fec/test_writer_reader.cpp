@@ -308,8 +308,8 @@ TEST(writer_reader, 1_loss) {
         }
         dispatcher.push_stocks();
 
-        LONGS_EQUAL(NumSourcePackets - 1, dispatcher.source_size());
-        LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
+        UNSIGNED_LONGS_EQUAL(NumSourcePackets - 1, dispatcher.source_size());
+        UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             packet::PacketPtr p;
@@ -376,7 +376,7 @@ TEST(writer_reader, lost_first_packet_in_first_block) {
             check_audio_packet(p, i);
             check_restored(p, false);
         }
-        CHECK(dispatcher.source_size() == 0);
+        UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
     }
 }
 
@@ -447,7 +447,7 @@ TEST(writer_reader, lost_one_source_and_all_repair_packets) {
             }
         }
 
-        CHECK(dispatcher.source_size() == 0);
+        UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
     }
 }
 
@@ -496,14 +496,14 @@ TEST(writer_reader, multiple_blocks_1_loss) {
             dispatcher.push_stocks();
 
             if (lost_sq == size_t(-1)) {
-                CHECK(dispatcher.source_size() == NumSourcePackets);
-                CHECK(dispatcher.repair_size() == NumRepairPackets);
+                UNSIGNED_LONGS_EQUAL(NumSourcePackets, dispatcher.source_size());
+                UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
             } else if (lost_sq < NumSourcePackets) {
-                CHECK(dispatcher.source_size() == NumSourcePackets - 1);
-                CHECK(dispatcher.repair_size() == NumRepairPackets);
+                UNSIGNED_LONGS_EQUAL(NumSourcePackets - 1, dispatcher.source_size());
+                UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
             } else {
-                CHECK(dispatcher.source_size() == NumSourcePackets);
-                CHECK(dispatcher.repair_size() == NumRepairPackets - 1);
+                UNSIGNED_LONGS_EQUAL(NumSourcePackets, dispatcher.source_size());
+                UNSIGNED_LONGS_EQUAL(NumRepairPackets - 1, dispatcher.repair_size());
             }
 
             for (size_t i = 0; i < NumSourcePackets; ++i) {
@@ -565,8 +565,8 @@ TEST(writer_reader, multiple_blocks_in_queue) {
         }
         dispatcher.push_stocks();
 
-        CHECK(dispatcher.source_size() == NumSourcePackets * NumBlocks);
-        CHECK(dispatcher.repair_size() == NumRepairPackets * NumBlocks);
+        UNSIGNED_LONGS_EQUAL(NumSourcePackets * NumBlocks, dispatcher.source_size());
+        UNSIGNED_LONGS_EQUAL(NumRepairPackets * NumBlocks, dispatcher.repair_size());
 
         for (size_t block_num = 0; block_num < NumBlocks; ++block_num) {
             for (size_t i = 0; i < NumSourcePackets; ++i) {
@@ -758,7 +758,7 @@ TEST(writer_reader, late_out_of_order_packets) {
 
         // Deliver packets 0-6 and 11-20
         dispatcher.push_stocks();
-        CHECK(dispatcher.source_size() == NumSourcePackets - (10 - 7 + 1));
+        UNSIGNED_LONGS_EQUAL(NumSourcePackets - (10 - 7 + 1), dispatcher.source_size());
 
         // Read packets 0-6
         for (size_t i = 0; i < 7; ++i) {
@@ -790,7 +790,7 @@ TEST(writer_reader, late_out_of_order_packets) {
             }
         }
 
-        LONGS_EQUAL(0, dispatcher.source_size());
+        UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
     }
 }
 
@@ -875,8 +875,8 @@ TEST(writer_reader, repair_packets_before_source_packets) {
             }
         }
 
-        CHECK(dispatcher.source_size() == 0);
-        CHECK(dispatcher.repair_size() == 0);
+        UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
+        UNSIGNED_LONGS_EQUAL(0, dispatcher.repair_size());
 
         UNSIGNED_LONGS_EQUAL(wr_sn, rd_sn);
     }
@@ -975,8 +975,8 @@ TEST(writer_reader, repair_packets_mixed_with_source_packets) {
             }
         }
 
-        CHECK(dispatcher.source_size() == 0);
-        CHECK(dispatcher.repair_size() == 0);
+        UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
+        UNSIGNED_LONGS_EQUAL(0, dispatcher.repair_size());
 
         UNSIGNED_LONGS_EQUAL(wr_sn, rd_sn);
     }
@@ -1065,7 +1065,7 @@ TEST(writer_reader, multiple_repair_attempts) {
             check_restored(p, false);
         }
 
-        LONGS_EQUAL(0, dispatcher.source_size());
+        UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
     }
 }
 
@@ -1129,7 +1129,7 @@ TEST(writer_reader, drop_outdated_block) {
             UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
             CHECK(p);
 
-            CHECK(p->fec()->source_block_number == sbn);
+            UNSIGNED_LONGS_EQUAL(sbn, p->fec()->source_block_number);
         }
 
         // Read second block.
@@ -1138,7 +1138,7 @@ TEST(writer_reader, drop_outdated_block) {
             UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
             CHECK(p);
 
-            CHECK(p->fec()->source_block_number == sbn + 1);
+            UNSIGNED_LONGS_EQUAL(sbn + 1, p->fec()->source_block_number);
         }
     }
 }
@@ -1209,7 +1209,7 @@ TEST(writer_reader, repaired_block_numbering) {
 
             if (n != lost_packet_n) {
                 CHECK(p->fec());
-                CHECK(p->fec()->source_block_number == sbn);
+                UNSIGNED_LONGS_EQUAL(sbn, p->fec()->source_block_number);
             } else {
                 CHECK(!p->fec());
             }
@@ -1225,7 +1225,7 @@ TEST(writer_reader, repaired_block_numbering) {
             check_restored(p, false);
 
             CHECK(p->fec());
-            CHECK(p->fec()->source_block_number == sbn + 1);
+            UNSIGNED_LONGS_EQUAL(sbn + 1, p->fec()->source_block_number);
         }
     }
 }
@@ -1307,8 +1307,8 @@ TEST(writer_reader, invalid_esi) {
             }
 
             CHECK(reader.is_alive());
-            CHECK(dispatcher.source_size() == 0);
-            CHECK(dispatcher.repair_size() == 0);
+            UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
+            UNSIGNED_LONGS_EQUAL(0, dispatcher.repair_size());
         }
     }
 }
@@ -1385,8 +1385,8 @@ TEST(writer_reader, invalid_sbl) {
             }
 
             CHECK(reader.is_alive());
-            CHECK(dispatcher.source_size() == 0);
-            CHECK(dispatcher.repair_size() == 0);
+            UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
+            UNSIGNED_LONGS_EQUAL(0, dispatcher.repair_size());
         }
     }
 }
@@ -1462,8 +1462,8 @@ TEST(writer_reader, invalid_nes) {
             }
 
             CHECK(reader.is_alive());
-            CHECK(dispatcher.source_size() == 0);
-            CHECK(dispatcher.repair_size() == 0);
+            UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
+            UNSIGNED_LONGS_EQUAL(0, dispatcher.repair_size());
         }
     }
 }
@@ -1549,8 +1549,8 @@ TEST(writer_reader, invalid_payload_size) {
             }
 
             CHECK(reader.is_alive());
-            CHECK(source_queue.size() == 0);
-            CHECK(repair_queue.size() == 0);
+            UNSIGNED_LONGS_EQUAL(0, source_queue.size());
+            UNSIGNED_LONGS_EQUAL(0, repair_queue.size());
         }
     }
 }
@@ -1636,8 +1636,8 @@ TEST(writer_reader, zero_source_packets) {
             }
 
             CHECK(reader.is_alive());
-            CHECK(dispatcher.source_size() == 0);
-            CHECK(dispatcher.repair_size() == 0);
+            UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
+            UNSIGNED_LONGS_EQUAL(0, dispatcher.repair_size());
         }
     }
 }
@@ -1720,8 +1720,8 @@ TEST(writer_reader, zero_repair_packets) {
             }
 
             CHECK(reader.is_alive());
-            CHECK(dispatcher.source_size() == 0);
-            CHECK(dispatcher.repair_size() == 0);
+            UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
+            UNSIGNED_LONGS_EQUAL(0, dispatcher.repair_size());
         }
     }
 }
@@ -1807,8 +1807,8 @@ TEST(writer_reader, zero_payload_size) {
             }
 
             CHECK(reader.is_alive());
-            CHECK(source_queue.size() == 0);
-            CHECK(repair_queue.size() == 0);
+            UNSIGNED_LONGS_EQUAL(0, source_queue.size());
+            UNSIGNED_LONGS_EQUAL(0, repair_queue.size());
         }
     }
 }
@@ -1928,8 +1928,8 @@ TEST(writer_reader, sbn_jump) {
         CHECK(!pp);
         CHECK(!reader.is_alive());
 
-        CHECK(dispatcher.source_size() == 0);
-        CHECK(dispatcher.repair_size() == 0);
+        UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
+        UNSIGNED_LONGS_EQUAL(0, dispatcher.repair_size());
 
         // TODO(gh-183): compare with StatusDead
         UNSIGNED_LONGS_EQUAL(status::StatusNoData, reader.read(pp));
@@ -1994,13 +1994,13 @@ TEST(writer_reader, writer_encode_blocks) {
                     const packet::RTP* rtp = p->rtp();
                     CHECK(rtp);
 
-                    LONGS_EQUAL(data_source, rtp->source);
+                    UNSIGNED_LONGS_EQUAL(data_source, rtp->source);
 
                     const packet::FEC* fec = p->fec();
                     CHECK(fec);
 
-                    LONGS_EQUAL(fec_sbn, fec->source_block_number);
-                    CHECK(fec->source_block_length == NumSourcePackets);
+                    UNSIGNED_LONGS_EQUAL(fec_sbn, fec->source_block_number);
+                    UNSIGNED_LONGS_EQUAL(NumSourcePackets, fec->source_block_length);
                     UNSIGNED_LONGS_EQUAL(encoding_symbol_id, fec->encoding_symbol_id);
 
                     encoding_symbol_id++;
@@ -2018,8 +2018,8 @@ TEST(writer_reader, writer_encode_blocks) {
                     const packet::FEC* fec = p->fec();
                     CHECK(fec);
 
-                    LONGS_EQUAL(fec_sbn, fec->source_block_number);
-                    CHECK(fec->source_block_length == NumSourcePackets);
+                    UNSIGNED_LONGS_EQUAL(fec_sbn, fec->source_block_number);
+                    UNSIGNED_LONGS_EQUAL(NumSourcePackets, fec->source_block_length);
                     UNSIGNED_LONGS_EQUAL(encoding_symbol_id, fec->encoding_symbol_id);
 
                     encoding_symbol_id++;
@@ -2249,7 +2249,7 @@ TEST(writer_reader, resize_block_middle) {
 
                 CHECK(p);
                 CHECK(p->fec());
-                CHECK(p->fec()->source_block_length == prev_sblen);
+                UNSIGNED_LONGS_EQUAL(prev_sblen, p->fec()->source_block_length);
 
                 check_audio_packet(p, rd_sn, prev_psize);
                 check_restored(p, false);
@@ -2428,8 +2428,8 @@ TEST(writer_reader, resize_block_repair_first) {
             rd_sn++;
         }
 
-        CHECK(dispatcher.source_size() == 0);
-        CHECK(dispatcher.repair_size() == 0);
+        UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
+        UNSIGNED_LONGS_EQUAL(0, dispatcher.repair_size());
 
         UNSIGNED_LONGS_EQUAL(wr_sn, rd_sn);
     }
@@ -2466,8 +2466,8 @@ TEST(writer_reader, error_writer_resize_block) {
         }
 
         CHECK(writer.is_alive());
-        CHECK(dispatcher.source_size() == NumSourcePackets);
-        CHECK(dispatcher.repair_size() == BlockSize1);
+        UNSIGNED_LONGS_EQUAL(NumSourcePackets, dispatcher.source_size());
+        UNSIGNED_LONGS_EQUAL(BlockSize1, dispatcher.repair_size());
 
         dispatcher.push_stocks();
         dispatcher.reset();
@@ -2482,8 +2482,8 @@ TEST(writer_reader, error_writer_resize_block) {
             CHECK(!writer.is_alive());
         }
 
-        CHECK(dispatcher.source_size() == 0);
-        CHECK(dispatcher.repair_size() == 0);
+        UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
+        UNSIGNED_LONGS_EQUAL(0, dispatcher.repair_size());
     }
 }
 
@@ -2519,8 +2519,8 @@ TEST(writer_reader, error_writer_encode_packet) {
         }
 
         CHECK(writer.is_alive());
-        CHECK(dispatcher.source_size() == BlockSize1);
-        CHECK(dispatcher.repair_size() == NumRepairPackets);
+        UNSIGNED_LONGS_EQUAL(BlockSize1, dispatcher.source_size());
+        UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
 
         mock_arena.set_fail(true);
         CHECK(writer.resize(BlockSize2, NumRepairPackets));
@@ -2531,8 +2531,8 @@ TEST(writer_reader, error_writer_encode_packet) {
             CHECK(!writer.is_alive());
         }
 
-        CHECK(dispatcher.source_size() == BlockSize1);
-        CHECK(dispatcher.repair_size() == NumRepairPackets);
+        UNSIGNED_LONGS_EQUAL(BlockSize1, dispatcher.source_size());
+        UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
     }
 }
 
@@ -2708,7 +2708,7 @@ TEST(writer_reader, writer_oversized_block) {
         CHECK(encoder);
         CHECK(decoder);
 
-        CHECK(decoder->max_block_length() == encoder->max_block_length());
+        UNSIGNED_LONGS_EQUAL(decoder->max_block_length(), encoder->max_block_length());
         CHECK(NumSourcePackets + NumRepairPackets <= encoder->max_block_length());
 
         test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
@@ -2741,8 +2741,8 @@ TEST(writer_reader, writer_oversized_block) {
             // deliver packets from dispatcher to reader
             dispatcher.push_stocks();
 
-            CHECK(dispatcher.source_size() == NumSourcePackets);
-            CHECK(dispatcher.repair_size() == NumRepairPackets);
+            UNSIGNED_LONGS_EQUAL(NumSourcePackets, dispatcher.source_size());
+            UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
 
             // read packets
             for (size_t i = 0; i < NumSourcePackets; ++i) {
@@ -2757,8 +2757,8 @@ TEST(writer_reader, writer_oversized_block) {
             }
 
             CHECK(reader.is_alive());
-            CHECK(dispatcher.source_size() == 0);
-            CHECK(dispatcher.repair_size() == 0);
+            UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
+            UNSIGNED_LONGS_EQUAL(0, dispatcher.repair_size());
         }
     }
 }
@@ -2776,7 +2776,7 @@ TEST(writer_reader, reader_oversized_source_block) {
         CHECK(encoder);
         CHECK(decoder);
 
-        CHECK(decoder->max_block_length() == encoder->max_block_length());
+        UNSIGNED_LONGS_EQUAL(decoder->max_block_length(), encoder->max_block_length());
         CHECK((NumSourcePackets + NumRepairPackets) < encoder->max_block_length());
 
         packet::Queue queue;
@@ -2824,8 +2824,8 @@ TEST(writer_reader, reader_oversized_source_block) {
         // deliver packets from dispatcher to reader
         dispatcher.push_stocks();
 
-        CHECK(dispatcher.source_size() == NumSourcePackets);
-        CHECK(dispatcher.repair_size() == NumRepairPackets);
+        UNSIGNED_LONGS_EQUAL(NumSourcePackets, dispatcher.source_size());
+        UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
 
         // reader should get an error because maximum block size was exceeded
         packet::PacketPtr pp;
@@ -2848,7 +2848,7 @@ TEST(writer_reader, reader_oversized_repair_block) {
         CHECK(encoder);
         CHECK(decoder);
 
-        CHECK(decoder->max_block_length() == encoder->max_block_length());
+        UNSIGNED_LONGS_EQUAL(decoder->max_block_length(), encoder->max_block_length());
         CHECK((NumSourcePackets + NumRepairPackets) < encoder->max_block_length());
 
         packet::Queue queue;
@@ -2896,8 +2896,8 @@ TEST(writer_reader, reader_oversized_repair_block) {
         // deliver packets from dispatcher to reader
         dispatcher.push_stocks();
 
-        CHECK(dispatcher.source_size() == NumSourcePackets);
-        CHECK(dispatcher.repair_size() == NumRepairPackets);
+        UNSIGNED_LONGS_EQUAL(NumSourcePackets, dispatcher.source_size());
+        UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
 
         // reader should get an error because maximum block size was exceeded
         packet::PacketPtr pp;
