@@ -119,6 +119,24 @@ public:
         return container_of_(data->next);
     }
 
+    //! Get list element previous to given one.
+    //!
+    //! @returns
+    //!  list element preceeding @p element if @p element is not
+    //!  first, or NULL otherwise.
+    //!
+    //! @pre
+    //!  @p element should be member of this list.
+    Pointer prevof(T& element) const {
+        ListNode::ListNodeData* data = element.list_node_data();
+        check_is_member_(data, this);
+
+        if (data->prev == &head_) {
+            return NULL;
+        }
+        return container_of_(data->prev);
+    }
+
     //! Prepend element to list.
     //!
     //! @remarks

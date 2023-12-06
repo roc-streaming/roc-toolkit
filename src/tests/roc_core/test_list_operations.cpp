@@ -32,6 +32,7 @@ TEST(list_operations, empty) {
     CHECK(list.back() == NULL);
 
     LONGS_EQUAL(0, list.size());
+    CHECK(list.is_empty());
 }
 
 TEST(list_operations, push_back_one) {
@@ -41,6 +42,7 @@ TEST(list_operations, push_back_one) {
     POINTERS_EQUAL(&objects[0], list.back());
 
     LONGS_EQUAL(1, list.size());
+    CHECK(!list.is_empty());
 }
 
 TEST(list_operations, push_back_many) {
@@ -54,17 +56,7 @@ TEST(list_operations, push_back_many) {
     POINTERS_EQUAL(&objects[NumObjects - 1], list.back());
 
     LONGS_EQUAL(NumObjects, list.size());
-}
-
-TEST(list_operations, push_back_iterate) {
-    for (size_t i = 0; i < NumObjects; ++i) {
-        list.push_back(objects[i]);
-    }
-
-    int i = 0;
-    for (Object* obj = list.front(); obj != NULL; obj = list.nextof(*obj)) {
-        POINTERS_EQUAL(&objects[i++], obj);
-    }
+    CHECK(!list.is_empty());
 }
 
 TEST(list_operations, push_front_one) {
@@ -74,6 +66,7 @@ TEST(list_operations, push_front_one) {
     POINTERS_EQUAL(&objects[0], list.back());
 
     LONGS_EQUAL(1, list.size());
+    CHECK(!list.is_empty());
 }
 
 TEST(list_operations, push_front_many) {
@@ -87,17 +80,7 @@ TEST(list_operations, push_front_many) {
     POINTERS_EQUAL(&objects[0], list.back());
 
     LONGS_EQUAL(NumObjects, list.size());
-}
-
-TEST(list_operations, push_front_iterate) {
-    for (size_t i = 0; i < NumObjects; ++i) {
-        list.push_front(objects[i]);
-    }
-
-    int i = NumObjects - 1;
-    for (Object* obj = list.front(); obj != NULL; obj = list.nextof(*obj)) {
-        POINTERS_EQUAL(&objects[i--], obj);
-    }
+    CHECK(!list.is_empty());
 }
 
 TEST(list_operations, insert_front) {
@@ -108,6 +91,7 @@ TEST(list_operations, insert_front) {
     POINTERS_EQUAL(&objects[0], list.back());
 
     LONGS_EQUAL(2, list.size());
+    CHECK(!list.is_empty());
 }
 
 TEST(list_operations, insert_middle) {
@@ -120,6 +104,7 @@ TEST(list_operations, insert_middle) {
     POINTERS_EQUAL(&objects[1], list.back());
 
     LONGS_EQUAL(3, list.size());
+    CHECK(!list.is_empty());
 
     POINTERS_EQUAL(&objects[2], list.nextof(*list.front()));
 }
@@ -144,6 +129,7 @@ TEST(list_operations, remove_front) {
     CHECK(list.back() == NULL);
 
     LONGS_EQUAL(0, list.size());
+    CHECK(list.is_empty());
 }
 
 TEST(list_operations, remove_middle) {
@@ -152,6 +138,7 @@ TEST(list_operations, remove_middle) {
     list.push_back(objects[2]);
 
     LONGS_EQUAL(3, list.size());
+    CHECK(!list.is_empty());
 
     list.remove(objects[1]);
 
@@ -160,6 +147,7 @@ TEST(list_operations, remove_middle) {
     POINTERS_EQUAL(list.back(), list.nextof(*list.front()));
 
     LONGS_EQUAL(2, list.size());
+    CHECK(!list.is_empty());
 }
 
 TEST(list_operations, contains) {
@@ -170,6 +158,26 @@ TEST(list_operations, contains) {
 
     list.remove(objects[0]);
     CHECK(!list.contains(objects[0]));
+}
+
+TEST(list_operations, iteration) {
+    for (size_t i = 0; i < NumObjects; ++i) {
+        list.push_back(objects[i]);
+    }
+
+    {
+        int i = 0;
+        for (Object* obj = list.front(); obj != NULL; obj = list.nextof(*obj)) {
+            POINTERS_EQUAL(&objects[i++], obj);
+        }
+    }
+
+    {
+        int i = NumObjects - 1;
+        for (Object* obj = list.back(); obj != NULL; obj = list.prevof(*obj)) {
+            POINTERS_EQUAL(&objects[i--], obj);
+        }
+    }
 }
 
 } // namespace core
