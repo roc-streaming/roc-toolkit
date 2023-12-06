@@ -64,20 +64,32 @@ hashsum_t hashsum_int(uint64_t x) {
 hashsum_t hashsum_str(const char* str) {
     roc_panic_if(!str);
 
-    return hashsum_mem(str, strlen(str));
+    hashsum_t h = 0;
+    hashsum_add(h, str, strlen(str));
+
+    return h;
 }
 
 hashsum_t hashsum_mem(const void* data, size_t size) {
-    roc_panic_if(data == NULL);
+    roc_panic_if(!data);
+
+    hashsum_t h = 0;
+    hashsum_add(h, data, size);
+
+    return h;
+}
+
+void hashsum_add(hashsum_t& h, const void* data, size_t size) {
+    roc_panic_if(!data);
 
     // DJB2
     // https://stackoverflow.com/a/2624218/3169754
-    hashsum_t h = 5381;
+    if (h == 0) {
+        h = 5381;
+    }
     for (size_t n = 0; n < size; n++) {
         h = ((h << 5) + h) + ((const uint8_t*)data)[n];
     }
-
-    return h;
 }
 
 } // namespace core

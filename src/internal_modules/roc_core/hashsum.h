@@ -59,6 +59,10 @@ hashsum_t hashsum_str(const char* str);
 //! Compute hash of byte range.
 hashsum_t hashsum_mem(const void* data, size_t size);
 
+//! Incrementally compute hash of memory chunks.
+//! On first invocation, @p hash should be zero.
+void hashsum_add(hashsum_t& hash, const void* data, size_t size);
+
 } // namespace core
 } // namespace roc
 
