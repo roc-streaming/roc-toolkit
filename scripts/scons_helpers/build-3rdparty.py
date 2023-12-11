@@ -1300,7 +1300,7 @@ elif ctx.pkg_name == 'sox':
 elif ctx.pkg_name == 'alsa':
     download(
         ctx,
-        'ftp://ftp.alsa-project.org/pub/lib/alsa-lib-{ctx.pkg_ver}.tar.bz2',
+        'https://www.alsa-project.org/files/pub/lib/alsa-lib-{ctx.pkg_ver}.tar.bz2',
         'alsa-lib-{ctx.pkg_ver}.tar.bz2')
     unpack(ctx,
            'alsa-lib-{ctx.pkg_ver}.tar.bz2',
@@ -1411,7 +1411,7 @@ elif ctx.pkg_name == 'pulseaudio':
 elif ctx.pkg_name == 'ltdl':
     download(
         ctx,
-        'ftp://ftp.gnu.org/gnu/libtool/libtool-{ctx.pkg_ver}.tar.gz',
+        'https://ftp.gnu.org/gnu/libtool/libtool-{ctx.pkg_ver}.tar.gz',
         'libtool-{ctx.pkg_ver}.tar.gz')
     unpack(
         ctx,
@@ -1463,7 +1463,7 @@ elif ctx.pkg_name == 'json-c':
 elif ctx.pkg_name == 'gengetopt':
     download(
         ctx,
-        'ftp://ftp.gnu.org/gnu/gengetopt/gengetopt-{ctx.pkg_ver}.tar.gz',
+        'https://ftp.gnu.org/gnu/gengetopt/gengetopt-{ctx.pkg_ver}.tar.gz',
         'gengetopt-{ctx.pkg_ver}.tar.gz')
     unpack(
         ctx,
