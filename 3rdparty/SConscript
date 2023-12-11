@@ -8,6 +8,7 @@ is_crosscompiling = (meta.build != meta.host)
 # these dependencies are shipped within our repo
 vendored_dependencies = [
     'hedley',
+    'dr_wav',
 ]
 
 # these dependencies should be either installed on system or downloaded and
@@ -87,6 +88,10 @@ system_dependencies = external_dependencies - autobuild_dependencies
 # dep: hedley
 if 'hedley' in vendored_dependencies:
     env.Append(CPPPATH=['#3rdparty/hedley'])
+
+# dep: dr_wav
+if 'dr_wav' in vendored_dependencies:
+    env.Append(CPPPATH=['#3rdparty/dr_wav'])
 
 # dep: libuv
 if 'libuv' in autobuild_dependencies:

@@ -46,6 +46,8 @@ void BackendMap::set_frame_size(core::nanoseconds_t frame_length,
 }
 
 void BackendMap::register_backends_() {
+    wav_backend_.reset(new (wav_backend_) WavBackend);
+    add_backend_(wav_backend_.get());
 #ifdef ROC_TARGET_PULSEAUDIO
     pulseaudio_backend_.reset(new (pulseaudio_backend_) PulseaudioBackend);
     add_backend_(pulseaudio_backend_.get());
