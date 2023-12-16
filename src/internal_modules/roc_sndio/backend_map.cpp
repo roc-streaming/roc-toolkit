@@ -56,7 +56,10 @@ void BackendMap::register_backends_() {
     pulseaudio_backend_.reset(new (pulseaudio_backend_) PulseaudioBackend);
     add_backend_(pulseaudio_backend_.get());
 #endif // ROC_TARGET_PULSEAUDIO
-
+#ifdef ROC_TARGET_SNDFILE
+    sndfile_backend_.reset(new (sndfile_backend_) SndfileBackend);
+    add_backend_(sndfile_backend_.get());
+#endif // ROC_TARGET_SNDFILE
 #ifdef ROC_TARGET_SOX
     sox_backend_.reset(new (sox_backend_) SoxBackend);
     add_backend_(sox_backend_.get());

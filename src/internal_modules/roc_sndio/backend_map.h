@@ -22,6 +22,10 @@
 #include "roc_sndio/pulseaudio_backend.h"
 #endif // ROC_TARGET_PULSEAUDIO
 
+#ifdef ROC_TARGET_SNDFILE
+#include "roc_sndio/sndfile_backend.h"
+#endif // ROC_TARGET_SNDFILE
+
 #ifdef ROC_TARGET_SOX
 #include "roc_sndio/sox_backend.h"
 #endif // ROC_TARGET_SOX
@@ -68,6 +72,10 @@ private:
 #ifdef ROC_TARGET_PULSEAUDIO
     core::Optional<PulseaudioBackend> pulseaudio_backend_;
 #endif // ROC_TARGET_PULSEAUDIO
+
+#ifdef ROC_TARGET_SNDFILE
+    core::Optional<SndfileBackend> sndfile_backend_;
+#endif // ROC_TARGET_SNDFILE
 
 #ifdef ROC_TARGET_SOX
     core::Optional<SoxBackend> sox_backend_;
