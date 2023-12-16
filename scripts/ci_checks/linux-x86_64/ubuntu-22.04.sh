@@ -9,7 +9,7 @@ do
           --enable-tests \
           --enable-benchmarks \
           --enable-examples \
-          --build-3rdparty=openfec \
+          --build-3rdparty=openfec,sndfile \
           --compiler=${comp} \
           test
 done

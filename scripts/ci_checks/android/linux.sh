@@ -7,6 +7,6 @@ scons -Q \
       --disable-soversion \
       --disable-tools \
       --enable-tests \
-      --build-3rdparty=libuv,openfec,speexdsp,openssl,cpputest \
+      --build-3rdparty=libuv,openfec,speexdsp,openssl,cpputest,sndfile \
       --compiler=clang \
       --host="$1"

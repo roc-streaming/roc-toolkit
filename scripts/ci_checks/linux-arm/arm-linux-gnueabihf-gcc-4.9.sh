@@ -6,7 +6,7 @@ toolchain="arm-linux-gnueabihf"
 compiler="gcc-4.9.4-release"
 cpu="cortex-a15" # armv7
 
-third_party="libuv,libunwind,openfec,alsa,pulseaudio:10.0,speexdsp,sox,openssl,cpputest"
+third_party="libuv,libunwind,openfec,alsa,pulseaudio:10.0,speexdsp,sox,openssl,cpputest,sndfile"
 
 scons -Q \
     --enable-werror \

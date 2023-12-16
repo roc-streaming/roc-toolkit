@@ -6,8 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_SNDIO_TARGET_SOX_TEST_HELPERS_MOCK_SOURCE_H_
-#define ROC_SNDIO_TARGET_SOX_TEST_HELPERS_MOCK_SOURCE_H_
+#ifndef ROC_SNDIO_TEST_HELPERS_MOCK_SOURCE_H_
+#define ROC_SNDIO_TEST_HELPERS_MOCK_SOURCE_H_
 
 #include <CppUTest/TestHarness.h>
 
@@ -127,4 +127,4 @@ private:
 } // namespace sndio
 } // namespace roc
 
-#endif // ROC_SNDIO_TARGET_SOX_TEST_HELPERS_MOCK_SOURCE_H_
+#endif // ROC_SNDIO_TEST_HELPERS_MOCK_SOURCE_H_
