@@ -5,7 +5,7 @@ set -euxo pipefail
 brew install --force --overwrite \
      automake scons ragel gengetopt \
      libuv speexdsp sox openssl@3 \
-     cpputest google-benchmark libsndfile
+     cpputest google-benchmark
 
 # debug build
 scons -Q \
@@ -15,7 +15,7 @@ scons -Q \
       --enable-examples \
       --enable-debug \
       --sanitizers=all \
-      --build-3rdparty=openfec \
+      --build-3rdparty=openfec,sndfile \
       test
 
 # release build
@@ -24,5 +24,5 @@ scons -Q \
       --enable-tests \
       --enable-benchmarks \
       --enable-examples \
-      --build-3rdparty=openfec \
+      --build-3rdparty=openfec,sndfile \
       test
