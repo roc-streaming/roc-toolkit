@@ -52,7 +52,7 @@ public:
         FlagNotComplete = (1 << 2),
 
         //! Set if some late packets were dropped while the frame was being built.
-        //! It's not necessarty that the frame itself is blank or incomplete.
+        //! It's not necessarily that the frame itself is blank or incomplete.
         FlagPacketDrops = (1 << 3)
     };
 

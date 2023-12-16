@@ -5,7 +5,7 @@ set -euxo pipefail
 brew install --force --overwrite \
      automake scons ragel gengetopt \
      libuv speexdsp sox openssl@3 \
-     cpputest google-benchmark
+     cpputest google-benchmark libsndfile
 
 # debug build
 scons -Q \

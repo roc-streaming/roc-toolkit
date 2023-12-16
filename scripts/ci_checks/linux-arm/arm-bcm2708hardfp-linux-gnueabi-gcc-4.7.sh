@@ -6,7 +6,7 @@ toolchain="arm-bcm2708hardfp-linux-gnueabi"
 compiler="gcc-4.7.1-release"
 cpu="arm1176" # armv6
 
-third_party="libuv,libunwind,libatomic_ops,openfec,alsa,pulseaudio:5.0,speexdsp,sox,openssl,cpputest"
+third_party="libuv,libunwind,libatomic_ops,openfec,alsa,pulseaudio:5.0,speexdsp,sox,openssl,cpputest,sndfile"
 
 scons -Q \
     --enable-werror \

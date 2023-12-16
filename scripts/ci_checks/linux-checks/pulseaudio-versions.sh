@@ -8,6 +8,6 @@ do
           --enable-werror \
           --enable-tests \
           --enable-examples \
-          --build-3rdparty=openfec,pulseaudio:$pulse_ver \
+          --build-3rdparty=openfec,pulseaudio:$pulse_ver,sndfile \
           test
 done

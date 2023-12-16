@@ -209,6 +209,11 @@ AddOption('--disable-sox',
           action='store_true',
           help='disable SoX support in tools')
 
+AddOption('--disable-sndfile',
+          dest='disable_sndfile',
+          action='store_true',
+          help='disable sndfile support in tools')
+
 AddOption('--disable-openssl',
           dest='disable_openssl',
           action='store_true',
@@ -824,6 +829,10 @@ else:
         if not GetOption('disable_sox'):
             env.Append(ROC_TARGETS=[
                 'target_sox',
+            ])
+        if not GetOption('disable_sndfile'):
+            env.Append(ROC_TARGETS=[
+                'target_sndfile',
             ])
         if not GetOption('disable_alsa') and meta.platform in ['linux']:
             env.Append(ROC_TARGETS=[

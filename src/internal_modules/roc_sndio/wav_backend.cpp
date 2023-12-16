@@ -76,5 +76,9 @@ IDevice* WavBackend::open_device(DeviceType device_type,
     roc_panic("wav backend: invalid device type");
 }
 
+const char* WavBackend::name() const {
+    return "wav";
+}
+
 } // namespace sndio
 } // namespace roc

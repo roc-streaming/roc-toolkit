@@ -24,7 +24,7 @@ thirdparty_versions = {
     'openfec':          '1.4.2.7',
     'openssl':          '3.0.8',
     'pulseaudio':       '12.2',
-    'sndfile':          '1.0.28',
+    'sndfile':          '1.0.26',
     'sox':              '14.4.2',
     'speexdsp':         '1.2.0',
 
@@ -43,6 +43,10 @@ external_dependencies = set(thirdparty_versions.keys()) \
 
 # ragel is always needed
 external_dependencies.add('ragel')
+
+# ensures we don't build sndfile twice
+if 'pulseaudio' in external_dependencies:
+    external_dependencies.add('sndfile')
 
 # on Linux, PulseAudio needs ALSA
 if meta.platform in ['linux'] and 'pulseaudio' in external_dependencies:
@@ -230,6 +234,31 @@ elif 'speexdsp' in system_dependencies:
 
     env = conf.Finish()
 
+# dep: sndfile
+if 'sndfile' in autobuild_dependencies:
+
+    env.BuildThirdParty(thirdparty_versions, 'sndfile')
+
+    conf = Configure(env, custom_tests=env.CustomTests)
+
+    env = conf.Finish()
+
+elif 'sndfile' in system_dependencies:
+    conf = Configure(env, custom_tests=env.CustomTests)
+
+    if not conf.AddPkgConfigDependency('sndfile', '--cflags --libs', exclude_from_pc=True):
+        conf.env.AddManualDependency(libs=['sndfile'], exclude_from_pc=True)
+
+    if not is_crosscompiling:
+        if not conf.CheckLibWithHeaderExt(
+                'sndfile', 'sndfile.h', 'C'):
+            env.Die("libsndfile >= 1.0.26 not found (see 'config.log' for details)")
+    else:
+        if not conf.CheckLibWithHeaderExt('sndfile', 'sndfile.h', 'C', run=False):
+            env.Die("libsndfile not found (see 'config.log' for details)")
+
+    env = conf.Finish()
+
 # dep: alsa
 if 'alsa' in autobuild_dependencies:
     env.BuildThirdParty(thirdparty_versions, 'alsa')
@@ -252,7 +281,6 @@ if 'pulseaudio' in autobuild_dependencies:
 
     env.BuildThirdParty(thirdparty_versions, 'ltdl')
     env.BuildThirdParty(thirdparty_versions, 'json-c')
-    env.BuildThirdParty(thirdparty_versions, 'sndfile')
     env.BuildThirdParty(thirdparty_versions, 'pulseaudio',
                         deps=pa_deps, libs=['pulse', 'pulse-simple'])
 
