@@ -15,7 +15,7 @@ scons -Q \
       --enable-examples \
       --enable-debug \
       --sanitizers=all \
-      --build-3rdparty=openfec \
+      --build-3rdparty=openfec,sndfile \
       test
 
 # release build
@@ -24,5 +24,5 @@ scons -Q \
       --enable-tests \
       --enable-benchmarks \
       --enable-examples \
-      --build-3rdparty=openfec \
+      --build-3rdparty=openfec,sndfile \
       test
