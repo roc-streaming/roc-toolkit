@@ -8,21 +8,21 @@ Examples
 Basic sender and receiver
 -------------------------
 
-* `basic_sender_sine_wave.c <https://github.com/roc-streaming/roc-toolkit/blob/master/src/library/example/basic_sender_sine_wave.c>`_
+* `basic_sender_sine_wave.c <https://github.com/roc-streaming/roc-toolkit/blob/master/src/public_api/examples/basic_sender_sine_wave.c>`_
 
   Basic sender example.
 
   This example creates a sender and connects it to remote receiver.
   Then it generates a 10-second beep and writes it to the sender.
 
-* `basic_sender_from_pulseaudio.c <https://github.com/roc-streaming/roc-toolkit/blob/master/src/library/example/basic_sender_from_pulseaudio.c>`_
+* `basic_sender_from_pulseaudio.c <https://github.com/roc-streaming/roc-toolkit/blob/master/src/public_api/examples/basic_sender_from_pulseaudio.c>`_
 
   Basic sender example.
 
   This example creates a sender and connects it to remote receiver.
   Then it records audio stream from PulseAudio and writes it to the sender.
 
-* `basic_receiver_to_pulseaudio.c <https://github.com/roc-streaming/roc-toolkit/blob/master/src/library/example/basic_receiver_to_pulseaudio.c>`_
+* `basic_receiver_to_pulseaudio.c <https://github.com/roc-streaming/roc-toolkit/blob/master/src/public_api/examples/basic_receiver_to_pulseaudio.c>`_
 
   Basic receiver example.
 
@@ -32,7 +32,7 @@ Basic sender and receiver
 Network protocols
 -----------------
 
-* `send_receive_rtp.c <https://github.com/roc-streaming/roc-toolkit/blob/master/src/library/example/send_receive_rtp.c>`_
+* `send_receive_rtp.c <https://github.com/roc-streaming/roc-toolkit/blob/master/src/public_api/examples/send_receive_rtp.c>`_
 
   Send and receive samples using bare RTP.
 
@@ -40,7 +40,7 @@ Network protocols
   Then it creates a sender and connects it to the receiver endpoint.
   Then it starts writing audio stream to the sender and reading it from receiver.
 
-* `send_receive_rtp_with_fecframe.c <https://github.com/roc-streaming/roc-toolkit/blob/master/src/library/example/send_receive_rtp_with_fecframe.c>`_
+* `send_receive_rtp_with_fecframe.c <https://github.com/roc-streaming/roc-toolkit/blob/master/src/public_api/examples/send_receive_rtp_with_fecframe.c>`_
 
   Send and receive samples using RTP and FECFRAME.
 
@@ -54,7 +54,7 @@ Network protocols
 Miscellaneous
 -------------
 
-* `uri_manipulation.c <https://github.com/roc-streaming/roc-toolkit/blob/master/src/library/example/uri_manipulation.c>`_
+* `uri_manipulation.c <https://github.com/roc-streaming/roc-toolkit/blob/master/src/public_api/examples/uri_manipulation.c>`_
 
   URI manipulation example.
 
