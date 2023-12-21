@@ -59,6 +59,12 @@ The path component of the provided URI is `percent-decoded <https://en.wikipedia
 
 For example, the file named ``/foo/bar%/[baz]`` may be specified using either of the following URIs: ``file:///foo%2Fbar%25%2F%5Bbaz%5D`` and ``file:///foo/bar%25/[baz]``.
 
+Time units
+----------
+
+*TIME* should have one of the following forms:
+  123ns; 1.23us; 1.23ms; 1.23s; 1.23m; 1.23h;
+
 EXAMPLES
 ========
 

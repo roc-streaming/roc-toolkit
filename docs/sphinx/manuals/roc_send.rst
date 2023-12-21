@@ -134,13 +134,13 @@ Time units
 ----------
 
 *TIME* should have one of the following forms:
-  123ns, 123us, 123ms, 123s, 123m, 123h
+  123ns; 1.23us; 1.23ms; 1.23s; 1.23m; 1.23h;
 
 Size units
 ----------
 
 *SIZE* should have one of the following forms:
-  123; 123K; 123M; 123G;
+  123; 1.23K; 1.23M; 1.23G;
 
 EXAMPLES
 ========

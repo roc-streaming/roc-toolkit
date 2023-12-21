@@ -68,11 +68,11 @@ IO_URI is a device or file URI, e.g.:
 FILE_FORMAT is the output file format name, e.g.:
   wav; ogg; mp3
 
-TIME is an integer number with a suffix, e.g.:
-  123ns; 123us; 123ms; 123s; 123m; 123h;
+TIME is an integer or floating-point number with a suffix, e.g.:
+  123ns; 1.23us; 1.23ms; 1.23s; 1.23m; 1.23h;
 
-SIZE is an integer number with an optional suffix, e.g.:
-  123; 123K; 123M; 123G;
+SIZE is an integer or floating-point number with an optional suffix, e.g.:
+  123; 1.23K; 1.23M; 1.23G;
 
 Use --list-supported option to print the list of the supported
 URI schemes and file formats.

@@ -29,6 +29,8 @@ TEST(parse_units, parse_duration_error) {
     CHECK(!parse_duration("!s", result));
     CHECK(!parse_duration("s1", result));
     CHECK(!parse_duration("1x", result));
+    CHECK(!parse_duration("1.2.3s", result));
+    CHECK(!parse_duration(".1s", result));
 }
 
 TEST(parse_units, parse_duration) {
@@ -53,6 +55,49 @@ TEST(parse_units, parse_duration) {
     CHECK(result == 123 * Hour);
 }
 
+TEST(parse_units, parse_duration_float_le_one) {
+    nanoseconds_t result = 0;
+
+    CHECK(parse_duration("0.ns", result));
+    CHECK(result == 0);
+    CHECK(parse_duration("0.0ns", result));
+    CHECK(result == 0);
+
+    CHECK(parse_duration("0.1ns", result));
+    CHECK(result == 0);
+
+    CHECK(parse_duration("0.0001us", result));
+    CHECK(result == 0);
+    CHECK(parse_duration("0.1us", result));
+    CHECK(result == 100);
+
+    CHECK(parse_duration("0.1ms", result));
+    CHECK(result == 100000);
+
+    CHECK(parse_duration("0.1s", result));
+    CHECK(result == 100000000);
+}
+
+TEST(parse_units, parse_duration_float_gt_one) {
+    nanoseconds_t result = 0;
+
+    CHECK(parse_duration("1.ns", result));
+    CHECK(result == 1);
+    CHECK(parse_duration("1.1ns", result));
+    CHECK(result == 1);
+    CHECK(parse_duration("1.5ns", result));
+    CHECK(result == 2);
+
+    CHECK(parse_duration("1.1us", result));
+    CHECK(result == 1100);
+
+    CHECK(parse_duration("1.1ms", result));
+    CHECK(result == 1100000);
+
+    CHECK(parse_duration("1.1s", result));
+    CHECK(result == 1100000000);
+}
+
 TEST(parse_units, parse_size_error) {
     size_t result = 0;
 
@@ -65,6 +110,9 @@ TEST(parse_units, parse_size_error) {
     CHECK(!parse_size("!K", result));
     CHECK(!parse_size("K1", result));
     CHECK(!parse_size("1x", result));
+    CHECK(!parse_size("1.2.3K", result));
+    CHECK(!parse_size(".1", result));
+    CHECK(!parse_size(".1K", result));
 }
 
 TEST(parse_units, parse_size) {
@@ -73,6 +121,9 @@ TEST(parse_units, parse_size) {
     const size_t kibibyte = 1024;
     const size_t mebibyte = 1024 * kibibyte;
     const size_t gibibyte = 1024 * mebibyte;
+
+    CHECK(parse_size("0", result));
+    CHECK(result == 0);
 
     CHECK(parse_size("123", result));
     CHECK(result == 123);
@@ -87,18 +138,52 @@ TEST(parse_units, parse_size) {
     CHECK(result == 1 * gibibyte);
 }
 
-TEST(parse_units, parse_size_overflows_due_to_sizeof_size_t) {
-    if (SIZE_MAX < ULLONG_MAX) {
-        char s[32];
-        snprintf(s, 32, "%llu", ULLONG_MAX - 1);
-        size_t result = 0;
-        CHECK_FALSE(parse_size(s, result));
-    }
+TEST(parse_units, parse_size_float_le_one) {
+    size_t result = 0;
+
+    CHECK(parse_size("0.", result));
+    CHECK(result == 0);
+    CHECK(parse_size("0.0", result));
+    CHECK(result == 0);
+
+    CHECK(parse_size("0.1", result));
+    CHECK(result == 0);
+
+    CHECK(parse_size("0.0001K", result));
+    CHECK(result == 0);
+    CHECK(parse_size("0.1K", result));
+    CHECK(result == 102);
+
+    CHECK(parse_size("0.1M", result));
+    CHECK(result == 104858);
+
+    CHECK(parse_size("0.1G", result));
+    CHECK(result == 107374182);
+}
+
+TEST(parse_units, parse_size_float_gt_one) {
+    size_t result = 0;
+
+    CHECK(parse_size("1.", result));
+    CHECK(result == 1);
+    CHECK(parse_size("1.1", result));
+    CHECK(result == 1);
+    CHECK(parse_size("1.5", result));
+    CHECK(result == 2);
+
+    CHECK(parse_size("1.1K", result));
+    CHECK(result == 1126);
+
+    CHECK(parse_size("1.1M", result));
+    CHECK(result == 1153434);
+
+    CHECK(parse_size("1.1G", result));
+    CHECK(result == 1181116006);
 }
 
 TEST(parse_units, parse_size_overflows_due_to_multiplier) {
     char s[32];
-    snprintf(s, 32, "%zuK", SIZE_MAX - 1);
+    snprintf(s, 32, "%lluK", (unsigned long long)SIZE_MAX);
     size_t result = 0;
     CHECK_FALSE(parse_size(s, result));
 }
