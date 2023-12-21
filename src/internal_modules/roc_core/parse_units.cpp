@@ -57,30 +57,38 @@ bool parse_duration(const char* str, nanoseconds_t& result) {
     }
 
     if (str == suffix) {
-        roc_log(
-            LogError,
-            "parse duration: invalid format, missing number, expected <number><suffix>");
+        roc_log(LogError,
+                "parse duration: invalid format, missing number, expected "
+                "<float><suffix>");
         return false;
     }
 
     if (!isdigit(*str) && *str != '-') {
-        roc_log(
-            LogError,
-            "parse duration: invalid format, not a number, expected <number><suffix>");
+        roc_log(LogError,
+                "parse duration: invalid format, not a number, expected "
+                "<float><suffix>");
         return false;
     }
 
     char* number_end = NULL;
-    long number = strtol(str, &number_end, 10);
+    const double number = strtod(str, &number_end);
 
-    if (number == LONG_MAX || number == LONG_MIN || !number_end || number_end != suffix) {
+    if ((number == 0. && str == number_end) || !number_end || number_end != suffix) {
         roc_log(LogError,
                 "parse duration: invalid format, can't parse number, expected "
-                "<number><suffix>");
+                "<float><suffix>");
         return false;
     }
 
-    result = nanoseconds_t(number) * multiplier;
+    const double number_multiplied = round(number * (double)multiplier);
+    if (number_multiplied > (double)INT64_MAX) {
+        roc_log(LogError,
+                "parse duration: too large, can't parse number, expected "
+                "<float><suffix>");
+        return false;
+    }
+
+    result = (nanoseconds_t)number_multiplied;
     return true;
 }
 
@@ -108,41 +116,32 @@ bool parse_size(const char* str, size_t& result) {
         multiplier = kibibyte;
     }
 
-    if (!isdigit(*str)) {
+    if (!isdigit(*str) && *str != '-') {
         roc_log(LogError,
-                "parse size: invalid format, not a number, expected <number>[<suffix>], "
-                "where suffix=<K|M|G>");
+                "parse size: invalid format, not a number, expected "
+                "<float>[<suffix>], where suffix=<K|M|G>");
         return false;
     }
 
     char* number_end = NULL;
-    unsigned long long number = strtoull(str, &number_end, 10);
+    const double number = strtod(str, &number_end);
 
-    if (number == ULLONG_MAX || (!suffix && *number_end != '\0')
+    if ((number == 0. && str == number_end) || (!suffix && *number_end != '\0')
         || (suffix && number_end != suffix)) {
         roc_log(LogError,
                 "parse size: invalid format, can't parse number, expected "
-                "<number>[<suffix>], where suffix=<K|M|G>");
+                "<float>[<suffix>], where suffix=<K|M|G>");
         return false;
     }
 
-    size_t number_converted = number;
-    if (number_converted < number) {
+    const double number_multiplied = round(number * (double)multiplier);
+    if (number_multiplied > (double)SIZE_MAX) {
         roc_log(LogError,
                 "parse size: too large, can't parse number, expected "
-                "<number>[<suffix>], where suffix=<K|M|G>");
+                "<float>[<suffix>], where suffix=<K|M|G>");
         return false;
     }
-
-    size_t output = number_converted * multiplier;
-    if (output / multiplier != number_converted) {
-        roc_log(LogError,
-                "parse size: too large, can't parse number, expected "
-                "<number>[<suffix>], where suffix=<K|M|G>");
-        return false;
-    }
-
-    result = output;
+    result = (size_t)number_multiplied;
     return true;
 }
 
