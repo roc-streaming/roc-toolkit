@@ -2,7 +2,8 @@
 
 set -euxo pipefail
 
-brew install automake scons
+brew install --force --overwrite \
+     automake scons
 
 scons -Q \
       --enable-werror \

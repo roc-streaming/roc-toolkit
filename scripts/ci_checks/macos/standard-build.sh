@@ -2,7 +2,7 @@
 
 set -euxo pipefail
 
-brew install \
+brew install --force --overwrite \
      automake scons ragel gengetopt \
      libuv speexdsp sox openssl@3 \
      cpputest google-benchmark
