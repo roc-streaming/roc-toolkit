@@ -270,11 +270,13 @@ public:
     TestPipeline(const TaskConfig& config,
                  ctl::ControlTaskQueue& control_queue,
                  DelayStats& stats)
-        : PipelineLoop(
-            *this,
-            config,
-            audio::SampleSpec(
-                SampleRate, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, Chans))
+        : PipelineLoop(*this,
+                       config,
+                       audio::SampleSpec(SampleRate,
+                                         audio::Sample_RawFormat,
+                                         audio::ChanLayout_Surround,
+                                         audio::ChanOrder_Smpte,
+                                         Chans))
         , stats_(stats)
         , control_queue_(control_queue)
         , control_task_(*this) {

@@ -117,8 +117,8 @@ void Mixer::read_(sample_t* out_data,
             out_data[n] += temp_data[n];
 
             // Saturate on overflow.
-            out_data[n] = std::min(out_data[n], SampleMax);
-            out_data[n] = std::max(out_data[n], SampleMin);
+            out_data[n] = std::min(out_data[n], Sample_Max);
+            out_data[n] = std::max(out_data[n], Sample_Min);
         }
 
         // Accumulate flags from all mixed frames.

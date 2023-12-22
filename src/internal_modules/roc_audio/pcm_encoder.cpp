@@ -19,7 +19,7 @@ IFrameEncoder* PcmEncoder::construct(core::IArena& arena,
 }
 
 PcmEncoder::PcmEncoder(PcmFormat pcm_format, const SampleSpec& sample_spec)
-    : pcm_mapper_(SampleFmt, pcm_format)
+    : pcm_mapper_(Sample_RawFormat, pcm_format)
     , n_chans_(sample_spec.num_channels())
     , frame_data_(NULL)
     , frame_byte_size_(0)

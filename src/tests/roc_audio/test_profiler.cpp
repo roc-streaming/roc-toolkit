@@ -27,8 +27,8 @@ struct TestFrame {
 
 const int SampleRate = 5000; // 50 samples / chunk
 const int ChannelMask = 1;
-const SampleSpec
-    SampleSpecs(SampleRate, ChanLayout_Surround, ChanOrder_Smpte, ChannelMask);
+const SampleSpec SampleSpecs(
+    SampleRate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte, ChannelMask);
 const double EpsilionThreshold = 0.001;
 core::HeapArena arena;
 ProfilerConfig profiler_config(50 * core::Millisecond, 10 * core::Millisecond);

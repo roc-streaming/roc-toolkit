@@ -22,13 +22,13 @@ namespace audio {
 typedef float sample_t;
 
 //! Format description for raw audio samples.
-extern const PcmFormat SampleFmt;
+extern const PcmFormat Sample_RawFormat;
 
 //! Minimum possible value of a raw sample.
-extern const sample_t SampleMin;
+extern const sample_t Sample_Min;
 
 //! Maximum possible value of a raw sample.
-extern const sample_t SampleMax;
+extern const sample_t Sample_Max;
 
 } // namespace audio
 } // namespace roc

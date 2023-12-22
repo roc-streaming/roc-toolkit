@@ -21,9 +21,9 @@ EncodingMap::EncodingMap(core::IArena& arena)
         Encoding enc;
         enc.payload_type = PayloadType_L16_Mono;
         enc.pcm_format = audio::PcmFormat_SInt16_Be;
-        enc.sample_spec =
-            audio::SampleSpec(44100, audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
-                              audio::ChanMask_Surround_Mono);
+        enc.sample_spec = audio::SampleSpec(
+            44100, audio::PcmFormat_SInt16_Be, audio::ChanLayout_Surround,
+            audio::ChanOrder_Smpte, audio::ChanMask_Surround_Mono);
         enc.packet_flags = packet::Packet::FlagAudio;
         enc.new_encoder = &audio::PcmEncoder::construct;
         enc.new_decoder = &audio::PcmDecoder::construct;
@@ -34,9 +34,9 @@ EncodingMap::EncodingMap(core::IArena& arena)
         Encoding enc;
         enc.payload_type = PayloadType_L16_Stereo;
         enc.pcm_format = audio::PcmFormat_SInt16_Be;
-        enc.sample_spec =
-            audio::SampleSpec(44100, audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
-                              audio::ChanMask_Surround_Stereo);
+        enc.sample_spec = audio::SampleSpec(
+            44100, audio::PcmFormat_SInt16_Be, audio::ChanLayout_Surround,
+            audio::ChanOrder_Smpte, audio::ChanMask_Surround_Stereo);
         enc.packet_flags = packet::Packet::FlagAudio;
         enc.new_encoder = &audio::PcmEncoder::construct;
         enc.new_decoder = &audio::PcmDecoder::construct;

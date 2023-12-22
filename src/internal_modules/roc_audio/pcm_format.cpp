@@ -14079,7 +14079,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.is_little = true;
 #endif
-        traits.bit_depth = 32;
+        traits.bit_depth = 25;
         traits.bit_width = 32;
         break;
 
@@ -14088,7 +14088,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = false;
         traits.is_signed = true;
         traits.is_little = false;
-        traits.bit_depth = 32;
+        traits.bit_depth = 25;
         traits.bit_width = 32;
         break;
 
@@ -14097,7 +14097,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = false;
         traits.is_signed = true;
         traits.is_little = true;
-        traits.bit_depth = 32;
+        traits.bit_depth = 25;
         traits.bit_width = 32;
         break;
 
@@ -14110,7 +14110,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.is_little = true;
 #endif
-        traits.bit_depth = 64;
+        traits.bit_depth = 53;
         traits.bit_width = 64;
         break;
 
@@ -14119,7 +14119,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = false;
         traits.is_signed = true;
         traits.is_little = false;
-        traits.bit_depth = 64;
+        traits.bit_depth = 53;
         traits.bit_width = 64;
         break;
 
@@ -14128,7 +14128,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = false;
         traits.is_signed = true;
         traits.is_little = true;
-        traits.bit_depth = 64;
+        traits.bit_depth = 53;
         traits.bit_width = 64;
         break;
 
@@ -14364,7 +14364,6 @@ PcmFormat pcm_format_from_str(const char* str) {
                 if (strcmp(str, "s18_le") == 0) {
                     return PcmFormat_SInt18_Le;
                 }
-                return PcmFormat_Invalid;
                 if (strcmp(str, "s18_3") == 0) {
                     return PcmFormat_SInt18_3;
                 }
@@ -14374,7 +14373,6 @@ PcmFormat pcm_format_from_str(const char* str) {
                 if (strcmp(str, "s18_3le") == 0) {
                     return PcmFormat_SInt18_3_Le;
                 }
-                return PcmFormat_Invalid;
                 if (strcmp(str, "s18_4") == 0) {
                     return PcmFormat_SInt18_4;
                 }
@@ -14399,7 +14397,6 @@ PcmFormat pcm_format_from_str(const char* str) {
                 if (strcmp(str, "s20_le") == 0) {
                     return PcmFormat_SInt20_Le;
                 }
-                return PcmFormat_Invalid;
                 if (strcmp(str, "s20_3") == 0) {
                     return PcmFormat_SInt20_3;
                 }
@@ -14409,7 +14406,6 @@ PcmFormat pcm_format_from_str(const char* str) {
                 if (strcmp(str, "s20_3le") == 0) {
                     return PcmFormat_SInt20_3_Le;
                 }
-                return PcmFormat_Invalid;
                 if (strcmp(str, "s20_4") == 0) {
                     return PcmFormat_SInt20_4;
                 }
@@ -14431,7 +14427,6 @@ PcmFormat pcm_format_from_str(const char* str) {
                 if (strcmp(str, "s24_le") == 0) {
                     return PcmFormat_SInt24_Le;
                 }
-                return PcmFormat_Invalid;
                 if (strcmp(str, "s24_4") == 0) {
                     return PcmFormat_SInt24_4;
                 }
@@ -14513,7 +14508,6 @@ PcmFormat pcm_format_from_str(const char* str) {
                 if (strcmp(str, "u18_le") == 0) {
                     return PcmFormat_UInt18_Le;
                 }
-                return PcmFormat_Invalid;
                 if (strcmp(str, "u18_3") == 0) {
                     return PcmFormat_UInt18_3;
                 }
@@ -14523,7 +14517,6 @@ PcmFormat pcm_format_from_str(const char* str) {
                 if (strcmp(str, "u18_3le") == 0) {
                     return PcmFormat_UInt18_3_Le;
                 }
-                return PcmFormat_Invalid;
                 if (strcmp(str, "u18_4") == 0) {
                     return PcmFormat_UInt18_4;
                 }
@@ -14548,7 +14541,6 @@ PcmFormat pcm_format_from_str(const char* str) {
                 if (strcmp(str, "u20_le") == 0) {
                     return PcmFormat_UInt20_Le;
                 }
-                return PcmFormat_Invalid;
                 if (strcmp(str, "u20_3") == 0) {
                     return PcmFormat_UInt20_3;
                 }
@@ -14558,7 +14550,6 @@ PcmFormat pcm_format_from_str(const char* str) {
                 if (strcmp(str, "u20_3le") == 0) {
                     return PcmFormat_UInt20_3_Le;
                 }
-                return PcmFormat_Invalid;
                 if (strcmp(str, "u20_4") == 0) {
                     return PcmFormat_UInt20_4;
                 }
@@ -14580,7 +14571,6 @@ PcmFormat pcm_format_from_str(const char* str) {
                 if (strcmp(str, "u24_le") == 0) {
                     return PcmFormat_UInt24_Le;
                 }
-                return PcmFormat_Invalid;
                 if (strcmp(str, "u24_4") == 0) {
                     return PcmFormat_UInt24_4;
                 }

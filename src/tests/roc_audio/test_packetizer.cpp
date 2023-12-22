@@ -43,7 +43,8 @@ enum {
 const core::nanoseconds_t PacketDuration = SamplesPerPacket * core::Second / SampleRate;
 const core::nanoseconds_t Now = 1691499037871419405;
 
-const SampleSpec SampleSpecs(SampleRate, ChanLayout_Surround, ChanOrder_Smpte, ChMask);
+const SampleSpec SampleSpecs(
+    SampleRate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 const PcmFormat PcmFmt = PcmFormat_SInt16_Be;
 
 core::HeapArena arena;

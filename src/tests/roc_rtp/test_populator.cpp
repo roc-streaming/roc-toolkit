@@ -27,8 +27,11 @@ namespace {
 
 enum { ChMask = 3, PacketSz = 128, SampleRate = 10000 };
 
-const audio::SampleSpec SampleSpec = audio::SampleSpec(
-    SampleRate, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, ChMask);
+const audio::SampleSpec SampleSpec = audio::SampleSpec(SampleRate,
+                                                       audio::Sample_RawFormat,
+                                                       audio::ChanLayout_Surround,
+                                                       audio::ChanOrder_Smpte,
+                                                       ChMask);
 
 const audio::PcmFormat PcmFmt = audio::PcmFormat_SInt16_Be;
 

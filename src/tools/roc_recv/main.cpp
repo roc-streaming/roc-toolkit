@@ -69,6 +69,10 @@ int main(int argc, char** argv) {
     pipeline::ReceiverConfig receiver_config;
 
     sndio::Config io_config;
+    io_config.sample_spec.set_sample_format(
+        receiver_config.common.output_sample_spec.sample_format());
+    io_config.sample_spec.set_pcm_format(
+        receiver_config.common.output_sample_spec.pcm_format());
     io_config.sample_spec.set_channel_set(
         receiver_config.common.output_sample_spec.channel_set());
 
@@ -359,9 +363,11 @@ int main(int argc, char** argv) {
 
         transcoder_config.input_sample_spec =
             audio::SampleSpec(backup_source->sample_spec().sample_rate(),
+                              receiver_config.common.output_sample_spec.pcm_format(),
                               receiver_config.common.output_sample_spec.channel_set());
         transcoder_config.output_sample_spec =
             audio::SampleSpec(receiver_config.common.output_sample_spec.sample_rate(),
+                              receiver_config.common.output_sample_spec.pcm_format(),
                               receiver_config.common.output_sample_spec.channel_set());
 
         backup_pipeline.reset(new (context.arena()) pipeline::TranscoderSource(

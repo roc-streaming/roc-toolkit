@@ -68,6 +68,9 @@ int main(int argc, char** argv) {
     pipeline::SenderConfig sender_config;
 
     sndio::Config io_config;
+    io_config.sample_spec.set_sample_format(
+        sender_config.input_sample_spec.sample_format());
+    io_config.sample_spec.set_pcm_format(sender_config.input_sample_spec.pcm_format());
     io_config.sample_spec.set_channel_set(sender_config.input_sample_spec.channel_set());
 
     if (args.frame_len_given) {

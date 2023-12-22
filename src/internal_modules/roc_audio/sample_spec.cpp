@@ -7,6 +7,8 @@
  */
 
 #include "roc_audio/sample_spec.h"
+#include "roc_audio/pcm_format.h"
+#include "roc_audio/sample_format.h"
 #include "roc_audio/sample_spec_to_str.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/panic.h"
@@ -63,30 +65,41 @@ core::nanoseconds_t nsamples_2_ns(const float n_samples, const size_t sample_rat
 } // namespace
 
 SampleSpec::SampleSpec()
-    : sample_rate_(0) {
-}
-
-SampleSpec::SampleSpec(const size_t sample_rate, const ChannelSet& channel_set)
-    : sample_rate_(sample_rate)
-    , channel_set_(channel_set) {
-    roc_panic_if_msg(sample_rate_ == 0, "sample spec: invalid sample rate");
-    roc_panic_if_msg(channel_set_.layout() == ChanLayout_None,
-                     "sample spec: invalid channel layout");
-    roc_panic_if_msg(channel_set_.num_channels() == 0,
-                     "sample spec: invalid channel count");
+    : sample_rate_(0)
+    , sample_fmt_(SampleFormat_Invalid)
+    , pcm_fmt_(PcmFormat_Invalid) {
 }
 
 SampleSpec::SampleSpec(const size_t sample_rate,
+                       const PcmFormat pcm_fmt,
+                       const ChannelSet& channel_set)
+    : sample_rate_(sample_rate)
+    , sample_fmt_(SampleFormat_Pcm)
+    , pcm_fmt_(pcm_fmt)
+    , channel_set_(channel_set) {
+    roc_panic_if_msg(sample_rate_ == 0, "sample spec: invalid sample rate");
+    roc_panic_if_msg(pcm_fmt_ == PcmFormat_Invalid, "sample spec: invalid pcm format");
+    roc_panic_if_msg(!channel_set_.is_valid(), "sample spec: invalid channel set");
+}
+
+SampleSpec::SampleSpec(const size_t sample_rate,
+                       const PcmFormat pcm_fmt,
                        const ChannelLayout channel_layout,
                        ChannelOrder channel_order,
                        const ChannelMask channel_mask)
     : sample_rate_(sample_rate)
+    , sample_fmt_(SampleFormat_Pcm)
+    , pcm_fmt_(pcm_fmt)
     , channel_set_(channel_layout, channel_order, channel_mask) {
     roc_panic_if_msg(sample_rate_ == 0, "sample spec: invalid sample rate");
+    roc_panic_if_msg(pcm_fmt_ == PcmFormat_Invalid, "sample spec: invalid pcm format");
+    roc_panic_if_msg(!channel_set_.is_valid(), "sample spec: invalid channel set");
 }
 
 bool SampleSpec::operator==(const SampleSpec& other) const {
-    return sample_rate_ == other.sample_rate_ && channel_set_ == other.channel_set_;
+    return sample_fmt_ == other.sample_fmt_
+        && (pcm_fmt_ == other.pcm_fmt_ || sample_fmt_ != SampleFormat_Pcm)
+        && sample_rate_ == other.sample_rate_ && channel_set_ == other.channel_set_;
 }
 
 bool SampleSpec::operator!=(const SampleSpec& other) const {
@@ -94,12 +107,32 @@ bool SampleSpec::operator!=(const SampleSpec& other) const {
 }
 
 bool SampleSpec::is_valid() const {
-    return sample_rate_ != 0 && channel_set_.is_valid();
+    return sample_fmt_ != SampleFormat_Invalid
+        && ((sample_fmt_ == SampleFormat_Pcm) == (pcm_fmt_ != PcmFormat_Invalid))
+        && sample_rate_ != 0 && channel_set_.is_valid();
 }
 
 void SampleSpec::clear() {
+    sample_fmt_ = SampleFormat_Invalid;
+    pcm_fmt_ = PcmFormat_Invalid;
     sample_rate_ = 0;
     channel_set_.clear();
+}
+
+SampleFormat SampleSpec::sample_format() const {
+    return sample_fmt_;
+}
+
+void SampleSpec::set_sample_format(SampleFormat sample_fmt) {
+    sample_fmt_ = sample_fmt;
+}
+
+PcmFormat SampleSpec::pcm_format() const {
+    return pcm_fmt_;
+}
+
+void SampleSpec::set_pcm_format(PcmFormat pcm_fmt) {
+    pcm_fmt_ = pcm_fmt;
 }
 
 size_t SampleSpec::sample_rate() const {

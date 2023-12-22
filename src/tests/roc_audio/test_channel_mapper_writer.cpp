@@ -76,10 +76,10 @@ TEST_GROUP(channel_mapper_writer) {};
 TEST(channel_mapper_writer, small_frame_upmix) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec in_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Mono);
-    const SampleSpec out_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
-                              ChanMask_Surround_Stereo);
+    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+                             ChanOrder_Smpte, ChanMask_Surround_Mono);
+    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+                              ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
     test::MockWriter mock_writer;
     ChannelMapperWriter mapper_writer(mock_writer, buffer_factory, in_spec, out_spec);
@@ -109,10 +109,10 @@ TEST(channel_mapper_writer, small_frame_upmix) {
 TEST(channel_mapper_writer, small_frame_downmix) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec in_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Stereo);
-    const SampleSpec out_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
-                              ChanMask_Surround_Mono);
+    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+                             ChanOrder_Smpte, ChanMask_Surround_Stereo);
+    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+                              ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockWriter mock_writer;
     ChannelMapperWriter mapper_writer(mock_writer, buffer_factory, in_spec, out_spec);
@@ -142,10 +142,10 @@ TEST(channel_mapper_writer, small_frame_downmix) {
 TEST(channel_mapper_writer, small_frame_nocts) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec in_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Stereo);
-    const SampleSpec out_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
-                              ChanMask_Surround_Mono);
+    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+                             ChanOrder_Smpte, ChanMask_Surround_Stereo);
+    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+                              ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockWriter mock_writer;
     ChannelMapperWriter mapper_writer(mock_writer, buffer_factory, in_spec, out_spec);
@@ -174,10 +174,10 @@ TEST(channel_mapper_writer, small_frame_nocts) {
 TEST(channel_mapper_writer, large_frame_upmix) {
     enum { FrameSz = MaxSz * 3 };
 
-    const SampleSpec in_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Mono);
-    const SampleSpec out_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
-                              ChanMask_Surround_Stereo);
+    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+                             ChanOrder_Smpte, ChanMask_Surround_Mono);
+    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+                              ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
     test::MockWriter mock_writer;
     ChannelMapperWriter mapper_writer(mock_writer, buffer_factory, in_spec, out_spec);
@@ -210,10 +210,10 @@ TEST(channel_mapper_writer, large_frame_upmix) {
 TEST(channel_mapper_writer, large_frame_downmix) {
     enum { FrameSz = MaxSz * 4 };
 
-    const SampleSpec in_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Stereo);
-    const SampleSpec out_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
-                              ChanMask_Surround_Mono);
+    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+                             ChanOrder_Smpte, ChanMask_Surround_Stereo);
+    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+                              ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockWriter mock_writer;
     ChannelMapperWriter mapper_writer(mock_writer, buffer_factory, in_spec, out_spec);
@@ -246,10 +246,10 @@ TEST(channel_mapper_writer, large_frame_downmix) {
 TEST(channel_mapper_writer, large_frame_nocts) {
     enum { FrameSz = MaxSz * 4 };
 
-    const SampleSpec in_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Stereo);
-    const SampleSpec out_spec(MaxSz, ChanLayout_Surround, ChanOrder_Smpte,
-                              ChanMask_Surround_Mono);
+    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+                             ChanOrder_Smpte, ChanMask_Surround_Stereo);
+    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+                              ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockWriter mock_writer;
     ChannelMapperWriter mapper_writer(mock_writer, buffer_factory, in_spec, out_spec);

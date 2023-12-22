@@ -131,11 +131,15 @@ TEST_GROUP(receiver_source) {
     void init(int output_sample_rate, audio::ChannelMask output_channels,
               int packet_sample_rate, audio::ChannelMask packet_channels) {
         output_sample_spec.set_sample_rate((size_t)output_sample_rate);
+        output_sample_spec.set_sample_format(audio::SampleFormat_Pcm);
+        output_sample_spec.set_pcm_format(audio::Sample_RawFormat);
         output_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
         output_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
         output_sample_spec.channel_set().set_channel_mask(output_channels);
 
         packet_sample_spec.set_sample_rate((size_t)packet_sample_rate);
+        packet_sample_spec.set_sample_format(audio::SampleFormat_Pcm);
+        packet_sample_spec.set_pcm_format(audio::PcmFormat_SInt16_Be);
         packet_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
         packet_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
         packet_sample_spec.channel_set().set_channel_mask(packet_channels);

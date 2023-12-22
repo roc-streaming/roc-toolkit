@@ -51,26 +51,26 @@ IFrameEncoder* new_encoder(size_t id) {
     case Codec_PCM_SInt16_1ch:
         return new (arena)
             PcmEncoder(PcmFormat_SInt16_Be,
-                       SampleSpec(SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
-                                  ChanMask_Surround_Mono));
+                       SampleSpec(SampleRate, Sample_RawFormat, ChanLayout_Surround,
+                                  ChanOrder_Smpte, ChanMask_Surround_Mono));
 
     case Codec_PCM_SInt16_2ch:
         return new (arena)
             PcmEncoder(PcmFormat_SInt16_Be,
-                       SampleSpec(SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
-                                  ChanMask_Surround_Stereo));
+                       SampleSpec(SampleRate, Sample_RawFormat, ChanLayout_Surround,
+                                  ChanOrder_Smpte, ChanMask_Surround_Stereo));
 
     case Codec_PCM_SInt24_1ch:
         return new (arena)
             PcmEncoder(PcmFormat_SInt16_Be,
-                       SampleSpec(SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
-                                  ChanMask_Surround_Mono));
+                       SampleSpec(SampleRate, Sample_RawFormat, ChanLayout_Surround,
+                                  ChanOrder_Smpte, ChanMask_Surround_Mono));
 
     case Codec_PCM_SInt24_2ch:
         return new (arena)
             PcmEncoder(PcmFormat_SInt16_Be,
-                       SampleSpec(SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
-                                  ChanMask_Surround_Stereo));
+                       SampleSpec(SampleRate, Sample_RawFormat, ChanLayout_Surround,
+                                  ChanOrder_Smpte, ChanMask_Surround_Stereo));
 
     default:
         FAIL("bad codec id");
@@ -84,26 +84,26 @@ IFrameDecoder* new_decoder(size_t id) {
     case Codec_PCM_SInt16_1ch:
         return new (arena)
             PcmDecoder(PcmFormat_SInt16_Be,
-                       SampleSpec(SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
-                                  ChanMask_Surround_Mono));
+                       SampleSpec(SampleRate, Sample_RawFormat, ChanLayout_Surround,
+                                  ChanOrder_Smpte, ChanMask_Surround_Mono));
 
     case Codec_PCM_SInt16_2ch:
         return new (arena)
             PcmDecoder(PcmFormat_SInt16_Be,
-                       SampleSpec(SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
-                                  ChanMask_Surround_Stereo));
+                       SampleSpec(SampleRate, Sample_RawFormat, ChanLayout_Surround,
+                                  ChanOrder_Smpte, ChanMask_Surround_Stereo));
 
     case Codec_PCM_SInt24_1ch:
         return new (arena)
             PcmDecoder(PcmFormat_SInt16_Be,
-                       SampleSpec(SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
-                                  ChanMask_Surround_Mono));
+                       SampleSpec(SampleRate, Sample_RawFormat, ChanLayout_Surround,
+                                  ChanOrder_Smpte, ChanMask_Surround_Mono));
 
     case Codec_PCM_SInt24_2ch:
         return new (arena)
             PcmDecoder(PcmFormat_SInt16_Be,
-                       SampleSpec(SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
-                                  ChanMask_Surround_Stereo));
+                       SampleSpec(SampleRate, Sample_RawFormat, ChanLayout_Surround,
+                                  ChanOrder_Smpte, ChanMask_Surround_Stereo));
 
     default:
         FAIL("bad codec id");

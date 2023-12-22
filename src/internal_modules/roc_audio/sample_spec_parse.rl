@@ -208,6 +208,18 @@ bool parse_sample_spec_imp(const char* str, SampleSpec& sample_spec) {
             sample_spec.channel_set().set_order(ChanOrder_None);
         }
 
+        action set_format {
+            char str[16] = {};
+            strncat(str, start_p, p - start_p);
+            PcmFormat pcm_fmt = pcm_format_from_str(str);
+            if (pcm_fmt == PcmFormat_Invalid) {
+                roc_log(LogError, "parse sample spec: invalid sample format");
+                return false;
+            }
+            sample_spec.set_sample_format(SampleFormat_Pcm);
+            sample_spec.set_pcm_format(pcm_fmt);
+        }
+
         action set_rate {
             size_t rate = 0;
             if (!parse_sample_rate(start_p, p - start_p, rate)) {
@@ -235,7 +247,7 @@ bool parse_sample_spec_imp(const char* str, SampleSpec& sample_spec) {
 
         mtr = (mtr_mask | mtr_list) %set_mtr;
 
-        format = [a-z0-9_]+;
+        format = [a-z0-9_]+ >start_token %set_format;
         rate = [0-9]+ >start_token %set_rate;
         channels = surround | mtr;
 

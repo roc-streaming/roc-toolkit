@@ -88,8 +88,8 @@ void ChannelMapper::map_surround_surround_(const sample_t* in_samples,
                 out_s += in_samples[in_ch] * map_matrix_.coeff(out_ch, in_ch);
             }
 
-            out_s = std::min(out_s, SampleMax);
-            out_s = std::max(out_s, SampleMin);
+            out_s = std::min(out_s, Sample_Max);
+            out_s = std::max(out_s, Sample_Min);
 
             *out_samples++ = out_s;
         }

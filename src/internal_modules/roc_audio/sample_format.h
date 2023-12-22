@@ -30,6 +30,9 @@ enum SampleFormat {
     SampleFormat_Pcm,
 };
 
+//! Get string name of sample format.
+const char* sample_format_to_str(SampleFormat format);
+
 } // namespace audio
 } // namespace roc
 

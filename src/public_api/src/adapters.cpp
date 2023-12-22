@@ -11,6 +11,7 @@
 #include "roc_address/interface.h"
 #include "roc_audio/channel_defs.h"
 #include "roc_audio/freq_estimator.h"
+#include "roc_audio/pcm_format.h"
 #include "roc_audio/resampler_backend.h"
 #include "roc_audio/resampler_profile.h"
 #include "roc_core/attributes.h"
@@ -303,7 +304,7 @@ bool sample_spec_from_user(audio::SampleSpec& out, const roc_media_encoding& in)
         return false;
     }
 
-    if (in.format != ROC_FORMAT_PCM_FLOAT32) {
+    if (!sample_format_from_user(out, in.format)) {
         roc_log(LogError,
                 "bad configuration: invalid roc_media_encoding.format:"
                 " should be valid enum value");
@@ -349,6 +350,18 @@ bool sample_spec_from_user(audio::SampleSpec& out, const roc_media_encoding& in)
     }
 
     return true;
+}
+
+ROC_ATTR_NO_SANITIZE_UB
+bool sample_format_from_user(audio::SampleSpec& out, roc_format in) {
+    switch (enum_from_user(in)) {
+    case ROC_FORMAT_PCM_FLOAT32:
+        out.set_sample_format(audio::SampleFormat_Pcm);
+        out.set_pcm_format(audio::PcmFormat_Float32);
+        return true;
+    }
+
+    return false;
 }
 
 ROC_ATTR_NO_SANITIZE_UB

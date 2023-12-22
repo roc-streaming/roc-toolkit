@@ -7,6 +7,7 @@
  */
 
 #include "roc_audio/pcm_decoder.h"
+#include "roc_audio/sample.h"
 #include "roc_core/panic.h"
 
 namespace roc {
@@ -19,7 +20,7 @@ IFrameDecoder* PcmDecoder::construct(core::IArena& arena,
 }
 
 PcmDecoder::PcmDecoder(PcmFormat pcm_format, const SampleSpec& sample_spec)
-    : pcm_mapper_(pcm_format, SampleFmt)
+    : pcm_mapper_(pcm_format, Sample_RawFormat)
     , n_chans_(sample_spec.num_channels())
     , stream_pos_(0)
     , stream_avail_(0)

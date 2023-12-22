@@ -114,7 +114,8 @@ SenderConfig make_sender_config(int flags,
     SenderConfig config;
 
     config.input_sample_spec.set_sample_rate(SampleRate);
-    config.input_sample_spec.channel_set().clear();
+    config.input_sample_spec.set_sample_format(audio::SampleFormat_Pcm);
+    config.input_sample_spec.set_pcm_format(audio::Sample_RawFormat);
     config.input_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
     config.input_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
     config.input_sample_spec.channel_set().set_channel_mask(frame_channels);
@@ -153,7 +154,8 @@ ReceiverConfig make_receiver_config(audio::ChannelMask frame_channels,
     ReceiverConfig config;
 
     config.common.output_sample_spec.set_sample_rate(SampleRate);
-    config.common.output_sample_spec.channel_set().clear();
+    config.common.output_sample_spec.set_sample_format(audio::SampleFormat_Pcm);
+    config.common.output_sample_spec.set_pcm_format(audio::Sample_RawFormat);
     config.common.output_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
     config.common.output_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
     config.common.output_sample_spec.channel_set().set_channel_mask(frame_channels);

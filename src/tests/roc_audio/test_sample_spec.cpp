@@ -10,6 +10,9 @@
 #include <CppUTest/UtestMacros.h>
 
 #include "roc_audio/channel_defs.h"
+#include "roc_audio/pcm_format.h"
+#include "roc_audio/sample.h"
+#include "roc_audio/sample_format.h"
 #include "roc_audio/sample_spec.cpp"
 #include "roc_core/cpu_traits.h"
 #include "roc_core/macro_helpers.h"
@@ -26,8 +29,8 @@ TEST(sample_spec, ns_2_nsamples) {
 
     for (size_t numChans = 1; numChans < ChanPos_Max; ++numChans) {
         const SampleSpec sample_spec =
-            SampleSpec((size_t)SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
-                       ChannelMask(((uint64_t)1 << numChans) - 1));
+            SampleSpec((size_t)SampleRate, Sample_RawFormat, ChanLayout_Surround,
+                       ChanOrder_Smpte, ChannelMask(((uint64_t)1 << numChans) - 1));
 
         // num_channels
         CHECK_EQUAL(numChans, sample_spec.channel_set().num_channels());
@@ -74,8 +77,8 @@ TEST(sample_spec, nsamples_2_ns) {
 
     for (size_t numChans = 1; numChans < ChanPos_Max; ++numChans) {
         const SampleSpec sample_spec =
-            SampleSpec((size_t)SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
-                       ChannelMask(((uint64_t)1 << numChans) - 1));
+            SampleSpec((size_t)SampleRate, Sample_RawFormat, ChanLayout_Surround,
+                       ChanOrder_Smpte, ChannelMask(((uint64_t)1 << numChans) - 1));
 
         const core::nanoseconds_t sampling_period =
             core::nanoseconds_t(1 / SampleRate * core::Second);
@@ -117,8 +120,9 @@ TEST(sample_spec, nsamples_2_ns) {
 TEST(sample_spec, saturation) {
 #if ROC_CPU_BITS == 32
     {
-        const SampleSpec sample_spec = SampleSpec(
-            1000000000, ChanLayout_Surround, ChanOrder_Smpte, ChanMask_Surround_Stereo);
+        const SampleSpec sample_spec =
+            SampleSpec(1000000000, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte,
+                       ChanMask_Surround_Stereo);
 
         // ns_2_samples_per_chan
         CHECK_EQUAL(ROC_MAX_OF(size_t),
@@ -126,8 +130,9 @@ TEST(sample_spec, saturation) {
     }
 #endif
     {
-        const SampleSpec sample_spec = SampleSpec(
-            1000000000, ChanLayout_Surround, ChanOrder_Smpte, ChanMask_Surround_Stereo);
+        const SampleSpec sample_spec =
+            SampleSpec(1000000000, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte,
+                       ChanMask_Surround_Stereo);
 
         // ns_2_samples_overall
         // (-1 because result is always multiple of channel count)
@@ -137,7 +142,8 @@ TEST(sample_spec, saturation) {
 #if ROC_CPU_BITS == 64
     {
         const SampleSpec sample_spec =
-            SampleSpec(1, ChanLayout_Surround, ChanOrder_Smpte, ChanMask_Surround_Stereo);
+            SampleSpec(1, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte,
+                       ChanMask_Surround_Stereo);
 
         // samples_per_chan_2_ns
         CHECK_EQUAL(ROC_MAX_OF(core::nanoseconds_t),
@@ -159,7 +165,8 @@ TEST(sample_spec, saturation) {
 #endif
     {
         const SampleSpec sample_spec =
-            SampleSpec(1, ChanLayout_Surround, ChanOrder_Smpte, ChanMask_Surround_Stereo);
+            SampleSpec(1, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte,
+                       ChanMask_Surround_Stereo);
 
         // ns_2_stream_timestamp_delta
         CHECK_EQUAL(
@@ -178,12 +185,16 @@ TEST(sample_spec, clear) {
     // sample spec is invalid
     CHECK(!sample_spec.is_valid());
     CHECK_EQUAL(0, sample_spec.sample_rate());
+    CHECK_EQUAL(SampleFormat_Invalid, sample_spec.sample_format());
+    CHECK_EQUAL(PcmFormat_Invalid, sample_spec.pcm_format());
     CHECK_EQUAL(ChanLayout_None, sample_spec.channel_set().layout());
     CHECK_EQUAL(ChanOrder_None, sample_spec.channel_set().order());
     CHECK_EQUAL(0, sample_spec.channel_set().num_channels());
 
     // set all fields
     sample_spec.set_sample_rate(44100);
+    sample_spec.set_sample_format(SampleFormat_Pcm);
+    sample_spec.set_pcm_format(PcmFormat_Float32);
     sample_spec.channel_set().set_layout(ChanLayout_Surround);
     sample_spec.channel_set().set_order(ChanOrder_Smpte);
     sample_spec.channel_set().set_channel_mask(ChanMask_Surround_Stereo);
@@ -191,6 +202,8 @@ TEST(sample_spec, clear) {
     // sample spec is valid
     CHECK(sample_spec.is_valid());
     CHECK_EQUAL(44100, sample_spec.sample_rate());
+    CHECK_EQUAL(SampleFormat_Pcm, sample_spec.sample_format());
+    CHECK_EQUAL(PcmFormat_Float32, sample_spec.pcm_format());
     CHECK_EQUAL(ChanLayout_Surround, sample_spec.channel_set().layout());
     CHECK_EQUAL(ChanOrder_Smpte, sample_spec.channel_set().order());
     CHECK(sample_spec.channel_set().is_equal(ChanMask_Surround_Stereo));
@@ -201,6 +214,8 @@ TEST(sample_spec, clear) {
     // sample spec is invalid
     CHECK(!sample_spec.is_valid());
     CHECK_EQUAL(0, sample_spec.sample_rate());
+    CHECK_EQUAL(SampleFormat_Invalid, sample_spec.sample_format());
+    CHECK_EQUAL(PcmFormat_Invalid, sample_spec.pcm_format());
     CHECK_EQUAL(ChanLayout_None, sample_spec.channel_set().layout());
     CHECK_EQUAL(ChanOrder_None, sample_spec.channel_set().order());
     CHECK_EQUAL(0, sample_spec.channel_set().num_channels());
@@ -214,6 +229,8 @@ TEST(sample_spec, parse_rate) {
         CHECK(sample_spec.is_valid());
 
         CHECK_EQUAL(44100, sample_spec.sample_rate());
+        CHECK_EQUAL(SampleFormat_Pcm, sample_spec.sample_format());
+        CHECK_EQUAL(PcmFormat_SInt16, sample_spec.pcm_format());
         CHECK_EQUAL(ChanLayout_Surround, sample_spec.channel_set().layout());
         CHECK_EQUAL(ChanOrder_Smpte, sample_spec.channel_set().order());
         CHECK(sample_spec.channel_set().is_equal(ChanMask_Surround_Stereo));
@@ -225,6 +242,50 @@ TEST(sample_spec, parse_rate) {
         CHECK(sample_spec.is_valid());
 
         CHECK_EQUAL(48000, sample_spec.sample_rate());
+        CHECK_EQUAL(SampleFormat_Pcm, sample_spec.sample_format());
+        CHECK_EQUAL(PcmFormat_SInt16, sample_spec.pcm_format());
+        CHECK_EQUAL(ChanLayout_Surround, sample_spec.channel_set().layout());
+        CHECK_EQUAL(ChanOrder_Smpte, sample_spec.channel_set().order());
+        CHECK(sample_spec.channel_set().is_equal(ChanMask_Surround_Stereo));
+    }
+}
+
+TEST(sample_spec, parse_format) {
+    { // uint8
+        SampleSpec sample_spec;
+        CHECK(parse_sample_spec("u8/44100/stereo", sample_spec));
+
+        CHECK(sample_spec.is_valid());
+
+        CHECK_EQUAL(44100, sample_spec.sample_rate());
+        CHECK_EQUAL(SampleFormat_Pcm, sample_spec.sample_format());
+        CHECK_EQUAL(PcmFormat_UInt8, sample_spec.pcm_format());
+        CHECK_EQUAL(ChanLayout_Surround, sample_spec.channel_set().layout());
+        CHECK_EQUAL(ChanOrder_Smpte, sample_spec.channel_set().order());
+        CHECK(sample_spec.channel_set().is_equal(ChanMask_Surround_Stereo));
+    }
+    { // sint18_4_le
+        SampleSpec sample_spec;
+        CHECK(parse_sample_spec("s18_4le/48000/stereo", sample_spec));
+
+        CHECK(sample_spec.is_valid());
+
+        CHECK_EQUAL(48000, sample_spec.sample_rate());
+        CHECK_EQUAL(SampleFormat_Pcm, sample_spec.sample_format());
+        CHECK_EQUAL(PcmFormat_SInt18_4_Le, sample_spec.pcm_format());
+        CHECK_EQUAL(ChanLayout_Surround, sample_spec.channel_set().layout());
+        CHECK_EQUAL(ChanOrder_Smpte, sample_spec.channel_set().order());
+        CHECK(sample_spec.channel_set().is_equal(ChanMask_Surround_Stereo));
+    }
+    { // float32
+        SampleSpec sample_spec;
+        CHECK(parse_sample_spec("f32/48000/stereo", sample_spec));
+
+        CHECK(sample_spec.is_valid());
+
+        CHECK_EQUAL(48000, sample_spec.sample_rate());
+        CHECK_EQUAL(SampleFormat_Pcm, sample_spec.sample_format());
+        CHECK_EQUAL(PcmFormat_Float32, sample_spec.pcm_format());
         CHECK_EQUAL(ChanLayout_Surround, sample_spec.channel_set().layout());
         CHECK_EQUAL(ChanOrder_Smpte, sample_spec.channel_set().order());
         CHECK(sample_spec.channel_set().is_equal(ChanMask_Surround_Stereo));
@@ -239,6 +300,8 @@ TEST(sample_spec, parse_channels) {
         CHECK(sample_spec.is_valid());
 
         CHECK_EQUAL(48000, sample_spec.sample_rate());
+        CHECK_EQUAL(SampleFormat_Pcm, sample_spec.sample_format());
+        CHECK_EQUAL(PcmFormat_SInt16, sample_spec.pcm_format());
         CHECK_EQUAL(ChanLayout_Surround, sample_spec.channel_set().layout());
         CHECK_EQUAL(ChanOrder_Smpte, sample_spec.channel_set().order());
         CHECK(sample_spec.channel_set().is_equal(ChanMask_Surround_Stereo));
@@ -250,6 +313,8 @@ TEST(sample_spec, parse_channels) {
         CHECK(sample_spec.is_valid());
 
         CHECK_EQUAL(48000, sample_spec.sample_rate());
+        CHECK_EQUAL(SampleFormat_Pcm, sample_spec.sample_format());
+        CHECK_EQUAL(PcmFormat_SInt16, sample_spec.pcm_format());
         CHECK_EQUAL(ChanLayout_Surround, sample_spec.channel_set().layout());
         CHECK_EQUAL(ChanOrder_Smpte, sample_spec.channel_set().order());
         CHECK(sample_spec.channel_set().is_equal(ChanMask_Surround_5_1_2));
@@ -261,6 +326,8 @@ TEST(sample_spec, parse_channels) {
         CHECK(sample_spec.is_valid());
 
         CHECK_EQUAL(48000, sample_spec.sample_rate());
+        CHECK_EQUAL(SampleFormat_Pcm, sample_spec.sample_format());
+        CHECK_EQUAL(PcmFormat_SInt16, sample_spec.pcm_format());
         CHECK_EQUAL(ChanLayout_Surround, sample_spec.channel_set().layout());
         CHECK_EQUAL(ChanOrder_Smpte, sample_spec.channel_set().order());
 
@@ -276,6 +343,8 @@ TEST(sample_spec, parse_channels) {
         CHECK(sample_spec.is_valid());
 
         CHECK_EQUAL(48000, sample_spec.sample_rate());
+        CHECK_EQUAL(SampleFormat_Pcm, sample_spec.sample_format());
+        CHECK_EQUAL(PcmFormat_SInt16, sample_spec.pcm_format());
         CHECK_EQUAL(ChanLayout_Multitrack, sample_spec.channel_set().layout());
         CHECK_EQUAL(ChanOrder_None, sample_spec.channel_set().order());
 
@@ -291,6 +360,8 @@ TEST(sample_spec, parse_channels) {
         CHECK(sample_spec.is_valid());
 
         CHECK_EQUAL(48000, sample_spec.sample_rate());
+        CHECK_EQUAL(SampleFormat_Pcm, sample_spec.sample_format());
+        CHECK_EQUAL(PcmFormat_SInt16, sample_spec.pcm_format());
         CHECK_EQUAL(ChanLayout_Multitrack, sample_spec.channel_set().layout());
         CHECK_EQUAL(ChanOrder_None, sample_spec.channel_set().order());
 
@@ -306,6 +377,8 @@ TEST(sample_spec, parse_channels) {
         CHECK(sample_spec.is_valid());
 
         CHECK_EQUAL(48000, sample_spec.sample_rate());
+        CHECK_EQUAL(SampleFormat_Pcm, sample_spec.sample_format());
+        CHECK_EQUAL(PcmFormat_SInt16, sample_spec.pcm_format());
         CHECK_EQUAL(ChanLayout_Multitrack, sample_spec.channel_set().layout());
         CHECK_EQUAL(ChanOrder_None, sample_spec.channel_set().order());
 
@@ -323,6 +396,8 @@ TEST(sample_spec, parse_channels) {
         CHECK(!sample_spec.is_valid());
 
         CHECK_EQUAL(48000, sample_spec.sample_rate());
+        CHECK_EQUAL(SampleFormat_Pcm, sample_spec.sample_format());
+        CHECK_EQUAL(PcmFormat_SInt16, sample_spec.pcm_format());
         CHECK_EQUAL(ChanLayout_Multitrack, sample_spec.channel_set().layout());
         CHECK_EQUAL(ChanOrder_None, sample_spec.channel_set().order());
         CHECK_EQUAL(0, sample_spec.num_channels());
@@ -335,6 +410,8 @@ TEST(sample_spec, parse_channels) {
         CHECK(sample_spec.is_valid());
 
         CHECK_EQUAL(48000, sample_spec.sample_rate());
+        CHECK_EQUAL(SampleFormat_Pcm, sample_spec.sample_format());
+        CHECK_EQUAL(PcmFormat_SInt16, sample_spec.pcm_format());
         CHECK_EQUAL(ChanLayout_Multitrack, sample_spec.channel_set().layout());
         CHECK_EQUAL(ChanOrder_None, sample_spec.channel_set().order());
 
@@ -352,6 +429,8 @@ TEST(sample_spec, parse_channels) {
         CHECK(sample_spec.is_valid());
 
         CHECK_EQUAL(48000, sample_spec.sample_rate());
+        CHECK_EQUAL(SampleFormat_Pcm, sample_spec.sample_format());
+        CHECK_EQUAL(PcmFormat_SInt16, sample_spec.pcm_format());
         CHECK_EQUAL(ChanLayout_Multitrack, sample_spec.channel_set().layout());
         CHECK_EQUAL(ChanOrder_None, sample_spec.channel_set().order());
 
@@ -368,10 +447,11 @@ TEST(sample_spec, parse_defaults) {
         SampleSpec sample_spec;
         CHECK(parse_sample_spec("-/44100/stereo", sample_spec));
 
-        // TODO(gh-547): should be invalid
-        CHECK(sample_spec.is_valid());
+        CHECK(!sample_spec.is_valid());
 
         CHECK_EQUAL(44100, sample_spec.sample_rate());
+        CHECK_EQUAL(SampleFormat_Invalid, sample_spec.sample_format());
+        CHECK_EQUAL(PcmFormat_Invalid, sample_spec.pcm_format());
         CHECK_EQUAL(ChanLayout_Surround, sample_spec.channel_set().layout());
         CHECK_EQUAL(ChanOrder_Smpte, sample_spec.channel_set().order());
         CHECK(sample_spec.channel_set().is_equal(ChanMask_Surround_Stereo));
@@ -383,6 +463,8 @@ TEST(sample_spec, parse_defaults) {
         CHECK(!sample_spec.is_valid());
 
         CHECK_EQUAL(0, sample_spec.sample_rate());
+        CHECK_EQUAL(SampleFormat_Pcm, sample_spec.sample_format());
+        CHECK_EQUAL(PcmFormat_SInt16, sample_spec.pcm_format());
         CHECK_EQUAL(ChanLayout_Surround, sample_spec.channel_set().layout());
         CHECK_EQUAL(ChanOrder_Smpte, sample_spec.channel_set().order());
         CHECK(sample_spec.channel_set().is_equal(ChanMask_Surround_Stereo));
@@ -394,6 +476,8 @@ TEST(sample_spec, parse_defaults) {
         CHECK(!sample_spec.is_valid());
 
         CHECK_EQUAL(48000, sample_spec.sample_rate());
+        CHECK_EQUAL(SampleFormat_Pcm, sample_spec.sample_format());
+        CHECK_EQUAL(PcmFormat_SInt16, sample_spec.pcm_format());
         CHECK_EQUAL(ChanLayout_None, sample_spec.channel_set().layout());
         CHECK_EQUAL(ChanOrder_None, sample_spec.channel_set().order());
         CHECK_EQUAL(0, sample_spec.channel_set().num_channels());
@@ -405,6 +489,8 @@ TEST(sample_spec, parse_defaults) {
         CHECK(!sample_spec.is_valid());
 
         CHECK_EQUAL(0, sample_spec.sample_rate());
+        CHECK_EQUAL(SampleFormat_Invalid, sample_spec.sample_format());
+        CHECK_EQUAL(PcmFormat_Invalid, sample_spec.pcm_format());
         CHECK_EQUAL(ChanLayout_None, sample_spec.channel_set().layout());
         CHECK_EQUAL(ChanOrder_None, sample_spec.channel_set().order());
         CHECK_EQUAL(0, sample_spec.channel_set().num_channels());
@@ -429,6 +515,10 @@ TEST(sample_spec, parse_errors) {
         CHECK(!parse_sample_spec("s16/0/stereo", sample_spec));
         CHECK(!parse_sample_spec("s16/-1/stereo", sample_spec));
         CHECK(!parse_sample_spec("s16/bad/stereo", sample_spec));
+    }
+    { // bad format
+        CHECK(!parse_sample_spec("s77/44100/stereo", sample_spec));
+        CHECK(!parse_sample_spec("xxx/44100/stereo", sample_spec));
     }
     { // bad surround
         CHECK(!parse_sample_spec("s16/44100/bad", sample_spec));

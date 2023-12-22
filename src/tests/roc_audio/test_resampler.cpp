@@ -325,11 +325,11 @@ TEST(resampler, supported_scalings) {
                             ResamplerMap::instance().nth_backend(n_back);
 
                         const SampleSpec in_spec =
-                            SampleSpec(supported_rates[n_irate], ChanLayout_Surround,
-                                       ChanOrder_Smpte, ChMask);
+                            SampleSpec(supported_rates[n_irate], Sample_RawFormat,
+                                       ChanLayout_Surround, ChanOrder_Smpte, ChMask);
                         const SampleSpec out_spec =
-                            SampleSpec(supported_rates[n_orate], ChanLayout_Surround,
-                                       ChanOrder_Smpte, ChMask);
+                            SampleSpec(supported_rates[n_orate], Sample_RawFormat,
+                                       ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
                         core::SharedPtr<IResampler> resampler =
                             ResamplerMap::instance().new_resampler(
@@ -383,11 +383,11 @@ TEST(resampler, invalid_scalings) {
                         ResamplerMap::instance().nth_backend(n_back);
 
                     const SampleSpec in_spec =
-                        SampleSpec(supported_rates[n_irate], ChanLayout_Surround,
-                                   ChanOrder_Smpte, ChMask);
+                        SampleSpec(supported_rates[n_irate], Sample_RawFormat,
+                                   ChanLayout_Surround, ChanOrder_Smpte, ChMask);
                     const SampleSpec out_spec =
-                        SampleSpec(supported_rates[n_orate], ChanLayout_Surround,
-                                   ChanOrder_Smpte, ChMask);
+                        SampleSpec(supported_rates[n_orate], Sample_RawFormat,
+                                   ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
                     core::SharedPtr<IResampler> resampler =
                         ResamplerMap::instance().new_resampler(
@@ -434,11 +434,11 @@ TEST(resampler, scaling_trend) {
                         ResamplerMap::instance().nth_backend(n_back);
 
                     const SampleSpec in_spec =
-                        SampleSpec(supported_rates[n_irate], ChanLayout_Surround,
-                                   ChanOrder_Smpte, ChMask);
+                        SampleSpec(supported_rates[n_irate], Sample_RawFormat,
+                                   ChanLayout_Surround, ChanOrder_Smpte, ChMask);
                     const SampleSpec out_spec =
-                        SampleSpec(supported_rates[n_orate], ChanLayout_Surround,
-                                   ChanOrder_Smpte, ChMask);
+                        SampleSpec(supported_rates[n_orate], Sample_RawFormat,
+                                   ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
                     const float scaling = supported_scalings[n_scale];
 
@@ -513,8 +513,8 @@ TEST(resampler, upscale_downscale_mono) {
         const ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
         const ResamplerProfile profile = ResamplerProfile_High;
 
-        const SampleSpec sample_spec(SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
-                                     ChMask);
+        const SampleSpec sample_spec(SampleRate, Sample_RawFormat, ChanLayout_Surround,
+                                     ChanOrder_Smpte, ChMask);
 
         for (size_t n_dir = 0; n_dir < ROC_ARRAY_SIZE(supported_dirs); n_dir++) {
             const Direction dir = supported_dirs[n_dir];
@@ -581,8 +581,8 @@ TEST(resampler, upscale_downscale_stereo) {
         const ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
         const ResamplerProfile profile = ResamplerProfile_High;
 
-        const SampleSpec sample_spec(SampleRate, ChanLayout_Surround, ChanOrder_Smpte,
-                                     ChMask);
+        const SampleSpec sample_spec(SampleRate, Sample_RawFormat, ChanLayout_Surround,
+                                     ChanOrder_Smpte, ChMask);
 
         for (size_t n_dir = 0; n_dir < ROC_ARRAY_SIZE(supported_dirs); n_dir++) {
             const Direction dir = supported_dirs[n_dir];
@@ -660,11 +660,11 @@ TEST(resampler, reader_timestamp_passthrough) {
                         ResamplerMap::instance().nth_backend(n_back);
 
                     const SampleSpec in_spec =
-                        SampleSpec(supported_rates[n_irate], ChanLayout_Surround,
-                                   ChanOrder_Smpte, ChMask);
+                        SampleSpec(supported_rates[n_irate], Sample_RawFormat,
+                                   ChanLayout_Surround, ChanOrder_Smpte, ChMask);
                     const SampleSpec out_spec =
-                        SampleSpec(supported_rates[n_orate], ChanLayout_Surround,
-                                   ChanOrder_Smpte, ChMask);
+                        SampleSpec(supported_rates[n_orate], Sample_RawFormat,
+                                   ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
                     core::SharedPtr<IResampler> resampler =
                         ResamplerMap::instance().new_resampler(
@@ -781,11 +781,11 @@ TEST(resampler, writer_timestamp_passthrough) {
                         ResamplerMap::instance().nth_backend(n_back);
 
                     const SampleSpec in_spec =
-                        SampleSpec(supported_rates[n_irate], ChanLayout_Surround,
-                                   ChanOrder_Smpte, ChMask);
+                        SampleSpec(supported_rates[n_irate], Sample_RawFormat,
+                                   ChanLayout_Surround, ChanOrder_Smpte, ChMask);
                     const SampleSpec out_spec =
-                        SampleSpec(supported_rates[n_orate], ChanLayout_Surround,
-                                   ChanOrder_Smpte, ChMask);
+                        SampleSpec(supported_rates[n_orate], Sample_RawFormat,
+                                   ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
                     core::SharedPtr<IResampler> resampler =
                         ResamplerMap::instance().new_resampler(
@@ -901,11 +901,11 @@ TEST(resampler, reader_timestamp_zero_or_small) {
                         ResamplerMap::instance().nth_backend(n_back);
 
                     const SampleSpec in_spec =
-                        SampleSpec(supported_rates[n_irate], ChanLayout_Surround,
-                                   ChanOrder_Smpte, ChMask);
+                        SampleSpec(supported_rates[n_irate], Sample_RawFormat,
+                                   ChanLayout_Surround, ChanOrder_Smpte, ChMask);
                     const SampleSpec out_spec =
-                        SampleSpec(supported_rates[n_orate], ChanLayout_Surround,
-                                   ChanOrder_Smpte, ChMask);
+                        SampleSpec(supported_rates[n_orate], Sample_RawFormat,
+                                   ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
                     core::SharedPtr<IResampler> resampler =
                         ResamplerMap::instance().new_resampler(
@@ -984,11 +984,11 @@ TEST(resampler, writer_timestamp_zero_or_small) {
                         ResamplerMap::instance().nth_backend(n_back);
 
                     const SampleSpec in_spec =
-                        SampleSpec(supported_rates[n_irate], ChanLayout_Surround,
-                                   ChanOrder_Smpte, ChMask);
+                        SampleSpec(supported_rates[n_irate], Sample_RawFormat,
+                                   ChanLayout_Surround, ChanOrder_Smpte, ChMask);
                     const SampleSpec out_spec =
-                        SampleSpec(supported_rates[n_orate], ChanLayout_Surround,
-                                   ChanOrder_Smpte, ChMask);
+                        SampleSpec(supported_rates[n_orate], Sample_RawFormat,
+                                   ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
                     core::SharedPtr<IResampler> resampler =
                         ResamplerMap::instance().new_resampler(

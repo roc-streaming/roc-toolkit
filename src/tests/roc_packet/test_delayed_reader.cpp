@@ -25,6 +25,7 @@ enum { SampleRate = 1000, NumSamples = 100, NumPackets = 30 };
 
 const core::nanoseconds_t NsPerSample = core::Second / SampleRate;
 const audio::SampleSpec SampleSpecs(SampleRate,
+                                    audio::Sample_RawFormat,
                                     audio::ChanLayout_Surround,
                                     audio::ChanOrder_Smpte,
                                     audio::ChanMask_Surround_Stereo);

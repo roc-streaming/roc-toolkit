@@ -146,6 +146,7 @@ CODES = [
         'short_name': 's8',
         'is_integer': True,
         'is_signed': True,
+        'depth': 8,
         'width': 8,
         'packed_width': 8,
         'unpacked_width': 8,
@@ -159,6 +160,7 @@ CODES = [
         'short_name': 'u8',
         'is_integer': True,
         'is_signed': False,
+        'depth': 8,
         'width': 8,
         'packed_width': 8,
         'unpacked_width': 8,
@@ -172,6 +174,7 @@ CODES = [
         'short_name': 's16',
         'is_integer': True,
         'is_signed': True,
+        'depth': 16,
         'width': 16,
         'packed_width': 16,
         'unpacked_width': 16,
@@ -185,6 +188,7 @@ CODES = [
         'short_name': 'u16',
         'is_integer': True,
         'is_signed': False,
+        'depth': 16,
         'width': 16,
         'packed_width': 16,
         'unpacked_width': 16,
@@ -198,6 +202,7 @@ CODES = [
         'short_name': 's18',
         'is_integer': True,
         'is_signed': True,
+        'depth': 18,
         'width': 18,
         'packed_width': 18,
         'unpacked_width': 32,
@@ -211,6 +216,7 @@ CODES = [
         'short_name': 'u18',
         'is_integer': True,
         'is_signed': False,
+        'depth': 18,
         'width': 18,
         'packed_width': 18,
         'unpacked_width': 32,
@@ -224,6 +230,7 @@ CODES = [
         'short_name': 's18_3',
         'is_integer': True,
         'is_signed': True,
+        'depth': 18,
         'width': 18,
         'packed_width': 24,
         'unpacked_width': 32,
@@ -237,6 +244,7 @@ CODES = [
         'short_name': 'u18_3',
         'is_integer': True,
         'is_signed': False,
+        'depth': 18,
         'width': 18,
         'packed_width': 24,
         'unpacked_width': 32,
@@ -250,6 +258,7 @@ CODES = [
         'short_name': 's18_4',
         'is_integer': True,
         'is_signed': True,
+        'depth': 18,
         'width': 18,
         'packed_width': 32,
         'unpacked_width': 32,
@@ -263,6 +272,7 @@ CODES = [
         'short_name': 'u18_4',
         'is_integer': True,
         'is_signed': False,
+        'depth': 18,
         'width': 18,
         'packed_width': 32,
         'unpacked_width': 32,
@@ -276,6 +286,7 @@ CODES = [
         'short_name': 's20',
         'is_integer': True,
         'is_signed': True,
+        'depth': 20,
         'width': 20,
         'packed_width': 20,
         'unpacked_width': 32,
@@ -289,6 +300,7 @@ CODES = [
         'short_name': 'u20',
         'is_integer': True,
         'is_signed': False,
+        'depth': 20,
         'width': 20,
         'packed_width': 20,
         'unpacked_width': 32,
@@ -302,6 +314,7 @@ CODES = [
         'short_name': 's20_3',
         'is_integer': True,
         'is_signed': True,
+        'depth': 20,
         'width': 20,
         'packed_width': 24,
         'unpacked_width': 32,
@@ -315,6 +328,7 @@ CODES = [
         'short_name': 'u20_3',
         'is_integer': True,
         'is_signed': False,
+        'depth': 20,
         'width': 20,
         'packed_width': 24,
         'unpacked_width': 32,
@@ -328,6 +342,7 @@ CODES = [
         'short_name': 's20_4',
         'is_integer': True,
         'is_signed': True,
+        'depth': 20,
         'width': 20,
         'packed_width': 32,
         'unpacked_width': 32,
@@ -341,6 +356,7 @@ CODES = [
         'short_name': 'u20_4',
         'is_integer': True,
         'is_signed': False,
+        'depth': 20,
         'width': 20,
         'packed_width': 32,
         'unpacked_width': 32,
@@ -354,6 +370,7 @@ CODES = [
         'short_name': 's24',
         'is_integer': True,
         'is_signed': True,
+        'depth': 24,
         'width': 24,
         'packed_width': 24,
         'unpacked_width': 32,
@@ -367,6 +384,7 @@ CODES = [
         'short_name': 'u24',
         'is_integer': True,
         'is_signed': False,
+        'depth': 24,
         'width': 24,
         'packed_width': 24,
         'unpacked_width': 32,
@@ -380,6 +398,7 @@ CODES = [
         'short_name': 's24_4',
         'is_integer': True,
         'is_signed': True,
+        'depth': 24,
         'width': 24,
         'packed_width': 32,
         'unpacked_width': 32,
@@ -393,6 +412,7 @@ CODES = [
         'short_name': 'u24_4',
         'is_integer': True,
         'is_signed': False,
+        'depth': 24,
         'width': 24,
         'packed_width': 32,
         'unpacked_width': 32,
@@ -406,6 +426,7 @@ CODES = [
         'short_name': 's32',
         'is_integer': True,
         'is_signed': True,
+        'depth': 32,
         'width': 32,
         'packed_width': 32,
         'unpacked_width': 32,
@@ -419,6 +440,7 @@ CODES = [
         'short_name': 'u32',
         'is_integer': True,
         'is_signed': False,
+        'depth': 32,
         'width': 32,
         'packed_width': 32,
         'unpacked_width': 32,
@@ -432,6 +454,7 @@ CODES = [
         'short_name': 's64',
         'is_integer': True,
         'is_signed': True,
+        'depth': 64,
         'width': 64,
         'packed_width': 64,
         'unpacked_width': 64,
@@ -445,6 +468,7 @@ CODES = [
         'short_name': 'u64',
         'is_integer': True,
         'is_signed': False,
+        'depth': 64,
         'width': 64,
         'packed_width': 64,
         'unpacked_width': 64,
@@ -457,6 +481,7 @@ CODES = [
         'short_name': 'f32',
         'is_integer': False,
         'is_signed': True,
+        'depth': 25,
         'width': 32,
         'packed_width': 32,
         'unpacked_width': 32,
@@ -469,6 +494,7 @@ CODES = [
         'short_name': 'f64',
         'is_integer': False,
         'is_signed': True,
+        'depth': 53,
         'width': 64,
         'packed_width': 64,
         'unpacked_width': 64,
@@ -918,7 +944,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 {% else %}
         traits.is_little = {{ str(endian == 'Little').lower() }};
 {% endif %}
-        traits.bit_depth = {{ code.width }};
+        traits.bit_depth = {{ code.depth }};
         traits.bit_width = {{ code.packed_width }};
         break;
 
@@ -962,9 +988,9 @@ PcmFormat pcm_format_from_str(const char* str) {
                     return {{ make_enum_name(code, endian) }};
                 }
 {% endfor %}
-                return PcmFormat_Invalid;
 {% endif %}
 {% endfor %}
+                return PcmFormat_Invalid;
             }
 {% endfor %}
 {% for code in CODES %}

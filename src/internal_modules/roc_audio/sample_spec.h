@@ -13,7 +13,9 @@
 #define ROC_AUDIO_SAMPLE_SPEC_H_
 
 #include "roc_audio/channel_set.h"
+#include "roc_audio/pcm_format.h"
 #include "roc_audio/sample.h"
+#include "roc_audio/sample_format.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/string_builder.h"
 #include "roc_core/time.h"
@@ -30,13 +32,18 @@ public:
     SampleSpec();
 
     //! Construct specification with parameters.
-    SampleSpec(size_t sample_rate, const ChannelSet& channel_set);
+    //! @note
+    //!  This constructor sets sample_format() to SampleFormat_Pcm.
+    SampleSpec(size_t sample_rate, PcmFormat pcm_fmt, const ChannelSet& channel_set);
 
     //! Construct specification with parameters.
     //! @remarks
     //!  This is a convenient overload for the case when 32-bit mask is enough to
     //!  describe channels. Otherwise, use overload that accepts ChannelSet.
+    //! @note
+    //!  This constructor sets sample_format() to SampleFormat_Pcm.
     SampleSpec(size_t sample_rate,
+               PcmFormat pcm_fmt,
                ChannelLayout channel_layout,
                ChannelOrder channel_order,
                ChannelMask channel_mask);
@@ -68,6 +75,25 @@ public:
 
     //! Set sample rate.
     void set_sample_rate(size_t sample_rate);
+
+    //! Get sample format.
+    //! @remarks
+    //!  Defines how samples are represented in memory.
+    //!  When set to SampleFormat_Pcm, pcm_format() defines what exact PCM coding
+    //!  and endian are used.
+    SampleFormat sample_format() const;
+
+    //! Set sample format.
+    void set_sample_format(SampleFormat sample_fmt);
+
+    //! Get PCM format.
+    //! @remarks
+    //!  When sample_format() is set to SampleFormat_Pcm, defines what exact PCM coding
+    //!  and endian are used.
+    PcmFormat pcm_format() const;
+
+    //! Set PCM format.
+    void set_pcm_format(PcmFormat pcm_fmt);
 
     //! Get channel set.
     //! @remarks
@@ -149,6 +175,8 @@ public:
 
 private:
     size_t sample_rate_;
+    SampleFormat sample_fmt_;
+    PcmFormat pcm_fmt_;
     ChannelSet channel_set_;
 };
 

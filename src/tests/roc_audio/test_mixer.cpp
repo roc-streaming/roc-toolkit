@@ -205,8 +205,8 @@ TEST(mixer, flags) {
 
 TEST(mixer, timestamps_one_reader) {
     // BufSz samples per second
-    const SampleSpec sample_spec(BufSz, ChanLayout_Surround, ChanOrder_Smpte,
-                                 ChanMask_Surround_Mono);
+    const SampleSpec sample_spec(BufSz, Sample_RawFormat, ChanLayout_Surround,
+                                 ChanOrder_Smpte, ChanMask_Surround_Mono);
     const core::nanoseconds_t start_ts = 1000000000000;
 
     test::MockReader reader;
@@ -232,8 +232,8 @@ TEST(mixer, timestamps_one_reader) {
 
 TEST(mixer, timestamps_two_readers) {
     // BufSz samples per second
-    const SampleSpec sample_spec(BufSz, ChanLayout_Surround, ChanOrder_Smpte,
-                                 ChanMask_Surround_Mono);
+    const SampleSpec sample_spec(BufSz, Sample_RawFormat, ChanLayout_Surround,
+                                 ChanOrder_Smpte, ChanMask_Surround_Mono);
     const core::nanoseconds_t start_ts1 = 2000000000000;
     const core::nanoseconds_t start_ts2 = 1000000000000;
 
@@ -269,8 +269,8 @@ TEST(mixer, timestamps_two_readers) {
 
 TEST(mixer, timestamps_partial) {
     // BufSz samples per second
-    const SampleSpec sample_spec(BufSz, ChanLayout_Surround, ChanOrder_Smpte,
-                                 ChanMask_Surround_Mono);
+    const SampleSpec sample_spec(BufSz, Sample_RawFormat, ChanLayout_Surround,
+                                 ChanOrder_Smpte, ChanMask_Surround_Mono);
     const core::nanoseconds_t start_ts1 = 2000000000000;
     const core::nanoseconds_t start_ts2 = 1000000000000;
 
@@ -313,8 +313,8 @@ TEST(mixer, timestamps_partial) {
 
 TEST(mixer, timestamps_no_overflow) {
     // BufSz samples per second
-    const SampleSpec sample_spec(BufSz, ChanLayout_Surround, ChanOrder_Smpte,
-                                 ChanMask_Surround_Mono);
+    const SampleSpec sample_spec(BufSz, Sample_RawFormat, ChanLayout_Surround,
+                                 ChanOrder_Smpte, ChanMask_Surround_Mono);
     const core::nanoseconds_t start_ts1 = 9000000000000000000ll;
     const core::nanoseconds_t start_ts2 = 9100000000000000000ll;
 
@@ -354,8 +354,8 @@ TEST(mixer, timestamps_no_overflow) {
 }
 
 TEST(mixer, timestamps_disabled) {
-    const SampleSpec sample_spec(BufSz, ChanLayout_Surround, ChanOrder_Smpte,
-                                 ChanMask_Surround_Mono);
+    const SampleSpec sample_spec(BufSz, Sample_RawFormat, ChanLayout_Surround,
+                                 ChanOrder_Smpte, ChanMask_Surround_Mono);
     const core::nanoseconds_t start_ts = 1000000000000;
 
     test::MockReader reader1;

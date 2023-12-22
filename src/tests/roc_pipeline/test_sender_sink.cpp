@@ -103,11 +103,15 @@ TEST_GROUP(sender_sink) {
     void init(int input_sample_rate, audio::ChannelMask input_channels,
               int packet_sample_rate, audio::ChannelMask packet_channels) {
         input_sample_spec.set_sample_rate((size_t)input_sample_rate);
+        input_sample_spec.set_sample_format(audio::SampleFormat_Pcm);
+        input_sample_spec.set_pcm_format(audio::Sample_RawFormat);
         input_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
         input_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
         input_sample_spec.channel_set().set_channel_mask(input_channels);
 
         packet_sample_spec.set_sample_rate((size_t)packet_sample_rate);
+        packet_sample_spec.set_sample_format(audio::SampleFormat_Pcm);
+        packet_sample_spec.set_pcm_format(audio::PcmFormat_SInt16_Be);
         packet_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
         packet_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
         packet_sample_spec.channel_set().set_channel_mask(packet_channels);

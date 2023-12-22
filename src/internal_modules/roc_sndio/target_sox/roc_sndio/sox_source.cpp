@@ -180,13 +180,15 @@ audio::SampleSpec SoxSource::sample_spec() const {
     }
 
     if (input_->signal.channels == 1) {
-        return audio::SampleSpec(size_t(input_->signal.rate), audio::ChanLayout_Surround,
-                                 audio::ChanOrder_Smpte, audio::ChanMask_Surround_Mono);
+        return audio::SampleSpec(size_t(input_->signal.rate), audio::Sample_RawFormat,
+                                 audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
+                                 audio::ChanMask_Surround_Mono);
     }
 
     if (input_->signal.channels == 2) {
-        return audio::SampleSpec(size_t(input_->signal.rate), audio::ChanLayout_Surround,
-                                 audio::ChanOrder_Smpte, audio::ChanMask_Surround_Stereo);
+        return audio::SampleSpec(size_t(input_->signal.rate), audio::Sample_RawFormat,
+                                 audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
+                                 audio::ChanMask_Surround_Stereo);
     }
 
     roc_panic("sox source: unsupported channel count");

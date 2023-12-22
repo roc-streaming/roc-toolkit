@@ -31,6 +31,7 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
             new (channel_mapper_writer_) audio::ChannelMapperWriter(
                 *awriter, buffer_factory,
                 audio::SampleSpec(config.output_sample_spec.sample_rate(),
+                                  config.input_sample_spec.pcm_format(),
                                   config.input_sample_spec.channel_set()),
                 config.output_sample_spec));
         if (!channel_mapper_writer_ || !channel_mapper_writer_->is_valid()) {
@@ -52,6 +53,7 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
             *awriter, *resampler_, buffer_factory, config.input_sample_spec,
             audio::SampleSpec(config.output_sample_spec.sample_rate(),
+                              config.input_sample_spec.pcm_format(),
                               config.input_sample_spec.channel_set())));
 
         if (!resampler_writer_ || !resampler_writer_->is_valid()) {

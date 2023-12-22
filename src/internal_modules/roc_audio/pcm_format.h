@@ -214,7 +214,7 @@ struct PcmTraits {
     //! Number of significant bits per sample.
     size_t bit_depth;
 
-    //! Number of total bits per sample in packed form.
+    //! Number of stored bits per sample in packed form.
     size_t bit_width;
 
     PcmTraits()

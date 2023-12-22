@@ -29,6 +29,7 @@ TranscoderSource::TranscoderSource(const TranscoderConfig& config,
             new (channel_mapper_reader_) audio::ChannelMapperReader(
                 *areader, buffer_factory, config.input_sample_spec,
                 audio::SampleSpec(config.input_sample_spec.sample_rate(),
+                                  config.output_sample_spec.pcm_format(),
                                   config.output_sample_spec.channel_set())));
         if (!channel_mapper_reader_ || !channel_mapper_reader_->is_valid()) {
             return;
@@ -48,6 +49,7 @@ TranscoderSource::TranscoderSource(const TranscoderConfig& config,
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
             config.resampler_backend, arena, buffer_factory, config.resampler_profile,
             audio::SampleSpec(config.input_sample_spec.sample_rate(),
+                              config.output_sample_spec.pcm_format(),
                               config.output_sample_spec.channel_set()),
             config.output_sample_spec));
 
@@ -58,6 +60,7 @@ TranscoderSource::TranscoderSource(const TranscoderConfig& config,
         resampler_reader_.reset(new (resampler_reader_) audio::ResamplerReader(
             *areader, *resampler_,
             audio::SampleSpec(config.input_sample_spec.sample_rate(),
+                              config.output_sample_spec.pcm_format(),
                               config.output_sample_spec.channel_set()),
             config.output_sample_spec));
 
