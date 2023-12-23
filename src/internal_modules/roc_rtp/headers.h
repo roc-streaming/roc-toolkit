@@ -16,6 +16,7 @@
 #include "roc_core/endian.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
+#include "roc_packet/units.h"
 
 namespace roc {
 namespace rtp {
@@ -27,8 +28,8 @@ enum Version {
 
 //! RTP payload type.
 enum PayloadType {
-    PayloadType_L16_Stereo = 10, //!< Audio, 16-bit samples, 2 channels, 44100 Hz.
-    PayloadType_L16_Mono = 11    //!< Audio, 16-bit samples, 1 channel, 44100 Hz.
+    PayloadType_L16_Stereo = 10, //!< Audio, 16-bit PCM, 2 channels, 44100 Hz.
+    PayloadType_L16_Mono = 11    //!< Audio, 16-bit PCM, 1 channel, 44100 Hz.
 };
 
 //! RTP header.
@@ -152,11 +153,6 @@ public:
         return (flags_ & (Flag_ExtensionMask << Flag_ExtensionShift));
     }
 
-    //! Get CSRC array size.
-    uint8_t num_csrc() const {
-        return ((flags_ >> Flag_CSRCShift) & Flag_CSRCMask);
-    }
-
     //! Get payload type.
     uint8_t payload_type() const {
         return ((mpt_ >> MPT_PayloadTypeShift) & MPT_PayloadTypeMask);
@@ -181,37 +177,42 @@ public:
     }
 
     //! Get sequence number.
-    uint16_t seqnum() const {
+    packet::seqnum_t seqnum() const {
         return core::ntoh16u(seqnum_);
     }
 
     //! Set sequence number.
-    void set_seqnum(uint16_t sn) {
+    void set_seqnum(packet::seqnum_t sn) {
         seqnum_ = core::hton16u(sn);
     }
 
     //! Get timestamp.
-    uint32_t timestamp() const {
+    packet::stream_timestamp_t timestamp() const {
         return core::ntoh32u(timestamp_);
     }
 
     //! Set timestamp.
-    void set_timestamp(uint32_t ts) {
+    void set_timestamp(packet::stream_timestamp_t ts) {
         timestamp_ = core::hton32u(ts);
     }
 
     //! Get SSRC.
-    uint32_t ssrc() const {
+    packet::stream_source_t ssrc() const {
         return core::ntoh32u(ssrc_[0]);
     }
 
     //! Set SSRC.
-    void set_ssrc(uint32_t s) {
+    void set_ssrc(packet::stream_source_t s) {
         ssrc_[0] = core::hton32u(s);
     }
 
-    //! Get CSRC.
-    uint32_t get_csrc(size_t index) const {
+    //! Get CSRC count.
+    uint8_t num_csrc() const {
+        return ((flags_ >> Flag_CSRCShift) & Flag_CSRCMask);
+    }
+
+    //! Get CSRC with given index.
+    packet::stream_source_t csrc(size_t index) const {
         roc_panic_if(index >= num_csrc());
         return core::ntoh32u(ssrc_[index + 1]);
     }
