@@ -16,7 +16,7 @@ namespace core {
 
 namespace {
 
-uint32_t state;
+uint32_t rng_state;
 
 } // namespace
 
@@ -25,15 +25,15 @@ uint32_t state;
 //
 // This implementation is not a cryptographically secure PRNG.
 uint32_t fast_random() {
-    if (AtomicOps::load_relaxed(state) == 0) {
+    if (AtomicOps::load_relaxed(rng_state) == 0) {
         uint32_t expected_state = 0;
         uint32_t new_state = (uint32_t)core::timestamp(core::ClockMonotonic);
-        AtomicOps::compare_exchange_seq_cst(state, expected_state, new_state);
+        AtomicOps::compare_exchange_seq_cst(rng_state, expected_state, new_state);
     }
 
     uint32_t z;
 
-    z = AtomicOps::fetch_add_seq_cst(state, 0x9E3779B9);
+    z = AtomicOps::fetch_add_seq_cst(rng_state, 0x9E3779B9);
     z = z ^ (z >> 16);
     z *= 0x21F0AAAD;
     z = z ^ (z >> 15);

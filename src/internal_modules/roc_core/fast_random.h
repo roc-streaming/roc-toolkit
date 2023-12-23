@@ -19,13 +19,13 @@ namespace core {
 
 //! Get a random integer from a non cryptographically secure, but fast PRNG.
 //! Thread-safe.
-//! @returns random value in range [from; to].
-uint32_t fast_random_range(uint32_t from, uint32_t to);
+//! @returns random value between 0 and UINT32_MAX.
+uint32_t fast_random();
 
 //! Get a random integer from a non cryptographically secure, but fast PRNG.
 //! Thread-safe.
-//! @returns random value between 0 and UINT32_MAX.
-uint32_t fast_random();
+//! @returns random value in inclusive range [from; to].
+uint32_t fast_random_range(uint32_t from, uint32_t to);
 
 } // namespace core
 } // namespace roc
