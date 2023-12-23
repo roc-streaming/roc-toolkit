@@ -28,7 +28,8 @@ ReceiverSource::ReceiverSource(
     , sample_buffer_factory_(sample_buffer_factory)
     , arena_(arena)
     , audio_reader_(NULL)
-    , config_(config) {
+    , config_(config)
+    , valid_(false) {
     mixer_.reset(new (mixer_) audio::Mixer(sample_buffer_factory, true));
     if (!mixer_ || !mixer_->is_valid()) {
         return;
@@ -51,11 +52,16 @@ ReceiverSource::ReceiverSource(
         areader = profiler_.get();
     }
 
+    if (!areader) {
+        return;
+    }
+
     audio_reader_ = areader;
+    valid_ = true;
 }
 
 bool ReceiverSource::is_valid() const {
-    return audio_reader_;
+    return valid_;
 }
 
 ReceiverSlot* ReceiverSource::create_slot() {
@@ -67,7 +73,8 @@ ReceiverSlot* ReceiverSource::create_slot() {
         ReceiverSlot(config_, state_, *mixer_, encoding_map_, packet_factory_,
                      byte_buffer_factory_, sample_buffer_factory_, arena_);
 
-    if (!slot) {
+    if (!slot || !slot->is_valid()) {
+        roc_log(LogError, "receiver source: can't create slot");
         return NULL;
     }
 

@@ -196,7 +196,7 @@ int roc_receiver_decoder_push(roc_receiver_decoder* decoder,
     }
 
     imp_packet->add_flags(packet::Packet::FlagUDP);
-    imp_packet->set_data(imp_slice);
+    imp_packet->set_buffer(imp_slice);
 
     const status::StatusCode code = imp_decoder->write(imp_iface, imp_packet);
     if (code != status::StatusOK) {

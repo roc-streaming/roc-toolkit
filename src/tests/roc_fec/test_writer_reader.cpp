@@ -165,7 +165,7 @@ TEST_GROUP(writer_reader) {
         }
         CHECK(composer->prepare(*pp, bp, rtp_payload_size));
 
-        pp->set_data(bp);
+        pp->set_buffer(bp);
 
         UNSIGNED_LONGS_EQUAL(rtp_payload_size, pp->rtp()->payload.size());
         UNSIGNED_LONGS_EQUAL(fec_payload_size, pp->fec()->payload.size());

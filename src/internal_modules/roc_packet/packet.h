@@ -18,6 +18,7 @@
 #include "roc_core/ref_counted.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_core/slab_pool.h"
+#include "roc_core/time.h"
 #include "roc_packet/fec.h"
 #include "roc_packet/print_packet.h"
 #include "roc_packet/rtcp.h"
@@ -87,31 +88,44 @@ public:
     //! RTCP packet.
     RTCP* rtcp();
 
-    //! Get packet data.
-    const core::Slice<uint8_t>& data() const;
+    //! Get packet buffer.
+    //! @remarks
+    //!  Returns slice with entire packet with all headers and footers.
+    const core::Slice<uint8_t>& buffer() const;
 
-    //! Set packet data.
-    void set_data(const core::Slice<uint8_t>& data);
+    //! Set packet buffer.
+    void set_buffer(const core::Slice<uint8_t>& data);
 
-    //! Return packet stream identifier.
+    //! Get protocol-dependant packet payload.
+    //! @remarks
+    //!  Returns sub-slice with inner-most packet data.
+    //!  E.g. for RTP nested into FECFRAME, returns payload
+    //!  of RTP packet (where samples are stored).
+    const core::Slice<uint8_t>& payload() const;
+
+    //! Get packet stream identifier.
     //! @remarks
     //!  The returning value depends on packet type. For some packet types, may
     //!  be always zero.
     stream_source_t source() const;
 
-    //! Get the timestamp of the first sample in packet.
+    //! Get stream timestamp (STS) of the packet.
     //! @remarks
     //!  Timestamp units depend on packet type. For some packet types, may
     //!  be always zero.
-    stream_timestamp_t begin() const;
+    stream_timestamp_t stream_timestamp() const;
 
-    //! Get the timestamp of the last sample in packet plus one.
+    //! Get duration of the packet.
     //! @remarks
-    //!  Timestamp units depend on packet type. For some packet types, may
-    //!  be always zero.
-    stream_timestamp_t end() const;
+    //!  Units are the same as for stream_timestamp().
+    stream_timestamp_t duration() const;
 
-    //! Determine packet order.
+    //! Get capture timestamp (CTS) of the packet.
+    //! @remarks
+    //!  Returns number of nanoseconds since Unix epoch.
+    core::nanoseconds_t capture_timestamp() const;
+
+    //! Determine packet ordering.
     //! @returns
     //!  * -1 if this packet precedes @p other packet
     //!  *  0 if this packet has the same position as @p other packet
@@ -136,7 +150,7 @@ private:
     FEC fec_;
     RTCP rtcp_;
 
-    core::Slice<uint8_t> data_;
+    core::Slice<uint8_t> buffer_;
 };
 
 } // namespace packet

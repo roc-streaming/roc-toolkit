@@ -28,7 +28,8 @@ SenderSink::SenderSink(const SenderConfig& config,
     , byte_buffer_factory_(byte_buffer_factory)
     , sample_buffer_factory_(sample_buffer_factory)
     , arena_(arena)
-    , audio_writer_(NULL) {
+    , audio_writer_(NULL)
+    , valid_(false) {
     audio::IFrameWriter* awriter = &fanout_;
 
     if (config_.enable_profiling) {
@@ -40,11 +41,16 @@ SenderSink::SenderSink(const SenderConfig& config,
         awriter = profiler_.get();
     }
 
+    if (!awriter) {
+        return;
+    }
+
     audio_writer_ = awriter;
+    valid_ = true;
 }
 
 bool SenderSink::is_valid() const {
-    return audio_writer_;
+    return valid_;
 }
 
 SenderSlot* SenderSink::create_slot() {
@@ -56,8 +62,8 @@ SenderSlot* SenderSink::create_slot() {
         new (arena_) SenderSlot(config_, encoding_map_, fanout_, packet_factory_,
                                 byte_buffer_factory_, sample_buffer_factory_, arena_);
 
-    if (!slot) {
-        roc_log(LogError, "sender sink: can't allocate slot");
+    if (!slot || !slot->is_valid()) {
+        roc_log(LogError, "sender sink: can't create slot");
         return NULL;
     }
 

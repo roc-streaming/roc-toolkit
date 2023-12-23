@@ -288,7 +288,7 @@ void UdpReceiverPort::recv_cb_(uv_udp_t* handle,
     pp->udp()->src_addr = src_addr;
     pp->udp()->dst_addr = self.config_.bind_address;
 
-    pp->set_data(core::Slice<uint8_t>(*bp, 0, (size_t)nread));
+    pp->set_buffer(core::Slice<uint8_t>(*bp, 0, (size_t)nread));
 
     const status::StatusCode code = self.writer_.write(pp);
     // TODO(gh-183): handle or log status

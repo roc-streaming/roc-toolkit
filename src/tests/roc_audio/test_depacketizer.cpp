@@ -62,7 +62,7 @@ packet::PacketPtr new_packet(IFrameEncoder& encoder,
 
     CHECK(rtp_composer.prepare(*pp, bp, encoder.encoded_byte_count(SamplesPerPacket)));
 
-    pp->set_data(bp);
+    pp->set_buffer(bp);
 
     pp->rtp()->stream_timestamp = ts;
     pp->rtp()->duration = SamplesPerPacket;

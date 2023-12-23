@@ -125,11 +125,11 @@ TEST(composer, packet_size) {
     CHECK(composer.align(buffer, 0, Alignment));
     CHECK(composer.prepare(*packet, buffer, PayloadSize));
 
-    packet->set_data(buffer);
+    packet->set_buffer(buffer);
 
     CHECK(composer.compose(*packet));
 
-    UNSIGNED_LONGS_EQUAL(sizeof(RS8M_PayloadID) + PayloadSize, packet->data().size());
+    UNSIGNED_LONGS_EQUAL(sizeof(RS8M_PayloadID) + PayloadSize, packet->buffer().size());
 }
 
 } // namespace fec

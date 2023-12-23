@@ -19,7 +19,8 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
                                core::BufferFactory<audio::sample_t>& buffer_factory,
                                core::IArena& arena)
     : audio_writer_(NULL)
-    , config_(config) {
+    , config_(config)
+    , valid_(false) {
     audio::IFrameWriter* awriter = output_writer;
     if (!awriter) {
         awriter = &null_writer_;
@@ -71,11 +72,16 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
         awriter = profiler_.get();
     }
 
+    if (!awriter) {
+        return;
+    }
+
     audio_writer_ = awriter;
+    valid_ = true;
 }
 
 bool TranscoderSink::is_valid() {
-    return audio_writer_;
+    return valid_;
 }
 
 sndio::DeviceType TranscoderSink::type() const {

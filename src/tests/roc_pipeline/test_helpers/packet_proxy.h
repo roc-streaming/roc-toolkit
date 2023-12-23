@@ -97,7 +97,7 @@ private:
         pb->add_flags(packet::Packet::FlagUDP);
         *pb->udp() = *pa->udp();
 
-        pb->set_data(pa->data());
+        pb->set_buffer(pa->buffer());
 
         return pb;
     }

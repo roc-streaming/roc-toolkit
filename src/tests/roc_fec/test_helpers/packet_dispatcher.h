@@ -212,11 +212,11 @@ private:
             FAIL("can't allocate packet");
         }
 
-        if (!parser.parse(*pp, old_pp->data())) {
+        if (!parser.parse(*pp, old_pp->buffer())) {
             FAIL("can't parse packet");
         }
 
-        pp->set_data(old_pp->data());
+        pp->set_buffer(old_pp->buffer());
 
         return pp;
     }

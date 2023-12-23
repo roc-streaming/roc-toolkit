@@ -224,27 +224,27 @@ packet::PacketPtr Writer::make_repair_packet_(packet::seqnum_t pack_n) {
         return NULL;
     }
 
-    core::Slice<uint8_t> data = buffer_factory_.new_buffer();
-    if (!data) {
+    core::Slice<uint8_t> buffer = buffer_factory_.new_buffer();
+    if (!buffer) {
         roc_log(LogError, "fec writer: can't allocate buffer");
         // TODO(gh-183): return StatusNoMem
         return NULL;
     }
 
-    if (!repair_composer_.align(data, 0, encoder_.alignment())) {
+    if (!repair_composer_.align(buffer, 0, encoder_.alignment())) {
         roc_log(LogError, "fec writer: can't align packet buffer");
         // TODO(gh-183): return status from composer
         return NULL;
     }
 
-    if (!repair_composer_.prepare(*packet, data, cur_payload_size_)) {
+    if (!repair_composer_.prepare(*packet, buffer, cur_payload_size_)) {
         roc_log(LogError, "fec writer: can't prepare packet");
         // TODO(gh-183): return status from composer
         return NULL;
     }
     packet->add_flags(packet::Packet::FlagPrepared);
 
-    packet->set_data(data);
+    packet->set_buffer(buffer);
 
     validate_fec_packet_(packet);
     fill_packet_fec_fields_(packet, (packet::seqnum_t)cur_sblen_ + pack_n);

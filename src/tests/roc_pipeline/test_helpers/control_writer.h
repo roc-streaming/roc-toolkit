@@ -87,7 +87,7 @@ private:
         pp->udp()->src_addr = src_addr_;
         pp->udp()->dst_addr = dst_addr_;
 
-        pp->set_data(buffer);
+        pp->set_buffer(buffer);
 
         return pp;
     }

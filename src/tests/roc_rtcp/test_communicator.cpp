@@ -313,10 +313,10 @@ packet::PacketPtr read_packet(packet::Queue& source) {
     CHECK_EQUAL(status::StatusOK, source.read(pp));
     CHECK(pp);
     CHECK(pp->rtcp());
-    CHECK(pp->rtcp()->data);
+    CHECK(pp->rtcp()->payload);
     roc_log(LogTrace, "delivering rtcp packet");
     if (core::Logger::instance().get_level() >= LogTrace) {
-        print_packet(pp->rtcp()->data);
+        print_packet(pp->rtcp()->payload);
     }
     return pp;
 }

@@ -88,18 +88,38 @@ RTCP* Packet::rtcp() {
     return NULL;
 }
 
-const core::Slice<uint8_t>& Packet::data() const {
-    if (!data_) {
+const core::Slice<uint8_t>& Packet::buffer() const {
+    if (!buffer_) {
         roc_panic("packet: data is null");
     }
-    return data_;
+    return buffer_;
 }
 
-void Packet::set_data(const core::Slice<uint8_t>& d) {
-    if (data_) {
+void Packet::set_buffer(const core::Slice<uint8_t>& d) {
+    if (buffer_) {
         roc_panic("packet: can't set data more than once");
     }
-    data_ = d;
+    buffer_ = d;
+}
+
+const core::Slice<uint8_t>& Packet::payload() const {
+    if (!buffer_) {
+        roc_panic("packet: data is null");
+    }
+
+    if (const RTP* r = rtp()) {
+        return r->payload;
+    }
+
+    if (const RTCP* r = rtcp()) {
+        return r->payload;
+    }
+
+    if (const FEC* f = fec()) {
+        return f->payload;
+    }
+
+    return buffer_;
 }
 
 stream_source_t Packet::source() const {
@@ -110,7 +130,7 @@ stream_source_t Packet::source() const {
     return 0;
 }
 
-stream_timestamp_t Packet::begin() const {
+stream_timestamp_t Packet::stream_timestamp() const {
     if (const RTP* r = rtp()) {
         return r->stream_timestamp;
     }
@@ -118,9 +138,17 @@ stream_timestamp_t Packet::begin() const {
     return 0;
 }
 
-stream_timestamp_t Packet::end() const {
+stream_timestamp_t Packet::duration() const {
     if (const RTP* r = rtp()) {
-        return r->stream_timestamp + r->duration;
+        return r->duration;
+    }
+
+    return 0;
+}
+
+core::nanoseconds_t Packet::capture_timestamp() const {
+    if (const RTP* r = rtp()) {
+        return r->capture_timestamp;
     }
 
     return 0;

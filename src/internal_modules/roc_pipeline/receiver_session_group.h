@@ -23,6 +23,7 @@
 #include "roc_rtcp/communicator.h"
 #include "roc_rtcp/composer.h"
 #include "roc_rtcp/istream_controller.h"
+#include "roc_rtp/identity.h"
 
 namespace roc {
 namespace pipeline {
@@ -44,6 +45,9 @@ public:
                          core::IArena& arena);
 
     ~ReceiverSessionGroup();
+
+    //! Check if pipeline was succefully constructed.
+    bool is_valid() const;
 
     //! Route packet to session.
     ROC_ATTR_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet,
@@ -110,10 +114,13 @@ private:
     ReceiverState& receiver_state_;
     const ReceiverConfig& receiver_config_;
 
+    core::Optional<rtp::Identity> identity_;
     core::Optional<rtcp::Composer> rtcp_composer_;
     core::Optional<rtcp::Communicator> rtcp_communicator_;
 
     core::List<ReceiverSession> sessions_;
+
+    bool valid_;
 };
 
 } // namespace pipeline

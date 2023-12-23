@@ -185,7 +185,8 @@ void LatencyMonitor::compute_niq_latency_() {
     }
 
     // timestamp of last sample of last packet in packet pipeline
-    const packet::stream_timestamp_t niq_tail = latest_packet->end();
+    const packet::stream_timestamp_t niq_tail =
+        latest_packet->stream_timestamp() + latest_packet->duration();
 
     // packet pipeline length
     // includes incoming queue and packets buffered inside other packet

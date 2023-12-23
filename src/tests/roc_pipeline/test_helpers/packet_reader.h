@@ -55,7 +55,7 @@ public:
         packet::PacketPtr pp = read_packet_();
 
         audio::sample_t samples[MaxSamples] = {};
-        parse_packet_(pp->data(), samples_per_packet, samples);
+        parse_packet_(pp->buffer(), samples_per_packet, samples);
         check_capture_timestamp_(*pp, sample_spec, base_capture_ts);
 
         for (size_t ns = 0; ns < samples_per_packet; ns++) {
@@ -75,7 +75,7 @@ public:
         packet::PacketPtr pp = read_packet_();
 
         audio::sample_t samples[MaxSamples] = {};
-        parse_packet_(pp->data(), samples_per_packet, samples);
+        parse_packet_(pp->buffer(), samples_per_packet, samples);
         check_capture_timestamp_(*pp, sample_spec, base_capture_ts);
 
         size_t non_zero = 0;
@@ -94,7 +94,7 @@ public:
         packet::PacketPtr pp = read_packet_();
 
         audio::sample_t samples[MaxSamples] = {};
-        parse_packet_(pp->data(), samples_per_packet, samples);
+        parse_packet_(pp->buffer(), samples_per_packet, samples);
         check_capture_timestamp_(*pp, sample_spec, base_capture_ts);
 
         for (size_t ns = 0; ns < samples_per_packet; ns++) {

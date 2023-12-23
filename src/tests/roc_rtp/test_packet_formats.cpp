@@ -63,7 +63,7 @@ void check_packet_fields(const packet::Packet& packet, const test::PacketInfo& p
     UNSIGNED_LONGS_EQUAL(packet::Packet::FlagRTP | packet::Packet::FlagAudio,
                          packet.flags());
 
-    CHECK(packet.data());
+    CHECK(packet.buffer());
     CHECK(packet.rtp());
     CHECK(packet.rtp()->header);
     CHECK(packet.rtp()->payload);
@@ -71,7 +71,7 @@ void check_packet_fields(const packet::Packet& packet, const test::PacketInfo& p
         CHECK(packet.rtp()->padding);
     }
 
-    UNSIGNED_LONGS_EQUAL(pi.packet_size, packet.data().size());
+    UNSIGNED_LONGS_EQUAL(pi.packet_size, packet.buffer().size());
     UNSIGNED_LONGS_EQUAL(pi.header_size + pi.extension_size, packet.rtp()->header.size());
     UNSIGNED_LONGS_EQUAL(pi.payload_size, packet.rtp()->payload.size());
     UNSIGNED_LONGS_EQUAL(pi.padding_size, packet.rtp()->padding.size());
@@ -95,19 +95,19 @@ void set_packet_fields(packet::Packet& packet, const test::PacketInfo& pi) {
 }
 
 void check_packet_data(packet::Packet& packet, const test::PacketInfo& pi) {
-    CHECK(packet.data());
+    CHECK(packet.buffer());
 
     CHECK(packet.rtp());
     CHECK(packet.rtp()->header);
     CHECK(packet.rtp()->payload);
 
-    UNSIGNED_LONGS_EQUAL(pi.packet_size, packet.data().size());
+    UNSIGNED_LONGS_EQUAL(pi.packet_size, packet.buffer().size());
 
-    UNSIGNED_LONGS_EQUAL(packet.data().size(),
+    UNSIGNED_LONGS_EQUAL(packet.buffer().size(),
                          packet.rtp()->header.size() + packet.rtp()->payload.size()
                              + packet.rtp()->padding.size());
 
-    CHECK(memcmp(packet.data().data(), pi.raw_data, pi.packet_size) == 0);
+    CHECK(memcmp(packet.buffer().data(), pi.raw_data, pi.packet_size) == 0);
 }
 
 void decode_samples(audio::IFrameDecoder& decoder,
@@ -166,10 +166,10 @@ void check_parse_decode(const test::PacketInfo& pi) {
     packet::PacketPtr packet = packet_factory.new_packet();
     CHECK(packet);
 
-    packet->set_data(buffer);
+    packet->set_buffer(buffer);
 
     Parser parser(encoding_map, NULL);
-    CHECK(parser.parse(*packet, packet->data()));
+    CHECK(parser.parse(*packet, packet->buffer()));
 
     const Encoding* encoding = encoding_map.find_by_pt(packet->rtp()->payload_type);
     CHECK(encoding);
@@ -206,7 +206,7 @@ void check_compose_encode(const test::PacketInfo& pi) {
     Composer composer(NULL);
 
     CHECK(composer.prepare(*packet, buffer, pi.payload_size + pi.padding_size));
-    packet->set_data(buffer);
+    packet->set_buffer(buffer);
 
     encode_samples(*encoder, *packet, pi);
     set_packet_fields(*packet, pi);

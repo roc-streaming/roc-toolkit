@@ -32,15 +32,28 @@ ReceiverSessionGroup::ReceiverSessionGroup(
     , encoding_map_(encoding_map)
     , mixer_(mixer)
     , receiver_state_(receiver_state)
-    , receiver_config_(receiver_config) {
+    , receiver_config_(receiver_config)
+    , valid_(false) {
+    identity_.reset(new (identity_) rtp::Identity());
+    if (!identity_ || !identity_->is_valid()) {
+        return;
+    }
+
+    valid_ = true;
 }
 
 ReceiverSessionGroup::~ReceiverSessionGroup() {
     remove_all_sessions_();
 }
 
+bool ReceiverSessionGroup::is_valid() const {
+    return valid_;
+}
+
 status::StatusCode ReceiverSessionGroup::route_packet(const packet::PacketPtr& packet,
                                                       core::nanoseconds_t current_time) {
+    roc_panic_if(!is_valid());
+
     if (packet->rtcp()) {
         return route_control_packet_(packet, current_time);
     }
@@ -50,6 +63,8 @@ status::StatusCode ReceiverSessionGroup::route_packet(const packet::PacketPtr& p
 
 core::nanoseconds_t
 ReceiverSessionGroup::refresh_sessions(core::nanoseconds_t current_time) {
+    roc_panic_if(!is_valid());
+
     core::SharedPtr<ReceiverSession> curr, next;
 
     core::nanoseconds_t next_deadline = 0;
@@ -78,6 +93,8 @@ ReceiverSessionGroup::refresh_sessions(core::nanoseconds_t current_time) {
 }
 
 void ReceiverSessionGroup::reclock_sessions(core::nanoseconds_t playback_time) {
+    roc_panic_if(!is_valid());
+
     core::SharedPtr<ReceiverSession> curr, next;
 
     for (curr = sessions_.front(); curr; curr = next) {
@@ -91,11 +108,15 @@ void ReceiverSessionGroup::reclock_sessions(core::nanoseconds_t playback_time) {
 }
 
 size_t ReceiverSessionGroup::num_sessions() const {
+    roc_panic_if(!is_valid());
+
     return sessions_.size();
 }
 
 void ReceiverSessionGroup::get_metrics(ReceiverSessionMetrics* metrics,
                                        size_t* metrics_size) const {
+    roc_panic_if(!is_valid());
+
     roc_panic_if_not(metrics);
     roc_panic_if_not(metrics_size);
 
@@ -114,39 +135,42 @@ void ReceiverSessionGroup::get_metrics(ReceiverSessionMetrics* metrics,
 }
 
 const char* ReceiverSessionGroup::cname() {
-    // TODO
-    return "todo";
+    return identity_->cname();
 }
 
 packet::stream_source_t ReceiverSessionGroup::source_id() {
-    // TODO
-    return 456;
+    return identity_->ssrc();
 }
 
 void ReceiverSessionGroup::change_source_id() {
-    // TODO
+    identity_->change_ssrc();
 }
 
 size_t ReceiverSessionGroup::num_recv_steams() {
-    // TODO
+    // TODO(gh-14): query num sessions
     return 0;
 }
 
 rtcp::RecvReport
 ReceiverSessionGroup::query_recv_stream(size_t recv_stream_index,
                                         core::nanoseconds_t report_time) {
-    // TODO
     rtcp::RecvReport report;
-    report.receiver_cname = cname();
-    report.receiver_source_id = source_id();
+    report.receiver_cname = identity_->cname();
+    report.receiver_source_id = identity_->ssrc();
+    // TODO(gh-14): query session
     report.sender_source_id = 123;
     report.report_timestamp = report_time;
+    report.extended_seqnum = 0;
+    report.fract_loss = 0;
+    report.cum_loss = 0;
+    report.jitter = 0;
+
     return report;
 }
 
 void ReceiverSessionGroup::notify_recv_stream(packet::stream_source_t send_source_id,
                                               const rtcp::SendReport& send_report) {
-    // TODO: match session by SSRC/CNAME
+    // TODO(gh-14): match session by SSRC/CNAME
     core::SharedPtr<ReceiverSession> sess;
 
     for (sess = sessions_.front(); sess; sess = sessions_.nextof(*sess)) {
@@ -155,7 +179,7 @@ void ReceiverSessionGroup::notify_recv_stream(packet::stream_source_t send_sourc
 }
 
 void ReceiverSessionGroup::halt_recv_stream(packet::stream_source_t send_source_id) {
-    // TODO
+    // TODO(gh-14): remove session
 }
 
 status::StatusCode

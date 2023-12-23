@@ -27,7 +27,8 @@ ReceiverSession::ReceiverSession(
     core::IArena& arena)
     : core::RefCounted<ReceiverSession, core::ArenaAllocation>(arena)
     , src_address_(src_address)
-    , audio_reader_(NULL) {
+    , audio_reader_(NULL)
+    , valid_(false) {
     const rtp::Encoding* encoding = encoding_map.find_by_pt(session_config.payload_type);
     if (!encoding) {
         return;
@@ -213,11 +214,16 @@ ReceiverSession::ReceiverSession(
     }
     areader = latency_monitor_.get();
 
+    if (!areader) {
+        return;
+    }
+
     audio_reader_ = areader;
+    valid_ = true;
 }
 
 bool ReceiverSession::is_valid() const {
-    return audio_reader_;
+    return valid_;
 }
 
 status::StatusCode ReceiverSession::route_packet(const packet::PacketPtr& packet) {

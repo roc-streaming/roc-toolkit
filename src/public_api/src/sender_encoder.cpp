@@ -208,17 +208,17 @@ int roc_sender_encoder_pop(roc_sender_encoder* encoder,
         return -1;
     }
 
-    if (packet->bytes_size < imp_packet->data().size()) {
+    if (packet->bytes_size < imp_packet->buffer().size()) {
         roc_log(LogError,
                 "roc_sender_encoder_pop(): not enough space in provided packet:"
                 " provided=%lu needed=%lu",
                 (unsigned long)packet->bytes_size,
-                (unsigned long)imp_packet->data().size());
+                (unsigned long)imp_packet->buffer().size());
         return -1;
     }
 
-    memcpy(packet->bytes, imp_packet->data().data(), imp_packet->data().size());
-    packet->bytes_size = imp_packet->data().size();
+    memcpy(packet->bytes, imp_packet->buffer().data(), imp_packet->buffer().size());
+    packet->bytes_size = imp_packet->buffer().size();
 
     return 0;
 }

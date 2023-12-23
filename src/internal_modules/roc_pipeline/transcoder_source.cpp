@@ -20,7 +20,8 @@ TranscoderSource::TranscoderSource(const TranscoderConfig& config,
                                    core::IArena& arena)
     : input_source_(input_source)
     , audio_reader_(NULL)
-    , config_(config) {
+    , config_(config)
+    , valid_(false) {
     audio::IFrameReader* areader = &input_source_;
 
     if (config.input_sample_spec.channel_set()
@@ -85,11 +86,16 @@ TranscoderSource::TranscoderSource(const TranscoderConfig& config,
         areader = profiler_.get();
     }
 
+    if (!areader) {
+        return;
+    }
+
     audio_reader_ = areader;
+    valid_ = true;
 }
 
 bool TranscoderSource::is_valid() {
-    return audio_reader_;
+    return valid_;
 }
 
 sndio::DeviceType TranscoderSource::type() const {

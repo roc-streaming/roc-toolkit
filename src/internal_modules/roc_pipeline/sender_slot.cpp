@@ -29,7 +29,13 @@ SenderSlot::SenderSlot(const SenderConfig& config,
                packet_factory,
                byte_buffer_factory,
                sample_buffer_factory,
-               arena) {
+               arena)
+    , valid_(false) {
+    if (!session_.is_valid()) {
+        return;
+    }
+
+    valid_ = true;
 }
 
 SenderSlot::~SenderSlot() {
@@ -38,10 +44,20 @@ SenderSlot::~SenderSlot() {
     }
 }
 
+bool SenderSlot::is_valid() const {
+    return valid_;
+}
+
+bool SenderSlot::is_complete() const {
+    return session_.writer() != NULL;
+}
+
 SenderEndpoint* SenderSlot::add_endpoint(address::Interface iface,
                                          address::Protocol proto,
                                          const address::SocketAddr& dest_address,
                                          packet::IWriter& dest_writer) {
+    roc_panic_if(!is_valid());
+
     roc_log(LogDebug, "sender slot: adding %s endpoint %s",
             address::interface_to_str(iface), address::proto_to_str(proto));
 
@@ -104,19 +120,21 @@ SenderEndpoint* SenderSlot::add_endpoint(address::Interface iface,
 }
 
 audio::IFrameWriter* SenderSlot::writer() {
-    return session_.writer();
-}
+    roc_panic_if(!is_valid());
 
-bool SenderSlot::is_complete() const {
     return session_.writer();
 }
 
 core::nanoseconds_t SenderSlot::refresh(core::nanoseconds_t current_time) {
+    roc_panic_if(!is_valid());
+
     return session_.refresh(current_time);
 }
 
 void SenderSlot::get_metrics(SenderSlotMetrics& slot_metrics,
                              SenderSessionMetrics* sess_metrics) const {
+    roc_panic_if(!is_valid());
+
     slot_metrics = SenderSlotMetrics();
     slot_metrics.is_complete = is_complete();
 

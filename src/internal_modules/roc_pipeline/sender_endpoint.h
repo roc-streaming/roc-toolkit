@@ -67,6 +67,8 @@ private:
     core::ScopedPtr<packet::IComposer> fec_composer_;
     core::Optional<rtcp::Composer> rtcp_composer_;
     core::Optional<packet::Shipper> packet_shipper_;
+
+    bool valid_;
 };
 
 } // namespace pipeline

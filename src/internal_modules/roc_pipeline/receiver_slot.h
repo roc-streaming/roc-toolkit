@@ -47,6 +47,9 @@ public:
                  core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                  core::IArena& arena);
 
+    //! Check if the slot was succefully constructed.
+    bool is_valid() const;
+
     //! Add endpoint.
     ReceiverEndpoint* add_endpoint(address::Interface iface, address::Protocol proto);
 
@@ -83,6 +86,8 @@ private:
     core::Optional<ReceiverEndpoint> source_endpoint_;
     core::Optional<ReceiverEndpoint> repair_endpoint_;
     core::Optional<ReceiverEndpoint> control_endpoint_;
+
+    bool valid_;
 };
 
 } // namespace pipeline

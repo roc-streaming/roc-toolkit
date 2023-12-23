@@ -120,7 +120,7 @@ private:
                                         packet::PacketPtr& packet);
 
     status::StatusCode generate_packet_payload_(PacketType packet_type,
-                                                core::Slice<uint8_t>& packet_data);
+                                                core::Slice<uint8_t>& packet_payload);
 
     void generate_reports_payload_(Builder& bld);
     void generate_goodbye_payload_(Builder& bld);

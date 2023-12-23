@@ -89,7 +89,9 @@ private:
     sndio::ISource& input_source_;
     audio::IFrameReader* audio_reader_;
 
-    TranscoderConfig config_;
+    const TranscoderConfig config_;
+
+    bool valid_;
 };
 
 } // namespace pipeline

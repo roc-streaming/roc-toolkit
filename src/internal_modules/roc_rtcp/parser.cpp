@@ -23,7 +23,7 @@ bool Parser::parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer) {
     packet.add_flags(packet::Packet::FlagControl);
     packet.add_flags(packet::Packet::FlagRTCP);
 
-    packet.rtcp()->data = buffer;
+    packet.rtcp()->payload = buffer;
 
     return true;
 }

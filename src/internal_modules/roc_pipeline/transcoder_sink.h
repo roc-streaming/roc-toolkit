@@ -86,6 +86,8 @@ private:
     audio::IFrameWriter* audio_writer_;
 
     const TranscoderConfig config_;
+
+    bool valid_;
 };
 
 } // namespace pipeline

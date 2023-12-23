@@ -121,6 +121,8 @@ private:
     core::Optional<audio::ProfilingWriter> profiler_;
 
     audio::IFrameWriter* audio_writer_;
+
+    bool valid_;
 };
 
 } // namespace pipeline

@@ -130,6 +130,8 @@ private:
     audio::IFrameReader* audio_reader_;
 
     ReceiverConfig config_;
+
+    bool valid_;
 };
 
 } // namespace pipeline

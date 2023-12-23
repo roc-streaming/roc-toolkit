@@ -32,12 +32,25 @@ ReceiverSlot::ReceiverSlot(const ReceiverConfig& receiver_config,
                      packet_factory,
                      byte_buffer_factory,
                      sample_buffer_factory,
-                     arena) {
+                     arena)
+    , valid_(false) {
+    if (!session_group_.is_valid()) {
+        return;
+    }
+
     roc_log(LogDebug, "receiver slot: initializing");
+
+    valid_ = true;
+}
+
+bool ReceiverSlot::is_valid() const {
+    return valid_;
 }
 
 ReceiverEndpoint* ReceiverSlot::add_endpoint(address::Interface iface,
                                              address::Protocol proto) {
+    roc_panic_if(!is_valid());
+
     roc_log(LogDebug, "receiver slot: adding %s endpoint %s",
             address::interface_to_str(iface), address::proto_to_str(proto));
 
@@ -60,6 +73,8 @@ ReceiverEndpoint* ReceiverSlot::add_endpoint(address::Interface iface,
 }
 
 core::nanoseconds_t ReceiverSlot::refresh(core::nanoseconds_t current_time) {
+    roc_panic_if(!is_valid());
+
     if (source_endpoint_) {
         const status::StatusCode code = source_endpoint_->pull_packets(current_time);
         // TODO(gh-183): forward status
@@ -82,16 +97,22 @@ core::nanoseconds_t ReceiverSlot::refresh(core::nanoseconds_t current_time) {
 }
 
 void ReceiverSlot::reclock(core::nanoseconds_t playback_time) {
+    roc_panic_if(!is_valid());
+
     session_group_.reclock_sessions(playback_time);
 }
 
 size_t ReceiverSlot::num_sessions() const {
+    roc_panic_if(!is_valid());
+
     return session_group_.num_sessions();
 }
 
 void ReceiverSlot::get_metrics(ReceiverSlotMetrics& slot_metrics,
                                ReceiverSessionMetrics* sess_metrics,
                                size_t* sess_metrics_size) const {
+    roc_panic_if(!is_valid());
+
     slot_metrics = ReceiverSlotMetrics();
     slot_metrics.num_sessions = session_group_.num_sessions();
 

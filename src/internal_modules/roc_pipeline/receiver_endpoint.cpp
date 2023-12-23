@@ -25,7 +25,8 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
     , proto_(proto)
     , receiver_state_(receiver_state)
     , session_group_(session_group)
-    , parser_(NULL) {
+    , parser_(NULL)
+    , valid_(false) {
     packet::IParser* parser = NULL;
 
     switch (proto) {
@@ -99,11 +100,16 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
         break;
     }
 
+    if (!parser) {
+        return;
+    }
+
     parser_ = parser;
+    valid_ = true;
 }
 
 bool ReceiverEndpoint::is_valid() const {
-    return parser_;
+    return valid_;
 }
 
 address::Protocol ReceiverEndpoint::proto() const {
@@ -126,7 +132,7 @@ status::StatusCode ReceiverEndpoint::pull_packets(core::nanoseconds_t current_ti
     // queue were added in a very short time or are being added currently. It's
     // acceptable to consider such packets late and to be pulled next time.
     while (packet::PacketPtr packet = queue_.try_pop_front_exclusive()) {
-        if (!parser_->parse(*packet, packet->data())) {
+        if (!parser_->parse(*packet, packet->buffer())) {
             roc_log(LogDebug, "receiver endpoint: can't parse packet");
             continue;
         }

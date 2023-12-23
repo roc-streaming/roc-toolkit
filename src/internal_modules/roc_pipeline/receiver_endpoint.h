@@ -79,6 +79,8 @@ private:
     core::Optional<rtcp::Parser> rtcp_parser_;
 
     core::MpscQueue<packet::Packet> queue_;
+
+    bool valid_;
 };
 
 } // namespace pipeline

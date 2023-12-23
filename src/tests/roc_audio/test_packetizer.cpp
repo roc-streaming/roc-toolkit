@@ -19,6 +19,8 @@
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_rtp/composer.h"
+#include "roc_rtp/identity.h"
+#include "roc_rtp/sequencer.h"
 
 namespace roc {
 namespace audio {
@@ -181,8 +183,10 @@ TEST(packetizer, one_buffer_one_packet) {
 
     packet::Queue packet_queue;
 
-    Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_factory,
-                          byte_buffer_factory, PacketDuration, SampleSpecs, PayloadType);
+    rtp::Identity identity;
+    rtp::Sequencer sequencer(identity, PayloadType);
+    Packetizer packetizer(packet_queue, rtp_composer, sequencer, encoder, packet_factory,
+                          byte_buffer_factory, PacketDuration, SampleSpecs);
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
@@ -206,8 +210,10 @@ TEST(packetizer, one_buffer_multiple_packets) {
 
     packet::Queue packet_queue;
 
-    Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_factory,
-                          byte_buffer_factory, PacketDuration, SampleSpecs, PayloadType);
+    rtp::Identity identity;
+    rtp::Sequencer sequencer(identity, PayloadType);
+    Packetizer packetizer(packet_queue, rtp_composer, sequencer, encoder, packet_factory,
+                          byte_buffer_factory, PacketDuration, SampleSpecs);
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
@@ -231,8 +237,10 @@ TEST(packetizer, multiple_buffers_one_packet) {
 
     packet::Queue packet_queue;
 
-    Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_factory,
-                          byte_buffer_factory, PacketDuration, SampleSpecs, PayloadType);
+    rtp::Identity identity;
+    rtp::Sequencer sequencer(identity, PayloadType);
+    Packetizer packetizer(packet_queue, rtp_composer, sequencer, encoder, packet_factory,
+                          byte_buffer_factory, PacketDuration, SampleSpecs);
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
@@ -262,8 +270,10 @@ TEST(packetizer, multiple_buffers_multiple_packets) {
 
     packet::Queue packet_queue;
 
-    Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_factory,
-                          byte_buffer_factory, PacketDuration, SampleSpecs, PayloadType);
+    rtp::Identity identity;
+    rtp::Sequencer sequencer(identity, PayloadType);
+    Packetizer packetizer(packet_queue, rtp_composer, sequencer, encoder, packet_factory,
+                          byte_buffer_factory, PacketDuration, SampleSpecs);
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
@@ -287,8 +297,10 @@ TEST(packetizer, flush) {
 
     packet::Queue packet_queue;
 
-    Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_factory,
-                          byte_buffer_factory, PacketDuration, SampleSpecs, PayloadType);
+    rtp::Identity identity;
+    rtp::Sequencer sequencer(identity, PayloadType);
+    Packetizer packetizer(packet_queue, rtp_composer, sequencer, encoder, packet_factory,
+                          byte_buffer_factory, PacketDuration, SampleSpecs);
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
@@ -323,8 +335,10 @@ TEST(packetizer, timestamp_zero_cts) {
 
     packet::Queue packet_queue;
 
-    Packetizer packetizer(packet_queue, rtp_composer, encoder, packet_factory,
-                          byte_buffer_factory, PacketDuration, SampleSpecs, PayloadType);
+    rtp::Identity identity;
+    rtp::Sequencer sequencer(identity, PayloadType);
+    Packetizer packetizer(packet_queue, rtp_composer, sequencer, encoder, packet_factory,
+                          byte_buffer_factory, PacketDuration, SampleSpecs);
 
     const core::nanoseconds_t zero_cts = 0;
 

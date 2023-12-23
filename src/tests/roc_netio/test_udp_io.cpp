@@ -79,7 +79,7 @@ packet::PacketPtr new_packet(const UdpSenderConfig& tx_config,
     pp->udp()->src_addr = tx_config.bind_address;
     pp->udp()->dst_addr = rx_config.bind_address;
 
-    pp->set_data(new_buffer(value));
+    pp->set_buffer(new_buffer(value));
 
     return pp;
 }
@@ -91,15 +91,15 @@ void check_packet(const packet::PacketPtr& pp,
     CHECK(pp);
 
     CHECK(pp->udp());
-    CHECK(pp->data());
+    CHECK(pp->buffer());
 
     CHECK(pp->udp()->src_addr == tx_config.bind_address);
     CHECK(pp->udp()->dst_addr == rx_config.bind_address);
 
     core::Slice<uint8_t> expected = new_buffer(value);
 
-    UNSIGNED_LONGS_EQUAL(expected.size(), pp->data().size());
-    CHECK(memcmp(pp->data().data(), expected.data(), expected.size()) == 0);
+    UNSIGNED_LONGS_EQUAL(expected.size(), pp->buffer().size());
+    CHECK(memcmp(pp->buffer().data(), expected.data(), expected.size()) == 0);
 }
 
 } // namespace

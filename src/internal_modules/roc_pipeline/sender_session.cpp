@@ -12,6 +12,7 @@
 #include "roc_core/time.h"
 #include "roc_fec/codec_map.h"
 #include "roc_rtcp/communicator.h"
+#include "roc_rtp/identity.h"
 
 namespace roc {
 namespace pipeline {
@@ -29,11 +30,19 @@ SenderSession::SenderSession(const SenderConfig& config,
     , byte_buffer_factory_(byte_buffer_factory)
     , sample_buffer_factory_(sample_buffer_factory)
     , audio_writer_(NULL)
-    , num_sources_(0) {
+    , num_sources_(0)
+    , valid_(false) {
+    valid_ = true;
+}
+
+bool SenderSession::is_valid() const {
+    return valid_;
 }
 
 bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
                                               SenderEndpoint* repair_endpoint) {
+    roc_panic_if(!is_valid());
+
     roc_panic_if(audio_writer_);
     roc_panic_if(!source_endpoint);
 
@@ -107,10 +116,20 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         return false;
     }
 
+    identity_.reset(new (identity_) rtp::Identity());
+    if (!identity_ || !identity_->is_valid()) {
+        return false;
+    }
+
+    sequencer_.reset(new (sequencer_) rtp::Sequencer(*identity_, config_.payload_type));
+    if (!sequencer_ || !sequencer_->is_valid()) {
+        return false;
+    }
+
     packetizer_.reset(new (packetizer_) audio::Packetizer(
-        *pwriter, source_endpoint->composer(), *payload_encoder_, packet_factory_,
-        byte_buffer_factory_, config_.packet_length, encoding->sample_spec,
-        config_.payload_type));
+        *pwriter, source_endpoint->composer(), *sequencer_, *payload_encoder_,
+        packet_factory_, byte_buffer_factory_, config_.packet_length,
+        encoding->sample_spec));
     if (!packetizer_ || !packetizer_->is_valid()) {
         return false;
     }
@@ -161,6 +180,8 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
 }
 
 bool SenderSession::create_control_pipeline(SenderEndpoint* control_endpoint) {
+    roc_panic_if(!is_valid());
+
     roc_panic_if(rtcp_communicator_);
     roc_panic_if(!control_endpoint);
 
@@ -180,10 +201,14 @@ bool SenderSession::create_control_pipeline(SenderEndpoint* control_endpoint) {
 }
 
 audio::IFrameWriter* SenderSession::writer() const {
+    roc_panic_if(!is_valid());
+
     return audio_writer_;
 }
 
 core::nanoseconds_t SenderSession::refresh(core::nanoseconds_t current_time) {
+    roc_panic_if(!is_valid());
+
     if (!rtcp_communicator_) {
         return 0;
     }
@@ -200,22 +225,22 @@ core::nanoseconds_t SenderSession::refresh(core::nanoseconds_t current_time) {
 }
 
 SenderSessionMetrics SenderSession::get_metrics() const {
+    roc_panic_if(!is_valid());
+
     SenderSessionMetrics metrics;
     return metrics;
 }
 
 const char* SenderSession::cname() {
-    // TODO
-    return "todo";
+    return identity_->cname();
 }
 
 packet::stream_source_t SenderSession::source_id() {
-    // TODO
-    return 123;
+    return identity_->ssrc();
 }
 
 void SenderSession::change_source_id() {
-    // TODO
+    identity_->change_ssrc();
 }
 
 bool SenderSession::has_send_stream() {
@@ -223,18 +248,21 @@ bool SenderSession::has_send_stream() {
 }
 
 rtcp::SendReport SenderSession::query_send_stream(core::nanoseconds_t report_time) {
-    // TODO
     rtcp::SendReport report;
-    report.sender_cname = cname();
-    report.sender_source_id = source_id();
+    report.sender_cname = identity_->cname();
+    report.sender_source_id = identity_->ssrc();
     report.report_timestamp = report_time;
     report.stream_timestamp = timestamp_extractor_->get_mapping(report_time);
+    // TODO(gh-14): query Packetizer
+    report.packet_count = 0;
+    report.byte_count = 0;
+
     return report;
 }
 
 void SenderSession::notify_send_stream(packet::stream_source_t recv_source_id,
                                        const rtcp::RecvReport& recv_report) {
-    // TODO
+    // TODO(gh-14): notify FeedbackMonitor
 }
 
 } // namespace pipeline

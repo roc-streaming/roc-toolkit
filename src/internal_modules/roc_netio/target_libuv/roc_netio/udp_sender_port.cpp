@@ -163,7 +163,7 @@ status::StatusCode UdpSenderPort::write(const packet::PacketPtr& pp) {
         roc_panic("udp sender: %s: unexpected non-udp packet", descriptor());
     }
 
-    if (!pp->data()) {
+    if (!pp->buffer()) {
         roc_panic("udp sender: %s: unexpected packet w/o data", descriptor());
     }
 
@@ -239,11 +239,11 @@ void UdpSenderPort::write_sem_cb_(uv_async_t* handle) {
                 self.descriptor(), packet_num,
                 address::socket_addr_to_str(self.config_.bind_address).c_str(),
                 address::socket_addr_to_str(udp.dst_addr).c_str(),
-                (long)pp->data().size());
+                (long)pp->buffer().size());
 
         uv_buf_t buf;
-        buf.base = (char*)pp->data().data();
-        buf.len = pp->data().size();
+        buf.base = (char*)pp->buffer().data();
+        buf.len = pp->buffer().size();
 
         udp.request.data = &self;
 
@@ -281,7 +281,7 @@ void UdpSenderPort::send_cb_(uv_udp_send_t* req, int status) {
                 self.descriptor(),
                 address::socket_addr_to_str(self.config_.bind_address).c_str(),
                 address::socket_addr_to_str(pp->udp()->dst_addr).c_str(),
-                (long)pp->data().size(), uv_err_name(status), uv_strerror(status));
+                (long)pp->buffer().size(), uv_err_name(status), uv_strerror(status));
     }
 
     const int pending_packets = --self.pending_packets_;
@@ -326,7 +326,7 @@ bool UdpSenderPort::try_nonblocking_send_(const packet::PacketPtr& pp) {
 
     const packet::UDP& udp = *pp->udp();
     const bool success =
-        socket_try_send_to(fd_, pp->data().data(), pp->data().size(), udp.dst_addr);
+        socket_try_send_to(fd_, pp->buffer().data(), pp->buffer().size(), udp.dst_addr);
 
     if (success) {
         const int packet_num = ++sent_packets_;
@@ -335,7 +335,7 @@ bool UdpSenderPort::try_nonblocking_send_(const packet::PacketPtr& pp) {
                 descriptor(), packet_num,
                 address::socket_addr_to_str(config_.bind_address).c_str(),
                 address::socket_addr_to_str(udp.dst_addr).c_str(),
-                (long)pp->data().size());
+                (long)pp->buffer().size());
     }
 
     return success;

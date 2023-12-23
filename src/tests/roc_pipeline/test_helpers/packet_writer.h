@@ -257,10 +257,10 @@ private:
         pb->udp()->src_addr = src_addr_;
         pb->udp()->dst_addr = source_dst_addr_;
 
-        pb->set_data(pa->data());
+        pb->set_buffer(pa->buffer());
 
         if (corrupt_) {
-            pb->data().data()[0] = 0;
+            pb->buffer().data()[0] = 0;
         }
 
         return pb;
@@ -282,7 +282,7 @@ private:
         CHECK(source_composer_->prepare(
             *pp, bp, payload_encoder_->encoded_byte_count(samples_per_packet)));
 
-        pp->set_data(bp);
+        pp->set_buffer(bp);
 
         pp->rtp()->source = source_;
         pp->rtp()->seqnum = seqnum_;

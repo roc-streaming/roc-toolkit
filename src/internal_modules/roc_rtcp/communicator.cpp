@@ -72,7 +72,7 @@ status::StatusCode Communicator::process_packet(const packet::PacketPtr& packet,
 
     roc_log(LogTrace, "rtcp communicator: processing incoming packet");
 
-    Traverser traverser(packet->rtcp()->data);
+    Traverser traverser(packet->rtcp()->payload);
     if (!traverser.parse()) {
         roc_log(LogTrace, "rtcp communicator: error when parsing compound packet");
         record_error_();
@@ -451,15 +451,15 @@ status::StatusCode Communicator::generate_packet_(PacketType packet_type,
     }
 
     // Buffer for RTCP packet data
-    core::Slice<uint8_t> rtcp_data = buffer_factory_.new_buffer();
-    if (!rtcp_data) {
+    core::Slice<uint8_t> payload_buffer = buffer_factory_.new_buffer();
+    if (!payload_buffer) {
         roc_log(LogError, "rtcp communicator: can't create buffer");
         return status::StatusNoMem;
     }
-    rtcp_data.reslice(0, 0);
+    payload_buffer.reslice(0, 0);
 
     // Fill RTCP packet data
-    status::StatusCode status = generate_packet_payload_(packet_type, rtcp_data);
+    status::StatusCode status = generate_packet_payload_(packet_type, payload_buffer);
     if (status != status::StatusOK) {
         return status;
     }
@@ -468,46 +468,46 @@ status::StatusCode Communicator::generate_packet_(PacketType packet_type,
     // composer, packet_data may hold additionals headers or footers around
     // RTCP. If RTCP composer is the topmost, packet_data and rtcp_data
     // will be identical.
-    core::Slice<uint8_t> packet_data = buffer_factory_.new_buffer();
-    if (!packet_data) {
+    core::Slice<uint8_t> packet_buffer = buffer_factory_.new_buffer();
+    if (!packet_buffer) {
         roc_log(LogError, "rtcp communicator: can't create buffer");
         return status::StatusNoMem;
     }
-    packet_data.reslice(0, 0);
+    packet_buffer.reslice(0, 0);
 
     // Prepare packet to be able to hold our RTCP packet data
-    if (!packet_composer_.prepare(*packet, packet_data, rtcp_data.size())) {
+    if (!packet_composer_.prepare(*packet, packet_buffer, payload_buffer.size())) {
         roc_log(LogError, "rtcp communicator: can't prepare packet");
         return status::StatusNoSpace;
     }
     packet->add_flags(packet::Packet::FlagPrepared);
 
-    // Attach prepared packet data to the packet
-    packet->set_data(packet_data);
+    // Attach prepared packet buffer to the packet
+    packet->set_buffer(packet_buffer);
 
     // prepare() call should have, among other things, set packet->rtcp()->data to a
     // sub-slice of packet_data, of size exactly as we requested
-    if (!packet->rtcp() || !packet->rtcp()->data
-        || packet->rtcp()->data.size() != rtcp_data.size()) {
+    if (!packet->rtcp() || !packet->rtcp()->payload
+        || packet->rtcp()->payload.size() != payload_buffer.size()) {
         roc_panic("rtcp communicator: composer prepared invalid packet");
     }
 
     // Copy our RTCP packet data into that sub-slice
-    memcpy(packet->rtcp()->data.data(), rtcp_data.data(), rtcp_data.size());
+    memcpy(packet->rtcp()->payload.data(), payload_buffer.data(), payload_buffer.size());
 
     return status::StatusOK;
 }
 
 status::StatusCode
 Communicator::generate_packet_payload_(PacketType packet_type,
-                                       core::Slice<uint8_t>& packet_data) {
+                                       core::Slice<uint8_t>& packet_payload) {
     const size_t saved_srrr_index = srrr_index_, saved_dlrr_index = dlrr_index_;
 
     for (;;) {
         // Start new packet.
         cur_pkt_block_ = 0;
 
-        Builder bld(config_, packet_data);
+        Builder bld(config_, packet_payload);
 
         switch (packet_type) {
         case PacketType_Reports:

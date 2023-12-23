@@ -48,6 +48,12 @@ public:
 
     ~SenderSlot();
 
+    //! Check if the slot was succefully constructed.
+    bool is_valid() const;
+
+    //! Check if slot configuration is complete.
+    bool is_complete() const;
+
     //! Add endpoint.
     SenderEndpoint* add_endpoint(address::Interface iface,
                                  address::Protocol proto,
@@ -57,9 +63,6 @@ public:
     //! Get audio writer.
     //! @returns NULL if slot is not ready.
     audio::IFrameWriter* writer();
-
-    //! Check if slot configuration is complete.
-    bool is_complete() const;
 
     //! Refresh pipeline according to current time.
     //! @returns
@@ -91,6 +94,8 @@ private:
     core::Optional<SenderEndpoint> control_endpoint_;
 
     SenderSession session_;
+
+    bool valid_;
 };
 
 } // namespace pipeline

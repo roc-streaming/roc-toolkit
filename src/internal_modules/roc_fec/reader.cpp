@@ -268,7 +268,7 @@ packet::PacketPtr Reader::parse_repaired_packet_(const core::Slice<uint8_t>& buf
         return NULL;
     }
 
-    pp->set_data(buffer);
+    pp->set_buffer(buffer);
     pp->add_flags(packet::Packet::FlagRestored);
 
     return pp;

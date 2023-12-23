@@ -212,9 +212,8 @@ void Depacketizer::update_packet_(FrameInfo& info) {
     unsigned n_dropped = 0;
 
     while ((packet_ = read_packet_())) {
-        payload_decoder_.begin(packet_->rtp()->stream_timestamp,
-                               packet_->rtp()->payload.data(),
-                               packet_->rtp()->payload.size());
+        payload_decoder_.begin(packet_->stream_timestamp(), packet_->payload().data(),
+                               packet_->payload().size());
 
         pkt_timestamp = payload_decoder_.position();
 
@@ -248,7 +247,7 @@ void Depacketizer::update_packet_(FrameInfo& info) {
         return;
     }
 
-    next_capture_ts_ = packet_->rtp()->capture_timestamp;
+    next_capture_ts_ = packet_->capture_timestamp();
     if (!valid_capture_ts_ && !!next_capture_ts_) {
         valid_capture_ts_ = true;
     }
@@ -281,16 +280,12 @@ packet::PacketPtr Depacketizer::read_packet_() {
     const status::StatusCode code = reader_.read(pp);
     if (code != status::StatusOK) {
         if (code != status::StatusNoData) {
-            // TODO: forward status (gh-302)
+            // TODO(gh-302): forward status
             roc_log(LogError, "depacketizer: failed to read packet: status=%s",
                     status::code_to_str(code));
         }
 
         return NULL;
-    }
-
-    if (!pp->rtp()) {
-        roc_panic("depacketizer: unexpected non-rtp packet");
     }
 
     return pp;

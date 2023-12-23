@@ -20,7 +20,8 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto,
                                packet::IWriter& dest_writer,
                                core::IArena& arena)
     : proto_(proto)
-    , composer_(NULL) {
+    , composer_(NULL)
+    , valid_(false) {
     packet::IComposer* composer = NULL;
 
     switch (proto) {
@@ -96,17 +97,22 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto,
         break;
     }
 
-    composer_ = composer;
-    if (!composer_) {
+    if (!composer) {
         return;
     }
 
     packet_shipper_.reset(new (packet_shipper_)
-                              packet::Shipper(dest_address, *composer_, dest_writer));
+                              packet::Shipper(dest_address, *composer, dest_writer));
+    if (!packet_shipper_) {
+        return;
+    }
+
+    composer_ = composer;
+    valid_ = true;
 }
 
 bool SenderEndpoint::is_valid() const {
-    return composer_ && packet_shipper_;
+    return valid_;
 }
 
 address::Protocol SenderEndpoint::proto() const {

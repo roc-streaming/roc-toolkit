@@ -56,7 +56,7 @@ void print_packet(const Packet& pkt, int flags) {
     }
 
     if (pkt.rtcp()) {
-        p.writef(" rtcp: size=%lu\n", (unsigned long)pkt.rtcp()->data.size());
+        p.writef(" rtcp: size=%lu\n", (unsigned long)pkt.rtcp()->payload.size());
     }
 }
 

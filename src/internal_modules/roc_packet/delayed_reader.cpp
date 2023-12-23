@@ -100,8 +100,9 @@ stream_timestamp_t DelayedReader::queue_size_() const {
         return 0;
     }
 
-    const stream_timestamp_diff_t qs =
-        stream_timestamp_diff(queue_.tail()->end(), queue_.head()->begin());
+    const stream_timestamp_diff_t qs = stream_timestamp_diff(
+        queue_.tail()->stream_timestamp() + queue_.tail()->duration(),
+        queue_.head()->stream_timestamp());
 
     if (qs < 0) {
         roc_log(LogError, "delayed reader: unexpected negative queue size: %ld",

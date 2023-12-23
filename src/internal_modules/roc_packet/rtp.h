@@ -22,7 +22,7 @@ namespace packet {
 
 //! RTP packet.
 struct RTP {
-    //! Packet source ID identifying packet stream ("src").
+    //! Packet source ID identifying packet stream ("ssrc").
     //! @remarks
     //!  Sequence numbers and timestamp are numbered independently inside
     //!  different packet streams.
@@ -45,7 +45,7 @@ struct RTP {
     //!  Just like seqnum, it starts from random value and may overflow.
     stream_timestamp_t stream_timestamp;
 
-    //! Packet duration ("dur").
+    //! Packet duration.
     //! @remarks
     //!  Duration is measured in the same units as timestamp.
     //!  Duration is not stored directly in RTP header. It is calculated

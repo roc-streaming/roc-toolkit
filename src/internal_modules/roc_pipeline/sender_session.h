@@ -35,6 +35,8 @@
 #include "roc_rtcp/composer.h"
 #include "roc_rtcp/istream_controller.h"
 #include "roc_rtp/encoding_map.h"
+#include "roc_rtp/identity.h"
+#include "roc_rtp/sequencer.h"
 #include "roc_rtp/timestamp_extractor.h"
 
 namespace roc {
@@ -54,6 +56,9 @@ public:
                   core::BufferFactory<uint8_t>& byte_buffer_factory,
                   core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                   core::IArena& arena);
+
+    //! Check if the session was succefully constructed.
+    bool is_valid() const;
 
     //! Create transport sub-pipeline.
     bool create_transport_pipeline(SenderEndpoint* source_endpoint,
@@ -95,6 +100,9 @@ private:
     core::BufferFactory<uint8_t>& byte_buffer_factory_;
     core::BufferFactory<audio::sample_t>& sample_buffer_factory_;
 
+    core::Optional<rtp::Identity> identity_;
+    core::Optional<rtp::Sequencer> sequencer_;
+
     core::Optional<packet::Router> router_;
 
     core::Optional<packet::Interleaver> interleaver_;
@@ -118,6 +126,8 @@ private:
     audio::IFrameWriter* audio_writer_;
 
     size_t num_sources_;
+
+    bool valid_;
 };
 
 } // namespace pipeline

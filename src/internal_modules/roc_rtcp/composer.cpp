@@ -45,7 +45,7 @@ bool Composer::prepare(packet::Packet& packet,
     packet.add_flags(packet::Packet::FlagControl);
     packet.add_flags(packet::Packet::FlagRTCP);
 
-    packet.rtcp()->data = buffer;
+    packet.rtcp()->payload = buffer;
 
     return true;
 }
@@ -64,12 +64,12 @@ bool Composer::compose(packet::Packet& packet) {
         roc_panic("rtcp composer: unexpected non-rctp packet");
     }
 
-    if (!packet.rtcp()->data) {
+    if (!packet.rtcp()->payload) {
         roc_log(LogError, "rtcp composer: unexpected null data");
         return false;
     }
 
-    if (packet.rtcp()->data.size() == 0) {
+    if (packet.rtcp()->payload.size() == 0) {
         roc_log(LogError, "rtcp composer: unexpected zero data");
         return false;
     }

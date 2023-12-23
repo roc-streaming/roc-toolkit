@@ -18,33 +18,28 @@ namespace audio {
 
 Packetizer::Packetizer(packet::IWriter& writer,
                        packet::IComposer& composer,
+                       packet::ISequencer& sequencer,
                        IFrameEncoder& payload_encoder,
                        packet::PacketFactory& packet_factory,
                        core::BufferFactory<uint8_t>& buffer_factory,
                        core::nanoseconds_t packet_length,
-                       const audio::SampleSpec& sample_spec,
-                       unsigned int payload_type)
+                       const audio::SampleSpec& sample_spec)
     : writer_(writer)
     , composer_(composer)
+    , sequencer_(sequencer)
     , payload_encoder_(payload_encoder)
     , packet_factory_(packet_factory)
     , buffer_factory_(buffer_factory)
     , sample_spec_(sample_spec)
     , samples_per_packet_((packet::stream_timestamp_t)
                               sample_spec.ns_2_stream_timestamp_delta(packet_length))
-    , payload_type_(payload_type)
     , payload_size_(payload_encoder.encoded_byte_count(samples_per_packet_))
     , packet_pos_(0)
+    , packet_cts_(0)
+    , capture_ts_(0)
     , valid_(false) {
     roc_panic_if_msg(!sample_spec.is_valid(), "packetizer: invalid sample spec: %s",
                      sample_spec_to_str(sample_spec).c_str());
-
-    source_ =
-        (packet::stream_source_t)core::fast_random_range(0, packet::stream_source_t(-1));
-    seqnum_ = (packet::seqnum_t)core::fast_random_range(0, packet::seqnum_t(-1));
-    stream_ts_ = (packet::stream_timestamp_t)core::fast_random_range(
-        0, packet::stream_timestamp_t(-1));
-    capture_ts_ = 0;
 
     roc_log(LogDebug, "packetizer: initializing: n_channels=%lu samples_per_packet=%lu",
             (unsigned long)sample_spec_.num_channels(),
@@ -105,29 +100,24 @@ bool Packetizer::begin_packet_() {
         return false;
     }
 
-    packet::RTP* rtp = pp->rtp();
-    if (!rtp) {
-        roc_panic("packetizer: unexpected non-rtp packet");
-    }
-
-    payload_encoder_.begin(rtp->payload.data(), rtp->payload.size());
-
-    rtp->source = source_;
-    rtp->seqnum = seqnum_;
-    rtp->stream_timestamp = stream_ts_;
-    rtp->capture_timestamp = capture_ts_;
-    rtp->payload_type = payload_type_;
-
     packet_ = pp;
+    packet_pos_ = 0;
+    packet_cts_ = capture_ts_;
+
+    // Begin encoding samples into packet.
+    payload_encoder_.begin(packet_->payload().data(), packet_->payload().size());
 
     return true;
 }
 
 void Packetizer::end_packet_() {
+    // Finish encoding samples into packet.
     payload_encoder_.end();
 
-    packet_->rtp()->duration = (packet::stream_timestamp_t)packet_pos_;
+    // Fill protocol-specific fields.
+    sequencer_.next(*packet_, packet_cts_, (packet::stream_timestamp_t)packet_pos_);
 
+    // Apply padding if needed.
     if (packet_pos_ < samples_per_packet_) {
         pad_packet_();
     }
@@ -136,11 +126,9 @@ void Packetizer::end_packet_() {
     // TODO(gh-183): forward status
     roc_panic_if(code != status::StatusOK);
 
-    seqnum_++;
-    stream_ts_ += (packet::stream_timestamp_t)packet_pos_;
-
     packet_ = NULL;
     packet_pos_ = 0;
+    packet_cts_ = 0;
 }
 
 void Packetizer::pad_packet_() {
@@ -166,19 +154,19 @@ packet::PacketPtr Packetizer::create_packet_() {
 
     packet->add_flags(packet::Packet::FlagAudio);
 
-    core::Slice<uint8_t> data = buffer_factory_.new_buffer();
-    if (!data) {
+    core::Slice<uint8_t> buffer = buffer_factory_.new_buffer();
+    if (!buffer) {
         roc_log(LogError, "packetizer: can't allocate buffer");
         return NULL;
     }
 
-    if (!composer_.prepare(*packet, data, payload_size_)) {
+    if (!composer_.prepare(*packet, buffer, payload_size_)) {
         roc_log(LogError, "packetizer: can't prepare packet");
         return NULL;
     }
     packet->add_flags(packet::Packet::FlagPrepared);
 
-    packet->set_data(data);
+    packet->set_buffer(buffer);
 
     return packet;
 }

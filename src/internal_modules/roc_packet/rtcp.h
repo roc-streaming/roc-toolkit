@@ -20,12 +20,12 @@ namespace packet {
 
 //! RTCP compound packet.
 struct RTCP {
-    //! Packet data.
-    //! RTCP compound packets does not contain any pre-parsed data.
-    //! Use rtcp::Traverser and rtcp::Builder to work with packet.
-    core::Slice<uint8_t> data;
+    //! Packet payload containing RTCP compound packet.
+    //! RTCP does not contain any pre-parsed fields.
+    //! Use rtcp::Traverser and rtcp::Builder to work with payload.
+    core::Slice<uint8_t> payload;
 
-    //! Construct zero RTP packet.
+    //! Construct zero RTCP packet.
     RTCP();
 };
 

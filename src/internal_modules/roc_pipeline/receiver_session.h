@@ -68,7 +68,7 @@ public:
                     core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                     core::IArena& arena);
 
-    //! Check if the session pipeline was succefully constructed.
+    //! Check if the session was succefully constructed.
     bool is_valid() const;
 
     //! Try to route a packet to this session.
@@ -135,6 +135,8 @@ private:
     core::Optional<audio::PoisonReader> session_poisoner_;
 
     core::Optional<audio::LatencyMonitor> latency_monitor_;
+
+    bool valid_;
 };
 
 } // namespace pipeline
