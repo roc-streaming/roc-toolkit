@@ -7,6 +7,7 @@
  */
 
 #include "roc_pipeline/sender_session.h"
+#include "roc_audio/packetizer.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/time.h"
@@ -32,6 +33,11 @@ SenderSession::SenderSession(const SenderConfig& config,
     , audio_writer_(NULL)
     , num_sources_(0)
     , valid_(false) {
+    identity_.reset(new (identity_) rtp::Identity());
+    if (!identity_ || !identity_->is_valid()) {
+        return;
+    }
+
     valid_ = true;
 }
 
@@ -113,11 +119,6 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         encoding->new_encoder(arena_, encoding->pcm_format, encoding->sample_spec),
         arena_);
     if (!payload_encoder_) {
-        return false;
-    }
-
-    identity_.reset(new (identity_) rtp::Identity());
-    if (!identity_ || !identity_->is_valid()) {
         return false;
     }
 
@@ -209,11 +210,11 @@ audio::IFrameWriter* SenderSession::writer() const {
 core::nanoseconds_t SenderSession::refresh(core::nanoseconds_t current_time) {
     roc_panic_if(!is_valid());
 
-    if (!rtcp_communicator_) {
+    if (!audio_writer_ || !rtcp_communicator_) {
         return 0;
     }
 
-    if (timestamp_extractor_ && timestamp_extractor_->has_mapping()) {
+    if (has_send_stream()) {
         const status::StatusCode code =
             rtcp_communicator_->generate_reports(current_time);
 
@@ -228,6 +229,10 @@ SenderSessionMetrics SenderSession::get_metrics() const {
     roc_panic_if(!is_valid());
 
     SenderSessionMetrics metrics;
+    if (packetizer_) {
+        metrics.packets = packetizer_->metrics();
+    }
+
     return metrics;
 }
 
@@ -244,24 +249,29 @@ void SenderSession::change_source_id() {
 }
 
 bool SenderSession::has_send_stream() {
-    return true;
+    return timestamp_extractor_ && timestamp_extractor_->has_mapping();
 }
 
 rtcp::SendReport SenderSession::query_send_stream(core::nanoseconds_t report_time) {
+    roc_panic_if(!has_send_stream());
+
+    const audio::PacketizerMetrics packet_metrics = packetizer_->metrics();
+
     rtcp::SendReport report;
     report.sender_cname = identity_->cname();
     report.sender_source_id = identity_->ssrc();
     report.report_timestamp = report_time;
     report.stream_timestamp = timestamp_extractor_->get_mapping(report_time);
-    // TODO(gh-14): query Packetizer
-    report.packet_count = 0;
-    report.byte_count = 0;
+    report.packet_count = (uint32_t)packet_metrics.packet_count;
+    report.byte_count = (uint32_t)packet_metrics.payload_count;
 
     return report;
 }
 
 void SenderSession::notify_send_stream(packet::stream_source_t recv_source_id,
                                        const rtcp::RecvReport& recv_report) {
+    roc_panic_if(!has_send_stream());
+
     // TODO(gh-14): notify FeedbackMonitor
 }
 

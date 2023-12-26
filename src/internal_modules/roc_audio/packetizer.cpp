@@ -52,6 +52,10 @@ bool Packetizer::is_valid() const {
     return valid_;
 }
 
+PacketizerMetrics Packetizer::metrics() const {
+    return metrics_;
+}
+
 void Packetizer::write(Frame& frame) {
     if (frame.num_samples() % sample_spec_.num_channels() != 0) {
         roc_panic("packetizer: unexpected frame size");
@@ -111,6 +115,10 @@ bool Packetizer::begin_packet_() {
 }
 
 void Packetizer::end_packet_() {
+    // How much bytes we've written into packet payload.
+    const size_t written_payload_size = payload_encoder_.encoded_byte_count(packet_pos_);
+    roc_panic_if_not(written_payload_size <= payload_size_);
+
     // Finish encoding samples into packet.
     payload_encoder_.end();
 
@@ -119,29 +127,29 @@ void Packetizer::end_packet_() {
 
     // Apply padding if needed.
     if (packet_pos_ < samples_per_packet_) {
-        pad_packet_();
+        pad_packet_(written_payload_size);
     }
 
     const status::StatusCode code = writer_.write(packet_);
     // TODO(gh-183): forward status
     roc_panic_if(code != status::StatusOK);
 
+    metrics_.packet_count++;
+    metrics_.payload_count += written_payload_size;
+
     packet_ = NULL;
     packet_pos_ = 0;
     packet_cts_ = 0;
 }
 
-void Packetizer::pad_packet_() {
-    const size_t actual_payload_size = payload_encoder_.encoded_byte_count(packet_pos_);
-    roc_panic_if_not(actual_payload_size <= payload_size_);
-
-    if (actual_payload_size == payload_size_) {
+void Packetizer::pad_packet_(size_t written_payload_size) {
+    if (written_payload_size == payload_size_) {
         return;
     }
 
-    if (!composer_.pad(*packet_, payload_size_ - actual_payload_size)) {
+    if (!composer_.pad(*packet_, payload_size_ - written_payload_size)) {
         roc_panic("packetizer: can't pad packet: orig_size=%lu actual_size=%lu",
-                  (unsigned long)payload_size_, (unsigned long)actual_payload_size);
+                  (unsigned long)payload_size_, (unsigned long)written_payload_size);
     }
 }
 

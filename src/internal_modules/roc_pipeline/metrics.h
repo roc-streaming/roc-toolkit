@@ -13,6 +13,7 @@
 #define ROC_PIPELINE_METRICS_H_
 
 #include "roc_audio/latency_monitor.h"
+#include "roc_audio/packetizer.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
@@ -20,6 +21,9 @@ namespace pipeline {
 
 //! Metrics of sender session (connection to receiver).
 struct SenderSessionMetrics {
+    //! Packetization metrics.
+    audio::PacketizerMetrics packets;
+
     SenderSessionMetrics() {
     }
 };
@@ -38,6 +42,9 @@ struct SenderSlotMetrics {
 struct ReceiverSessionMetrics {
     //! Latency metrics.
     audio::LatencyMonitorMetrics latency;
+
+    ReceiverSessionMetrics() {
+    }
 };
 
 //! Metrics of receiver slot.

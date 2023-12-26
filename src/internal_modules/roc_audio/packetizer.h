@@ -28,6 +28,21 @@
 namespace roc {
 namespace audio {
 
+//! Metrics of packetizer.
+struct PacketizerMetrics {
+    //! Cumulative count of produced packets.
+    uint64_t packet_count;
+
+    //! Cumulative count of produced payload bytes.
+    //! This excludes packet headers and padding.
+    uint64_t payload_count;
+
+    PacketizerMetrics()
+        : packet_count(0)
+        , payload_count(0) {
+    }
+};
+
 //! Packetizer.
 //! @remarks
 //!  Gets an audio stream, encodes samples to packets using an encoder, and
@@ -57,6 +72,9 @@ public:
     //! Check if object is successfully constructed.
     bool is_valid() const;
 
+    //! Get metrics.
+    PacketizerMetrics metrics() const;
+
     //! Write audio frame.
     virtual void write(Frame& frame);
 
@@ -69,7 +87,7 @@ private:
     bool begin_packet_();
     void end_packet_();
 
-    void pad_packet_();
+    void pad_packet_(size_t written_payload_size);
 
     packet::PacketPtr create_packet_();
 
@@ -90,6 +108,8 @@ private:
     core::nanoseconds_t packet_cts_;
 
     core::nanoseconds_t capture_ts_;
+
+    PacketizerMetrics metrics_;
 
     bool valid_;
 };
