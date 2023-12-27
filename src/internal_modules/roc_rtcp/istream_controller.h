@@ -12,8 +12,10 @@
 #ifndef ROC_RTCP_ISTREAM_CONTROLLER_H_
 #define ROC_RTCP_ISTREAM_CONTROLLER_H_
 
+#include "roc_core/attributes.h"
 #include "roc_packet/units.h"
 #include "roc_rtcp/reports.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace rtcp {
@@ -75,23 +77,26 @@ public:
     //! @p recv_source_id identifies remote receiver which sent report.
     //! In case of multicast sessions, one sending stream may have
     //! multiple receivers.
-    virtual void notify_send_stream(packet::stream_source_t recv_source_id,
-                                    const RecvReport& recv_report) {
+    virtual ROC_ATTR_NODISCARD status::StatusCode
+    notify_send_stream(packet::stream_source_t recv_source_id,
+                       const RecvReport& recv_report) {
+        return status::StatusOK;
     }
 
     //! Check how many local receiving streams are present.
     //! Multiple local receiving streams are allowed, each one corresponding to
     //! its own remote sender with unique sender SSRC.
-    virtual size_t num_recv_steams() {
+    virtual size_t num_recv_streams() {
         return 0;
     }
 
-    //! Query receiving report from local receiving stream.
-    //! Report will be used to generate RTCP packets for remote sender.
-    //! @p recv_stream_index defines stream number in range [0; num_recv_steams()-1].
-    virtual RecvReport query_recv_stream(size_t recv_stream_index,
-                                         core::nanoseconds_t report_time) {
-        return RecvReport();
+    //! Query receiving reports from local receiving streams.
+    //! Reports will be used to generate RTCP packets for remote senders.
+    //! @p reports points to a buffer of @p n_reports size,
+    //! where @p n_reports <= num_recv_streams().
+    virtual void query_recv_streams(rtcp::RecvReport* reports,
+                                    size_t n_reports,
+                                    core::nanoseconds_t report_time) {
     }
 
     //! Notify local receiving stream with sender report.
@@ -99,8 +104,10 @@ public:
     //! @p send_source_id identifies remote sender which sent report.
     //! If there are multiple receiving streams, each one will be notified
     //! with corresponding report.
-    virtual void notify_recv_stream(packet::stream_source_t send_source_id,
-                                    const SendReport& send_report) {
+    virtual ROC_ATTR_NODISCARD status::StatusCode
+    notify_recv_stream(packet::stream_source_t send_source_id,
+                       const SendReport& send_report) {
+        return status::StatusOK;
     }
 
     //! Terminate local receiving stream.

@@ -26,6 +26,7 @@ Reporter::Reporter(const Config& config,
     , stream_map_(arena)
     , local_send_streams_(arena)
     , local_recv_streams_(arena)
+    , local_recv_reports_(arena)
     , collision_detected_(false)
     , collision_reported_(false)
     , report_state_(State_Idle)
@@ -69,7 +70,7 @@ bool Reporter::is_sending() const {
 bool Reporter::is_receiving() const {
     roc_panic_if(!is_valid());
 
-    return stream_controller_.num_recv_steams() != 0;
+    return stream_controller_.num_recv_streams() != 0;
 }
 
 size_t Reporter::num_streams() const {
@@ -335,9 +336,13 @@ status::StatusCode Reporter::end_processing() {
     detect_timeouts_();
 
     // Notify stream controller with updated reports.
-    notify_streams_();
+    const status::StatusCode code = notify_streams_();
 
     report_state_ = State_Idle;
+
+    if (code != status::StatusOK) {
+        return code;
+    }
 
     return report_error_;
 }
@@ -517,9 +522,9 @@ status::StatusCode Reporter::end_generation() {
     return report_error_;
 }
 
-void Reporter::notify_streams_() {
+status::StatusCode Reporter::notify_streams_() {
     if (report_time_ == 0) {
-        return;
+        return status::StatusOK;
     }
 
     const bool is_sending = stream_controller_.has_send_stream();
@@ -543,8 +548,16 @@ void Reporter::notify_streams_() {
                     " notify_send_stream(): send_ssrc=%lu recv_ssrc=%lu",
                     (unsigned long)local_source_id_, (unsigned long)recv_source_id);
 
-            stream_controller_.notify_send_stream(recv_source_id,
-                                                  stream->remote_recv_report);
+            const status::StatusCode code = stream_controller_.notify_send_stream(
+                recv_source_id, stream->remote_recv_report);
+
+            if (code != status::StatusOK) {
+                roc_log(LogError,
+                        "rtcp reporter:"
+                        " failed to notify send stream: send_ssrc=%lu recv_ssrc=%lu",
+                        (unsigned long)local_source_id_, (unsigned long)recv_source_id);
+                return code;
+            }
         }
 
         if (stream->has_remote_send_report) {
@@ -558,10 +571,20 @@ void Reporter::notify_streams_() {
                     (unsigned long)local_source_id_, (unsigned long)send_source_id,
                     cname_to_str(stream->cname).c_str());
 
-            stream_controller_.notify_recv_stream(send_source_id,
-                                                  stream->remote_send_report);
+            const status::StatusCode code = stream_controller_.notify_recv_stream(
+                send_source_id, stream->remote_send_report);
+
+            if (code != status::StatusOK) {
+                roc_log(LogError,
+                        "rtcp reporter:"
+                        " failed to notify recv stream: recv_ssrc=%lu send_ssrc=%lu",
+                        (unsigned long)local_source_id_, (unsigned long)send_source_id);
+                return code;
+            }
         }
     }
+
+    return status::StatusOK;
 }
 
 status::StatusCode Reporter::query_send_streams_() {
@@ -599,7 +622,19 @@ status::StatusCode Reporter::query_send_streams_() {
 }
 
 status::StatusCode Reporter::query_recv_streams_() {
-    const size_t recv_count = stream_controller_.num_recv_steams();
+    const size_t recv_count = stream_controller_.num_recv_streams();
+
+    if (!local_recv_reports_.resize(recv_count)) {
+        return status::StatusNoMem;
+    }
+
+    if (recv_count != 0) {
+        roc_log(LogTrace, "rtcp reporter: query_recv_streams(): n_reports=%lu",
+                (unsigned long)recv_count);
+
+        stream_controller_.query_recv_streams(local_recv_reports_.data(),
+                                              local_recv_reports_.size(), report_time_);
+    }
 
     local_recv_streams_.clear();
 
@@ -608,23 +643,15 @@ status::StatusCode Reporter::query_recv_streams_() {
     // update its receiving report. This report will be later used to generate
     // RTCP packets for corresponding sender.
     for (size_t recv_idx = 0; recv_idx < recv_count; recv_idx++) {
-        const RecvReport recv_report =
-            stream_controller_.query_recv_stream(recv_idx, report_time_);
-
-        roc_log(LogTrace,
-                "rtcp reporter: query_recv_stream(): recv_ssrc=%lu send_ssrc=%lu",
-                (unsigned long)recv_report.receiver_source_id,
-                (unsigned long)recv_report.sender_source_id);
-
-        validate_recv_report_(recv_report);
+        validate_recv_report_(local_recv_reports_[recv_idx]);
 
         core::SharedPtr<Stream> stream =
-            find_stream_(recv_report.sender_source_id, AutoCreate);
+            find_stream_(local_recv_reports_[recv_idx].sender_source_id, AutoCreate);
         if (!stream) {
             return status::StatusNoMem;
         }
 
-        stream->local_recv_report = recv_report;
+        stream->local_recv_report = local_recv_reports_[recv_idx];
 
         if (!local_recv_streams_.push_back(stream.get())) {
             return status::StatusNoMem;

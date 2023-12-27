@@ -19,6 +19,7 @@ class Packet;
 
 //! Print flags.
 enum {
+    PrintHeaders = 0,       //!< Print packet header.
     PrintPayload = (1 << 0) //!< Print packet payload.
 };
 

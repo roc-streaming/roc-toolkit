@@ -38,6 +38,7 @@
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/router.h"
 #include "roc_packet/sorted_queue.h"
+#include "roc_packet/units.h"
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/metrics.h"
 #include "roc_rtcp/reports.h"
@@ -61,7 +62,6 @@ public:
     //! Initialize.
     ReceiverSession(const ReceiverSessionConfig& session_config,
                     const ReceiverCommonConfig& common_config,
-                    const address::SocketAddr& src_address,
                     const rtp::EncodingMap& encoding_map,
                     packet::PacketFactory& packet_factory,
                     core::BufferFactory<uint8_t>& byte_buffer_factory,
@@ -71,7 +71,7 @@ public:
     //! Check if the session was succefully constructed.
     bool is_valid() const;
 
-    //! Try to route a packet to this session.
+    //! Route a packet to this session.
     ROC_ATTR_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet);
 
     //! Refresh pipeline according to current time.
@@ -90,6 +90,11 @@ public:
     //!  false if the session is ended
     bool reclock(core::nanoseconds_t playback_time);
 
+    //! Generate RTCP report to be delivered to sender.
+    rtcp::RecvReport generate_report(const char* report_cname,
+                                     packet::stream_source_t report_ssrc,
+                                     core::nanoseconds_t report_time) const;
+
     //! Process RTCP report obtained from sender.
     void process_report(const rtcp::SendReport& report);
 
@@ -100,8 +105,6 @@ public:
     audio::IFrameReader& reader();
 
 private:
-    const address::SocketAddr src_address_;
-
     audio::IFrameReader* audio_reader_;
 
     core::Optional<packet::Router> queue_router_;

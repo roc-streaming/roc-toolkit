@@ -38,6 +38,7 @@
 #include "roc_rtp/identity.h"
 #include "roc_rtp/sequencer.h"
 #include "roc_rtp/timestamp_extractor.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace pipeline {
@@ -87,8 +88,8 @@ private:
     virtual void change_source_id();
     virtual bool has_send_stream();
     virtual rtcp::SendReport query_send_stream(core::nanoseconds_t report_time);
-    virtual void notify_send_stream(packet::stream_source_t recv_source_id,
-                                    const rtcp::RecvReport& recv_report);
+    virtual status::StatusCode notify_send_stream(packet::stream_source_t recv_source_id,
+                                                  const rtcp::RecvReport& recv_report);
 
     core::IArena& arena_;
 

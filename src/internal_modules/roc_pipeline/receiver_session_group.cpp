@@ -10,8 +10,10 @@
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_packet/units.h"
 #include "roc_rtcp/communicator.h"
 #include "roc_status/code_to_str.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace pipeline {
@@ -33,6 +35,7 @@ ReceiverSessionGroup::ReceiverSessionGroup(
     , mixer_(mixer)
     , receiver_state_(receiver_state)
     , receiver_config_(receiver_config)
+    , session_router_(arena)
     , valid_(false) {
     identity_.reset(new (identity_) rtp::Identity());
     if (!identity_ || !identity_->is_valid()) {
@@ -76,7 +79,7 @@ ReceiverSessionGroup::refresh_sessions(core::nanoseconds_t current_time) {
 
         if (!curr->refresh(current_time, &sess_deadline)) {
             // Session ended.
-            remove_session_(*curr);
+            remove_session_(curr);
             continue;
         }
 
@@ -102,7 +105,7 @@ void ReceiverSessionGroup::reclock_sessions(core::nanoseconds_t playback_time) {
 
         if (!curr->reclock(playback_time)) {
             // Session ended.
-            remove_session_(*curr);
+            remove_session_(curr);
         }
     }
 }
@@ -146,60 +149,99 @@ void ReceiverSessionGroup::change_source_id() {
     identity_->change_ssrc();
 }
 
-size_t ReceiverSessionGroup::num_recv_steams() {
-    // TODO(gh-14): query num sessions
-    return 0;
+size_t ReceiverSessionGroup::num_recv_streams() {
+    return sessions_.size();
 }
 
-rtcp::RecvReport
-ReceiverSessionGroup::query_recv_stream(size_t recv_stream_index,
-                                        core::nanoseconds_t report_time) {
-    rtcp::RecvReport report;
-    report.receiver_cname = identity_->cname();
-    report.receiver_source_id = identity_->ssrc();
-    // TODO(gh-14): query session
-    report.sender_source_id = 123;
-    report.report_timestamp = report_time;
-    report.extended_seqnum = 0;
-    report.fract_loss = 0;
-    report.cum_loss = 0;
-    report.jitter = 0;
+void ReceiverSessionGroup::query_recv_streams(rtcp::RecvReport* reports,
+                                              size_t n_reports,
+                                              core::nanoseconds_t report_time) {
+    roc_panic_if(!reports);
+    roc_panic_if(n_reports > sessions_.size());
 
-    return report;
-}
-
-void ReceiverSessionGroup::notify_recv_stream(packet::stream_source_t send_source_id,
-                                              const rtcp::SendReport& send_report) {
-    // TODO(gh-14): match session by SSRC/CNAME
     core::SharedPtr<ReceiverSession> sess;
+    size_t n_sess = 0;
 
-    for (sess = sessions_.front(); sess; sess = sessions_.nextof(*sess)) {
-        sess->process_report(send_report);
+    // Gather reports from all sessions.
+    for (sess = sessions_.front(); sess; sess = sessions_.nextof(*sess), n_sess++) {
+        reports[n_sess] =
+            sess->generate_report(identity_->cname(), identity_->ssrc(), report_time);
     }
 }
 
+status::StatusCode
+ReceiverSessionGroup::notify_recv_stream(packet::stream_source_t send_source_id,
+                                         const rtcp::SendReport& send_report) {
+    // First, inform router that these CNAME and SSRC are related.
+    // It is used to route related streams to the same session.
+    const status::StatusCode code =
+        session_router_.link_source(send_source_id, send_report.sender_cname);
+    if (code != status::StatusOK) {
+        roc_log(LogError, "session group: can't link source: status=%s",
+                status::code_to_str(code));
+        return code;
+    }
+
+    // Second, if there is a session for given SSRC, let it process the report.
+    core::SharedPtr<ReceiverSession> sess =
+        session_router_.find_by_source(send_source_id);
+    if (sess) {
+        sess->process_report(send_report);
+    }
+
+    return status::StatusOK;
+}
+
 void ReceiverSessionGroup::halt_recv_stream(packet::stream_source_t send_source_id) {
-    // TODO(gh-14): remove session
+    // Remember session for given SSRC.
+    core::SharedPtr<ReceiverSession> sess =
+        session_router_.find_by_source(send_source_id);
+
+    // Remove SSRC from router.
+    session_router_.unlink_source(send_source_id);
+
+    if (sess && session_router_.num_sources(sess) == 0) {
+        // If session exists, and it was last SSRC for that session,
+        // then remove the session.
+        remove_session_(sess);
+    }
 }
 
 status::StatusCode
 ReceiverSessionGroup::route_transport_packet_(const packet::PacketPtr& packet) {
-    core::SharedPtr<ReceiverSession> sess;
+    // Find route by packet SSRC.
+    core::SharedPtr<ReceiverSession> sess =
+        session_router_.find_by_source(packet->source());
 
-    for (sess = sessions_.front(); sess; sess = sessions_.nextof(*sess)) {
-        const status::StatusCode code = sess->route_packet(packet);
-        if (code == status::StatusOK) {
-            // TODO(gh-183): hadle StatusNoRoute vs other error
-            return code;
-        }
+    if (!sess && packet->udp()) {
+        // If there is no route found, fallback to finding route by *source* address.
+        //
+        // We assume that packets sent from the same remote source address belong to the
+        // same session.
+        //
+        // This does not conform to RFC 3550 (it mandates routing only by *destination*
+        // address) and is not guaranteed to work, but it works in sample cases, assuming
+        // that sender uses single port to send all packets (which is often the case) and
+        // there are no retranslators involved (which is rarely the case).
+        //
+        // If we have functioning RTCP or RTSP, this fallback logic not used because we
+        // will either find route based on SSRC, or will use separate destination
+        // addresses (and hence separate session groups) for each sender.
+        sess = session_router_.find_by_address(packet->udp()->src_addr);
     }
 
-    if (!can_create_session_(packet)) {
-        // TODO(gh-183): return status
-        return status::StatusOK;
+    if (sess) {
+        // Session found, route packet to it.
+        return sess->route_packet(packet);
     }
 
-    return create_session_(packet);
+    // Session not found, auto-create session if possible.
+    if (can_create_session_(packet)) {
+        return create_session_(packet);
+    }
+
+    // TODO(gh-183): return status
+    return status::StatusOK;
 }
 
 status::StatusCode
@@ -220,7 +262,7 @@ ReceiverSessionGroup::route_control_packet_(const packet::PacketPtr& packet,
         return status::StatusOK;
     }
 
-    // This will invoke IReceiverController methods implemented by us.
+    // This will invoke IStreamController methods implemented by us.
     return rtcp_communicator_->process_packet(packet, current_time);
 }
 
@@ -235,13 +277,6 @@ bool ReceiverSessionGroup::can_create_session_(const packet::PacketPtr& packet) 
 
 status::StatusCode
 ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
-    if (!packet->udp()) {
-        roc_log(LogError,
-                "session group: can't create session, unexpected non-udp packet");
-        // TODO(gh-183): return status
-        return status::StatusOK;
-    }
-
     if (!packet->rtp()) {
         roc_log(LogError,
                 "session group: can't create session, unexpected non-rtp packet");
@@ -249,7 +284,16 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
         return status::StatusOK;
     }
 
+    if (!packet->udp()) {
+        roc_log(LogError,
+                "session group: can't create session, unexpected non-udp packet");
+        // TODO(gh-183): return status
+        return status::StatusOK;
+    }
+
     const ReceiverSessionConfig sess_config = make_session_config_(packet);
+
+    const packet::stream_source_t source_id = packet->source();
 
     const address::SocketAddr src_address = packet->udp()->src_addr;
     const address::SocketAddr dst_address = packet->udp()->dst_addr;
@@ -259,7 +303,7 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
             address::socket_addr_to_str(dst_address).c_str());
 
     core::SharedPtr<ReceiverSession> sess = new (arena_) ReceiverSession(
-        sess_config, receiver_config_.common, src_address, encoding_map_, packet_factory_,
+        sess_config, receiver_config_.common, encoding_map_, packet_factory_,
         byte_buffer_factory_, sample_buffer_factory_, arena_);
 
     if (!sess || !sess->is_valid()) {
@@ -268,12 +312,21 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
         return status::StatusOK;
     }
 
-    const status::StatusCode code = sess->route_packet(packet);
+    status::StatusCode code = sess->route_packet(packet);
     if (code != status::StatusOK) {
         roc_log(
             LogError,
             "session group: can't create session, can't handle first packet: status=%s",
             status::code_to_str(code));
+        // TODO(gh-183): handle and return status
+        return status::StatusOK;
+    }
+
+    code = session_router_.add_session(sess, source_id, src_address);
+    if (code != status::StatusOK) {
+        roc_log(LogError,
+                "session group: can't create session, can't create route: status=%s",
+                status::code_to_str(code));
         // TODO(gh-183): handle and return status
         return status::StatusOK;
     }
@@ -286,12 +339,13 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
     return status::StatusOK;
 }
 
-void ReceiverSessionGroup::remove_session_(ReceiverSession& sess) {
+void ReceiverSessionGroup::remove_session_(core::SharedPtr<ReceiverSession> sess) {
     roc_log(LogInfo, "session group: removing session");
 
-    mixer_.remove_input(sess.reader());
-    sessions_.remove(sess);
+    mixer_.remove_input(sess->reader());
+    sessions_.remove(*sess);
 
+    session_router_.remove_session(sess);
     receiver_state_.add_sessions(-1);
 }
 
@@ -299,7 +353,7 @@ void ReceiverSessionGroup::remove_all_sessions_() {
     roc_log(LogDebug, "session group: removing all sessions");
 
     while (!sessions_.is_empty()) {
-        remove_session_(*sessions_.back());
+        remove_session_(sessions_.back());
     }
 }
 

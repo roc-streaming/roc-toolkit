@@ -268,11 +268,13 @@ rtcp::SendReport SenderSession::query_send_stream(core::nanoseconds_t report_tim
     return report;
 }
 
-void SenderSession::notify_send_stream(packet::stream_source_t recv_source_id,
-                                       const rtcp::RecvReport& recv_report) {
+status::StatusCode
+SenderSession::notify_send_stream(packet::stream_source_t recv_source_id,
+                                  const rtcp::RecvReport& recv_report) {
     roc_panic_if(!has_send_stream());
 
     // TODO(gh-14): notify FeedbackMonitor
+    return status::StatusOK;
 }
 
 } // namespace pipeline

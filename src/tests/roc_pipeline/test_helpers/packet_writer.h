@@ -43,6 +43,7 @@ public:
                  rtp::EncodingMap& encoding_map,
                  packet::PacketFactory& packet_factory,
                  core::BufferFactory<uint8_t>& buffer_factory,
+                 packet::stream_source_t src_id,
                  const address::SocketAddr& src_addr,
                  const address::SocketAddr& dst_addr,
                  rtp::PayloadType pt)
@@ -53,7 +54,7 @@ public:
         , src_addr_(src_addr)
         , source_dst_addr_(dst_addr)
         , repair_dst_addr_()
-        , source_(0)
+        , source_(src_id)
         , seqnum_(0)
         , timestamp_(0)
         , pt_(pt)
@@ -70,6 +71,7 @@ public:
                  rtp::EncodingMap& encoding_map,
                  packet::PacketFactory& packet_factory,
                  core::BufferFactory<uint8_t>& buffer_factory,
+                 packet::stream_source_t src_id,
                  const address::SocketAddr& src_addr,
                  const address::SocketAddr& source_dst_addr,
                  const address::SocketAddr& repair_dst_addr,
@@ -83,7 +85,7 @@ public:
         , src_addr_(src_addr)
         , source_dst_addr_(source_dst_addr)
         , repair_dst_addr_(repair_dst_addr)
-        , source_(0)
+        , source_(src_id)
         , seqnum_(0)
         , timestamp_(0)
         , pt_(pt)

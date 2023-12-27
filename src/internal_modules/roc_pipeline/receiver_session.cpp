@@ -19,14 +19,12 @@ namespace pipeline {
 ReceiverSession::ReceiverSession(
     const ReceiverSessionConfig& session_config,
     const ReceiverCommonConfig& common_config,
-    const address::SocketAddr& src_address,
     const rtp::EncodingMap& encoding_map,
     packet::PacketFactory& packet_factory,
     core::BufferFactory<uint8_t>& byte_buffer_factory,
     core::BufferFactory<audio::sample_t>& sample_buffer_factory,
     core::IArena& arena)
     : core::RefCounted<ReceiverSession, core::ArenaAllocation>(arena)
-    , src_address_(src_address)
     , audio_reader_(NULL)
     , valid_(false) {
     const rtp::Encoding* encoding = encoding_map.find_by_pt(session_config.payload_type);
@@ -229,17 +227,6 @@ bool ReceiverSession::is_valid() const {
 status::StatusCode ReceiverSession::route_packet(const packet::PacketPtr& packet) {
     roc_panic_if(!is_valid());
 
-    packet::UDP* udp = packet->udp();
-    if (!udp) {
-        // TODO(gh-183): return StatusNoRoute
-        return status::StatusUnknown;
-    }
-
-    if (udp->src_addr != src_address_) {
-        // TODO(gh-183): return StatusNoRoute
-        return status::StatusUnknown;
-    }
-
     return queue_router_->write(packet);
 }
 
@@ -272,9 +259,31 @@ bool ReceiverSession::reclock(core::nanoseconds_t playback_time) {
     return latency_monitor_->reclock(playback_time);
 }
 
+rtcp::RecvReport ReceiverSession::generate_report(const char* report_cname,
+                                                  packet::stream_source_t report_ssrc,
+                                                  core::nanoseconds_t report_time) const {
+    roc_panic_if(!is_valid());
+
+    rtcp::RecvReport report;
+    report.receiver_cname = report_cname;
+    report.receiver_source_id = report_ssrc;
+    // TODO(gh-14): remember and return ssrc
+    report.sender_source_id = 123;
+    report.report_timestamp = report_time;
+    // TODO(gh-14): query queue
+    report.extended_seqnum = 0;
+    // TODO(gh-14): query stats
+    report.fract_loss = 0;
+    report.cum_loss = 0;
+    report.jitter = 0;
+
+    return report;
+}
+
 void ReceiverSession::process_report(const rtcp::SendReport& report) {
     roc_panic_if(!is_valid());
 
+    // TODO(gh-14): notify stats
     timestamp_injector_->update_mapping(report.report_timestamp, report.stream_timestamp);
 }
 

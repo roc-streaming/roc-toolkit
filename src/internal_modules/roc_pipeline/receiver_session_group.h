@@ -19,6 +19,7 @@
 #include "roc_packet/iwriter.h"
 #include "roc_pipeline/metrics.h"
 #include "roc_pipeline/receiver_session.h"
+#include "roc_pipeline/receiver_session_router.h"
 #include "roc_pipeline/receiver_state.h"
 #include "roc_rtcp/communicator.h"
 #include "roc_rtcp/composer.h"
@@ -32,6 +33,16 @@ namespace pipeline {
 //!
 //! Contains:
 //!  - a set of related receiver sessions
+//!
+//! Session group corresponds to all sessions handled by one receiver slot - a set of
+//! related complementary endpoints, e.g. one endpoint for audio, one for repair, and one
+//! for control packets.
+//!
+//! Session group creates and removes sessions and routes packets from endpoints to
+//! sessions with the help of ReceiverSessionRouter.
+//!
+//! It also exchanges control information with remote senders using rtcp::Communicator
+//! and updates routing based on that control information.
 class ReceiverSessionGroup : public core::NonCopyable<>, private rtcp::IStreamController {
 public:
     //! Initialize.
@@ -82,11 +93,12 @@ private:
     virtual const char* cname();
     virtual packet::stream_source_t source_id();
     virtual void change_source_id();
-    virtual size_t num_recv_steams();
-    virtual rtcp::RecvReport query_recv_stream(size_t recv_stream_index,
-                                               core::nanoseconds_t report_time);
-    virtual void notify_recv_stream(packet::stream_source_t send_source_id,
-                                    const rtcp::SendReport& send_report);
+    virtual size_t num_recv_streams();
+    virtual void query_recv_streams(rtcp::RecvReport* reports,
+                                    size_t n_reports,
+                                    core::nanoseconds_t report_time);
+    virtual status::StatusCode notify_recv_stream(packet::stream_source_t send_source_id,
+                                                  const rtcp::SendReport& send_report);
     virtual void halt_recv_stream(packet::stream_source_t send_source_id);
 
     status::StatusCode route_transport_packet_(const packet::PacketPtr& packet);
@@ -96,7 +108,7 @@ private:
     bool can_create_session_(const packet::PacketPtr& packet);
 
     status::StatusCode create_session_(const packet::PacketPtr& packet);
-    void remove_session_(ReceiverSession& sess);
+    void remove_session_(core::SharedPtr<ReceiverSession> sess);
     void remove_all_sessions_();
 
     ReceiverSessionConfig make_session_config_(const packet::PacketPtr& packet) const;
@@ -119,6 +131,7 @@ private:
     core::Optional<rtcp::Communicator> rtcp_communicator_;
 
     core::List<ReceiverSession> sessions_;
+    ReceiverSessionRouter session_router_;
 
     bool valid_;
 };

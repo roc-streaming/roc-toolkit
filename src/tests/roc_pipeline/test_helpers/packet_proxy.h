@@ -11,6 +11,7 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_core/log.h"
 #include "roc_core/noncopyable.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_factory.h"
@@ -27,10 +28,12 @@ namespace test {
 class PacketProxy : public packet::IWriter, core::NonCopyable<> {
 public:
     PacketProxy(packet::PacketFactory& packet_factory,
+                const address::SocketAddr& proxy_addr,
                 packet::IWriter* source_writer,
                 packet::IWriter* repair_writer,
                 packet::IWriter* control_writer)
         : packet_factory_(packet_factory)
+        , proxy_addr_(proxy_addr)
         , source_writer_(source_writer)
         , repair_writer_(repair_writer)
         , control_writer_(control_writer)
@@ -62,6 +65,10 @@ public:
             if (code != status::StatusOK) {
                 UNSIGNED_LONGS_EQUAL(status::StatusNoData, code);
                 break;
+            }
+
+            if (core::Logger::instance().get_level() >= LogTrace) {
+                pp->print(packet::PrintHeaders);
             }
 
             if (pp->flags() & packet::Packet::FlagControl) {
@@ -96,6 +103,7 @@ private:
         CHECK(pa->flags() & packet::Packet::FlagUDP);
         pb->add_flags(packet::Packet::FlagUDP);
         *pb->udp() = *pa->udp();
+        pb->udp()->src_addr = proxy_addr_;
 
         pb->set_buffer(pa->buffer());
 
@@ -103,6 +111,8 @@ private:
     }
 
     packet::PacketFactory& packet_factory_;
+
+    address::SocketAddr proxy_addr_;
 
     packet::IWriter* source_writer_;
     packet::IWriter* repair_writer_;

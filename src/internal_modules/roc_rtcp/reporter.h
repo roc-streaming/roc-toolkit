@@ -261,7 +261,7 @@ private:
         }
     };
 
-    void notify_streams_();
+    status::StatusCode notify_streams_();
     status::StatusCode query_send_streams_();
     status::StatusCode query_recv_streams_();
 
@@ -296,6 +296,7 @@ private:
     char local_cname_[header::SdesItemHeader::MaxTextLen + 1];
     packet::stream_source_t local_source_id_;
     SendReport local_send_report_;
+    core::Array<RecvReport, PreallocatedStreams> local_recv_reports_;
 
     // SSRC collision detection state
     bool collision_detected_;

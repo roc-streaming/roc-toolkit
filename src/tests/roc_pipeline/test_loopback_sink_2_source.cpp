@@ -250,6 +250,8 @@ void send_receive(int flags,
     address::SocketAddr receiver_repair_addr = test::new_address(22);
     address::SocketAddr receiver_control_addr = test::new_address(33);
 
+    address::SocketAddr sender_addr = test::new_address(44);
+
     SenderConfig sender_config =
         make_sender_config(flags, frame_channels, packet_channels);
 
@@ -330,9 +332,9 @@ void send_receive(int flags,
         sender.refresh(frame_writer.last_capture_ts());
     }
 
-    test::PacketProxy packet_proxy(packet_factory, receiver_source_endpoint_writer,
-                                   receiver_repair_endpoint_writer,
-                                   receiver_control_endpoint_writer);
+    test::PacketProxy packet_proxy(
+        packet_factory, sender_addr, receiver_source_endpoint_writer,
+        receiver_repair_endpoint_writer, receiver_control_endpoint_writer);
 
     filter_packets(flags, queue, packet_proxy);
 

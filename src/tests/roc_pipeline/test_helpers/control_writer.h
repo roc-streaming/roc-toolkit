@@ -30,6 +30,7 @@ public:
     ControlWriter(packet::IWriter& writer,
                   packet::PacketFactory& packet_factory,
                   core::BufferFactory<uint8_t>& buffer_factory,
+                  packet::stream_source_t src_id,
                   const address::SocketAddr& src_addr,
                   const address::SocketAddr& dst_addr)
         : writer_(writer)
@@ -37,7 +38,7 @@ public:
         , buffer_factory_(buffer_factory)
         , src_addr_(src_addr)
         , dst_addr_(dst_addr)
-        , source_(0) {
+        , source_(src_id) {
     }
 
     void write_sender_report(packet::ntp_timestamp_t ntp_ts,

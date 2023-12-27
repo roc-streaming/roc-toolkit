@@ -20,6 +20,7 @@
 #include "roc_rtcp/composer.h"
 #include "roc_rtcp/istream_controller.h"
 #include "roc_rtcp/print_packet.h"
+#include "roc_status/status_code.h"
 
 // This file contains tests that check how rtcp::Communicator allows IStreamController
 // instances (senders and receivers) to exchange RTCP reports.
@@ -47,6 +48,7 @@ namespace {
 // Mock implementation of IStreamController
 struct MockController : public IStreamController, public core::NonCopyable<> {
     MockController(const char* cname, packet::stream_source_t source_id) {
+        status_ = status::StatusOK;
         cname_ = cname;
         source_id_ = changed_source_id_ = source_id;
         has_send_report_ = false;
@@ -61,6 +63,10 @@ struct MockController : public IStreamController, public core::NonCopyable<> {
     ~MockController() {
         // Every test should fetch and check all pending notifications.
         CHECK_EQUAL(0, pending_notifications());
+    }
+
+    void set_status(status::StatusCode status) {
+        status_ = status;
     }
 
     void set_send_report(const SendReport& report) {
@@ -127,14 +133,17 @@ struct MockController : public IStreamController, public core::NonCopyable<> {
         return send_report_;
     }
 
-    virtual void notify_send_stream(packet::stream_source_t recv_source_id,
-                                    const RecvReport& recv_report) {
+    virtual status::StatusCode notify_send_stream(packet::stream_source_t recv_source_id,
+                                                  const RecvReport& recv_report) {
         CHECK_EQUAL(recv_source_id, recv_report.receiver_source_id);
-        CHECK(num_send_notifications_ < MaxNotifications);
-        send_notifications_[num_send_notifications_++] = recv_report;
+        if (status_ == status::StatusOK) {
+            CHECK(num_send_notifications_ < MaxNotifications);
+            send_notifications_[num_send_notifications_++] = recv_report;
+        }
+        return status_;
     }
 
-    virtual size_t num_recv_steams() {
+    virtual size_t num_recv_streams() {
         size_t cnt = 0;
         for (size_t i = 0; i < MaxStreams; i++) {
             if (has_recv_report_[i]) {
@@ -144,18 +153,26 @@ struct MockController : public IStreamController, public core::NonCopyable<> {
         return cnt;
     }
 
-    virtual RecvReport query_recv_stream(size_t recv_stream_index,
-                                         core::nanoseconds_t report_time) {
-        CHECK(has_recv_report_[recv_stream_index]);
-        CHECK_EQUAL(report_time, recv_report_[recv_stream_index].report_timestamp);
-        return recv_report_[recv_stream_index];
+    virtual void query_recv_streams(rtcp::RecvReport* reports,
+                                    size_t n_reports,
+                                    core::nanoseconds_t report_time) {
+        CHECK(reports);
+        CHECK_EQUAL(num_recv_streams(), n_reports);
+        for (size_t n = 0; n < n_reports; n++) {
+            CHECK(has_recv_report_[n]);
+            CHECK_EQUAL(recv_report_[n].report_timestamp, report_time);
+            reports[n] = recv_report_[n];
+        }
     }
 
-    virtual void notify_recv_stream(packet::stream_source_t send_source_id,
-                                    const SendReport& send_report) {
+    virtual status::StatusCode notify_recv_stream(packet::stream_source_t send_source_id,
+                                                  const SendReport& send_report) {
         CHECK_EQUAL(send_source_id, send_report.sender_source_id);
-        CHECK(num_recv_notifications_ < MaxNotifications);
-        recv_notifications_[num_recv_notifications_++] = send_report;
+        if (status_ == status::StatusOK) {
+            CHECK(num_recv_notifications_ < MaxNotifications);
+            recv_notifications_[num_recv_notifications_++] = send_report;
+        }
+        return status_;
     }
 
     virtual void halt_recv_stream(packet::stream_source_t send_source_id) {
@@ -165,6 +182,8 @@ struct MockController : public IStreamController, public core::NonCopyable<> {
 
 private:
     enum { MaxStreams = 100, MaxNotifications = 100 };
+
+    status::StatusCode status_;
 
     const char* cname_;
 
@@ -2466,7 +2485,7 @@ TEST(communicator, generation_error) {
     const char* Cname = "test_cname";
     Config config;
 
-    { // error from arena
+    { // forward error from arena
         MockArena peer_arena;
         packet::Queue peer_queue;
         MockController peer_ctl(Cname, Ssrc);
@@ -2487,10 +2506,10 @@ TEST(communicator, generation_error) {
         }
 
         CHECK_EQUAL(status::StatusNoMem, peer_comm.generate_reports(peer_time));
-        CHECK_EQUAL(1, peer_comm.num_streams());
+        CHECK_EQUAL(0, peer_comm.num_streams());
         CHECK_EQUAL(0, peer_queue.size());
     }
-    { // error from writer
+    { // forward error from writer
         MockWriter peer_writer(status::StatusNoData);
         MockController peer_ctl(Cname, Ssrc);
         Communicator peer_comm(config, peer_ctl, &peer_writer, composer, packet_factory,
@@ -2591,6 +2610,47 @@ TEST(communicator, processing_error) {
             break;
         }
     }
+}
+
+TEST(communicator, notification_error) {
+    enum { SendSsrc = 11, RecvSsrc = 22, Seed = 100 };
+
+    const char* SendCname = "send_cname";
+    const char* RecvCname = "recv_cname";
+
+    Config config;
+
+    packet::Queue send_queue;
+    MockController send_ctl(SendCname, SendSsrc);
+    Communicator send_comm(config, send_ctl, &send_queue, composer, packet_factory,
+                           buffer_factory, arena);
+    CHECK(send_comm.is_valid());
+
+    packet::Queue recv_queue;
+    MockController recv_ctl(RecvCname, RecvSsrc);
+    Communicator recv_comm(config, recv_ctl, &recv_queue, composer, packet_factory,
+                           buffer_factory, arena);
+    CHECK(recv_comm.is_valid());
+
+    core::nanoseconds_t send_time = 10000000000000000;
+    core::nanoseconds_t recv_time = 30000000000000000;
+
+    // Generate sender report
+    send_ctl.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
+    CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
+    CHECK_EQUAL(0, send_comm.num_streams());
+    CHECK_EQUAL(1, send_queue.size());
+
+    // Tell receiver to return error from notification handler
+    recv_ctl.set_status(status::StatusNoData);
+
+    // Deliver sender report to receiver
+    CHECK_EQUAL(status::StatusNoData,
+                recv_comm.process_packet(read_packet(send_queue), recv_time));
+    CHECK_EQUAL(1, recv_comm.num_streams());
+
+    // Check notifications on receiver
+    CHECK_EQUAL(0, recv_ctl.pending_notifications());
 }
 
 } // namespace rtcp
