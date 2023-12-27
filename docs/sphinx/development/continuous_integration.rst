@@ -31,6 +31,7 @@ Linux native
 =================================== ===================== ============= ==================================
 Image                               Base image            Architecture  Compilers
 =================================== ===================== ============= ==================================
+rocstreaming/env-ubuntu:24.04       ubuntu:24.04          x86_64        gcc-13, clang-15, clang-17
 rocstreaming/env-ubuntu:22.04       ubuntu:22.04          x86_64        gcc-11, gcc-12, clang-11, clang-14
 rocstreaming/env-ubuntu:20.04       ubuntu:20.04          x86_64        gcc-8, gcc-10, clang-8, clang-10
 rocstreaming/env-ubuntu:18.04       ubuntu:18.04          x86_64        gcc-6, clang-6
