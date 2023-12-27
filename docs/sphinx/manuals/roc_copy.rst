@@ -87,6 +87,17 @@ Input from stdin, output to stdout:
     $ roc-copy -vv --input-format=wav -i file:- \
         --output-format=wav -o file:- >./output.wav <./input.wav
 
+ENVIRONMENT VARIABLES
+=====================
+
+The following environment variables are supported:
+
+NO_COLOR
+    Terminal coloring is automatically detected. This environment variable can be set to non-empty string to disable terminal coloring.
+
+FORCE_COLOR
+    Terminal coloring is automatically detected. This environment variable can be set to a positive integer to enable/force terminal coloring.
+
 SEE ALSO
 ========
 

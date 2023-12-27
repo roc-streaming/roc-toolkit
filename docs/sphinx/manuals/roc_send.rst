@@ -262,6 +262,17 @@ Manually specify resampling parameters:
     $ roc-send -vv -s rtp://192.168.0.3:10001 \
         --resampler-backend=speex --resampler-profile=high
 
+ENVIRONMENT VARIABLES
+=====================
+
+The following environment variables are supported:
+
+NO_COLOR
+    Terminal coloring is automatically detected. This environment variable can be set to non-empty string to disable terminal coloring.
+
+FORCE_COLOR
+    Terminal coloring is automatically detected. This environment variable can be set to a positive integer to enable/force terminal coloring.
+
 SEE ALSO
 ========
 

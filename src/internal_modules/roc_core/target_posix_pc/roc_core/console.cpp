@@ -34,13 +34,43 @@ namespace core {
 
 namespace {
 
-bool detect_color_support() {
+bool env_has_no_color() {
+    const char* no_color = getenv("NO_COLOR");
+    if (no_color) {
+        return strnlen(no_color, 16) > 0;
+    }
+    return false;
+}
+
+bool env_has_force_color() {
+    const char* force_color = getenv("FORCE_COLOR");
+    if (force_color) {
+        char* end;
+        long value = strtol(force_color, &end, 10);
+        if (*force_color != '\0' && *end == '\0') {
+            return value > 0;
+        }
+    }
+    return false;
+}
+
+bool term_supports_color() {
     if (isatty(STDERR_FILENO)) {
         const char* term = getenv("TERM");
-        return term && strncmp("dumb", term, 4) != 0;
-    } else {
-        return false;
+        if (term) {
+            return strncmp("dumb", term, 4) != 0;
+        }
     }
+    return false;
+}
+
+bool detect_color_support() {
+    if (env_has_no_color()) {
+        return false;
+    } else if (env_has_force_color()) {
+        return true;
+    }
+    return term_supports_color();
 }
 
 const char* color_code(Color color) {

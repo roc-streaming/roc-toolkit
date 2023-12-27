@@ -318,6 +318,17 @@ Manually specify clock synchronization parameters:
     $ roc-recv -vv -s rtp://0.0.0.0:10001 \
         --clock-backend=niq --clock-profile=gradual
 
+ENVIRONMENT VARIABLES
+=====================
+
+The following environment variables are supported:
+
+NO_COLOR
+    Terminal coloring is automatically detected. This environment variable can be set to non-empty string to disable terminal coloring.
+
+FORCE_COLOR
+    Terminal coloring is automatically detected. This environment variable can be set to a positive integer to enable/force terminal coloring.
+
 SEE ALSO
 ========
 
