@@ -149,6 +149,10 @@ bool SocketAddr::get_host(char* buf, size_t bufsz) const {
     return true;
 }
 
+SocketAddr::operator const struct unspecified_bool *() const {
+    return (const unspecified_bool*)has_host_port();
+}
+
 bool SocketAddr::operator==(const SocketAddr& other) const {
     if (saddr_family_() != other.saddr_family_()) {
         return false;

@@ -67,6 +67,9 @@ public:
     //! Get maximum allowed sockaddr struct length.
     socklen_t max_slen() const;
 
+    //! Convert to bool.
+    operator const struct unspecified_bool *() const;
+
     //! Compare addresses.
     bool operator==(const SocketAddr& other) const;
 
