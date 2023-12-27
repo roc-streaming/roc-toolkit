@@ -15,7 +15,7 @@
 #include "roc_core/align_ops.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/ref_counted.h"
-#include "roc_core/slab_pool.h"
+#include "roc_core/ipool.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
