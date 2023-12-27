@@ -12,9 +12,8 @@
 #ifndef ROC_CORE_SEQLOCK_H_
 #define ROC_CORE_SEQLOCK_H_
 
-#include "roc_core/atomic_ops.h"
-#include "roc_core/cpu_instructions.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/seqlock_impl.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
@@ -44,14 +43,13 @@ template <class T> class Seqlock : public NonCopyable<> {
 public:
     //! Initialize with given value.
     explicit Seqlock(T value)
-        : val_(value)
-        , ver_(0) {
+        : val_(value) {
     }
 
     //! Load value version.
     //! Wait-free.
     inline seqlock_version_t version() const {
-        return load_version_();
+        return impl_.version();
     }
 
     //! Store value.
@@ -63,13 +61,13 @@ public:
     //! updated value or fail (if changes are not fully published yet).
     inline bool try_store(const T& value) {
         seqlock_version_t ver;
-        return try_store_(value, ver);
+        return impl_.try_store(ver, &val_, sizeof(val_), &value);
     }
 
     //! Store value.
     //! Like try_store(), but also returns updated version.
     inline bool try_store_ver(const T& value, seqlock_version_t& ver) {
-        return try_store_(value, ver);
+        return impl_.try_store(ver, &val_, sizeof(val_), &value);
     }
 
     //! Store value.
@@ -81,13 +79,13 @@ public:
     //! updated value or fail (if changes are not fully published yet).
     inline void exclusive_store(const T& value) {
         seqlock_version_t ver;
-        exclusive_store_(value, ver);
+        impl_.exclusive_store(ver, &val_, sizeof(val_), &value);
     }
 
     //! Store value.
     //! Like exclusive_store(), but also returns updated version.
     inline void exclusive_store_ver(const T& value, seqlock_version_t& ver) {
-        exclusive_store_(value, ver);
+        impl_.exclusive_store(ver, &val_, sizeof(val_), &value);
     }
 
     //! Try to load value.
@@ -97,13 +95,13 @@ public:
     //! and never spins.
     inline bool try_load(T& value) const {
         seqlock_version_t ver;
-        return try_load_repeat_(value, ver);
+        return impl_.try_load_repeat(ver, &val_, sizeof(val_), &value);
     }
 
     //! Try to load value and version.
     //! Like try_load(), but also returns version.
     inline bool try_load_ver(T& value, seqlock_version_t& ver) const {
-        return try_load_repeat_(value, ver);
+        return impl_.try_load_repeat(ver, &val_, sizeof(val_), &value);
     }
 
     //! Load value.
@@ -112,101 +110,19 @@ public:
     inline T wait_load() const {
         T value;
         seqlock_version_t ver;
-        wait_load_(value, ver);
+        impl_.wait_load(ver, &val_, sizeof(val_), &value);
         return value;
     }
 
     //! Load value and version.
     //! Like wait_load(), but also returns version.
     inline void wait_load_ver(T& value, seqlock_version_t& ver) const {
-        wait_load_(value, ver);
+        impl_.wait_load(ver, &val_, sizeof(val_), &value);
     }
 
 private:
-    inline seqlock_version_t load_version_() const {
-        return AtomicOps::load_seq_cst(ver_);
-    }
-
-    inline void exclusive_store_(const T& value, seqlock_version_t& ver) {
-        const seqlock_version_t ver0 = AtomicOps::load_relaxed(ver_);
-        AtomicOps::store_relaxed(ver_, ver0 + 1);
-        AtomicOps::fence_release();
-
-        volatile_copy_(val_, value);
-        AtomicOps::fence_seq_cst();
-
-        ver = ver0 + 2;
-        AtomicOps::store_relaxed(ver_, ver);
-    }
-
-    inline bool try_store_(const T& value, seqlock_version_t& ver) {
-        seqlock_version_t ver0 = AtomicOps::load_relaxed(ver_);
-        if (ver0 & 1) {
-            return false;
-        }
-
-        if (!AtomicOps::compare_exchange_relaxed(ver_, ver0, ver0 + 1)) {
-            return false;
-        }
-        AtomicOps::fence_release();
-
-        volatile_copy_(val_, value);
-        AtomicOps::fence_seq_cst();
-
-        ver = ver0 + 2;
-        AtomicOps::store_relaxed(ver_, ver);
-
-        return true;
-    }
-
-    inline void wait_load_(T& value, seqlock_version_t& ver) const {
-        while (!try_load_(value, ver)) {
-            cpu_relax();
-        }
-    }
-
-    // If the concurrent store is running and is not sleeping, retrying 3 times
-    // should be enough to succeed. This may fail if the concurrent store was
-    // preempted in the middle, of if there are multiple concurrent stores.
-    inline bool try_load_repeat_(T& value, seqlock_version_t& ver) const {
-        if (try_load_(value, ver)) {
-            return true;
-        }
-        if (try_load_(value, ver)) {
-            return true;
-        }
-        if (try_load_(value, ver)) {
-            return true;
-        }
-        return false;
-    }
-
-    inline bool try_load_(T& value, seqlock_version_t& ver) const {
-        const seqlock_version_t ver0 = AtomicOps::load_relaxed(ver_);
-        AtomicOps::fence_seq_cst();
-
-        volatile_copy_(value, val_);
-        AtomicOps::fence_acquire();
-
-        ver = AtomicOps::load_relaxed(ver_);
-        return ((ver0 & 1) == 0 && ver0 == ver);
-    }
-
-    // We use hand-rolled loop instead of memcpy() or default (trivial) copy constructor
-    // to be sure that the copying will be covered by our memory fences. On some
-    // platforms, memcpy() and copy constructor may be implemented using streaming
-    // instructions which may ignore memory fences.
-    static void volatile_copy_(volatile T& dst, const volatile T& src) {
-        volatile char* dst_ptr = reinterpret_cast<volatile char*>(&dst);
-        const volatile char* src_ptr = reinterpret_cast<const volatile char*>(&src);
-
-        for (size_t n = 0; n < sizeof(T); n++) {
-            dst_ptr[n] = src_ptr[n];
-        }
-    }
-
     T val_;
-    seqlock_version_t ver_;
+    SeqlockImpl impl_;
 };
 
 } // namespace core
