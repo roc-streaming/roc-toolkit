@@ -106,16 +106,16 @@ Maximum internal frame size, in SIZE units
 Override output sample rate, Hz
 .TP
 .BI \-\-clock\-backend\fB= ENUM
-Clock synchronization backend  (possible values=\(dqdisable\(dq, \(dqniq\(dq default=\(ganiq\(aq)
+Clock synchronization backend  (possible values="disable", "niq" default=\(ganiq\(aq)
 .TP
 .BI \-\-clock\-profile\fB= ENUM
-Clock synchronization profile  (possible values=\(dqdefault\(dq, \(dqresponsive\(dq, \(dqgradual\(dq default=\(gadefault\(aq)
+Clock synchronization profile  (possible values="default", "responsive", "gradual" default=\(gadefault\(aq)
 .TP
 .BI \-\-resampler\-backend\fB= ENUM
-Resampler backend  (possible values=\(dqdefault\(dq, \(dqbuiltin\(dq, \(dqspeex\(dq, \(dqspeexdec\(dq default=\(gadefault\(aq)
+Resampler backend  (possible values="default", "builtin", "speex", "speexdec" default=\(gadefault\(aq)
 .TP
 .BI \-\-resampler\-profile\fB= ENUM
-Resampler profile  (possible values=\(dqlow\(dq, \(dqmedium\(dq, \(dqhigh\(dq default=\(gamedium\(aq)
+Resampler profile  (possible values="low", "medium", "high" default=\(gamedium\(aq)
 .TP
 .B  \-1\fP,\fB  \-\-oneshot
 Exit when last connected client disconnects (default=off)
@@ -127,7 +127,7 @@ Enable self\-profiling  (default=off)
 Enable beeping on packet loss  (default=off)
 .TP
 .BI \-\-color\fB= ENUM
-Set colored logging mode for stderr output (possible values=\(dqauto\(dq, \(dqalways\(dq, \(dqnever\(dq default=\(gaauto\(aq)
+Set colored logging mode for stderr output (possible values="auto", "always", "never" default=\(gaauto\(aq)
 .UNINDENT
 .SS Endpoint URI
 .sp
@@ -189,7 +189,7 @@ Supported control protocols:
 .IP \(bu 2
 \fBfile:///ABS/PATH\fP \-\- absolute file path
 .IP \(bu 2
-\fBfile://localhost/ABS/PATH\fP \-\- absolute file path (alternative form; only \(dqlocalhost\(dq host is supported)
+\fBfile://localhost/ABS/PATH\fP \-\- absolute file path (alternative form; only "localhost" host is supported)
 .IP \(bu 2
 \fBfile:/ABS/PATH\fP \-\- absolute file path (alternative form)
 .IP \(bu 2
@@ -537,6 +537,17 @@ $ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \e
 .ft P
 .fi
 .UNINDENT
+.UNINDENT
+.SH ENVIRONMENT VARIABLES
+.sp
+The following environment variables are supported:
+.INDENT 0.0
+.TP
+.B NO_COLOR
+Terminal coloring is automatically detected. This environment variable can be set to non\-empty string to disable terminal coloring.
+.TP
+.B FORCE_COLOR
+Terminal coloring is automatically detected. This environment variable can be set to a positive integer to enable/force terminal coloring.
 .UNINDENT
 .SH SEE ALSO
 .sp
