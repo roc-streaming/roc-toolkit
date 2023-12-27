@@ -21,7 +21,8 @@ enum StatusCode {
     StatusUnknown, //!< Unknown status.
     StatusNoData,  //!< There is no enough data to perform an operation.
     StatusNoMem,   //!< Allocation failed during operation.
-    StatusNoSpace  //!< Not enough space in buffer.
+    StatusNoSpace, //!< Not enough space in buffer.
+    StatusLimit    //!< Operation forbidden because limit exceeded.
 };
 
 } // namespace status

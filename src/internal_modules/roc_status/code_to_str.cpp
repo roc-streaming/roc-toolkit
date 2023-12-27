@@ -23,6 +23,8 @@ const char* code_to_str(StatusCode code) {
         return "NoMem";
     case StatusNoSpace:
         return "NoSpace";
+    case StatusLimit:
+        return "Limit";
     }
 
     return "<invalid>";
