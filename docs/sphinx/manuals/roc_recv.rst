@@ -324,10 +324,10 @@ ENVIRONMENT VARIABLES
 The following environment variables are supported:
 
 NO_COLOR
-    Terminal coloring is automatically detected. This environment variable can be set to non-empty string to disable terminal coloring.
+    By default, terminal coloring is automatically detected. This environment variable can be set to a non-empty string to disable terminal coloring. It has lower precedence than ``--color`` option.
 
 FORCE_COLOR
-    Terminal coloring is automatically detected. This environment variable can be set to a positive integer to enable/force terminal coloring.
+    By default, terminal coloring is automatically detected. This environment variable can be set to a positive integer to enable/force terminal coloring. It has lower precedence than  ``NO_COLOR`` variable and ``--color`` option.
 
 SEE ALSO
 ========
@@ -342,4 +342,4 @@ Please report any bugs found via GitHub (https://github.com/roc-streaming/roc-to
 AUTHORS
 =======
 
-See `authors <https://roc-streaming.org/toolkit/docs/about_project/authors.html>`_ page on the website for a list of maintainers and contributors.
+See authors page on the website for a list of maintainers and contributors (https://roc-streaming.org/toolkit/docs/about_project/authors.html).
