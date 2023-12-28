@@ -17,9 +17,20 @@
 namespace roc {
 namespace core {
 
+//! Type for holding seqlock value version.
+//! Version is changed each value update.
+//! May wrap.
 typedef uint32_t seqlock_version_t;
 
-//! Seqlock implementation.
+//! Check if this is a valid seqlock version.
+//! Returns false if seqlock version corresponds to intermediate state
+//! that should never be seen by seqlock user.
+inline bool seqlock_version_is_valid(seqlock_version_t ver) {
+    return (ver & 1) == 0;
+}
+
+//! Seqlock implementation class.
+//! @see Seqlock.
 class SeqlockImpl {
 public:
     //! Initialize.

@@ -11,6 +11,7 @@
 #include "roc_core/cpu_instructions.h"
 
 namespace {
+
 // We use hand-rolled loop instead of memcpy() or default (trivial) copy constructor
 // to be sure that the copying will be covered by our memory fences. On some
 // platforms, memcpy() and copy constructor may be implemented using streaming

@@ -14,20 +14,9 @@
 
 #include "roc_core/noncopyable.h"
 #include "roc_core/seqlock_impl.h"
-#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace core {
-
-//! Type for holding seqlock value version.
-//! Version is changed each value update.
-//! May wrap.
-typedef uint32_t seqlock_version_t;
-
-//! Check if given seqlock version corresponds to dirty value.
-inline bool seqlock_version_is_dirty(seqlock_version_t ver) {
-    return (ver & 1) != 0;
-}
 
 //! Seqlock.
 //!

@@ -65,7 +65,7 @@ void ControlTask::validate_deadline(core::nanoseconds_t deadline,
     roc_panic_if_msg(!(deadline >= 0 || deadline == -1),
                      "control task: detected corrupted task: invalid deadline");
 
-    roc_panic_if_msg(core::seqlock_version_is_dirty(version),
+    roc_panic_if_msg(!core::seqlock_version_is_valid(version),
                      "control task: detected corrupted task: invalid version");
 }
 
