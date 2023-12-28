@@ -1352,7 +1352,8 @@ elif ctx.pkg_name == 'pulseaudio':
         execute(ctx, './configure --host={host} {vars} {flags} {deps} {opts}'.format(
             host=ctx.toolchain,
             vars=format_vars(ctx),
-            flags=format_flags(ctx, cflags='-w -fomit-frame-pointer -O2'),
+            flags=format_flags(ctx, cflags='-w -Wno-implicit-function-declaration' + \
+                ' -fomit-frame-pointer -O2'),
             deps=' '.join([
                 'LIBJSON_CFLAGS=" "',
                 'LIBJSON_LIBS="-ljson-c"',
