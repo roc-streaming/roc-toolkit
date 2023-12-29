@@ -179,7 +179,7 @@ def query_issue_info(org, repo, issue_number):
             ],
             capture_output=True, text=True, check=True).stdout)
     except subprocess.CalledProcessError as e:
-        error('failed to retrieve issue info')
+        error(f'failed to retrieve issue info: {e.output}')
 
     issue_info['issue_title'] = response['title']
     issue_info['issue_url'] = response['html_url']
@@ -198,7 +198,7 @@ def query_pr_info(org, repo, pr_number):
             ['gh', 'api', f'/repos/{org}/{repo}/pulls/{pr_number}'],
             capture_output=True, text=True, check=True).stdout)
     except subprocess.CalledProcessError as e:
-        error('failed to retrieve pr info')
+        error(f'failed to retrieve pr info: {e.output}')
 
     pr_info = {
         'pr_link': (org, repo, pr_number),
@@ -256,7 +256,7 @@ def query_pr_actions(org, repo, pr_number):
             ],
             stdout=subprocess.PIPE, check=True).stdout.decode())
     except subprocess.CalledProcessError as e:
-        error('failed to retrieve workflow runs')
+        error(f'failed to retrieve workflow runs: {e.output}')
 
     results = {}
     for run in response['workflow_runs']:
@@ -280,7 +280,7 @@ def query_pr_commits(org, repo, pr_number):
             ],
             stdout=subprocess.PIPE, check=True).stdout.decode())
     except subprocess.CalledProcessError as e:
-        error('failed to retrieve pr commits')
+        error(f'failed to retrieve pr commits: {e.output}')
 
     results = []
     for commit in response['commits']:
@@ -458,7 +458,7 @@ def update_pr(org, repo, pr_number, issue_number, issue_milestone,
                 ['gh', 'api', f'/repos/{org}/{repo}/pulls/{pr_number}'],
                 capture_output=True, text=True, check=True).stdout)
         except subprocess.CalledProcessError as e:
-            error('failed to retrieve pr info')
+            error(f'failed to retrieve pr info: {e.output}')
 
         body = '{}\n\n{}'.format(
             make_prefix(org, repo, (org, repo, issue_number)),
