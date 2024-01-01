@@ -124,8 +124,8 @@ TEST_GROUP(receiver_source) {
         config.default_session.watchdog.no_playback_timeout =
             Timeout * core::Second / (int)output_sample_spec.sample_rate();
 
-        config.default_session.rtp_validator.max_sn_jump = MaxSnJump;
-        config.default_session.rtp_validator.max_ts_jump =
+        config.default_session.rtp_filter.max_sn_jump = MaxSnJump;
+        config.default_session.rtp_filter.max_ts_jump =
             MaxTsJump * core::Second / (int)output_sample_spec.sample_rate();
 
         return config;

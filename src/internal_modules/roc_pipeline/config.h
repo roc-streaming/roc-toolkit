@@ -28,8 +28,8 @@
 #include "roc_fec/writer.h"
 #include "roc_packet/units.h"
 #include "roc_rtcp/config.h"
+#include "roc_rtp/filter.h"
 #include "roc_rtp/headers.h"
-#include "roc_rtp/validator.h"
 
 namespace roc {
 namespace pipeline {
@@ -173,8 +173,8 @@ struct ReceiverSessionConfig {
     //! FEC decoder parameters.
     fec::CodecConfig fec_decoder;
 
-    //! RTP validator parameters.
-    rtp::ValidatorConfig rtp_validator;
+    //! RTP filter parameters.
+    rtp::FilterConfig rtp_filter;
 
     //! LatencyMonitor parameters.
     audio::LatencyMonitorConfig latency_monitor;

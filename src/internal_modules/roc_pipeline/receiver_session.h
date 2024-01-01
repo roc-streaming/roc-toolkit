@@ -43,10 +43,9 @@
 #include "roc_pipeline/metrics.h"
 #include "roc_rtcp/reports.h"
 #include "roc_rtp/encoding_map.h"
+#include "roc_rtp/filter.h"
 #include "roc_rtp/parser.h"
-#include "roc_rtp/populator.h"
 #include "roc_rtp/timestamp_injector.h"
-#include "roc_rtp/validator.h"
 
 namespace roc {
 namespace pipeline {
@@ -119,16 +118,14 @@ private:
 
     core::ScopedPtr<audio::IFrameDecoder> payload_decoder_;
 
-    core::Optional<rtp::Validator> validator_;
-    core::Optional<rtp::Populator> populator_;
+    core::Optional<rtp::Filter> filter_;
     core::Optional<packet::DelayedReader> delayed_reader_;
     core::Optional<audio::Watchdog> watchdog_;
 
     core::Optional<rtp::Parser> fec_parser_;
     core::ScopedPtr<fec::IBlockDecoder> fec_decoder_;
     core::Optional<fec::Reader> fec_reader_;
-    core::Optional<rtp::Validator> fec_validator_;
-    core::Optional<rtp::Populator> fec_populator_;
+    core::Optional<rtp::Filter> fec_filter_;
 
     core::Optional<rtp::TimestampInjector> timestamp_injector_;
 

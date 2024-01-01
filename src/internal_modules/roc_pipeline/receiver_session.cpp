@@ -57,19 +57,12 @@ ReceiverSession::ReceiverSession(
         return;
     }
 
-    validator_.reset(new (validator_) rtp::Validator(
-        *preader, session_config.rtp_validator, encoding->sample_spec));
-    if (!validator_) {
+    filter_.reset(new (filter_) rtp::Filter(
+        *preader, *payload_decoder_, session_config.rtp_filter, encoding->sample_spec));
+    if (!filter_) {
         return;
     }
-    preader = validator_.get();
-
-    populator_.reset(new (populator_) rtp::Populator(*preader, *payload_decoder_,
-                                                     encoding->sample_spec));
-    if (!populator_) {
-        return;
-    }
-    preader = populator_.get();
+    preader = filter_.get();
 
     delayed_reader_.reset(new (delayed_reader_) packet::DelayedReader(
         *preader, session_config.target_latency, encoding->sample_spec));
@@ -107,19 +100,13 @@ ReceiverSession::ReceiverSession(
         }
         preader = fec_reader_.get();
 
-        fec_validator_.reset(new (fec_validator_) rtp::Validator(
-            *preader, session_config.rtp_validator, encoding->sample_spec));
-        if (!fec_validator_) {
+        fec_filter_.reset(new (fec_filter_) rtp::Filter(*preader, *payload_decoder_,
+                                                        session_config.rtp_filter,
+                                                        encoding->sample_spec));
+        if (!fec_filter_) {
             return;
         }
-        preader = fec_validator_.get();
-
-        fec_populator_.reset(new (fec_populator_) rtp::Populator(
-            *preader, *payload_decoder_, encoding->sample_spec));
-        if (!fec_populator_) {
-            return;
-        }
-        preader = fec_populator_.get();
+        preader = fec_filter_.get();
     }
 
     timestamp_injector_.reset(new (timestamp_injector_) rtp::TimestampInjector(
@@ -288,10 +275,11 @@ void ReceiverSession::generate_reports(const char* report_cname,
 
         report.receiver_cname = report_cname;
         report.receiver_source_id = report_ssrc;
-        report.sender_source_id = packet_router_->get_source_id(packet::Packet::FlagAudio);
+        report.sender_source_id =
+            packet_router_->get_source_id(packet::Packet::FlagAudio);
         report.report_timestamp = report_time;
         // TODO(gh-14): query queue
-        report.extended_seqnum = 0;
+        report.ext_last_seqnum = 0;
         // TODO(gh-14): query stats
         report.fract_loss = 0;
         report.cum_loss = 0;
@@ -310,7 +298,7 @@ void ReceiverSession::generate_reports(const char* report_cname,
             packet_router_->get_source_id(packet::Packet::FlagRepair);
         report.report_timestamp = report_time;
         // TODO(gh-14): query queue
-        report.extended_seqnum = 0;
+        report.ext_last_seqnum = 0;
         // TODO(gh-14): query stats
         report.fract_loss = 0;
         report.cum_loss = 0;
