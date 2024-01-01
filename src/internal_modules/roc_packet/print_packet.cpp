@@ -12,6 +12,7 @@
 #include "roc_core/printer.h"
 #include "roc_packet/fec_scheme_to_str.h"
 #include "roc_packet/packet.h"
+#include "roc_packet/packet_flags_to_str.h"
 
 namespace roc {
 namespace packet {
@@ -19,7 +20,8 @@ namespace packet {
 void print_packet(const Packet& pkt, int flags) {
     core::Printer p;
 
-    p.writef("@ packet [%p]\n", (const void*)&pkt);
+    p.writef("@ packet [%p] %s\n", (const void*)&pkt,
+             packet_flags_to_str(pkt.flags()).c_str());
 
     if (pkt.udp()) {
         p.writef(" udp: src=%s dst=%s\n",
@@ -30,7 +32,7 @@ void print_packet(const Packet& pkt, int flags) {
     if (pkt.rtp()) {
         p.writef(
             " rtp: src=%lu m=%d sn=%lu sts=%lu dur=%lu cts=%lld pt=%u payload_sz=%lu\n",
-            (unsigned long)pkt.rtp()->source, (int)pkt.rtp()->marker,
+            (unsigned long)pkt.rtp()->source_id, (int)pkt.rtp()->marker,
             (unsigned long)pkt.rtp()->seqnum, (unsigned long)pkt.rtp()->stream_timestamp,
             (unsigned long)pkt.rtp()->duration, (long long)pkt.rtp()->capture_timestamp,
             (unsigned int)pkt.rtp()->payload_type,

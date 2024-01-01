@@ -150,22 +150,39 @@ void ReceiverSessionGroup::change_source_id() {
 }
 
 size_t ReceiverSessionGroup::num_recv_streams() {
-    return sessions_.size();
+    // Gather report counts from all sessions.
+    size_t n_reports = 0;
+
+    for (core::SharedPtr<ReceiverSession> sess = sessions_.front(); sess;
+         sess = sessions_.nextof(*sess)) {
+        n_reports += sess->num_reports();
+    }
+
+    return n_reports;
 }
 
 void ReceiverSessionGroup::query_recv_streams(rtcp::RecvReport* reports,
                                               size_t n_reports,
                                               core::nanoseconds_t report_time) {
     roc_panic_if(!reports);
-    roc_panic_if(n_reports > sessions_.size());
-
-    core::SharedPtr<ReceiverSession> sess;
-    size_t n_sess = 0;
 
     // Gather reports from all sessions.
-    for (sess = sessions_.front(); sess; sess = sessions_.nextof(*sess), n_sess++) {
-        reports[n_sess] =
-            sess->generate_report(identity_->cname(), identity_->ssrc(), report_time);
+    for (core::SharedPtr<ReceiverSession> sess = sessions_.front(); sess;
+         sess = sessions_.nextof(*sess)) {
+        if (n_reports == 0) {
+            break;
+        }
+
+        size_t n_sess_reports = sess->num_reports();
+        if (n_sess_reports > n_reports) {
+            n_sess_reports = n_reports;
+        }
+
+        sess->generate_reports(identity_->cname(), identity_->ssrc(), report_time,
+                               reports, n_sess_reports);
+
+        reports += n_sess_reports;
+        n_reports -= n_sess_reports;
     }
 }
 
@@ -210,8 +227,11 @@ void ReceiverSessionGroup::halt_recv_stream(packet::stream_source_t send_source_
 status::StatusCode
 ReceiverSessionGroup::route_transport_packet_(const packet::PacketPtr& packet) {
     // Find route by packet SSRC.
-    core::SharedPtr<ReceiverSession> sess =
-        session_router_.find_by_source(packet->source());
+    core::SharedPtr<ReceiverSession> sess;
+
+    if (packet->has_source_id()) {
+        sess = session_router_.find_by_source(packet->source_id());
+    }
 
     if (!sess && packet->udp()) {
         // If there is no route found, fallback to finding route by *source* address.
@@ -293,7 +313,7 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
 
     const ReceiverSessionConfig sess_config = make_session_config_(packet);
 
-    const packet::stream_source_t source_id = packet->source();
+    const packet::stream_source_t source_id = packet->source_id();
 
     const address::SocketAddr src_address = packet->udp()->src_addr;
     const address::SocketAddr dst_address = packet->udp()->dst_addr;

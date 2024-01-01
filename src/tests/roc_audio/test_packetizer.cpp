@@ -82,11 +82,11 @@ public:
                              pp->flags());
 
         if (pos_ == 0) {
-            src_ = pp->rtp()->source;
+            src_ = pp->rtp()->source_id;
             sn_ = pp->rtp()->seqnum;
             ts_ = pp->rtp()->stream_timestamp;
         } else {
-            UNSIGNED_LONGS_EQUAL(src_, pp->rtp()->source);
+            UNSIGNED_LONGS_EQUAL(src_, pp->rtp()->source_id);
             UNSIGNED_LONGS_EQUAL(sn_, pp->rtp()->seqnum);
             UNSIGNED_LONGS_EQUAL(ts_, pp->rtp()->stream_timestamp);
         }

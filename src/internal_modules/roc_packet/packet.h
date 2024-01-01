@@ -42,7 +42,7 @@ public:
     explicit Packet(core::IPool& packet_pool);
 
     //! Packet flags.
-    enum {
+    enum Flag {
         FlagUDP = (1 << 0),      //!< Packet contains UDP header.
         FlagRTP = (1 << 1),      //!< Packet contains RTP header.
         FlagFEC = (1 << 2),      //!< Packet contains FEC header.
@@ -103,11 +103,17 @@ public:
     //!  of RTP packet (where samples are stored).
     const core::Slice<uint8_t>& payload() const;
 
+    //! Check if packet has stream identifier.
+    //! @remarks
+    //!  The returning value depends on packet type. If this method returns
+    //!  true, then source_id() returns stream identifier.
+    bool has_source_id() const;
+
     //! Get packet stream identifier.
     //! @remarks
     //!  The returning value depends on packet type. For some packet types, may
     //!  be always zero.
-    stream_source_t source() const;
+    stream_source_t source_id() const;
 
     //! Get stream timestamp (STS) of the packet.
     //! @remarks

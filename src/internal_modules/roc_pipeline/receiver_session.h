@@ -90,10 +90,15 @@ public:
     //!  false if the session is ended
     bool reclock(core::nanoseconds_t playback_time);
 
-    //! Generate RTCP report to be delivered to sender.
-    rtcp::RecvReport generate_report(const char* report_cname,
-                                     packet::stream_source_t report_ssrc,
-                                     core::nanoseconds_t report_time) const;
+    //! Get number of RTCP reports to be generated.
+    size_t num_reports() const;
+
+    //! Generate RTCP reports to be delivered to sender.
+    void generate_reports(const char* report_cname,
+                          packet::stream_source_t report_ssrc,
+                          core::nanoseconds_t report_time,
+                          rtcp::RecvReport* reports,
+                          size_t n_reports) const;
 
     //! Process RTCP report obtained from sender.
     void process_report(const rtcp::SendReport& report);
@@ -107,7 +112,7 @@ public:
 private:
     audio::IFrameReader* audio_reader_;
 
-    core::Optional<packet::Router> queue_router_;
+    core::Optional<packet::Router> packet_router_;
 
     core::Optional<packet::SortedQueue> source_queue_;
     core::Optional<packet::SortedQueue> repair_queue_;

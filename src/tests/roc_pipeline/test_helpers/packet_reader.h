@@ -148,12 +148,12 @@ private:
         CHECK(pp->flags() & packet::Packet::FlagRTP);
 
         if (first_) {
-            source_ = pp->rtp()->source;
+            source_ = pp->rtp()->source_id;
             seqnum_ = pp->rtp()->seqnum;
             timestamp_ = pp->rtp()->stream_timestamp;
             first_ = false;
         } else {
-            UNSIGNED_LONGS_EQUAL(source_, pp->rtp()->source);
+            UNSIGNED_LONGS_EQUAL(source_, pp->rtp()->source_id);
             UNSIGNED_LONGS_EQUAL(seqnum_, pp->rtp()->seqnum);
             UNSIGNED_LONGS_EQUAL(timestamp_, pp->rtp()->stream_timestamp);
         }

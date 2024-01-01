@@ -122,9 +122,17 @@ const core::Slice<uint8_t>& Packet::payload() const {
     return buffer_;
 }
 
-stream_source_t Packet::source() const {
+bool Packet::has_source_id() const {
+    if (rtp()) {
+        return true;
+    }
+
+    return false;
+}
+
+stream_source_t Packet::source_id() const {
     if (const RTP* r = rtp()) {
-        return r->source;
+        return r->source_id;
     }
 
     return 0;

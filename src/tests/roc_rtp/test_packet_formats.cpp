@@ -76,7 +76,7 @@ void check_packet_fields(const packet::Packet& packet, const test::PacketInfo& p
     UNSIGNED_LONGS_EQUAL(pi.payload_size, packet.rtp()->payload.size());
     UNSIGNED_LONGS_EQUAL(pi.padding_size, packet.rtp()->padding.size());
 
-    UNSIGNED_LONGS_EQUAL(pi.ssrc, packet.rtp()->source);
+    UNSIGNED_LONGS_EQUAL(pi.ssrc, packet.rtp()->source_id);
     UNSIGNED_LONGS_EQUAL(pi.seqnum, packet.rtp()->seqnum);
     UNSIGNED_LONGS_EQUAL(pi.ts, packet.rtp()->stream_timestamp);
     UNSIGNED_LONGS_EQUAL(pi.marker, packet.rtp()->marker);
@@ -87,7 +87,7 @@ void check_packet_fields(const packet::Packet& packet, const test::PacketInfo& p
 void set_packet_fields(packet::Packet& packet, const test::PacketInfo& pi) {
     CHECK(packet.rtp());
 
-    packet.rtp()->source = pi.ssrc;
+    packet.rtp()->source_id = pi.ssrc;
     packet.rtp()->seqnum = pi.seqnum;
     packet.rtp()->stream_timestamp = pi.ts;
     packet.rtp()->marker = pi.marker;

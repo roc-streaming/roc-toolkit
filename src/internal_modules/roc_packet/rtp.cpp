@@ -12,7 +12,7 @@ namespace roc {
 namespace packet {
 
 RTP::RTP()
-    : source(0)
+    : source_id(0)
     , seqnum(0)
     , stream_timestamp(0)
     , duration(0)

@@ -298,7 +298,7 @@ RecvReport make_recv_report(core::nanoseconds_t time,
     report.receiver_source_id = recv_ssrc;
     report.sender_source_id = send_ssrc;
     report.report_timestamp = time;
-    report.extended_seqnum = seed * 100000;
+    report.ext_last_seqnum = seed * 100000;
     report.fract_loss = seed * 0.001f;
     report.cum_loss = (int)seed + 10;
     report.jitter = seed + 20;
@@ -315,7 +315,7 @@ void expect_recv_report(const RecvReport& report,
     STRCMP_EQUAL(recv_cname, report.receiver_cname);
     CHECK_EQUAL(recv_ssrc, report.receiver_source_id);
     CHECK_EQUAL(send_ssrc, report.sender_source_id);
-    CHECK_EQUAL(seed * 100000, report.extended_seqnum);
+    CHECK_EQUAL(seed * 100000, report.ext_last_seqnum);
     DOUBLES_EQUAL(seed * 0.001f, report.fract_loss, 0.005);
     CHECK_EQUAL((int)seed + 10, report.cum_loss);
     CHECK_EQUAL(seed + 20, report.jitter);

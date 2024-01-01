@@ -57,7 +57,7 @@ TEST_GROUP(validator) {
 
         packet->add_flags(packet::Packet::FlagRTP);
         packet->rtp()->payload_type = pt;
-        packet->rtp()->source = src;
+        packet->rtp()->source_id = src;
         packet->rtp()->seqnum = sn;
         packet->rtp()->stream_timestamp = ts;
         packet->rtp()->capture_timestamp = cts;

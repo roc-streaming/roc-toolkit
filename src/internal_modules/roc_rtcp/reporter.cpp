@@ -225,7 +225,7 @@ void Reporter::process_reception_block(const packet::stream_source_t ssrc,
 
     stream->remote_recv_report.fract_loss = blk.fract_loss();
     stream->remote_recv_report.cum_loss = blk.cum_loss();
-    stream->remote_recv_report.extended_seqnum = blk.last_seqnum();
+    stream->remote_recv_report.ext_last_seqnum = blk.last_seqnum();
     stream->remote_recv_report.jitter = blk.jitter();
 
     // TODO(gh-14): pass LSR and DLSR to RttEstimator
@@ -427,7 +427,7 @@ void Reporter::generate_reception_block(size_t index, header::ReceptionReportBlo
 
     blk.set_ssrc(stream->source_id);
 
-    blk.set_last_seqnum(stream->local_recv_report.extended_seqnum);
+    blk.set_last_seqnum(stream->local_recv_report.ext_last_seqnum);
     blk.set_fract_loss(stream->local_recv_report.fract_loss);
     blk.set_cum_loss(stream->local_recv_report.cum_loss);
     blk.set_jitter(stream->local_recv_report.jitter);

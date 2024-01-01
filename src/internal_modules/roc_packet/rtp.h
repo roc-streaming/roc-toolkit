@@ -26,7 +26,7 @@ struct RTP {
     //! @remarks
     //!  Sequence numbers and timestamp are numbered independently inside
     //!  different packet streams.
-    stream_source_t source;
+    stream_source_t source_id;
 
     //! Packet sequence number in packet stream ("sn").
     //! @remarks

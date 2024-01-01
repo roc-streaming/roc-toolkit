@@ -12,6 +12,7 @@
 #include "roc_core/panic.h"
 #include "roc_core/time.h"
 #include "roc_fec/codec_map.h"
+#include "roc_packet/packet.h"
 
 namespace roc {
 namespace pipeline {
@@ -32,8 +33,8 @@ ReceiverSession::ReceiverSession(
         return;
     }
 
-    queue_router_.reset(new (queue_router_) packet::Router(arena));
-    if (!queue_router_) {
+    packet_router_.reset(new (packet_router_) packet::Router(arena));
+    if (!packet_router_) {
         return;
     }
 
@@ -44,7 +45,7 @@ ReceiverSession::ReceiverSession(
 
     packet::IWriter* pwriter = source_queue_.get();
 
-    if (!queue_router_->add_route(*pwriter, packet::Packet::FlagAudio)) {
+    if (!packet_router_->add_route(*pwriter, packet::Packet::FlagAudio)) {
         return;
     }
 
@@ -82,7 +83,7 @@ ReceiverSession::ReceiverSession(
         if (!repair_queue_) {
             return;
         }
-        if (!queue_router_->add_route(*repair_queue_, packet::Packet::FlagRepair)) {
+        if (!packet_router_->add_route(*repair_queue_, packet::Packet::FlagRepair)) {
             return;
         }
 
@@ -227,7 +228,7 @@ bool ReceiverSession::is_valid() const {
 status::StatusCode ReceiverSession::route_packet(const packet::PacketPtr& packet) {
     roc_panic_if(!is_valid());
 
-    return queue_router_->write(packet);
+    return packet_router_->write(packet);
 }
 
 bool ReceiverSession::refresh(core::nanoseconds_t current_time,
@@ -259,32 +260,77 @@ bool ReceiverSession::reclock(core::nanoseconds_t playback_time) {
     return latency_monitor_->reclock(playback_time);
 }
 
-rtcp::RecvReport ReceiverSession::generate_report(const char* report_cname,
-                                                  packet::stream_source_t report_ssrc,
-                                                  core::nanoseconds_t report_time) const {
+size_t ReceiverSession::num_reports() const {
     roc_panic_if(!is_valid());
 
-    rtcp::RecvReport report;
-    report.receiver_cname = report_cname;
-    report.receiver_source_id = report_ssrc;
-    // TODO(gh-14): remember and return ssrc
-    report.sender_source_id = 123;
-    report.report_timestamp = report_time;
-    // TODO(gh-14): query queue
-    report.extended_seqnum = 0;
-    // TODO(gh-14): query stats
-    report.fract_loss = 0;
-    report.cum_loss = 0;
-    report.jitter = 0;
+    size_t n_reports = 0;
 
-    return report;
+    if (packet_router_->has_source_id(packet::Packet::FlagAudio)) {
+        n_reports++;
+    }
+
+    if (packet_router_->has_source_id(packet::Packet::FlagRepair)) {
+        n_reports++;
+    }
+
+    return n_reports;
+}
+
+void ReceiverSession::generate_reports(const char* report_cname,
+                                       packet::stream_source_t report_ssrc,
+                                       core::nanoseconds_t report_time,
+                                       rtcp::RecvReport* reports,
+                                       size_t n_reports) const {
+    roc_panic_if(!is_valid());
+
+    if (n_reports > 0 && packet_router_->has_source_id(packet::Packet::FlagAudio)) {
+        rtcp::RecvReport& report = *reports;
+
+        report.receiver_cname = report_cname;
+        report.receiver_source_id = report_ssrc;
+        report.sender_source_id = packet_router_->get_source_id(packet::Packet::FlagAudio);
+        report.report_timestamp = report_time;
+        // TODO(gh-14): query queue
+        report.extended_seqnum = 0;
+        // TODO(gh-14): query stats
+        report.fract_loss = 0;
+        report.cum_loss = 0;
+        report.jitter = 0;
+
+        reports++;
+        n_reports--;
+    }
+
+    if (n_reports > 0 && packet_router_->has_source_id(packet::Packet::FlagRepair)) {
+        rtcp::RecvReport& report = *reports;
+
+        report.receiver_cname = report_cname;
+        report.receiver_source_id = report_ssrc;
+        report.sender_source_id =
+            packet_router_->get_source_id(packet::Packet::FlagRepair);
+        report.report_timestamp = report_time;
+        // TODO(gh-14): query queue
+        report.extended_seqnum = 0;
+        // TODO(gh-14): query stats
+        report.fract_loss = 0;
+        report.cum_loss = 0;
+        report.jitter = 0;
+
+        reports++;
+        n_reports--;
+    }
 }
 
 void ReceiverSession::process_report(const rtcp::SendReport& report) {
     roc_panic_if(!is_valid());
 
-    // TODO(gh-14): notify stats
-    timestamp_injector_->update_mapping(report.report_timestamp, report.stream_timestamp);
+    if (packet_router_->has_source_id(packet::Packet::FlagAudio)
+        && packet_router_->get_source_id(packet::Packet::FlagAudio)
+            == report.sender_source_id) {
+        // TODO(gh-14): notify stats
+        timestamp_injector_->update_mapping(report.report_timestamp,
+                                            report.stream_timestamp);
+    }
 }
 
 ReceiverSessionMetrics ReceiverSession::get_metrics() const {

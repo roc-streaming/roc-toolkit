@@ -102,7 +102,7 @@ void fill_packet(packet::Packet& packet, bool is_rtp) {
     if (is_rtp) {
         CHECK(packet.rtp());
 
-        packet.rtp()->source = Test_rtp_source;
+        packet.rtp()->source_id = Test_rtp_source;
         packet.rtp()->seqnum = Test_rtp_seqnum;
         packet.rtp()->stream_timestamp = Test_rtp_timestamp;
         packet.rtp()->payload_type = Test_rtp_pt;
@@ -135,7 +135,7 @@ void check_packet(packet::Packet& packet,
     if (is_rtp) {
         CHECK(packet.rtp());
 
-        UNSIGNED_LONGS_EQUAL(Test_rtp_source, packet.rtp()->source);
+        UNSIGNED_LONGS_EQUAL(Test_rtp_source, packet.rtp()->source_id);
         UNSIGNED_LONGS_EQUAL(Test_rtp_seqnum, packet.rtp()->seqnum);
         UNSIGNED_LONGS_EQUAL(Test_rtp_timestamp, packet.rtp()->stream_timestamp);
         UNSIGNED_LONGS_EQUAL(Test_rtp_pt, packet.rtp()->payload_type);

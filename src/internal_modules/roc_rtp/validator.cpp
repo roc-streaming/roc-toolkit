@@ -51,9 +51,9 @@ status::StatusCode Validator::read(packet::PacketPtr& pp) {
 }
 
 bool Validator::validate_(const packet::RTP& prev, const packet::RTP& next) const {
-    if (prev.source != next.source) {
+    if (prev.source_id != next.source_id) {
         roc_log(LogDebug, "rtp validator: source id jump: prev=%lu next=%lu",
-                (unsigned long)prev.source, (unsigned long)next.source);
+                (unsigned long)prev.source_id, (unsigned long)next.source_id);
         return false;
     }
 

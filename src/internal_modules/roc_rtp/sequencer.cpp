@@ -41,7 +41,7 @@ void Sequencer::next(packet::Packet& packet,
 
     // Identity can change SSRC in case of collision, so we read SSRC
     // from it each time.
-    rtp->source = identity_.ssrc();
+    rtp->source_id = identity_.ssrc();
     rtp->payload_type = payload_type_;
     rtp->seqnum = seqnum_;
     rtp->stream_timestamp = stream_ts_;

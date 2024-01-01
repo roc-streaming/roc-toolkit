@@ -172,7 +172,7 @@ TEST_GROUP(writer_reader) {
 
         pp->add_flags(packet::Packet::FlagAudio | packet::Packet::FlagPrepared);
 
-        pp->rtp()->source = SourceID;
+        pp->rtp()->source_id = SourceID;
         pp->rtp()->payload_type = PayloadType;
         pp->rtp()->seqnum = packet::seqnum_t(sn);
         pp->rtp()->stream_timestamp = packet::stream_timestamp_t(sn * 10);
@@ -198,7 +198,7 @@ TEST_GROUP(writer_reader) {
         CHECK(pp->rtp()->header);
         CHECK(pp->rtp()->payload);
 
-        UNSIGNED_LONGS_EQUAL(SourceID, pp->rtp()->source);
+        UNSIGNED_LONGS_EQUAL(SourceID, pp->rtp()->source_id);
 
         UNSIGNED_LONGS_EQUAL(sn, pp->rtp()->seqnum);
         UNSIGNED_LONGS_EQUAL(packet::stream_timestamp_t(sn * 10),
@@ -1969,7 +1969,7 @@ TEST(writer_reader, writer_encode_blocks) {
                 fill_all_packets(NumSourcePackets * block_num);
 
                 for (size_t i = 0; i < NumSourcePackets; ++i) {
-                    source_packets[i]->rtp()->source = data_source;
+                    source_packets[i]->rtp()->source_id = data_source;
                 }
 
                 for (size_t i = 0; i < NumSourcePackets; ++i) {
@@ -1994,7 +1994,7 @@ TEST(writer_reader, writer_encode_blocks) {
                     const packet::RTP* rtp = p->rtp();
                     CHECK(rtp);
 
-                    UNSIGNED_LONGS_EQUAL(data_source, rtp->source);
+                    UNSIGNED_LONGS_EQUAL(data_source, rtp->source_id);
 
                     const packet::FEC* fec = p->fec();
                     CHECK(fec);

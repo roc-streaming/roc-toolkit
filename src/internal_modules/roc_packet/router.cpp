@@ -9,6 +9,7 @@
 #include "roc_packet/router.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_packet/packet_flags_to_str.h"
 #include "roc_status/status_code.h"
 
 namespace roc {
@@ -18,12 +19,10 @@ Router::Router(core::IArena& arena)
     : routes_(arena) {
 }
 
-bool Router::add_route(IWriter& writer, unsigned flags) {
+bool Router::add_route(IWriter& writer, const unsigned flags) {
     Route r;
     r.writer = &writer;
     r.flags = flags;
-    r.source = 0;
-    r.has_source = false;
 
     if (!routes_.push_back(r)) {
         roc_log(LogError, "router: can't allocate route");
@@ -33,42 +32,98 @@ bool Router::add_route(IWriter& writer, unsigned flags) {
     return true;
 }
 
+bool Router::has_source_id(const unsigned flags) {
+    if (Route* route = find_route_(flags)) {
+        return route->has_source;
+    }
+
+    return false;
+}
+
+stream_source_t Router::get_source_id(const unsigned flags) {
+    if (Route* route = find_route_(flags)) {
+        return route->has_source ? route->source : 0;
+    }
+
+    return 0;
+}
+
 status::StatusCode Router::write(const PacketPtr& packet) {
     if (!packet) {
         roc_panic("router: unexpected null packet");
     }
 
-    for (size_t n = 0; n < routes_.size(); n++) {
-        Route& r = routes_[n];
-
-        const unsigned pkt_flags = packet->flags();
-
-        if (r.flags != 0) {
-            if ((r.flags & pkt_flags) != r.flags) {
-                continue;
-            }
+    if (Route* route = find_route_(packet->flags())) {
+        if (allow_route_(*route, *packet)) {
+            return route->writer->write(packet);
         }
-
-        const stream_source_t pkt_source = packet->source();
-
-        if (r.has_source) {
-            if (r.source != pkt_source) {
-                continue;
-            }
-        } else {
-            r.source = pkt_source;
-            r.has_source = true;
-
-            roc_log(LogDebug, "router: detected new stream: source=%lu flags=0x%x",
-                    (unsigned long)r.source, (unsigned int)r.flags);
-        }
-
-        return r.writer->write(packet);
     }
 
     roc_log(LogDebug, "router: can't route packet, dropping");
     // TODO(gh-183): return status
     return status::StatusOK;
+}
+
+Router::Route* Router::find_route_(unsigned flags) {
+    for (size_t n = 0; n < routes_.size(); n++) {
+        Route& route = routes_[n];
+
+        if ((route.flags & flags) == route.flags) {
+            return &route;
+        }
+    }
+
+    return NULL;
+}
+
+bool Router::allow_route_(Route& route, const Packet& packet) {
+    if (packet.has_source_id()) {
+        if (route.has_source) {
+            if (route.source != packet.source_id()) {
+                // Route is started and has different source id.
+                // No match.
+                return false;
+            }
+        } else {
+            if (route.is_started) {
+                // Route is started and has no source id, but packet has one.
+                // No match.
+                return false;
+            }
+
+            // Route is not started, start and remember source id.
+            route.source = packet.source_id();
+            route.has_source = true;
+            route.is_started = true;
+
+            roc_log(LogDebug,
+                    "router: detected new stream:"
+                    " source_id=%lu route_flags=%s packet_flags=%s",
+                    (unsigned long)route.source, packet_flags_to_str(route.flags).c_str(),
+                    packet_flags_to_str(packet.flags()).c_str());
+        }
+    } else {
+        if (route.has_source) {
+            // Route is started and has source id, but packet doesn't have one.
+            // No match.
+            return false;
+        }
+
+        if (!route.is_started) {
+            // Route is not started, start and remember that there is no source id.
+            route.has_source = false;
+            route.is_started = true;
+
+            roc_log(LogDebug,
+                    "router: detected new stream:"
+                    " source_id=none route_flags=%s packet_flags=%s",
+                    packet_flags_to_str(route.flags).c_str(),
+                    packet_flags_to_str(packet.flags()).c_str());
+        }
+    }
+
+    // Match!
+    return true;
 }
 
 } // namespace packet

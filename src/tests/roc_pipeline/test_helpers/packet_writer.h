@@ -286,7 +286,7 @@ private:
 
         pp->set_buffer(bp);
 
-        pp->rtp()->source = source_;
+        pp->rtp()->source_id = source_;
         pp->rtp()->seqnum = seqnum_;
         pp->rtp()->stream_timestamp = timestamp_;
         pp->rtp()->payload_type = pt_;
