@@ -34,6 +34,7 @@
 #include "roc_packet/iparser.h"
 #include "roc_packet/ireader.h"
 #include "roc_packet/iwriter.h"
+#include "roc_packet/link_meter.h"
 #include "roc_packet/packet.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/router.h"
@@ -115,6 +116,9 @@ private:
 
     core::Optional<packet::SortedQueue> source_queue_;
     core::Optional<packet::SortedQueue> repair_queue_;
+
+    core::Optional<packet::LinkMeter> source_meter_;
+    core::Optional<packet::LinkMeter> repair_meter_;
 
     core::ScopedPtr<audio::IFrameDecoder> payload_decoder_;
 

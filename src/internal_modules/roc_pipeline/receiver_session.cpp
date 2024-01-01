@@ -10,9 +10,7 @@
 #include "roc_audio/resampler_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_core/time.h"
 #include "roc_fec/codec_map.h"
-#include "roc_packet/packet.h"
 
 namespace roc {
 namespace pipeline {
@@ -45,6 +43,13 @@ ReceiverSession::ReceiverSession(
 
     packet::IWriter* pwriter = source_queue_.get();
 
+    source_meter_.reset(new (source_meter_) packet::LinkMeter());
+    if (!source_meter_) {
+        return;
+    }
+    source_meter_->set_writer(*pwriter);
+    pwriter = source_meter_.get();
+
     if (!packet_router_->add_route(*pwriter, packet::Packet::FlagAudio)) {
         return;
     }
@@ -71,12 +76,22 @@ ReceiverSession::ReceiverSession(
     }
     preader = delayed_reader_.get();
 
+    source_meter_->set_reader(*preader);
+    preader = source_meter_.get();
+
     if (session_config.fec_decoder.scheme != packet::FEC_None) {
         repair_queue_.reset(new (repair_queue_) packet::SortedQueue(0));
         if (!repair_queue_) {
             return;
         }
-        if (!packet_router_->add_route(*repair_queue_, packet::Packet::FlagRepair)) {
+
+        repair_meter_.reset(new (repair_meter_) packet::LinkMeter());
+        if (!repair_meter_) {
+            return;
+        }
+        repair_meter_->set_writer(*repair_queue_);
+
+        if (!packet_router_->add_route(*repair_meter_, packet::Packet::FlagRepair)) {
             return;
         }
 
@@ -107,6 +122,9 @@ ReceiverSession::ReceiverSession(
             return;
         }
         preader = fec_filter_.get();
+
+        repair_meter_->set_reader(*preader);
+        preader = repair_meter_.get();
     }
 
     timestamp_injector_.reset(new (timestamp_injector_) rtp::TimestampInjector(
@@ -252,11 +270,13 @@ size_t ReceiverSession::num_reports() const {
 
     size_t n_reports = 0;
 
-    if (packet_router_->has_source_id(packet::Packet::FlagAudio)) {
+    if (packet_router_->has_source_id(packet::Packet::FlagAudio)
+        && source_meter_->has_metrics()) {
         n_reports++;
     }
 
-    if (packet_router_->has_source_id(packet::Packet::FlagRepair)) {
+    if (packet_router_->has_source_id(packet::Packet::FlagRepair)
+        && repair_meter_->has_metrics()) {
         n_reports++;
     }
 
@@ -270,7 +290,10 @@ void ReceiverSession::generate_reports(const char* report_cname,
                                        size_t n_reports) const {
     roc_panic_if(!is_valid());
 
-    if (n_reports > 0 && packet_router_->has_source_id(packet::Packet::FlagAudio)) {
+    if (n_reports > 0 && packet_router_->has_source_id(packet::Packet::FlagAudio)
+        && source_meter_->has_metrics()) {
+        const packet::LinkMetrics link_metrics = source_meter_->metrics();
+
         rtcp::RecvReport& report = *reports;
 
         report.receiver_cname = report_cname;
@@ -278,18 +301,19 @@ void ReceiverSession::generate_reports(const char* report_cname,
         report.sender_source_id =
             packet_router_->get_source_id(packet::Packet::FlagAudio);
         report.report_timestamp = report_time;
-        // TODO(gh-14): query queue
-        report.ext_last_seqnum = 0;
-        // TODO(gh-14): query stats
-        report.fract_loss = 0;
-        report.cum_loss = 0;
-        report.jitter = 0;
+        report.ext_last_seqnum = link_metrics.ext_last_seqnum;
+        report.fract_loss = link_metrics.fract_loss;
+        report.cum_loss = link_metrics.cum_loss;
+        report.jitter = link_metrics.jitter;
 
         reports++;
         n_reports--;
     }
 
-    if (n_reports > 0 && packet_router_->has_source_id(packet::Packet::FlagRepair)) {
+    if (n_reports > 0 && packet_router_->has_source_id(packet::Packet::FlagRepair)
+        && repair_meter_->has_metrics()) {
+        const packet::LinkMetrics link_metrics = repair_meter_->metrics();
+
         rtcp::RecvReport& report = *reports;
 
         report.receiver_cname = report_cname;
@@ -297,12 +321,10 @@ void ReceiverSession::generate_reports(const char* report_cname,
         report.sender_source_id =
             packet_router_->get_source_id(packet::Packet::FlagRepair);
         report.report_timestamp = report_time;
-        // TODO(gh-14): query queue
-        report.ext_last_seqnum = 0;
-        // TODO(gh-14): query stats
-        report.fract_loss = 0;
-        report.cum_loss = 0;
-        report.jitter = 0;
+        report.ext_last_seqnum = link_metrics.ext_last_seqnum;
+        report.fract_loss = link_metrics.fract_loss;
+        report.cum_loss = link_metrics.cum_loss;
+        report.jitter = link_metrics.jitter;
 
         reports++;
         n_reports--;
@@ -315,7 +337,6 @@ void ReceiverSession::process_report(const rtcp::SendReport& report) {
     if (packet_router_->has_source_id(packet::Packet::FlagAudio)
         && packet_router_->get_source_id(packet::Packet::FlagAudio)
             == report.sender_source_id) {
-        // TODO(gh-14): notify stats
         timestamp_injector_->update_mapping(report.report_timestamp,
                                             report.stream_timestamp);
     }
@@ -325,6 +346,7 @@ ReceiverSessionMetrics ReceiverSession::get_metrics() const {
     roc_panic_if(!is_valid());
 
     ReceiverSessionMetrics metrics;
+    metrics.link = source_meter_->metrics();
     metrics.latency = latency_monitor_->metrics();
 
     return metrics;
