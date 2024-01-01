@@ -63,9 +63,10 @@ public:
 
     //! Get the latest packet that were ever added to the queue.
     //! @remarks
-    //!  Returns null if the queue never has any packets. Otherwise, returns
-    //!  the latest ever added packet, even if that packet is not currently
-    //!  in the queue. Returned packet is not removed from the queue.
+    //!  Returns null if the queue never had any packets. Otherwise, returns
+    //!  the latest (by sorting order) ever added packet, even if that packet is not
+    //!  currently in the queue. Returned packet is not removed from the queue if
+    //!  it's still there.
     PacketPtr latest() const;
 
 private:

@@ -13,7 +13,6 @@
 #include "roc_packet/delayed_reader.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
-#include "roc_pipeline/config.h"
 #include "roc_status/status_code.h"
 
 namespace roc {
@@ -73,7 +72,7 @@ TEST(delayed_reader, failed_to_read_packet) {
         DelayedReader dr(reader, 0, SampleSpecs);
 
         PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(codes[n], dr.read(pp));
+        CHECK_EQUAL(codes[n], dr.read(pp));
         CHECK(!pp);
     }
 }
@@ -83,15 +82,15 @@ TEST(delayed_reader, no_delay) {
     DelayedReader dr(queue, 0, SampleSpecs);
 
     PacketPtr pp;
-    UNSIGNED_LONGS_EQUAL(status::StatusNoData, dr.read(pp));
+    CHECK_EQUAL(status::StatusNoData, dr.read(pp));
     CHECK(!pp);
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         PacketPtr wp = new_packet(n);
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp));
+        CHECK_EQUAL(status::StatusOK, queue.write(wp));
 
         PacketPtr rp;
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, dr.read(rp));
+        CHECK_EQUAL(status::StatusOK, dr.read(rp));
         CHECK(wp == rp);
     }
 }
@@ -104,33 +103,33 @@ TEST(delayed_reader, delay) {
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         PacketPtr p;
-        UNSIGNED_LONGS_EQUAL(status::StatusNoData, dr.read(p));
+        CHECK_EQUAL(status::StatusNoData, dr.read(p));
         CHECK(!p);
 
         packets[n] = new_packet(n);
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(packets[n]));
+        CHECK_EQUAL(status::StatusOK, queue.write(packets[n]));
     }
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         PacketPtr p;
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, dr.read(p));
+        CHECK_EQUAL(status::StatusOK, dr.read(p));
         CHECK(p == packets[n]);
     }
 
     PacketPtr pp;
-    UNSIGNED_LONGS_EQUAL(status::StatusNoData, dr.read(pp));
+    CHECK_EQUAL(status::StatusNoData, dr.read(pp));
     CHECK(!pp);
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         PacketPtr wp = new_packet(NumPackets + n);
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp));
+        CHECK_EQUAL(status::StatusOK, queue.write(wp));
 
         PacketPtr rp;
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, dr.read(rp));
+        CHECK_EQUAL(status::StatusOK, dr.read(rp));
         CHECK(wp == rp);
     }
 
-    UNSIGNED_LONGS_EQUAL(status::StatusNoData, dr.read(pp));
+    CHECK_EQUAL(status::StatusNoData, dr.read(pp));
     CHECK(!pp);
 }
 
@@ -142,17 +141,17 @@ TEST(delayed_reader, instant) {
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         packets[n] = new_packet(n);
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(packets[n]));
+        CHECK_EQUAL(status::StatusOK, queue.write(packets[n]));
     }
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         PacketPtr p;
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, dr.read(p));
+        CHECK_EQUAL(status::StatusOK, dr.read(p));
         CHECK(p == packets[n]);
     }
 
     PacketPtr pp;
-    UNSIGNED_LONGS_EQUAL(status::StatusNoData, dr.read(pp));
+    CHECK_EQUAL(status::StatusNoData, dr.read(pp));
     CHECK(!pp);
 }
 
@@ -164,17 +163,17 @@ TEST(delayed_reader, trim) {
 
     for (seqnum_t n = 0; n < NumPackets * 2; n++) {
         packets[n] = new_packet(n);
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(packets[n]));
+        CHECK_EQUAL(status::StatusOK, queue.write(packets[n]));
     }
 
     for (seqnum_t n = NumPackets; n < NumPackets * 2; n++) {
         PacketPtr p;
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, dr.read(p));
+        CHECK_EQUAL(status::StatusOK, dr.read(p));
         CHECK(p == packets[n]);
     }
 
     PacketPtr pp;
-    UNSIGNED_LONGS_EQUAL(status::StatusNoData, dr.read(pp));
+    CHECK_EQUAL(status::StatusNoData, dr.read(pp));
     CHECK(!pp);
 }
 
@@ -186,26 +185,26 @@ TEST(delayed_reader, late_duplicates) {
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         packets[n] = new_packet(n);
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(packets[n]));
+        CHECK_EQUAL(status::StatusOK, queue.write(packets[n]));
     }
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         PacketPtr p;
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, dr.read(p));
+        CHECK_EQUAL(status::StatusOK, dr.read(p));
         CHECK(p == packets[n]);
     }
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         PacketPtr wp = new_packet(n);
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(wp));
+        CHECK_EQUAL(status::StatusOK, queue.write(wp));
 
         PacketPtr rp;
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, dr.read(rp));
+        CHECK_EQUAL(status::StatusOK, dr.read(rp));
         CHECK(wp == rp);
     }
 
     PacketPtr pp;
-    UNSIGNED_LONGS_EQUAL(status::StatusNoData, dr.read(pp));
+    CHECK_EQUAL(status::StatusNoData, dr.read(pp));
     CHECK(!pp);
 }
 
