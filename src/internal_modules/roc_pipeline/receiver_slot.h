@@ -16,14 +16,13 @@
 #include "roc_address/protocol.h"
 #include "roc_audio/mixer.h"
 #include "roc_core/iarena.h"
-#include "roc_core/list.h"
 #include "roc_core/list_node.h"
 #include "roc_core/ref_counted.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_pipeline/metrics.h"
 #include "roc_pipeline/receiver_endpoint.h"
 #include "roc_pipeline/receiver_session_group.h"
-#include "roc_pipeline/receiver_state.h"
+#include "roc_pipeline/state_tracker.h"
 #include "roc_rtp/encoding_map.h"
 
 namespace roc {
@@ -39,7 +38,7 @@ class ReceiverSlot : public core::RefCounted<ReceiverSlot, core::ArenaAllocation
 public:
     //! Initialize.
     ReceiverSlot(const ReceiverConfig& receiver_config,
-                 ReceiverState& receiver_state,
+                 StateTracker& state_tracker,
                  audio::Mixer& mixer,
                  const rtp::EncodingMap& encoding_map,
                  packet::PacketFactory& packet_factory,
@@ -51,7 +50,10 @@ public:
     bool is_valid() const;
 
     //! Add endpoint.
-    ReceiverEndpoint* add_endpoint(address::Interface iface, address::Protocol proto);
+    ReceiverEndpoint* add_endpoint(address::Interface iface,
+                                   address::Protocol proto,
+                                   const address::SocketAddr* outbound_address,
+                                   packet::IWriter* outbound_writer);
 
     //! Pull packets and refresh sessions according to current time.
     //! @returns
@@ -74,13 +76,20 @@ public:
                      size_t* sess_metrics_size) const;
 
 private:
-    ReceiverEndpoint* create_source_endpoint_(address::Protocol proto);
-    ReceiverEndpoint* create_repair_endpoint_(address::Protocol proto);
-    ReceiverEndpoint* create_control_endpoint_(address::Protocol proto);
+    ReceiverEndpoint* create_source_endpoint_(address::Protocol proto,
+                                              const address::SocketAddr* outbound_address,
+                                              packet::IWriter* outbound_writer);
+    ReceiverEndpoint* create_repair_endpoint_(address::Protocol proto,
+                                              const address::SocketAddr* outbound_address,
+                                              packet::IWriter* outbound_writer);
+    ReceiverEndpoint*
+    create_control_endpoint_(address::Protocol proto,
+                             const address::SocketAddr* outbound_address,
+                             packet::IWriter* outbound_writer);
 
     const rtp::EncodingMap& encoding_map_;
 
-    ReceiverState& receiver_state_;
+    StateTracker& state_tracker_;
     ReceiverSessionGroup session_group_;
 
     core::Optional<ReceiverEndpoint> source_endpoint_;

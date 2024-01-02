@@ -71,7 +71,18 @@ public:
     //! Check if the session was succefully constructed.
     bool is_valid() const;
 
-    //! Route a packet to this session.
+    //! Get frame reader.
+    //! @remarks
+    //!  This way samples are fetched from the pipeline.
+    //!  Most of the processing, like decoding packets, restoring losses, and adjust
+    //!  clock, happens during the read operation.
+    audio::IFrameReader& frame_reader();
+
+    //! Route a packet to the session.
+    //! @remarks
+    //!  This way packets from sender reach receiver pipeline.
+    //!  Packets are stored inside internal pipeline queues, and then fetched
+    //!  when frame are requested from frame_reader().
     ROC_ATTR_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet);
 
     //! Refresh pipeline according to current time.
@@ -106,11 +117,8 @@ public:
     //! Get session metrics.
     ReceiverSessionMetrics get_metrics() const;
 
-    //! Get audio reader.
-    audio::IFrameReader& reader();
-
 private:
-    audio::IFrameReader* audio_reader_;
+    audio::IFrameReader* frame_reader_;
 
     core::Optional<packet::Router> packet_router_;
 

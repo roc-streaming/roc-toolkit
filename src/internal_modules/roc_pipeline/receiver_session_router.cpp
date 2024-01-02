@@ -7,13 +7,10 @@
  */
 
 #include "roc_pipeline/receiver_session_router.h"
-#include "roc_address/socket_addr.h"
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_core/shared_ptr.h"
 #include "roc_rtcp/cname.h"
-#include "roc_status/status_code.h"
 
 namespace roc {
 namespace pipeline {

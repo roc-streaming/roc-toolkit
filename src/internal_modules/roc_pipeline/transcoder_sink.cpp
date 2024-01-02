@@ -18,7 +18,7 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
                                audio::IFrameWriter* output_writer,
                                core::BufferFactory<audio::sample_t>& buffer_factory,
                                core::IArena& arena)
-    : audio_writer_(NULL)
+    : frame_writer_(NULL)
     , config_(config)
     , valid_(false) {
     audio::IFrameWriter* awriter = output_writer;
@@ -76,7 +76,7 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
         return;
     }
 
-    audio_writer_ = awriter;
+    frame_writer_ = awriter;
     valid_ = true;
 }
 
@@ -123,7 +123,7 @@ bool TranscoderSink::has_clock() const {
 void TranscoderSink::write(audio::Frame& frame) {
     roc_panic_if(!is_valid());
 
-    audio_writer_->write(frame);
+    frame_writer_->write(frame);
 }
 
 } // namespace pipeline

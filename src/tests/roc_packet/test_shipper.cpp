@@ -96,7 +96,7 @@ TEST(shipper, forward_write_status) {
         TestComposer composer;
         StatusWriter writer(codes[n]);
 
-        Shipper shipper(addr, composer, writer);
+        Shipper shipper(addr, writer, composer);
 
         PacketPtr pp = new_packet(packet_factory, buffer_factory);
         UNSIGNED_LONGS_EQUAL(codes[n], shipper.write(pp));
@@ -108,7 +108,7 @@ TEST(shipper, without_host_port) {
     TestComposer composer;
     Queue queue;
 
-    Shipper shipper(addr, composer, queue);
+    Shipper shipper(addr, queue, composer);
 
     PacketPtr wp = new_packet(packet_factory, buffer_factory);
 
@@ -132,7 +132,7 @@ TEST(shipper, with_host_port) {
     TestComposer composer;
     Queue queue;
 
-    Shipper shipper(addr, composer, queue);
+    Shipper shipper(addr, queue, composer);
 
     PacketPtr wp = new_packet(packet_factory, buffer_factory);
 
@@ -154,7 +154,7 @@ TEST(shipper, packet_already_composed) {
     TestComposer composer;
     Queue queue;
 
-    Shipper shipper(addr, composer, queue);
+    Shipper shipper(addr, queue, composer);
 
     PacketPtr wp = new_packet(packet_factory, buffer_factory);
     wp->add_flags(Packet::FlagComposed);
@@ -177,7 +177,7 @@ TEST(shipper, packet_not_composed) {
     TestComposer composer;
     Queue queue;
 
-    Shipper shipper(addr, composer, queue);
+    Shipper shipper(addr, queue, composer);
 
     PacketPtr wp = new_packet(packet_factory, buffer_factory);
 

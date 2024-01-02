@@ -65,7 +65,7 @@ private:
 
     core::Mutex mutex_;
 
-    address::SocketAddr address_;
+    address::SocketAddr dest_address_;
 
     core::Optional<packet::ConcurrentQueue> endpoint_queues_[address::Iface_Max];
     core::Atomic<packet::IReader*> endpoint_readers_[address::Iface_Max];

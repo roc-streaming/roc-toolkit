@@ -16,7 +16,6 @@
 #include "roc_audio/iframe_encoder.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/packetizer.h"
-#include "roc_audio/resampler_map.h"
 #include "roc_audio/resampler_writer.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/iarena.h"
@@ -68,8 +67,20 @@ public:
     //! Create control sub-pipeline.
     bool create_control_pipeline(SenderEndpoint* control_endpoint);
 
-    //! Get audio writer.
-    audio::IFrameWriter* writer() const;
+    //! Get frame writer.
+    //! @remarks
+    //!  This way samples reach the pipeline.
+    //!  Most of the processing, like encoding packets, generating redundancy packets,
+    //!  etc, happens during the write operation.
+    audio::IFrameWriter* frame_writer() const;
+
+    //! Route a packet to the session.
+    //! @remarks
+    //!  This way feedback packets from receiver reach sender pipeline.
+    //!  Packets are stored inside internal pipeline queues, and then fetched
+    //!  when frame are passed from frame_writer().
+    ROC_ATTR_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet,
+                                                       core::nanoseconds_t current_time);
 
     //! Refresh pipeline according to current time.
     //! @returns
@@ -90,6 +101,9 @@ private:
     virtual rtcp::SendReport query_send_stream(core::nanoseconds_t report_time);
     virtual status::StatusCode notify_send_stream(packet::stream_source_t recv_source_id,
                                                   const rtcp::RecvReport& recv_report);
+
+    status::StatusCode route_control_packet_(const packet::PacketPtr& packet,
+                                             core::nanoseconds_t current_time);
 
     core::IArena& arena_;
 
@@ -124,9 +138,7 @@ private:
     core::Optional<rtcp::Composer> rtcp_composer_;
     core::Optional<rtcp::Communicator> rtcp_communicator_;
 
-    audio::IFrameWriter* audio_writer_;
-
-    size_t num_sources_;
+    audio::IFrameWriter* frame_writer_;
 
     bool valid_;
 };

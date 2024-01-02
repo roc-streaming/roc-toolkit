@@ -24,21 +24,20 @@ namespace packet {
 class Shipper : public IWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
-    //!  - @p dest_address - destination address that is assigned to the outgoing packets.
-    //!  - @p composer to compose a packet if necessary.
-    //!  - @p writer to write outgoing packet.
-    Shipper(const address::SocketAddr& dest_address,
-            IComposer& composer,
-            IWriter& writer);
+    //!  - @p outbound_address - destination address is assigned to packets
+    //!  - @p outbound_writer - destination writer
+    //!  - @p composer - used to complete composing packets
+    Shipper(const address::SocketAddr& outbound_address,
+            IWriter& outbound_writer,
+            IComposer& composer);
 
     //! Write outgoing packet.
     virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr& packet);
 
 private:
-    const address::SocketAddr dest_address_;
-
+    const address::SocketAddr outbound_address_;
+    IWriter& outbound_writer_;
     IComposer& composer_;
-    IWriter& writer_;
 };
 
 } // namespace packet

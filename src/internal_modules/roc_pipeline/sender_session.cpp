@@ -7,13 +7,10 @@
  */
 
 #include "roc_pipeline/sender_session.h"
-#include "roc_audio/packetizer.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/time.h"
 #include "roc_fec/codec_map.h"
-#include "roc_rtcp/communicator.h"
-#include "roc_rtp/identity.h"
 
 namespace roc {
 namespace pipeline {
@@ -30,8 +27,7 @@ SenderSession::SenderSession(const SenderConfig& config,
     , packet_factory_(packet_factory)
     , byte_buffer_factory_(byte_buffer_factory)
     , sample_buffer_factory_(sample_buffer_factory)
-    , audio_writer_(NULL)
-    , num_sources_(0)
+    , frame_writer_(NULL)
     , valid_(false) {
     identity_.reset(new (identity_) rtp::Identity());
     if (!identity_ || !identity_->is_valid()) {
@@ -49,16 +45,8 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
                                               SenderEndpoint* repair_endpoint) {
     roc_panic_if(!is_valid());
 
-    roc_panic_if(audio_writer_);
     roc_panic_if(!source_endpoint);
-
-    if (source_endpoint) {
-        num_sources_++;
-    }
-
-    if (repair_endpoint) {
-        num_sources_++;
-    }
+    roc_panic_if(frame_writer_);
 
     const rtp::Encoding* encoding = encoding_map_.find_by_pt(config_.payload_type);
     if (!encoding) {
@@ -71,12 +59,14 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
     }
     packet::IWriter* pwriter = router_.get();
 
-    if (!router_->add_route(source_endpoint->writer(), packet::Packet::FlagAudio)) {
+    if (!router_->add_route(source_endpoint->outbound_writer(),
+                            packet::Packet::FlagAudio)) {
         return false;
     }
 
     if (repair_endpoint) {
-        if (!router_->add_route(repair_endpoint->writer(), packet::Packet::FlagRepair)) {
+        if (!router_->add_route(repair_endpoint->outbound_writer(),
+                                packet::Packet::FlagRepair)) {
             return false;
         }
 
@@ -175,7 +165,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         awriter = resampler_writer_.get();
     }
 
-    audio_writer_ = awriter;
+    frame_writer_ = awriter;
 
     return true;
 }
@@ -183,8 +173,8 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
 bool SenderSession::create_control_pipeline(SenderEndpoint* control_endpoint) {
     roc_panic_if(!is_valid());
 
-    roc_panic_if(rtcp_communicator_);
     roc_panic_if(!control_endpoint);
+    roc_panic_if(rtcp_communicator_);
 
     rtcp_composer_.reset(new (rtcp_composer_) rtcp::Composer());
     if (!rtcp_composer_) {
@@ -192,37 +182,48 @@ bool SenderSession::create_control_pipeline(SenderEndpoint* control_endpoint) {
     }
 
     rtcp_communicator_.reset(new (rtcp_communicator_) rtcp::Communicator(
-        config_.rtcp_config, *this, &control_endpoint->writer(), *rtcp_composer_,
+        config_.rtcp_config, *this, control_endpoint->outbound_writer(), *rtcp_composer_,
         packet_factory_, byte_buffer_factory_, arena_));
     if (!rtcp_communicator_ || !rtcp_communicator_->is_valid()) {
+        rtcp_communicator_.reset();
         return false;
     }
 
     return true;
 }
 
-audio::IFrameWriter* SenderSession::writer() const {
+audio::IFrameWriter* SenderSession::frame_writer() const {
     roc_panic_if(!is_valid());
 
-    return audio_writer_;
+    return frame_writer_;
+}
+
+status::StatusCode SenderSession::route_packet(const packet::PacketPtr& packet,
+                                               core::nanoseconds_t current_time) {
+    roc_panic_if(!is_valid());
+
+    if (packet->has_flags(packet::Packet::FlagControl)) {
+        return route_control_packet_(packet, current_time);
+    }
+
+    roc_panic("sender session: unexpected non-control packet");
 }
 
 core::nanoseconds_t SenderSession::refresh(core::nanoseconds_t current_time) {
     roc_panic_if(!is_valid());
 
-    if (!audio_writer_ || !rtcp_communicator_) {
-        return 0;
+    if (rtcp_communicator_) {
+        if (has_send_stream()) {
+            const status::StatusCode code =
+                rtcp_communicator_->generate_reports(current_time);
+            // TODO(gh-183): forward status
+            roc_panic_if(code != status::StatusOK);
+        }
+
+        return rtcp_communicator_->generation_deadline(current_time);
     }
 
-    if (has_send_stream()) {
-        const status::StatusCode code =
-            rtcp_communicator_->generate_reports(current_time);
-
-        // TODO(gh-183): forward status
-        roc_panic_if(code != status::StatusOK);
-    }
-
-    return rtcp_communicator_->generation_deadline(current_time);
+    return 0;
 }
 
 SenderSessionMetrics SenderSession::get_metrics() const {
@@ -275,6 +276,17 @@ SenderSession::notify_send_stream(packet::stream_source_t recv_source_id,
 
     // TODO(gh-14): notify FeedbackMonitor
     return status::StatusOK;
+}
+
+status::StatusCode
+SenderSession::route_control_packet_(const packet::PacketPtr& packet,
+                                     core::nanoseconds_t current_time) {
+    if (!rtcp_communicator_) {
+        roc_panic("sender session: rtcp communicator is null");
+    }
+
+    // This will invoke IStreamController methods implemented by us.
+    return rtcp_communicator_->process_packet(packet, current_time);
 }
 
 } // namespace pipeline

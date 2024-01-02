@@ -25,6 +25,7 @@
 #include "roc_pipeline/metrics.h"
 #include "roc_pipeline/sender_endpoint.h"
 #include "roc_pipeline/sender_session.h"
+#include "roc_pipeline/state_tracker.h"
 
 namespace roc {
 namespace pipeline {
@@ -39,6 +40,7 @@ class SenderSlot : public core::RefCounted<SenderSlot, core::ArenaAllocation>,
 public:
     //! Initialize.
     SenderSlot(const SenderConfig& config,
+               StateTracker& state_tracker,
                const rtp::EncodingMap& encoding_map,
                audio::Fanout& fanout,
                packet::PacketFactory& packet_factory,
@@ -57,12 +59,8 @@ public:
     //! Add endpoint.
     SenderEndpoint* add_endpoint(address::Interface iface,
                                  address::Protocol proto,
-                                 const address::SocketAddr& dest_address,
-                                 packet::IWriter& dest_writer);
-
-    //! Get audio writer.
-    //! @returns NULL if slot is not ready.
-    audio::IFrameWriter* writer();
+                                 const address::SocketAddr& outbound_address,
+                                 packet::IWriter& outbound_writer);
 
     //! Refresh pipeline according to current time.
     //! @returns
@@ -76,14 +74,14 @@ public:
 
 private:
     SenderEndpoint* create_source_endpoint_(address::Protocol proto,
-                                            const address::SocketAddr& dest_address,
-                                            packet::IWriter& dest_writer);
+                                            const address::SocketAddr& outbound_address,
+                                            packet::IWriter& outbound_writer);
     SenderEndpoint* create_repair_endpoint_(address::Protocol proto,
-                                            const address::SocketAddr& dest_address,
-                                            packet::IWriter& dest_writer);
+                                            const address::SocketAddr& outbound_address,
+                                            packet::IWriter& outbound_writer);
     SenderEndpoint* create_control_endpoint_(address::Protocol proto,
-                                             const address::SocketAddr& dest_address,
-                                             packet::IWriter& dest_writer);
+                                             const address::SocketAddr& outbound_address,
+                                             packet::IWriter& outbound_writer);
 
     const SenderConfig& config_;
 
@@ -93,6 +91,7 @@ private:
     core::Optional<SenderEndpoint> repair_endpoint_;
     core::Optional<SenderEndpoint> control_endpoint_;
 
+    StateTracker& state_tracker_;
     SenderSession session_;
 
     bool valid_;

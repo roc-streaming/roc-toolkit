@@ -16,7 +16,6 @@
 #include "roc_packet/queue.h"
 #include "roc_pipeline/receiver_endpoint.h"
 #include "roc_pipeline/receiver_session_group.h"
-#include "roc_pipeline/receiver_state.h"
 #include "roc_status/status_code.h"
 
 namespace roc {
@@ -37,40 +36,39 @@ enum { PacketSz = 512 };
 
 core::HeapArena arena;
 packet::PacketFactory packet_factory(arena);
-core::BufferFactory<uint8_t> buffer_factory(arena, PacketSz);
-core::BufferFactory<audio::sample_t> sample_factory(arena, PacketSz);
+core::BufferFactory<uint8_t> byte_buffer_factory(arena, PacketSz);
+core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, PacketSz);
+rtp::EncodingMap encoding_map(arena);
 
 } // namespace
 
 TEST_GROUP(receiver_endpoint) {};
 
 TEST(receiver_endpoint, valid) {
-    rtp::EncodingMap encoding_map(arena);
-    audio::Mixer mixer(sample_factory, false);
+    audio::Mixer mixer(sample_buffer_factory, false);
 
-    ReceiverState receiver_state;
+    StateTracker state_tracker;
     ReceiverConfig receiver_config;
-    ReceiverSessionGroup session_group(receiver_config, receiver_state, mixer,
-                                       encoding_map, packet_factory, buffer_factory,
-                                       sample_factory, arena);
+    ReceiverSessionGroup session_group(receiver_config, state_tracker, mixer,
+                                       encoding_map, packet_factory, byte_buffer_factory,
+                                       sample_buffer_factory, arena);
 
-    ReceiverEndpoint endpoint(address::Proto_RTP, receiver_state, session_group,
-                              encoding_map, arena);
+    ReceiverEndpoint endpoint(address::Proto_RTP, state_tracker, session_group,
+                              encoding_map, NULL, NULL, arena);
     CHECK(endpoint.is_valid());
 }
 
 TEST(receiver_endpoint, invalid_proto) {
-    rtp::EncodingMap encoding_map(arena);
-    audio::Mixer mixer(sample_factory, false);
+    audio::Mixer mixer(sample_buffer_factory, false);
 
-    ReceiverState receiver_state;
+    StateTracker state_tracker;
     ReceiverConfig receiver_config;
-    ReceiverSessionGroup session_group(receiver_config, receiver_state, mixer,
-                                       encoding_map, packet_factory, buffer_factory,
-                                       sample_factory, arena);
+    ReceiverSessionGroup session_group(receiver_config, state_tracker, mixer,
+                                       encoding_map, packet_factory, byte_buffer_factory,
+                                       sample_buffer_factory, arena);
 
-    ReceiverEndpoint endpoint(address::Proto_None, receiver_state, session_group,
-                              encoding_map, arena);
+    ReceiverEndpoint endpoint(address::Proto_None, state_tracker, session_group,
+                              encoding_map, NULL, NULL, arena);
     CHECK(!endpoint.is_valid());
 }
 
@@ -85,17 +83,16 @@ TEST(receiver_endpoint, no_memory) {
     NoMemArena nomem_arena;
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(protos); ++n) {
-        rtp::EncodingMap encoding_map(nomem_arena);
-        audio::Mixer mixer(sample_factory, false);
+        audio::Mixer mixer(sample_buffer_factory, false);
 
-        ReceiverState receiver_state;
+        StateTracker state_tracker;
         ReceiverConfig receiver_config;
-        ReceiverSessionGroup session_group(receiver_config, receiver_state, mixer,
-                                           encoding_map, packet_factory, buffer_factory,
-                                           sample_factory, nomem_arena);
+        ReceiverSessionGroup session_group(
+            receiver_config, state_tracker, mixer, encoding_map, packet_factory,
+            byte_buffer_factory, sample_buffer_factory, nomem_arena);
 
-        ReceiverEndpoint endpoint(protos[n], receiver_state, session_group, encoding_map,
-                                  nomem_arena);
+        ReceiverEndpoint endpoint(protos[n], state_tracker, session_group, encoding_map,
+                                  NULL, NULL, nomem_arena);
 
         CHECK(!endpoint.is_valid());
     }

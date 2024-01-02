@@ -80,11 +80,11 @@ private:
         netio::UdpConfig config;
         netio::UdpConfig orig_config;
         netio::NetworkLoop::PortHandle handle;
-        packet::IWriter* writer;
+        packet::IWriter* outbound_writer;
 
         Port()
             : handle(NULL)
-            , writer(NULL) {
+            , outbound_writer(NULL) {
         }
     };
 

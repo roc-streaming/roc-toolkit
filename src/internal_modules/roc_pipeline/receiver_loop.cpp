@@ -9,7 +9,6 @@
 #include "roc_pipeline/receiver_loop.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_core/shared_ptr.h"
 #include "roc_core/thread.h"
 
 namespace roc {
@@ -20,7 +19,8 @@ ReceiverLoop::Task::Task()
     , slot_(NULL)
     , iface_(address::Iface_Invalid)
     , proto_(address::Proto_None)
-    , writer_(NULL)
+    , outbound_writer_(NULL)
+    , inbound_writer_(NULL)
     , slot_metrics_(NULL)
     , sess_metrics_(NULL)
     , sess_metrics_size_(NULL) {
@@ -62,7 +62,9 @@ ReceiverLoop::Tasks::QuerySlot::QuerySlot(SlotHandle slot,
 
 ReceiverLoop::Tasks::AddEndpoint::AddEndpoint(SlotHandle slot,
                                               address::Interface iface,
-                                              address::Protocol proto) {
+                                              address::Protocol proto,
+                                              const address::SocketAddr* outbound_address,
+                                              packet::IWriter* outbound_writer) {
     func_ = &ReceiverLoop::task_add_endpoint_;
     if (!slot) {
         roc_panic("receiver loop: slot handle is null");
@@ -70,14 +72,18 @@ ReceiverLoop::Tasks::AddEndpoint::AddEndpoint(SlotHandle slot,
     slot_ = (ReceiverSlot*)slot;
     iface_ = iface;
     proto_ = proto;
+    if (outbound_address) {
+        outbound_address_ = *outbound_address;
+    }
+    outbound_writer_ = outbound_writer;
 }
 
-packet::IWriter* ReceiverLoop::Tasks::AddEndpoint::get_writer() const {
+packet::IWriter* ReceiverLoop::Tasks::AddEndpoint::get_inbound_writer() const {
     if (!success()) {
         return NULL;
     }
-    roc_panic_if_not(writer_);
-    return writer_;
+    roc_panic_if_not(inbound_writer_);
+    return inbound_writer_;
 }
 
 ReceiverLoop::ReceiverLoop(IPipelineTaskScheduler& scheduler,
@@ -276,11 +282,12 @@ bool ReceiverLoop::task_query_slot_(Task& task) {
 bool ReceiverLoop::task_add_endpoint_(Task& task) {
     roc_panic_if(!task.slot_);
 
-    ReceiverEndpoint* endpoint = task.slot_->add_endpoint(task.iface_, task.proto_);
+    ReceiverEndpoint* endpoint = task.slot_->add_endpoint(
+        task.iface_, task.proto_, &task.outbound_address_, task.outbound_writer_);
     if (!endpoint) {
         return false;
     }
-    task.writer_ = &endpoint->writer();
+    task.inbound_writer_ = &endpoint->inbound_writer();
     return true;
 }
 

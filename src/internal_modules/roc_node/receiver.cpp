@@ -8,6 +8,7 @@
 
 #include "roc_node/receiver.h"
 #include "roc_address/endpoint_uri_to_str.h"
+#include "roc_address/interface.h"
 #include "roc_address/socket_addr.h"
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
@@ -177,18 +178,6 @@ bool Receiver::bind(slot_index_t slot_index,
         return false;
     }
 
-    pipeline::ReceiverLoop::Tasks::AddEndpoint endpoint_task(slot->handle, iface,
-                                                             uri.proto());
-    if (!pipeline_.schedule_and_wait(endpoint_task)) {
-        roc_log(LogError,
-                "receiver node:"
-                " can't bind %s interface of slot %lu:"
-                " can't add endpoint to pipeline",
-                address::interface_to_str(iface), (unsigned long)slot_index);
-        break_slot_(*slot);
-        return false;
-    }
-
     port.config.bind_address = resolve_task.get_address();
 
     netio::NetworkLoop::Tasks::AddUdpPort port_task(port.config);
@@ -204,15 +193,39 @@ bool Receiver::bind(slot_index_t slot_index,
 
     port.handle = port_task.get_handle();
 
-    if (uri.port() == 0) {
-        // Report back the port number we've selected.
-        if (!uri.set_port(port.config.bind_address.port())) {
-            roc_panic("receiver node: can't set endpoint port");
+    const address::SocketAddr* outbound_address = NULL;
+    packet::IWriter* outbound_writer = NULL;
+
+    if (iface == address::Iface_AudioControl) {
+        netio::NetworkLoop::Tasks::StartUdpSend send_task(port.handle);
+        if (!context().network_loop().schedule_and_wait(send_task)) {
+            roc_log(LogError,
+                    "receiver node:"
+                    " can't bind %s interface of slot %lu:"
+                    " can't start sending on local port",
+                    address::interface_to_str(iface), (unsigned long)slot_index);
+            break_slot_(*slot);
+            return false;
         }
+
+        outbound_address = &port.config.bind_address;
+        outbound_writer = &send_task.get_outbound_writer();
     }
 
-    netio::NetworkLoop::Tasks::StartUdpRecv recv_task(port.handle,
-                                                      *endpoint_task.get_writer());
+    pipeline::ReceiverLoop::Tasks::AddEndpoint endpoint_task(
+        slot->handle, iface, uri.proto(), outbound_address, outbound_writer);
+    if (!pipeline_.schedule_and_wait(endpoint_task)) {
+        roc_log(LogError,
+                "receiver node:"
+                " can't bind %s interface of slot %lu:"
+                " can't add endpoint to pipeline",
+                address::interface_to_str(iface), (unsigned long)slot_index);
+        break_slot_(*slot);
+        return false;
+    }
+
+    netio::NetworkLoop::Tasks::StartUdpRecv recv_task(
+        port.handle, *endpoint_task.get_inbound_writer());
     if (!context().network_loop().schedule_and_wait(recv_task)) {
         roc_log(LogError,
                 "receiver node:"
@@ -221,6 +234,13 @@ bool Receiver::bind(slot_index_t slot_index,
                 address::interface_to_str(iface), (unsigned long)slot_index);
         break_slot_(*slot);
         return false;
+    }
+
+    if (uri.port() == 0) {
+        // Report back the port number we've selected.
+        if (!uri.set_port(slot->ports[iface].config.bind_address.port())) {
+            roc_panic("receiver node: can't set endpoint port");
+        }
     }
 
     update_compatibility_(iface, uri);

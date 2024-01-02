@@ -92,8 +92,8 @@ bool SenderEncoder::activate(address::Interface iface, address::Protocol proto) 
     endpoint_queues_[iface].reset(new (endpoint_queues_[iface]) packet::ConcurrentQueue(
         packet::ConcurrentQueue::NonBlocking));
 
-    pipeline::SenderLoop::Tasks::AddEndpoint endpoint_task(slot_, iface, proto, address_,
-                                                           *endpoint_queues_[iface]);
+    pipeline::SenderLoop::Tasks::AddEndpoint endpoint_task(
+        slot_, iface, proto, dest_address_, *endpoint_queues_[iface]);
     if (!pipeline_.schedule_and_wait(endpoint_task)) {
         roc_log(LogError,
                 "sender encoder node:"

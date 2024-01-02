@@ -11,18 +11,18 @@
 namespace roc {
 namespace packet {
 
-Shipper::Shipper(const address::SocketAddr& dest_address,
-                 IComposer& composer,
-                 IWriter& writer)
-    : dest_address_(dest_address)
-    , composer_(composer)
-    , writer_(writer) {
+Shipper::Shipper(const address::SocketAddr& outbound_address,
+                 IWriter& outbound_writer,
+                 IComposer& composer)
+    : outbound_address_(outbound_address)
+    , outbound_writer_(outbound_writer)
+    , composer_(composer) {
 }
 
 status::StatusCode Shipper::write(const PacketPtr& packet) {
-    if (dest_address_.has_host_port()) {
+    if (outbound_address_) {
         packet->add_flags(Packet::FlagUDP);
-        packet->udp()->dst_addr = dest_address_;
+        packet->udp()->dst_addr = outbound_address_;
     }
 
     if (!packet->has_flags(packet::Packet::FlagPrepared)) {
@@ -37,7 +37,7 @@ status::StatusCode Shipper::write(const PacketPtr& packet) {
         packet->add_flags(Packet::FlagComposed);
     }
 
-    return writer_.write(packet);
+    return outbound_writer_.write(packet);
 }
 
 } // namespace packet

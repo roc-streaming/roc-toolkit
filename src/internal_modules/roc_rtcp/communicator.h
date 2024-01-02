@@ -59,7 +59,7 @@ public:
     //! Initialize.
     Communicator(const Config& config,
                  IStreamController& stream_controller,
-                 packet::IWriter* packet_writer,
+                 packet::IWriter& packet_writer,
                  packet::IComposer& packet_composer,
                  packet::PacketFactory& packet_factory,
                  core::BufferFactory<uint8_t>& buffer_factory,
@@ -136,7 +136,7 @@ private:
     packet::PacketFactory& packet_factory_;
     core::BufferFactory<uint8_t>& buffer_factory_;
 
-    packet::IWriter* packet_writer_;
+    packet::IWriter& packet_writer_;
     packet::IComposer& packet_composer_;
 
     const Config config_;

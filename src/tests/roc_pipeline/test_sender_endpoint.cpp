@@ -9,10 +9,14 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_address/protocol.h"
+#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_pipeline/sender_endpoint.h"
+#include "roc_pipeline/sender_session.h"
+#include "roc_pipeline/state_tracker.h"
+#include "roc_rtp/encoding_map.h"
 #include "roc_status/status_code.h"
 
 namespace roc {
@@ -29,6 +33,14 @@ struct NoMemArena : public core::IArena, public core::NonCopyable<> {
     }
 };
 
+enum { PacketSz = 512 };
+
+core::HeapArena arena;
+packet::PacketFactory packet_factory(arena);
+core::BufferFactory<uint8_t> byte_buffer_factory(arena, PacketSz);
+core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, PacketSz);
+rtp::EncodingMap encoding_map(arena);
+
 } // namespace
 
 TEST_GROUP(sender_endpoint) {};
@@ -36,9 +48,14 @@ TEST_GROUP(sender_endpoint) {};
 TEST(sender_endpoint, valid) {
     address::SocketAddr addr;
     packet::Queue queue;
-    core::HeapArena arena;
 
-    SenderEndpoint endpoint(address::Proto_RTP, addr, queue, arena);
+    SenderConfig config;
+    StateTracker state_tracker;
+    SenderSession session(config, encoding_map, packet_factory, byte_buffer_factory,
+                          sample_buffer_factory, arena);
+
+    SenderEndpoint endpoint(address::Proto_RTP, state_tracker, session, addr, queue,
+                            arena);
     CHECK(endpoint.is_valid());
 }
 
@@ -47,7 +64,13 @@ TEST(sender_endpoint, invalid_proto) {
     packet::Queue queue;
     core::HeapArena arena;
 
-    SenderEndpoint endpoint(address::Proto_None, addr, queue, arena);
+    SenderConfig config;
+    StateTracker state_tracker;
+    SenderSession session(config, encoding_map, packet_factory, byte_buffer_factory,
+                          sample_buffer_factory, arena);
+
+    SenderEndpoint endpoint(address::Proto_None, state_tracker, session, addr, queue,
+                            arena);
     CHECK(!endpoint.is_valid());
 }
 
@@ -65,7 +88,13 @@ TEST(sender_endpoint, no_memory) {
         address::SocketAddr addr;
         packet::Queue queue;
 
-        SenderEndpoint endpoint(protos[n], addr, queue, nomem_arena);
+        SenderConfig config;
+        StateTracker state_tracker;
+        SenderSession session(config, encoding_map, packet_factory, byte_buffer_factory,
+                              sample_buffer_factory, arena);
+
+        SenderEndpoint endpoint(protos[n], state_tracker, session, addr, queue,
+                                nomem_arena);
         CHECK(!endpoint.is_valid());
     }
 }

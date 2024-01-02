@@ -18,6 +18,7 @@
 #include "roc_core/mutex.h"
 #include "roc_node/context.h"
 #include "roc_node/node.h"
+#include "roc_packet/concurrent_queue.h"
 #include "roc_pipeline/ipipeline_task_scheduler.h"
 #include "roc_pipeline/receiver_loop.h"
 #include "roc_status/status_code.h"
@@ -69,6 +70,9 @@ private:
 
     core::Mutex mutex_;
 
+    address::SocketAddr dest_address_;
+
+    core::Optional<packet::ConcurrentQueue> endpoint_queues_[address::Iface_Max];
     core::Atomic<packet::IWriter*> endpoint_writers_[address::Iface_Max];
 
     pipeline::ReceiverLoop pipeline_;

@@ -19,7 +19,7 @@ TranscoderSource::TranscoderSource(const TranscoderConfig& config,
                                    core::BufferFactory<audio::sample_t>& buffer_factory,
                                    core::IArena& arena)
     : input_source_(input_source)
-    , audio_reader_(NULL)
+    , frame_reader_(NULL)
     , config_(config)
     , valid_(false) {
     audio::IFrameReader* areader = &input_source_;
@@ -90,7 +90,7 @@ TranscoderSource::TranscoderSource(const TranscoderConfig& config,
         return;
     }
 
-    audio_reader_ = areader;
+    frame_reader_ = areader;
     valid_ = true;
 }
 
@@ -141,7 +141,7 @@ void TranscoderSource::reclock(core::nanoseconds_t timestamp) {
 bool TranscoderSource::read(audio::Frame& frame) {
     roc_panic_if(!is_valid());
 
-    return audio_reader_->read(frame);
+    return frame_reader_->read(frame);
 }
 
 } // namespace pipeline

@@ -8,6 +8,7 @@
 
 #include "roc_rtcp/print_packet.h"
 #include "roc_core/printer.h"
+#include "roc_packet/ntp.h"
 #include "roc_rtcp/traverser.h"
 
 namespace roc {
@@ -55,8 +56,10 @@ void print_reception_block(core::Printer& p, const header::ReceptionReportBlock&
     p.writef("|-- cum_loss: %d\n", (int)blk.cum_loss());
     p.writef("|-- last_seqnum: %lu\n", (unsigned long)blk.last_seqnum());
     p.writef("|-- jitter: %lu\n", (unsigned long)blk.jitter());
-    p.writef("|-- lsr: %lu\n", (unsigned long)blk.last_sr());
-    p.writef("|-- dlsr: %lu\n", (unsigned long)blk.delay_last_sr());
+    p.writef("|-- lsr: %lu (unix %lld)\n", (unsigned long)blk.last_sr(),
+             (long long)packet::ntp_2_unix(blk.last_sr()));
+    p.writef("|-- dlsr: %lu (unix %lld)\n", (unsigned long)blk.delay_last_sr(),
+             (long long)packet::ntp_2_unix(blk.delay_last_sr()));
 }
 
 void print_rr(core::Printer& p, const header::ReceiverReportPacket& rr) {
@@ -79,8 +82,9 @@ void print_sr(core::Printer& p, const header::SenderReportPacket& sr) {
 
     p.writef("|- body:\n");
     p.writef("|-- ssrc: %lu\n", (unsigned long)sr.ssrc());
-    p.writef("|-- ntp_timestamp: %llu (0x%llx)\n", (unsigned long long)sr.ntp_timestamp(),
-             (unsigned long long)sr.ntp_timestamp());
+    p.writef("|-- ntp_timestamp: %llu (unix %lld)\n",
+             (unsigned long long)sr.ntp_timestamp(),
+             (long long)packet::ntp_2_unix(sr.ntp_timestamp()));
     p.writef("|-- rtp_timestamp: %llu\n", (unsigned long long)sr.rtp_timestamp());
     p.writef("|-- packet_count: %d\n", (int)sr.packet_count());
     p.writef("|-- byte_count: %d\n", (int)sr.byte_count());
@@ -104,9 +108,9 @@ void print_xr_rrtr(core::Printer& p, const header::XrRrtrBlock& blk) {
     print_xr_block_header(p, blk.header());
 
     p.writef("|-- block body:\n");
-    p.writef("|--- ntp_timestamp: %llu (0x%llx)\n",
+    p.writef("|--- ntp_timestamp: %llu (unix %lld)\n",
              (unsigned long long)blk.ntp_timestamp(),
-             (unsigned long long)blk.ntp_timestamp());
+             (long long)packet::ntp_2_unix(blk.ntp_timestamp()));
 }
 
 void print_xr_dlrr(core::Printer& p, const header::XrDlrrBlock& blk) {
@@ -119,8 +123,10 @@ void print_xr_dlrr(core::Printer& p, const header::XrDlrrBlock& blk) {
 
         p.writef("|-- subblock:\n");
         p.writef("|--- ssrc: %lu\n", (unsigned long)sub_blk.ssrc());
-        p.writef("|--- lrr: %lu\n", (unsigned long)sub_blk.last_rr());
-        p.writef("|--- dlrr: %lu\n", (unsigned long)sub_blk.delay_last_rr());
+        p.writef("|--- lrr: %lu (unix %lld)\n", (unsigned long)sub_blk.last_rr(),
+                 (long long)packet::ntp_2_unix(sub_blk.last_rr()));
+        p.writef("|--- dlrr: %lu (unix %lld)\n", (unsigned long)sub_blk.delay_last_rr(),
+                 (long long)packet::ntp_2_unix(sub_blk.delay_last_rr()));
     }
 }
 

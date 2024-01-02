@@ -10,8 +10,6 @@
 #include "roc_audio/resampler_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_core/stddefs.h"
-#include "roc_sndio/device_state.h"
 
 namespace roc {
 namespace pipeline {
@@ -28,7 +26,7 @@ SenderSink::SenderSink(const SenderConfig& config,
     , byte_buffer_factory_(byte_buffer_factory)
     , sample_buffer_factory_(sample_buffer_factory)
     , arena_(arena)
-    , audio_writer_(NULL)
+    , frame_writer_(NULL)
     , valid_(false) {
     audio::IFrameWriter* awriter = &fanout_;
 
@@ -45,7 +43,7 @@ SenderSink::SenderSink(const SenderConfig& config,
         return;
     }
 
-    audio_writer_ = awriter;
+    frame_writer_ = awriter;
     valid_ = true;
 }
 
@@ -58,9 +56,9 @@ SenderSlot* SenderSink::create_slot() {
 
     roc_log(LogInfo, "sender sink: adding slot");
 
-    core::SharedPtr<SenderSlot> slot =
-        new (arena_) SenderSlot(config_, encoding_map_, fanout_, packet_factory_,
-                                byte_buffer_factory_, sample_buffer_factory_, arena_);
+    core::SharedPtr<SenderSlot> slot = new (arena_)
+        SenderSlot(config_, state_tracker_, encoding_map_, fanout_, packet_factory_,
+                   byte_buffer_factory_, sample_buffer_factory_, arena_);
 
     if (!slot || !slot->is_valid()) {
         roc_log(LogError, "sender sink: can't create slot");
@@ -80,7 +78,20 @@ void SenderSink::delete_slot(SenderSlot* slot) {
     slots_.remove(*slot);
 }
 
+size_t SenderSink::num_sessions() const {
+    roc_panic_if(!is_valid());
+
+    return state_tracker_.num_active_sessions();
+}
+
 core::nanoseconds_t SenderSink::refresh(core::nanoseconds_t current_time) {
+    roc_panic_if(!is_valid());
+
+    roc_panic_if_msg(current_time <= 0,
+                     "sender sink: invalid timestamp:"
+                     " expected positive value, got %lld",
+                     (long long)current_time);
+
     core::nanoseconds_t next_deadline = 0;
 
     for (core::SharedPtr<SenderSlot> slot = slots_.front(); slot;
@@ -104,7 +115,9 @@ sndio::DeviceType SenderSink::type() const {
 }
 
 sndio::DeviceState SenderSink::state() const {
-    return sndio::DeviceState_Active;
+    roc_panic_if(!is_valid());
+
+    return state_tracker_.get_state();
 }
 
 void SenderSink::pause() {
@@ -138,7 +151,7 @@ bool SenderSink::has_clock() const {
 void SenderSink::write(audio::Frame& frame) {
     roc_panic_if(!is_valid());
 
-    audio_writer_->write(frame);
+    frame_writer_->write(frame);
 }
 
 } // namespace pipeline

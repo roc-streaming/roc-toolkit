@@ -10,17 +10,14 @@
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_packet/units.h"
-#include "roc_rtcp/communicator.h"
 #include "roc_status/code_to_str.h"
-#include "roc_status/status_code.h"
 
 namespace roc {
 namespace pipeline {
 
 ReceiverSessionGroup::ReceiverSessionGroup(
     const ReceiverConfig& receiver_config,
-    ReceiverState& receiver_state,
+    StateTracker& state_tracker,
     audio::Mixer& mixer,
     const rtp::EncodingMap& encoding_map,
     packet::PacketFactory& packet_factory,
@@ -33,7 +30,7 @@ ReceiverSessionGroup::ReceiverSessionGroup(
     , sample_buffer_factory_(sample_buffer_factory)
     , encoding_map_(encoding_map)
     , mixer_(mixer)
-    , receiver_state_(receiver_state)
+    , state_tracker_(state_tracker)
     , receiver_config_(receiver_config)
     , session_router_(arena)
     , valid_(false) {
@@ -53,11 +50,34 @@ bool ReceiverSessionGroup::is_valid() const {
     return valid_;
 }
 
+bool ReceiverSessionGroup::create_control_pipeline(ReceiverEndpoint* control_endpoint) {
+    roc_panic_if(!is_valid());
+
+    roc_panic_if(!control_endpoint);
+    roc_panic_if(!control_endpoint->outbound_writer());
+    roc_panic_if(rtcp_communicator_);
+
+    rtcp_composer_.reset(new (rtcp_composer_) rtcp::Composer());
+    if (!rtcp_composer_) {
+        return false;
+    }
+
+    rtcp_communicator_.reset(new (rtcp_communicator_) rtcp::Communicator(
+        receiver_config_.common.rtcp_config, *this, *control_endpoint->outbound_writer(),
+        *rtcp_composer_, packet_factory_, byte_buffer_factory_, arena_));
+    if (!rtcp_communicator_ || !rtcp_communicator_->is_valid()) {
+        rtcp_communicator_.reset();
+        return false;
+    }
+
+    return true;
+}
+
 status::StatusCode ReceiverSessionGroup::route_packet(const packet::PacketPtr& packet,
                                                       core::nanoseconds_t current_time) {
     roc_panic_if(!is_valid());
 
-    if (packet->rtcp()) {
+    if (packet->has_flags(packet::Packet::FlagControl)) {
         return route_control_packet_(packet, current_time);
     }
 
@@ -71,6 +91,17 @@ ReceiverSessionGroup::refresh_sessions(core::nanoseconds_t current_time) {
     core::SharedPtr<ReceiverSession> curr, next;
 
     core::nanoseconds_t next_deadline = 0;
+
+    if (rtcp_communicator_) {
+        // This will invoke IStreamController methods implemented by us,
+        // in particular query_recv_streams().
+        const status::StatusCode code =
+            rtcp_communicator_->generate_reports(current_time);
+        // TODO(gh-183): forward status
+        roc_panic_if(code != status::StatusOK);
+
+        next_deadline = rtcp_communicator_->generation_deadline(current_time);
+    }
 
     for (curr = sessions_.front(); curr; curr = next) {
         next = sessions_.nextof(*curr);
@@ -267,27 +298,17 @@ ReceiverSessionGroup::route_transport_packet_(const packet::PacketPtr& packet) {
 status::StatusCode
 ReceiverSessionGroup::route_control_packet_(const packet::PacketPtr& packet,
                                             core::nanoseconds_t current_time) {
-    if (!rtcp_composer_) {
-        rtcp_composer_.reset(new (rtcp_composer_) rtcp::Composer());
-    }
-
     if (!rtcp_communicator_) {
-        rtcp_communicator_.reset(new (rtcp_communicator_) rtcp::Communicator(
-            receiver_config_.common.rtcp_config, *this, NULL, *rtcp_composer_,
-            packet_factory_, byte_buffer_factory_, arena_));
+        roc_panic("session group: rtcp communicator is null");
     }
 
-    if (!rtcp_communicator_->is_valid()) {
-        // TODO(gh-183): return status
-        return status::StatusOK;
-    }
-
-    // This will invoke IStreamController methods implemented by us.
+    // This will invoke IStreamController methods implemented by us,
+    // in particular notify_recv_stream() and maybe halt_recv_stream().
     return rtcp_communicator_->process_packet(packet, current_time);
 }
 
 bool ReceiverSessionGroup::can_create_session_(const packet::PacketPtr& packet) {
-    if (packet->flags() & packet::Packet::FlagRepair) {
+    if (packet->has_flags(packet::Packet::FlagRepair)) {
         roc_log(LogDebug, "session group: ignoring repair packet for unknown session");
         return false;
     }
@@ -351,10 +372,10 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
         return status::StatusOK;
     }
 
-    mixer_.add_input(sess->reader());
+    mixer_.add_input(sess->frame_reader());
     sessions_.push_back(*sess);
 
-    receiver_state_.add_sessions(+1);
+    state_tracker_.add_active_sessions(+1);
 
     return status::StatusOK;
 }
@@ -362,11 +383,11 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
 void ReceiverSessionGroup::remove_session_(core::SharedPtr<ReceiverSession> sess) {
     roc_log(LogInfo, "session group: removing session");
 
-    mixer_.remove_input(sess->reader());
+    mixer_.remove_input(sess->frame_reader());
     sessions_.remove(*sess);
 
     session_router_.remove_session(sess);
-    receiver_state_.add_sessions(-1);
+    state_tracker_.add_active_sessions(-1);
 }
 
 void ReceiverSessionGroup::remove_all_sessions_() {

@@ -83,7 +83,7 @@ private:
 
     core::Optional<audio::ProfilingWriter> profiler_;
 
-    audio::IFrameWriter* audio_writer_;
+    audio::IFrameWriter* frame_writer_;
 
     const TranscoderConfig config_;
 

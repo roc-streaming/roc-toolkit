@@ -23,7 +23,7 @@ namespace roc {
 namespace pipeline {
 namespace test {
 
-// Read audio frames from source and validate
+// Read audio frames from source and validate.
 class FrameReader : public core::NonCopyable<> {
 public:
     FrameReader(sndio::ISource& source,
@@ -32,10 +32,19 @@ public:
         , buffer_factory_(buffer_factory)
         , offset_(0)
         , abs_offset_(0)
-        , refresh_ts_(0)
+        // By default, we set base_cts_ to some non-zero value, so that if base_capture_ts
+        // is never provided to methods, refresh_ts() will still produce valid non-zero
+        // CTS even in tests that don't bother about timestamps. However, if a test
+        // provides specific value for base_capture_ts, default value is overwritten.
+        , base_cts_(core::Second)
+        , refresh_ts_offset_(0)
         , last_capture_ts_(0) {
     }
 
+    // Read num_samples samples.
+    // Expect specific value of each sample (nth_sample() * num_session).
+    // If base_capture_ts is -1, expect zero CTS, otherwise expect
+    // CTS = base_capture_ts + sample offset.
     void read_samples(size_t num_samples,
                       size_t num_sessions,
                       const audio::SampleSpec& sample_spec,
@@ -56,11 +65,17 @@ public:
             offset_++;
         }
         abs_offset_ += num_samples;
+        refresh_ts_offset_ = sample_spec.samples_per_chan_2_ns(abs_offset_);
 
-        refresh_ts_ = (base_capture_ts >= 0 ? base_capture_ts : 0)
-            + sample_spec.samples_per_chan_2_ns(abs_offset_);
+        if (base_capture_ts > 0) {
+            base_cts_ = base_capture_ts;
+        }
     }
 
+    // Read num_samples samples.
+    // Expect any non-zero values.
+    // If base_capture_ts is -1, expect zero CTS, otherwise expect
+    // CTS = base_capture_ts + sample offset.
     void read_nonzero_samples(size_t num_samples,
                               const audio::SampleSpec& sample_spec,
                               core::nanoseconds_t base_capture_ts = -1) {
@@ -78,11 +93,17 @@ public:
         }
         CHECK(non_zero > 0);
         abs_offset_ += num_samples;
+        refresh_ts_offset_ = sample_spec.samples_per_chan_2_ns(abs_offset_);
 
-        refresh_ts_ = (base_capture_ts >= 0 ? base_capture_ts : 0)
-            + sample_spec.samples_per_chan_2_ns(abs_offset_);
+        if (base_capture_ts > 0) {
+            base_cts_ = base_capture_ts;
+        }
     }
 
+    // Read num_samples samples.
+    // Expect all zero values.
+    // If base_capture_ts is -1, expect zero CTS, otherwise expect
+    // CTS = base_capture_ts + sample offset.
     void read_zero_samples(size_t num_samples,
                            const audio::SampleSpec& sample_spec,
                            core::nanoseconds_t base_capture_ts = -1) {
@@ -96,22 +117,32 @@ public:
             DOUBLES_EQUAL(0.0, (double)frame.samples()[n], SampleEpsilon);
         }
         abs_offset_ += num_samples;
+        refresh_ts_offset_ = sample_spec.samples_per_chan_2_ns(abs_offset_);
 
-        refresh_ts_ = (base_capture_ts >= 0 ? base_capture_ts : 0)
-            + sample_spec.samples_per_chan_2_ns(abs_offset_);
-    }
-
-    core::nanoseconds_t refresh_ts(core::nanoseconds_t base_capture_ts = -1) {
-        if (refresh_ts_ == 0 && base_capture_ts > 0) {
-            refresh_ts_ = base_capture_ts;
+        if (base_capture_ts > 0) {
+            base_cts_ = base_capture_ts;
         }
-        return refresh_ts_;
     }
 
+    // Get timestamp to be passed to refresh().
+    // If base_capture_ts is -1, returns some non-zero base + sample offset,
+    // otherwise returns base_capture_ts + sample offset.
+    core::nanoseconds_t refresh_ts(core::nanoseconds_t base_capture_ts = -1) {
+        if (base_capture_ts > 0) {
+            base_cts_ = base_capture_ts;
+        }
+
+        return base_cts_ + refresh_ts_offset_;
+    }
+
+    // Get CTS that was read from last frame.
     core::nanoseconds_t last_capture_ts() const {
         return last_capture_ts_;
     }
 
+    // Overwrite sample offset.
+    // Normally it starts from zero and is incremented automatically when you read
+    // samples, but here you can set it to arbitrary value.
     void set_offset(size_t offset) {
         offset_ = uint8_t(offset);
         abs_offset_ = offset;
@@ -149,7 +180,8 @@ private:
     uint8_t offset_;
     size_t abs_offset_;
 
-    core::nanoseconds_t refresh_ts_;
+    core::nanoseconds_t base_cts_;
+    core::nanoseconds_t refresh_ts_offset_;
     core::nanoseconds_t last_capture_ts_;
 };
 

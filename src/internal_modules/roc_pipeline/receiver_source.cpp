@@ -9,8 +9,6 @@
 #include "roc_pipeline/receiver_source.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_core/shared_ptr.h"
-#include "roc_sndio/device_type.h"
 
 namespace roc {
 namespace pipeline {
@@ -27,7 +25,7 @@ ReceiverSource::ReceiverSource(
     , byte_buffer_factory_(byte_buffer_factory)
     , sample_buffer_factory_(sample_buffer_factory)
     , arena_(arena)
-    , audio_reader_(NULL)
+    , frame_reader_(NULL)
     , config_(config)
     , valid_(false) {
     mixer_.reset(new (mixer_) audio::Mixer(sample_buffer_factory, true));
@@ -56,7 +54,7 @@ ReceiverSource::ReceiverSource(
         return;
     }
 
-    audio_reader_ = areader;
+    frame_reader_ = areader;
     valid_ = true;
 }
 
@@ -70,7 +68,7 @@ ReceiverSlot* ReceiverSource::create_slot() {
     roc_log(LogInfo, "receiver source: adding slot");
 
     core::SharedPtr<ReceiverSlot> slot = new (arena_)
-        ReceiverSlot(config_, state_, *mixer_, encoding_map_, packet_factory_,
+        ReceiverSlot(config_, state_tracker_, *mixer_, encoding_map_, packet_factory_,
                      byte_buffer_factory_, sample_buffer_factory_, arena_);
 
     if (!slot || !slot->is_valid()) {
@@ -91,11 +89,16 @@ void ReceiverSource::delete_slot(ReceiverSlot* slot) {
 }
 
 size_t ReceiverSource::num_sessions() const {
-    return state_.num_sessions();
+    return state_tracker_.num_active_sessions();
 }
 
 core::nanoseconds_t ReceiverSource::refresh(core::nanoseconds_t current_time) {
     roc_panic_if(!is_valid());
+
+    roc_panic_if_msg(current_time <= 0,
+                     "receiver source: invalid timestamp:"
+                     " expected positive value, got %lld",
+                     (long long)current_time);
 
     core::nanoseconds_t next_deadline = 0;
 
@@ -122,18 +125,7 @@ sndio::DeviceType ReceiverSource::type() const {
 sndio::DeviceState ReceiverSource::state() const {
     roc_panic_if(!is_valid());
 
-    if (state_.num_sessions() != 0) {
-        // we have sessions and they're producing some sound
-        return sndio::DeviceState_Active;
-    }
-
-    if (state_.has_pending_packets()) {
-        // we don't have sessions, but we have packets that may create sessions
-        return sndio::DeviceState_Active;
-    }
-
-    // no sessions and packets; we can sleep until there are some
-    return sndio::DeviceState_Idle;
+    return state_tracker_.get_state();
 }
 
 void ReceiverSource::pause() {
@@ -167,6 +159,11 @@ bool ReceiverSource::has_clock() const {
 void ReceiverSource::reclock(core::nanoseconds_t playback_time) {
     roc_panic_if(!is_valid());
 
+    roc_panic_if_msg(playback_time <= 0,
+                     "receiver source: invalid timestamp:"
+                     " expected positive value, got %lld",
+                     (long long)playback_time);
+
     for (core::SharedPtr<ReceiverSlot> slot = slots_.front(); slot;
          slot = slots_.nextof(*slot)) {
         slot->reclock(playback_time);
@@ -176,7 +173,7 @@ void ReceiverSource::reclock(core::nanoseconds_t playback_time) {
 bool ReceiverSource::read(audio::Frame& frame) {
     roc_panic_if(!is_valid());
 
-    return audio_reader_->read(frame);
+    return frame_reader_->read(frame);
 }
 
 } // namespace pipeline

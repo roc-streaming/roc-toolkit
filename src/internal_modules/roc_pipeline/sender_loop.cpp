@@ -11,6 +11,7 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/thread.h"
+#include "roc_pipeline/sender_endpoint.h"
 
 namespace roc {
 namespace pipeline {
@@ -18,10 +19,10 @@ namespace pipeline {
 SenderLoop::Task::Task()
     : func_(NULL)
     , slot_(NULL)
-    , endpoint_(NULL)
     , iface_(address::Iface_Invalid)
     , proto_(address::Proto_None)
-    , writer_(NULL)
+    , outbound_writer_(NULL)
+    , inbound_writer_(NULL)
     , slot_metrics_(NULL)
     , sess_metrics_(NULL) {
 }
@@ -61,8 +62,8 @@ SenderLoop::Tasks::QuerySlot::QuerySlot(SlotHandle slot,
 SenderLoop::Tasks::AddEndpoint::AddEndpoint(SlotHandle slot,
                                             address::Interface iface,
                                             address::Protocol proto,
-                                            const address::SocketAddr& dest_address,
-                                            packet::IWriter& dest_writer) {
+                                            const address::SocketAddr& outbound_address,
+                                            packet::IWriter& outbound_writer) {
     func_ = &SenderLoop::task_add_endpoint_;
     if (!slot) {
         roc_panic("sender loop: slot handle is null");
@@ -70,16 +71,15 @@ SenderLoop::Tasks::AddEndpoint::AddEndpoint(SlotHandle slot,
     slot_ = (SenderSlot*)slot;
     iface_ = iface;
     proto_ = proto;
-    address_ = dest_address;
-    writer_ = &dest_writer;
+    outbound_address_ = outbound_address;
+    outbound_writer_ = &outbound_writer;
 }
 
-SenderLoop::EndpointHandle SenderLoop::Tasks::AddEndpoint::get_handle() const {
+packet::IWriter* SenderLoop::Tasks::AddEndpoint::get_inbound_writer() const {
     if (!success()) {
         return NULL;
     }
-    roc_panic_if_not(endpoint_);
-    return (EndpointHandle)endpoint_;
+    return inbound_writer_;
 }
 
 SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
@@ -267,12 +267,12 @@ bool SenderLoop::task_query_slot_(Task& task) {
 bool SenderLoop::task_add_endpoint_(Task& task) {
     roc_panic_if(!task.slot_);
 
-    task.endpoint_ =
-        task.slot_->add_endpoint(task.iface_, task.proto_, task.address_, *task.writer_);
-    if (!task.endpoint_) {
+    SenderEndpoint* endpoint = task.slot_->add_endpoint(
+        task.iface_, task.proto_, task.outbound_address_, *task.outbound_writer_);
+    if (!endpoint) {
         return false;
     }
-
+    task.inbound_writer_ = endpoint->inbound_writer();
     return true;
 }
 

@@ -232,7 +232,7 @@ void filter_packets(int flags, packet::IReader& reader, packet::IWriter& writer)
             }
         }
 
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(pp));
+        CHECK_EQUAL(status::StatusOK, writer.write(pp));
     }
 }
 
@@ -240,7 +240,8 @@ void send_receive(int flags,
                   size_t num_sessions,
                   audio::ChannelMask frame_channels,
                   audio::ChannelMask packet_channels) {
-    packet::Queue queue;
+    packet::Queue sender_outbound_queue;
+    packet::Queue receiver_outbound_queue;
 
     address::Protocol source_proto = select_source_proto(flags);
     address::Protocol repair_proto = select_repair_proto(flags);
@@ -266,19 +267,22 @@ void send_receive(int flags,
     SenderEndpoint* sender_repair_endpoint = NULL;
     SenderEndpoint* sender_control_endpoint = NULL;
 
-    sender_source_endpoint = sender_slot->add_endpoint(
-        address::Iface_AudioSource, source_proto, receiver_source_addr, queue);
+    sender_source_endpoint =
+        sender_slot->add_endpoint(address::Iface_AudioSource, source_proto,
+                                  receiver_source_addr, sender_outbound_queue);
     CHECK(sender_source_endpoint);
 
     if (repair_proto != address::Proto_None) {
-        sender_repair_endpoint = sender_slot->add_endpoint(
-            address::Iface_AudioRepair, repair_proto, receiver_repair_addr, queue);
+        sender_repair_endpoint =
+            sender_slot->add_endpoint(address::Iface_AudioRepair, repair_proto,
+                                      receiver_repair_addr, sender_outbound_queue);
         CHECK(sender_repair_endpoint);
     }
 
     if (control_proto != address::Proto_None) {
-        sender_control_endpoint = sender_slot->add_endpoint(
-            address::Iface_AudioControl, control_proto, receiver_control_addr, queue);
+        sender_control_endpoint =
+            sender_slot->add_endpoint(address::Iface_AudioControl, control_proto,
+                                      receiver_control_addr, sender_outbound_queue);
         CHECK(sender_control_endpoint);
     }
 
@@ -301,22 +305,23 @@ void send_receive(int flags,
     packet::IWriter* receiver_control_endpoint_writer = NULL;
 
     receiver_source_endpoint =
-        receiver_slot->add_endpoint(address::Iface_AudioSource, source_proto);
+        receiver_slot->add_endpoint(address::Iface_AudioSource, source_proto, NULL, NULL);
     CHECK(receiver_source_endpoint);
-    receiver_source_endpoint_writer = &receiver_source_endpoint->writer();
+    receiver_source_endpoint_writer = &receiver_source_endpoint->inbound_writer();
 
     if (repair_proto != address::Proto_None) {
-        receiver_repair_endpoint =
-            receiver_slot->add_endpoint(address::Iface_AudioRepair, repair_proto);
+        receiver_repair_endpoint = receiver_slot->add_endpoint(address::Iface_AudioRepair,
+                                                               repair_proto, NULL, NULL);
         CHECK(receiver_repair_endpoint);
-        receiver_repair_endpoint_writer = &receiver_repair_endpoint->writer();
+        receiver_repair_endpoint_writer = &receiver_repair_endpoint->inbound_writer();
     }
 
     if (control_proto != address::Proto_None) {
         receiver_control_endpoint =
-            receiver_slot->add_endpoint(address::Iface_AudioControl, control_proto);
+            receiver_slot->add_endpoint(address::Iface_AudioControl, control_proto,
+                                        &sender_addr, &receiver_outbound_queue);
         CHECK(receiver_control_endpoint);
-        receiver_control_endpoint_writer = &receiver_control_endpoint->writer();
+        receiver_control_endpoint_writer = &receiver_control_endpoint->inbound_writer();
     }
 
     core::nanoseconds_t send_base_cts = -1;
@@ -329,14 +334,14 @@ void send_receive(int flags,
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, sender_config.input_sample_spec,
                                    send_base_cts);
-        sender.refresh(frame_writer.last_capture_ts());
+        sender.refresh(frame_writer.refresh_ts(send_base_cts));
     }
 
     test::PacketProxy packet_proxy(
         packet_factory, sender_addr, receiver_source_endpoint_writer,
         receiver_repair_endpoint_writer, receiver_control_endpoint_writer);
 
-    filter_packets(flags, queue, packet_proxy);
+    filter_packets(flags, sender_outbound_queue, packet_proxy);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
 
@@ -355,7 +360,7 @@ void send_receive(int flags,
                                       receiver_config.common.output_sample_spec,
                                       recv_base_cts);
 
-            UNSIGNED_LONGS_EQUAL(num_sessions, receiver.num_sessions());
+            CHECK_EQUAL(num_sessions, receiver.num_sessions());
         }
 
         packet_proxy.deliver(1);

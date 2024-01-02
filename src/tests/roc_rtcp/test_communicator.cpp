@@ -365,13 +365,13 @@ TEST(communicator, one_sender_one_receiver) {
 
     packet::Queue send_queue;
     MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(config, send_ctl, &send_queue, composer, packet_factory,
+    Communicator send_comm(config, send_ctl, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv_queue;
     MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(config, recv_ctl, &recv_queue, composer, packet_factory,
+    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -434,19 +434,19 @@ TEST(communicator, two_senders_one_receiver) {
 
     packet::Queue send1_queue;
     MockController send1_ctl(Send1Cname, Send1Ssrc);
-    Communicator send1_comm(config, send1_ctl, &send1_queue, composer, packet_factory,
+    Communicator send1_comm(config, send1_ctl, send1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send1_comm.is_valid());
 
     packet::Queue send2_queue;
     MockController send2_ctl(Send2Cname, Send2Ssrc);
-    Communicator send2_comm(config, send2_ctl, &send2_queue, composer, packet_factory,
+    Communicator send2_comm(config, send2_ctl, send2_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send2_comm.is_valid());
 
     packet::Queue recv_queue;
     MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(config, recv_ctl, &recv_queue, composer, packet_factory,
+    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -537,19 +537,19 @@ TEST(communicator, one_sender_two_receivers) {
 
     packet::Queue send_queue;
     MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(config, send_ctl, &send_queue, composer, packet_factory,
+    Communicator send_comm(config, send_ctl, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv1_queue;
     MockController recv1_ctl(Recv1Cname, Recv1Ssrc);
-    Communicator recv1_comm(config, recv1_ctl, &recv1_queue, composer, packet_factory,
+    Communicator recv1_comm(config, recv1_ctl, recv1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(recv1_comm.is_valid());
 
     packet::Queue recv2_queue;
     MockController recv2_ctl(Recv2Cname, Recv2Ssrc);
-    Communicator recv2_comm(config, recv2_ctl, &recv2_queue, composer, packet_factory,
+    Communicator recv2_comm(config, recv2_ctl, recv2_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(recv2_comm.is_valid());
 
@@ -631,13 +631,13 @@ TEST(communicator, receiver_report_first) {
 
     packet::Queue send_queue;
     MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(config, send_ctl, &send_queue, composer, packet_factory,
+    Communicator send_comm(config, send_ctl, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv_queue;
     MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(config, recv_ctl, &recv_queue, composer, packet_factory,
+    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -692,13 +692,13 @@ TEST(communicator, bidirectional_peers) {
 
     packet::Queue peer1_queue;
     MockController peer1_ctl(Peer1Cname, Peer1Ssrc);
-    Communicator peer1_comm(config, peer1_ctl, &peer1_queue, composer, packet_factory,
+    Communicator peer1_comm(config, peer1_ctl, peer1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(peer1_comm.is_valid());
 
     packet::Queue peer2_queue;
     MockController peer2_ctl(Peer2Cname, Peer2Ssrc);
-    Communicator peer2_comm(config, peer2_ctl, &peer2_queue, composer, packet_factory,
+    Communicator peer2_comm(config, peer2_ctl, peer2_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(peer2_comm.is_valid());
 
@@ -788,25 +788,25 @@ TEST(communicator, long_run) {
 
     packet::Queue send1_queue;
     MockController send1_ctl(Send1Cname, Send1Ssrc);
-    Communicator send1_comm(config, send1_ctl, &send1_queue, composer, packet_factory,
+    Communicator send1_comm(config, send1_ctl, send1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send1_comm.is_valid());
 
     packet::Queue send2_queue;
     MockController send2_ctl(Send2Cname, Send2Ssrc);
-    Communicator send2_comm(config, send2_ctl, &send2_queue, composer, packet_factory,
+    Communicator send2_comm(config, send2_ctl, send2_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send2_comm.is_valid());
 
     packet::Queue recv1_queue;
     MockController recv1_ctl(Recv1Cname, Recv1Ssrc);
-    Communicator recv1_comm(config, recv1_ctl, &recv1_queue, composer, packet_factory,
+    Communicator recv1_comm(config, recv1_ctl, recv1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(recv1_comm.is_valid());
 
     packet::Queue recv2_queue;
     MockController recv2_ctl(Recv2Cname, Recv2Ssrc);
-    Communicator recv2_comm(config, recv2_ctl, &recv2_queue, composer, packet_factory,
+    Communicator recv2_comm(config, recv2_ctl, recv2_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(recv2_comm.is_valid());
 
@@ -931,13 +931,13 @@ TEST(communicator, halt_goodbye) {
 
     packet::Queue send_queue;
     MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(config, send_ctl, &send_queue, composer, packet_factory,
+    Communicator send_comm(config, send_ctl, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv_queue;
     MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(config, recv_ctl, &recv_queue, composer, packet_factory,
+    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -991,19 +991,19 @@ TEST(communicator, halt_timeout) {
 
     packet::Queue send1_queue;
     MockController send1_ctl(Send1Cname, SendSsrc1);
-    Communicator send1_comm(config, send1_ctl, &send1_queue, composer, packet_factory,
+    Communicator send1_comm(config, send1_ctl, send1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send1_comm.is_valid());
 
     packet::Queue send2_queue;
     MockController send2_ctl(Send2Cname, SendSsrc2);
-    Communicator send2_comm(config, send2_ctl, &send2_queue, composer, packet_factory,
+    Communicator send2_comm(config, send2_ctl, send2_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send2_comm.is_valid());
 
     packet::Queue recv_queue;
     MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(config, recv_ctl, &recv_queue, composer, packet_factory,
+    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -1103,19 +1103,19 @@ TEST(communicator, halt_cname_change) {
 
     packet::Queue send1_queue;
     MockController send1_ctl(SendCnameA, SendSsrc);
-    Communicator send1_comm(config, send1_ctl, &send1_queue, composer, packet_factory,
+    Communicator send1_comm(config, send1_ctl, send1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send1_comm.is_valid());
 
     packet::Queue send2_queue;
     MockController send2_ctl(SendCnameB, SendSsrc);
-    Communicator send2_comm(config, send2_ctl, &send2_queue, composer, packet_factory,
+    Communicator send2_comm(config, send2_ctl, send2_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send2_comm.is_valid());
 
     packet::Queue recv_queue;
     MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(config, recv_ctl, &recv_queue, composer, packet_factory,
+    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -1175,7 +1175,7 @@ TEST(communicator, cname_comes_earlier) {
     send1_config.enable_sdes = true;
     packet::Queue send1_queue;
     MockController send1_ctl(SendCname, SendSsrc);
-    Communicator send1_comm(send1_config, send1_ctl, &send1_queue, composer,
+    Communicator send1_comm(send1_config, send1_ctl, send1_queue, composer,
                             packet_factory, buffer_factory, arena);
     CHECK(send1_comm.is_valid());
 
@@ -1186,14 +1186,14 @@ TEST(communicator, cname_comes_earlier) {
     send2_config.enable_sdes = false;
     packet::Queue send2_queue;
     MockController send2_ctl(NoCname, SendSsrc);
-    Communicator send2_comm(send2_config, send2_ctl, &send2_queue, composer,
+    Communicator send2_comm(send2_config, send2_ctl, send2_queue, composer,
                             packet_factory, buffer_factory, arena);
     CHECK(send2_comm.is_valid());
 
     Config recv_config;
     packet::Queue recv_queue;
     MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(recv_config, recv_ctl, &recv_queue, composer, packet_factory,
+    Communicator recv_comm(recv_config, recv_ctl, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -1250,7 +1250,7 @@ TEST(communicator, cname_comes_later) {
     send1_config.enable_sdes = false;
     packet::Queue send1_queue;
     MockController send1_ctl(NoCname, SendSsrc);
-    Communicator send1_comm(send1_config, send1_ctl, &send1_queue, composer,
+    Communicator send1_comm(send1_config, send1_ctl, send1_queue, composer,
                             packet_factory, buffer_factory, arena);
     CHECK(send1_comm.is_valid());
 
@@ -1261,14 +1261,14 @@ TEST(communicator, cname_comes_later) {
     send2_config.enable_sdes = true;
     packet::Queue send2_queue;
     MockController send2_ctl(SendCname, SendSsrc);
-    Communicator send2_comm(send2_config, send2_ctl, &send2_queue, composer,
+    Communicator send2_comm(send2_config, send2_ctl, send2_queue, composer,
                             packet_factory, buffer_factory, arena);
     CHECK(send2_comm.is_valid());
 
     Config recv_config;
     packet::Queue recv_queue;
     MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(recv_config, recv_ctl, &recv_queue, composer, packet_factory,
+    Communicator recv_comm(recv_config, recv_ctl, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -1331,19 +1331,19 @@ TEST(communicator, collision_send_report) {
 
     packet::Queue recv_queue;
     MockController recv_ctl(RecvCname, RecvSsrcA);
-    Communicator recv_comm(config, recv_ctl, &recv_queue, composer, packet_factory,
+    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
     packet::Queue send1_queue;
     MockController send1_ctl(Send1Cname, Send1Ssrc);
-    Communicator send1_comm(config, send1_ctl, &send1_queue, composer, packet_factory,
+    Communicator send1_comm(config, send1_ctl, send1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send1_comm.is_valid());
 
     packet::Queue send2_queue;
     MockController send2_ctl(Send2Cname, Send2Ssrc);
-    Communicator send2_comm(config, send2_ctl, &send2_queue, composer, packet_factory,
+    Communicator send2_comm(config, send2_ctl, send2_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send2_comm.is_valid());
 
@@ -1467,19 +1467,19 @@ TEST(communicator, collision_recv_report) {
 
     packet::Queue send_queue;
     MockController send_ctl(SendCname, SendSsrcA);
-    Communicator send_comm(config, send_ctl, &send_queue, composer, packet_factory,
+    Communicator send_comm(config, send_ctl, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv1_queue;
     MockController recv1_ctl(Recv1Cname, Recv1Ssrc);
-    Communicator recv1_comm(config, recv1_ctl, &recv1_queue, composer, packet_factory,
+    Communicator recv1_comm(config, recv1_ctl, recv1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(recv1_comm.is_valid());
 
     packet::Queue recv2_queue;
     MockController recv2_ctl(Recv2Cname, Recv2Ssrc);
-    Communicator recv2_comm(config, recv2_ctl, &recv2_queue, composer, packet_factory,
+    Communicator recv2_comm(config, recv2_ctl, recv2_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(recv2_comm.is_valid());
 
@@ -1603,19 +1603,19 @@ TEST(communicator, collision_unrelated_recv_report) {
 
     packet::Queue send1_queue;
     MockController send1_ctl(Send1Cname, Send1SsrcA);
-    Communicator send1_comm(config, send1_ctl, &send1_queue, composer, packet_factory,
+    Communicator send1_comm(config, send1_ctl, send1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send1_comm.is_valid());
 
     packet::Queue recv1_queue;
     MockController recv1_ctl(Recv1Cname, Recv1Ssrc);
-    Communicator recv1_comm(config, recv1_ctl, &recv1_queue, composer, packet_factory,
+    Communicator recv1_comm(config, recv1_ctl, recv1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(recv1_comm.is_valid());
 
     packet::Queue recv2_queue;
     MockController recv2_ctl(Recv2Cname, Recv2Ssrc);
-    Communicator recv2_comm(config, recv2_ctl, &recv2_queue, composer, packet_factory,
+    Communicator recv2_comm(config, recv2_ctl, recv2_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(recv2_comm.is_valid());
 
@@ -1736,13 +1736,13 @@ TEST(communicator, collision_sdes_different_cname) {
 
     packet::Queue recv_queue;
     MockController recv_ctl(RecvCname, RecvSsrcA);
-    Communicator recv_comm(config, recv_ctl, &recv_queue, composer, packet_factory,
+    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
     packet::Queue send1_queue;
     MockController send1_ctl(Send1Cname, Send1Ssrc);
-    Communicator send1_comm(config, send1_ctl, &send1_queue, composer, packet_factory,
+    Communicator send1_comm(config, send1_ctl, send1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send1_comm.is_valid());
 
@@ -1753,7 +1753,7 @@ TEST(communicator, collision_sdes_different_cname) {
     send2_config.enable_sdes = true;
     packet::Queue send2_queue;
     MockController send2_ctl(Send2Cname, Send2Ssrc);
-    Communicator send2_comm(send2_config, send2_ctl, &send2_queue, composer,
+    Communicator send2_comm(send2_config, send2_ctl, send2_queue, composer,
                             packet_factory, buffer_factory, arena);
     CHECK(send2_comm.is_valid());
 
@@ -1874,13 +1874,13 @@ TEST(communicator, collision_sdes_same_cname) {
 
     packet::Queue recv_queue;
     MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(config, recv_ctl, &recv_queue, composer, packet_factory,
+    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
     packet::Queue send1_queue;
     MockController send1_ctl(Send1Cname, Send1Ssrc);
-    Communicator send1_comm(config, send1_ctl, &send1_queue, composer, packet_factory,
+    Communicator send1_comm(config, send1_ctl, send1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send1_comm.is_valid());
 
@@ -1891,7 +1891,7 @@ TEST(communicator, collision_sdes_same_cname) {
     send2_config.enable_sdes = true;
     packet::Queue send2_queue;
     MockController send2_ctl(Send2Cname, Send2Ssrc);
-    Communicator send2_comm(send2_config, send2_ctl, &send2_queue, composer,
+    Communicator send2_comm(send2_config, send2_ctl, send2_queue, composer,
                             packet_factory, buffer_factory, arena);
     CHECK(send2_comm.is_valid());
 
@@ -1977,14 +1977,14 @@ TEST(communicator, missing_sender_sdes) {
     send_config.enable_sdes = false;
     packet::Queue send_queue;
     MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(send_config, send_ctl, &send_queue, composer, packet_factory,
+    Communicator send_comm(send_config, send_ctl, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
     Config recv_config;
     packet::Queue recv_queue;
     MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(recv_config, recv_ctl, &recv_queue, composer, packet_factory,
+    Communicator recv_comm(recv_config, recv_ctl, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -2019,7 +2019,7 @@ TEST(communicator, missing_receiver_sdes) {
     Config send_config;
     packet::Queue send_queue;
     MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(send_config, send_ctl, &send_queue, composer, packet_factory,
+    Communicator send_comm(send_config, send_ctl, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
@@ -2029,7 +2029,7 @@ TEST(communicator, missing_receiver_sdes) {
     recv_config.enable_sdes = false;
     packet::Queue recv_queue;
     MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(recv_config, recv_ctl, &recv_queue, composer, packet_factory,
+    Communicator recv_comm(recv_config, recv_ctl, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -2070,14 +2070,14 @@ TEST(communicator, missing_sender_sr) {
     send_config.enable_sdes = true;
     packet::Queue send_queue;
     MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(send_config, send_ctl, &send_queue, composer, packet_factory,
+    Communicator send_comm(send_config, send_ctl, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
     Config recv_config;
     packet::Queue recv_queue;
     MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(recv_config, recv_ctl, &recv_queue, composer, packet_factory,
+    Communicator recv_comm(recv_config, recv_ctl, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -2111,7 +2111,7 @@ TEST(communicator, missing_receiver_rr) {
     Config send_config;
     packet::Queue send_queue;
     MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(send_config, send_ctl, &send_queue, composer, packet_factory,
+    Communicator send_comm(send_config, send_ctl, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
@@ -2121,7 +2121,7 @@ TEST(communicator, missing_receiver_rr) {
     recv_config.enable_sdes = true;
     packet::Queue recv_queue;
     MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(recv_config, recv_ctl, &recv_queue, composer, packet_factory,
+    Communicator recv_comm(recv_config, recv_ctl, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -2160,14 +2160,14 @@ TEST(communicator, missing_sender_xr) {
     send_config.enable_sdes = true;
     packet::Queue send_queue;
     MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(send_config, send_ctl, &send_queue, composer, packet_factory,
+    Communicator send_comm(send_config, send_ctl, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
     Config recv_config;
     packet::Queue recv_queue;
     MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(recv_config, recv_ctl, &recv_queue, composer, packet_factory,
+    Communicator recv_comm(recv_config, recv_ctl, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -2203,7 +2203,7 @@ TEST(communicator, missing_receiver_xr) {
     Config send_config;
     packet::Queue send_queue;
     MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(send_config, send_ctl, &send_queue, composer, packet_factory,
+    Communicator send_comm(send_config, send_ctl, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
@@ -2213,7 +2213,7 @@ TEST(communicator, missing_receiver_xr) {
     recv_config.enable_sdes = true;
     packet::Queue recv_queue;
     MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(recv_config, recv_ctl, &recv_queue, composer, packet_factory,
+    Communicator recv_comm(recv_config, recv_ctl, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -2251,7 +2251,7 @@ TEST(communicator, split_sender_report) {
 
     packet::Queue send_queue;
     MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(config, send_ctl, &send_queue, composer, packet_factory,
+    Communicator send_comm(config, send_ctl, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
@@ -2272,7 +2272,7 @@ TEST(communicator, split_sender_report) {
 
         packet::Queue recv_queue;
         MockController recv_ctl(recv_cname, recv_ssrc);
-        Communicator recv_comm(config, recv_ctl, &recv_queue, composer, packet_factory,
+        Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
                                buffer_factory, arena);
         CHECK(recv_comm.is_valid());
 
@@ -2307,7 +2307,7 @@ TEST(communicator, split_sender_report) {
 
     packet::Queue recv_queue;
     MockController recv_ctl(recv_cname, recv_ssrc);
-    Communicator recv_comm(config, recv_ctl, &recv_queue, composer, packet_factory,
+    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -2338,13 +2338,13 @@ TEST(communicator, split_receiver_report) {
 
     packet::Queue send_queue;
     MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(config, send_ctl, &send_queue, composer, packet_factory,
+    Communicator send_comm(config, send_ctl, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv_queue;
     MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(config, recv_ctl, &recv_queue, composer, packet_factory,
+    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -2394,7 +2394,7 @@ TEST(communicator, split_sender_receiver_report) {
 
     packet::Queue local_queue;
     MockController local_ctl(LocalCname, LocalSsrc);
-    Communicator local_comm(config, local_ctl, &local_queue, composer, packet_factory,
+    Communicator local_comm(config, local_ctl, local_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(local_comm.is_valid());
 
@@ -2415,7 +2415,7 @@ TEST(communicator, split_sender_receiver_report) {
 
         packet::Queue remote_queue;
         MockController remote_ctl(remote_cname, remote_ssrc);
-        Communicator remote_comm(config, remote_ctl, &remote_queue, composer,
+        Communicator remote_comm(config, remote_ctl, remote_queue, composer,
                                  packet_factory, buffer_factory, arena);
         CHECK(remote_comm.is_valid());
 
@@ -2455,7 +2455,7 @@ TEST(communicator, split_sender_receiver_report) {
 
     packet::Queue remote_queue;
     MockController remote_ctl(remote_cname, remote_ssrc);
-    Communicator remote_comm(config, remote_ctl, &remote_queue, composer, packet_factory,
+    Communicator remote_comm(config, remote_ctl, remote_queue, composer, packet_factory,
                              buffer_factory, arena);
     CHECK(remote_comm.is_valid());
 
@@ -2489,7 +2489,7 @@ TEST(communicator, generation_error) {
         MockArena peer_arena;
         packet::Queue peer_queue;
         MockController peer_ctl(Cname, Ssrc);
-        Communicator peer_comm(config, peer_ctl, &peer_queue, composer, packet_factory,
+        Communicator peer_comm(config, peer_ctl, peer_queue, composer, packet_factory,
                                buffer_factory, peer_arena);
         CHECK(peer_comm.is_valid());
 
@@ -2512,7 +2512,7 @@ TEST(communicator, generation_error) {
     { // forward error from writer
         MockWriter peer_writer(status::StatusNoData);
         MockController peer_ctl(Cname, Ssrc);
-        Communicator peer_comm(config, peer_ctl, &peer_writer, composer, packet_factory,
+        Communicator peer_comm(config, peer_ctl, peer_writer, composer, packet_factory,
                                buffer_factory, arena);
         CHECK(peer_comm.is_valid());
 
@@ -2528,7 +2528,7 @@ TEST(communicator, generation_error) {
         MockController peer_ctl(Cname, Ssrc);
         // factory creates 5-byte buffers
         core::BufferFactory<uint8_t> peer_factory(arena, 5);
-        Communicator peer_comm(config, peer_ctl, &peer_queue, composer, packet_factory,
+        Communicator peer_comm(config, peer_ctl, peer_queue, composer, packet_factory,
                                peer_factory, arena);
         CHECK(peer_comm.is_valid());
 
@@ -2552,7 +2552,7 @@ TEST(communicator, processing_error) {
     MockArena recv_arena;
     packet::Queue recv_queue;
     MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(config, recv_ctl, &recv_queue, composer, packet_factory,
+    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
                            buffer_factory, recv_arena);
     CHECK(recv_comm.is_valid());
 
@@ -2576,7 +2576,7 @@ TEST(communicator, processing_error) {
 
         packet::Queue send_queue;
         MockController send_ctl(send_cname, send_ssrc);
-        Communicator send_comm(config, send_ctl, &send_queue, composer, packet_factory,
+        Communicator send_comm(config, send_ctl, send_queue, composer, packet_factory,
                                buffer_factory, arena);
         CHECK(send_comm.is_valid());
 
@@ -2622,13 +2622,13 @@ TEST(communicator, notification_error) {
 
     packet::Queue send_queue;
     MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(config, send_ctl, &send_queue, composer, packet_factory,
+    Communicator send_comm(config, send_ctl, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv_queue;
     MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(config, recv_ctl, &recv_queue, composer, packet_factory,
+    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 

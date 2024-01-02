@@ -18,16 +18,13 @@
 #include "roc_audio/profiling_reader.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/iarena.h"
-#include "roc_core/mutex.h"
 #include "roc_core/optional.h"
 #include "roc_core/stddefs.h"
-#include "roc_packet/ireader.h"
-#include "roc_packet/iwriter.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/receiver_endpoint.h"
 #include "roc_pipeline/receiver_slot.h"
-#include "roc_pipeline/receiver_state.h"
+#include "roc_pipeline/state_tracker.h"
 #include "roc_rtp/encoding_map.h"
 #include "roc_sndio/isource.h"
 
@@ -62,7 +59,7 @@ public:
     //! Delete slot.
     void delete_slot(ReceiverSlot* slot);
 
-    //! Get number of connected sessions.
+    //! Get number of active sessions.
     size_t num_sessions() const;
 
     //! Pull packets and refresh pipeline according to current time.
@@ -119,7 +116,7 @@ private:
     core::BufferFactory<audio::sample_t>& sample_buffer_factory_;
     core::IArena& arena_;
 
-    ReceiverState state_;
+    StateTracker state_tracker_;
 
     core::Optional<audio::Mixer> mixer_;
     core::Optional<audio::PoisonReader> poisoner_;
@@ -127,7 +124,7 @@ private:
 
     core::List<ReceiverSlot> slots_;
 
-    audio::IFrameReader* audio_reader_;
+    audio::IFrameReader* frame_reader_;
 
     ReceiverConfig config_;
 

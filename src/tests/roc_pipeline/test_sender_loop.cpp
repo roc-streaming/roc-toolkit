@@ -66,14 +66,14 @@ public:
             slot_ = task_create_slot_->get_handle();
             roc_panic_if_not(slot_);
             task_add_endpoint_ = new SenderLoop::Tasks::AddEndpoint(
-                slot_, address::Iface_AudioSource, address::Proto_RTP, dest_address_,
-                dest_writer_);
+                slot_, address::Iface_AudioSource, address::Proto_RTP, outbound_address_,
+                outbound_writer_);
             pipeline_.schedule(*task_add_endpoint_, *this);
             return;
         }
 
         if (&task == task_add_endpoint_) {
-            roc_panic_if_not(task_add_endpoint_->get_handle());
+            roc_panic_if(task_add_endpoint_->get_inbound_writer());
             task_delete_slot_ = new SenderLoop::Tasks::DeleteSlot(slot_);
             pipeline_.schedule(*task_delete_slot_, *this);
             return;
@@ -92,8 +92,8 @@ private:
 
     SenderLoop::SlotHandle slot_;
 
-    address::SocketAddr dest_address_;
-    packet::Queue dest_writer_;
+    address::SocketAddr outbound_address_;
+    packet::Queue outbound_writer_;
 
     SenderLoop::Tasks::CreateSlot* task_create_slot_;
     SenderLoop::Tasks::AddEndpoint* task_add_endpoint_;
@@ -117,8 +117,8 @@ TEST(sender_loop, endpoints_sync) {
 
     SenderLoop::SlotHandle slot = NULL;
 
-    address::SocketAddr dest_address;
-    packet::Queue dest_writer;
+    address::SocketAddr outbound_address;
+    packet::Queue outbound_writer;
 
     {
         SenderLoop::Tasks::CreateSlot task;
@@ -131,11 +131,11 @@ TEST(sender_loop, endpoints_sync) {
 
     {
         SenderLoop::Tasks::AddEndpoint task(slot, address::Iface_AudioSource,
-                                            address::Proto_RTP, dest_address,
-                                            dest_writer);
+                                            address::Proto_RTP, outbound_address,
+                                            outbound_writer);
         CHECK(sender.schedule_and_wait(task));
         CHECK(task.success());
-        CHECK(task.get_handle());
+        CHECK(!task.get_inbound_writer());
     }
 
     {

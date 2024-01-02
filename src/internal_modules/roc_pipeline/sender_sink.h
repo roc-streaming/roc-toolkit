@@ -13,22 +13,16 @@
 #define ROC_PIPELINE_SENDER_SINK_H_
 
 #include "roc_audio/fanout.h"
-#include "roc_audio/iframe_encoder.h"
-#include "roc_audio/iresampler.h"
-#include "roc_audio/packetizer.h"
 #include "roc_audio/profiling_writer.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
-#include "roc_fec/iblock_encoder.h"
-#include "roc_fec/writer.h"
-#include "roc_packet/interleaver.h"
 #include "roc_packet/packet_factory.h"
-#include "roc_packet/router.h"
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/sender_endpoint.h"
 #include "roc_pipeline/sender_slot.h"
+#include "roc_pipeline/state_tracker.h"
 #include "roc_rtp/encoding_map.h"
 #include "roc_sndio/isink.h"
 
@@ -62,6 +56,9 @@ public:
 
     //! Delete slot.
     void delete_slot(SenderSlot* slot);
+
+    //! Get number of active sessions.
+    size_t num_sessions() const;
 
     //! Refresh pipeline according to current time.
     //! @remarks
@@ -111,16 +108,16 @@ private:
     packet::PacketFactory& packet_factory_;
     core::BufferFactory<uint8_t>& byte_buffer_factory_;
     core::BufferFactory<audio::sample_t>& sample_buffer_factory_;
-
     core::IArena& arena_;
 
+    StateTracker state_tracker_;
+
     audio::Fanout fanout_;
+    core::Optional<audio::ProfilingWriter> profiler_;
 
     core::List<SenderSlot> slots_;
 
-    core::Optional<audio::ProfilingWriter> profiler_;
-
-    audio::IFrameWriter* audio_writer_;
+    audio::IFrameWriter* frame_writer_;
 
     bool valid_;
 };

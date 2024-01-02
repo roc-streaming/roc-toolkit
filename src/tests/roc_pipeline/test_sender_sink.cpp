@@ -65,6 +65,24 @@ packet::PacketFactory packet_factory(arena);
 
 rtp::EncodingMap encoding_map(arena);
 
+SenderSlot* create_slot(SenderSink& sink) {
+    SenderSlot* slot = sink.create_slot();
+    CHECK(slot);
+    return slot;
+}
+
+void create_transport_endpoint(SenderSlot* slot,
+                               address::Interface iface,
+                               address::Protocol proto,
+                               const address::SocketAddr& outbound_address,
+                               packet::IWriter& outbound_writer) {
+    CHECK(slot);
+    SenderEndpoint* endpoint =
+        slot->add_endpoint(iface, proto, outbound_address, outbound_writer);
+    CHECK(endpoint);
+    CHECK(!endpoint->inbound_writer());
+}
+
 } // namespace
 
 TEST_GROUP(sender_sink) {
@@ -132,12 +150,10 @@ TEST(sender_sink, write) {
                       sample_buffer_factory, arena);
     CHECK(sender.is_valid());
 
-    SenderSlot* slot = sender.create_slot();
+    SenderSlot* slot = create_slot(sender);
     CHECK(slot);
-
-    SenderEndpoint* source_endpoint =
-        slot->add_endpoint(address::Iface_AudioSource, source_proto, dst_addr, queue);
-    CHECK(source_endpoint);
+    create_transport_endpoint(slot, address::Iface_AudioSource, source_proto, dst_addr,
+                              queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -156,6 +172,7 @@ TEST(sender_sink, write) {
     packet_reader.read_eof();
 }
 
+// Frames smaller than packets.
 TEST(sender_sink, frame_size_small) {
     enum {
         Rate = SampleRate,
@@ -173,12 +190,10 @@ TEST(sender_sink, frame_size_small) {
                       sample_buffer_factory, arena);
     CHECK(sender.is_valid());
 
-    SenderSlot* slot = sender.create_slot();
+    SenderSlot* slot = create_slot(sender);
     CHECK(slot);
-
-    SenderEndpoint* source_endpoint =
-        slot->add_endpoint(address::Iface_AudioSource, source_proto, dst_addr, queue);
-    CHECK(source_endpoint);
+    create_transport_endpoint(slot, address::Iface_AudioSource, source_proto, dst_addr,
+                              queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -197,6 +212,7 @@ TEST(sender_sink, frame_size_small) {
     packet_reader.read_eof();
 }
 
+// Frames larger than packets.
 TEST(sender_sink, frame_size_large) {
     enum {
         Rate = SampleRate,
@@ -214,12 +230,10 @@ TEST(sender_sink, frame_size_large) {
                       sample_buffer_factory, arena);
     CHECK(sender.is_valid());
 
-    SenderSlot* slot = sender.create_slot();
+    SenderSlot* slot = create_slot(sender);
     CHECK(slot);
-
-    SenderEndpoint* source_endpoint =
-        slot->add_endpoint(address::Iface_AudioSource, source_proto, dst_addr, queue);
-    CHECK(source_endpoint);
+    create_transport_endpoint(slot, address::Iface_AudioSource, source_proto, dst_addr,
+                              queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -238,6 +252,7 @@ TEST(sender_sink, frame_size_large) {
     packet_reader.read_eof();
 }
 
+// Frames written to sender are stereo, packets are mono.
 TEST(sender_sink, channel_mapping_stereo_to_mono) {
     enum { Rate = SampleRate, InputChans = Chans_Stereo, PacketChans = Chans_Mono };
 
@@ -249,12 +264,10 @@ TEST(sender_sink, channel_mapping_stereo_to_mono) {
                       sample_buffer_factory, arena);
     CHECK(sender.is_valid());
 
-    SenderSlot* slot = sender.create_slot();
+    SenderSlot* slot = create_slot(sender);
     CHECK(slot);
-
-    SenderEndpoint* source_endpoint =
-        slot->add_endpoint(address::Iface_AudioSource, source_proto, dst_addr, queue);
-    CHECK(source_endpoint);
+    create_transport_endpoint(slot, address::Iface_AudioSource, source_proto, dst_addr,
+                              queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -273,6 +286,7 @@ TEST(sender_sink, channel_mapping_stereo_to_mono) {
     packet_reader.read_eof();
 }
 
+// Frames written to sender are mono, packets are stereo.
 TEST(sender_sink, channel_mapping_mono_to_stereo) {
     enum { Rate = SampleRate, InputChans = Chans_Mono, PacketChans = Chans_Stereo };
 
@@ -284,12 +298,10 @@ TEST(sender_sink, channel_mapping_mono_to_stereo) {
                       sample_buffer_factory, arena);
     CHECK(sender.is_valid());
 
-    SenderSlot* slot = sender.create_slot();
+    SenderSlot* slot = create_slot(sender);
     CHECK(slot);
-
-    SenderEndpoint* source_endpoint =
-        slot->add_endpoint(address::Iface_AudioSource, source_proto, dst_addr, queue);
-    CHECK(source_endpoint);
+    create_transport_endpoint(slot, address::Iface_AudioSource, source_proto, dst_addr,
+                              queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -308,6 +320,7 @@ TEST(sender_sink, channel_mapping_mono_to_stereo) {
     packet_reader.read_eof();
 }
 
+// Different sample rate of frames and packets.
 TEST(sender_sink, sample_rate_mapping) {
     enum { InputRate = 48000, PacketRate = 44100, Chans = Chans_Stereo };
 
@@ -319,12 +332,10 @@ TEST(sender_sink, sample_rate_mapping) {
                       sample_buffer_factory, arena);
     CHECK(sender.is_valid());
 
-    SenderSlot* slot = sender.create_slot();
+    SenderSlot* slot = create_slot(sender);
     CHECK(slot);
-
-    SenderEndpoint* source_endpoint =
-        slot->add_endpoint(address::Iface_AudioSource, source_proto, dst_addr, queue);
-    CHECK(source_endpoint);
+    create_transport_endpoint(slot, address::Iface_AudioSource, source_proto, dst_addr,
+                              queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -344,6 +355,8 @@ TEST(sender_sink, sample_rate_mapping) {
     }
 }
 
+// Check how sender sets CTS of packets based on CTS of frames
+// written to it.
 TEST(sender_sink, timestamp_mapping) {
     enum { Rate = SampleRate, Chans = Chans_Stereo };
 
@@ -355,12 +368,9 @@ TEST(sender_sink, timestamp_mapping) {
                       sample_buffer_factory, arena);
     CHECK(sender.is_valid());
 
-    SenderSlot* slot = sender.create_slot();
-    CHECK(slot);
-
-    SenderEndpoint* source_endpoint =
-        slot->add_endpoint(address::Iface_AudioSource, source_proto, dst_addr, queue);
-    CHECK(source_endpoint);
+    SenderSlot* slot = create_slot(sender);
+    create_transport_endpoint(slot, address::Iface_AudioSource, source_proto, dst_addr,
+                              queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -381,6 +391,7 @@ TEST(sender_sink, timestamp_mapping) {
     packet_reader.read_eof();
 }
 
+// Same as above, but there is also channel conversion and sample rate conversion.
 TEST(sender_sink, timestamp_mapping_remixing) {
     enum {
         InputRate = 48000,
@@ -397,12 +408,10 @@ TEST(sender_sink, timestamp_mapping_remixing) {
                       sample_buffer_factory, arena);
     CHECK(sender.is_valid());
 
-    SenderSlot* slot = sender.create_slot();
+    SenderSlot* slot = create_slot(sender);
     CHECK(slot);
-
-    SenderEndpoint* source_endpoint =
-        slot->add_endpoint(address::Iface_AudioSource, source_proto, dst_addr, queue);
-    CHECK(source_endpoint);
+    create_transport_endpoint(slot, address::Iface_AudioSource, source_proto, dst_addr,
+                              queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 

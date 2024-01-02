@@ -177,14 +177,48 @@ bool Sender::connect(slot_index_t slot_index,
         roc_log(LogError,
                 "sender node:"
                 " can't connect %s interface of slot %lu:"
-                " can't bind to local port",
+                " can't setup local port",
                 address::interface_to_str(iface), (unsigned long)slot_index);
         break_slot_(*slot);
         return false;
     }
 
+    if (!port.handle) {
+        netio::NetworkLoop::Tasks::AddUdpPort port_task(port.config);
+        if (!context().network_loop().schedule_and_wait(port_task)) {
+            roc_log(LogError,
+                    "sender node:"
+                    " can't connect %s interface of slot %lu:"
+                    " can't bind to local port",
+                    address::interface_to_str(iface), (unsigned long)slot_index);
+            break_slot_(*slot);
+            return false;
+        }
+
+        port.handle = port_task.get_handle();
+
+        roc_log(LogInfo, "sender node: bound %s interface to %s",
+                address::interface_to_str(iface),
+                address::socket_addr_to_str(port.config.bind_address).c_str());
+    }
+
+    if (!port.outbound_writer) {
+        netio::NetworkLoop::Tasks::StartUdpSend send_task(port.handle);
+        if (!context().network_loop().schedule_and_wait(send_task)) {
+            roc_log(LogError,
+                    "sender node:"
+                    " can't connect %s interface of slot %lu:"
+                    " can't start sending on local port",
+                    address::interface_to_str(iface), (unsigned long)slot_index);
+            break_slot_(*slot);
+            return false;
+        }
+
+        port.outbound_writer = &send_task.get_outbound_writer();
+    }
+
     pipeline::SenderLoop::Tasks::AddEndpoint endpoint_task(
-        slot->handle, iface, uri.proto(), address, *port.writer);
+        slot->handle, iface, uri.proto(), address, *port.outbound_writer);
     if (!pipeline_.schedule_and_wait(endpoint_task)) {
         roc_log(LogError,
                 "sender node:"
@@ -193,6 +227,20 @@ bool Sender::connect(slot_index_t slot_index,
                 address::interface_to_str(iface), (unsigned long)slot_index);
         break_slot_(*slot);
         return false;
+    }
+
+    if (iface == address::Iface_AudioControl && endpoint_task.get_inbound_writer()) {
+        netio::NetworkLoop::Tasks::StartUdpRecv recv_task(
+            port.handle, *endpoint_task.get_inbound_writer());
+        if (!context().network_loop().schedule_and_wait(recv_task)) {
+            roc_log(LogError,
+                    "sender node:"
+                    " can't connect %s interface of slot %lu:"
+                    " can't start receiving on local port",
+                    address::interface_to_str(iface), (unsigned long)slot_index);
+            break_slot_(*slot);
+            return false;
+        }
     }
 
     update_compatibility_(iface, uri);
@@ -426,7 +474,7 @@ Sender::Port& Sender::select_outgoing_port_(Slot& slot,
 bool Sender::setup_outgoing_port_(Port& port,
                                   address::Interface iface,
                                   address::AddrFamily family) {
-    if (port.config.bind_address.has_host_port()) {
+    if (port.config.bind_address) {
         if (port.config.bind_address.family() != family) {
             roc_log(LogError,
                     "sender node:"
@@ -442,7 +490,7 @@ bool Sender::setup_outgoing_port_(Port& port,
     if (!port.handle) {
         port.orig_config = port.config;
 
-        if (!port.config.bind_address.has_host_port()) {
+        if (!port.config.bind_address) {
             if (family == address::Family_IPv4) {
                 if (!port.config.bind_address.set_host_port(address::Family_IPv4,
                                                             "0.0.0.0", 0)) {
@@ -457,29 +505,6 @@ bool Sender::setup_outgoing_port_(Port& port,
                 }
             }
         }
-
-        netio::NetworkLoop::Tasks::AddUdpPort port_task(port.config);
-
-        if (!context().network_loop().schedule_and_wait(port_task)) {
-            roc_log(LogError, "sender node: can't bind %s interface: can't open port",
-                    address::interface_to_str(iface));
-            return false;
-        }
-
-        port.handle = port_task.get_handle();
-
-        netio::NetworkLoop::Tasks::StartUdpSend send_task(port.handle);
-        if (!context().network_loop().schedule_and_wait(send_task)) {
-            roc_log(LogError, "sender node: can't bind %s interface: can't start sending",
-                    address::interface_to_str(iface));
-            return false;
-        }
-
-        port.writer = &send_task.get_outbound_writer();
-
-        roc_log(LogInfo, "sender node: bound %s interface to %s",
-                address::interface_to_str(iface),
-                address::socket_addr_to_str(port.config.bind_address).c_str());
     }
 
     return true;

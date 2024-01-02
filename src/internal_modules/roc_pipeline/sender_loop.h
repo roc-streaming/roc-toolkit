@@ -46,9 +46,6 @@ public:
     //! Opaque slot handle.
     typedef struct SlotHandle* SlotHandle;
 
-    //! Opaque endpoint handle.
-    typedef struct EndpointHandle* EndpointHandle;
-
     //! Base task class.
     class Task : public PipelineTask {
     protected:
@@ -58,14 +55,14 @@ public:
 
         bool (SenderLoop::*func_)(Task&); //!< Task implementation method.
 
-        SenderSlot* slot_;                   //!< Slot.
-        SenderEndpoint* endpoint_;           //!< Endpoint.
-        address::Interface iface_;           //!< Interface.
-        address::Protocol proto_;            //!< Protocol.
-        address::SocketAddr address_;        //!< Destination address.
-        packet::IWriter* writer_;            //!< Destination writer.
-        SenderSlotMetrics* slot_metrics_;    //!< Output for slot metrics.
-        SenderSessionMetrics* sess_metrics_; //!< Output for session metrics.
+        SenderSlot* slot_;                     //!< Slot.
+        address::Interface iface_;             //!< Interface.
+        address::Protocol proto_;              //!< Protocol.
+        address::SocketAddr outbound_address_; //!< Destination address.
+        packet::IWriter* outbound_writer_;     //!< Destination packet writer.
+        packet::IWriter* inbound_writer_;      //!< Inbound packet writer.
+        SenderSlotMetrics* slot_metrics_;      //!< Output for slot metrics.
+        SenderSessionMetrics* sess_metrics_;   //!< Output for session metrics.
     };
 
     //! Subclasses for specific tasks.
@@ -109,11 +106,13 @@ public:
             AddEndpoint(SlotHandle slot,
                         address::Interface iface,
                         address::Protocol proto,
-                        const address::SocketAddr& dest_address,
-                        packet::IWriter& dest_writer);
+                        const address::SocketAddr& outbound_address,
+                        packet::IWriter& outbound_writer);
 
-            //! Get created endpoint handle.
-            EndpointHandle get_handle() const;
+            //! Get packet writer for inbound packets for the endpoint.
+            //! @remarks
+            //!  The returned writer may be used from any thread.
+            packet::IWriter* get_inbound_writer() const;
         };
     };
 

@@ -16,6 +16,7 @@
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
+#include "roc_rtcp/print_packet.h"
 #include "roc_status/status_code.h"
 
 namespace roc {
@@ -69,6 +70,9 @@ public:
 
             if (core::Logger::instance().get_level() >= LogTrace) {
                 pp->print(packet::PrintHeaders);
+                if (pp->rtcp()) {
+                    rtcp::print_packet(pp->rtcp()->payload);
+                }
             }
 
             if (pp->flags() & packet::Packet::FlagControl) {

@@ -87,7 +87,7 @@ private:
     core::Optional<audio::ProfilingReader> profiler_;
 
     sndio::ISource& input_source_;
-    audio::IFrameReader* audio_reader_;
+    audio::IFrameReader* frame_reader_;
 
     const TranscoderConfig config_;
 

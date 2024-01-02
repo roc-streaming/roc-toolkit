@@ -16,11 +16,11 @@
 #include "roc_core/iarena.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
-#include "roc_packet/iwriter.h"
 #include "roc_pipeline/metrics.h"
+#include "roc_pipeline/receiver_endpoint.h"
 #include "roc_pipeline/receiver_session.h"
 #include "roc_pipeline/receiver_session_router.h"
-#include "roc_pipeline/receiver_state.h"
+#include "roc_pipeline/state_tracker.h"
 #include "roc_rtcp/communicator.h"
 #include "roc_rtcp/composer.h"
 #include "roc_rtcp/istream_controller.h"
@@ -47,7 +47,7 @@ class ReceiverSessionGroup : public core::NonCopyable<>, private rtcp::IStreamCo
 public:
     //! Initialize.
     ReceiverSessionGroup(const ReceiverConfig& receiver_config,
-                         ReceiverState& receiver_state,
+                         StateTracker& state_tracker,
                          audio::Mixer& mixer,
                          const rtp::EncodingMap& encoding_map,
                          packet::PacketFactory& packet_factory,
@@ -59,6 +59,9 @@ public:
 
     //! Check if pipeline was succefully constructed.
     bool is_valid() const;
+
+    //! Create control sub-pipeline.
+    bool create_control_pipeline(ReceiverEndpoint* control_endpoint);
 
     //! Route packet to session.
     ROC_ATTR_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet,
@@ -123,7 +126,7 @@ private:
 
     audio::Mixer& mixer_;
 
-    ReceiverState& receiver_state_;
+    StateTracker& state_tracker_;
     const ReceiverConfig& receiver_config_;
 
     core::Optional<rtp::Identity> identity_;

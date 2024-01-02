@@ -61,7 +61,9 @@ public:
         ReceiverSlot* slot_;                   //!< Slot.
         address::Interface iface_;             //!< Interface.
         address::Protocol proto_;              //!< Protocol.
-        packet::IWriter* writer_;              //!< Packet writer.
+        address::SocketAddr outbound_address_; //!< Destination address.
+        packet::IWriter* outbound_writer_;     //!< Destination packet writer.
+        packet::IWriter* inbound_writer_;      //!< Inbound packet writer.
         ReceiverSlotMetrics* slot_metrics_;    //!< Output for slot metrics.
         ReceiverSessionMetrics* sess_metrics_; //!< Output for session metrics.
         size_t* sess_metrics_size_;            //!< Input/output session metrics size.
@@ -108,12 +110,14 @@ public:
             //!  The protocols of endpoints in one slot should be compatible.
             AddEndpoint(SlotHandle slot,
                         address::Interface iface,
-                        address::Protocol proto);
+                        address::Protocol proto,
+                        const address::SocketAddr* outbound_address,
+                        packet::IWriter* outbound_writer);
 
-            //! Get packet writer for the endpoint.
+            //! Get packet writer for inbound packets for the endpoint.
             //! @remarks
             //!  The returned writer may be used from any thread.
-            packet::IWriter* get_writer() const;
+            packet::IWriter* get_inbound_writer() const;
         };
     };
 

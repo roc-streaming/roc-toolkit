@@ -27,7 +27,7 @@ const core::nanoseconds_t ReportInterval = core::Second * 30;
 
 Communicator::Communicator(const Config& config,
                            IStreamController& stream_controller,
-                           packet::IWriter* packet_writer,
+                           packet::IWriter& packet_writer,
                            packet::IComposer& packet_composer,
                            packet::PacketFactory& packet_factory,
                            core::BufferFactory<uint8_t>& buffer_factory,
@@ -305,7 +305,10 @@ void Communicator::process_extended_report_(const XrTraverser& xr) {
 core::nanoseconds_t Communicator::generation_deadline(core::nanoseconds_t current_time) {
     roc_panic_if(!is_valid());
 
-    roc_panic_if_msg(current_time <= 0, "rtcp communicator: invalid timestamp");
+    roc_panic_if_msg(current_time <= 0,
+                     "rtcp communicator: invalid timestamp:"
+                     " expected positive value, got %lld",
+                     (long long)current_time);
 
     if (next_deadline_ == 0) {
         // Until generate_packets() is called first time, report that
@@ -319,7 +322,10 @@ core::nanoseconds_t Communicator::generation_deadline(core::nanoseconds_t curren
 status::StatusCode Communicator::generate_reports(core::nanoseconds_t current_time) {
     roc_panic_if(!is_valid());
 
-    roc_panic_if_msg(current_time <= 0, "rtcp communicator: invalid timestamp");
+    roc_panic_if_msg(current_time <= 0,
+                     "rtcp communicator: invalid timestamp:"
+                     " expected positive value, got %lld",
+                     (long long)current_time);
 
     if (next_deadline_ == 0) {
         next_deadline_ = current_time;
@@ -430,9 +436,7 @@ bool Communicator::continue_packet_generation_() {
 
 status::StatusCode
 Communicator::write_generated_packet_(const packet::PacketPtr& packet) {
-    roc_panic_if(!packet_writer_);
-
-    const status::StatusCode status = packet_writer_->write(packet);
+    const status::StatusCode status = packet_writer_.write(packet);
     roc_log(
         LogTrace,
         "rtcp communicator: wrote packet: status=%s blocks=%d/%d srrr=%d/%d dlrr=%d/%d",

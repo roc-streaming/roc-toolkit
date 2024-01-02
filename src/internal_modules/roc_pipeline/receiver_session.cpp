@@ -24,7 +24,7 @@ ReceiverSession::ReceiverSession(
     core::BufferFactory<audio::sample_t>& sample_buffer_factory,
     core::IArena& arena)
     : core::RefCounted<ReceiverSession, core::ArenaAllocation>(arena)
-    , audio_reader_(NULL)
+    , frame_reader_(NULL)
     , valid_(false) {
     const rtp::Encoding* encoding = encoding_map.find_by_pt(session_config.payload_type);
     if (!encoding) {
@@ -222,12 +222,18 @@ ReceiverSession::ReceiverSession(
         return;
     }
 
-    audio_reader_ = areader;
+    frame_reader_ = areader;
     valid_ = true;
 }
 
 bool ReceiverSession::is_valid() const {
     return valid_;
+}
+
+audio::IFrameReader& ReceiverSession::frame_reader() {
+    roc_panic_if(!is_valid());
+
+    return *frame_reader_;
 }
 
 status::StatusCode ReceiverSession::route_packet(const packet::PacketPtr& packet) {
@@ -350,12 +356,6 @@ ReceiverSessionMetrics ReceiverSession::get_metrics() const {
     metrics.latency = latency_monitor_->metrics();
 
     return metrics;
-}
-
-audio::IFrameReader& ReceiverSession::reader() {
-    roc_panic_if(!is_valid());
-
-    return *audio_reader_;
 }
 
 } // namespace pipeline

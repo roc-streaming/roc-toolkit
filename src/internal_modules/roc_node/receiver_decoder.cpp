@@ -90,7 +90,11 @@ bool ReceiverDecoder::activate(address::Interface iface, address::Protocol proto
         return false;
     }
 
-    pipeline::ReceiverLoop::Tasks::AddEndpoint endpoint_task(slot_, iface, proto);
+    endpoint_queues_[iface].reset(new (endpoint_queues_[iface]) packet::ConcurrentQueue(
+        packet::ConcurrentQueue::NonBlocking));
+
+    pipeline::ReceiverLoop::Tasks::AddEndpoint endpoint_task(
+        slot_, iface, proto, &dest_address_, endpoint_queues_[iface].get());
     if (!pipeline_.schedule_and_wait(endpoint_task)) {
         roc_log(LogError,
                 "receiver decoder node:"
@@ -99,7 +103,7 @@ bool ReceiverDecoder::activate(address::Interface iface, address::Protocol proto
         return false;
     }
 
-    endpoint_writers_[iface] = endpoint_task.get_writer();
+    endpoint_writers_[iface] = endpoint_task.get_inbound_writer();
 
     return true;
 }
