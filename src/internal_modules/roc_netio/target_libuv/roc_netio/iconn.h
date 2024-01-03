@@ -14,7 +14,7 @@
 
 #include "roc_address/socket_addr.h"
 #include "roc_core/stddefs.h"
-#include "roc_netio/io_error.h"
+#include "roc_netio/socket_ops.h"
 #include "roc_netio/termination_mode.h"
 
 namespace roc {
@@ -51,7 +51,7 @@ public:
     //!  - @p buf should not be NULL.
     //!  - @p buf should have size at least of @p len bytes.
     //! @returns
-    //!  number of bytes written (>= 0) or IOError (< 0);
+    //!  number of bytes written (>= 0) or SocketError (< 0);
     virtual ssize_t try_write(const void* buf, size_t len) = 0;
 
     //! Try reading @p len bytes from the the connection to @p buf without blocking.
@@ -59,7 +59,7 @@ public:
     //!  - @p buf should not be NULL.
     //!  - @p buf should have size at least of @p len bytes.
     //! @returns
-    //!  number of bytes read (>= 0) or IOError (< 0);
+    //!  number of bytes read (>= 0) or SocketError (< 0);
     virtual ssize_t try_read(void* buf, size_t len) = 0;
 
     //! Initiate asynchronous connection termination.

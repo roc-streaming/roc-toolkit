@@ -33,7 +33,7 @@ namespace netio {
 //! TCP connection parameters.
 struct TcpConnectionConfig {
     //! Socket options.
-    SocketOptions socket_options;
+    SocketOpts socket_options;
 };
 
 //! TCP connection parameters.
@@ -260,7 +260,7 @@ private:
         uint64_t rd_calls;
         uint64_t wr_calls;
 
-        // how much times IOErr_WouldBlock was returned
+        // how much times SockErr_WouldBlock was returned
         uint64_t rd_wouldblock;
         uint64_t wr_wouldblock;
 

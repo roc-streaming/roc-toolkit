@@ -306,7 +306,7 @@ ssize_t TcpConnectionPort::try_write(const void* buf, size_t len) {
     check_usable_for_io_(conn_state);
 
     if (conn_state != State_Established) {
-        return IOErr_Failure;
+        return SockErr_Failure;
     }
 
     writable_status_ = Io_InProgress;
@@ -316,14 +316,14 @@ ssize_t TcpConnectionPort::try_write(const void* buf, size_t len) {
     writable_status_.compare_exchange(Io_InProgress,
                                       ret >= 0 ? Io_Available : Io_NotAvailable);
 
-    if (ret < 0 && ret != IOErr_WouldBlock) {
+    if (ret < 0 && ret != SockErr_WouldBlock) {
         maybe_switch_state_(State_Established, State_Broken);
     }
 
     io_stats_.wr_calls++;
     if (ret > 0) {
         io_stats_.wr_bytes += (size_t)ret;
-    } else if (ret == IOErr_WouldBlock) {
+    } else if (ret == SockErr_WouldBlock) {
         io_stats_.wr_wouldblock++;
     }
 
@@ -342,11 +342,11 @@ ssize_t TcpConnectionPort::try_read(void* buf, size_t len) {
     check_usable_for_io_(conn_state);
 
     if (conn_state != State_Established) {
-        return IOErr_Failure;
+        return SockErr_Failure;
     }
 
     if (got_stream_end_) {
-        return IOErr_StreamEnd;
+        return SockErr_StreamEnd;
     }
 
     readable_status_ = Io_InProgress;
@@ -356,8 +356,8 @@ ssize_t TcpConnectionPort::try_read(void* buf, size_t len) {
     readable_status_.compare_exchange(Io_InProgress,
                                       ret >= 0 ? Io_Available : Io_NotAvailable);
 
-    if (ret < 0 && ret != IOErr_WouldBlock) {
-        if (ret == IOErr_StreamEnd) {
+    if (ret < 0 && ret != SockErr_WouldBlock) {
+        if (ret == SockErr_StreamEnd) {
             got_stream_end_ = true;
         } else {
             maybe_switch_state_(State_Established, State_Broken);
@@ -367,7 +367,7 @@ ssize_t TcpConnectionPort::try_read(void* buf, size_t len) {
     io_stats_.rd_calls++;
     if (ret > 0) {
         io_stats_.rd_bytes += (size_t)ret;
-    } else if (ret == IOErr_WouldBlock) {
+    } else if (ret == SockErr_WouldBlock) {
         io_stats_.rd_wouldblock++;
     }
 

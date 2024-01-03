@@ -236,7 +236,7 @@ bool socket_create(address::AddrFamily family, SocketType type, SocketHandle& ne
         roc_panic_if(is_malformed(errno));
 
         roc_log(LogError, "socket: socket(): %s", core::errno_to_str().c_str());
-        return IOErr_Failure;
+        return SockErr_Failure;
     }
 
     if (!set_cloexec(new_sock)) {
@@ -325,7 +325,7 @@ bool socket_accept(SocketHandle sock,
 
 #endif // defined(SOCK_CLOEXEC) && defined(SOCK_NONBLOCK)
 
-bool socket_setup(SocketHandle sock, const SocketOptions& options) {
+bool socket_setup(SocketHandle sock, const SocketOpts& options) {
     roc_panic_if(sock < 0);
 
     // If SO_NOSIGPIPE is available, enable it here for socket_try_send().
@@ -452,16 +452,16 @@ ssize_t socket_try_recv(SocketHandle sock, void* buf, size_t bufsz) {
     }
 
     if (ret < 0 && is_ewouldblock(errno)) {
-        return IOErr_WouldBlock;
+        return SockErr_WouldBlock;
     }
 
     if (ret < 0) {
         roc_log(LogError, "socket: recv(): %s", core::errno_to_str().c_str());
-        return IOErr_Failure;
+        return SockErr_Failure;
     }
 
     if (ret == 0) {
-        return IOErr_StreamEnd;
+        return SockErr_StreamEnd;
     }
 
     return ret;
@@ -501,17 +501,17 @@ ssize_t socket_try_send(SocketHandle sock, const void* buf, size_t bufsz) {
     }
 
     if (ret < 0 && is_ewouldblock(errno)) {
-        return IOErr_WouldBlock;
+        return SockErr_WouldBlock;
     }
 
     if (ret < 0) {
         roc_log(LogError, "socket: send(): %s", core::errno_to_str().c_str());
-        return IOErr_Failure;
+        return SockErr_Failure;
     }
 
     if (ret == 0) {
         roc_log(LogError, "socket: send(): unexpected zero return code");
-        return IOErr_Failure;
+        return SockErr_Failure;
     }
 
     return ret;
@@ -596,17 +596,17 @@ ssize_t socket_try_send(SocketHandle sock, const void* buf, size_t bufsz) {
     }
 
     if (ret < 0 && is_ewouldblock(saved_errno)) {
-        return IOErr_WouldBlock;
+        return SockErr_WouldBlock;
     }
 
     if (ret < 0) {
         roc_log(LogError, "socket: send(): %s", core::errno_to_str().c_str());
-        return IOErr_Failure;
+        return SockErr_Failure;
     }
 
     if (ret == 0) {
         roc_log(LogError, "socket: send(): unexpected zero return code");
-        return IOErr_Failure;
+        return SockErr_Failure;
     }
 
     return ret;
@@ -634,12 +634,12 @@ ssize_t socket_try_send_to(SocketHandle sock,
     }
 
     if (ret < 0 && is_ewouldblock(errno)) {
-        return IOErr_WouldBlock;
+        return SockErr_WouldBlock;
     }
 
     if (ret < 0) {
         roc_log(LogError, "socket: sendto(): %s", core::errno_to_str().c_str());
-        return IOErr_Failure;
+        return SockErr_Failure;
     }
 
     if ((size_t)ret != bufsz) {
@@ -647,7 +647,7 @@ ssize_t socket_try_send_to(SocketHandle sock,
                 "socket: sendto() processed less bytes than expected: "
                 "requested=%lu processed=%lu",
                 (unsigned long)bufsz, (unsigned long)ret);
-        return IOErr_Failure;
+        return SockErr_Failure;
     }
 
     return ret;

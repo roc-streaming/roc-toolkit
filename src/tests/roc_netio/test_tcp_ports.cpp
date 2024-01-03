@@ -122,13 +122,13 @@ void wait_writable_readable(test::MockConnHandler& handler,
     }
 }
 
-void expect_write_error(IConn* conn, IOError err) {
+void expect_write_error(IConn* conn, SocketError err) {
     CHECK(conn);
     char buf[1] = {};
     LONGS_EQUAL(err, conn->try_write(buf, sizeof(buf)));
 }
 
-void expect_read_error(IConn* conn, IOError err) {
+void expect_read_error(IConn* conn, SocketError err) {
     CHECK(conn);
     char buf[1] = {};
     LONGS_EQUAL(err, conn->try_read(buf, sizeof(buf)));
@@ -722,7 +722,7 @@ TEST(tcp_ports, connect_error) {
     CHECK(add_tcp_client(net_loop, client_config2, client_conn_handler2));
 
     IConn* client_conn2 = client_conn_handler2.wait_refused();
-    expect_read_error(client_conn2, IOErr_Failure);
+    expect_read_error(client_conn2, SockErr_Failure);
 
     terminate_and_wait(server_conn_handler1, server_conn1, test::ExpectNotFailed);
     terminate_and_wait(client_conn_handler1, client_conn1, test::ExpectNotFailed);
@@ -756,8 +756,8 @@ TEST(tcp_ports, acceptor_error) {
     IConn* client_conn1 = client_conn_handler1.wait_established();
 
     wait_writable_readable(client_conn_handler1, client_conn1, true, true);
-    expect_write_error(client_conn1, IOErr_Failure);
-    expect_read_error(client_conn1, IOErr_Failure);
+    expect_write_error(client_conn1, SockErr_Failure);
+    expect_read_error(client_conn1, SockErr_Failure);
 
     CHECK(client_conn1->is_failed());
 
@@ -820,7 +820,7 @@ TEST(tcp_ports, terminate_client_connection_normal) {
     client_conn_handler.wait_terminated(test::ExpectNotFailed);
 
     wait_writable_readable(server_conn_handler, server_conn, true, true);
-    expect_read_error(server_conn, IOErr_StreamEnd);
+    expect_read_error(server_conn, SockErr_StreamEnd);
 
     CHECK(!server_conn->is_failed());
 
@@ -871,8 +871,8 @@ TEST(tcp_ports, terminate_client_connection_failure) {
     client_conn_handler.wait_terminated(test::ExpectFailed);
 
     wait_writable_readable(server_conn_handler, server_conn, true, true);
-    expect_write_error(server_conn, IOErr_Failure);
-    expect_read_error(server_conn, IOErr_Failure);
+    expect_write_error(server_conn, SockErr_Failure);
+    expect_read_error(server_conn, SockErr_Failure);
 
     CHECK(server_conn->is_failed());
 
@@ -925,7 +925,7 @@ TEST(tcp_ports, terminate_server_connection_normal) {
     POINTERS_EQUAL(&server_conn_handler, acceptor.wait_removed());
 
     wait_writable_readable(client_conn_handler, client_conn, true, true);
-    expect_read_error(client_conn, IOErr_StreamEnd);
+    expect_read_error(client_conn, SockErr_StreamEnd);
 
     CHECK(!client_conn->is_failed());
 
@@ -976,8 +976,8 @@ TEST(tcp_ports, terminate_server_connection_failure) {
     POINTERS_EQUAL(&server_conn_handler, acceptor.wait_removed());
 
     wait_writable_readable(client_conn_handler, client_conn, true, true);
-    expect_write_error(client_conn, IOErr_Failure);
-    expect_read_error(client_conn, IOErr_Failure);
+    expect_write_error(client_conn, SockErr_Failure);
+    expect_read_error(client_conn, SockErr_Failure);
 
     CHECK(client_conn->is_failed());
 

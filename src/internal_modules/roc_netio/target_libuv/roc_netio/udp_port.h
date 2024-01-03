@@ -79,8 +79,8 @@ class UdpPort : public BasicPort, private packet::IWriter {
 public:
     //! Initialize.
     //! @remarks
-    //!  If config.enable_receiving is true, then received packets
-    //!  will be written to inbound_writer from network thread.
+    //!  If receiving is enabled, then received packets will be written
+    //!  to inbound_writer from network thread.
     UdpPort(const UdpConfig& config,
             UdpDirection dir,
             packet::IWriter* inbound_writer,
@@ -97,8 +97,8 @@ public:
 
     //! Get writer for outbound packets.
     //! @remarks
-    //!  If config.enable_sending is true, then packets written to outbound_writer()
-    //!  will be sent to network. Returned writer can be used from any thread.
+    //!  If sending is enabled, then packets written to outbound_writer()
+    //!  will be sent to network. It can be used from any thread.
     packet::IWriter* outbound_writer();
 
     //! Open receiver.

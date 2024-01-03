@@ -62,7 +62,7 @@ private:
 
                 const ssize_t ret = conn_.try_write(buf, bufsz);
 
-                if (ret == IOErr_WouldBlock) {
+                if (ret == SockErr_WouldBlock) {
                     break;
                 } else {
                     if (ret < 1 || ret > (ssize_t)bufsz) {

@@ -15,8 +15,6 @@
 #include "roc_address/socket_addr.h"
 #include "roc_core/attributes.h"
 #include "roc_core/stddefs.h"
-#include "roc_netio/io_error.h"
-#include "roc_netio/socket_options.h"
 
 namespace roc {
 namespace netio {
@@ -25,6 +23,28 @@ namespace netio {
 enum SocketType {
     SocketType_Tcp, //!< TCP socket.
     SocketType_Udp  //!< UDP socket.
+};
+
+//! Socket options.
+struct SocketOpts {
+    //! Disable Nagle's algorithm.
+    bool disable_nagle;
+
+    SocketOpts()
+        : disable_nagle(true) {
+    }
+};
+
+//! I/O error codes.
+enum SocketError {
+    //! Operation can't be performed without blocking, try later.
+    SockErr_WouldBlock = -1,
+
+    //! End of stream, no more data.
+    SockErr_StreamEnd = -2,
+
+    //! Failure.
+    SockErr_Failure = -3
 };
 
 //! Platform-specific socket handle.
@@ -43,7 +63,7 @@ ROC_ATTR_NODISCARD bool socket_accept(SocketHandle sock,
                                       address::SocketAddr& remote_address);
 
 //! Set socket options.
-ROC_ATTR_NODISCARD bool socket_setup(SocketHandle sock, const SocketOptions& options);
+ROC_ATTR_NODISCARD bool socket_setup(SocketHandle sock, const SocketOpts& options);
 
 //! Bind socket to local address.
 ROC_ATTR_NODISCARD bool socket_bind(SocketHandle sock,
@@ -65,17 +85,17 @@ ROC_ATTR_NODISCARD bool socket_begin_connect(SocketHandle sock,
 ROC_ATTR_NODISCARD bool socket_end_connect(SocketHandle sock);
 
 //! Try to read bytes from socket without blocking.
-//! @returns number of bytes read (>= 0) or IOError (< 0).
+//! @returns number of bytes read (>= 0) or SocketError (< 0).
 ROC_ATTR_NODISCARD ssize_t socket_try_recv(SocketHandle sock, void* buf, size_t bufsz);
 
 //! Try to write bytes to socket without blocking.
-//! @returns number of bytes written (>= 0) or IOError (< 0).
+//! @returns number of bytes written (>= 0) or SocketError (< 0).
 ROC_ATTR_NODISCARD ssize_t socket_try_send(SocketHandle sock,
                                            const void* buf,
                                            size_t bufsz);
 
 //! Try to send datagram via socket to given address, without blocking.
-//! @returns number of bytes written (>= 0) or IOError (< 0).
+//! @returns number of bytes written (>= 0) or SocketError (< 0).
 ROC_ATTR_NODISCARD ssize_t socket_try_send_to(SocketHandle sock,
                                               const void* buf,
                                               size_t bufsz,
