@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_packet/link_meter.h
+//! @file roc_rtp/link_meter.h
 //! @brief Link meter.
 
-#ifndef ROC_PACKET_LINK_METER_H_
-#define ROC_PACKET_LINK_METER_H_
+#ifndef ROC_RTP_LINK_METER_H_
+#define ROC_RTP_LINK_METER_H_
 
 #include "roc_core/noncopyable.h"
 #include "roc_packet/ireader.h"
@@ -18,7 +18,7 @@
 #include "roc_packet/packet.h"
 
 namespace roc {
-namespace packet {
+namespace rtp {
 
 //! Link metrics.
 struct LinkMetrics {
@@ -70,7 +70,9 @@ struct LinkMetrics {
 //!
 //! In both cases, LinkMeter passes through packets to/from nested
 //! writer/reader, and updates metrics.
-class LinkMeter : public IWriter, public IReader, public core::NonCopyable<> {
+class LinkMeter : public packet::IWriter,
+                  public packet::IReader,
+                  public core::NonCopyable<> {
 public:
     //! Initialize.
     LinkMeter();
@@ -78,22 +80,22 @@ public:
     //! Write packet and update metrics.
     //! @remarks
     //!  Invoked early in pipeline right after the packet is received.
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const PacketPtr& packet);
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr& packet);
 
     //! Read packet and update metrics.
     //! @remarks
     //!  Invoked late in pipeline right before the packet is decoded.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr& packet);
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(packet::PacketPtr& packet);
 
     //! Set nested packet writer.
     //! @remarks
     //!  Should be called before first write() call.
-    void set_writer(IWriter& writer);
+    void set_writer(packet::IWriter& writer);
 
     //! Set nested packet reader.
     //! @remarks
     //!  Should be called before first read() call.
-    void set_reader(IReader& reader);
+    void set_reader(packet::IReader& reader);
 
     //! Check if metrics are already gathered and can be reported.
     bool has_metrics() const;
@@ -102,20 +104,21 @@ public:
     LinkMetrics metrics() const;
 
 private:
-    void update_metrics_(const Packet& packet);
+    void update_metrics_(const packet::Packet& packet);
 
-    IWriter* writer_;
-    IReader* reader_;
-    LinkMetrics metrics_;
+    packet::IWriter* writer_;
+    packet::IReader* reader_;
 
     bool first_packet_;
     bool has_metrics_;
 
+    LinkMetrics metrics_;
+
     uint32_t seqnum_hi_;
-    seqnum_t seqnum_lo_;
+    uint16_t seqnum_lo_;
 };
 
-} // namespace packet
+} // namespace rtp
 } // namespace roc
 
-#endif // ROC_PACKET_LINK_METER_H_
+#endif // ROC_RTP_LINK_METER_H_

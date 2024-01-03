@@ -9,35 +9,35 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/heap_arena.h"
-#include "roc_packet/link_meter.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
+#include "roc_rtp/link_meter.h"
 
 namespace roc {
-namespace packet {
+namespace rtp {
 
 namespace {
 
 core::HeapArena arena;
-PacketFactory packet_factory(arena);
+packet::PacketFactory packet_factory(arena);
 
-PacketPtr new_packet(seqnum_t sn) {
-    PacketPtr packet = packet_factory.new_packet();
+packet::PacketPtr new_packet(packet::seqnum_t sn) {
+    packet::PacketPtr packet = packet_factory.new_packet();
     CHECK(packet);
 
-    packet->add_flags(Packet::FlagRTP);
+    packet->add_flags(packet::Packet::FlagRTP);
     packet->rtp()->seqnum = sn;
 
     return packet;
 }
 
-class StatusWriter : public IWriter {
+class StatusWriter : public packet::IWriter {
 public:
     explicit StatusWriter(status::StatusCode code)
         : code_(code) {
     }
 
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const PacketPtr&) {
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr&) {
         return code_;
     }
 
@@ -50,7 +50,7 @@ private:
 TEST_GROUP(link_meter) {};
 
 TEST(link_meter, has_metrics) {
-    Queue queue;
+    packet::Queue queue;
     LinkMeter meter;
     meter.set_writer(queue);
 
@@ -63,7 +63,7 @@ TEST(link_meter, has_metrics) {
 }
 
 TEST(link_meter, last_seqnum) {
-    Queue queue;
+    packet::Queue queue;
     LinkMeter meter;
     meter.set_writer(queue);
 
@@ -88,7 +88,7 @@ TEST(link_meter, last_seqnum) {
 }
 
 TEST(link_meter, last_seqnum_wrap) {
-    Queue queue;
+    packet::Queue queue;
     LinkMeter meter;
     meter.set_writer(queue);
 
@@ -125,5 +125,5 @@ TEST(link_meter, forward_error) {
     CHECK_EQUAL(status::StatusNoMem, meter.write(new_packet(100)));
 }
 
-} // namespace packet
+} // namespace rtp
 } // namespace roc

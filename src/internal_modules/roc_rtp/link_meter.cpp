@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_packet/link_meter.h"
+#include "roc_rtp/link_meter.h"
 #include "roc_core/panic.h"
 
 namespace roc {
-namespace packet {
+namespace rtp {
 
 LinkMeter::LinkMeter()
     : writer_(NULL)
@@ -21,7 +21,7 @@ LinkMeter::LinkMeter()
     , seqnum_lo_(0) {
 }
 
-status::StatusCode LinkMeter::write(const PacketPtr& packet) {
+status::StatusCode LinkMeter::write(const packet::PacketPtr& packet) {
     if (!writer_) {
         roc_panic("link meter: forgot to call set_writer()");
     }
@@ -39,7 +39,7 @@ status::StatusCode LinkMeter::write(const PacketPtr& packet) {
     return writer_->write(packet);
 }
 
-status::StatusCode LinkMeter::read(PacketPtr& packet) {
+status::StatusCode LinkMeter::read(packet::PacketPtr& packet) {
     if (!reader_) {
         roc_panic("link meter: forgot to call set_reader()");
     }
@@ -52,11 +52,11 @@ status::StatusCode LinkMeter::read(PacketPtr& packet) {
     return status::StatusOK;
 }
 
-void LinkMeter::set_writer(IWriter& writer) {
+void LinkMeter::set_writer(packet::IWriter& writer) {
     writer_ = &writer;
 }
 
-void LinkMeter::set_reader(IReader& reader) {
+void LinkMeter::set_reader(packet::IReader& reader) {
     reader_ = &reader;
 }
 
@@ -68,13 +68,13 @@ LinkMetrics LinkMeter::metrics() const {
     return metrics_;
 }
 
-void LinkMeter::update_metrics_(const Packet& packet) {
+void LinkMeter::update_metrics_(const packet::Packet& packet) {
     // Check if packet's seqnum goes ahead of the previous seqnum,
     // taken possible wrap into account.
-    if (first_packet_ || seqnum_diff(packet.rtp()->seqnum, seqnum_lo_) > 0) {
+    if (first_packet_ || packet::seqnum_diff(packet.rtp()->seqnum, seqnum_lo_) > 0) {
         if (packet.rtp()->seqnum < seqnum_lo_) {
             // Detect wrap.
-            seqnum_hi_ += (seqnum_t)-1;
+            seqnum_hi_ += (uint16_t)-1;
         }
         seqnum_lo_ = packet.rtp()->seqnum;
         metrics_.ext_last_seqnum = seqnum_hi_ + seqnum_lo_;
@@ -84,5 +84,5 @@ void LinkMeter::update_metrics_(const Packet& packet) {
     has_metrics_ = true;
 }
 
-} // namespace packet
+} // namespace rtp
 } // namespace roc

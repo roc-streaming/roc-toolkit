@@ -43,7 +43,7 @@ ReceiverSession::ReceiverSession(
 
     packet::IWriter* pwriter = source_queue_.get();
 
-    source_meter_.reset(new (source_meter_) packet::LinkMeter());
+    source_meter_.reset(new (source_meter_) rtp::LinkMeter());
     if (!source_meter_) {
         return;
     }
@@ -85,7 +85,7 @@ ReceiverSession::ReceiverSession(
             return;
         }
 
-        repair_meter_.reset(new (repair_meter_) packet::LinkMeter());
+        repair_meter_.reset(new (repair_meter_) rtp::LinkMeter());
         if (!repair_meter_) {
             return;
         }
@@ -292,7 +292,7 @@ void ReceiverSession::generate_reports(const char* report_cname,
 
     if (n_reports > 0 && packet_router_->has_source_id(packet::Packet::FlagAudio)
         && source_meter_->has_metrics()) {
-        const packet::LinkMetrics link_metrics = source_meter_->metrics();
+        const rtp::LinkMetrics link_metrics = source_meter_->metrics();
 
         rtcp::RecvReport& report = *reports;
 
@@ -312,7 +312,7 @@ void ReceiverSession::generate_reports(const char* report_cname,
 
     if (n_reports > 0 && packet_router_->has_source_id(packet::Packet::FlagRepair)
         && repair_meter_->has_metrics()) {
-        const packet::LinkMetrics link_metrics = repair_meter_->metrics();
+        const rtp::LinkMetrics link_metrics = repair_meter_->metrics();
 
         rtcp::RecvReport& report = *reports;
 
