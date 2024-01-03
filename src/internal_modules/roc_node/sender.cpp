@@ -458,17 +458,24 @@ bool Sender::setup_outgoing_port_(Port& port,
             }
         }
 
-        netio::NetworkLoop::Tasks::AddUdpPort port_task(port.config, netio::UdpSend,
-                                                        NULL);
+        netio::NetworkLoop::Tasks::AddUdpPort port_task(port.config);
 
         if (!context().network_loop().schedule_and_wait(port_task)) {
-            roc_log(LogError, "sender node: can't bind %s interface to local port",
+            roc_log(LogError, "sender node: can't bind %s interface: can't open port",
                     address::interface_to_str(iface));
             return false;
         }
 
         port.handle = port_task.get_handle();
-        port.writer = port_task.get_outbound_writer();
+
+        netio::NetworkLoop::Tasks::StartUdpSend send_task(port.handle);
+        if (!context().network_loop().schedule_and_wait(send_task)) {
+            roc_log(LogError, "sender node: can't bind %s interface: can't start sending",
+                    address::interface_to_str(iface));
+            return false;
+        }
+
+        port.writer = &send_task.get_outbound_writer();
 
         roc_log(LogInfo, "sender node: bound %s interface to %s",
                 address::interface_to_str(iface),

@@ -69,27 +69,33 @@ public:
         netio::NetworkLoop::PortHandle send_port = NULL;
 
         {
-            netio::NetworkLoop::Tasks::AddUdpPort task(send_config_, netio::UdpSend,
-                                                       NULL);
-            CHECK(net_loop_.schedule_and_wait(task));
+            netio::NetworkLoop::Tasks::AddUdpPort add_task(send_config_);
+            CHECK(net_loop_.schedule_and_wait(add_task));
 
-            send_port = task.get_handle();
+            send_port = add_task.get_handle();
             CHECK(send_port);
 
-            writer_ = task.get_outbound_writer();
-            CHECK(writer_);
+            netio::NetworkLoop::Tasks::StartUdpSend send_task(add_task.get_handle());
+            CHECK(net_loop_.schedule_and_wait(send_task));
+            writer_ = &send_task.get_outbound_writer();
         }
 
         {
-            netio::NetworkLoop::Tasks::AddUdpPort task(recv_source_config_,
-                                                       netio::UdpRecv, this);
-            CHECK(net_loop_.schedule_and_wait(task));
+            netio::NetworkLoop::Tasks::AddUdpPort add_task(recv_source_config_);
+            CHECK(net_loop_.schedule_and_wait(add_task));
+
+            netio::NetworkLoop::Tasks::StartUdpRecv recv_task(add_task.get_handle(),
+                                                              *this);
+            CHECK(net_loop_.schedule_and_wait(recv_task));
         }
 
         {
-            netio::NetworkLoop::Tasks::AddUdpPort task(recv_repair_config_,
-                                                       netio::UdpRecv, this);
-            CHECK(net_loop_.schedule_and_wait(task));
+            netio::NetworkLoop::Tasks::AddUdpPort add_task(recv_repair_config_);
+            CHECK(net_loop_.schedule_and_wait(add_task));
+
+            netio::NetworkLoop::Tasks::StartUdpRecv recv_task(add_task.get_handle(),
+                                                              *this);
+            CHECK(net_loop_.schedule_and_wait(recv_task));
         }
 
         CHECK(roc_endpoint_allocate(&input_source_endp_) == 0);

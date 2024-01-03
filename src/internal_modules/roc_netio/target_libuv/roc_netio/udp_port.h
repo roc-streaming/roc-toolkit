@@ -29,13 +29,6 @@
 namespace roc {
 namespace netio {
 
-//! UDP port direction.
-enum UdpDirection {
-    UdpSend,    //<! Send-only port.
-    UdpRecv,    //<! Recv-only port.
-    UdpSendRecv //<! Send+recv port.
-};
-
 //! UDP port parameters.
 struct UdpConfig {
     //! Port will bind to this address.
@@ -45,7 +38,7 @@ struct UdpConfig {
 
     //! If not empty, port will join multicast group on the interface
     //! with given address. May be "0.0.0.0" or "[::]" to join on all interfaces.
-    //! Used only if receiving is enabled.
+    //! Used only if receiving is started.
     char multicast_interface[64];
 
     //! If set, enable SO_REUSEADDR when binding socket to non-ephemeral port.
@@ -56,7 +49,7 @@ struct UdpConfig {
     //! If true, allow non-blocking writes directly in write() method.
     //! If non-blocking write can't be performed, port falls back to
     //! regular asynchronous write.
-    //! Used only if sending is enabled.
+    //! Used only if sending is started.
     bool enable_non_blocking;
 
     UdpConfig()
@@ -78,12 +71,7 @@ struct UdpConfig {
 class UdpPort : public BasicPort, private packet::IWriter {
 public:
     //! Initialize.
-    //! @remarks
-    //!  If receiving is enabled, then received packets will be written
-    //!  to inbound_writer from network thread.
     UdpPort(const UdpConfig& config,
-            UdpDirection dir,
-            packet::IWriter* inbound_writer,
             uv_loop_t& event_loop,
             packet::PacketFactory& packet_factory,
             core::BufferFactory<uint8_t>& buffer_factory,
@@ -95,17 +83,23 @@ public:
     //! Get bind address.
     const address::SocketAddr& bind_address() const;
 
-    //! Get writer for outbound packets.
-    //! @remarks
-    //!  If sending is enabled, then packets written to outbound_writer()
-    //!  will be sent to network. It can be used from any thread.
-    packet::IWriter* outbound_writer();
-
     //! Open receiver.
     virtual bool open();
 
     //! Asynchronously close receiver.
     virtual AsyncOperationStatus async_close(ICloseHandler& handler, void* handler_arg);
+
+    //! Start receiving packets.
+    //! @remarks
+    //!  Packets written to returned writer will be enqueued for sending.
+    //!  Writer can be used from any thread.
+    packet::IWriter* start_send();
+
+    //! Start receiving packets.
+    //! @remarks
+    //!  Received packets will be written to inbound_writer.
+    //!  Writer will be invoked from network thread.
+    bool start_recv(packet::IWriter& inbound_writer);
 
 protected:
     //! Format descriptor.
@@ -138,8 +132,6 @@ private:
     void report_stats_();
 
     UdpConfig config_;
-    const bool enable_send_;
-    const bool enable_recv_;
 
     ICloseHandler* close_handler_;
     void* close_handler_arg_;

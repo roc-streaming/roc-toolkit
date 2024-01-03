@@ -25,16 +25,12 @@ const core::nanoseconds_t PacketLogInterval = 20 * core::Second;
 } // namespace
 
 UdpPort::UdpPort(const UdpConfig& config,
-                 UdpDirection dir,
-                 packet::IWriter* inbound_writer,
                  uv_loop_t& event_loop,
                  packet::PacketFactory& packet_factory,
                  core::BufferFactory<uint8_t>& buffer_factory,
                  core::IArena& arena)
     : BasicPort(arena)
     , config_(config)
-    , enable_send_(dir == UdpSend || dir == UdpSendRecv)
-    , enable_recv_(dir == UdpRecv || dir == UdpSendRecv)
     , close_handler_(NULL)
     , close_handler_arg_(NULL)
     , loop_(event_loop)
@@ -47,16 +43,9 @@ UdpPort::UdpPort(const UdpConfig& config,
     , fd_()
     , packet_factory_(packet_factory)
     , buffer_factory_(buffer_factory)
-    , inbound_writer_(inbound_writer)
+    , inbound_writer_(NULL)
     , rate_limiter_(PacketLogInterval) {
     BasicPort::update_descriptor();
-
-    if (enable_recv_ != !!inbound_writer_) {
-        roc_panic(
-            "udp port: %s:"
-            " inbound_writer should be provided if and only if receiving is enabled",
-            descriptor());
-    }
 }
 
 UdpPort::~UdpPort() {
@@ -75,14 +64,6 @@ const address::SocketAddr& UdpPort::bind_address() const {
     return config_.bind_address;
 }
 
-packet::IWriter* UdpPort::outbound_writer() {
-    if (!enable_send_) {
-        return NULL;
-    }
-
-    return this;
-}
-
 bool UdpPort::open() {
     if (int err = uv_udp_init(&loop_, &handle_)) {
         roc_log(LogError, "udp port: %s: uv_udp_init(): [%s] %s", descriptor(),
@@ -94,7 +75,7 @@ bool UdpPort::open() {
     handle_initialized_ = true;
 
     unsigned flags = 0;
-    if ((config_.enable_reuseaddr || (enable_recv_ && config_.bind_address.multicast()))
+    if ((config_.enable_reuseaddr || config_.bind_address.multicast())
         && config_.bind_address.port() > 0) {
         flags |= UV_UDP_REUSEADDR;
     }
@@ -142,33 +123,6 @@ bool UdpPort::open() {
                   uv_strerror(fd_err));
     }
 
-    if (enable_recv_) {
-        if (config_.multicast_interface[0]) {
-            if (!join_multicast_group_()) {
-                return false;
-            }
-        }
-
-        if (int err = uv_udp_recv_start(&handle_, alloc_cb_, recv_cb_)) {
-            roc_log(LogError, "udp port: %s: uv_udp_recv_start(): [%s] %s", descriptor(),
-                    uv_err_name(err), uv_strerror(err));
-            return false;
-        }
-
-        recv_started_ = true;
-    }
-
-    if (enable_send_) {
-        if (int err = uv_async_init(&loop_, &write_sem_, write_sem_cb_)) {
-            roc_log(LogError, "udp port: %s: uv_async_init(): [%s] %s", descriptor(),
-                    uv_err_name(err), uv_strerror(err));
-            return false;
-        }
-
-        write_sem_.data = this;
-        write_sem_initialized_ = true;
-    }
-
     update_descriptor();
 
     roc_log(LogDebug, "udp port: %s: opened port", descriptor());
@@ -195,6 +149,49 @@ AsyncOperationStatus UdpPort::async_close(ICloseHandler& handler, void* handler_
     }
 
     return AsyncOp_Started;
+}
+
+packet::IWriter* UdpPort::start_send() {
+    if (!handle_initialized_) {
+        return NULL;
+    }
+
+    if (!write_sem_initialized_) {
+        if (int err = uv_async_init(&loop_, &write_sem_, write_sem_cb_)) {
+            roc_log(LogError, "udp port: %s: uv_async_init(): [%s] %s", descriptor(),
+                    uv_err_name(err), uv_strerror(err));
+            return NULL;
+        }
+
+        write_sem_.data = this;
+        write_sem_initialized_ = true;
+    }
+
+    return this;
+}
+
+bool UdpPort::start_recv(packet::IWriter& inbound_writer) {
+    if (!handle_initialized_) {
+        return false;
+    }
+
+    if (config_.multicast_interface[0] && !multicast_group_joined_) {
+        if (!join_multicast_group_()) {
+            return false;
+        }
+    }
+
+    if (!recv_started_) {
+        if (int err = uv_udp_recv_start(&handle_, alloc_cb_, recv_cb_)) {
+            roc_log(LogError, "udp port: %s: uv_udp_recv_start(): [%s] %s", descriptor(),
+                    uv_err_name(err), uv_strerror(err));
+            return false;
+        }
+        recv_started_ = true;
+    }
+
+    inbound_writer_ = &inbound_writer;
+    return true;
 }
 
 void UdpPort::close_cb_(uv_handle_t* handle) {
@@ -339,10 +336,11 @@ void UdpPort::recv_cb_(uv_udp_t* handle,
 
     pp->set_buffer(core::Slice<uint8_t>(*bp, 0, (size_t)nread));
 
-    roc_panic_if(!self.inbound_writer_);
-    const status::StatusCode code = self.inbound_writer_->write(pp);
-    // TODO(gh-183): handle or log status
-    roc_panic_if(code != status::StatusOK);
+    if (self.inbound_writer_) {
+        const status::StatusCode code = self.inbound_writer_->write(pp);
+        // TODO(gh-183): handle or log status
+        roc_panic_if(code != status::StatusOK);
+    }
 }
 
 void UdpPort::write_sem_cb_(uv_async_t* handle) {

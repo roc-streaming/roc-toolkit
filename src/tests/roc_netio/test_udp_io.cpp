@@ -35,37 +35,57 @@ UdpConfig make_udp_config() {
 NetworkLoop::PortHandle add_udp_sender(NetworkLoop& net_loop,
                                        UdpConfig& config,
                                        packet::IWriter** outbound_writer) {
-    NetworkLoop::Tasks::AddUdpPort task(config, netio::UdpSend, NULL);
-    CHECK(!task.success());
-    CHECK(net_loop.schedule_and_wait(task));
-    CHECK(task.success());
-    CHECK(task.get_outbound_writer());
-    *outbound_writer = task.get_outbound_writer();
-    return task.get_handle();
+    NetworkLoop::Tasks::AddUdpPort add_task(config);
+    CHECK(!add_task.success());
+    CHECK(net_loop.schedule_and_wait(add_task));
+    CHECK(add_task.success());
+
+    NetworkLoop::Tasks::StartUdpSend send_task(add_task.get_handle());
+    CHECK(!send_task.success());
+    CHECK(net_loop.schedule_and_wait(send_task));
+    CHECK(send_task.success());
+    *outbound_writer = &send_task.get_outbound_writer();
+
+    return add_task.get_handle();
 }
 
 NetworkLoop::PortHandle add_udp_receiver(NetworkLoop& net_loop,
                                          UdpConfig& config,
                                          packet::IWriter& inbound_writer) {
-    NetworkLoop::Tasks::AddUdpPort task(config, netio::UdpRecv, &inbound_writer);
-    CHECK(!task.success());
-    CHECK(net_loop.schedule_and_wait(task));
-    CHECK(task.success());
-    CHECK(!task.get_outbound_writer());
-    return task.get_handle();
+    NetworkLoop::Tasks::AddUdpPort add_task(config);
+    CHECK(!add_task.success());
+    CHECK(net_loop.schedule_and_wait(add_task));
+    CHECK(add_task.success());
+
+    NetworkLoop::Tasks::StartUdpRecv recv_task(add_task.get_handle(), inbound_writer);
+    CHECK(!recv_task.success());
+    CHECK(net_loop.schedule_and_wait(recv_task));
+    CHECK(recv_task.success());
+
+    return add_task.get_handle();
 }
 
 NetworkLoop::PortHandle add_udp_sender_receiver(NetworkLoop& net_loop,
                                                 UdpConfig& config,
                                                 packet::IWriter& inbound_writer,
                                                 packet::IWriter** outbound_writer) {
-    NetworkLoop::Tasks::AddUdpPort task(config, netio::UdpSendRecv, &inbound_writer);
-    CHECK(!task.success());
-    CHECK(net_loop.schedule_and_wait(task));
-    CHECK(task.success());
-    CHECK(task.get_outbound_writer());
-    *outbound_writer = task.get_outbound_writer();
-    return task.get_handle();
+    NetworkLoop::Tasks::AddUdpPort add_task(config);
+    CHECK(!add_task.success());
+    CHECK(net_loop.schedule_and_wait(add_task));
+    CHECK(add_task.success());
+
+    NetworkLoop::Tasks::StartUdpRecv recv_task(add_task.get_handle(), inbound_writer);
+    CHECK(!recv_task.success());
+    CHECK(net_loop.schedule_and_wait(recv_task));
+    CHECK(recv_task.success());
+
+    NetworkLoop::Tasks::StartUdpSend send_task(add_task.get_handle());
+    CHECK(!send_task.success());
+    CHECK(net_loop.schedule_and_wait(send_task));
+    CHECK(send_task.success());
+    *outbound_writer = &send_task.get_outbound_writer();
+
+    return add_task.get_handle();
 }
 
 core::Slice<uint8_t> new_buffer(int value) {

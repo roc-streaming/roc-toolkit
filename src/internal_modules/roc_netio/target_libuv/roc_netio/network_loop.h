@@ -62,34 +62,53 @@ public:
         public:
             //! Set task parameters.
             //! @remarks
-            //!  - Updates @p config with the actual bind address.
-            //!  - @p dir defines if sender and/or receiving is enabled.
-            //!  - If receiving is enabled, passes received packets to @p inbound_writer.
-            //!    It is invoked from network thread. It should not block the caller.
-            //!  - If sending is enabled, get_outbound_writer() returns a writer for
-            //!    packets to be send. It may be used from another thread. It doesn't
-            //!    block the caller
-            AddUdpPort(UdpConfig& config,
-                       UdpDirection dir,
-                       packet::IWriter* inbound_writer);
+            //!  Updates @p config with the actual bind address.
+            AddUdpPort(UdpConfig& config);
 
             //! Get created port handle.
             //! @pre
             //!  Should be called only after success() is true.
             PortHandle get_handle() const;
 
-            //! Get created writer for outbound packets.
-            //! @pre
-            //!  Should be called only after success() is true.
-            packet::IWriter* get_outbound_writer() const;
-
         private:
             friend class NetworkLoop;
 
             UdpConfig* config_;
-            UdpDirection dir_;
-            packet::IWriter* inbound_writer_;
+        };
+
+        //! Start sending on UDP port.
+        class StartUdpSend : public NetworkTask {
+        public:
+            //! Set task parameters.
+            //! @remarks
+            //!  get_outbound_writer() returns a writer for packets to be send. It may be
+            //!  used from another thread. It doesn't block the caller
+            StartUdpSend(PortHandle handle);
+
+            //! Get created writer for outbound packets.
+            //! @pre
+            //!  Should be called only after success() is true.
+            packet::IWriter& get_outbound_writer() const;
+
+        private:
+            friend class NetworkLoop;
+
             packet::IWriter* outbound_writer_;
+        };
+
+        //! Start receiving on UDP port.
+        class StartUdpRecv : public NetworkTask {
+        public:
+            //! Set task parameters.
+            //! @remarks
+            //!  Received packets will be passed to @p inbound_writer.
+            //!  It is invoked from network thread. It should not block the caller.
+            StartUdpRecv(PortHandle handle, packet::IWriter& inbound_writer);
+
+        private:
+            friend class NetworkLoop;
+
+            packet::IWriter* inbound_writer_;
         };
 
         //! Add TCP server port.
@@ -223,6 +242,8 @@ private:
     void close_all_ports_();
 
     void task_add_udp_port_(NetworkTask&);
+    void task_start_udp_send_(NetworkTask&);
+    void task_start_udp_recv_(NetworkTask&);
     void task_add_tcp_server_(NetworkTask&);
     void task_add_tcp_client_(NetworkTask&);
     void task_remove_port_(NetworkTask&);

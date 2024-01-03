@@ -16,14 +16,9 @@
 namespace roc {
 namespace netio {
 
-NetworkLoop::Tasks::AddUdpPort::AddUdpPort(UdpConfig& config,
-                                           UdpDirection dir,
-                                           packet::IWriter* writer) {
+NetworkLoop::Tasks::AddUdpPort::AddUdpPort(UdpConfig& config) {
     func_ = &NetworkLoop::task_add_udp_port_;
     config_ = &config;
-    dir_ = dir;
-    inbound_writer_ = writer;
-    outbound_writer_ = NULL;
 }
 
 NetworkLoop::PortHandle NetworkLoop::Tasks::AddUdpPort::get_handle() const {
@@ -34,11 +29,28 @@ NetworkLoop::PortHandle NetworkLoop::Tasks::AddUdpPort::get_handle() const {
     return (PortHandle)port_handle_;
 }
 
-packet::IWriter* NetworkLoop::Tasks::AddUdpPort::get_outbound_writer() const {
-    if (!success()) {
-        return NULL;
+NetworkLoop::Tasks::StartUdpSend::StartUdpSend(PortHandle handle) {
+    func_ = &NetworkLoop::task_start_udp_send_;
+    if (!handle) {
+        roc_panic("network loop: port handle is null");
     }
-    return outbound_writer_;
+    port_ = (BasicPort*)handle;
+}
+
+packet::IWriter& NetworkLoop::Tasks::StartUdpSend::get_outbound_writer() const {
+    roc_panic_if(!success());
+    roc_panic_if(!outbound_writer_);
+    return *outbound_writer_;
+}
+
+NetworkLoop::Tasks::StartUdpRecv::StartUdpRecv(PortHandle handle,
+                                               packet::IWriter& inbound_writer) {
+    func_ = &NetworkLoop::task_start_udp_recv_;
+    if (!handle) {
+        roc_panic("network loop: port handle is null");
+    }
+    port_ = (BasicPort*)handle;
+    inbound_writer_ = &inbound_writer;
 }
 
 NetworkLoop::Tasks::AddTcpServerPort::AddTcpServerPort(TcpServerConfig& config,
@@ -74,7 +86,7 @@ NetworkLoop::PortHandle NetworkLoop::Tasks::AddTcpClientPort::get_handle() const
 NetworkLoop::Tasks::RemovePort::RemovePort(PortHandle handle) {
     func_ = &NetworkLoop::task_remove_port_;
     if (!handle) {
-        roc_panic("network loop: handle is null");
+        roc_panic("network loop: port handle is null");
     }
     port_ = (BasicPort*)handle;
 }
@@ -374,9 +386,8 @@ void NetworkLoop::close_all_sems_() {
 void NetworkLoop::task_add_udp_port_(NetworkTask& base_task) {
     Tasks::AddUdpPort& task = (Tasks::AddUdpPort&)base_task;
 
-    core::SharedPtr<UdpPort> port =
-        new (arena_) UdpPort(*task.config_, task.dir_, task.inbound_writer_, loop_,
-                             packet_factory_, buffer_factory_, arena_);
+    core::SharedPtr<UdpPort> port = new (arena_)
+        UdpPort(*task.config_, loop_, packet_factory_, buffer_factory_, arena_);
     if (!port) {
         roc_log(LogError, "network loop: can't add udp port %s: allocate failed",
                 address::socket_addr_to_str(task.config_->bind_address).c_str());
@@ -404,7 +415,46 @@ void NetworkLoop::task_add_udp_port_(NetworkTask& base_task) {
 
     task.config_->bind_address = port->bind_address();
     task.port_handle_ = port.get();
-    task.outbound_writer_ = port->outbound_writer();
+
+    task.success_ = true;
+    task.state_ = NetworkTask::StateFinishing;
+}
+
+void NetworkLoop::task_start_udp_send_(NetworkTask& base_task) {
+    Tasks::StartUdpSend& task = (Tasks::StartUdpSend&)base_task;
+
+    roc_log(LogDebug, "network loop: starting sending packets on port %s",
+            task.port_->descriptor());
+
+    core::SharedPtr<UdpPort> port = (UdpPort*)task.port_.get();
+
+    if (!(task.outbound_writer_ = port->start_send())) {
+        roc_log(LogError, "network loop: can't start sending on port %s",
+                task.port_->descriptor());
+        task.success_ = false;
+        task.state_ = NetworkTask::StateFinishing;
+        return;
+    }
+
+    task.success_ = true;
+    task.state_ = NetworkTask::StateFinishing;
+}
+
+void NetworkLoop::task_start_udp_recv_(NetworkTask& base_task) {
+    Tasks::StartUdpRecv& task = (Tasks::StartUdpRecv&)base_task;
+
+    roc_log(LogDebug, "network loop: starting receiving packets on port %s",
+            task.port_->descriptor());
+
+    core::SharedPtr<UdpPort> port = (UdpPort*)task.port_.get();
+
+    if (!port->start_recv(*task.inbound_writer_)) {
+        roc_log(LogError, "network loop: can't start receiving on port %s",
+                task.port_->descriptor());
+        task.success_ = false;
+        task.state_ = NetworkTask::StateFinishing;
+        return;
+    }
 
     task.success_ = true;
     task.state_ = NetworkTask::StateFinishing;

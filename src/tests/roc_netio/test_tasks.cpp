@@ -66,19 +66,23 @@ public:
     AddRemoveCompleter(NetworkLoop& net_loop)
         : net_loop_(net_loop)
         , cond_(mutex_)
+        , writer_(NULL)
         , add_task_(NULL)
+        , recv_task_(NULL)
         , remove_task_(NULL) {
     }
 
     ~AddRemoveCompleter() {
         delete add_task_;
+        delete recv_task_;
         delete remove_task_;
     }
 
     void start(UdpConfig& config, packet::IWriter& writer) {
         core::Mutex::Lock lock(mutex_);
 
-        add_task_ = new NetworkLoop::Tasks::AddUdpPort(config, netio::UdpRecv, &writer);
+        writer_ = &writer;
+        add_task_ = new NetworkLoop::Tasks::AddUdpPort(config);
         net_loop_.schedule(*add_task_, *this);
     }
 
@@ -98,6 +102,18 @@ public:
 
             roc_panic_if_not(add_task_->success());
             roc_panic_if_not(add_task_->get_handle());
+
+            recv_task_ =
+                new NetworkLoop::Tasks::StartUdpRecv(add_task_->get_handle(), *writer_);
+            net_loop_.schedule(*recv_task_, *this);
+
+            return;
+        }
+
+        if (&task == recv_task_) {
+            roc_panic_if_not(net_loop_.num_ports() == 1);
+
+            roc_panic_if_not(recv_task_->success());
 
             remove_task_ = new NetworkLoop::Tasks::RemovePort(add_task_->get_handle());
             net_loop_.schedule(*remove_task_, *this);
@@ -123,7 +139,10 @@ private:
     core::Mutex mutex_;
     core::Cond cond_;
 
+    packet::IWriter* writer_;
+
     NetworkLoop::Tasks::AddUdpPort* add_task_;
+    NetworkLoop::Tasks::StartUdpRecv* recv_task_;
     NetworkLoop::Tasks::RemovePort* remove_task_;
 };
 
@@ -136,17 +155,44 @@ TEST(tasks, synchronous_add) {
     CHECK(net_loop.is_valid());
 
     UdpConfig config = make_receiver_config("127.0.0.1", 0);
+
+    NetworkLoop::Tasks::AddUdpPort add_task(config);
+
+    CHECK(!add_task.success());
+    CHECK(!add_task.get_handle());
+
+    CHECK(net_loop.schedule_and_wait(add_task));
+
+    CHECK(add_task.success());
+    CHECK(add_task.get_handle());
+}
+
+TEST(tasks, synchronous_add_recv_remove) {
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    CHECK(net_loop.is_valid());
+
+    UdpConfig config = make_receiver_config("127.0.0.1", 0);
     packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
-    NetworkLoop::Tasks::AddUdpPort task(config, netio::UdpRecv, &queue);
+    NetworkLoop::Tasks::AddUdpPort add_task(config);
+    CHECK(!add_task.success());
+    CHECK(!add_task.get_handle());
 
-    CHECK(!task.success());
-    CHECK(!task.get_handle());
+    CHECK(net_loop.schedule_and_wait(add_task));
+    CHECK(add_task.success());
+    CHECK(add_task.get_handle());
 
-    CHECK(net_loop.schedule_and_wait(task));
+    NetworkLoop::Tasks::StartUdpRecv recv_task(add_task.get_handle(), queue);
+    CHECK(!recv_task.success());
 
-    CHECK(task.success());
-    CHECK(task.get_handle());
+    CHECK(net_loop.schedule_and_wait(recv_task));
+    CHECK(recv_task.success());
+
+    NetworkLoop::Tasks::RemovePort remove_task(add_task.get_handle());
+    CHECK(!remove_task.success());
+
+    CHECK(net_loop.schedule_and_wait(remove_task));
+    CHECK(remove_task.success());
 }
 
 TEST(tasks, asynchronous_add) {
@@ -154,9 +200,8 @@ TEST(tasks, asynchronous_add) {
     CHECK(net_loop.is_valid());
 
     UdpConfig config = make_receiver_config("127.0.0.1", 0);
-    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
-    NetworkLoop::Tasks::AddUdpPort task(config, netio::UdpRecv, &queue);
+    NetworkLoop::Tasks::AddUdpPort task(config);
 
     CHECK(!task.success());
     CHECK(!task.get_handle());
@@ -171,7 +216,7 @@ TEST(tasks, asynchronous_add) {
     CHECK(task.get_handle());
 }
 
-TEST(tasks, asynchronous_add_remove) {
+TEST(tasks, asynchronous_add_recv_remove) {
     NetworkLoop net_loop(packet_factory, buffer_factory, arena);
     CHECK(net_loop.is_valid());
 

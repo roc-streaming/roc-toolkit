@@ -161,6 +161,8 @@ bool Receiver::bind(slot_index_t slot_index,
         return false;
     }
 
+    Port& port = slot->ports[iface];
+
     address::SocketAddr address;
 
     netio::NetworkLoop::Tasks::ResolveEndpointAddress resolve_task(uri);
@@ -187,10 +189,9 @@ bool Receiver::bind(slot_index_t slot_index,
         return false;
     }
 
-    slot->ports[iface].config.bind_address = resolve_task.get_address();
+    port.config.bind_address = resolve_task.get_address();
 
-    netio::NetworkLoop::Tasks::AddUdpPort port_task(
-        slot->ports[iface].config, netio::UdpRecv, endpoint_task.get_writer());
+    netio::NetworkLoop::Tasks::AddUdpPort port_task(port.config);
     if (!context().network_loop().schedule_and_wait(port_task)) {
         roc_log(LogError,
                 "receiver node:"
@@ -201,13 +202,25 @@ bool Receiver::bind(slot_index_t slot_index,
         return false;
     }
 
-    slot->ports[iface].handle = port_task.get_handle();
+    port.handle = port_task.get_handle();
 
     if (uri.port() == 0) {
         // Report back the port number we've selected.
-        if (!uri.set_port(slot->ports[iface].config.bind_address.port())) {
+        if (!uri.set_port(port.config.bind_address.port())) {
             roc_panic("receiver node: can't set endpoint port");
         }
+    }
+
+    netio::NetworkLoop::Tasks::StartUdpRecv recv_task(port.handle,
+                                                      *endpoint_task.get_writer());
+    if (!context().network_loop().schedule_and_wait(recv_task)) {
+        roc_log(LogError,
+                "receiver node:"
+                " can't bind %s interface of slot %lu:"
+                " can't start receiving on local port",
+                address::interface_to_str(iface), (unsigned long)slot_index);
+        break_slot_(*slot);
+        return false;
     }
 
     update_compatibility_(iface, uri);

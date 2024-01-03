@@ -33,51 +33,46 @@ UdpConfig make_udp_config(const char* ip, int port) {
     return config;
 }
 
-NetworkLoop::PortHandle add_udp_sender(NetworkLoop& net_loop, UdpConfig& config) {
-    NetworkLoop::Tasks::AddUdpPort task(config, netio::UdpSend, NULL);
-    CHECK(!task.success());
-    if (!net_loop.schedule_and_wait(task)) {
-        CHECK(!task.success());
-        return NULL;
-    }
-    CHECK(task.success());
-    CHECK(task.get_outbound_writer());
-    return task.get_handle();
-}
-
-NetworkLoop::PortHandle add_udp_receiver(NetworkLoop& net_loop,
-                                         UdpConfig& config,
-                                         packet::IWriter& inbound_writer) {
-    NetworkLoop::Tasks::AddUdpPort task(config, netio::UdpRecv, &inbound_writer);
-    CHECK(!task.success());
-    if (!net_loop.schedule_and_wait(task)) {
-        CHECK(!task.success());
-        return NULL;
-    }
-    CHECK(task.success());
-    CHECK(!task.get_outbound_writer());
-    return task.get_handle();
-}
-
-NetworkLoop::PortHandle add_udp_sender_receiver(NetworkLoop& net_loop,
-                                                UdpConfig& config,
-                                                packet::IWriter& inbound_writer) {
-    NetworkLoop::Tasks::AddUdpPort task(config, netio::UdpSendRecv, &inbound_writer);
-    CHECK(!task.success());
-    if (!net_loop.schedule_and_wait(task)) {
-        CHECK(!task.success());
-        return NULL;
-    }
-    CHECK(task.success());
-    CHECK(task.get_outbound_writer());
-    return task.get_handle();
-}
-
 void remove_port(NetworkLoop& net_loop, NetworkLoop::PortHandle handle) {
-    NetworkLoop::Tasks::RemovePort task(handle);
-    CHECK(!task.success());
-    CHECK(net_loop.schedule_and_wait(task));
-    CHECK(task.success());
+    NetworkLoop::Tasks::RemovePort remove_task(handle);
+    CHECK(!remove_task.success());
+    CHECK(net_loop.schedule_and_wait(remove_task));
+    CHECK(remove_task.success());
+}
+
+NetworkLoop::PortHandle add_port(NetworkLoop& net_loop, UdpConfig& config) {
+    NetworkLoop::Tasks::AddUdpPort add_task(config);
+    CHECK(!add_task.success());
+    if (!net_loop.schedule_and_wait(add_task)) {
+        CHECK(!add_task.success());
+        return NULL;
+    }
+    CHECK(add_task.success());
+    return add_task.get_handle();
+}
+
+bool start_send(NetworkLoop& net_loop, NetworkLoop::PortHandle port_handle) {
+    NetworkLoop::Tasks::StartUdpSend send_task(port_handle);
+    CHECK(!send_task.success());
+    if (!net_loop.schedule_and_wait(send_task)) {
+        CHECK(!send_task.success());
+        return false;
+    }
+    CHECK(send_task.success());
+    return true;
+}
+
+bool start_recv(NetworkLoop& net_loop,
+                NetworkLoop::PortHandle port_handle,
+                packet::IWriter& inbound_writer) {
+    NetworkLoop::Tasks::StartUdpRecv recv_task(port_handle, inbound_writer);
+    CHECK(!recv_task.success());
+    if (!net_loop.schedule_and_wait(recv_task)) {
+        CHECK(!recv_task.success());
+        return false;
+    }
+    CHECK(recv_task.success());
+    return true;
 }
 
 } // namespace
@@ -88,178 +83,7 @@ TEST(udp_ports, no_ports) {
     NetworkLoop net_loop(packet_factory, buffer_factory, arena);
     CHECK(net_loop.is_valid());
 
-    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
-}
-
-TEST(udp_ports, add_anyaddr) {
-    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
-
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
-    CHECK(net_loop.is_valid());
-
-    UdpConfig tx_config = make_udp_config("0.0.0.0", 0);
-    UdpConfig rx_config = make_udp_config("0.0.0.0", 0);
-
-    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
-
-    NetworkLoop::PortHandle tx_handle = add_udp_sender(net_loop, tx_config);
-    CHECK(tx_handle);
-    CHECK(tx_config.bind_address.port() != 0);
-
-    UNSIGNED_LONGS_EQUAL(1, net_loop.num_ports());
-
-    NetworkLoop::PortHandle rx_handle = add_udp_receiver(net_loop, rx_config, queue);
-    CHECK(rx_handle);
-    CHECK(rx_config.bind_address.port() != 0);
-
-    UNSIGNED_LONGS_EQUAL(2, net_loop.num_ports());
-}
-
-TEST(udp_ports, add_localhost) {
-    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
-
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
-    CHECK(net_loop.is_valid());
-
-    UdpConfig tx_config = make_udp_config("127.0.0.1", 0);
-    UdpConfig rx_config = make_udp_config("127.0.0.1", 0);
-
-    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
-
-    NetworkLoop::PortHandle tx_handle = add_udp_sender(net_loop, tx_config);
-    CHECK(tx_handle);
-    CHECK(tx_config.bind_address.port() != 0);
-
-    UNSIGNED_LONGS_EQUAL(1, net_loop.num_ports());
-
-    NetworkLoop::PortHandle rx_handle = add_udp_receiver(net_loop, rx_config, queue);
-    CHECK(rx_handle);
-    CHECK(rx_config.bind_address.port() != 0);
-
-    UNSIGNED_LONGS_EQUAL(2, net_loop.num_ports());
-}
-
-TEST(udp_ports, add_addrinuse) {
-    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
-
-    NetworkLoop net_loop1(packet_factory, buffer_factory, arena);
-    CHECK(net_loop1.is_valid());
-
-    UdpConfig tx_config = make_udp_config("127.0.0.1", 0);
-    UdpConfig rx_config = make_udp_config("127.0.0.1", 0);
-
-    UNSIGNED_LONGS_EQUAL(0, net_loop1.num_ports());
-
-    NetworkLoop::PortHandle tx_handle = add_udp_sender(net_loop1, tx_config);
-    CHECK(tx_handle);
-    CHECK(tx_config.bind_address.port() != 0);
-
-    UNSIGNED_LONGS_EQUAL(1, net_loop1.num_ports());
-
-    NetworkLoop::PortHandle rx_handle = add_udp_receiver(net_loop1, rx_config, queue);
-    CHECK(rx_handle);
-    CHECK(rx_config.bind_address.port() != 0);
-
-    UNSIGNED_LONGS_EQUAL(2, net_loop1.num_ports());
-
-    NetworkLoop net_loop2(packet_factory, buffer_factory, arena);
-    CHECK(net_loop2.is_valid());
-
-    UNSIGNED_LONGS_EQUAL(0, net_loop2.num_ports());
-
-    CHECK(!add_udp_sender(net_loop2, tx_config));
-    CHECK(!add_udp_receiver(net_loop2, rx_config, queue));
-
-    UNSIGNED_LONGS_EQUAL(2, net_loop1.num_ports());
-    UNSIGNED_LONGS_EQUAL(0, net_loop2.num_ports());
-}
-
-TEST(udp_ports, add_broadcast_sender) {
-    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
-
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
-    CHECK(net_loop.is_valid());
-
-    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
-
-    UdpConfig tx_config = make_udp_config("127.0.0.1", 0);
-    NetworkLoop::PortHandle tx_handle = add_udp_sender(net_loop, tx_config);
-    CHECK(tx_handle);
-    CHECK(tx_config.bind_address.port() != 0);
-
-    UNSIGNED_LONGS_EQUAL(1, net_loop.num_ports());
-}
-
-TEST(udp_ports, add_multicast_receiver) {
-    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
-
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
-    CHECK(net_loop.is_valid());
-
-    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
-
-    { // miface empty
-        UdpConfig rx_config = make_udp_config("224.0.0.1", 0);
-        strcpy(rx_config.multicast_interface, "");
-
-        CHECK(add_udp_receiver(net_loop, rx_config, queue));
-        UNSIGNED_LONGS_EQUAL(1, net_loop.num_ports());
-    }
-    { // miface 0.0.0.0
-        UdpConfig rx_config = make_udp_config("224.0.0.1", 0);
-        strcpy(rx_config.multicast_interface, "0.0.0.0");
-
-        CHECK(add_udp_receiver(net_loop, rx_config, queue));
-        UNSIGNED_LONGS_EQUAL(2, net_loop.num_ports());
-    }
-}
-
-TEST(udp_ports, add_multicast_receiver_error) {
-    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
-
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
-    CHECK(net_loop.is_valid());
-
-    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
-
-    { // non-multicast address
-        UdpConfig rx_config = make_udp_config("127.0.0.1", 0);
-        strcpy(rx_config.multicast_interface, "0.0.0.0");
-
-        CHECK(!add_udp_receiver(net_loop, rx_config, queue));
-        UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
-    }
-    { // ipv6 miface for ipv4 addr
-        UdpConfig rx_config = make_udp_config("224.0.0.1", 0);
-        strcpy(rx_config.multicast_interface, "::");
-
-        CHECK(!add_udp_receiver(net_loop, rx_config, queue));
-        UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
-    }
-    { // ipv4 miface for ipv6 addr
-        UdpConfig rx_config = make_udp_config("::1", 0);
-        strcpy(rx_config.multicast_interface, "0.0.0.0");
-
-        CHECK(!add_udp_receiver(net_loop, rx_config, queue));
-        UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
-    }
-}
-
-TEST(udp_ports, add_bidirectional) {
-    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
-
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
-    CHECK(net_loop.is_valid());
-
-    UdpConfig config = make_udp_config("0.0.0.0", 0);
-
-    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
-
-    NetworkLoop::PortHandle handle = add_udp_sender_receiver(net_loop, config, queue);
-    CHECK(handle);
-    CHECK(config.bind_address.port() != 0);
-
-    UNSIGNED_LONGS_EQUAL(1, net_loop.num_ports());
+    CHECK_EQUAL(0, net_loop.num_ports());
 }
 
 TEST(udp_ports, add_remove) {
@@ -271,23 +95,56 @@ TEST(udp_ports, add_remove) {
     UdpConfig tx_config = make_udp_config("0.0.0.0", 0);
     UdpConfig rx_config = make_udp_config("0.0.0.0", 0);
 
-    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
+    CHECK_EQUAL(0, net_loop.num_ports());
 
-    NetworkLoop::PortHandle tx_handle = add_udp_sender(net_loop, tx_config);
+    NetworkLoop::PortHandle tx_handle = add_port(net_loop, tx_config);
     CHECK(tx_handle);
 
-    UNSIGNED_LONGS_EQUAL(1, net_loop.num_ports());
+    CHECK_EQUAL(1, net_loop.num_ports());
 
-    NetworkLoop::PortHandle rx_handle = add_udp_receiver(net_loop, rx_config, queue);
+    NetworkLoop::PortHandle rx_handle = add_port(net_loop, rx_config);
     CHECK(rx_handle);
 
-    UNSIGNED_LONGS_EQUAL(2, net_loop.num_ports());
+    CHECK_EQUAL(2, net_loop.num_ports());
 
     remove_port(net_loop, tx_handle);
-    UNSIGNED_LONGS_EQUAL(1, net_loop.num_ports());
+    CHECK_EQUAL(1, net_loop.num_ports());
 
     remove_port(net_loop, rx_handle);
-    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
+    CHECK_EQUAL(0, net_loop.num_ports());
+}
+
+TEST(udp_ports, add_start_remove) {
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
+
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    CHECK(net_loop.is_valid());
+
+    UdpConfig tx_config = make_udp_config("0.0.0.0", 0);
+    UdpConfig rx_config = make_udp_config("0.0.0.0", 0);
+
+    CHECK_EQUAL(0, net_loop.num_ports());
+
+    NetworkLoop::PortHandle tx_handle = add_port(net_loop, tx_config);
+    CHECK(tx_handle);
+
+    CHECK_EQUAL(1, net_loop.num_ports());
+
+    NetworkLoop::PortHandle rx_handle = add_port(net_loop, rx_config);
+    CHECK(rx_handle);
+
+    CHECK_EQUAL(2, net_loop.num_ports());
+
+    CHECK(start_send(net_loop, tx_handle));
+    CHECK(start_recv(net_loop, rx_handle, queue));
+
+    CHECK_EQUAL(2, net_loop.num_ports());
+
+    remove_port(net_loop, tx_handle);
+    CHECK_EQUAL(1, net_loop.num_ports());
+
+    remove_port(net_loop, rx_handle);
+    CHECK_EQUAL(0, net_loop.num_ports());
 }
 
 TEST(udp_ports, add_remove_add) {
@@ -296,16 +153,247 @@ TEST(udp_ports, add_remove_add) {
 
     UdpConfig tx_config = make_udp_config("0.0.0.0", 0);
 
-    NetworkLoop::PortHandle tx_handle = add_udp_sender(net_loop, tx_config);
+    NetworkLoop::PortHandle tx_handle = add_port(net_loop, tx_config);
     CHECK(tx_handle);
-    UNSIGNED_LONGS_EQUAL(1, net_loop.num_ports());
+    CHECK_EQUAL(1, net_loop.num_ports());
 
     remove_port(net_loop, tx_handle);
-    UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
+    CHECK_EQUAL(0, net_loop.num_ports());
 
-    tx_handle = add_udp_sender(net_loop, tx_config);
+    tx_handle = add_port(net_loop, tx_config);
     CHECK(tx_handle);
-    UNSIGNED_LONGS_EQUAL(1, net_loop.num_ports());
+    CHECK_EQUAL(1, net_loop.num_ports());
+}
+
+TEST(udp_ports, add_start_remove_add) {
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    CHECK(net_loop.is_valid());
+
+    UdpConfig tx_config = make_udp_config("0.0.0.0", 0);
+
+    NetworkLoop::PortHandle tx_handle = add_port(net_loop, tx_config);
+    CHECK(tx_handle);
+    CHECK_EQUAL(1, net_loop.num_ports());
+
+    CHECK(start_send(net_loop, tx_handle));
+    CHECK_EQUAL(1, net_loop.num_ports());
+
+    remove_port(net_loop, tx_handle);
+    CHECK_EQUAL(0, net_loop.num_ports());
+
+    tx_handle = add_port(net_loop, tx_config);
+    CHECK(tx_handle);
+    CHECK_EQUAL(1, net_loop.num_ports());
+}
+
+TEST(udp_ports, anyaddr) {
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
+
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    CHECK(net_loop.is_valid());
+
+    UdpConfig tx_config = make_udp_config("0.0.0.0", 0);
+    UdpConfig rx_config = make_udp_config("0.0.0.0", 0);
+
+    CHECK_EQUAL(0, net_loop.num_ports());
+
+    NetworkLoop::PortHandle tx_handle = add_port(net_loop, tx_config);
+    CHECK(tx_handle);
+    CHECK(tx_config.bind_address.port() != 0);
+
+    CHECK_EQUAL(1, net_loop.num_ports());
+
+    NetworkLoop::PortHandle rx_handle = add_port(net_loop, rx_config);
+    CHECK(rx_handle);
+    CHECK(rx_config.bind_address.port() != 0);
+
+    CHECK_EQUAL(2, net_loop.num_ports());
+
+    CHECK(start_send(net_loop, tx_handle));
+    CHECK(start_recv(net_loop, rx_handle, queue));
+
+    CHECK_EQUAL(2, net_loop.num_ports());
+}
+
+TEST(udp_ports, localhost) {
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
+
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    CHECK(net_loop.is_valid());
+
+    UdpConfig tx_config = make_udp_config("127.0.0.1", 0);
+    UdpConfig rx_config = make_udp_config("127.0.0.1", 0);
+
+    CHECK_EQUAL(0, net_loop.num_ports());
+
+    NetworkLoop::PortHandle tx_handle = add_port(net_loop, tx_config);
+    CHECK(tx_handle);
+    CHECK(tx_config.bind_address.port() != 0);
+
+    CHECK_EQUAL(1, net_loop.num_ports());
+
+    NetworkLoop::PortHandle rx_handle = add_port(net_loop, rx_config);
+    CHECK(rx_handle);
+    CHECK(rx_config.bind_address.port() != 0);
+
+    CHECK_EQUAL(2, net_loop.num_ports());
+
+    CHECK(start_send(net_loop, tx_handle));
+    CHECK(start_recv(net_loop, rx_handle, queue));
+
+    CHECK_EQUAL(2, net_loop.num_ports());
+}
+
+TEST(udp_ports, addrinuse) {
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
+
+    NetworkLoop net_loop1(packet_factory, buffer_factory, arena);
+    CHECK(net_loop1.is_valid());
+
+    UdpConfig tx_config = make_udp_config("127.0.0.1", 0);
+    UdpConfig rx_config = make_udp_config("127.0.0.1", 0);
+
+    CHECK_EQUAL(0, net_loop1.num_ports());
+
+    NetworkLoop::PortHandle tx_handle = add_port(net_loop1, tx_config);
+    CHECK(tx_handle);
+    CHECK(tx_config.bind_address.port() != 0);
+
+    CHECK_EQUAL(1, net_loop1.num_ports());
+
+    NetworkLoop::PortHandle rx_handle = add_port(net_loop1, rx_config);
+    CHECK(rx_handle);
+    CHECK(rx_config.bind_address.port() != 0);
+
+    CHECK_EQUAL(2, net_loop1.num_ports());
+
+    CHECK(start_send(net_loop1, tx_handle));
+    CHECK(start_recv(net_loop1, rx_handle, queue));
+
+    CHECK_EQUAL(2, net_loop1.num_ports());
+
+    NetworkLoop net_loop2(packet_factory, buffer_factory, arena);
+    CHECK(net_loop2.is_valid());
+
+    CHECK_EQUAL(0, net_loop2.num_ports());
+
+    CHECK(!add_port(net_loop2, tx_config));
+    CHECK(!add_port(net_loop2, rx_config));
+
+    CHECK_EQUAL(2, net_loop1.num_ports());
+    CHECK_EQUAL(0, net_loop2.num_ports());
+}
+
+TEST(udp_ports, broadcast_sender) {
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
+
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    CHECK(net_loop.is_valid());
+
+    CHECK_EQUAL(0, net_loop.num_ports());
+
+    UdpConfig tx_config = make_udp_config("127.0.0.1", 0);
+    NetworkLoop::PortHandle tx_handle = add_port(net_loop, tx_config);
+    CHECK(tx_handle);
+    CHECK(tx_config.bind_address.port() != 0);
+
+    CHECK(start_send(net_loop, tx_handle));
+
+    CHECK_EQUAL(1, net_loop.num_ports());
+}
+
+TEST(udp_ports, multicast_receiver) {
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
+
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    CHECK(net_loop.is_valid());
+
+    CHECK_EQUAL(0, net_loop.num_ports());
+
+    { // miface empty
+        UdpConfig rx_config = make_udp_config("224.0.0.1", 0);
+        strcpy(rx_config.multicast_interface, "");
+
+        NetworkLoop::PortHandle rx_handle = add_port(net_loop, rx_config);
+        CHECK(rx_handle);
+        CHECK(start_recv(net_loop, rx_handle, queue));
+
+        remove_port(net_loop, rx_handle);
+    }
+    { // miface 0.0.0.0
+        UdpConfig rx_config = make_udp_config("224.0.0.1", 0);
+        strcpy(rx_config.multicast_interface, "0.0.0.0");
+
+        NetworkLoop::PortHandle rx_handle = add_port(net_loop, rx_config);
+        CHECK(rx_handle);
+        CHECK(start_recv(net_loop, rx_handle, queue));
+
+        remove_port(net_loop, rx_handle);
+    }
+
+    CHECK_EQUAL(0, net_loop.num_ports());
+}
+
+TEST(udp_ports, multicast_receiver_error) {
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
+
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    CHECK(net_loop.is_valid());
+
+    CHECK_EQUAL(0, net_loop.num_ports());
+
+    { // non-multicast address
+        UdpConfig rx_config = make_udp_config("127.0.0.1", 0);
+        strcpy(rx_config.multicast_interface, "0.0.0.0");
+
+        NetworkLoop::PortHandle rx_handle = add_port(net_loop, rx_config);
+        CHECK(rx_handle);
+        CHECK(!start_recv(net_loop, rx_handle, queue));
+
+        remove_port(net_loop, rx_handle);
+    }
+    { // ipv6 miface for ipv4 addr
+        UdpConfig rx_config = make_udp_config("224.0.0.1", 0);
+        strcpy(rx_config.multicast_interface, "::");
+
+        NetworkLoop::PortHandle rx_handle = add_port(net_loop, rx_config);
+        CHECK(rx_handle);
+        CHECK(!start_recv(net_loop, rx_handle, queue));
+
+        remove_port(net_loop, rx_handle);
+    }
+    { // ipv4 miface for ipv6 addr
+        UdpConfig rx_config = make_udp_config("::1", 0);
+        strcpy(rx_config.multicast_interface, "0.0.0.0");
+
+        NetworkLoop::PortHandle rx_handle = add_port(net_loop, rx_config);
+        if (rx_handle) {
+            CHECK(!start_recv(net_loop, rx_handle, queue));
+            remove_port(net_loop, rx_handle);
+        }
+    }
+
+    CHECK_EQUAL(0, net_loop.num_ports());
+}
+
+TEST(udp_ports, bidirectional) {
+    packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
+
+    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    CHECK(net_loop.is_valid());
+
+    UdpConfig config = make_udp_config("0.0.0.0", 0);
+
+    CHECK_EQUAL(0, net_loop.num_ports());
+
+    NetworkLoop::PortHandle handle = add_port(net_loop, config);
+    CHECK(handle);
+    CHECK(config.bind_address.port() != 0);
+
+    CHECK(start_send(net_loop, handle));
+    CHECK(start_recv(net_loop, handle, queue));
+
+    CHECK_EQUAL(1, net_loop.num_ports());
 }
 
 } // namespace netio
