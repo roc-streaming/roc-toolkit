@@ -232,33 +232,8 @@ bool receiver_config_from_user(node::Context&,
     return true;
 }
 
-ROC_ATTR_NO_SANITIZE_UB bool
-sender_interface_config_from_user(netio::UdpSenderConfig& out,
-                                  const roc_interface_config& in) {
-    if (in.outgoing_address[0] != '\0') {
-        if (!out.bind_address.set_host_port_auto(in.outgoing_address, 0)) {
-            roc_log(LogError,
-                    "bad configuration: invalid roc_interface_config.outgoing_address:"
-                    " should be either empty or valid IPv4/IPv6 address");
-            return false;
-        }
-    }
-
-    if (in.multicast_group[0] != '\0') {
-        roc_log(LogError,
-                "bad configuration: invalid roc_interface_config.multicast_group:"
-                " should be empty for sender");
-        return false;
-    }
-
-    out.reuseaddr = (in.reuse_address != 0);
-
-    return true;
-}
-
-ROC_ATTR_NO_SANITIZE_UB bool
-receiver_interface_config_from_user(netio::UdpReceiverConfig& out,
-                                    const roc_interface_config& in) {
+ROC_ATTR_NO_SANITIZE_UB bool interface_config_from_user(netio::UdpConfig& out,
+                                                        const roc_interface_config& in) {
     if (in.outgoing_address[0] != '\0') {
         if (!out.bind_address.set_host_port_auto(in.outgoing_address, 0)) {
             roc_log(LogError,
@@ -288,7 +263,7 @@ receiver_interface_config_from_user(netio::UdpReceiverConfig& out,
         strcpy(out.multicast_interface, in.multicast_group);
     }
 
-    out.reuseaddr = (in.reuse_address != 0);
+    out.enable_reuseaddr = (in.reuse_address != 0);
 
     return true;
 }

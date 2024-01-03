@@ -424,8 +424,8 @@ int main(int argc, char** argv) {
             return 1;
         }
 
-        netio::UdpReceiverConfig iface_config;
-        iface_config.reuseaddr = args.reuseaddr_given;
+        netio::UdpConfig iface_config;
+        iface_config.enable_reuseaddr = args.reuseaddr_given;
 
         if (args.miface_given) {
             if (strlen(args.miface_arg[slot])
@@ -457,8 +457,8 @@ int main(int argc, char** argv) {
             return 1;
         }
 
-        netio::UdpReceiverConfig iface_config;
-        iface_config.reuseaddr = args.reuseaddr_given;
+        netio::UdpConfig iface_config;
+        iface_config.enable_reuseaddr = args.reuseaddr_given;
 
         if (args.miface_given) {
             if (strlen(args.miface_arg[slot])
@@ -491,8 +491,8 @@ int main(int argc, char** argv) {
             return 1;
         }
 
-        netio::UdpReceiverConfig iface_config;
-        iface_config.reuseaddr = args.reuseaddr_given;
+        netio::UdpConfig iface_config;
+        iface_config.enable_reuseaddr = args.reuseaddr_given;
 
         if (args.miface_given) {
             if (strlen(args.miface_arg[slot])

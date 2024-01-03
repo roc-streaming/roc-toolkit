@@ -63,7 +63,7 @@ bool Receiver::is_valid() {
 
 bool Receiver::configure(slot_index_t slot_index,
                          address::Interface iface,
-                         const netio::UdpReceiverConfig& config) {
+                         const netio::UdpConfig& config) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(is_valid());
@@ -189,8 +189,8 @@ bool Receiver::bind(slot_index_t slot_index,
 
     slot->ports[iface].config.bind_address = resolve_task.get_address();
 
-    netio::NetworkLoop::Tasks::AddUdpReceiverPort port_task(slot->ports[iface].config,
-                                                            *endpoint_task.get_writer());
+    netio::NetworkLoop::Tasks::AddUdpPort port_task(
+        slot->ports[iface].config, netio::UdpRecv, endpoint_task.get_writer());
     if (!context().network_loop().schedule_and_wait(port_task)) {
         roc_log(LogError,
                 "receiver node:"

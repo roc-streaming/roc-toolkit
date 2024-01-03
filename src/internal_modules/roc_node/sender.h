@@ -49,7 +49,7 @@ public:
     //! Set interface config.
     bool configure(slot_index_t slot_index,
                    address::Interface iface,
-                   const netio::UdpSenderConfig& config);
+                   const netio::UdpConfig& config);
 
     //! Connect to remote endpoint.
     bool connect(slot_index_t slot_index,
@@ -77,8 +77,8 @@ public:
 
 private:
     struct Port {
-        netio::UdpSenderConfig config;
-        netio::UdpSenderConfig orig_config;
+        netio::UdpConfig config;
+        netio::UdpConfig orig_config;
         netio::NetworkLoop::PortHandle handle;
         packet::IWriter* writer;
 

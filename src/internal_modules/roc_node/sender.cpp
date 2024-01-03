@@ -61,7 +61,7 @@ bool Sender::is_valid() const {
 
 bool Sender::configure(slot_index_t slot_index,
                        address::Interface iface,
-                       const netio::UdpSenderConfig& config) {
+                       const netio::UdpConfig& config) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(is_valid());
@@ -458,7 +458,8 @@ bool Sender::setup_outgoing_port_(Port& port,
             }
         }
 
-        netio::NetworkLoop::Tasks::AddUdpSenderPort port_task(port.config);
+        netio::NetworkLoop::Tasks::AddUdpPort port_task(port.config, netio::UdpSend,
+                                                        NULL);
 
         if (!context().network_loop().schedule_and_wait(port_task)) {
             roc_log(LogError, "sender node: can't bind %s interface to local port",
@@ -467,7 +468,7 @@ bool Sender::setup_outgoing_port_(Port& port,
         }
 
         port.handle = port_task.get_handle();
-        port.writer = port_task.get_writer();
+        port.writer = port_task.get_outbound_writer();
 
         roc_log(LogInfo, "sender node: bound %s interface to %s",
                 address::interface_to_str(iface),

@@ -95,7 +95,7 @@ TEST(sender, configure) {
         Sender sender(context, sender_config);
         CHECK(sender.is_valid());
 
-        netio::UdpSenderConfig iface_config;
+        netio::UdpConfig iface_config;
         CHECK(sender.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
 
         UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
@@ -114,7 +114,7 @@ TEST(sender, configure) {
         Sender sender(context, sender_config);
         CHECK(sender.is_valid());
 
-        netio::UdpSenderConfig iface_config;
+        netio::UdpConfig iface_config;
         CHECK(sender.configure(0, address::Iface_AudioSource, iface_config));
         CHECK(sender.configure(1, address::Iface_AudioSource, iface_config));
 
@@ -471,7 +471,7 @@ TEST(sender, configure_errors) {
         Sender sender(context, sender_config);
         CHECK(sender.is_valid());
 
-        netio::UdpSenderConfig iface_config;
+        netio::UdpConfig iface_config;
         CHECK(iface_config.bind_address.set_host_port_auto("8.8.8.8", 0));
 
         CHECK(sender.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
@@ -492,7 +492,7 @@ TEST(sender, configure_errors) {
         Sender sender(context, sender_config);
         CHECK(sender.is_valid());
 
-        netio::UdpSenderConfig iface_config;
+        netio::UdpConfig iface_config;
         CHECK(iface_config.bind_address.set_host_port_auto("::", 0));
 
         CHECK(sender.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
@@ -524,7 +524,7 @@ TEST(sender, flow_errors) {
 
         UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 1);
 
-        netio::UdpSenderConfig iface_config;
+        netio::UdpConfig iface_config;
         CHECK(!sender.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
         CHECK(sender.has_broken());
 
@@ -639,7 +639,7 @@ TEST(sender, recover) {
         UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
 
         // can't configure, slot is broken
-        netio::UdpSenderConfig iface_config;
+        netio::UdpConfig iface_config;
         CHECK(!sender.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
         CHECK(sender.has_broken());
 
@@ -694,7 +694,7 @@ TEST(sender, port_sharing) {
         address::EndpointUri repair_endp(arena);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
 
-        netio::UdpSenderConfig iface_config;
+        netio::UdpConfig iface_config;
         CHECK(iface_config.bind_address.set_host_port_auto("127.0.0.1", 0));
 
         CHECK(sender.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
@@ -732,10 +732,10 @@ TEST(sender, port_sharing) {
         address::EndpointUri repair_endp(arena);
         parse_uri(repair_endp, "rs8m://127.0.0.1:123");
 
-        netio::UdpSenderConfig iface_config1;
+        netio::UdpConfig iface_config1;
         CHECK(iface_config1.bind_address.set_host_port_auto("127.0.0.1", 0));
 
-        netio::UdpSenderConfig iface_config2;
+        netio::UdpConfig iface_config2;
         CHECK(iface_config2.bind_address.set_host_port_auto("127.0.0.2", 0));
 
         CHECK(sender.configure(DefaultSlot, address::Iface_AudioSource, iface_config1));

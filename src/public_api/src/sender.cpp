@@ -84,8 +84,8 @@ int roc_sender_configure(roc_sender* sender,
         return -1;
     }
 
-    netio::UdpSenderConfig imp_config;
-    if (!api::sender_interface_config_from_user(imp_config, *config)) {
+    netio::UdpConfig imp_config;
+    if (!api::interface_config_from_user(imp_config, *config)) {
         roc_log(LogError, "roc_sender_configure(): invalid arguments: bad config");
         return -1;
     }

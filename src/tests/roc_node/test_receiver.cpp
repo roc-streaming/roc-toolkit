@@ -107,7 +107,7 @@ TEST(receiver, configure) {
         Receiver receiver(context, receiver_config);
         CHECK(receiver.is_valid());
 
-        netio::UdpReceiverConfig iface_config;
+        netio::UdpConfig iface_config;
         CHECK(receiver.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
 
         UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
@@ -128,7 +128,7 @@ TEST(receiver, configure) {
         Receiver receiver(context, receiver_config);
         CHECK(receiver.is_valid());
 
-        netio::UdpReceiverConfig iface_config;
+        netio::UdpConfig iface_config;
         CHECK(receiver.configure(0, address::Iface_AudioSource, iface_config));
         CHECK(receiver.configure(1, address::Iface_AudioSource, iface_config));
 
@@ -392,7 +392,7 @@ TEST(receiver, configure_errors) {
         Receiver receiver(context, receiver_config);
         CHECK(receiver.is_valid());
 
-        netio::UdpReceiverConfig iface_config;
+        netio::UdpConfig iface_config;
         strcpy(iface_config.multicast_interface, "8.8.8.8");
 
         CHECK(receiver.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
@@ -413,7 +413,7 @@ TEST(receiver, configure_errors) {
         Receiver receiver(context, receiver_config);
         CHECK(receiver.is_valid());
 
-        netio::UdpReceiverConfig iface_config;
+        netio::UdpConfig iface_config;
         // set IPv6 group
         strcpy(iface_config.multicast_interface, "::");
 
@@ -436,7 +436,7 @@ TEST(receiver, configure_errors) {
         Receiver receiver(context, receiver_config);
         CHECK(receiver.is_valid());
 
-        netio::UdpReceiverConfig iface_config;
+        netio::UdpConfig iface_config;
         // set multicast group
         strcpy(iface_config.multicast_interface, "0.0.0.0");
 
@@ -470,7 +470,7 @@ TEST(receiver, flow_errors) {
 
         UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 1);
 
-        netio::UdpReceiverConfig iface_config;
+        netio::UdpConfig iface_config;
         CHECK(!receiver.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
         CHECK(receiver.has_broken());
 
@@ -585,7 +585,7 @@ TEST(receiver, recover) {
         UNSIGNED_LONGS_EQUAL(context.network_loop().num_ports(), 0);
 
         // can't configure, slot is broken
-        netio::UdpReceiverConfig iface_config;
+        netio::UdpConfig iface_config;
         CHECK(!receiver.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
         CHECK(receiver.has_broken());
 

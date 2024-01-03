@@ -30,11 +30,7 @@ bool receiver_config_from_user(node::Context& context,
                                pipeline::ReceiverConfig& out,
                                const roc_receiver_config& in);
 
-bool sender_interface_config_from_user(netio::UdpSenderConfig& out,
-                                       const roc_interface_config& in);
-
-bool receiver_interface_config_from_user(netio::UdpReceiverConfig& out,
-                                         const roc_interface_config& in);
+bool interface_config_from_user(netio::UdpConfig& out, const roc_interface_config& in);
 
 bool sample_spec_from_user(audio::SampleSpec& out, const roc_media_encoding& in);
 

@@ -47,7 +47,7 @@ public:
     //! Set interface config.
     bool configure(slot_index_t slot_index,
                    address::Interface iface,
-                   const netio::UdpReceiverConfig& config);
+                   const netio::UdpConfig& config);
 
     //! Bind to local endpoint.
     bool
@@ -80,7 +80,7 @@ public:
 
 private:
     struct Port {
-        netio::UdpReceiverConfig config;
+        netio::UdpConfig config;
         netio::NetworkLoop::PortHandle handle;
 
         Port()

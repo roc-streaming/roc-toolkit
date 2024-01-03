@@ -18,7 +18,6 @@
 #include "roc_core/parse_units.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_netio/network_loop.h"
-#include "roc_netio/udp_sender_port.h"
 #include "roc_node/context.h"
 #include "roc_node/sender.h"
 #include "roc_pipeline/sender_sink.h"
@@ -310,8 +309,8 @@ int main(int argc, char** argv) {
             return 1;
         }
 
-        netio::UdpSenderConfig iface_config;
-        iface_config.reuseaddr = args.reuseaddr_given;
+        netio::UdpConfig iface_config;
+        iface_config.enable_reuseaddr = args.reuseaddr_given;
 
         if (!sender.configure(slot, address::Iface_AudioSource, iface_config)) {
             roc_log(LogError, "can't configure --source endpoint");
@@ -333,8 +332,8 @@ int main(int argc, char** argv) {
             return 1;
         }
 
-        netio::UdpSenderConfig iface_config;
-        iface_config.reuseaddr = args.reuseaddr_given;
+        netio::UdpConfig iface_config;
+        iface_config.enable_reuseaddr = args.reuseaddr_given;
 
         if (!sender.configure(slot, address::Iface_AudioRepair, iface_config)) {
             roc_log(LogError, "can't configure --repair endpoint");
@@ -357,8 +356,8 @@ int main(int argc, char** argv) {
             return 1;
         }
 
-        netio::UdpSenderConfig iface_config;
-        iface_config.reuseaddr = args.reuseaddr_given;
+        netio::UdpConfig iface_config;
+        iface_config.enable_reuseaddr = args.reuseaddr_given;
 
         if (!sender.configure(slot, address::Iface_AudioControl, iface_config)) {
             roc_log(LogError, "can't configure --control endpoint");

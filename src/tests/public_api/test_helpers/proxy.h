@@ -69,25 +69,26 @@ public:
         netio::NetworkLoop::PortHandle send_port = NULL;
 
         {
-            netio::NetworkLoop::Tasks::AddUdpSenderPort task(send_config_);
+            netio::NetworkLoop::Tasks::AddUdpPort task(send_config_, netio::UdpSend,
+                                                       NULL);
             CHECK(net_loop_.schedule_and_wait(task));
 
             send_port = task.get_handle();
             CHECK(send_port);
 
-            writer_ = task.get_writer();
+            writer_ = task.get_outbound_writer();
             CHECK(writer_);
         }
 
         {
-            netio::NetworkLoop::Tasks::AddUdpReceiverPort task(recv_source_config_,
-                                                               *this);
+            netio::NetworkLoop::Tasks::AddUdpPort task(recv_source_config_,
+                                                       netio::UdpRecv, this);
             CHECK(net_loop_.schedule_and_wait(task));
         }
 
         {
-            netio::NetworkLoop::Tasks::AddUdpReceiverPort task(recv_repair_config_,
-                                                               *this);
+            netio::NetworkLoop::Tasks::AddUdpPort task(recv_repair_config_,
+                                                       netio::UdpRecv, this);
             CHECK(net_loop_.schedule_and_wait(task));
         }
 
@@ -164,13 +165,12 @@ private:
         return true;
     }
 
-    netio::UdpSenderConfig send_config_;
+    netio::UdpConfig send_config_;
+    netio::UdpConfig recv_source_config_;
+    netio::UdpConfig recv_repair_config_;
 
     roc_endpoint* input_source_endp_;
     roc_endpoint* input_repair_endp_;
-
-    netio::UdpReceiverConfig recv_source_config_;
-    netio::UdpReceiverConfig recv_repair_config_;
 
     address::SocketAddr receiver_source_endp_;
     address::SocketAddr receiver_repair_endp_;
