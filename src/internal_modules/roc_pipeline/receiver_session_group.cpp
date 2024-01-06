@@ -220,7 +220,11 @@ void ReceiverSessionGroup::query_recv_streams(rtcp::RecvReport* reports,
 status::StatusCode
 ReceiverSessionGroup::notify_recv_stream(packet::stream_source_t send_source_id,
                                          const rtcp::SendReport& send_report) {
-    // First, inform router that these CNAME and SSRC are related.
+    // Remember session for given SSRC.
+    core::SharedPtr<ReceiverSession> old_sess =
+        session_router_.find_by_source(send_source_id);
+
+    // Inform router that these CNAME and SSRC are related.
     // It is used to route related streams to the same session.
     const status::StatusCode code =
         session_router_.link_source(send_source_id, send_report.sender_cname);
@@ -230,11 +234,17 @@ ReceiverSessionGroup::notify_recv_stream(packet::stream_source_t send_source_id,
         return code;
     }
 
-    // Second, if there is a session for given SSRC, let it process the report.
-    core::SharedPtr<ReceiverSession> sess =
+    if (old_sess && !session_router_.has_session(old_sess)) {
+        // If session existed before link_source(), but does not exist anymore, it
+        // means that there are no more routes to that session.
+        remove_session_(old_sess);
+    }
+
+    // If there is currently a session for given SSRC, let it process the report.
+    core::SharedPtr<ReceiverSession> cur_sess =
         session_router_.find_by_source(send_source_id);
-    if (sess) {
-        sess->process_report(send_report);
+    if (cur_sess) {
+        cur_sess->process_report(send_report);
     }
 
     return status::StatusOK;
@@ -242,16 +252,16 @@ ReceiverSessionGroup::notify_recv_stream(packet::stream_source_t send_source_id,
 
 void ReceiverSessionGroup::halt_recv_stream(packet::stream_source_t send_source_id) {
     // Remember session for given SSRC.
-    core::SharedPtr<ReceiverSession> sess =
+    core::SharedPtr<ReceiverSession> old_sess =
         session_router_.find_by_source(send_source_id);
 
     // Remove SSRC from router.
     session_router_.unlink_source(send_source_id);
 
-    if (sess && session_router_.num_sources(sess) == 0) {
-        // If session exists, and it was last SSRC for that session,
-        // then remove the session.
-        remove_session_(sess);
+    if (old_sess && !session_router_.has_session(old_sess)) {
+        // If session existed before unlink_source(), but does not exist anymore, it
+        // means that there are no more routes to that session.
+        remove_session_(old_sess);
     }
 }
 

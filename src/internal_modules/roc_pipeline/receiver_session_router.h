@@ -71,6 +71,9 @@ public:
     //! Deinitialize.
     ~ReceiverSessionRouter();
 
+    //! Get number of know routes.
+    size_t num_routes();
+
     //! Find registered session by source id of sender's stream.
     //! @remarks
     //!  Sender can have multiple streams, each with its own SSRC.
@@ -90,6 +93,12 @@ public:
     //!  and all sender's streams should have the same source address.
     core::SharedPtr<ReceiverSession>
     find_by_address(const address::SocketAddr& source_addr);
+
+    //! Check if there is a route for given session.
+    //! @remarks
+    //!  Will return false after session was removed via remove_session()
+    //!  or unlink_source().
+    bool has_session(const core::SharedPtr<ReceiverSession>& session);
 
     //! Register session in router.
     //! @remarks
@@ -119,11 +128,8 @@ public:
     //! Unlink source id from session.
     //! @remarks
     //!  Removes association of SSRC with session and CNAME.
+    //!  If this was the last SSRC, the whole route is removed.
     void unlink_source(packet::stream_source_t source_id);
-
-    //! Get number of source ids routed to given session.
-    //! @see link_source().
-    size_t num_sources(const core::SharedPtr<ReceiverSession>& session);
 
 private:
     enum {
@@ -257,6 +263,12 @@ private:
         // May be empty.
         char cname[MaxCnameLen + 1];
 
+        // Sender main source ID.
+        // Set to one of the identifiers fomr source_nodes list and
+        // identifies source provided to add_session().
+        bool has_main_source_id;
+        packet::stream_source_t main_source_id;
+
         // Hashmap nodes to map this route by different keys.
         core::List<SourceNode> source_nodes;
         AddressNode address_node;
@@ -264,10 +276,15 @@ private:
         SessionNode session_node;
 
         Route(core::IPool& pool)
-            : core::RefCounted<Route, core::PoolAllocation>(pool) {
+            : core::RefCounted<Route, core::PoolAllocation>(pool)
+            , has_main_source_id(false)
+            , main_source_id(0) {
             cname[0] = '\0';
         }
     };
+
+    status::StatusCode relink_source_(packet::stream_source_t source_id,
+                                      const char* cname);
 
     status::StatusCode create_route_(const packet::stream_source_t source_id,
                                      const address::SocketAddr& source_addr,
@@ -275,6 +292,8 @@ private:
                                      const core::SharedPtr<ReceiverSession>& session);
     void remove_route_(core::SharedPtr<Route> route);
     void remove_all_routes_();
+    status::StatusCode move_route_session_(Route& from, Route& to);
+    void collect_route_(Route& route);
 
     // Pools
     core::SlabPool<Route, PreallocatedRoutes> route_pool_;

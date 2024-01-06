@@ -7,6 +7,7 @@
  */
 
 #include "roc_status/code_to_str.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace status {
@@ -25,6 +26,8 @@ const char* code_to_str(StatusCode code) {
         return "NoSpace";
     case StatusLimit:
         return "Limit";
+    case StatusConflict:
+        return "Conflict";
     }
 
     return "<invalid>";
