@@ -51,11 +51,11 @@ ssize_t capture_backtrace(void** buffer, size_t max) {
 
 void dump_backtrace(void** buffer, ssize_t count) {
     if (count <= 0) {
-        Console::instance().println(Color_None, "No backtrace available\n");
+        Console::instance().println("No backtrace available\n");
         return;
     }
 
-    Console::instance().println(Color_None, "Backtrace:\n");
+    Console::instance().println("Backtrace:\n");
 
     char* demangled_buf = NULL;
     size_t demangled_size = 0;
@@ -72,7 +72,7 @@ void dump_backtrace(void** buffer, ssize_t count) {
             demangled_symbol = demangle_symbol(symbol, demangled_buf, demangled_size);
         }
 
-        Console::instance().println(Color_None, "#%d: %p %s", (int)idx, addr,
+        Console::instance().println("#%d: %p %s", (int)idx, addr,
                                     demangled_symbol ? demangled_symbol : symbol);
     }
 

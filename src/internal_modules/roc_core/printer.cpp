@@ -17,7 +17,7 @@ namespace core {
 namespace {
 
 void println_console(const char* buf, size_t bufsz) {
-    Console::instance().println(Color_None, "%.*s", (int)bufsz, buf);
+    Console::instance().println("%.*s", (int)bufsz, buf);
 }
 
 } // namespace

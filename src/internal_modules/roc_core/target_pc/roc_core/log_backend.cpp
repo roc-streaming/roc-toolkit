@@ -81,8 +81,9 @@ void LogBackend::handle(const LogMessage& msg) {
         }
     }
 
-    Console::instance().println(color, "%s.%s [%s] [%s] %s: %s%s", timestamp_hi,
-                                timestamp_lo, tid, level, msg.module, location, msg.text);
+    Console::instance().println_color(color, "%s.%s [%s] [%s] %s: %s%s", timestamp_hi,
+                                      timestamp_lo, tid, level, msg.module, location,
+                                      msg.text);
 }
 
 } // namespace core

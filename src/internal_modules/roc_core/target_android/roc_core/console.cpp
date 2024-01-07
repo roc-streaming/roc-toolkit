@@ -21,7 +21,16 @@ bool Console::colors_supported() {
     return false;
 }
 
-void Console::println(Color, const char* format, ...) {
+void Console::println(const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+
+    __android_log_vprint(ANDROID_LOG_DEBUG, "roc", format, args);
+
+    va_end(args);
+}
+
+void Console::println_color(Color color, const char* format, ...) {
     va_list args;
     va_start(args, format);
 

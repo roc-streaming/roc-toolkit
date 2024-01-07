@@ -36,7 +36,10 @@ public:
     bool colors_supported();
 
     //! Print line.
-    ROC_ATTR_PRINTF(3, 4) void println(Color color, const char* format, ...);
+    ROC_ATTR_PRINTF(2, 3) void println(const char* format, ...);
+
+    //! Print line.
+    ROC_ATTR_PRINTF(3, 4) void println_color(Color color, const char* format, ...);
 
 private:
     friend class Singleton<Console>;

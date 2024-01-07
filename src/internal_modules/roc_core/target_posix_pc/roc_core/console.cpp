@@ -107,7 +107,19 @@ bool Console::colors_supported() {
     return colors_supported_;
 }
 
-void Console::println(Color color, const char* format, ...) {
+void Console::println(const char* format, ...) {
+    Mutex::Lock lock(mutex_);
+
+    va_list args;
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
+
+    fprintf(stderr, "\n");
+    fflush(stderr);
+}
+
+void Console::println_color(Color color, const char* format, ...) {
     Mutex::Lock lock(mutex_);
 
     if (colors_supported_ && color != Color_None) {
