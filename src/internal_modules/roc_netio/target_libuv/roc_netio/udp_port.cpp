@@ -441,7 +441,6 @@ status::StatusCode UdpPort::write(const packet::PacketPtr& pp) {
 
 void UdpPort::write_(const packet::PacketPtr& pp) {
     const bool had_pending = (++pending_packets_ > 1);
-    ;
     if (!had_pending) {
         if (try_nonblocking_write_(pp)) {
             --pending_packets_;

@@ -9,8 +9,10 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_address/socket_addr.h"
+#include "roc_address/socket_addr_to_str.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
+#include "roc_core/print_buffer.h"
 #include "roc_netio/network_loop.h"
 #include "roc_packet/concurrent_queue.h"
 #include "roc_packet/packet_factory.h"
@@ -113,22 +115,62 @@ new_packet(const UdpConfig& tx_config, const UdpConfig& rx_config, int value) {
     return pp;
 }
 
+void dump_packet(const packet::PacketPtr& pp,
+                 const address::SocketAddr& expected_src_addr,
+                 const address::SocketAddr& expected_dst_addr,
+                 const core::Slice<uint8_t>& expected_buf,
+                 int value,
+                 int iteration) {
+    core::sleep_for(core::ClockMonotonic, core::Second);
+
+    fprintf(stderr, "iteration:  %d  value:  %d\n", iteration, value);
+    fprintf(stderr, "expected src_addr:  %s\n",
+            address::socket_addr_to_str(expected_src_addr).c_str());
+    fprintf(stderr, "received src_addr:  %s\n",
+            address::socket_addr_to_str(pp->udp()->src_addr).c_str());
+    fprintf(stderr, "expected dst_addr:  %s\n",
+            address::socket_addr_to_str(expected_dst_addr).c_str());
+    fprintf(stderr, "received dst_addr:  %s\n",
+            address::socket_addr_to_str(pp->udp()->dst_addr).c_str());
+    fprintf(stderr, "expected buffer:\n");
+    expected_buf.print();
+    fprintf(stderr, "received buffer:\n");
+    pp->buffer().print();
+}
+
 void check_packet(const packet::PacketPtr& pp,
                   const UdpConfig& tx_config,
                   const UdpConfig& rx_config,
-                  int value) {
+                  int value,
+                  int iteration) {
     CHECK(pp);
 
     CHECK(pp->udp());
     CHECK(pp->buffer());
 
-    CHECK(pp->udp()->src_addr == tx_config.bind_address);
-    CHECK(pp->udp()->dst_addr == rx_config.bind_address);
+    address::SocketAddr expected_src_addr = tx_config.bind_address;
+    address::SocketAddr expected_dst_addr = rx_config.bind_address;
 
-    core::Slice<uint8_t> expected = new_buffer(value);
+    core::Slice<uint8_t> expected_buf = new_buffer(value);
 
-    CHECK_EQUAL(expected.size(), pp->buffer().size());
-    CHECK(memcmp(pp->buffer().data(), expected.data(), expected.size()) == 0);
+    if (pp->udp()->src_addr != expected_src_addr) {
+        dump_packet(pp, expected_src_addr, expected_dst_addr, expected_buf, iteration,
+                    value);
+        FAIL("receiver src_addr does not match expected");
+    }
+
+    if (pp->udp()->dst_addr != expected_dst_addr) {
+        dump_packet(pp, expected_src_addr, expected_dst_addr, expected_buf, iteration,
+                    value);
+        FAIL("receiver dst_addr does not match expected");
+    }
+
+    if (pp->buffer().size() != expected_buf.size()
+        || memcmp(pp->buffer().data(), expected_buf.data(), expected_buf.size()) != 0) {
+        dump_packet(pp, expected_src_addr, expected_dst_addr, expected_buf, iteration,
+                    value);
+        FAIL("received buffer does not match expected");
+    }
 }
 
 } // namespace
@@ -160,7 +202,7 @@ TEST(udp_io, one_sender_one_receiver_single_thread_non_blocking_disabled) {
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
             CHECK_EQUAL(status::StatusOK, rx_queue.read(pp));
-            check_packet(pp, tx_config, rx_config, p);
+            check_packet(pp, tx_config, rx_config, p, i);
         }
     }
 }
@@ -188,7 +230,7 @@ TEST(udp_io, one_sender_one_receiver_single_loop) {
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
             CHECK_EQUAL(status::StatusOK, rx_queue.read(pp));
-            check_packet(pp, tx_config, rx_config, p);
+            check_packet(pp, tx_config, rx_config, p, i);
         }
     }
 }
@@ -218,7 +260,7 @@ TEST(udp_io, one_sender_one_receiver_separate_loops) {
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
             CHECK_EQUAL(status::StatusOK, rx_queue.read(pp));
-            check_packet(pp, tx_config, rx_config, p);
+            check_packet(pp, tx_config, rx_config, p, i);
         }
     }
 }
@@ -262,15 +304,15 @@ TEST(udp_io, one_sender_many_receivers) {
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp1;
             CHECK_EQUAL(status::StatusOK, rx_queue1.read(pp1));
-            check_packet(pp1, tx_config, rx_config1, p * 10);
+            check_packet(pp1, tx_config, rx_config1, p * 10, i);
 
             packet::PacketPtr pp2;
             CHECK_EQUAL(status::StatusOK, rx_queue2.read(pp2));
-            check_packet(pp2, tx_config, rx_config2, p * 20);
+            check_packet(pp2, tx_config, rx_config2, p * 20, i);
 
             packet::PacketPtr pp3;
             CHECK_EQUAL(status::StatusOK, rx_queue3.read(pp3));
-            check_packet(pp3, tx_config, rx_config3, p * 30);
+            check_packet(pp3, tx_config, rx_config3, p * 30, i);
         }
     }
 }
@@ -314,7 +356,7 @@ TEST(udp_io, many_senders_one_receiver) {
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
             CHECK_EQUAL(status::StatusOK, rx_queue.read(pp));
-            check_packet(pp, tx_config1, rx_config, p * 10);
+            check_packet(pp, tx_config1, rx_config, p * 10, i);
         }
         for (int p = 0; p < NumPackets; p++) {
             CHECK_EQUAL(status::StatusOK,
@@ -323,7 +365,7 @@ TEST(udp_io, many_senders_one_receiver) {
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
             CHECK_EQUAL(status::StatusOK, rx_queue.read(pp));
-            check_packet(pp, tx_config2, rx_config, p * 20);
+            check_packet(pp, tx_config2, rx_config, p * 20, i);
         }
         for (int p = 0; p < NumPackets; p++) {
             CHECK_EQUAL(status::StatusOK,
@@ -332,7 +374,7 @@ TEST(udp_io, many_senders_one_receiver) {
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
             CHECK_EQUAL(status::StatusOK, rx_queue.read(pp));
-            check_packet(pp, tx_config3, rx_config, p * 30);
+            check_packet(pp, tx_config3, rx_config, p * 30, i);
         }
     }
 }
@@ -376,13 +418,13 @@ TEST(udp_io, bidirectional_ports_one_loop) {
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
             CHECK_EQUAL(status::StatusOK, peer2_rx_queue.read(pp));
-            check_packet(pp, peer1_config, peer2_config, p);
+            check_packet(pp, peer1_config, peer2_config, p, i);
         }
 
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
             CHECK_EQUAL(status::StatusOK, peer1_rx_queue.read(pp));
-            check_packet(pp, peer2_config, peer1_config, p);
+            check_packet(pp, peer2_config, peer1_config, p, i);
         }
     }
 }
@@ -429,13 +471,13 @@ TEST(udp_io, bidirectional_ports_separate_loops) {
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
             CHECK_EQUAL(status::StatusOK, peer2_rx_queue.read(pp));
-            check_packet(pp, peer1_config, peer2_config, p);
+            check_packet(pp, peer1_config, peer2_config, p, i);
         }
 
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
             CHECK_EQUAL(status::StatusOK, peer1_rx_queue.read(pp));
-            check_packet(pp, peer2_config, peer1_config, p);
+            check_packet(pp, peer2_config, peer1_config, p, i);
         }
     }
 }
