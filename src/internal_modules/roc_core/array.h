@@ -238,6 +238,17 @@ public:
         return grow(new_max_size_);
     }
 
+    //! Remove last element from the array.
+    void pop_back() {
+        if (size_ == 0) {
+            roc_panic("array: array is empty");
+        }
+
+        // Destruct object
+        data_[size_ - 1].~T();
+        size_--;
+    }
+
 private:
     T* allocate_(size_t n_elems) {
         if (n_elems <= EmbeddedCapacity) {
