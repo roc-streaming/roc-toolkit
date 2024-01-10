@@ -132,6 +132,30 @@ TEST(array, push_back) {
     }
 }
 
+TEST(array, pop_back) {
+    Array<Object, EmbeddedCap> array(arena);
+
+    CHECK(array.grow(NumObjects));
+
+    for (size_t n = 0; n < NumObjects; n++) {
+        CHECK(array.push_back(Object(n)));
+
+        LONGS_EQUAL(NumObjects, array.capacity());
+        LONGS_EQUAL(n + 1, array.size());
+        LONGS_EQUAL(n + 1, Object::n_objects);
+    }
+
+    LONGS_EQUAL(NumObjects, array.size());
+    for (size_t n = NumObjects; n >= 1; n--) {
+        LONGS_EQUAL(n - 1, array[n - 1].value);
+        array.pop_back();
+        LONGS_EQUAL(n - 1, array.size());
+    }
+
+    LONGS_EQUAL(NumObjects, array.capacity());
+    CHECK(array.is_empty());
+}
+
 TEST(array, data) {
     Array<Object, EmbeddedCap> array(arena);
 
