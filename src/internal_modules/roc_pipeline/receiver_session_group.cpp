@@ -54,17 +54,14 @@ bool ReceiverSessionGroup::create_control_pipeline(ReceiverEndpoint* control_end
     roc_panic_if(!is_valid());
 
     roc_panic_if(!control_endpoint);
-    roc_panic_if(!control_endpoint->outbound_writer());
+    roc_panic_if(!control_endpoint->outbound_composer()
+                 || !control_endpoint->outbound_writer());
     roc_panic_if(rtcp_communicator_);
-
-    rtcp_composer_.reset(new (rtcp_composer_) rtcp::Composer());
-    if (!rtcp_composer_) {
-        return false;
-    }
 
     rtcp_communicator_.reset(new (rtcp_communicator_) rtcp::Communicator(
         receiver_config_.common.rtcp_config, *this, *control_endpoint->outbound_writer(),
-        *rtcp_composer_, packet_factory_, byte_buffer_factory_, arena_));
+        *control_endpoint->outbound_composer(), packet_factory_, byte_buffer_factory_,
+        arena_));
     if (!rtcp_communicator_ || !rtcp_communicator_->is_valid()) {
         rtcp_communicator_.reset();
         return false;
@@ -93,7 +90,7 @@ ReceiverSessionGroup::refresh_sessions(core::nanoseconds_t current_time) {
     core::nanoseconds_t next_deadline = 0;
 
     if (rtcp_communicator_) {
-        // This will invoke IStreamController methods implemented by us,
+        // This will invoke IParticipant methods implemented by us,
         // in particular query_recv_streams().
         const status::StatusCode code =
             rtcp_communicator_->generate_reports(current_time);
@@ -168,12 +165,14 @@ void ReceiverSessionGroup::get_metrics(ReceiverSessionMetrics* metrics,
     }
 }
 
-const char* ReceiverSessionGroup::cname() {
-    return identity_->cname();
-}
+rtcp::ParticipantInfo ReceiverSessionGroup::participant_info() {
+    rtcp::ParticipantInfo part_info;
 
-packet::stream_source_t ReceiverSessionGroup::source_id() {
-    return identity_->ssrc();
+    part_info.cname = identity_->cname();
+    part_info.source_id = identity_->ssrc();
+    part_info.report_back = true;
+
+    return part_info;
 }
 
 void ReceiverSessionGroup::change_source_id() {
@@ -312,7 +311,7 @@ ReceiverSessionGroup::route_control_packet_(const packet::PacketPtr& packet,
         roc_panic("session group: rtcp communicator is null");
     }
 
-    // This will invoke IStreamController methods implemented by us,
+    // This will invoke IParticipant methods implemented by us,
     // in particular notify_recv_stream() and maybe halt_recv_stream().
     return rtcp_communicator_->process_packet(packet, current_time);
 }

@@ -158,7 +158,6 @@ bool Sender::connect(slot_index_t slot_index,
     }
 
     netio::NetworkLoop::Tasks::ResolveEndpointAddress resolve_task(uri);
-
     if (!context().network_loop().schedule_and_wait(resolve_task)) {
         roc_log(LogError,
                 "sender node:"

@@ -61,8 +61,7 @@ public:
         ReceiverSlot* slot_;                   //!< Slot.
         address::Interface iface_;             //!< Interface.
         address::Protocol proto_;              //!< Protocol.
-        address::SocketAddr outbound_address_; //!< Destination address.
-        packet::IWriter* outbound_writer_;     //!< Destination packet writer.
+        packet::IWriter* outbound_writer_;     //!< Outbound packet writer.
         packet::IWriter* inbound_writer_;      //!< Inbound packet writer.
         ReceiverSlotMetrics* slot_metrics_;    //!< Output for slot metrics.
         ReceiverSessionMetrics* sess_metrics_; //!< Output for session metrics.
@@ -111,7 +110,6 @@ public:
             AddEndpoint(SlotHandle slot,
                         address::Interface iface,
                         address::Protocol proto,
-                        const address::SocketAddr* outbound_address,
                         packet::IWriter* outbound_writer);
 
             //! Get packet writer for inbound packets for the endpoint.

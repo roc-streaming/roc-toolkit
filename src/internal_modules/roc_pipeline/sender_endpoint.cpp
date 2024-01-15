@@ -121,7 +121,7 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto,
     }
 
     shipper_.reset(new (shipper_)
-                       packet::Shipper(outbound_address, outbound_writer, *composer));
+                       packet::Shipper(*composer, outbound_writer, &outbound_address));
     if (!shipper_) {
         return;
     }
@@ -142,7 +142,13 @@ address::Protocol SenderEndpoint::proto() const {
     return proto_;
 }
 
-packet::IComposer& SenderEndpoint::composer() {
+const address::SocketAddr& SenderEndpoint::outbound_address() {
+    roc_panic_if(!is_valid());
+
+    return shipper_->outbound_address();
+}
+
+packet::IComposer& SenderEndpoint::outbound_composer() {
     roc_panic_if(!is_valid());
 
     return *composer_;

@@ -84,7 +84,7 @@ packet::IWriter* create_transport_endpoint(ReceiverSlot* slot,
                                            address::Interface iface,
                                            address::Protocol proto) {
     CHECK(slot);
-    ReceiverEndpoint* endpoint = slot->add_endpoint(iface, proto, NULL, NULL);
+    ReceiverEndpoint* endpoint = slot->add_endpoint(iface, proto, NULL);
     CHECK(endpoint);
     return &endpoint->inbound_writer();
 }
@@ -92,11 +92,9 @@ packet::IWriter* create_transport_endpoint(ReceiverSlot* slot,
 packet::IWriter* create_control_endpoint(ReceiverSlot* slot,
                                          address::Interface iface,
                                          address::Protocol proto,
-                                         const address::SocketAddr& outbound_addr,
-                                         packet::IWriter* outbound_writer) {
+                                         packet::IWriter& outbound_writer) {
     CHECK(slot);
-    ReceiverEndpoint* endpoint =
-        slot->add_endpoint(iface, proto, &outbound_addr, outbound_writer);
+    ReceiverEndpoint* endpoint = slot->add_endpoint(iface, proto, &outbound_writer);
     CHECK(endpoint);
     return &endpoint->inbound_writer();
 }
@@ -1598,9 +1596,8 @@ TEST(receiver_source, timestamp_mapping_no_control_packets) {
     CHECK(transport_endpoint);
 
     packet::Queue control_outbound_queue;
-    packet::IWriter* control_endpoint =
-        create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
-                                src_addr1, &control_outbound_queue);
+    packet::IWriter* control_endpoint = create_control_endpoint(
+        slot, address::Iface_AudioControl, address::Proto_RTCP, control_outbound_queue);
     CHECK(control_endpoint);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1629,8 +1626,6 @@ TEST(receiver_source, timestamp_mapping_no_control_packets) {
 
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
     }
-
-    CHECK(control_outbound_queue.size() > 0);
 }
 
 // When there is one control packet, receiver sets CTS of frames according
@@ -1652,9 +1647,8 @@ TEST(receiver_source, timestamp_mapping_one_control_packet) {
     CHECK(transport_endpoint);
 
     packet::Queue control_outbound_queue;
-    packet::IWriter* control_endpoint =
-        create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
-                                src_addr1, &control_outbound_queue);
+    packet::IWriter* control_endpoint = create_control_endpoint(
+        slot, address::Iface_AudioControl, address::Proto_RTCP, control_outbound_queue);
     CHECK(control_endpoint);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1699,8 +1693,6 @@ TEST(receiver_source, timestamp_mapping_one_control_packet) {
                                                rtp_base);
         }
     }
-
-    CHECK(control_outbound_queue.size() > 0);
 }
 
 // When there are regular control packets, receiver updates CTS of frames according
@@ -1722,9 +1714,8 @@ TEST(receiver_source, timestamp_mapping_periodic_control_packets) {
     CHECK(transport_endpoint);
 
     packet::Queue control_outbound_queue;
-    packet::IWriter* control_endpoint =
-        create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
-                                src_addr1, &control_outbound_queue);
+    packet::IWriter* control_endpoint = create_control_endpoint(
+        slot, address::Iface_AudioControl, address::Proto_RTCP, control_outbound_queue);
     CHECK(control_endpoint);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1795,9 +1786,8 @@ TEST(receiver_source, timestamp_mapping_remixing) {
     CHECK(transport_endpoint);
 
     packet::Queue control_outbound_queue;
-    packet::IWriter* control_endpoint =
-        create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
-                                src_addr1, &control_outbound_queue);
+    packet::IWriter* control_endpoint = create_control_endpoint(
+        slot, address::Iface_AudioControl, address::Proto_RTCP, control_outbound_queue);
     CHECK(control_endpoint);
 
     test::PacketWriter packet_writer(arena, *transport_endpoint, encoding_map,
@@ -1859,7 +1849,6 @@ TEST(receiver_source, timestamp_mapping_remixing) {
     }
 
     CHECK(first_ts);
-    CHECK(control_outbound_queue.size() > 0);
 }
 
 TEST(receiver_source, metrics_sessions) {
@@ -2047,9 +2036,8 @@ TEST(receiver_source, metrics_e2e) {
     CHECK(transport_endpoint);
 
     packet::Queue control_outbound_queue;
-    packet::IWriter* control_endpoint =
-        create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
-                                src_addr1, &control_outbound_queue);
+    packet::IWriter* control_endpoint = create_control_endpoint(
+        slot, address::Iface_AudioControl, address::Proto_RTCP, control_outbound_queue);
     CHECK(control_endpoint);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -2114,8 +2102,6 @@ TEST(receiver_source, metrics_e2e) {
                                                rtp_base);
         }
     }
-
-    CHECK(control_outbound_queue.size() > 0);
 }
 
 // Check how receiver returns metrics if provided buffer for metrics

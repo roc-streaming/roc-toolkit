@@ -66,7 +66,7 @@ public:
             slot_ = task_create_slot_->get_handle();
             roc_panic_if_not(slot_);
             task_add_endpoint_ = new ReceiverLoop::Tasks::AddEndpoint(
-                slot_, address::Iface_AudioSource, address::Proto_RTP, NULL, NULL);
+                slot_, address::Iface_AudioSource, address::Proto_RTP, NULL);
             pipeline_.schedule(*task_add_endpoint_, *this);
             return;
         }
@@ -129,7 +129,7 @@ TEST(receiver_loop, endpoints_sync) {
 
     {
         ReceiverLoop::Tasks::AddEndpoint task(slot, address::Iface_AudioSource,
-                                              address::Proto_RTP, NULL, NULL);
+                                              address::Proto_RTP, NULL);
         CHECK(receiver.schedule_and_wait(task));
         CHECK(task.success());
         CHECK(task.get_inbound_writer());

@@ -26,7 +26,7 @@ const core::nanoseconds_t ReportInterval = core::Second * 30;
 } // namespace
 
 Communicator::Communicator(const Config& config,
-                           IStreamController& stream_controller,
+                           IParticipant& participant,
                            packet::IWriter& packet_writer,
                            packet::IComposer& packet_composer,
                            packet::PacketFactory& packet_factory,
@@ -37,8 +37,10 @@ Communicator::Communicator(const Config& config,
     , packet_writer_(packet_writer)
     , packet_composer_(packet_composer)
     , config_(config)
-    , reporter_(config, stream_controller, arena)
+    , reporter_(config, participant, arena)
     , next_deadline_(0)
+    , max_dest_addrs_(0)
+    , cur_dest_addr_(0)
     , max_pkt_blocks_(0)
     , cur_pkt_block_(0)
     , srrr_index_(0)
@@ -67,6 +69,7 @@ status::StatusCode Communicator::process_packet(const packet::PacketPtr& packet,
     roc_panic_if(!is_valid());
 
     roc_panic_if_msg(!packet, "rtcp communicator: null packet");
+    roc_panic_if_msg(!packet->udp(), "rtcp communicator: non-udp packet");
     roc_panic_if_msg(!packet->rtcp(), "rtcp communicator: non-rtcp packet");
     roc_panic_if_msg(current_time <= 0, "rtcp communicator: invalid timestamp");
 
@@ -79,7 +82,8 @@ status::StatusCode Communicator::process_packet(const packet::PacketPtr& packet,
         return status::StatusOK;
     }
 
-    status::StatusCode status = reporter_.begin_processing(current_time);
+    status::StatusCode status =
+        reporter_.begin_processing(packet->udp()->src_addr, current_time);
     roc_log(LogTrace, "rtcp communicator: begin_processing(): status=%s",
             status::code_to_str(status));
 
@@ -374,10 +378,11 @@ status::StatusCode Communicator::generate_packets_(core::nanoseconds_t current_t
         return status;
     }
 
-    // Usually we generate only one packet, however, if number of streams is
-    // high, it may be split into multiple packets. We will continue generation
-    // until all SR/RR and XR blocks are reported.
-    do {
+    // Usually we generate one packet per destination address, however, if number of
+    // streams is high, it may be split into multiple packets. We will continue
+    // generation until all SR/RR and XR blocks are reported to all destination
+    // addresses.
+    while (continue_packet_generation_()) {
         packet::PacketPtr packet;
         status = generate_packet_(packet_type, packet);
         if (status != status::StatusOK) {
@@ -388,7 +393,7 @@ status::StatusCode Communicator::generate_packets_(core::nanoseconds_t current_t
         if (status != status::StatusOK) {
             break;
         }
-    } while (continue_packet_generation_());
+    }
 
     status::StatusCode e_status = end_packet_generation_();
     if (status == status::StatusOK && e_status != status::StatusOK) {
@@ -408,16 +413,14 @@ Communicator::begin_packet_generation_(core::nanoseconds_t current_time) {
         return status;
     }
 
-    cur_pkt_block_ = 0;
+    max_dest_addrs_ = 0;
+    cur_dest_addr_ = 0;
 
     srrr_index_ = 0;
-    srrr_max_ = config_.enable_sr_rr && reporter_.is_receiving()
-        ? reporter_.num_reception_blocks()
-        : 0;
+    srrr_max_ = 0;
 
     dlrr_index_ = 0;
-    dlrr_max_ =
-        config_.enable_xr && reporter_.is_sending() ? reporter_.num_dlrr_subblocks() : 0;
+    dlrr_max_ = 0;
 
     return status::StatusOK;
 }
@@ -431,7 +434,40 @@ status::StatusCode Communicator::end_packet_generation_() {
 }
 
 bool Communicator::continue_packet_generation_() {
-    return srrr_index_ < srrr_max_ || dlrr_index_ < dlrr_max_;
+    if (srrr_index_ == srrr_max_ && dlrr_index_ == dlrr_max_) {
+        if (max_dest_addrs_ == 0) {
+            // This is the very first report.
+            max_dest_addrs_ = reporter_.num_dest_addresses();
+            cur_dest_addr_ = 0;
+        } else {
+            // We've reported all blocks for current destination address,
+            // switch to next address.
+            roc_log(LogTrace,
+                    "rtcp communicator: generated report: addr_index=%d addr_count=%d",
+                    (int)cur_dest_addr_, (int)max_dest_addrs_);
+            cur_dest_addr_++;
+        }
+
+        if (cur_dest_addr_ == max_dest_addrs_) {
+            // We've reported all blocks for all destination addesses,
+            // exit generation.
+            return false;
+        }
+
+        cur_pkt_block_ = 0;
+
+        srrr_index_ = 0;
+        srrr_max_ = config_.enable_sr_rr && reporter_.is_receiving()
+            ? reporter_.num_reception_blocks(cur_dest_addr_)
+            : 0;
+
+        dlrr_index_ = 0;
+        dlrr_max_ = config_.enable_xr && reporter_.is_sending()
+            ? reporter_.num_dlrr_subblocks(cur_dest_addr_)
+            : 0;
+    }
+
+    return true;
 }
 
 status::StatusCode
@@ -499,6 +535,10 @@ status::StatusCode Communicator::generate_packet_(PacketType packet_type,
     // Copy our RTCP packet data into that sub-slice
     memcpy(packet->rtcp()->payload.data(), payload_buffer.data(), payload_buffer.size());
 
+    // Set destination address
+    packet->add_flags(packet::Packet::FlagUDP);
+    reporter_.generate_dest_address(cur_dest_addr_, packet->udp()->dst_addr);
+
     return status::StatusOK;
 }
 
@@ -527,7 +567,7 @@ Communicator::generate_packet_payload_(PacketType packet_type,
         if (!bld.is_ok()) {
             if (cur_pkt_block_ <= 1) {
                 // Even one block can't fit into the buffer, so all we
-                // can do is to report failure.
+                // can do is to report failure and exit.
                 max_pkt_blocks_ = 1;
                 return status::StatusNoSpace;
             }
@@ -541,7 +581,7 @@ Communicator::generate_packet_payload_(PacketType packet_type,
 
             // Repeat current packet generation with reduced limit.
             // We will eventually either find value for max_pkt_blocks_
-            // that does not cause errors, or report StatusNoSpace.
+            // that does not cause errors, or report StatusNoSpace (see above).
             // Normally this search will happen only once and then the
             // found value of max_pkt_blocks_ will be reused.
             roc_log(LogTrace, "rtcp reporter: retrying generation with max_blocks=%lu",
@@ -594,13 +634,13 @@ void Communicator::generate_standard_report_(Builder& bld) {
 
         bld.begin_sr(sr);
 
+        // If we're also receiving, add reception reports to SR.
         if (reporter_.is_receiving()) {
-            // If we're also receiving, add reception reports to SR.
             for (; srrr_index_ < srrr_max_
                  && (cur_pkt_block_ < max_pkt_blocks_ || max_pkt_blocks_ == 0);
                  srrr_index_++, cur_pkt_block_++) {
                 header::ReceptionReportBlock blk;
-                reporter_.generate_reception_block(srrr_index_, blk);
+                reporter_.generate_reception_block(cur_dest_addr_, srrr_index_, blk);
 
                 bld.add_sr_report(blk);
             }
@@ -622,7 +662,7 @@ void Communicator::generate_standard_report_(Builder& bld) {
                  && (cur_pkt_block_ < max_pkt_blocks_ || max_pkt_blocks_ == 0);
                  srrr_index_++, cur_pkt_block_++) {
                 header::ReceptionReportBlock blk;
-                reporter_.generate_reception_block(srrr_index_, blk);
+                reporter_.generate_reception_block(cur_dest_addr_, srrr_index_, blk);
 
                 bld.add_rr_report(blk);
             }
@@ -649,7 +689,7 @@ void Communicator::generate_extended_report_(Builder& bld) {
                  && (cur_pkt_block_ < max_pkt_blocks_ || max_pkt_blocks_ == 0);
                  dlrr_index_++, cur_pkt_block_++) {
                 header::XrDlrrSubblock blk;
-                reporter_.generate_dlrr_subblock(dlrr_index_, blk);
+                reporter_.generate_dlrr_subblock(cur_dest_addr_, dlrr_index_, blk);
 
                 bld.add_xr_dlrr_report(blk);
             }

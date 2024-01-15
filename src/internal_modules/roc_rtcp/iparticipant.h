@@ -6,55 +6,53 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_rtcp/istream_controller.h
-//! @brief Stream controller.
+//! @file roc_rtcp/iparticipant.h
+//! @brief RTCP participant.
 
-#ifndef ROC_RTCP_ISTREAM_CONTROLLER_H_
-#define ROC_RTCP_ISTREAM_CONTROLLER_H_
+#ifndef ROC_RTCP_IPARTICIPANT_H_
+#define ROC_RTCP_IPARTICIPANT_H_
 
 #include "roc_core/attributes.h"
 #include "roc_packet/units.h"
+#include "roc_rtcp/participant_info.h"
 #include "roc_rtcp/reports.h"
 #include "roc_status/status_code.h"
 
 namespace roc {
 namespace rtcp {
 
-//! Stream controller.
+//! RTCP participant.
 //!
 //! Implemented by sender and receiver pipelines (see roc_pipeline module).
 //!
-//! Used by rtcp::Communicator to generate reports for local sending or receiving
+//! Used by rtcp::Communicator to generate reports for local sending and/or receiving
 //! streams, and to process reports from remote streams.
 //!
-//! One RTCP communicator corresponds to a single RTP session, which may include
-//! zero or one local sending stream and multiple remote sending streams (usually
-//! in case of multicast).
+//! One RTCP participant is usually associated with zero or one local sending stream and
+//! one or a few (in case of multicast) remote sending streams.
 //!
 //! For the local sending stream, multiple remote receivers may exists. Communicator
-//! will query one sending report from stream controller for the sending stream, and
-//! notify stream controller with multiple receiving reports, one for every discovered
+//! will query one sending report from IParticipant for the sending stream, and
+//! notify IParticipant with multiple receiving reports, one for every discovered
 //! remote receiver.
 //!
 //! For each local receiving stream, there is corresponding remote sender.
-//! Communicator will query receiving report from stream controller for every local
-//! receiving stream, as well as notify stream controller with corresponding sender
+//! Communicator will query receiving report from IParticipant for every local
+//! receiving stream, as will notify IParticipant with corresponding sender
 //! report for every local receiving stream.
-class IStreamController {
+//!
+//! Single IParticipant instance usually corresponds to a single RTP session. However,
+//! this is not a strict requirement: if configuration requires multiple related RTP
+//! sessions to transfer single logical source, e.g. one RTP session for media packets
+//! and another RTP session for FEC packets, then both RTP sessions will be associated
+//! with a single IParticipant instance.
+class IParticipant {
 public:
-    virtual ~IStreamController();
+    virtual ~IParticipant();
 
-    //! Get local CNAME.
-    //! This string uniquely identifies each participant across all RTP sessions.
-    //! It's used to associated related RTP sessions together.
-    //! It's also used to distinguish SSRC collisions from network loops.
-    virtual const char* cname() = 0;
-
-    //! Get local SSRC.
-    //! This number uniquely identifies each participant within RTP session.
-    //! If there is sending stream, its sender_source_id should be equal to it.
-    //! If there are receivings streams, theirs receiver_source_id should be equal to it.
-    virtual packet::stream_source_t source_id() = 0;
+    //! Get local participant info.
+    //! Invoked to know local CNAME, SSRC, etc.
+    virtual ParticipantInfo participant_info() = 0;
 
     //! Change local SSRC to another randomly selected number.
     //! Invoked when SSRC collision is detected.
@@ -120,4 +118,4 @@ public:
 } // namespace rtcp
 } // namespace roc
 
-#endif // ROC_RTCP_ISTREAM_CONTROLLER_H_
+#endif // ROC_RTCP_IPARTICIPANT_H_

@@ -90,8 +90,8 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
 
         fec_writer_.reset(new (fec_writer_) fec::Writer(
             config_.fec_writer, config_.fec_encoder.scheme, *fec_encoder_, *pwriter,
-            source_endpoint->composer(), repair_endpoint->composer(), packet_factory_,
-            byte_buffer_factory_, arena_));
+            source_endpoint->outbound_composer(), repair_endpoint->outbound_composer(),
+            packet_factory_, byte_buffer_factory_, arena_));
         if (!fec_writer_ || !fec_writer_->is_valid()) {
             return false;
         }
@@ -118,7 +118,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
     }
 
     packetizer_.reset(new (packetizer_) audio::Packetizer(
-        *pwriter, source_endpoint->composer(), *sequencer_, *payload_encoder_,
+        *pwriter, source_endpoint->outbound_composer(), *sequencer_, *payload_encoder_,
         packet_factory_, byte_buffer_factory_, config_.packet_length,
         encoding->sample_spec));
     if (!packetizer_ || !packetizer_->is_valid()) {
@@ -176,14 +176,12 @@ bool SenderSession::create_control_pipeline(SenderEndpoint* control_endpoint) {
     roc_panic_if(!control_endpoint);
     roc_panic_if(rtcp_communicator_);
 
-    rtcp_composer_.reset(new (rtcp_composer_) rtcp::Composer());
-    if (!rtcp_composer_) {
-        return false;
-    }
+    rtcp_address_ = control_endpoint->outbound_address();
 
     rtcp_communicator_.reset(new (rtcp_communicator_) rtcp::Communicator(
-        config_.rtcp_config, *this, control_endpoint->outbound_writer(), *rtcp_composer_,
-        packet_factory_, byte_buffer_factory_, arena_));
+        config_.rtcp_config, *this, control_endpoint->outbound_writer(),
+        control_endpoint->outbound_composer(), packet_factory_, byte_buffer_factory_,
+        arena_));
     if (!rtcp_communicator_ || !rtcp_communicator_->is_valid()) {
         rtcp_communicator_.reset();
         return false;
@@ -237,12 +235,14 @@ SenderSessionMetrics SenderSession::get_metrics() const {
     return metrics;
 }
 
-const char* SenderSession::cname() {
-    return identity_->cname();
-}
+rtcp::ParticipantInfo SenderSession::participant_info() {
+    rtcp::ParticipantInfo part_info;
 
-packet::stream_source_t SenderSession::source_id() {
-    return identity_->ssrc();
+    part_info.cname = identity_->cname();
+    part_info.source_id = identity_->ssrc();
+    part_info.report_address = rtcp_address_;
+
+    return part_info;
 }
 
 void SenderSession::change_source_id() {
@@ -285,7 +285,7 @@ SenderSession::route_control_packet_(const packet::PacketPtr& packet,
         roc_panic("sender session: rtcp communicator is null");
     }
 
-    // This will invoke IStreamController methods implemented by us.
+    // This will invoke IParticipant methods implemented by us.
     return rtcp_communicator_->process_packet(packet, current_time);
 }
 

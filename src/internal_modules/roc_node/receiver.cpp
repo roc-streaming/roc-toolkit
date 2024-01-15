@@ -167,7 +167,6 @@ bool Receiver::bind(slot_index_t slot_index,
     address::SocketAddr address;
 
     netio::NetworkLoop::Tasks::ResolveEndpointAddress resolve_task(uri);
-
     if (!context().network_loop().schedule_and_wait(resolve_task)) {
         roc_log(LogError,
                 "receiver node:"
@@ -193,7 +192,6 @@ bool Receiver::bind(slot_index_t slot_index,
 
     port.handle = port_task.get_handle();
 
-    const address::SocketAddr* outbound_address = NULL;
     packet::IWriter* outbound_writer = NULL;
 
     if (iface == address::Iface_AudioControl) {
@@ -208,12 +206,11 @@ bool Receiver::bind(slot_index_t slot_index,
             return false;
         }
 
-        outbound_address = &port.config.bind_address;
         outbound_writer = &send_task.get_outbound_writer();
     }
 
     pipeline::ReceiverLoop::Tasks::AddEndpoint endpoint_task(
-        slot->handle, iface, uri.proto(), outbound_address, outbound_writer);
+        slot->handle, iface, uri.proto(), outbound_writer);
     if (!pipeline_.schedule_and_wait(endpoint_task)) {
         roc_log(LogError,
                 "receiver node:"

@@ -23,7 +23,7 @@
 #include "roc_pipeline/state_tracker.h"
 #include "roc_rtcp/communicator.h"
 #include "roc_rtcp/composer.h"
-#include "roc_rtcp/istream_controller.h"
+#include "roc_rtcp/iparticipant.h"
 #include "roc_rtp/identity.h"
 
 namespace roc {
@@ -43,7 +43,7 @@ namespace pipeline {
 //!
 //! It also exchanges control information with remote senders using rtcp::Communicator
 //! and updates routing based on that control information.
-class ReceiverSessionGroup : public core::NonCopyable<>, private rtcp::IStreamController {
+class ReceiverSessionGroup : public core::NonCopyable<>, private rtcp::IParticipant {
 public:
     //! Initialize.
     ReceiverSessionGroup(const ReceiverConfig& receiver_config,
@@ -61,6 +61,11 @@ public:
     bool is_valid() const;
 
     //! Create control sub-pipeline.
+    //! @note
+    //!  Control sub-pipeline is shared among all sessions in same group, so
+    //!  it's created separately using this method. On the other hand,
+    //!  transport sub-pipeline is per-session and is created automatically
+    //!  when a session is created within group.
     bool create_control_pipeline(ReceiverEndpoint* control_endpoint);
 
     //! Route packet to session.
@@ -91,10 +96,9 @@ public:
     void get_metrics(ReceiverSessionMetrics* metrics, size_t* metrics_size) const;
 
 private:
-    // Implementation of rtcp::IStreamController interface.
+    // Implementation of rtcp::IParticipant interface.
     // These methods are invoked by rtcp::Communicator.
-    virtual const char* cname();
-    virtual packet::stream_source_t source_id();
+    virtual rtcp::ParticipantInfo participant_info();
     virtual void change_source_id();
     virtual size_t num_recv_streams();
     virtual void query_recv_streams(rtcp::RecvReport* reports,
@@ -130,7 +134,7 @@ private:
     const ReceiverConfig& receiver_config_;
 
     core::Optional<rtp::Identity> identity_;
-    core::Optional<rtcp::Composer> rtcp_composer_;
+
     core::Optional<rtcp::Communicator> rtcp_communicator_;
 
     core::List<ReceiverSession> sessions_;

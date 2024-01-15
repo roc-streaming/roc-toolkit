@@ -12,6 +12,7 @@
 #ifndef ROC_RTCP_REPORTER_H_
 #define ROC_RTCP_REPORTER_H_
 
+#include "roc_address/socket_addr.h"
 #include "roc_core/array.h"
 #include "roc_core/hashmap.h"
 #include "roc_core/list.h"
@@ -24,7 +25,7 @@
 #include "roc_packet/units.h"
 #include "roc_rtcp/config.h"
 #include "roc_rtcp/headers.h"
-#include "roc_rtcp/istream_controller.h"
+#include "roc_rtcp/iparticipant.h"
 #include "roc_rtcp/reports.h"
 #include "roc_rtcp/sdes.h"
 #include "roc_status/status_code.h"
@@ -36,27 +37,30 @@ namespace rtcp {
 //!
 //! Used by rtcp::Communicator to incrementally process and generate individual
 //! blocks of compound RTCP packets. Collects data from RTCP traffic and local
-//! stream controller (IStreamController).
+//! pipeline (IParticipant).
 //!
 //! Features:
 //!
 //!  - Maintains hash table of all known sending and receiving streams.
 //!    The table is populated from two sources: reports gathered via RTCP from
-//!    remote peers and local reports gathered from stream controller.
+//!    remote peers and local reports gathered from IParticipant.
+//!
+//!  - Maintains hash table of all destination addresses where to send reports,
+//!    and an index to quickly find which streams are associated with each address.
 //!
 //!  - Provides methods to process report blocks from incoming RTCP packets.
-//!    Incrementally fills stream table from provided report blocks.
-//!    When RTCP packet is fully processed, notifies stream controller with
-//!    the updated remote reports accumulated in stream table.
+//!    Incrementally fills internal tables from provided report blocks.
+//!    When RTCP packet is fully processed, notifies IParticipant with
+//!    the updated remote reports accumulated in internal tables.
 //!
 //!  - Provides methods to generate report blocks for outgoing RTCP packets.
-//!    Queries up-to-date local reports from stream controller into stream table.
-//!    Incrementally fills report blocks from the stream table.
+//!    Queries up-to-date local reports from IParticipant into internal tables.
+//!    Incrementally fills report blocks from the internal tables.
 //!
-//!  - Notifies stream controller when a stream is removed after receiving BYE
+//!  - Notifies IParticipant when a stream is removed after receiving BYE
 //!    message or due to inactivity timeout.
 //!
-//!  - Detects SSRC collisions and asks stream controller to switch SSRC.
+//!  - Detects SSRC collisions and asks IParticipant to switch SSRC.
 //!    Sends BYE message for old SSRC.
 //!
 //! Workflow of incoming packets processing:
@@ -81,9 +85,7 @@ namespace rtcp {
 class Reporter : public core::NonCopyable<> {
 public:
     //! Initialize.
-    Reporter(const Config& config,
-             IStreamController& stream_controller,
-             core::IArena& arena);
+    Reporter(const Config& config, IParticipant& participant, core::IArena& arena);
     ~Reporter();
 
     //! Check if initialization succeeded.
@@ -104,7 +106,8 @@ public:
     //! Begin report processing.
     //! Invoked before process_xxx() functions.
     ROC_ATTR_NODISCARD status::StatusCode
-    begin_processing(core::nanoseconds_t report_time);
+    begin_processing(const address::SocketAddr& report_addr,
+                     core::nanoseconds_t report_time);
 
     //! Process SDES CNAME.
     void process_cname(const SdesChunk& chunk, const SdesItem& item);
@@ -140,6 +143,13 @@ public:
     ROC_ATTR_NODISCARD status::StatusCode
     begin_generation(core::nanoseconds_t report_time);
 
+    //! Get number of destination addresses to which to send reports.
+    size_t num_dest_addresses() const;
+
+    //! Generate destination address.
+    //! @p addr_index should be in range [0; num_dest_addresses()-1].
+    void generate_dest_address(size_t addr_index, address::SocketAddr& addr);
+
     //! Generate SDES chunk with CNAME item.
     void generate_cname(SdesChunk& chunk, SdesItem& item);
 
@@ -150,21 +160,29 @@ public:
     void generate_rr(header::ReceiverReportPacket& rr);
 
     //! Get number of SR/RR reception blocks.
-    size_t num_reception_blocks() const;
+    //! @p addr_index should be in range [0; num_dest_addresses()-1].
+    size_t num_reception_blocks(size_t addr_index) const;
 
     //! Generate SR/RR reception block.
-    //! @p index should be in range [0; num_reception_blocks()-1].
-    void generate_reception_block(size_t index, header::ReceptionReportBlock& blk);
+    //! @p addr_index should be in range [0; num_dest_addresses()-1].
+    //! @p blk_index should be in range [0; num_reception_blocks()-1].
+    void generate_reception_block(size_t addr_index,
+                                  size_t blk_index,
+                                  header::ReceptionReportBlock& blk);
 
     //! Generate XR header.
     void generate_xr(header::XrPacket& xr);
 
     //! Get number of XR DLRR sub-blocks.
-    size_t num_dlrr_subblocks() const;
+    //! @p addr_index should be in range [0; num_dest_addresses()-1].
+    size_t num_dlrr_subblocks(size_t addr_index) const;
 
-    //! Generate XR DLRR sub-block.
-    //! @p index should be in range [0; num_dlrr_subblocks()-1].
-    void generate_dlrr_subblock(size_t index, header::XrDlrrSubblock& blk);
+    //! Generate XR DLRR sub-block (extended sender report).
+    //! @p addr_index should be in range [0; num_dest_addresses()-1].
+    //! @p blk_index should be in range [0; num_dlrr_subblocks()-1].
+    void generate_dlrr_subblock(size_t addr_index,
+                                size_t blk_index,
+                                header::XrDlrrSubblock& blk);
 
     //! Generate XR RRTR header (extended receiver report).
     void generate_rrtr_block(header::XrRrtrBlock& blk);
@@ -182,7 +200,7 @@ public:
     //! @}
 
 private:
-    enum { PreallocatedStreams = 8 };
+    enum { PreallocatedStreams = 8, PreallocatedAddresses = 4 };
 
     enum State {
         State_Idle,       // Default state
@@ -209,6 +227,7 @@ private:
             , source_id(source_id)
             , has_remote_recv_report(false)
             , has_remote_send_report(false)
+            , local_recv_report(NULL)
             , last_update(report_time)
             , last_sr(0)
             , last_rr(0)
@@ -232,13 +251,12 @@ private:
 
         // Stream is receiving from remote participant and this is our
         // receiver report to be delivered to remote side.
-        // Such streams are added to local_recv_streams_ array.
-        RecvReport local_recv_report;
+        // Points to an element of local_recv_reports_ array. Whenever
+        // array is resized, rebuild_index_() updates the pointers.
+        RecvReport* local_recv_report;
 
-        // Stream is sending to remote participant and this is our
-        // sender report to be delivered to remote side.
-        // Such streams are added to local_send_streams_ array.
-        SendReport local_send_report;
+        // Remote address from where reports are coming.
+        address::SocketAddr remote_address;
 
         // Local timestamps.
         core::nanoseconds_t last_update;
@@ -261,9 +279,51 @@ private:
         }
     };
 
+    // Represents one destination address.
+    // If we're sending all reports to a single preconfigured address, there will be
+    // only one instance. Otherwise there will be an instance for every unique address.
+    struct Address : core::RefCounted<Address, core::PoolAllocation>,
+                     core::HashmapNode,
+                     core::ListNode {
+        Address(core::IPool& pool,
+                core::IArena& arena,
+                const address::SocketAddr& remote_address,
+                packet::stream_source_t report_time)
+            : core::RefCounted<Address, core::PoolAllocation>(pool)
+            , remote_address(remote_address)
+            , send_stream_index(arena)
+            , recv_stream_index(arena)
+            , last_update(report_time) {
+        }
+
+        // Destination address where to send reports.
+        address::SocketAddr remote_address;
+
+        // Pointers to local sending and receiving streams from stream map
+        // associated with given address.
+        core::Array<Stream*, PreallocatedStreams> send_stream_index;
+        core::Array<Stream*, PreallocatedStreams> recv_stream_index;
+
+        // Update timestamp.
+        core::nanoseconds_t last_update;
+
+        const address::SocketAddr& key() const {
+            return remote_address;
+        }
+
+        static core::hashsum_t key_hash(const address::SocketAddr& addr) {
+            return core::hashsum_mem(addr.saddr(), addr.slen());
+        }
+
+        static bool key_equal(const address::SocketAddr& addr1,
+                              const address::SocketAddr& addr2) {
+            return addr1 == addr2;
+        }
+    };
+
     status::StatusCode notify_streams_();
-    status::StatusCode query_send_streams_();
-    status::StatusCode query_recv_streams_();
+    status::StatusCode query_streams_();
+    status::StatusCode rebuild_index_();
 
     void detect_timeouts_();
     void detect_collision_(packet::stream_source_t source_id);
@@ -277,37 +337,62 @@ private:
     void remove_stream_(Stream& stream);
     void update_stream_(Stream& stream);
 
-    IStreamController& stream_controller_;
+    core::SharedPtr<Address> find_address_(const address::SocketAddr& remote_address,
+                                           CreateMode mode);
+    void remove_address_(Address& address);
+    void update_address_(Address& address);
 
-    // Map of all streams, identified by SSRC
-    core::SlabPool<Stream, PreallocatedStreams> stream_pool_;
-    core::Hashmap<Stream, PreallocatedStreams> stream_map_;
+    core::IArena& arena_;
 
-    // List of all streams (from stream map) ordered by update time
-    // Recently updated streams are moved to the front of the list
-    core::List<Stream, core::NoOwnership> lru_streams_;
+    // Interface implemented by local sender/receiver pipeline.
+    IParticipant& participant_;
 
-    // Pointers to local sending and receiving streams (from stream map),
-    // as reported by stream controller
-    core::Array<Stream*, PreallocatedStreams> local_send_streams_;
-    core::Array<Stream*, PreallocatedStreams> local_recv_streams_;
-
-    // Information obtained from stream controller
+    // Information obtained from IParticipant.
     char local_cname_[header::SdesItemHeader::MaxTextLen + 1];
     packet::stream_source_t local_source_id_;
+    bool has_local_send_report_;
     SendReport local_send_report_;
     core::Array<RecvReport, PreallocatedStreams> local_recv_reports_;
 
-    // SSRC collision detection state
+    // Whether to use single destination address for all reports, or
+    // otherwise send reports back to remote participant addresses.
+    bool use_static_report_addr_;
+    address::SocketAddr static_report_addr_;
+
+    // Map of all streams, identified by SSRC.
+    core::SlabPool<Stream, PreallocatedStreams> stream_pool_;
+    core::Hashmap<Stream, PreallocatedStreams> stream_map_;
+
+    // List of all streams (from stream map) ordered by update time.
+    // Recently updated streams are moved to the front of the list.
+    core::List<Stream, core::NoOwnership> stream_lru_;
+
+    // Map of all destination addresses.
+    core::SlabPool<Address, PreallocatedAddresses> address_pool_;
+    core::Hashmap<Address, PreallocatedAddresses> address_map_;
+
+    // List of all addresss (from address map) ordered by update time.
+    // Recently updated addreses are moved to the front of the list.
+    core::List<Address, core::NoOwnership> address_lru_;
+
+    // Pointers to addresses (from address map), which in turn hold
+    // pointers to streams (from stream map), for fast access by index
+    // during report generation.
+    core::Array<Address*, PreallocatedAddresses> address_index_;
+    // If true, the index should be rebuilt.
+    bool need_rebuild_index_;
+
+    // SSRC collision detection state.
     bool collision_detected_;
     bool collision_reported_;
 
-    // Report processing & generation state
+    // Report processing & generation state.
     State report_state_;
     status::StatusCode report_error_;
+    address::SocketAddr report_addr_;
     core::nanoseconds_t report_time_;
 
-    // Inactivity timeout to remove dead streams
+    // Inactivity timeout to remove dead streams.
     const core::nanoseconds_t timeout_;
 
     bool valid_;

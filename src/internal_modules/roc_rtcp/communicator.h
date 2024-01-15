@@ -24,7 +24,7 @@
 #include "roc_packet/packet_factory.h"
 #include "roc_rtcp/builder.h"
 #include "roc_rtcp/config.h"
-#include "roc_rtcp/istream_controller.h"
+#include "roc_rtcp/iparticipant.h"
 #include "roc_rtcp/reporter.h"
 #include "roc_rtcp/traverser.h"
 
@@ -36,29 +36,29 @@ namespace rtcp {
 //! Implements bidirectional exchange of RTCP packets with other participants
 //! of a single RTP session.
 //!
-//! Holds a reference to IStreamController interface, which is implemented
-//! by sender or receiver pipeline.
+//! Holds a reference to IParticipant interface, which is implemented by
+//! sender or receiver pipeline.
 //!
 //! Features:
 //!
 //!  - processes received RTCP packets, extract reports from packets,
-//!    and notifies stream controller with reports from remote side
+//!    and notifies IParticipant with reports from remote side
 //!
-//!  - queries stream controller with up-to-date reports from local
+//!  - queries IParticipant with up-to-date reports from local
 //!    side, and generates RTCP packets to be sent to remote side
 //!
-//! For more details about streams and reports, @see IStreamController.
+//! For more details about streams and reports, @see IParticipant.
 //!
 //! This is top-level class of roc_rtcp module, glueing together other components:
 //!   - rtcp::Traverser, to iterate through blocks of compound RTCP packets
 //!   - rtcp::Builder, to construct compound RTCP packets
 //!   - rtcp::Reporter, to maintain hash table of active streams, process and generate
-//!     individual blocks of compound packets, and interact with stream controller
+//!     individual blocks of compound packets, and interact with IParticipant
 class Communicator : public core::NonCopyable<> {
 public:
     //! Initialize.
     Communicator(const Config& config,
-                 IStreamController& stream_controller,
+                 IParticipant& participant,
                  packet::IWriter& packet_writer,
                  packet::IComposer& packet_composer,
                  packet::PacketFactory& packet_factory,
@@ -72,7 +72,7 @@ public:
     size_t num_streams() const;
 
     //! Parse and process incoming packet.
-    //! Invokes stream controller methods during processing.
+    //! Invokes IParticipant methods during processing.
     ROC_ATTR_NODISCARD status::StatusCode
     process_packet(const packet::PacketPtr& packet, core::nanoseconds_t current_time);
 
@@ -84,14 +84,14 @@ public:
     //! Generate and send report packet(s).
     //! Should be called accroding to generation_deadline().
     //! @p current_time is current time in nanoseconds since Unix epoch.
-    //! Invokes stream controller methods during generation.
+    //! Invokes IParticipant methods during generation.
     ROC_ATTR_NODISCARD status::StatusCode
     generate_reports(core::nanoseconds_t current_time);
 
     //! Generate and send goodbye packet(s).
     //! Should be called before termination sender session.
     //! @p current_time is current time in nanoseconds since Unix epoch.
-    //! Invokes stream controller methods during generation.
+    //! Invokes IParticipant methods during generation.
     ROC_ATTR_NODISCARD status::StatusCode
     generate_goodbye(core::nanoseconds_t current_time);
 
@@ -144,6 +144,11 @@ private:
 
     // When generation_deadline() should be called next time.
     core::nanoseconds_t next_deadline_;
+
+    // Maximum number of destination addresses, and index of current destination
+    // address for which we're generating report.
+    size_t max_dest_addrs_;
+    size_t cur_dest_addr_;
 
     // Maximum number of SR/RR/XR blocks per packet, and number of current block
     // in packet. If maximum is exceeded, report is split into multiple packets.

@@ -12,6 +12,7 @@
 #ifndef ROC_PIPELINE_SENDER_SESSION_H_
 #define ROC_PIPELINE_SENDER_SESSION_H_
 
+#include "roc_address/socket_addr.h"
 #include "roc_audio/channel_mapper_writer.h"
 #include "roc_audio/iframe_encoder.h"
 #include "roc_audio/iresampler.h"
@@ -32,7 +33,7 @@
 #include "roc_pipeline/sender_endpoint.h"
 #include "roc_rtcp/communicator.h"
 #include "roc_rtcp/composer.h"
-#include "roc_rtcp/istream_controller.h"
+#include "roc_rtcp/iparticipant.h"
 #include "roc_rtp/encoding_map.h"
 #include "roc_rtp/identity.h"
 #include "roc_rtp/sequencer.h"
@@ -47,7 +48,7 @@ namespace pipeline {
 //! Contains:
 //!  - a pipeline for processing audio frames from single sender and converting
 //!    them into packets
-class SenderSession : public core::NonCopyable<>, private rtcp::IStreamController {
+class SenderSession : public core::NonCopyable<>, private rtcp::IParticipant {
 public:
     //! Initialize.
     SenderSession(const SenderConfig& config,
@@ -92,10 +93,9 @@ public:
     SenderSessionMetrics get_metrics() const;
 
 private:
-    // Implementation of rtcp::IStreamController interface.
+    // Implementation of rtcp::IParticipant interface.
     // These methods are invoked by rtcp::Communicator.
-    virtual const char* cname();
-    virtual packet::stream_source_t source_id();
+    virtual rtcp::ParticipantInfo participant_info();
     virtual void change_source_id();
     virtual bool has_send_stream();
     virtual rtcp::SendReport query_send_stream(core::nanoseconds_t report_time);
@@ -135,8 +135,8 @@ private:
     core::Optional<audio::ResamplerWriter> resampler_writer_;
     core::SharedPtr<audio::IResampler> resampler_;
 
-    core::Optional<rtcp::Composer> rtcp_composer_;
     core::Optional<rtcp::Communicator> rtcp_communicator_;
+    address::SocketAddr rtcp_address_;
 
     audio::IFrameWriter* frame_writer_;
 

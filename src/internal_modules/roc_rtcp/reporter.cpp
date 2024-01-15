@@ -7,6 +7,7 @@
  */
 
 #include "roc_rtcp/reporter.h"
+#include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/time.h"
@@ -18,15 +19,21 @@
 namespace roc {
 namespace rtcp {
 
-Reporter::Reporter(const Config& config,
-                   IStreamController& stream_controller,
-                   core::IArena& arena)
-    : stream_controller_(stream_controller)
+Reporter::Reporter(const Config& config, IParticipant& participant, core::IArena& arena)
+    : arena_(arena)
+    , participant_(participant)
+    , local_source_id_(0)
+    , has_local_send_report_(false)
+    , local_send_report_()
+    , local_recv_reports_(arena)
+    , use_static_report_addr_(false)
+    , static_report_addr_()
     , stream_pool_("stream_pool", arena)
     , stream_map_(arena)
-    , local_send_streams_(arena)
-    , local_recv_streams_(arena)
-    , local_recv_reports_(arena)
+    , address_pool_("address_pool", arena)
+    , address_map_(arena)
+    , address_index_(arena)
+    , need_rebuild_index_(true)
     , collision_detected_(false)
     , collision_reported_(false)
     , report_state_(State_Idle)
@@ -34,19 +41,33 @@ Reporter::Reporter(const Config& config,
     , report_time_(0)
     , timeout_(config.inactivity_timeout)
     , valid_(false) {
-    local_source_id_ = stream_controller_.source_id();
     memset(local_cname_, 0, sizeof(local_cname_));
 
-    const char* cname = stream_controller_.cname();
-    if (cname == NULL || cname[0] == '\0' || strlen(cname) > sizeof(local_cname_) - 1) {
+    const ParticipantInfo part_info = participant_.participant_info();
+
+    if (part_info.cname == NULL || part_info.cname[0] == '\0'
+        || strlen(part_info.cname) > sizeof(local_cname_) - 1) {
         roc_log(LogError, "rtcp reporter: cname() should return short non-empty string");
         return;
     }
-    strcpy(local_cname_, cname);
+
+    local_source_id_ = part_info.source_id;
+    strcpy(local_cname_, part_info.cname);
+
+    if (part_info.report_back) {
+        use_static_report_addr_ = false;
+    } else {
+        use_static_report_addr_ = true;
+        static_report_addr_ = part_info.report_address;
+    }
 
     roc_log(LogDebug,
-            "rtcp reporter: initializing: local_ssrc=%lu local_cname=%s timeout=%.3fms",
+            "rtcp reporter: initializing:"
+            " local_ssrc=%lu local_cname=%s report_addr=%s timeout=%.3fms",
             (unsigned long)local_source_id_, cname_to_str(local_cname_).c_str(),
+            use_static_report_addr_
+                ? address::socket_addr_to_str(static_report_addr_).c_str()
+                : "<report_back>",
             (double)timeout_ / core::Millisecond);
 
     valid_ = true;
@@ -64,13 +85,13 @@ bool Reporter::is_valid() const {
 bool Reporter::is_sending() const {
     roc_panic_if(!is_valid());
 
-    return stream_controller_.has_send_stream();
+    return participant_.has_send_stream();
 }
 
 bool Reporter::is_receiving() const {
     roc_panic_if(!is_valid());
 
-    return stream_controller_.num_recv_streams() != 0;
+    return participant_.num_recv_streams() != 0;
 }
 
 size_t Reporter::num_streams() const {
@@ -79,7 +100,8 @@ size_t Reporter::num_streams() const {
     return stream_map_.size();
 }
 
-status::StatusCode Reporter::begin_processing(core::nanoseconds_t report_time) {
+status::StatusCode Reporter::begin_processing(const address::SocketAddr& report_addr,
+                                              core::nanoseconds_t report_time) {
     roc_panic_if(!is_valid());
 
     roc_panic_if_msg(report_state_ != State_Idle, "rtcp reporter: invalid call order");
@@ -87,7 +109,11 @@ status::StatusCode Reporter::begin_processing(core::nanoseconds_t report_time) {
 
     report_state_ = State_Processing;
     report_error_ = status::StatusOK;
-    report_time_ = report_time;
+    report_addr_ = report_addr;
+
+    // Ensure that report timestamp changes every invocation
+    // to a different value, we rely on that.
+    report_time_ = report_time != report_time_ ? report_time : report_time + 1;
 
     return status::StatusOK;
 }
@@ -133,7 +159,7 @@ void Reporter::process_cname(const SdesChunk& chunk, const SdesItem& item) {
         roc_log(LogTrace, "rtcp reporter: halt_recv_stream(): ssrc=%lu cname=%s",
                 (unsigned long)stream->source_id, cname_to_str(stream->cname).c_str());
 
-        stream_controller_.halt_recv_stream(stream->source_id);
+        participant_.halt_recv_stream(stream->source_id);
 
         remove_stream_(*stream);
 
@@ -144,6 +170,7 @@ void Reporter::process_cname(const SdesChunk& chunk, const SdesItem& item) {
 
     // Update CNAME.
     strcpy(stream->cname, item.text);
+    need_rebuild_index_ = true;
 
     // Detect collisions after we've updated CNAME.
     detect_collision_(stream_source_id);
@@ -170,7 +197,10 @@ void Reporter::process_sr(const header::SenderReportPacket& sr) {
     roc_log(LogTrace, "rtcp reporter: processing SR: ssrc=%lu",
             (unsigned long)send_source_id);
 
-    stream->has_remote_send_report = true;
+    if (!stream->has_remote_send_report) {
+        stream->has_remote_send_report = true;
+        need_rebuild_index_ = true;
+    }
 
     stream->remote_send_report.sender_cname = stream->cname;
     stream->remote_send_report.sender_source_id = stream->source_id;
@@ -181,6 +211,17 @@ void Reporter::process_sr(const header::SenderReportPacket& sr) {
     stream->remote_send_report.packet_count = sr.packet_count();
     stream->remote_send_report.byte_count = sr.byte_count();
 
+    if (stream->remote_address != report_addr_) {
+        roc_log(LogDebug,
+                "rtcp reporter: updating stream address:"
+                " ssrc=%lu old_addr=%s new_addr=%s",
+                (unsigned long)stream->source_id,
+                address::socket_addr_to_str(stream->remote_address).c_str(),
+                address::socket_addr_to_str(report_addr_).c_str());
+
+        stream->remote_address = report_addr_;
+        need_rebuild_index_ = true;
+    }
     stream->last_sr = report_time_;
 
     update_stream_(*stream);
@@ -217,7 +258,10 @@ void Reporter::process_reception_block(const packet::stream_source_t ssrc,
         "rtcp reporter: processing SR/RR reception block: send_ssrc=%lu recv_ssrc=%lu",
         (unsigned long)send_source_id, (unsigned long)recv_source_id);
 
-    stream->has_remote_recv_report = true;
+    if (!stream->has_remote_recv_report) {
+        stream->has_remote_recv_report = true;
+        need_rebuild_index_ = true;
+    }
 
     stream->remote_recv_report.receiver_cname = stream->cname;
     stream->remote_recv_report.receiver_source_id = stream->source_id;
@@ -227,6 +271,18 @@ void Reporter::process_reception_block(const packet::stream_source_t ssrc,
     stream->remote_recv_report.cum_loss = blk.cum_loss();
     stream->remote_recv_report.ext_last_seqnum = blk.last_seqnum();
     stream->remote_recv_report.jitter = blk.jitter();
+
+    if (stream->remote_address != report_addr_) {
+        roc_log(LogDebug,
+                "rtcp reporter: updating stream address:"
+                " ssrc=%lu old_addr=%s new_addr=%s",
+                (unsigned long)stream->source_id,
+                address::socket_addr_to_str(stream->remote_address).c_str(),
+                address::socket_addr_to_str(report_addr_).c_str());
+
+        stream->remote_address = report_addr_;
+        need_rebuild_index_ = true;
+    }
 
     // TODO(gh-14): pass LSR and DLSR to RttEstimator
 
@@ -325,7 +381,7 @@ void Reporter::process_goodbye(const packet::stream_source_t ssrc) {
             (unsigned long)send_source_id,
             cname_to_str(stream ? stream->cname : NULL).c_str());
 
-    stream_controller_.halt_recv_stream(send_source_id);
+    participant_.halt_recv_stream(send_source_id);
 }
 
 status::StatusCode Reporter::end_processing() {
@@ -335,7 +391,7 @@ status::StatusCode Reporter::end_processing() {
     // Detect and remove timed-out streams.
     detect_timeouts_();
 
-    // Notify stream controller with updated reports.
+    // Notify IParticipant with updated reports.
     const status::StatusCode code = notify_streams_();
 
     report_state_ = State_Idle;
@@ -347,7 +403,7 @@ status::StatusCode Reporter::end_processing() {
     return report_error_;
 }
 
-status::StatusCode Reporter::begin_generation(const core::nanoseconds_t report_time) {
+status::StatusCode Reporter::begin_generation(core::nanoseconds_t report_time) {
     roc_panic_if(!is_valid());
 
     roc_panic_if_msg(report_state_ != State_Idle, "rtcp reporter: invalid call order");
@@ -355,20 +411,46 @@ status::StatusCode Reporter::begin_generation(const core::nanoseconds_t report_t
 
     report_state_ = State_Generating;
     report_error_ = status::StatusOK;
-    report_time_ = report_time;
 
-    // Query up-to-date reports from stream controller.
+    // Ensure that report timestamp changes every invocation
+    // to a different value, we rely on that.
+    report_time_ = report_time != report_time_ ? report_time : report_time + 1;
+
+    // Query up-to-date reports from IParticipant.
     status::StatusCode status;
-    if ((status = query_send_streams_()) != status::StatusOK) {
+    if ((status = query_streams_()) != status::StatusOK) {
         report_state_ = State_Idle;
         return status;
     }
-    if ((status = query_recv_streams_()) != status::StatusOK) {
-        report_state_ = State_Idle;
-        return status;
+
+    // Rebuild index if needed.
+    // This happens if local or remote streams appeared or disappeared.
+    // Most times it doesn't happen and it's enough to update existing
+    // streams via query_streams_() above.
+    if (need_rebuild_index_) {
+        if ((status = rebuild_index_()) != status::StatusOK) {
+            report_state_ = State_Idle;
+            return status;
+        }
+        need_rebuild_index_ = false;
     }
 
     return status::StatusOK;
+}
+
+// Get number of destination addresses to which to send reports
+size_t Reporter::num_dest_addresses() const {
+    roc_panic_if_msg(report_state_ != State_Generating,
+                     "rtcp reporter: invalid call order");
+
+    return address_index_.size();
+}
+
+void Reporter::generate_dest_address(size_t addr_index, address::SocketAddr& addr) {
+    roc_panic_if_msg(report_state_ != State_Generating,
+                     "rtcp reporter: invalid call order");
+
+    addr = address_index_[addr_index]->remote_address;
 }
 
 // Generate SDES CNAME to deliver to remote receiver
@@ -407,14 +489,17 @@ void Reporter::generate_rr(header::ReceiverReportPacket& rr) {
 }
 
 // Get number of reception blocks in SR or RR
-size_t Reporter::num_reception_blocks() const {
-    roc_panic_if(!is_valid());
+size_t Reporter::num_reception_blocks(size_t addr_index) const {
+    roc_panic_if_msg(report_state_ != State_Generating,
+                     "rtcp reporter: invalid call order");
 
-    return local_recv_streams_.size();
+    return address_index_[addr_index]->recv_stream_index.size();
 }
 
 // Generate SR/RR reception block to deliver to remote sender
-void Reporter::generate_reception_block(size_t index, header::ReceptionReportBlock& blk) {
+void Reporter::generate_reception_block(size_t addr_index,
+                                        size_t blk_index,
+                                        header::ReceptionReportBlock& blk) {
     roc_panic_if_msg(report_state_ != State_Generating,
                      "rtcp reporter: invalid call order");
 
@@ -422,15 +507,15 @@ void Reporter::generate_reception_block(size_t index, header::ReceptionReportBlo
         !is_receiving(),
         "rtcp reporter: SR/RR reception block can be generated only by receiver");
 
-    Stream* stream = local_recv_streams_[index];
+    Stream* stream = address_index_[addr_index]->recv_stream_index[blk_index];
     roc_panic_if(!stream);
 
     blk.set_ssrc(stream->source_id);
 
-    blk.set_last_seqnum(stream->local_recv_report.ext_last_seqnum);
-    blk.set_fract_loss(stream->local_recv_report.fract_loss);
-    blk.set_cum_loss(stream->local_recv_report.cum_loss);
-    blk.set_jitter(stream->local_recv_report.jitter);
+    blk.set_last_seqnum(stream->local_recv_report->ext_last_seqnum);
+    blk.set_fract_loss(stream->local_recv_report->fract_loss);
+    blk.set_cum_loss(stream->local_recv_report->cum_loss);
+    blk.set_jitter(stream->local_recv_report->jitter);
 
     // LSR: ntp timestamp from last SR in remote clock domain
     blk.set_last_sr(packet::unix_2_ntp(stream->remote_send_report.report_timestamp));
@@ -450,21 +535,24 @@ void Reporter::generate_xr(header::XrPacket& xr) {
 }
 
 // Get number of XR DLRR sub-blocks
-size_t Reporter::num_dlrr_subblocks() const {
-    roc_panic_if(!is_valid());
+size_t Reporter::num_dlrr_subblocks(size_t addr_index) const {
+    roc_panic_if_msg(report_state_ != State_Generating,
+                     "rtcp reporter: invalid call order");
 
-    return local_send_streams_.size();
+    return address_index_[addr_index]->send_stream_index.size();
 }
 
 // Generate XR DLRR sub-block to deliver to remote receiver
-void Reporter::generate_dlrr_subblock(size_t index, header::XrDlrrSubblock& blk) {
+void Reporter::generate_dlrr_subblock(size_t addr_index,
+                                      size_t blk_index,
+                                      header::XrDlrrSubblock& blk) {
     roc_panic_if_msg(report_state_ != State_Generating,
                      "rtcp reporter: invalid call order");
 
     roc_panic_if_msg(!is_sending(),
                      "rtcp reporter: DLRR can be generated only by sender");
 
-    Stream* stream = local_send_streams_[index];
+    Stream* stream = address_index_[addr_index]->send_stream_index[blk_index];
     roc_panic_if(!stream);
 
     blk.set_ssrc(stream->source_id);
@@ -485,13 +573,13 @@ void Reporter::generate_rrtr_block(header::XrRrtrBlock& blk) {
 
     // RRTR blocks are identical for all receiving streams,
     // so we can just use the first one.
-    Stream* stream = local_recv_streams_[0];
-    roc_panic_if(!stream);
-
-    blk.set_ntp_timestamp(packet::unix_2_ntp(stream->local_recv_report.report_timestamp));
+    blk.set_ntp_timestamp(packet::unix_2_ntp(local_recv_reports_[0].report_timestamp));
 }
 
 bool Reporter::need_goodbye() const {
+    roc_panic_if_msg(report_state_ != State_Generating,
+                     "rtcp reporter: invalid call order");
+
     return collision_detected_;
 }
 
@@ -512,8 +600,9 @@ status::StatusCode Reporter::end_generation() {
 
     report_state_ = State_Idle;
 
-    // Resolve SSRC collision.
-    // We do it after generation when we already sent BYE packet.
+    // Resolve SSRC collision (by choosing another SSRC).
+    // We do it after generation is done, when we already sent BYE packet
+    // for old SSRC.
     resolve_collision_();
 
     // Detect and remove timed-out streams.
@@ -527,14 +616,14 @@ status::StatusCode Reporter::notify_streams_() {
         return status::StatusOK;
     }
 
-    const bool is_sending = stream_controller_.has_send_stream();
+    const bool is_sending = participant_.has_send_stream();
 
-    for (Stream* stream = lru_streams_.front(); stream != NULL;
-         stream = lru_streams_.nextof(*stream)) {
+    for (Stream* stream = stream_lru_.front(); stream != NULL;
+         stream = stream_lru_.nextof(*stream)) {
         // Recently updated streams are moved to the front of the list.
         // We iterate from front to back and stop when we find first stream which
-        // was updated before current report.
-        if (stream->last_update < report_time_) {
+        // was not updated during processing of current report.
+        if (stream->last_update != report_time_) {
             break;
         }
 
@@ -548,7 +637,7 @@ status::StatusCode Reporter::notify_streams_() {
                     " notify_send_stream(): send_ssrc=%lu recv_ssrc=%lu",
                     (unsigned long)local_source_id_, (unsigned long)recv_source_id);
 
-            const status::StatusCode code = stream_controller_.notify_send_stream(
+            const status::StatusCode code = participant_.notify_send_stream(
                 recv_source_id, stream->remote_recv_report);
 
             if (code != status::StatusOK) {
@@ -561,8 +650,9 @@ status::StatusCode Reporter::notify_streams_() {
         }
 
         if (stream->has_remote_send_report) {
-            // If we're receiving, notify pipeline about every discovered
-            // sender report for one of our receiving streams.
+            // Notify pipeline about every discovered sender report, even if
+            // we're not receiving its stream yet. Pipeline may use info from
+            // this report later when it starts actually receiving the stream.
             const packet::stream_source_t send_source_id = stream->source_id;
 
             roc_log(LogTrace,
@@ -571,7 +661,7 @@ status::StatusCode Reporter::notify_streams_() {
                     (unsigned long)local_source_id_, (unsigned long)send_source_id,
                     cname_to_str(stream->cname).c_str());
 
-            const status::StatusCode code = stream_controller_.notify_recv_stream(
+            const status::StatusCode code = participant_.notify_recv_stream(
                 send_source_id, stream->remote_send_report);
 
             if (code != status::StatusOK) {
@@ -587,32 +677,55 @@ status::StatusCode Reporter::notify_streams_() {
     return status::StatusOK;
 }
 
-status::StatusCode Reporter::query_send_streams_() {
-    local_send_streams_.clear();
-
-    if (stream_controller_.has_send_stream()) {
-        local_send_report_ = stream_controller_.query_send_stream(report_time_);
-
+status::StatusCode Reporter::query_streams_() {
+    // Query report of local sending stream.
+    if (participant_.has_send_stream()) {
         roc_log(LogTrace,
                 "rtcp reporter: query_send_stream(): send_ssrc=%lu send_cname=%s",
                 (unsigned long)local_send_report_.sender_source_id,
                 cname_to_str(local_send_report_.sender_cname).c_str());
 
+        local_send_report_ = participant_.query_send_stream(report_time_);
+        has_local_send_report_ = true;
+
         validate_send_report_(local_send_report_);
+    } else {
+        has_local_send_report_ = false;
+    }
 
-        // We have only one actual sending stream, but in case of multicast,
-        // we create multiple sending stream objects, one per each receiver.
-        // We know about present receivers from RTCP reports obtained from
-        // them. Here we iterate over every sending stream object for each
-        // discovered receiver and update its sending report. This report will
-        // be later used to generate RTCP packets for that specific receiver.
-        for (core::SharedPtr<Stream> stream = stream_map_.front(); stream != NULL;
-             stream = stream_map_.nextof(*stream)) {
-            if (stream->has_remote_recv_report) {
-                stream->local_send_report = local_send_report_;
+    // Query reports of local receiving streams.
+    const size_t recv_count = participant_.num_recv_streams();
 
-                if (!local_send_streams_.push_back(stream.get())) {
-                    return status::StatusNoMem;
+    if (local_recv_reports_.size() != recv_count) {
+        if (!local_recv_reports_.resize(recv_count)) {
+            return status::StatusNoMem;
+        }
+
+        // Receiving stream list changed, need to rebuild index
+        // and update pointers to reports.
+        need_rebuild_index_ = true;
+    }
+
+    if (recv_count != 0) {
+        roc_log(LogTrace, "rtcp reporter: query_recv_streams(): n_reports=%lu",
+                (unsigned long)recv_count);
+
+        participant_.query_recv_streams(local_recv_reports_.data(),
+                                        local_recv_reports_.size(), report_time_);
+
+        for (size_t recv_idx = 0; recv_idx < recv_count; recv_idx++) {
+            validate_recv_report_(local_recv_reports_[recv_idx]);
+
+            if (!need_rebuild_index_) {
+                core::SharedPtr<Stream> stream = find_stream_(
+                    local_recv_reports_[recv_idx].sender_source_id, NoAutoCreate);
+
+                if (!stream
+                    || stream->source_id
+                        != local_recv_reports_[recv_idx].sender_source_id) {
+                    // Receiving stream list changed, need to rebuild index
+                    // and update pointers to reports.
+                    need_rebuild_index_ = true;
                 }
             }
         }
@@ -621,42 +734,111 @@ status::StatusCode Reporter::query_send_streams_() {
     return status::StatusOK;
 }
 
-status::StatusCode Reporter::query_recv_streams_() {
-    const size_t recv_count = stream_controller_.num_recv_streams();
+status::StatusCode Reporter::rebuild_index_() {
+    roc_panic_if(!need_rebuild_index_);
 
-    if (!local_recv_reports_.resize(recv_count)) {
-        return status::StatusNoMem;
+    address_index_.clear();
+
+    // We have only one local sending stream, but in case of multicast,
+    // we create multiple sending stream objects, one per each receiver.
+    // We know about present receivers from RTCP reports obtained from
+    // them. Here we iterate over every sending stream object for each
+    // discovered receiver and add it to index. Its report will be
+    // later used to generate XR packets for that specific receiver.
+    if (has_local_send_report_) {
+        if (use_static_report_addr_) {
+            // If there is configured single destination address for all
+            // reports, ensure that it's always present in the index,
+            // even if there are no sending steam objects.
+            core::SharedPtr<Address> address =
+                find_address_(static_report_addr_, AutoCreate);
+            if (!address) {
+                return status::StatusNoMem;
+            }
+
+            update_address_(*address);
+        }
+
+        for (core::SharedPtr<Stream> stream = stream_map_.front(); stream != NULL;
+             stream = stream_map_.nextof(*stream)) {
+            if (!stream->has_remote_recv_report) {
+                continue;
+            }
+
+            core::SharedPtr<Address> address = find_address_(
+                use_static_report_addr_ ? static_report_addr_ : stream->remote_address,
+                AutoCreate);
+            if (!address) {
+                return status::StatusNoMem;
+            }
+
+            update_address_(*address);
+
+            if (!address->send_stream_index.push_back(stream.get())) {
+                return status::StatusNoMem;
+            }
+        }
     }
-
-    if (recv_count != 0) {
-        roc_log(LogTrace, "rtcp reporter: query_recv_streams(): n_reports=%lu",
-                (unsigned long)recv_count);
-
-        stream_controller_.query_recv_streams(local_recv_reports_.data(),
-                                              local_recv_reports_.size(), report_time_);
-    }
-
-    local_recv_streams_.clear();
 
     // We can have multiple receiving streams, one per each sender in session.
     // Here we iterate over every receiving stream reported by pipeline and
-    // update its receiving report. This report will be later used to generate
-    // RTCP packets for corresponding sender.
-    for (size_t recv_idx = 0; recv_idx < recv_count; recv_idx++) {
-        validate_recv_report_(local_recv_reports_[recv_idx]);
-
+    // add it to the index. Its report will be later used to generate RR
+    // packets for corresponding sender.
+    for (size_t recv_idx = 0; recv_idx < local_recv_reports_.size(); recv_idx++) {
         core::SharedPtr<Stream> stream =
             find_stream_(local_recv_reports_[recv_idx].sender_source_id, AutoCreate);
         if (!stream) {
             return status::StatusNoMem;
         }
+        if (!stream->has_remote_send_report && !use_static_report_addr_) {
+            continue;
+        }
 
-        stream->local_recv_report = local_recv_reports_[recv_idx];
+        core::SharedPtr<Address> address = find_address_(
+            use_static_report_addr_ ? static_report_addr_ : stream->remote_address,
+            AutoCreate);
+        if (!address) {
+            return status::StatusNoMem;
+        }
 
-        if (!local_recv_streams_.push_back(stream.get())) {
+        update_address_(*address);
+
+        if (!address->recv_stream_index.push_back(stream.get())) {
+            return status::StatusNoMem;
+        }
+
+        // Save pointer to report.
+        // This report is regularly updated by query_streams_().
+        // If query_streams_() invalidates pointers, it ensures that
+        // rebuild_index_() will be called soon after it.
+        stream->local_recv_report = &local_recv_reports_[recv_idx];
+    }
+
+    // Recently updated addreses are moved to the front of the list.
+    // We iterate from back to front and stop when we find first address which
+    // was updated during current rebuild. We consider all addresses not
+    // updated during rebuild to be not relevant anymore, and remove them.
+    while (Address* address = address_lru_.back()) {
+        if (address->last_update == report_time_) {
+            break;
+        }
+        remove_address_(*address);
+    }
+
+    // Finally we can populate address_index_ array with pointers to addresses,
+    // for fast access by numeric index.
+    if (!address_index_.grow_exp(address_map_.size())) {
+        return status::StatusNoMem;
+    }
+    for (core::SharedPtr<Address> address = address_map_.front(); address != NULL;
+         address = address_map_.nextof(*address)) {
+        if (!address_index_.push_back(address.get())) {
             return status::StatusNoMem;
         }
     }
+
+    roc_log(LogDebug, "rtcp reporter: completed index rebuild: n_streams=%lu n_addrs=%lu",
+            (unsigned long)stream_map_.size(), (unsigned long)address_map_.size());
 
     return status::StatusOK;
 }
@@ -666,10 +848,11 @@ void Reporter::detect_timeouts_() {
         return;
     }
 
-    // If stream was not updated after deadline, it should be removed.
+    // If stream was not updated after deadline (i.e. there were no new reports),
+    // it should be removed.
     const core::nanoseconds_t deadline = report_time_ - timeout_;
 
-    while (Stream* stream = lru_streams_.back()) {
+    while (Stream* stream = stream_lru_.back()) {
         // Recently updated streams are moved to the front of the list.
         // We iterate from back to front and stop when we find first stream which
         // was updated recently enough.
@@ -691,7 +874,7 @@ void Reporter::detect_timeouts_() {
                     "rtcp reporter: halt_recv_stream(): send_ssrc=%lu send_cname=%s",
                     (unsigned long)send_source_id, cname_to_str(stream->cname).c_str());
 
-            stream_controller_.halt_recv_stream(send_source_id);
+            participant_.halt_recv_stream(send_source_id);
         }
 
         remove_stream_(*stream);
@@ -728,9 +911,13 @@ void Reporter::detect_collision_(packet::stream_source_t source_id) {
         return;
     }
 
-    // If stream has same SSRC, but not CNAME, we assume that we found SSRC
-    // collision. We should change our own SSRC to a new random value.
-    // It will be done in resolve_collision_() later.
+    // If stream has same SSRC, but not CNAME, we assume that we found SSRC collision.
+    // We should first send BYE message with old SSRC, and then change SSRC to a new
+    // random value. We achive this in two steps:
+    //  - During generation, we return true from need_boodbye() to tell rtcp::Communicator
+    //    to call generate_goodbye() and to send BYE message.
+    //  - After generation is completed, we call resolve_collision_(), that finishes
+    //    collision handling by choosing new SSRC.
     roc_log(LogDebug,
             "rtcp reporter: detected SSRC collision:"
             " remote_ssrc=%lu remote_cname=%s local_ssrc=%lu local_cname=%s",
@@ -751,14 +938,19 @@ void Reporter::resolve_collision_() {
                   " need_goodbye() returned true, but generate_goodbye() was not called");
     }
 
+    // If we are here, it means that:
+    //  - detect_collision_() detected collision
+    //  - generate_goodbye() reported collision (sent BYE for old SSRC)
+    // Now it's time to select a new random SSRC.
     for (;;) {
-        stream_controller_.change_source_id();
+        participant_.change_source_id();
 
-        local_source_id_ = stream_controller_.source_id();
+        const ParticipantInfo part_info = participant_.participant_info();
 
-        core::SharedPtr<Stream> stream = find_stream_(local_source_id_, NoAutoCreate);
-        if (stream) {
-            // Newly selected SSRC leads to collision again.
+        local_source_id_ = part_info.source_id;
+
+        if (find_stream_(local_source_id_, NoAutoCreate)) {
+            // Newly selected SSRC leads to collision again. Unlikely, but possible.
             // Repeat.
             continue;
         }
@@ -769,6 +961,7 @@ void Reporter::resolve_collision_() {
     roc_log(LogDebug, "rtcp reporter: changed local SSRC: ssrc=%lu cname=%s",
             (unsigned long)local_source_id_, cname_to_str(local_cname_).c_str());
 
+    // Update SSRC in stored reports.
     for (core::SharedPtr<Stream> stream = stream_map_.front(); stream != NULL;
          stream = stream_map_.nextof(*stream)) {
         if (stream->has_remote_recv_report) {
@@ -851,6 +1044,8 @@ Reporter::find_stream_(packet::stream_source_t source_id, CreateMode mode) {
             report_error_ = status::StatusNoMem;
             return NULL;
         }
+
+        need_rebuild_index_ = true;
     }
 
     return stream;
@@ -860,21 +1055,84 @@ void Reporter::remove_stream_(Stream& stream) {
     roc_log(LogDebug, "rtcp reporter: removing stream: ssrc=%lu",
             (unsigned long)stream.source_id);
 
-    if (lru_streams_.contains(stream)) {
-        lru_streams_.remove(stream);
+    if (stream_lru_.contains(stream)) {
+        stream_lru_.remove(stream);
     }
 
     stream_map_.remove(stream);
+
+    need_rebuild_index_ = true;
 }
 
 void Reporter::update_stream_(Stream& stream) {
-    stream.last_update = report_time_;
-
-    if (lru_streams_.contains(stream)) {
-        lru_streams_.remove(stream);
+    if (stream.last_update == report_time_) {
+        return;
     }
 
-    lru_streams_.push_front(stream);
+    stream.last_update = report_time_;
+
+    if (stream_lru_.contains(stream)) {
+        stream_lru_.remove(stream);
+    }
+
+    stream_lru_.push_front(stream);
+}
+
+core::SharedPtr<Reporter::Address>
+Reporter::find_address_(const address::SocketAddr& remote_address, CreateMode mode) {
+    core::SharedPtr<Address> address = address_map_.find(remote_address);
+
+    if (!address && mode == NoAutoCreate) {
+        return NULL;
+    }
+
+    if (!address) {
+        roc_log(LogDebug, "rtcp reporter: creating address: remote_addr=%s",
+                address::socket_addr_to_str(remote_address).c_str());
+
+        address = new (address_pool_)
+            Address(address_pool_, arena_, remote_address, report_time_);
+        if (!address) {
+            report_error_ = status::StatusNoMem;
+            return NULL;
+        }
+
+        if (!address_map_.insert(*address)) {
+            report_error_ = status::StatusNoMem;
+            return NULL;
+        }
+
+        address_lru_.push_back(*address);
+    }
+
+    return address;
+}
+
+void Reporter::remove_address_(Address& address) {
+    roc_log(LogDebug,
+            "rtcp reporter: removing address:"
+            " remote_addr=%s n_send_streams=%lu n_recv_streams=%lu",
+            address::socket_addr_to_str(address.remote_address).c_str(),
+            (unsigned long)address.send_stream_index.size(),
+            (unsigned long)address.recv_stream_index.size());
+
+    address_lru_.remove(address);
+    address_map_.remove(address);
+}
+
+void Reporter::update_address_(Address& address) {
+    if (address.last_update == report_time_) {
+        return;
+    }
+
+    address.last_update = report_time_;
+
+    address_lru_.remove(address);
+    address_lru_.push_front(address);
+
+    // Clear streams from previous update.
+    address.send_stream_index.clear();
+    address.recv_stream_index.clear();
 }
 
 } // namespace rtcp

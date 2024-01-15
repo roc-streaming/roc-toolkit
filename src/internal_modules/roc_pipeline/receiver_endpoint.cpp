@@ -22,7 +22,6 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
                                    StateTracker& state_tracker,
                                    ReceiverSessionGroup& session_group,
                                    const rtp::EncodingMap& encoding_map,
-                                   const address::SocketAddr* outbound_address,
                                    packet::IWriter* outbound_writer,
                                    core::IArena& arena)
     : core::RefCounted<ReceiverEndpoint, core::ArenaAllocation>(arena)
@@ -122,17 +121,20 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
     }
 
     if (composer) {
-        if (!outbound_address || !outbound_writer) {
+        if (!outbound_writer) {
             roc_log(LogError,
                     "receiver endpoint:"
-                    " outbound address and writer are required by protocol %s,"
-                    " but are missing",
+                    " outbound writer is required by protocol %s, but are missing",
                     address::proto_to_str(proto));
             return;
         }
 
-        shipper_.reset(new (shipper_) packet::Shipper(*outbound_address, *outbound_writer,
-                                                      *composer));
+        // We don't pass outbound address to shipper, because packets produced by
+        // rtcp::Communicator will already have non-empty destination address.
+        // On receiver, we enable report_back mode, which tells Communicator to
+        // collect addresses of all discovered senders and generate RTCP packets for
+        // each of them, instead of sending all RTCP packets to a single address.
+        shipper_.reset(new (shipper_) packet::Shipper(*composer, *outbound_writer, NULL));
         if (!shipper_) {
             return;
         }
@@ -152,6 +154,12 @@ address::Protocol ReceiverEndpoint::proto() const {
     roc_panic_if(!is_valid());
 
     return proto_;
+}
+
+packet::IComposer* ReceiverEndpoint::outbound_composer() {
+    roc_panic_if(!is_valid());
+
+    return composer_;
 }
 
 packet::IWriter* ReceiverEndpoint::outbound_writer() {

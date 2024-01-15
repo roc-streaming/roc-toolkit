@@ -52,7 +52,6 @@ public:
     //! Add endpoint.
     ReceiverEndpoint* add_endpoint(address::Interface iface,
                                    address::Protocol proto,
-                                   const address::SocketAddr* outbound_address,
                                    packet::IWriter* outbound_writer);
 
     //! Pull packets and refresh sessions according to current time.
@@ -77,15 +76,11 @@ public:
 
 private:
     ReceiverEndpoint* create_source_endpoint_(address::Protocol proto,
-                                              const address::SocketAddr* outbound_address,
                                               packet::IWriter* outbound_writer);
     ReceiverEndpoint* create_repair_endpoint_(address::Protocol proto,
-                                              const address::SocketAddr* outbound_address,
                                               packet::IWriter* outbound_writer);
-    ReceiverEndpoint*
-    create_control_endpoint_(address::Protocol proto,
-                             const address::SocketAddr* outbound_address,
-                             packet::IWriter* outbound_writer);
+    ReceiverEndpoint* create_control_endpoint_(address::Protocol proto,
+                                               packet::IWriter* outbound_writer);
 
     const rtp::EncodingMap& encoding_map_;
 

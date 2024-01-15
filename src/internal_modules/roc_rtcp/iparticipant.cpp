@@ -6,12 +6,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_rtcp/istream_controller.h"
+#include "roc_rtcp/iparticipant.h"
 
 namespace roc {
 namespace rtcp {
 
-IStreamController::~IStreamController() {
+IParticipant::~IParticipant() {
 }
 
 } // namespace rtcp

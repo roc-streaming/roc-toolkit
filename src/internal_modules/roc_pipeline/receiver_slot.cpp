@@ -48,7 +48,6 @@ bool ReceiverSlot::is_valid() const {
 
 ReceiverEndpoint* ReceiverSlot::add_endpoint(address::Interface iface,
                                              address::Protocol proto,
-                                             const address::SocketAddr* outbound_address,
                                              packet::IWriter* outbound_writer) {
     roc_panic_if(!is_valid());
 
@@ -57,13 +56,13 @@ ReceiverEndpoint* ReceiverSlot::add_endpoint(address::Interface iface,
 
     switch (iface) {
     case address::Iface_AudioSource:
-        return create_source_endpoint_(proto, outbound_address, outbound_writer);
+        return create_source_endpoint_(proto, outbound_writer);
 
     case address::Iface_AudioRepair:
-        return create_repair_endpoint_(proto, outbound_address, outbound_writer);
+        return create_repair_endpoint_(proto, outbound_writer);
 
     case address::Iface_AudioControl:
-        return create_control_endpoint_(proto, outbound_address, outbound_writer);
+        return create_control_endpoint_(proto, outbound_writer);
 
     default:
         break;
@@ -124,7 +123,6 @@ void ReceiverSlot::get_metrics(ReceiverSlotMetrics& slot_metrics,
 
 ReceiverEndpoint*
 ReceiverSlot::create_source_endpoint_(address::Protocol proto,
-                                      const address::SocketAddr* outbound_address,
                                       packet::IWriter* outbound_writer) {
     if (source_endpoint_) {
         roc_log(LogError, "receiver slot: audio source endpoint is already set");
@@ -142,8 +140,7 @@ ReceiverSlot::create_source_endpoint_(address::Protocol proto,
     }
 
     source_endpoint_.reset(new (source_endpoint_) ReceiverEndpoint(
-        proto, state_tracker_, session_group_, encoding_map_, outbound_address,
-        outbound_writer, arena()));
+        proto, state_tracker_, session_group_, encoding_map_, outbound_writer, arena()));
 
     if (!source_endpoint_ || !source_endpoint_->is_valid()) {
         roc_log(LogError, "receiver slot: can't create source endpoint");
@@ -156,7 +153,6 @@ ReceiverSlot::create_source_endpoint_(address::Protocol proto,
 
 ReceiverEndpoint*
 ReceiverSlot::create_repair_endpoint_(address::Protocol proto,
-                                      const address::SocketAddr* outbound_address,
                                       packet::IWriter* outbound_writer) {
     if (repair_endpoint_) {
         roc_log(LogError, "receiver slot: audio repair endpoint is already set");
@@ -174,8 +170,7 @@ ReceiverSlot::create_repair_endpoint_(address::Protocol proto,
     }
 
     repair_endpoint_.reset(new (repair_endpoint_) ReceiverEndpoint(
-        proto, state_tracker_, session_group_, encoding_map_, outbound_address,
-        outbound_writer, arena()));
+        proto, state_tracker_, session_group_, encoding_map_, outbound_writer, arena()));
 
     if (!repair_endpoint_ || !repair_endpoint_->is_valid()) {
         roc_log(LogError, "receiver slot: can't create repair endpoint");
@@ -188,7 +183,6 @@ ReceiverSlot::create_repair_endpoint_(address::Protocol proto,
 
 ReceiverEndpoint*
 ReceiverSlot::create_control_endpoint_(address::Protocol proto,
-                                       const address::SocketAddr* outbound_address,
                                        packet::IWriter* outbound_writer) {
     if (control_endpoint_) {
         roc_log(LogError, "receiver slot: audio control endpoint is already set");
@@ -200,8 +194,7 @@ ReceiverSlot::create_control_endpoint_(address::Protocol proto,
     }
 
     control_endpoint_.reset(new (control_endpoint_) ReceiverEndpoint(
-        proto, state_tracker_, session_group_, encoding_map_, outbound_address,
-        outbound_writer, arena()));
+        proto, state_tracker_, session_group_, encoding_map_, outbound_writer, arena()));
 
     if (!control_endpoint_ || !control_endpoint_->is_valid()) {
         roc_log(LogError, "receiver slot: can't create control endpoint");

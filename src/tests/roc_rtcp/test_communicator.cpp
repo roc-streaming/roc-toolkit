@@ -8,25 +8,22 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_address/socket_addr_to_str.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/log.h"
-#include "roc_core/noncopyable.h"
-#include "roc_core/time.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
-#include "roc_packet/units.h"
 #include "roc_rtcp/communicator.h"
 #include "roc_rtcp/composer.h"
-#include "roc_rtcp/istream_controller.h"
+#include "roc_rtcp/iparticipant.h"
 #include "roc_rtcp/print_packet.h"
-#include "roc_status/status_code.h"
 
-// This file contains tests that check how rtcp::Communicator allows IStreamController
+// This file contains tests that check how rtcp::Communicator allows IParticipant
 // instances (senders and receivers) to exchange RTCP reports.
 //
-// Tests create separate IStreamController + Communicator for every sender or receiver.
-// IStreamController is implemented by a mock. Tests instruct mock to return specific
+// Tests create separate IParticipant + Communicator for every sender or receiver.
+// IParticipant is implemented by a mock. Tests instruct mock to return specific
 // reports when communicator queries them, as well as remember notifications that
 // the mock gets from communicator.
 //
@@ -45,12 +42,13 @@ namespace rtcp {
 
 namespace {
 
-// Mock implementation of IStreamController
-struct MockController : public IStreamController, public core::NonCopyable<> {
-    MockController(const char* cname, packet::stream_source_t source_id) {
+// Mock implementation of IParticipant
+struct MockParticipant : public IParticipant, public core::NonCopyable<> {
+    MockParticipant(const char* cname, packet::stream_source_t source_id) {
         status_ = status::StatusOK;
         cname_ = cname;
         source_id_ = changed_source_id_ = source_id;
+        report_back_ = false;
         has_send_report_ = false;
         memset(has_recv_report_, 0, sizeof(has_recv_report_));
         cur_send_notification_ = num_send_notifications_ = 0;
@@ -60,7 +58,7 @@ struct MockController : public IStreamController, public core::NonCopyable<> {
         num_ssrc_change_notifications_ = 0;
     }
 
-    ~MockController() {
+    ~MockParticipant() {
         // Every test should fetch and check all pending notifications.
         CHECK_EQUAL(0, pending_notifications());
     }
@@ -81,6 +79,14 @@ struct MockController : public IStreamController, public core::NonCopyable<> {
 
     void set_changed_ssrc(packet::stream_source_t source_id) {
         changed_source_id_ = source_id;
+    }
+
+    void set_report_address(const address::SocketAddr& report_addr) {
+        report_addr_ = report_addr;
+    }
+
+    void set_report_back(bool report_back) {
+        report_back_ = report_back;
     }
 
     size_t pending_notifications() const {
@@ -110,12 +116,13 @@ struct MockController : public IStreamController, public core::NonCopyable<> {
         num_ssrc_change_notifications_--;
     }
 
-    virtual const char* cname() {
-        return cname_;
-    }
-
-    virtual packet::stream_source_t source_id() {
-        return source_id_;
+    virtual ParticipantInfo participant_info() {
+        ParticipantInfo part_info;
+        part_info.cname = cname_;
+        part_info.source_id = source_id_;
+        part_info.report_address = report_addr_;
+        part_info.report_back = report_back_;
+        return part_info;
     }
 
     virtual void change_source_id() {
@@ -189,6 +196,9 @@ private:
 
     packet::stream_source_t source_id_;
     packet::stream_source_t changed_source_id_;
+
+    address::SocketAddr report_addr_;
+    bool report_back_;
 
     bool has_send_report_;
     SendReport send_report_;
@@ -340,6 +350,114 @@ packet::PacketPtr read_packet(packet::Queue& source) {
     return pp;
 }
 
+address::SocketAddr make_address(int port) {
+    address::SocketAddr addr;
+    CHECK(addr.set_host_port(address::Family_IPv4, "127.0.0.1", port));
+    return addr;
+}
+
+void set_src_address(const packet::PacketPtr& pp, const address::SocketAddr& address) {
+    CHECK(pp);
+    CHECK(pp->udp());
+
+    pp->udp()->src_addr = address;
+}
+
+void expect_has_dst_address(const packet::PacketPtr& pp,
+                            const address::SocketAddr& address) {
+    CHECK(pp);
+    CHECK(pp->udp());
+
+    if (pp->udp()->dst_addr != address) {
+        char buf[256] = {};
+        snprintf(buf, sizeof(buf),
+                 "packet dst_address doesn't match:\n"
+                 "  expected: %s\n"
+                 "  actual:   %s\n",
+                 address::socket_addr_to_str(address).c_str(),
+                 address::socket_addr_to_str(pp->udp()->dst_addr).c_str());
+        FAIL(buf);
+    }
+}
+
+void expect_has_ssrc(const packet::PacketPtr& pp,
+                     packet::stream_source_t ssrc,
+                     bool present) {
+    CHECK(pp);
+    CHECK(pp->rtcp());
+    CHECK(pp->rtcp()->payload);
+
+    int ssrc_found = 0;
+
+    Traverser traverser(pp->rtcp()->payload);
+    CHECK(traverser.parse());
+
+    Traverser::Iterator iter = traverser.iter();
+    Traverser::Iterator::State state;
+
+    while ((state = iter.next()) != Traverser::Iterator::END) {
+        switch (state) {
+        case Traverser::Iterator::SR: {
+            if (iter.get_sr().ssrc() == ssrc) {
+                ssrc_found++;
+            }
+            for (size_t n = 0; n < iter.get_sr().num_blocks(); n++) {
+                if (iter.get_sr().get_block(n).ssrc() == ssrc) {
+                    ssrc_found++;
+                }
+            }
+        } break;
+
+        case Traverser::Iterator::RR: {
+            if (iter.get_rr().ssrc() == ssrc) {
+                ssrc_found++;
+            }
+            for (size_t n = 0; n < iter.get_rr().num_blocks(); n++) {
+                if (iter.get_rr().get_block(n).ssrc() == ssrc) {
+                    ssrc_found++;
+                }
+            }
+        } break;
+
+        case Traverser::Iterator::XR: {
+            XrTraverser xr = iter.get_xr();
+            CHECK(xr.parse());
+
+            if (xr.packet().ssrc() == ssrc) {
+                ssrc_found++;
+            }
+
+            XrTraverser::Iterator xr_iter = xr.iter();
+            XrTraverser::Iterator::Iterator::State xr_state;
+
+            while ((xr_state = xr_iter.next()) != XrTraverser::Iterator::END) {
+                switch (xr_state) {
+                case XrTraverser::Iterator::DLRR_BLOCK: {
+                    for (size_t n = 0; n < xr_iter.get_dlrr().num_subblocks(); n++) {
+                        if (xr_iter.get_dlrr().get_subblock(n).ssrc() == ssrc) {
+                            ssrc_found++;
+                        }
+                    }
+                } break;
+
+                default:
+                    break;
+                }
+            }
+        } break;
+
+        default:
+            break;
+        }
+    }
+
+    if (present) {
+        CHECK(ssrc_found > 0);
+    } else {
+        CHECK_EQUAL(0, ssrc_found);
+    }
+}
+
 void advance_time(core::nanoseconds_t& time, core::nanoseconds_t delta = core::Second) {
     time += delta;
 }
@@ -364,14 +482,14 @@ TEST(communicator, one_sender_one_receiver) {
     Config config;
 
     packet::Queue send_queue;
-    MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(config, send_ctl, send_queue, composer, packet_factory,
+    MockParticipant send_part(SendCname, SendSsrc);
+    Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv_queue;
-    MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
+    MockParticipant recv_part(RecvCname, RecvSsrc);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -379,7 +497,7 @@ TEST(communicator, one_sender_one_receiver) {
     core::nanoseconds_t recv_time = 30000000000000000;
 
     // Generate sender report
-    send_ctl.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed1));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed1));
     CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
     CHECK_EQUAL(0, send_comm.num_streams());
     CHECK_EQUAL(1, send_queue.size());
@@ -390,15 +508,15 @@ TEST(communicator, one_sender_one_receiver) {
     CHECK_EQUAL(1, recv_comm.num_streams());
 
     // Check notifications on receiver
-    CHECK_EQUAL(1, recv_ctl.pending_notifications());
-    expect_send_report(recv_ctl.next_send_notification(), send_time, SendCname, SendSsrc,
+    CHECK_EQUAL(1, recv_part.pending_notifications());
+    expect_send_report(recv_part.next_send_notification(), send_time, SendCname, SendSsrc,
                        Seed1);
 
     advance_time(send_time);
     advance_time(recv_time);
 
     // Generate receiver report
-    recv_ctl.set_recv_report(
+    recv_part.set_recv_report(
         0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed2));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(1, recv_queue.size());
@@ -410,8 +528,8 @@ TEST(communicator, one_sender_one_receiver) {
     CHECK_EQUAL(1, send_comm.num_streams());
 
     // Check notifications on sender
-    CHECK_EQUAL(1, send_ctl.pending_notifications());
-    expect_recv_report(send_ctl.next_recv_notification(), recv_time, RecvCname, RecvSsrc,
+    CHECK_EQUAL(1, send_part.pending_notifications());
+    expect_recv_report(send_part.next_recv_notification(), recv_time, RecvCname, RecvSsrc,
                        SendSsrc, Seed2);
 }
 
@@ -433,20 +551,20 @@ TEST(communicator, two_senders_one_receiver) {
     Config config;
 
     packet::Queue send1_queue;
-    MockController send1_ctl(Send1Cname, Send1Ssrc);
-    Communicator send1_comm(config, send1_ctl, send1_queue, composer, packet_factory,
+    MockParticipant send1_part(Send1Cname, Send1Ssrc);
+    Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send1_comm.is_valid());
 
     packet::Queue send2_queue;
-    MockController send2_ctl(Send2Cname, Send2Ssrc);
-    Communicator send2_comm(config, send2_ctl, send2_queue, composer, packet_factory,
+    MockParticipant send2_part(Send2Cname, Send2Ssrc);
+    Communicator send2_comm(config, send2_part, send2_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send2_comm.is_valid());
 
     packet::Queue recv_queue;
-    MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
+    MockParticipant recv_part(RecvCname, RecvSsrc);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -455,7 +573,8 @@ TEST(communicator, two_senders_one_receiver) {
     core::nanoseconds_t recv_time = 60000000000000000;
 
     // Generate sender 1 report
-    send1_ctl.set_send_report(make_send_report(send1_time, Send1Cname, Send1Ssrc, Seed1));
+    send1_part.set_send_report(
+        make_send_report(send1_time, Send1Cname, Send1Ssrc, Seed1));
     CHECK_EQUAL(status::StatusOK, send1_comm.generate_reports(send1_time));
     CHECK_EQUAL(0, send1_comm.num_streams());
     CHECK_EQUAL(1, send1_queue.size());
@@ -466,14 +585,15 @@ TEST(communicator, two_senders_one_receiver) {
     CHECK_EQUAL(1, recv_comm.num_streams());
 
     // Check notifications on receiver
-    CHECK_EQUAL(1, recv_ctl.pending_notifications());
-    expect_send_report(recv_ctl.next_send_notification(), send1_time, Send1Cname,
+    CHECK_EQUAL(1, recv_part.pending_notifications());
+    expect_send_report(recv_part.next_send_notification(), send1_time, Send1Cname,
                        Send1Ssrc, Seed1);
 
     advance_time(recv_time);
 
     // Generate sender 2 report
-    send2_ctl.set_send_report(make_send_report(send2_time, Send2Cname, Send2Ssrc, Seed2));
+    send2_part.set_send_report(
+        make_send_report(send2_time, Send2Cname, Send2Ssrc, Seed2));
     CHECK_EQUAL(status::StatusOK, send2_comm.generate_reports(send2_time));
     CHECK_EQUAL(0, send2_comm.num_streams());
     CHECK_EQUAL(1, send2_queue.size());
@@ -484,8 +604,8 @@ TEST(communicator, two_senders_one_receiver) {
     CHECK_EQUAL(2, recv_comm.num_streams());
 
     // Check notifications on receiver
-    CHECK_EQUAL(1, recv_ctl.pending_notifications());
-    expect_send_report(recv_ctl.next_send_notification(), send2_time, Send2Cname,
+    CHECK_EQUAL(1, recv_part.pending_notifications());
+    expect_send_report(recv_part.next_send_notification(), send2_time, Send2Cname,
                        Send2Ssrc, Seed2);
 
     advance_time(send1_time);
@@ -493,9 +613,9 @@ TEST(communicator, two_senders_one_receiver) {
     advance_time(recv_time);
 
     // Generate receiver report
-    recv_ctl.set_recv_report(
+    recv_part.set_recv_report(
         0, make_recv_report(recv_time, RecvCname, RecvSsrc, Send1Ssrc, Seed3));
-    recv_ctl.set_recv_report(
+    recv_part.set_recv_report(
         1, make_recv_report(recv_time, RecvCname, RecvSsrc, Send2Ssrc, Seed4));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(2, recv_comm.num_streams());
@@ -509,14 +629,14 @@ TEST(communicator, two_senders_one_receiver) {
     CHECK_EQUAL(1, send2_comm.num_streams());
 
     // Check notifications on sender 1
-    CHECK_EQUAL(1, send1_ctl.pending_notifications());
-    expect_recv_report(send1_ctl.next_recv_notification(), recv_time, RecvCname, RecvSsrc,
-                       Send1Ssrc, Seed3);
+    CHECK_EQUAL(1, send1_part.pending_notifications());
+    expect_recv_report(send1_part.next_recv_notification(), recv_time, RecvCname,
+                       RecvSsrc, Send1Ssrc, Seed3);
 
     // Check notifications on sender 2
-    CHECK_EQUAL(1, send2_ctl.pending_notifications());
-    expect_recv_report(send2_ctl.next_recv_notification(), recv_time, RecvCname, RecvSsrc,
-                       Send2Ssrc, Seed4);
+    CHECK_EQUAL(1, send2_part.pending_notifications());
+    expect_recv_report(send2_part.next_recv_notification(), recv_time, RecvCname,
+                       RecvSsrc, Send2Ssrc, Seed4);
 }
 
 TEST(communicator, one_sender_two_receivers) {
@@ -536,20 +656,20 @@ TEST(communicator, one_sender_two_receivers) {
     Config config;
 
     packet::Queue send_queue;
-    MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(config, send_ctl, send_queue, composer, packet_factory,
+    MockParticipant send_part(SendCname, SendSsrc);
+    Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv1_queue;
-    MockController recv1_ctl(Recv1Cname, Recv1Ssrc);
-    Communicator recv1_comm(config, recv1_ctl, recv1_queue, composer, packet_factory,
+    MockParticipant recv1_part(Recv1Cname, Recv1Ssrc);
+    Communicator recv1_comm(config, recv1_part, recv1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(recv1_comm.is_valid());
 
     packet::Queue recv2_queue;
-    MockController recv2_ctl(Recv2Cname, Recv2Ssrc);
-    Communicator recv2_comm(config, recv2_ctl, recv2_queue, composer, packet_factory,
+    MockParticipant recv2_part(Recv2Cname, Recv2Ssrc);
+    Communicator recv2_comm(config, recv2_part, recv2_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(recv2_comm.is_valid());
 
@@ -558,7 +678,7 @@ TEST(communicator, one_sender_two_receivers) {
     core::nanoseconds_t recv2_time = 60000000000000000;
 
     // Generate sender report
-    send_ctl.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed1));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed1));
     CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
     CHECK_EQUAL(0, send_comm.num_streams());
     CHECK_EQUAL(1, send_queue.size());
@@ -571,20 +691,20 @@ TEST(communicator, one_sender_two_receivers) {
     CHECK_EQUAL(1, recv2_comm.num_streams());
 
     // Check notifications on receiver 1
-    CHECK_EQUAL(1, recv1_ctl.pending_notifications());
-    expect_send_report(recv1_ctl.next_send_notification(), send_time, SendCname, SendSsrc,
-                       Seed1);
+    CHECK_EQUAL(1, recv1_part.pending_notifications());
+    expect_send_report(recv1_part.next_send_notification(), send_time, SendCname,
+                       SendSsrc, Seed1);
 
     // Check notifications on receiver 2
-    CHECK_EQUAL(1, recv2_ctl.pending_notifications());
-    expect_send_report(recv2_ctl.next_send_notification(), send_time, SendCname, SendSsrc,
-                       Seed1);
+    CHECK_EQUAL(1, recv2_part.pending_notifications());
+    expect_send_report(recv2_part.next_send_notification(), send_time, SendCname,
+                       SendSsrc, Seed1);
 
     advance_time(send_time);
     advance_time(recv1_time);
 
     // Generate receiver 1 report
-    recv1_ctl.set_recv_report(
+    recv1_part.set_recv_report(
         0, make_recv_report(recv1_time, Recv1Cname, Recv1Ssrc, SendSsrc, Seed2));
     CHECK_EQUAL(status::StatusOK, recv1_comm.generate_reports(recv1_time));
     CHECK_EQUAL(1, recv1_comm.num_streams());
@@ -596,15 +716,15 @@ TEST(communicator, one_sender_two_receivers) {
     CHECK_EQUAL(1, send_comm.num_streams());
 
     // Check notifications on sender
-    CHECK_EQUAL(1, send_ctl.pending_notifications());
-    expect_recv_report(send_ctl.next_recv_notification(), recv1_time, Recv1Cname,
+    CHECK_EQUAL(1, send_part.pending_notifications());
+    expect_recv_report(send_part.next_recv_notification(), recv1_time, Recv1Cname,
                        Recv1Ssrc, SendSsrc, Seed2);
 
     advance_time(send_time);
     advance_time(recv2_time);
 
     // Generate receiver 2 report
-    recv2_ctl.set_recv_report(
+    recv2_part.set_recv_report(
         0, make_recv_report(recv2_time, Recv2Cname, Recv2Ssrc, SendSsrc, Seed3));
     CHECK_EQUAL(status::StatusOK, recv2_comm.generate_reports(recv2_time));
     CHECK_EQUAL(1, recv2_comm.num_streams());
@@ -616,8 +736,8 @@ TEST(communicator, one_sender_two_receivers) {
     CHECK_EQUAL(2, send_comm.num_streams());
 
     // Check notifications on sender
-    CHECK_EQUAL(1, send_ctl.pending_notifications());
-    expect_recv_report(send_ctl.next_recv_notification(), recv2_time, Recv2Cname,
+    CHECK_EQUAL(1, send_part.pending_notifications());
+    expect_recv_report(send_part.next_recv_notification(), recv2_time, Recv2Cname,
                        Recv2Ssrc, SendSsrc, Seed3);
 }
 
@@ -630,14 +750,14 @@ TEST(communicator, receiver_report_first) {
     Config config;
 
     packet::Queue send_queue;
-    MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(config, send_ctl, send_queue, composer, packet_factory,
+    MockParticipant send_part(SendCname, SendSsrc);
+    Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv_queue;
-    MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
+    MockParticipant recv_part(RecvCname, RecvSsrc);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -645,28 +765,28 @@ TEST(communicator, receiver_report_first) {
     core::nanoseconds_t recv_time = 30000000000000000;
 
     // Generate receiver report
-    recv_ctl.set_recv_report(
+    recv_part.set_recv_report(
         0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed1));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(1, recv_comm.num_streams());
     CHECK_EQUAL(1, recv_queue.size());
 
     // Deliver receiver report to sender
-    send_ctl.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed2));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed2));
     CHECK_EQUAL(status::StatusOK,
                 send_comm.process_packet(read_packet(recv_queue), send_time));
     CHECK_EQUAL(1, send_comm.num_streams());
 
     // Check notifications on sender
-    CHECK_EQUAL(1, send_ctl.pending_notifications());
-    expect_recv_report(send_ctl.next_recv_notification(), recv_time, RecvCname, RecvSsrc,
+    CHECK_EQUAL(1, send_part.pending_notifications());
+    expect_recv_report(send_part.next_recv_notification(), recv_time, RecvCname, RecvSsrc,
                        SendSsrc, Seed1);
 
     advance_time(send_time);
     advance_time(recv_time);
 
     // Generate sender report
-    send_ctl.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed2));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed2));
     CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
     CHECK_EQUAL(1, send_comm.num_streams());
     CHECK_EQUAL(1, send_queue.size());
@@ -677,8 +797,8 @@ TEST(communicator, receiver_report_first) {
     CHECK_EQUAL(1, recv_comm.num_streams());
 
     // Check notifications on receiver
-    CHECK_EQUAL(1, recv_ctl.pending_notifications());
-    expect_send_report(recv_ctl.next_send_notification(), send_time, SendCname, SendSsrc,
+    CHECK_EQUAL(1, recv_part.pending_notifications());
+    expect_send_report(recv_part.next_send_notification(), send_time, SendCname, SendSsrc,
                        Seed2);
 }
 
@@ -691,14 +811,14 @@ TEST(communicator, bidirectional_peers) {
     Config config;
 
     packet::Queue peer1_queue;
-    MockController peer1_ctl(Peer1Cname, Peer1Ssrc);
-    Communicator peer1_comm(config, peer1_ctl, peer1_queue, composer, packet_factory,
+    MockParticipant peer1_part(Peer1Cname, Peer1Ssrc);
+    Communicator peer1_comm(config, peer1_part, peer1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(peer1_comm.is_valid());
 
     packet::Queue peer2_queue;
-    MockController peer2_ctl(Peer2Cname, Peer2Ssrc);
-    Communicator peer2_comm(config, peer2_ctl, peer2_queue, composer, packet_factory,
+    MockParticipant peer2_part(Peer2Cname, Peer2Ssrc);
+    Communicator peer2_comm(config, peer2_part, peer2_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(peer2_comm.is_valid());
 
@@ -706,8 +826,9 @@ TEST(communicator, bidirectional_peers) {
     core::nanoseconds_t peer2_time = 30000000000000000;
 
     // Generate report from peer 1
-    peer1_ctl.set_send_report(make_send_report(peer1_time, Peer1Cname, Peer1Ssrc, Seed1));
-    peer1_ctl.set_recv_report(
+    peer1_part.set_send_report(
+        make_send_report(peer1_time, Peer1Cname, Peer1Ssrc, Seed1));
+    peer1_part.set_recv_report(
         0, make_recv_report(peer1_time, Peer1Cname, Peer1Ssrc, Peer2Ssrc, Seed1));
     CHECK_EQUAL(status::StatusOK, peer1_comm.generate_reports(peer1_time));
     CHECK_EQUAL(1, peer1_comm.num_streams());
@@ -719,16 +840,17 @@ TEST(communicator, bidirectional_peers) {
     CHECK_EQUAL(1, peer2_comm.num_streams());
 
     // Check notifications on peer 2
-    CHECK_EQUAL(1, peer2_ctl.pending_notifications());
-    expect_send_report(peer2_ctl.next_send_notification(), peer1_time, Peer1Cname,
+    CHECK_EQUAL(1, peer2_part.pending_notifications());
+    expect_send_report(peer2_part.next_send_notification(), peer1_time, Peer1Cname,
                        Peer1Ssrc, Seed1);
 
     advance_time(peer1_time);
     advance_time(peer2_time);
 
     // Generate report from peer 2
-    peer2_ctl.set_send_report(make_send_report(peer2_time, Peer2Cname, Peer2Ssrc, Seed2));
-    peer2_ctl.set_recv_report(
+    peer2_part.set_send_report(
+        make_send_report(peer2_time, Peer2Cname, Peer2Ssrc, Seed2));
+    peer2_part.set_recv_report(
         0, make_recv_report(peer2_time, Peer2Cname, Peer2Ssrc, Peer1Ssrc, Seed2));
     CHECK_EQUAL(status::StatusOK, peer2_comm.generate_reports(peer2_time));
     CHECK_EQUAL(1, peer2_comm.num_streams());
@@ -740,18 +862,19 @@ TEST(communicator, bidirectional_peers) {
     CHECK_EQUAL(1, peer1_comm.num_streams());
 
     // Check notifications on peer 1
-    CHECK_EQUAL(2, peer1_ctl.pending_notifications());
-    expect_send_report(peer1_ctl.next_send_notification(), peer2_time, Peer2Cname,
+    CHECK_EQUAL(2, peer1_part.pending_notifications());
+    expect_send_report(peer1_part.next_send_notification(), peer2_time, Peer2Cname,
                        Peer2Ssrc, Seed2);
-    expect_recv_report(peer1_ctl.next_recv_notification(), peer2_time, Peer2Cname,
+    expect_recv_report(peer1_part.next_recv_notification(), peer2_time, Peer2Cname,
                        Peer2Ssrc, Peer1Ssrc, Seed2);
 
     advance_time(peer1_time);
     advance_time(peer2_time);
 
     // Generate report from peer 1
-    peer1_ctl.set_send_report(make_send_report(peer1_time, Peer1Cname, Peer1Ssrc, Seed3));
-    peer1_ctl.set_recv_report(
+    peer1_part.set_send_report(
+        make_send_report(peer1_time, Peer1Cname, Peer1Ssrc, Seed3));
+    peer1_part.set_recv_report(
         0, make_recv_report(peer1_time, Peer1Cname, Peer1Ssrc, Peer2Ssrc, Seed3));
     CHECK_EQUAL(status::StatusOK, peer1_comm.generate_reports(peer1_time));
     CHECK_EQUAL(1, peer1_comm.num_streams());
@@ -763,10 +886,10 @@ TEST(communicator, bidirectional_peers) {
     CHECK_EQUAL(1, peer2_comm.num_streams());
 
     // Check notifications on peer 2
-    CHECK_EQUAL(2, peer2_ctl.pending_notifications());
-    expect_send_report(peer2_ctl.next_send_notification(), peer1_time, Peer1Cname,
+    CHECK_EQUAL(2, peer2_part.pending_notifications());
+    expect_send_report(peer2_part.next_send_notification(), peer1_time, Peer1Cname,
                        Peer1Ssrc, Seed3);
-    expect_recv_report(peer2_ctl.next_recv_notification(), peer1_time, Peer1Cname,
+    expect_recv_report(peer2_part.next_recv_notification(), peer1_time, Peer1Cname,
                        Peer1Ssrc, Peer2Ssrc, Seed3);
 }
 
@@ -787,26 +910,26 @@ TEST(communicator, long_run) {
     Config config;
 
     packet::Queue send1_queue;
-    MockController send1_ctl(Send1Cname, Send1Ssrc);
-    Communicator send1_comm(config, send1_ctl, send1_queue, composer, packet_factory,
+    MockParticipant send1_part(Send1Cname, Send1Ssrc);
+    Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send1_comm.is_valid());
 
     packet::Queue send2_queue;
-    MockController send2_ctl(Send2Cname, Send2Ssrc);
-    Communicator send2_comm(config, send2_ctl, send2_queue, composer, packet_factory,
+    MockParticipant send2_part(Send2Cname, Send2Ssrc);
+    Communicator send2_comm(config, send2_part, send2_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send2_comm.is_valid());
 
     packet::Queue recv1_queue;
-    MockController recv1_ctl(Recv1Cname, Recv1Ssrc);
-    Communicator recv1_comm(config, recv1_ctl, recv1_queue, composer, packet_factory,
+    MockParticipant recv1_part(Recv1Cname, Recv1Ssrc);
+    Communicator recv1_comm(config, recv1_part, recv1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(recv1_comm.is_valid());
 
     packet::Queue recv2_queue;
-    MockController recv2_ctl(Recv2Cname, Recv2Ssrc);
-    Communicator recv2_comm(config, recv2_ctl, recv2_queue, composer, packet_factory,
+    MockParticipant recv2_part(Recv2Cname, Recv2Ssrc);
+    Communicator recv2_comm(config, recv2_part, recv2_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(recv2_comm.is_valid());
 
@@ -822,7 +945,7 @@ TEST(communicator, long_run) {
 
         // Generate sender 1 report
         const core::nanoseconds_t send1_report_time = send1_time;
-        send1_ctl.set_send_report(
+        send1_part.set_send_report(
             make_send_report(send1_time, Send1Cname, Send1Ssrc, seed));
         CHECK_EQUAL(status::StatusOK, send1_comm.generate_reports(send1_time));
 
@@ -838,7 +961,7 @@ TEST(communicator, long_run) {
 
         // Generate sender 2 report
         const core::nanoseconds_t send2_report_time = send2_time;
-        send2_ctl.set_send_report(
+        send2_part.set_send_report(
             make_send_report(send2_time, Send2Cname, Send2Ssrc, seed));
         CHECK_EQUAL(status::StatusOK, send2_comm.generate_reports(send2_time));
 
@@ -854,9 +977,9 @@ TEST(communicator, long_run) {
 
         // Generate receiver 1 report
         const core::nanoseconds_t recv1_report_time = recv1_time;
-        recv1_ctl.set_recv_report(
+        recv1_part.set_recv_report(
             0, make_recv_report(recv1_time, Recv1Cname, Recv1Ssrc, Send1Ssrc, seed));
-        recv1_ctl.set_recv_report(
+        recv1_part.set_recv_report(
             1, make_recv_report(recv1_time, Recv1Cname, Recv1Ssrc, Send2Ssrc, seed));
         CHECK_EQUAL(status::StatusOK, recv1_comm.generate_reports(recv1_time));
 
@@ -872,9 +995,9 @@ TEST(communicator, long_run) {
 
         // Generate receiver 2 report
         const core::nanoseconds_t recv2_report_time = recv2_time;
-        recv2_ctl.set_recv_report(
+        recv2_part.set_recv_report(
             0, make_recv_report(recv2_time, Recv2Cname, Recv2Ssrc, Send1Ssrc, seed));
-        recv2_ctl.set_recv_report(
+        recv2_part.set_recv_report(
             1, make_recv_report(recv2_time, Recv2Cname, Recv2Ssrc, Send2Ssrc, seed));
         CHECK_EQUAL(status::StatusOK, recv2_comm.generate_reports(recv2_time));
 
@@ -889,31 +1012,31 @@ TEST(communicator, long_run) {
         advance_time(recv2_time);
 
         // Check notifications on receiver 1
-        CHECK_EQUAL(2, recv1_ctl.pending_notifications());
-        expect_send_report(recv1_ctl.next_send_notification(), send1_report_time,
+        CHECK_EQUAL(2, recv1_part.pending_notifications());
+        expect_send_report(recv1_part.next_send_notification(), send1_report_time,
                            Send1Cname, Send1Ssrc, seed);
-        expect_send_report(recv1_ctl.next_send_notification(), send2_report_time,
+        expect_send_report(recv1_part.next_send_notification(), send2_report_time,
                            Send2Cname, Send2Ssrc, seed);
 
         // Check notifications on receiver 2
-        CHECK_EQUAL(2, recv2_ctl.pending_notifications());
-        expect_send_report(recv2_ctl.next_send_notification(), send1_report_time,
+        CHECK_EQUAL(2, recv2_part.pending_notifications());
+        expect_send_report(recv2_part.next_send_notification(), send1_report_time,
                            Send1Cname, Send1Ssrc, seed);
-        expect_send_report(recv2_ctl.next_send_notification(), send2_report_time,
+        expect_send_report(recv2_part.next_send_notification(), send2_report_time,
                            Send2Cname, Send2Ssrc, seed);
 
         // Check notifications on sender 1
-        CHECK_EQUAL(2, send1_ctl.pending_notifications());
-        expect_recv_report(send1_ctl.next_recv_notification(), recv1_report_time,
+        CHECK_EQUAL(2, send1_part.pending_notifications());
+        expect_recv_report(send1_part.next_recv_notification(), recv1_report_time,
                            Recv1Cname, Recv1Ssrc, Send1Ssrc, seed);
-        expect_recv_report(send1_ctl.next_recv_notification(), recv2_report_time,
+        expect_recv_report(send1_part.next_recv_notification(), recv2_report_time,
                            Recv2Cname, Recv2Ssrc, Send1Ssrc, seed);
 
         // Check notifications on sender 2
-        CHECK_EQUAL(2, send2_ctl.pending_notifications());
-        expect_recv_report(send2_ctl.next_recv_notification(), recv1_report_time,
+        CHECK_EQUAL(2, send2_part.pending_notifications());
+        expect_recv_report(send2_part.next_recv_notification(), recv1_report_time,
                            Recv1Cname, Recv1Ssrc, Send2Ssrc, seed);
-        expect_recv_report(send2_ctl.next_recv_notification(), recv2_report_time,
+        expect_recv_report(send2_part.next_recv_notification(), recv2_report_time,
                            Recv2Cname, Recv2Ssrc, Send2Ssrc, seed);
 
         seed++;
@@ -930,14 +1053,14 @@ TEST(communicator, halt_goodbye) {
     Config config;
 
     packet::Queue send_queue;
-    MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(config, send_ctl, send_queue, composer, packet_factory,
+    MockParticipant send_part(SendCname, SendSsrc);
+    Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv_queue;
-    MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
+    MockParticipant recv_part(RecvCname, RecvSsrc);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -945,7 +1068,7 @@ TEST(communicator, halt_goodbye) {
     core::nanoseconds_t recv_time = 30000000000000000;
 
     // Generate sender report
-    send_ctl.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed1));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed1));
     CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
     CHECK_EQUAL(0, send_comm.num_streams());
     CHECK_EQUAL(1, send_queue.size());
@@ -956,15 +1079,15 @@ TEST(communicator, halt_goodbye) {
     CHECK_EQUAL(1, recv_comm.num_streams());
 
     // Check notifications on receiver
-    CHECK_EQUAL(1, recv_ctl.pending_notifications());
-    expect_send_report(recv_ctl.next_send_notification(), send_time, SendCname, SendSsrc,
+    CHECK_EQUAL(1, recv_part.pending_notifications());
+    expect_send_report(recv_part.next_send_notification(), send_time, SendCname, SendSsrc,
                        Seed1);
 
     advance_time(send_time);
     advance_time(recv_time);
 
     // Generate sender goodbye
-    send_ctl.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed2));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed2));
     CHECK_EQUAL(status::StatusOK, send_comm.generate_goodbye(send_time));
     CHECK_EQUAL(0, send_comm.num_streams());
     CHECK_EQUAL(1, send_queue.size());
@@ -975,8 +1098,8 @@ TEST(communicator, halt_goodbye) {
     CHECK_EQUAL(0, recv_comm.num_streams());
 
     // Check notifications on receiver
-    CHECK_EQUAL(1, recv_ctl.pending_notifications());
-    CHECK_EQUAL(SendSsrc, recv_ctl.next_halt_notification());
+    CHECK_EQUAL(1, recv_part.pending_notifications());
+    CHECK_EQUAL(SendSsrc, recv_part.next_halt_notification());
 }
 
 // Check how stream is terminated when we don't hear from it during timeout
@@ -990,20 +1113,20 @@ TEST(communicator, halt_timeout) {
     Config config;
 
     packet::Queue send1_queue;
-    MockController send1_ctl(Send1Cname, SendSsrc1);
-    Communicator send1_comm(config, send1_ctl, send1_queue, composer, packet_factory,
+    MockParticipant send1_part(Send1Cname, SendSsrc1);
+    Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send1_comm.is_valid());
 
     packet::Queue send2_queue;
-    MockController send2_ctl(Send2Cname, SendSsrc2);
-    Communicator send2_comm(config, send2_ctl, send2_queue, composer, packet_factory,
+    MockParticipant send2_part(Send2Cname, SendSsrc2);
+    Communicator send2_comm(config, send2_part, send2_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send2_comm.is_valid());
 
     packet::Queue recv_queue;
-    MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
+    MockParticipant recv_part(RecvCname, RecvSsrc);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -1011,13 +1134,13 @@ TEST(communicator, halt_timeout) {
     core::nanoseconds_t send2_time = 30000000000000000;
     core::nanoseconds_t recv_time = 60000000000000000;
 
-    for (size_t i = 0; i < NumIters; i++) {
+    for (size_t iter = 0; iter < NumIters; iter++) {
         // Remaining 2ms until timeout, will not trigger
         advance_time(send1_time, config.inactivity_timeout);
         advance_time(recv_time, config.inactivity_timeout - 2 * core::Millisecond);
 
         // Generate sender 1 report
-        send1_ctl.set_send_report(
+        send1_part.set_send_report(
             make_send_report(send1_time, Send1Cname, SendSsrc1, Seed));
         CHECK_EQUAL(status::StatusOK, send1_comm.generate_reports(send1_time));
         CHECK_EQUAL(0, send1_comm.num_streams());
@@ -1026,11 +1149,11 @@ TEST(communicator, halt_timeout) {
         // Deliver sender 1 report to receiver
         CHECK_EQUAL(status::StatusOK,
                     recv_comm.process_packet(read_packet(send1_queue), recv_time));
-        CHECK_EQUAL(i == 0 ? 1 : 2, recv_comm.num_streams());
+        CHECK_EQUAL(iter == 0 ? 1 : 2, recv_comm.num_streams());
 
         // Check notifications on receiver
-        CHECK_EQUAL(1, recv_ctl.pending_notifications());
-        expect_send_report(recv_ctl.next_send_notification(), send1_time, Send1Cname,
+        CHECK_EQUAL(1, recv_part.pending_notifications());
+        expect_send_report(recv_part.next_send_notification(), send1_time, Send1Cname,
                            SendSsrc1, Seed);
 
         // Remaining 1ms until timeout, will not trigger
@@ -1038,7 +1161,7 @@ TEST(communicator, halt_timeout) {
         advance_time(recv_time, core::Millisecond);
 
         // Generate sender 2 report
-        send2_ctl.set_send_report(
+        send2_part.set_send_report(
             make_send_report(send2_time, Send2Cname, SendSsrc2, Seed));
         CHECK_EQUAL(status::StatusOK, send2_comm.generate_reports(send2_time));
         CHECK_EQUAL(0, send2_comm.num_streams());
@@ -1050,8 +1173,8 @@ TEST(communicator, halt_timeout) {
         CHECK_EQUAL(2, recv_comm.num_streams());
 
         // Check notifications on receiver
-        CHECK_EQUAL(1, recv_ctl.pending_notifications());
-        expect_send_report(recv_ctl.next_send_notification(), send2_time, Send2Cname,
+        CHECK_EQUAL(1, recv_part.pending_notifications());
+        expect_send_report(recv_part.next_send_notification(), send2_time, Send2Cname,
                            SendSsrc2, Seed);
     }
 
@@ -1060,7 +1183,7 @@ TEST(communicator, halt_timeout) {
     advance_time(recv_time, config.inactivity_timeout);
 
     // Generate sender 1 report
-    send1_ctl.set_send_report(make_send_report(send1_time, Send1Cname, SendSsrc1, Seed));
+    send1_part.set_send_report(make_send_report(send1_time, Send1Cname, SendSsrc1, Seed));
     CHECK_EQUAL(status::StatusOK, send1_comm.generate_reports(send1_time));
     CHECK_EQUAL(0, send1_comm.num_streams());
     CHECK_EQUAL(1, send1_queue.size());
@@ -1071,24 +1194,24 @@ TEST(communicator, halt_timeout) {
     CHECK_EQUAL(1, recv_comm.num_streams());
 
     // Check notifications on receiver
-    CHECK_EQUAL(2, recv_ctl.pending_notifications());
-    expect_send_report(recv_ctl.next_send_notification(), send1_time, Send1Cname,
+    CHECK_EQUAL(2, recv_part.pending_notifications());
+    expect_send_report(recv_part.next_send_notification(), send1_time, Send1Cname,
                        SendSsrc1, Seed);
-    CHECK_EQUAL(SendSsrc2, recv_ctl.next_halt_notification());
+    CHECK_EQUAL(SendSsrc2, recv_part.next_halt_notification());
 
     // Timeout will trigger for sender 1
     advance_time(recv_time, config.inactivity_timeout);
 
     // Generate receiver report for sender 1
     // We don't actually deliver it, just want to trigger timeout
-    recv_ctl.set_recv_report(
+    recv_part.set_recv_report(
         0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc1, Seed));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(0, recv_comm.num_streams());
 
     // Check notifications on receiver
-    CHECK_EQUAL(1, recv_ctl.pending_notifications());
-    CHECK_EQUAL(SendSsrc1, recv_ctl.next_halt_notification());
+    CHECK_EQUAL(1, recv_part.pending_notifications());
+    CHECK_EQUAL(SendSsrc1, recv_part.next_halt_notification());
 }
 
 // Check how stream is terminated when we its CNAME changes
@@ -1102,20 +1225,20 @@ TEST(communicator, halt_cname_change) {
     Config config;
 
     packet::Queue send1_queue;
-    MockController send1_ctl(SendCnameA, SendSsrc);
-    Communicator send1_comm(config, send1_ctl, send1_queue, composer, packet_factory,
+    MockParticipant send1_part(SendCnameA, SendSsrc);
+    Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send1_comm.is_valid());
 
     packet::Queue send2_queue;
-    MockController send2_ctl(SendCnameB, SendSsrc);
-    Communicator send2_comm(config, send2_ctl, send2_queue, composer, packet_factory,
+    MockParticipant send2_part(SendCnameB, SendSsrc);
+    Communicator send2_comm(config, send2_part, send2_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send2_comm.is_valid());
 
     packet::Queue recv_queue;
-    MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
+    MockParticipant recv_part(RecvCname, RecvSsrc);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -1123,7 +1246,7 @@ TEST(communicator, halt_cname_change) {
     core::nanoseconds_t recv_time = 30000000000000000;
 
     // Generate sender report with CNAME
-    send1_ctl.set_send_report(make_send_report(send_time, SendCnameA, SendSsrc, Seed1));
+    send1_part.set_send_report(make_send_report(send_time, SendCnameA, SendSsrc, Seed1));
     CHECK_EQUAL(status::StatusOK, send1_comm.generate_reports(send_time));
     CHECK_EQUAL(0, send1_comm.num_streams());
     CHECK_EQUAL(1, send1_queue.size());
@@ -1134,15 +1257,15 @@ TEST(communicator, halt_cname_change) {
     CHECK_EQUAL(1, recv_comm.num_streams());
 
     // Check notifications on receiver
-    CHECK_EQUAL(1, recv_ctl.pending_notifications());
-    expect_send_report(recv_ctl.next_send_notification(), send_time, SendCnameA, SendSsrc,
-                       Seed1);
+    CHECK_EQUAL(1, recv_part.pending_notifications());
+    expect_send_report(recv_part.next_send_notification(), send_time, SendCnameA,
+                       SendSsrc, Seed1);
 
     advance_time(send_time);
     advance_time(recv_time);
 
     // Generate sender report with same SSRC and different CNAME
-    send2_ctl.set_send_report(make_send_report(send_time, SendCnameB, SendSsrc, Seed2));
+    send2_part.set_send_report(make_send_report(send_time, SendCnameB, SendSsrc, Seed2));
     CHECK_EQUAL(status::StatusOK, send2_comm.generate_reports(send_time));
     CHECK_EQUAL(0, send2_comm.num_streams());
     CHECK_EQUAL(1, send2_queue.size());
@@ -1153,10 +1276,10 @@ TEST(communicator, halt_cname_change) {
     CHECK_EQUAL(1, recv_comm.num_streams());
 
     // Check notifications on receiver
-    CHECK_EQUAL(2, recv_ctl.pending_notifications());
-    CHECK_EQUAL(SendSsrc, recv_ctl.next_halt_notification());
-    expect_send_report(recv_ctl.next_send_notification(), send_time, SendCnameB, SendSsrc,
-                       Seed2);
+    CHECK_EQUAL(2, recv_part.pending_notifications());
+    CHECK_EQUAL(SendSsrc, recv_part.next_halt_notification());
+    expect_send_report(recv_part.next_send_notification(), send_time, SendCnameB,
+                       SendSsrc, Seed2);
 }
 
 // When CNAME comes in one packet, and report in another, we should
@@ -1174,8 +1297,8 @@ TEST(communicator, cname_comes_earlier) {
     send1_config.enable_xr = false;
     send1_config.enable_sdes = true;
     packet::Queue send1_queue;
-    MockController send1_ctl(SendCname, SendSsrc);
-    Communicator send1_comm(send1_config, send1_ctl, send1_queue, composer,
+    MockParticipant send1_part(SendCname, SendSsrc);
+    Communicator send1_comm(send1_config, send1_part, send1_queue, composer,
                             packet_factory, buffer_factory, arena);
     CHECK(send1_comm.is_valid());
 
@@ -1185,15 +1308,15 @@ TEST(communicator, cname_comes_earlier) {
     send2_config.enable_xr = true;
     send2_config.enable_sdes = false;
     packet::Queue send2_queue;
-    MockController send2_ctl(NoCname, SendSsrc);
-    Communicator send2_comm(send2_config, send2_ctl, send2_queue, composer,
+    MockParticipant send2_part(NoCname, SendSsrc);
+    Communicator send2_comm(send2_config, send2_part, send2_queue, composer,
                             packet_factory, buffer_factory, arena);
     CHECK(send2_comm.is_valid());
 
     Config recv_config;
     packet::Queue recv_queue;
-    MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(recv_config, recv_ctl, recv_queue, composer, packet_factory,
+    MockParticipant recv_part(RecvCname, RecvSsrc);
+    Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -1201,7 +1324,7 @@ TEST(communicator, cname_comes_earlier) {
     core::nanoseconds_t recv_time = 30000000000000000;
 
     // Generate first sender report
-    send1_ctl.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed1));
+    send1_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed1));
     CHECK_EQUAL(status::StatusOK, send1_comm.generate_reports(send_time));
     CHECK_EQUAL(0, send1_comm.num_streams());
     CHECK_EQUAL(1, send1_queue.size());
@@ -1212,13 +1335,13 @@ TEST(communicator, cname_comes_earlier) {
     CHECK_EQUAL(1, recv_comm.num_streams());
 
     // Check notifications on receiver (no notifications)
-    CHECK_EQUAL(0, recv_ctl.pending_notifications());
+    CHECK_EQUAL(0, recv_part.pending_notifications());
 
     advance_time(send_time);
     advance_time(recv_time);
 
     // Generate second sender report
-    send2_ctl.set_send_report(make_send_report(send_time, NoCname, SendSsrc, Seed2));
+    send2_part.set_send_report(make_send_report(send_time, NoCname, SendSsrc, Seed2));
     CHECK_EQUAL(status::StatusOK, send2_comm.generate_reports(send_time));
     CHECK_EQUAL(0, send2_comm.num_streams());
     CHECK_EQUAL(1, send2_queue.size());
@@ -1229,8 +1352,8 @@ TEST(communicator, cname_comes_earlier) {
     CHECK_EQUAL(1, recv_comm.num_streams());
 
     // Check notifications on receiver (got notification)
-    CHECK_EQUAL(1, recv_ctl.pending_notifications());
-    expect_send_report(recv_ctl.next_send_notification(), send_time, SendCname, SendSsrc,
+    CHECK_EQUAL(1, recv_part.pending_notifications());
+    expect_send_report(recv_part.next_send_notification(), send_time, SendCname, SendSsrc,
                        Seed2);
 }
 
@@ -1249,8 +1372,8 @@ TEST(communicator, cname_comes_later) {
     send1_config.enable_xr = true;
     send1_config.enable_sdes = false;
     packet::Queue send1_queue;
-    MockController send1_ctl(NoCname, SendSsrc);
-    Communicator send1_comm(send1_config, send1_ctl, send1_queue, composer,
+    MockParticipant send1_part(NoCname, SendSsrc);
+    Communicator send1_comm(send1_config, send1_part, send1_queue, composer,
                             packet_factory, buffer_factory, arena);
     CHECK(send1_comm.is_valid());
 
@@ -1260,15 +1383,15 @@ TEST(communicator, cname_comes_later) {
     send2_config.enable_xr = false;
     send2_config.enable_sdes = true;
     packet::Queue send2_queue;
-    MockController send2_ctl(SendCname, SendSsrc);
-    Communicator send2_comm(send2_config, send2_ctl, send2_queue, composer,
+    MockParticipant send2_part(SendCname, SendSsrc);
+    Communicator send2_comm(send2_config, send2_part, send2_queue, composer,
                             packet_factory, buffer_factory, arena);
     CHECK(send2_comm.is_valid());
 
     Config recv_config;
     packet::Queue recv_queue;
-    MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(recv_config, recv_ctl, recv_queue, composer, packet_factory,
+    MockParticipant recv_part(RecvCname, RecvSsrc);
+    Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -1276,7 +1399,7 @@ TEST(communicator, cname_comes_later) {
     core::nanoseconds_t recv_time = 30000000000000000;
 
     // Generate first sender report
-    send1_ctl.set_send_report(make_send_report(send_time, NoCname, SendSsrc, Seed1));
+    send1_part.set_send_report(make_send_report(send_time, NoCname, SendSsrc, Seed1));
     CHECK_EQUAL(status::StatusOK, send1_comm.generate_reports(send_time));
     CHECK_EQUAL(0, send1_comm.num_streams());
     CHECK_EQUAL(1, send1_queue.size());
@@ -1287,13 +1410,14 @@ TEST(communicator, cname_comes_later) {
     CHECK_EQUAL(1, recv_comm.num_streams());
 
     // Check notifications on receiver (no CNAME)
-    CHECK_EQUAL(1, recv_ctl.pending_notifications());
-    expect_send_report(recv_ctl.next_send_notification(), send_time, "", SendSsrc, Seed1);
+    CHECK_EQUAL(1, recv_part.pending_notifications());
+    expect_send_report(recv_part.next_send_notification(), send_time, "", SendSsrc,
+                       Seed1);
 
     advance_time(recv_time);
 
     // Generate second sender report
-    send2_ctl.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed2));
+    send2_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed2));
     CHECK_EQUAL(status::StatusOK, send2_comm.generate_reports(send_time));
     CHECK_EQUAL(0, send2_comm.num_streams());
     CHECK_EQUAL(1, send2_queue.size());
@@ -1304,8 +1428,8 @@ TEST(communicator, cname_comes_later) {
     CHECK_EQUAL(1, recv_comm.num_streams());
 
     // Check notifications on receiver (got CNAME)
-    CHECK_EQUAL(1, recv_ctl.pending_notifications());
-    expect_send_report(recv_ctl.next_send_notification(), send_time, SendCname, SendSsrc,
+    CHECK_EQUAL(1, recv_part.pending_notifications());
+    expect_send_report(recv_part.next_send_notification(), send_time, SendCname, SendSsrc,
                        Seed1);
 }
 
@@ -1330,20 +1454,20 @@ TEST(communicator, collision_send_report) {
     Config config;
 
     packet::Queue recv_queue;
-    MockController recv_ctl(RecvCname, RecvSsrcA);
-    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
+    MockParticipant recv_part(RecvCname, RecvSsrcA);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
     packet::Queue send1_queue;
-    MockController send1_ctl(Send1Cname, Send1Ssrc);
-    Communicator send1_comm(config, send1_ctl, send1_queue, composer, packet_factory,
+    MockParticipant send1_part(Send1Cname, Send1Ssrc);
+    Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send1_comm.is_valid());
 
     packet::Queue send2_queue;
-    MockController send2_ctl(Send2Cname, Send2Ssrc);
-    Communicator send2_comm(config, send2_ctl, send2_queue, composer, packet_factory,
+    MockParticipant send2_part(Send2Cname, Send2Ssrc);
+    Communicator send2_comm(config, send2_part, send2_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send2_comm.is_valid());
 
@@ -1352,21 +1476,22 @@ TEST(communicator, collision_send_report) {
     core::nanoseconds_t send2_time = 60000000000000000;
 
     // Generate report from receiver to sender 1
-    recv_ctl.set_recv_report(
+    recv_part.set_recv_report(
         0, make_recv_report(recv_time, RecvCname, RecvSsrcA, Send1Ssrc, Seed1));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(1, recv_queue.size());
     CHECK_EQUAL(1, recv_comm.num_streams());
 
     // Deliver report from receiver to sender 1
-    send1_ctl.set_send_report(make_send_report(send1_time, Send1Cname, Send1Ssrc, Seed1));
+    send1_part.set_send_report(
+        make_send_report(send1_time, Send1Cname, Send1Ssrc, Seed1));
     CHECK_EQUAL(status::StatusOK,
                 send1_comm.process_packet(read_packet(recv_queue), send1_time));
     CHECK_EQUAL(1, send1_comm.num_streams());
 
     // Check notifications on sender 1
-    CHECK_EQUAL(1, send1_ctl.pending_notifications());
-    expect_recv_report(send1_ctl.next_recv_notification(), recv_time, RecvCname,
+    CHECK_EQUAL(1, send1_part.pending_notifications());
+    expect_recv_report(send1_part.next_recv_notification(), recv_time, RecvCname,
                        RecvSsrcA, Send1Ssrc, Seed1);
 
     advance_time(recv_time);
@@ -1375,14 +1500,15 @@ TEST(communicator, collision_send_report) {
 
     // Generate report from sender 2
     // Sender 2 has same SSRC as receiver
-    send2_ctl.set_send_report(make_send_report(send2_time, Send2Cname, Send2Ssrc, Seed2));
+    send2_part.set_send_report(
+        make_send_report(send2_time, Send2Cname, Send2Ssrc, Seed2));
     CHECK_EQUAL(status::StatusOK, send2_comm.generate_reports(send2_time));
     CHECK_EQUAL(1, send2_queue.size());
     CHECK_EQUAL(0, send2_comm.num_streams());
 
-    // Tell receiver controller which SSRC to use when requested
+    // Tell receiver participant which SSRC to use when requested
     // to update SSRC
-    recv_ctl.set_changed_ssrc(RecvSsrcB);
+    recv_part.set_changed_ssrc(RecvSsrcB);
 
     // Deliver report from sender 2 to receiver
     // Receiver should detect SSRC collision
@@ -1391,8 +1517,8 @@ TEST(communicator, collision_send_report) {
     CHECK_EQUAL(2, recv_comm.num_streams());
 
     // Check notifications on receiver
-    CHECK_EQUAL(1, recv_ctl.pending_notifications());
-    expect_send_report(recv_ctl.next_send_notification(), send2_time, Send2Cname,
+    CHECK_EQUAL(1, recv_part.pending_notifications());
+    expect_send_report(recv_part.next_send_notification(), send2_time, Send2Cname,
                        Send2Ssrc, Seed2);
 
     advance_time(recv_time);
@@ -1401,17 +1527,17 @@ TEST(communicator, collision_send_report) {
 
     // Generate next report from receiver to sender 1
     // Since receiver detected collision, it should generate BYE message with
-    // old SSRC, and then request stream controller to change SSRC
-    recv_ctl.set_recv_report(
+    // old SSRC, and then request participant to change SSRC
+    recv_part.set_recv_report(
         0, make_recv_report(recv_time, RecvCname, RecvSsrcA, Send1Ssrc, Seed3));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(1, recv_queue.size());
     CHECK_EQUAL(2, recv_comm.num_streams());
 
     // Check notifications on receiver
-    // It should request stream controller to change SSRC
-    CHECK_EQUAL(1, recv_ctl.pending_notifications());
-    recv_ctl.next_ssrc_change_notification();
+    // It should request participant to change SSRC
+    CHECK_EQUAL(1, recv_part.pending_notifications());
+    recv_part.next_ssrc_change_notification();
 
     // Deliver report from receiver to sender 1
     CHECK_EQUAL(status::StatusOK,
@@ -1419,8 +1545,8 @@ TEST(communicator, collision_send_report) {
     CHECK_EQUAL(0, send1_comm.num_streams());
 
     // Check notifications on sender 1
-    CHECK_EQUAL(1, send1_ctl.pending_notifications());
-    CHECK_EQUAL(RecvSsrcA, send1_ctl.next_halt_notification());
+    CHECK_EQUAL(1, send1_part.pending_notifications());
+    CHECK_EQUAL(RecvSsrcA, send1_part.next_halt_notification());
 
     advance_time(recv_time);
     advance_time(send1_time);
@@ -1428,7 +1554,7 @@ TEST(communicator, collision_send_report) {
 
     // Generate next report from receiver to sender 1
     // It should use new SSRC now
-    recv_ctl.set_recv_report(
+    recv_part.set_recv_report(
         0, make_recv_report(recv_time, RecvCname, RecvSsrcB, Send1Ssrc, Seed4));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(1, recv_queue.size());
@@ -1440,8 +1566,8 @@ TEST(communicator, collision_send_report) {
     CHECK_EQUAL(1, send1_comm.num_streams());
 
     // Check notifications on sender 1
-    CHECK_EQUAL(1, send1_ctl.pending_notifications());
-    expect_recv_report(send1_ctl.next_recv_notification(), recv_time, RecvCname,
+    CHECK_EQUAL(1, send1_part.pending_notifications());
+    expect_recv_report(send1_part.next_recv_notification(), recv_time, RecvCname,
                        RecvSsrcB, Send1Ssrc, Seed4);
 }
 
@@ -1466,20 +1592,20 @@ TEST(communicator, collision_recv_report) {
     Config config;
 
     packet::Queue send_queue;
-    MockController send_ctl(SendCname, SendSsrcA);
-    Communicator send_comm(config, send_ctl, send_queue, composer, packet_factory,
+    MockParticipant send_part(SendCname, SendSsrcA);
+    Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv1_queue;
-    MockController recv1_ctl(Recv1Cname, Recv1Ssrc);
-    Communicator recv1_comm(config, recv1_ctl, recv1_queue, composer, packet_factory,
+    MockParticipant recv1_part(Recv1Cname, Recv1Ssrc);
+    Communicator recv1_comm(config, recv1_part, recv1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(recv1_comm.is_valid());
 
     packet::Queue recv2_queue;
-    MockController recv2_ctl(Recv2Cname, Recv2Ssrc);
-    Communicator recv2_comm(config, recv2_ctl, recv2_queue, composer, packet_factory,
+    MockParticipant recv2_part(Recv2Cname, Recv2Ssrc);
+    Communicator recv2_comm(config, recv2_part, recv2_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(recv2_comm.is_valid());
 
@@ -1488,7 +1614,7 @@ TEST(communicator, collision_recv_report) {
     core::nanoseconds_t recv2_time = 60000000000000000;
 
     // Generate report from sender
-    send_ctl.set_send_report(make_send_report(send_time, SendCname, SendSsrcA, Seed1));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrcA, Seed1));
     CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
     CHECK_EQUAL(0, send_comm.num_streams());
     CHECK_EQUAL(1, send_queue.size());
@@ -1499,8 +1625,8 @@ TEST(communicator, collision_recv_report) {
     CHECK_EQUAL(1, recv1_comm.num_streams());
 
     // Check notifications on receiver 1
-    CHECK_EQUAL(1, recv1_ctl.pending_notifications());
-    expect_send_report(recv1_ctl.next_send_notification(), send_time, SendCname,
+    CHECK_EQUAL(1, recv1_part.pending_notifications());
+    expect_send_report(recv1_part.next_send_notification(), send_time, SendCname,
                        SendSsrcA, Seed1);
 
     advance_time(send_time);
@@ -1509,15 +1635,15 @@ TEST(communicator, collision_recv_report) {
 
     // Generate report from receiver 2
     // Receiver 2 has same SSRC as sender
-    recv2_ctl.set_recv_report(
+    recv2_part.set_recv_report(
         0, make_recv_report(recv2_time, Recv2Cname, Recv2Ssrc, SendSsrcA, Seed2));
     CHECK_EQUAL(status::StatusOK, recv2_comm.generate_reports(recv2_time));
     CHECK_EQUAL(1, recv2_queue.size());
     CHECK_EQUAL(1, recv2_comm.num_streams());
 
-    // Tell sender controller which SSRC to use when requested
+    // Tell sender participant which SSRC to use when requested
     // to update SSRC
-    send_ctl.set_changed_ssrc(SendSsrcB);
+    send_part.set_changed_ssrc(SendSsrcB);
 
     // Deliver report from receiver 2 to sender
     // sender should ignore this report, because it's for another sender
@@ -1528,8 +1654,8 @@ TEST(communicator, collision_recv_report) {
     CHECK_EQUAL(1, send_comm.num_streams());
 
     // Check notifications on sender
-    CHECK_EQUAL(1, send_ctl.pending_notifications());
-    expect_recv_report(send_ctl.next_recv_notification(), recv2_time, Recv2Cname,
+    CHECK_EQUAL(1, send_part.pending_notifications());
+    expect_recv_report(send_part.next_recv_notification(), recv2_time, Recv2Cname,
                        Recv2Ssrc, SendSsrcA, Seed2);
 
     advance_time(send_time);
@@ -1538,16 +1664,16 @@ TEST(communicator, collision_recv_report) {
 
     // Generate next report from sender to receiver 1
     // Since sender detected collision, it should generate BYE message with
-    // old SSRC, and then request stream controller to change SSRC
-    send_ctl.set_send_report(make_send_report(send_time, SendCname, SendSsrcA, Seed3));
+    // old SSRC, and then request participant to change SSRC
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrcA, Seed3));
     CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
     CHECK_EQUAL(1, send_comm.num_streams());
     CHECK_EQUAL(1, send_queue.size());
 
     // Check notifications on sender
-    // It should request stream controller to change SSRC
-    CHECK_EQUAL(1, send_ctl.pending_notifications());
-    send_ctl.next_ssrc_change_notification();
+    // It should request participant to change SSRC
+    CHECK_EQUAL(1, send_part.pending_notifications());
+    send_part.next_ssrc_change_notification();
 
     // Deliver report from sender to receiver 1
     CHECK_EQUAL(status::StatusOK,
@@ -1555,8 +1681,8 @@ TEST(communicator, collision_recv_report) {
     CHECK_EQUAL(0, recv1_comm.num_streams());
 
     // Check notifications on receiver 1
-    CHECK_EQUAL(1, recv1_ctl.pending_notifications());
-    CHECK_EQUAL(SendSsrcA, recv1_ctl.next_halt_notification());
+    CHECK_EQUAL(1, recv1_part.pending_notifications());
+    CHECK_EQUAL(SendSsrcA, recv1_part.next_halt_notification());
 
     advance_time(send_time);
     advance_time(recv1_time);
@@ -1564,7 +1690,7 @@ TEST(communicator, collision_recv_report) {
 
     // Generate next report from sender to receiver 1
     // It should use new SSRC now
-    send_ctl.set_send_report(make_send_report(send_time, SendCname, SendSsrcB, Seed4));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrcB, Seed4));
     CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
     CHECK_EQUAL(1, send_comm.num_streams());
     CHECK_EQUAL(1, send_queue.size());
@@ -1575,8 +1701,8 @@ TEST(communicator, collision_recv_report) {
     CHECK_EQUAL(1, recv1_comm.num_streams());
 
     // Check notifications on receiver 1
-    CHECK_EQUAL(1, recv1_ctl.pending_notifications());
-    expect_send_report(recv1_ctl.next_send_notification(), send_time, SendCname,
+    CHECK_EQUAL(1, recv1_part.pending_notifications());
+    expect_send_report(recv1_part.next_send_notification(), send_time, SendCname,
                        SendSsrcB, Seed4);
 }
 
@@ -1602,20 +1728,20 @@ TEST(communicator, collision_unrelated_recv_report) {
     Config config;
 
     packet::Queue send1_queue;
-    MockController send1_ctl(Send1Cname, Send1SsrcA);
-    Communicator send1_comm(config, send1_ctl, send1_queue, composer, packet_factory,
+    MockParticipant send1_part(Send1Cname, Send1SsrcA);
+    Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send1_comm.is_valid());
 
     packet::Queue recv1_queue;
-    MockController recv1_ctl(Recv1Cname, Recv1Ssrc);
-    Communicator recv1_comm(config, recv1_ctl, recv1_queue, composer, packet_factory,
+    MockParticipant recv1_part(Recv1Cname, Recv1Ssrc);
+    Communicator recv1_comm(config, recv1_part, recv1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(recv1_comm.is_valid());
 
     packet::Queue recv2_queue;
-    MockController recv2_ctl(Recv2Cname, Recv2Ssrc);
-    Communicator recv2_comm(config, recv2_ctl, recv2_queue, composer, packet_factory,
+    MockParticipant recv2_part(Recv2Cname, Recv2Ssrc);
+    Communicator recv2_comm(config, recv2_part, recv2_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(recv2_comm.is_valid());
 
@@ -1624,7 +1750,7 @@ TEST(communicator, collision_unrelated_recv_report) {
     core::nanoseconds_t recv2_time = 60000000000000000;
 
     // Generate report from sender 1
-    send1_ctl.set_send_report(
+    send1_part.set_send_report(
         make_send_report(send1_time, Send1Cname, Send1SsrcA, Seed1));
     CHECK_EQUAL(status::StatusOK, send1_comm.generate_reports(send1_time));
     CHECK_EQUAL(0, send1_comm.num_streams());
@@ -1636,8 +1762,8 @@ TEST(communicator, collision_unrelated_recv_report) {
     CHECK_EQUAL(1, recv1_comm.num_streams());
 
     // Check notifications on receiver 1
-    CHECK_EQUAL(1, recv1_ctl.pending_notifications());
-    expect_send_report(recv1_ctl.next_send_notification(), send1_time, Send1Cname,
+    CHECK_EQUAL(1, recv1_part.pending_notifications());
+    expect_send_report(recv1_part.next_send_notification(), send1_time, Send1Cname,
                        Send1SsrcA, Seed1);
 
     advance_time(send1_time);
@@ -1646,15 +1772,15 @@ TEST(communicator, collision_unrelated_recv_report) {
 
     // Generate report from receiver 2 to imaginary sender 2
     // Receiver 2 has same SSRC as sender 1
-    recv2_ctl.set_recv_report(
+    recv2_part.set_recv_report(
         0, make_recv_report(recv2_time, Recv2Cname, Recv2Ssrc, Send2Ssrc, Seed2));
     CHECK_EQUAL(status::StatusOK, recv2_comm.generate_reports(recv2_time));
     CHECK_EQUAL(1, recv2_queue.size());
     CHECK_EQUAL(1, recv2_comm.num_streams());
 
-    // Tell sender 1 controller which SSRC to use when requested
+    // Tell sender 1 participant which SSRC to use when requested
     // to update SSRC
-    send1_ctl.set_changed_ssrc(Send1SsrcB);
+    send1_part.set_changed_ssrc(Send1SsrcB);
 
     // Deliver report from receiver 2 to sender 1
     // Sender 1 should ignore this report, because it's for another sender
@@ -1670,17 +1796,17 @@ TEST(communicator, collision_unrelated_recv_report) {
 
     // Generate next report from sender 1 to receiver 1
     // Since sender 1 detected collision, it should generate BYE message with
-    // old SSRC, and then request stream controller to change SSRC
-    send1_ctl.set_send_report(
+    // old SSRC, and then request participant to change SSRC
+    send1_part.set_send_report(
         make_send_report(send1_time, Send1Cname, Send1SsrcA, Seed3));
     CHECK_EQUAL(status::StatusOK, send1_comm.generate_reports(send1_time));
     CHECK_EQUAL(1, send1_comm.num_streams());
     CHECK_EQUAL(1, send1_queue.size());
 
     // Check notifications on sender 1
-    // It should request stream controller to change SSRC
-    CHECK_EQUAL(1, send1_ctl.pending_notifications());
-    send1_ctl.next_ssrc_change_notification();
+    // It should request participant to change SSRC
+    CHECK_EQUAL(1, send1_part.pending_notifications());
+    send1_part.next_ssrc_change_notification();
 
     // Deliver report from sender 1 to receiver 1
     CHECK_EQUAL(status::StatusOK,
@@ -1688,8 +1814,8 @@ TEST(communicator, collision_unrelated_recv_report) {
     CHECK_EQUAL(0, recv1_comm.num_streams());
 
     // Check notifications on receiver 1
-    CHECK_EQUAL(1, recv1_ctl.pending_notifications());
-    CHECK_EQUAL(Send1SsrcA, recv1_ctl.next_halt_notification());
+    CHECK_EQUAL(1, recv1_part.pending_notifications());
+    CHECK_EQUAL(Send1SsrcA, recv1_part.next_halt_notification());
 
     advance_time(send1_time);
     advance_time(recv1_time);
@@ -1697,7 +1823,7 @@ TEST(communicator, collision_unrelated_recv_report) {
 
     // Generate next report from sender 1 to receiver 1
     // It should use new SSRC now
-    send1_ctl.set_send_report(
+    send1_part.set_send_report(
         make_send_report(send1_time, Send1Cname, Send1SsrcB, Seed4));
     CHECK_EQUAL(status::StatusOK, send1_comm.generate_reports(send1_time));
     CHECK_EQUAL(1, send1_comm.num_streams());
@@ -1709,8 +1835,8 @@ TEST(communicator, collision_unrelated_recv_report) {
     CHECK_EQUAL(1, recv1_comm.num_streams());
 
     // Check notifications on receiver 1
-    CHECK_EQUAL(1, recv1_ctl.pending_notifications());
-    expect_send_report(recv1_ctl.next_send_notification(), send1_time, Send1Cname,
+    CHECK_EQUAL(1, recv1_part.pending_notifications());
+    expect_send_report(recv1_part.next_send_notification(), send1_time, Send1Cname,
                        Send1SsrcB, Seed4);
 }
 
@@ -1735,14 +1861,14 @@ TEST(communicator, collision_sdes_different_cname) {
     Config config;
 
     packet::Queue recv_queue;
-    MockController recv_ctl(RecvCname, RecvSsrcA);
-    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
+    MockParticipant recv_part(RecvCname, RecvSsrcA);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
     packet::Queue send1_queue;
-    MockController send1_ctl(Send1Cname, Send1Ssrc);
-    Communicator send1_comm(config, send1_ctl, send1_queue, composer, packet_factory,
+    MockParticipant send1_part(Send1Cname, Send1Ssrc);
+    Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send1_comm.is_valid());
 
@@ -1752,8 +1878,8 @@ TEST(communicator, collision_sdes_different_cname) {
     send2_config.enable_xr = false;
     send2_config.enable_sdes = true;
     packet::Queue send2_queue;
-    MockController send2_ctl(Send2Cname, Send2Ssrc);
-    Communicator send2_comm(send2_config, send2_ctl, send2_queue, composer,
+    MockParticipant send2_part(Send2Cname, Send2Ssrc);
+    Communicator send2_comm(send2_config, send2_part, send2_queue, composer,
                             packet_factory, buffer_factory, arena);
     CHECK(send2_comm.is_valid());
 
@@ -1762,21 +1888,22 @@ TEST(communicator, collision_sdes_different_cname) {
     core::nanoseconds_t send2_time = 60000000000000000;
 
     // Generate report from receiver to sender 1
-    recv_ctl.set_recv_report(
+    recv_part.set_recv_report(
         0, make_recv_report(recv_time, RecvCname, RecvSsrcA, Send1Ssrc, Seed1));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(1, recv_queue.size());
     CHECK_EQUAL(1, recv_comm.num_streams());
 
     // Deliver report from receiver to sender 1
-    send1_ctl.set_send_report(make_send_report(send1_time, Send1Cname, Send1Ssrc, Seed1));
+    send1_part.set_send_report(
+        make_send_report(send1_time, Send1Cname, Send1Ssrc, Seed1));
     CHECK_EQUAL(status::StatusOK,
                 send1_comm.process_packet(read_packet(recv_queue), send1_time));
     CHECK_EQUAL(1, send1_comm.num_streams());
 
     // Check notifications on sender 1
-    CHECK_EQUAL(1, send1_ctl.pending_notifications());
-    expect_recv_report(send1_ctl.next_recv_notification(), recv_time, RecvCname,
+    CHECK_EQUAL(1, send1_part.pending_notifications());
+    expect_recv_report(send1_part.next_recv_notification(), recv_time, RecvCname,
                        RecvSsrcA, Send1Ssrc, Seed1);
 
     advance_time(recv_time);
@@ -1785,14 +1912,15 @@ TEST(communicator, collision_sdes_different_cname) {
 
     // Generate report from sender 2
     // Sender 2 has same SSRC as receiver and different CNAME
-    send2_ctl.set_send_report(make_send_report(send2_time, Send2Cname, Send2Ssrc, Seed2));
+    send2_part.set_send_report(
+        make_send_report(send2_time, Send2Cname, Send2Ssrc, Seed2));
     CHECK_EQUAL(status::StatusOK, send2_comm.generate_reports(send2_time));
     CHECK_EQUAL(1, send2_queue.size());
     CHECK_EQUAL(0, send2_comm.num_streams());
 
-    // Tell receiver controller which SSRC to use when requested
+    // Tell receiver participant which SSRC to use when requested
     // to update SSRC
-    recv_ctl.set_changed_ssrc(RecvSsrcB);
+    recv_part.set_changed_ssrc(RecvSsrcB);
 
     // Deliver report from sender 2 to receiver
     // Receiver should detect SSRC collision
@@ -1801,7 +1929,7 @@ TEST(communicator, collision_sdes_different_cname) {
     CHECK_EQUAL(2, recv_comm.num_streams());
 
     // Check notifications on receiver
-    CHECK_EQUAL(0, recv_ctl.pending_notifications());
+    CHECK_EQUAL(0, recv_part.pending_notifications());
 
     advance_time(recv_time);
     advance_time(send1_time);
@@ -1809,17 +1937,17 @@ TEST(communicator, collision_sdes_different_cname) {
 
     // Generate next report from receiver to sender 1
     // Since receiver detected collision, it should generate BYE message with
-    // old SSRC, and then request stream controller to change SSRC
-    recv_ctl.set_recv_report(
+    // old SSRC, and then request participant to change SSRC
+    recv_part.set_recv_report(
         0, make_recv_report(recv_time, RecvCname, RecvSsrcA, Send1Ssrc, Seed3));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(1, recv_queue.size());
     CHECK_EQUAL(2, recv_comm.num_streams());
 
     // Check notifications on receiver
-    // It should request stream controller to change SSRC
-    CHECK_EQUAL(1, recv_ctl.pending_notifications());
-    recv_ctl.next_ssrc_change_notification();
+    // It should request participant to change SSRC
+    CHECK_EQUAL(1, recv_part.pending_notifications());
+    recv_part.next_ssrc_change_notification();
 
     // Deliver report from receiver to sender 1
     CHECK_EQUAL(status::StatusOK,
@@ -1827,8 +1955,8 @@ TEST(communicator, collision_sdes_different_cname) {
     CHECK_EQUAL(0, send1_comm.num_streams());
 
     // Check notifications on sender 1
-    CHECK_EQUAL(1, send1_ctl.pending_notifications());
-    CHECK_EQUAL(RecvSsrcA, send1_ctl.next_halt_notification());
+    CHECK_EQUAL(1, send1_part.pending_notifications());
+    CHECK_EQUAL(RecvSsrcA, send1_part.next_halt_notification());
 
     advance_time(recv_time);
     advance_time(send1_time);
@@ -1836,7 +1964,7 @@ TEST(communicator, collision_sdes_different_cname) {
 
     // Generate next report from receiver to sender 1
     // It should use new SSRC now
-    recv_ctl.set_recv_report(
+    recv_part.set_recv_report(
         0, make_recv_report(recv_time, RecvCname, RecvSsrcB, Send1Ssrc, Seed4));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(1, recv_queue.size());
@@ -1848,8 +1976,8 @@ TEST(communicator, collision_sdes_different_cname) {
     CHECK_EQUAL(1, send1_comm.num_streams());
 
     // Check notifications on sender 1
-    CHECK_EQUAL(1, send1_ctl.pending_notifications());
-    expect_recv_report(send1_ctl.next_recv_notification(), recv_time, RecvCname,
+    CHECK_EQUAL(1, send1_part.pending_notifications());
+    expect_recv_report(send1_part.next_recv_notification(), recv_time, RecvCname,
                        RecvSsrcB, Send1Ssrc, Seed4);
 }
 
@@ -1873,14 +2001,14 @@ TEST(communicator, collision_sdes_same_cname) {
     Config config;
 
     packet::Queue recv_queue;
-    MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
+    MockParticipant recv_part(RecvCname, RecvSsrc);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
     packet::Queue send1_queue;
-    MockController send1_ctl(Send1Cname, Send1Ssrc);
-    Communicator send1_comm(config, send1_ctl, send1_queue, composer, packet_factory,
+    MockParticipant send1_part(Send1Cname, Send1Ssrc);
+    Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(send1_comm.is_valid());
 
@@ -1890,8 +2018,8 @@ TEST(communicator, collision_sdes_same_cname) {
     send2_config.enable_xr = false;
     send2_config.enable_sdes = true;
     packet::Queue send2_queue;
-    MockController send2_ctl(Send2Cname, Send2Ssrc);
-    Communicator send2_comm(send2_config, send2_ctl, send2_queue, composer,
+    MockParticipant send2_part(Send2Cname, Send2Ssrc);
+    Communicator send2_comm(send2_config, send2_part, send2_queue, composer,
                             packet_factory, buffer_factory, arena);
     CHECK(send2_comm.is_valid());
 
@@ -1900,22 +2028,23 @@ TEST(communicator, collision_sdes_same_cname) {
     core::nanoseconds_t send2_time = 60000000000000000;
 
     // Generate report from receiver to sender 1
-    recv_ctl.set_recv_report(
+    recv_part.set_recv_report(
         0, make_recv_report(recv_time, RecvCname, RecvSsrc, Send1Ssrc, Seed1));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(1, recv_queue.size());
     CHECK_EQUAL(1, recv_comm.num_streams());
 
     // Deliver report from receiver to sender 1
-    send1_ctl.set_send_report(make_send_report(send1_time, Send1Cname, Send1Ssrc, Seed1));
+    send1_part.set_send_report(
+        make_send_report(send1_time, Send1Cname, Send1Ssrc, Seed1));
     CHECK_EQUAL(status::StatusOK,
                 send1_comm.process_packet(read_packet(recv_queue), send1_time));
     CHECK_EQUAL(1, send1_comm.num_streams());
 
     // Check notifications on sender 1
-    CHECK_EQUAL(1, send1_ctl.pending_notifications());
-    expect_recv_report(send1_ctl.next_recv_notification(), recv_time, RecvCname, RecvSsrc,
-                       Send1Ssrc, Seed1);
+    CHECK_EQUAL(1, send1_part.pending_notifications());
+    expect_recv_report(send1_part.next_recv_notification(), recv_time, RecvCname,
+                       RecvSsrc, Send1Ssrc, Seed1);
 
     advance_time(recv_time);
     advance_time(send1_time);
@@ -1923,7 +2052,8 @@ TEST(communicator, collision_sdes_same_cname) {
 
     // Generate report from sender 2
     // Sender 2 has same SSRC as receiver and same CNAME
-    send2_ctl.set_send_report(make_send_report(send2_time, Send2Cname, Send2Ssrc, Seed2));
+    send2_part.set_send_report(
+        make_send_report(send2_time, Send2Cname, Send2Ssrc, Seed2));
     CHECK_EQUAL(status::StatusOK, send2_comm.generate_reports(send2_time));
     CHECK_EQUAL(1, send2_queue.size());
     CHECK_EQUAL(0, send2_comm.num_streams());
@@ -1935,7 +2065,7 @@ TEST(communicator, collision_sdes_same_cname) {
     CHECK_EQUAL(2, recv_comm.num_streams());
 
     // Check notifications on receiver
-    CHECK_EQUAL(0, recv_ctl.pending_notifications());
+    CHECK_EQUAL(0, recv_part.pending_notifications());
 
     advance_time(recv_time);
     advance_time(send1_time);
@@ -1943,14 +2073,14 @@ TEST(communicator, collision_sdes_same_cname) {
 
     // Generate next report from receiver to sender 1
     // No collision should be reported & handled
-    recv_ctl.set_recv_report(
+    recv_part.set_recv_report(
         0, make_recv_report(recv_time, RecvCname, RecvSsrc, Send1Ssrc, Seed3));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(1, recv_queue.size());
     CHECK_EQUAL(2, recv_comm.num_streams());
 
     // Check notifications on receiver
-    CHECK_EQUAL(0, recv_ctl.pending_notifications());
+    CHECK_EQUAL(0, recv_part.pending_notifications());
 
     // Deliver report from receiver to sender 1
     CHECK_EQUAL(status::StatusOK,
@@ -1958,9 +2088,9 @@ TEST(communicator, collision_sdes_same_cname) {
     CHECK_EQUAL(1, send1_comm.num_streams());
 
     // Check notifications on sender 1
-    CHECK_EQUAL(1, send1_ctl.pending_notifications());
-    expect_recv_report(send1_ctl.next_recv_notification(), recv_time, RecvCname, RecvSsrc,
-                       Send1Ssrc, Seed3);
+    CHECK_EQUAL(1, send1_part.pending_notifications());
+    expect_recv_report(send1_part.next_recv_notification(), recv_time, RecvCname,
+                       RecvSsrc, Send1Ssrc, Seed3);
 }
 
 // Handle incoming packet from sender without SDES
@@ -1976,15 +2106,15 @@ TEST(communicator, missing_sender_sdes) {
     send_config.enable_xr = true;
     send_config.enable_sdes = false;
     packet::Queue send_queue;
-    MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(send_config, send_ctl, send_queue, composer, packet_factory,
+    MockParticipant send_part(SendCname, SendSsrc);
+    Communicator send_comm(send_config, send_part, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
     Config recv_config;
     packet::Queue recv_queue;
-    MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(recv_config, recv_ctl, recv_queue, composer, packet_factory,
+    MockParticipant recv_part(RecvCname, RecvSsrc);
+    Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -1992,7 +2122,7 @@ TEST(communicator, missing_sender_sdes) {
     core::nanoseconds_t recv_time = 30000000000000000;
 
     // Generate sender report
-    send_ctl.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed1));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed1));
     CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
     CHECK_EQUAL(0, send_comm.num_streams());
     CHECK_EQUAL(1, send_queue.size());
@@ -2004,8 +2134,9 @@ TEST(communicator, missing_sender_sdes) {
 
     // Check notifications on receiver
     // Notification with empty CNAME should be generated
-    CHECK_EQUAL(1, recv_ctl.pending_notifications());
-    expect_send_report(recv_ctl.next_send_notification(), send_time, "", SendSsrc, Seed1);
+    CHECK_EQUAL(1, recv_part.pending_notifications());
+    expect_send_report(recv_part.next_send_notification(), send_time, "", SendSsrc,
+                       Seed1);
 }
 
 // Handle incoming packet from receiver without SDES
@@ -2018,8 +2149,8 @@ TEST(communicator, missing_receiver_sdes) {
 
     Config send_config;
     packet::Queue send_queue;
-    MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(send_config, send_ctl, send_queue, composer, packet_factory,
+    MockParticipant send_part(SendCname, SendSsrc);
+    Communicator send_comm(send_config, send_part, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
@@ -2028,8 +2159,8 @@ TEST(communicator, missing_receiver_sdes) {
     recv_config.enable_xr = true;
     recv_config.enable_sdes = false;
     packet::Queue recv_queue;
-    MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(recv_config, recv_ctl, recv_queue, composer, packet_factory,
+    MockParticipant recv_part(RecvCname, RecvSsrc);
+    Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -2037,22 +2168,22 @@ TEST(communicator, missing_receiver_sdes) {
     core::nanoseconds_t recv_time = 30000000000000000;
 
     // Generate receiver report
-    recv_ctl.set_recv_report(
+    recv_part.set_recv_report(
         0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed2));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(1, recv_queue.size());
     CHECK_EQUAL(1, recv_comm.num_streams());
 
     // Deliver receiver report to sender
-    send_ctl.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed2));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed2));
     CHECK_EQUAL(status::StatusOK,
                 send_comm.process_packet(read_packet(recv_queue), send_time));
     CHECK_EQUAL(1, send_comm.num_streams());
 
     // Check notifications on sender
     // Notification with empty CNAME should be generated
-    CHECK_EQUAL(1, send_ctl.pending_notifications());
-    expect_recv_report(send_ctl.next_recv_notification(), recv_time, "", RecvSsrc,
+    CHECK_EQUAL(1, send_part.pending_notifications());
+    expect_recv_report(send_part.next_recv_notification(), recv_time, "", RecvSsrc,
                        SendSsrc, Seed2);
 }
 
@@ -2069,15 +2200,15 @@ TEST(communicator, missing_sender_sr) {
     send_config.enable_xr = true;
     send_config.enable_sdes = true;
     packet::Queue send_queue;
-    MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(send_config, send_ctl, send_queue, composer, packet_factory,
+    MockParticipant send_part(SendCname, SendSsrc);
+    Communicator send_comm(send_config, send_part, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
     Config recv_config;
     packet::Queue recv_queue;
-    MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(recv_config, recv_ctl, recv_queue, composer, packet_factory,
+    MockParticipant recv_part(RecvCname, RecvSsrc);
+    Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -2085,7 +2216,7 @@ TEST(communicator, missing_sender_sr) {
     core::nanoseconds_t recv_time = 30000000000000000;
 
     // Generate sender report
-    send_ctl.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed1));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed1));
     CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
     CHECK_EQUAL(0, send_comm.num_streams());
     CHECK_EQUAL(1, send_queue.size());
@@ -2097,7 +2228,7 @@ TEST(communicator, missing_sender_sr) {
 
     // Check notifications on receiver
     // No notifications should be generated
-    CHECK_EQUAL(0, recv_ctl.pending_notifications());
+    CHECK_EQUAL(0, recv_part.pending_notifications());
 }
 
 // Handle incoming packet from receiver without RR
@@ -2110,8 +2241,8 @@ TEST(communicator, missing_receiver_rr) {
 
     Config send_config;
     packet::Queue send_queue;
-    MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(send_config, send_ctl, send_queue, composer, packet_factory,
+    MockParticipant send_part(SendCname, SendSsrc);
+    Communicator send_comm(send_config, send_part, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
@@ -2120,8 +2251,8 @@ TEST(communicator, missing_receiver_rr) {
     recv_config.enable_xr = true;
     recv_config.enable_sdes = true;
     packet::Queue recv_queue;
-    MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(recv_config, recv_ctl, recv_queue, composer, packet_factory,
+    MockParticipant recv_part(RecvCname, RecvSsrc);
+    Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -2129,21 +2260,21 @@ TEST(communicator, missing_receiver_rr) {
     core::nanoseconds_t recv_time = 30000000000000000;
 
     // Generate receiver report
-    recv_ctl.set_recv_report(
+    recv_part.set_recv_report(
         0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed2));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(1, recv_queue.size());
     CHECK_EQUAL(1, recv_comm.num_streams());
 
     // Deliver receiver report to sender
-    send_ctl.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed2));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed2));
     CHECK_EQUAL(status::StatusOK,
                 send_comm.process_packet(read_packet(recv_queue), send_time));
     CHECK_EQUAL(1, send_comm.num_streams());
 
     // Check notifications on sender
     // No notifications should be generated
-    CHECK_EQUAL(0, send_ctl.pending_notifications());
+    CHECK_EQUAL(0, send_part.pending_notifications());
 }
 
 // Handle incoming packet from sender without XR
@@ -2159,15 +2290,15 @@ TEST(communicator, missing_sender_xr) {
     send_config.enable_xr = false;
     send_config.enable_sdes = true;
     packet::Queue send_queue;
-    MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(send_config, send_ctl, send_queue, composer, packet_factory,
+    MockParticipant send_part(SendCname, SendSsrc);
+    Communicator send_comm(send_config, send_part, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
     Config recv_config;
     packet::Queue recv_queue;
-    MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(recv_config, recv_ctl, recv_queue, composer, packet_factory,
+    MockParticipant recv_part(RecvCname, RecvSsrc);
+    Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -2175,7 +2306,7 @@ TEST(communicator, missing_sender_xr) {
     core::nanoseconds_t recv_time = 30000000000000000;
 
     // Generate sender report
-    send_ctl.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed1));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed1));
     CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
     CHECK_EQUAL(0, send_comm.num_streams());
     CHECK_EQUAL(1, send_queue.size());
@@ -2187,8 +2318,8 @@ TEST(communicator, missing_sender_xr) {
 
     // Check notifications on receiver
     // Notification with zero XR fields should be generated
-    CHECK_EQUAL(1, recv_ctl.pending_notifications());
-    expect_send_report(recv_ctl.next_send_notification(), send_time, SendCname, SendSsrc,
+    CHECK_EQUAL(1, recv_part.pending_notifications());
+    expect_send_report(recv_part.next_send_notification(), send_time, SendCname, SendSsrc,
                        Seed1, /* expect_xr = */ false);
 }
 
@@ -2202,8 +2333,8 @@ TEST(communicator, missing_receiver_xr) {
 
     Config send_config;
     packet::Queue send_queue;
-    MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(send_config, send_ctl, send_queue, composer, packet_factory,
+    MockParticipant send_part(SendCname, SendSsrc);
+    Communicator send_comm(send_config, send_part, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
@@ -2212,8 +2343,8 @@ TEST(communicator, missing_receiver_xr) {
     recv_config.enable_xr = false;
     recv_config.enable_sdes = true;
     packet::Queue recv_queue;
-    MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(recv_config, recv_ctl, recv_queue, composer, packet_factory,
+    MockParticipant recv_part(RecvCname, RecvSsrc);
+    Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -2221,22 +2352,22 @@ TEST(communicator, missing_receiver_xr) {
     core::nanoseconds_t recv_time = 30000000000000000;
 
     // Generate receiver report
-    recv_ctl.set_recv_report(
+    recv_part.set_recv_report(
         0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed2));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(1, recv_queue.size());
     CHECK_EQUAL(1, recv_comm.num_streams());
 
     // Deliver receiver report to sender
-    send_ctl.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed2));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed2));
     CHECK_EQUAL(status::StatusOK,
                 send_comm.process_packet(read_packet(recv_queue), send_time));
     CHECK_EQUAL(1, send_comm.num_streams());
 
     // Check notifications on sender
     // Notification with zero XR fields should be generated
-    CHECK_EQUAL(1, send_ctl.pending_notifications());
-    expect_recv_report(send_ctl.next_recv_notification(), recv_time, RecvCname, RecvSsrc,
+    CHECK_EQUAL(1, send_part.pending_notifications());
+    expect_recv_report(send_part.next_recv_notification(), recv_time, RecvCname, RecvSsrc,
                        SendSsrc, Seed2, /* expect_xr = */ false);
 }
 
@@ -2250,8 +2381,8 @@ TEST(communicator, split_sender_report) {
     config.inactivity_timeout = core::Second * 999;
 
     packet::Queue send_queue;
-    MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(config, send_ctl, send_queue, composer, packet_factory,
+    MockParticipant send_part(SendCname, SendSsrc);
+    Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
@@ -2259,25 +2390,25 @@ TEST(communicator, split_sender_report) {
     core::nanoseconds_t recv_time = 30000000000000000;
 
     // Prepare sender
-    send_ctl.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
 
     // Generate reports from multiple receivers to sender to let sender discover them
-    for (size_t idx = 0; idx < NumReports; idx++) {
+    for (size_t n_rep = 0; n_rep < NumReports; n_rep++) {
         advance_time(send_time);
         advance_time(recv_time);
 
-        packet::stream_source_t recv_ssrc = RecvSsrc + idx;
+        packet::stream_source_t recv_ssrc = RecvSsrc + n_rep;
         char recv_cname[64] = {};
         snprintf(recv_cname, sizeof(recv_cname), "recv_cname%d", (int)recv_ssrc);
 
         packet::Queue recv_queue;
-        MockController recv_ctl(recv_cname, recv_ssrc);
-        Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
+        MockParticipant recv_part(recv_cname, recv_ssrc);
+        Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                                buffer_factory, arena);
         CHECK(recv_comm.is_valid());
 
         // Generate receiver report
-        recv_ctl.set_recv_report(
+        recv_part.set_recv_report(
             0, make_recv_report(recv_time, recv_cname, recv_ssrc, SendSsrc, Seed));
         CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
         CHECK_EQUAL(1, recv_comm.num_streams());
@@ -2288,15 +2419,15 @@ TEST(communicator, split_sender_report) {
                     send_comm.process_packet(read_packet(recv_queue), send_time));
 
         // Check notifications on sender
-        CHECK_EQUAL(1, send_ctl.pending_notifications());
-        expect_recv_report(send_ctl.next_recv_notification(), recv_time, recv_cname,
+        CHECK_EQUAL(1, send_part.pending_notifications());
+        expect_recv_report(send_part.next_recv_notification(), recv_time, recv_cname,
                            recv_ssrc, SendSsrc, Seed);
     }
 
     advance_time(send_time);
 
     // Generate sender multi-packet report
-    send_ctl.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
     CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
     CHECK_EQUAL(NumReports, send_comm.num_streams());
     CHECK_EQUAL(NumPackets, send_queue.size());
@@ -2306,8 +2437,8 @@ TEST(communicator, split_sender_report) {
     snprintf(recv_cname, sizeof(recv_cname), "recv_cname%d", (int)recv_ssrc);
 
     packet::Queue recv_queue;
-    MockController recv_ctl(recv_cname, recv_ssrc);
-    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
+    MockParticipant recv_part(recv_cname, recv_ssrc);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -2320,9 +2451,9 @@ TEST(communicator, split_sender_report) {
     CHECK_EQUAL(1, recv_comm.num_streams());
 
     // Check notifications on receiver
-    CHECK_EQUAL(3, recv_ctl.pending_notifications());
-    for (size_t p = 0; p < NumPackets; p++) {
-        expect_send_report(recv_ctl.next_send_notification(), send_time, SendCname,
+    CHECK_EQUAL(3, recv_part.pending_notifications());
+    for (size_t n_pkt = 0; n_pkt < NumPackets; n_pkt++) {
+        expect_send_report(recv_part.next_send_notification(), send_time, SendCname,
                            SendSsrc, Seed);
     }
 }
@@ -2337,14 +2468,14 @@ TEST(communicator, split_receiver_report) {
     Config config;
 
     packet::Queue send_queue;
-    MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(config, send_ctl, send_queue, composer, packet_factory,
+    MockParticipant send_part(SendCname, SendSsrc);
+    Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv_queue;
-    MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
+    MockParticipant recv_part(RecvCname, RecvSsrc);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -2352,16 +2483,17 @@ TEST(communicator, split_receiver_report) {
     core::nanoseconds_t recv_time = 30000000000000000;
 
     // Generate receiver multi-packet report
-    for (size_t idx = 0; idx < NumReports; idx++) {
-        recv_ctl.set_recv_report(
-            idx, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc + idx, Seed));
+    for (size_t n_rep = 0; n_rep < NumReports; n_rep++) {
+        recv_part.set_recv_report(
+            n_rep,
+            make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc + n_rep, Seed));
     }
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(NumReports, recv_comm.num_streams());
     CHECK_EQUAL(NumPackets, recv_queue.size());
 
     // Deliver receiver report packets to sender
-    send_ctl.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
     while (recv_queue.size() != 0) {
         advance_time(send_time);
         CHECK_EQUAL(status::StatusOK,
@@ -2370,9 +2502,9 @@ TEST(communicator, split_receiver_report) {
     CHECK_EQUAL(1, send_comm.num_streams());
 
     // Check notifications on sender
-    CHECK_EQUAL(NumPackets, send_ctl.pending_notifications());
-    for (size_t p = 0; p < NumPackets; p++) {
-        expect_recv_report(send_ctl.next_recv_notification(), recv_time, RecvCname,
+    CHECK_EQUAL(NumPackets, send_part.pending_notifications());
+    for (size_t n_pkt = 0; n_pkt < NumPackets; n_pkt++) {
+        expect_recv_report(send_part.next_recv_notification(), recv_time, RecvCname,
                            RecvSsrc, SendSsrc, Seed);
     }
 }
@@ -2387,14 +2519,14 @@ TEST(communicator, split_sender_receiver_report) {
         Seed = 100
     };
 
-    const char* LocalCname = "local_cname";
+    const char* local_cname = "local_cname";
 
     Config config;
     config.inactivity_timeout = core::Second * 999;
 
     packet::Queue local_queue;
-    MockController local_ctl(LocalCname, LocalSsrc);
-    Communicator local_comm(config, local_ctl, local_queue, composer, packet_factory,
+    MockParticipant local_part(local_cname, LocalSsrc);
+    Communicator local_comm(config, local_part, local_queue, composer, packet_factory,
                             buffer_factory, arena);
     CHECK(local_comm.is_valid());
 
@@ -2402,25 +2534,26 @@ TEST(communicator, split_sender_receiver_report) {
     core::nanoseconds_t remote_time = 30000000000000000;
 
     // Prepare local peer
-    local_ctl.set_send_report(make_send_report(local_time, LocalCname, LocalSsrc, Seed));
+    local_part.set_send_report(
+        make_send_report(local_time, local_cname, LocalSsrc, Seed));
 
     // Generate reports from multiple remote peers to local peer
-    for (size_t idx = 0; idx < NumReports; idx++) {
+    for (size_t n_rep = 0; n_rep < NumReports; n_rep++) {
         advance_time(local_time);
         advance_time(remote_time);
 
-        packet::stream_source_t remote_ssrc = RemoteSsrc + idx;
+        packet::stream_source_t remote_ssrc = RemoteSsrc + n_rep;
         char remote_cname[64] = {};
         snprintf(remote_cname, sizeof(remote_cname), "remote_cname%d", (int)remote_ssrc);
 
         packet::Queue remote_queue;
-        MockController remote_ctl(remote_cname, remote_ssrc);
-        Communicator remote_comm(config, remote_ctl, remote_queue, composer,
+        MockParticipant remote_part(remote_cname, remote_ssrc);
+        Communicator remote_comm(config, remote_part, remote_queue, composer,
                                  packet_factory, buffer_factory, arena);
         CHECK(remote_comm.is_valid());
 
         // Generate remote peer report
-        remote_ctl.set_recv_report(
+        remote_part.set_recv_report(
             0, make_recv_report(remote_time, remote_cname, remote_ssrc, LocalSsrc, Seed));
         CHECK_EQUAL(status::StatusOK, remote_comm.generate_reports(remote_time));
         CHECK_EQUAL(1, remote_comm.num_streams());
@@ -2431,19 +2564,20 @@ TEST(communicator, split_sender_receiver_report) {
                     local_comm.process_packet(read_packet(remote_queue), local_time));
 
         // Check notifications on local peer
-        CHECK_EQUAL(1, local_ctl.pending_notifications());
-        expect_recv_report(local_ctl.next_recv_notification(), remote_time, remote_cname,
+        CHECK_EQUAL(1, local_part.pending_notifications());
+        expect_recv_report(local_part.next_recv_notification(), remote_time, remote_cname,
                            remote_ssrc, LocalSsrc, Seed);
     }
 
     advance_time(local_time);
 
     // Generate local peer multi-packet report
-    local_ctl.set_send_report(make_send_report(local_time, LocalCname, LocalSsrc, Seed));
-    for (size_t idx = 0; idx < NumReports; idx++) {
-        local_ctl.set_recv_report(
-            idx,
-            make_recv_report(local_time, LocalCname, LocalSsrc, RemoteSsrc + idx, Seed));
+    local_part.set_send_report(
+        make_send_report(local_time, local_cname, LocalSsrc, Seed));
+    for (size_t n_rep = 0; n_rep < NumReports; n_rep++) {
+        local_part.set_recv_report(n_rep,
+                                   make_recv_report(local_time, local_cname, LocalSsrc,
+                                                    RemoteSsrc + n_rep, Seed));
     }
     CHECK_EQUAL(status::StatusOK, local_comm.generate_reports(local_time));
     CHECK_EQUAL(NumReports, local_comm.num_streams());
@@ -2454,13 +2588,13 @@ TEST(communicator, split_sender_receiver_report) {
     snprintf(remote_cname, sizeof(remote_cname), "remote_cname%d", (int)remote_ssrc);
 
     packet::Queue remote_queue;
-    MockController remote_ctl(remote_cname, remote_ssrc);
-    Communicator remote_comm(config, remote_ctl, remote_queue, composer, packet_factory,
+    MockParticipant remote_part(remote_cname, remote_ssrc);
+    Communicator remote_comm(config, remote_part, remote_queue, composer, packet_factory,
                              buffer_factory, arena);
     CHECK(remote_comm.is_valid());
 
     // Deliver local peer report packets to one of the remote peers
-    remote_ctl.set_send_report(
+    remote_part.set_send_report(
         make_send_report(remote_time, remote_cname, remote_ssrc, Seed));
     while (local_queue.size() != 0) {
         advance_time(remote_time);
@@ -2470,12 +2604,699 @@ TEST(communicator, split_sender_receiver_report) {
     CHECK_EQUAL(1, remote_comm.num_streams());
 
     // Check notifications on remote peer
-    CHECK_EQUAL(NumPackets * 2, remote_ctl.pending_notifications());
-    for (size_t p = 0; p < NumPackets; p++) {
-        expect_send_report(remote_ctl.next_send_notification(), local_time, LocalCname,
+    CHECK_EQUAL(NumPackets * 2, remote_part.pending_notifications());
+    for (size_t n_pkt = 0; n_pkt < NumPackets; n_pkt++) {
+        expect_send_report(remote_part.next_send_notification(), local_time, local_cname,
                            LocalSsrc, Seed);
-        expect_recv_report(remote_ctl.next_recv_notification(), local_time, LocalCname,
+        expect_recv_report(remote_part.next_recv_notification(), local_time, local_cname,
                            LocalSsrc, RemoteSsrc, Seed);
+    }
+}
+
+// Tell sender to use specific destination report address
+TEST(communicator, report_address_sender) {
+    enum { SendSsrc = 11, Recv1Ssrc = 22, Recv2Ssrc = 33, Seed = 100 };
+
+    const char* SendCname = "send_cname";
+    const char* Recv1Cname = "recv1_cname";
+    const char* Recv2Cname = "recv2_cname";
+
+    const address::SocketAddr send_dest_addr = make_address(111);
+
+    const address::SocketAddr recv1_addr = make_address(222);
+    const address::SocketAddr recv2_addr = make_address(333);
+
+    Config config;
+
+    packet::Queue send_queue;
+    MockParticipant send_part(SendCname, SendSsrc);
+    send_part.set_report_address(send_dest_addr);
+    Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
+                           buffer_factory, arena);
+    CHECK(send_comm.is_valid());
+
+    packet::Queue recv1_queue;
+    MockParticipant recv1_part(Recv1Cname, Recv1Ssrc);
+    Communicator recv1_comm(config, recv1_part, recv1_queue, composer, packet_factory,
+                            buffer_factory, arena);
+    CHECK(recv1_comm.is_valid());
+
+    packet::Queue recv2_queue;
+    MockParticipant recv2_part(Recv2Cname, Recv2Ssrc);
+    Communicator recv2_comm(config, recv2_part, recv2_queue, composer, packet_factory,
+                            buffer_factory, arena);
+    CHECK(recv2_comm.is_valid());
+
+    core::nanoseconds_t send_time = 10000000000000000;
+    core::nanoseconds_t recv1_time = 30000000000000000;
+    core::nanoseconds_t recv2_time = 60000000000000000;
+
+    packet::PacketPtr pp;
+
+    // Generate sender report
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
+    CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
+    CHECK_EQUAL(1, send_queue.size());
+
+    // Expect single report to configured address
+    // Since receivers were not discovered yet, their SSRCs should
+    // not be present
+    pp = read_packet(send_queue);
+    expect_has_dst_address(pp, send_dest_addr);
+    expect_has_ssrc(pp, SendSsrc, true);
+    expect_has_ssrc(pp, Recv1Ssrc, false);
+    expect_has_ssrc(pp, Recv2Ssrc, false);
+
+    advance_time(send_time);
+    advance_time(recv1_time);
+    advance_time(recv2_time);
+
+    // Generate receiver 1 report
+    recv1_part.set_recv_report(
+        0, make_recv_report(recv1_time, Recv1Cname, Recv1Ssrc, SendSsrc, Seed));
+    CHECK_EQUAL(status::StatusOK, recv1_comm.generate_reports(recv1_time));
+    CHECK_EQUAL(1, recv1_queue.size());
+
+    // Deliver receiver 1 report to sender
+    pp = read_packet(recv1_queue);
+    set_src_address(pp, recv1_addr);
+    CHECK_EQUAL(status::StatusOK, send_comm.process_packet(pp, send_time));
+    CHECK_EQUAL(1, send_comm.num_streams());
+
+    // Check notifications on sender
+    CHECK_EQUAL(1, send_part.pending_notifications());
+    expect_recv_report(send_part.next_recv_notification(), recv1_time, Recv1Cname,
+                       Recv1Ssrc, SendSsrc, Seed);
+
+    advance_time(send_time);
+    advance_time(recv1_time);
+    advance_time(recv2_time);
+
+    // Generate sender report
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
+    CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
+    CHECK_EQUAL(1, send_queue.size());
+
+    // Expect single report to configured address
+    // SSRC of one receiver should be present
+    pp = read_packet(send_queue);
+    expect_has_dst_address(pp, send_dest_addr);
+    expect_has_ssrc(pp, SendSsrc, true);
+    expect_has_ssrc(pp, Recv1Ssrc, true);
+    expect_has_ssrc(pp, Recv2Ssrc, false);
+
+    advance_time(send_time);
+    advance_time(recv1_time);
+    advance_time(recv2_time);
+
+    // Generate receiver 2 report
+    recv2_part.set_recv_report(
+        0, make_recv_report(recv2_time, Recv2Cname, Recv2Ssrc, SendSsrc, Seed));
+    CHECK_EQUAL(status::StatusOK, recv2_comm.generate_reports(recv2_time));
+    CHECK_EQUAL(1, recv2_queue.size());
+
+    // Deliver receiver 2 report to sender
+    pp = read_packet(recv2_queue);
+    set_src_address(pp, recv2_addr);
+    CHECK_EQUAL(status::StatusOK, send_comm.process_packet(pp, send_time));
+    CHECK_EQUAL(2, send_comm.num_streams());
+
+    // Check notifications on sender
+    CHECK_EQUAL(1, send_part.pending_notifications());
+    expect_recv_report(send_part.next_recv_notification(), recv2_time, Recv2Cname,
+                       Recv2Ssrc, SendSsrc, Seed);
+
+    advance_time(send_time);
+    advance_time(recv1_time);
+    advance_time(recv2_time);
+
+    // Generate sender report
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
+    CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
+    CHECK_EQUAL(1, send_queue.size());
+
+    // Expect single report to configured address
+    // SSRC of both receivers should be present
+    pp = read_packet(send_queue);
+    expect_has_dst_address(pp, send_dest_addr);
+    expect_has_ssrc(pp, SendSsrc, true);
+    expect_has_ssrc(pp, Recv1Ssrc, true);
+    expect_has_ssrc(pp, Recv2Ssrc, true);
+}
+
+// Tell receiver to use specific destination report address
+TEST(communicator, report_address_receiver) {
+    enum { RecvSsrc = 11, Send1Ssrc = 22, Send2Ssrc = 33, Seed = 100 };
+
+    const char* RecvCname = "recv_cname";
+
+    const address::SocketAddr recv_dest_addr = make_address(111);
+
+    Config config;
+
+    packet::Queue recv_queue;
+    MockParticipant recv_part(RecvCname, RecvSsrc);
+    recv_part.set_report_address(recv_dest_addr);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
+                           buffer_factory, arena);
+    CHECK(recv_comm.is_valid());
+
+    core::nanoseconds_t recv_time = 10000000000000000;
+
+    packet::PacketPtr pp;
+
+    // Generate receiver report
+    recv_part.set_recv_report(
+        0, make_recv_report(recv_time, RecvCname, RecvSsrc, Send1Ssrc, Seed));
+    recv_part.set_recv_report(
+        1, make_recv_report(recv_time, RecvCname, RecvSsrc, Send2Ssrc, Seed));
+    CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
+    CHECK_EQUAL(2, recv_comm.num_streams());
+    CHECK_EQUAL(1, recv_queue.size());
+
+    // Expect single report to configured address
+    // SSRC of both senders should be present
+    pp = read_packet(recv_queue);
+    expect_has_dst_address(pp, recv_dest_addr);
+    expect_has_ssrc(pp, RecvSsrc, true);
+    expect_has_ssrc(pp, Send1Ssrc, true);
+    expect_has_ssrc(pp, Send2Ssrc, true);
+}
+
+// Tell sender to deliver reports back to each participant, instead
+// of using single destination address for all reports
+TEST(communicator, report_back_sender) {
+    enum { SendSsrc = 11, Recv1Ssrc = 22, Recv2Ssrc = 33, Seed = 100 };
+
+    const char* SendCname = "send_cname";
+    const char* Recv1Cname = "recv1_cname";
+    const char* Recv2Cname = "recv2_cname";
+
+    const address::SocketAddr recv1_addr = make_address(111);
+    const address::SocketAddr recv2_addr = make_address(222);
+
+    Config config;
+
+    packet::Queue send_queue;
+    MockParticipant send_part(SendCname, SendSsrc);
+    send_part.set_report_back(true);
+    Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
+                           buffer_factory, arena);
+    CHECK(send_comm.is_valid());
+
+    packet::Queue recv1_queue;
+    MockParticipant recv1_part(Recv1Cname, Recv1Ssrc);
+    Communicator recv1_comm(config, recv1_part, recv1_queue, composer, packet_factory,
+                            buffer_factory, arena);
+    CHECK(recv1_comm.is_valid());
+
+    packet::Queue recv2_queue;
+    MockParticipant recv2_part(Recv2Cname, Recv2Ssrc);
+    Communicator recv2_comm(config, recv2_part, recv2_queue, composer, packet_factory,
+                            buffer_factory, arena);
+    CHECK(recv2_comm.is_valid());
+
+    core::nanoseconds_t send_time = 10000000000000000;
+    core::nanoseconds_t recv1_time = 30000000000000000;
+    core::nanoseconds_t recv2_time = 60000000000000000;
+
+    packet::PacketPtr pp;
+
+    // Generate sender report
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
+    CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
+
+    // Expect no reports generated because no reports were received yet
+    CHECK_EQUAL(0, send_queue.size());
+
+    advance_time(send_time);
+    advance_time(recv1_time);
+    advance_time(recv2_time);
+
+    // Generate receiver 1 report
+    recv1_part.set_recv_report(
+        0, make_recv_report(recv1_time, Recv1Cname, Recv1Ssrc, SendSsrc, Seed));
+    CHECK_EQUAL(status::StatusOK, recv1_comm.generate_reports(recv1_time));
+    CHECK_EQUAL(1, recv1_queue.size());
+
+    // Deliver receiver 1 report to sender
+    pp = read_packet(recv1_queue);
+    set_src_address(pp, recv1_addr);
+    CHECK_EQUAL(status::StatusOK, send_comm.process_packet(pp, send_time));
+    CHECK_EQUAL(1, send_comm.num_streams());
+
+    // Check notifications on sender
+    CHECK_EQUAL(1, send_part.pending_notifications());
+    expect_recv_report(send_part.next_recv_notification(), recv1_time, Recv1Cname,
+                       Recv1Ssrc, SendSsrc, Seed);
+
+    advance_time(send_time);
+    advance_time(recv1_time);
+    advance_time(recv2_time);
+
+    // Generate sender report
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
+    CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
+
+    // Expect one report to receiver 1
+    CHECK_EQUAL(1, send_queue.size());
+    pp = read_packet(send_queue);
+    expect_has_dst_address(pp, recv1_addr);
+    expect_has_ssrc(pp, SendSsrc, true);
+    expect_has_ssrc(pp, Recv1Ssrc, true);
+    expect_has_ssrc(pp, Recv2Ssrc, false);
+
+    advance_time(send_time);
+    advance_time(recv1_time);
+    advance_time(recv2_time);
+
+    // Generate receiver 2 report
+    recv2_part.set_recv_report(
+        0, make_recv_report(recv2_time, Recv2Cname, Recv2Ssrc, SendSsrc, Seed));
+    CHECK_EQUAL(status::StatusOK, recv2_comm.generate_reports(recv2_time));
+    CHECK_EQUAL(1, recv2_queue.size());
+
+    // Deliver receiver 2 report to sender
+    pp = read_packet(recv2_queue);
+    set_src_address(pp, recv2_addr);
+    CHECK_EQUAL(status::StatusOK, send_comm.process_packet(pp, send_time));
+    CHECK_EQUAL(2, send_comm.num_streams());
+
+    // Check notifications on sender
+    CHECK_EQUAL(1, send_part.pending_notifications());
+    expect_recv_report(send_part.next_recv_notification(), recv2_time, Recv2Cname,
+                       Recv2Ssrc, SendSsrc, Seed);
+
+    advance_time(send_time);
+    advance_time(recv1_time);
+    advance_time(recv2_time);
+
+    // Generate sender report
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
+    CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
+
+    // Expect two reports: to receiver 1 and to receiver 2
+    CHECK_EQUAL(2, send_queue.size());
+
+    pp = read_packet(send_queue);
+    expect_has_dst_address(pp, recv1_addr);
+    expect_has_ssrc(pp, SendSsrc, true);
+    expect_has_ssrc(pp, Recv1Ssrc, true);
+    expect_has_ssrc(pp, Recv2Ssrc, false);
+
+    pp = read_packet(send_queue);
+    expect_has_dst_address(pp, recv2_addr);
+    expect_has_ssrc(pp, SendSsrc, true);
+    expect_has_ssrc(pp, Recv1Ssrc, false);
+    expect_has_ssrc(pp, Recv2Ssrc, true);
+}
+
+// Tell receiver to deliver reports back to each participant, instead
+// of using single destination address for all reports
+TEST(communicator, report_back_receiver) {
+    enum { RecvSsrc = 11, Send1Ssrc = 22, Send2Ssrc = 33, Seed = 100 };
+
+    const char* RecvCname = "recv_cname";
+    const char* Send1Cname = "send1_cname";
+    const char* Send2Cname = "send2_cname";
+
+    const address::SocketAddr send1_addr = make_address(111);
+    const address::SocketAddr send2_addr = make_address(222);
+
+    Config config;
+
+    packet::Queue recv_queue;
+    MockParticipant recv_part(RecvCname, RecvSsrc);
+    recv_part.set_report_back(true);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
+                           buffer_factory, arena);
+    CHECK(recv_comm.is_valid());
+
+    packet::Queue send1_queue;
+    MockParticipant send1_part(Send1Cname, Send1Ssrc);
+    Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
+                            buffer_factory, arena);
+    CHECK(send1_comm.is_valid());
+
+    packet::Queue send2_queue;
+    MockParticipant send2_part(Send2Cname, Send2Ssrc);
+    Communicator send2_comm(config, send2_part, send2_queue, composer, packet_factory,
+                            buffer_factory, arena);
+    CHECK(send2_comm.is_valid());
+
+    core::nanoseconds_t recv_time = 10000000000000000;
+    core::nanoseconds_t send1_time = 30000000000000000;
+    core::nanoseconds_t send2_time = 60000000000000000;
+
+    packet::PacketPtr pp;
+
+    // Generate receiver report
+    recv_part.set_recv_report(
+        0, make_recv_report(recv_time, RecvCname, RecvSsrc, Send1Ssrc, Seed));
+    recv_part.set_recv_report(
+        1, make_recv_report(recv_time, RecvCname, RecvSsrc, Send2Ssrc, Seed));
+    CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
+    CHECK_EQUAL(2, recv_comm.num_streams());
+
+    // Expect no reports generated because no reports were received yet
+    CHECK_EQUAL(0, recv_queue.size());
+
+    advance_time(recv_time);
+    advance_time(send1_time);
+    advance_time(send2_time);
+
+    // Generate sender 1 report
+    send1_part.set_send_report(make_send_report(send1_time, Send1Cname, Send1Ssrc, Seed));
+    CHECK_EQUAL(status::StatusOK, send1_comm.generate_reports(send1_time));
+    CHECK_EQUAL(1, send1_queue.size());
+
+    // Deliver sender 1 report to receiver
+    pp = read_packet(send1_queue);
+    set_src_address(pp, send1_addr);
+    CHECK_EQUAL(status::StatusOK, recv_comm.process_packet(pp, recv_time));
+    CHECK_EQUAL(2, recv_comm.num_streams());
+
+    // Check notifications on receiver
+    CHECK_EQUAL(1, recv_part.pending_notifications());
+    expect_send_report(recv_part.next_send_notification(), send1_time, Send1Cname,
+                       Send1Ssrc, Seed);
+
+    advance_time(recv_time);
+    advance_time(send1_time);
+    advance_time(send2_time);
+
+    // Generate receiver report
+    recv_part.set_recv_report(
+        0, make_recv_report(recv_time, RecvCname, RecvSsrc, Send1Ssrc, Seed));
+    recv_part.set_recv_report(
+        1, make_recv_report(recv_time, RecvCname, RecvSsrc, Send2Ssrc, Seed));
+    CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
+    CHECK_EQUAL(2, recv_comm.num_streams());
+
+    // Expect one report to sender 1
+    CHECK_EQUAL(1, recv_queue.size());
+    pp = read_packet(recv_queue);
+    expect_has_dst_address(pp, send1_addr);
+    expect_has_ssrc(pp, RecvSsrc, true);
+    expect_has_ssrc(pp, Send1Ssrc, true);
+    expect_has_ssrc(pp, Send2Ssrc, false);
+
+    advance_time(recv_time);
+    advance_time(send1_time);
+    advance_time(send2_time);
+
+    // Generate sender 2 report
+    send2_part.set_send_report(make_send_report(send2_time, Send2Cname, Send2Ssrc, Seed));
+    CHECK_EQUAL(status::StatusOK, send2_comm.generate_reports(send2_time));
+    CHECK_EQUAL(1, send2_queue.size());
+
+    // Deliver sender 2 report to receiver
+    pp = read_packet(send2_queue);
+    set_src_address(pp, send2_addr);
+    CHECK_EQUAL(status::StatusOK, recv_comm.process_packet(pp, recv_time));
+    CHECK_EQUAL(2, recv_comm.num_streams());
+
+    // Check notifications on receiver
+    CHECK_EQUAL(1, recv_part.pending_notifications());
+    expect_send_report(recv_part.next_send_notification(), send2_time, Send2Cname,
+                       Send2Ssrc, Seed);
+
+    advance_time(recv_time);
+    advance_time(send1_time);
+    advance_time(send2_time);
+
+    // Generate receiver report
+    recv_part.set_recv_report(
+        0, make_recv_report(recv_time, RecvCname, RecvSsrc, Send1Ssrc, Seed));
+    recv_part.set_recv_report(
+        1, make_recv_report(recv_time, RecvCname, RecvSsrc, Send2Ssrc, Seed));
+    CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
+    CHECK_EQUAL(2, recv_comm.num_streams());
+
+    // Expect two reports: to sender 1 and to sender 2
+    CHECK_EQUAL(2, recv_queue.size());
+
+    pp = read_packet(recv_queue);
+    expect_has_dst_address(pp, send1_addr);
+    expect_has_ssrc(pp, RecvSsrc, true);
+    expect_has_ssrc(pp, Send1Ssrc, true);
+    expect_has_ssrc(pp, Send2Ssrc, false);
+
+    pp = read_packet(recv_queue);
+    expect_has_dst_address(pp, send2_addr);
+    expect_has_ssrc(pp, RecvSsrc, true);
+    expect_has_ssrc(pp, Send1Ssrc, false);
+    expect_has_ssrc(pp, Send2Ssrc, true);
+}
+
+// Same as above, but some participants have same address, so there should be
+// a single report for them
+TEST(communicator, report_back_combine_reports) {
+    enum { RecvSsrc = 11, Send1Ssrc = 22, Send2Ssrc = 33, Send3Ssrc = 44, Seed = 100 };
+
+    const char* RecvCname = "recv_cname";
+    const char* Send1Cname = "send1_cname";
+    const char* Send2Cname = "send2_cname";
+    const char* Send3Cname = "send3_cname";
+
+    const address::SocketAddr send1_addr = make_address(111);
+    const address::SocketAddr send2_addr = send1_addr;
+    const address::SocketAddr send3_addr = make_address(222);
+
+    Config config;
+
+    packet::Queue recv_queue;
+    MockParticipant recv_part(RecvCname, RecvSsrc);
+    recv_part.set_report_back(true);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
+                           buffer_factory, arena);
+    CHECK(recv_comm.is_valid());
+
+    packet::Queue send1_queue;
+    MockParticipant send1_part(Send1Cname, Send1Ssrc);
+    Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
+                            buffer_factory, arena);
+    CHECK(send1_comm.is_valid());
+
+    packet::Queue send2_queue;
+    MockParticipant send2_part(Send2Cname, Send2Ssrc);
+    Communicator send2_comm(config, send2_part, send2_queue, composer, packet_factory,
+                            buffer_factory, arena);
+    CHECK(send2_comm.is_valid());
+
+    packet::Queue send3_queue;
+    MockParticipant send3_part(Send3Cname, Send3Ssrc);
+    Communicator send3_comm(config, send3_part, send3_queue, composer, packet_factory,
+                            buffer_factory, arena);
+    CHECK(send3_comm.is_valid());
+
+    core::nanoseconds_t recv_time = 10000000000000000;
+    core::nanoseconds_t send1_time = 30000000000000000;
+    core::nanoseconds_t send2_time = 60000000000000000;
+    core::nanoseconds_t send3_time = 90000000000000000;
+
+    packet::PacketPtr pp;
+
+    // Generate sender 1 report
+    send1_part.set_send_report(make_send_report(send1_time, Send1Cname, Send1Ssrc, Seed));
+    CHECK_EQUAL(status::StatusOK, send1_comm.generate_reports(send1_time));
+    CHECK_EQUAL(1, send1_queue.size());
+
+    // Deliver sender 1 report to receiver
+    pp = read_packet(send1_queue);
+    set_src_address(pp, send1_addr);
+    CHECK_EQUAL(status::StatusOK, recv_comm.process_packet(pp, recv_time));
+    CHECK_EQUAL(1, recv_comm.num_streams());
+
+    // Check notifications on receiver
+    CHECK_EQUAL(1, recv_part.pending_notifications());
+    expect_send_report(recv_part.next_send_notification(), send1_time, Send1Cname,
+                       Send1Ssrc, Seed);
+
+    advance_time(recv_time);
+    advance_time(send1_time);
+    advance_time(send2_time);
+    advance_time(send3_time);
+
+    // Generate sender 2 report
+    send2_part.set_send_report(make_send_report(send2_time, Send2Cname, Send2Ssrc, Seed));
+    CHECK_EQUAL(status::StatusOK, send2_comm.generate_reports(send2_time));
+    CHECK_EQUAL(1, send2_queue.size());
+
+    // Deliver sender 2 report to receiver
+    pp = read_packet(send2_queue);
+    set_src_address(pp, send2_addr);
+    CHECK_EQUAL(status::StatusOK, recv_comm.process_packet(pp, recv_time));
+    CHECK_EQUAL(2, recv_comm.num_streams());
+
+    // Check notifications on receiver
+    CHECK_EQUAL(1, recv_part.pending_notifications());
+    expect_send_report(recv_part.next_send_notification(), send2_time, Send2Cname,
+                       Send2Ssrc, Seed);
+
+    advance_time(recv_time);
+    advance_time(send1_time);
+    advance_time(send2_time);
+    advance_time(send3_time);
+
+    // Generate sender 3 report
+    send3_part.set_send_report(make_send_report(send3_time, Send3Cname, Send3Ssrc, Seed));
+    CHECK_EQUAL(status::StatusOK, send3_comm.generate_reports(send3_time));
+    CHECK_EQUAL(1, send3_queue.size());
+
+    // Deliver sender 3 report to receiver
+    pp = read_packet(send3_queue);
+    set_src_address(pp, send3_addr);
+    CHECK_EQUAL(status::StatusOK, recv_comm.process_packet(pp, recv_time));
+    CHECK_EQUAL(3, recv_comm.num_streams());
+
+    // Check notifications on receiver
+    CHECK_EQUAL(1, recv_part.pending_notifications());
+    expect_send_report(recv_part.next_send_notification(), send3_time, Send3Cname,
+                       Send3Ssrc, Seed);
+
+    advance_time(recv_time);
+    advance_time(send1_time);
+    advance_time(send2_time);
+    advance_time(send3_time);
+
+    // Generate receiver report
+    recv_part.set_recv_report(
+        0, make_recv_report(recv_time, RecvCname, RecvSsrc, Send1Ssrc, Seed));
+    recv_part.set_recv_report(
+        1, make_recv_report(recv_time, RecvCname, RecvSsrc, Send2Ssrc, Seed));
+    recv_part.set_recv_report(
+        2, make_recv_report(recv_time, RecvCname, RecvSsrc, Send3Ssrc, Seed));
+    CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
+    CHECK_EQUAL(3, recv_comm.num_streams());
+
+    // Expect two reports: to sender 1 & 2 and to sender 3
+    CHECK_EQUAL(2, recv_queue.size());
+
+    pp = read_packet(recv_queue);
+    expect_has_dst_address(pp, send1_addr);
+    expect_has_ssrc(pp, RecvSsrc, true);
+    expect_has_ssrc(pp, Send1Ssrc, true);
+    expect_has_ssrc(pp, Send2Ssrc, true);
+    expect_has_ssrc(pp, Send3Ssrc, false);
+
+    pp = read_packet(recv_queue);
+    expect_has_dst_address(pp, send3_addr);
+    expect_has_ssrc(pp, RecvSsrc, true);
+    expect_has_ssrc(pp, Send1Ssrc, false);
+    expect_has_ssrc(pp, Send2Ssrc, false);
+    expect_has_ssrc(pp, Send3Ssrc, true);
+}
+
+// Same as above, but reports to same address are also split into multiple packets
+// because they're too big
+TEST(communicator, report_back_split_reports) {
+    enum {
+        LocalSsrc = 100,
+        NumGroups = 2,
+        PeersPerGroup = 12,
+        PacketsPerGroup = 2,
+        Seed = 100
+    };
+
+    const char* local_cname = "local_cname";
+
+    const packet::stream_source_t group_ssrc[NumGroups] = {
+        200,
+        300,
+    };
+
+    const address::SocketAddr group_addr[NumGroups] = {
+        make_address(111),
+        make_address(222),
+    };
+
+    Config config;
+    config.inactivity_timeout = core::Second * 999;
+
+    packet::Queue local_queue;
+    MockParticipant local_part(local_cname, LocalSsrc);
+    local_part.set_report_back(true);
+    Communicator local_comm(config, local_part, local_queue, composer, packet_factory,
+                            buffer_factory, arena);
+    CHECK(local_comm.is_valid());
+
+    core::nanoseconds_t local_time = 10000000000000000;
+    core::nanoseconds_t remote_time = 30000000000000000;
+
+    // Generate reports from two groups of peers to local peer
+    for (size_t n_grp = 0; n_grp < NumGroups; n_grp++) {
+        for (size_t n_peer = 0; n_peer < PeersPerGroup; n_peer++) {
+            advance_time(local_time);
+            advance_time(remote_time);
+
+            packet::stream_source_t remote_ssrc = group_ssrc[n_grp] + n_peer;
+            char remote_cname[64] = {};
+            snprintf(remote_cname, sizeof(remote_cname), "remote_cname%d",
+                     (int)remote_ssrc);
+
+            packet::Queue remote_queue;
+            MockParticipant remote_part(remote_cname, remote_ssrc);
+            Communicator remote_comm(config, remote_part, remote_queue, composer,
+                                     packet_factory, buffer_factory, arena);
+            CHECK(remote_comm.is_valid());
+
+            // Generate remote peer report
+            remote_part.set_send_report(
+                make_send_report(remote_time, remote_cname, remote_ssrc, Seed));
+            CHECK_EQUAL(status::StatusOK, remote_comm.generate_reports(remote_time));
+            CHECK_EQUAL(1, remote_queue.size());
+
+            // Deliver remote peer report to local peer
+            packet::PacketPtr pp = read_packet(remote_queue);
+            set_src_address(pp, group_addr[n_grp]);
+            CHECK_EQUAL(status::StatusOK, local_comm.process_packet(pp, local_time));
+
+            // Check notifications on local peer
+            CHECK_EQUAL(1, local_part.pending_notifications());
+            expect_send_report(local_part.next_send_notification(), remote_time,
+                               remote_cname, remote_ssrc, Seed);
+        }
+    }
+
+    advance_time(local_time);
+
+    // Generate local peer multi-packet multi-address report
+    for (size_t n_grp = 0; n_grp < NumGroups; n_grp++) {
+        for (size_t n_peer = 0; n_peer < PeersPerGroup; n_peer++) {
+            local_part.set_recv_report(
+                n_grp * PeersPerGroup + n_peer,
+                make_recv_report(local_time, local_cname, LocalSsrc,
+                                 group_ssrc[n_grp] + n_peer, Seed));
+        }
+    }
+
+    CHECK_EQUAL(status::StatusOK, local_comm.generate_reports(local_time));
+    CHECK_EQUAL(PeersPerGroup * NumGroups, local_comm.num_streams());
+    CHECK_EQUAL(PacketsPerGroup * NumGroups, local_queue.size());
+
+    // Check packets
+    for (size_t n_grp = 0; n_grp < NumGroups; n_grp++) {
+        for (size_t n_pkt = 0; n_pkt < PacketsPerGroup; n_pkt++) {
+            packet::PacketPtr pp = read_packet(local_queue);
+            expect_has_dst_address(pp, group_addr[n_grp]);
+            expect_has_ssrc(pp, LocalSsrc, true);
+
+            for (size_t n_peer = 0; n_peer < PeersPerGroup; n_peer++) {
+                const bool peer_present_in_pkt =
+                    n_pkt == n_peer / (PeersPerGroup / PacketsPerGroup);
+
+                expect_has_ssrc(pp, group_ssrc[n_grp] + n_peer, peer_present_in_pkt);
+            }
+
+            for (size_t other_grp = 0; other_grp < NumGroups; other_grp++) {
+                if (other_grp != n_grp) {
+                    for (size_t n_peer = 0; n_peer < PeersPerGroup; n_peer++) {
+                        expect_has_ssrc(pp, group_ssrc[other_grp] + n_peer, false);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -2488,8 +3309,8 @@ TEST(communicator, generation_error) {
     { // forward error from arena
         MockArena peer_arena;
         packet::Queue peer_queue;
-        MockController peer_ctl(Cname, Ssrc);
-        Communicator peer_comm(config, peer_ctl, peer_queue, composer, packet_factory,
+        MockParticipant peer_part(Cname, Ssrc);
+        Communicator peer_comm(config, peer_part, peer_queue, composer, packet_factory,
                                buffer_factory, peer_arena);
         CHECK(peer_comm.is_valid());
 
@@ -2497,11 +3318,11 @@ TEST(communicator, generation_error) {
 
         // Tell arena to fail
         peer_arena.set_fail(true);
-        peer_ctl.set_send_report(make_send_report(peer_time, Cname, Ssrc, Seed));
+        peer_part.set_send_report(make_send_report(peer_time, Cname, Ssrc, Seed));
         for (size_t idx = 0; idx < 50; idx++) {
-            // Tell stream controller to report 50 streams to
+            // Tell participant to report 50 streams to
             // force allocations from arena
-            peer_ctl.set_recv_report(
+            peer_part.set_recv_report(
                 idx, make_recv_report(peer_time, Cname, Ssrc, Ssrc, Seed));
         }
 
@@ -2511,30 +3332,30 @@ TEST(communicator, generation_error) {
     }
     { // forward error from writer
         MockWriter peer_writer(status::StatusNoData);
-        MockController peer_ctl(Cname, Ssrc);
-        Communicator peer_comm(config, peer_ctl, peer_writer, composer, packet_factory,
+        MockParticipant peer_part(Cname, Ssrc);
+        Communicator peer_comm(config, peer_part, peer_writer, composer, packet_factory,
                                buffer_factory, arena);
         CHECK(peer_comm.is_valid());
 
         core::nanoseconds_t peer_time = 10000000000000000;
 
-        peer_ctl.set_send_report(make_send_report(peer_time, Cname, Ssrc, Seed));
+        peer_part.set_send_report(make_send_report(peer_time, Cname, Ssrc, Seed));
         CHECK_EQUAL(status::StatusNoData, peer_comm.generate_reports(peer_time));
         CHECK_EQUAL(0, peer_comm.num_streams());
         CHECK_EQUAL(1, peer_writer.call_count());
     }
     { // buffer factory w/ small buffers
         packet::Queue peer_queue;
-        MockController peer_ctl(Cname, Ssrc);
+        MockParticipant peer_part(Cname, Ssrc);
         // factory creates 5-byte buffers
         core::BufferFactory<uint8_t> peer_factory(arena, 5);
-        Communicator peer_comm(config, peer_ctl, peer_queue, composer, packet_factory,
+        Communicator peer_comm(config, peer_part, peer_queue, composer, packet_factory,
                                peer_factory, arena);
         CHECK(peer_comm.is_valid());
 
         core::nanoseconds_t peer_time = 10000000000000000;
 
-        peer_ctl.set_send_report(make_send_report(peer_time, Cname, Ssrc, Seed));
+        peer_part.set_send_report(make_send_report(peer_time, Cname, Ssrc, Seed));
         CHECK_EQUAL(status::StatusNoSpace, peer_comm.generate_reports(peer_time));
         CHECK_EQUAL(0, peer_comm.num_streams());
         CHECK_EQUAL(0, peer_queue.size());
@@ -2551,8 +3372,8 @@ TEST(communicator, processing_error) {
 
     MockArena recv_arena;
     packet::Queue recv_queue;
-    MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
+    MockParticipant recv_part(RecvCname, RecvSsrc);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            buffer_factory, recv_arena);
     CHECK(recv_comm.is_valid());
 
@@ -2575,13 +3396,13 @@ TEST(communicator, processing_error) {
         advance_time(recv_time);
 
         packet::Queue send_queue;
-        MockController send_ctl(send_cname, send_ssrc);
-        Communicator send_comm(config, send_ctl, send_queue, composer, packet_factory,
+        MockParticipant send_part(send_cname, send_ssrc);
+        Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                                buffer_factory, arena);
         CHECK(send_comm.is_valid());
 
         // Generate sender report
-        send_ctl.set_send_report(
+        send_part.set_send_report(
             make_send_report(send_time, send_cname, send_ssrc, Seed));
         CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
         CHECK_EQUAL(0, send_comm.num_streams());
@@ -2594,8 +3415,8 @@ TEST(communicator, processing_error) {
         if (status == status::StatusOK) {
             // Check notifications on receiver
             CHECK_EQUAL(n_reports, recv_comm.num_streams());
-            CHECK_EQUAL(1, recv_ctl.pending_notifications());
-            expect_send_report(recv_ctl.next_send_notification(), send_time, send_cname,
+            CHECK_EQUAL(1, recv_part.pending_notifications());
+            expect_send_report(recv_part.next_send_notification(), send_time, send_cname,
                                send_ssrc, Seed);
 
             // Repeat until failure.
@@ -2606,7 +3427,7 @@ TEST(communicator, processing_error) {
             // Finally allocation failed and reported.
             CHECK_EQUAL(status::StatusNoMem, status);
             CHECK_EQUAL(n_reports - 1, recv_comm.num_streams());
-            CHECK_EQUAL(0, recv_ctl.pending_notifications());
+            CHECK_EQUAL(0, recv_part.pending_notifications());
             break;
         }
     }
@@ -2621,14 +3442,14 @@ TEST(communicator, notification_error) {
     Config config;
 
     packet::Queue send_queue;
-    MockController send_ctl(SendCname, SendSsrc);
-    Communicator send_comm(config, send_ctl, send_queue, composer, packet_factory,
+    MockParticipant send_part(SendCname, SendSsrc);
+    Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv_queue;
-    MockController recv_ctl(RecvCname, RecvSsrc);
-    Communicator recv_comm(config, recv_ctl, recv_queue, composer, packet_factory,
+    MockParticipant recv_part(RecvCname, RecvSsrc);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            buffer_factory, arena);
     CHECK(recv_comm.is_valid());
 
@@ -2636,13 +3457,13 @@ TEST(communicator, notification_error) {
     core::nanoseconds_t recv_time = 30000000000000000;
 
     // Generate sender report
-    send_ctl.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
     CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
     CHECK_EQUAL(0, send_comm.num_streams());
     CHECK_EQUAL(1, send_queue.size());
 
     // Tell receiver to return error from notification handler
-    recv_ctl.set_status(status::StatusNoData);
+    recv_part.set_status(status::StatusNoData);
 
     // Deliver sender report to receiver
     CHECK_EQUAL(status::StatusNoData,
@@ -2650,7 +3471,7 @@ TEST(communicator, notification_error) {
     CHECK_EQUAL(1, recv_comm.num_streams());
 
     // Check notifications on receiver
-    CHECK_EQUAL(0, recv_ctl.pending_notifications());
+    CHECK_EQUAL(0, recv_part.pending_notifications());
 }
 
 } // namespace rtcp

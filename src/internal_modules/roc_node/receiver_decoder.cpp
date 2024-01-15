@@ -94,7 +94,7 @@ bool ReceiverDecoder::activate(address::Interface iface, address::Protocol proto
         packet::ConcurrentQueue::NonBlocking));
 
     pipeline::ReceiverLoop::Tasks::AddEndpoint endpoint_task(
-        slot_, iface, proto, &dest_address_, endpoint_queues_[iface].get());
+        slot_, iface, proto, endpoint_queues_[iface].get());
     if (!pipeline_.schedule_and_wait(endpoint_task)) {
         roc_log(LogError,
                 "receiver decoder node:"

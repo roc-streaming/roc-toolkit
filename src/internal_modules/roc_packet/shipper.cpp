@@ -11,18 +11,28 @@
 namespace roc {
 namespace packet {
 
-Shipper::Shipper(const address::SocketAddr& outbound_address,
+Shipper::Shipper(IComposer& composer,
                  IWriter& outbound_writer,
-                 IComposer& composer)
-    : outbound_address_(outbound_address)
-    , outbound_writer_(outbound_writer)
-    , composer_(composer) {
+                 const address::SocketAddr* outbound_address)
+    : composer_(composer)
+    , outbound_writer_(outbound_writer) {
+    if (outbound_address) {
+        outbound_address_ = *outbound_address;
+    }
+}
+
+const address::SocketAddr& Shipper::outbound_address() const {
+    return outbound_address_;
 }
 
 status::StatusCode Shipper::write(const PacketPtr& packet) {
     if (outbound_address_) {
-        packet->add_flags(Packet::FlagUDP);
-        packet->udp()->dst_addr = outbound_address_;
+        if (!packet->has_flags(Packet::FlagUDP)) {
+            packet->add_flags(Packet::FlagUDP);
+        }
+        if (!packet->udp()->dst_addr) {
+            packet->udp()->dst_addr = outbound_address_;
+        }
     }
 
     if (!packet->has_flags(packet::Packet::FlagPrepared)) {
