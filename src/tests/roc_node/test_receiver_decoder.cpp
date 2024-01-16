@@ -43,8 +43,8 @@ TEST(receiver_decoder, source) {
     ReceiverDecoder receiver_decoder(context, receiver_config);
     CHECK(receiver_decoder.is_valid());
 
-    UNSIGNED_LONGS_EQUAL(receiver_decoder.source().sample_spec().sample_rate(),
-                         receiver_config.common.output_sample_spec.sample_rate());
+    CHECK_EQUAL(receiver_decoder.source().sample_spec().sample_rate(),
+                receiver_config.common.output_sample_spec.sample_rate());
 }
 
 TEST(receiver_decoder, write) {
@@ -56,10 +56,10 @@ TEST(receiver_decoder, write) {
 
     packet::PacketPtr pp = packet_factory.new_packet();
 
-    UNSIGNED_LONGS_EQUAL(status::StatusUnknown,
-                         receiver_decoder.write(address::Iface_AudioSource, pp));
-    UNSIGNED_LONGS_EQUAL(status::StatusUnknown,
-                         receiver_decoder.write(address::Iface_AudioRepair, pp));
+    CHECK_EQUAL(status::StatusUnknown,
+                receiver_decoder.write(address::Iface_AudioSource, pp));
+    CHECK_EQUAL(status::StatusUnknown,
+                receiver_decoder.write(address::Iface_AudioRepair, pp));
 }
 
 TEST(receiver_decoder, activate_no_fec) {
@@ -107,8 +107,8 @@ TEST(receiver_decoder, metrics) {
     CHECK(receiver_decoder.get_metrics(slot_metrics, handle_sess_metrics,
                                        &sess_metrics_size, sess_metrics));
 
-    UNSIGNED_LONGS_EQUAL(0, slot_metrics.num_sessions);
-    UNSIGNED_LONGS_EQUAL(0, sess_metrics_size);
+    CHECK_EQUAL(0, slot_metrics.num_sessions);
+    CHECK_EQUAL(0, sess_metrics_size);
 
     CHECK(receiver_decoder.activate(address::Iface_AudioSource, address::Proto_RTP));
 
@@ -116,8 +116,8 @@ TEST(receiver_decoder, metrics) {
     CHECK(receiver_decoder.get_metrics(slot_metrics, handle_sess_metrics,
                                        &sess_metrics_size, sess_metrics));
 
-    UNSIGNED_LONGS_EQUAL(0, slot_metrics.num_sessions);
-    UNSIGNED_LONGS_EQUAL(0, sess_metrics_size);
+    CHECK_EQUAL(0, slot_metrics.num_sessions);
+    CHECK_EQUAL(0, sess_metrics_size);
 }
 
 } // namespace node

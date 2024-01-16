@@ -37,8 +37,8 @@ TEST(sender_encoder, sink) {
     SenderEncoder sender_encoder(context, sender_config);
     CHECK(sender_encoder.is_valid());
 
-    UNSIGNED_LONGS_EQUAL(sender_encoder.sink().sample_spec().sample_rate(),
-                         sender_config.input_sample_spec.sample_rate());
+    CHECK_EQUAL(sender_encoder.sink().sample_spec().sample_rate(),
+                sender_config.input_sample_spec.sample_rate());
 }
 
 TEST(sender_encoder, read) {
@@ -51,10 +51,10 @@ TEST(sender_encoder, read) {
     packet::PacketPtr pp;
 
     // TODO(gh-183): compare with StatusNotFound
-    UNSIGNED_LONGS_EQUAL(status::StatusNoData,
-                         sender_encoder.read(address::Iface_AudioSource, pp));
-    UNSIGNED_LONGS_EQUAL(status::StatusNoData,
-                         sender_encoder.read(address::Iface_AudioRepair, pp));
+    CHECK_EQUAL(status::StatusNoData,
+                sender_encoder.read(address::Iface_AudioSource, pp));
+    CHECK_EQUAL(status::StatusNoData,
+                sender_encoder.read(address::Iface_AudioRepair, pp));
 }
 
 TEST(sender_encoder, activate_no_fec) {
