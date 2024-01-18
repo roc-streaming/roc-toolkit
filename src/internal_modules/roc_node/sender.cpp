@@ -8,7 +8,6 @@
 
 #include "roc_node/sender.h"
 #include "roc_address/endpoint_uri_to_str.h"
-#include "roc_address/socket_addr.h"
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
@@ -442,7 +441,8 @@ Sender::Port& Sender::select_outgoing_port_(Slot& slot,
     // standard nor universal, but in many cases it allows us to work even without
     // protocols like RTCP or RTSP.
     const bool share_interface_ports =
-        (iface == address::Iface_AudioSource || iface == address::Iface_AudioRepair);
+        (iface == address::Iface_AudioSource || iface == address::Iface_AudioRepair
+         || iface == address::Iface_AudioControl);
 
     if (share_interface_ports && !slot.ports[iface].handle) {
         for (size_t i = 0; i < address::Iface_Max; i++) {
