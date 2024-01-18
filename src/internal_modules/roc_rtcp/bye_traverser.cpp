@@ -40,7 +40,7 @@ bool ByeTraverser::parse() {
     }
 
     ssrc_count_ = bye->header().counter();
-    if (ssrc_count_ > header::PacketMaxBlocks) {
+    if (ssrc_count_ > header::MaxPacketBlocks) {
         return false;
     }
 

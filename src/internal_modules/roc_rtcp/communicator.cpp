@@ -41,7 +41,7 @@ Communicator::Communicator(const Config& config,
     , next_deadline_(0)
     , max_dest_addrs_(0)
     , cur_dest_addr_(0)
-    , max_pkt_blocks_(0)
+    , max_pkt_blocks_(header::MaxPacketBlocks)
     , cur_pkt_block_(0)
     , srrr_index_(0)
     , srrr_max_(0)
@@ -642,8 +642,7 @@ void Communicator::generate_standard_report_(Builder& bld) {
 
         // If we're also receiving, add reception reports to SR.
         if (reporter_.is_receiving()) {
-            for (; srrr_index_ < srrr_max_
-                 && (cur_pkt_block_ < max_pkt_blocks_ || max_pkt_blocks_ == 0);
+            for (; srrr_index_ < srrr_max_ && cur_pkt_block_ < max_pkt_blocks_;
                  srrr_index_++, cur_pkt_block_++) {
                 header::ReceptionReportBlock blk;
                 reporter_.generate_reception_block(cur_dest_addr_, srrr_index_, blk);
@@ -664,8 +663,7 @@ void Communicator::generate_standard_report_(Builder& bld) {
         // If there are no actual receiving streams, keep RR empty,
         // as specified in RFC 3550.
         if (reporter_.is_receiving()) {
-            for (; srrr_index_ < srrr_max_
-                 && (cur_pkt_block_ < max_pkt_blocks_ || max_pkt_blocks_ == 0);
+            for (; srrr_index_ < srrr_max_ && cur_pkt_block_ < max_pkt_blocks_;
                  srrr_index_++, cur_pkt_block_++) {
                 header::ReceptionReportBlock blk;
                 reporter_.generate_reception_block(cur_dest_addr_, srrr_index_, blk);
@@ -691,8 +689,7 @@ void Communicator::generate_extended_report_(Builder& bld) {
 
             bld.begin_xr_dlrr(dlrr);
 
-            for (; dlrr_index_ < dlrr_max_
-                 && (cur_pkt_block_ < max_pkt_blocks_ || max_pkt_blocks_ == 0);
+            for (; dlrr_index_ < dlrr_max_ && cur_pkt_block_ < max_pkt_blocks_;
                  dlrr_index_++, cur_pkt_block_++) {
                 header::XrDlrrSubblock blk;
                 reporter_.generate_dlrr_subblock(cur_dest_addr_, dlrr_index_, blk);

@@ -16,6 +16,7 @@
 #include "roc_core/endian.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
+#include "roc_core/time.h"
 #include "roc_packet/ntp.h"
 #include "roc_packet/units.h"
 
@@ -69,6 +70,29 @@ Blk& get_block_by_index(Pkt* pkt,
     return ((Blk*)(const_cast<char*>((const char*)pkt) + sizeof(*pkt)))[block_index];
 }
 
+//! Restore full 64-bit NTP timestamp from middle 32 bits.
+//! @param value is middle 32 bits of timestamp to be restored.
+//! @param base is full 64 bit timestamp that was recently obtained from same source.
+//! The function will combine high 16 bits of base with value.
+//! It will also detect possible wrap and apply correction if needed.
+inline packet::ntp_timestamp_t extend_timestamp(packet::ntp_timestamp_t base,
+                                                packet::ntp_timestamp_t value) {
+    roc_panic_if_msg(value & 0xFFFF00000000FFFF, "value should have only middle 32 bits");
+
+    // value extended with high 16 bits from base
+    const packet::ntp_timestamp_t extended_value = (base & 0xFFFF000000000000) | value;
+    // another candidate: same, but assuming that it wrapped arround before
+    // truncating high 16 bits
+    const packet::ntp_timestamp_t wrapped_value = extended_value + 0x0001000000000000;
+
+    // choose candidate that is closer to base
+    if (std::abs(int64_t(extended_value - base))
+        <= std::abs(int64_t(wrapped_value - base))) {
+        return extended_value;
+    }
+    return wrapped_value;
+}
+
 //! RTP protocol version.
 enum Version {
     V2 = 2 //!< RTP version 2.
@@ -85,7 +109,13 @@ enum PacketType {
 };
 
 //! Maximum number of inner blocks/chunks in RTCP packet.
-static const size_t PacketMaxBlocks = 31;
+static const size_t MaxPacketBlocks = 31;
+
+//! Maximum allowed SDES/BYE text length.
+static const size_t MaxTextLen = 255;
+
+//! Maximum allowed DLSR/DLRR value.
+static const packet::ntp_timestamp_t MaxDelay = 0x0000FFFFFFFFFFFF;
 
 //! Helper to store 64-bit ntp timestamp in a common way among RTCP.
 //!
@@ -200,7 +230,7 @@ public:
 
     //! Set number of blocks/chunks.
     void set_counter(const size_t c) {
-        roc_panic_if(c > PacketMaxBlocks);
+        roc_panic_if(c > MaxPacketBlocks);
         set_bitfield<uint8_t>(count_, (uint8_t)c, Flag_CounterShift, Flag_CounterMask);
     }
 
@@ -436,12 +466,16 @@ public:
 
     //! Get DLSR.
     packet::ntp_timestamp_t delay_last_sr() const {
-        return core::ntoh32u(delay_last_sr_);
+        packet::ntp_timestamp_t x = core::ntoh32u(delay_last_sr_);
+        x <<= 16;
+        return x;
     }
 
     //! Set DLSR.
-    //! Stores only the low 32 bits out of 64 in the NTP timestamp.
+    //! Stores only the middle 32 bits out of 64 in the NTP timestamp.
     void set_delay_last_sr(packet::ntp_timestamp_t x) {
+        roc_panic_if(x > MaxDelay);
+        x >>= 16;
         x &= 0xffffffff;
         delay_last_sr_ = core::hton32u((uint32_t)x);
     }
@@ -743,9 +777,6 @@ private:
     uint8_t len_;
 
 public:
-    //! Get maximum allowed item text length.
-    static const size_t MaxTextLen = 255;
-
     SdesItemHeader() {
         reset();
     }
@@ -894,9 +925,6 @@ private:
     uint8_t len_;
 
 public:
-    //! Get maximum allowed reason text length.
-    static const size_t MaxTextLen = 255;
-
     ByeReasonHeader() {
         reset();
     }
@@ -1216,12 +1244,16 @@ public:
 
     //! Get DLRR.
     packet::ntp_timestamp_t delay_last_rr() const {
-        return core::ntoh32u(delay_last_rr_);
+        packet::ntp_timestamp_t x = core::ntoh32u(delay_last_rr_);
+        x <<= 16;
+        return x;
     }
 
     //! Set DLRR.
-    //! Stores only the low 32 bits out of 64 in the NTP timestamp.
+    //! Stores only the middle 32 bits out of 64 in the NTP timestamp.
     void set_delay_last_rr(packet::ntp_timestamp_t x) {
+        roc_panic_if(x > MaxDelay);
+        x >>= 16;
         x &= 0xffffffff;
         delay_last_rr_ = core::hton32u((uint32_t)x);
     }

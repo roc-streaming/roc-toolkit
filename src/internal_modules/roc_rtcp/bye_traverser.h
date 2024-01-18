@@ -68,7 +68,7 @@ public:
         bool error_;
 
         packet::stream_source_t parsed_ssrc_;
-        char parsed_reason_[header::ByeReasonHeader::MaxTextLen + 1];
+        char parsed_reason_[header::MaxTextLen + 1];
     };
 
     //! Initialize traverser.

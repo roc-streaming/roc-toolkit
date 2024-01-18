@@ -70,7 +70,7 @@ public:
 
         packet::stream_source_t parsed_ssrc_;
         header::SdesItemType parsed_item_type_;
-        char parsed_item_text_[header::SdesItemHeader::MaxTextLen + 1];
+        char parsed_item_text_[header::MaxTextLen + 1];
     };
 
     //! Initialize traverser.

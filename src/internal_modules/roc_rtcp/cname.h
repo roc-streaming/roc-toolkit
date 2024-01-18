@@ -18,6 +18,9 @@
 namespace roc {
 namespace rtcp {
 
+//! Maximum allowed CNAME length.
+static const size_t MaxCnameLen = header::MaxTextLen;
+
 //! Get printable representation of CNAME.
 class cname_to_str : public core::NonCopyable<> {
 public:
@@ -30,7 +33,7 @@ public:
     }
 
 private:
-    char buffer_[header::SdesItemHeader::MaxTextLen * 3 + 4];
+    char buffer_[MaxCnameLen * 3 + 4];
 };
 
 } // namespace rtcp

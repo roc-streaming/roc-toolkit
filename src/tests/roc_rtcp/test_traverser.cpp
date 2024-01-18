@@ -354,8 +354,8 @@ TEST(traverser, sr_fields) {
         blk1.set_cum_loss(13);
         blk1.set_last_seqnum(14);
         blk1.set_jitter(15);
-        blk1.set_last_sr(1048576);
-        blk1.set_delay_last_sr(17);
+        blk1.set_last_sr(0x100000);
+        blk1.set_delay_last_sr(0x200000);
 
         header::ReceptionReportBlock blk2;
         blk2.set_ssrc(20);
@@ -363,8 +363,8 @@ TEST(traverser, sr_fields) {
         blk2.set_cum_loss(23);
         blk2.set_last_seqnum(24);
         blk2.set_jitter(25);
-        blk2.set_last_sr(1073741824);
-        blk2.set_delay_last_sr(27);
+        blk2.set_last_sr(0x300000);
+        blk2.set_delay_last_sr(0x400000);
 
         append_buffer(buff, &sr, sizeof(sr));
         append_buffer(buff, &blk1, sizeof(blk1));
@@ -390,16 +390,16 @@ TEST(traverser, sr_fields) {
     CHECK_EQUAL(13, it.get_sr().get_block(0).cum_loss());
     CHECK_EQUAL(14, it.get_sr().get_block(0).last_seqnum());
     CHECK_EQUAL(15, it.get_sr().get_block(0).jitter());
-    CHECK_EQUAL(1048576, it.get_sr().get_block(0).last_sr());
-    CHECK_EQUAL(17, it.get_sr().get_block(0).delay_last_sr());
+    CHECK_EQUAL(0x100000, it.get_sr().get_block(0).last_sr());
+    CHECK_EQUAL(0x200000, it.get_sr().get_block(0).delay_last_sr());
 
     CHECK_EQUAL(20, it.get_sr().get_block(1).ssrc());
     DOUBLES_EQUAL(0.75, it.get_sr().get_block(1).fract_loss(), 1e-8);
     CHECK_EQUAL(23, it.get_sr().get_block(1).cum_loss());
     CHECK_EQUAL(24, it.get_sr().get_block(1).last_seqnum());
     CHECK_EQUAL(25, it.get_sr().get_block(1).jitter());
-    CHECK_EQUAL(1073741824, it.get_sr().get_block(1).last_sr());
-    CHECK_EQUAL(27, it.get_sr().get_block(1).delay_last_sr());
+    CHECK_EQUAL(0x300000, it.get_sr().get_block(1).last_sr());
+    CHECK_EQUAL(0x400000, it.get_sr().get_block(1).delay_last_sr());
 
     CHECK_EQUAL(Traverser::Iterator::END, it.next());
     CHECK_FALSE(it.error());
@@ -657,8 +657,8 @@ TEST(traverser, rr_fields) {
         blk1.set_cum_loss(13);
         blk1.set_last_seqnum(14);
         blk1.set_jitter(15);
-        blk1.set_last_sr(1048576);
-        blk1.set_delay_last_sr(17);
+        blk1.set_last_sr(0x100000);
+        blk1.set_delay_last_sr(0x200000);
 
         header::ReceptionReportBlock blk2;
         blk2.set_ssrc(20);
@@ -666,8 +666,8 @@ TEST(traverser, rr_fields) {
         blk2.set_cum_loss(23);
         blk2.set_last_seqnum(24);
         blk2.set_jitter(25);
-        blk2.set_last_sr(1073741824);
-        blk2.set_delay_last_sr(27);
+        blk2.set_last_sr(0x300000);
+        blk2.set_delay_last_sr(0x400000);
 
         append_buffer(buff, &rr, sizeof(rr));
         append_buffer(buff, &blk1, sizeof(blk1));
@@ -689,16 +689,16 @@ TEST(traverser, rr_fields) {
     CHECK_EQUAL(13, it.get_rr().get_block(0).cum_loss());
     CHECK_EQUAL(14, it.get_rr().get_block(0).last_seqnum());
     CHECK_EQUAL(15, it.get_rr().get_block(0).jitter());
-    CHECK_EQUAL(1048576, it.get_rr().get_block(0).last_sr());
-    CHECK_EQUAL(17, it.get_rr().get_block(0).delay_last_sr());
+    CHECK_EQUAL(0x100000, it.get_rr().get_block(0).last_sr());
+    CHECK_EQUAL(0x200000, it.get_rr().get_block(0).delay_last_sr());
 
     CHECK_EQUAL(20, it.get_rr().get_block(1).ssrc());
     DOUBLES_EQUAL(0.75, it.get_rr().get_block(1).fract_loss(), 1e-8);
     CHECK_EQUAL(23, it.get_rr().get_block(1).cum_loss());
     CHECK_EQUAL(24, it.get_rr().get_block(1).last_seqnum());
     CHECK_EQUAL(25, it.get_rr().get_block(1).jitter());
-    CHECK_EQUAL(1073741824, it.get_rr().get_block(1).last_sr());
-    CHECK_EQUAL(27, it.get_rr().get_block(1).delay_last_sr());
+    CHECK_EQUAL(0x300000, it.get_rr().get_block(1).last_sr());
+    CHECK_EQUAL(0x400000, it.get_rr().get_block(1).delay_last_sr());
 
     CHECK_EQUAL(Traverser::Iterator::END, it.next());
     CHECK_FALSE(it.error());
@@ -1174,13 +1174,13 @@ TEST(traverser, xr_fields) {
 
         header::XrDlrrSubblock dlrr_sblk1;
         dlrr_sblk1.set_ssrc(222);
-        dlrr_sblk1.set_delay_last_rr(333);
-        dlrr_sblk1.set_last_rr(4194304);
+        dlrr_sblk1.set_last_rr(0x100000);
+        dlrr_sblk1.set_delay_last_rr(0x200000);
 
         header::XrDlrrSubblock dlrr_sblk2;
-        dlrr_sblk2.set_ssrc(555);
-        dlrr_sblk2.set_delay_last_rr(666);
-        dlrr_sblk2.set_last_rr(8388608);
+        dlrr_sblk2.set_ssrc(333);
+        dlrr_sblk2.set_last_rr(0x300000);
+        dlrr_sblk2.set_delay_last_rr(0x400000);
 
         append_buffer(buff, &xr, sizeof(xr));
         append_buffer(buff, &rrtr, sizeof(rrtr));
@@ -1212,12 +1212,12 @@ TEST(traverser, xr_fields) {
         CHECK_EQUAL(2, xr_it.get_dlrr().num_subblocks());
 
         CHECK_EQUAL(222, xr_it.get_dlrr().get_subblock(0).ssrc());
-        CHECK_EQUAL(333, xr_it.get_dlrr().get_subblock(0).delay_last_rr());
-        CHECK_EQUAL(4194304, xr_it.get_dlrr().get_subblock(0).last_rr());
+        CHECK_EQUAL(0x100000, xr_it.get_dlrr().get_subblock(0).last_rr());
+        CHECK_EQUAL(0x200000, xr_it.get_dlrr().get_subblock(0).delay_last_rr());
 
-        CHECK_EQUAL(555, xr_it.get_dlrr().get_subblock(1).ssrc());
-        CHECK_EQUAL(666, xr_it.get_dlrr().get_subblock(1).delay_last_rr());
-        CHECK_EQUAL(8388608, xr_it.get_dlrr().get_subblock(1).last_rr());
+        CHECK_EQUAL(333, xr_it.get_dlrr().get_subblock(1).ssrc());
+        CHECK_EQUAL(0x300000, xr_it.get_dlrr().get_subblock(1).last_rr());
+        CHECK_EQUAL(0x400000, xr_it.get_dlrr().get_subblock(1).delay_last_rr());
 
         CHECK_EQUAL(XrTraverser::Iterator::END, xr_it.next());
         CHECK_FALSE(xr_it.error());

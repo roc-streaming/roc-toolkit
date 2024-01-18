@@ -154,7 +154,7 @@ void ReceiverSessionRouter::remove_session(
 status::StatusCode ReceiverSessionRouter::link_source(packet::stream_source_t source_id,
                                                       const char* cname) {
     roc_panic_if(!cname || !*cname);
-    roc_panic_if(strlen(cname) > MaxCnameLen);
+    roc_panic_if(strlen(cname) > rtcp::MaxCnameLen);
 
     // Find routes for SSRC and CNAME.
     core::SharedPtr<Route> source_route, cname_route;
@@ -388,7 +388,7 @@ ReceiverSessionRouter::create_route_(const packet::stream_source_t source_id,
 
     // Add CNAME to route.
     if (cname) {
-        roc_panic_if(strlen(cname) > MaxCnameLen);
+        roc_panic_if(strlen(cname) > rtcp::MaxCnameLen);
         strcpy(route->cname, cname);
 
         if (!cname_route_map_.insert(route->cname_node)) {

@@ -11,7 +11,6 @@
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
-#include "roc_core/log.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_rtcp/communicator.h"
@@ -96,17 +95,17 @@ struct MockParticipant : public IParticipant, public core::NonCopyable<> {
 
     SendReport next_send_notification() {
         CHECK(cur_recv_notification_ < num_recv_notifications_);
-        return recv_notifications_[cur_recv_notification_++];
+        return recv_notifications_[cur_recv_notification_++ % MaxNotifications];
     }
 
     RecvReport next_recv_notification() {
         CHECK(cur_send_notification_ < num_send_notifications_);
-        return send_notifications_[cur_send_notification_++];
+        return send_notifications_[cur_send_notification_++ % MaxNotifications];
     }
 
     packet::stream_source_t next_halt_notification() {
         CHECK(cur_halt_notification_ < num_halt_notifications_);
-        return halt_notifications_[cur_halt_notification_++];
+        return halt_notifications_[cur_halt_notification_++ % MaxNotifications];
     }
 
     void next_ssrc_change_notification() {
@@ -134,7 +133,9 @@ struct MockParticipant : public IParticipant, public core::NonCopyable<> {
 
     virtual SendReport query_send_stream(core::nanoseconds_t report_time) {
         CHECK(has_send_report_);
-        CHECK_EQUAL(report_time, send_report_.report_timestamp);
+        CHECK(core::ns_equal_delta(report_time, send_report_.report_timestamp,
+                                   core::Nanosecond));
+        send_report_.report_timestamp = report_time;
         return send_report_;
     }
 
@@ -142,8 +143,10 @@ struct MockParticipant : public IParticipant, public core::NonCopyable<> {
                                                   const RecvReport& recv_report) {
         CHECK_EQUAL(recv_source_id, recv_report.receiver_source_id);
         if (status_ == status::StatusOK) {
-            CHECK(num_send_notifications_ < MaxNotifications);
-            send_notifications_[num_send_notifications_++] = recv_report;
+            CHECK(cur_send_notification_ <= num_send_notifications_);
+            CHECK(num_send_notifications_ - cur_send_notification_ < MaxNotifications);
+            send_notifications_[num_send_notifications_++ % MaxNotifications] =
+                recv_report;
         }
         return status_;
     }
@@ -174,19 +177,23 @@ struct MockParticipant : public IParticipant, public core::NonCopyable<> {
                                                   const SendReport& send_report) {
         CHECK_EQUAL(send_source_id, send_report.sender_source_id);
         if (status_ == status::StatusOK) {
-            CHECK(num_recv_notifications_ < MaxNotifications);
-            recv_notifications_[num_recv_notifications_++] = send_report;
+            CHECK(cur_recv_notification_ <= num_recv_notifications_);
+            CHECK(num_recv_notifications_ - cur_recv_notification_ < MaxNotifications);
+            recv_notifications_[num_recv_notifications_++ % MaxNotifications] =
+                send_report;
         }
         return status_;
     }
 
     virtual void halt_recv_stream(packet::stream_source_t send_source_id) {
-        CHECK(num_halt_notifications_ < MaxNotifications);
-        halt_notifications_[num_halt_notifications_++] = send_source_id;
+        CHECK(cur_halt_notification_ <= num_halt_notifications_);
+        CHECK(num_halt_notifications_ - cur_halt_notification_ < MaxNotifications);
+        halt_notifications_[num_halt_notifications_++ % MaxNotifications] =
+            send_source_id;
     }
 
 private:
-    enum { MaxStreams = 100, MaxNotifications = 100 };
+    enum { MaxStreams = 50, MaxNotifications = 50 };
 
     status::StatusCode status_;
 
@@ -268,6 +275,24 @@ private:
     bool fail_;
 };
 
+void expect_timestamp(const char* name,
+                      core::nanoseconds_t expected,
+                      core::nanoseconds_t actual,
+                      core::nanoseconds_t epsilon) {
+    if (!core::ns_equal_delta(expected, actual, epsilon)) {
+        char sbuff[256];
+        snprintf(sbuff, sizeof(sbuff),
+                 "failed comparing %s timestamps:\n"
+                 " expected:  %lld\n"
+                 " actual:    %lld\n"
+                 " delta:     %lld\n"
+                 " max_delta: %lld\n",
+                 name, (long long)expected, (long long)actual,
+                 (long long)(expected - actual), (long long)epsilon);
+        FAIL(sbuff);
+    }
+}
+
 SendReport make_send_report(core::nanoseconds_t time,
                             const char* send_cname,
                             packet::stream_source_t send_ssrc,
@@ -294,6 +319,12 @@ void expect_send_report(const SendReport& report,
     CHECK_EQUAL(seed + 10, report.stream_timestamp);
     CHECK_EQUAL(seed + 20, report.packet_count);
     CHECK_EQUAL(seed + 30, report.byte_count);
+    if (expect_xr) {
+        CHECK(report.rtt >= 0);
+    } else {
+        CHECK(report.rtt == 0);
+        CHECK(report.clock_offset == 0);
+    }
 }
 
 RecvReport make_recv_report(core::nanoseconds_t time,
@@ -329,8 +360,11 @@ void expect_recv_report(const RecvReport& report,
     CHECK_EQUAL(seed + 20, report.jitter);
     if (expect_xr) {
         CHECK(core::ns_equal_delta(time, report.report_timestamp, 10 * core::Nanosecond));
+        CHECK(report.rtt >= 0);
     } else {
         CHECK(report.report_timestamp == 0);
+        CHECK(report.rtt == 0);
+        CHECK(report.clock_offset == 0);
     }
 }
 
@@ -361,8 +395,9 @@ void set_src_address(const packet::PacketPtr& pp, const address::SocketAddr& add
     pp->udp()->src_addr = address;
 }
 
-void expect_has_dst_address(const packet::PacketPtr& pp,
-                            const address::SocketAddr& address) {
+// Check that packet has specified destination address
+void expect_has_dest_address(const packet::PacketPtr& pp,
+                             const address::SocketAddr& address) {
     CHECK(pp);
     CHECK(pp->udp());
 
@@ -378,9 +413,10 @@ void expect_has_dst_address(const packet::PacketPtr& pp,
     }
 }
 
-void expect_has_ssrc(const packet::PacketPtr& pp,
-                     packet::stream_source_t ssrc,
-                     bool present) {
+// Check that report has blocks originated by given SSRC
+void expect_has_orig_ssrc(const packet::PacketPtr& pp,
+                          packet::stream_source_t ssrc,
+                          bool present) {
     CHECK(pp);
     CHECK(pp->rtcp());
     CHECK(pp->rtcp()->payload);
@@ -399,21 +435,11 @@ void expect_has_ssrc(const packet::PacketPtr& pp,
             if (iter.get_sr().ssrc() == ssrc) {
                 ssrc_found++;
             }
-            for (size_t n = 0; n < iter.get_sr().num_blocks(); n++) {
-                if (iter.get_sr().get_block(n).ssrc() == ssrc) {
-                    ssrc_found++;
-                }
-            }
         } break;
 
         case Traverser::Iterator::RR: {
             if (iter.get_rr().ssrc() == ssrc) {
                 ssrc_found++;
-            }
-            for (size_t n = 0; n < iter.get_rr().num_blocks(); n++) {
-                if (iter.get_rr().get_block(n).ssrc() == ssrc) {
-                    ssrc_found++;
-                }
             }
         } break;
 
@@ -424,6 +450,57 @@ void expect_has_ssrc(const packet::PacketPtr& pp,
             if (xr.packet().ssrc() == ssrc) {
                 ssrc_found++;
             }
+        } break;
+
+        default:
+            break;
+        }
+    }
+
+    if (present) {
+        CHECK(ssrc_found > 0);
+    } else {
+        CHECK_EQUAL(0, ssrc_found);
+    }
+}
+
+// Check that report has blocks targeted to given SSRC
+void expect_has_dest_ssrc(const packet::PacketPtr& pp,
+                          packet::stream_source_t ssrc,
+                          bool present) {
+    CHECK(pp);
+    CHECK(pp->rtcp());
+    CHECK(pp->rtcp()->payload);
+
+    int ssrc_found = 0;
+
+    Traverser traverser(pp->rtcp()->payload);
+    CHECK(traverser.parse());
+
+    Traverser::Iterator iter = traverser.iter();
+    Traverser::Iterator::State state;
+
+    while ((state = iter.next()) != Traverser::Iterator::END) {
+        switch (state) {
+        case Traverser::Iterator::SR: {
+            for (size_t n = 0; n < iter.get_sr().num_blocks(); n++) {
+                if (iter.get_sr().get_block(n).ssrc() == ssrc) {
+                    ssrc_found++;
+                }
+            }
+        } break;
+
+        case Traverser::Iterator::RR: {
+            for (size_t n = 0; n < iter.get_rr().num_blocks(); n++) {
+                if (iter.get_rr().get_block(n).ssrc() == ssrc) {
+                    ssrc_found++;
+                }
+            }
+        } break;
+
+        case Traverser::Iterator::XR: {
+            XrTraverser xr = iter.get_xr();
+            CHECK(xr.parse());
 
             XrTraverser::Iterator xr_iter = xr.iter();
             XrTraverser::Iterator::Iterator::State xr_state;
@@ -461,6 +538,10 @@ void advance_time(core::nanoseconds_t& time, core::nanoseconds_t delta = core::S
 }
 
 enum { MaxPacketSz = 200 };
+
+// LSR/LRR precision in RTCP is ~100us because low 16 bits
+// of 64-bit NTP timestamp are truncated.
+const core::nanoseconds_t RttEpsilon = 100 * core::Microsecond;
 
 core::HeapArena arena;
 packet::PacketFactory packet_factory(arena);
@@ -925,7 +1006,7 @@ TEST(communicator, long_run) {
         Send2Ssrc = 22,
         Recv1Ssrc = 33,
         Recv2Ssrc = 44,
-        NumIters = 20
+        NumIters = 50
     };
 
     const char* Send1Cname = "send1_cname";
@@ -2187,6 +2268,106 @@ TEST(communicator, collision_sdes_same_cname) {
                        RecvSsrc, Send1Ssrc, Seed3);
 }
 
+// Check how communicator handles reports looped back from itself
+TEST(communicator, network_loop) {
+    enum { LocalSsrc = 11, RemoteSsrc = 22, Seed = 100 };
+
+    const char* LocalCname = "local_cname";
+    const char* RemoteCname = "remote_cname";
+
+    Config config;
+
+    packet::Queue local_queue;
+    MockParticipant local_part(LocalCname, LocalSsrc, Report_ToAddress);
+    Communicator local_comm(config, local_part, local_queue, composer, packet_factory,
+                            buffer_factory, arena);
+    CHECK(local_comm.is_valid());
+
+    packet::Queue remote_queue;
+    MockParticipant remote_part(RemoteCname, RemoteSsrc, Report_ToAddress);
+    Communicator remote_comm(config, remote_part, remote_queue, composer, packet_factory,
+                             buffer_factory, arena);
+    CHECK(remote_comm.is_valid());
+
+    core::nanoseconds_t local_time = 10000000000000000;
+    core::nanoseconds_t remote_time = 30000000000000000;
+
+    // Generate report from local peer
+    local_part.set_send_report(make_send_report(local_time, LocalCname, LocalSsrc, Seed));
+    local_part.set_recv_report(
+        0, make_recv_report(local_time, LocalCname, LocalSsrc, RemoteSsrc, Seed));
+    CHECK_EQUAL(status::StatusOK, local_comm.generate_reports(local_time));
+    CHECK_EQUAL(1, local_queue.size());
+
+    // Deliver report to remote peer
+    CHECK_EQUAL(status::StatusOK,
+                remote_comm.process_packet(read_packet(local_queue), remote_time));
+
+    // Check notifications on remote peer
+    CHECK_EQUAL(1, remote_part.pending_notifications());
+    expect_send_report(remote_part.next_send_notification(), local_time, LocalCname,
+                       LocalSsrc, Seed);
+
+    advance_time(local_time);
+    advance_time(remote_time);
+
+    // Generate report from remote peer
+    remote_part.set_send_report(
+        make_send_report(remote_time, RemoteCname, RemoteSsrc, Seed));
+    remote_part.set_recv_report(
+        0, make_recv_report(remote_time, RemoteCname, RemoteSsrc, LocalSsrc, Seed));
+    CHECK_EQUAL(status::StatusOK, remote_comm.generate_reports(remote_time));
+    CHECK_EQUAL(1, remote_queue.size());
+
+    // Deliver report to local peer
+    CHECK_EQUAL(status::StatusOK,
+                local_comm.process_packet(read_packet(remote_queue), local_time));
+
+    // Check notifications on local peer
+    CHECK_EQUAL(2, local_part.pending_notifications());
+    expect_send_report(local_part.next_send_notification(), remote_time, RemoteCname,
+                       RemoteSsrc, Seed);
+    expect_recv_report(local_part.next_recv_notification(), remote_time, RemoteCname,
+                       RemoteSsrc, LocalSsrc, Seed);
+
+    advance_time(local_time);
+    advance_time(remote_time);
+
+    // Generate report from local peer
+    local_part.set_send_report(make_send_report(local_time, LocalCname, LocalSsrc, Seed));
+    local_part.set_recv_report(
+        0, make_recv_report(local_time, LocalCname, LocalSsrc, RemoteSsrc, Seed));
+    CHECK_EQUAL(status::StatusOK, local_comm.generate_reports(local_time));
+    CHECK_EQUAL(1, local_queue.size());
+
+    // Loop report back to local peer
+    CHECK_EQUAL(status::StatusOK,
+                local_comm.process_packet(read_packet(local_queue), local_time));
+
+    // Expect no notifications
+    CHECK_EQUAL(0, local_part.pending_notifications());
+
+    advance_time(local_time);
+    advance_time(remote_time);
+
+    // Generate report from local peer
+    local_part.set_send_report(make_send_report(local_time, LocalCname, LocalSsrc, Seed));
+    local_part.set_recv_report(
+        0, make_recv_report(local_time, LocalCname, LocalSsrc, RemoteSsrc, Seed));
+    CHECK_EQUAL(status::StatusOK, local_comm.generate_reports(local_time));
+    CHECK_EQUAL(1, local_queue.size());
+
+    // Inspect report
+    packet::PacketPtr pp = read_packet(local_queue);
+
+    expect_has_orig_ssrc(pp, LocalSsrc, true);
+    expect_has_dest_ssrc(pp, RemoteSsrc, true);
+
+    // Ensure that local peer doesn't try to target report
+    // to its own SSRC
+    expect_has_dest_ssrc(pp, LocalSsrc, false);
+}
+
 // Handle incoming packet from sender without SDES
 // (Only SR and XR)
 TEST(communicator, missing_sender_sdes) {
@@ -2604,8 +2785,8 @@ TEST(communicator, split_receiver_report) {
     }
 }
 
-// Sender+receiver report is too large and is split into multiple packets
-TEST(communicator, split_sender_receiver_report) {
+// Bidirectional peer report is too large and is split into multiple packets
+TEST(communicator, split_bidirectional_report) {
     enum {
         LocalSsrc = 100,
         RemoteSsrc = 200,
@@ -2760,10 +2941,10 @@ TEST(communicator, report_to_address_sender) {
     CHECK_EQUAL(1, send_queue.size());
 
     pp = read_packet(send_queue);
-    expect_has_dst_address(pp, send_dest_addr);
-    expect_has_ssrc(pp, SendSsrc, true);
-    expect_has_ssrc(pp, Recv1Ssrc, false);
-    expect_has_ssrc(pp, Recv2Ssrc, false);
+    expect_has_dest_address(pp, send_dest_addr);
+    expect_has_orig_ssrc(pp, SendSsrc, true);
+    expect_has_dest_ssrc(pp, Recv1Ssrc, false);
+    expect_has_dest_ssrc(pp, Recv2Ssrc, false);
 
     advance_time(send_time);
     advance_time(recv1_time);
@@ -2801,10 +2982,10 @@ TEST(communicator, report_to_address_sender) {
     CHECK_EQUAL(1, send_queue.size());
 
     pp = read_packet(send_queue);
-    expect_has_dst_address(pp, send_dest_addr);
-    expect_has_ssrc(pp, SendSsrc, true);
-    expect_has_ssrc(pp, Recv1Ssrc, true);
-    expect_has_ssrc(pp, Recv2Ssrc, false);
+    expect_has_dest_address(pp, send_dest_addr);
+    expect_has_orig_ssrc(pp, SendSsrc, true);
+    expect_has_dest_ssrc(pp, Recv1Ssrc, true);
+    expect_has_dest_ssrc(pp, Recv2Ssrc, false);
 
     advance_time(send_time);
     advance_time(recv1_time);
@@ -2842,10 +3023,10 @@ TEST(communicator, report_to_address_sender) {
     CHECK_EQUAL(1, send_queue.size());
 
     pp = read_packet(send_queue);
-    expect_has_dst_address(pp, send_dest_addr);
-    expect_has_ssrc(pp, SendSsrc, true);
-    expect_has_ssrc(pp, Recv1Ssrc, true);
-    expect_has_ssrc(pp, Recv2Ssrc, true);
+    expect_has_dest_address(pp, send_dest_addr);
+    expect_has_orig_ssrc(pp, SendSsrc, true);
+    expect_has_dest_ssrc(pp, Recv1Ssrc, true);
+    expect_has_dest_ssrc(pp, Recv2Ssrc, true);
 }
 
 // Tell receiver to use specific destination report address
@@ -2883,10 +3064,10 @@ TEST(communicator, report_to_address_receiver) {
     CHECK_EQUAL(1, recv_queue.size());
 
     pp = read_packet(recv_queue);
-    expect_has_dst_address(pp, recv_dest_addr);
-    expect_has_ssrc(pp, RecvSsrc, true);
-    expect_has_ssrc(pp, Send1Ssrc, true);
-    expect_has_ssrc(pp, Send2Ssrc, true);
+    expect_has_dest_address(pp, recv_dest_addr);
+    expect_has_orig_ssrc(pp, RecvSsrc, true);
+    expect_has_dest_ssrc(pp, Send1Ssrc, true);
+    expect_has_dest_ssrc(pp, Send2Ssrc, true);
 }
 
 // Tell sender to deliver reports back to each participant, instead
@@ -2971,10 +3152,10 @@ TEST(communicator, report_back_sender) {
     CHECK_EQUAL(1, send_queue.size());
 
     pp = read_packet(send_queue);
-    expect_has_dst_address(pp, recv1_addr);
-    expect_has_ssrc(pp, SendSsrc, true);
-    expect_has_ssrc(pp, Recv1Ssrc, true);
-    expect_has_ssrc(pp, Recv2Ssrc, false);
+    expect_has_dest_address(pp, recv1_addr);
+    expect_has_orig_ssrc(pp, SendSsrc, true);
+    expect_has_dest_ssrc(pp, Recv1Ssrc, true);
+    expect_has_dest_ssrc(pp, Recv2Ssrc, false);
 
     advance_time(send_time);
     advance_time(recv1_time);
@@ -3011,16 +3192,16 @@ TEST(communicator, report_back_sender) {
     CHECK_EQUAL(2, send_queue.size());
 
     pp = read_packet(send_queue);
-    expect_has_dst_address(pp, recv1_addr);
-    expect_has_ssrc(pp, SendSsrc, true);
-    expect_has_ssrc(pp, Recv1Ssrc, true);
-    expect_has_ssrc(pp, Recv2Ssrc, false);
+    expect_has_dest_address(pp, recv1_addr);
+    expect_has_orig_ssrc(pp, SendSsrc, true);
+    expect_has_dest_ssrc(pp, Recv1Ssrc, true);
+    expect_has_dest_ssrc(pp, Recv2Ssrc, false);
 
     pp = read_packet(send_queue);
-    expect_has_dst_address(pp, recv2_addr);
-    expect_has_ssrc(pp, SendSsrc, true);
-    expect_has_ssrc(pp, Recv1Ssrc, false);
-    expect_has_ssrc(pp, Recv2Ssrc, true);
+    expect_has_dest_address(pp, recv2_addr);
+    expect_has_orig_ssrc(pp, SendSsrc, true);
+    expect_has_dest_ssrc(pp, Recv1Ssrc, false);
+    expect_has_dest_ssrc(pp, Recv2Ssrc, true);
 }
 
 // Tell receiver to deliver reports back to each participant, instead
@@ -3110,10 +3291,10 @@ TEST(communicator, report_back_receiver) {
     CHECK_EQUAL(1, recv_queue.size());
 
     pp = read_packet(recv_queue);
-    expect_has_dst_address(pp, send1_addr);
-    expect_has_ssrc(pp, RecvSsrc, true);
-    expect_has_ssrc(pp, Send1Ssrc, true);
-    expect_has_ssrc(pp, Send2Ssrc, false);
+    expect_has_dest_address(pp, send1_addr);
+    expect_has_orig_ssrc(pp, RecvSsrc, true);
+    expect_has_dest_ssrc(pp, Send1Ssrc, true);
+    expect_has_dest_ssrc(pp, Send2Ssrc, false);
 
     advance_time(recv_time);
     advance_time(send1_time);
@@ -3152,20 +3333,20 @@ TEST(communicator, report_back_receiver) {
     CHECK_EQUAL(2, recv_queue.size());
 
     pp = read_packet(recv_queue);
-    expect_has_dst_address(pp, send1_addr);
-    expect_has_ssrc(pp, RecvSsrc, true);
-    expect_has_ssrc(pp, Send1Ssrc, true);
-    expect_has_ssrc(pp, Send2Ssrc, false);
+    expect_has_dest_address(pp, send1_addr);
+    expect_has_orig_ssrc(pp, RecvSsrc, true);
+    expect_has_dest_ssrc(pp, Send1Ssrc, true);
+    expect_has_dest_ssrc(pp, Send2Ssrc, false);
 
     pp = read_packet(recv_queue);
-    expect_has_dst_address(pp, send2_addr);
-    expect_has_ssrc(pp, RecvSsrc, true);
-    expect_has_ssrc(pp, Send1Ssrc, false);
-    expect_has_ssrc(pp, Send2Ssrc, true);
+    expect_has_dest_address(pp, send2_addr);
+    expect_has_orig_ssrc(pp, RecvSsrc, true);
+    expect_has_dest_ssrc(pp, Send1Ssrc, false);
+    expect_has_dest_ssrc(pp, Send2Ssrc, true);
 }
 
 // Same as above, but some participants have same address, so there should be
-// a single report for them
+// a single report for those of them
 TEST(communicator, report_back_combine_reports) {
     enum { RecvSsrc = 11, Send1Ssrc = 22, Send2Ssrc = 33, Send3Ssrc = 44, Seed = 100 };
 
@@ -3289,18 +3470,18 @@ TEST(communicator, report_back_combine_reports) {
     CHECK_EQUAL(2, recv_queue.size());
 
     pp = read_packet(recv_queue);
-    expect_has_dst_address(pp, send1_addr);
-    expect_has_ssrc(pp, RecvSsrc, true);
-    expect_has_ssrc(pp, Send1Ssrc, true);
-    expect_has_ssrc(pp, Send2Ssrc, true);
-    expect_has_ssrc(pp, Send3Ssrc, false);
+    expect_has_dest_address(pp, send1_addr);
+    expect_has_orig_ssrc(pp, RecvSsrc, true);
+    expect_has_dest_ssrc(pp, Send1Ssrc, true);
+    expect_has_dest_ssrc(pp, Send2Ssrc, true);
+    expect_has_dest_ssrc(pp, Send3Ssrc, false);
 
     pp = read_packet(recv_queue);
-    expect_has_dst_address(pp, send3_addr);
-    expect_has_ssrc(pp, RecvSsrc, true);
-    expect_has_ssrc(pp, Send1Ssrc, false);
-    expect_has_ssrc(pp, Send2Ssrc, false);
-    expect_has_ssrc(pp, Send3Ssrc, true);
+    expect_has_dest_address(pp, send3_addr);
+    expect_has_orig_ssrc(pp, RecvSsrc, true);
+    expect_has_dest_ssrc(pp, Send1Ssrc, false);
+    expect_has_dest_ssrc(pp, Send2Ssrc, false);
+    expect_has_dest_ssrc(pp, Send3Ssrc, true);
 }
 
 // Same as above, but reports to same address are also split into multiple packets
@@ -3394,20 +3575,20 @@ TEST(communicator, report_back_split_reports) {
     for (size_t n_grp = 0; n_grp < NumGroups; n_grp++) {
         for (size_t n_pkt = 0; n_pkt < PacketsPerGroup; n_pkt++) {
             packet::PacketPtr pp = read_packet(local_queue);
-            expect_has_dst_address(pp, group_addr[n_grp]);
-            expect_has_ssrc(pp, LocalSsrc, true);
+            expect_has_dest_address(pp, group_addr[n_grp]);
+            expect_has_orig_ssrc(pp, LocalSsrc, true);
 
             for (size_t n_peer = 0; n_peer < PeersPerGroup; n_peer++) {
                 const bool peer_present_in_pkt =
                     n_pkt == n_peer / (PeersPerGroup / PacketsPerGroup);
 
-                expect_has_ssrc(pp, group_ssrc[n_grp] + n_peer, peer_present_in_pkt);
+                expect_has_dest_ssrc(pp, group_ssrc[n_grp] + n_peer, peer_present_in_pkt);
             }
 
             for (size_t other_grp = 0; other_grp < NumGroups; other_grp++) {
                 if (other_grp != n_grp) {
                     for (size_t n_peer = 0; n_peer < PeersPerGroup; n_peer++) {
-                        expect_has_ssrc(pp, group_ssrc[other_grp] + n_peer, false);
+                        expect_has_dest_ssrc(pp, group_ssrc[other_grp] + n_peer, false);
                     }
                 }
             }
@@ -3415,6 +3596,809 @@ TEST(communicator, report_back_split_reports) {
     }
 
     CHECK_EQUAL(0, local_queue.size());
+}
+
+// Check how communicator computes RTT and clock offset
+TEST(communicator, rtt) {
+    enum { SendSsrc = 11, RecvSsrc = 22, Seed = 100, NumIters = 200 };
+
+    const char* SendCname = "send_cname";
+    const char* RecvCname = "recv_cname";
+
+    const core::nanoseconds_t SendStartTime = 10000000000000000;
+    const core::nanoseconds_t RecvStartTime = 30000000000000000;
+
+    const core::nanoseconds_t ReportInterval = 500 * core::Millisecond;
+    const core::nanoseconds_t Rtt = 200 * core::Millisecond;
+
+    Config config;
+
+    packet::Queue send_queue;
+    MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
+    Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
+                           buffer_factory, arena);
+    CHECK(send_comm.is_valid());
+
+    packet::Queue recv_queue;
+    MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
+                           buffer_factory, arena);
+    CHECK(recv_comm.is_valid());
+
+    core::nanoseconds_t send_time = SendStartTime;
+    core::nanoseconds_t recv_time = RecvStartTime;
+
+    for (int iter = 0; iter < NumIters; iter++) {
+        // Generate sender report
+        send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
+        CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
+        CHECK_EQUAL(1, send_queue.size());
+
+        advance_time(send_time, Rtt / 2);
+        advance_time(recv_time, Rtt / 2);
+
+        // Deliver sender report to receiver
+        CHECK_EQUAL(status::StatusOK,
+                    recv_comm.process_packet(read_packet(send_queue), recv_time));
+
+        {
+            // Check metrics on receiver
+            const SendReport report = recv_part.next_send_notification();
+            if (iter == 0) {
+                CHECK(report.rtt == 0);
+                CHECK(report.clock_offset == 0);
+            } else {
+                expect_timestamp("receiver rtt", Rtt, report.rtt, RttEpsilon);
+                expect_timestamp("receiver clock_offset", SendStartTime - RecvStartTime,
+                                 report.clock_offset, RttEpsilon);
+
+                // Double-check that clock_offset works as documented
+                // If receiver adds estimated clock offset to local receiver timestamp, it
+                // should get corresponding remote sender timestamp
+                expect_timestamp("receiver mapping", send_time,
+                                 recv_time + report.clock_offset, RttEpsilon);
+            }
+        }
+
+        advance_time(send_time, ReportInterval / 2);
+        advance_time(recv_time, ReportInterval / 2);
+
+        // Generate receiver report
+        recv_part.set_recv_report(
+            0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed));
+        CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
+        CHECK_EQUAL(1, recv_queue.size());
+
+        advance_time(send_time, Rtt / 2);
+        advance_time(recv_time, Rtt / 2);
+
+        // Deliver receiver report to sender
+        CHECK_EQUAL(status::StatusOK,
+                    send_comm.process_packet(read_packet(recv_queue), send_time));
+
+        {
+            // Check metrics on sender
+            const RecvReport report = send_part.next_recv_notification();
+
+            expect_timestamp("sender rtt", Rtt, report.rtt, RttEpsilon);
+            expect_timestamp("sender clock_offset", RecvStartTime - SendStartTime,
+                             report.clock_offset, RttEpsilon);
+
+            // Double-check that clock_offset works as documented
+            // If sender adds estimated clock offset to local sender timestamp, it
+            // should get corresponding remote receiver timestamp
+            expect_timestamp("sender mapping", recv_time, send_time + report.clock_offset,
+                             RttEpsilon);
+        }
+
+        advance_time(send_time, ReportInterval / 2);
+        advance_time(recv_time, ReportInterval / 2);
+    }
+}
+
+// Same, but there is a persistent clock drift between sender and receiver
+TEST(communicator, rtt_clock_drift) {
+    enum { SendSsrc = 11, RecvSsrc = 22, Seed = 100, NumIters = 200 };
+
+    const char* SendCname = "send_cname";
+    const char* RecvCname = "recv_cname";
+
+    const core::nanoseconds_t SendStartTime = 10000000000000000;
+    const core::nanoseconds_t RecvStartTime = 30000000000000000;
+
+    const core::nanoseconds_t ReportInterval = 500 * core::Millisecond;
+    const core::nanoseconds_t Rtt = 200 * core::Millisecond;
+    const core::nanoseconds_t Drift = 1 * core::Millisecond;
+
+    Config config;
+
+    packet::Queue send_queue;
+    MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
+    Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
+                           buffer_factory, arena);
+    CHECK(send_comm.is_valid());
+
+    packet::Queue recv_queue;
+    MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
+                           buffer_factory, arena);
+    CHECK(recv_comm.is_valid());
+
+    core::nanoseconds_t send_time = SendStartTime;
+    core::nanoseconds_t recv_time = RecvStartTime;
+
+    for (int iter = 0; iter < NumIters; iter++) {
+        // Generate sender report
+        send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
+        CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
+        CHECK_EQUAL(1, send_queue.size());
+
+        advance_time(send_time, Rtt / 2);
+        advance_time(recv_time, Rtt / 2);
+
+        // Deliver sender report to receiver
+        CHECK_EQUAL(status::StatusOK,
+                    recv_comm.process_packet(read_packet(send_queue), recv_time));
+
+        {
+            // Check metrics on receiver
+            const SendReport report = recv_part.next_send_notification();
+            if (iter != 0) {
+                expect_timestamp("receiver rtt", Rtt, report.rtt, RttEpsilon + Drift);
+                expect_timestamp("receiver clock_offset",
+                                 SendStartTime + (Drift * iter) - RecvStartTime,
+                                 report.clock_offset, RttEpsilon + Drift);
+            }
+        }
+
+        advance_time(send_time, ReportInterval / 2 + Drift);
+        advance_time(recv_time, ReportInterval / 2);
+
+        // Generate receiver report
+        recv_part.set_recv_report(
+            0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed));
+        CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
+        CHECK_EQUAL(1, recv_queue.size());
+
+        advance_time(send_time, Rtt / 2);
+        advance_time(recv_time, Rtt / 2);
+
+        // Deliver receiver report to sender
+        CHECK_EQUAL(status::StatusOK,
+                    send_comm.process_packet(read_packet(recv_queue), send_time));
+
+        {
+            // Check metrics on sender
+            const RecvReport report = send_part.next_recv_notification();
+
+            expect_timestamp("sender rtt", Rtt, report.rtt, RttEpsilon + Drift);
+            expect_timestamp("sender clock_offset",
+                             RecvStartTime - SendStartTime - (Drift * iter),
+                             report.clock_offset, RttEpsilon + Drift);
+        }
+
+        advance_time(send_time, ReportInterval / 2);
+        advance_time(recv_time, ReportInterval / 2);
+    }
+}
+
+// Same, but there is persistent network jitter
+TEST(communicator, rtt_network_jitter) {
+    enum { SendSsrc = 11, RecvSsrc = 22, Seed = 100, NumIters = 200 };
+
+    const char* SendCname = "send_cname";
+    const char* RecvCname = "recv_cname";
+
+    const core::nanoseconds_t SendStartTime = 10000000000000000;
+    const core::nanoseconds_t RecvStartTime = 30000000000000000;
+
+    const core::nanoseconds_t ReportInterval = 500 * core::Millisecond;
+    const core::nanoseconds_t Rtt = 200 * core::Millisecond;
+    const core::nanoseconds_t Jitter = 30 * core::Millisecond;
+
+    Config config;
+
+    packet::Queue send_queue;
+    MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
+    Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
+                           buffer_factory, arena);
+    CHECK(send_comm.is_valid());
+
+    packet::Queue recv_queue;
+    MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
+                           buffer_factory, arena);
+    CHECK(recv_comm.is_valid());
+
+    core::nanoseconds_t send_time = SendStartTime;
+    core::nanoseconds_t recv_time = RecvStartTime;
+
+    for (int iter = 0; iter < NumIters; iter++) {
+        // Select pseudo-random jitter for current iteration
+        const core::nanoseconds_t iter_jitter =
+            (iter % (Jitter / core::Millisecond)) * core::Millisecond - Jitter / 2;
+
+        // Generate sender report
+        send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
+        CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
+        CHECK_EQUAL(1, send_queue.size());
+
+        advance_time(send_time, Rtt / 2 + iter_jitter);
+        advance_time(recv_time, Rtt / 2 + iter_jitter);
+
+        // Deliver sender report to receiver
+        CHECK_EQUAL(status::StatusOK,
+                    recv_comm.process_packet(read_packet(send_queue), recv_time));
+
+        {
+            // Check metrics on receiver
+            const SendReport report = recv_part.next_send_notification();
+            if (iter != 0) {
+                expect_timestamp("receiver rtt", Rtt, report.rtt, RttEpsilon + Jitter);
+                expect_timestamp("receiver clock_offset", SendStartTime - RecvStartTime,
+                                 report.clock_offset, RttEpsilon + Jitter);
+            }
+        }
+
+        advance_time(send_time, ReportInterval / 2);
+        advance_time(recv_time, ReportInterval / 2);
+
+        // Generate receiver report
+        recv_part.set_recv_report(
+            0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed));
+        CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
+        CHECK_EQUAL(1, recv_queue.size());
+
+        advance_time(send_time, Rtt / 2 + iter_jitter);
+        advance_time(recv_time, Rtt / 2 + iter_jitter);
+
+        // Deliver receiver report to sender
+        CHECK_EQUAL(status::StatusOK,
+                    send_comm.process_packet(read_packet(recv_queue), send_time));
+
+        {
+            // Check metrics on sender
+            const RecvReport report = send_part.next_recv_notification();
+
+            expect_timestamp("sender rtt", Rtt, report.rtt, RttEpsilon + Jitter);
+            expect_timestamp("sender clock_offset", RecvStartTime - SendStartTime,
+                             report.clock_offset, RttEpsilon + Jitter);
+        }
+
+        advance_time(send_time, ReportInterval / 2);
+        advance_time(recv_time, ReportInterval / 2);
+    }
+}
+
+// Same, but there are occasional packet losses
+TEST(communicator, rtt_network_losses) {
+    enum { SendSsrc = 11, RecvSsrc = 22, Seed = 100, NumIters = 200 };
+
+    const char* SendCname = "send_cname";
+    const char* RecvCname = "recv_cname";
+
+    const core::nanoseconds_t SendStartTime = 10000000000000000;
+    const core::nanoseconds_t RecvStartTime = 30000000000000000;
+
+    const core::nanoseconds_t ReportInterval = 500 * core::Millisecond;
+    const core::nanoseconds_t Rtt = 200 * core::Millisecond;
+    const int DropFreq = 9;
+
+    Config config;
+
+    packet::Queue send_queue;
+    MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
+    Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
+                           buffer_factory, arena);
+    CHECK(send_comm.is_valid());
+
+    packet::Queue recv_queue;
+    MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
+                           buffer_factory, arena);
+    CHECK(recv_comm.is_valid());
+
+    core::nanoseconds_t send_time = SendStartTime;
+    core::nanoseconds_t recv_time = RecvStartTime;
+
+    for (int iter = 0; iter < NumIters; iter++) {
+        // Decide whether to loss packets on this iteration
+        const bool loss_send_report = (iter + 3) % DropFreq == 0;
+        const bool loss_recv_report = (iter + 5) % DropFreq == 0;
+
+        packet::PacketPtr pp;
+
+        // Generate sender report
+        send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
+        CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
+        CHECK_EQUAL(1, send_queue.size());
+
+        advance_time(send_time, Rtt / 2);
+        advance_time(recv_time, Rtt / 2);
+
+        // Deliver sender report to receiver
+        pp = read_packet(send_queue);
+
+        if (!loss_send_report) {
+            CHECK_EQUAL(status::StatusOK, recv_comm.process_packet(pp, recv_time));
+
+            // Check metrics on receiver
+            const SendReport report = recv_part.next_send_notification();
+            if (iter != 0) {
+                expect_timestamp("receiver rtt", Rtt, report.rtt, RttEpsilon);
+                expect_timestamp("receiver clock_offset", SendStartTime - RecvStartTime,
+                                 report.clock_offset, RttEpsilon);
+            }
+        }
+
+        advance_time(send_time, ReportInterval / 2);
+        advance_time(recv_time, ReportInterval / 2);
+
+        // Generate receiver report
+        recv_part.set_recv_report(
+            0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed));
+        CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
+        CHECK_EQUAL(1, recv_queue.size());
+
+        advance_time(send_time, Rtt / 2);
+        advance_time(recv_time, Rtt / 2);
+
+        // Deliver receiver report to sender
+        pp = read_packet(recv_queue);
+
+        if (!loss_recv_report) {
+            CHECK_EQUAL(status::StatusOK, send_comm.process_packet(pp, send_time));
+
+            // Check metrics on sender
+            const RecvReport report = send_part.next_recv_notification();
+
+            expect_timestamp("sender rtt", Rtt, report.rtt, RttEpsilon);
+            expect_timestamp("sender clock_offset", RecvStartTime - SendStartTime,
+                             report.clock_offset, RttEpsilon);
+        }
+
+        advance_time(send_time, ReportInterval / 2);
+        advance_time(recv_time, ReportInterval / 2);
+    }
+}
+
+// Same, but there are occasional burst delays
+TEST(communicator, rtt_network_delays) {
+    enum { SendSsrc = 11, RecvSsrc = 22, Seed = 100, NumIters = 200 };
+
+    const char* SendCname = "send_cname";
+    const char* RecvCname = "recv_cname";
+
+    const core::nanoseconds_t SendStartTime = 10000000000000000;
+    const core::nanoseconds_t RecvStartTime = 30000000000000000;
+
+    const core::nanoseconds_t ReportInterval = 500 * core::Millisecond;
+    const core::nanoseconds_t Rtt = 200 * core::Millisecond;
+    const int DelayFreq = 9;
+    const int DelayBurst = 3;
+    const core::nanoseconds_t MaxDelay = (ReportInterval + Rtt) * DelayBurst;
+
+    Config config;
+
+    packet::Queue send_queue;
+    MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
+    Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
+                           buffer_factory, arena);
+    CHECK(send_comm.is_valid());
+
+    packet::Queue recv_queue;
+    MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
+                           buffer_factory, arena);
+    CHECK(recv_comm.is_valid());
+
+    core::nanoseconds_t send_time = SendStartTime;
+    core::nanoseconds_t recv_time = RecvStartTime;
+
+    int send_delay_countdown = 0;
+    int recv_delay_countdown = 0;
+
+    for (int iter = 0; iter < NumIters; iter++) {
+        // Decide whether to delay packets from this iteration to next one
+        const bool start_send_delay = (iter + 3) % DelayFreq == 0;
+        const bool start_recv_delay = (iter + 5) % DelayFreq == 0;
+
+        // Generate sender report
+        send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
+        CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
+        CHECK(send_queue.size() > 0);
+
+        advance_time(send_time, Rtt / 2);
+        advance_time(recv_time, Rtt / 2);
+
+        // Deliver sender reports to receiver
+        if (!start_send_delay && send_delay_countdown == 0) {
+            while (send_queue.size() != 0) {
+                packet::PacketPtr pp = read_packet(send_queue);
+                CHECK_EQUAL(status::StatusOK, recv_comm.process_packet(pp, recv_time));
+
+                // Check metrics on receiver
+                const SendReport report = recv_part.next_send_notification();
+                if (iter != 0) {
+                    expect_timestamp("receiver rtt", Rtt, report.rtt,
+                                     RttEpsilon + MaxDelay);
+                    expect_timestamp("receiver clock_offset",
+                                     SendStartTime - RecvStartTime, report.clock_offset,
+                                     RttEpsilon + MaxDelay);
+                }
+            }
+        } else {
+            if (start_send_delay) {
+                send_delay_countdown = DelayBurst;
+            }
+            send_delay_countdown--;
+        }
+
+        advance_time(send_time, ReportInterval / 2);
+        advance_time(recv_time, ReportInterval / 2);
+
+        // Generate receiver report
+        recv_part.set_recv_report(
+            0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed));
+        CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
+        CHECK(recv_queue.size() > 0);
+
+        advance_time(send_time, Rtt / 2);
+        advance_time(recv_time, Rtt / 2);
+
+        // Deliver receiver reports to sender
+        if (!start_recv_delay && recv_delay_countdown == 0) {
+            while (recv_queue.size() != 0) {
+                packet::PacketPtr pp = read_packet(recv_queue);
+                CHECK_EQUAL(status::StatusOK, send_comm.process_packet(pp, send_time));
+
+                // Check metrics on sender
+                const RecvReport report = send_part.next_recv_notification();
+
+                expect_timestamp("sender rtt", Rtt, report.rtt, RttEpsilon + MaxDelay);
+                expect_timestamp("sender clock_offset", RecvStartTime - SendStartTime,
+                                 report.clock_offset, RttEpsilon + MaxDelay);
+            }
+        } else {
+            if (start_recv_delay) {
+                recv_delay_countdown = DelayBurst;
+            }
+            recv_delay_countdown--;
+        }
+
+        advance_time(send_time, ReportInterval / 2);
+        advance_time(recv_time, ReportInterval / 2);
+    }
+}
+
+// Same, but there are occasional burst reorders
+TEST(communicator, rtt_network_reordering) {
+    enum { SendSsrc = 11, RecvSsrc = 22, Seed = 100, NumIters = 200 };
+
+    const char* SendCname = "send_cname";
+    const char* RecvCname = "recv_cname";
+
+    const core::nanoseconds_t SendStartTime = 10000000000000000;
+    const core::nanoseconds_t RecvStartTime = 30000000000000000;
+
+    const core::nanoseconds_t ReportInterval = 500 * core::Millisecond;
+    const core::nanoseconds_t Rtt = 200 * core::Millisecond;
+    const int ReorderFreq = 9;
+    const int ReorderBurst = 3;
+    const core::nanoseconds_t MaxDelay = (ReportInterval + Rtt) * ReorderBurst;
+
+    Config config;
+
+    packet::Queue send_queue;
+    MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
+    Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
+                           buffer_factory, arena);
+    CHECK(send_comm.is_valid());
+
+    packet::Queue recv_queue;
+    MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
+                           buffer_factory, arena);
+    CHECK(recv_comm.is_valid());
+
+    core::nanoseconds_t send_time = SendStartTime;
+    core::nanoseconds_t recv_time = RecvStartTime;
+
+    core::List<packet::Packet> send_packet_stash;
+    core::List<packet::Packet> recv_packet_stash;
+
+    int send_reorder_countdown = 0;
+    int recv_reorder_countdown = 0;
+
+    for (int iter = 0; iter < NumIters; iter++) {
+        // Decide whether to reorder packets from this iteration with next one
+        const bool start_send_reorder = (iter + 3) % ReorderFreq == 0;
+        const bool start_recv_reorder = (iter + 5) % ReorderFreq == 0;
+
+        // Generate sender report
+        send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
+        CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
+        CHECK_EQUAL(1, send_queue.size());
+
+        advance_time(send_time, Rtt / 2);
+        advance_time(recv_time, Rtt / 2);
+
+        // Deliver sender reports to receiver
+        if (!start_send_reorder && send_reorder_countdown == 0) {
+            // Enqueue stashed packets (if any) in reverse order
+            while (packet::PacketPtr pp = send_packet_stash.back()) {
+                send_packet_stash.remove(*pp);
+                CHECK_EQUAL(status::StatusOK, send_queue.write(pp));
+            }
+
+            while (send_queue.size() != 0) {
+                packet::PacketPtr pp = read_packet(send_queue);
+                CHECK_EQUAL(status::StatusOK, recv_comm.process_packet(pp, recv_time));
+
+                // Check metrics on receiver
+                const SendReport report = recv_part.next_send_notification();
+                if (iter != 0) {
+                    expect_timestamp("receiver rtt", Rtt, report.rtt,
+                                     RttEpsilon + MaxDelay);
+                    expect_timestamp("receiver clock_offset",
+                                     SendStartTime - RecvStartTime, report.clock_offset,
+                                     RttEpsilon + MaxDelay);
+                }
+            }
+        } else {
+            if (start_send_reorder) {
+                send_reorder_countdown = ReorderBurst;
+            }
+            send_reorder_countdown--;
+            packet::PacketPtr pp = read_packet(send_queue);
+            send_packet_stash.push_back(*pp);
+        }
+
+        advance_time(send_time, ReportInterval / 2);
+        advance_time(recv_time, ReportInterval / 2);
+
+        // Generate receiver report
+        recv_part.set_recv_report(
+            0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed));
+        CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
+        CHECK_EQUAL(1, recv_queue.size());
+
+        advance_time(send_time, Rtt / 2);
+        advance_time(recv_time, Rtt / 2);
+
+        // Deliver receiver reports to sender
+        if (!start_recv_reorder && recv_reorder_countdown == 0) {
+            // Enqueue stashed packets (if any) in reverse order
+            while (packet::PacketPtr pp = recv_packet_stash.back()) {
+                recv_packet_stash.remove(*pp);
+                CHECK_EQUAL(status::StatusOK, recv_queue.write(pp));
+            }
+
+            while (recv_queue.size() != 0) {
+                packet::PacketPtr pp = read_packet(recv_queue);
+                CHECK_EQUAL(status::StatusOK, send_comm.process_packet(pp, send_time));
+
+                // Check metrics on sender
+                const RecvReport report = send_part.next_recv_notification();
+
+                expect_timestamp("sender rtt", Rtt, report.rtt, RttEpsilon + MaxDelay);
+                expect_timestamp("sender clock_offset", RecvStartTime - SendStartTime,
+                                 report.clock_offset, RttEpsilon + MaxDelay);
+            }
+        } else {
+            if (start_recv_reorder) {
+                recv_reorder_countdown = ReorderBurst;
+            }
+            recv_reorder_countdown--;
+            packet::PacketPtr pp = read_packet(recv_queue);
+            recv_packet_stash.push_back(*pp);
+        }
+
+        advance_time(send_time, ReportInterval / 2);
+        advance_time(recv_time, ReportInterval / 2);
+    }
+}
+
+// Same, but there are occasional duplicates
+TEST(communicator, rtt_network_duplicates) {
+    enum { SendSsrc = 11, RecvSsrc = 22, Seed = 100, NumIters = 200 };
+
+    const char* SendCname = "send_cname";
+    const char* RecvCname = "recv_cname";
+
+    const core::nanoseconds_t SendStartTime = 10000000000000000;
+    const core::nanoseconds_t RecvStartTime = 30000000000000000;
+
+    const core::nanoseconds_t ReportInterval = 500 * core::Millisecond;
+    const core::nanoseconds_t Rtt = 200 * core::Millisecond;
+    const int DupFreq = 9;
+    const int DupDelay = 3;
+
+    Config config;
+
+    packet::Queue send_queue;
+    MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
+    Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
+                           buffer_factory, arena);
+    CHECK(send_comm.is_valid());
+
+    packet::Queue recv_queue;
+    MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
+                           buffer_factory, arena);
+    CHECK(recv_comm.is_valid());
+
+    core::nanoseconds_t send_time = SendStartTime;
+    core::nanoseconds_t recv_time = RecvStartTime;
+
+    packet::PacketPtr send_dup_packet;
+    packet::PacketPtr recv_dup_packet;
+
+    int send_dup_countdown = 0;
+    int recv_dup_countdown = 0;
+
+    for (int iter = 0; iter < NumIters; iter++) {
+        // Decide whether to duplicate packets from this iteration to next one
+        const bool dup_send_report = (iter + 3) % DupFreq == 0;
+        const bool dup_recv_report = (iter + 5) % DupFreq == 0;
+
+        packet::PacketPtr pp;
+
+        // Generate sender report
+        send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
+        CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
+        CHECK(send_queue.size() > 0);
+
+        advance_time(send_time, Rtt / 2);
+        advance_time(recv_time, Rtt / 2);
+
+        // Enqueue duplicate packet
+        if (send_dup_packet) {
+            if (--send_dup_countdown == 0) {
+                CHECK_EQUAL(status::StatusOK, send_queue.write(send_dup_packet));
+                send_dup_packet = NULL;
+            }
+        }
+
+        // Deliver sender reports to receiver
+        while (send_queue.size() != 0) {
+            pp = read_packet(send_queue);
+            CHECK_EQUAL(status::StatusOK, recv_comm.process_packet(pp, recv_time));
+
+            // Check metrics on receiver
+            const SendReport report = recv_part.next_send_notification();
+            if (iter != 0) {
+                expect_timestamp("receiver rtt", Rtt, report.rtt, RttEpsilon);
+                expect_timestamp("receiver clock_offset", SendStartTime - RecvStartTime,
+                                 report.clock_offset, RttEpsilon);
+            }
+        }
+
+        if (dup_send_report) {
+            send_dup_packet = pp;
+            send_dup_countdown = DupDelay;
+        }
+
+        advance_time(send_time, ReportInterval / 2);
+        advance_time(recv_time, ReportInterval / 2);
+
+        // Generate receiver report
+        recv_part.set_recv_report(
+            0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed));
+        CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
+        CHECK(recv_queue.size() > 0);
+
+        advance_time(send_time, Rtt / 2);
+        advance_time(recv_time, Rtt / 2);
+
+        // Enqueue duplicate packet
+        if (recv_dup_packet) {
+            if (--recv_dup_countdown == 0) {
+                CHECK_EQUAL(status::StatusOK, recv_queue.write(recv_dup_packet));
+                recv_dup_packet = NULL;
+            }
+        }
+
+        // Deliver receiver reports to sender
+        while (recv_queue.size() != 0) {
+            pp = read_packet(recv_queue);
+            CHECK_EQUAL(status::StatusOK, send_comm.process_packet(pp, send_time));
+
+            // Check metrics on sender
+            const RecvReport report = send_part.next_recv_notification();
+
+            expect_timestamp("sender rtt", Rtt, report.rtt, RttEpsilon);
+            expect_timestamp("sender clock_offset", RecvStartTime - SendStartTime,
+                             report.clock_offset, RttEpsilon);
+        }
+
+        if (dup_recv_report) {
+            recv_dup_packet = pp;
+            recv_dup_countdown = DupDelay;
+        }
+
+        advance_time(send_time, ReportInterval / 2);
+        advance_time(recv_time, ReportInterval / 2);
+    }
+}
+
+// If XR is disabled, RTT and clock offset should remain zero
+TEST(communicator, rtt_missing_xr) {
+    enum { SendSsrc = 11, RecvSsrc = 22, Seed = 100, NumIters = 200 };
+
+    const char* SendCname = "send_cname";
+    const char* RecvCname = "recv_cname";
+
+    const core::nanoseconds_t SendStartTime = 10000000000000000;
+    const core::nanoseconds_t RecvStartTime = 30000000000000000;
+
+    const core::nanoseconds_t ReportInterval = 500 * core::Millisecond;
+    const core::nanoseconds_t Rtt = 200 * core::Millisecond;
+
+    Config config;
+    config.enable_xr = false;
+
+    packet::Queue send_queue;
+    MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
+    Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
+                           buffer_factory, arena);
+    CHECK(send_comm.is_valid());
+
+    packet::Queue recv_queue;
+    MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
+                           buffer_factory, arena);
+    CHECK(recv_comm.is_valid());
+
+    core::nanoseconds_t send_time = SendStartTime;
+    core::nanoseconds_t recv_time = RecvStartTime;
+
+    for (int iter = 0; iter < NumIters; iter++) {
+        // Generate sender report
+        send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
+        CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
+        CHECK_EQUAL(1, send_queue.size());
+
+        advance_time(send_time, Rtt / 2);
+        advance_time(recv_time, Rtt / 2);
+
+        // Deliver sender report to receiver
+        CHECK_EQUAL(status::StatusOK,
+                    recv_comm.process_packet(read_packet(send_queue), recv_time));
+
+        {
+            // Check metrics on receiver
+            const SendReport report = recv_part.next_send_notification();
+            CHECK(report.rtt == 0);
+            CHECK(report.clock_offset == 0);
+        }
+
+        advance_time(send_time, ReportInterval / 2);
+        advance_time(recv_time, ReportInterval / 2);
+
+        // Generate receiver report
+        recv_part.set_recv_report(
+            0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed));
+        CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
+        CHECK_EQUAL(1, recv_queue.size());
+
+        advance_time(send_time, Rtt / 2);
+        advance_time(recv_time, Rtt / 2);
+
+        // Deliver receiver report to sender
+        CHECK_EQUAL(status::StatusOK,
+                    send_comm.process_packet(read_packet(recv_queue), send_time));
+
+        {
+            // Check metrics on sender
+            const RecvReport report = send_part.next_recv_notification();
+            CHECK(report.rtt == 0);
+            CHECK(report.clock_offset == 0);
+        }
+
+        advance_time(send_time, ReportInterval / 2);
+        advance_time(recv_time, ReportInterval / 2);
+    }
 }
 
 TEST(communicator, generation_error) {

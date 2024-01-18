@@ -59,7 +59,7 @@ void print_reception_block(core::Printer& p, const header::ReceptionReportBlock&
     p.writef("|-- lsr: %lu (unix %lld)\n", (unsigned long)blk.last_sr(),
              (long long)packet::ntp_2_unix(blk.last_sr()));
     p.writef("|-- dlsr: %lu (unix %lld)\n", (unsigned long)blk.delay_last_sr(),
-             (long long)packet::ntp_2_unix(blk.delay_last_sr()));
+             (long long)packet::ntp_2_nanoseconds(blk.delay_last_sr()));
 }
 
 void print_rr(core::Printer& p, const header::ReceiverReportPacket& rr) {
@@ -126,7 +126,7 @@ void print_xr_dlrr(core::Printer& p, const header::XrDlrrBlock& blk) {
         p.writef("|--- lrr: %lu (unix %lld)\n", (unsigned long)sub_blk.last_rr(),
                  (long long)packet::ntp_2_unix(sub_blk.last_rr()));
         p.writef("|--- dlrr: %lu (unix %lld)\n", (unsigned long)sub_blk.delay_last_rr(),
-                 (long long)packet::ntp_2_unix(sub_blk.delay_last_rr()));
+                 (long long)packet::ntp_2_nanoseconds(sub_blk.delay_last_rr()));
     }
 }
 

@@ -55,13 +55,28 @@ struct SendReport {
     //! up until the time this report.
     uint32_t byte_count;
 
+    //! Estimated offset of remote clock relative to local clock.
+    //! If you add it to local timestamp, you get estimated remote timestamp.
+    //! If you subtract it from remote timestamp, you get estimated local timestamp.
+    //! Read-only field, you can read it on receiver, but you don't need to fill
+    //! it on sender.
+    core::nanoseconds_t clock_offset;
+
+    //! Estimated round-trip time between sender and receiver.
+    //! Computed based on NTP-like timestamp exchange implemennted by RTCP protocol.
+    //! Read-only field, you can read it on receiver, but you don't need to fill
+    //! it on sender.
+    core::nanoseconds_t rtt;
+
     SendReport()
         : sender_cname(NULL)
         , sender_source_id(0)
         , report_timestamp(0)
         , stream_timestamp(0)
         , packet_count(0)
-        , byte_count(0) {
+        , byte_count(0)
+        , clock_offset(0)
+        , rtt(0) {
     }
 };
 
@@ -114,6 +129,19 @@ struct RecvReport {
     //! time, measured in timestamp units.
     packet::stream_timestamp_t jitter;
 
+    //! Estimated offset of remote clock relative to local clock.
+    //! If you add it to local timestamp, you get estimated remote timestamp.
+    //! If you subtract it from remote timestamp, you get estimated local timestamp.
+    //! Read-only field, you can read it on sender, but you don't need to fill
+    //! it on receiver.
+    core::nanoseconds_t clock_offset;
+
+    //! Estimated round-trip time between sender and receiver.
+    //! Computed based on NTP-like timestamp exchange implemennted by RTCP protocol.
+    //! Read-only field, you can read it on sender, but you don't need to fill
+    //! it on receiver.
+    core::nanoseconds_t rtt;
+
     RecvReport()
         : receiver_cname(NULL)
         , receiver_source_id(0)
@@ -122,7 +150,9 @@ struct RecvReport {
         , ext_last_seqnum(0)
         , fract_loss(0)
         , cum_loss(0)
-        , jitter(0) {
+        , jitter(0)
+        , clock_offset(0)
+        , rtt(0) {
     }
 };
 

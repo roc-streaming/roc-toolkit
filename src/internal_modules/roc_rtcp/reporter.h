@@ -22,11 +22,14 @@
 #include "roc_core/shared_ptr.h"
 #include "roc_core/slab_pool.h"
 #include "roc_core/time.h"
+#include "roc_packet/ntp.h"
 #include "roc_packet/units.h"
+#include "roc_rtcp/cname.h"
 #include "roc_rtcp/config.h"
 #include "roc_rtcp/headers.h"
 #include "roc_rtcp/iparticipant.h"
 #include "roc_rtcp/reports.h"
+#include "roc_rtcp/rtt_estimator.h"
 #include "roc_rtcp/sdes.h"
 #include "roc_status/status_code.h"
 
@@ -205,7 +208,7 @@ public:
 private:
     enum { PreallocatedStreams = 8, PreallocatedAddresses = 4 };
 
-    enum State {
+    enum ReportState {
         State_Idle,       // Default state
         State_Processing, // Between begin_processing() and end_processing()
         State_Generating, // Between begin_generation() and end_generation()
@@ -225,32 +228,40 @@ private:
                     core::ListNode {
         Stream(core::IPool& pool,
                packet::stream_source_t source_id,
-               packet::stream_source_t report_time)
+               core::nanoseconds_t report_time)
             : core::RefCounted<Stream, core::PoolAllocation>(pool)
             , source_id(source_id)
             , has_remote_recv_report(false)
             , has_remote_send_report(false)
             , local_recv_report(NULL)
             , last_update(report_time)
-            , last_sr(0)
-            , last_rr(0)
+            , last_local_sr(0)
+            , last_remote_rr(0)
+            , last_remote_rr_ntp(0)
+            , last_remote_dlsr(0)
+            , last_local_rr(0)
+            , last_remote_sr(0)
+            , last_remote_sr_ntp(0)
+            , last_remote_dlrr(0)
             , is_looped(false) {
             cname[0] = '\0';
         }
 
         // SSRC and CNAME of remote participant.
         packet::stream_source_t source_id;
-        char cname[header::SdesItemHeader::MaxTextLen + 1];
+        char cname[MaxCnameLen + 1];
 
         // Stream is sending to remote participant and we obtained
         // receiver report from it.
         bool has_remote_recv_report;
         RecvReport remote_recv_report;
+        RttEstimator remote_recv_rtt;
 
         // Stream is receiving from remote participant and we obtained
         // sender report from it.
         bool has_remote_send_report;
         SendReport remote_send_report;
+        RttEstimator remote_send_rtt;
 
         // Stream is receiving from remote participant and this is our
         // receiver report to be delivered to remote side.
@@ -261,10 +272,27 @@ private:
         // Remote address from where reports are coming.
         address::SocketAddr remote_address;
 
-        // Local timestamps.
+        // Whenever stream is updated, this timestamp changes and stream
+        // is moved to the front of stream_lru_ list.
         core::nanoseconds_t last_update;
-        core::nanoseconds_t last_sr;
-        core::nanoseconds_t last_rr;
+
+        // When we sent last SR for which we received DLSR (local clock).
+        core::nanoseconds_t last_local_sr;
+        // When we received last RR (local clock).
+        core::nanoseconds_t last_remote_rr;
+        // NTP timestamp from last RR (as it was in packet, remote clock).
+        packet::ntp_timestamp_t last_remote_rr_ntp;
+        // DLSR received with last RR (delta, remote clock).
+        core::nanoseconds_t last_remote_dlsr;
+
+        // When we sent last RR for which we received DLRR (local clock).
+        core::nanoseconds_t last_local_rr;
+        // When we received last SR (local clock).
+        core::nanoseconds_t last_remote_sr;
+        // NTP timestamp from last SR (as it was in packet, remote clock).
+        packet::ntp_timestamp_t last_remote_sr_ntp;
+        // DLRR received with last SR (delta, remote clock).
+        core::nanoseconds_t last_remote_dlrr;
 
         // Set when we detect network loop.
         bool is_looped;
@@ -291,12 +319,12 @@ private:
         Address(core::IPool& pool,
                 core::IArena& arena,
                 const address::SocketAddr& remote_address,
-                packet::stream_source_t report_time)
+                core::nanoseconds_t report_time)
             : core::RefCounted<Address, core::PoolAllocation>(pool)
             , remote_address(remote_address)
             , send_stream_index(arena)
             , recv_stream_index(arena)
-            , last_update(report_time) {
+            , last_rebuild(report_time) {
         }
 
         // Destination address where to send reports.
@@ -307,8 +335,9 @@ private:
         core::Array<Stream*, PreallocatedStreams> send_stream_index;
         core::Array<Stream*, PreallocatedStreams> recv_stream_index;
 
-        // Update timestamp.
-        core::nanoseconds_t last_update;
+        // Whenever address is rebuilt, this timestamp changes and address
+        // is moved to the front of address_lru_ list.
+        core::nanoseconds_t last_rebuild;
 
         const address::SocketAddr& key() const {
             return remote_address;
@@ -323,6 +352,8 @@ private:
             return addr1 == addr2;
         }
     };
+
+    bool can_generate_last_ts_(core::nanoseconds_t last_ts) const;
 
     status::StatusCode notify_streams_();
     status::StatusCode query_streams_();
@@ -343,7 +374,7 @@ private:
     core::SharedPtr<Address> find_address_(const address::SocketAddr& remote_address,
                                            CreateMode mode);
     void remove_address_(Address& address);
-    void update_address_(Address& address);
+    void rebuild_address_(Address& address);
 
     core::IArena& arena_;
 
@@ -357,7 +388,7 @@ private:
     address::SocketAddr participant_report_addr_;
 
     // Information obtained from IParticipant.
-    char local_cname_[header::SdesItemHeader::MaxTextLen + 1];
+    char local_cname_[MaxCnameLen + 1];
     packet::stream_source_t local_source_id_;
     bool has_local_send_report_;
     SendReport local_send_report_;
@@ -369,35 +400,46 @@ private:
 
     // List of all streams (from stream map) ordered by update time.
     // Recently updated streams are moved to the front of the list.
+    // This list always contains all existing streams.
     core::List<Stream, core::NoOwnership> stream_lru_;
 
     // Map of all destination addresses.
+    // In Report_ToAddress mode, there will be only one address.
+    // In Report_Back mode, addresses will be allocated as we discover
+    // new remote participants.
     core::SlabPool<Address, PreallocatedAddresses> address_pool_;
     core::Hashmap<Address, PreallocatedAddresses> address_map_;
 
-    // List of all addresss (from address map) ordered by update time.
-    // Recently updated addreses are moved to the front of the list.
+    // List of all addresss (from address map) ordered by rebuild time.
+    // Recently rebuilt addreses are moved to the front of the list.
+    // This list always contains all existing addresses.
     core::List<Address, core::NoOwnership> address_lru_;
 
     // Pointers to addresses (from address map), which in turn hold
     // pointers to streams (from stream map), for fast access by index
     // during report generation.
     core::Array<Address*, PreallocatedAddresses> address_index_;
-    // If true, the index should be rebuilt.
+    // If true, the index should be rebuilt before next generation.
     bool need_rebuild_index_;
+
+    // When we sent most recent SR (local clock).
+    core::nanoseconds_t current_sr_;
+    // When we sent most recent RR (local clock).
+    core::nanoseconds_t current_rr_;
 
     // SSRC collision detection state.
     bool collision_detected_;
     bool collision_reported_;
 
     // Report processing & generation state.
-    State report_state_;
+    ReportState report_state_;
     status::StatusCode report_error_;
     address::SocketAddr report_addr_;
     core::nanoseconds_t report_time_;
 
-    // Inactivity timeout to remove dead streams.
-    const core::nanoseconds_t timeout_;
+    // Configuration.
+    const core::nanoseconds_t inactivity_timeout_;
+    const core::nanoseconds_t max_delay_;
 
     bool valid_;
 };

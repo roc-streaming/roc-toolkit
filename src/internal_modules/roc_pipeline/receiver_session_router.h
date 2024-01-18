@@ -24,6 +24,7 @@
 #include "roc_core/slab_pool.h"
 #include "roc_packet/units.h"
 #include "roc_pipeline/receiver_session.h"
+#include "roc_rtcp/cname.h"
 #include "roc_rtcp/headers.h"
 #include "roc_status/status_code.h"
 
@@ -132,11 +133,7 @@ public:
     void unlink_source(packet::stream_source_t source_id);
 
 private:
-    enum {
-        PreallocatedRoutes = 4,
-        PreallocatedSources = 8,
-        MaxCnameLen = rtcp::header::SdesItemHeader::MaxTextLen
-    };
+    enum { PreallocatedRoutes = 4, PreallocatedSources = 8 };
 
     struct Route;
 
@@ -261,7 +258,7 @@ private:
 
         // Sender cname.
         // May be empty.
-        char cname[MaxCnameLen + 1];
+        char cname[rtcp::MaxCnameLen + 1];
 
         // Sender main source ID.
         // Set to one of the identifiers fomr source_nodes list and

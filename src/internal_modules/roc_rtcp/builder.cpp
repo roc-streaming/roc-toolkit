@@ -178,9 +178,9 @@ void Builder::add_sdes_item(const SdesItem& item) {
     const size_t text_size = strlen(item.text);
     const size_t total_size = sizeof(header::SdesItemHeader) + text_size;
 
-    roc_panic_if_msg(text_size > header::SdesItemHeader::MaxTextLen,
+    roc_panic_if_msg(text_size > header::MaxTextLen,
                      "rtcp builder: SDES item text can't longer than %d bytes",
-                     (int)header::SdesItemHeader::MaxTextLen);
+                     (int)header::MaxTextLen);
 
     if (item.type == header::SDES_CNAME) {
         roc_panic_if_msg(item.text[0] == '\0',
@@ -273,9 +273,9 @@ void Builder::add_bye_reason(const char* reason) {
     const size_t total_size = sizeof(header::ByeReasonHeader) + text_size;
     const size_t padding_size = header::padding_len(total_size, 0);
 
-    roc_panic_if_msg(text_size > header::SdesItemHeader::MaxTextLen,
+    roc_panic_if_msg(text_size > header::MaxTextLen,
                      "rtcp builder: BYE reason text can't longer than %d bytes",
-                     (int)header::SdesItemHeader::MaxTextLen);
+                     (int)header::MaxTextLen);
 
     state_ = BYE_REASON;
 

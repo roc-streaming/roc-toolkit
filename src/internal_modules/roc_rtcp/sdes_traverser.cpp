@@ -38,7 +38,7 @@ bool SdesTraverser::parse() {
     }
 
     chunks_count_ = sdes->header().counter();
-    if (chunks_count_ > header::PacketMaxBlocks) {
+    if (chunks_count_ > header::MaxPacketBlocks) {
         return false;
     }
 

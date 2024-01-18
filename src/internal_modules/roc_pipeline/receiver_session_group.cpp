@@ -281,12 +281,12 @@ ReceiverSessionGroup::route_transport_packet_(const packet::PacketPtr& packet) {
         // same session.
         //
         // This does not conform to RFC 3550 (it mandates routing only by *destination*
-        // address) and is not guaranteed to work, but it works in sample cases, assuming
+        // address) and is not guaranteed to work, but it works in simple cases, assuming
         // that sender uses single port to send all packets (which is often the case) and
         // there are no retranslators involved (which is rarely the case).
         //
-        // If we have functioning RTCP or RTSP, this fallback logic not used because we
-        // will either find route based on SSRC, or will use separate destination
+        // If we have functioning RTCP or RTSP, this fallback logic isn't used because
+        // we'll either find route based on SSRC, or will use separate destination
         // addresses (and hence separate session groups) for each sender.
         sess = session_router_.find_by_address(packet->udp()->src_addr);
     }
@@ -346,8 +346,8 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
 
     const packet::stream_source_t source_id = packet->source_id();
 
-    const address::SocketAddr src_address = packet->udp()->src_addr;
-    const address::SocketAddr dst_address = packet->udp()->dst_addr;
+    const address::SocketAddr& src_address = packet->udp()->src_addr;
+    const address::SocketAddr& dst_address = packet->udp()->dst_addr;
 
     roc_log(LogInfo, "session group: creating session: src_addr=%s dst_addr=%s",
             address::socket_addr_to_str(src_address).c_str(),
