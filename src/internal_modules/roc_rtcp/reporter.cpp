@@ -14,6 +14,7 @@
 #include "roc_packet/ntp.h"
 #include "roc_packet/units.h"
 #include "roc_rtcp/cname.h"
+#include "roc_rtcp/participant_info.h"
 #include "roc_status/status_code.h"
 
 namespace roc {
@@ -26,8 +27,6 @@ Reporter::Reporter(const Config& config, IParticipant& participant, core::IArena
     , has_local_send_report_(false)
     , local_send_report_()
     , local_recv_reports_(arena)
-    , use_static_report_addr_(false)
-    , static_report_addr_()
     , stream_pool_("stream_pool", arena)
     , stream_map_(arena)
     , address_pool_("address_pool", arena)
@@ -45,6 +44,9 @@ Reporter::Reporter(const Config& config, IParticipant& participant, core::IArena
 
     const ParticipantInfo part_info = participant_.participant_info();
 
+    participant_report_mode_ = part_info.report_mode;
+    participant_report_addr_ = part_info.report_address;
+
     if (part_info.cname == NULL || part_info.cname[0] == '\0'
         || strlen(part_info.cname) > sizeof(local_cname_) - 1) {
         roc_log(LogError, "rtcp reporter: cname() should return short non-empty string");
@@ -54,20 +56,12 @@ Reporter::Reporter(const Config& config, IParticipant& participant, core::IArena
     local_source_id_ = part_info.source_id;
     strcpy(local_cname_, part_info.cname);
 
-    if (part_info.report_back) {
-        use_static_report_addr_ = false;
-    } else {
-        use_static_report_addr_ = true;
-        static_report_addr_ = part_info.report_address;
-    }
-
     roc_log(LogDebug,
             "rtcp reporter: initializing:"
-            " local_ssrc=%lu local_cname=%s report_addr=%s timeout=%.3fms",
+            " local_ssrc=%lu local_cname=%s report_mode=%s report_addr=%s timeout=%.3fms",
             (unsigned long)local_source_id_, cname_to_str(local_cname_).c_str(),
-            use_static_report_addr_
-                ? address::socket_addr_to_str(static_report_addr_).c_str()
-                : "<report_back>",
+            participant_report_mode_ == Report_ToAddress ? "address" : "back",
+            address::socket_addr_to_str(participant_report_addr_).c_str(),
             (double)timeout_ / core::Millisecond);
 
     valid_ = true;
@@ -98,6 +92,12 @@ size_t Reporter::num_streams() const {
     roc_panic_if(!is_valid());
 
     return stream_map_.size();
+}
+
+size_t Reporter::num_destinations() const {
+    roc_panic_if(!is_valid());
+
+    return address_map_.size();
 }
 
 status::StatusCode Reporter::begin_processing(const address::SocketAddr& report_addr,
@@ -746,12 +746,12 @@ status::StatusCode Reporter::rebuild_index_() {
     // discovered receiver and add it to index. Its report will be
     // later used to generate XR packets for that specific receiver.
     if (has_local_send_report_) {
-        if (use_static_report_addr_) {
+        if (participant_report_mode_ == Report_ToAddress) {
             // If there is configured single destination address for all
             // reports, ensure that it's always present in the index,
             // even if there are no sending steam objects.
             core::SharedPtr<Address> address =
-                find_address_(static_report_addr_, AutoCreate);
+                find_address_(participant_report_addr_, AutoCreate);
             if (!address) {
                 return status::StatusNoMem;
             }
@@ -766,7 +766,8 @@ status::StatusCode Reporter::rebuild_index_() {
             }
 
             core::SharedPtr<Address> address = find_address_(
-                use_static_report_addr_ ? static_report_addr_ : stream->remote_address,
+                participant_report_mode_ == Report_ToAddress ? participant_report_addr_
+                                                             : stream->remote_address,
                 AutoCreate);
             if (!address) {
                 return status::StatusNoMem;
@@ -790,12 +791,14 @@ status::StatusCode Reporter::rebuild_index_() {
         if (!stream) {
             return status::StatusNoMem;
         }
-        if (!stream->has_remote_send_report && !use_static_report_addr_) {
+        if (participant_report_mode_ != Report_ToAddress
+            && !stream->has_remote_send_report) {
             continue;
         }
 
         core::SharedPtr<Address> address = find_address_(
-            use_static_report_addr_ ? static_report_addr_ : stream->remote_address,
+            participant_report_mode_ == Report_ToAddress ? participant_report_addr_
+                                                         : stream->remote_address,
             AutoCreate);
         if (!address) {
             return status::StatusNoMem;

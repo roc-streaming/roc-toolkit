@@ -18,6 +18,21 @@
 namespace roc {
 namespace rtcp {
 
+//! Participant report generation mode.
+enum ParticipantReportMode {
+    //! Reports are sent to a single static destination address,
+    //! set via report_address field of ParticipantInfo struct.
+    //! This mode is typically used on sender side.
+    Report_ToAddress,
+
+    //! Reports are sent back to dynamically discovered participant.
+    //! In this mode, for every stream we send or receive via RTP, we remember
+    //! address from which RTCP reports for that stream come. Then we send
+    //! reports back to all such addresses.
+    //! This mode is typically used on receiver side.
+    Report_Back,
+};
+
 //! Participant info.
 //! @remarks
 //!  Provides information about RTCP participant (sender/receiver).
@@ -34,22 +49,19 @@ struct ParticipantInfo {
     //! If there are receivings streams, theirs receiver_source_id should be equal to it.
     packet::stream_source_t source_id;
 
-    //! If set, reports are sent to this destination address.
-    //! Used if report_back is false.
-    //! Typically set on sender side.
-    address::SocketAddr report_address;
+    //! Participant report mode.
+    //! Deterimeds where to send generated reports.
+    ParticipantReportMode report_mode;
 
-    //! If set, reports are sent back to discovered senders.
-    //! For every stream we send or receive via RTP, we remember address from which RTCP
-    //! reports for that stream come. Then we send reports back to all such addresses.
-    //! Typically set on receiver side.
-    bool report_back;
+    //! Participant destination report address.
+    //! Used if report_mode is set to Report_ToAddress.
+    address::SocketAddr report_address;
 
     ParticipantInfo()
         : cname(NULL)
         , source_id(0)
-        , report_address()
-        , report_back(false) {
+        , report_mode(Report_ToAddress)
+        , report_address() {
     }
 };
 

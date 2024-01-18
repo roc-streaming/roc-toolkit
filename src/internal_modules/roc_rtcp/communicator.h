@@ -68,8 +68,11 @@ public:
     //! Check if initialization succeeded.
     bool is_valid() const;
 
-    //! Get number of active streams, for testing.
+    //! Get number of tracked streams, for testing.
     size_t num_streams() const;
+
+    //! Get number of tracked destination addresses, for testing.
+    size_t num_destinations() const;
 
     //! Parse and process incoming packet.
     //! Invokes IParticipant methods during processing.

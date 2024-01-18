@@ -11,6 +11,7 @@
 #include "roc_core/panic.h"
 #include "roc_core/time.h"
 #include "roc_fec/codec_map.h"
+#include "roc_rtcp/participant_info.h"
 
 namespace roc {
 namespace pipeline {
@@ -240,6 +241,7 @@ rtcp::ParticipantInfo SenderSession::participant_info() {
 
     part_info.cname = identity_->cname();
     part_info.source_id = identity_->ssrc();
+    part_info.report_mode = rtcp::Report_ToAddress;
     part_info.report_address = rtcp_address_;
 
     return part_info;

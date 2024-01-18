@@ -64,6 +64,10 @@ size_t Communicator::num_streams() const {
     return reporter_.num_streams();
 }
 
+size_t Communicator::num_destinations() const {
+    return reporter_.num_destinations();
+}
+
 status::StatusCode Communicator::process_packet(const packet::PacketPtr& packet,
                                                 core::nanoseconds_t current_time) {
     roc_panic_if(!is_valid());
@@ -436,7 +440,7 @@ status::StatusCode Communicator::end_packet_generation_() {
 bool Communicator::continue_packet_generation_() {
     if (srrr_index_ == srrr_max_ && dlrr_index_ == dlrr_max_) {
         if (max_dest_addrs_ == 0) {
-            // This is the very first report.
+            // This is the very first report, do some initialization.
             max_dest_addrs_ = reporter_.num_dest_addresses();
             cur_dest_addr_ = 0;
         } else {
@@ -449,11 +453,12 @@ bool Communicator::continue_packet_generation_() {
         }
 
         if (cur_dest_addr_ == max_dest_addrs_) {
-            // We've reported all blocks for all destination addesses,
-            // exit generation.
+            // We've reported all blocks for all destination addesses (or maybe
+            // there are no destination addesses), exit generation.
             return false;
         }
 
+        // Prepare to generate packets for new destination address.
         cur_pkt_block_ = 0;
 
         srrr_index_ = 0;
@@ -467,6 +472,7 @@ bool Communicator::continue_packet_generation_() {
             : 0;
     }
 
+    // Continue generation.
     return true;
 }
 
@@ -648,7 +654,7 @@ void Communicator::generate_standard_report_(Builder& bld) {
 
         bld.end_sr();
     } else {
-        // We're only receiving.
+        // We're either only receiving, or nor sending neither receiving.
         // Create RR in this case.
         header::ReceiverReportPacket rr;
         reporter_.generate_rr(rr);

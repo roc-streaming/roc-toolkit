@@ -10,6 +10,7 @@
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_rtcp/participant_info.h"
 #include "roc_status/code_to_str.h"
 
 namespace roc {
@@ -170,7 +171,7 @@ rtcp::ParticipantInfo ReceiverSessionGroup::participant_info() {
 
     part_info.cname = identity_->cname();
     part_info.source_id = identity_->ssrc();
-    part_info.report_back = true;
+    part_info.report_mode = rtcp::Report_Back;
 
     return part_info;
 }

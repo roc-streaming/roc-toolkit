@@ -97,8 +97,11 @@ public:
     //! Check if there are local receiving streams.
     bool is_receiving() const;
 
-    //! Get number of active streams, for testing.
+    //! Get number of tracked streams, for testing.
     size_t num_streams() const;
+
+    //! Get number of tracked destination addresses, for testing.
+    size_t num_destinations() const;
 
     //! @name Report processing
     //! @{
@@ -312,7 +315,7 @@ private:
         }
 
         static core::hashsum_t key_hash(const address::SocketAddr& addr) {
-            return core::hashsum_mem(addr.saddr(), addr.slen());
+            return core::hashsum_mem(addr.saddr(), (size_t)addr.slen());
         }
 
         static bool key_equal(const address::SocketAddr& addr1,
@@ -347,17 +350,18 @@ private:
     // Interface implemented by local sender/receiver pipeline.
     IParticipant& participant_;
 
+    // Defines whether participant uses a single static destinatation address
+    // for all all reports, or otherwise sends individual reports to dynamically
+    // discovered remote addresses.
+    ParticipantReportMode participant_report_mode_;
+    address::SocketAddr participant_report_addr_;
+
     // Information obtained from IParticipant.
     char local_cname_[header::SdesItemHeader::MaxTextLen + 1];
     packet::stream_source_t local_source_id_;
     bool has_local_send_report_;
     SendReport local_send_report_;
     core::Array<RecvReport, PreallocatedStreams> local_recv_reports_;
-
-    // Whether to use single destination address for all reports, or
-    // otherwise send reports back to remote participant addresses.
-    bool use_static_report_addr_;
-    address::SocketAddr static_report_addr_;
 
     // Map of all streams, identified by SSRC.
     core::SlabPool<Stream, PreallocatedStreams> stream_pool_;
