@@ -26,7 +26,7 @@ struct LinkMetrics {
     //! The low 16 bits contain the highest sequence number received in an RTP data
     //! packet, and the rest bits extend that sequence number with the corresponding
     //! count of seqnum cycles.
-    uint32_t ext_last_seqnum;
+    packet::ext_seqnum_t ext_last_seqnum;
 
     //! Fraction of lost packets from 0 to 1.
     //! The fraction of RTP data packets lost since the previous report was sent.

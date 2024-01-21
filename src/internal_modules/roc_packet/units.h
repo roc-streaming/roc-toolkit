@@ -83,6 +83,11 @@ inline bool seqnum_le(const seqnum_t a, const seqnum_t b) {
     return seqnum_diff(a, b) <= 0;
 }
 
+//! Extended sequence number.
+//! @remarks
+//!  Sequence number extended to 32 bits.
+typedef uint32_t ext_seqnum_t;
+
 //! FEC packet block number.
 //! @remarks
 //!  Defines position of FEC packet block within stream.

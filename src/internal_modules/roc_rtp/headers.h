@@ -33,8 +33,10 @@ enum PayloadType {
 };
 
 //! RTP header.
-//! @remarks
-//!  Contains fixed size part of 12 bytes and variable size CSRC array.
+//!
+//! Contains fixed size part of 12 bytes and variable size CSRC array.
+//!
+//! RFC 3550 5.1: "RTP Fixed Header Fields"
 //!
 //! @code
 //!    0             1               2               3               4
@@ -219,9 +221,11 @@ public:
 } ROC_ATTR_PACKED_END;
 
 //! RTP extension header.
-//! @remarks
-//!  Extension contains fixed size header of 4 bytes followed by variable
-//!  length data.
+//!
+//! Extension contains fixed size header of 4 bytes followed by variable
+//! length data.
+//!
+//! RFC 3550 5.3.1: "RTP Header Extension"
 //!
 //! @code
 //!    0             1               2               3               4

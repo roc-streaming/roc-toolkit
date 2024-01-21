@@ -33,7 +33,9 @@ enum PayloadID_Pos {
     Footer  //!< PayloadID comes after payload.
 };
 
-//! LDPC Source FEC Payload ID.
+//! LDPC-Staircase Source FEC Payload ID.
+//!
+//! RFC 6816 5.1.2: "Explicit Source FEC Payload ID"
 //!
 //! @code
 //!    0                   1                   2                   3
@@ -106,7 +108,9 @@ public:
     }
 } ROC_ATTR_PACKED_END;
 
-//! LDPC Repair FEC Payload ID.
+//! LDPC-Staircase Repair FEC Payload ID.
+//!
+//! RFC 6816 5.1.3: "Repair FEC Payload ID"
 //!
 //! @code
 //!    0                   1                   2                   3
@@ -184,6 +188,8 @@ public:
 } ROC_ATTR_PACKED_END;
 
 //! Reed-Solomon Source or Repair Payload ID (for m=8).
+//!
+//! RFC 5510 5.1: "FEC Payload ID"
 //!
 //! @code
 //!    0                   1                   2                   3

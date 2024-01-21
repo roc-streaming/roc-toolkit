@@ -16,6 +16,19 @@ namespace rtcp {
 
 TEST_GROUP(headers) {};
 
+TEST(headers, set_bit_field) {
+    uint32_t val = 0;
+
+    header::set_bit_field(val, (uint32_t)0xdd, 4, 0xf);
+    CHECK_EQUAL(0xd0, val);
+
+    header::set_bit_field(val, (uint32_t)0xc, 8, 0xf);
+    CHECK_EQUAL(0xcd0, val);
+
+    header::set_bit_field(val, (uint32_t)0xe, 4, 0xf);
+    CHECK_EQUAL(0xce0, val);
+}
+
 TEST(headers, extend_timestamp) {
     { // no wrap
         const packet::ntp_timestamp_t base = 0xAAAABBBBCCCCDDDD;

@@ -30,9 +30,9 @@ namespace header {
 //! @param shift From which bit num the field start.
 //! @param mask The bitmask.
 template <typename T>
-void set_bitfield(T& v0, const T v1, const size_t shift, const size_t mask) {
+void set_bit_field(T& v0, const T v1, const size_t shift, const size_t mask) {
     v0 &= T(~(mask << shift));
-    v0 |= T(v1 << shift);
+    v0 |= T((v1 & mask) << shift);
 }
 
 //! Computes the value of RTCP packet header length field from input number.
@@ -119,6 +119,8 @@ static const packet::ntp_timestamp_t MaxDelay = 0x0000FFFFFFFFFFFF;
 
 //! Helper to store 64-bit ntp timestamp in a common way among RTCP.
 //!
+//! RFC 3550 6.4.1: "SR: Sender Report RTCP Packet"
+//!
 //! @code
 //!  0                   1                   2                   3
 //!  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -128,6 +130,8 @@ static const packet::ntp_timestamp_t MaxDelay = 0x0000FFFFFFFFFFFF;
 //! |             NTP timestamp, least significant word             |
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
+//!
+//! From RFC 3550.
 ROC_ATTR_PACKED_BEGIN class NtpTimestamp {
 private:
     enum {
@@ -169,11 +173,14 @@ public:
 
 //! RTCP packet header, common for all RTCP packet types.
 //!
+//! RFC 3550 6.4.1: "SR: Sender Report RTCP Packet"
+//! RFC 3550 6.4.2: "RR: Receiver Report RTCP Packet"
+//!
 //! @code
 //!  0                   1                   2                   3
 //!  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//! |V=2|P|    RC   |   PT=SR=200   |             length            |
+//! |V=2|P|    RC   |       PT      |             length            |
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
 ROC_ATTR_PACKED_BEGIN class PacketHeader {
@@ -231,7 +238,7 @@ public:
     //! Set number of blocks/chunks.
     void set_counter(const size_t c) {
         roc_panic_if(c > MaxPacketBlocks);
-        set_bitfield<uint8_t>(count_, (uint8_t)c, Flag_CounterShift, Flag_CounterMask);
+        set_bit_field<uint8_t>(count_, (uint8_t)c, Flag_CounterShift, Flag_CounterMask);
     }
 
     //! Increment packet counter,
@@ -247,7 +254,7 @@ public:
     //! Set protocol version.
     void set_version(Version v) {
         roc_panic_if((v & Flag_VersionMask) != v);
-        set_bitfield<uint8_t>(count_, v, Flag_VersionShift, Flag_VersionMask);
+        set_bit_field<uint8_t>(count_, v, Flag_VersionShift, Flag_VersionMask);
     }
 
     //! Get padding flag.
@@ -257,7 +264,7 @@ public:
 
     //! Set padding flag.
     void set_padding(bool v) {
-        set_bitfield(count_, (uint8_t)v, Flag_PaddingShift, Flag_PaddingMask);
+        set_bit_field(count_, (uint8_t)v, Flag_PaddingShift, Flag_PaddingMask);
     }
 
     //! Get packet type.
@@ -295,6 +302,9 @@ public:
 //! Reception report block.
 //!
 //! Part of RR and SR packets.
+//!
+//! RFC 3550 6.4.1: "SR: Sender Report RTCP Packet"
+//! RFC 3550 6.4.2: "RR: Receiver Report RTCP Packet"
 //!
 //! @code
 //!  0                   1                   2                   3
@@ -394,8 +404,8 @@ public:
             (uint8_t)(uint32_t)(fract_loss * float(1 << Losses_FractLoss_width));
 
         uint32_t losses = core::ntoh32u(losses_);
-        set_bitfield<uint32_t>(losses, fract_loss8, Losses_FractLost_shift,
-                               Losses_FractLost_mask);
+        set_bit_field<uint32_t>(losses, fract_loss8, Losses_FractLost_shift,
+                                Losses_FractLost_mask);
 
         losses_ = core::hton32u(losses);
     }
@@ -423,19 +433,19 @@ public:
         }
 
         uint32_t losses = core::ntoh32u(losses_);
-        set_bitfield<uint32_t>(losses, (uint32_t)cum_loss, Losses_CumLoss_shift,
-                               Losses_CumLoss_mask);
+        set_bit_field<uint32_t>(losses, (uint32_t)cum_loss, Losses_CumLoss_shift,
+                                Losses_CumLoss_mask);
 
         losses_ = core::hton32u(losses);
     }
 
     //! Get last seqnum.
-    uint32_t last_seqnum() const {
+    packet::ext_seqnum_t last_seqnum() const {
         return core::ntoh32u(last_seq_);
     }
 
     //! Set last seqnum.
-    void set_last_seqnum(const uint32_t x) {
+    void set_last_seqnum(const packet::ext_seqnum_t x) {
         last_seq_ = core::hton32u(x);
     }
 
@@ -483,7 +493,7 @@ public:
 
 //! Receiver Report RTCP packet (RR).
 //!
-//! RFC 3550 6.4.2. "RR: Receiver Report RTCP packet"
+//! RFC 3550 6.4.2: "RR: Receiver Report RTCP packet"
 //!
 //! @code
 //!         0                   1                   2                   3
@@ -714,6 +724,7 @@ public:
 
 //! SDES item type.
 enum SdesItemType {
+    // RFC 3550
     SDES_CNAME = 1, //!< Canonical End-Point Identifier.
     SDES_NAME = 2,  //!< User Name.
     SDES_EMAIL = 3, //!< Electronic Mail Address.
@@ -727,6 +738,8 @@ enum SdesItemType {
 //! SDES chunk header.
 //!
 //! Part of SDES packet.
+//!
+//! RFC 3550 6.5: "SDES: Source Description RTCP packet"
 //!
 //! @code
 //!  0                   1                   2                   3
@@ -764,6 +777,8 @@ public:
 //!
 //! Part of SDES packet.
 //!
+//! RFC 3550 6.5: "SDES: Source Description RTCP packet"
+//!
 //! @code
 //!  0                   1                   2                   3
 //!  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -793,7 +808,6 @@ public:
 
     //! Set type.
     void set_type(const SdesItemType t) {
-        roc_panic_if_not(t == 0 || (t >= SDES_CNAME && t <= SDES_PRIV));
         type_ = t;
     }
 
@@ -823,13 +837,13 @@ public:
 
 //! Source Description RTCP packet (SDES).
 //!
-//! RFC 3550 6.5. "SDES: Source Description RTCP packet"
+//! RFC 3550 6.5: "SDES: Source Description RTCP packet"
 //!
 //! @code
 //!         0                   1                   2                   3
 //!         0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 //!        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//! header |V=2|P|    RC   |   PT=Sdes=202  |             length           |
+//! header |V=2|P|    RC   |   PT=SDES=202  |             length           |
 //!        +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //! Chunk1 |                 SSRC_1 (SSRC of first source)                 |
 //!        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -877,6 +891,8 @@ public:
 //!
 //! Part of BYE packet.
 //!
+//! RFC 3550 6.6: "BYE: Goodbye RTCP Packet"
+//!
 //! @code
 //!  0                   1                   2                   3
 //!  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -912,6 +928,8 @@ public:
 //! BYE reason header.
 //!
 //! Part of BYE packet.
+//!
+//! RFC 3550 6.6: "BYE: Goodbye RTCP Packet"
 //!
 //! @code
 //!  0                   1                   2                   3
@@ -966,7 +984,7 @@ public:
 //!        0                   1                   2                   3
 //!        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 //!       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//!       |V=2|P|    SC   |   PT=Bye=203  |             length            |
+//!       |V=2|P|    SC   |   PT=BYE=203  |             length            |
 //!       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //!       |                           SSRC/CSRC                           |
 //!       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -1002,13 +1020,13 @@ public:
 
 //! RTCP Extended Report Packet.
 //!
-//! RFC 3611 2. "XR Packet Format"
+//! RFC 3611 2: "XR Packet Format"
 //!
 //! @code
 //!  0                   1                   2                   3
 //!  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//! |V=2|P|reserved |   PT=Xr=207   |             length            |
+//! |V=2|P|reserved |   PT=XR=207   |             length            |
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! |                              SSRC                             |
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -1054,16 +1072,18 @@ public:
 
 //! XR Block Type.
 enum XrBlockType {
-    XR_LOSS_RLE = 1,          //!< Loss RLE Report Block.
-    XR_DUPLICATE_RLE = 2,     //!< Duplicate RLE Report Block.
-    XR_PACKET_RECPT_TIME = 3, //!< Packet Receipt Times Report Block.
-    XR_RRTR = 4,              //!< Receiver Reference Time Report Block.
-    XR_DLRR = 5,              //!< DLRR Report Block.
-    XR_STAT_SUMMARY = 6,      //!< Statistics Summary Report Block.
-    XR_VOIP_METRICS = 7       //!< VoIP Metrics Report Block.
+    // RFC 3611
+    XR_RRTR = 4, //!< Receiver Reference Time Report Block.
+    XR_DLRR = 5, //!< DLRR Report Block.
+    // RFC 6776
+    XR_MEASUREMENT_INFO = 14, //!< Measurement Information Report Block.
+    // RFC 6843
+    XR_DELAY_METRICS = 16 //!< Delay Metrics Report Block.
 };
 
 //! XR Block Header.
+//!
+//! RFC 3611 3: "Extended Report Block Framework"
 //!
 //! @code
 //!  0                   1                   2                   3
@@ -1099,7 +1119,6 @@ public:
 
     //! Set XR block type.
     void set_block_type(const XrBlockType bt) {
-        roc_panic_if_not(bt == 0 || (bt >= XR_LOSS_RLE && bt <= XR_VOIP_METRICS));
         block_type_ = (uint8_t)bt;
     }
 
@@ -1136,7 +1155,7 @@ public:
 
 //! XR Receiver Reference Time Report block.
 //!
-//! RFC 3611 4.4. "Receiver Reference Time Report Block"
+//! RFC 3611 4.4: "Receiver Reference Time Report Block"
 //!
 //! @code
 //!  0                   1                   2                   3
@@ -1188,7 +1207,7 @@ public:
 
 //! XR DLRR Report sub-block.
 //!
-//! RFC 3611 4.5. "DLRR Report Sub-block"
+//! RFC 3611 4.5: "DLRR Report Sub-block"
 //!
 //! @code
 //!  0                   1                   2                   3
@@ -1261,7 +1280,7 @@ public:
 
 //! XR DLRR Report block.
 //!
-//! RFC 3611 4.5. "DLRR Report Block"
+//! RFC 3611 4.5: "DLRR Report Block"
 //!
 //! @code
 //!  0                   1                   2                   3
