@@ -25,16 +25,17 @@ namespace core {
 
 //! Dynamic array.
 //!
-//! Elements are stored continuously in a memory chunk allocated using IArena.
-//! Small chunks can be stored directly in Array object, without extra allocation.
-//! Array can be resized only by explicitly calling resize(), grow(), or grow_exp().
-//! Elements are copied during resize and old copies are destroyed.
+//! Elements are stored continuously in a memory chunk allocated using IArena,
+//! or directly in Array object when number of elements is small.
 //!
-//! @tparam T defines array element type. It should have copy constructor and
-//! destructor.
+//! Array supports resizing and inserting and removing elements in the end with
+//! amortized O(1) complexity.
 //!
-//! @tparam EmbeddedCapacity defines the size of the fixed-size array embedded
-//! directly into Array object; it is used instead of dynamic memory if
+//! @tparam T defines array element type. It should have default constructor,
+//! copy constructor, and assignment operator.
+//!
+//! @tparam EmbeddedCapacity defines number of elements in the fixed-size chunk
+//! embedded directly into Array object; it is used instead of dynamic memory if
 //! the array size is small enough.
 template <class T, size_t EmbeddedCapacity = 0> class Array : public NonCopyable<> {
 public:
@@ -44,7 +45,7 @@ public:
     Array()
         : data_(NULL)
         , size_(0)
-        , max_size_(0)
+        , capacity_(0)
         , arena_(NULL) {
     }
 
@@ -54,7 +55,7 @@ public:
     explicit Array(IArena& arena)
         : data_(NULL)
         , size_(0)
-        , max_size_(0)
+        , capacity_(0)
         , arena_(&arena) {
     }
 
@@ -66,10 +67,10 @@ public:
         }
     }
 
-    //! Get maximum number of elements.
+    //! Get maximum number of elements that can be added without reallocation.
     //! If array has arena, capacity can be grown.
     size_t capacity() const {
-        return max_size_;
+        return capacity_;
     }
 
     //! Get number of elements.
@@ -105,26 +106,32 @@ public:
     }
 
     //! Get element at given position.
+    //! @pre
+    //!  Panics if index is out of bounds.
     T& operator[](size_t index) {
-        if (index >= size_) {
-            roc_panic("array: subscript out of range: index=%lu size=%lu",
-                      (unsigned long)index, (unsigned long)size_);
-        }
+        roc_panic_if_msg(index >= size_,
+                         "array: subscript out of range: index=%lu size=%lu",
+                         (unsigned long)index, (unsigned long)size_);
+
         return data_[index];
     }
 
     //! Get element at given position.
+    //! @pre
+    //!  Panics if index is out of bounds.
     const T& operator[](size_t index) const {
-        if (index >= size_) {
-            roc_panic("array: subscript out of range: index=%lu size=%lu",
-                      (unsigned long)index, (unsigned long)size_);
-        }
+        roc_panic_if_msg(index >= size_,
+                         "array: subscript out of range: index=%lu size=%lu",
+                         (unsigned long)index, (unsigned long)size_);
+
         return data_[index];
     }
 
     //! Append element to array.
     //! @returns
-    //!  false if the allocation failed
+    //!  false if the allocation failed.
+    //! @note
+    //!  has amortized O(1) complexity, O(n) in worst case.
     ROC_ATTR_NODISCARD bool push_back(const T& value) {
         if (!grow_exp(size() + 1)) {
             return false;
@@ -136,28 +143,41 @@ public:
         return true;
     }
 
+    //! Remove last element from the array.
+    //! @pre
+    //!  Panics if array is empty.
+    void pop_back() {
+        if (size_ == 0) {
+            roc_panic("array: array is empty");
+        }
+
+        // Destruct object
+        data_[size_ - 1].~T();
+        size_--;
+    }
+
     //! Set array size.
     //! @remarks
     //!  Calls grow() to ensure that there is enough space in array.
     //! @returns
     //!  false if the allocation failed
-    ROC_ATTR_NODISCARD bool resize(size_t sz) {
+    ROC_ATTR_NODISCARD bool resize(size_t new_size) {
         // Move objects to a new memory region if necessary.
-        if (!grow(sz)) {
+        if (!grow(new_size)) {
             return false;
         }
 
         // Construct new objects if size increased.
-        for (size_t n = size_; n < sz; n++) {
+        for (size_t n = size_; n < new_size; n++) {
             new (data_ + n) T();
         }
 
-        // Destruct old objects (in reverse order) if size decreased.
-        for (size_t n = size_; n > sz; n--) {
+        // Destruct old objects (in reversed order) if size decreased.
+        for (size_t n = size_; n > new_size; n--) {
             data_[n - 1].~T();
         }
 
-        size_ = sz;
+        size_ = new_size;
 
         return true;
     }
@@ -171,19 +191,17 @@ public:
 
     //! Increase array capacity.
     //! @remarks
-    //!  If @p max_sz is greater than the current capacity, a larger memory
+    //!  If @p min_capacity is greater than the current capacity, a larger memory
     //!  region is allocated and the array elements are copied there.
     //! @returns
-    //!  false if the allocation failed
-    ROC_ATTR_NODISCARD bool grow(size_t max_sz) {
-        if (max_sz <= max_size_) {
+    //!  false if the allocation failed.
+    ROC_ATTR_NODISCARD bool grow(size_t min_capacity) {
+        if (min_capacity <= capacity_) {
             return true;
         }
 
-        T* new_data = allocate_(max_sz);
+        T* new_data = allocate_(min_capacity);
         if (!new_data) {
-            roc_log(LogError, "array: can't allocate memory: old_size=%lu new_size=%lu",
-                    (unsigned long)max_size_, (unsigned long)max_sz);
             return false;
         }
 
@@ -193,7 +211,7 @@ public:
                 new (new_data + n) T(data_[n]);
             }
 
-            // Destruct objects in old memory (in reverse order).
+            // Destruct objects in old memory (in reversed order).
             for (size_t n = size_; n > 0; n--) {
                 data_[n - 1].~T();
             }
@@ -206,58 +224,47 @@ public:
             data_ = new_data;
         }
 
-        max_size_ = max_sz;
+        capacity_ = min_capacity;
         return true;
     }
 
     //! Increase array capacity exponentially.
     //! @remarks
-    //!  If @p min_size is greater than the current capacity, a larger memory
+    //!  If @p min_capacity is greater than the current capacity, a larger memory
     //!  region is allocated and the array elements are copied there.
     //!  The size growth will follow the sequence: 0, 2, 4, 8, 16, ... until
     //!  it reaches some threshold, and then starts growing linearly.
     //! @returns
-    //!  false if the allocation failed
-    ROC_ATTR_NODISCARD bool grow_exp(size_t min_size) {
-        if (min_size <= max_size_) {
+    //!  false if the allocation failed.
+    ROC_ATTR_NODISCARD bool grow_exp(size_t min_capacity) {
+        if (min_capacity <= capacity_) {
             return true;
         }
 
-        size_t new_max_size_ = max_size_;
+        const size_t new_capacity = next_capacity_(min_capacity);
 
-        if (max_size_ < 1024) {
-            while (min_size > new_max_size_) {
-                new_max_size_ = (new_max_size_ == 0) ? 2 : new_max_size_ * 2;
-            }
-        } else {
-            while (min_size > new_max_size_) {
-                new_max_size_ += new_max_size_ / 4;
-            }
-        }
-
-        return grow(new_max_size_);
-    }
-
-    //! Remove last element from the array.
-    void pop_back() {
-        if (size_ == 0) {
-            roc_panic("array: array is empty");
-        }
-
-        // Destruct object
-        data_[size_ - 1].~T();
-        size_--;
+        return grow(new_capacity);
     }
 
 private:
     T* allocate_(size_t n_elems) {
+        T* data = NULL;
+
         if (n_elems <= EmbeddedCapacity) {
-            return (T*)embedded_data_.memory();
+            data = (T*)embedded_data_.memory();
         } else if (arena_) {
-            return (T*)arena_->allocate(n_elems * sizeof(T));
-        } else {
-            return NULL;
+            data = (T*)arena_->allocate(n_elems * sizeof(T));
         }
+
+        if (!data) {
+            roc_log(LogError,
+                    "array: can't allocate memory:"
+                    " current_cap=%lu requested_cap=%lu embedded_cap=%lu has_arena=%d",
+                    (unsigned long)capacity_, (unsigned long)n_elems,
+                    (unsigned long)EmbeddedCapacity, (int)(arena_ != NULL));
+        }
+
+        return data;
     }
 
     void deallocate_(T* data) {
@@ -267,9 +274,25 @@ private:
         }
     }
 
+    size_t next_capacity_(size_t min_size) const {
+        size_t new_capacity = capacity_;
+
+        if (capacity_ < 1024) {
+            while (min_size > new_capacity) {
+                new_capacity = (new_capacity == 0) ? 2 : new_capacity * 2;
+            }
+        } else {
+            while (min_size > new_capacity) {
+                new_capacity += new_capacity / 4;
+            }
+        }
+
+        return new_capacity;
+    }
+
     T* data_;
     size_t size_;
-    size_t max_size_;
+    size_t capacity_;
 
     IArena* arena_;
 
