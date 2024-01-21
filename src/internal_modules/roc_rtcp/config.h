@@ -15,6 +15,7 @@
 #include "roc_core/stddefs.h"
 #include "roc_core/time.h"
 #include "roc_packet/units.h"
+#include "roc_rtcp/rtt_estimator.h"
 
 namespace roc {
 namespace rtcp {
@@ -23,6 +24,9 @@ namespace rtcp {
 struct Config {
     //! Timeout to remove inactive streams.
     core::nanoseconds_t inactivity_timeout;
+
+    //! RTT estimation config.
+    RttConfig rtt;
 
     //! Enable generation of SR/RR packets.
     bool enable_sr_rr;

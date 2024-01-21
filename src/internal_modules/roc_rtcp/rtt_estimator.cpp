@@ -12,18 +12,14 @@
 namespace roc {
 namespace rtcp {
 
-RttEstimator::RttEstimator()
-    : last_local_report_ts_(0)
-    , clock_offset_(0)
-    , rtt_(0) {
+RttEstimator::RttEstimator(const RttConfig& config)
+    : config_(config)
+    , first_report_ts_(0)
+    , last_report_ts_(0) {
 }
 
-core::nanoseconds_t RttEstimator::clock_offset() const {
-    return clock_offset_;
-}
-
-core::nanoseconds_t RttEstimator::last_rtt() const {
-    return rtt_;
+const RttMetrics& RttEstimator::metrics() const {
+    return metrics_;
 }
 
 // Notation:
@@ -49,7 +45,8 @@ core::nanoseconds_t RttEstimator::last_rtt() const {
 //
 // See RFC 3550 and RFC 5905.
 // See also https://www.eecis.udel.edu/~mills/time.html
-void RttEstimator::update(core::nanoseconds_t local_report_ts,
+void RttEstimator::update(packet::ext_seqnum_t last_seqnum,
+                          core::nanoseconds_t local_report_ts,
                           core::nanoseconds_t remote_report_ts,
                           core::nanoseconds_t remote_reply_ts,
                           core::nanoseconds_t local_reply_ts) {
@@ -58,7 +55,7 @@ void RttEstimator::update(core::nanoseconds_t local_report_ts,
         return;
     }
 
-    if (local_report_ts <= last_local_report_ts_) {
+    if (local_report_ts <= last_report_ts_) {
         // Filter out outdated reports.
         return;
     }
@@ -78,9 +75,27 @@ void RttEstimator::update(core::nanoseconds_t local_report_ts,
         return;
     }
 
-    last_local_report_ts_ = local_report_ts;
-    clock_offset_ = clock_offset;
-    rtt_ = rtt;
+    if (first_report_ts_ == 0) {
+        first_report_ts_ = local_report_ts;
+    }
+    last_report_ts_ = local_report_ts;
+
+    metrics_.cumulative_duration = local_reply_ts - first_report_ts_;
+    metrics_.interval_duration =
+        std::min(metrics_.cumulative_duration, config_.interval_duration);
+    metrics_.interval_first_seqnum = last_seqnum;
+    metrics_.interval_last_seqnum = last_seqnum;
+    metrics_.clock_offset = clock_offset;
+    metrics_.rtt_last = rtt;
+    metrics_.rtt_avg = rtt;
+    metrics_.rtt_min = rtt;
+    metrics_.rtt_max = rtt;
+
+    // TODO(gh-676): fill missing fields:
+    //  - interval_first_seqnum
+    //  - rtt_avg
+    //  - rtt_min
+    //  - rtt_max
 }
 
 } // namespace rtcp

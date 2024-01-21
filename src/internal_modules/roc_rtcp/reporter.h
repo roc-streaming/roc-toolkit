@@ -228,11 +228,14 @@ private:
                     core::ListNode {
         Stream(core::IPool& pool,
                packet::stream_source_t source_id,
-               core::nanoseconds_t report_time)
+               core::nanoseconds_t report_time,
+               const RttConfig& rtt_config)
             : core::RefCounted<Stream, core::PoolAllocation>(pool)
             , source_id(source_id)
             , has_remote_recv_report(false)
+            , remote_recv_rtt(rtt_config)
             , has_remote_send_report(false)
+            , remote_send_rtt(rtt_config)
             , local_recv_report(NULL)
             , last_update(report_time)
             , last_local_sr(0)
@@ -438,7 +441,7 @@ private:
     core::nanoseconds_t report_time_;
 
     // Configuration.
-    const core::nanoseconds_t inactivity_timeout_;
+    const Config config_;
     const core::nanoseconds_t max_delay_;
 
     bool valid_;

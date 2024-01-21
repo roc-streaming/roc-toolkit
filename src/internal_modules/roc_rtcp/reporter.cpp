@@ -41,7 +41,7 @@ Reporter::Reporter(const Config& config, IParticipant& participant, core::IArena
     , report_state_(State_Idle)
     , report_error_(status::StatusOK)
     , report_time_(0)
-    , inactivity_timeout_(config.inactivity_timeout)
+    , config_(config)
     , max_delay_(packet::ntp_2_nanoseconds(header::MaxDelay))
     , valid_(false) {
     memset(local_cname_, 0, sizeof(local_cname_));
@@ -66,7 +66,7 @@ Reporter::Reporter(const Config& config, IParticipant& participant, core::IArena
             (unsigned long)local_source_id_, cname_to_str(local_cname_).c_str(),
             participant_report_mode_ == Report_ToAddress ? "address" : "back",
             address::socket_addr_to_str(participant_report_addr_).c_str(),
-            (double)inactivity_timeout_ / core::Millisecond);
+            (double)config_.inactivity_timeout / core::Millisecond);
 
     valid_ = true;
 }
@@ -354,14 +354,16 @@ void Reporter::process_dlrr_subblock(const header::XrPacket& xr,
     if (stream->last_local_rr != 0 && stream->last_remote_sr != 0
         && stream->last_remote_dlrr != 0) {
         stream->remote_send_rtt.update(
+            /* latest seqnum */ stream->local_recv_report->ext_last_seqnum,
             /* when we sent RR */ stream->last_local_rr,
             /* when remote received RR */ stream->remote_send_report.report_timestamp
                 - stream->last_remote_dlrr,
             /* when remote sent SR */ stream->remote_send_report.report_timestamp,
             /* when we received SR */ stream->last_remote_sr);
 
-        stream->remote_send_report.clock_offset = stream->remote_send_rtt.clock_offset();
-        stream->remote_send_report.rtt = stream->remote_send_rtt.last_rtt();
+        const RttMetrics& metrics = stream->remote_send_rtt.metrics();
+        stream->remote_send_report.clock_offset = metrics.clock_offset;
+        stream->remote_send_report.rtt = metrics.rtt_last;
     }
 
     update_stream_(*stream);
@@ -401,14 +403,16 @@ void Reporter::process_rrtr_block(const header::XrPacket& xr,
     if (stream->last_local_sr != 0 && stream->last_remote_rr != 0
         && stream->last_remote_dlsr != 0) {
         stream->remote_recv_rtt.update(
+            /* latest seqnum (not used on sender) */ 0,
             /* when we sent SR */ stream->last_local_sr,
             /* when remote received SR */ stream->remote_recv_report.report_timestamp
                 - stream->last_remote_dlsr,
             /* when remote sent RR */ stream->remote_recv_report.report_timestamp,
             /* when we received RR */ stream->last_remote_rr);
 
-        stream->remote_recv_report.clock_offset = stream->remote_recv_rtt.clock_offset();
-        stream->remote_recv_report.rtt = stream->remote_recv_rtt.last_rtt();
+        const RttMetrics& metrics = stream->remote_recv_rtt.metrics();
+        stream->remote_recv_report.clock_offset = metrics.clock_offset;
+        stream->remote_recv_report.rtt = metrics.rtt_last;
     }
 
     update_stream_(*stream);
@@ -974,7 +978,7 @@ status::StatusCode Reporter::rebuild_index_() {
 void Reporter::detect_timeouts_() {
     // If stream was not updated after deadline (i.e. there were no new reports),
     // it should be removed.
-    const core::nanoseconds_t deadline = report_time_ - inactivity_timeout_;
+    const core::nanoseconds_t deadline = report_time_ - config_.inactivity_timeout;
 
     while (Stream* stream = stream_lru_.back()) {
         // Recently updated streams are moved to the front of the list.
@@ -989,7 +993,7 @@ void Reporter::detect_timeouts_() {
                 " ssrc=%lu cname=%s last_update=%lld deadline=%lld timeout=%.3fms",
                 (unsigned long)stream->source_id, cname_to_str(stream->cname).c_str(),
                 (long long)stream->last_update, (long long)deadline,
-                (double)inactivity_timeout_ / core::Millisecond);
+                (double)config_.inactivity_timeout / core::Millisecond);
 
         {
             // If we're receiving, notify pipeline that sender timed out.
@@ -1175,7 +1179,8 @@ Reporter::find_stream_(packet::stream_source_t source_id, CreateMode mode) {
         roc_log(LogDebug, "rtcp reporter: creating stream: ssrc=%lu",
                 (unsigned long)source_id);
 
-        stream = new (stream_pool_) Stream(stream_pool_, source_id, report_time_);
+        stream =
+            new (stream_pool_) Stream(stream_pool_, source_id, report_time_, config_.rtt);
         if (!stream) {
             report_error_ = status::StatusNoMem;
             return NULL;
