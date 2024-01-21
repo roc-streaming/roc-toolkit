@@ -22,6 +22,12 @@ namespace rtp {
 
 //! Link metrics.
 struct LinkMetrics {
+    //! Extended lowest RTP seqnum received.
+    //! The low 16 bits contain the lowest sequence number received in an RTP data
+    //! packet, and the rest bits extend that sequence number with the corresponding
+    //! count of seqnum cycles.
+    packet::ext_seqnum_t ext_first_seqnum;
+
     //! Extended highest RTP seqnum received.
     //! The low 16 bits contain the highest sequence number received in an RTP data
     //! packet, and the rest bits extend that sequence number with the corresponding
@@ -48,7 +54,8 @@ struct LinkMetrics {
     packet::stream_timestamp_t jitter;
 
     LinkMetrics()
-        : ext_last_seqnum(0)
+        : ext_first_seqnum(0)
+        , ext_last_seqnum(0)
         , fract_loss(0)
         , cum_loss(0)
         , jitter(0) {
@@ -114,8 +121,9 @@ private:
 
     LinkMetrics metrics_;
 
-    uint32_t seqnum_hi_;
-    uint16_t seqnum_lo_;
+    uint16_t first_seqnum_;
+    uint32_t last_seqnum_hi_;
+    uint16_t last_seqnum_lo_;
 };
 
 } // namespace rtp

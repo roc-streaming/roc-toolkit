@@ -8,6 +8,7 @@
 
 #include "roc_rtp/link_meter.h"
 #include "roc_core/panic.h"
+#include "roc_packet/units.h"
 
 namespace roc {
 namespace rtp {
@@ -17,8 +18,9 @@ LinkMeter::LinkMeter()
     , reader_(NULL)
     , first_packet_(true)
     , has_metrics_(false)
-    , seqnum_hi_(0)
-    , seqnum_lo_(0) {
+    , first_seqnum_(0)
+    , last_seqnum_hi_(0)
+    , last_seqnum_lo_(0) {
 }
 
 status::StatusCode LinkMeter::write(const packet::PacketPtr& packet) {
@@ -69,16 +71,26 @@ LinkMetrics LinkMeter::metrics() const {
 }
 
 void LinkMeter::update_metrics_(const packet::Packet& packet) {
-    // Check if packet's seqnum goes ahead of the previous seqnum,
-    // taken possible wrap into account.
-    if (first_packet_ || packet::seqnum_diff(packet.rtp()->seqnum, seqnum_lo_) > 0) {
-        if (packet.rtp()->seqnum < seqnum_lo_) {
-            // Detect wrap.
-            seqnum_hi_ += (uint16_t)-1;
-        }
-        seqnum_lo_ = packet.rtp()->seqnum;
-        metrics_.ext_last_seqnum = seqnum_hi_ + seqnum_lo_;
+    const packet::seqnum_t pkt_seqnum = packet.rtp()->seqnum;
+
+    // If packet seqnum is before first seqnum, and there was no wrap yet,
+    // update first seqnum.
+    if ((first_packet_ || packet::seqnum_diff(pkt_seqnum, first_seqnum_) < 0)
+        && last_seqnum_hi_ == 0) {
+        first_seqnum_ = pkt_seqnum;
     }
+
+    // If packet seqnum is after last seqnum, update last seqnum, and
+    // also counts possible wraps.
+    if (first_packet_ || packet::seqnum_diff(pkt_seqnum, last_seqnum_lo_) > 0) {
+        if (pkt_seqnum < last_seqnum_lo_) {
+            last_seqnum_hi_ += (uint16_t)-1;
+        }
+        last_seqnum_lo_ = pkt_seqnum;
+    }
+
+    metrics_.ext_first_seqnum = first_seqnum_;
+    metrics_.ext_last_seqnum = last_seqnum_hi_ + last_seqnum_lo_;
 
     first_packet_ = false;
     has_metrics_ = true;

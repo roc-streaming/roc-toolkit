@@ -104,6 +104,12 @@ struct RecvReport {
     //! Defines time when report was sent in receiver's clock domain.
     core::nanoseconds_t report_timestamp;
 
+    //! Extended lowest sequence number received.
+    //! The low 16 bits contain the highest sequence number received in an RTP data
+    //! packet, and the high 16 bits extend that sequence number with the corresponding
+    //! count of sequence number cycles.
+    packet::ext_seqnum_t ext_first_seqnum;
+
     //! Extended highest sequence number received.
     //! The low 16 bits contain the highest sequence number received in an RTP data
     //! packet, and the high 16 bits extend that sequence number with the corresponding
@@ -147,6 +153,7 @@ struct RecvReport {
         , receiver_source_id(0)
         , sender_source_id(0)
         , report_timestamp(0)
+        , ext_first_seqnum(0)
         , ext_last_seqnum(0)
         , fract_loss(0)
         , cum_loss(0)

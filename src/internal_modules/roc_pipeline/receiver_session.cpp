@@ -307,6 +307,7 @@ void ReceiverSession::generate_reports(const char* report_cname,
         report.sender_source_id =
             packet_router_->get_source_id(packet::Packet::FlagAudio);
         report.report_timestamp = report_time;
+        report.ext_first_seqnum = link_metrics.ext_first_seqnum;
         report.ext_last_seqnum = link_metrics.ext_last_seqnum;
         report.fract_loss = link_metrics.fract_loss;
         report.cum_loss = link_metrics.cum_loss;
@@ -327,6 +328,7 @@ void ReceiverSession::generate_reports(const char* report_cname,
         report.sender_source_id =
             packet_router_->get_source_id(packet::Packet::FlagRepair);
         report.report_timestamp = report_time;
+        report.ext_first_seqnum = link_metrics.ext_first_seqnum;
         report.ext_last_seqnum = link_metrics.ext_last_seqnum;
         report.fract_loss = link_metrics.fract_loss;
         report.cum_loss = link_metrics.cum_loss;
