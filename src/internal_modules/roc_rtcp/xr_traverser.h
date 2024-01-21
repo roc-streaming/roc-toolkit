@@ -27,10 +27,12 @@ public:
     public:
         //! Iterator state.
         enum State {
-            BEGIN,      //!< Iterator created.
-            RRTR_BLOCK, //!< RRTR block (receiver reference time).
-            DLRR_BLOCK, //!< DLRR block (delay since last receiver report).
-            END         //!< Parsed whole packet.
+            BEGIN,                  //!< Iterator created.
+            RRTR_BLOCK,             //!< RRTR block (receiver reference time).
+            DLRR_BLOCK,             //!< DLRR block (delay since last receiver report).
+            MEASUREMENT_INFO_BLOCK, //!< Measurement information block.
+            DELAY_METRICS_BLOCK,    //!< Delay metrics block.
+            END                     //!< Parsed whole packet.
         };
 
         //! Advance iterator.
@@ -47,6 +49,14 @@ public:
         //! @pre Can be used if next() returned DLRR_BLOCK.
         const header::XrDlrrBlock& get_dlrr() const;
 
+        //! Get measurement info block.
+        //! @pre Can be used if next() returned RRTR_MEASUREMENT_INFO_BLOCK
+        const header::XrMeasurementInfoBlock& get_measurement_info() const;
+
+        //! Get delay metrics block.
+        //! @pre Can be used if next() returned DELAY_METRICS_BLOCK
+        const header::XrDelayMetricsBlock& get_delay_metrics() const;
+
     private:
         friend class XrTraverser;
 
@@ -54,6 +64,8 @@ public:
         void next_block_();
         bool check_rrtr_();
         bool check_dlrr_();
+        bool check_measurement_info_();
+        bool check_delay_metrics_();
 
         State state_;
         const core::Slice<uint8_t> buf_;

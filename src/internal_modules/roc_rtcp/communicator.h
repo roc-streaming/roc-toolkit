@@ -68,11 +68,11 @@ public:
     //! Check if initialization succeeded.
     bool is_valid() const;
 
-    //! Get number of tracked streams, for testing.
-    size_t num_streams() const;
-
     //! Get number of tracked destination addresses, for testing.
-    size_t num_destinations() const;
+    size_t total_destinations() const;
+
+    //! Get number of tracked streams, for testing.
+    size_t total_streams() const;
 
     //! Parse and process incoming packet.
     //! Invokes IParticipant methods during processing.
@@ -119,6 +119,9 @@ private:
     bool continue_packet_generation_();
     status::StatusCode write_generated_packet_(const packet::PacketPtr& packet);
 
+    bool next_send_stream_(size_t new_stream_index);
+    bool next_recv_stream_(size_t new_stream_index);
+
     status::StatusCode generate_packet_(PacketType packet_type,
                                         packet::PacketPtr& packet);
 
@@ -148,20 +151,19 @@ private:
     // When generation_deadline() should be called next time.
     core::nanoseconds_t next_deadline_;
 
-    // Maximum number of destination addresses, and index of current destination
-    // address for which we're generating report.
-    size_t max_dest_addrs_;
-    size_t cur_dest_addr_;
+    size_t dest_addr_count_; // Total count of destination addresses.
+    size_t dest_addr_index_; // Index of current destination address.
 
-    // Maximum number of SR/RR/XR blocks per packet, and number of current block
-    // in packet. If maximum is exceeded, report is split into multiple packets.
-    size_t max_pkt_blocks_;
-    size_t cur_pkt_block_;
+    size_t send_stream_count_; // Total count of sending stream reports.
+    size_t send_stream_index_; // Index of current sending stream report.
+    size_t recv_stream_count_; // Total count of receiving stream reports.
+    size_t recv_stream_index_; // Index of current receiving stream report.
 
-    size_t srrr_index_; // Current SR/RR block.
-    size_t srrr_max_;   // Total count of SR/RR blocks in report.
-    size_t dlrr_index_; // Current DLRR block.
-    size_t dlrr_max_;   // Total count of DLRR blocks in report.
+    // Maximum number of sending and receiving stream reports per single packet,
+    // and number of current sending and receiving stream report inside packet.
+    size_t max_pkt_streams_;
+    size_t cur_pkt_send_stream_;
+    size_t cur_pkt_recv_stream_;
 
     // Dropped malformed incoming packets.
     size_t error_count_;

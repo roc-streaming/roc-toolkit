@@ -484,7 +484,7 @@ public:
     //! Set DLSR.
     //! Stores only the middle 32 bits out of 64 in the NTP timestamp.
     void set_delay_last_sr(packet::ntp_timestamp_t x) {
-        roc_panic_if(x > MaxDelay);
+        x = std::min(x, MaxDelay);
         x >>= 16;
         x &= 0xffffffff;
         delay_last_sr_ = core::hton32u((uint32_t)x);
@@ -1073,7 +1073,7 @@ public:
 //! XR Block Type.
 enum XrBlockType {
     // RFC 3611
-    XR_RRTR = 4, //!< Receiver Reference Time Report Block.
+    XR_RRTR = 4, //!< RRTR Report Block.
     XR_DLRR = 5, //!< DLRR Report Block.
     // RFC 6776
     XR_MEASUREMENT_INFO = 14, //!< Measurement Information Report Block.
@@ -1271,7 +1271,7 @@ public:
     //! Set DLRR.
     //! Stores only the middle 32 bits out of 64 in the NTP timestamp.
     void set_delay_last_rr(packet::ntp_timestamp_t x) {
-        roc_panic_if(x > MaxDelay);
+        x = std::min(x, MaxDelay);
         x >>= 16;
         x &= 0xffffffff;
         delay_last_rr_ = core::hton32u((uint32_t)x);
@@ -1279,6 +1279,9 @@ public:
 } ROC_ATTR_PACKED_END;
 
 //! XR DLRR Report block.
+//!
+//! Provides delay since last receiver report (DLRR) for each receiver,
+//! complementing to DLSR.
 //!
 //! RFC 3611 4.5: "DLRR Report Block"
 //!
@@ -1338,6 +1341,321 @@ public:
     XrDlrrSubblock& get_subblock(const size_t i) {
         return get_block_by_index<XrDlrrSubblock>(this, i, num_subblocks(),
                                                   "rtcp xr_dlrr");
+    }
+} ROC_ATTR_PACKED_END;
+
+//! XR Measurement Info Report Block.
+//!
+//! Defines measurement interval associated with other metrics blocks,
+//! in particular XrDelayMetricsBlock.
+//!
+//! RFC 6776 4.1: "Report Block Structure"
+//!
+//! @code
+//!  0               1               2               3
+//!  0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7
+//! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//! |     BT=14     |    Reserved   |      block length = 7         |
+//! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//! |                    SSRC of stream source                      |
+//! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//! |            Reserved           |    first sequence number      |
+//! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//! |           extended first sequence number of interval          |
+//! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//! |                 extended last sequence number                 |
+//! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//! |              Measurement Duration (Interval)                  |
+//! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//! |     Measurement Duration (Cumulative) - Seconds (bit 0-31)    |
+//! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//! |     Measurement Duration (Cumulative) - Fraction (bit 0-31)   |
+//! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//! @endcode
+ROC_ATTR_PACKED_BEGIN class XrMeasurementInfoBlock {
+private:
+    XrBlockHeader header_;
+    uint32_t ssrc_;
+    uint16_t reserved_;
+    uint16_t first_sn_;
+    uint32_t interval_first_sn_;
+    uint32_t interval_last_sn_;
+    uint32_t interval_duration_;
+    NtpTimestamp cum_duration_;
+
+public:
+    XrMeasurementInfoBlock() {
+        reset();
+    }
+
+    //! Reset to initial state (all zeros).
+    void reset() {
+        header_.reset(XR_MEASUREMENT_INFO);
+        ssrc_ = 0;
+        reserved_ = 0;
+        first_sn_ = 0;
+        interval_first_sn_ = interval_last_sn_ = 0;
+        interval_duration_ = 0;
+        cum_duration_.reset();
+    }
+
+    //! Get common block header.
+    const XrBlockHeader& header() const {
+        return header_;
+    }
+
+    //! Get common block header.
+    XrBlockHeader& header() {
+        return header_;
+    }
+
+    //! Get SSRC of source being reported.
+    packet::stream_source_t ssrc() const {
+        return core::ntoh32u(ssrc_);
+    }
+
+    //! Set SSRC of source being reported.
+    void set_ssrc(const packet::stream_source_t ssrc) {
+        ssrc_ = core::hton32u(ssrc);
+    }
+
+    //! Get seqnum of first ever received packet.
+    packet::seqnum_t first_sn() const {
+        return core::ntoh16u(first_sn_);
+    }
+
+    //! Set seqnum of first ever received packet.
+    void set_first_sn(const packet::seqnum_t x) {
+        first_sn_ = core::hton16u(x);
+    }
+
+    //! Get extended seqnum of first packet in interval.
+    packet::ext_seqnum_t interval_first_sn() const {
+        return core::ntoh32u(interval_first_sn_);
+    }
+
+    //! Set extended seqnum of first packet in interval.
+    void set_interval_first_sn(const packet::ext_seqnum_t x) {
+        interval_first_sn_ = core::hton32u(x);
+    }
+
+    //! Get extended seqnum of last packet in interval.
+    packet::ext_seqnum_t interval_last_sn() const {
+        return core::ntoh32u(interval_last_sn_);
+    }
+
+    //! Set extended seqnum of last packet in interval.
+    void set_interval_last_sn(const packet::ext_seqnum_t x) {
+        interval_last_sn_ = core::hton32u(x);
+    }
+
+    //! Get measurement interval duration.
+    //! Applicable to MetricFlag_IntervalDuration reports.
+    packet::ntp_timestamp_t interval_duration() const {
+        packet::ntp_timestamp_t x = core::ntoh32u(interval_duration_);
+        x <<= 16;
+        return x;
+    }
+
+    //! Set measurement interval duration.
+    //! Stores only the middle 32 bits out of 64 in the NTP timestamp.
+    void set_interval_duration(packet::ntp_timestamp_t x) {
+        x = std::min(x, MaxDelay);
+        x >>= 16;
+        x &= 0xffffffff;
+        interval_duration_ = core::hton32u((uint32_t)x);
+    }
+
+    //! Get measurement cumulative duration.
+    //! Applicable to MetricFlag_CumulativeDuration reports.
+    packet::ntp_timestamp_t cum_duration() const {
+        return cum_duration_.value();
+    }
+
+    //! Set measurement cumulative duration.
+    void set_cum_duration(const packet::ntp_timestamp_t t) {
+        cum_duration_.set_value(t);
+    }
+};
+
+//! Interval Metric flag for XR Delay Metrics Block.
+enum MetricFlag {
+    //! Interval Duration.
+    //! The reported value applies to the most recent measurement interval
+    //! duration between successive metrics reports.
+    MetricFlag_IntervalDuration = 0x2,
+
+    //! Cumulative Duration.
+    //! The reported value applies to the accumulation period characteristic
+    //! of cumulative measurements.
+    MetricFlag_CumulativeDuration = 0x3,
+
+    //! Sampled Value.
+    //! The reported value is a sampled instantaneous value.
+    MetricFlag_SampledValue = 0x1
+};
+
+//! XR Delay Metrics Block.
+//!
+//! RFC 6843 3.1: "Report Block Structure"
+//!
+//! @code
+//!  0               1               2               3
+//!  0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7
+//! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//! |    BT=16      | I |   resv.   |      block length = 6         |
+//! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//! |                           SSRC of Source                      |
+//! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//! |                  Mean Network Round-Trip Delay                |
+//! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//! |                   Min Network Round-Trip Delay                |
+//! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//! |                   Max Network Round-Trip Delay                |
+//! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//! |               End System Delay - Seconds (bit 0-31)           |
+//! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//! |              End System Delay - Fraction (bit 0-31)           |
+//! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//! @endcode
+ROC_ATTR_PACKED_BEGIN class XrDelayMetricsBlock {
+private:
+    enum {
+        MetricFlag_Shift = 6,
+        MetricFlag_Mask = 0x03,
+    };
+
+    XrBlockHeader header_;
+    uint32_t ssrc_;
+    uint32_t mean_rtt_;
+    uint32_t min_rtt_;
+    uint32_t max_rtt_;
+    NtpTimestamp e2e_delay_;
+
+public:
+    XrDelayMetricsBlock() {
+        reset();
+    }
+
+    //! Reset to initial state (all zeros).
+    void reset() {
+        header_.reset(XR_DELAY_METRICS);
+        ssrc_ = 0;
+        mean_rtt_ = min_rtt_ = max_rtt_ = 0xffffffff;
+        e2e_delay_.set_value(0xffffffffffffffff);
+    }
+
+    //! Get common block header.
+    const XrBlockHeader& header() const {
+        return header_;
+    }
+
+    //! Get common block header.
+    XrBlockHeader& header() {
+        return header_;
+    }
+
+    //! Get Interval Metrics flag.
+    MetricFlag metric_flag() const {
+        uint8_t t = header_.type_specific();
+        t >>= MetricFlag_Shift;
+        t &= MetricFlag_Mask;
+        return (MetricFlag)t;
+    }
+
+    //! Set Interval Metrics flag.
+    void set_metric_flag(const MetricFlag f) {
+        uint8_t t = f;
+        t <<= MetricFlag_Shift;
+        header_.set_type_specific(t);
+    }
+
+    //! Get SSRC of source being reported.
+    packet::stream_source_t ssrc() const {
+        return core::ntoh32u(ssrc_);
+    }
+
+    //! Set SSRC of source being reported.
+    void set_ssrc(const packet::stream_source_t ssrc) {
+        ssrc_ = core::hton32u(ssrc);
+    }
+
+    //! Check if Mean Network Round-Trip Delay is set.
+    bool has_mean_rtt() const {
+        return mean_rtt_ != 0xffffffff;
+    }
+
+    //! Get Mean Network Round-Trip Delay.
+    packet::ntp_timestamp_t mean_rtt() const {
+        packet::ntp_timestamp_t x = core::ntoh32u(mean_rtt_);
+        x <<= 16;
+        return x;
+    }
+
+    //! Set Mean Network Round-Trip Delay.
+    //! Stores only the middle 32 bits out of 64 in the NTP timestamp.
+    void set_mean_rtt(packet::ntp_timestamp_t x) {
+        x = std::min(x, MaxDelay);
+        x >>= 16;
+        x &= 0xffffffff;
+        mean_rtt_ = core::hton32u((uint32_t)x);
+    }
+
+    //! Check if Minimum Network Round-Trip Delay is set.
+    bool has_min_rtt() const {
+        return min_rtt_ != 0xffffffff;
+    }
+
+    //! Get Minimum Network Round-Trip Delay.
+    packet::ntp_timestamp_t min_rtt() const {
+        packet::ntp_timestamp_t x = core::ntoh32u(min_rtt_);
+        x <<= 16;
+        return x;
+    }
+
+    //! Set Minimum Network Round-Trip Delay.
+    //! Stores only the middle 32 bits out of 64 in the NTP timestamp.
+    void set_min_rtt(packet::ntp_timestamp_t x) {
+        x = std::min(x, MaxDelay);
+        x >>= 16;
+        x &= 0xffffffff;
+        min_rtt_ = core::hton32u((uint32_t)x);
+    }
+
+    //! Check if Maximum Network Round-Trip Delay is set.
+    bool has_max_rtt() const {
+        return max_rtt_ != 0xffffffff;
+    }
+
+    //! Get Maximum Network Round-Trip Delay.
+    packet::ntp_timestamp_t max_rtt() const {
+        packet::ntp_timestamp_t x = core::ntoh32u(max_rtt_);
+        x <<= 16;
+        return x;
+    }
+
+    //! Set Maximum Network Round-Trip Delay.
+    //! Stores only the middle 32 bits out of 64 in the NTP timestamp.
+    void set_max_rtt(packet::ntp_timestamp_t x) {
+        x = std::min(x, MaxDelay);
+        x >>= 16;
+        x &= 0xffffffff;
+        max_rtt_ = core::hton32u((uint32_t)x);
+    }
+
+    //! Check if End System Delay is set.
+    bool has_e2e_delay() const {
+        return e2e_delay_.value() != 0xffffffffffffffff;
+    }
+
+    //! Get End System Delay.
+    packet::ntp_timestamp_t e2e_delay() const {
+        return e2e_delay_.value();
+    }
+
+    //! Set End System Delay.
+    void set_e2e_delay(const packet::ntp_timestamp_t t) {
+        e2e_delay_.set_value(t);
     }
 } ROC_ATTR_PACKED_END;
 

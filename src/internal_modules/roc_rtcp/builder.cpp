@@ -375,6 +375,35 @@ void Builder::end_xr_dlrr() {
         size_t(cur_pkt_slice_.data_end() - (uint8_t*)cur_xr_block_header_));
 }
 
+void Builder::add_xr_measurement_info(
+    const header::XrMeasurementInfoBlock& measurement_info) {
+    roc_panic_if_msg(state_ != XR_HEAD, "rtcp builder: wrong call order");
+
+    header::XrMeasurementInfoBlock* p =
+        (header::XrMeasurementInfoBlock*)add_block_(sizeof(measurement_info));
+    if (!p) {
+        return;
+    }
+    memcpy(p, &measurement_info, sizeof(measurement_info));
+
+    cur_xr_block_header_ = &p->header();
+    cur_xr_block_header_->set_len_bytes(sizeof(measurement_info));
+}
+
+void Builder::add_xr_delay_metrics(const header::XrDelayMetricsBlock& delay_metrics) {
+    roc_panic_if_msg(state_ != XR_HEAD, "rtcp builder: wrong call order");
+
+    header::XrDelayMetricsBlock* p =
+        (header::XrDelayMetricsBlock*)add_block_(sizeof(delay_metrics));
+    if (!p) {
+        return;
+    }
+    memcpy(p, &delay_metrics, sizeof(delay_metrics));
+
+    cur_xr_block_header_ = &p->header();
+    cur_xr_block_header_->set_len_bytes(sizeof(delay_metrics));
+}
+
 void Builder::end_xr() {
     roc_panic_if_msg(state_ != XR_HEAD, "rtcp builder: wrong call order");
 

@@ -298,6 +298,7 @@ void ReceiverSession::generate_reports(const char* report_cname,
 
     if (n_reports > 0 && packet_router_->has_source_id(packet::Packet::FlagAudio)
         && source_meter_->has_metrics()) {
+        const audio::LatencyMonitorMetrics latency_metrics = latency_monitor_->metrics();
         const rtp::LinkMetrics link_metrics = source_meter_->metrics();
 
         rtcp::RecvReport& report = *reports;
@@ -312,6 +313,7 @@ void ReceiverSession::generate_reports(const char* report_cname,
         report.fract_loss = link_metrics.fract_loss;
         report.cum_loss = link_metrics.cum_loss;
         report.jitter = link_metrics.jitter;
+        report.e2e_latency = latency_metrics.e2e_latency;
 
         reports++;
         n_reports--;
@@ -333,6 +335,7 @@ void ReceiverSession::generate_reports(const char* report_cname,
         report.fract_loss = link_metrics.fract_loss;
         report.cum_loss = link_metrics.cum_loss;
         report.jitter = link_metrics.jitter;
+        report.e2e_latency = 0;
 
         reports++;
         n_reports--;

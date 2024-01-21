@@ -100,11 +100,11 @@ public:
     //! Check if there are local receiving streams.
     bool is_receiving() const;
 
-    //! Get number of tracked streams, for testing.
-    size_t num_streams() const;
-
     //! Get number of tracked destination addresses, for testing.
-    size_t num_destinations() const;
+    size_t total_destinations() const;
+
+    //! Get number of tracked streams, for testing.
+    size_t total_streams() const;
 
     //! @name Report processing
     //! @{
@@ -132,6 +132,10 @@ public:
     //! Process XR RRTR block (extended receiver report).
     void process_rrtr_block(const header::XrPacket& xr, const header::XrRrtrBlock& blk);
 
+    //! Process XR Delay Metrics block (extended receiver report).
+    void process_delay_metrics_block(const header::XrPacket& xr,
+                                     const header::XrDelayMetricsBlock& blk);
+
     //! Process BYE message.
     void process_goodbye(packet::stream_source_t ssrc);
 
@@ -152,6 +156,14 @@ public:
     //! Get number of destination addresses to which to send reports.
     size_t num_dest_addresses() const;
 
+    //! Get number of sending streams to be reported.
+    //! @p addr_index should be in range [0; num_dest_addresses()-1].
+    size_t num_sending_streams(size_t addr_index) const;
+
+    //! Get number of receiving streams to be reported.
+    //! @p addr_index should be in range [0; num_dest_addresses()-1].
+    size_t num_receiving_streams(size_t addr_index) const;
+
     //! Generate destination address.
     //! @p addr_index should be in range [0; num_dest_addresses()-1].
     void generate_dest_address(size_t addr_index, address::SocketAddr& addr);
@@ -165,33 +177,39 @@ public:
     //! Generate RR header.
     void generate_rr(header::ReceiverReportPacket& rr);
 
-    //! Get number of SR/RR reception blocks.
-    //! @p addr_index should be in range [0; num_dest_addresses()-1].
-    size_t num_reception_blocks(size_t addr_index) const;
-
     //! Generate SR/RR reception block.
     //! @p addr_index should be in range [0; num_dest_addresses()-1].
-    //! @p blk_index should be in range [0; num_reception_blocks()-1].
+    //! @p stream_index should be in range [0; num_receiving_streams()-1].
     void generate_reception_block(size_t addr_index,
-                                  size_t blk_index,
+                                  size_t stream_index,
                                   header::ReceptionReportBlock& blk);
 
     //! Generate XR header.
     void generate_xr(header::XrPacket& xr);
 
-    //! Get number of XR DLRR sub-blocks.
-    //! @p addr_index should be in range [0; num_dest_addresses()-1].
-    size_t num_dlrr_subblocks(size_t addr_index) const;
-
     //! Generate XR DLRR sub-block (extended sender report).
     //! @p addr_index should be in range [0; num_dest_addresses()-1].
-    //! @p blk_index should be in range [0; num_dlrr_subblocks()-1].
+    //! @p stream_index should be in range [0; num_sending_streams()-1].
     void generate_dlrr_subblock(size_t addr_index,
-                                size_t blk_index,
+                                size_t stream_index,
                                 header::XrDlrrSubblock& blk);
 
     //! Generate XR RRTR header (extended receiver report).
     void generate_rrtr_block(header::XrRrtrBlock& blk);
+
+    //! Generate XR Measurement Info block (extended receiver report).
+    //! @p addr_index should be in range [0; num_dest_addresses()-1].
+    //! @p stream_index should be in range [0; num_receiving_streams()-1].
+    void generate_measurement_info_block(size_t addr_index,
+                                         size_t stream_index,
+                                         header::XrMeasurementInfoBlock& blk);
+
+    //! Generate XR Delay Metrics block (extended receiver report).
+    //! @p addr_index should be in range [0; num_dest_addresses()-1].
+    //! @p stream_index should be in range [0; num_receiving_streams()-1].
+    void generate_delay_metrics_block(size_t addr_index,
+                                      size_t stream_index,
+                                      header::XrDelayMetricsBlock& blk);
 
     //! Check if BYE message should be included.
     bool need_goodbye() const;
@@ -355,8 +373,6 @@ private:
             return addr1 == addr2;
         }
     };
-
-    bool can_generate_last_ts_(core::nanoseconds_t last_ts) const;
 
     status::StatusCode notify_streams_();
     status::StatusCode query_streams_();

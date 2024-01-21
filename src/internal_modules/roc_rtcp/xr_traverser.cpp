@@ -7,6 +7,7 @@
  */
 
 #include "roc_rtcp/xr_traverser.h"
+#include "roc_rtcp/headers.h"
 
 namespace roc {
 namespace rtcp {
@@ -142,7 +143,7 @@ void XrTraverser::Iterator::next_block_() {
         switch (cur_blk_header_->block_type()) {
         case header::XR_RRTR:
             if (!check_rrtr_()) {
-                // Skipping invalid RRTR block.
+                // Skipping invalid block.
                 error_ = true;
                 break;
             }
@@ -150,11 +151,27 @@ void XrTraverser::Iterator::next_block_() {
             return;
         case header::XR_DLRR:
             if (!check_dlrr_()) {
-                // Skipping invalid DLRR block.
+                // Skipping invalid block.
                 error_ = true;
                 break;
             }
             state_ = DLRR_BLOCK;
+            return;
+        case header::XR_MEASUREMENT_INFO:
+            if (!check_measurement_info_()) {
+                // Skipping invalid block.
+                error_ = true;
+                break;
+            }
+            state_ = MEASUREMENT_INFO_BLOCK;
+            return;
+        case header::XR_DELAY_METRICS:
+            if (!check_delay_metrics_()) {
+                // Skipping invalid block.
+                error_ = true;
+                break;
+            }
+            state_ = DELAY_METRICS_BLOCK;
             return;
         default:
             // Unknown block.
@@ -185,6 +202,22 @@ bool XrTraverser::Iterator::check_dlrr_() {
     return true;
 }
 
+bool XrTraverser::Iterator::check_measurement_info_() {
+    if (cur_blk_len_ < sizeof(header::XrMeasurementInfoBlock)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool XrTraverser::Iterator::check_delay_metrics_() {
+    if (cur_blk_len_ < sizeof(header::XrDelayMetricsBlock)) {
+        return false;
+    }
+
+    return true;
+}
+
 const header::XrRrtrBlock& XrTraverser::Iterator::get_rrtr() const {
     roc_panic_if_msg(state_ != RRTR_BLOCK,
                      "xr traverser: get_rrtr() called in wrong state %d", (int)state_);
@@ -197,6 +230,23 @@ const header::XrDlrrBlock& XrTraverser::Iterator::get_dlrr() const {
                      "xr traverser: get_dlrr() called in wrong state %d", (int)state_);
 
     return *(const header::XrDlrrBlock*)cur_blk_header_;
+}
+
+const header::XrMeasurementInfoBlock&
+XrTraverser::Iterator::get_measurement_info() const {
+    roc_panic_if_msg(state_ != MEASUREMENT_INFO_BLOCK,
+                     "xr traverser: get_measurement_info() called in wrong state %d",
+                     (int)state_);
+
+    return *(const header::XrMeasurementInfoBlock*)cur_blk_header_;
+}
+
+const header::XrDelayMetricsBlock& XrTraverser::Iterator::get_delay_metrics() const {
+    roc_panic_if_msg(state_ != DELAY_METRICS_BLOCK,
+                     "xr traverser: get_delay_metrics() called in wrong state %d",
+                     (int)state_);
+
+    return *(const header::XrDelayMetricsBlock*)cur_blk_header_;
 }
 
 } // namespace rtcp

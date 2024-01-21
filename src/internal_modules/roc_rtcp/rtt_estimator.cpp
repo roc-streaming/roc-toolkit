@@ -14,8 +14,14 @@ namespace rtcp {
 
 RttEstimator::RttEstimator(const RttConfig& config)
     : config_(config)
+    , metrics_()
+    , has_metrics_(false)
     , first_report_ts_(0)
     , last_report_ts_(0) {
+}
+
+bool RttEstimator::has_metrics() const {
+    return has_metrics_;
 }
 
 const RttMetrics& RttEstimator::metrics() const {
@@ -86,10 +92,11 @@ void RttEstimator::update(packet::ext_seqnum_t last_seqnum,
     metrics_.interval_first_seqnum = last_seqnum;
     metrics_.interval_last_seqnum = last_seqnum;
     metrics_.clock_offset = clock_offset;
-    metrics_.rtt_last = rtt;
     metrics_.rtt_avg = rtt;
     metrics_.rtt_min = rtt;
     metrics_.rtt_max = rtt;
+
+    has_metrics_ = true;
 
     // TODO(gh-676): fill missing fields:
     //  - interval_first_seqnum

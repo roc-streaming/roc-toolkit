@@ -49,9 +49,6 @@ struct RttMetrics {
     //! Estimated based on RTT and local/remote timestamp.
     core::nanoseconds_t clock_offset;
 
-    //! Estimated round-trip time (latest in interval).
-    core::nanoseconds_t rtt_last;
-
     //! Estimated round-trip time (average during interval).
     core::nanoseconds_t rtt_avg;
 
@@ -67,7 +64,6 @@ struct RttMetrics {
         , interval_first_seqnum(0)
         , interval_last_seqnum(0)
         , clock_offset(0)
-        , rtt_last(0)
         , rtt_avg(0)
         , rtt_min(0)
         , rtt_max(0) {
@@ -82,6 +78,9 @@ class RttEstimator {
 public:
     //! Initialize.
     RttEstimator(const RttConfig& config);
+
+    //! Check whether metrics are already available.
+    bool has_metrics() const;
 
     //! Get estimated metrics.
     const RttMetrics& metrics() const;
@@ -102,6 +101,7 @@ public:
 private:
     const RttConfig config_;
     RttMetrics metrics_;
+    bool has_metrics_;
 
     core::nanoseconds_t first_report_ts_;
     core::nanoseconds_t last_report_ts_;

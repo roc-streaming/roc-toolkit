@@ -11,6 +11,7 @@
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_rtcp/builder.h"
+#include "roc_rtcp/headers.h"
 #include "roc_rtcp/traverser.h"
 
 namespace roc {
@@ -103,28 +104,34 @@ TEST(builder_traverser, sr_sdes) {
     core::Slice<uint8_t> buff = new_buffer();
 
     header::SenderReportPacket sr;
-    sr.set_ssrc(1);
-    sr.set_ntp_timestamp(2);
-    sr.set_rtp_timestamp(3);
-    sr.set_packet_count(4);
-    sr.set_byte_count(5);
+    sr.set_ssrc(111);
+    sr.set_ntp_timestamp(11);
+    sr.set_rtp_timestamp(12);
+    sr.set_packet_count(13);
+    sr.set_byte_count(14);
 
     header::ReceptionReportBlock sender_report1;
-    sender_report1.set_ssrc(1);
+    sender_report1.set_ssrc(222);
     sender_report1.set_fract_loss(0.125f);
-    sender_report1.set_cum_loss(2);
-    sender_report1.set_last_seqnum(3);
-    sender_report1.set_jitter(4);
-    sender_report1.set_last_sr(5);
-    sender_report1.set_delay_last_sr(6);
+    sender_report1.set_cum_loss(21);
+    sender_report1.set_last_seqnum(22);
+    sender_report1.set_jitter(23);
+    sender_report1.set_last_sr(0x2400000);
+    sender_report1.set_delay_last_sr(0x2500000);
     header::ReceptionReportBlock sender_report2;
-    sender_report2.set_ssrc(1 + 10);
+    sender_report2.set_ssrc(333);
     sender_report2.set_fract_loss(0.0625f);
-    sender_report2.set_cum_loss(2 + 10);
-    sender_report2.set_last_seqnum(3 + 10);
-    sender_report2.set_jitter(4 + 10);
-    sender_report2.set_last_sr(5 + 10);
-    sender_report2.set_delay_last_sr(6 + 10);
+    sender_report2.set_cum_loss(31);
+    sender_report2.set_last_seqnum(32);
+    sender_report2.set_jitter(33);
+    sender_report2.set_last_sr(0x3400000);
+    sender_report2.set_delay_last_sr(0x3500000);
+
+    SdesChunk sdes_chunk;
+    sdes_chunk.ssrc = 444;
+    SdesItem sdes_item_send;
+    sdes_item_send.type = header::SDES_CNAME;
+    sdes_item_send.text = "1234:cname1";
 
     // Synthesize part
 
@@ -139,13 +146,7 @@ TEST(builder_traverser, sr_sdes) {
 
     // SDES
     builder.begin_sdes();
-    SdesChunk sdes_chunk;
-    sdes_chunk.ssrc = 666;
     builder.begin_sdes_chunk(sdes_chunk);
-    SdesItem sdes_item_send;
-    const char* cname = "1234:cname1";
-    sdes_item_send.type = header::SDES_CNAME;
-    sdes_item_send.text = cname;
     builder.add_sdes_item(sdes_item_send);
     builder.end_sdes_chunk();
     builder.end_sdes();
@@ -163,43 +164,45 @@ TEST(builder_traverser, sr_sdes) {
 
     Traverser::Iterator it = traverser.iter();
     CHECK_EQUAL(Traverser::Iterator::SR, it.next());
-    CHECK_EQUAL(sr.ssrc(), it.get_sr().ssrc());
-    CHECK_EQUAL(sr.ntp_timestamp(), it.get_sr().ntp_timestamp());
-    CHECK_EQUAL(sr.rtp_timestamp(), it.get_sr().rtp_timestamp());
-    CHECK_EQUAL(sr.packet_count(), it.get_sr().packet_count());
-    CHECK_EQUAL(sr.byte_count(), it.get_sr().byte_count());
-    CHECK_EQUAL(sender_report1.ssrc(), it.get_sr().get_block(0).ssrc());
-    DOUBLES_EQUAL(sender_report1.fract_loss(), it.get_sr().get_block(0).fract_loss(),
-                  1e-8);
-    CHECK_EQUAL(sender_report1.cum_loss(), it.get_sr().get_block(0).cum_loss());
-    CHECK_EQUAL(sender_report1.last_seqnum(), it.get_sr().get_block(0).last_seqnum());
-    CHECK_EQUAL(sender_report1.jitter(), it.get_sr().get_block(0).jitter());
-    CHECK_EQUAL(sender_report1.last_sr(), it.get_sr().get_block(0).last_sr());
-    CHECK_EQUAL(sender_report1.delay_last_sr(), it.get_sr().get_block(0).delay_last_sr());
-    CHECK_EQUAL(sender_report2.ssrc(), it.get_sr().get_block(1).ssrc());
-    DOUBLES_EQUAL(sender_report2.fract_loss(), it.get_sr().get_block(1).fract_loss(),
-                  1e-8);
-    CHECK_EQUAL(sender_report2.cum_loss(), it.get_sr().get_block(1).cum_loss());
-    CHECK_EQUAL(sender_report2.last_seqnum(), it.get_sr().get_block(1).last_seqnum());
-    CHECK_EQUAL(sender_report2.jitter(), it.get_sr().get_block(1).jitter());
-    CHECK_EQUAL(sender_report2.last_sr(), it.get_sr().get_block(1).last_sr());
-    CHECK_EQUAL(sender_report2.delay_last_sr(), it.get_sr().get_block(1).delay_last_sr());
+
+    CHECK_EQUAL(111, it.get_sr().ssrc());
+    CHECK_EQUAL(11, it.get_sr().ntp_timestamp());
+    CHECK_EQUAL(12, it.get_sr().rtp_timestamp());
+    CHECK_EQUAL(13, it.get_sr().packet_count());
+    CHECK_EQUAL(14, it.get_sr().byte_count());
+
+    CHECK_EQUAL(222, it.get_sr().get_block(0).ssrc());
+    DOUBLES_EQUAL(0.125f, it.get_sr().get_block(0).fract_loss(), 1e-8);
+    CHECK_EQUAL(21, it.get_sr().get_block(0).cum_loss());
+    CHECK_EQUAL(22, it.get_sr().get_block(0).last_seqnum());
+    CHECK_EQUAL(23, it.get_sr().get_block(0).jitter());
+    CHECK_EQUAL(0x2400000, it.get_sr().get_block(0).last_sr());
+    CHECK_EQUAL(0x2500000, it.get_sr().get_block(0).delay_last_sr());
+
+    CHECK_EQUAL(333, it.get_sr().get_block(1).ssrc());
+    DOUBLES_EQUAL(0.0625f, it.get_sr().get_block(1).fract_loss(), 1e-8);
+    CHECK_EQUAL(31, it.get_sr().get_block(1).cum_loss());
+    CHECK_EQUAL(32, it.get_sr().get_block(1).last_seqnum());
+    CHECK_EQUAL(33, it.get_sr().get_block(1).jitter());
+    CHECK_EQUAL(0x3400000, it.get_sr().get_block(1).last_sr());
+    CHECK_EQUAL(0x3500000, it.get_sr().get_block(1).delay_last_sr());
 
     CHECK_EQUAL(Traverser::Iterator::SDES, it.next());
     SdesTraverser sdes = it.get_sdes();
     CHECK(sdes.parse());
+
     SdesTraverser::Iterator sdes_it = sdes.iter();
     CHECK_EQUAL(1, sdes.chunks_count());
 
     CHECK_EQUAL(SdesTraverser::Iterator::CHUNK, sdes_it.next());
     SdesChunk sdes_chunk_recv = sdes_it.get_chunk();
-    CHECK_EQUAL(sdes_chunk.ssrc, sdes_chunk_recv.ssrc);
+    CHECK_EQUAL(444, sdes_chunk_recv.ssrc);
 
     CHECK_EQUAL(SdesTraverser::Iterator::ITEM, sdes_it.next());
     SdesItem sdes_item_recv = sdes_it.get_item();
-    CHECK_EQUAL(sdes_item_send.type, sdes_item_recv.type);
-    STRCMP_EQUAL(sdes_item_send.text, sdes_item_recv.text);
-    STRCMP_EQUAL(cname, sdes_item_recv.text);
+    CHECK_EQUAL(header::SDES_CNAME, sdes_item_recv.type);
+    STRCMP_EQUAL("1234:cname1", sdes_item_recv.text);
+
     CHECK_EQUAL(SdesTraverser::Iterator::END, sdes_it.next());
     CHECK_FALSE(sdes_it.error());
 
@@ -211,24 +214,33 @@ TEST(builder_traverser, rr_sdes) {
     core::Slice<uint8_t> buff = new_buffer();
 
     header::ReceiverReportPacket rr;
-    rr.set_ssrc(1);
+    rr.set_ssrc(111);
 
     header::ReceptionReportBlock receiver_report_1;
-    receiver_report_1.set_ssrc(1);
+    receiver_report_1.set_ssrc(222);
     receiver_report_1.set_fract_loss(0.125f);
-    receiver_report_1.set_cum_loss(2);
-    receiver_report_1.set_last_seqnum(3);
-    receiver_report_1.set_jitter(4);
-    receiver_report_1.set_last_sr(5);
-    receiver_report_1.set_delay_last_sr(6);
+    receiver_report_1.set_cum_loss(21);
+    receiver_report_1.set_last_seqnum(22);
+    receiver_report_1.set_jitter(23);
+    receiver_report_1.set_last_sr(0x2400000);
+    receiver_report_1.set_delay_last_sr(0x2500000);
     header::ReceptionReportBlock receiver_report_2;
-    receiver_report_2.set_ssrc(1 + 10);
+    receiver_report_2.set_ssrc(333);
     receiver_report_2.set_fract_loss(0.0625f);
-    receiver_report_2.set_cum_loss(2 + 10);
-    receiver_report_2.set_last_seqnum(3 + 10);
-    receiver_report_2.set_jitter(4 + 10);
-    receiver_report_2.set_last_sr(5 + 10);
-    receiver_report_2.set_delay_last_sr(6 + 10);
+    receiver_report_2.set_cum_loss(31);
+    receiver_report_2.set_last_seqnum(32);
+    receiver_report_2.set_jitter(33);
+    receiver_report_2.set_last_sr(0x3400000);
+    receiver_report_2.set_delay_last_sr(0x3500000);
+
+    SdesChunk sdes_chunk;
+    sdes_chunk.ssrc = 444;
+    SdesItem sdes_item_send_1;
+    sdes_item_send_1.type = header::SDES_CNAME;
+    sdes_item_send_1.text = "1234:cname1";
+    SdesItem sdes_item_send_2;
+    sdes_item_send_2.type = header::SDES_NAME;
+    sdes_item_send_2.text = "First Last";
 
     // Synthesize part
 
@@ -243,18 +255,8 @@ TEST(builder_traverser, rr_sdes) {
 
     // SDES
     builder.begin_sdes();
-    SdesChunk sdes_chunk;
-    sdes_chunk.ssrc = 666;
     builder.begin_sdes_chunk(sdes_chunk);
-    SdesItem sdes_item_send_1;
-    const char* cname = "1234:cname1";
-    sdes_item_send_1.type = header::SDES_CNAME;
-    sdes_item_send_1.text = cname;
     builder.add_sdes_item(sdes_item_send_1);
-    SdesItem sdes_item_send_2;
-    const char* name = "name name";
-    sdes_item_send_2.type = header::SDES_NAME;
-    sdes_item_send_2.text = name;
     builder.add_sdes_item(sdes_item_send_2);
     builder.end_sdes_chunk();
     builder.end_sdes();
@@ -272,27 +274,23 @@ TEST(builder_traverser, rr_sdes) {
 
     Traverser::Iterator it = traverser.iter();
     CHECK_EQUAL(Traverser::Iterator::RR, it.next());
-    CHECK_EQUAL(rr.ssrc(), it.get_rr().ssrc());
+    CHECK_EQUAL(111, it.get_rr().ssrc());
 
-    CHECK_EQUAL(receiver_report_1.ssrc(), it.get_rr().get_block(0).ssrc());
-    DOUBLES_EQUAL(receiver_report_1.fract_loss(), it.get_rr().get_block(0).fract_loss(),
-                  1e-8);
-    CHECK_EQUAL(receiver_report_1.cum_loss(), it.get_rr().get_block(0).cum_loss());
-    CHECK_EQUAL(receiver_report_1.last_seqnum(), it.get_rr().get_block(0).last_seqnum());
-    CHECK_EQUAL(receiver_report_1.jitter(), it.get_rr().get_block(0).jitter());
-    CHECK_EQUAL(receiver_report_1.last_sr(), it.get_rr().get_block(0).last_sr());
-    CHECK_EQUAL(receiver_report_1.delay_last_sr(),
-                it.get_rr().get_block(0).delay_last_sr());
+    CHECK_EQUAL(222, it.get_rr().get_block(0).ssrc());
+    DOUBLES_EQUAL(0.125f, it.get_rr().get_block(0).fract_loss(), 1e-8);
+    CHECK_EQUAL(21, it.get_rr().get_block(0).cum_loss());
+    CHECK_EQUAL(22, it.get_rr().get_block(0).last_seqnum());
+    CHECK_EQUAL(23, it.get_rr().get_block(0).jitter());
+    CHECK_EQUAL(0x2400000, it.get_rr().get_block(0).last_sr());
+    CHECK_EQUAL(0x2500000, it.get_rr().get_block(0).delay_last_sr());
 
-    CHECK_EQUAL(receiver_report_2.ssrc(), it.get_rr().get_block(1).ssrc());
-    DOUBLES_EQUAL(receiver_report_2.fract_loss(), it.get_rr().get_block(1).fract_loss(),
-                  1e-8);
-    CHECK_EQUAL(receiver_report_2.cum_loss(), it.get_rr().get_block(1).cum_loss());
-    CHECK_EQUAL(receiver_report_2.last_seqnum(), it.get_rr().get_block(1).last_seqnum());
-    CHECK_EQUAL(receiver_report_2.jitter(), it.get_rr().get_block(1).jitter());
-    CHECK_EQUAL(receiver_report_2.last_sr(), it.get_rr().get_block(1).last_sr());
-    CHECK_EQUAL(receiver_report_2.delay_last_sr(),
-                it.get_rr().get_block(1).delay_last_sr());
+    CHECK_EQUAL(333, it.get_rr().get_block(1).ssrc());
+    DOUBLES_EQUAL(0.0625f, it.get_rr().get_block(1).fract_loss(), 1e-8);
+    CHECK_EQUAL(31, it.get_rr().get_block(1).cum_loss());
+    CHECK_EQUAL(32, it.get_rr().get_block(1).last_seqnum());
+    CHECK_EQUAL(33, it.get_rr().get_block(1).jitter());
+    CHECK_EQUAL(0x3400000, it.get_rr().get_block(1).last_sr());
+    CHECK_EQUAL(0x3500000, it.get_rr().get_block(1).delay_last_sr());
 
     CHECK_EQUAL(Traverser::Iterator::SDES, it.next());
     SdesTraverser sdes = it.get_sdes();
@@ -305,17 +303,17 @@ TEST(builder_traverser, rr_sdes) {
 
     CHECK_EQUAL(SdesTraverser::Iterator::CHUNK, sdes_it.next());
     sdes_chunk_recv = sdes_it.get_chunk();
-    CHECK_EQUAL(sdes_chunk.ssrc, sdes_chunk_recv.ssrc);
+    CHECK_EQUAL(444, sdes_chunk_recv.ssrc);
 
     CHECK_EQUAL(SdesTraverser::Iterator::ITEM, sdes_it.next());
     sdes_item_recv = sdes_it.get_item();
-    CHECK_EQUAL(sdes_item_send_1.type, sdes_item_recv.type);
-    STRCMP_EQUAL(sdes_item_send_1.text, sdes_item_recv.text);
+    CHECK_EQUAL(header::SDES_CNAME, sdes_item_recv.type);
+    STRCMP_EQUAL("1234:cname1", sdes_item_recv.text);
 
     CHECK_EQUAL(SdesTraverser::Iterator::ITEM, sdes_it.next());
     sdes_item_recv = sdes_it.get_item();
-    CHECK_EQUAL(sdes_item_send_2.type, sdes_item_recv.type);
-    STRCMP_EQUAL(sdes_item_send_2.text, sdes_item_recv.text);
+    CHECK_EQUAL(header::SDES_NAME, sdes_item_recv.type);
+    STRCMP_EQUAL("First Last", sdes_item_recv.text);
     CHECK_EQUAL(SdesTraverser::Iterator::END, sdes_it.next());
     CHECK_FALSE(sdes_it.error());
 
@@ -327,38 +325,61 @@ TEST(builder_traverser, rr_sdes_xr) {
     core::Slice<uint8_t> buff = new_buffer();
 
     header::ReceiverReportPacket rr;
-    rr.set_ssrc(1);
+    rr.set_ssrc(111);
 
     header::ReceptionReportBlock receiver_report_1;
-    receiver_report_1.set_ssrc(1);
+    receiver_report_1.set_ssrc(222);
     receiver_report_1.set_fract_loss(0.125f);
-    receiver_report_1.set_cum_loss(2);
-    receiver_report_1.set_last_seqnum(3);
-    receiver_report_1.set_jitter(4);
-    receiver_report_1.set_last_sr(5);
-    receiver_report_1.set_delay_last_sr(6);
+    receiver_report_1.set_cum_loss(21);
+    receiver_report_1.set_last_seqnum(22);
+    receiver_report_1.set_jitter(23);
+    receiver_report_1.set_last_sr(0x2400000);
+    receiver_report_1.set_delay_last_sr(0x2500000);
     header::ReceptionReportBlock receiver_report_2;
-    receiver_report_2.set_ssrc(1 + 10);
+    receiver_report_2.set_ssrc(333);
     receiver_report_2.set_fract_loss(0.0625f);
-    receiver_report_2.set_cum_loss(2 + 10);
-    receiver_report_2.set_last_seqnum(3 + 10);
-    receiver_report_2.set_jitter(4 + 10);
-    receiver_report_2.set_last_sr(5 + 10);
-    receiver_report_2.set_delay_last_sr(6 + 10);
+    receiver_report_2.set_cum_loss(31);
+    receiver_report_2.set_last_seqnum(32);
+    receiver_report_2.set_jitter(33);
+    receiver_report_2.set_last_sr(0x3400000);
+    receiver_report_2.set_delay_last_sr(0x3500000);
+
+    SdesChunk sdes_chunk;
+    sdes_chunk.ssrc = 444;
+    SdesItem sdes_item_send_1;
+    sdes_item_send_1.type = header::SDES_CNAME;
+    sdes_item_send_1.text = "1234:cname1";
+    SdesItem sdes_item_send_2;
+    sdes_item_send_2.type = header::SDES_NAME;
+    sdes_item_send_2.text = "First Last";
 
     header::XrPacket xr;
-    xr.set_ssrc(111);
+    xr.set_ssrc(555);
     header::XrRrtrBlock ref_time;
-    ref_time.set_ntp_timestamp(0xFFFFFFFFFFFFFFFF);
+    ref_time.set_ntp_timestamp(0xABCDABCDABCDABCD);
     header::XrDlrrBlock dlrr;
     header::XrDlrrSubblock dlrr_repblock_1;
-    dlrr_repblock_1.set_ssrc(222);
-    dlrr_repblock_1.set_delay_last_rr(333);
-    dlrr_repblock_1.set_last_rr(444);
+    dlrr_repblock_1.set_ssrc(666);
+    dlrr_repblock_1.set_delay_last_rr(0x6100000);
+    dlrr_repblock_1.set_last_rr(0x6200000);
     header::XrDlrrSubblock dlrr_repblock_2;
-    dlrr_repblock_2.set_ssrc(555);
-    dlrr_repblock_2.set_delay_last_rr(666);
-    dlrr_repblock_2.set_last_rr(777);
+    dlrr_repblock_2.set_ssrc(777);
+    dlrr_repblock_2.set_delay_last_rr(0x7100000);
+    dlrr_repblock_2.set_last_rr(0x7200000);
+    header::XrMeasurementInfoBlock measure_info;
+    measure_info.set_ssrc(888);
+    measure_info.set_first_sn(81);
+    measure_info.set_interval_first_sn(82);
+    measure_info.set_interval_last_sn(83);
+    measure_info.set_interval_duration(0x8400000);
+    measure_info.set_cum_duration(0x8500000000000058);
+    header::XrDelayMetricsBlock delay_metrics;
+    delay_metrics.set_metric_flag(header::MetricFlag_CumulativeDuration);
+    delay_metrics.set_ssrc(999);
+    delay_metrics.set_mean_rtt(0x9100000);
+    delay_metrics.set_min_rtt(0x9200000);
+    delay_metrics.set_max_rtt(0x9300000);
+    delay_metrics.set_e2e_delay(0x9400000000000049);
 
     // Synthesize part
 
@@ -373,18 +394,8 @@ TEST(builder_traverser, rr_sdes_xr) {
 
     // SDES
     builder.begin_sdes();
-    SdesChunk sdes_chunk;
-    sdes_chunk.ssrc = 666;
     builder.begin_sdes_chunk(sdes_chunk);
-    SdesItem sdes_item_send_1;
-    const char* cname = "1234:cname1";
-    sdes_item_send_1.type = header::SDES_CNAME;
-    sdes_item_send_1.text = cname;
     builder.add_sdes_item(sdes_item_send_1);
-    SdesItem sdes_item_send_2;
-    const char* name = "name name";
-    sdes_item_send_2.type = header::SDES_NAME;
-    sdes_item_send_2.text = name;
     builder.add_sdes_item(sdes_item_send_2);
     builder.end_sdes_chunk();
     builder.end_sdes();
@@ -396,6 +407,8 @@ TEST(builder_traverser, rr_sdes_xr) {
     builder.add_xr_dlrr_report(dlrr_repblock_1);
     builder.add_xr_dlrr_report(dlrr_repblock_2);
     builder.end_xr_dlrr();
+    builder.add_xr_measurement_info(measure_info);
+    builder.add_xr_delay_metrics(delay_metrics);
     builder.end_xr();
 
     CHECK(builder.is_ok());
@@ -411,26 +424,23 @@ TEST(builder_traverser, rr_sdes_xr) {
 
     Traverser::Iterator it = traverser.iter();
     CHECK_EQUAL(Traverser::Iterator::RR, it.next());
-    CHECK_EQUAL(rr.ssrc(), it.get_rr().ssrc());
+    CHECK_EQUAL(111, it.get_rr().ssrc());
 
-    CHECK_EQUAL(receiver_report_1.ssrc(), it.get_rr().get_block(0).ssrc());
-    DOUBLES_EQUAL(receiver_report_1.fract_loss(), it.get_rr().get_block(0).fract_loss(),
-                  1e-8);
-    CHECK_EQUAL(receiver_report_1.cum_loss(), it.get_rr().get_block(0).cum_loss());
-    CHECK_EQUAL(receiver_report_1.last_seqnum(), it.get_rr().get_block(0).last_seqnum());
-    CHECK_EQUAL(receiver_report_1.jitter(), it.get_rr().get_block(0).jitter());
-    CHECK_EQUAL(receiver_report_1.last_sr(), it.get_rr().get_block(0).last_sr());
-    CHECK_EQUAL(receiver_report_1.delay_last_sr(),
-                it.get_rr().get_block(0).delay_last_sr());
-    CHECK_EQUAL(receiver_report_2.ssrc(), it.get_rr().get_block(1).ssrc());
-    DOUBLES_EQUAL(receiver_report_2.fract_loss(), it.get_rr().get_block(1).fract_loss(),
-                  1e-8);
-    CHECK_EQUAL(receiver_report_2.cum_loss(), it.get_rr().get_block(1).cum_loss());
-    CHECK_EQUAL(receiver_report_2.last_seqnum(), it.get_rr().get_block(1).last_seqnum());
-    CHECK_EQUAL(receiver_report_2.jitter(), it.get_rr().get_block(1).jitter());
-    CHECK_EQUAL(receiver_report_2.last_sr(), it.get_rr().get_block(1).last_sr());
-    CHECK_EQUAL(receiver_report_2.delay_last_sr(),
-                it.get_rr().get_block(1).delay_last_sr());
+    CHECK_EQUAL(222, it.get_rr().get_block(0).ssrc());
+    DOUBLES_EQUAL(0.125f, it.get_rr().get_block(0).fract_loss(), 1e-8);
+    CHECK_EQUAL(21, it.get_rr().get_block(0).cum_loss());
+    CHECK_EQUAL(22, it.get_rr().get_block(0).last_seqnum());
+    CHECK_EQUAL(23, it.get_rr().get_block(0).jitter());
+    CHECK_EQUAL(0x2400000, it.get_rr().get_block(0).last_sr());
+    CHECK_EQUAL(0x2500000, it.get_rr().get_block(0).delay_last_sr());
+
+    CHECK_EQUAL(333, it.get_rr().get_block(1).ssrc());
+    DOUBLES_EQUAL(0.0625f, it.get_rr().get_block(1).fract_loss(), 1e-8);
+    CHECK_EQUAL(31, it.get_rr().get_block(1).cum_loss());
+    CHECK_EQUAL(32, it.get_rr().get_block(1).last_seqnum());
+    CHECK_EQUAL(33, it.get_rr().get_block(1).jitter());
+    CHECK_EQUAL(0x3400000, it.get_rr().get_block(1).last_sr());
+    CHECK_EQUAL(0x3500000, it.get_rr().get_block(1).delay_last_sr());
 
     CHECK_EQUAL(Traverser::Iterator::SDES, it.next());
     SdesTraverser sdes = it.get_sdes();
@@ -443,38 +453,58 @@ TEST(builder_traverser, rr_sdes_xr) {
 
     CHECK_EQUAL(SdesTraverser::Iterator::CHUNK, sdes_it.next());
     sdes_chunk_recv = sdes_it.get_chunk();
-    CHECK_EQUAL(sdes_chunk.ssrc, sdes_chunk_recv.ssrc);
+    CHECK_EQUAL(444, sdes_chunk_recv.ssrc);
 
     CHECK_EQUAL(SdesTraverser::Iterator::ITEM, sdes_it.next());
     sdes_item_recv = sdes_it.get_item();
-    CHECK_EQUAL(sdes_item_send_1.type, sdes_item_recv.type);
-    STRCMP_EQUAL(sdes_item_send_1.text, sdes_item_recv.text);
+    CHECK_EQUAL(header::SDES_CNAME, sdes_item_recv.type);
+    STRCMP_EQUAL("1234:cname1", sdes_item_recv.text);
 
     CHECK_EQUAL(SdesTraverser::Iterator::ITEM, sdes_it.next());
     sdes_item_recv = sdes_it.get_item();
-    CHECK_EQUAL(sdes_item_send_2.type, sdes_item_recv.type);
-    STRCMP_EQUAL(sdes_item_send_2.text, sdes_item_recv.text);
+    CHECK_EQUAL(header::SDES_NAME, sdes_item_recv.type);
+    STRCMP_EQUAL("First Last", sdes_item_recv.text);
     CHECK_EQUAL(SdesTraverser::Iterator::END, sdes_it.next());
     CHECK_FALSE(sdes_it.error());
 
     CHECK_EQUAL(Traverser::Iterator::XR, it.next());
     XrTraverser xr_tr = it.get_xr();
     CHECK(xr_tr.parse());
-    CHECK_EQUAL(2, xr_tr.blocks_count());
-    CHECK_EQUAL(xr.ssrc(), xr_tr.packet().ssrc());
+    CHECK_EQUAL(4, xr_tr.blocks_count());
+    CHECK_EQUAL(555, xr_tr.packet().ssrc());
     XrTraverser::Iterator xr_it = xr_tr.iter();
+
     CHECK_EQUAL(XrTraverser::Iterator::RRTR_BLOCK, xr_it.next());
-    CHECK_EQUAL(ref_time.ntp_timestamp(), xr_it.get_rrtr().ntp_timestamp());
+    CHECK_EQUAL(0xABCDABCDABCDABCD, xr_it.get_rrtr().ntp_timestamp());
+
     CHECK_EQUAL(XrTraverser::Iterator::DLRR_BLOCK, xr_it.next());
     const header::XrDlrrBlock& pdlrr = xr_it.get_dlrr();
 
     CHECK_EQUAL(2, pdlrr.num_subblocks());
-    CHECK_EQUAL(dlrr_repblock_1.ssrc(), pdlrr.get_subblock(0).ssrc());
-    CHECK_EQUAL(dlrr_repblock_1.delay_last_rr(), pdlrr.get_subblock(0).delay_last_rr());
-    CHECK_EQUAL(dlrr_repblock_1.last_rr(), pdlrr.get_subblock(0).last_rr());
-    CHECK_EQUAL(dlrr_repblock_2.ssrc(), pdlrr.get_subblock(1).ssrc());
-    CHECK_EQUAL(dlrr_repblock_2.delay_last_rr(), pdlrr.get_subblock(1).delay_last_rr());
-    CHECK_EQUAL(dlrr_repblock_2.last_rr(), pdlrr.get_subblock(1).last_rr());
+    CHECK_EQUAL(666, pdlrr.get_subblock(0).ssrc());
+    CHECK_EQUAL(0x6100000, pdlrr.get_subblock(0).delay_last_rr());
+    CHECK_EQUAL(0x6200000, pdlrr.get_subblock(0).last_rr());
+    CHECK_EQUAL(777, pdlrr.get_subblock(1).ssrc());
+    CHECK_EQUAL(0x7100000, pdlrr.get_subblock(1).delay_last_rr());
+    CHECK_EQUAL(0x7200000, pdlrr.get_subblock(1).last_rr());
+
+    CHECK_EQUAL(XrTraverser::Iterator::MEASUREMENT_INFO_BLOCK, xr_it.next());
+    CHECK_EQUAL(888, xr_it.get_measurement_info().ssrc());
+    CHECK_EQUAL(81, xr_it.get_measurement_info().first_sn());
+    CHECK_EQUAL(82, xr_it.get_measurement_info().interval_first_sn());
+    CHECK_EQUAL(83, xr_it.get_measurement_info().interval_last_sn());
+    CHECK_EQUAL(0x8400000, xr_it.get_measurement_info().interval_duration());
+    CHECK_EQUAL(0x8500000000000058, xr_it.get_measurement_info().cum_duration());
+
+    CHECK_EQUAL(XrTraverser::Iterator::DELAY_METRICS_BLOCK, xr_it.next());
+    CHECK_EQUAL(header::MetricFlag_CumulativeDuration,
+                xr_it.get_delay_metrics().metric_flag());
+    CHECK_EQUAL(999, xr_it.get_delay_metrics().ssrc());
+    CHECK_EQUAL(0x9100000, xr_it.get_delay_metrics().mean_rtt());
+    CHECK_EQUAL(0x9200000, xr_it.get_delay_metrics().min_rtt());
+    CHECK_EQUAL(0x9300000, xr_it.get_delay_metrics().max_rtt());
+    CHECK_EQUAL(0x9400000000000049, xr_it.get_delay_metrics().e2e_delay());
+
     CHECK_EQUAL(XrTraverser::Iterator::END, xr_it.next());
     CHECK_FALSE(xr_it.error());
 
@@ -486,30 +516,36 @@ TEST(builder_traverser, rr_sdes_xr_padding) {
     core::Slice<uint8_t> buff = new_buffer();
 
     header::ReceiverReportPacket rr;
-    rr.set_ssrc(1);
+    rr.set_ssrc(111);
 
     header::ReceptionReportBlock receiver_report;
-    receiver_report.set_ssrc(1);
+    receiver_report.set_ssrc(222);
     receiver_report.set_fract_loss(0.125f);
-    receiver_report.set_cum_loss(2);
-    receiver_report.set_last_seqnum(3);
-    receiver_report.set_jitter(4);
-    receiver_report.set_last_sr(5);
-    receiver_report.set_delay_last_sr(6);
+    receiver_report.set_cum_loss(21);
+    receiver_report.set_last_seqnum(22);
+    receiver_report.set_jitter(23);
+    receiver_report.set_last_sr(0x2400000);
+    receiver_report.set_delay_last_sr(0x2500000);
+
+    SdesChunk sdes_chunk;
+    sdes_chunk.ssrc = 444;
+    SdesItem sdes_item_send;
+    sdes_item_send.type = header::SDES_CNAME;
+    sdes_item_send.text = "1234:cname1";
 
     header::XrPacket xr;
-    xr.set_ssrc(111);
+    xr.set_ssrc(555);
     header::XrRrtrBlock ref_time;
-    ref_time.set_ntp_timestamp(0xFFFFFFFFFFFFFFFF);
+    ref_time.set_ntp_timestamp(0xABCDABCDABCDABCD);
     header::XrDlrrBlock dlrr;
     header::XrDlrrSubblock dlrr_repblock_1;
-    dlrr_repblock_1.set_ssrc(222);
-    dlrr_repblock_1.set_delay_last_rr(333);
-    dlrr_repblock_1.set_last_rr(444);
+    dlrr_repblock_1.set_ssrc(666);
+    dlrr_repblock_1.set_delay_last_rr(0x6100000);
+    dlrr_repblock_1.set_last_rr(0x6200000);
     header::XrDlrrSubblock dlrr_repblock_2;
-    dlrr_repblock_2.set_ssrc(555);
-    dlrr_repblock_2.set_delay_last_rr(666);
-    dlrr_repblock_2.set_last_rr(777);
+    dlrr_repblock_2.set_ssrc(777);
+    dlrr_repblock_2.set_delay_last_rr(0x7100000);
+    dlrr_repblock_2.set_last_rr(0x7200000);
 
     // Synthesize part
 
@@ -523,13 +559,7 @@ TEST(builder_traverser, rr_sdes_xr_padding) {
 
     // SDES
     builder.begin_sdes();
-    SdesChunk sdes_chunk;
-    sdes_chunk.ssrc = 22;
     builder.begin_sdes_chunk(sdes_chunk);
-    SdesItem sdes_item_send;
-    const char* cname = "1234:cname1";
-    sdes_item_send.type = header::SDES_CNAME;
-    sdes_item_send.text = cname;
     builder.add_sdes_item(sdes_item_send);
     builder.end_sdes_chunk();
     builder.end_sdes();
@@ -559,17 +589,15 @@ TEST(builder_traverser, rr_sdes_xr_padding) {
 
     Traverser::Iterator it = traverser.iter();
     CHECK_EQUAL(Traverser::Iterator::RR, it.next());
-    CHECK_EQUAL(rr.ssrc(), it.get_rr().ssrc());
+    CHECK_EQUAL(111, it.get_rr().ssrc());
 
-    CHECK_EQUAL(receiver_report.ssrc(), it.get_rr().get_block(0).ssrc());
-    DOUBLES_EQUAL(receiver_report.fract_loss(), it.get_rr().get_block(0).fract_loss(),
-                  1e-8);
-    CHECK_EQUAL(receiver_report.cum_loss(), it.get_rr().get_block(0).cum_loss());
-    CHECK_EQUAL(receiver_report.last_seqnum(), it.get_rr().get_block(0).last_seqnum());
-    CHECK_EQUAL(receiver_report.jitter(), it.get_rr().get_block(0).jitter());
-    CHECK_EQUAL(receiver_report.last_sr(), it.get_rr().get_block(0).last_sr());
-    CHECK_EQUAL(receiver_report.delay_last_sr(),
-                it.get_rr().get_block(0).delay_last_sr());
+    CHECK_EQUAL(222, it.get_rr().get_block(0).ssrc());
+    DOUBLES_EQUAL(0.125f, it.get_rr().get_block(0).fract_loss(), 1e-8);
+    CHECK_EQUAL(21, it.get_rr().get_block(0).cum_loss());
+    CHECK_EQUAL(22, it.get_rr().get_block(0).last_seqnum());
+    CHECK_EQUAL(23, it.get_rr().get_block(0).jitter());
+    CHECK_EQUAL(0x2400000, it.get_rr().get_block(0).last_sr());
+    CHECK_EQUAL(0x2500000, it.get_rr().get_block(0).delay_last_sr());
 
     CHECK_EQUAL(Traverser::Iterator::SDES, it.next());
     SdesTraverser sdes = it.get_sdes();
@@ -579,13 +607,12 @@ TEST(builder_traverser, rr_sdes_xr_padding) {
 
     CHECK_EQUAL(SdesTraverser::Iterator::CHUNK, sdes_it.next());
     SdesChunk sdes_chunk_recv = sdes_it.get_chunk();
-    CHECK_EQUAL(sdes_chunk.ssrc, sdes_chunk_recv.ssrc);
+    CHECK_EQUAL(444, sdes_chunk_recv.ssrc);
 
     CHECK_EQUAL(SdesTraverser::Iterator::ITEM, sdes_it.next());
     SdesItem sdes_item_recv = sdes_it.get_item();
-    CHECK_EQUAL(sdes_item_send.type, sdes_item_recv.type);
-    STRCMP_EQUAL(sdes_item_send.text, sdes_item_recv.text);
-    STRCMP_EQUAL(cname, sdes_item_recv.text);
+    CHECK_EQUAL(header::SDES_CNAME, sdes_item_recv.type);
+    STRCMP_EQUAL("1234:cname1", sdes_item_recv.text);
     CHECK_EQUAL(SdesTraverser::Iterator::END, sdes_it.next());
     CHECK_FALSE(sdes_it.error());
 
@@ -593,20 +620,23 @@ TEST(builder_traverser, rr_sdes_xr_padding) {
     XrTraverser xr_tr = it.get_xr();
     CHECK(xr_tr.parse());
     CHECK_EQUAL(2, xr_tr.blocks_count());
-    CHECK_EQUAL(xr.ssrc(), xr_tr.packet().ssrc());
+    CHECK_EQUAL(555, xr_tr.packet().ssrc());
     XrTraverser::Iterator xr_it = xr_tr.iter();
+
     CHECK_EQUAL(XrTraverser::Iterator::RRTR_BLOCK, xr_it.next());
-    CHECK_EQUAL(ref_time.ntp_timestamp(), xr_it.get_rrtr().ntp_timestamp());
+    CHECK_EQUAL(0xABCDABCDABCDABCD, xr_it.get_rrtr().ntp_timestamp());
+
     CHECK_EQUAL(XrTraverser::Iterator::DLRR_BLOCK, xr_it.next());
     const header::XrDlrrBlock& pdlrr = xr_it.get_dlrr();
 
     CHECK_EQUAL(2, pdlrr.num_subblocks());
-    CHECK_EQUAL(dlrr_repblock_1.ssrc(), pdlrr.get_subblock(0).ssrc());
-    CHECK_EQUAL(dlrr_repblock_1.delay_last_rr(), pdlrr.get_subblock(0).delay_last_rr());
-    CHECK_EQUAL(dlrr_repblock_1.last_rr(), pdlrr.get_subblock(0).last_rr());
-    CHECK_EQUAL(dlrr_repblock_2.ssrc(), pdlrr.get_subblock(1).ssrc());
-    CHECK_EQUAL(dlrr_repblock_2.delay_last_rr(), pdlrr.get_subblock(1).delay_last_rr());
-    CHECK_EQUAL(dlrr_repblock_2.last_rr(), pdlrr.get_subblock(1).last_rr());
+    CHECK_EQUAL(666, pdlrr.get_subblock(0).ssrc());
+    CHECK_EQUAL(0x6100000, pdlrr.get_subblock(0).delay_last_rr());
+    CHECK_EQUAL(0x6200000, pdlrr.get_subblock(0).last_rr());
+    CHECK_EQUAL(777, pdlrr.get_subblock(1).ssrc());
+    CHECK_EQUAL(0x7100000, pdlrr.get_subblock(1).delay_last_rr());
+    CHECK_EQUAL(0x7200000, pdlrr.get_subblock(1).last_rr());
+
     CHECK_EQUAL(XrTraverser::Iterator::END, xr_it.next());
     CHECK_FALSE(xr_it.error());
 
@@ -618,9 +648,15 @@ TEST(builder_traverser, rr_sdes_bye) {
     core::Slice<uint8_t> buff = new_buffer();
 
     header::ReceiverReportPacket rr;
-    rr.set_ssrc(1);
+    rr.set_ssrc(11);
 
-    const char* s_reason = "Reason to live";
+    SdesChunk sdes_chunk;
+    sdes_chunk.ssrc = 22;
+    SdesItem sdes_item_send;
+    sdes_item_send.type = header::SDES_CNAME;
+    sdes_item_send.text = "1234:cname1";
+
+    const char* bye_reason = "Reason to live";
 
     // Synthesize part
 
@@ -633,13 +669,7 @@ TEST(builder_traverser, rr_sdes_bye) {
 
     // SDES
     builder.begin_sdes();
-    SdesChunk sdes_chunk;
-    sdes_chunk.ssrc = 22;
     builder.begin_sdes_chunk(sdes_chunk);
-    SdesItem sdes_item_send;
-    const char* cname = "1234:cname1";
-    sdes_item_send.type = header::SDES_CNAME;
-    sdes_item_send.text = cname;
     builder.add_sdes_item(sdes_item_send);
     builder.end_sdes_chunk();
     builder.end_sdes();
@@ -650,7 +680,7 @@ TEST(builder_traverser, rr_sdes_bye) {
     builder.add_bye_ssrc(333);
     builder.add_bye_ssrc(444);
     builder.add_bye_ssrc(555);
-    builder.add_bye_reason(s_reason);
+    builder.add_bye_reason(bye_reason);
     builder.end_bye();
 
     CHECK(builder.is_ok());
@@ -666,7 +696,7 @@ TEST(builder_traverser, rr_sdes_bye) {
 
     Traverser::Iterator it = traverser.iter();
     CHECK_EQUAL(Traverser::Iterator::RR, it.next());
-    CHECK_EQUAL(rr.ssrc(), it.get_rr().ssrc());
+    CHECK_EQUAL(11, it.get_rr().ssrc());
 
     CHECK_EQUAL(Traverser::Iterator::SDES, it.next());
     SdesTraverser sdes = it.get_sdes();
@@ -676,13 +706,12 @@ TEST(builder_traverser, rr_sdes_bye) {
 
     CHECK_EQUAL(SdesTraverser::Iterator::CHUNK, sdes_it.next());
     SdesChunk sdes_chunk_recv = sdes_it.get_chunk();
-    CHECK_EQUAL(sdes_chunk.ssrc, sdes_chunk_recv.ssrc);
+    CHECK_EQUAL(22, sdes_chunk_recv.ssrc);
 
     CHECK_EQUAL(SdesTraverser::Iterator::ITEM, sdes_it.next());
     SdesItem sdes_item_recv = sdes_it.get_item();
-    CHECK_EQUAL(sdes_item_send.type, sdes_item_recv.type);
-    STRCMP_EQUAL(sdes_item_send.text, sdes_item_recv.text);
-    STRCMP_EQUAL(cname, sdes_item_recv.text);
+    CHECK_EQUAL(header::SDES_CNAME, sdes_item_recv.type);
+    STRCMP_EQUAL("1234:cname1", sdes_item_recv.text);
     CHECK_EQUAL(SdesTraverser::Iterator::END, sdes_it.next());
     CHECK_FALSE(sdes_it.error());
 
@@ -700,7 +729,7 @@ TEST(builder_traverser, rr_sdes_bye) {
     CHECK_EQUAL(ByeTraverser::Iterator::SSRC, bye_it.next());
     CHECK_EQUAL(555, bye_it.get_ssrc());
     CHECK_EQUAL(ByeTraverser::Iterator::REASON, bye_it.next());
-    STRCMP_EQUAL(s_reason, bye_it.get_reason());
+    STRCMP_EQUAL(bye_reason, bye_it.get_reason());
     CHECK_EQUAL(ByeTraverser::Iterator::END, bye_it.next());
     CHECK_FALSE(bye_it.error());
 

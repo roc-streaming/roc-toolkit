@@ -1161,7 +1161,9 @@ TEST(traverser, xr_fields) {
         header::XrPacket xr;
         xr.header().set_len_bytes(sizeof(header::XrPacket) + sizeof(header::XrRrtrBlock)
                                   + sizeof(header::XrDlrrBlock)
-                                  + sizeof(header::XrDlrrSubblock) * 2);
+                                  + sizeof(header::XrDlrrSubblock) * 2
+                                  + sizeof(header::XrMeasurementInfoBlock)
+                                  + sizeof(header::XrDelayMetricsBlock));
         xr.set_ssrc(111);
 
         header::XrRrtrBlock rrtr;
@@ -1182,11 +1184,31 @@ TEST(traverser, xr_fields) {
         dlrr_sblk2.set_last_rr(0x300000);
         dlrr_sblk2.set_delay_last_rr(0x400000);
 
+        header::XrMeasurementInfoBlock measure_info;
+        measure_info.header().set_len_bytes(sizeof(header::XrMeasurementInfoBlock));
+        measure_info.set_ssrc(444);
+        measure_info.set_first_sn(41);
+        measure_info.set_interval_first_sn(42);
+        measure_info.set_interval_last_sn(43);
+        measure_info.set_interval_duration(0x500000);
+        measure_info.set_cum_duration(0x6000000000000006);
+
+        header::XrDelayMetricsBlock delay_metrics;
+        delay_metrics.header().set_len_bytes(sizeof(header::XrDelayMetricsBlock));
+        delay_metrics.set_metric_flag(header::MetricFlag_IntervalDuration);
+        delay_metrics.set_ssrc(555);
+        delay_metrics.set_mean_rtt(0x600000);
+        delay_metrics.set_min_rtt(0x700000);
+        delay_metrics.set_max_rtt(0x800000);
+        delay_metrics.set_e2e_delay(0x9000000000000009);
+
         append_buffer(buff, &xr, sizeof(xr));
         append_buffer(buff, &rrtr, sizeof(rrtr));
         append_buffer(buff, &dlrr, sizeof(dlrr));
         append_buffer(buff, &dlrr_sblk1, sizeof(dlrr_sblk1));
         append_buffer(buff, &dlrr_sblk2, sizeof(dlrr_sblk2));
+        append_buffer(buff, &measure_info, sizeof(measure_info));
+        append_buffer(buff, &delay_metrics, sizeof(delay_metrics));
     }
 
     Traverser traverser(buff);
@@ -1199,7 +1221,7 @@ TEST(traverser, xr_fields) {
         XrTraverser xr_tr = it.get_xr();
         CHECK(xr_tr.parse());
 
-        CHECK_EQUAL(2, xr_tr.blocks_count());
+        CHECK_EQUAL(4, xr_tr.blocks_count());
         CHECK_EQUAL(111, xr_tr.packet().ssrc());
 
         XrTraverser::Iterator xr_it = xr_tr.iter();
@@ -1218,6 +1240,23 @@ TEST(traverser, xr_fields) {
         CHECK_EQUAL(333, xr_it.get_dlrr().get_subblock(1).ssrc());
         CHECK_EQUAL(0x300000, xr_it.get_dlrr().get_subblock(1).last_rr());
         CHECK_EQUAL(0x400000, xr_it.get_dlrr().get_subblock(1).delay_last_rr());
+
+        CHECK_EQUAL(XrTraverser::Iterator::MEASUREMENT_INFO_BLOCK, xr_it.next());
+        CHECK_EQUAL(444, xr_it.get_measurement_info().ssrc());
+        CHECK_EQUAL(41, xr_it.get_measurement_info().first_sn());
+        CHECK_EQUAL(42, xr_it.get_measurement_info().interval_first_sn());
+        CHECK_EQUAL(43, xr_it.get_measurement_info().interval_last_sn());
+        CHECK_EQUAL(0x500000, xr_it.get_measurement_info().interval_duration());
+        CHECK_EQUAL(0x6000000000000006, xr_it.get_measurement_info().cum_duration());
+
+        CHECK_EQUAL(XrTraverser::Iterator::DELAY_METRICS_BLOCK, xr_it.next());
+        CHECK_EQUAL(header::MetricFlag_IntervalDuration,
+                    xr_it.get_delay_metrics().metric_flag());
+        CHECK_EQUAL(555, xr_it.get_delay_metrics().ssrc());
+        CHECK_EQUAL(0x600000, xr_it.get_delay_metrics().mean_rtt());
+        CHECK_EQUAL(0x700000, xr_it.get_delay_metrics().min_rtt());
+        CHECK_EQUAL(0x800000, xr_it.get_delay_metrics().max_rtt());
+        CHECK_EQUAL(0x9000000000000009, xr_it.get_delay_metrics().e2e_delay());
 
         CHECK_EQUAL(XrTraverser::Iterator::END, xr_it.next());
         CHECK_FALSE(xr_it.error());

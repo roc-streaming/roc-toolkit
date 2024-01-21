@@ -92,6 +92,12 @@ public:
     //! Add DLRR report to current DLRR block.
     void add_xr_dlrr_report(const header::XrDlrrSubblock& report);
 
+    //! Add measurement info block.to current XR packet.
+    void add_xr_measurement_info(const header::XrMeasurementInfoBlock& measurement_info);
+
+    //! Add delay metrics block.to current XR packet.
+    void add_xr_delay_metrics(const header::XrDelayMetricsBlock& delay_metrics);
+
     //! Finish current DLRR block.
     void end_xr_dlrr();
 

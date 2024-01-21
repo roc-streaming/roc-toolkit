@@ -39,14 +39,15 @@ Communicator::Communicator(const Config& config,
     , config_(config)
     , reporter_(config, participant, arena)
     , next_deadline_(0)
-    , max_dest_addrs_(0)
-    , cur_dest_addr_(0)
-    , max_pkt_blocks_(header::MaxPacketBlocks)
-    , cur_pkt_block_(0)
-    , srrr_index_(0)
-    , srrr_max_(0)
-    , dlrr_index_(0)
-    , dlrr_max_(0)
+    , dest_addr_count_(0)
+    , dest_addr_index_(0)
+    , send_stream_count_(0)
+    , send_stream_index_(0)
+    , recv_stream_count_(0)
+    , recv_stream_index_(0)
+    , max_pkt_streams_(header::MaxPacketBlocks)
+    , cur_pkt_send_stream_(0)
+    , cur_pkt_recv_stream_(0)
     , error_count_(0)
     , error_limiter_(ReportInterval)
     , valid_(false) {
@@ -60,12 +61,12 @@ bool Communicator::is_valid() const {
     return valid_;
 }
 
-size_t Communicator::num_streams() const {
-    return reporter_.num_streams();
+size_t Communicator::total_destinations() const {
+    return reporter_.total_destinations();
 }
 
-size_t Communicator::num_destinations() const {
-    return reporter_.num_destinations();
+size_t Communicator::total_streams() const {
+    return reporter_.total_streams();
 }
 
 status::StatusCode Communicator::process_packet(const packet::PacketPtr& packet,
@@ -285,11 +286,6 @@ void Communicator::process_extended_report_(const XrTraverser& xr) {
 
     while ((state = iter.next()) != XrTraverser::Iterator::END) {
         switch (state) {
-        case XrTraverser::Iterator::RRTR_BLOCK: {
-            // RRTR is extended receiver report.
-            reporter_.process_rrtr_block(xr.packet(), iter.get_rrtr());
-        } break;
-
         case XrTraverser::Iterator::DLRR_BLOCK: {
             // DLRR is extended sender report.
             const header::XrDlrrBlock& dlrr = iter.get_dlrr();
@@ -297,6 +293,16 @@ void Communicator::process_extended_report_(const XrTraverser& xr) {
             for (size_t n = 0; n < dlrr.num_subblocks(); n++) {
                 reporter_.process_dlrr_subblock(xr.packet(), dlrr.get_subblock(n));
             }
+        } break;
+
+        case XrTraverser::Iterator::RRTR_BLOCK: {
+            // RRTR is extended receiver report.
+            reporter_.process_rrtr_block(xr.packet(), iter.get_rrtr());
+        } break;
+
+        case XrTraverser::Iterator::DELAY_METRICS_BLOCK: {
+            // Delay Metrics is extended receiver report.
+            reporter_.process_delay_metrics_block(xr.packet(), iter.get_delay_metrics());
         } break;
 
         default:
@@ -417,14 +423,14 @@ Communicator::begin_packet_generation_(core::nanoseconds_t current_time) {
         return status;
     }
 
-    max_dest_addrs_ = 0;
-    cur_dest_addr_ = 0;
+    dest_addr_count_ = 0;
+    dest_addr_index_ = 0;
 
-    srrr_index_ = 0;
-    srrr_max_ = 0;
+    send_stream_count_ = 0;
+    send_stream_index_ = 0;
 
-    dlrr_index_ = 0;
-    dlrr_max_ = 0;
+    recv_stream_count_ = 0;
+    recv_stream_index_ = 0;
 
     return status::StatusOK;
 }
@@ -438,37 +444,38 @@ status::StatusCode Communicator::end_packet_generation_() {
 }
 
 bool Communicator::continue_packet_generation_() {
-    if (srrr_index_ == srrr_max_ && dlrr_index_ == dlrr_max_) {
-        if (max_dest_addrs_ == 0) {
+    if (send_stream_index_ >= send_stream_count_
+        && recv_stream_index_ >= recv_stream_count_) {
+        if (dest_addr_count_ == 0) {
             // This is the very first report, do some initialization.
-            max_dest_addrs_ = reporter_.num_dest_addresses();
-            cur_dest_addr_ = 0;
+            dest_addr_count_ = reporter_.num_dest_addresses();
+            dest_addr_index_ = 0;
         } else {
             // We've reported all blocks for current destination address,
             // switch to next address.
             roc_log(LogTrace,
                     "rtcp communicator: generated report: addr_index=%d addr_count=%d",
-                    (int)cur_dest_addr_, (int)max_dest_addrs_);
-            cur_dest_addr_++;
+                    (int)dest_addr_index_, (int)dest_addr_count_);
+            dest_addr_index_++;
         }
 
-        if (cur_dest_addr_ == max_dest_addrs_) {
+        if (dest_addr_index_ >= dest_addr_count_) {
             // We've reported all blocks for all destination addesses (or maybe
             // there are no destination addesses), exit generation.
             return false;
         }
 
         // Prepare to generate packets for new destination address.
-        cur_pkt_block_ = 0;
+        cur_pkt_send_stream_ = 0;
+        cur_pkt_recv_stream_ = 0;
 
-        srrr_index_ = 0;
-        srrr_max_ = config_.enable_sr_rr && reporter_.is_receiving()
-            ? reporter_.num_reception_blocks(cur_dest_addr_)
-            : 0;
+        send_stream_index_ = 0;
+        send_stream_count_ =
+            reporter_.is_sending() ? reporter_.num_sending_streams(dest_addr_index_) : 0;
 
-        dlrr_index_ = 0;
-        dlrr_max_ = config_.enable_xr && reporter_.is_sending()
-            ? reporter_.num_dlrr_subblocks(cur_dest_addr_)
+        recv_stream_index_ = 0;
+        recv_stream_count_ = reporter_.is_receiving()
+            ? reporter_.num_receiving_streams(dest_addr_index_)
             : 0;
     }
 
@@ -479,13 +486,43 @@ bool Communicator::continue_packet_generation_() {
 status::StatusCode
 Communicator::write_generated_packet_(const packet::PacketPtr& packet) {
     const status::StatusCode status = packet_writer_.write(packet);
-    roc_log(
-        LogTrace,
-        "rtcp communicator: wrote packet: status=%s blocks=%d/%d srrr=%d/%d dlrr=%d/%d",
-        status::code_to_str(status), (int)cur_pkt_block_, (int)max_pkt_blocks_,
-        (int)srrr_index_, (int)srrr_max_, (int)dlrr_index_, (int)dlrr_max_);
+    roc_log(LogTrace,
+            "rtcp communicator: wrote packet:"
+            " status=%s max_pkt_blocks=%d send_blocks=%d/%d recv_blocks=%d/%d",
+            status::code_to_str(status), (int)max_pkt_streams_, (int)send_stream_index_,
+            (int)send_stream_count_, (int)recv_stream_index_, (int)recv_stream_count_);
 
     return status;
+}
+
+bool Communicator::next_send_stream_(size_t new_stream_index) {
+    // This function is called whenever we're going to add a report block for
+    // the stream with given index. It checks whether it would lead to exceeding
+    // the limit of streams per packet, and if not, updates the number of
+    // streams in packet. It uses max() because it's called repeatedly for
+    // the same streams, first for all streams when adding blocks of one type,
+    // then for all streams when adding blocks of another type, and so on.
+    const size_t new_pkt_send_stream =
+        std::max(cur_pkt_send_stream_, new_stream_index - send_stream_index_ + 1);
+
+    if (new_pkt_send_stream + cur_pkt_recv_stream_ >= max_pkt_streams_) {
+        return false;
+    }
+
+    cur_pkt_send_stream_ = new_pkt_send_stream;
+    return true;
+}
+
+bool Communicator::next_recv_stream_(size_t new_stream_index) {
+    const size_t next_pkt_recv_stream =
+        std::max(cur_pkt_recv_stream_, new_stream_index - recv_stream_index_ + 1);
+
+    if (cur_pkt_send_stream_ + next_pkt_recv_stream >= max_pkt_streams_) {
+        return false;
+    }
+
+    cur_pkt_recv_stream_ = next_pkt_recv_stream;
+    return true;
 }
 
 status::StatusCode Communicator::generate_packet_(PacketType packet_type,
@@ -543,7 +580,7 @@ status::StatusCode Communicator::generate_packet_(PacketType packet_type,
 
     // Set destination address
     packet->add_flags(packet::Packet::FlagUDP);
-    reporter_.generate_dest_address(cur_dest_addr_, packet->udp()->dst_addr);
+    reporter_.generate_dest_address(dest_addr_index_, packet->udp()->dst_addr);
 
     return status::StatusOK;
 }
@@ -551,11 +588,10 @@ status::StatusCode Communicator::generate_packet_(PacketType packet_type,
 status::StatusCode
 Communicator::generate_packet_payload_(PacketType packet_type,
                                        core::Slice<uint8_t>& packet_payload) {
-    const size_t saved_srrr_index = srrr_index_, saved_dlrr_index = dlrr_index_;
-
     for (;;) {
         // Start new packet.
-        cur_pkt_block_ = 0;
+        cur_pkt_send_stream_ = 0;
+        cur_pkt_recv_stream_ = 0;
 
         Builder bld(config_, packet_payload);
 
@@ -571,29 +607,28 @@ Communicator::generate_packet_payload_(PacketType packet_type,
 
         // Check if packet didn't fit into the buffer.
         if (!bld.is_ok()) {
-            if (cur_pkt_block_ <= 1) {
+            if (cur_pkt_send_stream_ + cur_pkt_recv_stream_ <= 1) {
                 // Even one block can't fit into the buffer, so all we
                 // can do is to report failure and exit.
-                max_pkt_blocks_ = 1;
+                max_pkt_streams_ = 1;
                 return status::StatusNoSpace;
             }
-
-            // Reduce limit for number of blocks per packet.
-            max_pkt_blocks_ = cur_pkt_block_ - 1;
-
-            // Roll back to beginning of current packet.
-            srrr_index_ = saved_srrr_index;
-            dlrr_index_ = saved_dlrr_index;
 
             // Repeat current packet generation with reduced limit.
             // We will eventually either find value for max_pkt_blocks_
             // that does not cause errors, or report StatusNoSpace (see above).
             // Normally this search will happen only once and then the
             // found value of max_pkt_blocks_ will be reused.
+            max_pkt_streams_ = cur_pkt_send_stream_ + cur_pkt_recv_stream_ - 1;
+
             roc_log(LogTrace, "rtcp reporter: retrying generation with max_blocks=%lu",
-                    (unsigned long)max_pkt_blocks_);
+                    (unsigned long)max_pkt_streams_);
+
             continue;
         }
+
+        send_stream_index_ += cur_pkt_send_stream_;
+        recv_stream_index_ += cur_pkt_recv_stream_;
 
         return status::StatusOK;
     }
@@ -642,10 +677,13 @@ void Communicator::generate_standard_report_(Builder& bld) {
 
         // If we're also receiving, add reception reports to SR.
         if (reporter_.is_receiving()) {
-            for (; srrr_index_ < srrr_max_ && cur_pkt_block_ < max_pkt_blocks_;
-                 srrr_index_++, cur_pkt_block_++) {
+            for (size_t stream_index = recv_stream_index_;
+                 stream_index < recv_stream_count_; stream_index++) {
+                if (!next_recv_stream_(stream_index)) {
+                    break;
+                }
                 header::ReceptionReportBlock blk;
-                reporter_.generate_reception_block(cur_dest_addr_, srrr_index_, blk);
+                reporter_.generate_reception_block(dest_addr_index_, stream_index, blk);
 
                 bld.add_sr_report(blk);
             }
@@ -663,10 +701,13 @@ void Communicator::generate_standard_report_(Builder& bld) {
         // If there are no actual receiving streams, keep RR empty,
         // as specified in RFC 3550.
         if (reporter_.is_receiving()) {
-            for (; srrr_index_ < srrr_max_ && cur_pkt_block_ < max_pkt_blocks_;
-                 srrr_index_++, cur_pkt_block_++) {
+            for (size_t stream_index = recv_stream_index_;
+                 stream_index < recv_stream_count_; stream_index++) {
+                if (!next_recv_stream_(stream_index)) {
+                    break;
+                }
                 header::ReceptionReportBlock blk;
-                reporter_.generate_reception_block(cur_dest_addr_, srrr_index_, blk);
+                reporter_.generate_reception_block(dest_addr_index_, stream_index, blk);
 
                 bld.add_rr_report(blk);
             }
@@ -677,22 +718,26 @@ void Communicator::generate_standard_report_(Builder& bld) {
 }
 
 void Communicator::generate_extended_report_(Builder& bld) {
-    if ((reporter_.is_sending() && dlrr_index_ < dlrr_max_) || reporter_.is_receiving()) {
+    if ((reporter_.is_sending() && send_stream_index_ < send_stream_count_)
+        || reporter_.is_receiving()) {
         header::XrPacket xr;
         reporter_.generate_xr(xr);
 
         bld.begin_xr(xr);
 
-        if (reporter_.is_sending() && dlrr_index_ < dlrr_max_) {
+        if (reporter_.is_sending() && send_stream_index_ < send_stream_count_) {
             // DLRR is extended sender report.
             header::XrDlrrBlock dlrr;
 
             bld.begin_xr_dlrr(dlrr);
 
-            for (; dlrr_index_ < dlrr_max_ && cur_pkt_block_ < max_pkt_blocks_;
-                 dlrr_index_++, cur_pkt_block_++) {
+            for (size_t stream_index = send_stream_index_;
+                 stream_index < send_stream_count_; stream_index++) {
+                if (!next_send_stream_(stream_index)) {
+                    break;
+                }
                 header::XrDlrrSubblock blk;
-                reporter_.generate_dlrr_subblock(cur_dest_addr_, dlrr_index_, blk);
+                reporter_.generate_dlrr_subblock(dest_addr_index_, stream_index, blk);
 
                 bld.add_xr_dlrr_report(blk);
             }
@@ -706,6 +751,24 @@ void Communicator::generate_extended_report_(Builder& bld) {
             reporter_.generate_rrtr_block(rrtr);
 
             bld.add_xr_rrtr(rrtr);
+
+            for (size_t stream_index = recv_stream_index_;
+                 stream_index < recv_stream_count_; stream_index++) {
+                if (!next_recv_stream_(stream_index)) {
+                    break;
+                }
+                header::XrMeasurementInfoBlock mi_blk;
+                reporter_.generate_measurement_info_block(dest_addr_index_, stream_index,
+                                                          mi_blk);
+
+                bld.add_xr_measurement_info(mi_blk);
+
+                header::XrDelayMetricsBlock dm_blk;
+                reporter_.generate_delay_metrics_block(dest_addr_index_, stream_index,
+                                                       dm_blk);
+
+                bld.add_xr_delay_metrics(dm_blk);
+            }
         }
 
         bld.end_xr();

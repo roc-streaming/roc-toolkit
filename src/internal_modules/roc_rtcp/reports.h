@@ -58,14 +58,14 @@ struct SendReport {
     //! Estimated offset of remote clock relative to local clock.
     //! If you add it to local timestamp, you get estimated remote timestamp.
     //! If you subtract it from remote timestamp, you get estimated local timestamp.
-    //! Read-only field, you can read it on receiver, but you don't need to fill
-    //! it on sender.
+    //! Read-only field, you can read it on receiver, but you should not write
+    //! it on sender, it's calculated on sender from other metrics.
     core::nanoseconds_t clock_offset;
 
     //! Estimated round-trip time between sender and receiver.
     //! Computed based on NTP-like timestamp exchange implemennted by RTCP protocol.
-    //! Read-only field, you can read it on receiver, but you don't need to fill
-    //! it on sender.
+    //! Read-only field, you can read it on receiver, but you should not write
+    //! it on sender, it's calculated on sender from other metrics.
     core::nanoseconds_t rtt;
 
     SendReport()
@@ -135,17 +135,21 @@ struct RecvReport {
     //! time, measured in timestamp units.
     packet::stream_timestamp_t jitter;
 
+    //! Estimated end-to-end latency.
+    //! An estimate of the time from recording a frame on sender to playing it on
+    //! receiver.
+    core::nanoseconds_t e2e_latency;
+
     //! Estimated offset of remote clock relative to local clock.
     //! If you add it to local timestamp, you get estimated remote timestamp.
-    //! If you subtract it from remote timestamp, you get estimated local timestamp.
-    //! Read-only field, you can read it on sender, but you don't need to fill
-    //! it on receiver.
+    //! Read-only field, you can read it on sender, but you should not write
+    //! it on receiver, it's calculated on sender from other metrics.
     core::nanoseconds_t clock_offset;
 
     //! Estimated round-trip time between sender and receiver.
     //! Computed based on NTP-like timestamp exchange implemennted by RTCP protocol.
-    //! Read-only field, you can read it on sender, but you don't need to fill
-    //! it on receiver.
+    //! Read-only field, you can read it on sender, but you should not write
+    //! it on receiver, it's calculated on sender from other metrics.
     core::nanoseconds_t rtt;
 
     RecvReport()
@@ -158,6 +162,7 @@ struct RecvReport {
         , fract_loss(0)
         , cum_loss(0)
         , jitter(0)
+        , e2e_latency(0)
         , clock_offset(0)
         , rtt(0) {
     }
