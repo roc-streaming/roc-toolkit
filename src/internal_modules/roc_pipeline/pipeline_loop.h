@@ -23,13 +23,56 @@
 #include "roc_core/seqlock.h"
 #include "roc_core/time.h"
 #include "roc_packet/units.h"
-#include "roc_pipeline/config.h"
 #include "roc_pipeline/ipipeline_task_completer.h"
 #include "roc_pipeline/ipipeline_task_scheduler.h"
 #include "roc_pipeline/pipeline_task.h"
 
 namespace roc {
 namespace pipeline {
+
+//! Pipeline loop task processing parameters.
+struct PipelineLoopConfig {
+    //! Enable precise task scheduling mode (default).
+    //! The other settings have effect only when this is set to true.
+    //! When enabled, pipeline processes tasks in dedicated time intervals between
+    //! sub-frame and between frames, trying to prevent time collisions between
+    //! task and frame processing.
+    bool enable_precise_task_scheduling;
+
+    //! Minimum frame duration between processing tasks.
+    //! In-frame task processing does not happen until at least given number
+    //! of samples is processed.
+    //! Set to zero to allow task processing between frames of any size.
+    core::nanoseconds_t min_frame_length_between_tasks;
+
+    //! Maximum frame duration between processing tasks.
+    //! If the frame is larger than this size, it is split into multiple subframes
+    //! to allow task processing between the sub-frames.
+    //! Set to zero to disable frame splitting.
+    core::nanoseconds_t max_frame_length_between_tasks;
+
+    //! Mximum task processing duration happening immediatelly after processing a frame.
+    //! If this period expires and there are still pending tasks, asynchronous
+    //! task processing is scheduled.
+    //! At least one task is always processed after each frame, even if this
+    //! setting is too small.
+    core::nanoseconds_t max_inframe_task_processing;
+
+    //! Time interval during which no task processing is allowed.
+    //! This setting is used to prohibit task processing during the time when
+    //! next read() or write() call is expected.
+    //! Since it can not be calculated abolutely precisely, and there is always
+    //! thread switch overhead, scheduler jitter clock drift, we use a wide interval.
+    core::nanoseconds_t task_processing_prohibited_interval;
+
+    PipelineLoopConfig()
+        : enable_precise_task_scheduling(true)
+        , min_frame_length_between_tasks(200 * core::Microsecond)
+        , max_frame_length_between_tasks(1 * core::Millisecond)
+        , max_inframe_task_processing(20 * core::Microsecond)
+        , task_processing_prohibited_interval(200 * core::Microsecond) {
+    }
+};
 
 //! Base class for task-based pipelines.
 //!
@@ -235,7 +278,7 @@ protected:
 
     //! Initialization.
     PipelineLoop(IPipelineTaskScheduler& scheduler,
-                 const TaskConfig& config,
+                 const PipelineLoopConfig& config,
                  const audio::SampleSpec& sample_spec);
 
     virtual ~PipelineLoop();
@@ -291,7 +334,7 @@ private:
     void report_stats_();
 
     // configuration
-    const TaskConfig config_;
+    const PipelineLoopConfig config_;
 
     const audio::SampleSpec sample_spec_;
 

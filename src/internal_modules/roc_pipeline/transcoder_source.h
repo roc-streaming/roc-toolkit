@@ -16,8 +16,6 @@
 #include "roc_audio/iresampler.h"
 #include "roc_audio/poison_reader.h"
 #include "roc_audio/profiling_reader.h"
-#include "roc_audio/resampler_map.h"
-#include "roc_audio/resampler_profile.h"
 #include "roc_audio/resampler_reader.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/optional.h"
@@ -89,7 +87,7 @@ private:
     sndio::ISource& input_source_;
     audio::IFrameReader* frame_reader_;
 
-    const TranscoderConfig config_;
+    TranscoderConfig config_;
 
     bool valid_;
 };

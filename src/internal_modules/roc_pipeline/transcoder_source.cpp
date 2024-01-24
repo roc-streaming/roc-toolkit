@@ -22,24 +22,26 @@ TranscoderSource::TranscoderSource(const TranscoderConfig& config,
     , frame_reader_(NULL)
     , config_(config)
     , valid_(false) {
+    config_.deduce_defaults();
+
     audio::IFrameReader* areader = &input_source_;
 
-    if (config.input_sample_spec.channel_set()
-        != config.output_sample_spec.channel_set()) {
+    if (config_.input_sample_spec.channel_set()
+        != config_.output_sample_spec.channel_set()) {
         channel_mapper_reader_.reset(
             new (channel_mapper_reader_) audio::ChannelMapperReader(
-                *areader, buffer_factory, config.input_sample_spec,
-                audio::SampleSpec(config.input_sample_spec.sample_rate(),
-                                  config.output_sample_spec.pcm_format(),
-                                  config.output_sample_spec.channel_set())));
+                *areader, buffer_factory, config_.input_sample_spec,
+                audio::SampleSpec(config_.input_sample_spec.sample_rate(),
+                                  config_.output_sample_spec.pcm_format(),
+                                  config_.output_sample_spec.channel_set())));
         if (!channel_mapper_reader_ || !channel_mapper_reader_->is_valid()) {
             return;
         }
         areader = channel_mapper_reader_.get();
     }
 
-    if (config.input_sample_spec.sample_rate()
-        != config.output_sample_spec.sample_rate()) {
+    if (config_.input_sample_spec.sample_rate()
+        != config_.output_sample_spec.sample_rate()) {
         resampler_poisoner_.reset(new (resampler_poisoner_)
                                       audio::PoisonReader(*areader));
         if (!resampler_poisoner_) {
@@ -48,11 +50,11 @@ TranscoderSource::TranscoderSource(const TranscoderConfig& config,
         areader = resampler_poisoner_.get();
 
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-            config.resampler_backend, arena, buffer_factory, config.resampler_profile,
-            audio::SampleSpec(config.input_sample_spec.sample_rate(),
-                              config.output_sample_spec.pcm_format(),
-                              config.output_sample_spec.channel_set()),
-            config.output_sample_spec));
+            arena, buffer_factory, config_.resampler,
+            audio::SampleSpec(config_.input_sample_spec.sample_rate(),
+                              config_.output_sample_spec.pcm_format(),
+                              config_.output_sample_spec.channel_set()),
+            config_.output_sample_spec));
 
         if (!resampler_) {
             return;
@@ -60,10 +62,10 @@ TranscoderSource::TranscoderSource(const TranscoderConfig& config,
 
         resampler_reader_.reset(new (resampler_reader_) audio::ResamplerReader(
             *areader, *resampler_,
-            audio::SampleSpec(config.input_sample_spec.sample_rate(),
-                              config.output_sample_spec.pcm_format(),
-                              config.output_sample_spec.channel_set()),
-            config.output_sample_spec));
+            audio::SampleSpec(config_.input_sample_spec.sample_rate(),
+                              config_.output_sample_spec.pcm_format(),
+                              config_.output_sample_spec.channel_set()),
+            config_.output_sample_spec));
 
         if (!resampler_reader_ || !resampler_reader_->is_valid()) {
             return;
@@ -77,9 +79,9 @@ TranscoderSource::TranscoderSource(const TranscoderConfig& config,
     }
     areader = pipeline_poisoner_.get();
 
-    if (config.enable_profiling) {
+    if (config_.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingReader(
-            *areader, arena, config.output_sample_spec, config.profiler_config));
+            *areader, arena, config_.output_sample_spec, config_.profiler));
         if (!profiler_ || !profiler_->is_valid()) {
             return;
         }

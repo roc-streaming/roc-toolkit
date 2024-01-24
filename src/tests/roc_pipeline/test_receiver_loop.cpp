@@ -105,8 +105,7 @@ TEST_GROUP(receiver_loop) {
     ReceiverConfig config;
 
     void setup() {
-        config.common.enable_timing = false;
-        config.default_session.latency_monitor.fe_enable = false;
+        config.default_session.latency.fe_input = audio::FreqEstimatorInput_Disable;
     }
 };
 

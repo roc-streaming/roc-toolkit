@@ -267,7 +267,7 @@ public:
         core::nanoseconds_t start_time_;
     };
 
-    TestPipeline(const TaskConfig& config,
+    TestPipeline(const PipelineLoopConfig& config,
                  ctl::ControlTaskQueue& control_queue,
                  DelayStats& stats)
         : PipelineLoop(*this,
@@ -443,7 +443,7 @@ void BM_PipelinePeakLoad_NoTasks(benchmark::State& state) {
 
     DelayStats stats;
 
-    TaskConfig config;
+    PipelineLoopConfig config;
     TestPipeline pipeline(config, control_queue, stats);
 
     FrameWriter frame_wr(pipeline, stats, state);
@@ -464,7 +464,7 @@ void BM_PipelinePeakLoad_PreciseSchedOff(benchmark::State& state) {
 
     DelayStats stats;
 
-    TaskConfig config;
+    PipelineLoopConfig config;
     config.enable_precise_task_scheduling = false;
 
     TestPipeline pipeline(config, control_queue, stats);
@@ -494,7 +494,7 @@ void BM_PipelinePeakLoad_PreciseSchedOn(benchmark::State& state) {
 
     DelayStats stats;
 
-    TaskConfig config;
+    PipelineLoopConfig config;
     config.enable_precise_task_scheduling = true;
 
     TestPipeline pipeline(config, control_queue, stats);

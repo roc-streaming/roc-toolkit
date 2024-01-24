@@ -98,8 +98,9 @@ SpeexResampler::SpeexResampler(core::IArena& arena,
 
     roc_log(LogDebug,
             "speex resampler: initializing:"
-            " quality=%d frame_size=%lu channels_num=%lu",
-            quality, (unsigned long)in_frame_size_, (unsigned long)num_ch_);
+            " profile=%s quality=%d frame_size=%lu channels_num=%lu",
+            resampler_profile_to_str(profile), quality, (unsigned long)in_frame_size_,
+            (unsigned long)num_ch_);
 
     if (!(in_frame_ = buffer_factory.new_buffer())) {
         roc_log(LogError, "speex resampler: can't allocate frame buffer");

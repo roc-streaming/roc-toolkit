@@ -146,7 +146,7 @@ SenderConfig make_sender_config(int flags,
     config.enable_timing = false;
     config.enable_profiling = true;
 
-    config.rtcp_config.inactivity_timeout = Timeout * core::Second / SampleRate;
+    config.rtcp.inactivity_timeout = Timeout * core::Second / SampleRate;
 
     return config;
 }
@@ -164,10 +164,10 @@ ReceiverConfig make_receiver_config(audio::ChannelMask frame_channels,
 
     config.common.enable_timing = false;
 
-    config.common.rtcp_config.inactivity_timeout = Timeout * core::Second / SampleRate;
+    config.common.rtcp.inactivity_timeout = Timeout * core::Second / SampleRate;
 
-    config.default_session.latency_monitor.fe_enable = false;
-    config.default_session.target_latency = Latency * core::Second / SampleRate;
+    config.default_session.latency.fe_input = audio::FreqEstimatorInput_Disable;
+    config.default_session.latency.target_latency = Latency * core::Second / SampleRate;
     config.default_session.watchdog.no_playback_timeout =
         Timeout * core::Second / SampleRate;
 

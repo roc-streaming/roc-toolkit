@@ -20,7 +20,7 @@ const core::nanoseconds_t StatsReportInterval = core::Minute;
 } // namespace
 
 PipelineLoop::PipelineLoop(IPipelineTaskScheduler& scheduler,
-                           const TaskConfig& config,
+                           const PipelineLoopConfig& config,
                            const audio::SampleSpec& sample_spec)
     : config_(config)
     , sample_spec_(sample_spec)

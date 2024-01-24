@@ -157,11 +157,13 @@ BuiltinResampler::BuiltinResampler(core::IArena& arena,
         return;
     }
 
-    roc_log(LogDebug,
-            "builtin resampler: initializing: "
-            "window_interp=%lu window_size=%lu frame_size=%lu channels_num=%lu",
-            (unsigned long)window_interp_, (unsigned long)window_size_,
-            (unsigned long)frame_size_, (unsigned long)in_spec_.num_channels());
+    roc_log(
+        LogDebug,
+        "builtin resampler: initializing:"
+        " profile=%s window_interp=%lu window_size=%lu frame_size=%lu channels_num=%lu",
+        resampler_profile_to_str(profile), (unsigned long)window_interp_,
+        (unsigned long)window_size_, (unsigned long)frame_size_,
+        (unsigned long)in_spec_.num_channels());
 
     valid_ = true;
 }

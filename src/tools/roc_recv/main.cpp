@@ -10,9 +10,6 @@
 #include "roc_address/io_uri.h"
 #include "roc_address/print_supported.h"
 #include "roc_address/protocol_map.h"
-#include "roc_audio/freq_estimator.h"
-#include "roc_audio/resampler_profile.h"
-#include "roc_core/array.h"
 #include "roc_core/crash_handler.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/log.h"
@@ -108,8 +105,9 @@ int main(int argc, char** argv) {
         io_config.frame_length, receiver_config.common.output_sample_spec);
 
     if (args.sess_latency_given) {
-        if (!core::parse_duration(args.sess_latency_arg,
-                                  receiver_config.default_session.target_latency)) {
+        if (!core::parse_duration(
+                args.sess_latency_arg,
+                receiver_config.default_session.latency.target_latency)) {
             roc_log(LogError, "invalid --sess-latency");
             return 1;
         }
@@ -118,13 +116,10 @@ int main(int argc, char** argv) {
     if (args.latency_tolerance_given) {
         if (!core::parse_duration(
                 args.latency_tolerance_arg,
-                receiver_config.default_session.latency_monitor.latency_tolerance)) {
+                receiver_config.default_session.latency.latency_tolerance)) {
             roc_log(LogError, "invalid --latency-tolerance");
             return 1;
         }
-    } else {
-        receiver_config.default_session.latency_monitor.deduce_latency_tolerance(
-            receiver_config.default_session.target_latency);
     }
 
     if (args.no_play_timeout_given) {
@@ -134,9 +129,6 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --no-play-timeout");
             return 1;
         }
-    } else {
-        receiver_config.default_session.watchdog.deduce_no_playback_timeout(
-            receiver_config.default_session.target_latency);
     }
 
     if (args.choppy_play_timeout_given) {
@@ -146,16 +138,16 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --choppy-play-timeout");
             return 1;
         }
-        receiver_config.default_session.watchdog.deduce_choppy_playback_window(
-            receiver_config.default_session.watchdog.choppy_playback_timeout);
     }
 
     switch (args.clock_backend_arg) {
     case clock_backend_arg_disable:
-        receiver_config.default_session.latency_monitor.fe_enable = false;
+        receiver_config.default_session.latency.fe_input =
+            audio::FreqEstimatorInput_Disable;
         break;
     case clock_backend_arg_niq:
-        receiver_config.default_session.latency_monitor.fe_enable = true;
+        receiver_config.default_session.latency.fe_input =
+            audio::FreqEstimatorInput_NiqLatency;
         break;
     default:
         break;
@@ -163,15 +155,15 @@ int main(int argc, char** argv) {
 
     switch (args.clock_profile_arg) {
     case clock_profile_arg_default:
-        receiver_config.default_session.latency_monitor.deduce_fe_profile(
-            receiver_config.default_session.target_latency);
+        receiver_config.default_session.latency.fe_profile =
+            audio::FreqEstimatorProfile_Default;
         break;
     case clock_profile_arg_responsive:
-        receiver_config.default_session.latency_monitor.fe_profile =
+        receiver_config.default_session.latency.fe_profile =
             audio::FreqEstimatorProfile_Responsive;
         break;
     case clock_profile_arg_gradual:
-        receiver_config.default_session.latency_monitor.fe_profile =
+        receiver_config.default_session.latency.fe_profile =
             audio::FreqEstimatorProfile_Gradual;
         break;
     default:
@@ -180,17 +172,18 @@ int main(int argc, char** argv) {
 
     switch (args.resampler_backend_arg) {
     case resampler_backend_arg_default:
-        receiver_config.default_session.deduce_resampler_backend();
+        receiver_config.default_session.resampler.backend =
+            audio::ResamplerBackend_Default;
         break;
     case resampler_backend_arg_builtin:
-        receiver_config.default_session.resampler_backend =
+        receiver_config.default_session.resampler.backend =
             audio::ResamplerBackend_Builtin;
         break;
     case resampler_backend_arg_speex:
-        receiver_config.default_session.resampler_backend = audio::ResamplerBackend_Speex;
+        receiver_config.default_session.resampler.backend = audio::ResamplerBackend_Speex;
         break;
     case resampler_backend_arg_speexdec:
-        receiver_config.default_session.resampler_backend =
+        receiver_config.default_session.resampler.backend =
             audio::ResamplerBackend_SpeexDec;
         break;
     default:
@@ -199,14 +192,14 @@ int main(int argc, char** argv) {
 
     switch (args.resampler_profile_arg) {
     case resampler_profile_arg_low:
-        receiver_config.default_session.resampler_profile = audio::ResamplerProfile_Low;
+        receiver_config.default_session.resampler.profile = audio::ResamplerProfile_Low;
         break;
     case resampler_profile_arg_medium:
-        receiver_config.default_session.resampler_profile =
+        receiver_config.default_session.resampler.profile =
             audio::ResamplerProfile_Medium;
         break;
     case resampler_profile_arg_high:
-        receiver_config.default_session.resampler_profile = audio::ResamplerProfile_High;
+        receiver_config.default_session.resampler.profile = audio::ResamplerProfile_High;
         break;
 
     default:
@@ -356,10 +349,10 @@ int main(int argc, char** argv) {
 
         pipeline::TranscoderConfig transcoder_config;
 
-        transcoder_config.resampler_backend =
-            receiver_config.default_session.resampler_backend;
-        transcoder_config.resampler_profile =
-            receiver_config.default_session.resampler_profile;
+        transcoder_config.resampler.backend =
+            receiver_config.default_session.resampler.backend;
+        transcoder_config.resampler.profile =
+            receiver_config.default_session.resampler.profile;
 
         transcoder_config.input_sample_spec =
             audio::SampleSpec(backup_source->sample_spec().sample_rate(),

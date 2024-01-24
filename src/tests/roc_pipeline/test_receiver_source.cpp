@@ -125,17 +125,17 @@ TEST_GROUP(receiver_source) {
         config.common.enable_timing = false;
         config.common.enable_profiling = true;
 
-        config.default_session.latency_monitor.fe_enable = false;
-        config.default_session.target_latency =
+        config.default_session.latency.fe_input = audio::FreqEstimatorInput_Disable;
+        config.default_session.latency.target_latency =
             Latency * core::Second / (int)output_sample_spec.sample_rate();
-        config.default_session.latency_monitor.latency_tolerance =
+        config.default_session.latency.latency_tolerance =
             Timeout * 10 * core::Second / (int)output_sample_spec.sample_rate();
 
         config.default_session.watchdog.no_playback_timeout =
             Timeout * core::Second / (int)output_sample_spec.sample_rate();
 
-        config.default_session.rtp_filter.max_sn_jump = MaxSnJump;
-        config.default_session.rtp_filter.max_ts_jump =
+        config.common.rtp_filter.max_sn_jump = MaxSnJump;
+        config.common.rtp_filter.max_ts_jump =
             MaxTsJump * core::Second / (int)output_sample_spec.sample_rate();
 
         return config;

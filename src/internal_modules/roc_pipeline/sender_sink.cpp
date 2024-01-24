@@ -28,11 +28,13 @@ SenderSink::SenderSink(const SenderConfig& config,
     , arena_(arena)
     , frame_writer_(NULL)
     , valid_(false) {
+    config_.deduce_defaults();
+
     audio::IFrameWriter* awriter = &fanout_;
 
     if (config_.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingWriter(
-            *awriter, arena, config_.input_sample_spec, config_.profiler_config));
+            *awriter, arena, config_.input_sample_spec, config_.profiler));
         if (!profiler_ || !profiler_->is_valid()) {
             return;
         }

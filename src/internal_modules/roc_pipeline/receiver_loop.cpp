@@ -89,7 +89,7 @@ ReceiverLoop::ReceiverLoop(IPipelineTaskScheduler& scheduler,
                            core::BufferFactory<uint8_t>& byte_buffer_factory,
                            core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                            core::IArena& arena)
-    : PipelineLoop(scheduler, config.tasks, config.common.output_sample_spec)
+    : PipelineLoop(scheduler, config.pipeline_loop, config.common.output_sample_spec)
     , source_(config,
               encoding_map,
               packet_factory,

@@ -28,6 +28,8 @@ ReceiverSource::ReceiverSource(
     , frame_reader_(NULL)
     , config_(config)
     , valid_(false) {
+    config_.deduce_defaults();
+
     mixer_.reset(new (mixer_) audio::Mixer(sample_buffer_factory, true));
     if (!mixer_ || !mixer_->is_valid()) {
         return;
@@ -40,10 +42,9 @@ ReceiverSource::ReceiverSource(
     }
     areader = poisoner_.get();
 
-    if (config.common.enable_profiling) {
+    if (config_.common.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingReader(
-            *areader, arena, config.common.output_sample_spec,
-            config.common.profiler_config));
+            *areader, arena, config_.common.output_sample_spec, config_.common.profiler));
         if (!profiler_ || !profiler_->is_valid()) {
             return;
         }

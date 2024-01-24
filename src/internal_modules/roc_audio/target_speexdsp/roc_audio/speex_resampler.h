@@ -15,7 +15,7 @@
 #include "roc_audio/frame.h"
 #include "roc_audio/iframe_reader.h"
 #include "roc_audio/iresampler.h"
-#include "roc_audio/resampler_profile.h"
+#include "roc_audio/resampler_config.h"
 #include "roc_audio/sample.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/array.h"

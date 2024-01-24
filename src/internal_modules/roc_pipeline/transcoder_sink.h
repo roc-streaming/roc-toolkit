@@ -16,8 +16,6 @@
 #include "roc_audio/iresampler.h"
 #include "roc_audio/null_writer.h"
 #include "roc_audio/profiling_writer.h"
-#include "roc_audio/resampler_map.h"
-#include "roc_audio/resampler_profile.h"
 #include "roc_audio/resampler_writer.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/optional.h"
@@ -85,7 +83,7 @@ private:
 
     audio::IFrameWriter* frame_writer_;
 
-    const TranscoderConfig config_;
+    TranscoderConfig config_;
 
     bool valid_;
 };

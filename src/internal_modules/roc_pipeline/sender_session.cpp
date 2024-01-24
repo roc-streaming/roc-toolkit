@@ -7,6 +7,7 @@
  */
 
 #include "roc_pipeline/sender_session.h"
+#include "roc_audio/resampler_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/time.h"
@@ -144,8 +145,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
 
     if (encoding->sample_spec.sample_rate() != config_.input_sample_spec.sample_rate()) {
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-            config_.resampler_backend, arena_, sample_buffer_factory_,
-            config_.resampler_profile, config_.input_sample_spec,
+            arena_, sample_buffer_factory_, config_.resampler, config_.input_sample_spec,
             audio::SampleSpec(encoding->sample_spec.sample_rate(),
                               config_.input_sample_spec.pcm_format(),
                               config_.input_sample_spec.channel_set())));
@@ -180,7 +180,7 @@ bool SenderSession::create_control_pipeline(SenderEndpoint* control_endpoint) {
     rtcp_address_ = control_endpoint->outbound_address();
 
     rtcp_communicator_.reset(new (rtcp_communicator_) rtcp::Communicator(
-        config_.rtcp_config, *this, control_endpoint->outbound_writer(),
+        config_.rtcp, *this, control_endpoint->outbound_writer(),
         control_endpoint->outbound_composer(), packet_factory_, byte_buffer_factory_,
         arena_));
     if (!rtcp_communicator_ || !rtcp_communicator_->is_valid()) {

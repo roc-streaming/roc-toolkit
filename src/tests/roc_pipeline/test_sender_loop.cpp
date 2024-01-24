@@ -108,6 +108,10 @@ TEST_GROUP(sender_loop) {
     test::MockScheduler scheduler;
 
     SenderConfig config;
+
+    void setup() {
+        config.latency.fe_input = audio::FreqEstimatorInput_Disable;
+    }
 };
 
 TEST(sender_loop, endpoints_sync) {

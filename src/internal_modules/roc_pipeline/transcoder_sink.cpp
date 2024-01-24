@@ -21,41 +21,43 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
     : frame_writer_(NULL)
     , config_(config)
     , valid_(false) {
+    config_.deduce_defaults();
+
     audio::IFrameWriter* awriter = output_writer;
     if (!awriter) {
         awriter = &null_writer_;
     }
 
-    if (config.input_sample_spec.channel_set()
-        != config.output_sample_spec.channel_set()) {
+    if (config_.input_sample_spec.channel_set()
+        != config_.output_sample_spec.channel_set()) {
         channel_mapper_writer_.reset(
             new (channel_mapper_writer_) audio::ChannelMapperWriter(
                 *awriter, buffer_factory,
-                audio::SampleSpec(config.output_sample_spec.sample_rate(),
-                                  config.input_sample_spec.pcm_format(),
-                                  config.input_sample_spec.channel_set()),
-                config.output_sample_spec));
+                audio::SampleSpec(config_.output_sample_spec.sample_rate(),
+                                  config_.input_sample_spec.pcm_format(),
+                                  config_.input_sample_spec.channel_set()),
+                config_.output_sample_spec));
         if (!channel_mapper_writer_ || !channel_mapper_writer_->is_valid()) {
             return;
         }
         awriter = channel_mapper_writer_.get();
     }
 
-    if (config.input_sample_spec.sample_rate()
-        != config.output_sample_spec.sample_rate()) {
+    if (config_.input_sample_spec.sample_rate()
+        != config_.output_sample_spec.sample_rate()) {
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-            config.resampler_backend, arena, buffer_factory, config.resampler_profile,
-            config.input_sample_spec, config.output_sample_spec));
+            arena, buffer_factory, config_.resampler, config_.input_sample_spec,
+            config_.output_sample_spec));
 
         if (!resampler_) {
             return;
         }
 
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
-            *awriter, *resampler_, buffer_factory, config.input_sample_spec,
-            audio::SampleSpec(config.output_sample_spec.sample_rate(),
-                              config.input_sample_spec.pcm_format(),
-                              config.input_sample_spec.channel_set())));
+            *awriter, *resampler_, buffer_factory, config_.input_sample_spec,
+            audio::SampleSpec(config_.output_sample_spec.sample_rate(),
+                              config_.input_sample_spec.pcm_format(),
+                              config_.input_sample_spec.channel_set())));
 
         if (!resampler_writer_ || !resampler_writer_->is_valid()) {
             return;
@@ -63,9 +65,9 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
         awriter = resampler_writer_.get();
     }
 
-    if (config.enable_profiling) {
+    if (config_.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingWriter(
-            *awriter, arena, config.input_sample_spec, config.profiler_config));
+            *awriter, arena, config_.input_sample_spec, config_.profiler));
         if (!profiler_ || !profiler_->is_valid()) {
             return;
         }

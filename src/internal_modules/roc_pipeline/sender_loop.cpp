@@ -89,7 +89,7 @@ SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
                        core::BufferFactory<uint8_t>& byte_buffer_factory,
                        core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                        core::IArena& arena)
-    : PipelineLoop(scheduler, config.tasks, config.input_sample_spec)
+    : PipelineLoop(scheduler, config.pipeline_loop, config.input_sample_spec)
     , sink_(config,
             encoding_map,
             packet_factory,

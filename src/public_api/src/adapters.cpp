@@ -12,8 +12,7 @@
 #include "roc_audio/channel_defs.h"
 #include "roc_audio/freq_estimator.h"
 #include "roc_audio/pcm_format.h"
-#include "roc_audio/resampler_backend.h"
-#include "roc_audio/resampler_profile.h"
+#include "roc_audio/resampler_config.h"
 #include "roc_core/attributes.h"
 #include "roc_core/log.h"
 
@@ -119,14 +118,14 @@ bool sender_config_from_user(node::Context& context,
         return false;
     }
 
-    if (!resampler_backend_from_user(out.resampler_backend, in.resampler_backend)) {
+    if (!resampler_backend_from_user(out.resampler.backend, in.resampler_backend)) {
         roc_log(LogError,
                 "bad configuration: invalid roc_sender_config.resampler_backend:"
                 " should be valid enum value");
         return false;
     }
 
-    if (!resampler_profile_from_user(out.resampler_profile, in.resampler_profile)) {
+    if (!resampler_profile_from_user(out.resampler.profile, in.resampler_profile)) {
         roc_log(LogError,
                 "bad configuration: invalid roc_sender_config.resampler_profile:"
                 " should be valid enum value");
@@ -141,33 +140,25 @@ bool receiver_config_from_user(node::Context&,
                                pipeline::ReceiverConfig& out,
                                const roc_receiver_config& in) {
     if (in.target_latency != 0) {
-        out.default_session.target_latency = (core::nanoseconds_t)in.target_latency;
+        out.default_session.latency.target_latency =
+            (core::nanoseconds_t)in.target_latency;
     }
 
     if (in.latency_tolerance != 0) {
-        out.default_session.latency_monitor.latency_tolerance =
+        out.default_session.latency.latency_tolerance =
             (core::nanoseconds_t)in.latency_tolerance;
-    } else {
-        out.default_session.latency_monitor.deduce_latency_tolerance(
-            out.default_session.target_latency);
     }
 
     if (in.no_playback_timeout < 0) {
         out.default_session.watchdog.no_playback_timeout = 0;
     } else if (in.no_playback_timeout > 0) {
         out.default_session.watchdog.no_playback_timeout = in.no_playback_timeout;
-    } else {
-        out.default_session.watchdog.deduce_no_playback_timeout(
-            out.default_session.target_latency);
     }
 
     if (in.choppy_playback_timeout < 0) {
         out.default_session.watchdog.choppy_playback_timeout = 0;
     } else if (in.choppy_playback_timeout > 0) {
         out.default_session.watchdog.choppy_playback_timeout = in.choppy_playback_timeout;
-
-        out.default_session.watchdog.deduce_choppy_playback_window(
-            out.default_session.watchdog.choppy_playback_timeout);
     }
 
     out.common.enable_timing = false;
@@ -186,7 +177,7 @@ bool receiver_config_from_user(node::Context&,
         return false;
     }
 
-    if (!clock_sync_backend_from_user(out.default_session.latency_monitor.fe_enable,
+    if (!clock_sync_backend_from_user(out.default_session.latency.fe_input,
                                       in.clock_sync_backend)) {
         roc_log(LogError,
                 "bad configuration: invalid roc_receiver_config.clock_sync_backend:"
@@ -194,34 +185,23 @@ bool receiver_config_from_user(node::Context&,
         return false;
     }
 
-    if (in.clock_sync_profile != ROC_CLOCK_SYNC_PROFILE_DEFAULT) {
-        if (!clock_sync_profile_from_user(out.default_session.latency_monitor.fe_profile,
-                                          in.clock_sync_profile)) {
-            roc_log(LogError,
-                    "bad configuration: invalid roc_receiver_config.clock_sync_profile:"
-                    " should be valid enum value");
-            return false;
-        }
-    } else {
-        if (out.default_session.latency_monitor.fe_enable) {
-            out.default_session.latency_monitor.deduce_fe_profile(
-                out.default_session.target_latency);
-        }
+    if (!clock_sync_profile_from_user(out.default_session.latency.fe_profile,
+                                      in.clock_sync_profile)) {
+        roc_log(LogError,
+                "bad configuration: invalid roc_receiver_config.clock_sync_profile:"
+                " should be valid enum value");
+        return false;
     }
 
-    if (in.resampler_backend != ROC_RESAMPLER_BACKEND_DEFAULT) {
-        if (!resampler_backend_from_user(out.default_session.resampler_backend,
-                                         in.resampler_backend)) {
-            roc_log(LogError,
-                    "bad configuration: invalid roc_receiver_config.resampler_backend:"
-                    " should be valid enum value");
-            return false;
-        }
-    } else {
-        out.default_session.deduce_resampler_backend();
+    if (!resampler_backend_from_user(out.default_session.resampler.backend,
+                                     in.resampler_backend)) {
+        roc_log(LogError,
+                "bad configuration: invalid roc_receiver_config.resampler_backend:"
+                " should be valid enum value");
+        return false;
     }
 
-    if (!resampler_profile_from_user(out.default_session.resampler_profile,
+    if (!resampler_profile_from_user(out.default_session.resampler.profile,
                                      in.resampler_profile)) {
         roc_log(LogError,
                 "bad configuration: invalid roc_receiver_config.resampler_profile:"
@@ -385,15 +365,19 @@ bool clock_source_from_user(bool& out_timing, roc_clock_source in) {
 }
 
 ROC_ATTR_NO_SANITIZE_UB
-bool clock_sync_backend_from_user(bool& out_fe, roc_clock_sync_backend in) {
+bool clock_sync_backend_from_user(audio::FreqEstimatorInput& out,
+                                  roc_clock_sync_backend in) {
     switch (enum_from_user(in)) {
     case ROC_CLOCK_SYNC_BACKEND_DISABLE:
-        out_fe = false;
+        out = audio::FreqEstimatorInput_Disable;
         return true;
 
     case ROC_CLOCK_SYNC_BACKEND_DEFAULT:
+        out = audio::FreqEstimatorInput_Default;
+        return true;
+
     case ROC_CLOCK_SYNC_BACKEND_NIQ:
-        out_fe = true;
+        out = audio::FreqEstimatorInput_NiqLatency;
         return true;
     }
 
@@ -405,6 +389,9 @@ bool clock_sync_profile_from_user(audio::FreqEstimatorProfile& out,
                                   roc_clock_sync_profile in) {
     switch (enum_from_user(in)) {
     case ROC_CLOCK_SYNC_PROFILE_DEFAULT:
+        out = audio::FreqEstimatorProfile_Default;
+        return true;
+
     case ROC_CLOCK_SYNC_PROFILE_RESPONSIVE:
         out = audio::FreqEstimatorProfile_Responsive;
         return true;

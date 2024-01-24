@@ -30,8 +30,7 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
                                const packet::SortedQueue& incoming_queue,
                                const Depacketizer& depacketizer,
                                ResamplerReader* resampler,
-                               const LatencyMonitorConfig& config,
-                               core::nanoseconds_t target_latency,
+                               const LatencyConfig& config,
                                const SampleSpec& input_sample_spec,
                                const SampleSpec& output_sample_spec)
     : frame_reader_(frame_reader)
@@ -52,11 +51,12 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
     , e2e_latency_(0)
     , has_niq_latency_(false)
     , has_e2e_latency_(false)
-    , target_latency_(input_sample_spec.ns_2_stream_timestamp_delta(target_latency))
+    , target_latency_(
+          input_sample_spec.ns_2_stream_timestamp_delta(config.target_latency))
     , min_latency_(input_sample_spec.ns_2_stream_timestamp_delta(
-          target_latency - config.latency_tolerance))
+          config.target_latency - config.latency_tolerance))
     , max_latency_(input_sample_spec.ns_2_stream_timestamp_delta(
-          target_latency + config.latency_tolerance))
+          config.target_latency + config.latency_tolerance))
     , max_scaling_delta_(config.scaling_tolerance)
     , input_sample_spec_(input_sample_spec)
     , output_sample_spec_(output_sample_spec)
@@ -67,27 +67,27 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
         "latency monitor: initializing:"
         " target=%lu(%.3fms) min=%lu(%.3fms) max=%lu(%.3fms)"
         " in_rate=%lu out_rate=%lu"
-        " fe_enable=%d fe_profile=%s fe_interval=%.3fms",
+        " fe_input=%s fe_profile=%s fe_interval=%.3fms",
         (unsigned long)target_latency_,
         timestamp_to_ms(input_sample_spec_, target_latency_), (unsigned long)min_latency_,
         timestamp_to_ms(input_sample_spec_, min_latency_), (unsigned long)max_latency_,
         timestamp_to_ms(input_sample_spec_, max_latency_),
         (unsigned long)input_sample_spec_.sample_rate(),
-        (unsigned long)output_sample_spec_.sample_rate(), (int)config.fe_enable,
-        fe_profile_to_str(config.fe_profile),
+        (unsigned long)output_sample_spec_.sample_rate(),
+        fe_input_to_str(config.fe_input), fe_profile_to_str(config.fe_profile),
         timestamp_to_ms(input_sample_spec_,
                         (packet::stream_timestamp_diff_t)update_interval_));
 
-    if (target_latency_ < min_latency_ || target_latency_ > max_latency_
-        || target_latency <= 0) {
+    if (config.target_latency <= 0 || config.latency_tolerance <= 0
+        || target_latency_ < min_latency_ || target_latency_ > max_latency_) {
         roc_log(LogError,
                 "latency monitor: invalid config:"
                 " target_latency=%ldns latency_tolerance=%ldns",
-                (long)target_latency, (long)config.latency_tolerance);
+                (long)config.target_latency, (long)config.latency_tolerance);
         return;
     }
 
-    if (config.fe_enable) {
+    if (config.fe_input != audio::FreqEstimatorInput_Disable) {
         if (config.fe_update_interval <= 0) {
             roc_log(LogError, "latency monitor: invalid config: fe_update_interval=%ld",
                     (long)config.fe_update_interval);

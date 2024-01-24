@@ -15,6 +15,7 @@
 #include "roc_audio/depacketizer.h"
 #include "roc_audio/freq_estimator.h"
 #include "roc_audio/iframe_reader.h"
+#include "roc_audio/latency_config.h"
 #include "roc_audio/resampler_reader.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/attributes.h"
@@ -26,64 +27,6 @@
 
 namespace roc {
 namespace audio {
-
-//! Parameters for latency monitor.
-struct LatencyMonitorConfig {
-    //! Enable FreqEstimator.
-    bool fe_enable;
-
-    //! FreqEstimator profile.
-    FreqEstimatorProfile fe_profile;
-
-    //! FreqEstimator update interval, nanoseconds.
-    //! How often to run FreqEstimator and update Resampler scaling.
-    core::nanoseconds_t fe_update_interval;
-
-    //! Maximum allowed deviation from target latency, nanoseconds.
-    //! If the latency goes out of bounds, the session is terminated.
-    core::nanoseconds_t latency_tolerance;
-
-    //! Maximum allowed deviation of freq_coeff from 1.0.
-    //! If the scaling goes out of bounds, it is trimmed.
-    //! For example, 0.01 allows freq_coeff values in range [0.99; 1.01].
-    float scaling_tolerance;
-
-    LatencyMonitorConfig()
-        : fe_enable(true)
-        , fe_profile(FreqEstimatorProfile_Responsive)
-        , fe_update_interval(5 * core::Millisecond)
-        , latency_tolerance(0)
-        , scaling_tolerance(0.005f) {
-    }
-
-    //! Automatically deduce FreqEstimator profile from target latency.
-    void deduce_fe_profile(const core::nanoseconds_t target_latency) {
-        fe_profile = target_latency < 30 * core::Millisecond
-            // prefer responsive profile on low latencies, because gradual profile
-            // won't do it at all
-            ? FreqEstimatorProfile_Responsive
-            // prefer gradual profile for higher latencies, because it can handle
-            // higher network jitter
-            : FreqEstimatorProfile_Gradual;
-    }
-
-    //! Automatically deduce latency_tolerance from target_latency.
-    void deduce_latency_tolerance(core::nanoseconds_t target_latency) {
-        // this formula returns target_latency * N, where N starts with larger
-        // number and approaches 0.5 as target_latency grows
-        // examples:
-        //  target=1ms -> tolerance=8ms (x8)
-        //  target=10ms -> tolerance=20ms (x2)
-        //  target=200ms -> tolerance=200ms (x1)
-        //  target=2000ms -> tolerance=1444ms (x0.722)
-        if (target_latency < core::Millisecond) {
-            target_latency = core::Millisecond;
-        }
-        latency_tolerance = core::nanoseconds_t(
-            target_latency
-            * (std::log((200 * core::Millisecond) * 2) / std::log(target_latency * 2)));
-    }
-};
 
 //! Metrics of latency monitor.
 struct LatencyMonitorMetrics {
@@ -155,8 +98,7 @@ public:
                    const packet::SortedQueue& incoming_queue,
                    const Depacketizer& depacketizer,
                    ResamplerReader* resampler,
-                   const LatencyMonitorConfig& config,
-                   core::nanoseconds_t target_latency,
+                   const LatencyConfig& config,
                    const SampleSpec& input_sample_spec,
                    const SampleSpec& output_sample_spec);
 

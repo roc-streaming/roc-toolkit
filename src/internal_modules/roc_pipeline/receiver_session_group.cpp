@@ -60,7 +60,7 @@ bool ReceiverSessionGroup::create_control_pipeline(ReceiverEndpoint* control_end
     roc_panic_if(rtcp_communicator_);
 
     rtcp_communicator_.reset(new (rtcp_communicator_) rtcp::Communicator(
-        receiver_config_.common.rtcp_config, *this, *control_endpoint->outbound_writer(),
+        receiver_config_.common.rtcp, *this, *control_endpoint->outbound_writer(),
         *control_endpoint->outbound_composer(), packet_factory_, byte_buffer_factory_,
         arena_));
     if (!rtcp_communicator_ || !rtcp_communicator_->is_valid()) {

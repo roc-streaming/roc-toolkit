@@ -47,7 +47,7 @@ public:
         }
     };
 
-    NoopPipeline(const TaskConfig& config, ctl::ControlTaskQueue& control_queue)
+    NoopPipeline(const PipelineLoopConfig& config, ctl::ControlTaskQueue& control_queue)
         : PipelineLoop(*this,
                        config,
                        audio::SampleSpec(SampleRate,
@@ -123,7 +123,7 @@ public:
 struct BM_PipelineContention : benchmark::Fixture {
     ctl::ControlTaskQueue control_queue;
 
-    TaskConfig config;
+    PipelineLoopConfig config;
 
     NoopPipeline pipeline;
     NoopCompleter completer;

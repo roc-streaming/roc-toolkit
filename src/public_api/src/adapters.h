@@ -13,6 +13,7 @@
 #include "roc/log.h"
 #include "roc/metrics.h"
 
+#include "roc_audio/freq_estimator.h"
 #include "roc_node/context.h"
 #include "roc_node/receiver.h"
 #include "roc_node/sender.h"
@@ -42,7 +43,8 @@ bool channel_set_from_user(audio::ChannelSet& out,
 
 bool clock_source_from_user(bool& out_timing, roc_clock_source in);
 
-bool clock_sync_backend_from_user(bool& out_fe, roc_clock_sync_backend in);
+bool clock_sync_backend_from_user(audio::FreqEstimatorInput& out,
+                                  roc_clock_sync_backend in);
 bool clock_sync_profile_from_user(audio::FreqEstimatorProfile& out,
                                   roc_clock_sync_profile in);
 

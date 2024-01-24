@@ -101,7 +101,7 @@ public:
     virtual void write(audio::Frame& frame);
 
 private:
-    const SenderConfig config_;
+    SenderConfig config_;
 
     const rtp::EncodingMap& encoding_map_;
 

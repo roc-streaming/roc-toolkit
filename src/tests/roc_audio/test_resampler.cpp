@@ -12,7 +12,6 @@
 #include "test_helpers/mock_writer.h"
 
 #include "roc_audio/iresampler.h"
-#include "roc_audio/resampler_backend.h"
 #include "roc_audio/resampler_map.h"
 #include "roc_audio/resampler_reader.h"
 #include "roc_audio/resampler_writer.h"
@@ -284,6 +283,14 @@ void resample_write(IResampler& resampler,
     }
 }
 
+ResamplerConfig make_config(ResamplerBackend backend, ResamplerProfile profile) {
+    ResamplerConfig config;
+    config.backend = backend;
+    config.profile = profile;
+
+    return config;
+}
+
 void resample(ResamplerBackend backend,
               ResamplerProfile profile,
               Direction dir,
@@ -293,7 +300,7 @@ void resample(ResamplerBackend backend,
               const SampleSpec& sample_spec,
               float scaling) {
     core::SharedPtr<IResampler> resampler = ResamplerMap::instance().new_resampler(
-        backend, arena, buffer_factory, profile, sample_spec, sample_spec);
+        arena, buffer_factory, make_config(backend, profile), sample_spec, sample_spec);
     CHECK(resampler);
     CHECK(resampler->is_valid());
 
@@ -333,8 +340,9 @@ TEST(resampler, supported_scalings) {
 
                         core::SharedPtr<IResampler> resampler =
                             ResamplerMap::instance().new_resampler(
-                                backend, arena, buffer_factory,
-                                supported_profiles[n_prof], in_spec, out_spec);
+                                arena, buffer_factory,
+                                make_config(backend, supported_profiles[n_prof]), in_spec,
+                                out_spec);
                         CHECK(resampler);
                         CHECK(resampler->is_valid());
 
@@ -391,8 +399,9 @@ TEST(resampler, invalid_scalings) {
 
                     core::SharedPtr<IResampler> resampler =
                         ResamplerMap::instance().new_resampler(
-                            backend, arena, buffer_factory, supported_profiles[n_prof],
-                            in_spec, out_spec);
+                            arena, buffer_factory,
+                            make_config(backend, supported_profiles[n_prof]), in_spec,
+                            out_spec);
                     CHECK(resampler);
                     CHECK(resampler->is_valid());
 
@@ -444,7 +453,8 @@ TEST(resampler, scaling_trend) {
 
                     core::SharedPtr<IResampler> resampler =
                         ResamplerMap::instance().new_resampler(
-                            backend, arena, buffer_factory, ResamplerProfile_Low, in_spec,
+                            arena, buffer_factory,
+                            make_config(backend, ResamplerProfile_Low), in_spec,
                             out_spec);
                     CHECK(resampler);
                     CHECK(resampler->is_valid());
@@ -668,8 +678,9 @@ TEST(resampler, reader_timestamp_passthrough) {
 
                     core::SharedPtr<IResampler> resampler =
                         ResamplerMap::instance().new_resampler(
-                            backend, arena, buffer_factory, supported_profiles[n_prof],
-                            in_spec, out_spec);
+                            arena, buffer_factory,
+                            make_config(backend, supported_profiles[n_prof]), in_spec,
+                            out_spec);
 
                     const core::nanoseconds_t start_ts = 1691499037871419405;
                     core::nanoseconds_t cur_ts = start_ts;
@@ -789,8 +800,9 @@ TEST(resampler, writer_timestamp_passthrough) {
 
                     core::SharedPtr<IResampler> resampler =
                         ResamplerMap::instance().new_resampler(
-                            backend, arena, buffer_factory, supported_profiles[n_prof],
-                            in_spec, out_spec);
+                            arena, buffer_factory,
+                            make_config(backend, supported_profiles[n_prof]), in_spec,
+                            out_spec);
 
                     const core::nanoseconds_t start_ts = 1691499037871419405;
                     core::nanoseconds_t cur_ts = start_ts;
@@ -909,8 +921,9 @@ TEST(resampler, reader_timestamp_zero_or_small) {
 
                     core::SharedPtr<IResampler> resampler =
                         ResamplerMap::instance().new_resampler(
-                            backend, arena, buffer_factory, supported_profiles[n_prof],
-                            in_spec, out_spec);
+                            arena, buffer_factory,
+                            make_config(backend, supported_profiles[n_prof]), in_spec,
+                            out_spec);
 
                     test::MockReader input_reader;
                     input_reader.add_zero_samples();
@@ -992,8 +1005,9 @@ TEST(resampler, writer_timestamp_zero_or_small) {
 
                     core::SharedPtr<IResampler> resampler =
                         ResamplerMap::instance().new_resampler(
-                            backend, arena, buffer_factory, supported_profiles[n_prof],
-                            in_spec, out_spec);
+                            arena, buffer_factory,
+                            make_config(backend, supported_profiles[n_prof]), in_spec,
+                            out_spec);
 
                     const core::nanoseconds_t epsilon =
                         core::nanoseconds_t(1. / in_spec.sample_rate() * core::Second

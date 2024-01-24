@@ -12,6 +12,21 @@
 namespace roc {
 namespace audio {
 
+void WatchdogConfig::deduce_defaults(const core::nanoseconds_t target_latency) {
+    if (no_playback_timeout < 0) {
+        no_playback_timeout = target_latency * 4 / 3;
+    }
+
+    if (choppy_playback_timeout < 0) {
+        choppy_playback_timeout = 2 * core::Second;
+    }
+
+    if (choppy_playback_window < 0) {
+        choppy_playback_window =
+            std::min(300 * core::Millisecond, choppy_playback_timeout / 4);
+    }
+}
+
 Watchdog::Watchdog(IFrameReader& reader,
                    const audio::SampleSpec& sample_spec,
                    const WatchdogConfig& config,

@@ -85,21 +85,20 @@ bool ResamplerMap::is_supported(ResamplerBackend backend_id) const {
 }
 
 core::SharedPtr<IResampler>
-ResamplerMap::new_resampler(ResamplerBackend backend_id,
-                            core::IArena& arena,
+ResamplerMap::new_resampler(core::IArena& arena,
                             core::BufferFactory<sample_t>& buffer_factory,
-                            ResamplerProfile profile,
+                            const ResamplerConfig& config,
                             const audio::SampleSpec& in_spec,
                             const audio::SampleSpec& out_spec) {
-    const Backend* backend = find_backend_(backend_id);
+    const Backend* backend = find_backend_(config.backend);
     if (!backend) {
         roc_log(LogError, "resampler map: unsupported resampler backend: [%d] %s",
-                backend_id, resampler_backend_to_str(backend_id));
+                config.backend, resampler_backend_to_str(config.backend));
         return NULL;
     }
 
     core::SharedPtr<IResampler> resampler =
-        backend->ctor(arena, buffer_factory, profile, in_spec, out_spec);
+        backend->ctor(arena, buffer_factory, config.profile, in_spec, out_spec);
 
     if (!resampler || !resampler->is_valid()) {
         return NULL;
@@ -115,10 +114,6 @@ void ResamplerMap::add_backend_(const Backend& backend) {
 
 const ResamplerMap::Backend*
 ResamplerMap::find_backend_(ResamplerBackend backend_id) const {
-    if (backend_id == ResamplerBackend_Default) {
-        roc_panic_if(n_backends_ == 0);
-        return &backends_[0];
-    }
     for (size_t n = 0; n < n_backends_; n++) {
         if (backends_[n].id == backend_id) {
             return &backends_[n];

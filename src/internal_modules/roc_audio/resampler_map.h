@@ -13,8 +13,7 @@
 #define ROC_AUDIO_RESAMPLER_MAP_H_
 
 #include "roc_audio/iresampler.h"
-#include "roc_audio/resampler_backend.h"
-#include "roc_audio/resampler_profile.h"
+#include "roc_audio/resampler_config.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/iarena.h"
@@ -46,10 +45,9 @@ public:
 
     //! Instantiate IResampler for given backend ID.
     core::SharedPtr<IResampler>
-    new_resampler(ResamplerBackend backend_id,
-                  core::IArena& arena,
+    new_resampler(core::IArena& arena,
                   core::BufferFactory<sample_t>& buffer_factory,
-                  ResamplerProfile profile,
+                  const ResamplerConfig& config,
                   const audio::SampleSpec& in_spec,
                   const audio::SampleSpec& out_spec);
 

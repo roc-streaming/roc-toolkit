@@ -63,14 +63,14 @@ ReceiverSession::ReceiverSession(
     }
 
     filter_.reset(new (filter_) rtp::Filter(
-        *preader, *payload_decoder_, session_config.rtp_filter, encoding->sample_spec));
+        *preader, *payload_decoder_, common_config.rtp_filter, encoding->sample_spec));
     if (!filter_) {
         return;
     }
     preader = filter_.get();
 
     delayed_reader_.reset(new (delayed_reader_) packet::DelayedReader(
-        *preader, session_config.target_latency, encoding->sample_spec));
+        *preader, session_config.latency.target_latency, encoding->sample_spec));
     if (!delayed_reader_) {
         return;
     }
@@ -116,7 +116,7 @@ ReceiverSession::ReceiverSession(
         preader = fec_reader_.get();
 
         fec_filter_.reset(new (fec_filter_) rtp::Filter(*preader, *payload_decoder_,
-                                                        session_config.rtp_filter,
+                                                        common_config.rtp_filter,
                                                         encoding->sample_spec));
         if (!fec_filter_) {
             return;
@@ -168,7 +168,7 @@ ReceiverSession::ReceiverSession(
         areader = channel_mapper_reader_.get();
     }
 
-    if (session_config.latency_monitor.fe_enable
+    if (session_config.latency.fe_input != audio::FreqEstimatorInput_Disable
         || encoding->sample_spec.sample_rate()
             != common_config.output_sample_spec.sample_rate()) {
         resampler_poisoner_.reset(new (resampler_poisoner_)
@@ -179,8 +179,7 @@ ReceiverSession::ReceiverSession(
         areader = resampler_poisoner_.get();
 
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-            session_config.resampler_backend, arena, sample_buffer_factory,
-            session_config.resampler_profile,
+            arena, sample_buffer_factory, session_config.resampler,
             audio::SampleSpec(encoding->sample_spec.sample_rate(),
                               common_config.output_sample_spec.pcm_format(),
                               common_config.output_sample_spec.channel_set()),
@@ -211,8 +210,7 @@ ReceiverSession::ReceiverSession(
 
     latency_monitor_.reset(new (latency_monitor_) audio::LatencyMonitor(
         *areader, *source_queue_, *depacketizer_, resampler_reader_.get(),
-        session_config.latency_monitor, session_config.target_latency,
-        encoding->sample_spec, common_config.output_sample_spec));
+        session_config.latency, encoding->sample_spec, common_config.output_sample_spec));
     if (!latency_monitor_ || !latency_monitor_->is_valid()) {
         return;
     }

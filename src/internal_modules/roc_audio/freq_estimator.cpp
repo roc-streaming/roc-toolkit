@@ -33,6 +33,9 @@ FreqEstimatorConfig make_config(FreqEstimatorProfile profile) {
         config.decimation_factor1 = fe_decim_factor_max;
         config.decimation_factor2 = fe_decim_factor_max;
         break;
+
+    case FreqEstimatorProfile_Default:
+        break;
     }
 
     return config;
@@ -153,8 +156,29 @@ double FreqEstimator::run_controller_(double current) {
     return 1 + config_.P * error + config_.I * accum_;
 }
 
+const char* fe_input_to_str(FreqEstimatorInput input) {
+    switch (input) {
+    case FreqEstimatorInput_Disable:
+        return "disable";
+
+    case FreqEstimatorInput_Default:
+        return "default";
+
+    case FreqEstimatorInput_NiqLatency:
+        return "niq";
+
+    case FreqEstimatorInput_E2eLatency:
+        return "e2e";
+    }
+
+    return "<invalid>";
+}
+
 const char* fe_profile_to_str(FreqEstimatorProfile profile) {
     switch (profile) {
+    case FreqEstimatorProfile_Default:
+        return "default";
+
     case FreqEstimatorProfile_Responsive:
         return "responsive";
 

@@ -7,7 +7,6 @@
  */
 
 #include "roc_address/io_uri.h"
-#include "roc_audio/resampler_profile.h"
 #include "roc_core/crash_handler.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/log.h"
@@ -136,16 +135,16 @@ int main(int argc, char** argv) {
 
     switch (args.resampler_backend_arg) {
     case resampler_backend_arg_default:
-        transcoder_config.resampler_backend = audio::ResamplerBackend_Default;
+        transcoder_config.resampler.backend = audio::ResamplerBackend_Default;
         break;
     case resampler_backend_arg_builtin:
-        transcoder_config.resampler_backend = audio::ResamplerBackend_Builtin;
+        transcoder_config.resampler.backend = audio::ResamplerBackend_Builtin;
         break;
     case resampler_backend_arg_speex:
-        transcoder_config.resampler_backend = audio::ResamplerBackend_Speex;
+        transcoder_config.resampler.backend = audio::ResamplerBackend_Speex;
         break;
     case resampler_backend_arg_speexdec:
-        transcoder_config.resampler_backend = audio::ResamplerBackend_SpeexDec;
+        transcoder_config.resampler.backend = audio::ResamplerBackend_SpeexDec;
         break;
     default:
         break;
@@ -153,13 +152,13 @@ int main(int argc, char** argv) {
 
     switch (args.resampler_profile_arg) {
     case resampler_profile_arg_low:
-        transcoder_config.resampler_profile = audio::ResamplerProfile_Low;
+        transcoder_config.resampler.profile = audio::ResamplerProfile_Low;
         break;
     case resampler_profile_arg_medium:
-        transcoder_config.resampler_profile = audio::ResamplerProfile_Medium;
+        transcoder_config.resampler.profile = audio::ResamplerProfile_Medium;
         break;
     case resampler_profile_arg_high:
-        transcoder_config.resampler_profile = audio::ResamplerProfile_High;
+        transcoder_config.resampler.profile = audio::ResamplerProfile_High;
         break;
     default:
         break;

@@ -55,7 +55,7 @@ public:
         }
     };
 
-    TestPipeline(const TaskConfig& config)
+    TestPipeline(const PipelineLoopConfig& config)
         : PipelineLoop(*this, config, SampleSpecs)
         , blocked_cond_(mutex_)
         , unblocked_cond_(mutex_)
@@ -424,7 +424,7 @@ private:
 TEST_GROUP(pipeline_loop) {
     audio::sample_t samples[MaxSamples];
 
-    TaskConfig config;
+    PipelineLoopConfig config;
 
     void setup() {
         config.enable_precise_task_scheduling = true;
