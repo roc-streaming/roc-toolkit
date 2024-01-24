@@ -143,7 +143,9 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         awriter = channel_mapper_writer_.get();
     }
 
-    if (encoding->sample_spec.sample_rate() != config_.input_sample_spec.sample_rate()) {
+    if (config_.latency.fe_input != audio::FreqEstimatorInput_Disable
+        || encoding->sample_spec.sample_rate()
+            != config_.input_sample_spec.sample_rate()) {
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
             arena_, sample_buffer_factory_, config_.resampler, config_.input_sample_spec,
             audio::SampleSpec(encoding->sample_spec.sample_rate(),
@@ -166,7 +168,16 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         awriter = resampler_writer_.get();
     }
 
+    feedback_monitor_.reset(new (feedback_monitor_) audio::FeedbackMonitor(
+        *awriter, resampler_writer_.get(), config_.input_sample_spec, config_.latency));
+    if (!feedback_monitor_ || !feedback_monitor_->is_valid()) {
+        return false;
+    }
+    awriter = feedback_monitor_.get();
+
     frame_writer_ = awriter;
+
+    start_feedback_monitor_();
 
     return true;
 }
@@ -187,6 +198,8 @@ bool SenderSession::create_control_pipeline(SenderEndpoint* control_endpoint) {
         rtcp_communicator_.reset();
         return false;
     }
+
+    start_feedback_monitor_();
 
     return true;
 }
@@ -232,6 +245,9 @@ SenderSessionMetrics SenderSession::get_metrics() const {
     if (packetizer_) {
         metrics.packets = packetizer_->metrics();
     }
+    if (feedback_monitor_) {
+        metrics.feedback = feedback_monitor_->metrics();
+    }
 
     return metrics;
 }
@@ -276,8 +292,34 @@ SenderSession::notify_send_stream(packet::stream_source_t recv_source_id,
                                   const rtcp::RecvReport& recv_report) {
     roc_panic_if(!has_send_stream());
 
-    // TODO(gh-14): notify FeedbackMonitor
+    if (feedback_monitor_ && feedback_monitor_->is_started()) {
+        audio::FeedbackMonitorMetrics metrics;
+        metrics.e2e_latency = recv_report.e2e_latency;
+
+        feedback_monitor_->store(metrics);
+    }
+
     return status::StatusOK;
+}
+
+void SenderSession::start_feedback_monitor_() {
+    if (!feedback_monitor_) {
+        // Transport endpoint not created yet.
+        return;
+    }
+
+    if (!rtcp_communicator_) {
+        // Control endpoint not created yet.
+        return;
+    }
+
+    if (rtcp_address_.multicast()) {
+        // Control endpoint uses multicast, so there are multiple receivers for
+        // a sender session. We don't support feedback monitoring in this mode.
+        return;
+    }
+
+    feedback_monitor_->start();
 }
 
 status::StatusCode

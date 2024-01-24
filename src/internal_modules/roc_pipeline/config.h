@@ -58,6 +58,9 @@ struct SenderConfig {
     //! Task processing parameters.
     PipelineLoopConfig pipeline_loop;
 
+    //! Latency parameters.
+    audio::LatencyConfig latency;
+
     //! Resampler parameters.
     audio::ResamplerConfig resampler;
 
@@ -114,7 +117,7 @@ struct ReceiverSessionConfig {
     //! FEC decoder parameters.
     fec::CodecConfig fec_decoder;
 
-    //! LatencyMonitor parameters.
+    //! Latency parameters.
     audio::LatencyConfig latency;
 
     //! Watchdog parameters.

@@ -13,7 +13,8 @@ namespace roc {
 namespace pipeline {
 
 SenderConfig::SenderConfig()
-    : input_sample_spec(DefaultSampleSpec)
+    : latency(DefaultLatency)
+    , input_sample_spec(DefaultSampleSpec)
     , packet_length(DefaultPacketLength)
     , payload_type(rtp::PayloadType_L16_Stereo)
     , enable_interleaving(false)
@@ -23,8 +24,8 @@ SenderConfig::SenderConfig()
 }
 
 void SenderConfig::deduce_defaults() {
-    resampler.deduce_defaults(audio::FreqEstimatorInput_Disable,
-                              audio::FreqEstimatorProfile_Default);
+    latency.deduce_defaults(false);
+    resampler.deduce_defaults(latency.fe_input, latency.fe_profile);
 }
 
 ReceiverSessionConfig::ReceiverSessionConfig()

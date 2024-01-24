@@ -12,6 +12,7 @@
 #ifndef ROC_PIPELINE_METRICS_H_
 #define ROC_PIPELINE_METRICS_H_
 
+#include "roc_audio/feedback_monitor.h"
 #include "roc_audio/latency_monitor.h"
 #include "roc_audio/packetizer.h"
 #include "roc_core/stddefs.h"
@@ -24,6 +25,9 @@ namespace pipeline {
 struct SenderSessionMetrics {
     //! Packetization metrics.
     audio::PacketizerMetrics packets;
+
+    //! Receiver feedback.
+    audio::FeedbackMonitorMetrics feedback;
 
     SenderSessionMetrics() {
     }

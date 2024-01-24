@@ -14,6 +14,7 @@
 
 #include "roc_address/socket_addr.h"
 #include "roc_audio/channel_mapper_writer.h"
+#include "roc_audio/feedback_monitor.h"
 #include "roc_audio/iframe_encoder.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/packetizer.h"
@@ -102,6 +103,8 @@ private:
     virtual status::StatusCode notify_send_stream(packet::stream_source_t recv_source_id,
                                                   const rtcp::RecvReport& recv_report);
 
+    void start_feedback_monitor_();
+
     status::StatusCode route_control_packet_(const packet::PacketPtr& packet,
                                              core::nanoseconds_t current_time);
 
@@ -134,6 +137,8 @@ private:
 
     core::Optional<audio::ResamplerWriter> resampler_writer_;
     core::SharedPtr<audio::IResampler> resampler_;
+
+    core::Optional<audio::FeedbackMonitor> feedback_monitor_;
 
     core::Optional<rtcp::Communicator> rtcp_communicator_;
     address::SocketAddr rtcp_address_;

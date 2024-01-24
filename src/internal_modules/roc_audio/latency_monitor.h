@@ -155,6 +155,8 @@ private:
     packet::stream_timestamp_t report_pos_;
 
     float freq_coeff_;
+    const FreqEstimatorInput fe_input_;
+    const float fe_max_delta_;
 
     packet::stream_timestamp_diff_t niq_latency_;
     packet::stream_timestamp_diff_t e2e_latency_;
@@ -164,8 +166,6 @@ private:
     const packet::stream_timestamp_diff_t target_latency_;
     const packet::stream_timestamp_diff_t min_latency_;
     const packet::stream_timestamp_diff_t max_latency_;
-
-    const float max_scaling_delta_;
 
     const SampleSpec input_sample_spec_;
     const SampleSpec output_sample_spec_;

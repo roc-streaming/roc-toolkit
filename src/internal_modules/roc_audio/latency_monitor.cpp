@@ -7,6 +7,7 @@
  */
 
 #include "roc_audio/latency_monitor.h"
+#include "roc_audio/freq_estimator.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
@@ -47,17 +48,24 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
                            input_sample_spec.ns_2_stream_timestamp_delta(LogInterval))
     , report_pos_(0)
     , freq_coeff_(0)
+    , fe_input_(config.fe_input)
+    , fe_max_delta_(config.scaling_tolerance)
     , niq_latency_(0)
     , e2e_latency_(0)
     , has_niq_latency_(false)
     , has_e2e_latency_(false)
     , target_latency_(
-          input_sample_spec.ns_2_stream_timestamp_delta(config.target_latency))
-    , min_latency_(input_sample_spec.ns_2_stream_timestamp_delta(
-          config.target_latency - config.latency_tolerance))
-    , max_latency_(input_sample_spec.ns_2_stream_timestamp_delta(
-          config.target_latency + config.latency_tolerance))
-    , max_scaling_delta_(config.scaling_tolerance)
+          fe_input_ != audio::FreqEstimatorInput_Disable
+              ? input_sample_spec.ns_2_stream_timestamp_delta(config.target_latency)
+              : 0)
+    , min_latency_(fe_input_ != audio::FreqEstimatorInput_Disable
+                       ? input_sample_spec.ns_2_stream_timestamp_delta(
+                           config.target_latency - config.latency_tolerance)
+                       : 0)
+    , max_latency_(fe_input_ != audio::FreqEstimatorInput_Disable
+                       ? input_sample_spec.ns_2_stream_timestamp_delta(
+                           config.target_latency + config.latency_tolerance)
+                       : 0)
     , input_sample_spec_(input_sample_spec)
     , output_sample_spec_(output_sample_spec)
     , alive_(true)
@@ -78,19 +86,19 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
         timestamp_to_ms(input_sample_spec_,
                         (packet::stream_timestamp_diff_t)update_interval_));
 
-    if (config.target_latency <= 0 || config.latency_tolerance <= 0
-        || target_latency_ < min_latency_ || target_latency_ > max_latency_) {
-        roc_log(LogError,
-                "latency monitor: invalid config:"
-                " target_latency=%ldns latency_tolerance=%ldns",
-                (long)config.target_latency, (long)config.latency_tolerance);
-        return;
-    }
-
-    if (config.fe_input != audio::FreqEstimatorInput_Disable) {
+    if (fe_input_ != audio::FreqEstimatorInput_Disable) {
         if (config.fe_update_interval <= 0) {
             roc_log(LogError, "latency monitor: invalid config: fe_update_interval=%ld",
                     (long)config.fe_update_interval);
+            return;
+        }
+
+        if (config.target_latency <= 0 || config.latency_tolerance <= 0
+            || target_latency_ < min_latency_ || target_latency_ > max_latency_) {
+            roc_log(LogError,
+                    "latency monitor: invalid config:"
+                    " target_latency=%ldns latency_tolerance=%ldns",
+                    (long)config.target_latency, (long)config.latency_tolerance);
             return;
         }
 
@@ -213,18 +221,39 @@ bool LatencyMonitor::update_() {
         return false;
     }
 
-    // currently scaling is always updated based on niq latency
-    if (has_niq_latency_) {
-        if (!check_bounds_(niq_latency_)) {
-            alive_ = false;
-            return false;
-        }
-        if (fe_) {
-            if (!update_scaling_(niq_latency_)) {
+    switch (fe_input_) {
+    case audio::FreqEstimatorInput_NiqLatency:
+        if (has_niq_latency_) {
+            if (!check_bounds_(niq_latency_)) {
                 alive_ = false;
                 return false;
             }
+            if (fe_) {
+                if (!update_scaling_(niq_latency_)) {
+                    alive_ = false;
+                    return false;
+                }
+            }
         }
+        break;
+
+    case audio::FreqEstimatorInput_E2eLatency:
+        if (has_e2e_latency_) {
+            if (!check_bounds_(e2e_latency_)) {
+                alive_ = false;
+                return false;
+            }
+            if (fe_) {
+                if (!update_scaling_(e2e_latency_)) {
+                    alive_ = false;
+                    return false;
+                }
+            }
+        }
+        break;
+
+    default:
+        break;
     }
 
     return true;
@@ -297,8 +326,8 @@ bool LatencyMonitor::update_scaling_(packet::stream_timestamp_diff_t latency) {
     }
 
     freq_coeff_ = fe_->freq_coeff();
-    freq_coeff_ = std::min(freq_coeff_, 1.0f + max_scaling_delta_);
-    freq_coeff_ = std::max(freq_coeff_, 1.0f - max_scaling_delta_);
+    freq_coeff_ = std::min(freq_coeff_, 1.0f + fe_max_delta_);
+    freq_coeff_ = std::max(freq_coeff_, 1.0f - fe_max_delta_);
 
     if (!resampler_->set_scaling(freq_coeff_)) {
         roc_log(LogDebug,
@@ -311,7 +340,7 @@ bool LatencyMonitor::update_scaling_(packet::stream_timestamp_diff_t latency) {
 }
 
 void LatencyMonitor::report_() {
-    if (!has_niq_latency_) {
+    if (!has_e2e_latency_ && !has_niq_latency_) {
         return;
     }
 
