@@ -56,6 +56,20 @@ inline bool stream_timestamp_le(const stream_timestamp_t a, const stream_timesta
     return stream_timestamp_diff(a, b) <= 0;
 }
 
+//! Convert nanoseconds to stream timestamp.
+stream_timestamp_t ns_2_stream_timestamp(core::nanoseconds_t ns, size_t sample_rate);
+
+//! Convert stream timestamp.to nanoseconds.
+core::nanoseconds_t stream_timestamp_2_ns(stream_timestamp_t ts, size_t sample_rate);
+
+//! Convert nanoseconds to stream timestamp delta.
+stream_timestamp_diff_t ns_2_stream_timestamp_delta(core::nanoseconds_t ns,
+                                                    size_t sample_rate);
+
+//! Convert stream timestamp.delta to nanoseconds.
+core::nanoseconds_t stream_timestamp_delta_2_ns(stream_timestamp_diff_t ts,
+                                                size_t sample_rate);
+
 //! Packet sequence number.
 //! @remarks
 //!  Defines position of packet within stream.

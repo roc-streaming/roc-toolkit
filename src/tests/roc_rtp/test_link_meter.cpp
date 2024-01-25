@@ -8,9 +8,12 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_audio/channel_defs.h"
 #include "roc_core/heap_arena.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
+#include "roc_rtp/encoding_map.h"
+#include "roc_rtp/headers.h"
 #include "roc_rtp/link_meter.h"
 
 namespace roc {
@@ -20,12 +23,14 @@ namespace {
 
 core::HeapArena arena;
 packet::PacketFactory packet_factory(arena);
+EncodingMap encoding_map(arena);
 
 packet::PacketPtr new_packet(packet::seqnum_t sn) {
     packet::PacketPtr packet = packet_factory.new_packet();
     CHECK(packet);
 
     packet->add_flags(packet::Packet::FlagRTP);
+    packet->rtp()->payload_type = PayloadType_L16_Stereo;
     packet->rtp()->seqnum = sn;
 
     return packet;
@@ -51,7 +56,7 @@ TEST_GROUP(link_meter) {};
 
 TEST(link_meter, has_metrics) {
     packet::Queue queue;
-    LinkMeter meter;
+    LinkMeter meter(encoding_map);
     meter.set_writer(queue);
 
     CHECK(!meter.has_metrics());
@@ -64,7 +69,7 @@ TEST(link_meter, has_metrics) {
 
 TEST(link_meter, last_seqnum) {
     packet::Queue queue;
-    LinkMeter meter;
+    LinkMeter meter(encoding_map);
     meter.set_writer(queue);
 
     CHECK_EQUAL(0, meter.metrics().ext_last_seqnum);
@@ -89,7 +94,7 @@ TEST(link_meter, last_seqnum) {
 
 TEST(link_meter, last_seqnum_wrap) {
     packet::Queue queue;
-    LinkMeter meter;
+    LinkMeter meter(encoding_map);
     meter.set_writer(queue);
 
     CHECK_EQUAL(0, meter.metrics().ext_last_seqnum);
@@ -119,7 +124,7 @@ TEST(link_meter, last_seqnum_wrap) {
 
 TEST(link_meter, forward_error) {
     StatusWriter writer(status::StatusNoMem);
-    LinkMeter meter;
+    LinkMeter meter(encoding_map);
     meter.set_writer(writer);
 
     CHECK_EQUAL(status::StatusNoMem, meter.write(new_packet(100)));

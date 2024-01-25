@@ -11,6 +11,7 @@
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
+#include "roc_core/time.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_rtcp/communicator.h"
@@ -40,6 +41,34 @@ namespace roc {
 namespace rtcp {
 
 namespace {
+
+enum { MaxPacketSz = 1000, SampleRate = 50000 };
+
+enum {
+    Seed = 100,
+    Seed1 = 100,
+    Seed2 = 200,
+    Seed3 = 300,
+    Seed4 = 400,
+    Seed5 = 500,
+    Seed6 = 600,
+    Seed7 = 700,
+    Seed8 = 800
+};
+
+// Precision of most timestamps
+// The error is introduced by conversion between NTP and Unix time.
+const core::nanoseconds_t TimestampEpsilon = 1 * core::Nanosecond;
+
+// LSR/LRR and DLSR/DLRR precision in RTCP is ~15us because low 16 bits
+// of 64-bit NTP timestamp are truncated. It is doubled because two
+// such fields are used in calculations.
+const core::nanoseconds_t RttEpsilon = 30 * core::Microsecond;
+
+core::HeapArena arena;
+packet::PacketFactory packet_factory(arena);
+core::BufferFactory<uint8_t> buffer_factory(arena, MaxPacketSz);
+Composer composer;
 
 // Mock implementation of IParticipant
 struct MockParticipant : public IParticipant, public core::NonCopyable<> {
@@ -135,8 +164,11 @@ struct MockParticipant : public IParticipant, public core::NonCopyable<> {
         CHECK(has_send_report_);
         CHECK(core::ns_equal_delta(report_time, send_report_.report_timestamp,
                                    core::Nanosecond));
-        send_report_.report_timestamp = report_time;
-        return send_report_;
+
+        SendReport report = send_report_;
+        report.report_timestamp = report_time;
+
+        return report;
     }
 
     virtual status::StatusCode notify_send_stream(packet::stream_source_t recv_source_id,
@@ -168,8 +200,11 @@ struct MockParticipant : public IParticipant, public core::NonCopyable<> {
         CHECK_EQUAL(num_recv_streams(), n_reports);
         for (size_t n = 0; n < n_reports; n++) {
             CHECK(has_recv_report_[n]);
-            CHECK_EQUAL(recv_report_[n].report_timestamp, report_time);
+            CHECK(core::ns_equal_delta(report_time, recv_report_[n].report_timestamp,
+                                       core::Nanosecond));
+
             reports[n] = recv_report_[n];
+            reports[n].report_timestamp = report_time;
         }
     }
 
@@ -301,9 +336,10 @@ SendReport make_send_report(core::nanoseconds_t time,
     report.sender_source_id = send_ssrc;
     report.sender_cname = send_cname;
     report.report_timestamp = time;
-    report.stream_timestamp = seed + 10;
-    report.packet_count = seed + 20;
-    report.byte_count = seed + 30;
+    report.stream_timestamp = seed * 1000;
+    report.sample_rate = SampleRate;
+    report.packet_count = seed * 2000;
+    report.byte_count = seed * 3000;
     return report;
 }
 
@@ -315,10 +351,11 @@ void expect_send_report(const SendReport& report,
                         bool expect_xr = true) {
     CHECK_EQUAL(send_ssrc, report.sender_source_id);
     STRCMP_EQUAL(send_cname, report.sender_cname);
-    CHECK(core::ns_equal_delta(time, report.report_timestamp, 10 * core::Nanosecond));
-    CHECK_EQUAL(seed + 10, report.stream_timestamp);
-    CHECK_EQUAL(seed + 20, report.packet_count);
-    CHECK_EQUAL(seed + 30, report.byte_count);
+    expect_timestamp("report_timestamp", time, report.report_timestamp, TimestampEpsilon);
+    CHECK_EQUAL(seed * 1000, report.stream_timestamp);
+    CHECK_EQUAL(0, report.sample_rate);
+    CHECK_EQUAL(seed * 2000, report.packet_count);
+    CHECK_EQUAL(seed * 3000, report.byte_count);
     if (expect_xr) {
         CHECK(report.rtt >= 0);
     } else {
@@ -337,11 +374,13 @@ RecvReport make_recv_report(core::nanoseconds_t time,
     report.receiver_source_id = recv_ssrc;
     report.sender_source_id = send_ssrc;
     report.report_timestamp = time;
-    report.ext_last_seqnum = seed * 100000;
+    report.sample_rate = SampleRate;
+    report.ext_first_seqnum = seed * 10;
+    report.ext_last_seqnum = seed * 2000;
     report.fract_loss = seed * 0.001f;
-    report.cum_loss = (int)seed + 10;
-    report.jitter = seed + 20;
-    report.e2e_latency = seed * 300;
+    report.cum_loss = (long)seed * 3000;
+    report.jitter = seed * 400000;
+    report.e2e_latency = seed * 5000;
     return report;
 }
 
@@ -355,16 +394,27 @@ void expect_recv_report(const RecvReport& report,
     STRCMP_EQUAL(recv_cname, report.receiver_cname);
     CHECK_EQUAL(recv_ssrc, report.receiver_source_id);
     CHECK_EQUAL(send_ssrc, report.sender_source_id);
-    CHECK_EQUAL(seed * 100000, report.ext_last_seqnum);
-    DOUBLES_EQUAL(seed * 0.001f, report.fract_loss, 0.005);
-    CHECK_EQUAL((int)seed + 10, report.cum_loss);
-    CHECK_EQUAL(seed + 20, report.jitter);
     if (expect_xr) {
-        CHECK(core::ns_equal_delta(time, report.report_timestamp, core::Nanosecond));
-        CHECK(core::ns_equal_delta(seed * 300, report.e2e_latency, core::Nanosecond));
-        CHECK(report.rtt >= 0);
+        expect_timestamp("report_timestamp", time, report.report_timestamp,
+                         TimestampEpsilon);
     } else {
         CHECK(report.report_timestamp == 0);
+    }
+    CHECK_EQUAL(0, report.sample_rate);
+    if (expect_xr) {
+        CHECK_EQUAL(seed * 10, report.ext_first_seqnum);
+    } else {
+        CHECK_EQUAL(0, report.ext_first_seqnum);
+    }
+    CHECK_EQUAL(seed * 2000, report.ext_last_seqnum);
+    DOUBLES_EQUAL(seed * 0.001f, report.fract_loss, 0.005);
+    CHECK_EQUAL((long)seed * 3000, report.cum_loss);
+    expect_timestamp("jitter", seed * 400000, report.jitter, TimestampEpsilon);
+    if (expect_xr) {
+        expect_timestamp("e2e_latency", seed * 5000, report.e2e_latency,
+                         TimestampEpsilon);
+        CHECK(report.rtt >= 0);
+    } else {
         CHECK(report.e2e_latency == 0);
         CHECK(report.rtt == 0);
         CHECK(report.clock_offset == 0);
@@ -552,23 +602,12 @@ void advance_time(core::nanoseconds_t& time, core::nanoseconds_t delta = core::S
     time += delta;
 }
 
-enum { MaxPacketSz = 1000 };
-
-// LSR/LRR precision in RTCP is ~100us because low 16 bits
-// of 64-bit NTP timestamp are truncated.
-const core::nanoseconds_t RttEpsilon = 100 * core::Microsecond;
-
-core::HeapArena arena;
-packet::PacketFactory packet_factory(arena);
-core::BufferFactory<uint8_t> buffer_factory(arena, MaxPacketSz);
-Composer composer;
-
 } // namespace
 
 TEST_GROUP(communicator) {};
 
 TEST(communicator, one_sender_one_receiver) {
-    enum { SendSsrc = 11, RecvSsrc = 22, Seed1 = 100, Seed2 = 200 };
+    enum { SendSsrc = 11, RecvSsrc = 22 };
 
     const char* SendCname = "send_cname";
     const char* RecvCname = "recv_cname";
@@ -620,6 +659,7 @@ TEST(communicator, one_sender_one_receiver) {
     CHECK_EQUAL(1, recv_queue.size());
 
     // Deliver receiver report to sender
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed3));
     CHECK_EQUAL(status::StatusOK,
                 send_comm.process_packet(read_packet(recv_queue), send_time));
     CHECK_EQUAL(1, send_comm.total_streams());
@@ -632,15 +672,7 @@ TEST(communicator, one_sender_one_receiver) {
 }
 
 TEST(communicator, two_senders_one_receiver) {
-    enum {
-        Send1Ssrc = 11,
-        Send2Ssrc = 22,
-        RecvSsrc = 33,
-        Seed1 = 100,
-        Seed2 = 200,
-        Seed3 = 300,
-        Seed4 = 400,
-    };
+    enum { Send1Ssrc = 11, Send2Ssrc = 22, RecvSsrc = 33 };
 
     const char* Send1Cname = "send1_cname";
     const char* Send2Cname = "send2_cname";
@@ -726,9 +758,15 @@ TEST(communicator, two_senders_one_receiver) {
 
     // Deliver receiver report to sender 1 and 2
     packet::PacketPtr pp = read_packet(recv_queue);
+
+    send1_part.set_send_report(
+        make_send_report(send1_time, Send1Cname, Send1Ssrc, Seed5));
     CHECK_EQUAL(status::StatusOK, send1_comm.process_packet(pp, send1_time));
     CHECK_EQUAL(1, send1_comm.total_streams());
     CHECK_EQUAL(1, send1_comm.total_destinations());
+
+    send2_part.set_send_report(
+        make_send_report(send2_time, Send2Cname, Send2Ssrc, Seed6));
     CHECK_EQUAL(status::StatusOK, send2_comm.process_packet(pp, send2_time));
     CHECK_EQUAL(1, send2_comm.total_streams());
     CHECK_EQUAL(1, send2_comm.total_destinations());
@@ -745,14 +783,7 @@ TEST(communicator, two_senders_one_receiver) {
 }
 
 TEST(communicator, one_sender_two_receivers) {
-    enum {
-        SendSsrc = 11,
-        Recv1Ssrc = 22,
-        Recv2Ssrc = 33,
-        Seed1 = 100,
-        Seed2 = 200,
-        Seed3 = 300
-    };
+    enum { SendSsrc = 11, Recv1Ssrc = 22, Recv2Ssrc = 33 };
 
     const char* SendCname = "send_cname";
     const char* Recv1Cname = "recv1_cname";
@@ -820,6 +851,7 @@ TEST(communicator, one_sender_two_receivers) {
     CHECK_EQUAL(1, recv1_queue.size());
 
     // Deliver receiver 1 report to sender
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed3));
     CHECK_EQUAL(status::StatusOK,
                 send_comm.process_packet(read_packet(recv1_queue), send_time));
     CHECK_EQUAL(1, send_comm.total_streams());
@@ -835,13 +867,14 @@ TEST(communicator, one_sender_two_receivers) {
 
     // Generate receiver 2 report
     recv2_part.set_recv_report(
-        0, make_recv_report(recv2_time, Recv2Cname, Recv2Ssrc, SendSsrc, Seed3));
+        0, make_recv_report(recv2_time, Recv2Cname, Recv2Ssrc, SendSsrc, Seed4));
     CHECK_EQUAL(status::StatusOK, recv2_comm.generate_reports(recv2_time));
     CHECK_EQUAL(1, recv2_comm.total_streams());
     CHECK_EQUAL(1, recv2_comm.total_destinations());
     CHECK_EQUAL(1, recv2_queue.size());
 
     // Deliver receiver 1 report to sender
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed5));
     CHECK_EQUAL(status::StatusOK,
                 send_comm.process_packet(read_packet(recv2_queue), send_time));
     CHECK_EQUAL(2, send_comm.total_streams());
@@ -850,11 +883,11 @@ TEST(communicator, one_sender_two_receivers) {
     // Check notifications on sender
     CHECK_EQUAL(1, send_part.pending_notifications());
     expect_recv_report(send_part.next_recv_notification(), recv2_time, Recv2Cname,
-                       Recv2Ssrc, SendSsrc, Seed3);
+                       Recv2Ssrc, SendSsrc, Seed4);
 }
 
 TEST(communicator, receiver_report_first) {
-    enum { SendSsrc = 11, RecvSsrc = 22, Seed1 = 100, Seed2 = 200 };
+    enum { SendSsrc = 11, RecvSsrc = 22 };
 
     const char* SendCname = "send_cname";
     const char* RecvCname = "recv_cname";
@@ -889,7 +922,7 @@ TEST(communicator, receiver_report_first) {
     CHECK_EQUAL(status::StatusOK,
                 send_comm.process_packet(read_packet(recv_queue), send_time));
     CHECK_EQUAL(1, send_comm.total_streams());
-    CHECK_EQUAL(0, send_comm.total_destinations());
+    CHECK_EQUAL(1, send_comm.total_destinations());
 
     // Check notifications on sender
     CHECK_EQUAL(1, send_part.pending_notifications());
@@ -907,6 +940,8 @@ TEST(communicator, receiver_report_first) {
     CHECK_EQUAL(1, send_queue.size());
 
     // Deliver sender report to receiver
+    recv_part.set_recv_report(
+        0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed3));
     CHECK_EQUAL(status::StatusOK,
                 recv_comm.process_packet(read_packet(send_queue), recv_time));
     CHECK_EQUAL(1, recv_comm.total_streams());
@@ -919,7 +954,7 @@ TEST(communicator, receiver_report_first) {
 }
 
 TEST(communicator, bidirectional_peers) {
-    enum { Peer1Ssrc = 11, Peer2Ssrc = 22, Seed1 = 100, Seed2 = 200, Seed3 = 300 };
+    enum { Peer1Ssrc = 11, Peer2Ssrc = 22 };
 
     const char* Peer1Cname = "peer1_cname";
     const char* Peer2Cname = "peer2_cname";
@@ -967,15 +1002,19 @@ TEST(communicator, bidirectional_peers) {
 
     // Generate report from peer 2
     peer2_part.set_send_report(
-        make_send_report(peer2_time, Peer2Cname, Peer2Ssrc, Seed2));
+        make_send_report(peer2_time, Peer2Cname, Peer2Ssrc, Seed3));
     peer2_part.set_recv_report(
-        0, make_recv_report(peer2_time, Peer2Cname, Peer2Ssrc, Peer1Ssrc, Seed2));
+        0, make_recv_report(peer2_time, Peer2Cname, Peer2Ssrc, Peer1Ssrc, Seed3));
     CHECK_EQUAL(status::StatusOK, peer2_comm.generate_reports(peer2_time));
     CHECK_EQUAL(1, peer2_comm.total_streams());
     CHECK_EQUAL(1, peer2_comm.total_destinations());
     CHECK_EQUAL(1, peer2_queue.size());
 
     // Deliver report to peer 1
+    peer1_part.set_send_report(
+        make_send_report(peer1_time, Peer1Cname, Peer1Ssrc, Seed4));
+    peer1_part.set_recv_report(
+        0, make_recv_report(peer1_time, Peer1Cname, Peer1Ssrc, Peer2Ssrc, Seed4));
     CHECK_EQUAL(status::StatusOK,
                 peer1_comm.process_packet(read_packet(peer2_queue), peer1_time));
     CHECK_EQUAL(1, peer1_comm.total_streams());
@@ -984,24 +1023,28 @@ TEST(communicator, bidirectional_peers) {
     // Check notifications on peer 1
     CHECK_EQUAL(2, peer1_part.pending_notifications());
     expect_send_report(peer1_part.next_send_notification(), peer2_time, Peer2Cname,
-                       Peer2Ssrc, Seed2);
+                       Peer2Ssrc, Seed3);
     expect_recv_report(peer1_part.next_recv_notification(), peer2_time, Peer2Cname,
-                       Peer2Ssrc, Peer1Ssrc, Seed2);
+                       Peer2Ssrc, Peer1Ssrc, Seed3);
 
     advance_time(peer1_time);
     advance_time(peer2_time);
 
     // Generate report from peer 1
     peer1_part.set_send_report(
-        make_send_report(peer1_time, Peer1Cname, Peer1Ssrc, Seed3));
+        make_send_report(peer1_time, Peer1Cname, Peer1Ssrc, Seed5));
     peer1_part.set_recv_report(
-        0, make_recv_report(peer1_time, Peer1Cname, Peer1Ssrc, Peer2Ssrc, Seed3));
+        0, make_recv_report(peer1_time, Peer1Cname, Peer1Ssrc, Peer2Ssrc, Seed5));
     CHECK_EQUAL(status::StatusOK, peer1_comm.generate_reports(peer1_time));
     CHECK_EQUAL(1, peer1_comm.total_streams());
     CHECK_EQUAL(1, peer1_comm.total_destinations());
     CHECK_EQUAL(1, peer1_queue.size());
 
     // Deliver report to peer 2
+    peer2_part.set_send_report(
+        make_send_report(peer2_time, Peer2Cname, Peer2Ssrc, Seed6));
+    peer2_part.set_recv_report(
+        0, make_recv_report(peer2_time, Peer2Cname, Peer2Ssrc, Peer1Ssrc, Seed6));
     CHECK_EQUAL(status::StatusOK,
                 peer2_comm.process_packet(read_packet(peer1_queue), peer2_time));
     CHECK_EQUAL(1, peer2_comm.total_streams());
@@ -1010,9 +1053,9 @@ TEST(communicator, bidirectional_peers) {
     // Check notifications on peer 2
     CHECK_EQUAL(2, peer2_part.pending_notifications());
     expect_send_report(peer2_part.next_send_notification(), peer1_time, Peer1Cname,
-                       Peer1Ssrc, Seed3);
+                       Peer1Ssrc, Seed5);
     expect_recv_report(peer2_part.next_recv_notification(), peer1_time, Peer1Cname,
-                       Peer1Ssrc, Peer2Ssrc, Seed3);
+                       Peer1Ssrc, Peer2Ssrc, Seed5);
 }
 
 TEST(communicator, long_run) {
@@ -1073,7 +1116,21 @@ TEST(communicator, long_run) {
 
         // Deliver sender 1 report to receiver 1 and 2
         pp = read_packet(send1_queue);
+
+        if (iter != 0) {
+            recv1_part.set_recv_report(
+                0, make_recv_report(recv1_time, Recv1Cname, Recv1Ssrc, Send1Ssrc, seed));
+            recv1_part.set_recv_report(
+                1, make_recv_report(recv1_time, Recv1Cname, Recv1Ssrc, Send2Ssrc, seed));
+        }
         CHECK_EQUAL(status::StatusOK, recv1_comm.process_packet(pp, recv1_time));
+
+        if (iter != 0) {
+            recv2_part.set_recv_report(
+                0, make_recv_report(recv2_time, Recv2Cname, Recv2Ssrc, Send1Ssrc, seed));
+            recv2_part.set_recv_report(
+                1, make_recv_report(recv2_time, Recv2Cname, Recv2Ssrc, Send2Ssrc, seed));
+        }
         CHECK_EQUAL(status::StatusOK, recv2_comm.process_packet(pp, recv2_time));
 
         advance_time(send1_time);
@@ -1089,7 +1146,21 @@ TEST(communicator, long_run) {
 
         // Deliver sender 2 report to receiver 1 and 2
         pp = read_packet(send2_queue);
+
+        if (iter != 0) {
+            recv1_part.set_recv_report(
+                0, make_recv_report(recv1_time, Recv1Cname, Recv1Ssrc, Send1Ssrc, seed));
+            recv1_part.set_recv_report(
+                1, make_recv_report(recv1_time, Recv1Cname, Recv1Ssrc, Send2Ssrc, seed));
+        }
         CHECK_EQUAL(status::StatusOK, recv1_comm.process_packet(pp, recv1_time));
+
+        if (iter != 0) {
+            recv2_part.set_recv_report(
+                0, make_recv_report(recv2_time, Recv2Cname, Recv2Ssrc, Send1Ssrc, seed));
+            recv2_part.set_recv_report(
+                1, make_recv_report(recv2_time, Recv2Cname, Recv2Ssrc, Send2Ssrc, seed));
+        }
         CHECK_EQUAL(status::StatusOK, recv2_comm.process_packet(pp, recv2_time));
 
         advance_time(send1_time);
@@ -1107,7 +1178,13 @@ TEST(communicator, long_run) {
 
         // Deliver receiver 1 report to sender 1 and 2
         pp = read_packet(recv1_queue);
+
+        send1_part.set_send_report(
+            make_send_report(send1_time, Send1Cname, Send1Ssrc, seed));
         CHECK_EQUAL(status::StatusOK, send1_comm.process_packet(pp, send1_time));
+
+        send2_part.set_send_report(
+            make_send_report(send2_time, Send2Cname, Send2Ssrc, seed));
         CHECK_EQUAL(status::StatusOK, send2_comm.process_packet(pp, send2_time));
 
         advance_time(send1_time);
@@ -1125,7 +1202,13 @@ TEST(communicator, long_run) {
 
         // Deliver receiver 2 report to sender 1 and 2
         pp = read_packet(recv2_queue);
+
+        send1_part.set_send_report(
+            make_send_report(send1_time, Send1Cname, Send1Ssrc, seed));
         CHECK_EQUAL(status::StatusOK, send1_comm.process_packet(pp, send1_time));
+
+        send2_part.set_send_report(
+            make_send_report(send2_time, Send2Cname, Send2Ssrc, seed));
         CHECK_EQUAL(status::StatusOK, send2_comm.process_packet(pp, send2_time));
 
         advance_time(send1_time);
@@ -1173,7 +1256,7 @@ TEST(communicator, long_run) {
 
 // Check how stream is terminated when we receive BYE message
 TEST(communicator, halt_goodbye) {
-    enum { SendSsrc = 11, RecvSsrc = 22, Seed1 = 100, Seed2 = 200 };
+    enum { SendSsrc = 11, RecvSsrc = 22 };
 
     const char* SendCname = "send_cname";
     const char* RecvCname = "recv_cname";
@@ -1236,7 +1319,7 @@ TEST(communicator, halt_goodbye) {
 
 // Check how stream is terminated when we don't hear from it during timeout
 TEST(communicator, halt_timeout) {
-    enum { SendSsrc1 = 11, SendSsrc2 = 22, RecvSsrc = 33, Seed = 100, NumIters = 10 };
+    enum { SendSsrc1 = 11, SendSsrc2 = 22, RecvSsrc = 33, NumIters = 10 };
 
     const char* Send1Cname = "send1_cname";
     const char* Send2Cname = "send2_cname";
@@ -1356,7 +1439,7 @@ TEST(communicator, halt_timeout) {
 
 // Check how stream is terminated when we its CNAME changes
 TEST(communicator, halt_cname_change) {
-    enum { SendSsrc = 11, RecvSsrc = 22, Seed1 = 100, Seed2 = 200 };
+    enum { SendSsrc = 11, RecvSsrc = 22 };
 
     const char* SendCnameA = "send_cname_a";
     const char* SendCnameB = "send_cname_b";
@@ -1429,7 +1512,7 @@ TEST(communicator, halt_cname_change) {
 // When CNAME comes in one packet, and report in another, we should
 // correctly merge everything together
 TEST(communicator, cname_comes_earlier) {
-    enum { SendSsrc = 11, RecvSsrc = 22, Seed1 = 100, Seed2 = 200 };
+    enum { SendSsrc = 11, RecvSsrc = 22 };
 
     const char* NoCname = "<not used>";
     const char* SendCname = "send_cname";
@@ -1508,7 +1591,7 @@ TEST(communicator, cname_comes_earlier) {
 // When report comes in one packet, and CNAME in another, we should
 // correctly merge everything together
 TEST(communicator, cname_comes_later) {
-    enum { SendSsrc = 11, RecvSsrc = 22, Seed1 = 100, Seed2 = 200 };
+    enum { SendSsrc = 11, RecvSsrc = 22 };
 
     const char* NoCname = "<not used>";
     const char* SendCname = "send_cname";
@@ -1592,11 +1675,7 @@ TEST(communicator, collision_send_report) {
         Send1Ssrc = 11,        // sender 1
         Send2Ssrc = 22,        // sender 2
         RecvSsrcA = Send2Ssrc, // initial SSRC of receiver (collision w/ sender 2)
-        RecvSsrcB = 33,        // updated SSRC of receiver
-        Seed1 = 100,
-        Seed2 = 200,
-        Seed3 = 300,
-        Seed4 = 400
+        RecvSsrcB = 33         // updated SSRC of receiver
     };
 
     const char* RecvCname = "recv_cname";
@@ -1629,24 +1708,23 @@ TEST(communicator, collision_send_report) {
 
     // Generate report from receiver to sender 1
     recv_part.set_recv_report(
-        0, make_recv_report(recv_time, RecvCname, RecvSsrcA, Send1Ssrc, Seed1));
+        0, make_recv_report(recv_time, RecvCname, RecvSsrcA, Send1Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(1, recv_queue.size());
     CHECK_EQUAL(1, recv_comm.total_streams());
     CHECK_EQUAL(1, recv_comm.total_destinations());
 
     // Deliver report from receiver to sender 1
-    send1_part.set_send_report(
-        make_send_report(send1_time, Send1Cname, Send1Ssrc, Seed1));
+    send1_part.set_send_report(make_send_report(send1_time, Send1Cname, Send1Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK,
                 send1_comm.process_packet(read_packet(recv_queue), send1_time));
     CHECK_EQUAL(1, send1_comm.total_streams());
-    CHECK_EQUAL(0, send1_comm.total_destinations());
+    CHECK_EQUAL(1, send1_comm.total_destinations());
 
     // Check notifications on sender 1
     CHECK_EQUAL(1, send1_part.pending_notifications());
     expect_recv_report(send1_part.next_recv_notification(), recv_time, RecvCname,
-                       RecvSsrcA, Send1Ssrc, Seed1);
+                       RecvSsrcA, Send1Ssrc, Seed);
 
     advance_time(recv_time);
     advance_time(send1_time);
@@ -1654,8 +1732,7 @@ TEST(communicator, collision_send_report) {
 
     // Generate report from sender 2
     // Sender 2 has same SSRC as receiver
-    send2_part.set_send_report(
-        make_send_report(send2_time, Send2Cname, Send2Ssrc, Seed2));
+    send2_part.set_send_report(make_send_report(send2_time, Send2Cname, Send2Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK, send2_comm.generate_reports(send2_time));
     CHECK_EQUAL(1, send2_queue.size());
     CHECK_EQUAL(0, send2_comm.total_streams());
@@ -1667,6 +1744,8 @@ TEST(communicator, collision_send_report) {
 
     // Deliver report from sender 2 to receiver
     // Receiver should detect SSRC collision
+    recv_part.set_recv_report(
+        0, make_recv_report(recv_time, RecvCname, RecvSsrcA, Send1Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK,
                 recv_comm.process_packet(read_packet(send2_queue), recv_time));
     CHECK_EQUAL(2, recv_comm.total_streams());
@@ -1675,7 +1754,7 @@ TEST(communicator, collision_send_report) {
     // Check notifications on receiver
     CHECK_EQUAL(1, recv_part.pending_notifications());
     expect_send_report(recv_part.next_send_notification(), send2_time, Send2Cname,
-                       Send2Ssrc, Seed2);
+                       Send2Ssrc, Seed);
 
     advance_time(recv_time);
     advance_time(send1_time);
@@ -1685,7 +1764,7 @@ TEST(communicator, collision_send_report) {
     // Since receiver detected collision, it should generate BYE message with
     // old SSRC, and then request participant to change SSRC
     recv_part.set_recv_report(
-        0, make_recv_report(recv_time, RecvCname, RecvSsrcA, Send1Ssrc, Seed3));
+        0, make_recv_report(recv_time, RecvCname, RecvSsrcA, Send1Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(1, recv_queue.size());
     CHECK_EQUAL(2, recv_comm.total_streams());
@@ -1697,10 +1776,11 @@ TEST(communicator, collision_send_report) {
     recv_part.next_ssrc_change_notification();
 
     // Deliver report from receiver to sender 1
+    send1_part.set_send_report(make_send_report(send1_time, Send1Cname, Send1Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK,
                 send1_comm.process_packet(read_packet(recv_queue), send1_time));
     CHECK_EQUAL(0, send1_comm.total_streams());
-    CHECK_EQUAL(0, send1_comm.total_destinations());
+    CHECK_EQUAL(1, send1_comm.total_destinations());
 
     // Check notifications on sender 1
     CHECK_EQUAL(1, send1_part.pending_notifications());
@@ -1713,22 +1793,23 @@ TEST(communicator, collision_send_report) {
     // Generate next report from receiver to sender 1
     // It should use new SSRC now
     recv_part.set_recv_report(
-        0, make_recv_report(recv_time, RecvCname, RecvSsrcB, Send1Ssrc, Seed4));
+        0, make_recv_report(recv_time, RecvCname, RecvSsrcB, Send1Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(1, recv_queue.size());
     CHECK_EQUAL(2, recv_comm.total_streams());
     CHECK_EQUAL(1, recv_comm.total_destinations());
 
     // Deliver report from receiver to sender 1
+    send1_part.set_send_report(make_send_report(send1_time, Send1Cname, Send1Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK,
                 send1_comm.process_packet(read_packet(recv_queue), send1_time));
     CHECK_EQUAL(1, send1_comm.total_streams());
-    CHECK_EQUAL(0, send1_comm.total_destinations());
+    CHECK_EQUAL(1, send1_comm.total_destinations());
 
     // Check notifications on sender 1
     CHECK_EQUAL(1, send1_part.pending_notifications());
     expect_recv_report(send1_part.next_recv_notification(), recv_time, RecvCname,
-                       RecvSsrcB, Send1Ssrc, Seed4);
+                       RecvSsrcB, Send1Ssrc, Seed);
 }
 
 // Collision detected in RR/XR from remote receiver to us
@@ -1738,11 +1819,7 @@ TEST(communicator, collision_recv_report) {
         Recv1Ssrc = 11,        // receiver 1
         Recv2Ssrc = 22,        // receiver 2
         SendSsrcA = Recv2Ssrc, // initial SSRC of sender (collision w/ receiver 2)
-        SendSsrcB = 33,        // updated SSRC of sender
-        Seed1 = 100,
-        Seed2 = 200,
-        Seed3 = 300,
-        Seed4 = 400
+        SendSsrcB = 33         // updated SSRC of sender
     };
 
     const char* SendCname = "send_cname";
@@ -1774,7 +1851,7 @@ TEST(communicator, collision_recv_report) {
     core::nanoseconds_t recv2_time = 60000000000000000;
 
     // Generate report from sender
-    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrcA, Seed1));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrcA, Seed));
     CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
     CHECK_EQUAL(0, send_comm.total_streams());
     CHECK_EQUAL(1, send_comm.total_destinations());
@@ -1789,7 +1866,7 @@ TEST(communicator, collision_recv_report) {
     // Check notifications on receiver 1
     CHECK_EQUAL(1, recv1_part.pending_notifications());
     expect_send_report(recv1_part.next_send_notification(), send_time, SendCname,
-                       SendSsrcA, Seed1);
+                       SendSsrcA, Seed);
 
     advance_time(send_time);
     advance_time(recv1_time);
@@ -1798,7 +1875,7 @@ TEST(communicator, collision_recv_report) {
     // Generate report from receiver 2
     // Receiver 2 has same SSRC as sender
     recv2_part.set_recv_report(
-        0, make_recv_report(recv2_time, Recv2Cname, Recv2Ssrc, SendSsrcA, Seed2));
+        0, make_recv_report(recv2_time, Recv2Cname, Recv2Ssrc, SendSsrcA, Seed));
     CHECK_EQUAL(status::StatusOK, recv2_comm.generate_reports(recv2_time));
     CHECK_EQUAL(1, recv2_comm.total_streams());
     CHECK_EQUAL(1, recv2_comm.total_destinations());
@@ -1812,6 +1889,7 @@ TEST(communicator, collision_recv_report) {
     // sender should ignore this report, because it's for another sender
     // However it should also detect SSRC collision because receiver 2 has
     // same SSRC as sender
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrcA, Seed));
     CHECK_EQUAL(status::StatusOK,
                 send_comm.process_packet(read_packet(recv2_queue), send_time));
     CHECK_EQUAL(1, send_comm.total_streams());
@@ -1820,7 +1898,7 @@ TEST(communicator, collision_recv_report) {
     // Check notifications on sender
     CHECK_EQUAL(1, send_part.pending_notifications());
     expect_recv_report(send_part.next_recv_notification(), recv2_time, Recv2Cname,
-                       Recv2Ssrc, SendSsrcA, Seed2);
+                       Recv2Ssrc, SendSsrcA, Seed);
 
     advance_time(send_time);
     advance_time(recv1_time);
@@ -1829,7 +1907,7 @@ TEST(communicator, collision_recv_report) {
     // Generate next report from sender to receiver 1
     // Since sender detected collision, it should generate BYE message with
     // old SSRC, and then request participant to change SSRC
-    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrcA, Seed3));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrcA, Seed));
     CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
     CHECK_EQUAL(1, send_comm.total_streams());
     CHECK_EQUAL(1, send_comm.total_destinations());
@@ -1856,7 +1934,7 @@ TEST(communicator, collision_recv_report) {
 
     // Generate next report from sender to receiver 1
     // It should use new SSRC now
-    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrcB, Seed4));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrcB, Seed));
     CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
     CHECK_EQUAL(1, send_comm.total_streams());
     CHECK_EQUAL(1, send_comm.total_destinations());
@@ -1871,7 +1949,7 @@ TEST(communicator, collision_recv_report) {
     // Check notifications on receiver 1
     CHECK_EQUAL(1, recv1_part.pending_notifications());
     expect_send_report(recv1_part.next_send_notification(), send_time, SendCname,
-                       SendSsrcB, Seed4);
+                       SendSsrcB, Seed);
 }
 
 // Collision detected in unrelated RR/XR from remote receiver to remote sender
@@ -1882,11 +1960,7 @@ TEST(communicator, collision_unrelated_recv_report) {
         Recv2Ssrc = 22,         // receiver 2
         Send1SsrcA = Recv2Ssrc, // initial SSRC of sender 1 (collision w/ receiver 2)
         Send1SsrcB = 33,        // updated SSRC of sender 1
-        Send2Ssrc = 44,         // sender 2 (imaginary)
-        Seed1 = 100,
-        Seed2 = 200,
-        Seed3 = 300,
-        Seed4 = 400
+        Send2Ssrc = 44          // sender 2 (imaginary)
     };
 
     const char* Send1Cname = "send1_cname";
@@ -1919,7 +1993,7 @@ TEST(communicator, collision_unrelated_recv_report) {
 
     // Generate report from sender 1
     send1_part.set_send_report(
-        make_send_report(send1_time, Send1Cname, Send1SsrcA, Seed1));
+        make_send_report(send1_time, Send1Cname, Send1SsrcA, Seed));
     CHECK_EQUAL(status::StatusOK, send1_comm.generate_reports(send1_time));
     CHECK_EQUAL(0, send1_comm.total_streams());
     CHECK_EQUAL(1, send1_comm.total_destinations());
@@ -1934,7 +2008,7 @@ TEST(communicator, collision_unrelated_recv_report) {
     // Check notifications on receiver 1
     CHECK_EQUAL(1, recv1_part.pending_notifications());
     expect_send_report(recv1_part.next_send_notification(), send1_time, Send1Cname,
-                       Send1SsrcA, Seed1);
+                       Send1SsrcA, Seed);
 
     advance_time(send1_time);
     advance_time(recv1_time);
@@ -1943,7 +2017,7 @@ TEST(communicator, collision_unrelated_recv_report) {
     // Generate report from receiver 2 to imaginary sender 2
     // Receiver 2 has same SSRC as sender 1
     recv2_part.set_recv_report(
-        0, make_recv_report(recv2_time, Recv2Cname, Recv2Ssrc, Send2Ssrc, Seed2));
+        0, make_recv_report(recv2_time, Recv2Cname, Recv2Ssrc, Send2Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK, recv2_comm.generate_reports(recv2_time));
     CHECK_EQUAL(1, recv2_comm.total_streams());
     CHECK_EQUAL(1, recv2_comm.total_destinations());
@@ -1957,6 +2031,8 @@ TEST(communicator, collision_unrelated_recv_report) {
     // Sender 1 should ignore this report, because it's for another sender
     // However it should also detect SSRC collision because receiver 2 has
     // same SSRC as sender 1
+    send1_part.set_send_report(
+        make_send_report(send1_time, Send1Cname, Send1SsrcA, Seed));
     CHECK_EQUAL(status::StatusOK,
                 send1_comm.process_packet(read_packet(recv2_queue), send1_time));
     CHECK_EQUAL(1, send1_comm.total_streams());
@@ -1970,7 +2046,7 @@ TEST(communicator, collision_unrelated_recv_report) {
     // Since sender 1 detected collision, it should generate BYE message with
     // old SSRC, and then request participant to change SSRC
     send1_part.set_send_report(
-        make_send_report(send1_time, Send1Cname, Send1SsrcA, Seed3));
+        make_send_report(send1_time, Send1Cname, Send1SsrcA, Seed));
     CHECK_EQUAL(status::StatusOK, send1_comm.generate_reports(send1_time));
     CHECK_EQUAL(1, send1_comm.total_streams());
     CHECK_EQUAL(1, send1_comm.total_destinations());
@@ -1982,6 +2058,8 @@ TEST(communicator, collision_unrelated_recv_report) {
     send1_part.next_ssrc_change_notification();
 
     // Deliver report from sender 1 to receiver 1
+    send1_part.set_send_report(
+        make_send_report(send1_time, Send1Cname, Send1SsrcB, Seed));
     CHECK_EQUAL(status::StatusOK,
                 recv1_comm.process_packet(read_packet(send1_queue), recv1_time));
     CHECK_EQUAL(0, recv1_comm.total_streams());
@@ -1998,7 +2076,7 @@ TEST(communicator, collision_unrelated_recv_report) {
     // Generate next report from sender 1 to receiver 1
     // It should use new SSRC now
     send1_part.set_send_report(
-        make_send_report(send1_time, Send1Cname, Send1SsrcB, Seed4));
+        make_send_report(send1_time, Send1Cname, Send1SsrcB, Seed));
     CHECK_EQUAL(status::StatusOK, send1_comm.generate_reports(send1_time));
     CHECK_EQUAL(1, send1_comm.total_streams());
     CHECK_EQUAL(1, send1_comm.total_destinations());
@@ -2013,7 +2091,7 @@ TEST(communicator, collision_unrelated_recv_report) {
     // Check notifications on receiver 1
     CHECK_EQUAL(1, recv1_part.pending_notifications());
     expect_send_report(recv1_part.next_send_notification(), send1_time, Send1Cname,
-                       Send1SsrcB, Seed4);
+                       Send1SsrcB, Seed);
 }
 
 // Collision detected in SDES
@@ -2023,11 +2101,7 @@ TEST(communicator, collision_sdes_different_cname) {
         Send1Ssrc = 11,        // sender 1
         Send2Ssrc = 22,        // sender 2
         RecvSsrcA = Send2Ssrc, // initial SSRC of receiver (collision w/ sender 2)
-        RecvSsrcB = 33,        // updated SSRC of receiver
-        Seed1 = 100,
-        Seed2 = 200,
-        Seed3 = 300,
-        Seed4 = 400
+        RecvSsrcB = 33         // updated SSRC of receiver
     };
 
     const char* RecvCname = "recv_cname";
@@ -2065,24 +2139,23 @@ TEST(communicator, collision_sdes_different_cname) {
 
     // Generate report from receiver to sender 1
     recv_part.set_recv_report(
-        0, make_recv_report(recv_time, RecvCname, RecvSsrcA, Send1Ssrc, Seed1));
+        0, make_recv_report(recv_time, RecvCname, RecvSsrcA, Send1Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(1, recv_comm.total_streams());
     CHECK_EQUAL(1, recv_comm.total_destinations());
     CHECK_EQUAL(1, recv_queue.size());
 
     // Deliver report from receiver to sender 1
-    send1_part.set_send_report(
-        make_send_report(send1_time, Send1Cname, Send1Ssrc, Seed1));
+    send1_part.set_send_report(make_send_report(send1_time, Send1Cname, Send1Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK,
                 send1_comm.process_packet(read_packet(recv_queue), send1_time));
     CHECK_EQUAL(1, send1_comm.total_streams());
-    CHECK_EQUAL(0, send1_comm.total_destinations());
+    CHECK_EQUAL(1, send1_comm.total_destinations());
 
     // Check notifications on sender 1
     CHECK_EQUAL(1, send1_part.pending_notifications());
     expect_recv_report(send1_part.next_recv_notification(), recv_time, RecvCname,
-                       RecvSsrcA, Send1Ssrc, Seed1);
+                       RecvSsrcA, Send1Ssrc, Seed);
 
     advance_time(recv_time);
     advance_time(send1_time);
@@ -2090,8 +2163,7 @@ TEST(communicator, collision_sdes_different_cname) {
 
     // Generate report from sender 2
     // Sender 2 has same SSRC as receiver and different CNAME
-    send2_part.set_send_report(
-        make_send_report(send2_time, Send2Cname, Send2Ssrc, Seed2));
+    send2_part.set_send_report(make_send_report(send2_time, Send2Cname, Send2Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK, send2_comm.generate_reports(send2_time));
     CHECK_EQUAL(0, send2_comm.total_streams());
     CHECK_EQUAL(1, send2_comm.total_destinations());
@@ -2103,6 +2175,8 @@ TEST(communicator, collision_sdes_different_cname) {
 
     // Deliver report from sender 2 to receiver
     // Receiver should detect SSRC collision
+    recv_part.set_recv_report(
+        0, make_recv_report(recv_time, RecvCname, RecvSsrcA, Send1Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK,
                 recv_comm.process_packet(read_packet(send2_queue), recv_time));
     CHECK_EQUAL(2, recv_comm.total_streams());
@@ -2119,7 +2193,7 @@ TEST(communicator, collision_sdes_different_cname) {
     // Since receiver detected collision, it should generate BYE message with
     // old SSRC, and then request participant to change SSRC
     recv_part.set_recv_report(
-        0, make_recv_report(recv_time, RecvCname, RecvSsrcA, Send1Ssrc, Seed3));
+        0, make_recv_report(recv_time, RecvCname, RecvSsrcA, Send1Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(2, recv_comm.total_streams());
     CHECK_EQUAL(1, recv_comm.total_destinations());
@@ -2131,10 +2205,11 @@ TEST(communicator, collision_sdes_different_cname) {
     recv_part.next_ssrc_change_notification();
 
     // Deliver report from receiver to sender 1
+    send1_part.set_send_report(make_send_report(send1_time, Send1Cname, Send1Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK,
                 send1_comm.process_packet(read_packet(recv_queue), send1_time));
     CHECK_EQUAL(0, send1_comm.total_streams());
-    CHECK_EQUAL(0, send1_comm.total_destinations());
+    CHECK_EQUAL(1, send1_comm.total_destinations());
 
     // Check notifications on sender 1
     CHECK_EQUAL(1, send1_part.pending_notifications());
@@ -2147,22 +2222,23 @@ TEST(communicator, collision_sdes_different_cname) {
     // Generate next report from receiver to sender 1
     // It should use new SSRC now
     recv_part.set_recv_report(
-        0, make_recv_report(recv_time, RecvCname, RecvSsrcB, Send1Ssrc, Seed4));
+        0, make_recv_report(recv_time, RecvCname, RecvSsrcB, Send1Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(2, recv_comm.total_streams());
     CHECK_EQUAL(1, recv_comm.total_destinations());
     CHECK_EQUAL(1, recv_queue.size());
 
     // Deliver report from receiver to sender 1
+    send1_part.set_send_report(make_send_report(send1_time, Send1Cname, Send1Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK,
                 send1_comm.process_packet(read_packet(recv_queue), send1_time));
     CHECK_EQUAL(1, send1_comm.total_streams());
-    CHECK_EQUAL(0, send1_comm.total_destinations());
+    CHECK_EQUAL(1, send1_comm.total_destinations());
 
     // Check notifications on sender 1
     CHECK_EQUAL(1, send1_part.pending_notifications());
     expect_recv_report(send1_part.next_recv_notification(), recv_time, RecvCname,
-                       RecvSsrcB, Send1Ssrc, Seed4);
+                       RecvSsrcB, Send1Ssrc, Seed);
 }
 
 // Collision detected in SDES
@@ -2170,12 +2246,9 @@ TEST(communicator, collision_sdes_different_cname) {
 // to be network loop and not handled as collision
 TEST(communicator, collision_sdes_same_cname) {
     enum {
-        Send1Ssrc = 11,       // sender 1
-        Send2Ssrc = 22,       // sender 2
-        RecvSsrc = Send2Ssrc, // receiver (same as sender 2)
-        Seed1 = 100,
-        Seed2 = 200,
-        Seed3 = 300
+        Send1Ssrc = 11,      // sender 1
+        Send2Ssrc = 22,      // sender 2
+        RecvSsrc = Send2Ssrc // receiver (same as sender 2)
     };
 
     const char* Send1Cname = "test_cname1";
@@ -2213,24 +2286,23 @@ TEST(communicator, collision_sdes_same_cname) {
 
     // Generate report from receiver to sender 1
     recv_part.set_recv_report(
-        0, make_recv_report(recv_time, RecvCname, RecvSsrc, Send1Ssrc, Seed1));
+        0, make_recv_report(recv_time, RecvCname, RecvSsrc, Send1Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(1, recv_comm.total_streams());
     CHECK_EQUAL(1, recv_comm.total_destinations());
     CHECK_EQUAL(1, recv_queue.size());
 
     // Deliver report from receiver to sender 1
-    send1_part.set_send_report(
-        make_send_report(send1_time, Send1Cname, Send1Ssrc, Seed1));
+    send1_part.set_send_report(make_send_report(send1_time, Send1Cname, Send1Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK,
                 send1_comm.process_packet(read_packet(recv_queue), send1_time));
     CHECK_EQUAL(1, send1_comm.total_streams());
-    CHECK_EQUAL(0, send1_comm.total_destinations());
+    CHECK_EQUAL(1, send1_comm.total_destinations());
 
     // Check notifications on sender 1
     CHECK_EQUAL(1, send1_part.pending_notifications());
     expect_recv_report(send1_part.next_recv_notification(), recv_time, RecvCname,
-                       RecvSsrc, Send1Ssrc, Seed1);
+                       RecvSsrc, Send1Ssrc, Seed);
 
     advance_time(recv_time);
     advance_time(send1_time);
@@ -2238,8 +2310,7 @@ TEST(communicator, collision_sdes_same_cname) {
 
     // Generate report from sender 2
     // Sender 2 has same SSRC as receiver and same CNAME
-    send2_part.set_send_report(
-        make_send_report(send2_time, Send2Cname, Send2Ssrc, Seed2));
+    send2_part.set_send_report(make_send_report(send2_time, Send2Cname, Send2Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK, send2_comm.generate_reports(send2_time));
     CHECK_EQUAL(0, send2_comm.total_streams());
     CHECK_EQUAL(1, send2_comm.total_destinations());
@@ -2247,6 +2318,8 @@ TEST(communicator, collision_sdes_same_cname) {
 
     // Deliver report from sender 2 to receiver
     // Receiver should detect SSRC collision
+    recv_part.set_recv_report(
+        0, make_recv_report(recv_time, RecvCname, RecvSsrc, Send1Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK,
                 recv_comm.process_packet(read_packet(send2_queue), recv_time));
     CHECK_EQUAL(2, recv_comm.total_streams());
@@ -2262,7 +2335,7 @@ TEST(communicator, collision_sdes_same_cname) {
     // Generate next report from receiver to sender 1
     // No collision should be reported & handled
     recv_part.set_recv_report(
-        0, make_recv_report(recv_time, RecvCname, RecvSsrc, Send1Ssrc, Seed3));
+        0, make_recv_report(recv_time, RecvCname, RecvSsrc, Send1Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(2, recv_comm.total_streams());
     CHECK_EQUAL(1, recv_comm.total_destinations());
@@ -2272,20 +2345,21 @@ TEST(communicator, collision_sdes_same_cname) {
     CHECK_EQUAL(0, recv_part.pending_notifications());
 
     // Deliver report from receiver to sender 1
+    send1_part.set_send_report(make_send_report(send1_time, Send1Cname, Send1Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK,
                 send1_comm.process_packet(read_packet(recv_queue), send1_time));
     CHECK_EQUAL(1, send1_comm.total_streams());
-    CHECK_EQUAL(0, send1_comm.total_destinations());
+    CHECK_EQUAL(1, send1_comm.total_destinations());
 
     // Check notifications on sender 1
     CHECK_EQUAL(1, send1_part.pending_notifications());
     expect_recv_report(send1_part.next_recv_notification(), recv_time, RecvCname,
-                       RecvSsrc, Send1Ssrc, Seed3);
+                       RecvSsrc, Send1Ssrc, Seed);
 }
 
 // Check how communicator handles reports looped back from itself
 TEST(communicator, network_loop) {
-    enum { LocalSsrc = 11, RemoteSsrc = 22, Seed = 100 };
+    enum { LocalSsrc = 11, RemoteSsrc = 22 };
 
     const char* LocalCname = "local_cname";
     const char* RemoteCname = "remote_cname";
@@ -2335,6 +2409,9 @@ TEST(communicator, network_loop) {
     CHECK_EQUAL(1, remote_queue.size());
 
     // Deliver report to local peer
+    local_part.set_send_report(make_send_report(local_time, LocalCname, LocalSsrc, Seed));
+    local_part.set_recv_report(
+        0, make_recv_report(local_time, LocalCname, LocalSsrc, RemoteSsrc, Seed));
     CHECK_EQUAL(status::StatusOK,
                 local_comm.process_packet(read_packet(remote_queue), local_time));
 
@@ -2386,7 +2463,7 @@ TEST(communicator, network_loop) {
 // Handle incoming packet from sender without SDES
 // (Only SR and XR)
 TEST(communicator, missing_sender_sdes) {
-    enum { SendSsrc = 11, RecvSsrc = 22, Seed1 = 100, Seed2 = 200 };
+    enum { SendSsrc = 11, RecvSsrc = 22 };
 
     const char* SendCname = "send_cname";
     const char* RecvCname = "recv_cname";
@@ -2412,7 +2489,7 @@ TEST(communicator, missing_sender_sdes) {
     core::nanoseconds_t recv_time = 30000000000000000;
 
     // Generate sender report
-    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed1));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
     CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
     CHECK_EQUAL(0, send_comm.total_streams());
     CHECK_EQUAL(1, send_queue.size());
@@ -2425,14 +2502,13 @@ TEST(communicator, missing_sender_sdes) {
     // Check notifications on receiver
     // Notification with empty CNAME should be generated
     CHECK_EQUAL(1, recv_part.pending_notifications());
-    expect_send_report(recv_part.next_send_notification(), send_time, "", SendSsrc,
-                       Seed1);
+    expect_send_report(recv_part.next_send_notification(), send_time, "", SendSsrc, Seed);
 }
 
 // Handle incoming packet from receiver without SDES
 // (Only RR and XR)
 TEST(communicator, missing_receiver_sdes) {
-    enum { SendSsrc = 11, RecvSsrc = 22, Seed1 = 100, Seed2 = 200 };
+    enum { SendSsrc = 11, RecvSsrc = 22 };
 
     const char* SendCname = "send_cname";
     const char* RecvCname = "recv_cname";
@@ -2459,13 +2535,13 @@ TEST(communicator, missing_receiver_sdes) {
 
     // Generate receiver report
     recv_part.set_recv_report(
-        0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed2));
+        0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(1, recv_comm.total_streams());
     CHECK_EQUAL(1, recv_queue.size());
 
     // Deliver receiver report to sender
-    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed2));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
     CHECK_EQUAL(status::StatusOK,
                 send_comm.process_packet(read_packet(recv_queue), send_time));
     CHECK_EQUAL(1, send_comm.total_streams());
@@ -2474,13 +2550,13 @@ TEST(communicator, missing_receiver_sdes) {
     // Notification with empty CNAME should be generated
     CHECK_EQUAL(1, send_part.pending_notifications());
     expect_recv_report(send_part.next_recv_notification(), recv_time, "", RecvSsrc,
-                       SendSsrc, Seed2);
+                       SendSsrc, Seed);
 }
 
 // Handle incoming packet from sender without SR
 // (Only SDES and XR)
 TEST(communicator, missing_sender_sr) {
-    enum { SendSsrc = 11, RecvSsrc = 22, Seed1 = 100, Seed2 = 200 };
+    enum { SendSsrc = 11, RecvSsrc = 22 };
 
     const char* SendCname = "send_cname";
     const char* RecvCname = "recv_cname";
@@ -2506,7 +2582,7 @@ TEST(communicator, missing_sender_sr) {
     core::nanoseconds_t recv_time = 30000000000000000;
 
     // Generate sender report
-    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed1));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
     CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
     CHECK_EQUAL(0, send_comm.total_streams());
     CHECK_EQUAL(1, send_queue.size());
@@ -2524,7 +2600,7 @@ TEST(communicator, missing_sender_sr) {
 // Handle incoming packet from receiver without RR
 // (Only SDES and XR)
 TEST(communicator, missing_receiver_rr) {
-    enum { SendSsrc = 11, RecvSsrc = 22, Seed1 = 100, Seed2 = 200 };
+    enum { SendSsrc = 11, RecvSsrc = 22 };
 
     const char* SendCname = "send_cname";
     const char* RecvCname = "recv_cname";
@@ -2551,13 +2627,13 @@ TEST(communicator, missing_receiver_rr) {
 
     // Generate receiver report
     recv_part.set_recv_report(
-        0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed2));
+        0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(1, recv_comm.total_streams());
     CHECK_EQUAL(1, recv_queue.size());
 
     // Deliver receiver report to sender
-    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed2));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
     CHECK_EQUAL(status::StatusOK,
                 send_comm.process_packet(read_packet(recv_queue), send_time));
     CHECK_EQUAL(1, send_comm.total_streams());
@@ -2570,7 +2646,7 @@ TEST(communicator, missing_receiver_rr) {
 // Handle incoming packet from sender without XR
 // (Only SR and SDES)
 TEST(communicator, missing_sender_xr) {
-    enum { SendSsrc = 11, RecvSsrc = 22, Seed1 = 100, Seed2 = 200 };
+    enum { SendSsrc = 11, RecvSsrc = 22 };
 
     const char* SendCname = "send_cname";
     const char* RecvCname = "recv_cname";
@@ -2596,7 +2672,7 @@ TEST(communicator, missing_sender_xr) {
     core::nanoseconds_t recv_time = 30000000000000000;
 
     // Generate sender report
-    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed1));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
     CHECK_EQUAL(status::StatusOK, send_comm.generate_reports(send_time));
     CHECK_EQUAL(0, send_comm.total_streams());
     CHECK_EQUAL(1, send_queue.size());
@@ -2610,13 +2686,13 @@ TEST(communicator, missing_sender_xr) {
     // Notification with zero XR fields should be generated
     CHECK_EQUAL(1, recv_part.pending_notifications());
     expect_send_report(recv_part.next_send_notification(), send_time, SendCname, SendSsrc,
-                       Seed1, /* expect_xr = */ false);
+                       Seed, /* expect_xr = */ false);
 }
 
 // Handle incoming packet from receiver without XR
 // (Only RR and SDES)
 TEST(communicator, missing_receiver_xr) {
-    enum { SendSsrc = 11, RecvSsrc = 22, Seed1 = 100, Seed2 = 200 };
+    enum { SendSsrc = 11, RecvSsrc = 22 };
 
     const char* SendCname = "send_cname";
     const char* RecvCname = "recv_cname";
@@ -2643,13 +2719,13 @@ TEST(communicator, missing_receiver_xr) {
 
     // Generate receiver report
     recv_part.set_recv_report(
-        0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed2));
+        0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed));
     CHECK_EQUAL(status::StatusOK, recv_comm.generate_reports(recv_time));
     CHECK_EQUAL(1, recv_comm.total_streams());
     CHECK_EQUAL(1, recv_queue.size());
 
     // Deliver receiver report to sender
-    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed2));
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
     CHECK_EQUAL(status::StatusOK,
                 send_comm.process_packet(read_packet(recv_queue), send_time));
     CHECK_EQUAL(1, send_comm.total_streams());
@@ -2658,7 +2734,7 @@ TEST(communicator, missing_receiver_xr) {
     // Notification with zero XR fields should be generated
     CHECK_EQUAL(1, send_part.pending_notifications());
     expect_recv_report(send_part.next_recv_notification(), recv_time, RecvCname, RecvSsrc,
-                       SendSsrc, Seed2, /* expect_xr = */ false);
+                       SendSsrc, Seed, /* expect_xr = */ false);
 }
 
 // Sender report is too large and is split into multiple packets
@@ -2668,7 +2744,6 @@ TEST(communicator, split_sender_report) {
         RecvSsrc = 200,
         NumReports = 80,
         NumPackets = 3,
-        Seed = 100,
         SmallPacketSize = 500
     };
 
@@ -2713,6 +2788,7 @@ TEST(communicator, split_sender_report) {
         CHECK_EQUAL(1, recv_queue.size());
 
         // Deliver receiver report to sender
+        send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
         CHECK_EQUAL(status::StatusOK,
                     send_comm.process_packet(read_packet(recv_queue), send_time));
 
@@ -2744,6 +2820,9 @@ TEST(communicator, split_sender_report) {
     // Deliver sender report packets to one of the receivers
     while (send_queue.size() != 0) {
         advance_time(recv_time);
+
+        recv_part.set_recv_report(
+            0, make_recv_report(recv_time, recv_cname, recv_ssrc, SendSsrc, Seed));
         CHECK_EQUAL(status::StatusOK,
                     recv_comm.process_packet(read_packet(send_queue), recv_time));
     }
@@ -2764,7 +2843,6 @@ TEST(communicator, split_receiver_report) {
         RecvSsrc = 200,
         NumReports = 15,
         NumPackets = 3,
-        Seed = 100,
         SmallPacketSize = 500
     };
 
@@ -2803,9 +2881,10 @@ TEST(communicator, split_receiver_report) {
     CHECK_EQUAL(NumPackets, recv_queue.size());
 
     // Deliver receiver report packets to sender
-    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
     while (recv_queue.size() != 0) {
         advance_time(send_time);
+
+        send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
         CHECK_EQUAL(status::StatusOK,
                     send_comm.process_packet(read_packet(recv_queue), send_time));
     }
@@ -2826,7 +2905,6 @@ TEST(communicator, split_bidirectional_report) {
         RemoteSsrc = 200,
         NumReports = 15,
         NumPackets = 8,
-        Seed = 100,
         SmallPacketSize = 500
     };
 
@@ -2872,6 +2950,8 @@ TEST(communicator, split_bidirectional_report) {
         CHECK_EQUAL(1, remote_queue.size());
 
         // Deliver remote peer report to local peer
+        local_part.set_send_report(
+            make_send_report(local_time, local_cname, LocalSsrc, Seed));
         CHECK_EQUAL(status::StatusOK,
                     local_comm.process_packet(read_packet(remote_queue), local_time));
 
@@ -2907,10 +2987,11 @@ TEST(communicator, split_bidirectional_report) {
     CHECK(remote_comm.is_valid());
 
     // Deliver local peer report packets to one of the remote peers
-    remote_part.set_send_report(
-        make_send_report(remote_time, remote_cname, remote_ssrc, Seed));
     while (local_queue.size() != 0) {
         advance_time(remote_time);
+
+        remote_part.set_send_report(
+            make_send_report(remote_time, remote_cname, remote_ssrc, Seed));
         CHECK_EQUAL(status::StatusOK,
                     remote_comm.process_packet(read_packet(local_queue), remote_time));
     }
@@ -2928,7 +3009,7 @@ TEST(communicator, split_bidirectional_report) {
 
 // Tell sender to use specific destination report address
 TEST(communicator, report_to_address_sender) {
-    enum { SendSsrc = 11, Recv1Ssrc = 22, Recv2Ssrc = 33, Seed = 100 };
+    enum { SendSsrc = 11, Recv1Ssrc = 22, Recv2Ssrc = 33 };
 
     const char* SendCname = "send_cname";
     const char* Recv1Cname = "recv1_cname";
@@ -2996,6 +3077,7 @@ TEST(communicator, report_to_address_sender) {
     // Deliver receiver 1 report to sender
     pp = read_packet(recv1_queue);
     set_src_address(pp, recv1_addr);
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
     CHECK_EQUAL(status::StatusOK, send_comm.process_packet(pp, send_time));
     CHECK_EQUAL(1, send_comm.total_streams());
 
@@ -3037,6 +3119,7 @@ TEST(communicator, report_to_address_sender) {
     // Deliver receiver 2 report to sender
     pp = read_packet(recv2_queue);
     set_src_address(pp, recv2_addr);
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
     CHECK_EQUAL(status::StatusOK, send_comm.process_packet(pp, send_time));
     CHECK_EQUAL(2, send_comm.total_streams());
 
@@ -3068,7 +3151,7 @@ TEST(communicator, report_to_address_sender) {
 
 // Tell receiver to use specific destination report address
 TEST(communicator, report_to_address_receiver) {
-    enum { RecvSsrc = 11, Send1Ssrc = 22, Send2Ssrc = 33, Seed = 100 };
+    enum { RecvSsrc = 11, Send1Ssrc = 22, Send2Ssrc = 33 };
 
     const char* RecvCname = "recv_cname";
 
@@ -3110,7 +3193,7 @@ TEST(communicator, report_to_address_receiver) {
 // Tell sender to deliver reports back to each participant, instead
 // of using single destination address for all reports
 TEST(communicator, report_back_sender) {
-    enum { SendSsrc = 11, Recv1Ssrc = 22, Recv2Ssrc = 33, Seed = 100 };
+    enum { SendSsrc = 11, Recv1Ssrc = 22, Recv2Ssrc = 33 };
 
     const char* SendCname = "send_cname";
     const char* Recv1Cname = "recv1_cname";
@@ -3167,6 +3250,7 @@ TEST(communicator, report_back_sender) {
     // Deliver receiver 1 report to sender
     pp = read_packet(recv1_queue);
     set_src_address(pp, recv1_addr);
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
     CHECK_EQUAL(status::StatusOK, send_comm.process_packet(pp, send_time));
     CHECK_EQUAL(1, send_comm.total_streams());
 
@@ -3207,6 +3291,7 @@ TEST(communicator, report_back_sender) {
     // Deliver receiver 2 report to sender
     pp = read_packet(recv2_queue);
     set_src_address(pp, recv2_addr);
+    send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
     CHECK_EQUAL(status::StatusOK, send_comm.process_packet(pp, send_time));
     CHECK_EQUAL(2, send_comm.total_streams());
 
@@ -3244,7 +3329,7 @@ TEST(communicator, report_back_sender) {
 // Tell receiver to deliver reports back to each participant, instead
 // of using single destination address for all reports
 TEST(communicator, report_back_receiver) {
-    enum { RecvSsrc = 11, Send1Ssrc = 22, Send2Ssrc = 33, Seed = 100 };
+    enum { RecvSsrc = 11, Send1Ssrc = 22, Send2Ssrc = 33 };
 
     const char* RecvCname = "recv_cname";
     const char* Send1Cname = "send1_cname";
@@ -3303,6 +3388,10 @@ TEST(communicator, report_back_receiver) {
     // Deliver sender 1 report to receiver
     pp = read_packet(send1_queue);
     set_src_address(pp, send1_addr);
+    recv_part.set_recv_report(
+        0, make_recv_report(recv_time, RecvCname, RecvSsrc, Send1Ssrc, Seed));
+    recv_part.set_recv_report(
+        1, make_recv_report(recv_time, RecvCname, RecvSsrc, Send2Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK, recv_comm.process_packet(pp, recv_time));
     CHECK_EQUAL(2, recv_comm.total_streams());
 
@@ -3345,6 +3434,10 @@ TEST(communicator, report_back_receiver) {
     // Deliver sender 2 report to receiver
     pp = read_packet(send2_queue);
     set_src_address(pp, send2_addr);
+    recv_part.set_recv_report(
+        0, make_recv_report(recv_time, RecvCname, RecvSsrc, Send1Ssrc, Seed));
+    recv_part.set_recv_report(
+        1, make_recv_report(recv_time, RecvCname, RecvSsrc, Send2Ssrc, Seed));
     CHECK_EQUAL(status::StatusOK, recv_comm.process_packet(pp, recv_time));
     CHECK_EQUAL(2, recv_comm.total_streams());
 
@@ -3385,7 +3478,7 @@ TEST(communicator, report_back_receiver) {
 // Same as above, but some participants have same address, so there should be
 // a single report for those of them
 TEST(communicator, report_back_combine_reports) {
-    enum { RecvSsrc = 11, Send1Ssrc = 22, Send2Ssrc = 33, Send3Ssrc = 44, Seed = 100 };
+    enum { RecvSsrc = 11, Send1Ssrc = 22, Send2Ssrc = 33, Send3Ssrc = 44 };
 
     const char* RecvCname = "recv_cname";
     const char* Send1Cname = "send1_cname";
@@ -3529,7 +3622,6 @@ TEST(communicator, report_back_split_reports) {
         NumGroups = 2,
         PeersPerGroup = 20,
         PacketsPerGroup = 5,
-        Seed = 100,
         SmallPacketSize = 500
     };
 
@@ -3640,7 +3732,7 @@ TEST(communicator, report_back_split_reports) {
 
 // Check how communicator computes RTT and clock offset
 TEST(communicator, rtt) {
-    enum { SendSsrc = 11, RecvSsrc = 22, Seed = 100, NumIters = 200 };
+    enum { SendSsrc = 11, RecvSsrc = 22, NumIters = 200 };
 
     const char* SendCname = "send_cname";
     const char* RecvCname = "recv_cname";
@@ -3678,6 +3770,10 @@ TEST(communicator, rtt) {
         advance_time(recv_time, Rtt / 2);
 
         // Deliver sender report to receiver
+        if (iter != 0) {
+            recv_part.set_recv_report(
+                0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed));
+        }
         CHECK_EQUAL(status::StatusOK,
                     recv_comm.process_packet(read_packet(send_queue), recv_time));
 
@@ -3713,6 +3809,7 @@ TEST(communicator, rtt) {
         advance_time(recv_time, Rtt / 2);
 
         // Deliver receiver report to sender
+        send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
         CHECK_EQUAL(status::StatusOK,
                     send_comm.process_packet(read_packet(recv_queue), send_time));
 
@@ -3738,7 +3835,7 @@ TEST(communicator, rtt) {
 
 // Same, but there is a persistent clock drift between sender and receiver
 TEST(communicator, rtt_clock_drift) {
-    enum { SendSsrc = 11, RecvSsrc = 22, Seed = 100, NumIters = 200 };
+    enum { SendSsrc = 11, RecvSsrc = 22, NumIters = 200 };
 
     const char* SendCname = "send_cname";
     const char* RecvCname = "recv_cname";
@@ -3777,6 +3874,10 @@ TEST(communicator, rtt_clock_drift) {
         advance_time(recv_time, Rtt / 2);
 
         // Deliver sender report to receiver
+        if (iter != 0) {
+            recv_part.set_recv_report(
+                0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed));
+        }
         CHECK_EQUAL(status::StatusOK,
                     recv_comm.process_packet(read_packet(send_queue), recv_time));
 
@@ -3804,6 +3905,7 @@ TEST(communicator, rtt_clock_drift) {
         advance_time(recv_time, Rtt / 2);
 
         // Deliver receiver report to sender
+        send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
         CHECK_EQUAL(status::StatusOK,
                     send_comm.process_packet(read_packet(recv_queue), send_time));
 
@@ -3824,7 +3926,7 @@ TEST(communicator, rtt_clock_drift) {
 
 // Same, but there is persistent network jitter
 TEST(communicator, rtt_network_jitter) {
-    enum { SendSsrc = 11, RecvSsrc = 22, Seed = 100, NumIters = 200 };
+    enum { SendSsrc = 11, RecvSsrc = 22, NumIters = 200 };
 
     const char* SendCname = "send_cname";
     const char* RecvCname = "recv_cname";
@@ -3867,6 +3969,10 @@ TEST(communicator, rtt_network_jitter) {
         advance_time(recv_time, Rtt / 2 + iter_jitter);
 
         // Deliver sender report to receiver
+        if (iter != 0) {
+            recv_part.set_recv_report(
+                0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed));
+        }
         CHECK_EQUAL(status::StatusOK,
                     recv_comm.process_packet(read_packet(send_queue), recv_time));
 
@@ -3893,6 +3999,7 @@ TEST(communicator, rtt_network_jitter) {
         advance_time(recv_time, Rtt / 2 + iter_jitter);
 
         // Deliver receiver report to sender
+        send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
         CHECK_EQUAL(status::StatusOK,
                     send_comm.process_packet(read_packet(recv_queue), send_time));
 
@@ -3912,7 +4019,7 @@ TEST(communicator, rtt_network_jitter) {
 
 // Same, but there are occasional packet losses
 TEST(communicator, rtt_network_losses) {
-    enum { SendSsrc = 11, RecvSsrc = 22, Seed = 100, NumIters = 200 };
+    enum { SendSsrc = 11, RecvSsrc = 22, NumIters = 200 };
 
     const char* SendCname = "send_cname";
     const char* RecvCname = "recv_cname";
@@ -3960,6 +4067,10 @@ TEST(communicator, rtt_network_losses) {
         pp = read_packet(send_queue);
 
         if (!loss_send_report) {
+            if (iter != 0) {
+                recv_part.set_recv_report(
+                    0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed));
+            }
             CHECK_EQUAL(status::StatusOK, recv_comm.process_packet(pp, recv_time));
 
             // Check metrics on receiver
@@ -3987,6 +4098,8 @@ TEST(communicator, rtt_network_losses) {
         pp = read_packet(recv_queue);
 
         if (!loss_recv_report) {
+            send_part.set_send_report(
+                make_send_report(send_time, SendCname, SendSsrc, Seed));
             CHECK_EQUAL(status::StatusOK, send_comm.process_packet(pp, send_time));
 
             // Check metrics on sender
@@ -4004,7 +4117,7 @@ TEST(communicator, rtt_network_losses) {
 
 // Same, but there are occasional burst delays
 TEST(communicator, rtt_network_delays) {
-    enum { SendSsrc = 11, RecvSsrc = 22, Seed = 100, NumIters = 200 };
+    enum { SendSsrc = 11, RecvSsrc = 22, NumIters = 200 };
 
     const char* SendCname = "send_cname";
     const char* RecvCname = "recv_cname";
@@ -4055,6 +4168,12 @@ TEST(communicator, rtt_network_delays) {
         if (!start_send_delay && send_delay_countdown == 0) {
             while (send_queue.size() != 0) {
                 packet::PacketPtr pp = read_packet(send_queue);
+
+                if (iter != 0) {
+                    recv_part.set_recv_report(
+                        0,
+                        make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed));
+                }
                 CHECK_EQUAL(status::StatusOK, recv_comm.process_packet(pp, recv_time));
 
                 // Check metrics on receiver
@@ -4090,6 +4209,9 @@ TEST(communicator, rtt_network_delays) {
         if (!start_recv_delay && recv_delay_countdown == 0) {
             while (recv_queue.size() != 0) {
                 packet::PacketPtr pp = read_packet(recv_queue);
+
+                send_part.set_send_report(
+                    make_send_report(send_time, SendCname, SendSsrc, Seed));
                 CHECK_EQUAL(status::StatusOK, send_comm.process_packet(pp, send_time));
 
                 // Check metrics on sender
@@ -4113,7 +4235,7 @@ TEST(communicator, rtt_network_delays) {
 
 // Same, but there are occasional burst reorders
 TEST(communicator, rtt_network_reordering) {
-    enum { SendSsrc = 11, RecvSsrc = 22, Seed = 100, NumIters = 200 };
+    enum { SendSsrc = 11, RecvSsrc = 22, NumIters = 200 };
 
     const char* SendCname = "send_cname";
     const char* RecvCname = "recv_cname";
@@ -4173,6 +4295,12 @@ TEST(communicator, rtt_network_reordering) {
 
             while (send_queue.size() != 0) {
                 packet::PacketPtr pp = read_packet(send_queue);
+
+                if (iter != 0) {
+                    recv_part.set_recv_report(
+                        0,
+                        make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed));
+                }
                 CHECK_EQUAL(status::StatusOK, recv_comm.process_packet(pp, recv_time));
 
                 // Check metrics on receiver
@@ -4216,6 +4344,9 @@ TEST(communicator, rtt_network_reordering) {
 
             while (recv_queue.size() != 0) {
                 packet::PacketPtr pp = read_packet(recv_queue);
+
+                send_part.set_send_report(
+                    make_send_report(send_time, SendCname, SendSsrc, Seed));
                 CHECK_EQUAL(status::StatusOK, send_comm.process_packet(pp, send_time));
 
                 // Check metrics on sender
@@ -4241,7 +4372,7 @@ TEST(communicator, rtt_network_reordering) {
 
 // Same, but there are occasional duplicates
 TEST(communicator, rtt_network_duplicates) {
-    enum { SendSsrc = 11, RecvSsrc = 22, Seed = 100, NumIters = 200 };
+    enum { SendSsrc = 11, RecvSsrc = 22, NumIters = 200 };
 
     const char* SendCname = "send_cname";
     const char* RecvCname = "recv_cname";
@@ -4303,6 +4434,11 @@ TEST(communicator, rtt_network_duplicates) {
         // Deliver sender reports to receiver
         while (send_queue.size() != 0) {
             pp = read_packet(send_queue);
+
+            if (iter != 0) {
+                recv_part.set_recv_report(
+                    0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed));
+            }
             CHECK_EQUAL(status::StatusOK, recv_comm.process_packet(pp, recv_time));
 
             // Check metrics on receiver
@@ -4342,6 +4478,9 @@ TEST(communicator, rtt_network_duplicates) {
         // Deliver receiver reports to sender
         while (recv_queue.size() != 0) {
             pp = read_packet(recv_queue);
+
+            send_part.set_send_report(
+                make_send_report(send_time, SendCname, SendSsrc, Seed));
             CHECK_EQUAL(status::StatusOK, send_comm.process_packet(pp, send_time));
 
             // Check metrics on sender
@@ -4364,7 +4503,7 @@ TEST(communicator, rtt_network_duplicates) {
 
 // If XR is disabled, RTT and clock offset should remain zero
 TEST(communicator, rtt_missing_xr) {
-    enum { SendSsrc = 11, RecvSsrc = 22, Seed = 100, NumIters = 200 };
+    enum { SendSsrc = 11, RecvSsrc = 22, NumIters = 200 };
 
     const char* SendCname = "send_cname";
     const char* RecvCname = "recv_cname";
@@ -4403,6 +4542,10 @@ TEST(communicator, rtt_missing_xr) {
         advance_time(recv_time, Rtt / 2);
 
         // Deliver sender report to receiver
+        if (iter != 0) {
+            recv_part.set_recv_report(
+                0, make_recv_report(recv_time, RecvCname, RecvSsrc, SendSsrc, Seed));
+        }
         CHECK_EQUAL(status::StatusOK,
                     recv_comm.process_packet(read_packet(send_queue), recv_time));
 
@@ -4426,6 +4569,7 @@ TEST(communicator, rtt_missing_xr) {
         advance_time(recv_time, Rtt / 2);
 
         // Deliver receiver report to sender
+        send_part.set_send_report(make_send_report(send_time, SendCname, SendSsrc, Seed));
         CHECK_EQUAL(status::StatusOK,
                     send_comm.process_packet(read_packet(recv_queue), send_time));
 
@@ -4442,7 +4586,7 @@ TEST(communicator, rtt_missing_xr) {
 }
 
 TEST(communicator, generation_error) {
-    enum { Ssrc = 11, Seed = 100 };
+    enum { Ssrc = 11 };
 
     const char* Cname = "test_cname";
     Config config;
@@ -4504,7 +4648,7 @@ TEST(communicator, generation_error) {
 }
 
 TEST(communicator, processing_error) {
-    enum { RecvSsrc = 11, Seed = 100 };
+    enum { RecvSsrc = 11 };
 
     const char* RecvCname = "recv_cname";
 
@@ -4575,7 +4719,7 @@ TEST(communicator, processing_error) {
 }
 
 TEST(communicator, notification_error) {
-    enum { SendSsrc = 11, RecvSsrc = 22, Seed = 100 };
+    enum { SendSsrc = 11, RecvSsrc = 22 };
 
     const char* SendCname = "send_cname";
     const char* RecvCname = "recv_cname";

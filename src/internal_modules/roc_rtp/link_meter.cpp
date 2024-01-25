@@ -13,8 +13,10 @@
 namespace roc {
 namespace rtp {
 
-LinkMeter::LinkMeter()
-    : writer_(NULL)
+LinkMeter::LinkMeter(const EncodingMap& encoding_map)
+    : encoding_map_(encoding_map)
+    , encoding_(NULL)
+    , writer_(NULL)
     , reader_(NULL)
     , first_packet_(true)
     , has_metrics_(false)
@@ -35,7 +37,14 @@ status::StatusCode LinkMeter::write(const packet::PacketPtr& packet) {
     // When we create LinkMeter, we don't know yet if RTP is used (e.g.
     // for repair packets), so we should be ready for non-rtp packets.
     if (packet->rtp()) {
-        update_metrics_(*packet);
+        // Since we don't know packet type in-before, we also determine
+        // encoding dynamically.
+        if (!encoding_ || encoding_->payload_type != packet->rtp()->payload_type) {
+            encoding_ = encoding_map_.find_by_pt(packet->rtp()->payload_type);
+        }
+        if (encoding_) {
+            update_metrics_(*packet);
+        }
     }
 
     return writer_->write(packet);
@@ -88,6 +97,8 @@ void LinkMeter::update_metrics_(const packet::Packet& packet) {
         }
         last_seqnum_lo_ = pkt_seqnum;
     }
+
+    metrics_.sample_rate = encoding_->sample_spec.sample_rate();
 
     metrics_.ext_first_seqnum = first_seqnum_;
     metrics_.ext_last_seqnum = last_seqnum_hi_ + last_seqnum_lo_;

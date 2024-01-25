@@ -72,6 +72,9 @@ public:
     //! Check if object is successfully constructed.
     bool is_valid() const;
 
+    //! Get sample rate.
+    size_t sample_rate() const;
+
     //! Get metrics.
     PacketizerMetrics metrics() const;
 

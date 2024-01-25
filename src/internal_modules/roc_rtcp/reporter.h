@@ -132,6 +132,10 @@ public:
     //! Process XR RRTR block (extended receiver report).
     void process_rrtr_block(const header::XrPacket& xr, const header::XrRrtrBlock& blk);
 
+    //! Process XR Measurement Info block (extended receiver report).
+    void process_measurement_info_block(const header::XrPacket& xr,
+                                        const header::XrMeasurementInfoBlock& blk);
+
     //! Process XR Delay Metrics block (extended receiver report).
     void process_delay_metrics_block(const header::XrPacket& xr,
                                      const header::XrDelayMetricsBlock& blk);
@@ -375,6 +379,7 @@ private:
     };
 
     status::StatusCode notify_streams_();
+    status::StatusCode refresh_streams_();
     status::StatusCode query_streams_();
     status::StatusCode rebuild_index_();
 

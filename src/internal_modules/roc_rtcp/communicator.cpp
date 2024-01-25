@@ -300,6 +300,12 @@ void Communicator::process_extended_report_(const XrTraverser& xr) {
             reporter_.process_rrtr_block(xr.packet(), iter.get_rrtr());
         } break;
 
+        case XrTraverser::Iterator::MEASUREMENT_INFO_BLOCK: {
+            // Measurement Info is extended receiver report.
+            reporter_.process_measurement_info_block(xr.packet(),
+                                                     iter.get_measurement_info());
+        } break;
+
         case XrTraverser::Iterator::DELAY_METRICS_BLOCK: {
             // Delay Metrics is extended receiver report.
             reporter_.process_delay_metrics_block(xr.packet(), iter.get_delay_metrics());
@@ -682,6 +688,7 @@ void Communicator::generate_standard_report_(Builder& bld) {
                 if (!next_recv_stream_(stream_index)) {
                     break;
                 }
+
                 header::ReceptionReportBlock blk;
                 reporter_.generate_reception_block(dest_addr_index_, stream_index, blk);
 
@@ -706,6 +713,7 @@ void Communicator::generate_standard_report_(Builder& bld) {
                 if (!next_recv_stream_(stream_index)) {
                     break;
                 }
+
                 header::ReceptionReportBlock blk;
                 reporter_.generate_reception_block(dest_addr_index_, stream_index, blk);
 
@@ -736,6 +744,7 @@ void Communicator::generate_extended_report_(Builder& bld) {
                 if (!next_send_stream_(stream_index)) {
                     break;
                 }
+
                 header::XrDlrrSubblock blk;
                 reporter_.generate_dlrr_subblock(dest_addr_index_, stream_index, blk);
 

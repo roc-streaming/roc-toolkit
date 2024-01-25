@@ -51,8 +51,7 @@ const RttMetrics& RttEstimator::metrics() const {
 //
 // See RFC 3550 and RFC 5905.
 // See also https://www.eecis.udel.edu/~mills/time.html
-void RttEstimator::update(packet::ext_seqnum_t last_seqnum,
-                          core::nanoseconds_t local_report_ts,
+void RttEstimator::update(core::nanoseconds_t local_report_ts,
                           core::nanoseconds_t remote_report_ts,
                           core::nanoseconds_t remote_reply_ts,
                           core::nanoseconds_t local_reply_ts) {
@@ -86,23 +85,10 @@ void RttEstimator::update(packet::ext_seqnum_t last_seqnum,
     }
     last_report_ts_ = local_report_ts;
 
-    metrics_.cumulative_duration = local_reply_ts - first_report_ts_;
-    metrics_.interval_duration =
-        std::min(metrics_.cumulative_duration, config_.interval_duration);
-    metrics_.interval_first_seqnum = last_seqnum;
-    metrics_.interval_last_seqnum = last_seqnum;
     metrics_.clock_offset = clock_offset;
-    metrics_.rtt_avg = rtt;
-    metrics_.rtt_min = rtt;
-    metrics_.rtt_max = rtt;
+    metrics_.rtt = rtt;
 
     has_metrics_ = true;
-
-    // TODO(gh-676): fill missing fields:
-    //  - interval_first_seqnum
-    //  - rtt_avg
-    //  - rtt_min
-    //  - rtt_max
 }
 
 } // namespace rtcp

@@ -140,9 +140,9 @@ void print_xr_measurement_info(core::Printer& p,
 
     p.writef("|-- block body:\n");
     p.writef("|--- ssrc: %lu\n", (unsigned long)blk.ssrc());
-    p.writef("|--- first_sn: %lu\n", (unsigned long)blk.first_sn());
-    p.writef("|--- interval_first_sn: %lu\n", (unsigned long)blk.interval_first_sn());
-    p.writef("|--- interval_last_sn: %lu\n", (unsigned long)blk.interval_last_sn());
+    p.writef("|--- first_sn: %lu\n", (unsigned long)blk.first_seq());
+    p.writef("|--- interval_first_sn: %lu\n", (unsigned long)blk.interval_first_seq());
+    p.writef("|--- interval_last_sn: %lu\n", (unsigned long)blk.interval_last_seq());
     p.writef("|--- interval_duration: %016llx (unix %lld)\n",
              (unsigned long long)blk.interval_duration(),
              (long long)packet::ntp_2_nanoseconds(blk.interval_duration()));

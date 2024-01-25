@@ -31,42 +31,16 @@ struct RttConfig {
 
 //! Round-trip time metrics.
 struct RttMetrics {
-    //! Measurement cumulative duration.
-    //! Total duration from the very beginning.
-    core::nanoseconds_t cumulative_duration;
-
-    //! Measurement interval duration.
-    //! All metrics below are computed for a sliding window of this length.
-    core::nanoseconds_t interval_duration;
-
-    //! Extended seqnums of first packet in current measurement interval.
-    packet::ext_seqnum_t interval_first_seqnum;
-
-    //! Extended seqnums of last packet in current measurement interval.
-    packet::ext_seqnum_t interval_last_seqnum;
-
     //! Estimated offset of remote clock relative to local clock.
     //! Estimated based on RTT and local/remote timestamp.
     core::nanoseconds_t clock_offset;
 
-    //! Estimated round-trip time (average during interval).
-    core::nanoseconds_t rtt_avg;
-
-    //! Estimated round-trip time (minimum during interval).
-    core::nanoseconds_t rtt_min;
-
-    //! Estimated round-trip time (maximum during interval).
-    core::nanoseconds_t rtt_max;
+    //! Estimated round-trip time.
+    core::nanoseconds_t rtt;
 
     RttMetrics()
-        : cumulative_duration(0)
-        , interval_duration(0)
-        , interval_first_seqnum(0)
-        , interval_last_seqnum(0)
-        , clock_offset(0)
-        , rtt_avg(0)
-        , rtt_min(0)
-        , rtt_max(0) {
+        : clock_offset(0)
+        , rtt(0) {
     }
 };
 
@@ -87,13 +61,11 @@ public:
 
     //! Update metrics with new data.
     //! Parameters:
-    //!  - @p last_seqnum - extended seqnum of latest packet in RTP stream
     //!  - @p local_report_ts - local unix time when we've sent report
     //!  - @p remote_report_ts - remote unix time when they've received our report
     //!  - @p remote_reply_ts - remote unix time when they've send reply report
     //!  - @p local_reply_ts - local unix time when we've received their reply
-    void update(packet::ext_seqnum_t last_seqnum,
-                core::nanoseconds_t local_report_ts,
+    void update(core::nanoseconds_t local_report_ts,
                 core::nanoseconds_t remote_report_ts,
                 core::nanoseconds_t remote_reply_ts,
                 core::nanoseconds_t local_reply_ts);

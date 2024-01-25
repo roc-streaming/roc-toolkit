@@ -12,16 +12,23 @@
 #ifndef ROC_RTP_LINK_METER_H_
 #define ROC_RTP_LINK_METER_H_
 
+#include "roc_audio/sample_spec.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/time.h"
 #include "roc_packet/ireader.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet.h"
+#include "roc_rtp/encoding.h"
+#include "roc_rtp/encoding_map.h"
 
 namespace roc {
 namespace rtp {
 
 //! Link metrics.
 struct LinkMetrics {
+    //! Number of RTP timestamp units per second.
+    size_t sample_rate;
+
     //! Extended lowest RTP seqnum received.
     //! The low 16 bits contain the lowest sequence number received in an RTP data
     //! packet, and the rest bits extend that sequence number with the corresponding
@@ -46,15 +53,16 @@ struct LinkMetrics {
     //! packets actually received, where the number of packets received includes any
     //! which are late or duplicates. Packets that arrive late are not counted as lost,
     //! and the loss may be negative if there are duplicates.
-    int32_t cum_loss;
+    long cum_loss;
 
-    //! Estimated interarrival jitter, in timestamp units.
-    //! An estimate of the statistical variance of the RTP data packet interarrival
-    //! time, measured in timestamp units.
-    packet::stream_timestamp_t jitter;
+    //! Estimated interarrival jitter.
+    //! An estimate of the statistical variance of the RTP data packet
+    //! interarrival time.
+    core::nanoseconds_t jitter;
 
     LinkMetrics()
-        : ext_first_seqnum(0)
+        : sample_rate(0)
+        , ext_first_seqnum(0)
         , ext_last_seqnum(0)
         , fract_loss(0)
         , cum_loss(0)
@@ -82,7 +90,7 @@ class LinkMeter : public packet::IWriter,
                   public core::NonCopyable<> {
 public:
     //! Initialize.
-    LinkMeter();
+    LinkMeter(const EncodingMap& encoding_map);
 
     //! Write packet and update metrics.
     //! @remarks
@@ -112,6 +120,9 @@ public:
 
 private:
     void update_metrics_(const packet::Packet& packet);
+
+    const EncodingMap& encoding_map_;
+    const Encoding* encoding_;
 
     packet::IWriter* writer_;
     packet::IReader* reader_;

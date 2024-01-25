@@ -368,9 +368,9 @@ TEST(builder_traverser, rr_sdes_xr) {
     dlrr_repblock_2.set_last_rr(0x7200000);
     header::XrMeasurementInfoBlock measure_info;
     measure_info.set_ssrc(888);
-    measure_info.set_first_sn(81);
-    measure_info.set_interval_first_sn(82);
-    measure_info.set_interval_last_sn(83);
+    measure_info.set_first_seq(81);
+    measure_info.set_interval_first_seq(82);
+    measure_info.set_interval_last_seq(83);
     measure_info.set_interval_duration(0x8400000);
     measure_info.set_cum_duration(0x8500000000000058);
     header::XrDelayMetricsBlock delay_metrics;
@@ -490,9 +490,9 @@ TEST(builder_traverser, rr_sdes_xr) {
 
     CHECK_EQUAL(XrTraverser::Iterator::MEASUREMENT_INFO_BLOCK, xr_it.next());
     CHECK_EQUAL(888, xr_it.get_measurement_info().ssrc());
-    CHECK_EQUAL(81, xr_it.get_measurement_info().first_sn());
-    CHECK_EQUAL(82, xr_it.get_measurement_info().interval_first_sn());
-    CHECK_EQUAL(83, xr_it.get_measurement_info().interval_last_sn());
+    CHECK_EQUAL(81, xr_it.get_measurement_info().first_seq());
+    CHECK_EQUAL(82, xr_it.get_measurement_info().interval_first_seq());
+    CHECK_EQUAL(83, xr_it.get_measurement_info().interval_last_seq());
     CHECK_EQUAL(0x8400000, xr_it.get_measurement_info().interval_duration());
     CHECK_EQUAL(0x8500000000000058, xr_it.get_measurement_info().cum_duration());
 

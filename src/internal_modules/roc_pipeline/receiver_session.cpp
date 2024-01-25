@@ -43,7 +43,7 @@ ReceiverSession::ReceiverSession(
 
     packet::IWriter* pwriter = source_queue_.get();
 
-    source_meter_.reset(new (source_meter_) rtp::LinkMeter());
+    source_meter_.reset(new (source_meter_) rtp::LinkMeter(encoding_map));
     if (!source_meter_) {
         return;
     }
@@ -85,7 +85,7 @@ ReceiverSession::ReceiverSession(
             return;
         }
 
-        repair_meter_.reset(new (repair_meter_) rtp::LinkMeter());
+        repair_meter_.reset(new (repair_meter_) rtp::LinkMeter(encoding_map));
         if (!repair_meter_) {
             return;
         }
@@ -306,6 +306,7 @@ void ReceiverSession::generate_reports(const char* report_cname,
         report.sender_source_id =
             packet_router_->get_source_id(packet::Packet::FlagAudio);
         report.report_timestamp = report_time;
+        report.sample_rate = link_metrics.sample_rate;
         report.ext_first_seqnum = link_metrics.ext_first_seqnum;
         report.ext_last_seqnum = link_metrics.ext_last_seqnum;
         report.fract_loss = link_metrics.fract_loss;
@@ -328,12 +329,12 @@ void ReceiverSession::generate_reports(const char* report_cname,
         report.sender_source_id =
             packet_router_->get_source_id(packet::Packet::FlagRepair);
         report.report_timestamp = report_time;
+        report.sample_rate = link_metrics.sample_rate;
         report.ext_first_seqnum = link_metrics.ext_first_seqnum;
         report.ext_last_seqnum = link_metrics.ext_last_seqnum;
         report.fract_loss = link_metrics.fract_loss;
         report.cum_loss = link_metrics.cum_loss;
         report.jitter = link_metrics.jitter;
-        report.e2e_latency = 0;
 
         reports++;
         n_reports--;

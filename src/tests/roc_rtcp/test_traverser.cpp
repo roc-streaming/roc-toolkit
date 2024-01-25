@@ -1187,9 +1187,9 @@ TEST(traverser, xr_fields) {
         header::XrMeasurementInfoBlock measure_info;
         measure_info.header().set_len_bytes(sizeof(header::XrMeasurementInfoBlock));
         measure_info.set_ssrc(444);
-        measure_info.set_first_sn(41);
-        measure_info.set_interval_first_sn(42);
-        measure_info.set_interval_last_sn(43);
+        measure_info.set_first_seq(41);
+        measure_info.set_interval_first_seq(42);
+        measure_info.set_interval_last_seq(43);
         measure_info.set_interval_duration(0x500000);
         measure_info.set_cum_duration(0x6000000000000006);
 
@@ -1243,9 +1243,9 @@ TEST(traverser, xr_fields) {
 
         CHECK_EQUAL(XrTraverser::Iterator::MEASUREMENT_INFO_BLOCK, xr_it.next());
         CHECK_EQUAL(444, xr_it.get_measurement_info().ssrc());
-        CHECK_EQUAL(41, xr_it.get_measurement_info().first_sn());
-        CHECK_EQUAL(42, xr_it.get_measurement_info().interval_first_sn());
-        CHECK_EQUAL(43, xr_it.get_measurement_info().interval_last_sn());
+        CHECK_EQUAL(41, xr_it.get_measurement_info().first_seq());
+        CHECK_EQUAL(42, xr_it.get_measurement_info().interval_first_seq());
+        CHECK_EQUAL(43, xr_it.get_measurement_info().interval_last_seq());
         CHECK_EQUAL(0x500000, xr_it.get_measurement_info().interval_duration());
         CHECK_EQUAL(0x6000000000000006, xr_it.get_measurement_info().cum_duration());
 
