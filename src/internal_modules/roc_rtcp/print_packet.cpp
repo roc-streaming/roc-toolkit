@@ -151,26 +151,30 @@ void print_xr_measurement_info(core::Printer& p,
              (long long)packet::ntp_2_nanoseconds(blk.cum_duration()));
 }
 
+void print_metric_flag(core::Printer& p, const header::MetricFlag flag) {
+    switch (flag) {
+    case header::MetricFlag_IntervalDuration:
+        p.writef("|--- flag: interval (%d)\n", flag);
+        break;
+    case header::MetricFlag_CumulativeDuration:
+        p.writef("|--- flag: cumulative (%d)\n", flag);
+        break;
+    case header::MetricFlag_SampledValue:
+        p.writef("|--- flag: sample (%d)\n", flag);
+        break;
+    default:
+        p.writef("|--- flag: unknown (%d)\n", flag);
+        break;
+    }
+}
+
 void print_xr_delay_metrics(core::Printer& p, const header::XrDelayMetricsBlock& blk) {
     p.writef("|- delay:\n");
 
     print_xr_block_header(p, blk.header());
 
     p.writef("|-- block body:\n");
-    switch (blk.metric_flag()) {
-    case header::MetricFlag_IntervalDuration:
-        p.writef("|--- flag: interval (%d)\n", blk.metric_flag());
-        break;
-    case header::MetricFlag_CumulativeDuration:
-        p.writef("|--- flag: cumulative (%d)\n", blk.metric_flag());
-        break;
-    case header::MetricFlag_SampledValue:
-        p.writef("|--- flag: sample (%d)\n", blk.metric_flag());
-        break;
-    default:
-        p.writef("|--- flag: unknown (%d)\n", blk.metric_flag());
-        break;
-    }
+    print_metric_flag(p, blk.metric_flag());
     p.writef("|--- ssrc: %lu\n", (unsigned long)blk.ssrc());
     p.writef("|--- rtt_mean: %016llx (unix %lld)\n", (unsigned long long)blk.mean_rtt(),
              (long long)packet::ntp_2_nanoseconds(blk.mean_rtt()));
@@ -180,6 +184,18 @@ void print_xr_delay_metrics(core::Printer& p, const header::XrDelayMetricsBlock&
              (long long)packet::ntp_2_nanoseconds(blk.max_rtt()));
     p.writef("|--- e2e_delay: %016llx (unix %lld)\n", (unsigned long long)blk.e2e_delay(),
              (long long)packet::ntp_2_nanoseconds(blk.e2e_delay()));
+}
+
+void print_xr_queue_metrics(core::Printer& p, const header::XrQueueMetricsBlock& blk) {
+    p.writef("|- queue:\n");
+
+    print_xr_block_header(p, blk.header());
+
+    p.writef("|-- block body:\n");
+    print_metric_flag(p, blk.metric_flag());
+    p.writef("|--- ssrc: %lu\n", (unsigned long)blk.ssrc());
+    p.writef("|--- niq_delay: %016llx (unix %lld)\n", (unsigned long long)blk.niq_delay(),
+             (long long)packet::ntp_2_nanoseconds(blk.niq_delay()));
 }
 
 void print_xr(core::Printer& p, const XrTraverser& xr) {
@@ -213,6 +229,10 @@ void print_xr(core::Printer& p, const XrTraverser& xr) {
 
         case XrTraverser::Iterator::DELAY_METRICS_BLOCK:
             print_xr_delay_metrics(p, iter.get_delay_metrics());
+            break;
+
+        case XrTraverser::Iterator::QUEUE_METRICS_BLOCK:
+            print_xr_queue_metrics(p, iter.get_queue_metrics());
             break;
         }
     }

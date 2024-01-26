@@ -140,6 +140,10 @@ public:
     void process_delay_metrics_block(const header::XrPacket& xr,
                                      const header::XrDelayMetricsBlock& blk);
 
+    //! Process XR Queue Metrics block (extended receiver report).
+    void process_queue_metrics_block(const header::XrPacket& xr,
+                                     const header::XrQueueMetricsBlock& blk);
+
     //! Process BYE message.
     void process_goodbye(packet::stream_source_t ssrc);
 
@@ -214,6 +218,13 @@ public:
     void generate_delay_metrics_block(size_t addr_index,
                                       size_t stream_index,
                                       header::XrDelayMetricsBlock& blk);
+
+    //! Generate XR Queue Metrics block (extended receiver report).
+    //! @p addr_index should be in range [0; num_dest_addresses()-1].
+    //! @p stream_index should be in range [0; num_receiving_streams()-1].
+    void generate_queue_metrics_block(size_t addr_index,
+                                      size_t stream_index,
+                                      header::XrQueueMetricsBlock& blk);
 
     //! Check if BYE message should be included.
     bool need_goodbye() const;

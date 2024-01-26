@@ -98,6 +98,9 @@ public:
     //! Add delay metrics block.to current XR packet.
     void add_xr_delay_metrics(const header::XrDelayMetricsBlock& delay_metrics);
 
+    //! Add queue metrics block.to current XR packet.
+    void add_xr_queue_metrics(const header::XrQueueMetricsBlock& queue_metrics);
+
     //! Finish current DLRR block.
     void end_xr_dlrr();
 

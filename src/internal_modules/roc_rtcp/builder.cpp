@@ -404,6 +404,20 @@ void Builder::add_xr_delay_metrics(const header::XrDelayMetricsBlock& delay_metr
     cur_xr_block_header_->set_len_bytes(sizeof(delay_metrics));
 }
 
+void Builder::add_xr_queue_metrics(const header::XrQueueMetricsBlock& queue_metrics) {
+    roc_panic_if_msg(state_ != XR_HEAD, "rtcp builder: wrong call order");
+
+    header::XrQueueMetricsBlock* p =
+        (header::XrQueueMetricsBlock*)add_block_(sizeof(queue_metrics));
+    if (!p) {
+        return;
+    }
+    memcpy(p, &queue_metrics, sizeof(queue_metrics));
+
+    cur_xr_block_header_ = &p->header();
+    cur_xr_block_header_->set_len_bytes(sizeof(queue_metrics));
+}
+
 void Builder::end_xr() {
     roc_panic_if_msg(state_ != XR_HEAD, "rtcp builder: wrong call order");
 

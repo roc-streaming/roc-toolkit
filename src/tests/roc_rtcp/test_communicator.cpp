@@ -380,7 +380,8 @@ RecvReport make_recv_report(core::nanoseconds_t time,
     report.fract_loss = seed * 0.001f;
     report.cum_loss = (long)seed * 3000;
     report.jitter = seed * 400000;
-    report.e2e_latency = seed * 5000;
+    report.niq_latency = seed * 500000;
+    report.e2e_latency = seed * 6000;
     return report;
 }
 
@@ -411,10 +412,12 @@ void expect_recv_report(const RecvReport& report,
     CHECK_EQUAL((long)seed * 3000, report.cum_loss);
     expect_timestamp("jitter", seed * 400000, report.jitter, TimestampEpsilon);
     if (expect_xr) {
-        expect_timestamp("e2e_latency", seed * 5000, report.e2e_latency,
+        expect_timestamp("niq_latency", seed * 500000, report.niq_latency, RttEpsilon);
+        expect_timestamp("e2e_latency", seed * 6000, report.e2e_latency,
                          TimestampEpsilon);
         CHECK(report.rtt >= 0);
     } else {
+        CHECK(report.niq_latency == 0);
         CHECK(report.e2e_latency == 0);
         CHECK(report.rtt == 0);
         CHECK(report.clock_offset == 0);
@@ -2842,7 +2845,7 @@ TEST(communicator, split_receiver_report) {
         SendSsrc = 100,
         RecvSsrc = 200,
         NumReports = 15,
-        NumPackets = 3,
+        NumPackets = 5,
         SmallPacketSize = 500
     };
 

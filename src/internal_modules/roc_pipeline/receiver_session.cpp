@@ -312,6 +312,7 @@ void ReceiverSession::generate_reports(const char* report_cname,
         report.fract_loss = link_metrics.fract_loss;
         report.cum_loss = link_metrics.cum_loss;
         report.jitter = link_metrics.jitter;
+        report.niq_latency = latency_metrics.niq_latency;
         report.e2e_latency = latency_metrics.e2e_latency;
 
         reports++;

@@ -311,6 +311,11 @@ void Communicator::process_extended_report_(const XrTraverser& xr) {
             reporter_.process_delay_metrics_block(xr.packet(), iter.get_delay_metrics());
         } break;
 
+        case XrTraverser::Iterator::QUEUE_METRICS_BLOCK: {
+            // Queue Metrics is extended receiver report.
+            reporter_.process_queue_metrics_block(xr.packet(), iter.get_queue_metrics());
+        } break;
+
         default:
             break;
         }
@@ -766,6 +771,7 @@ void Communicator::generate_extended_report_(Builder& bld) {
                 if (!next_recv_stream_(stream_index)) {
                     break;
                 }
+
                 header::XrMeasurementInfoBlock mi_blk;
                 reporter_.generate_measurement_info_block(dest_addr_index_, stream_index,
                                                           mi_blk);
@@ -777,6 +783,12 @@ void Communicator::generate_extended_report_(Builder& bld) {
                                                        dm_blk);
 
                 bld.add_xr_delay_metrics(dm_blk);
+
+                header::XrQueueMetricsBlock qm_blk;
+                reporter_.generate_queue_metrics_block(dest_addr_index_, stream_index,
+                                                       qm_blk);
+
+                bld.add_xr_queue_metrics(qm_blk);
             }
         }
 

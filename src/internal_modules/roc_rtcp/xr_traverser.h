@@ -32,6 +32,7 @@ public:
             DLRR_BLOCK,             //!< DLRR block (delay since last receiver report).
             MEASUREMENT_INFO_BLOCK, //!< Measurement information block.
             DELAY_METRICS_BLOCK,    //!< Delay metrics block.
+            QUEUE_METRICS_BLOCK,    //!< Queue metrics block.
             END                     //!< Parsed whole packet.
         };
 
@@ -57,6 +58,10 @@ public:
         //! @pre Can be used if next() returned DELAY_METRICS_BLOCK
         const header::XrDelayMetricsBlock& get_delay_metrics() const;
 
+        //! Get queue metrics block.
+        //! @pre Can be used if next() returned QUEUE_METRICS_BLOCK
+        const header::XrQueueMetricsBlock& get_queue_metrics() const;
+
     private:
         friend class XrTraverser;
 
@@ -66,6 +71,7 @@ public:
         bool check_dlrr_();
         bool check_measurement_info_();
         bool check_delay_metrics_();
+        bool check_queue_metrics_();
 
         State state_;
         const core::Slice<uint8_t> buf_;

@@ -243,6 +243,29 @@ TEST(headers, metrics) {
         CHECK(!blk.has_e2e_delay());
         CHECK_EQUAL(0xFFFFFFFFFFFFFFFF, blk.e2e_delay());
     }
+    { // niq_delay
+        header::XrQueueMetricsBlock blk;
+
+        CHECK(!blk.has_niq_delay());
+        CHECK_EQUAL(0x0000FFFFFFFF0000, blk.niq_delay());
+
+        blk.set_niq_delay(0x0000AABBCCDD0000);
+        CHECK(blk.has_niq_delay());
+        CHECK_EQUAL(0x0000AABBCCDD0000, blk.niq_delay());
+
+        blk.set_niq_delay(0x0000AABBCCDD1111);
+        CHECK(blk.has_niq_delay());
+        CHECK_EQUAL(0x0000AABBCCDD0000, blk.niq_delay());
+
+        blk.set_niq_delay(0x1111AABBCCDD0000);
+        CHECK(blk.has_niq_delay());
+        CHECK_EQUAL(0x0000FFFFFFFE0000, blk.niq_delay());
+
+        blk.reset();
+
+        CHECK(!blk.has_niq_delay());
+        CHECK_EQUAL(0x0000FFFFFFFF0000, blk.niq_delay());
+    }
 }
 
 } // namespace rtcp

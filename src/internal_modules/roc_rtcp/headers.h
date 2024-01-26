@@ -1109,7 +1109,9 @@ enum XrBlockType {
     // RFC 6776
     XR_MEASUREMENT_INFO = 14, //!< Measurement Information Report Block.
     // RFC 6843
-    XR_DELAY_METRICS = 16 //!< Delay Metrics Report Block.
+    XR_DELAY_METRICS = 16, //!< Delay Metrics Report Block.
+    // Non-standard
+    XR_QUEUE_METRICS = 220 //!< Queue Metrics Report Block.
 };
 
 //! XR Block Header.
@@ -1664,6 +1666,94 @@ public:
     //! Set End System Delay.
     void set_e2e_delay(const packet::ntp_timestamp_t t) {
         e2e_delay_.set_value(std::min(t, MetricUnavail_64 - 1));
+    }
+} ROC_ATTR_PACKED_END;
+
+//! XR Queue Metrics Block.
+//!
+//! Non-standard.
+//!
+//! @code
+//!  0               1               2               3
+//!  0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7
+//! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//! |    BT=220     | I |   resv.   |      block length = 6         |
+//! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//! |                           SSRC of Source                      |
+//! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//! |                    Network Incoming Queue Delay               |
+//! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//! @endcode
+ROC_ATTR_PACKED_BEGIN class XrQueueMetricsBlock {
+private:
+    enum {
+        MetricFlag_shift = 6,
+        MetricFlag_mask = 0x03,
+    };
+
+    XrBlockHeader header_;
+
+    uint32_t ssrc_;
+    NtpTimestamp32 niq_delay_;
+
+public:
+    XrQueueMetricsBlock() {
+        reset();
+    }
+
+    //! Reset to initial state (all zeros).
+    void reset() {
+        header_.reset(XR_QUEUE_METRICS);
+        ssrc_ = 0;
+        niq_delay_.set_value(MetricUnavail_32);
+    }
+
+    //! Get common block header.
+    const XrBlockHeader& header() const {
+        return header_;
+    }
+
+    //! Get common block header.
+    XrBlockHeader& header() {
+        return header_;
+    }
+
+    //! Get Interval Metrics flag.
+    MetricFlag metric_flag() const {
+        return (MetricFlag)get_bit_field<uint8_t>(header_.type_specific(),
+                                                  MetricFlag_shift, MetricFlag_mask);
+    }
+
+    //! Set Interval Metrics flag.
+    void set_metric_flag(const MetricFlag f) {
+        uint8_t t = header_.type_specific();
+        set_bit_field<uint8_t>(t, (uint8_t)f, MetricFlag_shift, MetricFlag_mask);
+        header_.set_type_specific(t);
+    }
+
+    //! Get SSRC of source being reported.
+    packet::stream_source_t ssrc() const {
+        return core::ntoh32u(ssrc_);
+    }
+
+    //! Set SSRC of source being reported.
+    void set_ssrc(const packet::stream_source_t ssrc) {
+        ssrc_ = core::hton32u(ssrc);
+    }
+
+    //! Check if Network Incoming Queue Delay is set.
+    bool has_niq_delay() const {
+        return niq_delay_.value() != MetricUnavail_32;
+    }
+
+    //! Get Network Incoming Queue Delay.
+    packet::ntp_timestamp_t niq_delay() const {
+        return niq_delay_.value();
+    }
+
+    //! Set Network Incoming Queue Delay.
+    void set_niq_delay(const packet::ntp_timestamp_t t) {
+        niq_delay_.set_value(std::min(t, MetricUnavail_32 - 1));
     }
 } ROC_ATTR_PACKED_END;
 

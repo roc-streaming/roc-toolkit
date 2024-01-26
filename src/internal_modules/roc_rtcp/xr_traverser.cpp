@@ -173,6 +173,14 @@ void XrTraverser::Iterator::next_block_() {
             }
             state_ = DELAY_METRICS_BLOCK;
             return;
+        case header::XR_QUEUE_METRICS:
+            if (!check_queue_metrics_()) {
+                // Skipping invalid block.
+                error_ = true;
+                break;
+            }
+            state_ = QUEUE_METRICS_BLOCK;
+            return;
         default:
             // Unknown block.
             break;
@@ -218,6 +226,14 @@ bool XrTraverser::Iterator::check_delay_metrics_() {
     return true;
 }
 
+bool XrTraverser::Iterator::check_queue_metrics_() {
+    if (cur_blk_len_ != sizeof(header::XrQueueMetricsBlock)) {
+        return false;
+    }
+
+    return true;
+}
+
 const header::XrRrtrBlock& XrTraverser::Iterator::get_rrtr() const {
     roc_panic_if_msg(state_ != RRTR_BLOCK,
                      "xr traverser: get_rrtr() called in wrong state %d", (int)state_);
@@ -247,6 +263,14 @@ const header::XrDelayMetricsBlock& XrTraverser::Iterator::get_delay_metrics() co
                      (int)state_);
 
     return *(const header::XrDelayMetricsBlock*)cur_blk_header_;
+}
+
+const header::XrQueueMetricsBlock& XrTraverser::Iterator::get_queue_metrics() const {
+    roc_panic_if_msg(state_ != QUEUE_METRICS_BLOCK,
+                     "xr traverser: get_queue_metrics() called in wrong state %d",
+                     (int)state_);
+
+    return *(const header::XrQueueMetricsBlock*)cur_blk_header_;
 }
 
 } // namespace rtcp

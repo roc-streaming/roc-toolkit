@@ -380,6 +380,10 @@ TEST(builder_traverser, rr_sdes_xr) {
     delay_metrics.set_min_rtt(0x9200000);
     delay_metrics.set_max_rtt(0x9300000);
     delay_metrics.set_e2e_delay(0x9400000000000049);
+    header::XrQueueMetricsBlock queue_metrics;
+    queue_metrics.set_metric_flag(header::MetricFlag_SampledValue);
+    queue_metrics.set_ssrc(1010);
+    queue_metrics.set_niq_delay(0xA100000);
 
     // Synthesize part
 
@@ -409,6 +413,7 @@ TEST(builder_traverser, rr_sdes_xr) {
     builder.end_xr_dlrr();
     builder.add_xr_measurement_info(measure_info);
     builder.add_xr_delay_metrics(delay_metrics);
+    builder.add_xr_queue_metrics(queue_metrics);
     builder.end_xr();
 
     CHECK(builder.is_ok());
@@ -470,7 +475,7 @@ TEST(builder_traverser, rr_sdes_xr) {
     CHECK_EQUAL(Traverser::Iterator::XR, it.next());
     XrTraverser xr_tr = it.get_xr();
     CHECK(xr_tr.parse());
-    CHECK_EQUAL(4, xr_tr.blocks_count());
+    CHECK_EQUAL(5, xr_tr.blocks_count());
     CHECK_EQUAL(555, xr_tr.packet().ssrc());
     XrTraverser::Iterator xr_it = xr_tr.iter();
 
@@ -504,6 +509,11 @@ TEST(builder_traverser, rr_sdes_xr) {
     CHECK_EQUAL(0x9200000, xr_it.get_delay_metrics().min_rtt());
     CHECK_EQUAL(0x9300000, xr_it.get_delay_metrics().max_rtt());
     CHECK_EQUAL(0x9400000000000049, xr_it.get_delay_metrics().e2e_delay());
+
+    CHECK_EQUAL(XrTraverser::Iterator::QUEUE_METRICS_BLOCK, xr_it.next());
+    CHECK_EQUAL(header::MetricFlag_SampledValue, xr_it.get_queue_metrics().metric_flag());
+    CHECK_EQUAL(1010, xr_it.get_queue_metrics().ssrc());
+    CHECK_EQUAL(0xA100000, xr_it.get_queue_metrics().niq_delay());
 
     CHECK_EQUAL(XrTraverser::Iterator::END, xr_it.next());
     CHECK_FALSE(xr_it.error());

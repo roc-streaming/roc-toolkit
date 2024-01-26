@@ -146,9 +146,13 @@ struct RecvReport {
     //! interarrival time.
     core::nanoseconds_t jitter;
 
+    //! Estimated network incoming queue latency.
+    //! An estimate of how much media is buffered in receiver packet queue.
+    core::nanoseconds_t niq_latency;
+
     //! Estimated end-to-end latency.
-    //! An estimate of the time from recording a frame on sender to playing it on
-    //! receiver.
+    //! An estimate of the time from recording a frame on sender to playing it
+    //! on receiver.
     core::nanoseconds_t e2e_latency;
 
     //! Estimated offset of remote clock relative to local clock.
@@ -174,6 +178,7 @@ struct RecvReport {
         , fract_loss(0)
         , cum_loss(0)
         , jitter(0)
+        , niq_latency(0)
         , e2e_latency(0)
         , clock_offset(0)
         , rtt(0) {
