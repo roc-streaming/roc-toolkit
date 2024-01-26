@@ -47,6 +47,8 @@ FeedbackMonitor::FeedbackMonitor(IFrameWriter& writer,
     , e2e_latency_(0)
     , has_niq_latency_(false)
     , has_e2e_latency_(false)
+    , jitter_(0)
+    , has_jitter_(false)
     , target_latency_(fe_input_ != audio::FreqEstimatorInput_Disable
                           ? sample_spec.ns_2_stream_timestamp_delta(config.target_latency)
                           : 0)
@@ -105,6 +107,8 @@ FeedbackMonitorMetrics FeedbackMonitor::metrics() const {
     roc_panic_if(!is_valid());
 
     FeedbackMonitorMetrics metrics;
+    metrics.jitter = sample_spec_.stream_timestamp_delta_2_ns(jitter_);
+    metrics.niq_latency = sample_spec_.stream_timestamp_delta_2_ns(niq_latency_);
     metrics.e2e_latency = sample_spec_.stream_timestamp_delta_2_ns(e2e_latency_);
 
     return metrics;
@@ -126,6 +130,16 @@ void FeedbackMonitor::store(const FeedbackMonitorMetrics& metrics) {
 
     if (!started_) {
         return;
+    }
+
+    if (metrics.jitter != 0) {
+        jitter_ = sample_spec_.ns_2_stream_timestamp_delta(metrics.jitter);
+        has_jitter_ = true;
+    }
+
+    if (metrics.niq_latency != 0) {
+        niq_latency_ = sample_spec_.ns_2_stream_timestamp_delta(metrics.niq_latency);
+        has_niq_latency_ = true;
     }
 
     if (metrics.e2e_latency != 0) {
@@ -229,7 +243,7 @@ void FeedbackMonitor::report_() {
         return;
     }
 
-    if (!has_e2e_latency_ && !has_niq_latency_) {
+    if (!has_e2e_latency_ && !has_niq_latency_ && !has_jitter_) {
         return;
     }
 
@@ -249,10 +263,12 @@ void FeedbackMonitor::report_() {
     roc_log(LogDebug,
             "feedback monitor:"
             " e2e_latency=%ld(%.3fms) niq_latency=%ld(%.3fms) target_latency=%ld(%.3fms)"
+            " jitter=%ld(%.3fms)"
             " fe=%.6f trim_fe=%.6f",
             (long)e2e_latency_, timestamp_to_ms(sample_spec_, e2e_latency_),
             (long)niq_latency_, timestamp_to_ms(sample_spec_, niq_latency_),
-            (long)target_latency_, timestamp_to_ms(sample_spec_, target_latency_),
+            (long)jitter_, timestamp_to_ms(sample_spec_, jitter_), (long)target_latency_,
+            timestamp_to_ms(sample_spec_, target_latency_),
             (double)(fe_ ? fe_->freq_coeff() : 0), (double)freq_coeff_);
 }
 

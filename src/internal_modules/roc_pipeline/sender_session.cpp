@@ -295,6 +295,8 @@ SenderSession::notify_send_stream(packet::stream_source_t recv_source_id,
 
     if (feedback_monitor_ && feedback_monitor_->is_started()) {
         audio::FeedbackMonitorMetrics metrics;
+        metrics.jitter = recv_report.jitter;
+        metrics.niq_latency = recv_report.niq_latency;
         metrics.e2e_latency = recv_report.e2e_latency;
 
         feedback_monitor_->store(metrics);

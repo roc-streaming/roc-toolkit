@@ -26,13 +26,24 @@ namespace audio {
 
 //! Metrics for feedback monitor.
 struct FeedbackMonitorMetrics {
+    //! Estimated interarrival jitter.
+    //! An estimate of the statistical variance of the RTP data packet
+    //! interarrival time.
+    core::nanoseconds_t jitter;
+
+    //! Estimated network incoming queue latency.
+    //! An estimate of how much media is buffered in receiver packet queue.
+    core::nanoseconds_t niq_latency;
+
     //! Estimated end-to-end latency.
-    //! An estimate of the time from recording a frame on sender to
-    //! playing it on receiver.
+    //! An estimate of the time from recording a frame on sender to playing it
+    //! on receiver.
     core::nanoseconds_t e2e_latency;
 
     FeedbackMonitorMetrics()
-        : e2e_latency(0) {
+        : jitter(0)
+        , niq_latency(0)
+        , e2e_latency(0) {
     }
 };
 
@@ -93,6 +104,9 @@ private:
     packet::stream_timestamp_diff_t e2e_latency_;
     bool has_niq_latency_;
     bool has_e2e_latency_;
+
+    packet::stream_timestamp_diff_t jitter_;
+    bool has_jitter_;
 
     const packet::stream_timestamp_diff_t target_latency_;
 
