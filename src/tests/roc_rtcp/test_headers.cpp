@@ -54,6 +54,9 @@ TEST(headers, timestamps) {
         blk.set_ntp_timestamp(0x0000AABBCCDD1111);
         CHECK_EQUAL(0x0000AABBCCDD1111, blk.ntp_timestamp());
 
+        blk.set_ntp_timestamp(0x0000AABBCCDD8888);
+        CHECK_EQUAL(0x0000AABBCCDD8888, blk.ntp_timestamp());
+
         blk.set_ntp_timestamp(0x1111AABBCCDD0000);
         CHECK_EQUAL(0x1111AABBCCDD0000, blk.ntp_timestamp());
     }
@@ -66,6 +69,9 @@ TEST(headers, timestamps) {
         blk.set_ntp_timestamp(0x0000AABBCCDD1111);
         CHECK_EQUAL(0x0000AABBCCDD1111, blk.ntp_timestamp());
 
+        blk.set_ntp_timestamp(0x0000AABBCCDD8888);
+        CHECK_EQUAL(0x0000AABBCCDD8888, blk.ntp_timestamp());
+
         blk.set_ntp_timestamp(0x1111AABBCCDD0000);
         CHECK_EQUAL(0x1111AABBCCDD0000, blk.ntp_timestamp());
     }
@@ -76,6 +82,9 @@ TEST(headers, timestamps) {
         CHECK_EQUAL(0x0000AABBCCDD0000, blk.last_sr());
 
         blk.set_last_sr(0x0000AABBCCDD1111);
+        CHECK_EQUAL(0x0000AABBCCDD0000, blk.last_sr());
+
+        blk.set_last_sr(0x0000AABBCCDD8888);
         CHECK_EQUAL(0x0000AABBCCDD0000, blk.last_sr());
 
         blk.set_last_sr(0x1111AABBCCDD0000);
@@ -90,6 +99,9 @@ TEST(headers, timestamps) {
         blk.set_delay_last_sr(0x0000AABBCCDD1111);
         CHECK_EQUAL(0x0000AABBCCDD0000, blk.delay_last_sr());
 
+        blk.set_delay_last_sr(0x0000AABBCCDD8888);
+        CHECK_EQUAL(0x0000AABBCCDE0000, blk.delay_last_sr());
+
         blk.set_delay_last_sr(0x1111AABBCCDD0000);
         CHECK_EQUAL(0x0000FFFFFFFF0000, blk.delay_last_sr());
     }
@@ -100,6 +112,9 @@ TEST(headers, timestamps) {
         CHECK_EQUAL(0x0000AABBCCDD0000, blk.last_rr());
 
         blk.set_last_rr(0x0000AABBCCDD1111);
+        CHECK_EQUAL(0x0000AABBCCDD0000, blk.last_rr());
+
+        blk.set_last_rr(0x0000AABBCCDD8888);
         CHECK_EQUAL(0x0000AABBCCDD0000, blk.last_rr());
 
         blk.set_last_rr(0x1111AABBCCDD0000);
@@ -113,6 +128,9 @@ TEST(headers, timestamps) {
 
         blk.set_delay_last_rr(0x0000AABBCCDD1111);
         CHECK_EQUAL(0x0000AABBCCDD0000, blk.delay_last_rr());
+
+        blk.set_delay_last_rr(0x0000AABBCCDD8888);
+        CHECK_EQUAL(0x0000AABBCCDE0000, blk.delay_last_rr());
 
         blk.set_delay_last_rr(0x1111AABBCCDD0000);
         CHECK_EQUAL(0x0000FFFFFFFF0000, blk.delay_last_rr());
@@ -129,6 +147,9 @@ TEST(headers, intervals) {
         blk.set_interval_duration(0x0000AABBCCDD1111);
         CHECK_EQUAL(0x0000AABBCCDD0000, blk.interval_duration());
 
+        blk.set_interval_duration(0x0000AABBCCDD8888);
+        CHECK_EQUAL(0x0000AABBCCDE0000, blk.interval_duration());
+
         blk.set_interval_duration(0x1111AABBCCDD0000);
         CHECK_EQUAL(0x0000FFFFFFFF0000, blk.interval_duration());
     }
@@ -140,6 +161,9 @@ TEST(headers, intervals) {
 
         blk.set_cum_duration(0x0000AABBCCDD1111);
         CHECK_EQUAL(0x0000AABBCCDD1111, blk.cum_duration());
+
+        blk.set_cum_duration(0x0000AABBCCDD8888);
+        CHECK_EQUAL(0x0000AABBCCDD8888, blk.cum_duration());
 
         blk.set_cum_duration(0x1111AABBCCDD0000);
         CHECK_EQUAL(0x1111AABBCCDD0000, blk.cum_duration());
@@ -161,7 +185,15 @@ TEST(headers, metrics) {
         CHECK(blk.has_mean_rtt());
         CHECK_EQUAL(0x0000AABBCCDD0000, blk.mean_rtt());
 
+        blk.set_mean_rtt(0x0000AABBCCDD8888);
+        CHECK(blk.has_mean_rtt());
+        CHECK_EQUAL(0x0000AABBCCDE0000, blk.mean_rtt());
+
         blk.set_mean_rtt(0x1111AABBCCDD0000);
+        CHECK(blk.has_mean_rtt());
+        CHECK_EQUAL(0x0000FFFFFFFE0000, blk.mean_rtt());
+
+        blk.set_mean_rtt(0x0000FFFFFFFE8000);
         CHECK(blk.has_mean_rtt());
         CHECK_EQUAL(0x0000FFFFFFFE0000, blk.mean_rtt());
 
@@ -184,7 +216,15 @@ TEST(headers, metrics) {
         CHECK(blk.has_min_rtt());
         CHECK_EQUAL(0x0000AABBCCDD0000, blk.min_rtt());
 
+        blk.set_min_rtt(0x0000AABBCCDD8888);
+        CHECK(blk.has_min_rtt());
+        CHECK_EQUAL(0x0000AABBCCDE0000, blk.min_rtt());
+
         blk.set_min_rtt(0x1111AABBCCDD0000);
+        CHECK(blk.has_min_rtt());
+        CHECK_EQUAL(0x0000FFFFFFFE0000, blk.min_rtt());
+
+        blk.set_min_rtt(0x0000FFFFFFFE8000);
         CHECK(blk.has_min_rtt());
         CHECK_EQUAL(0x0000FFFFFFFE0000, blk.min_rtt());
 
@@ -207,7 +247,15 @@ TEST(headers, metrics) {
         CHECK(blk.has_max_rtt());
         CHECK_EQUAL(0x0000AABBCCDD0000, blk.max_rtt());
 
+        blk.set_max_rtt(0x0000AABBCCDD8888);
+        CHECK(blk.has_max_rtt());
+        CHECK_EQUAL(0x0000AABBCCDE0000, blk.max_rtt());
+
         blk.set_max_rtt(0x1111AABBCCDD0000);
+        CHECK(blk.has_max_rtt());
+        CHECK_EQUAL(0x0000FFFFFFFE0000, blk.max_rtt());
+
+        blk.set_max_rtt(0x0000FFFFFFFE8000);
         CHECK(blk.has_max_rtt());
         CHECK_EQUAL(0x0000FFFFFFFE0000, blk.max_rtt());
 
@@ -257,7 +305,15 @@ TEST(headers, metrics) {
         CHECK(blk.has_niq_delay());
         CHECK_EQUAL(0x0000AABBCCDD0000, blk.niq_delay());
 
+        blk.set_niq_delay(0x0000AABBCCDD8888);
+        CHECK(blk.has_niq_delay());
+        CHECK_EQUAL(0x0000AABBCCDE0000, blk.niq_delay());
+
         blk.set_niq_delay(0x1111AABBCCDD0000);
+        CHECK(blk.has_niq_delay());
+        CHECK_EQUAL(0x0000FFFFFFFE0000, blk.niq_delay());
+
+        blk.set_niq_delay(0x0000FFFFFFFE8000);
         CHECK(blk.has_niq_delay());
         CHECK_EQUAL(0x0000FFFFFFFE0000, blk.niq_delay());
 

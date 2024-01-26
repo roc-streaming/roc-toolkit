@@ -60,10 +60,9 @@ enum {
 // The error is introduced by conversion between NTP and Unix time.
 const core::nanoseconds_t TimestampEpsilon = 1 * core::Nanosecond;
 
-// LSR/LRR and DLSR/DLRR precision in RTCP is ~15us because low 16 bits
-// of 64-bit NTP timestamp are truncated. It is doubled because two
-// such fields are used in calculations.
-const core::nanoseconds_t RttEpsilon = 30 * core::Microsecond;
+// LSR/LRR and DLSR/DLRR precision in RTCP is ~16us because low 16 bits
+// of 64-bit NTP timestamp are truncated.
+const core::nanoseconds_t RttEpsilon = 16 * core::Microsecond;
 
 core::HeapArena arena;
 packet::PacketFactory packet_factory(arena);

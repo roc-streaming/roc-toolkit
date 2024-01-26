@@ -80,6 +80,30 @@ Blk& get_block_by_index(Pkt* pkt,
     return ((Blk*)(const_cast<char*>((const char*)pkt) + sizeof(*pkt)))[block_index];
 }
 
+//! Clamp 64-bit NTP timestamp so that it does not exceed maximum.
+inline packet::ntp_timestamp_t clamp_ntp_64(packet::ntp_timestamp_t value,
+                                            packet::ntp_timestamp_t max_value) {
+    if (value > max_value) {
+        value = max_value;
+    }
+    return value;
+}
+
+//! Clamp 64-bit NTP timestamp so that it fits into middle 32-bits.
+//! Value is rounded to the new resolution and capped with given maximum.
+//! Returned value has zeros in high and low 16 bits.
+inline packet::ntp_timestamp_t clamp_ntp_32(packet::ntp_timestamp_t value,
+                                            packet::ntp_timestamp_t max_value) {
+    if (value & 0x8000) {
+        value += 0x8000;
+    }
+    if (value > max_value) {
+        value = max_value;
+    }
+    value &= 0x0000FFFFFFFF0000;
+    return value;
+}
+
 //! Restore full 64-bit NTP timestamp from middle 32 bits.
 //! @param value is middle 32 bits of timestamp to be restored.
 //! @param base is full 64 bit timestamp that was recently obtained from same source.
@@ -274,14 +298,6 @@ public:
 //! From RFC 3550.
 ROC_ATTR_PACKED_BEGIN class NtpTimestamp64 {
 private:
-    enum {
-        High_shift = 32,
-        High_mask = 0xFFFFFFFF00000000,
-
-        Low_shift = 0,
-        Low_mask = 0x00000000FFFFFFFF
-    };
-
     uint32_t high_;
     uint32_t low_;
 
@@ -292,16 +308,14 @@ public:
 
     //! Get NTP timestamp value.
     packet::ntp_timestamp_t value() const {
-        const uint64_t res = (((uint64_t)core::ntoh32u(high_) << High_shift) & High_mask)
-            | (((uint64_t)core::ntoh32u(low_) << Low_shift) & Low_mask);
-
-        return (packet::ntp_timestamp_t)res;
+        return ((packet::ntp_timestamp_t)core::ntoh32u(high_) << 32)
+            | (packet::ntp_timestamp_t)core::ntoh32u(low_);
     }
 
     //! Set NTP timestamp value.
     void set_value(const packet::ntp_timestamp_t t) {
-        high_ = core::hton32u(uint32_t((t >> High_shift) & Low_mask));
-        low_ = core::hton32u(uint32_t((t >> Low_shift) & Low_mask));
+        high_ = core::hton32u((uint32_t)(t >> 32));
+        low_ = core::hton32u((uint32_t)t);
     }
 } ROC_ATTR_PACKED_END;
 
@@ -318,7 +332,7 @@ public:
 //! From RFC 3550.
 ROC_ATTR_PACKED_BEGIN class NtpTimestamp32 {
 private:
-    uint32_t value_;
+    uint32_t mid_;
 
 public:
     NtpTimestamp32() {
@@ -327,14 +341,14 @@ public:
 
     //! Get NTP timestamp value.
     packet::ntp_timestamp_t value() const {
-        return (packet::ntp_timestamp_t)core::ntoh32u(value_) << 16;
+        return (packet::ntp_timestamp_t)core::ntoh32u(mid_) << 16;
     }
 
     //! Set NTP timestamp value.
     //! Stores middle 32 bits of timestamp.
     //! High and low 16 bits are just truncated.
     void set_value(const packet::ntp_timestamp_t t) {
-        value_ = core::hton32u(t >> 16);
+        mid_ = core::hton32u(t >> 16);
     }
 } ROC_ATTR_PACKED_END;
 
@@ -516,7 +530,7 @@ public:
     //! Set DLSR.
     //! Stores only the middle 32 bits out of 64 in the NTP timestamp.
     void set_delay_last_sr(const packet::ntp_timestamp_t x) {
-        delay_last_sr_.set_value(std::min(x, MaxDelay));
+        delay_last_sr_.set_value(clamp_ntp_32(x, MaxDelay));
     }
 } ROC_ATTR_PACKED_END;
 
@@ -1302,7 +1316,7 @@ public:
     //! Set DLRR.
     //! Stores only the middle 32 bits out of 64 in the NTP timestamp.
     void set_delay_last_rr(const packet::ntp_timestamp_t x) {
-        delay_last_rr_.set_value(std::min(x, MaxDelay));
+        delay_last_rr_.set_value(clamp_ntp_32(x, MaxDelay));
     }
 } ROC_ATTR_PACKED_END;
 
@@ -1487,7 +1501,7 @@ public:
     //! Set measurement interval duration.
     //! Stores only the middle 32 bits out of 64 in the NTP timestamp.
     void set_interval_duration(const packet::ntp_timestamp_t x) {
-        interval_duration_.set_value(std::min(x, MaxDelay));
+        interval_duration_.set_value(clamp_ntp_32(x, MaxDelay));
     }
 
     //! Get measurement cumulative duration.
@@ -1618,7 +1632,7 @@ public:
     //! Set Mean Network Round-Trip Delay.
     //! Stores only the middle 32 bits out of 64 in the NTP timestamp.
     void set_mean_rtt(const packet::ntp_timestamp_t x) {
-        mean_rtt_.set_value(std::min(x, MetricUnavail_32 - 1));
+        mean_rtt_.set_value(clamp_ntp_32(x, MetricUnavail_32 - 1));
     }
 
     //! Check if Minimum Network Round-Trip Delay is set.
@@ -1634,7 +1648,7 @@ public:
     //! Set Minimum Network Round-Trip Delay.
     //! Stores only the middle 32 bits out of 64 in the NTP timestamp.
     void set_min_rtt(const packet::ntp_timestamp_t x) {
-        min_rtt_.set_value(std::min(x, MetricUnavail_32 - 1));
+        min_rtt_.set_value(clamp_ntp_32(x, MetricUnavail_32 - 1));
     }
 
     //! Check if Maximum Network Round-Trip Delay is set.
@@ -1650,7 +1664,7 @@ public:
     //! Set Maximum Network Round-Trip Delay.
     //! Stores only the middle 32 bits out of 64 in the NTP timestamp.
     void set_max_rtt(const packet::ntp_timestamp_t x) {
-        max_rtt_.set_value(std::min(x, MetricUnavail_32 - 1));
+        max_rtt_.set_value(clamp_ntp_32(x, MetricUnavail_32 - 1));
     }
 
     //! Check if End System Delay is set.
@@ -1665,7 +1679,7 @@ public:
 
     //! Set End System Delay.
     void set_e2e_delay(const packet::ntp_timestamp_t t) {
-        e2e_delay_.set_value(std::min(t, MetricUnavail_64 - 1));
+        e2e_delay_.set_value(clamp_ntp_64(t, MetricUnavail_64 - 1));
     }
 } ROC_ATTR_PACKED_END;
 
@@ -1753,7 +1767,7 @@ public:
 
     //! Set Network Incoming Queue Delay.
     void set_niq_delay(const packet::ntp_timestamp_t t) {
-        niq_delay_.set_value(std::min(t, MetricUnavail_32 - 1));
+        niq_delay_.set_value(clamp_ntp_32(t, MetricUnavail_32 - 1));
     }
 } ROC_ATTR_PACKED_END;
 
