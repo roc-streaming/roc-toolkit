@@ -9,6 +9,7 @@
 #include "roc_rtp/encoding_map.h"
 #include "roc_audio/pcm_decoder.h"
 #include "roc_audio/pcm_encoder.h"
+#include "roc_audio/sample_format.h"
 #include "roc_core/panic.h"
 
 namespace roc {
@@ -20,26 +21,20 @@ EncodingMap::EncodingMap(core::IArena& arena)
     {
         Encoding enc;
         enc.payload_type = PayloadType_L16_Mono;
-        enc.pcm_format = audio::PcmFormat_SInt16_Be;
         enc.sample_spec = audio::SampleSpec(
             44100, audio::PcmFormat_SInt16_Be, audio::ChanLayout_Surround,
             audio::ChanOrder_Smpte, audio::ChanMask_Surround_Mono);
         enc.packet_flags = packet::Packet::FlagAudio;
-        enc.new_encoder = &audio::PcmEncoder::construct;
-        enc.new_decoder = &audio::PcmDecoder::construct;
 
         add_builtin_(enc);
     }
     {
         Encoding enc;
         enc.payload_type = PayloadType_L16_Stereo;
-        enc.pcm_format = audio::PcmFormat_SInt16_Be;
         enc.sample_spec = audio::SampleSpec(
             44100, audio::PcmFormat_SInt16_Be, audio::ChanLayout_Surround,
             audio::ChanOrder_Smpte, audio::ChanMask_Surround_Stereo);
         enc.packet_flags = packet::Packet::FlagAudio;
-        enc.new_encoder = &audio::PcmEncoder::construct;
-        enc.new_decoder = &audio::PcmDecoder::construct;
 
         add_builtin_(enc);
     }
@@ -68,7 +63,7 @@ const Encoding* EncodingMap::find_by_spec(const audio::SampleSpec& spec) const {
     return NULL;
 }
 
-bool EncodingMap::add_encoding(const Encoding& enc) {
+bool EncodingMap::add_encoding(Encoding enc) {
     core::Mutex::Lock lock(mutex_);
 
     if (enc.payload_type == 0) {
@@ -78,6 +73,8 @@ bool EncodingMap::add_encoding(const Encoding& enc) {
     if (!enc.sample_spec.is_valid()) {
         roc_panic("encoding map: bad encoding: invalid sample spec");
     }
+
+    find_codecs_(enc);
 
     if (!enc.new_encoder || !enc.new_decoder) {
         roc_panic("encoding map: bad encoding: invalid codec functions");
@@ -111,6 +108,26 @@ bool EncodingMap::add_encoding(const Encoding& enc) {
 void EncodingMap::add_builtin_(const Encoding& enc) {
     if (!add_encoding(enc)) {
         roc_panic("encoding map: can't add builtin encoding");
+    }
+}
+
+void EncodingMap::find_codecs_(Encoding& enc) {
+    if (enc.new_encoder && enc.new_decoder) {
+        return;
+    }
+
+    switch (enc.sample_spec.sample_format()) {
+    case audio::SampleFormat_Pcm:
+        if (!enc.new_encoder) {
+            enc.new_encoder = &audio::PcmEncoder::construct;
+        }
+        if (!enc.new_decoder) {
+            enc.new_decoder = &audio::PcmDecoder::construct;
+        }
+        break;
+
+    case audio::SampleFormat_Invalid:
+        break;
     }
 }
 

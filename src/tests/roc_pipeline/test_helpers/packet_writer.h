@@ -162,8 +162,7 @@ private:
         // payload encoder
         const rtp::Encoding* enc = encoding_map.find_by_pt(pt);
         CHECK(enc);
-        payload_encoder_.reset(enc->new_encoder(arena, enc->pcm_format, enc->sample_spec),
-                               arena);
+        payload_encoder_.reset(enc->new_encoder(arena, enc->sample_spec), arena);
         CHECK(payload_encoder_);
 
         if (fec_scheme == packet::FEC_None) {

@@ -56,8 +56,7 @@ ReceiverSession::ReceiverSession(
 
     packet::IReader* preader = source_queue_.get();
 
-    payload_decoder_.reset(
-        encoding->new_decoder(arena, encoding->pcm_format, encoding->sample_spec), arena);
+    payload_decoder_.reset(encoding->new_decoder(arena, encoding->sample_spec), arena);
     if (!payload_decoder_) {
         return;
     }

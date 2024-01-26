@@ -24,11 +24,10 @@ namespace audio {
 class PcmDecoder : public IFrameDecoder, public core::NonCopyable<> {
 public:
     //! Construction function.
-    static IFrameDecoder*
-    construct(core::IArena& arena, PcmFormat pcm_format, const SampleSpec& sample_spec);
+    static IFrameDecoder* construct(core::IArena& arena, const SampleSpec& sample_spec);
 
     //! Initialize.
-    PcmDecoder(PcmFormat pcm_format, const SampleSpec& sample_spec);
+    PcmDecoder(const SampleSpec& sample_spec);
 
     //! Get current stream position.
     virtual packet::stream_timestamp_t position() const;

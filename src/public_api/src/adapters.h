@@ -33,9 +33,11 @@ bool receiver_config_from_user(node::Context& context,
 
 bool interface_config_from_user(netio::UdpConfig& out, const roc_interface_config& in);
 
-bool sample_spec_from_user(audio::SampleSpec& out, const roc_media_encoding& in);
+bool sample_spec_from_user(audio::SampleSpec& out,
+                           const roc_media_encoding& in,
+                           bool is_network);
 
-bool sample_format_from_user(audio::SampleSpec& out, roc_format in);
+bool sample_format_from_user(audio::SampleSpec& out, roc_format in, bool is_network);
 
 bool channel_set_from_user(audio::ChannelSet& out,
                            roc_channel_layout in,

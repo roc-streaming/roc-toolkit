@@ -38,10 +38,8 @@ enum {
     MaxTsJump = 1000
 };
 
-const audio::PcmFormat PayloadFormat = audio::PcmFormat_SInt16_Be;
-
 const audio::SampleSpec PayloadSpec(SampleRate,
-                                    audio::Sample_RawFormat,
+                                    audio::PcmFormat_SInt16_Be,
                                     audio::ChanLayout_Surround,
                                     audio::ChanOrder_Smpte,
                                     ChMask);
@@ -88,7 +86,7 @@ TEST_GROUP(filter) {
 
 TEST(filter, all_good) {
     packet::Queue queue;
-    audio::PcmDecoder decoder(PayloadFormat, PayloadSpec);
+    audio::PcmDecoder decoder(PayloadSpec);
     Filter filter(queue, decoder, config, PayloadSpec);
 
     {
@@ -118,7 +116,7 @@ TEST(filter, all_good) {
 
 TEST(filter, payload_id_jump) {
     packet::Queue queue;
-    audio::PcmDecoder decoder(PayloadFormat, PayloadSpec);
+    audio::PcmDecoder decoder(PayloadSpec);
     Filter filter(queue, decoder, config, PayloadSpec);
 
     {
@@ -148,7 +146,7 @@ TEST(filter, payload_id_jump) {
 
 TEST(filter, source_id_jump) {
     packet::Queue queue;
-    audio::PcmDecoder decoder(PayloadFormat, PayloadSpec);
+    audio::PcmDecoder decoder(PayloadSpec);
     Filter filter(queue, decoder, config, PayloadSpec);
 
     {
@@ -187,7 +185,7 @@ TEST(filter, seqnum_no_jump) {
         const packet::seqnum_t sn2 = packet::seqnum_t(sn1 + MaxSnJump);
 
         packet::Queue queue;
-        audio::PcmDecoder decoder(PayloadFormat, PayloadSpec);
+        audio::PcmDecoder decoder(PayloadSpec);
         Filter filter(queue, decoder, config, PayloadSpec);
 
         {
@@ -227,7 +225,7 @@ TEST(filter, seqnum_jump_up) {
         const packet::seqnum_t sn2 = packet::seqnum_t(sn1 + MaxSnJump + 1);
 
         packet::Queue queue;
-        audio::PcmDecoder decoder(PayloadFormat, PayloadSpec);
+        audio::PcmDecoder decoder(PayloadSpec);
         Filter filter(queue, decoder, config, PayloadSpec);
 
         {
@@ -267,7 +265,7 @@ TEST(filter, seqnum_jump_down) {
         const packet::seqnum_t sn2 = packet::seqnum_t(sn1 + MaxSnJump + 1);
 
         packet::Queue queue;
-        audio::PcmDecoder decoder(PayloadFormat, PayloadSpec);
+        audio::PcmDecoder decoder(PayloadSpec);
         Filter filter(queue, decoder, config, PayloadSpec);
 
         {
@@ -302,7 +300,7 @@ TEST(filter, seqnum_late) {
     const packet::seqnum_t sn3 = sn2 + MaxSnJump + 1;
 
     packet::Queue queue;
-    audio::PcmDecoder decoder(PayloadFormat, PayloadSpec);
+    audio::PcmDecoder decoder(PayloadSpec);
     Filter filter(queue, decoder, config, PayloadSpec);
 
     {
@@ -350,7 +348,7 @@ TEST(filter, timestamp_no_jump) {
         const packet::stream_timestamp_t ts2 = ts1 + MaxTsJump;
 
         packet::Queue queue;
-        audio::PcmDecoder decoder(PayloadFormat, PayloadSpec);
+        audio::PcmDecoder decoder(PayloadSpec);
         Filter filter(queue, decoder, config, PayloadSpec);
 
         {
@@ -390,7 +388,7 @@ TEST(filter, timestamp_jump_up) {
         const packet::stream_timestamp_t ts2 = ts1 + MaxTsJump + 10;
 
         packet::Queue queue;
-        audio::PcmDecoder decoder(PayloadFormat, PayloadSpec);
+        audio::PcmDecoder decoder(PayloadSpec);
         Filter filter(queue, decoder, config, PayloadSpec);
 
         {
@@ -430,7 +428,7 @@ TEST(filter, timestamp_jump_down) {
         const packet::stream_timestamp_t ts2 = ts1 + MaxTsJump + 10;
 
         packet::Queue queue;
-        audio::PcmDecoder decoder(PayloadFormat, PayloadSpec);
+        audio::PcmDecoder decoder(PayloadSpec);
         Filter filter(queue, decoder, config, PayloadSpec);
 
         {
@@ -465,7 +463,7 @@ TEST(filter, timestamp_late) {
     const packet::stream_timestamp_t ts3 = ts2 + MaxTsJump + 1;
 
     packet::Queue queue;
-    audio::PcmDecoder decoder(PayloadFormat, PayloadSpec);
+    audio::PcmDecoder decoder(PayloadSpec);
     Filter filter(queue, decoder, config, PayloadSpec);
 
     {
@@ -504,7 +502,7 @@ TEST(filter, timestamp_late) {
 
 TEST(filter, cts_positive) {
     packet::Queue queue;
-    audio::PcmDecoder decoder(PayloadFormat, PayloadSpec);
+    audio::PcmDecoder decoder(PayloadSpec);
     Filter filter(queue, decoder, config, PayloadSpec);
 
     {
@@ -552,7 +550,7 @@ TEST(filter, cts_positive) {
 
 TEST(filter, cts_negative) {
     packet::Queue queue;
-    audio::PcmDecoder decoder(PayloadFormat, PayloadSpec);
+    audio::PcmDecoder decoder(PayloadSpec);
     Filter filter(queue, decoder, config, PayloadSpec);
 
     {
@@ -600,7 +598,7 @@ TEST(filter, cts_negative) {
 
 TEST(filter, cts_zero) {
     packet::Queue queue;
-    audio::PcmDecoder decoder(PayloadFormat, PayloadSpec);
+    audio::PcmDecoder decoder(PayloadSpec);
     Filter filter(queue, decoder, config, PayloadSpec);
 
     {
@@ -648,7 +646,7 @@ TEST(filter, cts_zero) {
 
 TEST(filter, duration_zero) {
     packet::Queue queue;
-    audio::PcmDecoder decoder(PayloadFormat, PayloadSpec);
+    audio::PcmDecoder decoder(PayloadSpec);
     Filter filter(queue, decoder, config, PayloadSpec);
 
     const packet::stream_timestamp_t packet_duration = 0;
@@ -667,7 +665,7 @@ TEST(filter, duration_zero) {
 
 TEST(filter, duration_non_zero) {
     packet::Queue queue;
-    audio::PcmDecoder decoder(PayloadFormat, PayloadSpec);
+    audio::PcmDecoder decoder(PayloadSpec);
     Filter filter(queue, decoder, config, PayloadSpec);
 
     const packet::stream_timestamp_t duration = 100;
@@ -691,7 +689,7 @@ TEST(filter, forward_error) {
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(code_list); ++n) {
         test::StatusReader reader(code_list[n]);
-        audio::PcmDecoder decoder(PayloadFormat, PayloadSpec);
+        audio::PcmDecoder decoder(PayloadSpec);
         Filter filter(reader, decoder, config, PayloadSpec);
 
         packet::PacketPtr pp;

@@ -37,10 +37,10 @@ enum {
     SamplesSize = SamplesPerPacket * NumCh
 };
 
-const SampleSpec SampleSpecs(
-    SampleRate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte, ChMask);
-const PcmFormat PcmFmt = PcmFormat_SInt16_Be;
-const core::nanoseconds_t NsPerPacket = SampleSpecs.samples_overall_2_ns(SamplesSize);
+const SampleSpec sample_spec(
+    SampleRate, PcmFormat_SInt16_Be, ChanLayout_Surround, ChanOrder_Smpte, ChMask);
+
+const core::nanoseconds_t NsPerPacket = sample_spec.samples_overall_2_ns(SamplesSize);
 const core::nanoseconds_t Now = 1691499037871419405;
 
 core::HeapArena arena;
@@ -87,7 +87,7 @@ packet::PacketPtr new_packet(IFrameEncoder& encoder,
 core::Slice<sample_t> new_buffer(size_t n_samples) {
     core::Slice<sample_t> buffer = sample_buffer_factory.new_buffer();
     CHECK(buffer);
-    buffer.reslice(0, n_samples * SampleSpecs.num_channels());
+    buffer.reslice(0, n_samples * sample_spec.num_channels());
     return buffer;
 }
 
@@ -107,8 +107,8 @@ void expect_output(Depacketizer& depacketizer,
     CHECK(depacketizer.read(frame));
 
     CHECK(core::ns_equal_delta(frame.capture_timestamp(), capt_ts, core::Microsecond));
-    UNSIGNED_LONGS_EQUAL(sz * SampleSpecs.num_channels(), frame.num_samples());
-    expect_values(frame.samples(), sz * SampleSpecs.num_channels(), value);
+    UNSIGNED_LONGS_EQUAL(sz * sample_spec.num_channels(), frame.num_samples());
+    expect_values(frame.samples(), sz * sample_spec.num_channels(), value);
 }
 
 void expect_flags(Depacketizer& depacketizer,
@@ -175,11 +175,11 @@ private:
 TEST_GROUP(depacketizer) {};
 
 TEST(depacketizer, one_packet_one_read) {
-    PcmEncoder encoder(PcmFmt, SampleSpecs);
-    PcmDecoder decoder(PcmFmt, SampleSpecs);
+    PcmEncoder encoder(sample_spec);
+    PcmDecoder decoder(sample_spec);
 
     packet::Queue queue;
-    Depacketizer dp(queue, decoder, SampleSpecs, false);
+    Depacketizer dp(queue, decoder, sample_spec, false);
     CHECK(dp.is_valid());
 
     UNSIGNED_LONGS_EQUAL(status::StatusOK,
@@ -189,11 +189,11 @@ TEST(depacketizer, one_packet_one_read) {
 }
 
 TEST(depacketizer, one_packet_multiple_reads) {
-    PcmEncoder encoder(PcmFmt, SampleSpecs);
-    PcmDecoder decoder(PcmFmt, SampleSpecs);
+    PcmEncoder encoder(sample_spec);
+    PcmDecoder decoder(sample_spec);
 
     packet::Queue queue;
-    Depacketizer dp(queue, decoder, SampleSpecs, false);
+    Depacketizer dp(queue, decoder, sample_spec, false);
     CHECK(dp.is_valid());
 
     UNSIGNED_LONGS_EQUAL(status::StatusOK,
@@ -202,18 +202,18 @@ TEST(depacketizer, one_packet_multiple_reads) {
     core::nanoseconds_t ts = Now;
     for (size_t n = 0; n < SamplesPerPacket; n++) {
         expect_output(dp, 1, 0.11f, ts);
-        ts += SampleSpecs.samples_per_chan_2_ns(1);
+        ts += sample_spec.samples_per_chan_2_ns(1);
     }
 }
 
 TEST(depacketizer, multiple_packets_one_read) {
     enum { NumPackets = 10 };
 
-    PcmEncoder encoder(PcmFmt, SampleSpecs);
-    PcmDecoder decoder(PcmFmt, SampleSpecs);
+    PcmEncoder encoder(sample_spec);
+    PcmDecoder decoder(sample_spec);
 
     packet::Queue queue;
-    Depacketizer dp(queue, decoder, SampleSpecs, false);
+    Depacketizer dp(queue, decoder, sample_spec, false);
     CHECK(dp.is_valid());
 
     core::nanoseconds_t ts = Now;
@@ -232,11 +232,11 @@ TEST(depacketizer, multiple_packets_multiple_reads) {
 
     CHECK(SamplesPerPacket % FramesPerPacket == 0);
 
-    PcmEncoder encoder(PcmFmt, SampleSpecs);
-    PcmDecoder decoder(PcmFmt, SampleSpecs);
+    PcmEncoder encoder(sample_spec);
+    PcmDecoder decoder(sample_spec);
 
     packet::Queue queue;
-    Depacketizer dp(queue, decoder, SampleSpecs, false);
+    Depacketizer dp(queue, decoder, sample_spec, false);
     CHECK(dp.is_valid());
 
     // Start with a packet with zero capture timestamp.
@@ -262,26 +262,26 @@ TEST(depacketizer, multiple_packets_multiple_reads) {
     ts = Now;
     for (size_t n = 0; n < FramesPerPacket; n++) {
         expect_output(dp, samples_per_frame, 0.11f, ts);
-        ts += SampleSpecs.samples_per_chan_2_ns(samples_per_frame);
+        ts += sample_spec.samples_per_chan_2_ns(samples_per_frame);
     }
 
     for (size_t n = 0; n < FramesPerPacket; n++) {
         expect_output(dp, samples_per_frame, 0.22f, ts);
-        ts += SampleSpecs.samples_per_chan_2_ns(samples_per_frame);
+        ts += sample_spec.samples_per_chan_2_ns(samples_per_frame);
     }
 
     for (size_t n = 0; n < FramesPerPacket; n++) {
         expect_output(dp, samples_per_frame, 0.33f, ts);
-        ts += SampleSpecs.samples_per_chan_2_ns(samples_per_frame);
+        ts += sample_spec.samples_per_chan_2_ns(samples_per_frame);
     }
 }
 
 TEST(depacketizer, timestamp_overflow) {
-    PcmEncoder encoder(PcmFmt, SampleSpecs);
-    PcmDecoder decoder(PcmFmt, SampleSpecs);
+    PcmEncoder encoder(sample_spec);
+    PcmDecoder decoder(sample_spec);
 
     packet::Queue queue;
-    Depacketizer dp(queue, decoder, SampleSpecs, false);
+    Depacketizer dp(queue, decoder, sample_spec, false);
     CHECK(dp.is_valid());
 
     const packet::stream_timestamp_t ts2 = 0;
@@ -307,11 +307,11 @@ TEST(depacketizer, timestamp_overflow) {
 }
 
 TEST(depacketizer, drop_late_packets) {
-    PcmEncoder encoder(PcmFmt, SampleSpecs);
-    PcmDecoder decoder(PcmFmt, SampleSpecs);
+    PcmEncoder encoder(sample_spec);
+    PcmDecoder decoder(sample_spec);
 
     packet::Queue queue;
-    Depacketizer dp(queue, decoder, SampleSpecs, false);
+    Depacketizer dp(queue, decoder, sample_spec, false);
     CHECK(dp.is_valid());
 
     const packet::stream_timestamp_t ts1 = SamplesPerPacket * 2;
@@ -333,11 +333,11 @@ TEST(depacketizer, drop_late_packets) {
 }
 
 TEST(depacketizer, drop_late_packets_timestamp_overflow) {
-    PcmEncoder encoder(PcmFmt, SampleSpecs);
-    PcmDecoder decoder(PcmFmt, SampleSpecs);
+    PcmEncoder encoder(sample_spec);
+    PcmDecoder decoder(sample_spec);
 
     packet::Queue queue;
-    Depacketizer dp(queue, decoder, SampleSpecs, false);
+    Depacketizer dp(queue, decoder, sample_spec, false);
     CHECK(dp.is_valid());
 
     const packet::stream_timestamp_t ts1 = 0;
@@ -359,22 +359,22 @@ TEST(depacketizer, drop_late_packets_timestamp_overflow) {
 }
 
 TEST(depacketizer, zeros_no_packets) {
-    PcmEncoder encoder(PcmFmt, SampleSpecs);
-    PcmDecoder decoder(PcmFmt, SampleSpecs);
+    PcmEncoder encoder(sample_spec);
+    PcmDecoder decoder(sample_spec);
 
     packet::Queue queue;
-    Depacketizer dp(queue, decoder, SampleSpecs, false);
+    Depacketizer dp(queue, decoder, sample_spec, false);
     CHECK(dp.is_valid());
 
     expect_output(dp, SamplesPerPacket, 0.00f, 0);
 }
 
 TEST(depacketizer, zeros_no_next_packet) {
-    PcmEncoder encoder(PcmFmt, SampleSpecs);
-    PcmDecoder decoder(PcmFmt, SampleSpecs);
+    PcmEncoder encoder(sample_spec);
+    PcmDecoder decoder(sample_spec);
 
     packet::Queue queue;
-    Depacketizer dp(queue, decoder, SampleSpecs, false);
+    Depacketizer dp(queue, decoder, sample_spec, false);
     CHECK(dp.is_valid());
 
     UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, 0, 0.11f, 0)));
@@ -384,11 +384,11 @@ TEST(depacketizer, zeros_no_next_packet) {
 }
 
 TEST(depacketizer, zeros_between_packets) {
-    PcmEncoder encoder(PcmFmt, SampleSpecs);
-    PcmDecoder decoder(PcmFmt, SampleSpecs);
+    PcmEncoder encoder(sample_spec);
+    PcmDecoder decoder(sample_spec);
 
     packet::Queue queue;
-    Depacketizer dp(queue, decoder, SampleSpecs, false);
+    Depacketizer dp(queue, decoder, sample_spec, false);
     CHECK(dp.is_valid());
 
     const core::nanoseconds_t capt_ts1 = Now;
@@ -407,11 +407,11 @@ TEST(depacketizer, zeros_between_packets) {
 }
 
 TEST(depacketizer, zeros_between_packets_timestamp_overflow) {
-    PcmEncoder encoder(PcmFmt, SampleSpecs);
-    PcmDecoder decoder(PcmFmt, SampleSpecs);
+    PcmEncoder encoder(sample_spec);
+    PcmDecoder decoder(sample_spec);
 
     packet::Queue queue;
-    Depacketizer dp(queue, decoder, SampleSpecs, false);
+    Depacketizer dp(queue, decoder, sample_spec, false);
     CHECK(dp.is_valid());
 
     const packet::stream_timestamp_t ts2 = 0;
@@ -432,13 +432,13 @@ TEST(depacketizer, zeros_between_packets_timestamp_overflow) {
 }
 
 TEST(depacketizer, zeros_after_packet) {
-    PcmEncoder encoder(PcmFmt, SampleSpecs);
-    PcmDecoder decoder(PcmFmt, SampleSpecs);
+    PcmEncoder encoder(sample_spec);
+    PcmDecoder decoder(sample_spec);
 
     CHECK(SamplesPerPacket % 2 == 0);
 
     packet::Queue queue;
-    Depacketizer dp(queue, decoder, SampleSpecs, false);
+    Depacketizer dp(queue, decoder, sample_spec, false);
     CHECK(dp.is_valid());
 
     UNSIGNED_LONGS_EQUAL(status::StatusOK,
@@ -453,18 +453,18 @@ TEST(depacketizer, zeros_after_packet) {
     dp.read(f1);
     dp.read(f2);
 
-    expect_values(f1.samples(), SamplesPerPacket / 2 * SampleSpecs.num_channels(), 0.11f);
-    expect_values(f2.samples(), SamplesPerPacket / 2 * SampleSpecs.num_channels(), 0.11f);
-    expect_values(f2.samples() + SamplesPerPacket / 2 * SampleSpecs.num_channels(),
-                  SamplesPerPacket / 2 * SampleSpecs.num_channels(), 0.00f);
+    expect_values(f1.samples(), SamplesPerPacket / 2 * sample_spec.num_channels(), 0.11f);
+    expect_values(f2.samples(), SamplesPerPacket / 2 * sample_spec.num_channels(), 0.11f);
+    expect_values(f2.samples() + SamplesPerPacket / 2 * sample_spec.num_channels(),
+                  SamplesPerPacket / 2 * sample_spec.num_channels(), 0.00f);
 }
 
 TEST(depacketizer, packet_after_zeros) {
-    PcmEncoder encoder(PcmFmt, SampleSpecs);
-    PcmDecoder decoder(PcmFmt, SampleSpecs);
+    PcmEncoder encoder(sample_spec);
+    PcmDecoder decoder(sample_spec);
 
     packet::Queue queue;
-    Depacketizer dp(queue, decoder, SampleSpecs, false);
+    Depacketizer dp(queue, decoder, sample_spec, false);
     CHECK(dp.is_valid());
 
     expect_output(dp, SamplesPerPacket, 0.00f, 0);
@@ -478,11 +478,11 @@ TEST(depacketizer, packet_after_zeros) {
 TEST(depacketizer, overlapping_packets) {
     CHECK(SamplesPerPacket % 2 == 0);
 
-    PcmEncoder encoder(PcmFmt, SampleSpecs);
-    PcmDecoder decoder(PcmFmt, SampleSpecs);
+    PcmEncoder encoder(sample_spec);
+    PcmDecoder decoder(sample_spec);
 
     packet::Queue queue;
-    Depacketizer dp(queue, decoder, SampleSpecs, false);
+    Depacketizer dp(queue, decoder, sample_spec, false);
     CHECK(dp.is_valid());
 
     const packet::stream_timestamp_t ts1 = 0;
@@ -508,7 +508,7 @@ TEST(depacketizer, overlapping_packets) {
 TEST(depacketizer, frame_flags_incompltete_blank) {
     enum { PacketsPerFrame = 3 };
 
-    PcmEncoder encoder(PcmFmt, SampleSpecs);
+    PcmEncoder encoder(sample_spec);
 
     packet::Queue queue;
 
@@ -573,8 +573,8 @@ TEST(depacketizer, frame_flags_incompltete_blank) {
     CHECK(ROC_ARRAY_SIZE(packets) == ROC_ARRAY_SIZE(frame_flags));
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(packets); n++) {
-        PcmDecoder decoder(PcmFmt, SampleSpecs);
-        Depacketizer dp(queue, decoder, SampleSpecs, false);
+        PcmDecoder decoder(sample_spec);
+        Depacketizer dp(queue, decoder, sample_spec, false);
         CHECK(dp.is_valid());
 
         for (size_t p = 0; p < PacketsPerFrame; p++) {
@@ -588,11 +588,11 @@ TEST(depacketizer, frame_flags_incompltete_blank) {
 }
 
 TEST(depacketizer, frame_flags_drops) {
-    PcmEncoder encoder(PcmFmt, SampleSpecs);
-    PcmDecoder decoder(PcmFmt, SampleSpecs);
+    PcmEncoder encoder(sample_spec);
+    PcmDecoder decoder(sample_spec);
 
     packet::Queue queue;
-    Depacketizer dp(queue, decoder, SampleSpecs, false);
+    Depacketizer dp(queue, decoder, sample_spec, false);
     CHECK(dp.is_valid());
 
     packet::PacketPtr packets[] = {
@@ -632,17 +632,17 @@ TEST(depacketizer, timestamp) {
 
     CHECK(SamplesPerPacket % FramesPerPacket == 0);
 
-    PcmEncoder encoder(PcmFmt, SampleSpecs);
-    PcmDecoder decoder(PcmFmt, SampleSpecs);
+    PcmEncoder encoder(sample_spec);
+    PcmDecoder decoder(sample_spec);
 
     packet::Queue queue;
-    Depacketizer dp(queue, decoder, SampleSpecs, false);
+    Depacketizer dp(queue, decoder, sample_spec, false);
     CHECK(dp.is_valid());
 
     core::nanoseconds_t capt_ts = 0;
     for (size_t n = 0; n < NumPackets * FramesPerPacket; n++) {
         expect_output(dp, SamplesPerFrame, 0.0f, 0);
-        capt_ts += SampleSpecs.samples_per_chan_2_ns(SamplesPerFrame);
+        capt_ts += sample_spec.samples_per_chan_2_ns(SamplesPerFrame);
 
         CHECK(!dp.is_started());
         UNSIGNED_LONGS_EQUAL(0, dp.next_timestamp());
@@ -654,7 +654,7 @@ TEST(depacketizer, timestamp) {
         UNSIGNED_LONGS_EQUAL(
             status::StatusOK,
             queue.write(new_packet(encoder, StartTimestamp + nsamples, 0.1f, capt_ts)));
-        capt_ts += SampleSpecs.samples_per_chan_2_ns(SamplesPerPacket);
+        capt_ts += sample_spec.samples_per_chan_2_ns(SamplesPerPacket);
     }
 
     packet::stream_timestamp_t ts = StartTimestamp;
@@ -662,7 +662,7 @@ TEST(depacketizer, timestamp) {
     capt_ts = Now;
     for (size_t n = 0; n < NumPackets * FramesPerPacket; n++) {
         expect_output(dp, SamplesPerFrame, 0.1f, capt_ts);
-        capt_ts += SampleSpecs.samples_per_chan_2_ns(SamplesPerFrame);
+        capt_ts += sample_spec.samples_per_chan_2_ns(SamplesPerFrame);
 
         ts += SamplesPerFrame;
 
@@ -672,7 +672,7 @@ TEST(depacketizer, timestamp) {
 
     for (size_t n = 0; n < NumPackets * FramesPerPacket; n++) {
         expect_output(dp, SamplesPerFrame, 0.0f, capt_ts);
-        capt_ts += SampleSpecs.samples_per_chan_2_ns(SamplesPerFrame);
+        capt_ts += sample_spec.samples_per_chan_2_ns(SamplesPerFrame);
 
         ts += SamplesPerFrame;
 
@@ -688,15 +688,15 @@ TEST(depacketizer, timestamp_fract_frame_per_packet) {
         SamplesPerFrame = SamplesPerPacket + 50
     };
 
-    PcmEncoder encoder(PcmFmt, SampleSpecs);
-    PcmDecoder decoder(PcmFmt, SampleSpecs);
+    PcmEncoder encoder(sample_spec);
+    PcmDecoder decoder(sample_spec);
 
     packet::Queue queue;
-    Depacketizer dp(queue, decoder, SampleSpecs, false);
+    Depacketizer dp(queue, decoder, sample_spec, false);
     CHECK(dp.is_valid());
 
     core::nanoseconds_t capt_ts =
-        Now + SampleSpecs.samples_overall_2_ns(SamplesPerPacket);
+        Now + sample_spec.samples_overall_2_ns(SamplesPerPacket);
     // 1st packet in the frame has 0 capture ts, and the next
     CHECK_EQUAL(status::StatusOK,
                 queue.write(new_packet(encoder, StartTimestamp, 0.1f, 0)));
@@ -713,11 +713,11 @@ TEST(depacketizer, timestamp_small_non_zero_cts) {
         PacketsPerFrame = 10
     };
 
-    PcmEncoder encoder(PcmFmt, SampleSpecs);
-    PcmDecoder decoder(PcmFmt, SampleSpecs);
+    PcmEncoder encoder(sample_spec);
+    PcmDecoder decoder(sample_spec);
 
     packet::Queue queue;
-    Depacketizer dp(queue, decoder, SampleSpecs, false);
+    Depacketizer dp(queue, decoder, sample_spec, false);
     CHECK(dp.is_valid());
 
     // 1st packet in frame has 0 capture ts
@@ -733,7 +733,7 @@ TEST(depacketizer, timestamp_small_non_zero_cts) {
         LONGS_EQUAL(status::StatusOK,
                     queue.write(new_packet(encoder, stream_ts, 0.1f, capt_ts)));
         stream_ts += SamplesPerPacket;
-        capt_ts += SampleSpecs.samples_overall_2_ns(SamplesPerPacket);
+        capt_ts += sample_spec.samples_overall_2_ns(SamplesPerPacket);
     }
 
     // remember cts that should be used for second frame
@@ -744,7 +744,7 @@ TEST(depacketizer, timestamp_small_non_zero_cts) {
         LONGS_EQUAL(status::StatusOK,
                     queue.write(new_packet(encoder, stream_ts, 0.2f, capt_ts)));
         stream_ts += SamplesPerPacket;
-        capt_ts += SampleSpecs.samples_overall_2_ns(SamplesPerPacket);
+        capt_ts += sample_spec.samples_overall_2_ns(SamplesPerPacket);
     }
 
     // first frame has zero cts
@@ -763,12 +763,12 @@ TEST(depacketizer, read_after_error) {
     };
 
     for (unsigned n = 0; n < ROC_ARRAY_SIZE(codes); ++n) {
-        PcmEncoder encoder(PcmFmt, SampleSpecs);
-        PcmDecoder decoder(PcmFmt, SampleSpecs);
+        PcmEncoder encoder(sample_spec);
+        PcmDecoder decoder(sample_spec);
 
         packet::Queue queue;
         TestReader reader(queue);
-        Depacketizer dp(reader, decoder, SampleSpecs, false);
+        Depacketizer dp(reader, decoder, sample_spec, false);
         CHECK(dp.is_valid());
 
         UNSIGNED_LONGS_EQUAL(status::StatusOK,

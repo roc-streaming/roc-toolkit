@@ -30,27 +30,21 @@ struct Encoding {
     //! Encoding specification.
     audio::SampleSpec sample_spec;
 
-    //! Sample encoding and endian.
-    audio::PcmFormat pcm_format;
-
     //! Packet flags.
     unsigned packet_flags;
 
     //! Create frame encoder.
     audio::IFrameEncoder* (*new_encoder)(core::IArena& arena,
-                                         audio::PcmFormat pcm_format,
                                          const audio::SampleSpec& sample_spec);
 
     //! Create frame decoder.
     audio::IFrameDecoder* (*new_decoder)(core::IArena& arena,
-                                         audio::PcmFormat pcm_format,
                                          const audio::SampleSpec& sample_spec);
 
     //! Initialize.
     Encoding()
         : payload_type(0)
         , sample_spec()
-        , pcm_format()
         , packet_flags(0)
         , new_encoder(NULL)
         , new_decoder(NULL) {

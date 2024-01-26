@@ -175,7 +175,7 @@ void check_parse_decode(const test::PacketInfo& pi) {
     CHECK(encoding);
 
     core::ScopedPtr<audio::IFrameDecoder> decoder(
-        encoding->new_decoder(arena, encoding->pcm_format, encoding->sample_spec), arena);
+        encoding->new_decoder(arena, encoding->sample_spec), arena);
     CHECK(decoder);
 
     check_format_info(*encoding, pi);
@@ -200,7 +200,7 @@ void check_compose_encode(const test::PacketInfo& pi) {
     CHECK(encoding);
 
     core::ScopedPtr<audio::IFrameEncoder> encoder(
-        encoding->new_encoder(arena, encoding->pcm_format, encoding->sample_spec), arena);
+        encoding->new_encoder(arena, encoding->sample_spec), arena);
     CHECK(encoder);
 
     Composer composer(NULL);

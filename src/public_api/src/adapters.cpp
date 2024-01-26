@@ -56,7 +56,7 @@ ROC_ATTR_NO_SANITIZE_UB
 bool sender_config_from_user(node::Context& context,
                              pipeline::SenderConfig& out,
                              const roc_sender_config& in) {
-    if (!sample_spec_from_user(out.input_sample_spec, in.frame_encoding)) {
+    if (!sample_spec_from_user(out.input_sample_spec, in.frame_encoding, false)) {
         roc_log(LogError, "bad configuration: invalid roc_sender_config.frame_encoding");
         return false;
     }
@@ -164,7 +164,7 @@ bool receiver_config_from_user(node::Context&,
     out.common.enable_timing = false;
     out.common.enable_auto_reclock = true;
 
-    if (!sample_spec_from_user(out.common.output_sample_spec, in.frame_encoding)) {
+    if (!sample_spec_from_user(out.common.output_sample_spec, in.frame_encoding, false)) {
         roc_log(LogError,
                 "bad configuration: invalid roc_receiver_config.frame_encoding");
         return false;
@@ -249,7 +249,9 @@ ROC_ATTR_NO_SANITIZE_UB bool interface_config_from_user(netio::UdpConfig& out,
 }
 
 ROC_ATTR_NO_SANITIZE_UB
-bool sample_spec_from_user(audio::SampleSpec& out, const roc_media_encoding& in) {
+bool sample_spec_from_user(audio::SampleSpec& out,
+                           const roc_media_encoding& in,
+                           bool is_network) {
     if (in.rate != 0) {
         out.set_sample_rate(in.rate);
     } else {
@@ -259,7 +261,7 @@ bool sample_spec_from_user(audio::SampleSpec& out, const roc_media_encoding& in)
         return false;
     }
 
-    if (!sample_format_from_user(out, in.format)) {
+    if (!sample_format_from_user(out, in.format, is_network)) {
         roc_log(LogError,
                 "bad configuration: invalid roc_media_encoding.format:"
                 " should be valid enum value");
@@ -308,11 +310,13 @@ bool sample_spec_from_user(audio::SampleSpec& out, const roc_media_encoding& in)
 }
 
 ROC_ATTR_NO_SANITIZE_UB
-bool sample_format_from_user(audio::SampleSpec& out, roc_format in) {
+bool sample_format_from_user(audio::SampleSpec& out, roc_format in, bool is_network) {
     switch (enum_from_user(in)) {
     case ROC_FORMAT_PCM_FLOAT32:
         out.set_sample_format(audio::SampleFormat_Pcm);
-        out.set_pcm_format(audio::PcmFormat_Float32);
+        // TODO(gh-608): use PcmFormat_Float32_Be instead of PcmFormat_SInt16_Be
+        out.set_pcm_format(is_network ? audio::PcmFormat_SInt16_Be
+                                      : audio::PcmFormat_Float32);
         return true;
     }
 

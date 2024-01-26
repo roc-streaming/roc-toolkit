@@ -87,17 +87,12 @@ int roc_context_register_encoding(roc_context* context,
     enc.payload_type = (unsigned)encoding_id;
     enc.packet_flags = packet::Packet::FlagAudio;
 
-    enc.pcm_format = audio::PcmFormat_SInt16_Be;
-
-    if (!api::sample_spec_from_user(enc.sample_spec, *encoding)) {
+    if (!api::sample_spec_from_user(enc.sample_spec, *encoding, true)) {
         roc_log(
             LogError,
             "roc_context_register_encoding(): invalid arguments: encoding is invalid");
         return -1;
     }
-
-    enc.new_encoder = &audio::PcmEncoder::construct;
-    enc.new_decoder = &audio::PcmDecoder::construct;
 
     if (!imp_context->encoding_map().add_encoding(enc)) {
         roc_log(LogError, "roc_context_register_encoding(): failed to register encoding");

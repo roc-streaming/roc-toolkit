@@ -107,9 +107,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
     }
     pwriter = timestamp_extractor_.get();
 
-    payload_encoder_.reset(
-        encoding->new_encoder(arena_, encoding->pcm_format, encoding->sample_spec),
-        arena_);
+    payload_encoder_.reset(encoding->new_encoder(arena_, encoding->sample_spec), arena_);
     if (!payload_encoder_) {
         return false;
     }

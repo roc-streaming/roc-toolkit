@@ -12,14 +12,12 @@
 namespace roc {
 namespace audio {
 
-IFrameEncoder* PcmEncoder::construct(core::IArena& arena,
-                                     PcmFormat pcm_format,
-                                     const SampleSpec& sample_spec) {
-    return new (arena) PcmEncoder(pcm_format, sample_spec);
+IFrameEncoder* PcmEncoder::construct(core::IArena& arena, const SampleSpec& sample_spec) {
+    return new (arena) PcmEncoder(sample_spec);
 }
 
-PcmEncoder::PcmEncoder(PcmFormat pcm_format, const SampleSpec& sample_spec)
-    : pcm_mapper_(Sample_RawFormat, pcm_format)
+PcmEncoder::PcmEncoder(const SampleSpec& sample_spec)
+    : pcm_mapper_(Sample_RawFormat, sample_spec.pcm_format())
     , n_chans_(sample_spec.num_channels())
     , frame_data_(NULL)
     , frame_byte_size_(0)
