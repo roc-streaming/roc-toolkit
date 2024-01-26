@@ -16,31 +16,85 @@ namespace rtcp {
 
 TEST_GROUP(headers) {};
 
-TEST(headers, set_bit_field) {
-    uint32_t val = 0;
+TEST(headers, bit_fields) {
+    { // get_bit_field
+        uint32_t val = 0xAABBCCDD;
 
-    header::set_bit_field(val, (uint32_t)0xdd, 4, 0xf);
-    CHECK_EQUAL(0xd0, val);
+        CHECK_EQUAL(0xAA, header::get_bit_field(val, 24, 0xffff));
+        CHECK_EQUAL(0xAAB, header::get_bit_field(val, 20, 0xffff));
+        CHECK_EQUAL(0xAABB, header::get_bit_field(val, 16, 0xffff));
+        CHECK_EQUAL(0xABB, header::get_bit_field(val, 16, 0xfff));
 
-    header::set_bit_field(val, (uint32_t)0xc, 8, 0xf);
-    CHECK_EQUAL(0xcd0, val);
+        CHECK_EQUAL(0xAABBCCDD, header::get_bit_field(val, 0, 0xffffffff));
+        CHECK_EQUAL(0, header::get_bit_field(val, 0, 0));
+    }
+    { // set_bit_field
+        uint32_t val = 0;
 
-    header::set_bit_field(val, (uint32_t)0xe, 4, 0xf);
-    CHECK_EQUAL(0xce0, val);
+        header::set_bit_field(val, (uint32_t)0xDD, 4, 0xf);
+        CHECK_EQUAL(0xD0, val);
+
+        header::set_bit_field(val, (uint32_t)0xC, 8, 0xf);
+        CHECK_EQUAL(0xCD0, val);
+
+        header::set_bit_field(val, (uint32_t)0xE, 4, 0xf);
+        CHECK_EQUAL(0xCE0, val);
+    }
 }
 
-TEST(headers, extend_timestamp) {
-    { // no wrap
-        const packet::ntp_timestamp_t base = 0xAAAABBBBCCCCDDDD;
-        const packet::ntp_timestamp_t value = 0x0000CCCCDDDD0000;
+TEST(headers, losses) {
+    { // fract_loss
+        header::ReceptionReportBlock blk;
 
-        CHECK_EQUAL(0xAAAACCCCDDDD0000, header::extend_timestamp(base, value));
+        blk.set_fract_loss(0.25f);
+        DOUBLES_EQUAL(0.25, blk.fract_loss(), 0.01);
+
+        blk.set_fract_loss(0.75f);
+        DOUBLES_EQUAL(0.75, blk.fract_loss(), 0.01);
+
+        blk.set_fract_loss(0.0f);
+        DOUBLES_EQUAL(0.0, blk.fract_loss(), 0.01);
+
+        blk.set_fract_loss(1.0f);
+        DOUBLES_EQUAL(1.0, blk.fract_loss(), 0.01);
+        CHECK(blk.fract_loss() <= 1.0f);
+
+        blk.set_fract_loss(-0.25f);
+        DOUBLES_EQUAL(0.0, blk.fract_loss(), 0.01);
+
+        blk.set_fract_loss(1.25f);
+        DOUBLES_EQUAL(1.0, blk.fract_loss(), 0.01);
+        CHECK(blk.fract_loss() <= 1.0f);
     }
-    { // wrap
-        const packet::ntp_timestamp_t base = 0xAAAABBBBCCCCDDDD;
-        const packet::ntp_timestamp_t value = 0x0000111122220000;
+    { // cum_loss
+        header::ReceptionReportBlock blk;
 
-        CHECK_EQUAL(0xAAAB111122220000, header::extend_timestamp(base, value));
+        blk.set_cum_loss(100);
+        CHECK_EQUAL(100, blk.cum_loss());
+
+        blk.set_cum_loss(-100);
+        CHECK_EQUAL(-100, blk.cum_loss());
+
+        blk.set_cum_loss(0);
+        CHECK_EQUAL(0, blk.cum_loss());
+
+        blk.set_cum_loss(8388607);
+        CHECK_EQUAL(8388607, blk.cum_loss());
+
+        blk.set_cum_loss(-8388608);
+        CHECK_EQUAL(-8388608, blk.cum_loss());
+
+        blk.set_cum_loss(8388608);
+        CHECK_EQUAL(8388607, blk.cum_loss());
+
+        blk.set_cum_loss(-8388609);
+        CHECK_EQUAL(-8388608, blk.cum_loss());
+
+        blk.set_cum_loss(99999999);
+        CHECK_EQUAL(8388607, blk.cum_loss());
+
+        blk.set_cum_loss(-99999999);
+        CHECK_EQUAL(-8388608, blk.cum_loss());
     }
 }
 

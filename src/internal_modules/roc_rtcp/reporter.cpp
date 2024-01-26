@@ -292,7 +292,7 @@ void Reporter::process_reception_block(const packet::stream_source_t ssrc,
         // Restore full 64-bit timestamp from compacted 32-bit form
         // by taking high 16 bits from local clock.
         const packet::ntp_timestamp_t blk_last_sr =
-            header::extend_timestamp(packet::unix_2_ntp(current_sr_), blk.last_sr());
+            ntp_extend(packet::unix_2_ntp(current_sr_), blk.last_sr());
 
         stream->last_local_sr = packet::ntp_2_unix(blk_last_sr);
         stream->last_remote_dlsr = packet::ntp_2_nanoseconds(blk.delay_last_sr());
@@ -350,7 +350,7 @@ void Reporter::process_dlrr_subblock(const header::XrPacket& xr,
         // Restore full 64-bit timestamp from compacted 32-bit form
         // by taking high 16 bits from local clock.
         const packet::ntp_timestamp_t blk_last_rr =
-            header::extend_timestamp(packet::unix_2_ntp(current_rr_), blk.last_rr());
+            ntp_extend(packet::unix_2_ntp(current_rr_), blk.last_rr());
 
         stream->last_local_rr = packet::ntp_2_unix(blk_last_rr);
         stream->last_remote_dlrr = packet::ntp_2_nanoseconds(blk.delay_last_rr());
