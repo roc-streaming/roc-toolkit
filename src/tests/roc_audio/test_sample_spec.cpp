@@ -221,6 +221,41 @@ TEST(sample_spec, clear) {
     CHECK_EQUAL(0, sample_spec.channel_set().num_channels());
 }
 
+TEST(sample_spec, is_raw) {
+    { // empty
+        SampleSpec sample_spec;
+        CHECK(!sample_spec.is_valid());
+        CHECK(!sample_spec.is_raw());
+    }
+    { // incomplete
+        SampleSpec sample_spec;
+        sample_spec.set_sample_format(SampleFormat_Pcm);
+        sample_spec.set_pcm_format(PcmFormat_Float32);
+        CHECK(!sample_spec.is_valid());
+        CHECK(sample_spec.is_raw());
+    }
+    { // complete
+        SampleSpec sample_spec;
+        sample_spec.set_sample_format(SampleFormat_Pcm);
+        sample_spec.set_pcm_format(PcmFormat_Float32);
+        sample_spec.set_sample_rate(44100);
+        sample_spec.set_channel_set(
+            ChannelSet(ChanLayout_Surround, ChanOrder_Smpte, ChanMask_Surround_Stereo));
+        CHECK(sample_spec.is_valid());
+        CHECK(sample_spec.is_raw());
+    }
+    { // pcm format mismatch
+        SampleSpec sample_spec;
+        sample_spec.set_sample_format(SampleFormat_Pcm);
+        sample_spec.set_pcm_format(PcmFormat_Float32_Be);
+        sample_spec.set_sample_rate(44100);
+        sample_spec.set_channel_set(
+            ChannelSet(ChanLayout_Surround, ChanOrder_Smpte, ChanMask_Surround_Stereo));
+        CHECK(sample_spec.is_valid());
+        CHECK(!sample_spec.is_raw());
+    }
+}
+
 TEST(sample_spec, parse_rate) {
     { // 44.1Khz
         SampleSpec sample_spec;

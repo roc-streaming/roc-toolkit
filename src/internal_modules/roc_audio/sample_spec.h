@@ -65,6 +65,12 @@ public:
     //! Check if sample spec has non-zero rate and valid channel set.
     bool is_valid() const;
 
+    //! Check if samples are in raw format.
+    //! @returns
+    //!  true if sample_format() is SampleFormat_Pcm and pcm_format()
+    //!  is Sample_RawFormat (32-bit native-endian floats).
+    bool is_raw() const;
+
     //! Unset all fields.
     void clear();
 

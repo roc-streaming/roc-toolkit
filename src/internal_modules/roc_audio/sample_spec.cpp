@@ -112,6 +112,10 @@ bool SampleSpec::is_valid() const {
         && sample_rate_ != 0 && channel_set_.is_valid();
 }
 
+bool SampleSpec::is_raw() const {
+    return sample_fmt_ == SampleFormat_Pcm && pcm_fmt_ == Sample_RawFormat;
+}
+
 void SampleSpec::clear() {
     sample_fmt_ = SampleFormat_Invalid;
     pcm_fmt_ = PcmFormat_Invalid;
