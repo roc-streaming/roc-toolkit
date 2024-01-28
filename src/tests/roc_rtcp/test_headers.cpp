@@ -318,63 +318,94 @@ TEST(headers, metrics) {
         CHECK(!blk.has_max_rtt());
         CHECK_EQUAL(0x0000FFFFFFFF0000, blk.max_rtt());
     }
-    { // e2e_delay
+    { // e2e_latency
         header::XrDelayMetricsBlock blk;
 
-        CHECK(!blk.has_e2e_delay());
-        CHECK_EQUAL(0xFFFFFFFFFFFFFFFF, blk.e2e_delay());
+        CHECK(!blk.has_e2e_latency());
+        CHECK_EQUAL(0xFFFFFFFFFFFFFFFF, blk.e2e_latency());
 
-        blk.set_e2e_delay(0x0000AABBCCDD0000);
-        CHECK(blk.has_e2e_delay());
-        CHECK_EQUAL(0x0000AABBCCDD0000, blk.e2e_delay());
+        blk.set_e2e_latency(0x0000AABBCCDD0000);
+        CHECK(blk.has_e2e_latency());
+        CHECK_EQUAL(0x0000AABBCCDD0000, blk.e2e_latency());
 
-        blk.set_e2e_delay(0x0000AABBCCDD1111);
-        CHECK(blk.has_e2e_delay());
-        CHECK_EQUAL(0x0000AABBCCDD1111, blk.e2e_delay());
+        blk.set_e2e_latency(0x0000AABBCCDD1111);
+        CHECK(blk.has_e2e_latency());
+        CHECK_EQUAL(0x0000AABBCCDD1111, blk.e2e_latency());
 
-        blk.set_e2e_delay(0x1111AABBCCDD0000);
-        CHECK(blk.has_e2e_delay());
-        CHECK_EQUAL(0x1111AABBCCDD0000, blk.e2e_delay());
+        blk.set_e2e_latency(0x1111AABBCCDD0000);
+        CHECK(blk.has_e2e_latency());
+        CHECK_EQUAL(0x1111AABBCCDD0000, blk.e2e_latency());
 
-        blk.set_e2e_delay(0xFFFFFFFFFFFFFFFF);
-        CHECK(blk.has_e2e_delay());
-        CHECK_EQUAL(0xFFFFFFFFFFFFFFFE, blk.e2e_delay());
+        blk.set_e2e_latency(0xFFFFFFFFFFFFFFFF);
+        CHECK(blk.has_e2e_latency());
+        CHECK_EQUAL(0xFFFFFFFFFFFFFFFE, blk.e2e_latency());
 
         blk.reset();
 
-        CHECK(!blk.has_e2e_delay());
-        CHECK_EQUAL(0xFFFFFFFFFFFFFFFF, blk.e2e_delay());
+        CHECK(!blk.has_e2e_latency());
+        CHECK_EQUAL(0xFFFFFFFFFFFFFFFF, blk.e2e_latency());
     }
-    { // niq_delay
+    { // niq_latency
         header::XrQueueMetricsBlock blk;
 
-        CHECK(!blk.has_niq_delay());
-        CHECK_EQUAL(0x0000FFFFFFFF0000, blk.niq_delay());
+        CHECK(!blk.has_niq_latency());
+        CHECK_EQUAL(0x0000FFFFFFFF0000, blk.niq_latency());
 
-        blk.set_niq_delay(0x0000AABBCCDD0000);
-        CHECK(blk.has_niq_delay());
-        CHECK_EQUAL(0x0000AABBCCDD0000, blk.niq_delay());
+        blk.set_niq_latency(0x0000AABBCCDD0000);
+        CHECK(blk.has_niq_latency());
+        CHECK_EQUAL(0x0000AABBCCDD0000, blk.niq_latency());
 
-        blk.set_niq_delay(0x0000AABBCCDD1111);
-        CHECK(blk.has_niq_delay());
-        CHECK_EQUAL(0x0000AABBCCDD0000, blk.niq_delay());
+        blk.set_niq_latency(0x0000AABBCCDD1111);
+        CHECK(blk.has_niq_latency());
+        CHECK_EQUAL(0x0000AABBCCDD0000, blk.niq_latency());
 
-        blk.set_niq_delay(0x0000AABBCCDD8888);
-        CHECK(blk.has_niq_delay());
-        CHECK_EQUAL(0x0000AABBCCDE0000, blk.niq_delay());
+        blk.set_niq_latency(0x0000AABBCCDD8888);
+        CHECK(blk.has_niq_latency());
+        CHECK_EQUAL(0x0000AABBCCDE0000, blk.niq_latency());
 
-        blk.set_niq_delay(0x1111AABBCCDD0000);
-        CHECK(blk.has_niq_delay());
-        CHECK_EQUAL(0x0000FFFFFFFE0000, blk.niq_delay());
+        blk.set_niq_latency(0x1111AABBCCDD0000);
+        CHECK(blk.has_niq_latency());
+        CHECK_EQUAL(0x0000FFFFFFFE0000, blk.niq_latency());
 
-        blk.set_niq_delay(0x0000FFFFFFFE8000);
-        CHECK(blk.has_niq_delay());
-        CHECK_EQUAL(0x0000FFFFFFFE0000, blk.niq_delay());
+        blk.set_niq_latency(0x0000FFFFFFFE8000);
+        CHECK(blk.has_niq_latency());
+        CHECK_EQUAL(0x0000FFFFFFFE0000, blk.niq_latency());
 
         blk.reset();
 
-        CHECK(!blk.has_niq_delay());
-        CHECK_EQUAL(0x0000FFFFFFFF0000, blk.niq_delay());
+        CHECK(!blk.has_niq_latency());
+        CHECK_EQUAL(0x0000FFFFFFFF0000, blk.niq_latency());
+    }
+    { // niq_stalling
+        header::XrQueueMetricsBlock blk;
+
+        CHECK(!blk.has_niq_stalling());
+        CHECK_EQUAL(0x0000FFFFFFFF0000, blk.niq_stalling());
+
+        blk.set_niq_stalling(0x0000AABBCCDD0000);
+        CHECK(blk.has_niq_stalling());
+        CHECK_EQUAL(0x0000AABBCCDD0000, blk.niq_stalling());
+
+        blk.set_niq_stalling(0x0000AABBCCDD1111);
+        CHECK(blk.has_niq_stalling());
+        CHECK_EQUAL(0x0000AABBCCDD0000, blk.niq_stalling());
+
+        blk.set_niq_stalling(0x0000AABBCCDD8888);
+        CHECK(blk.has_niq_stalling());
+        CHECK_EQUAL(0x0000AABBCCDE0000, blk.niq_stalling());
+
+        blk.set_niq_stalling(0x1111AABBCCDD0000);
+        CHECK(blk.has_niq_stalling());
+        CHECK_EQUAL(0x0000FFFFFFFE0000, blk.niq_stalling());
+
+        blk.set_niq_stalling(0x0000FFFFFFFE8000);
+        CHECK(blk.has_niq_stalling());
+        CHECK_EQUAL(0x0000FFFFFFFE0000, blk.niq_stalling());
+
+        blk.reset();
+
+        CHECK(!blk.has_niq_stalling());
+        CHECK_EQUAL(0x0000FFFFFFFF0000, blk.niq_stalling());
     }
 }
 

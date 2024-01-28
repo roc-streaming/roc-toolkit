@@ -12,13 +12,12 @@
 namespace roc {
 namespace audio {
 
-void ResamplerConfig::deduce_defaults(FreqEstimatorInput fe_input,
-                                      FreqEstimatorProfile fe_profile) {
+void ResamplerConfig::deduce_defaults(LatencyTunerBackend latency_backend,
+                                      LatencyTunerProfile latency_tuner) {
     if (backend == ResamplerBackend_Default) {
         // If responsive profile is set, use builtin backend instead of speex,
         // since it has higher scaling precision.
-        const bool need_builtin_backend = fe_input != FreqEstimatorInput_Disable
-            && fe_profile == FreqEstimatorProfile_Responsive;
+        const bool need_builtin_backend = latency_tuner == LatencyTunerProfile_Responsive;
 
         // If speex backend is not available, fallback to builtin backend.
         const bool force_builtin_backend =

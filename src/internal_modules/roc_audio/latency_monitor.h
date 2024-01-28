@@ -15,7 +15,7 @@
 #include "roc_audio/depacketizer.h"
 #include "roc_audio/freq_estimator.h"
 #include "roc_audio/iframe_reader.h"
-#include "roc_audio/latency_config.h"
+#include "roc_audio/latency_tuner.h"
 #include "roc_audio/resampler_reader.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/attributes.h"
@@ -24,29 +24,10 @@
 #include "roc_core/time.h"
 #include "roc_packet/sorted_queue.h"
 #include "roc_packet/units.h"
+#include "roc_rtp/link_meter.h"
 
 namespace roc {
 namespace audio {
-
-//! Metrics of latency monitor.
-struct LatencyMonitorMetrics {
-    //! Estimated NIQ latency.
-    //! NIQ = network incoming queue.
-    //! Defines how many samples are buffered in receiver packet queue and
-    //! receiver pipeline before depacketizer (packet part of pipeline).
-    core::nanoseconds_t niq_latency;
-
-    //! Estimated E2E latency.
-    //! E2E = end-to-end.
-    //! Defines how much time passed between frame entered sender pipeline
-    //! (when it is captured) and leaved received pipeline (when it is played).
-    core::nanoseconds_t e2e_latency;
-
-    LatencyMonitorMetrics()
-        : niq_latency(0)
-        , e2e_latency(0) {
-    }
-};
 
 //! Latency monitor.
 //!
@@ -57,13 +38,9 @@ struct LatencyMonitorMetrics {
 //!  - calculates E2E latency (end-to-end) - how much time passed between frame
 //!    was captured on sender and played on receiver (this is based on capture
 //!    timestamps, which are populated with the help of RTCP)
-//!  - monitors how close actual latency and target latency are (which one to
-//!    check, NIQ or E2E, depends on config)
-//!  - assuming that the difference between actual latency and target latency is
-//!    caused by the clock drift between sender and receiver, calculates scaling
-//!    factor for resampler to compensate that clock drift
+//!  - asks LatencyTuner to calculate scaling factor based on the actual and
+//!    target latencies
 //!  - passes calculated scaling factor to resampler
-//!  - shuts down session if the actual latency goes out of bounds
 //!
 //! @b Flow
 //!
@@ -74,12 +51,12 @@ struct LatencyMonitorMetrics {
 //!  - after adding frame to playback buffer, pipeline invokes reclock() method;
 //!    it calculates difference between capture and playback time of the frame,
 //!    which is E2E latency
-//!  - latency monitor has an instance of FreqEstimator (FE); it continously passes
-//!    calculated latency to FE, and FE calculates scaling factor for resampler
+//!  - latency monitor has an instance of LatencyTuner; it continously passes
+//!    calculated latencies to it, and obtains scaling factor for resampler
 //!  - latency monitor has a reference to resampler, and periodically passes
-//!    updated scaling factor to it;
-//!  - pipeline also can query latency monitor for latency statistics on behalf of
-//!    request from user
+//!    updated scaling factor to it
+//!  - pipeline also can query latency monitor for latency metrics on behalf of
+//!    request from user or to report them to sender via RTCP
 class LatencyMonitor : public IFrameReader, public core::NonCopyable<> {
 public:
     //! Constructor.
@@ -87,20 +64,21 @@ public:
     //! @b Parameters
     //!  - @p frame_reader is inner frame reader for E2E latency calculation
     //!  - @p incoming_queue and @p depacketizer are used to NIQ latency calculation
+    //!  - @p link_meter is used to obtain link metrics
     //!  - @p resampler is used to set the scaling factor to compensate clock
     //!    drift according to calculated latency
     //!  - @p config defines calculation parameters
-    //!  - @p target_latency defines target latency that we should maintain
-    //!  - @p input_sample_spec is the sample spec of the input packets
-    //!  - @p output_sample_spec is the sample spec of the output frames (after
+    //!  - @p packet_sample_spec is the sample spec of the input packets
+    //!  - @p frame_sample_spec is the sample spec of the output frames (after
     //!    resampling)
     LatencyMonitor(IFrameReader& frame_reader,
                    const packet::SortedQueue& incoming_queue,
                    const Depacketizer& depacketizer,
+                   const rtp::LinkMeter& link_meter,
                    ResamplerReader* resampler,
                    const LatencyConfig& config,
-                   const SampleSpec& input_sample_spec,
-                   const SampleSpec& output_sample_spec);
+                   const SampleSpec& packet_sample_spec,
+                   const SampleSpec& frame_sample_spec);
 
     //! Check if the object was initialized successfully.
     bool is_valid() const;
@@ -109,7 +87,7 @@ public:
     bool is_alive() const;
 
     //! Get metrics.
-    LatencyMonitorMetrics metrics() const;
+    LatencyMetrics metrics() const;
 
     //! Read audio frame from a pipeline.
     //! @remarks
@@ -127,48 +105,29 @@ public:
 private:
     void compute_niq_latency_();
     void compute_e2e_latency_(core::nanoseconds_t playback_timestamp);
+    void query_link_meter_();
 
-    bool update_();
+    bool pre_process_(const Frame& frame);
+    void post_process_(const Frame& frame);
 
-    bool check_bounds_(packet::stream_timestamp_diff_t latency) const;
+    bool init_scaling_();
+    bool update_scaling_();
 
-    bool init_scaling_(size_t input_sample_rate, size_t output_sample_rate);
-    bool update_scaling_(packet::stream_timestamp_diff_t latency);
-
-    void report_();
+    LatencyTuner tuner_;
+    LatencyMetrics metrics_;
 
     IFrameReader& frame_reader_;
 
     const packet::SortedQueue& incoming_queue_;
     const Depacketizer& depacketizer_;
+    const rtp::LinkMeter& link_meter_;
 
     ResamplerReader* resampler_;
-    core::Optional<FreqEstimator> fe_;
+    const bool enable_scaling_;
 
-    packet::stream_timestamp_t stream_pos_;
-    core::nanoseconds_t stream_cts_;
+    core::nanoseconds_t capture_ts_;
 
-    const packet::stream_timestamp_t update_interval_;
-    packet::stream_timestamp_t update_pos_;
-
-    const packet::stream_timestamp_t report_interval_;
-    packet::stream_timestamp_t report_pos_;
-
-    float freq_coeff_;
-    const FreqEstimatorInput fe_input_;
-    const float fe_max_delta_;
-
-    packet::stream_timestamp_diff_t niq_latency_;
-    packet::stream_timestamp_diff_t e2e_latency_;
-    bool has_niq_latency_;
-    bool has_e2e_latency_;
-
-    const packet::stream_timestamp_diff_t target_latency_;
-    const packet::stream_timestamp_diff_t min_latency_;
-    const packet::stream_timestamp_diff_t max_latency_;
-
-    const SampleSpec input_sample_spec_;
-    const SampleSpec output_sample_spec_;
+    const SampleSpec packet_sample_spec_;
 
     bool alive_;
     bool valid_;

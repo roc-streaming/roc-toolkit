@@ -137,7 +137,7 @@ private:
     void generate_description_(Builder& bld);
     void generate_goodbye_(Builder& bld);
 
-    void record_error_();
+    void log_stats_();
 
     packet::PacketFactory& packet_factory_;
     core::BufferFactory<uint8_t>& buffer_factory_;
@@ -165,9 +165,11 @@ private:
     size_t cur_pkt_send_stream_;
     size_t cur_pkt_recv_stream_;
 
-    // Dropped malformed incoming packets.
+    // Statistics.
     size_t error_count_;
-    core::RateLimiter error_limiter_;
+    size_t processed_packet_count_;
+    size_t generated_packet_count_;
+    core::RateLimiter log_limiter_;
 
     bool valid_;
 };

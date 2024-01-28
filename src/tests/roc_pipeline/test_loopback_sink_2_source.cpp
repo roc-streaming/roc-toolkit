@@ -166,7 +166,8 @@ ReceiverConfig make_receiver_config(audio::ChannelMask frame_channels,
 
     config.common.rtcp.inactivity_timeout = Timeout * core::Second / SampleRate;
 
-    config.default_session.latency.fe_input = audio::FreqEstimatorInput_Disable;
+    config.default_session.latency.tuner_backend = audio::LatencyTunerBackend_Niq;
+    config.default_session.latency.tuner_profile = audio::LatencyTunerProfile_Intact;
     config.default_session.latency.target_latency = Latency * core::Second / SampleRate;
     config.default_session.watchdog.no_playback_timeout =
         Timeout * core::Second / SampleRate;

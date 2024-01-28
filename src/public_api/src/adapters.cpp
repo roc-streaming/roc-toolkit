@@ -94,6 +94,16 @@ bool sender_config_from_user(node::Context& context,
         out.packet_length = (core::nanoseconds_t)in.packet_length;
     }
 
+    if (in.target_latency != 0) {
+        out.latency.target_latency = (core::nanoseconds_t)in.target_latency;
+    }
+
+    if (in.latency_tolerance < 0) {
+        out.latency.latency_tolerance = 0;
+    } else if (in.latency_tolerance > 0) {
+        out.latency.latency_tolerance = (core::nanoseconds_t)in.latency_tolerance;
+    }
+
     out.enable_timing = false;
     out.enable_auto_cts = true;
 
@@ -144,7 +154,9 @@ bool receiver_config_from_user(node::Context&,
             (core::nanoseconds_t)in.target_latency;
     }
 
-    if (in.latency_tolerance != 0) {
+    if (in.latency_tolerance < 0) {
+        out.default_session.latency.latency_tolerance = 0;
+    } else if (in.latency_tolerance > 0) {
         out.default_session.latency.latency_tolerance =
             (core::nanoseconds_t)in.latency_tolerance;
     }
@@ -177,18 +189,18 @@ bool receiver_config_from_user(node::Context&,
         return false;
     }
 
-    if (!clock_sync_backend_from_user(out.default_session.latency.fe_input,
-                                      in.clock_sync_backend)) {
+    if (!latency_tuner_backend_from_user(out.default_session.latency.tuner_backend,
+                                         in.latency_tuner_backend)) {
         roc_log(LogError,
-                "bad configuration: invalid roc_receiver_config.clock_sync_backend:"
+                "bad configuration: invalid roc_receiver_config.latency_tuner_backend:"
                 " should be valid enum value");
         return false;
     }
 
-    if (!clock_sync_profile_from_user(out.default_session.latency.fe_profile,
-                                      in.clock_sync_profile)) {
+    if (!latency_tuner_profile_from_user(out.default_session.latency.tuner_profile,
+                                         in.latency_tuner_profile)) {
         roc_log(LogError,
-                "bad configuration: invalid roc_receiver_config.clock_sync_profile:"
+                "bad configuration: invalid roc_receiver_config.latency_tuner_profile:"
                 " should be valid enum value");
         return false;
     }
@@ -369,19 +381,15 @@ bool clock_source_from_user(bool& out_timing, roc_clock_source in) {
 }
 
 ROC_ATTR_NO_SANITIZE_UB
-bool clock_sync_backend_from_user(audio::FreqEstimatorInput& out,
-                                  roc_clock_sync_backend in) {
+bool latency_tuner_backend_from_user(audio::LatencyTunerBackend& out,
+                                     roc_latency_tuner_backend in) {
     switch (enum_from_user(in)) {
-    case ROC_CLOCK_SYNC_BACKEND_DISABLE:
-        out = audio::FreqEstimatorInput_Disable;
+    case ROC_LATENCY_TUNER_BACKEND_DEFAULT:
+        out = audio::LatencyTunerBackend_Default;
         return true;
 
-    case ROC_CLOCK_SYNC_BACKEND_DEFAULT:
-        out = audio::FreqEstimatorInput_Default;
-        return true;
-
-    case ROC_CLOCK_SYNC_BACKEND_NIQ:
-        out = audio::FreqEstimatorInput_NiqLatency;
+    case ROC_LATENCY_TUNER_BACKEND_NIQ:
+        out = audio::LatencyTunerBackend_Niq;
         return true;
     }
 
@@ -389,19 +397,23 @@ bool clock_sync_backend_from_user(audio::FreqEstimatorInput& out,
 }
 
 ROC_ATTR_NO_SANITIZE_UB
-bool clock_sync_profile_from_user(audio::FreqEstimatorProfile& out,
-                                  roc_clock_sync_profile in) {
+bool latency_tuner_profile_from_user(audio::LatencyTunerProfile& out,
+                                     roc_latency_tuner_profile in) {
     switch (enum_from_user(in)) {
-    case ROC_CLOCK_SYNC_PROFILE_DEFAULT:
-        out = audio::FreqEstimatorProfile_Default;
+    case ROC_LATENCY_TUNER_PROFILE_DEFAULT:
+        out = audio::LatencyTunerProfile_Default;
         return true;
 
-    case ROC_CLOCK_SYNC_PROFILE_RESPONSIVE:
-        out = audio::FreqEstimatorProfile_Responsive;
+    case ROC_LATENCY_TUNER_PROFILE_INTACT:
+        out = audio::LatencyTunerProfile_Intact;
         return true;
 
-    case ROC_CLOCK_SYNC_PROFILE_GRADUAL:
-        out = audio::FreqEstimatorProfile_Gradual;
+    case ROC_LATENCY_TUNER_PROFILE_RESPONSIVE:
+        out = audio::LatencyTunerProfile_Responsive;
+        return true;
+
+    case ROC_LATENCY_TUNER_PROFILE_GRADUAL:
+        out = audio::LatencyTunerProfile_Gradual;
         return true;
     }
 

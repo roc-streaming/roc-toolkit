@@ -197,9 +197,9 @@ roc_config
 
 .. doxygenenum:: roc_clock_source
 
-.. doxygenenum:: roc_clock_sync_backend
+.. doxygenenum:: roc_latency_tuner_backend
 
-.. doxygenenum:: roc_clock_sync_profile
+.. doxygenenum:: roc_latency_tuner_profile
 
 .. doxygenenum:: roc_resampler_backend
 

@@ -12,7 +12,11 @@
 namespace roc {
 namespace audio {
 
-void WatchdogConfig::deduce_defaults(const core::nanoseconds_t target_latency) {
+void WatchdogConfig::deduce_defaults(core::nanoseconds_t target_latency) {
+    if (target_latency <= 0) {
+        target_latency = 200 * core::Millisecond;
+    }
+
     if (no_playback_timeout < 0) {
         no_playback_timeout = target_latency * 4 / 3;
     }

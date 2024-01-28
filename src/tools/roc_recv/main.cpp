@@ -104,11 +104,11 @@ int main(int argc, char** argv) {
     sndio::BackendMap::instance().set_frame_size(
         io_config.frame_length, receiver_config.common.output_sample_spec);
 
-    if (args.sess_latency_given) {
+    if (args.target_latency_given) {
         if (!core::parse_duration(
-                args.sess_latency_arg,
+                args.target_latency_arg,
                 receiver_config.default_session.latency.target_latency)) {
-            roc_log(LogError, "invalid --sess-latency");
+            roc_log(LogError, "invalid --target-latency");
             return 1;
         }
     }
@@ -140,31 +140,31 @@ int main(int argc, char** argv) {
         }
     }
 
-    switch (args.clock_backend_arg) {
-    case clock_backend_arg_disable:
-        receiver_config.default_session.latency.fe_input =
-            audio::FreqEstimatorInput_Disable;
-        break;
-    case clock_backend_arg_niq:
-        receiver_config.default_session.latency.fe_input =
-            audio::FreqEstimatorInput_NiqLatency;
+    switch (args.latency_backend_arg) {
+    case latency_backend_arg_niq:
+        receiver_config.default_session.latency.tuner_backend =
+            audio::LatencyTunerBackend_Niq;
         break;
     default:
         break;
     }
 
-    switch (args.clock_profile_arg) {
-    case clock_profile_arg_default:
-        receiver_config.default_session.latency.fe_profile =
-            audio::FreqEstimatorProfile_Default;
+    switch (args.latency_profile_arg) {
+    case latency_profile_arg_default:
+        receiver_config.default_session.latency.tuner_profile =
+            audio::LatencyTunerProfile_Default;
         break;
-    case clock_profile_arg_responsive:
-        receiver_config.default_session.latency.fe_profile =
-            audio::FreqEstimatorProfile_Responsive;
+    case latency_profile_arg_responsive:
+        receiver_config.default_session.latency.tuner_profile =
+            audio::LatencyTunerProfile_Responsive;
         break;
-    case clock_profile_arg_gradual:
-        receiver_config.default_session.latency.fe_profile =
-            audio::FreqEstimatorProfile_Gradual;
+    case latency_profile_arg_gradual:
+        receiver_config.default_session.latency.tuner_profile =
+            audio::LatencyTunerProfile_Gradual;
+        break;
+    case latency_profile_arg_intact:
+        receiver_config.default_session.latency.tuner_profile =
+            audio::LatencyTunerProfile_Intact;
         break;
     default:
         break;

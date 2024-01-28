@@ -20,7 +20,13 @@ section "Options"
 
     option "reuseaddr" - "enable SO_REUSEADDR when binding sockets" optional
 
+    option "target-latency" - "Target latency, TIME units"
+        string optional
+
     option "io-latency" - "Recording target latency, TIME units"
+        string optional
+
+    option "latency-tolerance" - "Maximum latency deviation, TIME units"
         string optional
 
     option "nbsrc" - "Number of source packets in FEC block"
@@ -43,6 +49,12 @@ section "Options"
 
     option "rate" - "Override input sample rate, Hz"
         int optional
+
+    option "latency-backend" - "Which latency to use in latency tuner"
+        values="niq" default="niq" enum optional
+
+    option "latency-profile" - "Latency tuning profile"
+        values="responsive","gradual","intact" default="intact" enum optional
 
     option "resampler-backend" - "Resampler backend"
         values="default","builtin","speex","speexdec" default="default" enum optional

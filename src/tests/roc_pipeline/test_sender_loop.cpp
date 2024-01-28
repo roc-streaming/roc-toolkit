@@ -110,7 +110,8 @@ TEST_GROUP(sender_loop) {
     SenderConfig config;
 
     void setup() {
-        config.latency.fe_input = audio::FreqEstimatorInput_Disable;
+        config.latency.tuner_backend = audio::LatencyTunerBackend_Niq;
+        config.latency.tuner_profile = audio::LatencyTunerProfile_Intact;
     }
 };
 

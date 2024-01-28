@@ -162,6 +162,14 @@ core::nanoseconds_t Packet::capture_timestamp() const {
     return 0;
 }
 
+core::nanoseconds_t Packet::receive_timestamp() const {
+    if (const UDP* u = udp()) {
+        return u->receive_timestamp;
+    }
+
+    return 0;
+}
+
 int Packet::compare(const Packet& other) const {
     if (const RTP* ra = rtp()) {
         if (const RTP* rb = other.rtp()) {

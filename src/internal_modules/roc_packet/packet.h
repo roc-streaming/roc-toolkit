@@ -131,6 +131,11 @@ public:
     //!  Returns number of nanoseconds since Unix epoch.
     core::nanoseconds_t capture_timestamp() const;
 
+    //! Get receive timestamp (RTS) of the packet.
+    //! @remarks
+    //!  Returns number of nanoseconds since Unix epoch.
+    core::nanoseconds_t receive_timestamp() const;
+
     //! Determine packet ordering.
     //! @returns
     //!  * -1 if this packet precedes @p other packet

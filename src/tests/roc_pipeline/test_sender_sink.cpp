@@ -115,6 +115,9 @@ TEST_GROUP(sender_sink) {
         config.enable_timing = false;
         config.enable_profiling = true;
 
+        config.latency.tuner_backend = audio::LatencyTunerBackend_Niq;
+        config.latency.tuner_profile = audio::LatencyTunerProfile_Intact;
+
         return config;
     }
 

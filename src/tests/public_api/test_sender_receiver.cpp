@@ -112,7 +112,7 @@ TEST_GROUP(sender_receiver) {
         }
 
         receiver_conf.clock_source = ROC_CLOCK_SOURCE_INTERNAL;
-        receiver_conf.clock_sync_backend = ROC_CLOCK_SYNC_BACKEND_DISABLE;
+        receiver_conf.latency_tuner_profile = ROC_LATENCY_TUNER_PROFILE_INTACT;
         receiver_conf.target_latency = test::Latency * 1000000000ull / test::SampleRate;
         receiver_conf.no_playback_timeout =
             test::Timeout * 1000000000ull / test::SampleRate;

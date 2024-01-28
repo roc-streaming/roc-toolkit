@@ -21,7 +21,7 @@ namespace rtcp {
 
 namespace {
 
-const core::nanoseconds_t ReportInterval = core::Second * 30;
+const core::nanoseconds_t LogInterval = core::Second * 30;
 
 } // namespace
 
@@ -49,7 +49,9 @@ Communicator::Communicator(const Config& config,
     , cur_pkt_send_stream_(0)
     , cur_pkt_recv_stream_(0)
     , error_count_(0)
-    , error_limiter_(ReportInterval)
+    , processed_packet_count_(0)
+    , generated_packet_count_(0)
+    , log_limiter_(LogInterval)
     , valid_(false) {
     if (!reporter_.is_valid()) {
         return;
@@ -80,10 +82,12 @@ status::StatusCode Communicator::process_packet(const packet::PacketPtr& packet,
 
     roc_log(LogTrace, "rtcp communicator: processing incoming packet");
 
+    processed_packet_count_++;
+
     Traverser traverser(packet->rtcp()->payload);
     if (!traverser.parse()) {
         roc_log(LogTrace, "rtcp communicator: error when parsing compound packet");
-        record_error_();
+        error_count_++;
         return status::StatusOK;
     }
 
@@ -128,7 +132,7 @@ void Communicator::process_all_descriptions_(const Traverser& traverser) {
             SdesTraverser sdes = iter.get_sdes();
             if (!sdes.parse()) {
                 roc_log(LogTrace, "rtcp communicator: error when parsing SDES packet");
-                record_error_();
+                error_count_++;
                 break;
             }
             process_description_(sdes);
@@ -141,7 +145,7 @@ void Communicator::process_all_descriptions_(const Traverser& traverser) {
 
     if (iter.error()) {
         roc_log(LogTrace, "rtcp communicator: error when traversing compound packet");
-        record_error_();
+        error_count_++;
     }
 }
 
@@ -163,7 +167,7 @@ void Communicator::process_all_reports_(const Traverser& traverser) {
             XrTraverser xr = iter.get_xr();
             if (!xr.parse()) {
                 roc_log(LogTrace, "rtcp communicator: error when parsing XR packet");
-                record_error_();
+                error_count_++;
                 break;
             }
             process_extended_report_(xr);
@@ -176,7 +180,7 @@ void Communicator::process_all_reports_(const Traverser& traverser) {
 
     if (iter.error()) {
         roc_log(LogTrace, "rtcp communicator: error when traversing compound packet");
-        record_error_();
+        error_count_++;
     }
 }
 
@@ -190,7 +194,7 @@ void Communicator::process_all_goodbyes_(const Traverser& traverser) {
             ByeTraverser bye = iter.get_bye();
             if (!bye.parse()) {
                 roc_log(LogTrace, "rtcp communicator: error when parsing BYE packet");
-                record_error_();
+                error_count_++;
                 break;
             }
             process_goodbye_(bye);
@@ -203,7 +207,7 @@ void Communicator::process_all_goodbyes_(const Traverser& traverser) {
 
     if (iter.error()) {
         roc_log(LogTrace, "rtcp communicator: error when traversing compound packet");
-        record_error_();
+        error_count_++;
     }
 }
 
@@ -237,7 +241,7 @@ void Communicator::process_description_(const SdesTraverser& sdes) {
 
     if (iter.error()) {
         roc_log(LogTrace, "rtcp communicator: error when traversing SDES packet");
-        record_error_();
+        error_count_++;
     }
 }
 
@@ -258,7 +262,7 @@ void Communicator::process_goodbye_(const ByeTraverser& bye) {
 
     if (iter.error()) {
         roc_log(LogTrace, "rtcp communicator: error when traversing BYE packet");
-        record_error_();
+        error_count_++;
     }
 }
 
@@ -323,7 +327,7 @@ void Communicator::process_extended_report_(const XrTraverser& xr) {
 
     if (iter.error()) {
         roc_log(LogTrace, "rtcp communicator: error when traversing XR packet");
-        record_error_();
+        error_count_++;
     }
 }
 
@@ -414,12 +418,16 @@ status::StatusCode Communicator::generate_packets_(core::nanoseconds_t current_t
         if (status != status::StatusOK) {
             break;
         }
+
+        generated_packet_count_++;
     }
 
     status::StatusCode e_status = end_packet_generation_();
     if (status == status::StatusOK && e_status != status::StatusOK) {
         status = e_status;
     }
+
+    log_stats_();
 
     return status;
 }
@@ -835,14 +843,20 @@ void Communicator::generate_goodbye_(Builder& bld) {
     bld.end_bye();
 }
 
-void Communicator::record_error_() {
-    error_count_++;
-
-    if (error_limiter_.allow()) {
-        roc_log(LogDebug, "rtcp communicator: dropped %lu malformed packets",
-                (unsigned long)error_count_);
-        error_count_ = 0;
+void Communicator::log_stats_() {
+    if (!log_limiter_.allow()) {
+        return;
     }
+
+    roc_log(LogDebug,
+            "rtcp communicator:"
+            " generated_pkts=%lu processed_pkts=%lu proc_errs=%lu",
+            (unsigned long)generated_packet_count_,
+            (unsigned long)processed_packet_count_, (unsigned long)error_count_);
+
+    error_count_ = 0;
+    processed_packet_count_ = 0;
+    generated_packet_count_ = 0;
 }
 
 } // namespace rtcp

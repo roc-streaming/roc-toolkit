@@ -29,7 +29,7 @@ section "Options"
 
     option "reuseaddr" - "enable SO_REUSEADDR when binding sockets" optional
 
-    option "sess-latency" - "Session target latency, TIME units"
+    option "target-latency" - "Target latency, TIME units"
         string optional
 
     option "io-latency" - "Playback target latency, TIME units"
@@ -56,11 +56,11 @@ section "Options"
     option "rate" - "Override output sample rate, Hz"
         int optional
 
-    option "clock-backend" - "Clock synchronization backend"
-        values="disable","niq" default="niq" enum optional
+    option "latency-backend" - "Which latency to use in latency tuner"
+        values="niq" default="niq" enum optional
 
-    option "clock-profile" - "Clock synchronization profile"
-        values="default","responsive","gradual" default="default" enum optional
+    option "latency-profile" - "Latency tuning profile"
+        values="default","responsive","gradual","intact" default="default" enum optional
 
     option "resampler-backend" - "Resampler backend"
         values="default","builtin","speex","speexdec" default="default" enum optional

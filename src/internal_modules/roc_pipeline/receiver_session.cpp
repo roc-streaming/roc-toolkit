@@ -167,7 +167,7 @@ ReceiverSession::ReceiverSession(
         areader = channel_mapper_reader_.get();
     }
 
-    if (session_config.latency.fe_input != audio::FreqEstimatorInput_Disable
+    if (session_config.latency.tuner_profile != audio::LatencyTunerProfile_Intact
         || encoding->sample_spec.sample_rate()
             != common_config.output_sample_spec.sample_rate()) {
         resampler_poisoner_.reset(new (resampler_poisoner_)
@@ -208,7 +208,7 @@ ReceiverSession::ReceiverSession(
     areader = session_poisoner_.get();
 
     latency_monitor_.reset(new (latency_monitor_) audio::LatencyMonitor(
-        *areader, *source_queue_, *depacketizer_, resampler_reader_.get(),
+        *areader, *source_queue_, *depacketizer_, *source_meter_, resampler_reader_.get(),
         session_config.latency, encoding->sample_spec, common_config.output_sample_spec));
     if (!latency_monitor_ || !latency_monitor_->is_valid()) {
         return;
@@ -295,7 +295,7 @@ void ReceiverSession::generate_reports(const char* report_cname,
 
     if (n_reports > 0 && packet_router_->has_source_id(packet::Packet::FlagAudio)
         && source_meter_->has_metrics()) {
-        const audio::LatencyMonitorMetrics latency_metrics = latency_monitor_->metrics();
+        const audio::LatencyMetrics latency_metrics = latency_monitor_->metrics();
         const rtp::LinkMetrics link_metrics = source_meter_->metrics();
 
         rtcp::RecvReport& report = *reports;
@@ -312,6 +312,7 @@ void ReceiverSession::generate_reports(const char* report_cname,
         report.cum_loss = link_metrics.cum_loss;
         report.jitter = link_metrics.jitter;
         report.niq_latency = latency_metrics.niq_latency;
+        report.niq_stalling = latency_metrics.niq_stalling;
         report.e2e_latency = latency_metrics.e2e_latency;
 
         reports++;

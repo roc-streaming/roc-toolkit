@@ -24,7 +24,9 @@ Options
 -r, --repair=ENDPOINT_URI   Remote repair endpoint
 -c, --control=ENDPOINT_URI  Remote control endpoint
 --reuseaddr                 enable SO_REUSEADDR when binding sockets
+--target-latency=STRING     Target latency, TIME units
 --io-latency=STRING         Recording target latency, TIME units
+--latency-tolerance=STRING  Maximum latency deviation, TIME units
 --nbsrc=INT                 Number of source packets in FEC block
 --nbrpr=INT                 Number of repair packets in FEC block
 --packet-len=STRING         Outgoing packet length, TIME units
@@ -32,6 +34,8 @@ Options
 --max-packet-size=SIZE      Maximum packet size, in SIZE units
 --max-frame-size=SIZE       Maximum internal frame size, in SIZE units
 --rate=INT                  Override input sample rate, Hz
+--latency-backend=ENUM      Which latency to use in latency tuner (possible values="niq" default=`niq')
+--latency-profile=ENUM      Latency tuning profile  (possible values="responsive", "gradual", "intact" default=`intact')
 --resampler-backend=ENUM    Resampler backend  (possible values="default", "builtin", "speex", "speexdec" default=`default')
 --resampler-profile=ENUM    Resampler profile  (possible values="low", "medium", "high" default=`medium')
 --interleaving              Enable packet interleaving  (default=off)
@@ -261,6 +265,18 @@ Manually specify resampling parameters:
 
     $ roc-send -vv -s rtp://192.168.0.3:10001 \
         --resampler-backend=speex --resampler-profile=high
+
+Perform latency tuning on sender instead of receiver:
+
+.. code::
+
+    $ roc-recv -vv -o pulse://default -s rtp+rs8m://0.0.0.0:10001 \
+        -r rs8m://0.0.0.0:10002 -c rtcp://0.0.0.0:10003 \
+        --latency-profile=intact --target-latency=200ms
+
+    $ roc-send -vv -i file:./input.wav -s rtp+rs8m://192.168.0.3:10001 \
+        -r rs8m://192.168.0.3:10002 -c rtcp://192.168.0.3:10003 \
+        --latency-profile=gradual --target-latency=200ms
 
 ENVIRONMENT VARIABLES
 =====================

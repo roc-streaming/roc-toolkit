@@ -125,7 +125,8 @@ TEST_GROUP(receiver_source) {
         config.common.enable_timing = false;
         config.common.enable_profiling = true;
 
-        config.default_session.latency.fe_input = audio::FreqEstimatorInput_Disable;
+        config.default_session.latency.tuner_backend = audio::LatencyTunerBackend_Niq;
+        config.default_session.latency.tuner_profile = audio::LatencyTunerProfile_Intact;
         config.default_session.latency.target_latency =
             Latency * core::Second / (int)output_sample_spec.sample_rate();
         config.default_session.latency.latency_tolerance =

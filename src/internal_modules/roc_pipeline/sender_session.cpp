@@ -141,7 +141,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         awriter = channel_mapper_writer_.get();
     }
 
-    if (config_.latency.fe_input != audio::FreqEstimatorInput_Disable
+    if (config_.latency.tuner_profile != audio::LatencyTunerProfile_Intact
         || encoding->sample_spec.sample_rate()
             != config_.input_sample_spec.sample_rate()) {
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
@@ -167,7 +167,8 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
     }
 
     feedback_monitor_.reset(new (feedback_monitor_) audio::FeedbackMonitor(
-        *awriter, resampler_writer_.get(), config_.input_sample_spec, config_.latency));
+        *awriter, resampler_writer_.get(), config_.feedback, config_.latency,
+        config_.input_sample_spec));
     if (!feedback_monitor_ || !feedback_monitor_->is_valid()) {
         return false;
     }
@@ -244,7 +245,7 @@ SenderSessionMetrics SenderSession::get_metrics() const {
         metrics.packets = packetizer_->metrics();
     }
     if (feedback_monitor_) {
-        metrics.feedback = feedback_monitor_->metrics();
+        metrics.latency = feedback_monitor_->metrics();
     }
 
     return metrics;
@@ -292,12 +293,13 @@ SenderSession::notify_send_stream(packet::stream_source_t recv_source_id,
     roc_panic_if(!has_send_stream());
 
     if (feedback_monitor_ && feedback_monitor_->is_started()) {
-        audio::FeedbackMonitorMetrics metrics;
-        metrics.jitter = recv_report.jitter;
+        audio::LatencyMetrics metrics;
         metrics.niq_latency = recv_report.niq_latency;
+        metrics.niq_stalling = recv_report.niq_stalling;
         metrics.e2e_latency = recv_report.e2e_latency;
+        metrics.jitter = recv_report.jitter;
 
-        feedback_monitor_->store(metrics);
+        feedback_monitor_->process_feedback(recv_source_id, metrics);
     }
 
     return status::StatusOK;
@@ -317,6 +319,11 @@ void SenderSession::start_feedback_monitor_() {
     if (rtcp_address_.multicast()) {
         // Control endpoint uses multicast, so there are multiple receivers for
         // a sender session. We don't support feedback monitoring in this mode.
+        return;
+    }
+
+    if (feedback_monitor_->is_started()) {
+        // Already started.
         return;
     }
 

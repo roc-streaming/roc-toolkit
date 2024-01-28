@@ -12,8 +12,7 @@
 #ifndef ROC_PIPELINE_METRICS_H_
 #define ROC_PIPELINE_METRICS_H_
 
-#include "roc_audio/feedback_monitor.h"
-#include "roc_audio/latency_monitor.h"
+#include "roc_audio/latency_tuner.h"
 #include "roc_audio/packetizer.h"
 #include "roc_core/stddefs.h"
 #include "roc_rtp/link_meter.h"
@@ -27,7 +26,7 @@ struct SenderSessionMetrics {
     audio::PacketizerMetrics packets;
 
     //! Receiver feedback.
-    audio::FeedbackMonitorMetrics feedback;
+    audio::LatencyMetrics latency;
 
     SenderSessionMetrics() {
     }
@@ -49,7 +48,7 @@ struct ReceiverSessionMetrics {
     rtp::LinkMetrics link;
 
     //! Latency metrics.
-    audio::LatencyMonitorMetrics latency;
+    audio::LatencyMetrics latency;
 
     ReceiverSessionMetrics() {
     }

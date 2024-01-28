@@ -12,6 +12,7 @@
 #include "roc_core/panic.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_core/string_builder.h"
+#include "roc_core/time.h"
 #include "roc_netio/socket_ops.h"
 #include "roc_status/code_to_str.h"
 
@@ -333,13 +334,16 @@ void UdpPort::recv_cb_(uv_udp_t* handle,
 
     pp->udp()->src_addr = src_addr;
     pp->udp()->dst_addr = self.config_.bind_address;
+    pp->udp()->receive_timestamp = core::timestamp(core::ClockUnix);
 
     pp->set_buffer(core::Slice<uint8_t>(*bp, 0, (size_t)nread));
 
     if (self.inbound_writer_) {
         const status::StatusCode code = self.inbound_writer_->write(pp);
-        // TODO(gh-183): handle or log status
-        roc_panic_if(code != status::StatusOK);
+        if (code != status::StatusOK) {
+            roc_panic("udp port: %s: can't writer packet: status=%s", self.descriptor(),
+                      status::code_to_str(code));
+        }
     }
 }
 

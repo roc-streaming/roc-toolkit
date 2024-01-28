@@ -1525,7 +1525,7 @@ private:
     NtpTimestamp32 mean_rtt_;
     NtpTimestamp32 min_rtt_;
     NtpTimestamp32 max_rtt_;
-    NtpTimestamp64 e2e_delay_;
+    NtpTimestamp64 e2e_latency_;
 
 public:
     XrDelayMetricsBlock() {
@@ -1539,7 +1539,7 @@ public:
         mean_rtt_.set_value(MetricUnavail_32);
         min_rtt_.set_value(MetricUnavail_32);
         max_rtt_.set_value(MetricUnavail_32);
-        e2e_delay_.set_value(MetricUnavail_64);
+        e2e_latency_.set_value(MetricUnavail_64);
     }
 
     //! Get common block header.
@@ -1624,18 +1624,18 @@ public:
     }
 
     //! Check if End System Delay is set.
-    bool has_e2e_delay() const {
-        return e2e_delay_.value() != MetricUnavail_64;
+    bool has_e2e_latency() const {
+        return e2e_latency_.value() != MetricUnavail_64;
     }
 
     //! Get End System Delay.
-    packet::ntp_timestamp_t e2e_delay() const {
-        return e2e_delay_.value();
+    packet::ntp_timestamp_t e2e_latency() const {
+        return e2e_latency_.value();
     }
 
     //! Set End System Delay.
-    void set_e2e_delay(const packet::ntp_timestamp_t t) {
-        e2e_delay_.set_value(ntp_clamp_64(t, MetricUnavail_64 - 1));
+    void set_e2e_latency(const packet::ntp_timestamp_t t) {
+        e2e_latency_.set_value(ntp_clamp_64(t, MetricUnavail_64 - 1));
     }
 } ROC_ATTR_PACKED_END;
 
@@ -1643,15 +1643,26 @@ public:
 //!
 //! Non-standard.
 //!
+//! Reports two metrics from receiver to sender:
+//!
+//!  - niq_latency: current length of network incoming queue, measured via timestamp
+//!                 difference between last received packet and last decoded packet
+//!                 (expressed in units of 1/65536 seconds)
+//!
+//!  - niq_stalling: current elapsed time since last received packet
+//!                  (expressed in units of 1/65536 seconds)
+//!
 //! @code
 //!  0               1               2               3
 //!  0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//! |    BT=220     | I |   resv.   |      block length = 6         |
+//! |    BT=220     | I |   resv.   |      block length = 3         |
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! |                           SSRC of Source                      |
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-//! |                    Network Incoming Queue Delay               |
+//! |                  Network Incoming Queue Latency               |
+//! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//! |                  Network Incoming Queue Stalling              |
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
 ROC_ATTR_PACKED_BEGIN class XrQueueMetricsBlock {
@@ -1664,7 +1675,8 @@ private:
     XrBlockHeader header_;
 
     uint32_t ssrc_;
-    NtpTimestamp32 niq_delay_;
+    NtpTimestamp32 niq_latency_;
+    NtpTimestamp32 niq_stalling_;
 
 public:
     XrQueueMetricsBlock() {
@@ -1675,7 +1687,8 @@ public:
     void reset() {
         header_.reset(XR_QUEUE_METRICS);
         ssrc_ = 0;
-        niq_delay_.set_value(MetricUnavail_32);
+        niq_latency_.set_value(MetricUnavail_32);
+        niq_stalling_.set_value(MetricUnavail_32);
     }
 
     //! Get common block header.
@@ -1712,18 +1725,33 @@ public:
     }
 
     //! Check if Network Incoming Queue Delay is set.
-    bool has_niq_delay() const {
-        return niq_delay_.value() != MetricUnavail_32;
+    bool has_niq_latency() const {
+        return niq_latency_.value() != MetricUnavail_32;
     }
 
     //! Get Network Incoming Queue Delay.
-    packet::ntp_timestamp_t niq_delay() const {
-        return niq_delay_.value();
+    packet::ntp_timestamp_t niq_latency() const {
+        return niq_latency_.value();
     }
 
     //! Set Network Incoming Queue Delay.
-    void set_niq_delay(const packet::ntp_timestamp_t t) {
-        niq_delay_.set_value(ntp_clamp_32(t, MetricUnavail_32 - 1));
+    void set_niq_latency(const packet::ntp_timestamp_t t) {
+        niq_latency_.set_value(ntp_clamp_32(t, MetricUnavail_32 - 1));
+    }
+
+    //! Check if Network Incoming Queue Stalling is set.
+    bool has_niq_stalling() const {
+        return niq_stalling_.value() != MetricUnavail_32;
+    }
+
+    //! Get Network Incoming Queue Stalling.
+    packet::ntp_timestamp_t niq_stalling() const {
+        return niq_stalling_.value();
+    }
+
+    //! Set Network Incoming Queue Stalling.
+    void set_niq_stalling(const packet::ntp_timestamp_t t) {
+        niq_stalling_.set_value(ntp_clamp_32(t, MetricUnavail_32 - 1));
     }
 } ROC_ATTR_PACKED_END;
 

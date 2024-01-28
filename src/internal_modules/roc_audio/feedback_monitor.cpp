@@ -7,86 +7,36 @@
  */
 
 #include "roc_audio/feedback_monitor.h"
-#include "roc_audio/freq_estimator.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_core/time.h"
 
 namespace roc {
 namespace audio {
 
-namespace {
-
-const core::nanoseconds_t LogInterval = 5 * core::Second;
-
-double timestamp_to_ms(const SampleSpec& sample_spec,
-                       packet::stream_timestamp_diff_t timestamp) {
-    return (double)sample_spec.stream_timestamp_delta_2_ns(timestamp) / core::Millisecond;
-}
-
-} // namespace
-
 FeedbackMonitor::FeedbackMonitor(IFrameWriter& writer,
                                  ResamplerWriter* resampler,
-                                 const SampleSpec& sample_spec,
-                                 const LatencyConfig& config)
-    : writer_(writer)
+                                 const FeedbackConfig& feedback_config,
+                                 const LatencyConfig& latency_config,
+                                 const SampleSpec& sample_spec)
+    : tuner_(latency_config, sample_spec)
+    , metrics_()
+    , has_metrics_(false)
+    , metrics_timeout_(feedback_config.source_timeout)
+    , metrics_ts_(0)
+    , writer_(writer)
     , resampler_(resampler)
-    , stream_pos_(0)
-    , update_interval_(
-          (packet::stream_timestamp_t)sample_spec.ns_2_stream_timestamp_delta(
-              config.fe_update_interval))
-    , update_pos_(0)
-    , report_interval_((packet::stream_timestamp_t)
-                           sample_spec.ns_2_stream_timestamp_delta(LogInterval))
-    , report_pos_(0)
-    , first_report_(true)
-    , freq_coeff_(0)
-    , fe_input_(config.fe_input)
-    , fe_max_delta_(config.scaling_tolerance)
-    , niq_latency_(0)
-    , e2e_latency_(0)
-    , has_niq_latency_(false)
-    , has_e2e_latency_(false)
-    , jitter_(0)
-    , has_jitter_(false)
-    , target_latency_(fe_input_ != audio::FreqEstimatorInput_Disable
-                          ? sample_spec.ns_2_stream_timestamp_delta(config.target_latency)
-                          : 0)
+    , enable_scaling_(latency_config.tuner_profile != audio::LatencyTunerProfile_Intact)
+    , source_(0)
+    , source_change_limiter_(feedback_config.source_cooldown)
     , sample_spec_(sample_spec)
     , started_(false)
     , valid_(false) {
-    roc_log(
-        LogDebug,
-        "feedback monitor: initializing:"
-        " target=%lu(%.3fms) fe_input=%s fe_profile=%s fe_interval=%.3fms",
-        (unsigned long)target_latency_, timestamp_to_ms(sample_spec_, target_latency_),
-        fe_input_to_str(config.fe_input), fe_profile_to_str(config.fe_profile),
-        timestamp_to_ms(sample_spec_, (packet::stream_timestamp_diff_t)update_interval_));
+    if (!tuner_.is_valid()) {
+        return;
+    }
 
-    if (fe_input_ != audio::FreqEstimatorInput_Disable) {
-        if (config.fe_update_interval <= 0) {
-            roc_log(LogError, "feedback monitor: invalid config: fe_update_interval=%ld",
-                    (long)config.fe_update_interval);
-            return;
-        }
-
-        if (config.target_latency <= 0) {
-            roc_log(LogError, "feedback monitor: invalid config: target_latency=%ldns",
-                    (long)config.target_latency);
-            return;
-        }
-
-        if (!resampler_) {
-            roc_panic(
-                "feedback monitor: freq estimator is enabled, but resampler is null");
-        }
-
-        fe_.reset(new (fe_) FreqEstimator(config.fe_profile,
-                                          (packet::stream_timestamp_t)target_latency_));
-        if (!fe_) {
-            return;
-        }
-
+    if (enable_scaling_) {
         if (!init_scaling_()) {
             return;
         }
@@ -103,17 +53,6 @@ bool FeedbackMonitor::is_started() const {
     return started_;
 }
 
-FeedbackMonitorMetrics FeedbackMonitor::metrics() const {
-    roc_panic_if(!is_valid());
-
-    FeedbackMonitorMetrics metrics;
-    metrics.jitter = sample_spec_.stream_timestamp_delta_2_ns(jitter_);
-    metrics.niq_latency = sample_spec_.stream_timestamp_delta_2_ns(niq_latency_);
-    metrics.e2e_latency = sample_spec_.stream_timestamp_delta_2_ns(e2e_latency_);
-
-    return metrics;
-}
-
 void FeedbackMonitor::start() {
     roc_panic_if(!is_valid());
 
@@ -121,76 +60,92 @@ void FeedbackMonitor::start() {
         return;
     }
 
-    roc_log(LogDebug, "feedback monitor: starting");
+    roc_log(LogDebug, "feedback monitor: start gathering feedback");
     started_ = true;
 }
 
-void FeedbackMonitor::store(const FeedbackMonitorMetrics& metrics) {
+void FeedbackMonitor::process_feedback(packet::stream_source_t source_id,
+                                       const LatencyMetrics& metrics) {
     roc_panic_if(!is_valid());
 
     if (!started_) {
         return;
     }
 
-    if (metrics.jitter != 0) {
-        jitter_ = sample_spec_.ns_2_stream_timestamp_delta(metrics.jitter);
-        has_jitter_ = true;
+    if (!has_metrics_) {
+        roc_log(LogInfo, "feedback monitor: got first report from receiver: source=%lu",
+                (unsigned long)source_id);
+        source_ = source_id;
     }
 
-    if (metrics.niq_latency != 0) {
-        niq_latency_ = sample_spec_.ns_2_stream_timestamp_delta(metrics.niq_latency);
-        has_niq_latency_ = true;
+    if (has_metrics_ && source_ != source_id) {
+        if (!source_change_limiter_.allow()) {
+            // Protection from inadequately frequent SSRC changes.
+            // Can happen is feedback monitor is mistakenly created when multiple
+            // receivers exists for a single sender, which is not supported.
+            // This also protects from outdated reports delivered from recently
+            // restarted receiver.
+            return;
+        }
+
+        roc_log(LogInfo,
+                "feedback monitor: detected source change:"
+                " old_source=%lu new_source=%lu",
+                (unsigned long)source_, (unsigned long)source_id);
+
+        source_ = source_id;
     }
 
-    if (metrics.e2e_latency != 0) {
-        e2e_latency_ = sample_spec_.ns_2_stream_timestamp_delta(metrics.e2e_latency);
-        has_e2e_latency_ = true;
-    }
+    metrics_ = metrics;
+    has_metrics_ = true;
+    metrics_ts_ = core::timestamp(core::ClockMonotonic);
 }
 
 void FeedbackMonitor::write(Frame& frame) {
     roc_panic_if(!is_valid());
 
-    if (!update_()) {
-        // TODO(gh-183): return status code
-        roc_panic("feedback monitor: update failed");
+    if (started_) {
+        if (!update_tuner_(frame.num_samples())) {
+            // TODO(gh-674): change sender SSRC to restart session
+        }
+
+        if (enable_scaling_) {
+            if (!update_scaling_()) {
+                // TODO(gh-183): return status code
+                roc_panic("feedback monitor: update failed");
+            }
+        }
     }
 
     writer_.write(frame);
-
-    stream_pos_ += frame.num_samples() / sample_spec_.num_channels();
-
-    report_();
 }
 
-bool FeedbackMonitor::update_() {
-    if (!started_) {
+LatencyMetrics FeedbackMonitor::metrics() const {
+    return metrics_;
+}
+
+bool FeedbackMonitor::update_tuner_(size_t n_samples) {
+    if (!has_metrics_) {
         return true;
     }
 
-    if (!fe_) {
+    if (core::timestamp(core::ClockMonotonic) - metrics_ts_ > metrics_timeout_) {
+        roc_log(LogInfo,
+                "feedback monitor: no reports from receiver during timeout:"
+                " source=%lu timeout=%.3fms",
+                (unsigned long)source_, (double)metrics_timeout_ / core::Millisecond);
+
+        has_metrics_ = false;
+        metrics_ts_ = 0;
+        source_ = 0;
+
         return true;
     }
 
-    switch (fe_input_) {
-    case audio::FreqEstimatorInput_NiqLatency:
-        if (has_niq_latency_) {
-            if (!update_scaling_(niq_latency_)) {
-                return false;
-            }
-        }
-        break;
+    tuner_.write_metrics(metrics_);
 
-    case audio::FreqEstimatorInput_E2eLatency:
-        if (has_e2e_latency_) {
-            if (!update_scaling_(e2e_latency_)) {
-                return false;
-            }
-        }
-        break;
-
-    default:
-        break;
+    if (!tuner_.advance_stream(n_samples)) {
+        return false;
     }
 
     return true;
@@ -207,69 +162,21 @@ bool FeedbackMonitor::init_scaling_() {
     return true;
 }
 
-bool FeedbackMonitor::update_scaling_(packet::stream_timestamp_diff_t latency) {
+bool FeedbackMonitor::update_scaling_() {
     roc_panic_if_not(resampler_);
-    roc_panic_if_not(fe_);
 
-    if (latency < 0) {
-        latency = 0;
-    }
+    const float scaling = tuner_.get_scaling();
 
-    if (stream_pos_ < update_pos_) {
-        return true;
-    }
-
-    while (stream_pos_ >= update_pos_) {
-        fe_->update((packet::stream_timestamp_t)latency);
-        update_pos_ += update_interval_;
-    }
-
-    freq_coeff_ = fe_->freq_coeff();
-    freq_coeff_ = std::min(freq_coeff_, 1.0f + fe_max_delta_);
-    freq_coeff_ = std::max(freq_coeff_, 1.0f - fe_max_delta_);
-
-    if (!resampler_->set_scaling(freq_coeff_)) {
-        roc_log(LogDebug,
-                "feedback monitor: scaling factor out of bounds: fe=%.6f trim_fe=%.6f",
-                (double)fe_->freq_coeff(), (double)freq_coeff_);
-        return false;
+    if (scaling > 0) {
+        if (!resampler_->set_scaling(scaling)) {
+            roc_log(LogDebug,
+                    "feedback monitor: scaling factor out of bounds: scaling=%.6f",
+                    (double)scaling);
+            return false;
+        }
     }
 
     return true;
-}
-
-void FeedbackMonitor::report_() {
-    if (!started_) {
-        return;
-    }
-
-    if (!has_e2e_latency_ && !has_niq_latency_ && !has_jitter_) {
-        return;
-    }
-
-    if (first_report_) {
-        roc_log(LogInfo, "feedback monitor: got first report from receiver");
-        first_report_ = false;
-    }
-
-    if (stream_pos_ < report_pos_) {
-        return;
-    }
-
-    while (stream_pos_ >= report_pos_) {
-        report_pos_ += report_interval_;
-    }
-
-    roc_log(LogDebug,
-            "feedback monitor:"
-            " e2e_latency=%ld(%.3fms) niq_latency=%ld(%.3fms) target_latency=%ld(%.3fms)"
-            " jitter=%ld(%.3fms)"
-            " fe=%.6f trim_fe=%.6f",
-            (long)e2e_latency_, timestamp_to_ms(sample_spec_, e2e_latency_),
-            (long)niq_latency_, timestamp_to_ms(sample_spec_, niq_latency_),
-            (long)jitter_, timestamp_to_ms(sample_spec_, jitter_), (long)target_latency_,
-            timestamp_to_ms(sample_spec_, target_latency_),
-            (double)(fe_ ? fe_->freq_coeff() : 0), (double)freq_coeff_);
 }
 
 } // namespace audio

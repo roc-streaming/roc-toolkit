@@ -407,30 +407,31 @@ typedef enum roc_clock_source {
     ROC_CLOCK_SOURCE_INTERNAL = 1
 } roc_clock_source;
 
-/** Clock synchronization algorithm.
- * Defines how sender and receiver clocks are synchronized.
+/** Latency tuner backend.
+ * Defines which latency is monitored and tuned by latency tuner.
  */
-typedef enum roc_clock_sync_backend {
-    /** Disable clock synchronization.
-     *
-     * In this mode, sender and receiver clocks are not synchronized. This mode is
-     * generally not recommended, since clock drift will lead to periodic playback
-     * disruptions caused by underruns and overruns.
-     */
-    ROC_CLOCK_SYNC_BACKEND_DISABLE = -1,
-
+typedef enum roc_latency_tuner_backend {
     /** Default backend.
-     * Current default is \c ROC_CLOCK_SYNC_BACKEND_NIQ.
+     * Current default is \c ROC_LATENCY_TUNER_BACKEND_NIQ.
      */
-    ROC_CLOCK_SYNC_BACKEND_DEFAULT = 0,
+    ROC_LATENCY_TUNER_BACKEND_DEFAULT = 0,
 
-    /** Clock synchronization based on network incoming queue size.
+    /** Latency tuning is based on network incoming queue length.
      *
-     * In this mode, receiver monitors incoming queue size and adjusts playback clock
-     * speed to match the estimated capture clock speed.
+     * In this mode, latency is defined as incoming queue length (in nanoseconds).
+     * Latency tuner monitors queue length and and adjusts playback clock speed
+     * to keep queue length close to configured target latency.
+     *
+     * Keeping constant queue length allows to match playback clock speed with the
+     * capture clock speed and to keep the overall latency constant (yet unknown).
+     *
+     * On receiver, this backend is always available, without any protocol help.
+     * On sender, this backend works only if RTCP is enabled and both sender and
+     * receiver are implemented with roc-toolkit, as it relies on a non-standard
+     * RTCP extension to report receiver queue length to sender.
      *
      * Pros:
-     *  - works with any protocol (does not require RTCP or NTP)
+     *  - works with any protocol if used on receiver (does not require RTCP or NTP)
      *
      * Cons:
      *  - synchronizes only clock speed, but not position; different receivers will
@@ -438,22 +439,40 @@ typedef enum roc_clock_sync_backend {
      *  - affected by network jitter; spikes in packet delivery will cause slow
      *    oscillations in clock speed
      */
-    ROC_CLOCK_SYNC_BACKEND_NIQ = 2
-} roc_clock_sync_backend;
+    ROC_LATENCY_TUNER_BACKEND_NIQ = 2
+} roc_latency_tuner_backend;
 
-/** Clock synchronization profile.
- * Defines what latency and jitter are tolerated by clock synchronization algorithm.
+/** Latency tuner profile.
+ * Defines which algorithm is used by latency tuner.
  */
-typedef enum roc_clock_sync_profile {
+typedef enum roc_latency_tuner_profile {
     /** Default profile.
      *
-     * When \ref ROC_CLOCK_SYNC_BACKEND_NIQ is used, selects \ref
-     * ROC_CLOCK_SYNC_PROFILE_RESPONSIVE if target latency is low, and \ref
-     * ROC_CLOCK_SYNC_PROFILE_GRADUAL if target latency is high.
+     * On receiver, when \ref ROC_LATENCY_TUNER_BACKEND_NIQ is used, selects \ref
+     * ROC_LATENCY_TUNER_PROFILE_RESPONSIVE if target latency is low, and \ref
+     * ROC_LATENCY_TUNER_PROFILE_GRADUAL if target latency is high.
+     *
+     * On sender, selects \ref ROC_LATENCY_TUNER_PROFILE_INTACT.
      */
-    ROC_CLOCK_SYNC_PROFILE_DEFAULT = 0,
+    ROC_LATENCY_TUNER_PROFILE_DEFAULT = 0,
 
-    /** Responsive clock adjustment.
+    /** No latency tuning.
+     *
+     * In this mode, clock speed is not adjusted. Default on sender.
+     *
+     * You can set this mode on receiver, and set some other mode on sender, to
+     * do latency tuning on sender side instead of recever side. It's useful
+     * when receiver is CPU-constrained and sender is not, because latency tuner
+     * relies on resampling, which is CPU-demanding.
+     *
+     * You can also set this mode on both sender and receiver if you don't need
+     * latency tuning at all. However, if sender and receiver have independent
+     * clocks (which is typically the case), clock drift will lead to periodic
+     * playback disruptions caused by underruns and overruns.
+     */
+    ROC_LATENCY_TUNER_PROFILE_INTACT = 1,
+
+    /** Responsive latency tuning.
      *
      * Clock speed is adjusted quickly and accurately.
      *
@@ -461,16 +480,16 @@ typedef enum roc_clock_sync_profile {
      * \ref ROC_RESAMPLER_BACKEND_BUILTIN.
      *
      * Pros:
-     *  - allows very low latency or synchronization error
+     *  - allows very low latency and synchronization error
      *
      * Cons:
      *  - does not work well with some resampler backends
-     *  - does not work well with \ref ROC_CLOCK_SYNC_BACKEND_NIQ
+     *  - does not work well with \ref ROC_LATENCY_TUNER_BACKEND_NIQ
      *    if network jitter is high
      */
-    ROC_CLOCK_SYNC_PROFILE_RESPONSIVE = 1,
+    ROC_LATENCY_TUNER_PROFILE_RESPONSIVE = 2,
 
-    /** Gradual clock adjustment.
+    /** Gradual latency tuning.
      *
      * Clock speed is adjusted slowly and smoothly.
      *
@@ -479,10 +498,10 @@ typedef enum roc_clock_sync_profile {
      *  - works well with any resampler backend
      *
      * Cons:
-     *  - does not allow very low latency or synchronization error
+     *  - does not allow very low latency and synchronization error
      */
-    ROC_CLOCK_SYNC_PROFILE_GRADUAL = 2
-} roc_clock_sync_profile;
+    ROC_LATENCY_TUNER_PROFILE_GRADUAL = 3
+} roc_latency_tuner_profile;
 
 /** Resampler backend.
  * Affects CPU usage, quality, and clock synchronization precision.
@@ -492,7 +511,7 @@ typedef enum roc_resampler_backend {
     /** Default backend.
      *
      * Selects \ref ROC_RESAMPLER_BACKEND_BUILTIN when using \ref
-     * ROC_CLOCK_SYNC_PROFILE_RESPONSIVE, or when SpeexDSP is disabled.
+     * ROC_LATENCY_TUNER_PROFILE_RESPONSIVE, or when SpeexDSP is disabled.
      *
      * Otherwise, selects \ref ROC_RESAMPLER_BACKEND_SPEEX.
      */
@@ -510,7 +529,7 @@ typedef enum roc_resampler_backend {
      *
      * This backend is always available.
      *
-     * Recommended for \ref ROC_CLOCK_SYNC_PROFILE_RESPONSIVE and on good CPUs.
+     * Recommended for \ref ROC_LATENCY_TUNER_PROFILE_RESPONSIVE and on good CPUs.
      */
     ROC_RESAMPLER_BACKEND_BUILTIN = 1,
 
@@ -523,7 +542,7 @@ typedef enum roc_resampler_backend {
      *
      * This backend is available only when SpeexDSP was enabled at build time.
      *
-     * Recommended for \ref ROC_CLOCK_SYNC_PROFILE_GRADUAL and on cheap CPUs.
+     * Recommended for \ref ROC_LATENCY_TUNER_PROFILE_GRADUAL and on cheap CPUs.
      */
     ROC_RESAMPLER_BACKEND_SPEEX = 2,
 
@@ -582,15 +601,19 @@ typedef enum roc_resampler_profile {
  */
 typedef struct roc_context_config {
     /** Maximum size in bytes of a network packet.
+     *
      * Defines the amount of bytes allocated per network packet.
      * Sender and receiver won't handle packets larger than this.
+     *
      * If zero, default value is used.
      */
     unsigned int max_packet_size;
 
     /** Maximum size in bytes of an audio frame.
+     *
      * Defines the amount of bytes allocated per intermediate internal frame in the
      * pipeline. Does not limit the size of the frames provided by user.
+     *
      * If zero, default value is used.
      */
     unsigned int max_frame_size;
@@ -606,9 +629,11 @@ typedef struct roc_context_config {
  */
 typedef struct roc_sender_config {
     /** The encoding used in frames passed to sender.
+     *
      * Frame encoding defines sample format, channel layout, and sample rate in local
      * frames created by user and passed to sender.
-     * Should be set (zero value is invalid).
+     *
+     * Should be set explicitly (zero value is invalid).
      */
     roc_media_encoding frame_encoding;
 
@@ -632,24 +657,30 @@ typedef struct roc_sender_config {
     roc_packet_encoding packet_encoding;
 
     /** The length of the packets produced by sender, in nanoseconds.
+     *
      * Number of nanoseconds encoded per packet.
      * The samples written to the sender are buffered until the full packet is
      * accumulated or the sender is flushed or closed. Larger number reduces
      * packet overhead but also increases latency.
+     *
      * If zero, default value is used.
      */
     unsigned long long packet_length;
 
     /** Enable packet interleaving.
+     *
      * If non-zero, the sender shuffles packets before sending them. This
      * may increase robustness but also increases latency.
      */
     unsigned int packet_interleaving;
 
     /** FEC encoding to use.
-     * If non-zero, the sender employs a FEC encoding to generate redundant packets
-     * which may be used on receiver to restore lost packets. This requires both
-     * sender and receiver to use two separate source and repair endpoints.
+     *
+     * If FEC is enabled, the sender employs a FEC encoding to generate redundant
+     * packet which may be used on receiver to restore lost packets. This requires
+     * both sender and receiver to use two separate source and repair endpoints.
+     *
+     * If zero, default encoding is used (\ref ROC_FEC_ENCODING_DEFAULT).
      */
     roc_fec_encoding fec_encoding;
 
@@ -684,20 +715,74 @@ typedef struct roc_sender_config {
 
     /** Clock source to use.
      * Defines whether write operation will be blocking or non-blocking.
-     * If zero, default value is used (\c ROC_CLOCK_SOURCE_EXTERNAL).
+     *
+     * If zero, \ref ROC_CLOCK_SOURCE_EXTERNAL is used.
      */
     roc_clock_source clock_source;
 
-    /** Resampler backend to use.
-     * If zero, default value is used.
+    /** Latency tuner backend.
+     * Defines which latency is monitored and controlled by latency tuner.
+     * Defines semantics of \c target_latency field.
+     *
+     * If zero, default backend is used (\ref ROC_LATENCY_TUNER_BACKEND_DEFAULT).
+     */
+    roc_latency_tuner_backend latency_tuner_backend;
+
+    /** Latency tuner profile.
+     * Defines which algorithm is used by latency tuner.
+     *
+     * If zero, default profile is used (\ref ROC_LATENCY_TUNER_PROFILE_DEFAULT).
+     *
+     * By default, latency tuning is disabled on sender. If you enable it on sender,
+     * you need to disable it on receiver. In that case you also need to set
+     * \c target_latency to the same value on both sides.
+     */
+    roc_latency_tuner_profile latency_tuner_profile;
+
+    /** Resampler backend.
+     * Affects CPU usage, quality, and clock synchronization precision
+     * (if latency tuning is enabled).
+     *
+     * If zero, default backend is used (\ref ROC_RESAMPLER_BACKEND_DEFAULT).
      */
     roc_resampler_backend resampler_backend;
 
-    /** Resampler profile to use.
-     * If non-zero, the sender employs resampler if the frame sample rate differs
-     * from the packet sample rate.
+    /** Resampler profile.
+     * Affects CPU usage and quality.
+     *
+     * If zero, default profile is used (\ref ROC_RESAMPLER_PROFILE_DEFAULT).
      */
     roc_resampler_profile resampler_profile;
+
+    /** Target latency, in nanoseconds.
+     *
+     * Exact semantics of this field, i.e. how latency is defined, depends on
+     * \c latency_tuner_backend field.
+     *
+     * If latency tuning is enabled on sender (\c latency_tuner_profile), it will
+     * adjust its clock to keep actual latency as close as possible to the target.
+     *
+     * If latency tolerance is set on sender (\c latency_tolerance), it will
+     * restart session when actual latency differs from target too much.
+     *
+     * If latency tuning or latency tolerance is enabled on sender, you should
+     * explicitly set target latency to a non-zero value, there is no default.
+     *
+     * By default, latency tuning is disabled on sender. If you enable it on sender,
+     * you need to disable it on receiver. You also need to set \c target_latency
+     * to the same value on both sides.
+     */
+    unsigned long long target_latency;
+
+    /** Maximum allowed delta between current and target latency, in nanoseconds.
+     *
+     * When set, if delta between actual latency and target latency becomes larger
+     * than the tolerance, the session is restarted.
+     *
+     * If zero, default value is used based on \c target_latency, if it's set, or
+     * checks are disabled if it's not set. If negative, the checks are disabled.
+     */
+    long long latency_tolerance;
 } roc_sender_config;
 
 /** Receiver configuration.
@@ -710,75 +795,105 @@ typedef struct roc_sender_config {
  */
 typedef struct roc_receiver_config {
     /** The encoding used in frames returned by receiver.
+     *
      * Frame encoding defines sample format, channel layout, and sample rate in local
      * frames returned by receiver to user.
+     *
      * Should be set (zero value is invalid).
      */
     roc_media_encoding frame_encoding;
 
     /** Clock source.
      * Defines whether read operation will be blocking or non-blocking.
+     *
      * If zero, \ref ROC_CLOCK_SOURCE_EXTERNAL is used.
      */
     roc_clock_source clock_source;
 
-    /** Clock synchronization backend.
-     * Defines how sender and receiver clocks are synchronized.
-     * If zero, default value is used.
+    /** Latency tuner backend.
+     * Defines which latency is monitored and controlled by latency tuner.
+     * Defines semantics of \c target_latency field.
+     *
+     * If zero, default backend is used (\ref ROC_LATENCY_TUNER_BACKEND_DEFAULT).
      */
-    roc_clock_sync_backend clock_sync_backend;
+    roc_latency_tuner_backend latency_tuner_backend;
 
-    /**  Clock synchronization profile.
-     * Defines what latency and network jitter are tolerated.
-     * If zero, default value is used.
+    /** Latency tuner profile.
+     * Defines which algorithm is used by latency tuner.
+     *
+     * If zero, default profile is used (\ref ROC_LATENCY_TUNER_PROFILE_DEFAULT).
+     *
+     * By default, latency tuning is enabled on receiver. If you disable it on receiver,
+     * you usually need to enable it on sender. In that case you also need to set
+     * \c target_latency to the same value on both sides.
      */
-    roc_clock_sync_profile clock_sync_profile;
+    roc_latency_tuner_profile latency_tuner_profile;
 
     /** Resampler backend.
-     * Affects CPU usage, quality, and clock synchronization precision.
-     * If zero, default value is used.
+     * Affects CPU usage, quality, and clock synchronization precision
+     * (if latency tuning is enabled).
+     *
+     * If zero, default backend is used (\ref ROC_RESAMPLER_BACKEND_DEFAULT).
      */
     roc_resampler_backend resampler_backend;
 
     /** Resampler profile.
      * Affects CPU usage and quality.
-     * If zero, default value is used.
+     *
+     * If zero, default profile is used (\ref ROC_RESAMPLER_PROFILE_DEFAULT).
      */
     roc_resampler_profile resampler_profile;
 
     /** Target latency, in nanoseconds.
-     * The session will not start playing until it accumulates the requested latency.
-     * Then, if clock synchronization is enabled, the session will adjust its clock to
-     * keep actual latency as close as possible to the target latency.
-     * If zero, default value is used.
+     *
+     * Exact semantics of this field, i.e. how latency is defined, depends on
+     * \c latency_tuner_backend field.
+     *
+     * If latency tuning is enabled on receiver (\c latency_tuner_profile), it will
+     * adjust its clock to keep actual latency as close as possible to the target.
+     *
+     * If latency tolerance is set on receiver (\c latency_tolerance), it will
+     * restart session when actual latency differs from target too much.
+     *
+     * If zero, default value is used, unless latency tuning is disabled, in which
+     * case it should be specified explicitly.
      */
     unsigned long long target_latency;
 
     /** Maximum allowed delta between current and target latency, in nanoseconds.
-     * If session latency differs from the target latency by more than given value, the
-     * session is terminated (it can then automatically restart). Receiver itself is
-     * not terminated; if there are no sessions, it will produce zeros.
-     * If zero, default value is used.
+     *
+     * If the actual latency differs from the target by more than the tolerance, the
+     * session is terminated (it can then restart if traffic keeps coming). Receiver
+     * itself is not terminated; if there are no sessions, it produces zeros.
+     *
+     * If zero, default value is used based on \c target_latency. If negative,
+     * the checks are disabled.
      */
-    unsigned long long latency_tolerance;
+    long long latency_tolerance;
 
     /** Timeout for the lack of playback, in nanoseconds.
+     *
      * If there is no playback during this period, the session is terminated (it can
-     * then automatically restart). Receiver itself is not terminated; if there are
-     * no sessions, it will produce zeros.
+     * then restart if traffic keeps coming). Receiver itself is not terminated; if
+     * there are no sessions, it produces zeros.
+     *
      * This mechanism allows to detect dead, hanging, or incompatible clients that
      * generate unparseable packets.
-     * If zero, default value is used. If negative, the timeout is disabled.
+     *
+     * If zero, default value is used. If negative, the checks are disabled.
      */
     long long no_playback_timeout;
 
     /** Timeout for choppy playback, in nanoseconds.
-     * If there is constant stuttering during this period, the session is terminated (it
-     * can then automatically restart). Receiver itself is not terminated; if there are
-     * no sessions, it will produce zeros.
+     *
+     * If there is constant stuttering during this period, the session is terminated
+     * (it can then restart if traffic keeps coming). Receiver itself is not terminated;
+     * if there are no sessions, it produces zeros.
+     *
      * This mechanism allows to detect situations when playback continues but there
      * are frequent glitches, for example because there is a high ratio of late packets.
-     * If zero, default value is used. If negative, the timeout is disabled.
+     *
+     * If zero, default value is used. If negative, the checks are disabled.
      */
     long long choppy_playback_timeout;
 } roc_receiver_config;

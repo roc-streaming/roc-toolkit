@@ -27,7 +27,7 @@ Options
 -c, --control=ENDPOINT_URI    Local control endpoint
 --miface=MIFACE               IPv4 or IPv6 address of the network interface on which to join the multicast group
 --reuseaddr                   enable SO_REUSEADDR when binding sockets
---sess-latency=STRING         Session target latency, TIME units
+--target-latency=STRING       Target latency, TIME units
 --io-latency=STRING           Playback target latency, TIME units
 --latency-tolerance=STRING    Maximum latency deviation, TIME units
 --no-play-timeout=STRING      No playback timeout, TIME units
@@ -36,8 +36,8 @@ Options
 --max-packet-size=SIZE        Maximum packet size, in SIZE units
 --max-frame-size=SIZE         Maximum internal frame size, in SIZE units
 --rate=INT                    Override output sample rate, Hz
---clock-backend=ENUM          Clock synchronization backend  (possible values="disable", "niq" default=`niq')
---clock-profile=ENUM          Clock synchronization profile  (possible values="default", "responsive", "gradual" default=`default')
+--latency-backend=ENUM        Which latency to use in latency tuner (possible values="niq" default=`niq')
+--latency-profile=ENUM        Latency tuning profile  (possible values="default", "responsive", "gradual", "intact" default=`default')
 --resampler-backend=ENUM      Resampler backend  (possible values="default", "builtin", "speex", "speexdec" default=`default')
 --resampler-profile=ENUM      Resampler profile  (possible values="low", "medium", "high" default=`medium')
 -1, --oneshot                 Exit when last connected client disconnects (default=off)
@@ -287,7 +287,7 @@ Select lower session latency:
 
 .. code::
 
-    $ roc-recv -vv -s rtp://0.0.0.0:10001 --sess-latency=50ms
+    $ roc-recv -vv -s rtp://0.0.0.0:10001 --target-latency=50ms
 
 Select lower I/O latency and frame length:
 
@@ -301,7 +301,7 @@ Manually specify thresholds and timeouts:
 .. code::
 
     $ roc-recv -vv -s rtp://0.0.0.0:10001 \
-        --sess-latency=50ms --latency-tolerance=20ms \
+        --target-latency=50ms --latency-tolerance=20ms \
         --no-play-timeout=200s --choppy-play-timeout=500ms
 
 Manually specify resampling parameters:
@@ -311,12 +311,12 @@ Manually specify resampling parameters:
     $ roc-recv -vv -s rtp://0.0.0.0:10001 \
         --resampler-backend=speex --resampler-profile=high
 
-Manually specify clock synchronization parameters:
+Manually specify latency tuning parameters:
 
 .. code::
 
     $ roc-recv -vv -s rtp://0.0.0.0:10001 \
-        --clock-backend=niq --clock-profile=gradual
+        --latency-backend=niq --latency-profile=gradual
 
 ENVIRONMENT VARIABLES
 =====================

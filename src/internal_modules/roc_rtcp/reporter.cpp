@@ -495,9 +495,9 @@ void Reporter::process_delay_metrics_block(const header::XrPacket& xr,
             "rtcp reporter: processing Delay Metrics block: send_ssrc=%lu recv_ssrc=%lu",
             (unsigned long)send_source_id, (unsigned long)recv_source_id);
 
-    if (blk.has_e2e_delay()) {
+    if (blk.has_e2e_latency()) {
         stream->remote_recv_report.e2e_latency =
-            packet::ntp_2_nanoseconds(blk.e2e_delay());
+            packet::ntp_2_nanoseconds(blk.e2e_latency());
     }
 
     update_stream_(*stream);
@@ -533,9 +533,14 @@ void Reporter::process_queue_metrics_block(const header::XrPacket& xr,
             "rtcp reporter: processing Queue Metrics block: send_ssrc=%lu recv_ssrc=%lu",
             (unsigned long)send_source_id, (unsigned long)recv_source_id);
 
-    if (blk.has_niq_delay()) {
+    if (blk.has_niq_latency()) {
         stream->remote_recv_report.niq_latency =
-            packet::ntp_2_nanoseconds(blk.niq_delay());
+            packet::ntp_2_nanoseconds(blk.niq_latency());
+    }
+
+    if (blk.has_niq_stalling()) {
+        stream->remote_recv_report.niq_stalling =
+            packet::ntp_2_nanoseconds(blk.niq_stalling());
     }
 
     update_stream_(*stream);
@@ -820,7 +825,7 @@ void Reporter::generate_delay_metrics_block(size_t addr_index,
     }
 
     if (stream->local_recv_report->e2e_latency > 0) {
-        blk.set_e2e_delay(
+        blk.set_e2e_latency(
             packet::nanoseconds_2_ntp(stream->local_recv_report->e2e_latency));
     }
 }
@@ -841,8 +846,10 @@ void Reporter::generate_queue_metrics_block(size_t addr_index,
     blk.set_metric_flag(header::MetricFlag_SampledValue);
 
     if (stream->local_recv_report->niq_latency > 0) {
-        blk.set_niq_delay(
+        blk.set_niq_latency(
             packet::nanoseconds_2_ntp(stream->local_recv_report->niq_latency));
+        blk.set_niq_stalling(
+            packet::nanoseconds_2_ntp(stream->local_recv_report->niq_stalling));
     }
 }
 

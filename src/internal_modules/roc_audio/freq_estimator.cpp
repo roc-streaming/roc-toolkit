@@ -33,9 +33,6 @@ FreqEstimatorConfig make_config(FreqEstimatorProfile profile) {
         config.decimation_factor1 = fe_decim_factor_max;
         config.decimation_factor2 = fe_decim_factor_max;
         break;
-
-    case FreqEstimatorProfile_Default:
-        break;
     }
 
     return config;
@@ -88,7 +85,7 @@ FreqEstimator::FreqEstimator(FreqEstimatorProfile profile,
         "freq estimator: invalid decimation factor 2: got=%lu expected=[0; %lu]",
         (unsigned long)config_.decimation_factor2, (unsigned long)fe_decim_factor_max);
 
-    roc_panic_if_msg(fe_decim_len % 2 != 0,
+    roc_panic_if_msg((fe_decim_len & (fe_decim_len - 1)) != 0,
                      "freq estimator: decim_len should be power of two");
 
     memset(dec1_casc_buff_, 0, sizeof(dec1_casc_buff_));
@@ -154,39 +151,6 @@ double FreqEstimator::run_controller_(double current) {
 
     accum_ = accum_ + error;
     return 1 + config_.P * error + config_.I * accum_;
-}
-
-const char* fe_input_to_str(FreqEstimatorInput input) {
-    switch (input) {
-    case FreqEstimatorInput_Disable:
-        return "disable";
-
-    case FreqEstimatorInput_Default:
-        return "default";
-
-    case FreqEstimatorInput_NiqLatency:
-        return "niq";
-
-    case FreqEstimatorInput_E2eLatency:
-        return "e2e";
-    }
-
-    return "<invalid>";
-}
-
-const char* fe_profile_to_str(FreqEstimatorProfile profile) {
-    switch (profile) {
-    case FreqEstimatorProfile_Default:
-        return "default";
-
-    case FreqEstimatorProfile_Responsive:
-        return "responsive";
-
-    case FreqEstimatorProfile_Gradual:
-        return "gradual";
-    }
-
-    return "<invalid>";
 }
 
 } // namespace audio

@@ -150,6 +150,10 @@ struct RecvReport {
     //! An estimate of how much media is buffered in receiver packet queue.
     core::nanoseconds_t niq_latency;
 
+    //! Network incoming queue stalling.
+    //! How much time elapsed since last received packet.
+    core::nanoseconds_t niq_stalling;
+
     //! Estimated end-to-end latency.
     //! An estimate of the time from recording a frame on sender to playing it
     //! on receiver.
@@ -179,6 +183,7 @@ struct RecvReport {
         , cum_loss(0)
         , jitter(0)
         , niq_latency(0)
+        , niq_stalling(0)
         , e2e_latency(0)
         , clock_offset(0)
         , rtt(0) {

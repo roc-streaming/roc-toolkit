@@ -20,26 +20,8 @@
 namespace roc {
 namespace audio {
 
-//! FreqEstimator input value.
-enum FreqEstimatorInput {
-    //! Don't use FreqEstimator.
-    FreqEstimatorInput_Disable,
-
-    //! Use default input.
-    FreqEstimatorInput_Default,
-
-    //! Feed FreqEstimator with Network Incoming Queue length.
-    FreqEstimatorInput_NiqLatency,
-
-    //! Feed FreqEstimator with End-to-end latency.
-    FreqEstimatorInput_E2eLatency
-};
-
 //! FreqEstimator paremeter preset.
 enum FreqEstimatorProfile {
-    //! Use default profile.
-    FreqEstimatorProfile_Default,
-
     //! Fast and responsive tuning.
     //! Good for lower network latency and jitter.
     FreqEstimatorProfile_Responsive,
@@ -84,8 +66,8 @@ public:
     //! @b Parameters
     //!  - @p profile defines configuration preset.
     //!  - @p target_latency defines latency we want to archive.
-    explicit FreqEstimator(FreqEstimatorProfile profile,
-                           packet::stream_timestamp_t target_latency);
+    FreqEstimator(FreqEstimatorProfile profile,
+                  packet::stream_timestamp_t target_latency);
 
     //! Get current frequecy coefficient.
     float freq_coeff() const;
@@ -111,12 +93,6 @@ private:
 
     double coeff_; // Current frequency coefficient value.
 };
-
-//! Get string name of FreqEstimator input.
-const char* fe_input_to_str(FreqEstimatorInput input);
-
-//! Get string name of FreqEstimator profile.
-const char* fe_profile_to_str(FreqEstimatorProfile profile);
 
 } // namespace audio
 } // namespace roc

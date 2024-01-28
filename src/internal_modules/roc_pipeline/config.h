@@ -13,7 +13,8 @@
 #define ROC_PIPELINE_CONFIG_H_
 
 #include "roc_address/protocol.h"
-#include "roc_audio/latency_config.h"
+#include "roc_audio/feedback_monitor.h"
+#include "roc_audio/latency_tuner.h"
 #include "roc_audio/profiler.h"
 #include "roc_audio/resampler_config.h"
 #include "roc_audio/sample_spec.h"
@@ -60,6 +61,9 @@ struct SenderConfig {
 
     //! Latency parameters.
     audio::LatencyConfig latency;
+
+    //! Feedback parameters.
+    audio::FeedbackConfig feedback;
 
     //! Resampler parameters.
     audio::ResamplerConfig resampler;

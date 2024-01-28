@@ -45,10 +45,10 @@ bool channel_set_from_user(audio::ChannelSet& out,
 
 bool clock_source_from_user(bool& out_timing, roc_clock_source in);
 
-bool clock_sync_backend_from_user(audio::FreqEstimatorInput& out,
-                                  roc_clock_sync_backend in);
-bool clock_sync_profile_from_user(audio::FreqEstimatorProfile& out,
-                                  roc_clock_sync_profile in);
+bool latency_tuner_backend_from_user(audio::LatencyTunerBackend& out,
+                                     roc_latency_tuner_backend in);
+bool latency_tuner_profile_from_user(audio::LatencyTunerProfile& out,
+                                     roc_latency_tuner_profile in);
 
 bool resampler_backend_from_user(audio::ResamplerBackend& out, roc_resampler_backend in);
 bool resampler_profile_from_user(audio::ResamplerProfile& out, roc_resampler_profile in);

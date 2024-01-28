@@ -17,6 +17,7 @@
 #include "roc_address/socket_addr.h"
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
+#include "roc_core/time.h"
 
 namespace roc {
 namespace packet {
@@ -29,8 +30,13 @@ struct UDP {
     //! Destination address.
     address::SocketAddr dst_addr;
 
+    //! Packet receive timestamp (RTS), nanoseconds since Unix epoch.
+    core::nanoseconds_t receive_timestamp;
+
     //! Sender request state.
     uv_udp_send_t request;
+
+    UDP();
 };
 
 } // namespace packet

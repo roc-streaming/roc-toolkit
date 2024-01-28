@@ -13,8 +13,7 @@ namespace roc {
 namespace pipeline {
 
 SenderConfig::SenderConfig()
-    : latency(DefaultLatency)
-    , input_sample_spec(DefaultSampleSpec)
+    : input_sample_spec(DefaultSampleSpec)
     , packet_length(DefaultPacketLength)
     , payload_type(rtp::PayloadType_L16_Stereo)
     , enable_interleaving(false)
@@ -24,19 +23,18 @@ SenderConfig::SenderConfig()
 }
 
 void SenderConfig::deduce_defaults() {
-    latency.deduce_defaults(false);
-    resampler.deduce_defaults(latency.fe_input, latency.fe_profile);
+    latency.deduce_defaults(DefaultLatency, false);
+    resampler.deduce_defaults(latency.tuner_backend, latency.tuner_profile);
 }
 
 ReceiverSessionConfig::ReceiverSessionConfig()
-    : payload_type(0)
-    , latency(DefaultLatency) {
+    : payload_type(0) {
 }
 
 void ReceiverSessionConfig::deduce_defaults() {
-    latency.deduce_defaults(true);
+    latency.deduce_defaults(DefaultLatency, true);
     watchdog.deduce_defaults(latency.target_latency);
-    resampler.deduce_defaults(latency.fe_input, latency.fe_profile);
+    resampler.deduce_defaults(latency.tuner_backend, latency.tuner_profile);
 }
 
 ReceiverCommonConfig::ReceiverCommonConfig()
@@ -65,8 +63,8 @@ TranscoderConfig::TranscoderConfig()
 }
 
 void TranscoderConfig::deduce_defaults() {
-    resampler.deduce_defaults(audio::FreqEstimatorInput_Disable,
-                              audio::FreqEstimatorProfile_Default);
+    resampler.deduce_defaults(audio::LatencyTunerBackend_Default,
+                              audio::LatencyTunerProfile_Default);
 }
 
 } // namespace pipeline

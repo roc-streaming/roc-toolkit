@@ -146,6 +146,44 @@ int main(int argc, char** argv) {
         sender_config.fec_writer.n_repair_packets = (size_t)args.nbrpr_arg;
     }
 
+    if (args.target_latency_given) {
+        if (!core::parse_duration(args.target_latency_arg,
+                                  sender_config.latency.target_latency)) {
+            roc_log(LogError, "invalid --target-latency");
+            return 1;
+        }
+    }
+
+    if (args.latency_tolerance_given) {
+        if (!core::parse_duration(args.latency_tolerance_arg,
+                                  sender_config.latency.latency_tolerance)) {
+            roc_log(LogError, "invalid --latency-tolerance");
+            return 1;
+        }
+    }
+
+    switch (args.latency_backend_arg) {
+    case latency_backend_arg_niq:
+        sender_config.latency.tuner_backend = audio::LatencyTunerBackend_Niq;
+        break;
+    default:
+        break;
+    }
+
+    switch (args.latency_profile_arg) {
+    case latency_profile_arg_responsive:
+        sender_config.latency.tuner_profile = audio::LatencyTunerProfile_Responsive;
+        break;
+    case latency_profile_arg_gradual:
+        sender_config.latency.tuner_profile = audio::LatencyTunerProfile_Gradual;
+        break;
+    case latency_profile_arg_intact:
+        sender_config.latency.tuner_profile = audio::LatencyTunerProfile_Intact;
+        break;
+    default:
+        break;
+    }
+
     switch (args.resampler_backend_arg) {
     case resampler_backend_arg_default:
         sender_config.resampler.backend = audio::ResamplerBackend_Default;

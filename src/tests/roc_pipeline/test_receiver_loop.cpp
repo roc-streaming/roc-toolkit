@@ -105,7 +105,8 @@ TEST_GROUP(receiver_loop) {
     ReceiverConfig config;
 
     void setup() {
-        config.default_session.latency.fe_input = audio::FreqEstimatorInput_Disable;
+        config.default_session.latency.tuner_backend = audio::LatencyTunerBackend_Niq;
+        config.default_session.latency.tuner_profile = audio::LatencyTunerProfile_Intact;
     }
 };
 

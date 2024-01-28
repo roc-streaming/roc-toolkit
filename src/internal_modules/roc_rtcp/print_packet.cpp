@@ -182,8 +182,9 @@ void print_xr_delay_metrics(core::Printer& p, const header::XrDelayMetricsBlock&
              (long long)packet::ntp_2_nanoseconds(blk.min_rtt()));
     p.writef("|--- rtt_max: %016llx (unix %lld)\n", (unsigned long long)blk.max_rtt(),
              (long long)packet::ntp_2_nanoseconds(blk.max_rtt()));
-    p.writef("|--- e2e_delay: %016llx (unix %lld)\n", (unsigned long long)blk.e2e_delay(),
-             (long long)packet::ntp_2_nanoseconds(blk.e2e_delay()));
+    p.writef("|--- e2e_latency: %016llx (unix %lld)\n",
+             (unsigned long long)blk.e2e_latency(),
+             (long long)packet::ntp_2_nanoseconds(blk.e2e_latency()));
 }
 
 void print_xr_queue_metrics(core::Printer& p, const header::XrQueueMetricsBlock& blk) {
@@ -194,8 +195,12 @@ void print_xr_queue_metrics(core::Printer& p, const header::XrQueueMetricsBlock&
     p.writef("|-- block body:\n");
     print_metric_flag(p, blk.metric_flag());
     p.writef("|--- ssrc: %lu\n", (unsigned long)blk.ssrc());
-    p.writef("|--- niq_delay: %016llx (unix %lld)\n", (unsigned long long)blk.niq_delay(),
-             (long long)packet::ntp_2_nanoseconds(blk.niq_delay()));
+    p.writef("|--- niq_latency: %016llx (unix %lld)\n",
+             (unsigned long long)blk.niq_latency(),
+             (long long)packet::ntp_2_nanoseconds(blk.niq_latency()));
+    p.writef("|--- niq_stalling: %016llx (unix %lld)\n",
+             (unsigned long long)blk.niq_stalling(),
+             (long long)packet::ntp_2_nanoseconds(blk.niq_stalling()));
 }
 
 void print_xr(core::Printer& p, const XrTraverser& xr) {
