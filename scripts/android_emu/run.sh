@@ -73,7 +73,7 @@ then
           --enable-tests \
           --disable-soversion \
           --disable-tools \
-          --build-3rdparty=libuv,openfec,openssl,speexdsp,cpputest,sndfile
+          --build-3rdparty=libuv,openfec,openssl,speexdsp,cpputest
 fi
 
 if [[ "${action}" == prep ]]

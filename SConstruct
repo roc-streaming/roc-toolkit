@@ -212,7 +212,7 @@ AddOption('--disable-sox',
 AddOption('--disable-sndfile',
           dest='disable_sndfile',
           action='store_true',
-          help='disable SndFile support in tools')
+          help='disable sndfile support in tools')
 
 AddOption('--disable-openssl',
           dest='disable_openssl',

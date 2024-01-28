@@ -81,19 +81,14 @@ public:
     virtual void write(audio::Frame& frame);
 
 private:
-    bool setup_buffer_();
     bool open_(const char* driver, const char* path);
     void close_();
 
-    SNDFILE* sndfile_output_;
-    SF_INFO sf_info_out_;
+    SNDFILE* file_;
+    SF_INFO file_info_;
 
-    core::Array<audio::sample_t> buffer_;
-    size_t buffer_size_;
     core::nanoseconds_t frame_length_;
     audio::SampleSpec sample_spec_;
-
-    bool is_file_;
     bool valid_;
 };
 

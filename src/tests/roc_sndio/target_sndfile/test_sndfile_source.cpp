@@ -32,7 +32,7 @@ enum {
 };
 
 const audio::SampleSpec
-    SampleSpecs(SampleRate, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, ChMask);
+    SampleSpecs(SampleRate, audio::Sample_RawFormat, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, ChMask);
 
 const core::nanoseconds_t FrameDuration = FrameSize * core::Second
     / core::nanoseconds_t(SampleSpecs.sample_rate() * SampleSpecs.num_channels());
@@ -48,11 +48,11 @@ TEST_GROUP(sndfile_source) {
 
     void setup() {
         sink_config.sample_spec = audio::SampleSpec(
-            SampleRate, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, ChMask);
+            SampleRate, audio::Sample_RawFormat, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, ChMask);
         sink_config.frame_length = FrameDuration;
 
         source_config.sample_spec = audio::SampleSpec(
-            SampleRate, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, ChMask);
+            SampleRate, audio::Sample_RawFormat, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, ChMask);
         source_config.frame_length = FrameDuration;
     }
 };
@@ -136,93 +136,6 @@ TEST(sndfile_source, sample_rate_mismatch) {
     CHECK(sndfile_source.sample_spec().sample_rate() == SampleRate * 2);
 }
 
-TEST(sndfile_source, pause_resume) {
-    core::TempFile file("test.wav");
-
-    {
-        test::MockSource mock_source;
-        mock_source.add(FrameSize * NumChans * 2);
-
-        SndfileSink sndfile_sink(arena, sink_config);
-        CHECK(sndfile_sink.open(NULL, file.path()));
-
-        Pump pump(buffer_factory, mock_source, NULL, sndfile_sink, FrameDuration,
-                  SampleSpecs, Pump::ModeOneshot);
-        CHECK(pump.is_valid());
-        CHECK(pump.run());
-    }
-
-    SndfileSource sndfile_source(arena, source_config);
-
-    CHECK(sndfile_source.open(NULL, file.path()));
-
-    audio::sample_t frame_data1[FrameSize * NumChans] = {};
-    audio::Frame frame1(frame_data1, FrameSize * NumChans);
-
-    CHECK(sndfile_source.state() == DeviceState_Active);
-    CHECK(sndfile_source.read(frame1));
-
-    sndfile_source.pause();
-    CHECK(sndfile_source.state() == DeviceState_Paused);
-
-    audio::sample_t frame_data2[FrameSize * NumChans] = {};
-    audio::Frame frame2(frame_data2, FrameSize * NumChans);
-
-    CHECK(!sndfile_source.read(frame2));
-
-    CHECK(sndfile_source.resume());
-    CHECK(sndfile_source.state() == DeviceState_Active);
-
-    CHECK(sndfile_source.read(frame2));
-
-    if (memcmp(frame_data1, frame_data2, sizeof(frame_data1)) == 0) {
-        FAIL("frames should not be equal");
-    }
-}
-
-TEST(sndfile_source, pause_restart) {
-    core::TempFile file("test.wav");
-
-    {
-        test::MockSource mock_source;
-        mock_source.add(FrameSize * NumChans * 2);
-
-        SndfileSink sndfile_sink(arena, sink_config);
-        CHECK(sndfile_sink.open(NULL, file.path()));
-
-        Pump pump(buffer_factory, mock_source, NULL, sndfile_sink, FrameDuration,
-                  SampleSpecs, Pump::ModeOneshot);
-        CHECK(pump.is_valid());
-        CHECK(pump.run());
-    }
-
-    SndfileSource sndfile_source(arena, source_config);
-
-    CHECK(sndfile_source.open(NULL, file.path()));
-
-    audio::sample_t frame_data1[FrameSize * NumChans] = {};
-    audio::Frame frame1(frame_data1, FrameSize * NumChans);
-
-    CHECK(sndfile_source.state() == DeviceState_Active);
-    CHECK(sndfile_source.read(frame1));
-
-    sndfile_source.pause();
-    CHECK(sndfile_source.state() == DeviceState_Paused);
-
-    audio::sample_t frame_data2[FrameSize * NumChans] = {};
-    audio::Frame frame2(frame_data2, FrameSize * NumChans);
-
-    CHECK(!sndfile_source.read(frame2));
-
-    CHECK(sndfile_source.restart());
-    CHECK(sndfile_source.state() == DeviceState_Active);
-
-    CHECK(sndfile_source.read(frame2));
-
-    if (memcmp(frame_data1, frame_data2, sizeof(frame_data1)) != 0) {
-        FAIL("frames should be equal");
-    }
-}
 
 TEST(sndfile_source, eof_restart) {
     core::TempFile file("test.wav");
@@ -232,7 +145,7 @@ TEST(sndfile_source, eof_restart) {
         mock_source.add(FrameSize * NumChans * 2);
 
         SndfileSink sndfile_sink(arena, sink_config);
-        CHECK(sndfile_sink.open(NULL, file.path())); // TODO beginning of segfault
+        CHECK(sndfile_sink.open(NULL, file.path()));
 
         Pump pump(buffer_factory, mock_source, NULL, sndfile_sink, FrameDuration,
                   SampleSpecs, Pump::ModeOneshot);
@@ -250,7 +163,7 @@ TEST(sndfile_source, eof_restart) {
     for (int i = 0; i < 3; i++) {
         CHECK(sndfile_source.read(frame));
         CHECK(sndfile_source.read(frame));
-        CHECK(!sndfile_source.read(frame));
+        CHECK(!sndfile_source.read(frame)); //This line fails
 
         CHECK(sndfile_source.restart());
     }

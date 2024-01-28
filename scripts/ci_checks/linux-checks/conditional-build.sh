@@ -13,7 +13,7 @@ scons -Q --enable-werror --build-3rdparty=all \
       --disable-speex \
       --disable-sox \
       --disable-pulseaudio \
-      --disable-sndfile \
+      --disable-sndfile
 
 # optional dependencies: none, optional targets: all
 scons -Q --enable-werror --build-3rdparty=all \

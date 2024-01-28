@@ -75,7 +75,7 @@ private:
 
 #ifdef ROC_TARGET_SNDFILE
     core::Optional<SndfileBackend> sndfile_backend_;
-#endif // ROC_TARGET_SOX
+#endif // ROC_TARGET_SNDFILE
 
 #ifdef ROC_TARGET_SOX
     core::Optional<SoxBackend> sox_backend_;

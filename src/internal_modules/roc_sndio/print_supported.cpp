@@ -61,7 +61,7 @@ bool print_supported(BackendDispatcher& backend_dispatcher, core::IArena& arena)
     }
 
     prn.writef("\nsupported formats for audio files:\n");
-    print_string_list(prn, list, ".", "");
+    print_string_list(prn, list, "", "");
 
     return true;
 }

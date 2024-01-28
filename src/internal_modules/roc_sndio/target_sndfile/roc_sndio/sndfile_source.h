@@ -85,33 +85,21 @@ public:
     virtual bool read(audio::Frame&);
 
 private:
-    bool setup_names_(const char* driver, const char* path);
-    bool setup_buffer_();
-
-    int map_to_sndfile_();
-    bool open_();
+    bool open_(const char* path);
     void close_();
 
     bool seek_(size_t offset);
 
     int get_out_bits_();
 
-    core::StringBuffer driver_name_;
-    core::StringBuffer input_name_;
-
-    core::Array<audio::sample_t> buffer_;
-    size_t buffer_size_;
     core::nanoseconds_t frame_length_;
     audio::SampleSpec sample_spec_;
 
-    SNDFILE* sndfile_input_;
-    SF_INFO sf_info_in_;
-
-    int sample_rate_;
-    int precision_;
-    bool is_file_;
+    SNDFILE* file_;
+    SF_INFO file_info_;
+    const char * path_;
+    size_t sample_rate_;
     bool eof_;
-    bool paused_;
     bool valid_;
 };
 

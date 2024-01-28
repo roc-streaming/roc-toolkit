@@ -36,9 +36,6 @@ public:
                                  const char* path,
                                  const Config& config,
                                  core::IArena& arena);
-
-private:
-    bool first_created_;
 };
 
 } // namespace sndio

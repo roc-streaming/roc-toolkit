@@ -6,70 +6,52 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <stdio.h>
-
 #include "roc_core/log.h"
-#include "roc_core/macro_helpers.h"
-#include "roc_core/scoped_lock.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_sndio/sndfile_backend.h"
 #include "roc_sndio/sndfile_sink.h"
 #include "roc_sndio/sndfile_source.h"
+#include "roc_sndio/sndfile_extension_table.h"
 
 namespace roc {
 namespace sndio {
 
-SndfileBackend::SndfileBackend()
-    : first_created_(false) {
+SndfileBackend::SndfileBackend(){
     roc_log(LogDebug, "sndfile backend: initializing");
 }
 
 void SndfileBackend::discover_drivers(core::Array<DriverInfo, MaxDrivers>& driver_list) {
+    
+    SF_FORMAT_INFO format_info;
     int total_number_of_drivers;
-
+    
     if (int errnum = sf_command(NULL, SFC_GET_FORMAT_MAJOR_COUNT,
                                 &total_number_of_drivers, sizeof(int))) {
-        roc_panic("sndfile backend: %s", sf_error_number(errnum));
-    }
+        roc_panic("sndfile backend: sf_command(SFC_GET_FORMAT_MAJOR_COUNT) failed %s", sf_error_number(errnum));
+    } 
 
-    SF_FORMAT_INFO format_info;
-
-    int wav_count = 0;
-    int mat_count = 0;
-
-    for (int n = 0; n < total_number_of_drivers; n++) {
-        format_info.format = n;
+    for (int format_index = 0; format_index < total_number_of_drivers; format_index++) {
+        format_info.format = format_index;
         if (int errnum = sf_command(NULL, SFC_GET_FORMAT_MAJOR, &format_info,
                                     sizeof(format_info))) {
-            roc_panic("sndfile backend: %s", sf_error_number(errnum));
+            roc_panic("sndfile backend: sf_command(SFC_GET_FORMAT_MAJOR) failed %s", sf_error_number(errnum));
         }
-
+        
         const char* driver = format_info.extension;
 
-        if (strcmp(driver, "wav") == 0) {
-            if (wav_count == 1) {
-                driver = "nist";
-            } else if (wav_count == 2) {
-                driver = "wavex";
-            }
-            wav_count++;
-        }
-
-        if (strcmp(driver, "mat") == 0) {
-            if (mat_count == 0) {
-                driver = "mat4";
-            } else if (mat_count == 1) {
-                driver = "mat5";
-            }
-            mat_count++;
+        if((strcmp(format_info.extension, "wav") == 0) || (strcmp(format_info.extension, "mat") == 0)){
+            for(size_t map_index = 0; map_index < ROC_ARRAY_SIZE(file_type_map); map_index++){
+                if(file_type_map[map_index].format_id == format_info.format){
+                    driver = file_type_map[map_index].driver_name;
+                }
+            } 
         }
 
         if (!driver_list.push_back(DriverInfo(driver, DriverType_File,
-                                              DriverFlag_IsDefault
-                                                  | DriverFlag_SupportsSource
+                                                    DriverFlag_SupportsSource
                                                   | DriverFlag_SupportsSink,
                                               this))) {
-            roc_panic("sndfile backend: can't add driver");
+            roc_panic("sndfile backend: driver_list.push_back(DriverInfo) failed to add driver");
         }
     }
 }
@@ -84,8 +66,6 @@ IDevice* SndfileBackend::open_device(DeviceType device_type,
         roc_log(LogDebug, "sndfile backend: driver=%s is not a file type", driver);
         return NULL;
     }
-
-    first_created_ = true;
 
     switch (device_type) {
     case DeviceType_Sink: {
@@ -130,7 +110,5 @@ IDevice* SndfileBackend::open_device(DeviceType device_type,
 
     roc_panic("sndfile backend: invalid device type");
 }
-
 } // namespace sndio
-
 } // namespace roc

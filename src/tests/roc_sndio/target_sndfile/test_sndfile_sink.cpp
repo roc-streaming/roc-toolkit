@@ -28,7 +28,7 @@ TEST_GROUP(sndfile_sink) {
 
     void setup() {
         sink_config.sample_spec = audio::SampleSpec(
-            SampleRate, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, ChMask);
+            SampleRate, audio::Sample_RawFormat, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, ChMask);
 
         sink_config.frame_length = FrameSize * core::Second
             / core::nanoseconds_t(sink_config.sample_spec.sample_rate()
