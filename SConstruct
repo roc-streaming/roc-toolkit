@@ -810,6 +810,10 @@ else:
         env.Append(ROC_TARGETS=[
             'target_openssl',
         ])
+    else:
+        env.Append(ROC_TARGETS=[
+            'target_nocsprng',
+        ])
 
     if not GetOption('disable_speexdsp'):
         env.Append(ROC_TARGETS=[

@@ -8,7 +8,6 @@
 
 #include "roc_audio/packetizer.h"
 #include "roc_audio/sample_spec_to_str.h"
-#include "roc_core/fast_random.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_status/code_to_str.h"

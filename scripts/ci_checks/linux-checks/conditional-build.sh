@@ -9,6 +9,7 @@ scons -Q --enable-werror --build-3rdparty=all \
       --disable-c11 \
       --disable-libunwind \
       --disable-openfec \
+      --disable-openssl \
       --disable-speex \
       --disable-sox \
       --disable-pulseaudio
@@ -21,6 +22,7 @@ scons -Q --enable-werror --build-3rdparty=all \
       --enable-examples \
       --disable-libunwind \
       --disable-openfec \
+      --disable-openssl \
       --disable-speex \
       --disable-sox \
       --disable-pulseaudio \
