@@ -24,9 +24,10 @@ void print_packet(const Packet& pkt, int flags) {
              packet_flags_to_str(pkt.flags()).c_str());
 
     if (pkt.udp()) {
-        p.writef(" udp: src=%s dst=%s\n",
+        p.writef(" udp: src=%s dst=%s rts=%lld\n",
                  address::socket_addr_to_str(pkt.udp()->src_addr).c_str(),
-                 address::socket_addr_to_str(pkt.udp()->dst_addr).c_str());
+                 address::socket_addr_to_str(pkt.udp()->dst_addr).c_str(),
+                 (long long)pkt.udp()->receive_timestamp);
     }
 
     if (pkt.rtp()) {
