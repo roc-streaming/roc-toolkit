@@ -74,12 +74,14 @@ TEST_GROUP(watchdog) {
     }
 
     WatchdogConfig make_config(packet::stream_timestamp_t no_playback_timeout,
-                               packet::stream_timestamp_t broken_playback_timeout) {
+                               packet::stream_timestamp_t broken_playback_timeout,
+                               packet::stream_timestamp_t Latency = 0) {
         WatchdogConfig config;
         config.no_playback_timeout = no_playback_timeout * core::Second / SampleRate;
         config.choppy_playback_timeout =
             broken_playback_timeout * core::Second / SampleRate;
         config.choppy_playback_window = BreakageWindow * core::Second / SampleRate;
+        config.warmup_duration = Latency * core::Second / SampleRate;
         return config;
     }
 
@@ -433,6 +435,30 @@ TEST(watchdog, broken_playback_timeout_disabled) {
 
         CHECK(watchdog.is_alive());
     }
+}
+
+// Checks that watchdog works correctly with latency longer than no_playback_timeout
+TEST(watchdog, latency_longer_then_no_playback_timeout) {
+    enum {Latency = NoPlaybackTimeout * 10};
+    WatchdogConfig config = make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, Latency);
+    Watchdog watchdog(test_reader, SampleSpecs, config, arena);
+    CHECK(watchdog.is_valid());
+
+    for (packet::stream_timestamp_t n = 0; n < Latency / SamplesPerFrame; n++) {
+        CHECK(watchdog.is_alive());
+        check_read(watchdog, true, SamplesPerFrame, 0);
+    }
+
+    CHECK(watchdog.is_alive());
+
+    for (packet::stream_timestamp_t n = 0; n < NoPlaybackTimeout / SamplesPerFrame - 1; n++) {
+        check_read(watchdog, true, SamplesPerFrame, 0);
+        CHECK(watchdog.is_alive());
+    }
+
+    check_read(watchdog, true, SamplesPerFrame, 0);
+    CHECK(!watchdog.is_alive());
+
 }
 
 } // namespace audio

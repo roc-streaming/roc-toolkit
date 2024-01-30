@@ -48,6 +48,15 @@ struct WatchdogConfig {
     //!  choppy_playback_timeout
     core::nanoseconds_t choppy_playback_window;
 
+    //! Duration of the warmup phase in the beginning, nanoseconds
+    //! @remarks
+    //!  During the warmup phase blank_timeout is not triggered. After this period last
+    //!  position before blank frames is set to the current position. Warmup can also
+    //!  be terminated in case a non-blank frame occurs during it. This mechanism allows
+    //!  watchdog to work with latency longer than no_playback_timeout. Usually is equal
+    //!  to target_latency.
+    core::nanoseconds_t warmup_duration;
+
     //! Frame status window size for logging, number of frames.
     //! @remarks
     //!  Used for debug logging. Set to zero to disable.
@@ -58,6 +67,7 @@ struct WatchdogConfig {
         : no_playback_timeout(-1)
         , choppy_playback_timeout(-1)
         , choppy_playback_window(-1)
+        , warmup_duration(-1)
         , frame_status_window(20) {
     }
 
@@ -98,6 +108,8 @@ private:
 
     void update_drops_timeout_(const Frame& frame,
                                packet::stream_timestamp_t next_read_pos);
+    void update_warmup_status_();
+
     bool check_drops_timeout_();
 
     void update_status_(const Frame& frame);
@@ -110,6 +122,7 @@ private:
     const packet::stream_timestamp_t max_blank_duration_;
     const packet::stream_timestamp_t max_drops_duration_;
     const packet::stream_timestamp_t drop_detection_window_;
+    const packet::stream_timestamp_t warmup_ending_pos_;
 
     packet::stream_timestamp_t curr_read_pos_;
     packet::stream_timestamp_t last_pos_before_blank_;
@@ -120,6 +133,7 @@ private:
     core::Array<char> status_;
     size_t status_pos_;
     bool status_show_;
+    bool warmup_status_;
 
     bool alive_;
     bool valid_;
