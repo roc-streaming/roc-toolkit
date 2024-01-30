@@ -47,6 +47,12 @@ public:
     //!  If @p path is NULL, defaults are used.
     bool open(const char* path);
 
+    //! Cast IDevice to ISink.
+    virtual ISink* to_sink();
+
+    //! Cast IDevice to ISink.
+    virtual ISource* to_source();
+
     //! Get device type.
     virtual DeviceType type() const;
 
@@ -81,15 +87,13 @@ public:
     virtual bool read(audio::Frame& frame);
 
 private:
-    bool open_(const char* filename);
+    bool open_(const char* path);
     void close_();
-    bool seek_(drwav_uint64 target_frame_index);
 
     drwav wav_;
-    core::nanoseconds_t frame_length_;
     bool file_opened_;
     bool eof_;
-    bool paused_;
+
     bool valid_;
 };
 

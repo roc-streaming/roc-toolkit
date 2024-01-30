@@ -119,13 +119,19 @@ core::nanoseconds_t ReceiverSource::refresh(core::nanoseconds_t current_time) {
     return next_deadline;
 }
 
+sndio::ISink* ReceiverSource::to_sink() {
+    return NULL;
+}
+
+sndio::ISource* ReceiverSource::to_source() {
+    return this;
+}
+
 sndio::DeviceType ReceiverSource::type() const {
     return sndio::DeviceType_Source;
 }
 
 sndio::DeviceState ReceiverSource::state() const {
-    roc_panic_if(!is_valid());
-
     return state_tracker_.get_state();
 }
 

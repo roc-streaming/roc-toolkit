@@ -70,7 +70,7 @@ ISink* BackendDispatcher::open_default_sink(const Config& config) {
                          "backend dispatcher: unexpected non-sink device");
     }
 
-    return static_cast<ISink*>(device);
+    return device->to_sink();
 }
 
 ISource* BackendDispatcher::open_default_source(const Config& config) {
@@ -80,7 +80,7 @@ ISource* BackendDispatcher::open_default_source(const Config& config) {
                          "backend dispatcher: unexpected non-source device");
     }
 
-    return static_cast<ISource*>(device);
+    return device->to_source();
 }
 
 ISink* BackendDispatcher::open_sink(const address::IoUri& uri,
@@ -100,7 +100,7 @@ ISink* BackendDispatcher::open_sink(const address::IoUri& uri,
                          "backend dispatcher: unexpected non-sink device");
     }
 
-    return static_cast<ISink*>(device);
+    return device->to_sink();
 }
 
 ISource* BackendDispatcher::open_source(const address::IoUri& uri,
@@ -120,7 +120,7 @@ ISource* BackendDispatcher::open_source(const address::IoUri& uri,
                          "backend dispatcher: unexpected non-source device");
     }
 
-    return static_cast<ISource*>(device);
+    return device->to_source();
 }
 
 bool BackendDispatcher::get_supported_schemes(core::StringList& result) {

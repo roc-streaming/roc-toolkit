@@ -126,6 +126,18 @@ sndio::ISource& ReceiverLoop::source() {
     return *this;
 }
 
+sndio::ISink* ReceiverLoop::to_sink() {
+    roc_panic_if(!is_valid());
+
+    return NULL;
+}
+
+sndio::ISource* ReceiverLoop::to_source() {
+    roc_panic_if(!is_valid());
+
+    return this;
+}
+
 sndio::DeviceType ReceiverLoop::type() const {
     roc_panic_if(!is_valid());
 

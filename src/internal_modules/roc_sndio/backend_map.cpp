@@ -16,7 +16,7 @@ BackendMap::BackendMap() {
     register_backends_();
     register_drivers_();
 
-    roc_log(LogDebug, "backend map: initialized: n_backends=%d n_drivers=%d",
+    roc_log(LogDebug, "backend map: initializing: n_backends=%d n_drivers=%d",
             (int)backends_.size(), (int)drivers_.size());
 }
 
@@ -48,10 +48,12 @@ void BackendMap::set_frame_size(core::nanoseconds_t frame_length,
 void BackendMap::register_backends_() {
     wav_backend_.reset(new (wav_backend_) WavBackend);
     add_backend_(wav_backend_.get());
+
 #ifdef ROC_TARGET_PULSEAUDIO
     pulseaudio_backend_.reset(new (pulseaudio_backend_) PulseaudioBackend);
     add_backend_(pulseaudio_backend_.get());
 #endif // ROC_TARGET_PULSEAUDIO
+
 #ifdef ROC_TARGET_SOX
     sox_backend_.reset(new (sox_backend_) SoxBackend);
     add_backend_(sox_backend_.get());

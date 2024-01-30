@@ -76,6 +76,14 @@ bool SoxSink::open(const char* driver, const char* path) {
     return true;
 }
 
+ISink* SoxSink::to_sink() {
+    return this;
+}
+
+ISource* SoxSink::to_source() {
+    return NULL;
+}
+
 DeviceType SoxSink::type() const {
     return DeviceType_Sink;
 }

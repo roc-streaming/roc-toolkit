@@ -30,14 +30,7 @@ WavSink::WavSink(core::IArena& arena, const Config& config)
               sizeof(audio::sample_t) * 8)
     , valid_(false) {
     if (config.latency != 0) {
-        roc_log(LogError, "wav sink: setting io latency not supported by wav backend");
-        return;
-    }
-
-    frame_length_ = config.frame_length;
-
-    if (frame_length_ == 0) {
-        roc_log(LogError, "wav sink: frame length is zero");
+        roc_log(LogError, "wav sink: setting io latency not supported");
         return;
     }
 
@@ -55,17 +48,19 @@ bool WavSink::is_valid() const {
 bool WavSink::open(const char* path) {
     roc_panic_if(!valid_);
 
-    roc_log(LogDebug, "wav sink: opening: path=%s", path);
-
-    if (output_file_ != NULL) {
-        roc_panic("wav sink: can't call open() more than once");
-    }
-
     if (!open_(path)) {
         return false;
     }
 
     return true;
+}
+
+ISink* WavSink::to_sink() {
+    return this;
+}
+
+ISource* WavSink::to_source() {
+    return NULL;
 }
 
 DeviceType WavSink::type() const {
@@ -89,10 +84,8 @@ bool WavSink::restart() {
 }
 
 audio::SampleSpec WavSink::sample_spec() const {
-    roc_panic_if(!valid_);
-
     if (!output_file_) {
-        roc_panic("wav sink: sample_spec(): non-open output file or device");
+        roc_panic("wav sink: not opened");
     }
 
     audio::ChannelSet channel_set;
@@ -105,60 +98,25 @@ audio::SampleSpec WavSink::sample_spec() const {
 }
 
 core::nanoseconds_t WavSink::latency() const {
-    roc_panic_if(!valid_);
-
-    if (!output_file_) {
-        roc_panic("wav sink: latency(): non-open output file");
-    }
-
     return 0;
 }
 
 bool WavSink::has_latency() const {
-    roc_panic_if(!valid_);
-
-    if (!output_file_) {
-        roc_panic("wav sink: has_latency(): non-open output file");
-    }
-
     return false;
 }
 
 bool WavSink::has_clock() const {
-    roc_panic_if(!valid_);
-
-    if (!output_file_) {
-        roc_panic("wav sink: has_clock(): non-open output file");
-    }
-
     return false;
 }
 
 void WavSink::write(audio::Frame& frame) {
-    roc_panic_if(!valid_);
-
-    const audio::sample_t* frame_data = frame.samples();
-    size_t frame_size = frame.num_samples();
-
-    write_(frame_data, frame_size);
-}
-
-bool WavSink::open_(const char* path) {
-    output_file_ = fopen(path, "w");
     if (!output_file_) {
-        roc_log(LogDebug, "wav sink: can't open: path=%s, errno=%s", path,
-                core::errno_to_str(errno).c_str());
-        return false;
+        roc_panic("wav sink: not opened");
     }
 
-    roc_log(LogInfo, "wav sink: opened: out_bits=%lu out_rate=%lu out_ch=%lu",
-            (unsigned long)header_.bits_per_sample(),
-            (unsigned long)header_.sample_rate(), (unsigned long)header_.num_channels());
+    const audio::sample_t* samples = frame.samples();
+    size_t n_samples = frame.num_samples();
 
-    return true;
-}
-
-void WavSink::write_(const audio::sample_t* samples, size_t n_samples) {
     if (n_samples > 0) {
         if (fseek(output_file_, 0, SEEK_SET)) {
             roc_log(LogError, "wav sink: failed to seek to the beginning of the file: %s",
@@ -191,15 +149,37 @@ void WavSink::write_(const audio::sample_t* samples, size_t n_samples) {
     }
 }
 
+bool WavSink::open_(const char* path) {
+    if (output_file_) {
+        roc_panic("wav sink: already opened");
+    }
+
+    output_file_ = fopen(path, "w");
+    if (!output_file_) {
+        roc_log(LogDebug, "wav sink: can't open output file: %s",
+                core::errno_to_str(errno).c_str());
+        return false;
+    }
+
+    roc_log(LogInfo,
+            "wav sink: opened output file:"
+            " path=%s out_bits=%lu out_rate=%lu out_ch=%lu",
+            path, (unsigned long)header_.bits_per_sample(),
+            (unsigned long)header_.sample_rate(), (unsigned long)header_.num_channels());
+
+    return true;
+}
+
 void WavSink::close_() {
     if (!output_file_) {
         return;
     }
 
-    roc_log(LogDebug, "wav sink: closing output");
+    roc_log(LogDebug, "wav sink: closing output file");
 
     if (fclose(output_file_)) {
-        roc_panic("wav sink: can't close output");
+        roc_panic("wav sink: can't close output file: %s",
+                  core::errno_to_str(errno).c_str());
     }
 
     output_file_ = NULL;

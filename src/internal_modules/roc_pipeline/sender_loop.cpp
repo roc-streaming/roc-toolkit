@@ -125,6 +125,18 @@ sndio::ISink& SenderLoop::sink() {
     return *this;
 }
 
+sndio::ISink* SenderLoop::to_sink() {
+    roc_panic_if(!is_valid());
+
+    return this;
+}
+
+sndio::ISource* SenderLoop::to_source() {
+    roc_panic_if(!is_valid());
+
+    return NULL;
+}
+
 sndio::DeviceType SenderLoop::type() const {
     roc_panic_if(!is_valid());
 

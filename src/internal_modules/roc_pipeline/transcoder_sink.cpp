@@ -86,6 +86,14 @@ bool TranscoderSink::is_valid() {
     return valid_;
 }
 
+sndio::ISink* TranscoderSink::to_sink() {
+    return this;
+}
+
+sndio::ISource* TranscoderSink::to_source() {
+    return NULL;
+}
+
 sndio::DeviceType TranscoderSink::type() const {
     return sndio::DeviceType_Sink;
 }

@@ -9,7 +9,6 @@
 #include "roc_sndio/pulseaudio_device.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_packet/units.h"
 
 namespace roc {
 namespace sndio {
@@ -89,6 +88,18 @@ bool PulseaudioDevice::open(const char* device) {
     return true;
 }
 
+ISink* PulseaudioDevice::to_sink() {
+    return device_type_ == DeviceType_Sink ? this : NULL;
+}
+
+ISource* PulseaudioDevice::to_source() {
+    return device_type_ == DeviceType_Source ? this : NULL;
+}
+
+DeviceType PulseaudioDevice::type() const {
+    return device_type_;
+}
+
 DeviceState PulseaudioDevice::state() const {
     want_mainloop_();
 
@@ -161,7 +172,31 @@ core::nanoseconds_t PulseaudioDevice::latency() const {
     return latency;
 }
 
-bool PulseaudioDevice::request(audio::Frame& frame) {
+bool PulseaudioDevice::has_latency() const {
+    return true;
+}
+
+bool PulseaudioDevice::has_clock() const {
+    return true;
+}
+
+void PulseaudioDevice::reclock(core::nanoseconds_t timestamp) {
+    // no-op
+}
+
+void PulseaudioDevice::write(audio::Frame& frame) {
+    roc_panic_if(device_type_ != DeviceType_Sink);
+
+    request_frame_(frame);
+}
+
+bool PulseaudioDevice::read(audio::Frame& frame) {
+    roc_panic_if(device_type_ != DeviceType_Source);
+
+    return request_frame_(frame);
+}
+
+bool PulseaudioDevice::request_frame_(audio::Frame& frame) {
     want_mainloop_();
 
     audio::sample_t* data = frame.samples();

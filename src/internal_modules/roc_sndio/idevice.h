@@ -21,10 +21,19 @@
 namespace roc {
 namespace sndio {
 
+class ISink;
+class ISource;
+
 //! Base interface for sinks and sources.
 class IDevice {
 public:
     virtual ~IDevice();
+
+    //! Cast IDevice to ISink.
+    virtual ISink* to_sink() = 0;
+
+    //! Cast IDevice to ISink.
+    virtual ISource* to_source() = 0;
 
     //! Get device type.
     virtual DeviceType type() const = 0;

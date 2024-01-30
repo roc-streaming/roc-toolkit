@@ -17,7 +17,6 @@ namespace roc {
 namespace sndio {
 
 WavBackend::WavBackend() {
-    roc_log(LogDebug, "wav backend: initializing");
 }
 
 void WavBackend::discover_drivers(core::Array<DriverInfo, MaxDrivers>& driver_list) {

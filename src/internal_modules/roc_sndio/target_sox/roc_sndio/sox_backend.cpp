@@ -161,8 +161,6 @@ void log_handler(unsigned sox_level,
 
 SoxBackend::SoxBackend()
     : first_created_(false) {
-    roc_log(LogDebug, "sox backend: initializing");
-
     sox_init();
 
     sox_get_globals()->verbosity = 100;

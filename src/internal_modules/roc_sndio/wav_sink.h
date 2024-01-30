@@ -48,6 +48,12 @@ public:
     //!  If @p path is NULL, defaults are used.
     bool open(const char* path);
 
+    //! Cast IDevice to ISink.
+    virtual ISink* to_sink();
+
+    //! Cast IDevice to ISink.
+    virtual ISource* to_source();
+
     //! Get device type.
     virtual DeviceType type() const;
 
@@ -80,13 +86,10 @@ public:
 
 private:
     bool open_(const char* path);
-    void write_(const audio::sample_t* samples, size_t n_samples);
-    void update_header_();
     void close_();
 
     FILE* output_file_;
     WavHeader header_;
-    core::nanoseconds_t frame_length_;
 
     bool valid_;
 };

@@ -19,7 +19,7 @@ namespace roc {
 namespace sndio {
 
 //! Sink interface.
-class ISink : public IDevice, public audio::IFrameWriter {
+class ISink : virtual public IDevice, public audio::IFrameWriter {
 public:
     virtual ~ISink();
 };

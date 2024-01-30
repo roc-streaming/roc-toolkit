@@ -25,6 +25,14 @@ public:
         , size_(0) {
     }
 
+    virtual ISink* to_sink() {
+        return NULL;
+    }
+
+    virtual ISource* to_source() {
+        return this;
+    }
+
     virtual DeviceType type() const {
         return DeviceType_Source;
     }

@@ -15,17 +15,9 @@ namespace sndio {
 
 WavSource::WavSource(core::IArena& arena, const Config& config)
     : eof_(false)
-    , paused_(false)
     , valid_(false) {
     if (config.latency != 0) {
-        roc_log(LogError, "wav source: setting io latency not supported by wav backend");
-        return;
-    }
-
-    frame_length_ = config.frame_length;
-
-    if (frame_length_ == 0) {
-        roc_log(LogError, "wav source: frame length is zero");
+        roc_log(LogError, "wav source: setting io latency not supported");
         return;
     }
 
@@ -43,18 +35,19 @@ bool WavSource::is_valid() const {
 bool WavSource::open(const char* path) {
     roc_panic_if(!valid_);
 
-    roc_log(LogInfo, "wav source: opening: path=%s", path);
-
-    if (file_opened_) {
-        roc_panic("wav source: can't call open() more than once");
-    }
-
     if (!open_(path)) {
         return false;
     }
 
-    file_opened_ = true;
     return true;
+}
+
+ISink* WavSource::to_sink() {
+    return NULL;
+}
+
+ISource* WavSource::to_source() {
+    return this;
 }
 
 DeviceType WavSource::type() const {
@@ -62,48 +55,37 @@ DeviceType WavSource::type() const {
 }
 
 DeviceState WavSource::state() const {
-    roc_panic_if(!valid_);
-
-    if (paused_) {
-        return DeviceState_Paused;
-    } else {
-        return DeviceState_Active;
-    }
+    return DeviceState_Active;
 }
 
 void WavSource::pause() {
-    // no-op - but the state is updated
-    paused_ = true;
+    // no-op
 }
 
 bool WavSource::resume() {
-    // no-op - but the state is updated
-    paused_ = false;
     return true;
 }
 
 bool WavSource::restart() {
-    roc_panic_if(!valid_);
-    roc_panic_if(!file_opened_);
+    if (!file_opened_) {
+        roc_panic("wav source: not opened");
+    }
 
     roc_log(LogDebug, "wav source: restarting");
 
-    if (!seek_(0)) {
+    if (!drwav_seek_to_pcm_frame(&wav_, 0)) {
         roc_log(LogError, "wav source: seek failed when restarting");
         return false;
     }
 
-    paused_ = false;
     eof_ = false;
 
     return true;
 }
 
 audio::SampleSpec WavSource::sample_spec() const {
-    roc_panic_if(!valid_);
-
     if (!file_opened_) {
-        roc_panic("wav source: sample_spec(): non-open output file or device");
+        roc_panic("wav source: not opened");
     }
 
     audio::ChannelSet channel_set;
@@ -120,39 +102,24 @@ core::nanoseconds_t WavSource::latency() const {
 }
 
 bool WavSource::has_latency() const {
-    roc_panic_if(!valid_);
-
-    if (!file_opened_) {
-        roc_panic("wav source: has_latency(): non-open input file or device");
-    }
-
     return false;
 }
 
 bool WavSource::has_clock() const {
-    roc_panic_if(!valid_);
-
-    if (!file_opened_) {
-        roc_panic("wav source: has_clock(): non-open input file or device");
-    }
-
     return false;
 }
 
 void WavSource::reclock(core::nanoseconds_t timestamp) {
     // no-op
-    (void)timestamp;
 }
 
 bool WavSource::read(audio::Frame& frame) {
-    roc_panic_if(!valid_);
-
-    if (paused_ || eof_) {
-        return false;
+    if (!file_opened_) {
+        roc_panic("wav source: not opened");
     }
 
-    if (!file_opened_) {
-        roc_panic("wav source: read: non-open input file");
+    if (eof_) {
+        return false;
     }
 
     audio::sample_t* frame_data = frame.samples();
@@ -166,7 +133,7 @@ bool WavSource::read(audio::Frame& frame) {
             * wav_.channels;
 
         if (n_samples == 0) {
-            roc_log(LogDebug, "wav source: got eof from wav");
+            roc_log(LogDebug, "wav source: got eof from input file");
             eof_ = true;
             break;
         }
@@ -186,22 +153,24 @@ bool WavSource::read(audio::Frame& frame) {
     return true;
 }
 
-bool WavSource::open_(const char* filename) {
+bool WavSource::open_(const char* path) {
     if (file_opened_) {
         roc_panic("wav source: already opened");
     }
 
-    if (!drwav_init_file(&wav_, filename, NULL)) {
-        roc_log(LogInfo, "wav source: can't open: input=%s", filename);
+    if (!drwav_init_file(&wav_, path, NULL)) {
+        roc_log(LogDebug, "wav sink: can't open input file: %s",
+                core::errno_to_str(errno).c_str());
         return false;
     }
 
     roc_log(LogInfo,
-            "wav source:"
-            " in_bits=%lu in_rate=%lu in_ch=%lu",
-            (unsigned long)wav_.bitsPerSample, (unsigned long)wav_.sampleRate,
+            "wav source: opened input file:"
+            " path=%s in_bits=%lu in_rate=%lu in_ch=%lu",
+            path, (unsigned long)wav_.bitsPerSample, (unsigned long)wav_.sampleRate,
             (unsigned long)wav_.channels);
 
+    file_opened_ = true;
     return true;
 }
 
@@ -212,10 +181,6 @@ void WavSource::close_() {
 
     file_opened_ = false;
     drwav_uninit(&wav_);
-}
-
-bool WavSource::seek_(drwav_uint64 target_frame_index) {
-    return drwav_seek_to_pcm_frame(&wav_, target_frame_index);
 }
 
 } // namespace sndio

@@ -83,6 +83,14 @@ bool SoxSource::open(const char* driver, const char* path) {
     return true;
 }
 
+ISink* SoxSource::to_sink() {
+    return NULL;
+}
+
+ISource* SoxSource::to_source() {
+    return this;
+}
+
 DeviceType SoxSource::type() const {
     return DeviceType_Source;
 }

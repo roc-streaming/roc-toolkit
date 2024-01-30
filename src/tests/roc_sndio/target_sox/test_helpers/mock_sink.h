@@ -23,6 +23,14 @@ public:
         : pos_(0) {
     }
 
+    virtual ISink* to_sink() {
+        return this;
+    }
+
+    virtual ISource* to_source() {
+        return NULL;
+    }
+
     virtual DeviceType type() const {
         return DeviceType_Sink;
     }

@@ -135,6 +135,8 @@ public:
 
 private:
     // Methods of sndio::ISink
+    virtual sndio::ISink* to_sink();
+    virtual sndio::ISource* to_source();
     virtual sndio::DeviceType type() const;
     virtual sndio::DeviceState state() const;
     virtual void pause();

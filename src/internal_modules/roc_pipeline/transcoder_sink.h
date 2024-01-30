@@ -41,6 +41,12 @@ public:
     //! Check if the pipeline was successfully constructed.
     bool is_valid();
 
+    //! Cast IDevice to ISink.
+    virtual sndio::ISink* to_sink();
+
+    //! Cast IDevice to ISink.
+    virtual sndio::ISource* to_source();
+
     //! Get device type.
     virtual sndio::DeviceType type() const;
 

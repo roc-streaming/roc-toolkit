@@ -100,6 +100,14 @@ bool TranscoderSource::is_valid() {
     return valid_;
 }
 
+sndio::ISink* TranscoderSource::to_sink() {
+    return NULL;
+}
+
+sndio::ISource* TranscoderSource::to_source() {
+    return this;
+}
+
 sndio::DeviceType TranscoderSource::type() const {
     return input_source_.type();
 }

@@ -11,14 +11,12 @@
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
 #include "roc_sndio/driver.h"
-#include "roc_sndio/pulseaudio_sink.h"
-#include "roc_sndio/pulseaudio_source.h"
+#include "roc_sndio/pulseaudio_device.h"
 
 namespace roc {
 namespace sndio {
 
 PulseaudioBackend::PulseaudioBackend() {
-    roc_log(LogDebug, "pulseaudio backend: initializing");
 }
 
 void PulseaudioBackend::discover_drivers(
@@ -45,44 +43,20 @@ IDevice* PulseaudioBackend::open_device(DeviceType device_type,
         return NULL;
     }
 
-    switch (device_type) {
-    case DeviceType_Sink: {
-        core::ScopedPtr<PulseaudioSink> sink(new (arena) PulseaudioSink(config), arena);
-        if (!sink) {
-            roc_log(LogDebug, "pulseaudio backend: can't construct sink: path=%s", path);
-            return NULL;
-        }
+    core::ScopedPtr<PulseaudioDevice> device(
+        new (arena) PulseaudioDevice(config, device_type), arena);
 
-        if (!sink->open(path)) {
-            roc_log(LogDebug, "pulseaudio backend: can't open sink: path=%s", path);
-            return NULL;
-        }
-
-        return sink.release();
-    } break;
-
-    case DeviceType_Source: {
-        core::ScopedPtr<PulseaudioSource> source(new (arena) PulseaudioSource(config),
-                                                 arena);
-        if (!source) {
-            roc_log(LogDebug, "pulseaudio backend: can't construct source: path=%s",
-                    path);
-            return NULL;
-        }
-
-        if (!source->open(path)) {
-            roc_log(LogDebug, "pulseaudio backend: can't open source: path=%s", path);
-            return NULL;
-        }
-
-        return source.release();
-    } break;
-
-    default:
-        break;
+    if (!device) {
+        roc_log(LogDebug, "pulseaudio backend: can't construct device: path=%s", path);
+        return NULL;
     }
 
-    roc_panic("pulseaudio backend: invalid device type");
+    if (!device->open(path)) {
+        roc_log(LogDebug, "pulseaudio backend: can't open device: path=%s", path);
+        return NULL;
+    }
+
+    return device.release();
 }
 
 } // namespace sndio

@@ -29,6 +29,14 @@ public:
         , value_(0) {
     }
 
+    virtual sndio::ISink* to_sink() {
+        return NULL;
+    }
+
+    virtual sndio::ISource* to_source() {
+        return this;
+    }
+
     virtual sndio::DeviceType type() const {
         return sndio::DeviceType_Source;
     }

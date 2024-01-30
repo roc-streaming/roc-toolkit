@@ -20,7 +20,7 @@ namespace roc {
 namespace sndio {
 
 //! Source interface.
-class ISource : public IDevice, public audio::IFrameReader {
+class ISource : virtual public IDevice, public audio::IFrameReader {
 public:
     virtual ~ISource();
 

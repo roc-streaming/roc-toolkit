@@ -112,13 +112,19 @@ core::nanoseconds_t SenderSink::refresh(core::nanoseconds_t current_time) {
     return next_deadline;
 }
 
+sndio::ISink* SenderSink::to_sink() {
+    return this;
+}
+
+sndio::ISource* SenderSink::to_source() {
+    return NULL;
+}
+
 sndio::DeviceType SenderSink::type() const {
     return sndio::DeviceType_Sink;
 }
 
 sndio::DeviceState SenderSink::state() const {
-    roc_panic_if(!is_valid());
-
     return state_tracker_.get_state();
 }
 

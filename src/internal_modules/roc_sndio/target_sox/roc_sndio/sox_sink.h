@@ -50,6 +50,12 @@ public:
     //!  If @p driver or @p path are NULL, defaults are used.
     bool open(const char* driver, const char* path);
 
+    //! Cast IDevice to ISink.
+    virtual ISink* to_sink();
+
+    //! Cast IDevice to ISink.
+    virtual ISource* to_source();
+
     //! Get device type.
     virtual DeviceType type() const;
 

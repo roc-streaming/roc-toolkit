@@ -29,6 +29,14 @@ public:
         , n_chans_(sample_spec.num_channels()) {
     }
 
+    virtual sndio::ISink* to_sink() {
+        return this;
+    }
+
+    virtual sndio::ISource* to_source() {
+        return NULL;
+    }
+
     virtual sndio::DeviceType type() const {
         return sndio::DeviceType_Sink;
     }

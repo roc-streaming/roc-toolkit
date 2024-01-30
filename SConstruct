@@ -1095,8 +1095,15 @@ if sanitizers:
     if not meta.compiler in ['gcc', 'clang']:
         env.Die("sanitizers are not supported for compiler '{}'", meta.compiler)
 
-    for name in sanitizers:
-        flags = ['-fsanitize=' + name, '-fno-sanitize-recover=' + name]
+    enabled = sanitizers
+    disabled = ['vptr'] # disable due to false positives w/ virtual inheritance
+
+    for name in enabled + disabled:
+        if name in enabled:
+            flags = ['-fsanitize=' + name,
+                '-fno-sanitize-recover=' + name]
+        else:
+            flags = ['-fno-sanitize=' + name]
         env.AppendUnique(CFLAGS=flags)
         env.AppendUnique(CXXFLAGS=flags)
         env.AppendUnique(LINKFLAGS=flags)
