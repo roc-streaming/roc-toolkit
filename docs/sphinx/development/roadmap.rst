@@ -6,7 +6,7 @@ Basic features
 
 - |:ballot_box_with_check:| Real-time streaming with guaranteed latency
 - |:ballot_box_with_check:| Clock drift compensation driven by receiver
-- |:white_large_square:| Clock drift compensation driven by sender
+- |:ballot_box_with_check:| Clock drift compensation driven by sender
 - |:ballot_box_with_check:| Packet loss recovery using FEC
 - |:ballot_box_with_check:| Session multiplexing
 - |:ballot_box_with_check:| Stream breakage detection
@@ -45,15 +45,17 @@ Extensibility
 - |:white_large_square:| Provide custom allocator
 - |:ballot_box_with_check:| Register custom payload types
 - |:white_large_square:| Register custom codecs
+- |:white_large_square:| Register custom mixer
 
 Protocols
 =========
 
 - |:ballot_box_with_check:| RTP/AVPF
 - |:ballot_box_with_check:| FECFRAME (Reed-Solomon and LDPC-Staircase FEC codes based on `OpenFEC <http://openfec.org/>`_)
-- |:white_large_square:| RTCP
-- |:white_large_square:| RTCP XR (extended reports)
-- |:white_large_square:| SDP and RTSP
+- |:ballot_box_with_check:| RTCP
+- |:ballot_box_with_check:| RTCP XR (extended reports)
+- |:white_large_square:| SDP
+- |:white_large_square:| RTSP
 - |:white_large_square:| SRTP
 - |:white_large_square:| DTLS
 
@@ -80,6 +82,8 @@ Audio backends
 - |:white_large_square:| WASAPI (Windows)
 - |:ballot_box_with_check:| SoX (universal)
 - |:white_large_square:| FFmpeg
+- |:white_large_square:| libsndfile
+- |:white_large_square:| WAV
 
 API
 ===
@@ -109,8 +113,9 @@ Integrations
 Bindings
 ========
 
-- |:ballot_box_with_check:| Go (roc-go)
 - |:ballot_box_with_check:| Java (roc-java)
+- |:ballot_box_with_check:| Go (roc-go)
+- |:white_large_square:| Rust
 
 Portability
 ===========

@@ -211,7 +211,7 @@ Raspberry Pi (64-bit)
 
     # build libraries and tools
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocstreaming/toolchain-aarch64-linux-gnu \
+        rocstreaming/toolchain-aarch64-linux-gnu:gcc-7.4 \
           scons -Q \
             --host=aarch64-linux-gnu \
             --build-3rdparty=all \
@@ -235,7 +235,7 @@ Raspberry Pi 2 and later (32-bit)
 
     # build libraries and tools
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocstreaming/toolchain-arm-linux-gnueabihf \
+        rocstreaming/toolchain-arm-linux-gnueabihf:gcc-4.9 \
           scons -Q \
             --host=arm-linux-gnueabihf \
             --build-3rdparty=all \
@@ -259,7 +259,7 @@ Raspberry Pi 1 and Zero (32-bit)
 
     # build libraries and tools
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi \
+        rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi:gcc-4.7 \
           scons -Q \
             --host=arm-bcm2708hardfp-linux-gnueabi \
             --build-3rdparty=all

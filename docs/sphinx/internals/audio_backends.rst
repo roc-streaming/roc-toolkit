@@ -16,13 +16,13 @@ syntax                     meaning                    example
 ``<driver>://<device>``    audio device name          ``alsa://hw:0``
 ``<driver>://default``     default audio device       ``pulse://default``
 ``file://<abs_path>``      audio file (absolute path) ``file:///home/user/test.wav``
-``file://<rel_path>``      audio file (relative path) ``file:./test.wav``
+``file:<rel_path>``        audio file (relative path) ``file:./test.wav``
 ``file://-`` or ``file:-`` stdin or stdout            ``file:-``
 ========================== ========================== ==============
 
 User can specify input file/device (**source**) for ``roc-send`` via ``--input`` option, and output file/device (**sink**) for ``roec-recv`` via ``--output`` option.
 
-When device is used, user specifies driver explicitly (e.g. ``alsa://`` for ALSA, ``pulse://`` for PulseAudio, etc). When file is used, file driver is automatically selected automatically, usually by file extension. However, user may force usage of specific driver for the file via ``--input-format`` or ``--output-format`` option.
+When device is used, user specifies driver explicitly (e.g. ``alsa://`` for ALSA, ``pulse://`` for PulseAudio, etc). When file is used, file driver is selected automatically, usually by file extension. However, user may force usage of specific driver for the file via ``--input-format`` or ``--output-format`` option.
 
 See :doc:`manual pages </manuals>` for more details.
 

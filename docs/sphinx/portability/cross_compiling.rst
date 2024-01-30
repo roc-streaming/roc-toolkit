@@ -46,7 +46,7 @@ Here is how you can build Roc with this toolchain using `rocstreaming/toolchain-
 
     $ cd /path/to/roc
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocstreaming/toolchain-aarch64-linux-gnu \
+        rocstreaming/toolchain-aarch64-linux-gnu:gcc-7.4 \
           scons \
             --host=aarch64-linux-gnu \
             --build-3rdparty=all
@@ -89,7 +89,7 @@ Here is how you can build Roc with this toolchain using `rocstreaming/toolchain-
 
     $ cd /path/to/roc
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocstreaming/toolchain-arm-linux-gnueabihf \
+        rocstreaming/toolchain-arm-linux-gnueabihf:gcc-4.9 \
           scons \
             --host=arm-linux-gnueabihf \
             --build-3rdparty=all
@@ -132,7 +132,7 @@ Here is how you can build Roc with this toolchain using `rocstreaming/toolchain-
 
     $ cd /path/to/roc
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi \
+        rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi:gcc-4.7 \
           scons \
             --host=arm-bcm2708hardfp-linux-gnueabi \
             --build-3rdparty=all
@@ -347,16 +347,16 @@ If PulseAudio support is enabled, install libltdl and libpulse:
 Running cross-compiled tests in QEMU
 ====================================
 
-Running a test on 32-bit ARMv6 CPU using `rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi <https://hub.docker.com/r/rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi/>`_ Docker image:
+Running a test on 64-bit ARMv8 CPU using `rocstreaming/toolchain-aarch64-linux-gnu <https://hub.docker.com/r/rocstreaming/toolchain-aarch64-linux-gnu/>`_ Docker image:
 
 .. code::
 
     $ cd /path/to/roc
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi \
-          env LD_LIBRARY_PATH="/opt/sysroot/lib:${PWD}/3rdparty/arm-bcm2708hardfp-linux-gnueabi/rpath" \
-            qemu-arm -L /opt/sysroot -cpu arm1176 \
-              ./bin/arm-bcm2708hardfp-linux-gnueabi/roc-test-core
+        rocstreaming/toolchain-aarch64-linux-gnu:gcc-7.4 \
+          env LD_LIBRARY_PATH="/opt/sysroot/lib:${PWD}/3rdparty/aarch64-linux-gnu/rpath" \
+            qemu-aarch64 -L /opt/sysroot -cpu cortex-a53 \
+              ./bin/aarch64-linux-gnu/roc-test-core
 
 Running a test on 32-bit ARMv7 CPU using `rocstreaming/toolchain-arm-linux-gnueabihf <https://hub.docker.com/r/rocstreaming/toolchain-arm-linux-gnueabihf/>`_ Docker image:
 
@@ -364,18 +364,18 @@ Running a test on 32-bit ARMv7 CPU using `rocstreaming/toolchain-arm-linux-gnuea
 
     $ cd /path/to/roc
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocstreaming/toolchain-arm-linux-gnueabihf \
+        rocstreaming/toolchain-arm-linux-gnueabihf:gcc-4.9 \
           env LD_LIBRARY_PATH="/opt/sysroot/lib:${PWD}/3rdparty/arm-linux-gnueabihf/rpath" \
             qemu-arm -L /opt/sysroot -cpu cortex-a15 \
               ./bin/arm-linux-gnueabihf/roc-test-core
 
-Running a test on 64-bit ARMv8 CPU using `rocstreaming/toolchain-aarch64-linux-gnu <https://hub.docker.com/r/rocstreaming/toolchain-aarch64-linux-gnu/>`_ Docker image:
+Running a test on 32-bit ARMv6 CPU using `rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi <https://hub.docker.com/r/rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi/>`_ Docker image:
 
 .. code::
 
     $ cd /path/to/roc
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocstreaming/toolchain-aarch64-linux-gnu \
-          env LD_LIBRARY_PATH="/opt/sysroot/lib:${PWD}/3rdparty/aarch64-linux-gnu/rpath" \
-            qemu-aarch64 -L /opt/sysroot -cpu cortex-a53 \
-              ./bin/aarch64-linux-gnu/roc-test-core
+        rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi:gcc-4.7 \
+          env LD_LIBRARY_PATH="/opt/sysroot/lib:${PWD}/3rdparty/arm-bcm2708hardfp-linux-gnueabi/rpath" \
+            qemu-arm -L /opt/sysroot -cpu arm1176 \
+              ./bin/arm-bcm2708hardfp-linux-gnueabi/roc-test-core

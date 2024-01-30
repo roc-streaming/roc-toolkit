@@ -8,10 +8,11 @@ Timestamps
 Types of timestamps
 ===================
 
-:doc:`Packets and frames </internals/packets_frames>` have two major types of timestamps:
+:doc:`Packets and frames </internals/packets_frames>` have three major types of timestamps:
 
 * STS - stream timestamp
 * CTS - capture timestamp
+* RTS - receive timestamp
 
 **Stream timestamp** (STS) describes position of the first sample in packet or frame using abstract stream clock.
 
@@ -28,18 +29,20 @@ The clock for CTS always belongs to the local system, no matter if we're on send
 * On sender, CTS of packet or frame is set to the system time when its first sample was captured.
 * On receiver, CTS is set to an estimation of the same value, converted to receiver system clock, i.e. the system time *of receiver* when the first sample was captured *on sender*.
 
-Unlike STS, this field does not directly correspond to any field inside RTP packet. Instead, sender and receiver exchange RTCP packets which help them to map STS to CTS, as described below.
+Unlike STS, this field does not directly correspond to any field inside RTP packet. Instead, sender and receiver exchange RTCP packets which help them to map STS to CTS, as described in the further sections.
+
+**Receive timestamp** (RTS) is the time when the packet reached incoming network queue.
+
+The clock for RTS is the same as for CTS: local Unix-time UTC clock, counting nanoseconds since Unix Epoch.
+
+This timestamp is used only on receiver and only for packets.
 
 Use of timestamps
 =================
 
 Stream timestamps are used to position packets in the continuous stream of samples. When a packet arrives to receiver, its stream timestamp defines where exactly it will be inserted into receiver stream.
 
-.. note::
-
-   Features below are still under construction.
-
-Capture timestamps have the following usages:
+Capture and receive timestamps have the following usages:
 
 * Estimate end-to-end latency between sender and receiver. To compute it, receiver needs to find the difference between the time when the frame was captured (i.e. capture timestamp) and the time when the frame is actually played (which receiver knows).
 
