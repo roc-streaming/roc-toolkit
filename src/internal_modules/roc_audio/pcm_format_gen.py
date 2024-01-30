@@ -938,11 +938,14 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 {% if endian == 'Native' %}
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = {{ make_enum_name(code, 'Big') }};
 #else
         traits.is_little = true;
+        traits.canon_id = {{ make_enum_name(code, 'Little') }};
 #endif
 {% else %}
         traits.is_little = {{ str(endian == 'Little').lower() }};
+        traits.canon_id = {{ make_enum_name(code, endian) }};
 {% endif %}
         traits.bit_depth = {{ code.depth }};
         traits.bit_width = {{ code.packed_width }};

@@ -62,6 +62,15 @@ core::nanoseconds_t nsamples_2_ns(const float n_samples, const size_t sample_rat
     return (core::nanoseconds_t)val;
 }
 
+PcmFormat canon_pcm_format(PcmFormat fmt) {
+    if (fmt == PcmFormat_Invalid) {
+        return PcmFormat_Invalid;
+    }
+
+    const PcmTraits traits = pcm_format_traits(fmt);
+    return traits.canon_id;
+}
+
 } // namespace
 
 SampleSpec::SampleSpec()
@@ -98,7 +107,8 @@ SampleSpec::SampleSpec(const size_t sample_rate,
 
 bool SampleSpec::operator==(const SampleSpec& other) const {
     return sample_fmt_ == other.sample_fmt_
-        && (pcm_fmt_ == other.pcm_fmt_ || sample_fmt_ != SampleFormat_Pcm)
+        && (sample_fmt_ != SampleFormat_Pcm || pcm_fmt_ == other.pcm_fmt_
+            || canon_pcm_format(pcm_fmt_) == canon_pcm_format(other.pcm_fmt_))
         && sample_rate_ == other.sample_rate_ && channel_set_ == other.channel_set_;
 }
 

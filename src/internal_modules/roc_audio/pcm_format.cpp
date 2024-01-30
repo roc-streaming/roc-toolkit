@@ -13332,8 +13332,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = true;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt8_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt8_Le;
 #endif
         traits.bit_depth = 8;
         traits.bit_width = 8;
@@ -13344,6 +13346,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt8_Be;
         traits.bit_depth = 8;
         traits.bit_width = 8;
         break;
@@ -13353,6 +13356,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt8_Le;
         traits.bit_depth = 8;
         traits.bit_width = 8;
         break;
@@ -13363,8 +13367,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = false;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt8_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt8_Le;
 #endif
         traits.bit_depth = 8;
         traits.bit_width = 8;
@@ -13375,6 +13381,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt8_Be;
         traits.bit_depth = 8;
         traits.bit_width = 8;
         break;
@@ -13384,6 +13391,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt8_Le;
         traits.bit_depth = 8;
         traits.bit_width = 8;
         break;
@@ -13394,8 +13402,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = true;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt16_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt16_Le;
 #endif
         traits.bit_depth = 16;
         traits.bit_width = 16;
@@ -13406,6 +13416,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt16_Be;
         traits.bit_depth = 16;
         traits.bit_width = 16;
         break;
@@ -13415,6 +13426,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt16_Le;
         traits.bit_depth = 16;
         traits.bit_width = 16;
         break;
@@ -13425,8 +13437,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = false;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt16_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt16_Le;
 #endif
         traits.bit_depth = 16;
         traits.bit_width = 16;
@@ -13437,6 +13451,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt16_Be;
         traits.bit_depth = 16;
         traits.bit_width = 16;
         break;
@@ -13446,6 +13461,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt16_Le;
         traits.bit_depth = 16;
         traits.bit_width = 16;
         break;
@@ -13456,8 +13472,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = true;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt18_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt18_Le;
 #endif
         traits.bit_depth = 18;
         traits.bit_width = 18;
@@ -13468,6 +13486,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt18_Be;
         traits.bit_depth = 18;
         traits.bit_width = 18;
         break;
@@ -13477,6 +13496,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt18_Le;
         traits.bit_depth = 18;
         traits.bit_width = 18;
         break;
@@ -13487,8 +13507,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = false;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt18_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt18_Le;
 #endif
         traits.bit_depth = 18;
         traits.bit_width = 18;
@@ -13499,6 +13521,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt18_Be;
         traits.bit_depth = 18;
         traits.bit_width = 18;
         break;
@@ -13508,6 +13531,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt18_Le;
         traits.bit_depth = 18;
         traits.bit_width = 18;
         break;
@@ -13518,8 +13542,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = true;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt18_3_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt18_3_Le;
 #endif
         traits.bit_depth = 18;
         traits.bit_width = 24;
@@ -13530,6 +13556,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt18_3_Be;
         traits.bit_depth = 18;
         traits.bit_width = 24;
         break;
@@ -13539,6 +13566,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt18_3_Le;
         traits.bit_depth = 18;
         traits.bit_width = 24;
         break;
@@ -13549,8 +13577,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = false;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt18_3_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt18_3_Le;
 #endif
         traits.bit_depth = 18;
         traits.bit_width = 24;
@@ -13561,6 +13591,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt18_3_Be;
         traits.bit_depth = 18;
         traits.bit_width = 24;
         break;
@@ -13570,6 +13601,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt18_3_Le;
         traits.bit_depth = 18;
         traits.bit_width = 24;
         break;
@@ -13580,8 +13612,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = true;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt18_4_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt18_4_Le;
 #endif
         traits.bit_depth = 18;
         traits.bit_width = 32;
@@ -13592,6 +13626,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt18_4_Be;
         traits.bit_depth = 18;
         traits.bit_width = 32;
         break;
@@ -13601,6 +13636,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt18_4_Le;
         traits.bit_depth = 18;
         traits.bit_width = 32;
         break;
@@ -13611,8 +13647,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = false;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt18_4_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt18_4_Le;
 #endif
         traits.bit_depth = 18;
         traits.bit_width = 32;
@@ -13623,6 +13661,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt18_4_Be;
         traits.bit_depth = 18;
         traits.bit_width = 32;
         break;
@@ -13632,6 +13671,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt18_4_Le;
         traits.bit_depth = 18;
         traits.bit_width = 32;
         break;
@@ -13642,8 +13682,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = true;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt20_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt20_Le;
 #endif
         traits.bit_depth = 20;
         traits.bit_width = 20;
@@ -13654,6 +13696,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt20_Be;
         traits.bit_depth = 20;
         traits.bit_width = 20;
         break;
@@ -13663,6 +13706,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt20_Le;
         traits.bit_depth = 20;
         traits.bit_width = 20;
         break;
@@ -13673,8 +13717,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = false;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt20_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt20_Le;
 #endif
         traits.bit_depth = 20;
         traits.bit_width = 20;
@@ -13685,6 +13731,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt20_Be;
         traits.bit_depth = 20;
         traits.bit_width = 20;
         break;
@@ -13694,6 +13741,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt20_Le;
         traits.bit_depth = 20;
         traits.bit_width = 20;
         break;
@@ -13704,8 +13752,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = true;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt20_3_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt20_3_Le;
 #endif
         traits.bit_depth = 20;
         traits.bit_width = 24;
@@ -13716,6 +13766,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt20_3_Be;
         traits.bit_depth = 20;
         traits.bit_width = 24;
         break;
@@ -13725,6 +13776,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt20_3_Le;
         traits.bit_depth = 20;
         traits.bit_width = 24;
         break;
@@ -13735,8 +13787,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = false;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt20_3_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt20_3_Le;
 #endif
         traits.bit_depth = 20;
         traits.bit_width = 24;
@@ -13747,6 +13801,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt20_3_Be;
         traits.bit_depth = 20;
         traits.bit_width = 24;
         break;
@@ -13756,6 +13811,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt20_3_Le;
         traits.bit_depth = 20;
         traits.bit_width = 24;
         break;
@@ -13766,8 +13822,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = true;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt20_4_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt20_4_Le;
 #endif
         traits.bit_depth = 20;
         traits.bit_width = 32;
@@ -13778,6 +13836,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt20_4_Be;
         traits.bit_depth = 20;
         traits.bit_width = 32;
         break;
@@ -13787,6 +13846,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt20_4_Le;
         traits.bit_depth = 20;
         traits.bit_width = 32;
         break;
@@ -13797,8 +13857,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = false;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt20_4_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt20_4_Le;
 #endif
         traits.bit_depth = 20;
         traits.bit_width = 32;
@@ -13809,6 +13871,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt20_4_Be;
         traits.bit_depth = 20;
         traits.bit_width = 32;
         break;
@@ -13818,6 +13881,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt20_4_Le;
         traits.bit_depth = 20;
         traits.bit_width = 32;
         break;
@@ -13828,8 +13892,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = true;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt24_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt24_Le;
 #endif
         traits.bit_depth = 24;
         traits.bit_width = 24;
@@ -13840,6 +13906,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt24_Be;
         traits.bit_depth = 24;
         traits.bit_width = 24;
         break;
@@ -13849,6 +13916,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt24_Le;
         traits.bit_depth = 24;
         traits.bit_width = 24;
         break;
@@ -13859,8 +13927,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = false;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt24_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt24_Le;
 #endif
         traits.bit_depth = 24;
         traits.bit_width = 24;
@@ -13871,6 +13941,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt24_Be;
         traits.bit_depth = 24;
         traits.bit_width = 24;
         break;
@@ -13880,6 +13951,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt24_Le;
         traits.bit_depth = 24;
         traits.bit_width = 24;
         break;
@@ -13890,8 +13962,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = true;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt24_4_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt24_4_Le;
 #endif
         traits.bit_depth = 24;
         traits.bit_width = 32;
@@ -13902,6 +13976,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt24_4_Be;
         traits.bit_depth = 24;
         traits.bit_width = 32;
         break;
@@ -13911,6 +13986,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt24_4_Le;
         traits.bit_depth = 24;
         traits.bit_width = 32;
         break;
@@ -13921,8 +13997,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = false;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt24_4_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt24_4_Le;
 #endif
         traits.bit_depth = 24;
         traits.bit_width = 32;
@@ -13933,6 +14011,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt24_4_Be;
         traits.bit_depth = 24;
         traits.bit_width = 32;
         break;
@@ -13942,6 +14021,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt24_4_Le;
         traits.bit_depth = 24;
         traits.bit_width = 32;
         break;
@@ -13952,8 +14032,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = true;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt32_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt32_Le;
 #endif
         traits.bit_depth = 32;
         traits.bit_width = 32;
@@ -13964,6 +14046,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt32_Be;
         traits.bit_depth = 32;
         traits.bit_width = 32;
         break;
@@ -13973,6 +14056,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt32_Le;
         traits.bit_depth = 32;
         traits.bit_width = 32;
         break;
@@ -13983,8 +14067,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = false;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt32_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt32_Le;
 #endif
         traits.bit_depth = 32;
         traits.bit_width = 32;
@@ -13995,6 +14081,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt32_Be;
         traits.bit_depth = 32;
         traits.bit_width = 32;
         break;
@@ -14004,6 +14091,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt32_Le;
         traits.bit_depth = 32;
         traits.bit_width = 32;
         break;
@@ -14014,8 +14102,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = true;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt64_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt64_Le;
 #endif
         traits.bit_depth = 64;
         traits.bit_width = 64;
@@ -14026,6 +14116,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_SInt64_Be;
         traits.bit_depth = 64;
         traits.bit_width = 64;
         break;
@@ -14035,6 +14126,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = true;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_SInt64_Le;
         traits.bit_depth = 64;
         traits.bit_width = 64;
         break;
@@ -14045,8 +14137,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = false;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt64_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt64_Le;
 #endif
         traits.bit_depth = 64;
         traits.bit_width = 64;
@@ -14057,6 +14151,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_UInt64_Be;
         traits.bit_depth = 64;
         traits.bit_width = 64;
         break;
@@ -14066,6 +14161,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = true;
         traits.is_signed = false;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_UInt64_Le;
         traits.bit_depth = 64;
         traits.bit_width = 64;
         break;
@@ -14076,8 +14172,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = true;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_Float32_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_Float32_Le;
 #endif
         traits.bit_depth = 25;
         traits.bit_width = 32;
@@ -14088,6 +14186,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = false;
         traits.is_signed = true;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_Float32_Be;
         traits.bit_depth = 25;
         traits.bit_width = 32;
         break;
@@ -14097,6 +14196,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = false;
         traits.is_signed = true;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_Float32_Le;
         traits.bit_depth = 25;
         traits.bit_width = 32;
         break;
@@ -14107,8 +14207,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_signed = true;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.is_little = false;
+        traits.canon_id = PcmFormat_Float64_Be;
 #else
         traits.is_little = true;
+        traits.canon_id = PcmFormat_Float64_Le;
 #endif
         traits.bit_depth = 53;
         traits.bit_width = 64;
@@ -14119,6 +14221,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = false;
         traits.is_signed = true;
         traits.is_little = false;
+        traits.canon_id = PcmFormat_Float64_Be;
         traits.bit_depth = 53;
         traits.bit_width = 64;
         break;
@@ -14128,6 +14231,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
         traits.is_integer = false;
         traits.is_signed = true;
         traits.is_little = true;
+        traits.canon_id = PcmFormat_Float64_Le;
         traits.bit_depth = 53;
         traits.bit_width = 64;
         break;

@@ -211,6 +211,9 @@ struct PcmTraits {
     //! True for little-endian formats.
     bool is_little;
 
+    //! Canonical identifier of the same format.
+    PcmFormat canon_id;
+
     //! Number of significant bits per sample.
     size_t bit_depth;
 
@@ -222,6 +225,7 @@ struct PcmTraits {
         , is_integer(false)
         , is_signed(false)
         , is_little(false)
+        , canon_id(PcmFormat_Invalid)
         , bit_depth(0)
         , bit_width(0) {
     }
