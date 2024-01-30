@@ -119,7 +119,7 @@ TEST_GROUP(receiver_source) {
     address::Protocol proto1;
     address::Protocol proto2;
 
-    ReceiverConfig make_config() {
+    ReceiverConfig make_config(int latency = Latency) {
         ReceiverConfig config;
 
         config.common.output_sample_spec = output_sample_spec;
@@ -130,7 +130,7 @@ TEST_GROUP(receiver_source) {
         config.default_session.latency.tuner_backend = audio::LatencyTunerBackend_Niq;
         config.default_session.latency.tuner_profile = audio::LatencyTunerProfile_Intact;
         config.default_session.latency.target_latency =
-            Latency * core::Second / (int)output_sample_spec.sample_rate();
+            latency * core::Second / (int)output_sample_spec.sample_rate();
         config.default_session.latency.latency_tolerance =
             Timeout * 10 * core::Second / (int)output_sample_spec.sample_rate();
 
@@ -341,7 +341,7 @@ TEST(receiver_source, initial_latency_timeout) {
 
     packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
 
-    for (size_t np = 0; np < Timeout / SamplesPerPacket; np++) {
+    for (size_t np = 0; np < Timeout / SamplesPerPacket + Latency / SamplesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_zero_samples(SamplesPerFrame, output_sample_spec);
@@ -2263,6 +2263,42 @@ TEST(receiver_source, state) {
             break;
         }
     }
+}
+
+// Checks that receiver can work with latency longer than timeout
+TEST(receiver_source, watchdog_timeout_smaller_than_latency) {
+    enum { Rate = SampleRate, Chans = Chans_Stereo, Local_latency = Timeout * 10 };
+
+    init(Rate, Chans, Rate, Chans);
+
+    ReceiverSource receiver(make_config(Local_latency), encoding_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, arena);
+    CHECK(receiver.is_valid());
+
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
+
+    packet::IWriter* endpoint1_writer =
+            create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+    CHECK(endpoint1_writer);
+
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+
+    test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
+                                     packet_factory, byte_buffer_factory, src_id1,
+                                     src_addr1, dst_addr1, PayloadType_Ch2);
+
+    packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
+
+    for (size_t np = 0; np < Local_latency / SamplesPerPacket; np++) {
+        for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
+            frame_reader.read_zero_samples(SamplesPerFrame, output_sample_spec);
+        }
+
+    UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
+    }
+
 }
 
 } // namespace pipeline

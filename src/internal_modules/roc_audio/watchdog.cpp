@@ -29,6 +29,10 @@ void WatchdogConfig::deduce_defaults(core::nanoseconds_t target_latency) {
         choppy_playback_window =
             std::min(300 * core::Millisecond, choppy_playback_timeout / 4);
     }
+
+    if(warmup_duration < 0){
+        warmup_duration = target_latency;
+    }
 }
 
 Watchdog::Watchdog(IFrameReader& reader,
@@ -46,22 +50,26 @@ Watchdog::Watchdog(IFrameReader& reader,
     , drop_detection_window_(
           (packet::stream_timestamp_t)sample_spec.ns_2_stream_timestamp_delta(
               config.choppy_playback_window))
+    , warmup_ending_pos_(
+          (packet::stream_timestamp_t)sample_spec.ns_2_stream_timestamp_delta(
+              config.warmup_duration))
     , curr_read_pos_(0)
-    , last_pos_before_blank_(0)
+    , last_pos_before_blank_(warmup_ending_pos_)
     , last_pos_before_drops_(0)
     , curr_window_flags_(0)
     , status_(arena)
     , status_pos_(0)
     , status_show_(false)
+    , warmup_status_(bool(warmup_ending_pos_))
     , alive_(true)
     , valid_(false) {
     if (config.no_playback_timeout < 0 || config.choppy_playback_timeout < 0
-        || config.choppy_playback_window < 0) {
+        || config.choppy_playback_window < 0 || config.warmup_duration < 0) {
         roc_log(LogError,
                 "watchdog: invalid config:"
-                " no_packets_timeout=%ld drops_timeout=%ld drop_detection_window=%ld",
+                " no_packets_timeout=%ld drops_timeout=%ld drop_detection_window=%ld warmup_ending_pos=%ld",
                 (long)config.no_playback_timeout, (long)config.choppy_playback_timeout,
-                (long)config.choppy_playback_window);
+                (long)config.choppy_playback_window, (long)config.warmup_duration);
         return;
     }
 
@@ -70,9 +78,10 @@ Watchdog::Watchdog(IFrameReader& reader,
             roc_log(LogError,
                     "watchdog: invalid config:"
                     " drop_detection_window should be in range (0; max_drops_duration]:"
-                    " max_drops_duration=%lu drop_detection_window=%lu",
+                    " max_drops_duration=%lu drop_detection_window=%lu warmup_ending_pos=%lu",
                     (unsigned long)max_drops_duration_,
-                    (unsigned long)drop_detection_window_);
+                    (unsigned long)drop_detection_window_,
+                    (unsigned long)warmup_ending_pos_);
             return;
         }
     }
@@ -85,9 +94,9 @@ Watchdog::Watchdog(IFrameReader& reader,
 
     roc_log(LogDebug,
             "watchdog: initializing:"
-            " max_blank_duration=%lu max_drops_duration=%lu drop_detection_window=%lu",
+            " max_blank_duration=%lu max_drops_duration=%lu drop_detection_window=%lu warmup_ending_pos=%lu",
             (unsigned long)max_blank_duration_, (unsigned long)max_drops_duration_,
-            (unsigned long)drop_detection_window_);
+            (unsigned long)drop_detection_window_, (unsigned long)warmup_ending_pos_);
 
     valid_ = true;
 }
@@ -135,6 +144,8 @@ bool Watchdog::read(Frame& frame) {
         alive_ = false;
     }
 
+    update_warmup_status_();
+
     return true;
 }
 
@@ -146,11 +157,12 @@ void Watchdog::update_blank_timeout_(const Frame& frame,
 
     if (frame.flags() & Frame::FlagNonblank) {
         last_pos_before_blank_ = next_read_pos;
+        warmup_status_ = false;
     }
 }
 
 bool Watchdog::check_blank_timeout_() const {
-    if (max_blank_duration_ == 0) {
+    if (max_blank_duration_ == 0 || warmup_status_) {
         return true;
     }
 
@@ -160,9 +172,9 @@ bool Watchdog::check_blank_timeout_() const {
 
     roc_log(LogDebug,
             "watchdog: blank timeout reached: every frame was blank during timeout:"
-            " curr_read_pos=%lu last_pos_before_blank=%lu max_blank_duration=%lu",
+            " curr_read_pos=%lu last_pos_before_blank=%lu max_blank_duration=%lu warmup_ending_pos=%lu",
             (unsigned long)curr_read_pos_, (unsigned long)last_pos_before_blank_,
-            (unsigned long)max_blank_duration_);
+            (unsigned long)max_blank_duration_, (unsigned long)warmup_ending_pos_);
 
     return false;
 }
@@ -194,6 +206,11 @@ void Watchdog::update_drops_timeout_(const Frame& frame,
         }
     }
 }
+
+void Watchdog::update_warmup_status_(){
+    warmup_status_ = warmup_status_ && (curr_read_pos_ < warmup_ending_pos_);
+}
+
 
 bool Watchdog::check_drops_timeout_() {
     if (max_drops_duration_ == 0) {
