@@ -84,3 +84,7 @@ Contributors
 * ForeverASilver <https://github.com/ForeverASilver>
 * JJ <https://github.com/computerscienceiscool>
 * Hunter Rick <hunter.ellis.rick@gmail.com>
+* Pekureda <angelthorns@proton.me>
+* Anurag Soni <anuragsoni39@yahoo.com>
+* Samad Khan <khan.samad47@gmail.com>
+* Alyssa Ross <hi@alyssa.is>
