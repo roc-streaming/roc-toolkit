@@ -52,21 +52,24 @@ bool parse_duration(const char* str, nanoseconds_t& result) {
     } else if ((suffix = find_suffix(str, str_len, "h"))) {
         multiplier = Hour;
     } else {
-        roc_log(LogError, "parse duration: no known suffix (ns, us, ms, s, m, h)");
+        roc_log(LogError,
+                "parse duration: invalid format: missing suffix, expected"
+                " <float><suffix>, where suffix=<ns|us|ms|s|m|h>");
+        return false;
         return false;
     }
 
     if (str == suffix) {
         roc_log(LogError,
-                "parse duration: invalid format, missing number, expected "
-                "<float><suffix>");
+                "parse duration: invalid format: missing number, expected"
+                " <float><suffix>, where suffix=<ns|us|ms|s|m|h>");
         return false;
     }
 
     if (!isdigit(*str) && *str != '-') {
         roc_log(LogError,
-                "parse duration: invalid format, not a number, expected "
-                "<float><suffix>");
+                "parse duration: invalid format: not a number, expected"
+                " <float><suffix>, where suffix=<ns|us|ms|s|m|h>");
         return false;
     }
 
@@ -75,16 +78,17 @@ bool parse_duration(const char* str, nanoseconds_t& result) {
 
     if ((number == 0. && str == number_end) || !number_end || number_end != suffix) {
         roc_log(LogError,
-                "parse duration: invalid format, can't parse number, expected "
-                "<float><suffix>");
+                "parse duration: invalid format: not a number, expected"
+                " <float><suffix>, where suffix=<ns|us|ms|s|m|h>");
         return false;
     }
 
     const double number_multiplied = round(number * (double)multiplier);
     if (number_multiplied > (double)INT64_MAX) {
         roc_log(LogError,
-                "parse duration: too large, can't parse number, expected "
-                "<float><suffix>");
+                "parse duration: number out of range:"
+                " value=%f maximum=%f",
+                number_multiplied, (double)INT64_MAX);
         return false;
     }
 
@@ -116,10 +120,10 @@ bool parse_size(const char* str, size_t& result) {
         multiplier = kibibyte;
     }
 
-    if (!isdigit(*str) && *str != '-') {
+    if (!isdigit(*str)) {
         roc_log(LogError,
-                "parse size: invalid format, not a number, expected "
-                "<float>[<suffix>], where suffix=<K|M|G>");
+                "parse size: invalid format: not a number, expected"
+                " <float>[<suffix>], where suffix=<K|M|G>");
         return false;
     }
 
@@ -129,18 +133,20 @@ bool parse_size(const char* str, size_t& result) {
     if ((number == 0. && str == number_end) || (!suffix && *number_end != '\0')
         || (suffix && number_end != suffix)) {
         roc_log(LogError,
-                "parse size: invalid format, can't parse number, expected "
-                "<float>[<suffix>], where suffix=<K|M|G>");
+                "parse size: invalid format: not a number, expected"
+                " <float>[<suffix>], where suffix=<K|M|G>");
         return false;
     }
 
     const double number_multiplied = round(number * (double)multiplier);
     if (number_multiplied > (double)SIZE_MAX) {
         roc_log(LogError,
-                "parse size: too large, can't parse number, expected "
-                "<float>[<suffix>], where suffix=<K|M|G>");
+                "parse size: number out of range:"
+                " value=%f maximum=%f",
+                number_multiplied, (double)SIZE_MAX);
         return false;
     }
+
     result = (size_t)number_multiplied;
     return true;
 }

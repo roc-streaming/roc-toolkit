@@ -16,6 +16,7 @@
 #include "roc_audio/iframe_encoder.h"
 #include "roc_audio/pcm_format.h"
 #include "roc_audio/sample_spec.h"
+#include "roc_core/attributes.h"
 #include "roc_core/iarena.h"
 #include "roc_rtp/headers.h"
 
@@ -50,6 +51,26 @@ struct Encoding {
         , new_decoder(NULL) {
     }
 };
+
+//! Parse RTP encoding from string.
+//!
+//! @remarks
+//!  The input string should have the form:
+//!   - "<id>:<spec>"
+//!
+//!  Where:
+//!   - "<id>" is payload id, a positive integer
+//!   - "<spec>" is sample spec, in form "<format>/<rate>/<channel>"
+//!
+//! See audio::parse_sample_spec() for details on "<spec>" format.
+//!
+//! Examples:
+//!  - "55:s16/44100/stereo"
+//!  - "77:f32/96000/20-30"
+//!
+//! @returns
+//!  false if string can't be parsed.
+ROC_ATTR_NODISCARD bool parse_encoding(const char* str, Encoding& result);
 
 } // namespace rtp
 } // namespace roc

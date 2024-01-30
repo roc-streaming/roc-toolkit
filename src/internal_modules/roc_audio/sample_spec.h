@@ -16,6 +16,7 @@
 #include "roc_audio/pcm_format.h"
 #include "roc_audio/sample.h"
 #include "roc_audio/sample_format.h"
+#include "roc_core/attributes.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/string_builder.h"
 #include "roc_core/time.h"
@@ -187,7 +188,44 @@ private:
 };
 
 //! Parse sample spec from string.
-bool parse_sample_spec(const char* str, SampleSpec& result);
+//!
+//! @remarks
+//!  The input string should have the form:
+//!   - "<format>/<rate>/<channels>"
+//!
+//!  Where:
+//!   - "<format>" is string name of sample format (e.g. "s16")
+//!   - "<rate>" is a positive integer
+//!   - "<channels>" can be: "<surround preset>", "<surround channel list>",
+//!                        "<multitrack mask>", "<multitrack channel list>"
+//!
+//!   - "<surround preset>" is a string name of predefined surround channel
+//!                         mask, e.g. "stereo", "surround4.1", etc.
+//!   - "<surround channel list>" is comma-separated list of surround channel names,
+//!                               e.g. "FL,FC,FR"
+//!
+//!   - "<multitrack mask>" is a 1024-bit hex mask defining which tracks are
+//!                         enabled, e.g. "0xAA00BB00"
+//!   - "<multitrack channel list>" is a comma-separated list of track numbers
+//!                                 or ranges, e.g. "1,2,5-8"
+//!
+//! Each of the three components ("<format>", "<rate>", "<channels>") may be set
+//! to "-", which means "keep unset".
+//!
+//! All four forms of "<channels>" component are alternative ways to represent a
+//! bitmask of enabled channels or tracks. The order of channels does no matter.
+//!
+//! Examples:
+//!  - "s16/44100/stereo"
+//!  - "s18_4le/48000/FL,FC,FR"
+//!  - "f32/96000/1,2,10-20,31"
+//!  - "f32/96000/0xA0000000FFFF0000000C"
+//!  - "-/44100/-"
+//!  - "-/-/-"
+//!
+//! @returns
+//!  false if string can't be parsed.
+ROC_ATTR_NODISCARD bool parse_sample_spec(const char* str, SampleSpec& result);
 
 //! Format sample spec to string.
 void format_sample_spec(const SampleSpec& sample_spec, core::StringBuilder& bld);
