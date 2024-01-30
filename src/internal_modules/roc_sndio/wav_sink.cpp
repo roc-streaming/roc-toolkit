@@ -14,16 +14,21 @@
 namespace roc {
 namespace sndio {
 
+namespace {
+
+const size_t DefaultChans = 2;
+const size_t DefaultRate = 44100;
+
+} // namespace
+
 WavSink::WavSink(core::IArena& arena, const Config& config)
     : output_file_(NULL)
-    , header_(config.sample_spec.num_channels(), config.sample_spec.sample_rate(), 32)
+    , header_(config.sample_spec.num_channels() != 0 ? config.sample_spec.num_channels()
+                                                     : DefaultChans,
+              config.sample_spec.sample_rate() != 0 ? config.sample_spec.sample_rate()
+                                                    : DefaultRate,
+              sizeof(audio::sample_t) * 8)
     , valid_(false) {
-    (void)arena;
-    if (config.sample_spec.num_channels() == 0) {
-        roc_log(LogError, "wav sink: # of channels is zero");
-        return;
-    }
-
     if (config.latency != 0) {
         roc_log(LogError, "wav sink: setting io latency not supported by wav backend");
         return;
@@ -95,7 +100,7 @@ audio::SampleSpec WavSink::sample_spec() const {
     channel_set.set_order(audio::ChanOrder_Smpte);
     channel_set.set_channel_range(0, header_.num_channels() - 1, true);
 
-    return audio::SampleSpec(size_t(header_.sample_rate()), audio::PcmFormat_Float32_Le,
+    return audio::SampleSpec(size_t(header_.sample_rate()), audio::Sample_RawFormat,
                              channel_set);
 }
 

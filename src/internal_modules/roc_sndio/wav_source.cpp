@@ -17,13 +17,6 @@ WavSource::WavSource(core::IArena& arena, const Config& config)
     : eof_(false)
     , paused_(false)
     , valid_(false) {
-    (void)arena;
-
-    if (config.sample_spec.num_channels() == 0) {
-        roc_log(LogError, "wav source: # of channels is zero");
-        return;
-    }
-
     if (config.latency != 0) {
         roc_log(LogError, "wav source: setting io latency not supported by wav backend");
         return;
@@ -118,7 +111,7 @@ audio::SampleSpec WavSource::sample_spec() const {
     channel_set.set_order(audio::ChanOrder_Smpte);
     channel_set.set_channel_range(0, wav_.channels - 1, true);
 
-    return audio::SampleSpec(size_t(wav_.sampleRate), audio::PcmFormat_Float32_Le,
+    return audio::SampleSpec(size_t(wav_.sampleRate), audio::Sample_RawFormat,
                              channel_set);
 }
 

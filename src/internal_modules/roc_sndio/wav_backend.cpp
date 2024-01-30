@@ -21,10 +21,6 @@ WavBackend::WavBackend() {
 }
 
 void WavBackend::discover_drivers(core::Array<DriverInfo, MaxDrivers>& driver_list) {
-    if (!driver_list.grow(driver_list.size() + 1)) {
-        roc_panic("wav backend: can't grow drivers array");
-    }
-
     if (!driver_list.push_back(
             DriverInfo("wav", DriverType_File,
                        DriverFlag_SupportsSink | DriverFlag_SupportsSource, this))) {
