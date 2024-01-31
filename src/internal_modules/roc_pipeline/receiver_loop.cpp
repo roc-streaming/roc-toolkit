@@ -100,7 +100,7 @@ ReceiverLoop::ReceiverLoop(IPipelineTaskScheduler& scheduler,
               sample_buffer_factory,
               arena)
     , ticker_ts_(0)
-    , auto_reclock_(false)
+    , auto_reclock_(config.common.enable_auto_reclock)
     , valid_(false) {
     if (!source_.is_valid()) {
         return;
@@ -113,8 +113,6 @@ ReceiverLoop::ReceiverLoop(IPipelineTaskScheduler& scheduler,
             return;
         }
     }
-
-    auto_reclock_ = config.common.enable_auto_reclock;
 
     valid_ = true;
 }
@@ -232,13 +230,14 @@ bool ReceiverLoop::read(audio::Frame& frame) {
 
     if (ticker_) {
         ticker_->wait(ticker_ts_);
-        ticker_ts_ += frame.num_samples() / source_.sample_spec().num_channels();
     }
 
     // invokes process_subframe_imp() and process_task_imp()
     if (!process_subframes_and_tasks(frame)) {
         return false;
     }
+
+    ticker_ts_ += frame.duration();
 
     if (auto_reclock_) {
         source_.reclock(core::timestamp(core::ClockUnix));

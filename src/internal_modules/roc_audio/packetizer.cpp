@@ -30,15 +30,15 @@ Packetizer::Packetizer(packet::IWriter& writer,
     , packet_factory_(packet_factory)
     , buffer_factory_(buffer_factory)
     , sample_spec_(sample_spec)
-    , samples_per_packet_((packet::stream_timestamp_t)
-                              sample_spec.ns_2_stream_timestamp_delta(packet_length))
+    , samples_per_packet_(sample_spec.ns_2_stream_timestamp(packet_length))
     , payload_size_(payload_encoder.encoded_byte_count(samples_per_packet_))
     , packet_pos_(0)
     , packet_cts_(0)
     , capture_ts_(0)
     , valid_(false) {
-    roc_panic_if_msg(!sample_spec.is_valid(), "packetizer: invalid sample spec: %s",
-                     sample_spec_to_str(sample_spec).c_str());
+    roc_panic_if_msg(!sample_spec_.is_valid() || !sample_spec_.is_raw(),
+                     "packetizer: required valid sample spec with raw format: %s",
+                     sample_spec_to_str(sample_spec_).c_str());
 
     roc_log(LogDebug, "packetizer: initializing: n_channels=%lu samples_per_packet=%lu",
             (unsigned long)sample_spec_.num_channels(),
@@ -60,12 +60,12 @@ PacketizerMetrics Packetizer::metrics() const {
 }
 
 void Packetizer::write(Frame& frame) {
-    if (frame.num_samples() % sample_spec_.num_channels() != 0) {
+    if (frame.num_raw_samples() % sample_spec_.num_channels() != 0) {
         roc_panic("packetizer: unexpected frame size");
     }
 
-    const sample_t* buffer_ptr = frame.samples();
-    size_t buffer_samples = frame.num_samples() / sample_spec_.num_channels();
+    const sample_t* buffer_ptr = frame.raw_samples();
+    size_t buffer_samples = frame.num_raw_samples() / sample_spec_.num_channels();
     capture_ts_ = frame.capture_timestamp();
 
     while (buffer_samples != 0) {

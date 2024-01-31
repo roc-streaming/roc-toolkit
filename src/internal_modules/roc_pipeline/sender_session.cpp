@@ -10,9 +10,7 @@
 #include "roc_audio/resampler_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_core/time.h"
 #include "roc_fec/codec_map.h"
-#include "roc_rtcp/participant_info.h"
 
 namespace roc {
 namespace pipeline {
@@ -50,16 +48,18 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
     roc_panic_if(!source_endpoint);
     roc_panic_if(frame_writer_);
 
-    const rtp::Encoding* encoding = encoding_map_.find_by_pt(config_.payload_type);
-    if (!encoding) {
+    const rtp::Encoding* pkt_encoding = encoding_map_.find_by_pt(config_.payload_type);
+    if (!pkt_encoding) {
         return false;
     }
+
+    packet::IWriter* pkt_writer = NULL;
 
     router_.reset(new (router_) packet::Router(arena_));
     if (!router_) {
         return false;
     }
-    packet::IWriter* pwriter = router_.get();
+    pkt_writer = router_.get();
 
     if (!router_->add_route(source_endpoint->outbound_writer(),
                             packet::Packet::FlagAudio)) {
@@ -74,13 +74,13 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
 
         if (config_.enable_interleaving) {
             interleaver_.reset(new (interleaver_) packet::Interleaver(
-                *pwriter, arena_,
+                *pkt_writer, arena_,
                 config_.fec_writer.n_source_packets
                     + config_.fec_writer.n_repair_packets));
             if (!interleaver_ || !interleaver_->is_valid()) {
                 return false;
             }
-            pwriter = interleaver_.get();
+            pkt_writer = interleaver_.get();
         }
 
         fec_encoder_.reset(fec::CodecMap::instance().new_encoder(
@@ -91,23 +91,24 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         }
 
         fec_writer_.reset(new (fec_writer_) fec::Writer(
-            config_.fec_writer, config_.fec_encoder.scheme, *fec_encoder_, *pwriter,
+            config_.fec_writer, config_.fec_encoder.scheme, *fec_encoder_, *pkt_writer,
             source_endpoint->outbound_composer(), repair_endpoint->outbound_composer(),
             packet_factory_, byte_buffer_factory_, arena_));
         if (!fec_writer_ || !fec_writer_->is_valid()) {
             return false;
         }
-        pwriter = fec_writer_.get();
+        pkt_writer = fec_writer_.get();
     }
 
     timestamp_extractor_.reset(new (timestamp_extractor_) rtp::TimestampExtractor(
-        *pwriter, encoding->sample_spec));
+        *pkt_writer, pkt_encoding->sample_spec));
     if (!timestamp_extractor_) {
         return false;
     }
-    pwriter = timestamp_extractor_.get();
+    pkt_writer = timestamp_extractor_.get();
 
-    payload_encoder_.reset(encoding->new_encoder(arena_, encoding->sample_spec), arena_);
+    payload_encoder_.reset(pkt_encoding->new_encoder(arena_, pkt_encoding->sample_spec),
+                           arena_);
     if (!payload_encoder_) {
         return false;
     }
@@ -117,64 +118,78 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         return false;
     }
 
-    packetizer_.reset(new (packetizer_) audio::Packetizer(
-        *pwriter, source_endpoint->outbound_composer(), *sequencer_, *payload_encoder_,
-        packet_factory_, byte_buffer_factory_, config_.packet_length,
-        encoding->sample_spec));
-    if (!packetizer_ || !packetizer_->is_valid()) {
-        return false;
+    audio::IFrameWriter* frm_writer = NULL;
+
+    {
+        const audio::SampleSpec from_spec(pkt_encoding->sample_spec.sample_rate(),
+                                          audio::Sample_RawFormat,
+                                          pkt_encoding->sample_spec.channel_set());
+
+        packetizer_.reset(new (packetizer_) audio::Packetizer(
+            *pkt_writer, source_endpoint->outbound_composer(), *sequencer_,
+            *payload_encoder_, packet_factory_, byte_buffer_factory_,
+            config_.packet_length, from_spec));
+        if (!packetizer_ || !packetizer_->is_valid()) {
+            return false;
+        }
+        frm_writer = packetizer_.get();
     }
 
-    audio::IFrameWriter* awriter = packetizer_.get();
+    if (pkt_encoding->sample_spec.channel_set()
+        != config_.input_sample_spec.channel_set()) {
+        const audio::SampleSpec from_spec(pkt_encoding->sample_spec.sample_rate(),
+                                          audio::Sample_RawFormat,
+                                          config_.input_sample_spec.channel_set());
 
-    if (encoding->sample_spec.channel_set() != config_.input_sample_spec.channel_set()) {
+        const audio::SampleSpec to_spec(pkt_encoding->sample_spec.sample_rate(),
+                                        audio::Sample_RawFormat,
+                                        pkt_encoding->sample_spec.channel_set());
+
         channel_mapper_writer_.reset(
             new (channel_mapper_writer_) audio::ChannelMapperWriter(
-                *awriter, sample_buffer_factory_,
-                audio::SampleSpec(encoding->sample_spec.sample_rate(),
-                                  config_.input_sample_spec.pcm_format(),
-                                  config_.input_sample_spec.channel_set()),
-                encoding->sample_spec));
+                *frm_writer, sample_buffer_factory_, from_spec, to_spec));
         if (!channel_mapper_writer_ || !channel_mapper_writer_->is_valid()) {
             return false;
         }
-        awriter = channel_mapper_writer_.get();
+        frm_writer = channel_mapper_writer_.get();
     }
 
     if (config_.latency.tuner_profile != audio::LatencyTunerProfile_Intact
-        || encoding->sample_spec.sample_rate()
+        || pkt_encoding->sample_spec.sample_rate()
             != config_.input_sample_spec.sample_rate()) {
+        const audio::SampleSpec from_spec(config_.input_sample_spec.sample_rate(),
+                                          audio::Sample_RawFormat,
+                                          config_.input_sample_spec.channel_set());
+
+        const audio::SampleSpec to_spec(pkt_encoding->sample_spec.sample_rate(),
+                                        audio::Sample_RawFormat,
+                                        config_.input_sample_spec.channel_set());
+
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-            arena_, sample_buffer_factory_, config_.resampler, config_.input_sample_spec,
-            audio::SampleSpec(encoding->sample_spec.sample_rate(),
-                              config_.input_sample_spec.pcm_format(),
-                              config_.input_sample_spec.channel_set())));
+            arena_, sample_buffer_factory_, config_.resampler, from_spec, to_spec));
 
         if (!resampler_) {
             return false;
         }
 
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
-            *awriter, *resampler_, sample_buffer_factory_, config_.input_sample_spec,
-            audio::SampleSpec(encoding->sample_spec.sample_rate(),
-                              config_.input_sample_spec.pcm_format(),
-                              config_.input_sample_spec.channel_set())));
+            *frm_writer, *resampler_, sample_buffer_factory_, from_spec, to_spec));
 
         if (!resampler_writer_ || !resampler_writer_->is_valid()) {
             return false;
         }
-        awriter = resampler_writer_.get();
+        frm_writer = resampler_writer_.get();
     }
 
     feedback_monitor_.reset(new (feedback_monitor_) audio::FeedbackMonitor(
-        *awriter, resampler_writer_.get(), config_.feedback, config_.latency,
+        *frm_writer, resampler_writer_.get(), config_.feedback, config_.latency,
         config_.input_sample_spec));
     if (!feedback_monitor_ || !feedback_monitor_->is_valid()) {
         return false;
     }
-    awriter = feedback_monitor_.get();
+    frm_writer = feedback_monitor_.get();
 
-    frame_writer_ = awriter;
+    frame_writer_ = frm_writer;
 
     start_feedback_monitor_();
 

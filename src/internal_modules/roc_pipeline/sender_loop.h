@@ -166,7 +166,10 @@ private:
     core::Optional<core::Ticker> ticker_;
     core::Ticker::ticks_t ticker_ts_;
 
-    bool auto_cts_;
+    const bool auto_duration_;
+    const bool auto_cts_;
+
+    const audio::SampleSpec sample_spec_;
 
     bool valid_;
 };

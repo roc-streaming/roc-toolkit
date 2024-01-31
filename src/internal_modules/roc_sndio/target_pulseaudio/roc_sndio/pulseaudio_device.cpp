@@ -199,8 +199,8 @@ bool PulseaudioDevice::read(audio::Frame& frame) {
 bool PulseaudioDevice::request_frame_(audio::Frame& frame) {
     want_mainloop_();
 
-    audio::sample_t* data = frame.samples();
-    size_t size = frame.num_samples();
+    audio::sample_t* data = frame.raw_samples();
+    size_t size = frame.num_raw_samples();
 
     while (size > 0) {
         pa_threaded_mainloop_lock(mainloop_);

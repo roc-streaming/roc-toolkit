@@ -23,7 +23,8 @@ namespace {
 enum { SampleRate = 1000, NumSamples = 100, NumPackets = 30 };
 
 const core::nanoseconds_t NsPerSample = core::Second / SampleRate;
-const audio::SampleSpec SampleSpecs(SampleRate,
+
+const audio::SampleSpec sample_spec(SampleRate,
                                     audio::Sample_RawFormat,
                                     audio::ChanLayout_Surround,
                                     audio::ChanOrder_Smpte,
@@ -69,7 +70,7 @@ TEST(delayed_reader, failed_to_read_packet) {
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(codes); ++n) {
         StatusReader reader(codes[n]);
-        DelayedReader dr(reader, 0, SampleSpecs);
+        DelayedReader dr(reader, 0, sample_spec);
 
         PacketPtr pp;
         CHECK_EQUAL(codes[n], dr.read(pp));
@@ -79,7 +80,7 @@ TEST(delayed_reader, failed_to_read_packet) {
 
 TEST(delayed_reader, no_delay) {
     Queue queue;
-    DelayedReader dr(queue, 0, SampleSpecs);
+    DelayedReader dr(queue, 0, sample_spec);
 
     PacketPtr pp;
     CHECK_EQUAL(status::StatusNoData, dr.read(pp));
@@ -97,7 +98,7 @@ TEST(delayed_reader, no_delay) {
 
 TEST(delayed_reader, delay) {
     Queue queue;
-    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, SampleSpecs);
+    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, sample_spec);
 
     PacketPtr packets[NumPackets];
 
@@ -135,7 +136,7 @@ TEST(delayed_reader, delay) {
 
 TEST(delayed_reader, instant) {
     Queue queue;
-    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, SampleSpecs);
+    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, sample_spec);
 
     PacketPtr packets[NumPackets];
 
@@ -157,7 +158,7 @@ TEST(delayed_reader, instant) {
 
 TEST(delayed_reader, trim) {
     Queue queue;
-    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, SampleSpecs);
+    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, sample_spec);
 
     PacketPtr packets[NumPackets * 2];
 
@@ -179,7 +180,7 @@ TEST(delayed_reader, trim) {
 
 TEST(delayed_reader, late_duplicates) {
     Queue queue;
-    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, SampleSpecs);
+    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, sample_spec);
 
     PacketPtr packets[NumPackets];
 

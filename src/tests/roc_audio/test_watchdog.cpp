@@ -52,8 +52,8 @@ public:
         if (flags_) {
             frame.set_flags(flags_);
         }
-        for (size_t n = 0; n < frame.num_samples(); n++) {
-            frame.samples()[n] = 42;
+        for (size_t n = 0; n < frame.num_raw_samples(); n++) {
+            frame.raw_samples()[n] = 42;
         }
         return true;
     }
@@ -96,12 +96,12 @@ TEST_GROUP(watchdog) {
         CHECK(reader.read(frame));
 
         if (is_read) {
-            for (size_t n = 0; n < frame.num_samples(); n++) {
-                DOUBLES_EQUAL(42.0, (double)frame.samples()[n], 0);
+            for (size_t n = 0; n < frame.num_raw_samples(); n++) {
+                DOUBLES_EQUAL(42.0, (double)frame.raw_samples()[n], 0);
             }
         } else {
-            for (size_t n = 0; n < frame.num_samples(); n++) {
-                DOUBLES_EQUAL(0.0, (double)frame.samples()[n], 0);
+            for (size_t n = 0; n < frame.num_raw_samples(); n++) {
+                DOUBLES_EQUAL(0.0, (double)frame.raw_samples()[n], 0);
             }
         }
     }

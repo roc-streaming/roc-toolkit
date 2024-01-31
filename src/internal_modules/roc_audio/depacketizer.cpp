@@ -49,8 +49,9 @@ Depacketizer::Depacketizer(packet::IReader& reader,
     , beep_(beep)
     , first_packet_(true)
     , valid_(false) {
-    roc_panic_if_msg(!sample_spec.is_valid(), "depacketizer: invalid sample spec: %s",
-                     sample_spec_to_str(sample_spec).c_str());
+    roc_panic_if_msg(!sample_spec_.is_valid() || !sample_spec_.is_raw(),
+                     "depacketizer: required valid sample spec with raw format: %s",
+                     sample_spec_to_str(sample_spec_).c_str());
 
     roc_log(LogDebug, "depacketizer: initializing: n_channels=%lu",
             (unsigned long)sample_spec_.num_channels());
@@ -82,12 +83,12 @@ bool Depacketizer::read(Frame& frame) {
 }
 
 void Depacketizer::read_frame_(Frame& frame) {
-    if (frame.num_samples() % sample_spec_.num_channels() != 0) {
+    if (frame.num_raw_samples() % sample_spec_.num_channels() != 0) {
         roc_panic("depacketizer: unexpected frame size");
     }
 
-    sample_t* buff_ptr = frame.samples();
-    sample_t* buff_end = frame.samples() + frame.num_samples();
+    sample_t* buff_ptr = frame.raw_samples();
+    sample_t* buff_end = frame.raw_samples() + frame.num_raw_samples();
 
     FrameInfo info;
 
@@ -298,7 +299,7 @@ void Depacketizer::set_frame_props_(Frame& frame, const FrameInfo& info) {
         flags |= Frame::FlagNonblank;
     }
 
-    if (info.n_decoded_samples < frame.num_samples()) {
+    if (info.n_decoded_samples < frame.num_raw_samples()) {
         flags |= Frame::FlagIncomplete;
     }
 
@@ -307,6 +308,7 @@ void Depacketizer::set_frame_props_(Frame& frame, const FrameInfo& info) {
     }
 
     frame.set_flags(flags);
+    frame.set_duration(frame.num_raw_samples() / sample_spec_.num_channels());
 
     if (info.capture_ts > 0) {
         // do not produce negative cts, which may happen when first packet was in

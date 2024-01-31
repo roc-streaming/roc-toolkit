@@ -32,24 +32,25 @@ public:
         total_reads_++;
 
         if (fail_on_empty_) {
-            CHECK(pos_ + frame.num_samples() <= size_);
-        } else if (pos_ + frame.num_samples() > size_) {
+            CHECK(pos_ + frame.num_raw_samples() <= size_);
+        } else if (pos_ + frame.num_raw_samples() > size_) {
             return false;
         }
 
-        memcpy(frame.samples(), samples_ + pos_, frame.num_samples() * sizeof(sample_t));
+        memcpy(frame.raw_samples(), samples_ + pos_,
+               frame.num_raw_samples() * sizeof(sample_t));
 
         unsigned flags = 0;
-        for (size_t n = pos_; n < pos_ + frame.num_samples(); n++) {
+        for (size_t n = pos_; n < pos_ + frame.num_raw_samples(); n++) {
             flags |= flags_[n];
         }
         frame.set_flags(flags);
 
-        pos_ += frame.num_samples();
+        pos_ += frame.num_raw_samples();
 
         if (timestamp_ >= 0) {
             frame.set_capture_timestamp(timestamp_);
-            timestamp_ += sample_spec_.samples_overall_2_ns(frame.num_samples());
+            timestamp_ += sample_spec_.samples_overall_2_ns(frame.num_raw_samples());
         }
 
         return true;

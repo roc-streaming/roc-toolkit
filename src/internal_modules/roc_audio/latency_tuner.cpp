@@ -121,12 +121,9 @@ void LatencyConfig::deduce_defaults(core::nanoseconds_t default_target_latency,
 
 LatencyTuner::LatencyTuner(const LatencyConfig& config, const SampleSpec& sample_spec)
     : stream_pos_(0)
-    , update_interval_(
-          (packet::stream_timestamp_t)sample_spec.ns_2_stream_timestamp_delta(
-              config.scaling_interval))
+    , update_interval_(sample_spec.ns_2_stream_timestamp(config.scaling_interval))
     , update_pos_(0)
-    , report_interval_((packet::stream_timestamp_t)
-                           sample_spec.ns_2_stream_timestamp_delta(LogInterval))
+    , report_interval_(sample_spec.ns_2_stream_timestamp(LogInterval))
     , report_pos_(0)
     , freq_coeff_(0)
     , freq_coeff_max_delta_(config.scaling_tolerance)
@@ -247,29 +244,9 @@ void LatencyTuner::write_metrics(const LatencyMetrics& metrics) {
     }
 }
 
-bool LatencyTuner::advance_stream(size_t n_samples) {
+bool LatencyTuner::update_stream() {
     roc_panic_if(!is_valid());
 
-    const bool success = update_();
-
-    if (n_samples % sample_spec_.num_channels() != 0) {
-        roc_panic("latency tuner: unexpected frame size");
-    }
-
-    stream_pos_ += packet::stream_timestamp_t(n_samples / sample_spec_.num_channels());
-
-    report_();
-
-    return success;
-}
-
-float LatencyTuner::get_scaling() const {
-    roc_panic_if(!is_valid());
-
-    return freq_coeff_;
-}
-
-bool LatencyTuner::update_() {
     packet::stream_timestamp_diff_t latency = 0;
 
     switch (backend_) {
@@ -302,6 +279,20 @@ bool LatencyTuner::update_() {
     }
 
     return true;
+}
+
+void LatencyTuner::advance_stream(packet::stream_timestamp_t duration) {
+    roc_panic_if(!is_valid());
+
+    stream_pos_ += duration;
+
+    report_();
+}
+
+float LatencyTuner::get_scaling() const {
+    roc_panic_if(!is_valid());
+
+    return freq_coeff_;
 }
 
 bool LatencyTuner::check_bounds_(const packet::stream_timestamp_diff_t latency) {

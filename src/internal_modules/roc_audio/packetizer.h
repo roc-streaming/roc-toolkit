@@ -59,7 +59,7 @@ public:
     //!  - @p packet_factory is used to allocate packets
     //!  - @p buffer_factory is used to allocate buffers for packets
     //!  - @p packet_length defines packet length in nanoseconds
-    //!  - @p sample_spec defines the sample spec
+    //!  - @p sample_spec describes input frames
     Packetizer(packet::IWriter& writer,
                packet::IComposer& composer,
                packet::ISequencer& sequencer,

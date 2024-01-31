@@ -26,8 +26,9 @@ ReceiverSession::ReceiverSession(
     : core::RefCounted<ReceiverSession, core::ArenaAllocation>(arena)
     , frame_reader_(NULL)
     , valid_(false) {
-    const rtp::Encoding* encoding = encoding_map.find_by_pt(session_config.payload_type);
-    if (!encoding) {
+    const rtp::Encoding* pkt_encoding =
+        encoding_map.find_by_pt(session_config.payload_type);
+    if (!pkt_encoding) {
         return;
     }
 
@@ -36,47 +37,50 @@ ReceiverSession::ReceiverSession(
         return;
     }
 
+    packet::IWriter* pkt_writer = NULL;
+
     source_queue_.reset(new (source_queue_) packet::SortedQueue(0));
     if (!source_queue_) {
         return;
     }
-
-    packet::IWriter* pwriter = source_queue_.get();
+    pkt_writer = source_queue_.get();
 
     source_meter_.reset(new (source_meter_) rtp::LinkMeter(encoding_map));
     if (!source_meter_) {
         return;
     }
-    source_meter_->set_writer(*pwriter);
-    pwriter = source_meter_.get();
+    source_meter_->set_writer(*pkt_writer);
+    pkt_writer = source_meter_.get();
 
-    if (!packet_router_->add_route(*pwriter, packet::Packet::FlagAudio)) {
+    if (!packet_router_->add_route(*pkt_writer, packet::Packet::FlagAudio)) {
         return;
     }
 
-    packet::IReader* preader = source_queue_.get();
+    packet::IReader* pkt_reader = source_queue_.get();
 
-    payload_decoder_.reset(encoding->new_decoder(arena, encoding->sample_spec), arena);
+    payload_decoder_.reset(pkt_encoding->new_decoder(arena, pkt_encoding->sample_spec),
+                           arena);
     if (!payload_decoder_) {
         return;
     }
 
-    filter_.reset(new (filter_) rtp::Filter(
-        *preader, *payload_decoder_, common_config.rtp_filter, encoding->sample_spec));
+    filter_.reset(new (filter_)
+                      rtp::Filter(*pkt_reader, *payload_decoder_,
+                                  common_config.rtp_filter, pkt_encoding->sample_spec));
     if (!filter_) {
         return;
     }
-    preader = filter_.get();
+    pkt_reader = filter_.get();
 
     delayed_reader_.reset(new (delayed_reader_) packet::DelayedReader(
-        *preader, session_config.latency.target_latency, encoding->sample_spec));
+        *pkt_reader, session_config.latency.target_latency, pkt_encoding->sample_spec));
     if (!delayed_reader_) {
         return;
     }
-    preader = delayed_reader_.get();
+    pkt_reader = delayed_reader_.get();
 
-    source_meter_->set_reader(*preader);
-    preader = source_meter_.get();
+    source_meter_->set_reader(*pkt_reader);
+    pkt_reader = source_meter_.get();
 
     if (session_config.fec_decoder.scheme != packet::FEC_None) {
         repair_queue_.reset(new (repair_queue_) packet::SortedQueue(0));
@@ -108,118 +112,128 @@ ReceiverSession::ReceiverSession(
 
         fec_reader_.reset(new (fec_reader_) fec::Reader(
             session_config.fec_reader, session_config.fec_decoder.scheme, *fec_decoder_,
-            *preader, *repair_queue_, *fec_parser_, packet_factory, arena));
+            *pkt_reader, *repair_queue_, *fec_parser_, packet_factory, arena));
         if (!fec_reader_ || !fec_reader_->is_valid()) {
             return;
         }
-        preader = fec_reader_.get();
+        pkt_reader = fec_reader_.get();
 
-        fec_filter_.reset(new (fec_filter_) rtp::Filter(*preader, *payload_decoder_,
+        fec_filter_.reset(new (fec_filter_) rtp::Filter(*pkt_reader, *payload_decoder_,
                                                         common_config.rtp_filter,
-                                                        encoding->sample_spec));
+                                                        pkt_encoding->sample_spec));
         if (!fec_filter_) {
             return;
         }
-        preader = fec_filter_.get();
+        pkt_reader = fec_filter_.get();
 
-        repair_meter_->set_reader(*preader);
-        preader = repair_meter_.get();
+        repair_meter_->set_reader(*pkt_reader);
+        pkt_reader = repair_meter_.get();
     }
 
     timestamp_injector_.reset(new (timestamp_injector_) rtp::TimestampInjector(
-        *preader, encoding->sample_spec));
+        *pkt_reader, pkt_encoding->sample_spec));
     if (!timestamp_injector_) {
         return;
     }
-    preader = timestamp_injector_.get();
+    pkt_reader = timestamp_injector_.get();
 
-    depacketizer_.reset(new (depacketizer_) audio::Depacketizer(
-        *preader, *payload_decoder_, encoding->sample_spec,
-        common_config.enable_beeping));
-    if (!depacketizer_ || !depacketizer_->is_valid()) {
-        return;
-    }
+    audio::IFrameReader* frm_reader = NULL;
 
-    audio::IFrameReader* areader = depacketizer_.get();
+    {
+        const audio::SampleSpec to_spec(pkt_encoding->sample_spec.sample_rate(),
+                                        audio::Sample_RawFormat,
+                                        pkt_encoding->sample_spec.channel_set());
 
-    if (session_config.watchdog.no_playback_timeout != 0
-        || session_config.watchdog.choppy_playback_timeout != 0
-        || session_config.watchdog.frame_status_window != 0) {
-        watchdog_.reset(new (watchdog_) audio::Watchdog(*areader, encoding->sample_spec,
-                                                        session_config.watchdog, arena));
-        if (!watchdog_ || !watchdog_->is_valid()) {
+        depacketizer_.reset(new (depacketizer_) audio::Depacketizer(
+            *pkt_reader, *payload_decoder_, to_spec, common_config.enable_beeping));
+        if (!depacketizer_ || !depacketizer_->is_valid()) {
             return;
         }
-        areader = watchdog_.get();
+        frm_reader = depacketizer_.get();
+
+        if (session_config.watchdog.no_playback_timeout != 0
+            || session_config.watchdog.choppy_playback_timeout != 0
+            || session_config.watchdog.frame_status_window != 0) {
+            watchdog_.reset(new (watchdog_) audio::Watchdog(
+                *frm_reader, to_spec, session_config.watchdog, arena));
+            if (!watchdog_ || !watchdog_->is_valid()) {
+                return;
+            }
+            frm_reader = watchdog_.get();
+        }
     }
 
-    if (encoding->sample_spec.channel_set()
+    if (pkt_encoding->sample_spec.channel_set()
         != common_config.output_sample_spec.channel_set()) {
+        const audio::SampleSpec from_spec(pkt_encoding->sample_spec.sample_rate(),
+                                          audio::Sample_RawFormat,
+                                          pkt_encoding->sample_spec.channel_set());
+
+        const audio::SampleSpec to_spec(pkt_encoding->sample_spec.sample_rate(),
+                                        audio::Sample_RawFormat,
+                                        common_config.output_sample_spec.channel_set());
+
         channel_mapper_reader_.reset(
             new (channel_mapper_reader_) audio::ChannelMapperReader(
-                *areader, sample_buffer_factory, encoding->sample_spec,
-                audio::SampleSpec(encoding->sample_spec.sample_rate(),
-                                  common_config.output_sample_spec.pcm_format(),
-                                  common_config.output_sample_spec.channel_set())));
+                *frm_reader, sample_buffer_factory, from_spec, to_spec));
         if (!channel_mapper_reader_ || !channel_mapper_reader_->is_valid()) {
             return;
         }
-        areader = channel_mapper_reader_.get();
+        frm_reader = channel_mapper_reader_.get();
     }
 
     if (session_config.latency.tuner_profile != audio::LatencyTunerProfile_Intact
-        || encoding->sample_spec.sample_rate()
+        || pkt_encoding->sample_spec.sample_rate()
             != common_config.output_sample_spec.sample_rate()) {
+        const audio::SampleSpec from_spec(pkt_encoding->sample_spec.sample_rate(),
+                                          audio::Sample_RawFormat,
+                                          common_config.output_sample_spec.channel_set());
+
+        const audio::SampleSpec to_spec(common_config.output_sample_spec.sample_rate(),
+                                        audio::Sample_RawFormat,
+                                        common_config.output_sample_spec.channel_set());
+
         resampler_poisoner_.reset(new (resampler_poisoner_)
-                                      audio::PoisonReader(*areader));
+                                      audio::PoisonReader(*frm_reader));
         if (!resampler_poisoner_) {
             return;
         }
-        areader = resampler_poisoner_.get();
+        frm_reader = resampler_poisoner_.get();
 
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-            arena, sample_buffer_factory, session_config.resampler,
-            audio::SampleSpec(encoding->sample_spec.sample_rate(),
-                              common_config.output_sample_spec.pcm_format(),
-                              common_config.output_sample_spec.channel_set()),
-            common_config.output_sample_spec));
-
+            arena, sample_buffer_factory, session_config.resampler, from_spec, to_spec));
         if (!resampler_) {
             return;
         }
 
         resampler_reader_.reset(new (resampler_reader_) audio::ResamplerReader(
-            *areader, *resampler_,
-            audio::SampleSpec(encoding->sample_spec.sample_rate(),
-                              common_config.output_sample_spec.pcm_format(),
-                              common_config.output_sample_spec.channel_set()),
-            common_config.output_sample_spec));
-
+            *frm_reader, *resampler_, from_spec, to_spec));
         if (!resampler_reader_ || !resampler_reader_->is_valid()) {
             return;
         }
-        areader = resampler_reader_.get();
+        frm_reader = resampler_reader_.get();
     }
 
-    session_poisoner_.reset(new (session_poisoner_) audio::PoisonReader(*areader));
+    session_poisoner_.reset(new (session_poisoner_) audio::PoisonReader(*frm_reader));
     if (!session_poisoner_) {
         return;
     }
-    areader = session_poisoner_.get();
+    frm_reader = session_poisoner_.get();
 
     latency_monitor_.reset(new (latency_monitor_) audio::LatencyMonitor(
-        *areader, *source_queue_, *depacketizer_, *source_meter_, resampler_reader_.get(),
-        session_config.latency, encoding->sample_spec, common_config.output_sample_spec));
+        *frm_reader, *source_queue_, *depacketizer_, *source_meter_,
+        resampler_reader_.get(), session_config.latency, pkt_encoding->sample_spec,
+        common_config.output_sample_spec));
     if (!latency_monitor_ || !latency_monitor_->is_valid()) {
         return;
     }
-    areader = latency_monitor_.get();
+    frm_reader = latency_monitor_.get();
 
-    if (!areader) {
+    if (!frm_reader) {
         return;
     }
 
-    frame_reader_ = areader;
+    frame_reader_ = frm_reader;
     valid_ = true;
 }
 

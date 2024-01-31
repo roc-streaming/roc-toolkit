@@ -73,13 +73,15 @@ public:
     bool is_valid() const;
 
     //! Profile frame speed.
-    void add_frame(size_t frame_size, core::nanoseconds_t elapsed);
+    void add_frame(packet::stream_timestamp_t frame_duration,
+                   core::nanoseconds_t elapsed);
 
     //! Get computed average.
     float get_moving_avg();
 
 private:
-    void update_moving_avg_(size_t frame_size, core::nanoseconds_t elapsed);
+    void update_moving_avg_(packet::stream_timestamp_t frame_duration,
+                            core::nanoseconds_t elapsed);
 
     core::RateLimiter rate_limiter_;
 

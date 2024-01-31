@@ -18,6 +18,7 @@ SenderConfig::SenderConfig()
     , payload_type(rtp::PayloadType_L16_Stereo)
     , enable_interleaving(false)
     , enable_timing(false)
+    , enable_auto_duration(false)
     , enable_auto_cts(false)
     , enable_profiling(false) {
 }

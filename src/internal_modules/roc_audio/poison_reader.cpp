@@ -18,8 +18,7 @@ PoisonReader::PoisonReader(IFrameReader& reader)
 }
 
 bool PoisonReader::read(Frame& frame) {
-    core::MemoryOps::poison_before_use(frame.samples(),
-                                       frame.num_samples() * sizeof(sample_t));
+    core::MemoryOps::poison_before_use(frame.bytes(), frame.num_bytes());
 
     return reader_.read(frame);
 }

@@ -89,7 +89,7 @@ public:
     LatencyMetrics metrics() const;
 
 private:
-    bool update_tuner_(size_t n_samples);
+    bool update_tuner_(packet::stream_timestamp_t duration);
 
     bool init_scaling_();
     bool update_scaling_();

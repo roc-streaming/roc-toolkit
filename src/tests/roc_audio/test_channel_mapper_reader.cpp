@@ -54,20 +54,20 @@ void add_stereo(test::MockReader& mock_reader,
 }
 
 void expect_mono(const Frame& frame, sample_t value) {
-    CHECK(frame.num_samples() > 0);
+    CHECK(frame.num_raw_samples() > 0);
 
-    for (size_t n = 0; n < frame.num_samples(); n++) {
-        DOUBLES_EQUAL((double)value, (double)frame.samples()[n], Epsilon);
+    for (size_t n = 0; n < frame.num_raw_samples(); n++) {
+        DOUBLES_EQUAL((double)value, (double)frame.raw_samples()[n], Epsilon);
     }
 }
 
 void expect_stereo(const Frame& frame, sample_t left_value, sample_t right_value) {
-    CHECK(frame.num_samples() > 0);
-    CHECK(frame.num_samples() % 2 == 0);
+    CHECK(frame.num_raw_samples() > 0);
+    CHECK(frame.num_raw_samples() % 2 == 0);
 
-    for (size_t n = 0; n < frame.num_samples(); n += 2) {
-        DOUBLES_EQUAL((double)left_value, (double)frame.samples()[n + 0], Epsilon);
-        DOUBLES_EQUAL((double)right_value, (double)frame.samples()[n + 1], Epsilon);
+    for (size_t n = 0; n < frame.num_raw_samples(); n += 2) {
+        DOUBLES_EQUAL((double)left_value, (double)frame.raw_samples()[n + 0], Epsilon);
+        DOUBLES_EQUAL((double)right_value, (double)frame.raw_samples()[n + 1], Epsilon);
     }
 }
 

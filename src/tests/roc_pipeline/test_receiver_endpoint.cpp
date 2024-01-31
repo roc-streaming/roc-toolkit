@@ -14,6 +14,7 @@
 #include "roc_core/heap_arena.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
+#include "roc_pipeline/config.h"
 #include "roc_pipeline/receiver_endpoint.h"
 #include "roc_pipeline/receiver_session_group.h"
 #include "roc_status/status_code.h"
@@ -45,7 +46,7 @@ rtp::EncodingMap encoding_map(arena);
 TEST_GROUP(receiver_endpoint) {};
 
 TEST(receiver_endpoint, valid) {
-    audio::Mixer mixer(sample_buffer_factory, false);
+    audio::Mixer mixer(sample_buffer_factory, DefaultSampleSpec, false);
 
     StateTracker state_tracker;
     ReceiverConfig receiver_config;
@@ -59,7 +60,7 @@ TEST(receiver_endpoint, valid) {
 }
 
 TEST(receiver_endpoint, invalid_proto) {
-    audio::Mixer mixer(sample_buffer_factory, false);
+    audio::Mixer mixer(sample_buffer_factory, DefaultSampleSpec, false);
 
     StateTracker state_tracker;
     ReceiverConfig receiver_config;
@@ -83,7 +84,7 @@ TEST(receiver_endpoint, no_memory) {
     NoMemArena nomem_arena;
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(protos); ++n) {
-        audio::Mixer mixer(sample_buffer_factory, false);
+        audio::Mixer mixer(sample_buffer_factory, DefaultSampleSpec, false);
 
         StateTracker state_tracker;
         ReceiverConfig receiver_config;

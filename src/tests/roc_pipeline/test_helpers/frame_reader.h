@@ -53,13 +53,14 @@ public:
         audio::Frame frame(samples.data(), samples.size());
         CHECK(source_.read(frame));
 
+        check_duration_(frame, sample_spec);
         check_timestamp_(frame, sample_spec, base_capture_ts);
 
         for (size_t ns = 0; ns < num_samples; ns++) {
             for (size_t nc = 0; nc < sample_spec.num_channels(); nc++) {
                 DOUBLES_EQUAL(
                     (double)nth_sample(offset_) * num_sessions,
-                    (double)frame.samples()[ns * sample_spec.num_channels() + nc],
+                    (double)frame.raw_samples()[ns * sample_spec.num_channels() + nc],
                     SampleEpsilon);
             }
             offset_++;
@@ -83,11 +84,12 @@ public:
         audio::Frame frame(samples.data(), samples.size());
         CHECK(source_.read(frame));
 
+        check_duration_(frame, sample_spec);
         check_timestamp_(frame, sample_spec, base_capture_ts);
 
         size_t non_zero = 0;
         for (size_t ns = 0; ns < num_samples * sample_spec.num_channels(); ns++) {
-            if (frame.samples()[ns] != 0) {
+            if (frame.raw_samples()[ns] != 0) {
                 non_zero++;
             }
         }
@@ -111,10 +113,11 @@ public:
         audio::Frame frame(samples.data(), samples.size());
         CHECK(source_.read(frame));
 
+        check_duration_(frame, sample_spec);
         check_timestamp_(frame, sample_spec, base_capture_ts);
 
         for (size_t n = 0; n < num_samples * sample_spec.num_channels(); n++) {
-            DOUBLES_EQUAL(0.0, (double)frame.samples()[n], SampleEpsilon);
+            DOUBLES_EQUAL(0.0, (double)frame.raw_samples()[n], SampleEpsilon);
         }
         abs_offset_ += num_samples;
         refresh_ts_offset_ = sample_spec.samples_per_chan_2_ns(abs_offset_);
@@ -172,6 +175,12 @@ private:
             expect_capture_timestamp(capture_ts, frame.capture_timestamp(), sample_spec,
                                      TimestampEpsilonSmpls);
         }
+    }
+
+    void check_duration_(const audio::Frame& frame,
+                         const audio::SampleSpec& sample_spec) {
+        CHECK_EQUAL(frame.num_raw_samples() / sample_spec.num_channels(),
+                    frame.duration());
     }
 
     sndio::ISource& source_;

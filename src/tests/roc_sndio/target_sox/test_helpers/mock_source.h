@@ -80,19 +80,19 @@ public:
     }
 
     virtual bool read(audio::Frame& frame) {
-        size_t ns = frame.num_samples();
+        size_t ns = frame.num_raw_samples();
         if (ns > size_ - pos_) {
             ns = size_ - pos_;
         }
 
         if (ns > 0) {
-            memcpy(frame.samples(), samples_ + pos_, ns * sizeof(audio::sample_t));
+            memcpy(frame.raw_samples(), samples_ + pos_, ns * sizeof(audio::sample_t));
             pos_ += ns;
         }
 
-        if (ns < frame.num_samples()) {
-            memset(frame.samples() + ns, 0,
-                   (frame.num_samples() - ns) * sizeof(audio::sample_t));
+        if (ns < frame.num_raw_samples()) {
+            memset(frame.raw_samples() + ns, 0,
+                   (frame.num_raw_samples() - ns) * sizeof(audio::sample_t));
         }
 
         return true;

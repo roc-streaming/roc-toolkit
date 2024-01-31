@@ -17,6 +17,7 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
 #include "roc_core/time.h"
+#include "roc_packet/units.h"
 #include "roc_status/status_code.h"
 
 namespace roc {
@@ -161,7 +162,7 @@ public:
     //! Tuner will use new metrics next time when advance() is called.
     void write_metrics(const LatencyMetrics& metrics);
 
-    //! Advance stream by given number of samples.
+    //! Update stream latency and scaling.
     //! This method performs all actual work:
     //!  - depending on configured backend, selects which latency from
     //!    metrics to use
@@ -169,7 +170,11 @@ public:
     //!    terminated; if so, returns false
     //!  - computes updated scaling based on latency history and configured
     //!    profile
-    bool advance_stream(size_t n_samples);
+    bool update_stream();
+
+    //! Advance stream by given number of samples.
+    //! Should be called after updating stream.
+    void advance_stream(packet::stream_timestamp_t duration);
 
     //! Get computed scaling.
     //! Latency tuner expects that this scaling will applied to the stream
@@ -179,11 +184,8 @@ public:
     float get_scaling() const;
 
 private:
-    bool update_();
-
     bool check_bounds_(packet::stream_timestamp_diff_t latency);
     void compute_scaling_(packet::stream_timestamp_diff_t latency);
-
     void report_();
 
     core::Optional<FreqEstimator> fe_;

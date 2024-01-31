@@ -105,6 +105,7 @@ bool sender_config_from_user(node::Context& context,
     }
 
     out.enable_timing = false;
+    out.enable_auto_duration = true;
     out.enable_auto_cts = true;
 
     out.enable_interleaving = in.packet_interleaving;

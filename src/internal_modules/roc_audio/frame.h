@@ -24,37 +24,69 @@ namespace audio {
 //! Audio frame.
 class Frame : public core::NonCopyable<> {
 public:
-    //! Construct frame from samples.
-    //! @remarks
-    //!  The pointer is saved in the frame, no copying is performed.
+    //! Construct frame from raw samples.
+    //! Flags are set to zero.
     Frame(sample_t* samples, size_t num_samples);
 
+    //! Construct frame from bytes.
+    //! Flags are set to zero.
+    Frame(uint8_t* bytes, size_t num_bytes);
+
     //! Frame flags.
+    //! Flags are designed the way so that if you combine multiple frames into one,
+    //! (concatenate or mix), bitwise OR of their flags will produce correct result.
+    //! E.g., if at least one frame was non-blank, combined frame will be non-blank,
+    //! if at least one frame was incomplete, combined frame will be incomplete, etc.
     enum {
+        //! Set if the frame has format different from raw samples.
+        //! If this flag is set, only bytes() can be used, and raw_samples() panics.
+        FlagNotRaw = (1 << 0),
+
         //! Set if the frame has at least some samples from packets.
         //! If this flag is clear, frame is completely zero because of lack of packets.
-        FlagNonblank = (1 << 0),
+        FlagNonblank = (1 << 1),
 
         //! Set if the frame is not fully filled with samples from packets.
         //! If this flag is set, frame is partially zero because of lack of packets.
-        FlagIncomplete = (1 << 1),
+        FlagIncomplete = (1 << 2),
 
         //! Set if some late packets were dropped while the frame was being built.
         //! It's not necessarty that the frame itself is blank or incomplete.
-        FlagDrops = (1 << 2)
+        FlagDrops = (1 << 3)
     };
-
-    //! Set flags.
-    void set_flags(unsigned flags);
 
     //! Get flags.
     unsigned flags() const;
 
-    //! Get frame data.
-    sample_t* samples() const;
+    //! Set flags.
+    void set_flags(unsigned flags);
 
-    //! Get frame data size.
-    size_t num_samples() const;
+    //! Check frame data is raw samples.
+    //! Returns true if FlagAltFormat is not set.
+    bool is_raw() const;
+
+    //! Get frame data as raw samples.
+    //! May be used only if is_raw() is true, otherwise use bytes().
+    sample_t* raw_samples() const;
+
+    //! Get number of raw samples in frame,
+    //! May be used only if is_raw() is true, otherwise use num_bytes().
+    size_t num_raw_samples() const;
+
+    //! Get frame data as bytes.
+    uint8_t* bytes() const;
+
+    //! Get number of bytes in frame.
+    size_t num_bytes() const;
+
+    //! Check if duration was set.
+    bool has_duration() const;
+
+    //! Get frame duration in terms of stream timestamps.
+    packet::stream_timestamp_t duration() const;
+
+    //! Get frame duration in terms of stream timestamps.
+    void set_duration(packet::stream_timestamp_t duration);
 
     //! Get unix-epoch timestamp in ns of the 1st sample.
     core::nanoseconds_t capture_timestamp() const;
@@ -66,9 +98,10 @@ public:
     void print() const;
 
 private:
-    sample_t* samples_;
-    size_t num_samples_;
+    uint8_t* bytes_;
+    size_t num_bytes_;
     unsigned flags_;
+    packet::stream_timestamp_t duration_;
     core::nanoseconds_t capture_timestamp_;
 };
 

@@ -105,7 +105,7 @@ void FeedbackMonitor::write(Frame& frame) {
     roc_panic_if(!is_valid());
 
     if (started_) {
-        if (!update_tuner_(frame.num_samples())) {
+        if (!update_tuner_(frame.duration())) {
             // TODO(gh-674): change sender SSRC to restart session
         }
 
@@ -124,7 +124,7 @@ LatencyMetrics FeedbackMonitor::metrics() const {
     return metrics_;
 }
 
-bool FeedbackMonitor::update_tuner_(size_t n_samples) {
+bool FeedbackMonitor::update_tuner_(packet::stream_timestamp_t duration) {
     if (!has_metrics_) {
         return true;
     }
@@ -144,9 +144,11 @@ bool FeedbackMonitor::update_tuner_(size_t n_samples) {
 
     tuner_.write_metrics(metrics_);
 
-    if (!tuner_.advance_stream(n_samples)) {
+    if (!tuner_.update_stream()) {
         return false;
     }
+
+    tuner_.advance_stream(duration);
 
     return true;
 }

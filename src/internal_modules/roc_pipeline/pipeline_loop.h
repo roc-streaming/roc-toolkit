@@ -321,13 +321,16 @@ private:
     void cancel_async_task_processing_();
 
     void process_task_(PipelineTask& task, bool notify);
-    bool process_next_subframe_(audio::Frame& frame, size_t* frame_pos);
+    bool process_next_subframe_(audio::Frame& frame,
+                                packet::stream_timestamp_t* frame_pos,
+                                packet::stream_timestamp_t frame_duration);
 
     bool start_subframe_task_processing_();
     bool subframe_task_processing_allowed_(core::nanoseconds_t next_frame_deadline) const;
 
-    core::nanoseconds_t update_next_frame_deadline_(core::nanoseconds_t frame_start_time,
-                                                    size_t frame_size);
+    core::nanoseconds_t
+    update_next_frame_deadline_(core::nanoseconds_t frame_start_time,
+                                packet::stream_timestamp_t frame_duration);
     bool
     interframe_task_processing_allowed_(core::nanoseconds_t next_frame_deadline) const;
 
@@ -338,8 +341,8 @@ private:
 
     const audio::SampleSpec sample_spec_;
 
-    const size_t min_samples_between_tasks_;
-    const size_t max_samples_between_tasks_;
+    const packet::stream_timestamp_t min_samples_between_tasks_;
+    const packet::stream_timestamp_t max_samples_between_tasks_;
 
     const core::nanoseconds_t no_task_proc_half_interval_;
 
@@ -374,7 +377,7 @@ private:
     core::nanoseconds_t subframe_tasks_deadline_;
 
     // number of samples processed since last in-frame task processing
-    size_t samples_processed_;
+    packet::stream_timestamp_t samples_processed_;
 
     // did we accumulate enough samples in samples_processed_
     bool enough_samples_to_process_tasks_;

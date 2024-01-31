@@ -25,9 +25,9 @@ PipelineLoop::PipelineLoop(IPipelineTaskScheduler& scheduler,
     : config_(config)
     , sample_spec_(sample_spec)
     , min_samples_between_tasks_(
-          sample_spec.ns_2_samples_overall(config.min_frame_length_between_tasks))
+          sample_spec.ns_2_stream_timestamp(config.min_frame_length_between_tasks))
     , max_samples_between_tasks_(
-          sample_spec.ns_2_samples_overall(config.max_frame_length_between_tasks))
+          sample_spec.ns_2_stream_timestamp(config.max_frame_length_between_tasks))
     , no_task_proc_half_interval_(config.task_processing_prohibited_interval / 2)
     , scheduler_(scheduler)
     , pending_tasks_(0)
@@ -228,17 +228,21 @@ bool PipelineLoop::process_subframes_and_tasks_precise_(audio::Frame& frame) {
 
     core::nanoseconds_t next_frame_deadline = 0;
 
-    size_t frame_pos = 0;
+    packet::stream_timestamp_t frame_pos = 0;
     bool frame_res = false;
+
+    const packet::stream_timestamp_t frame_duration = frame.has_duration()
+        ? frame.duration()
+        : sample_spec_.bytes_2_stream_timestamp(frame.num_bytes());
 
     for (;;) {
         const bool first_iteration = (frame_pos == 0);
 
-        frame_res = process_next_subframe_(frame, &frame_pos);
+        frame_res = process_next_subframe_(frame, &frame_pos, frame_duration);
 
         if (first_iteration) {
             next_frame_deadline =
-                update_next_frame_deadline_(frame_start_time, frame.num_samples());
+                update_next_frame_deadline_(frame_start_time, frame_duration);
         }
 
         if (start_subframe_task_processing_()) {
@@ -255,7 +259,7 @@ bool PipelineLoop::process_subframes_and_tasks_precise_(audio::Frame& frame) {
             }
         }
 
-        if (!frame_res || frame_pos == frame.num_samples()) {
+        if (!frame_res || frame_pos == frame_duration) {
             break;
         }
     }
@@ -339,27 +343,41 @@ void PipelineLoop::process_task_(PipelineTask& task, bool notify) {
     }
 }
 
-bool PipelineLoop::process_next_subframe_(audio::Frame& frame, size_t* frame_pos) {
-    const size_t subframe_size = max_samples_between_tasks_
-        ? std::min(frame.num_samples() - *frame_pos, max_samples_between_tasks_)
-        : frame.num_samples();
+bool PipelineLoop::process_next_subframe_(audio::Frame& frame,
+                                          packet::stream_timestamp_t* frame_pos,
+                                          packet::stream_timestamp_t frame_duration) {
+    const size_t subframe_duration = max_samples_between_tasks_
+        ? std::min(frame_duration - *frame_pos, max_samples_between_tasks_)
+        : frame_duration;
 
-    audio::Frame sub_frame(frame.samples() + *frame_pos, subframe_size);
+    audio::Frame sub_frame(frame.bytes()
+                               + sample_spec_.stream_timestamp_2_bytes(*frame_pos),
+                           sample_spec_.stream_timestamp_2_bytes(subframe_duration));
 
     sub_frame.set_flags(frame.flags());
-    sub_frame.set_capture_timestamp(
-        frame.capture_timestamp()
-            ? frame.capture_timestamp() + sample_spec_.samples_overall_2_ns(*frame_pos)
-            : 0);
+    sub_frame.set_duration(subframe_duration);
+
+    if (frame.capture_timestamp()) {
+        sub_frame.set_capture_timestamp(frame.capture_timestamp()
+                                        + sample_spec_.stream_timestamp_2_ns(*frame_pos));
+    }
 
     const bool ret = process_subframe_imp(sub_frame);
 
     subframe_tasks_deadline_ = timestamp_imp() + config_.max_inframe_task_processing;
 
-    *frame_pos += subframe_size;
+    if (*frame_pos == 0) {
+        frame.set_capture_timestamp(sub_frame.capture_timestamp());
+    }
+
+    *frame_pos += subframe_duration;
+
+    frame.set_flags(frame.flags() | sub_frame.flags());
+    frame.set_duration(*frame_pos);
 
     if (!enough_samples_to_process_tasks_) {
-        samples_processed_ += subframe_size;
+        samples_processed_ += subframe_duration;
+
         if (samples_processed_ >= min_samples_between_tasks_) {
             enough_samples_to_process_tasks_ = true;
         }
@@ -400,11 +418,9 @@ bool PipelineLoop::subframe_task_processing_allowed_(
 
 core::nanoseconds_t
 PipelineLoop::update_next_frame_deadline_(core::nanoseconds_t frame_start_time,
-                                          size_t frame_size) {
-    const core::nanoseconds_t frame_duration =
-        sample_spec_.samples_overall_2_ns(frame_size);
-
-    const core::nanoseconds_t next_frame_deadline = frame_start_time + frame_duration;
+                                          packet::stream_timestamp_t frame_duration) {
+    const core::nanoseconds_t next_frame_deadline =
+        frame_start_time + sample_spec_.stream_timestamp_2_ns(frame_duration);
 
     next_frame_deadline_.exclusive_store(next_frame_deadline);
 

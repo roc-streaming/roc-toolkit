@@ -25,20 +25,24 @@ struct TestFrame {
     core::nanoseconds_t time;
 };
 
-const int SampleRate = 5000; // 50 samples / chunk
-const int ChannelMask = 1;
-const SampleSpec SampleSpecs(
-    SampleRate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte, ChannelMask);
 const double EpsilionThreshold = 0.001;
+
+const int SampleRate = 5000; // 50 samples / chunk
+const int ChannelMask = 0x1;
+
+const SampleSpec sample_spec(
+    SampleRate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte, ChannelMask);
+
+const ProfilerConfig profiler_config(50 * core::Millisecond, 10 * core::Millisecond);
+
 core::HeapArena arena;
-ProfilerConfig profiler_config(50 * core::Millisecond, 10 * core::Millisecond);
 
 } // namespace
 
 TEST_GROUP(profiler) {};
 
 TEST(profiler, test_moving_average) {
-    Profiler profiler(arena, SampleSpecs, profiler_config);
+    Profiler profiler(arena, sample_spec, profiler_config);
 
     TestFrame frames[] = {
         TestFrame(50, 50 * core::Second),      TestFrame(25, 25 * core::Second),
@@ -52,7 +56,7 @@ TEST(profiler, test_moving_average) {
     double frame_speeds[ROC_ARRAY_SIZE(frames)];
     for (size_t i = 0; i < ROC_ARRAY_SIZE(frames); ++i) {
         frame_speeds[i] = double(frames[i].size * core::Second) / frames[i].time
-            / SampleSpecs.num_channels();
+            / sample_spec.num_channels();
     }
 
     size_t samples_in_moving_avg = 0;
@@ -117,7 +121,9 @@ TEST(profiler, test_moving_average) {
         / samples_in_moving_avg;
 
     for (size_t i = 0; i < ROC_ARRAY_SIZE(frames); ++i) {
-        profiler.add_frame(frames[i].size, frames[i].time);
+        profiler.add_frame((packet::stream_timestamp_t)frames[i].size
+                               / sample_spec.num_channels(),
+                           frames[i].time);
         DOUBLES_EQUAL(expected_average[i], profiler.get_moving_avg(), EpsilionThreshold);
     }
 }

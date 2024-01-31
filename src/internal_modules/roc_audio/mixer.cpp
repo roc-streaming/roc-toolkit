@@ -7,6 +7,7 @@
  */
 
 #include "roc_audio/mixer.h"
+#include "roc_audio/sample_spec_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
@@ -14,9 +15,16 @@
 namespace roc {
 namespace audio {
 
-Mixer::Mixer(core::BufferFactory<sample_t>& buffer_factory, bool enable_timestamps)
-    : enable_timestamps_(enable_timestamps)
+Mixer::Mixer(core::BufferFactory<sample_t>& buffer_factory,
+             const audio::SampleSpec& sample_spec,
+             bool enable_timestamps)
+    : sample_spec_(sample_spec)
+    , enable_timestamps_(enable_timestamps)
     , valid_(false) {
+    roc_panic_if_msg(!sample_spec_.is_valid() || !sample_spec_.is_raw(),
+                     "mixer: required valid sample spec with raw format: %s",
+                     sample_spec_to_str(sample_spec_).c_str());
+
     temp_buf_ = buffer_factory.new_buffer();
     if (!temp_buf_) {
         roc_log(LogError, "mixer: can't allocate temporary buffer");
@@ -62,8 +70,8 @@ bool Mixer::read(Frame& frame) {
 
     const size_t max_read = temp_buf_.size();
 
-    sample_t* samples = frame.samples();
-    size_t n_samples = frame.num_samples();
+    sample_t* samples = frame.raw_samples();
+    size_t n_samples = frame.num_raw_samples();
 
     unsigned flags = 0;
     core::nanoseconds_t capture_ts = 0;
@@ -84,6 +92,7 @@ bool Mixer::read(Frame& frame) {
     }
 
     frame.set_flags(flags);
+    frame.set_duration(frame.num_raw_samples() / sample_spec_.num_channels());
     frame.set_capture_timestamp(capture_ts);
 
     return true;

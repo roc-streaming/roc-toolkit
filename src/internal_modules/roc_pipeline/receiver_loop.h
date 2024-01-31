@@ -172,7 +172,7 @@ private:
     core::Optional<core::Ticker> ticker_;
     core::Ticker::ticks_t ticker_ts_;
 
-    bool auto_reclock_;
+    const bool auto_reclock_;
 
     bool valid_;
 };

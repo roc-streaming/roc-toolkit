@@ -25,14 +25,16 @@ ChannelMapperReader::ChannelMapperReader(IFrameReader& reader,
     , in_spec_(in_spec)
     , out_spec_(out_spec)
     , valid_(false) {
-    if (!in_spec_.is_valid() || !out_spec_.is_valid()) {
-        roc_panic("channel mapper reader: invalid sample spec: input=%s output=%s",
-                  sample_spec_to_str(in_spec).c_str(),
-                  sample_spec_to_str(out_spec).c_str());
+    if (!in_spec_.is_valid() || !out_spec_.is_valid() || !in_spec_.is_raw()
+        || !out_spec_.is_raw()) {
+        roc_panic("channel mapper reader: required valid sample specs with raw format:"
+                  " in_spec=%s out_spec=%s",
+                  sample_spec_to_str(in_spec_).c_str(),
+                  sample_spec_to_str(out_spec_).c_str());
     }
 
     if (in_spec_.sample_rate() != out_spec_.sample_rate()) {
-        roc_panic("channel mapper reader: input and output sample rate should be equal:"
+        roc_panic("channel mapper reader: required identical input and output rates:"
                   " in_spec=%s out_spec=%s",
                   sample_spec_to_str(in_spec).c_str(),
                   sample_spec_to_str(out_spec).c_str());
@@ -56,14 +58,14 @@ bool ChannelMapperReader::is_valid() const {
 bool ChannelMapperReader::read(Frame& out_frame) {
     roc_panic_if(!valid_);
 
-    if (out_frame.num_samples() % out_spec_.num_channels() != 0) {
+    if (out_frame.num_raw_samples() % out_spec_.num_channels() != 0) {
         roc_panic("channel mapper reader: unexpected frame size");
     }
 
     const size_t max_batch = input_buf_.size() / in_spec_.num_channels();
 
-    sample_t* out_samples = out_frame.samples();
-    size_t n_samples = out_frame.num_samples() / out_spec_.num_channels();
+    sample_t* out_samples = out_frame.raw_samples();
+    size_t n_samples = out_frame.num_raw_samples() / out_spec_.num_channels();
 
     unsigned flags = 0;
 
@@ -85,6 +87,7 @@ bool ChannelMapperReader::read(Frame& out_frame) {
     }
 
     out_frame.set_flags(flags);
+    out_frame.set_duration(out_frame.num_raw_samples() / out_spec_.num_channels());
 
     return true;
 }
@@ -98,7 +101,7 @@ bool ChannelMapperReader::read_(sample_t* out_samples,
         return false;
     }
 
-    mapper_.map(in_frame.samples(), in_frame.num_samples(), out_samples,
+    mapper_.map(in_frame.raw_samples(), in_frame.num_raw_samples(), out_samples,
                 n_samples * out_spec_.num_channels());
 
     capt_ts = in_frame.capture_timestamp();

@@ -59,6 +59,8 @@ public:
 
         audio::Frame frame(samples.data(), samples.size());
 
+        frame.set_duration(samples.size() / sample_spec.num_channels());
+
         if (base_capture_ts >= 0) {
             last_capture_ts_ =
                 base_capture_ts + sample_spec.samples_per_chan_2_ns(abs_offset_);

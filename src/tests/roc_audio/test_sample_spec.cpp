@@ -60,6 +60,14 @@ TEST(sample_spec, ns_2_nsamples) {
                     sample_spec.ns_2_samples_overall(
                         core::nanoseconds_t(2 / SampleRate * core::Second)));
 
+        // ns_2_stream_timestamp
+        CHECK_EQUAL(1,
+                    sample_spec.ns_2_stream_timestamp(
+                        core::nanoseconds_t(1 / SampleRate * core::Second)));
+        CHECK_EQUAL(2,
+                    sample_spec.ns_2_stream_timestamp(
+                        core::nanoseconds_t(2 / SampleRate * core::Second)));
+
         // ns_2_stream_timestamp_delta
         CHECK_EQUAL(1,
                     sample_spec.ns_2_stream_timestamp_delta(
@@ -110,6 +118,10 @@ TEST(sample_spec, nsamples_2_ns) {
         CHECK(core::ns_equal_delta(
             sample_spec.fract_samples_overall_2_ns(-0.1f),
             -core::nanoseconds_t(0.1 / SampleRate * core::Second / numChans), epsilon));
+
+        // stream_timestamp_2_ns
+        CHECK(core::ns_equal_delta(sample_spec.stream_timestamp_2_ns(1), sampling_period,
+                                   epsilon));
 
         // stream_timestamp_delta_2_ns
         CHECK(core::ns_equal_delta(sample_spec.stream_timestamp_delta_2_ns(1),
@@ -176,6 +188,57 @@ TEST(sample_spec, saturation) {
         CHECK_EQUAL(
             ROC_MIN_OF(packet::stream_timestamp_diff_t),
             sample_spec.ns_2_stream_timestamp_delta(ROC_MIN_OF(core::nanoseconds_t)));
+    }
+}
+
+TEST(sample_spec, bytes) {
+    { // raw format
+        const size_t SampleRate = 44100;
+        const size_t NumChans = 2;
+        const size_t SampleSize = sizeof(sample_t);
+
+        const SampleSpec sample_spec(SampleRate, Sample_RawFormat, ChanLayout_Surround,
+                                     ChanOrder_Smpte, ChanMask_Surround_Stereo);
+
+        // bytes_2_stream_timestamp
+        CHECK_EQUAL(111,
+                    sample_spec.bytes_2_stream_timestamp(111 * NumChans * SampleSize));
+
+        // stream_timestamp_2_bytes
+        CHECK_EQUAL(111 * NumChans * SampleSize,
+                    sample_spec.stream_timestamp_2_bytes(111));
+
+        // bytes_2_ns
+        CHECK_EQUAL(sample_spec.stream_timestamp_2_ns(111),
+                    sample_spec.bytes_2_ns(111 * NumChans * SampleSize));
+
+        // ns_2_bytes
+        CHECK_EQUAL(111 * NumChans * SampleSize,
+                    sample_spec.ns_2_bytes(sample_spec.stream_timestamp_2_ns(111)));
+    }
+    { // alternative format
+        const size_t SampleRate = 44100;
+        const size_t NumChans = 2;
+        const size_t SampleSize = 3; // 24 bits
+
+        const SampleSpec sample_spec(SampleRate, PcmFormat_SInt24_Be, ChanLayout_Surround,
+                                     ChanOrder_Smpte, ChanMask_Surround_Stereo);
+
+        // bytes_2_stream_timestamp
+        CHECK_EQUAL(111,
+                    sample_spec.bytes_2_stream_timestamp(111 * NumChans * SampleSize));
+
+        // stream_timestamp_2_bytes
+        CHECK_EQUAL(111 * NumChans * SampleSize,
+                    sample_spec.stream_timestamp_2_bytes(111));
+
+        // bytes_2_ns
+        CHECK_EQUAL(sample_spec.stream_timestamp_2_ns(111),
+                    sample_spec.bytes_2_ns(111 * NumChans * SampleSize));
+
+        // ns_2_bytes
+        CHECK_EQUAL(111 * NumChans * SampleSize,
+                    sample_spec.ns_2_bytes(sample_spec.stream_timestamp_2_ns(111)));
     }
 }
 

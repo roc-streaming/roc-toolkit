@@ -36,7 +36,7 @@ void write_frame(Fanout& fanout, size_t sz, sample_t value) {
 
     Frame frame(buf.data(), buf.size());
     for (size_t n = 0; n < sz; n++) {
-        frame.samples()[n] = value;
+        frame.raw_samples()[n] = value;
     }
 
     fanout.write(frame);

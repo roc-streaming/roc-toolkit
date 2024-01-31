@@ -29,20 +29,20 @@ core::HeapArena arena;
 core::BufferFactory<sample_t> buffer_factory(arena, MaxSz);
 
 void fill_mono(Frame& frame, sample_t value) {
-    CHECK(frame.num_samples() > 0);
+    CHECK(frame.num_raw_samples() > 0);
 
-    for (size_t n = 0; n < frame.num_samples(); n++) {
-        frame.samples()[n] = value;
+    for (size_t n = 0; n < frame.num_raw_samples(); n++) {
+        frame.raw_samples()[n] = value;
     }
 }
 
 void fill_stereo(Frame& frame, sample_t left_value, sample_t right_value) {
-    CHECK(frame.num_samples() > 0);
-    CHECK(frame.num_samples() % 2 == 0);
+    CHECK(frame.num_raw_samples() > 0);
+    CHECK(frame.num_raw_samples() % 2 == 0);
 
-    for (size_t n = 0; n < frame.num_samples(); n += 2) {
-        frame.samples()[n + 0] = left_value;
-        frame.samples()[n + 1] = right_value;
+    for (size_t n = 0; n < frame.num_raw_samples(); n += 2) {
+        frame.raw_samples()[n + 0] = left_value;
+        frame.raw_samples()[n + 1] = right_value;
     }
 }
 

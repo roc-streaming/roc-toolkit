@@ -26,7 +26,8 @@ public:
         : state_(sndio::DeviceState_Active)
         , pos_(0)
         , size_(0)
-        , value_(0) {
+        , value_(0)
+        , n_ch_(0) {
     }
 
     virtual sndio::ISink* to_sink() {
@@ -88,20 +89,23 @@ public:
             return false;
         }
 
-        size_t ns = frame.num_samples();
+        size_t ns = frame.num_raw_samples();
         if (ns > size_ - pos_) {
             ns = size_ - pos_;
         }
 
         if (ns > 0) {
-            memcpy(frame.samples(), samples_ + pos_, ns * sizeof(audio::sample_t));
+            memcpy(frame.raw_samples(), samples_ + pos_, ns * sizeof(audio::sample_t));
             pos_ += ns;
         }
 
-        if (ns < frame.num_samples()) {
-            memset(frame.samples() + ns, 0,
-                   (frame.num_samples() - ns) * sizeof(audio::sample_t));
+        if (ns < frame.num_raw_samples()) {
+            memset(frame.raw_samples() + ns, 0,
+                   (frame.num_raw_samples() - ns) * sizeof(audio::sample_t));
         }
+
+        CHECK(n_ch_ > 0);
+        frame.set_duration(frame.num_raw_samples() / n_ch_);
 
         return true;
     }
@@ -116,6 +120,11 @@ public:
             }
             value_++;
         }
+
+        if (!n_ch_) {
+            n_ch_ = sample_spec.num_channels();
+        }
+        CHECK_EQUAL(n_ch_, sample_spec.num_channels());
     }
 
     size_t num_remaining() const {
@@ -132,6 +141,7 @@ private:
     size_t pos_;
     size_t size_;
     size_t value_;
+    size_t n_ch_;
 };
 
 } // namespace test

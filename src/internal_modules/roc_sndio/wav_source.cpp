@@ -122,8 +122,8 @@ bool WavSource::read(audio::Frame& frame) {
         return false;
     }
 
-    audio::sample_t* frame_data = frame.samples();
-    size_t frame_left = frame.num_samples();
+    audio::sample_t* frame_data = frame.raw_samples();
+    size_t frame_left = frame.num_raw_samples();
 
     while (frame_left != 0) {
         size_t n_samples = frame_left;
@@ -142,7 +142,7 @@ bool WavSource::read(audio::Frame& frame) {
         frame_left -= n_samples;
     }
 
-    if (frame_left == frame.num_samples()) {
+    if (frame_left == frame.num_raw_samples()) {
         return false;
     }
 

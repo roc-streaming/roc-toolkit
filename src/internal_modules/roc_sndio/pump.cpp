@@ -118,6 +118,12 @@ bool Pump::transfer_frame_(ISource& current_source) {
         return false;
     }
 
+    if (!frame.has_duration()) {
+        // if source does not provide frame duration, we fill it here
+        // we assume that the frame has some PCM format
+        frame.set_duration(sample_spec_.bytes_2_stream_timestamp(frame.num_bytes()));
+    }
+
     if (frame.capture_timestamp() == 0) {
         // if source does not provide capture timestamps, we fill them here
         // we subtract source latency to take into account recording buffer size,
@@ -128,7 +134,7 @@ bool Pump::transfer_frame_(ISource& current_source) {
 
         if (current_source.has_latency()) {
             capture_latency = current_source.latency()
-                + sample_spec_.samples_overall_2_ns(frame.num_samples());
+                + sample_spec_.stream_timestamp_2_ns(frame.duration());
         }
 
         frame.set_capture_timestamp(core::timestamp(core::ClockUnix) - capture_latency);
@@ -147,7 +153,7 @@ bool Pump::transfer_frame_(ISource& current_source) {
 
         if (sink_.has_latency()) {
             playback_latency =
-                sink_.latency() - sample_spec_.samples_overall_2_ns(frame.num_samples());
+                sink_.latency() - sample_spec_.stream_timestamp_2_ns(frame.duration());
         }
 
         current_source.reclock(core::timestamp(core::ClockUnix) + playback_latency);

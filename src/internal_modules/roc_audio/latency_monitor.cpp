@@ -102,7 +102,7 @@ bool LatencyMonitor::reclock(const core::nanoseconds_t playback_timestamp) {
 bool LatencyMonitor::pre_process_(const Frame& frame) {
     tuner_.write_metrics(metrics_);
 
-    if (!tuner_.advance_stream(frame.num_samples())) {
+    if (!tuner_.update_stream()) {
         // TODO(gh-183): forward status code
         return false;
     }
@@ -120,6 +120,9 @@ bool LatencyMonitor::pre_process_(const Frame& frame) {
 void LatencyMonitor::post_process_(const Frame& frame) {
     // for end-2-end latency calculations
     capture_ts_ = frame.capture_timestamp();
+
+    // after reading the frame we know its duration
+    tuner_.advance_stream(frame.duration());
 }
 
 void LatencyMonitor::compute_niq_latency_() {

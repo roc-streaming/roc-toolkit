@@ -120,7 +120,7 @@ public:
 
     // @}
 
-    //! @name Nanosecond duration converters
+    //! @name Convert number of samples
     //! @{
 
     //! Convert nanoseconds duration to number of samples per channel.
@@ -163,8 +163,22 @@ public:
 
     // @}
 
-    //! @name RTP timestamp converters
+    //! @name Convert stream timestamps
     //! @{
+
+    //! Convert nanoseconds delta to stream timestamp.
+    //! @pre
+    //!  @p ns_duration should not be negative.
+    //! @remarks
+    //!  Same as ns_2_samples_per_chan(), but with stream_timestamp_t instead of size_t.
+    packet::stream_timestamp_t
+    ns_2_stream_timestamp(core::nanoseconds_t ns_duration) const;
+
+    //! Convert stream timestamp to nanoseconds.
+    //! @remarks
+    //!  Same as samples_per_chan_2_ns(), but with stream_timestamp_t instead of size_t.
+    core::nanoseconds_t
+    stream_timestamp_2_ns(packet::stream_timestamp_t sts_duration) const;
 
     //! Convert nanoseconds delta to stream timestamp delta.
     //! @remarks
@@ -180,10 +194,36 @@ public:
 
     // @}
 
+    //! @name Convert byte size
+    //! @{
+
+    //! Convert byte size to stream timestamp.
+    //! @pre
+    //!  sample_format() should be PCM.
+    packet::stream_timestamp_t bytes_2_stream_timestamp(size_t n_bytes) const;
+
+    //! Convert stream timestamp to byte size.
+    //! @pre
+    //!  sample_format() should be PCM.
+    size_t stream_timestamp_2_bytes(packet::stream_timestamp_t duration) const;
+
+    //! Convert byte size to nanosecond duration.
+    //! @pre
+    //!  sample_format() should be PCM.
+    core::nanoseconds_t bytes_2_ns(size_t n_bytes) const;
+
+    //! Convert nanosecond duration to byte size.
+    //! @pre
+    //!  sample_format() should be PCM.
+    size_t ns_2_bytes(core::nanoseconds_t duration) const;
+
+    // @}
+
 private:
     size_t sample_rate_;
     SampleFormat sample_fmt_;
     PcmFormat pcm_fmt_;
+    size_t pcm_width_;
     ChannelSet channel_set_;
 };
 

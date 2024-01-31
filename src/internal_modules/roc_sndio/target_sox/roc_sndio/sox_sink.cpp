@@ -159,8 +159,8 @@ bool SoxSink::has_clock() const {
 void SoxSink::write(audio::Frame& frame) {
     roc_panic_if(!valid_);
 
-    const audio::sample_t* frame_data = frame.samples();
-    size_t frame_size = frame.num_samples();
+    const audio::sample_t* frame_data = frame.raw_samples();
+    size_t frame_size = frame.num_raw_samples();
 
     sox_sample_t* buffer_data = buffer_.data();
     size_t buffer_pos = 0;

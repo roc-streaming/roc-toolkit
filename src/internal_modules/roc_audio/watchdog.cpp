@@ -115,8 +115,8 @@ bool Watchdog::read(Frame& frame) {
     roc_panic_if(!is_valid());
 
     if (!alive_) {
-        if (frame.num_samples() != 0) {
-            memset(frame.samples(), 0, frame.num_samples() * sizeof(sample_t));
+        if (frame.num_bytes() != 0) {
+            memset(frame.bytes(), 0, frame.num_bytes());
         }
         return true;
     }
@@ -126,7 +126,7 @@ bool Watchdog::read(Frame& frame) {
     }
 
     const packet::stream_timestamp_t next_read_pos = packet::stream_timestamp_t(
-        curr_read_pos_ + frame.num_samples() / sample_spec_.num_channels());
+        curr_read_pos_ + frame.num_raw_samples() / sample_spec_.num_channels());
 
     update_blank_timeout_(frame, next_read_pos);
     update_drops_timeout_(frame, next_read_pos);

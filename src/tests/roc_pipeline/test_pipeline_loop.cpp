@@ -41,7 +41,7 @@ const uint64_t DefaultThread = 1, ProcessingThread = 2, BackgroundThread = 3;
 
 const float Epsilon = 1e6f;
 
-const audio::SampleSpec SampleSpecs(SampleRate,
+const audio::SampleSpec sample_spec(SampleRate,
                                     audio::Sample_RawFormat,
                                     audio::ChanLayout_Surround,
                                     audio::ChanOrder_Smpte,
@@ -56,7 +56,7 @@ public:
     };
 
     TestPipeline(const PipelineLoopConfig& config)
-        : PipelineLoop(*this, config, SampleSpecs)
+        : PipelineLoop(*this, config, sample_spec)
         , blocked_cond_(mutex_)
         , unblocked_cond_(mutex_)
         , blocked_counter_(0)
@@ -224,9 +224,9 @@ private:
             unblocked_cond_.wait();
         }
         frame_allow_counter_--;
-        roc_panic_if(frame.num_samples() != exp_frame_sz_);
+        roc_panic_if(frame.num_raw_samples() != exp_frame_sz_);
         for (size_t n = 0; n < exp_frame_sz_; n++) {
-            roc_panic_if(std::abs(frame.samples()[n] - exp_frame_val_) > Epsilon);
+            roc_panic_if(std::abs(frame.raw_samples()[n] - exp_frame_val_) > Epsilon);
         }
         roc_panic_if(frame.flags() != exp_frame_flags_);
         roc_panic_if(frame.capture_timestamp() != exp_frame_cts_);
@@ -435,10 +435,10 @@ TEST_GROUP(pipeline_loop) {
     }
 
     void fill_frame(audio::Frame & frame, float val, size_t from, size_t to) {
-        CHECK(from <= frame.num_samples());
-        CHECK(to <= frame.num_samples());
+        CHECK(from <= frame.num_raw_samples());
+        CHECK(to <= frame.num_raw_samples());
         for (size_t n = from; n < to; n++) {
-            frame.samples()[n] = val;
+            frame.raw_samples()[n] = val;
         }
     }
 };
@@ -2347,7 +2347,7 @@ TEST(pipeline_loop, forward_flags_and_cts_large_frame) {
 
     pipeline.wait_blocked();
     pipeline.expect_frame(0.1f, MaxFrameSize, frame_flags,
-                          frame_cts + SampleSpecs.samples_overall_2_ns(MaxFrameSize));
+                          frame_cts + sample_spec.samples_overall_2_ns(MaxFrameSize));
     pipeline.unblock_one_frame();
 
     fw.join();

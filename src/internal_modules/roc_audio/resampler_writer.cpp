@@ -7,6 +7,7 @@
  */
 
 #include "roc_audio/resampler_writer.h"
+#include "roc_audio/sample_spec_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/stddefs.h"
 
@@ -26,8 +27,19 @@ ResamplerWriter::ResamplerWriter(IFrameWriter& writer,
     , output_buf_pos_(0)
     , scaling_(1.f)
     , valid_(false) {
+    if (!in_sample_spec_.is_valid() || !out_sample_spec_.is_valid()
+        || !in_sample_spec_.is_raw() || !out_sample_spec_.is_raw()) {
+        roc_panic("resampler writer: required valid sample specs with raw format:"
+                  " in_spec=%s out_spec=%s",
+                  sample_spec_to_str(in_sample_spec_).c_str(),
+                  sample_spec_to_str(out_sample_spec_).c_str());
+    }
+
     if (in_sample_spec_.channel_set() != out_sample_spec_.channel_set()) {
-        roc_panic("resampler writer: input and output channel sets should be same");
+        roc_panic("resampler writer: required identical input and output channel sets:"
+                  " in_spec=%s out_spec=%s",
+                  sample_spec_to_str(in_sample_spec_).c_str(),
+                  sample_spec_to_str(out_sample_spec_).c_str());
     }
 
     if (!resampler_.is_valid()) {
@@ -64,13 +76,13 @@ bool ResamplerWriter::set_scaling(float multiplier) {
 void ResamplerWriter::write(Frame& in_frame) {
     roc_panic_if_not(is_valid());
 
-    if (in_frame.num_samples() % in_sample_spec_.num_channels() != 0) {
+    if (in_frame.num_raw_samples() % in_sample_spec_.num_channels() != 0) {
         roc_panic("resampler writer: unexpected frame size");
     }
 
     size_t in_pos = 0;
 
-    while (in_pos < in_frame.num_samples()) {
+    while (in_pos < in_frame.num_raw_samples()) {
         const size_t output_buf_remain = output_buf_.size() - output_buf_pos_;
 
         const size_t num_popped = resampler_.pop_output(
@@ -84,6 +96,9 @@ void ResamplerWriter::write(Frame& in_frame) {
 
         if (output_buf_pos_ == output_buf_.size()) {
             Frame out_frame(output_buf_.data(), output_buf_.size());
+
+            out_frame.set_duration(out_frame.num_raw_samples()
+                                   / out_sample_spec_.num_channels());
             out_frame.set_capture_timestamp(capture_ts_(in_frame, in_pos));
 
             writer_.write(out_frame);
@@ -94,6 +109,9 @@ void ResamplerWriter::write(Frame& in_frame) {
 
     if (output_buf_pos_ != 0) {
         Frame out_frame(output_buf_.data(), output_buf_pos_);
+
+        out_frame.set_duration(out_frame.num_raw_samples()
+                               / out_sample_spec_.num_channels());
         out_frame.set_capture_timestamp(capture_ts_(in_frame, in_pos));
 
         writer_.write(out_frame);
@@ -108,9 +126,9 @@ size_t ResamplerWriter::push_input_(Frame& in_frame, size_t in_pos) {
     }
 
     const size_t num_copy =
-        std::min(in_frame.num_samples() - in_pos, input_buf_.size() - input_buf_pos_);
+        std::min(in_frame.num_raw_samples() - in_pos, input_buf_.size() - input_buf_pos_);
 
-    memcpy(input_buf_.data() + input_buf_pos_, in_frame.samples() + in_pos,
+    memcpy(input_buf_.data() + input_buf_pos_, in_frame.raw_samples() + in_pos,
            num_copy * sizeof(sample_t));
 
     input_buf_pos_ += num_copy;

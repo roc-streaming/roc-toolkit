@@ -30,7 +30,8 @@ ReceiverSource::ReceiverSource(
     , valid_(false) {
     config_.deduce_defaults();
 
-    mixer_.reset(new (mixer_) audio::Mixer(sample_buffer_factory, true));
+    mixer_.reset(new (mixer_) audio::Mixer(sample_buffer_factory,
+                                           config.common.output_sample_spec, true));
     if (!mixer_ || !mixer_->is_valid()) {
         return;
     }

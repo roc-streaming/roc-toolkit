@@ -114,8 +114,8 @@ void WavSink::write(audio::Frame& frame) {
         roc_panic("wav sink: not opened");
     }
 
-    const audio::sample_t* samples = frame.samples();
-    size_t n_samples = frame.num_samples();
+    const audio::sample_t* samples = frame.raw_samples();
+    size_t n_samples = frame.num_raw_samples();
 
     if (n_samples > 0) {
         if (fseek(output_file_, 0, SEEK_SET)) {

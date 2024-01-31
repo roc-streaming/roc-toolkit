@@ -97,7 +97,9 @@ SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
             sample_buffer_factory,
             arena)
     , ticker_ts_(0)
-    , auto_cts_(false)
+    , auto_duration_(config.enable_auto_duration)
+    , auto_cts_(config.enable_auto_cts)
+    , sample_spec_(config.input_sample_spec)
     , valid_(false) {
     if (!sink_.is_valid()) {
         return;
@@ -109,8 +111,6 @@ SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
             return;
         }
     }
-
-    auto_cts_ = config.enable_auto_cts;
 
     valid_ = true;
 }
@@ -212,6 +212,13 @@ bool SenderLoop::has_clock() const {
 void SenderLoop::write(audio::Frame& frame) {
     roc_panic_if_not(is_valid());
 
+    if (auto_duration_) {
+        if (frame.has_duration()) {
+            roc_panic("sender loop: unexpected non-zero duration in auto-duration mode");
+        }
+        frame.set_duration(sample_spec_.bytes_2_stream_timestamp(frame.num_bytes()));
+    }
+
     if (auto_cts_) {
         if (frame.capture_timestamp() != 0) {
             roc_panic("sender loop: unexpected non-zero cts in auto-cts mode");
@@ -223,7 +230,7 @@ void SenderLoop::write(audio::Frame& frame) {
 
     if (ticker_) {
         ticker_->wait(ticker_ts_);
-        ticker_ts_ += frame.num_samples() / sink_.sample_spec().num_channels();
+        ticker_ts_ += frame.duration();
     }
 
     // invokes process_subframe_imp() and process_task_imp()

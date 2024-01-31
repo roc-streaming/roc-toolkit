@@ -89,6 +89,9 @@ struct SenderConfig {
     //! Constrain receiver speed using a CPU timer according to the sample rate.
     bool enable_timing;
 
+    //! Automatically fill duration of input frames.
+    bool enable_auto_duration;
+
     //! Automatically fill capture timestamps of input frames with invocation time.
     bool enable_auto_cts;
 

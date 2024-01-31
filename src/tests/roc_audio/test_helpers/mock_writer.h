@@ -27,14 +27,15 @@ public:
     }
 
     virtual void write(Frame& frame) {
-        CHECK(size_ + frame.num_samples() <= MaxSz);
+        CHECK(size_ + frame.num_raw_samples() <= MaxSz);
 
-        memcpy(samples_ + size_, frame.samples(), frame.num_samples() * sizeof(sample_t));
-        size_ += frame.num_samples();
+        memcpy(samples_ + size_, frame.raw_samples(),
+               frame.num_raw_samples() * sizeof(sample_t));
+        size_ += frame.num_raw_samples();
 
         CHECK(n_writes_ < MaxWrites);
 
-        frame_sizes_[n_writes_] = frame.num_samples();
+        frame_sizes_[n_writes_] = frame.num_raw_samples();
         frame_flags_[n_writes_] = frame.flags();
         frame_timestamps_[n_writes_] = frame.capture_timestamp();
 

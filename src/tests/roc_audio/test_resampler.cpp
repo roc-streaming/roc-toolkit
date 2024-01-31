@@ -102,7 +102,7 @@ public:
             if (started_) {
                 expect_capture_timestamp(capt_ts_, frame.capture_timestamp(), epsilon_);
                 capt_ts_ += core::nanoseconds_t(
-                    sample_spec_.samples_overall_2_ns(frame.num_samples()) * scale_);
+                    sample_spec_.samples_overall_2_ns(frame.num_raw_samples()) * scale_);
             }
         } else {
             CHECK(frame.capture_timestamp() == 0);
@@ -250,7 +250,7 @@ void resample_read(IResampler& resampler,
                     std::min(num_samples - pos,
                              (size_t)OutFrameSize * sample_spec.num_channels()));
         CHECK(rr.read(frame));
-        pos += frame.num_samples();
+        pos += frame.num_raw_samples();
     }
 }
 
@@ -272,7 +272,7 @@ void resample_write(IResampler& resampler,
                     std::min(num_samples - pos,
                              (size_t)OutFrameSize * sample_spec.num_channels()));
         rw.write(frame);
-        pos += frame.num_samples();
+        pos += frame.num_raw_samples();
     }
 
     for (size_t n = 0; n < num_samples; n++) {
