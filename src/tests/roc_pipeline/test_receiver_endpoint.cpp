@@ -54,7 +54,7 @@ TEST(receiver_endpoint, valid) {
                                        sample_buffer_factory, arena);
 
     ReceiverEndpoint endpoint(address::Proto_RTP, state_tracker, session_group,
-                              encoding_map, NULL, arena);
+                              encoding_map, address::SocketAddr(), NULL, arena);
     CHECK(endpoint.is_valid());
 }
 
@@ -68,7 +68,7 @@ TEST(receiver_endpoint, invalid_proto) {
                                        sample_buffer_factory, arena);
 
     ReceiverEndpoint endpoint(address::Proto_None, state_tracker, session_group,
-                              encoding_map, NULL, arena);
+                              encoding_map, address::SocketAddr(), NULL, arena);
     CHECK(!endpoint.is_valid());
 }
 
@@ -92,7 +92,7 @@ TEST(receiver_endpoint, no_memory) {
             byte_buffer_factory, sample_buffer_factory, nomem_arena);
 
         ReceiverEndpoint endpoint(protos[n], state_tracker, session_group, encoding_map,
-                                  NULL, nomem_arena);
+                                  address::SocketAddr(), NULL, nomem_arena);
 
         CHECK(!endpoint.is_valid());
     }

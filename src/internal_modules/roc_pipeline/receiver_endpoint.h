@@ -44,11 +44,11 @@ class ReceiverEndpoint : public core::RefCounted<ReceiverEndpoint, core::ArenaAl
                          private packet::IWriter {
 public:
     //! Initialize.
-    //!  - @p writer to handle packets received on netio thread.
     ReceiverEndpoint(address::Protocol proto,
                      StateTracker& state_tracker,
                      ReceiverSessionGroup& session_group,
                      const rtp::EncodingMap& encoding_map,
+                     const address::SocketAddr& inbound_address,
                      packet::IWriter* outbound_writer,
                      core::IArena& arena);
 
@@ -76,6 +76,9 @@ public:
     //!  Not all protocols support outbound packets on receiver. If it's
     //!  not supported, the method returns NULL.
     packet::IWriter* outbound_writer();
+
+    //! Get bind address for inbound packets.
+    const address::SocketAddr& inbound_address() const;
 
     //! Get writer for inbound packets.
     //! This way packets from network reach receiver pipeline.
@@ -112,6 +115,7 @@ private:
     core::Optional<rtp::Parser> rtp_parser_;
     core::ScopedPtr<packet::IParser> fec_parser_;
     core::Optional<rtcp::Parser> rtcp_parser_;
+    address::SocketAddr inbound_address_;
     core::MpscQueue<packet::Packet> inbound_queue_;
 
     bool valid_;

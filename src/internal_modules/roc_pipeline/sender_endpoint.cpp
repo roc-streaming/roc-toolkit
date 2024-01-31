@@ -142,7 +142,7 @@ address::Protocol SenderEndpoint::proto() const {
     return proto_;
 }
 
-const address::SocketAddr& SenderEndpoint::outbound_address() {
+const address::SocketAddr& SenderEndpoint::outbound_address() const {
     roc_panic_if(!is_valid());
 
     return shipper_->outbound_address();

@@ -136,6 +136,7 @@ private:
     core::Optional<rtp::Identity> identity_;
 
     core::Optional<rtcp::Communicator> rtcp_communicator_;
+    address::SocketAddr rtcp_inbound_addr_;
 
     core::List<ReceiverSession> sessions_;
     ReceiverSessionRouter session_router_;

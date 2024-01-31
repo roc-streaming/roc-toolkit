@@ -22,6 +22,7 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
                                    StateTracker& state_tracker,
                                    ReceiverSessionGroup& session_group,
                                    const rtp::EncodingMap& encoding_map,
+                                   const address::SocketAddr& inbound_address,
                                    packet::IWriter* outbound_writer,
                                    core::IArena& arena)
     : core::RefCounted<ReceiverEndpoint, core::ArenaAllocation>(arena)
@@ -30,6 +31,7 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
     , session_group_(session_group)
     , composer_(NULL)
     , parser_(NULL)
+    , inbound_address_(inbound_address)
     , valid_(false) {
     packet::IComposer* composer = NULL;
     packet::IParser* parser = NULL;
@@ -172,6 +174,12 @@ packet::IWriter* ReceiverEndpoint::outbound_writer() {
 
     roc_panic_if(!shipper_);
     return shipper_.get();
+}
+
+const address::SocketAddr& ReceiverEndpoint::inbound_address() const {
+    roc_panic_if(!is_valid());
+
+    return inbound_address_;
 }
 
 packet::IWriter& ReceiverEndpoint::inbound_writer() {

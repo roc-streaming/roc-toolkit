@@ -59,6 +59,8 @@ bool ReceiverSessionGroup::create_control_pipeline(ReceiverEndpoint* control_end
                  || !control_endpoint->outbound_writer());
     roc_panic_if(rtcp_communicator_);
 
+    rtcp_inbound_addr_ = control_endpoint->inbound_address();
+
     rtcp_communicator_.reset(new (rtcp_communicator_) rtcp::Communicator(
         receiver_config_.common.rtcp, *this, *control_endpoint->outbound_writer(),
         *control_endpoint->outbound_composer(), packet_factory_, byte_buffer_factory_,
@@ -171,7 +173,13 @@ rtcp::ParticipantInfo ReceiverSessionGroup::participant_info() {
 
     part_info.cname = identity_->cname();
     part_info.source_id = identity_->ssrc();
-    part_info.report_mode = rtcp::Report_Back;
+
+    if (rtcp_inbound_addr_.multicast()) {
+        part_info.report_mode = rtcp::Report_ToAddress;
+        part_info.report_address = rtcp_inbound_addr_;
+    } else {
+        part_info.report_mode = rtcp::Report_Back;
+    }
 
     return part_info;
 }

@@ -70,7 +70,7 @@ private:
 
     core::Mutex mutex_;
 
-    address::SocketAddr dest_address_;
+    address::SocketAddr bind_address_;
 
     core::Optional<packet::ConcurrentQueue> endpoint_queues_[address::Iface_Max];
     core::Atomic<packet::IWriter*> endpoint_writers_[address::Iface_Max];

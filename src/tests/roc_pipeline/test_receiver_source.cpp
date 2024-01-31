@@ -84,7 +84,8 @@ packet::IWriter* create_transport_endpoint(ReceiverSlot* slot,
                                            address::Interface iface,
                                            address::Protocol proto) {
     CHECK(slot);
-    ReceiverEndpoint* endpoint = slot->add_endpoint(iface, proto, NULL);
+    ReceiverEndpoint* endpoint =
+        slot->add_endpoint(iface, proto, address::SocketAddr(), NULL);
     CHECK(endpoint);
     return &endpoint->inbound_writer();
 }
@@ -94,7 +95,8 @@ packet::IWriter* create_control_endpoint(ReceiverSlot* slot,
                                          address::Protocol proto,
                                          packet::IWriter& outbound_writer) {
     CHECK(slot);
-    ReceiverEndpoint* endpoint = slot->add_endpoint(iface, proto, &outbound_writer);
+    ReceiverEndpoint* endpoint =
+        slot->add_endpoint(iface, proto, address::SocketAddr(), &outbound_writer);
     CHECK(endpoint);
     return &endpoint->inbound_writer();
 }

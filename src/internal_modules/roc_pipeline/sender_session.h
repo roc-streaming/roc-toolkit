@@ -141,7 +141,7 @@ private:
     core::Optional<audio::FeedbackMonitor> feedback_monitor_;
 
     core::Optional<rtcp::Communicator> rtcp_communicator_;
-    address::SocketAddr rtcp_address_;
+    address::SocketAddr rtcp_outbound_addr_;
 
     audio::IFrameWriter* frame_writer_;
 

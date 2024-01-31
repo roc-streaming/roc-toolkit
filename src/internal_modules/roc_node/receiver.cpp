@@ -207,7 +207,7 @@ bool Receiver::bind(slot_index_t slot_index,
     }
 
     pipeline::ReceiverLoop::Tasks::AddEndpoint endpoint_task(
-        slot->handle, iface, uri.proto(), outbound_writer);
+        slot->handle, iface, uri.proto(), port.config.bind_address, outbound_writer);
     if (!pipeline_.schedule_and_wait(endpoint_task)) {
         roc_log(LogError,
                 "receiver node:"

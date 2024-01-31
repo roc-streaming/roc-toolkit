@@ -19,8 +19,9 @@ ReceiverLoop::Task::Task()
     , slot_(NULL)
     , iface_(address::Iface_Invalid)
     , proto_(address::Proto_None)
-    , outbound_writer_(NULL)
+    , inbound_address_()
     , inbound_writer_(NULL)
+    , outbound_writer_(NULL)
     , slot_metrics_(NULL)
     , sess_metrics_(NULL)
     , sess_metrics_size_(NULL) {
@@ -63,6 +64,7 @@ ReceiverLoop::Tasks::QuerySlot::QuerySlot(SlotHandle slot,
 ReceiverLoop::Tasks::AddEndpoint::AddEndpoint(SlotHandle slot,
                                               address::Interface iface,
                                               address::Protocol proto,
+                                              const address::SocketAddr& inbound_address,
                                               packet::IWriter* outbound_writer) {
     func_ = &ReceiverLoop::task_add_endpoint_;
     if (!slot) {
@@ -71,6 +73,7 @@ ReceiverLoop::Tasks::AddEndpoint::AddEndpoint(SlotHandle slot,
     slot_ = (ReceiverSlot*)slot;
     iface_ = iface;
     proto_ = proto;
+    inbound_address_ = inbound_address;
     outbound_writer_ = outbound_writer;
 }
 
@@ -290,8 +293,8 @@ bool ReceiverLoop::task_query_slot_(Task& task) {
 bool ReceiverLoop::task_add_endpoint_(Task& task) {
     roc_panic_if(!task.slot_);
 
-    ReceiverEndpoint* endpoint =
-        task.slot_->add_endpoint(task.iface_, task.proto_, task.outbound_writer_);
+    ReceiverEndpoint* endpoint = task.slot_->add_endpoint(
+        task.iface_, task.proto_, task.inbound_address_, task.outbound_writer_);
     if (!endpoint) {
         return false;
     }

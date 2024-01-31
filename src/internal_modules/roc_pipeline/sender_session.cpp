@@ -187,7 +187,7 @@ bool SenderSession::create_control_pipeline(SenderEndpoint* control_endpoint) {
     roc_panic_if(!control_endpoint);
     roc_panic_if(rtcp_communicator_);
 
-    rtcp_address_ = control_endpoint->outbound_address();
+    rtcp_outbound_addr_ = control_endpoint->outbound_address();
 
     rtcp_communicator_.reset(new (rtcp_communicator_) rtcp::Communicator(
         config_.rtcp, *this, control_endpoint->outbound_writer(),
@@ -257,7 +257,7 @@ rtcp::ParticipantInfo SenderSession::participant_info() {
     part_info.cname = identity_->cname();
     part_info.source_id = identity_->ssrc();
     part_info.report_mode = rtcp::Report_ToAddress;
-    part_info.report_address = rtcp_address_;
+    part_info.report_address = rtcp_outbound_addr_;
 
     return part_info;
 }
@@ -316,7 +316,7 @@ void SenderSession::start_feedback_monitor_() {
         return;
     }
 
-    if (rtcp_address_.multicast()) {
+    if (rtcp_outbound_addr_.multicast()) {
         // Control endpoint uses multicast, so there are multiple receivers for
         // a sender session. We don't support feedback monitoring in this mode.
         return;

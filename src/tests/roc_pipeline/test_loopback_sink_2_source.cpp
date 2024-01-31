@@ -305,21 +305,22 @@ void send_receive(int flags,
     packet::IWriter* receiver_repair_endpoint_writer = NULL;
     packet::IWriter* receiver_control_endpoint_writer = NULL;
 
-    receiver_source_endpoint =
-        receiver_slot->add_endpoint(address::Iface_AudioSource, source_proto, NULL);
+    receiver_source_endpoint = receiver_slot->add_endpoint(
+        address::Iface_AudioSource, source_proto, receiver_source_addr, NULL);
     CHECK(receiver_source_endpoint);
     receiver_source_endpoint_writer = &receiver_source_endpoint->inbound_writer();
 
     if (repair_proto != address::Proto_None) {
-        receiver_repair_endpoint =
-            receiver_slot->add_endpoint(address::Iface_AudioRepair, repair_proto, NULL);
+        receiver_repair_endpoint = receiver_slot->add_endpoint(
+            address::Iface_AudioRepair, repair_proto, receiver_repair_addr, NULL);
         CHECK(receiver_repair_endpoint);
         receiver_repair_endpoint_writer = &receiver_repair_endpoint->inbound_writer();
     }
 
     if (control_proto != address::Proto_None) {
-        receiver_control_endpoint = receiver_slot->add_endpoint(
-            address::Iface_AudioControl, control_proto, &receiver_outbound_queue);
+        receiver_control_endpoint =
+            receiver_slot->add_endpoint(address::Iface_AudioControl, control_proto,
+                                        receiver_control_addr, &receiver_outbound_queue);
         CHECK(receiver_control_endpoint);
         receiver_control_endpoint_writer = &receiver_control_endpoint->inbound_writer();
     }

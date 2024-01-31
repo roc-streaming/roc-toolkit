@@ -58,7 +58,7 @@ public:
     address::Protocol proto() const;
 
     //! Get destination address for outbound packets.
-    const address::SocketAddr& outbound_address();
+    const address::SocketAddr& outbound_address() const;
 
     //! Get composer for outbound packets.
     //! @remarks
