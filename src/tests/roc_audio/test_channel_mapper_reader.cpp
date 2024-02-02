@@ -88,7 +88,7 @@ TEST(channel_mapper_reader, small_frame_upmix) {
     test::MockReader mock_reader;
     ChannelMapperReader mapper_reader(mock_reader, buffer_factory, in_spec, out_spec);
 
-    const unsigned flags = Frame::FlagIncomplete;
+    const unsigned flags = Frame::FlagNotComplete;
 
     mock_reader.enable_timestamps(start_ts, in_spec);
     add_mono(mock_reader, FrameSz / 2, 0.3f, flags);
@@ -120,7 +120,7 @@ TEST(channel_mapper_reader, small_frame_downmix) {
     test::MockReader mock_reader;
     ChannelMapperReader mapper_reader(mock_reader, buffer_factory, in_spec, out_spec);
 
-    const unsigned flags = Frame::FlagIncomplete;
+    const unsigned flags = Frame::FlagNotComplete;
 
     mock_reader.enable_timestamps(start_ts, in_spec);
     add_stereo(mock_reader, FrameSz * 2, 0.2f, 0.4f, flags);
@@ -150,7 +150,7 @@ TEST(channel_mapper_reader, small_frame_nocts) {
     test::MockReader mock_reader;
     ChannelMapperReader mapper_reader(mock_reader, buffer_factory, in_spec, out_spec);
 
-    const unsigned flags = Frame::FlagIncomplete;
+    const unsigned flags = Frame::FlagNotComplete;
 
     add_stereo(mock_reader, FrameSz * 2, 0.2f, 0.4f, flags);
 
@@ -181,8 +181,8 @@ TEST(channel_mapper_reader, large_frame_upmix) {
     test::MockReader mock_reader;
     ChannelMapperReader mapper_reader(mock_reader, buffer_factory, in_spec, out_spec);
 
-    const unsigned flags1 = Frame::FlagIncomplete;
-    const unsigned flags2 = Frame::FlagDrops;
+    const unsigned flags1 = Frame::FlagNotComplete;
+    const unsigned flags2 = Frame::FlagPacketDrops;
 
     mock_reader.enable_timestamps(start_ts, in_spec);
     add_mono(mock_reader, MaxSz, 0.3f, flags1);
@@ -215,8 +215,8 @@ TEST(channel_mapper_reader, large_frame_downmix) {
     test::MockReader mock_reader;
     ChannelMapperReader mapper_reader(mock_reader, buffer_factory, in_spec, out_spec);
 
-    const unsigned flags1 = Frame::FlagIncomplete;
-    const unsigned flags2 = Frame::FlagDrops;
+    const unsigned flags1 = Frame::FlagNotComplete;
+    const unsigned flags2 = Frame::FlagPacketDrops;
 
     mock_reader.enable_timestamps(start_ts, in_spec);
     add_stereo(mock_reader, MaxSz, 0.2f, 0.4f, flags1);
@@ -247,8 +247,8 @@ TEST(channel_mapper_reader, large_frame_nocts) {
     test::MockReader mock_reader;
     ChannelMapperReader mapper_reader(mock_reader, buffer_factory, in_spec, out_spec);
 
-    const unsigned flags1 = Frame::FlagIncomplete;
-    const unsigned flags2 = Frame::FlagDrops;
+    const unsigned flags1 = Frame::FlagNotComplete;
+    const unsigned flags2 = Frame::FlagPacketDrops;
 
     add_stereo(mock_reader, MaxSz, 0.2f, 0.4f, flags1);
     add_stereo(mock_reader, MaxSz, 0.2f, 0.4f, flags2);

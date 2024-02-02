@@ -44,15 +44,15 @@ public:
 
         //! Set if the frame has at least some samples from packets.
         //! If this flag is clear, frame is completely zero because of lack of packets.
-        FlagNonblank = (1 << 1),
+        FlagNotBlank = (1 << 1),
 
         //! Set if the frame is not fully filled with samples from packets.
         //! If this flag is set, frame is partially zero because of lack of packets.
-        FlagIncomplete = (1 << 2),
+        FlagNotComplete = (1 << 2),
 
         //! Set if some late packets were dropped while the frame was being built.
         //! It's not necessarty that the frame itself is blank or incomplete.
-        FlagDrops = (1 << 3)
+        FlagPacketDrops = (1 << 3)
     };
 
     //! Get flags.

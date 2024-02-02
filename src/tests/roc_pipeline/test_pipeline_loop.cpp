@@ -2308,7 +2308,7 @@ TEST(pipeline_loop, schedule_and_wait_until_process_frame_called) {
 TEST(pipeline_loop, forward_flags_and_cts_small_frame) {
     TestPipeline pipeline(config);
 
-    const unsigned frame_flags = audio::Frame::FlagNonblank;
+    const unsigned frame_flags = audio::Frame::FlagNotBlank;
     const core::nanoseconds_t frame_cts = 1000000000;
 
     audio::Frame frame(samples, FrameSize);
@@ -2327,7 +2327,7 @@ TEST(pipeline_loop, forward_flags_and_cts_small_frame) {
 TEST(pipeline_loop, forward_flags_and_cts_large_frame) {
     TestPipeline pipeline(config);
 
-    const unsigned frame_flags = audio::Frame::FlagNonblank;
+    const unsigned frame_flags = audio::Frame::FlagNotBlank;
     const core::nanoseconds_t frame_cts = 1000000000;
 
     audio::Frame frame(samples, MaxFrameSize * 2);

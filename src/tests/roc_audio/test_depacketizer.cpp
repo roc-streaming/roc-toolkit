@@ -537,14 +537,14 @@ TEST(depacketizer, frame_flags_incompltete_blank) {
     };
 
     unsigned frame_flags[] = {
-        Frame::FlagNonblank,
-        Frame::FlagIncomplete | Frame::FlagNonblank,
-        Frame::FlagIncomplete | Frame::FlagNonblank,
-        Frame::FlagIncomplete | Frame::FlagNonblank,
-        Frame::FlagIncomplete | Frame::FlagNonblank,
-        Frame::FlagIncomplete,
-        Frame::FlagNonblank,
-        Frame::FlagIncomplete,
+        Frame::FlagNotBlank,
+        Frame::FlagNotComplete | Frame::FlagNotBlank,
+        Frame::FlagNotComplete | Frame::FlagNotBlank,
+        Frame::FlagNotComplete | Frame::FlagNotBlank,
+        Frame::FlagNotComplete | Frame::FlagNotBlank,
+        Frame::FlagNotComplete,
+        Frame::FlagNotBlank,
+        Frame::FlagNotComplete,
     };
 
     core::nanoseconds_t capt_ts[] = {
@@ -587,11 +587,11 @@ TEST(depacketizer, frame_flags_drops) {
     };
 
     unsigned frame_flags[] = {
-        Frame::FlagNonblank,                      //
-        Frame::FlagNonblank | Frame::FlagDrops,   //
-        Frame::FlagNonblank,                      //
-        Frame::FlagIncomplete | Frame::FlagDrops, //
-        Frame::FlagNonblank,                      //
+        Frame::FlagNotBlank,                             //
+        Frame::FlagNotBlank | Frame::FlagPacketDrops,    //
+        Frame::FlagNotBlank,                             //
+        Frame::FlagNotComplete | Frame::FlagPacketDrops, //
+        Frame::FlagNotBlank,                             //
     };
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(packets); n++) {

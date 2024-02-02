@@ -85,7 +85,7 @@ TEST(channel_mapper_writer, small_frame_upmix) {
     ChannelMapperWriter mapper_writer(mock_writer, buffer_factory, in_spec, out_spec);
 
     sample_t samples[FrameSz] = {};
-    const unsigned flags = Frame::FlagIncomplete;
+    const unsigned flags = Frame::FlagNotComplete;
     const core::nanoseconds_t timestamp = 1000000;
 
     Frame frame(samples, FrameSz);
@@ -118,7 +118,7 @@ TEST(channel_mapper_writer, small_frame_downmix) {
     ChannelMapperWriter mapper_writer(mock_writer, buffer_factory, in_spec, out_spec);
 
     sample_t samples[FrameSz] = {};
-    const unsigned flags = Frame::FlagIncomplete;
+    const unsigned flags = Frame::FlagNotComplete;
     const core::nanoseconds_t timestamp = 1000000;
 
     Frame frame(samples, FrameSz);
@@ -151,7 +151,7 @@ TEST(channel_mapper_writer, small_frame_nocts) {
     ChannelMapperWriter mapper_writer(mock_writer, buffer_factory, in_spec, out_spec);
 
     sample_t samples[FrameSz] = {};
-    const unsigned flags = Frame::FlagIncomplete;
+    const unsigned flags = Frame::FlagNotComplete;
 
     Frame frame(samples, FrameSz);
     frame.set_flags(flags);
@@ -183,7 +183,7 @@ TEST(channel_mapper_writer, large_frame_upmix) {
     ChannelMapperWriter mapper_writer(mock_writer, buffer_factory, in_spec, out_spec);
 
     sample_t samples[FrameSz] = {};
-    const unsigned flags = Frame::FlagIncomplete;
+    const unsigned flags = Frame::FlagNotComplete;
     const core::nanoseconds_t timestamp = 1000000;
 
     Frame frame(samples, FrameSz);
@@ -219,7 +219,7 @@ TEST(channel_mapper_writer, large_frame_downmix) {
     ChannelMapperWriter mapper_writer(mock_writer, buffer_factory, in_spec, out_spec);
 
     sample_t samples[FrameSz] = {};
-    const unsigned flags = Frame::FlagIncomplete;
+    const unsigned flags = Frame::FlagNotComplete;
     const core::nanoseconds_t timestamp = 1000000;
 
     Frame frame(samples, FrameSz);
@@ -255,7 +255,7 @@ TEST(channel_mapper_writer, large_frame_nocts) {
     ChannelMapperWriter mapper_writer(mock_writer, buffer_factory, in_spec, out_spec);
 
     sample_t samples[FrameSz] = {};
-    const unsigned flags = Frame::FlagIncomplete;
+    const unsigned flags = Frame::FlagNotComplete;
 
     Frame frame(samples, FrameSz);
     frame.set_flags(flags);

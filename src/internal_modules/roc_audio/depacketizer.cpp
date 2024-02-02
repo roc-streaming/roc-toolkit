@@ -296,15 +296,15 @@ void Depacketizer::set_frame_props_(Frame& frame, const FrameInfo& info) {
     unsigned flags = 0;
 
     if (info.n_decoded_samples != 0) {
-        flags |= Frame::FlagNonblank;
+        flags |= Frame::FlagNotBlank;
     }
 
     if (info.n_decoded_samples < frame.num_raw_samples()) {
-        flags |= Frame::FlagIncomplete;
+        flags |= Frame::FlagNotComplete;
     }
 
     if (info.n_dropped_packets != 0) {
-        flags |= Frame::FlagDrops;
+        flags |= Frame::FlagPacketDrops;
     }
 
     frame.set_flags(flags);

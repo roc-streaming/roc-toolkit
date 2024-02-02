@@ -134,7 +134,7 @@ TEST(watchdog, no_playback_timeout_blank_frames) {
     }
 
     CHECK(!watchdog.is_alive());
-    check_read(watchdog, false, SamplesPerFrame, Frame::FlagNonblank);
+    check_read(watchdog, false, SamplesPerFrame, Frame::FlagNotBlank);
 
     CHECK(!watchdog.is_alive());
 }
@@ -154,7 +154,7 @@ TEST(watchdog, no_playback_timeout_blank_and_non_blank_frames) {
         }
 
         CHECK(watchdog.is_alive());
-        check_read(watchdog, true, SamplesPerFrame, Frame::FlagNonblank);
+        check_read(watchdog, true, SamplesPerFrame, Frame::FlagNotBlank);
     }
 
     CHECK(watchdog.is_alive());
@@ -198,12 +198,13 @@ TEST(watchdog, broken_playback_timeout_equal_frame_sizes) {
         CHECK(watchdog.is_valid());
 
         check_n_reads(watchdog, true, BreakageWindow, BreakageWindowsPerTimeout - 1,
-                      Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
+                      Frame::FlagNotBlank | Frame::FlagNotComplete
+                          | Frame::FlagPacketDrops);
 
-        check_read(watchdog, true, BreakageWindow, Frame::FlagNonblank);
+        check_read(watchdog, true, BreakageWindow, Frame::FlagNotBlank);
         CHECK(watchdog.is_alive());
 
-        check_read(watchdog, true, BreakageWindow, Frame::FlagNonblank);
+        check_read(watchdog, true, BreakageWindow, Frame::FlagNotBlank);
         CHECK(watchdog.is_alive());
     }
     {
@@ -212,14 +213,15 @@ TEST(watchdog, broken_playback_timeout_equal_frame_sizes) {
                           arena);
         CHECK(watchdog.is_valid());
 
-        check_read(watchdog, true, BreakageWindow, Frame::FlagNonblank);
+        check_read(watchdog, true, BreakageWindow, Frame::FlagNotBlank);
         check_n_reads(watchdog, true, BreakageWindow, BreakageWindowsPerTimeout - 2,
-                      Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
-        check_read(watchdog, true, BreakageWindow, Frame::FlagNonblank);
+                      Frame::FlagNotBlank | Frame::FlagNotComplete
+                          | Frame::FlagPacketDrops);
+        check_read(watchdog, true, BreakageWindow, Frame::FlagNotBlank);
         CHECK(watchdog.is_alive());
 
         check_n_reads(watchdog, true, BreakageWindow, BreakageWindowsPerTimeout,
-                      Frame::FlagNonblank);
+                      Frame::FlagNotBlank);
         CHECK(watchdog.is_alive());
     }
     {
@@ -228,12 +230,13 @@ TEST(watchdog, broken_playback_timeout_equal_frame_sizes) {
                           arena);
         CHECK(watchdog.is_valid());
 
-        check_read(watchdog, true, BreakageWindow, Frame::FlagNonblank);
+        check_read(watchdog, true, BreakageWindow, Frame::FlagNotBlank);
         check_n_reads(watchdog, true, BreakageWindow, BreakageWindowsPerTimeout - 1,
-                      Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
+                      Frame::FlagNotBlank | Frame::FlagNotComplete
+                          | Frame::FlagPacketDrops);
         CHECK(watchdog.is_alive());
 
-        check_read(watchdog, true, BreakageWindow, Frame::FlagNonblank);
+        check_read(watchdog, true, BreakageWindow, Frame::FlagNotBlank);
         CHECK(watchdog.is_alive());
     }
     {
@@ -243,27 +246,13 @@ TEST(watchdog, broken_playback_timeout_equal_frame_sizes) {
         CHECK(watchdog.is_valid());
 
         check_n_reads(watchdog, true, BreakageWindow, BreakageWindowsPerTimeout - 1,
-                      Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
+                      Frame::FlagNotBlank | Frame::FlagNotComplete
+                          | Frame::FlagPacketDrops);
         check_read(watchdog, true, BreakageWindow,
-                   Frame::FlagNonblank | Frame::FlagIncomplete);
+                   Frame::FlagNotBlank | Frame::FlagNotComplete);
         CHECK(watchdog.is_alive());
 
-        check_read(watchdog, true, BreakageWindow, Frame::FlagNonblank);
-        CHECK(watchdog.is_alive());
-    }
-    {
-        Watchdog watchdog(test_reader, sample_spec,
-                          make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, 0),
-                          arena);
-        CHECK(watchdog.is_valid());
-
-        check_n_reads(watchdog, true, BreakageWindow, BreakageWindowsPerTimeout - 1,
-                      Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
-        check_read(watchdog, true, BreakageWindow,
-                   Frame::FlagNonblank | Frame::FlagDrops);
-        CHECK(watchdog.is_alive());
-
-        check_read(watchdog, true, BreakageWindow, Frame::FlagNonblank);
+        check_read(watchdog, true, BreakageWindow, Frame::FlagNotBlank);
         CHECK(watchdog.is_alive());
     }
     {
@@ -273,12 +262,29 @@ TEST(watchdog, broken_playback_timeout_equal_frame_sizes) {
         CHECK(watchdog.is_valid());
 
         check_n_reads(watchdog, true, BreakageWindow, BreakageWindowsPerTimeout - 1,
-                      Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
+                      Frame::FlagNotBlank | Frame::FlagNotComplete
+                          | Frame::FlagPacketDrops);
         check_read(watchdog, true, BreakageWindow,
-                   Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
+                   Frame::FlagNotBlank | Frame::FlagPacketDrops);
+        CHECK(watchdog.is_alive());
+
+        check_read(watchdog, true, BreakageWindow, Frame::FlagNotBlank);
+        CHECK(watchdog.is_alive());
+    }
+    {
+        Watchdog watchdog(test_reader, sample_spec,
+                          make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, 0),
+                          arena);
+        CHECK(watchdog.is_valid());
+
+        check_n_reads(watchdog, true, BreakageWindow, BreakageWindowsPerTimeout - 1,
+                      Frame::FlagNotBlank | Frame::FlagNotComplete
+                          | Frame::FlagPacketDrops);
+        check_read(watchdog, true, BreakageWindow,
+                   Frame::FlagNotBlank | Frame::FlagNotComplete | Frame::FlagPacketDrops);
         CHECK(!watchdog.is_alive());
 
-        check_read(watchdog, false, BreakageWindow, Frame::FlagNonblank);
+        check_read(watchdog, false, BreakageWindow, Frame::FlagNotBlank);
         CHECK(!watchdog.is_alive());
     }
 }
@@ -291,10 +297,10 @@ TEST(watchdog, broken_playback_timeout_mixed_frame_sizes) {
         CHECK(watchdog.is_valid());
 
         check_read(watchdog, true, BreakageWindow * (BreakageWindowsPerTimeout - 1),
-                   Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
-        check_read(watchdog, true, BreakageWindow / 2, Frame::FlagNonblank);
+                   Frame::FlagNotBlank | Frame::FlagNotComplete | Frame::FlagPacketDrops);
+        check_read(watchdog, true, BreakageWindow / 2, Frame::FlagNotBlank);
         check_read(watchdog, true, BreakageWindow - BreakageWindow / 2,
-                   Frame::FlagNonblank);
+                   Frame::FlagNotBlank);
 
         CHECK(watchdog.is_alive());
     }
@@ -305,11 +311,11 @@ TEST(watchdog, broken_playback_timeout_mixed_frame_sizes) {
         CHECK(watchdog.is_valid());
 
         check_read(watchdog, true, BreakageWindow * (BreakageWindowsPerTimeout - 1),
-                   Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
+                   Frame::FlagNotBlank | Frame::FlagNotComplete | Frame::FlagPacketDrops);
         check_read(watchdog, true, BreakageWindow / 2,
-                   Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
+                   Frame::FlagNotBlank | Frame::FlagNotComplete | Frame::FlagPacketDrops);
         check_read(watchdog, true, BreakageWindow - BreakageWindow / 2,
-                   Frame::FlagNonblank);
+                   Frame::FlagNotBlank);
 
         CHECK(!watchdog.is_alive());
     }
@@ -320,10 +326,10 @@ TEST(watchdog, broken_playback_timeout_mixed_frame_sizes) {
         CHECK(watchdog.is_valid());
 
         check_read(watchdog, true, BreakageWindow * (BreakageWindowsPerTimeout - 1),
-                   Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
-        check_read(watchdog, true, BreakageWindow / 2, Frame::FlagNonblank);
+                   Frame::FlagNotBlank | Frame::FlagNotComplete | Frame::FlagPacketDrops);
+        check_read(watchdog, true, BreakageWindow / 2, Frame::FlagNotBlank);
         check_read(watchdog, true, BreakageWindow - BreakageWindow / 2,
-                   Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
+                   Frame::FlagNotBlank | Frame::FlagNotComplete | Frame::FlagPacketDrops);
 
         CHECK(!watchdog.is_alive());
     }
@@ -337,9 +343,9 @@ TEST(watchdog, broken_playback_timeout_constant_drops) {
     for (packet::stream_timestamp_t n = 0; n < BreakageWindowsPerTimeout; n++) {
         CHECK(watchdog.is_alive());
         check_read(watchdog, true, BreakageWindow / 2,
-                   Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
+                   Frame::FlagNotBlank | Frame::FlagNotComplete | Frame::FlagPacketDrops);
         check_read(watchdog, true, BreakageWindow - BreakageWindow / 2,
-                   Frame::FlagNonblank);
+                   Frame::FlagNotBlank);
     }
 
     CHECK(!watchdog.is_alive());
@@ -355,10 +361,10 @@ TEST(watchdog, broken_playback_timeout_frame_overlaps_with_breakage_window) {
         CHECK(watchdog.is_alive());
 
         check_read(watchdog, true, BreakageWindow,
-                   Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
-        check_read(watchdog, true, BreakageWindow, Frame::FlagNonblank);
+                   Frame::FlagNotBlank | Frame::FlagNotComplete | Frame::FlagPacketDrops);
+        check_read(watchdog, true, BreakageWindow, Frame::FlagNotBlank);
         check_read(watchdog, true, BrokenPlaybackTimeout - BreakageWindow,
-                   Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
+                   Frame::FlagNotBlank | Frame::FlagNotComplete | Frame::FlagPacketDrops);
 
         CHECK(watchdog.is_alive());
     }
@@ -371,10 +377,10 @@ TEST(watchdog, broken_playback_timeout_frame_overlaps_with_breakage_window) {
         CHECK(watchdog.is_alive());
 
         check_read(watchdog, true, BreakageWindow + 1,
-                   Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
-        check_read(watchdog, true, BreakageWindow - 1, Frame::FlagNonblank);
+                   Frame::FlagNotBlank | Frame::FlagNotComplete | Frame::FlagPacketDrops);
+        check_read(watchdog, true, BreakageWindow - 1, Frame::FlagNotBlank);
         check_read(watchdog, true, BrokenPlaybackTimeout - BreakageWindow,
-                   Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
+                   Frame::FlagNotBlank | Frame::FlagNotComplete | Frame::FlagPacketDrops);
 
         CHECK(!watchdog.is_alive());
     }
@@ -387,15 +393,15 @@ TEST(watchdog, broken_playback_timeout_frame_overlaps_with_breakage_window) {
         CHECK(watchdog.is_alive());
 
         check_read(watchdog, true, BrokenPlaybackTimeout - BreakageWindow,
-                   Frame::FlagNonblank);
+                   Frame::FlagNotBlank);
         check_read(watchdog, true, BreakageWindow + 1,
-                   Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
+                   Frame::FlagNotBlank | Frame::FlagNotComplete | Frame::FlagPacketDrops);
 
         CHECK(watchdog.is_alive());
 
-        check_read(watchdog, true, BreakageWindow - 1, Frame::FlagNonblank);
+        check_read(watchdog, true, BreakageWindow - 1, Frame::FlagNotBlank);
         check_read(watchdog, true, BrokenPlaybackTimeout - BreakageWindow,
-                   Frame::FlagNonblank);
+                   Frame::FlagNotBlank);
 
         CHECK(watchdog.is_alive());
     }
@@ -408,15 +414,15 @@ TEST(watchdog, broken_playback_timeout_frame_overlaps_with_breakage_window) {
         CHECK(watchdog.is_alive());
 
         check_read(watchdog, true, BrokenPlaybackTimeout - BreakageWindow,
-                   Frame::FlagNonblank);
+                   Frame::FlagNotBlank);
         check_read(watchdog, true, BreakageWindow + 1,
-                   Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
+                   Frame::FlagNotBlank | Frame::FlagNotComplete | Frame::FlagPacketDrops);
 
         CHECK(watchdog.is_alive());
 
-        check_read(watchdog, true, BreakageWindow - 1, Frame::FlagNonblank);
+        check_read(watchdog, true, BreakageWindow - 1, Frame::FlagNotBlank);
         check_read(watchdog, true, BrokenPlaybackTimeout - BreakageWindow,
-                   Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
+                   Frame::FlagNotBlank | Frame::FlagNotComplete | Frame::FlagPacketDrops);
 
         CHECK(!watchdog.is_alive());
     }
@@ -433,7 +439,8 @@ TEST(watchdog, broken_playback_timeout_disabled) {
              n < BrokenPlaybackTimeout / SamplesPerFrame; n++) {
             CHECK(watchdog.is_alive());
             check_read(watchdog, true, SamplesPerFrame,
-                       Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
+                       Frame::FlagNotBlank | Frame::FlagNotComplete
+                           | Frame::FlagPacketDrops);
         }
 
         CHECK(!watchdog.is_alive());
@@ -447,7 +454,8 @@ TEST(watchdog, broken_playback_timeout_disabled) {
              n < BrokenPlaybackTimeout / SamplesPerFrame; n++) {
             CHECK(watchdog.is_alive());
             check_read(watchdog, true, SamplesPerFrame,
-                       Frame::FlagNonblank | Frame::FlagIncomplete | Frame::FlagDrops);
+                       Frame::FlagNotBlank | Frame::FlagNotComplete
+                           | Frame::FlagPacketDrops);
         }
 
         CHECK(watchdog.is_alive());
