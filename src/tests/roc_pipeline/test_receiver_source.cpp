@@ -60,7 +60,9 @@ enum {
     FramesPerPacket = SamplesPerPacket / SamplesPerFrame,
 
     Latency = SamplesPerPacket * 8,
+    Tolerance = Latency * 100,
     Timeout = Latency * 13,
+    Warmup = Latency,
 
     ManyPackets = Latency / SamplesPerPacket * 10,
 
@@ -119,7 +121,8 @@ TEST_GROUP(receiver_source) {
     address::Protocol proto1;
     address::Protocol proto2;
 
-    ReceiverConfig make_config(int latency = Latency) {
+    ReceiverConfig make_custom_config(int latency, int latency_tolerance,
+                                      int watchdog_timeout, int watchdog_warmup) {
         ReceiverConfig config;
 
         config.common.output_sample_spec = output_sample_spec;
@@ -132,16 +135,22 @@ TEST_GROUP(receiver_source) {
         config.default_session.latency.target_latency =
             latency * core::Second / (int)output_sample_spec.sample_rate();
         config.default_session.latency.latency_tolerance =
-            Timeout * 10 * core::Second / (int)output_sample_spec.sample_rate();
+            latency_tolerance * core::Second / (int)output_sample_spec.sample_rate();
 
         config.default_session.watchdog.no_playback_timeout =
-            Timeout * core::Second / (int)output_sample_spec.sample_rate();
+            watchdog_timeout * core::Second / (int)output_sample_spec.sample_rate();
+        config.default_session.watchdog.warmup_duration =
+            watchdog_warmup * core::Second / (int)output_sample_spec.sample_rate();
 
         config.common.rtp_filter.max_sn_jump = MaxSnJump;
         config.common.rtp_filter.max_ts_jump =
             MaxTsJump * core::Second / (int)output_sample_spec.sample_rate();
 
         return config;
+    }
+
+    ReceiverConfig make_default_config() {
+        return make_custom_config(Latency, Tolerance, Timeout, Warmup);
     }
 
     void init(int output_sample_rate, audio::ChannelMask output_channels,
@@ -179,7 +188,7 @@ TEST(receiver_source, no_sessions) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -198,7 +207,7 @@ TEST(receiver_source, one_session) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -235,7 +244,7 @@ TEST(receiver_source, one_session_long_run) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -276,7 +285,7 @@ TEST(receiver_source, initial_latency) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -322,7 +331,7 @@ TEST(receiver_source, initial_latency_timeout) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -341,7 +350,7 @@ TEST(receiver_source, initial_latency_timeout) {
 
     packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
 
-    for (size_t np = 0; np < Timeout / SamplesPerPacket + Latency / SamplesPerPacket; np++) {
+    for (size_t np = 0; np < (Latency + Timeout) / SamplesPerPacket; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             receiver.refresh(frame_reader.refresh_ts());
             frame_reader.read_zero_samples(SamplesPerFrame, output_sample_spec);
@@ -362,7 +371,7 @@ TEST(receiver_source, timeout) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -397,6 +406,81 @@ TEST(receiver_source, timeout) {
     }
 }
 
+// Checks that receiver can work with latency longer than timeout.
+TEST(receiver_source, timeout_smaller_than_latency) {
+    enum {
+        Rate = SampleRate,
+        Chans = Chans_Stereo,
+        LargeLatency = Timeout * 5,
+        LargeWarmup = LargeLatency
+    };
+
+    init(Rate, Chans, Rate, Chans);
+
+    ReceiverSource receiver(
+        make_custom_config(LargeLatency, Tolerance, Timeout, LargeWarmup), encoding_map,
+        packet_factory, byte_buffer_factory, sample_buffer_factory, arena);
+    CHECK(receiver.is_valid());
+
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
+
+    packet::IWriter* endpoint1_writer =
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+    CHECK(endpoint1_writer);
+
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+
+    test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
+                                     packet_factory, byte_buffer_factory, src_id1,
+                                     src_addr1, dst_addr1, PayloadType_Ch2);
+
+    for (size_t np = 0; np < LargeLatency / SamplesPerPacket - 1; np++) {
+        packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
+
+        for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
+            frame_reader.read_zero_samples(SamplesPerFrame, output_sample_spec);
+        }
+
+        UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
+    }
+
+    for (size_t np = 0; np < ManyPackets; np++) {
+        packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
+
+        for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
+            frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
+
+            UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
+        }
+    }
+
+    for (size_t np = 0; np < LargeLatency / SamplesPerPacket - 1; np++) {
+        for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
+            frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
+
+            UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
+        }
+    }
+
+    for (size_t np = 0; np < Timeout / SamplesPerPacket; np++) {
+        for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
+            frame_reader.read_zero_samples(SamplesPerFrame, output_sample_spec);
+        }
+
+        UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
+    }
+
+    receiver.refresh(frame_reader.refresh_ts());
+    frame_reader.read_zero_samples(SamplesPerFrame, output_sample_spec);
+
+    UNSIGNED_LONGS_EQUAL(0, receiver.num_sessions());
+}
+
 // Check how receiver trims incoming queue if initially it receives more
 // packets than configured jitter buffer size.
 TEST(receiver_source, initial_trim) {
@@ -404,7 +488,7 @@ TEST(receiver_source, initial_trim) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -443,7 +527,7 @@ TEST(receiver_source, two_sessions_synchronous) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -487,7 +571,7 @@ TEST(receiver_source, two_sessions_overlapping) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -544,7 +628,7 @@ TEST(receiver_source, two_sessions_two_endpoints) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -595,7 +679,7 @@ TEST(receiver_source, two_sessions_same_address_same_stream) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -644,7 +728,7 @@ TEST(receiver_source, two_sessions_same_address_different_streams) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -695,7 +779,7 @@ TEST(receiver_source, seqnum_overflow) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -730,7 +814,7 @@ TEST(receiver_source, seqnum_small_jump) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -775,7 +859,7 @@ TEST(receiver_source, seqnum_large_jump) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -828,7 +912,7 @@ TEST(receiver_source, seqnum_reorder) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -869,7 +953,7 @@ TEST(receiver_source, seqnum_late) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -932,7 +1016,7 @@ TEST(receiver_source, timestamp_overflow) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -969,7 +1053,7 @@ TEST(receiver_source, timestamp_small_jump) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -1023,7 +1107,7 @@ TEST(receiver_source, timestamp_large_jump) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -1071,7 +1155,7 @@ TEST(receiver_source, timestamp_overlap) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -1108,7 +1192,7 @@ TEST(receiver_source, timestamp_reorder) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -1167,7 +1251,7 @@ TEST(receiver_source, timestamp_late) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -1241,7 +1325,7 @@ TEST(receiver_source, packet_size_small) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -1282,7 +1366,7 @@ TEST(receiver_source, packet_size_large) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -1329,7 +1413,7 @@ TEST(receiver_source, packet_size_variable) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -1367,7 +1451,7 @@ TEST(receiver_source, corrupted_packets_new_session) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -1407,7 +1491,7 @@ TEST(receiver_source, corrupted_packets_existing_session) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -1470,7 +1554,7 @@ TEST(receiver_source, channel_mapping_stereo_to_mono) {
 
     init(Rate, OutputChans, Rate, PacketChans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -1508,7 +1592,7 @@ TEST(receiver_source, channel_mapping_mono_to_stereo) {
 
     init(Rate, OutputChans, Rate, PacketChans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -1546,7 +1630,7 @@ TEST(receiver_source, sample_rate_mapping) {
 
     init(OutputRate, Chans, PacketRate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -1587,7 +1671,7 @@ TEST(receiver_source, timestamp_mapping_no_control_packets) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -1638,7 +1722,7 @@ TEST(receiver_source, timestamp_mapping_one_control_packet) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -1705,7 +1789,7 @@ TEST(receiver_source, timestamp_mapping_periodic_control_packets) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -1777,7 +1861,7 @@ TEST(receiver_source, timestamp_mapping_remixing) {
 
     init(OutputRate, OutputChans, PacketRate, PacketChans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -1859,7 +1943,7 @@ TEST(receiver_source, metrics_sessions) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -1972,7 +2056,7 @@ TEST(receiver_source, metrics_niq) {
     const core::nanoseconds_t virtual_niq_latency =
         output_sample_spec.samples_per_chan_2_ns(Latency);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -2027,7 +2111,7 @@ TEST(receiver_source, metrics_e2e) {
 
     const core::nanoseconds_t virtual_e2e_latency = core::Millisecond * 555;
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -2114,7 +2198,7 @@ TEST(receiver_source, metrics_truncation) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -2208,7 +2292,7 @@ TEST(receiver_source, state) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_config(), encoding_map, packet_factory,
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
@@ -2263,42 +2347,6 @@ TEST(receiver_source, state) {
             break;
         }
     }
-}
-
-// Checks that receiver can work with latency longer than timeout
-TEST(receiver_source, watchdog_timeout_smaller_than_latency) {
-    enum { Rate = SampleRate, Chans = Chans_Stereo, Local_latency = Timeout * 10 };
-
-    init(Rate, Chans, Rate, Chans);
-
-    ReceiverSource receiver(make_config(Local_latency), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
-    CHECK(receiver.is_valid());
-
-    ReceiverSlot* slot = create_slot(receiver);
-    CHECK(slot);
-
-    packet::IWriter* endpoint1_writer =
-            create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
-    CHECK(endpoint1_writer);
-
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
-
-    test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
-
-    packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
-
-    for (size_t np = 0; np < Local_latency / SamplesPerPacket; np++) {
-        for (size_t nf = 0; nf < FramesPerPacket; nf++) {
-            receiver.refresh(frame_reader.refresh_ts());
-            frame_reader.read_zero_samples(SamplesPerFrame, output_sample_spec);
-        }
-
-    UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
-    }
-
 }
 
 } // namespace pipeline
