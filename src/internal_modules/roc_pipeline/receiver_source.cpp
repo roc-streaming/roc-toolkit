@@ -35,28 +35,29 @@ ReceiverSource::ReceiverSource(
     if (!mixer_ || !mixer_->is_valid()) {
         return;
     }
-    audio::IFrameReader* areader = mixer_.get();
+    audio::IFrameReader* frm_reader = mixer_.get();
 
-    poisoner_.reset(new (poisoner_) audio::PoisonReader(*areader));
+    poisoner_.reset(new (poisoner_) audio::PoisonReader(*frm_reader));
     if (!poisoner_) {
         return;
     }
-    areader = poisoner_.get();
+    frm_reader = poisoner_.get();
 
     if (config_.common.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingReader(
-            *areader, arena, config_.common.output_sample_spec, config_.common.profiler));
+            *frm_reader, arena, config_.common.output_sample_spec,
+            config_.common.profiler));
         if (!profiler_ || !profiler_->is_valid()) {
             return;
         }
-        areader = profiler_.get();
+        frm_reader = profiler_.get();
     }
 
-    if (!areader) {
+    if (!frm_reader) {
         return;
     }
 
-    frame_reader_ = areader;
+    frame_reader_ = frm_reader;
     valid_ = true;
 }
 

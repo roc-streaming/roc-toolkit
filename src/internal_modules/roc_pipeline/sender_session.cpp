@@ -53,6 +53,9 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         return false;
     }
 
+    // First part of pipeline: chained packet writers from packetizer to endpoint.
+    // Packetizer writes packet to this pipeline, and it the end it writes
+    // packets into endpoint outbound writers.
     packet::IWriter* pkt_writer = NULL;
 
     router_.reset(new (router_) packet::Router(arena_));
@@ -118,6 +121,9 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         return false;
     }
 
+    // Second part of pipeline: chained frame writers from fanout to packetizer.
+    // Fanout writes frames to this pipeline, and in the end it writes packets
+    // to packet writers pipeline.
     audio::IFrameWriter* frm_writer = NULL;
 
     {
@@ -189,6 +195,11 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
     }
     frm_writer = feedback_monitor_.get();
 
+    if (!frm_writer) {
+        return false;
+    }
+
+    // Top-level frame writer that is added to fanout.
     frame_writer_ = frm_writer;
 
     start_feedback_monitor_();

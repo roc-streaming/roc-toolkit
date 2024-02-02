@@ -24,75 +24,78 @@ TranscoderSource::TranscoderSource(const TranscoderConfig& config,
     , valid_(false) {
     config_.deduce_defaults();
 
-    audio::IFrameReader* areader = &input_source_;
+    audio::IFrameReader* frm_reader = &input_source_;
 
     if (config_.input_sample_spec.channel_set()
         != config_.output_sample_spec.channel_set()) {
+        const audio::SampleSpec from_spec(config_.input_sample_spec.sample_rate(),
+                                          audio::Sample_RawFormat,
+                                          config_.input_sample_spec.channel_set());
+
+        const audio::SampleSpec to_spec(config_.input_sample_spec.sample_rate(),
+                                        audio::Sample_RawFormat,
+                                        config_.output_sample_spec.channel_set());
+
         channel_mapper_reader_.reset(
             new (channel_mapper_reader_) audio::ChannelMapperReader(
-                *areader, buffer_factory, config_.input_sample_spec,
-                audio::SampleSpec(config_.input_sample_spec.sample_rate(),
-                                  config_.output_sample_spec.pcm_format(),
-                                  config_.output_sample_spec.channel_set())));
+                *frm_reader, buffer_factory, from_spec, to_spec));
         if (!channel_mapper_reader_ || !channel_mapper_reader_->is_valid()) {
             return;
         }
-        areader = channel_mapper_reader_.get();
+        frm_reader = channel_mapper_reader_.get();
     }
 
     if (config_.input_sample_spec.sample_rate()
         != config_.output_sample_spec.sample_rate()) {
+        const audio::SampleSpec from_spec(config_.input_sample_spec.sample_rate(),
+                                          audio::Sample_RawFormat,
+                                          config_.output_sample_spec.channel_set());
+
+        const audio::SampleSpec to_spec(config_.output_sample_spec.sample_rate(),
+                                        audio::Sample_RawFormat,
+                                        config_.output_sample_spec.channel_set());
+
         resampler_poisoner_.reset(new (resampler_poisoner_)
-                                      audio::PoisonReader(*areader));
+                                      audio::PoisonReader(*frm_reader));
         if (!resampler_poisoner_) {
             return;
         }
-        areader = resampler_poisoner_.get();
+        frm_reader = resampler_poisoner_.get();
 
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-            arena, buffer_factory, config_.resampler,
-            audio::SampleSpec(config_.input_sample_spec.sample_rate(),
-                              config_.output_sample_spec.pcm_format(),
-                              config_.output_sample_spec.channel_set()),
-            config_.output_sample_spec));
-
+            arena, buffer_factory, config_.resampler, from_spec, to_spec));
         if (!resampler_) {
             return;
         }
 
         resampler_reader_.reset(new (resampler_reader_) audio::ResamplerReader(
-            *areader, *resampler_,
-            audio::SampleSpec(config_.input_sample_spec.sample_rate(),
-                              config_.output_sample_spec.pcm_format(),
-                              config_.output_sample_spec.channel_set()),
-            config_.output_sample_spec));
-
+            *frm_reader, *resampler_, from_spec, to_spec));
         if (!resampler_reader_ || !resampler_reader_->is_valid()) {
             return;
         }
-        areader = resampler_reader_.get();
+        frm_reader = resampler_reader_.get();
     }
 
-    pipeline_poisoner_.reset(new (pipeline_poisoner_) audio::PoisonReader(*areader));
+    pipeline_poisoner_.reset(new (pipeline_poisoner_) audio::PoisonReader(*frm_reader));
     if (!pipeline_poisoner_) {
         return;
     }
-    areader = pipeline_poisoner_.get();
+    frm_reader = pipeline_poisoner_.get();
 
     if (config_.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingReader(
-            *areader, arena, config_.output_sample_spec, config_.profiler));
+            *frm_reader, arena, config_.output_sample_spec, config_.profiler));
         if (!profiler_ || !profiler_->is_valid()) {
             return;
         }
-        areader = profiler_.get();
+        frm_reader = profiler_.get();
     }
 
-    if (!areader) {
+    if (!frm_reader) {
         return;
     }
 
-    frame_reader_ = areader;
+    frame_reader_ = frm_reader;
     valid_ = true;
 }
 

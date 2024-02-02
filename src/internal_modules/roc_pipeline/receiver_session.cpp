@@ -37,6 +37,9 @@ ReceiverSession::ReceiverSession(
         return;
     }
 
+    // First part of pipeline: chained packet writers from endpoint to queues.
+    // Endpoint writes packets to this pipeline, and in the end it stores
+    // packets in the queues.
     packet::IWriter* pkt_writer = NULL;
 
     source_queue_.reset(new (source_queue_) packet::SortedQueue(0));
@@ -56,6 +59,9 @@ ReceiverSession::ReceiverSession(
         return;
     }
 
+    // Second part of pipeline: chained packet readers from queues to depacketizer.
+    // Depacketizer reads packets from this pipeline, and in the end it reads
+    // packets stored in the queues.
     packet::IReader* pkt_reader = source_queue_.get();
 
     payload_decoder_.reset(pkt_encoding->new_decoder(arena, pkt_encoding->sample_spec),
@@ -137,6 +143,9 @@ ReceiverSession::ReceiverSession(
     }
     pkt_reader = timestamp_injector_.get();
 
+    // Third part of pipeline: chained frame readers from depacketizer to mixer.
+    // Mixed reads frames from this pipeline, and in the end it requests packets
+    // from packet readers pipeline.
     audio::IFrameReader* frm_reader = NULL;
 
     {
@@ -233,6 +242,7 @@ ReceiverSession::ReceiverSession(
         return;
     }
 
+    // Top-level frame reader that is added to mixer.
     frame_reader_ = frm_reader;
     valid_ = true;
 }

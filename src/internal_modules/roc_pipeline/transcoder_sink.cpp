@@ -23,62 +23,68 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
     , valid_(false) {
     config_.deduce_defaults();
 
-    audio::IFrameWriter* awriter = output_writer;
-    if (!awriter) {
-        awriter = &null_writer_;
+    audio::IFrameWriter* frm_writer = output_writer;
+    if (!frm_writer) {
+        frm_writer = &null_writer_;
     }
 
     if (config_.input_sample_spec.channel_set()
         != config_.output_sample_spec.channel_set()) {
+        const audio::SampleSpec from_spec(config_.output_sample_spec.sample_rate(),
+                                          audio::Sample_RawFormat,
+                                          config_.input_sample_spec.channel_set());
+
+        const audio::SampleSpec to_spec(config_.output_sample_spec.sample_rate(),
+                                        audio::Sample_RawFormat,
+                                        config_.output_sample_spec.channel_set());
+
         channel_mapper_writer_.reset(
             new (channel_mapper_writer_) audio::ChannelMapperWriter(
-                *awriter, buffer_factory,
-                audio::SampleSpec(config_.output_sample_spec.sample_rate(),
-                                  config_.input_sample_spec.pcm_format(),
-                                  config_.input_sample_spec.channel_set()),
-                config_.output_sample_spec));
+                *frm_writer, buffer_factory, from_spec, to_spec));
         if (!channel_mapper_writer_ || !channel_mapper_writer_->is_valid()) {
             return;
         }
-        awriter = channel_mapper_writer_.get();
+        frm_writer = channel_mapper_writer_.get();
     }
 
     if (config_.input_sample_spec.sample_rate()
         != config_.output_sample_spec.sample_rate()) {
-        resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-            arena, buffer_factory, config_.resampler, config_.input_sample_spec,
-            config_.output_sample_spec));
+        const audio::SampleSpec from_spec(config_.input_sample_spec.sample_rate(),
+                                          audio::Sample_RawFormat,
+                                          config_.input_sample_spec.channel_set());
 
+        const audio::SampleSpec to_spec(config_.output_sample_spec.sample_rate(),
+                                        audio::Sample_RawFormat,
+                                        config_.input_sample_spec.channel_set());
+
+        resampler_.reset(audio::ResamplerMap::instance().new_resampler(
+            arena, buffer_factory, config_.resampler, from_spec, to_spec));
         if (!resampler_) {
             return;
         }
 
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
-            *awriter, *resampler_, buffer_factory, config_.input_sample_spec,
-            audio::SampleSpec(config_.output_sample_spec.sample_rate(),
-                              config_.input_sample_spec.pcm_format(),
-                              config_.input_sample_spec.channel_set())));
-
+            *frm_writer, *resampler_, buffer_factory, from_spec, to_spec));
         if (!resampler_writer_ || !resampler_writer_->is_valid()) {
             return;
         }
-        awriter = resampler_writer_.get();
+        frm_writer = resampler_writer_.get();
     }
 
     if (config_.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingWriter(
-            *awriter, arena, config_.input_sample_spec, config_.profiler));
+            *frm_writer, arena, config_.input_sample_spec, config_.profiler));
         if (!profiler_ || !profiler_->is_valid()) {
             return;
         }
-        awriter = profiler_.get();
+        frm_writer = profiler_.get();
     }
 
-    if (!awriter) {
+    if (!frm_writer) {
         return;
     }
 
-    frame_writer_ = awriter;
+    frame_writer_ = frm_writer;
     valid_ = true;
 }
 

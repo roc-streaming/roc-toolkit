@@ -30,22 +30,22 @@ SenderSink::SenderSink(const SenderConfig& config,
     , valid_(false) {
     config_.deduce_defaults();
 
-    audio::IFrameWriter* awriter = &fanout_;
+    audio::IFrameWriter* frm_writer = &fanout_;
 
     if (config_.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingWriter(
-            *awriter, arena, config_.input_sample_spec, config_.profiler));
+            *frm_writer, arena, config_.input_sample_spec, config_.profiler));
         if (!profiler_ || !profiler_->is_valid()) {
             return;
         }
-        awriter = profiler_.get();
+        frm_writer = profiler_.get();
     }
 
-    if (!awriter) {
+    if (!frm_writer) {
         return;
     }
 
-    frame_writer_ = awriter;
+    frame_writer_ = frm_writer;
     valid_ = true;
 }
 
