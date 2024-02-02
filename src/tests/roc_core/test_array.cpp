@@ -212,6 +212,32 @@ TEST(array, data_pointer) {
     }
 }
 
+TEST(array, front) {
+    Array<Object, EmbeddedCap> array(arena);
+
+    CHECK(array.size() == 0);
+    CHECK(array.is_empty());
+
+    CHECK(array.push_back(Object(1)));
+    LONGS_EQUAL(array.front().value, 1);
+
+    CHECK(array.push_back(Object(2)));
+    LONGS_EQUAL(array.front().value, 1);
+}
+
+TEST(array, back) {
+    Array<Object, EmbeddedCap> array(arena);
+
+    CHECK(array.size() == 0);
+    CHECK(array.is_empty());
+
+    CHECK(array.push_back(Object(1)));
+    LONGS_EQUAL(array.back().value, 1);
+
+    CHECK(array.push_back(Object(2)));
+    LONGS_EQUAL(array.back().value, 2);
+}
+
 TEST(array, embedding) {
     Array<Object, EmbeddedCap> array(arena);
 
