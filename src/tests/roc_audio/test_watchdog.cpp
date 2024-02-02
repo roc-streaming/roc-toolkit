@@ -515,5 +515,33 @@ TEST(watchdog, warmup_longer_than_timeout) {
     CHECK(!watchdog.is_alive());
 }
 
+TEST(watchdog, warmup_early_nonblank) {
+    enum { Warmup = NoPlaybackTimeout * 10 };
+
+    Watchdog watchdog(test_reader, sample_spec,
+                      make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, Warmup),
+                      arena);
+    CHECK(watchdog.is_valid());
+
+    for (packet::stream_timestamp_t n = 0; n < (Warmup / 2) / SamplesPerFrame; n++) {
+        CHECK(watchdog.is_alive());
+        check_read(watchdog, true, SamplesPerFrame, 0);
+    }
+
+    CHECK(watchdog.is_alive());
+
+    check_read(watchdog, true, SamplesPerFrame, Frame::FlagNotBlank);
+
+    for (packet::stream_timestamp_t n = 0; n < NoPlaybackTimeout / SamplesPerFrame; n++) {
+        CHECK(watchdog.is_alive());
+        check_read(watchdog, true, SamplesPerFrame, 0);
+    }
+
+    CHECK(!watchdog.is_alive());
+    check_read(watchdog, false, SamplesPerFrame, Frame::FlagNotBlank);
+
+    CHECK(!watchdog.is_alive());
+}
+
 } // namespace audio
 } // namespace roc
