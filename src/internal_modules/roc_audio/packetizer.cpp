@@ -30,8 +30,8 @@ Packetizer::Packetizer(packet::IWriter& writer,
     , packet_factory_(packet_factory)
     , buffer_factory_(buffer_factory)
     , sample_spec_(sample_spec)
-    , samples_per_packet_(sample_spec.ns_2_stream_timestamp(packet_length))
-    , payload_size_(payload_encoder.encoded_byte_count(samples_per_packet_))
+    , samples_per_packet_(0)
+    , payload_size_(0)
     , packet_pos_(0)
     , packet_cts_(0)
     , capture_ts_(0)
@@ -40,9 +40,22 @@ Packetizer::Packetizer(packet::IWriter& writer,
                      "packetizer: required valid sample spec with raw format: %s",
                      sample_spec_to_str(sample_spec_).c_str());
 
-    roc_log(LogDebug, "packetizer: initializing: n_channels=%lu samples_per_packet=%lu",
-            (unsigned long)sample_spec_.num_channels(),
-            (unsigned long)samples_per_packet_);
+    if (packet_length > 0) {
+        samples_per_packet_ = sample_spec.ns_2_stream_timestamp(packet_length);
+        payload_size_ = payload_encoder.encoded_byte_count(samples_per_packet_);
+    }
+
+    roc_log(
+        LogDebug,
+        "packetizer: initializing:"
+        " packet_length=%.3fms samples_per_packet=%lu payload_size=%lu sample_spec=%s",
+        (double)packet_length / core::Millisecond, (unsigned long)samples_per_packet_,
+        (unsigned long)payload_size_, sample_spec_to_str(sample_spec_).c_str());
+
+    if (samples_per_packet_ == 0 || payload_size_ == 0) {
+        roc_log(LogError, "packetizer: invalid config: packet length out of bounds");
+        return;
+    }
 
     valid_ = true;
 }

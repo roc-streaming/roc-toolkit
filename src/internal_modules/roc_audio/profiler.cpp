@@ -10,6 +10,7 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/shared_ptr.h"
+#include "roc_core/time.h"
 
 namespace roc {
 namespace audio {
@@ -33,6 +34,16 @@ Profiler::Profiler(core::IArena& arena,
     , sample_spec_(sample_spec)
     , valid_(false)
     , buffer_full_(false) {
+    if (profiler_config.profiling_interval < 0 || profiler_config.chunk_duration < 0
+        || chunk_length_ == 0 || num_chunks_ == 0) {
+        roc_log(LogError,
+                "profile: invalid config:"
+                " profiling_interval=%.3fms chunk_duration=%.3fms",
+                (double)profiler_config.profiling_interval / core::Millisecond,
+                (double)profiler_config.chunk_duration / core::Millisecond);
+        return;
+    }
+
     if (!chunks_.resize(num_chunks_)) {
         roc_log(LogError, "profiler: can't allocate chunks");
         return;

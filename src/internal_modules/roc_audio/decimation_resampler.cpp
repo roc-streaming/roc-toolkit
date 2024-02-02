@@ -45,7 +45,14 @@ DecimationResampler::DecimationResampler(
     , decim_count_(0)
     , report_limiter_(LogReportInterval)
     , valid_(false) {
-    if (!in_spec.is_valid() || !out_spec.is_valid()) {
+    roc_log(LogDebug,
+            "decimation resampler: initializing: "
+            " frame_size=%lu num_ch=%lu use_inner_resampler=%d",
+            (unsigned long)InputFrameSize, (unsigned long)num_ch_,
+            (int)use_inner_resampler_);
+
+    if (!in_spec.is_valid() || !out_spec.is_valid() || !in_spec.is_raw()
+        || !out_spec.is_raw()) {
         roc_log(LogError,
                 "decimation resampler: invalid sample spec:"
                 " in_spec=%s out_spec=%s",
@@ -83,11 +90,6 @@ DecimationResampler::DecimationResampler(
     last_buf_.reslice(0, num_ch_);
 
     memset(last_buf_.data(), 0, last_buf_.size() * sizeof(sample_t));
-
-    roc_log(LogDebug,
-            "decimation resampler: initializing: "
-            " frame_size=%lu num_ch=%lu use_inner_resampler=%d",
-            (unsigned long)in_size_, (unsigned long)num_ch_, (int)use_inner_resampler_);
 
     valid_ = true;
 }

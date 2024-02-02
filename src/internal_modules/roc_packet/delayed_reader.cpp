@@ -9,6 +9,7 @@
 #include "roc_packet/delayed_reader.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_core/time.h"
 #include "roc_status/code_to_str.h"
 #include "roc_status/status_code.h"
 
@@ -16,16 +17,35 @@ namespace roc {
 namespace packet {
 
 DelayedReader::DelayedReader(IReader& reader,
-                             core::nanoseconds_t delay,
+                             core::nanoseconds_t target_delay,
                              const audio::SampleSpec& sample_spec)
     : reader_(reader)
     , queue_(0)
-    , delay_(sample_spec.ns_2_stream_timestamp(delay))
-    , started_(false) {
-    roc_log(LogDebug, "delayed reader: initializing: delay=%lu", (unsigned long)delay_);
+    , delay_(0)
+    , started_(false)
+    , sample_spec_(sample_spec)
+    , valid_(false) {
+    if (target_delay < 0) {
+        roc_log(LogError, "delayed reader: delay out of bounds: target_delay=%.3fms",
+                (double)target_delay / core::Millisecond);
+        return;
+    }
+
+    delay_ = sample_spec.ns_2_stream_timestamp(target_delay);
+
+    roc_log(LogDebug, "delayed reader: initializing: delay=%lu(%.3fms)",
+            (unsigned long)delay_, sample_spec_.stream_timestamp_2_ms(delay_));
+
+    valid_ = true;
+}
+
+bool DelayedReader::is_valid() const {
+    return valid_;
 }
 
 status::StatusCode DelayedReader::read(PacketPtr& ptr) {
+    roc_panic_if(!valid_);
+
     if (!started_) {
         const status::StatusCode code = fetch_packets_();
         if (code != status::StatusOK) {
@@ -63,8 +83,12 @@ status::StatusCode DelayedReader::fetch_packets_() {
         return status::StatusNoData;
     }
 
-    roc_log(LogDebug, "delayed reader: initial queue: delay=%lu queue=%lu packets=%lu",
-            (unsigned long)delay_, (unsigned long)qs, (unsigned long)queue_.size());
+    roc_log(LogDebug,
+            "delayed reader: initial queue:"
+            " delay=%lu(%.3fms) queue=%lu(%.3fms) packets=%lu",
+            (unsigned long)delay_, sample_spec_.stream_timestamp_2_ms(delay_),
+            (unsigned long)qs, sample_spec_.stream_timestamp_2_ms(qs),
+            (unsigned long)queue_.size());
 
     return status::StatusOK;
 }
@@ -87,9 +111,12 @@ status::StatusCode DelayedReader::read_queued_packet_(PacketPtr& pp) {
     }
 
     if (qs != 0) {
-        roc_log(
-            LogDebug, "delayed reader: trimmed queue: delay=%lu queue=%lu packets=%lu",
-            (unsigned long)delay_, (unsigned long)qs, (unsigned long)(queue_.size() + 1));
+        roc_log(LogDebug,
+                "delayed reader: trimmed queue:"
+                " delay=%lu(%.3fms) queue=%lu(%.3fms) packets=%lu",
+                (unsigned long)delay_, sample_spec_.stream_timestamp_2_ms(delay_),
+                (unsigned long)qs, sample_spec_.stream_timestamp_2_ms(qs),
+                (unsigned long)(queue_.size() + 1));
     }
 
     return status::StatusOK;

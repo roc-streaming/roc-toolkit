@@ -256,6 +256,10 @@ SampleSpec::stream_timestamp_2_ns(const packet::stream_timestamp_t sts_duration)
     return nsamples_2_ns((float)sts_duration, sample_rate_);
 }
 
+double SampleSpec::stream_timestamp_2_ms(packet::stream_timestamp_t sts_duration) const {
+    return (double)stream_timestamp_2_ns(sts_duration) / core::Millisecond;
+}
+
 packet::stream_timestamp_diff_t
 SampleSpec::ns_2_stream_timestamp_delta(const core::nanoseconds_t ns_delta) const {
     roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
@@ -270,6 +274,11 @@ core::nanoseconds_t SampleSpec::stream_timestamp_delta_2_ns(
                      sample_spec_to_str(*this).c_str());
 
     return nsamples_2_ns((float)sts_delta, sample_rate_);
+}
+
+double
+SampleSpec::stream_timestamp_delta_2_ms(packet::stream_timestamp_diff_t sts_delta) const {
+    return (double)stream_timestamp_delta_2_ns(sts_delta) / core::Millisecond;
 }
 
 packet::stream_timestamp_t SampleSpec::bytes_2_stream_timestamp(size_t n_bytes) const {
@@ -303,16 +312,10 @@ size_t SampleSpec::stream_timestamp_2_bytes(packet::stream_timestamp_t duration)
 }
 
 core::nanoseconds_t SampleSpec::bytes_2_ns(size_t n_bytes) const {
-    roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
-                     sample_spec_to_str(*this).c_str());
-
     return stream_timestamp_2_ns(bytes_2_stream_timestamp(n_bytes));
 }
 
 size_t SampleSpec::ns_2_bytes(core::nanoseconds_t duration) const {
-    roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
-                     sample_spec_to_str(*this).c_str());
-
     return stream_timestamp_2_bytes(ns_2_stream_timestamp(duration));
 }
 

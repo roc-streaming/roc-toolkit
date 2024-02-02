@@ -13,15 +13,6 @@
 namespace roc {
 namespace audio {
 
-namespace {
-
-double timestamp_to_ms(const SampleSpec& sample_spec,
-                       packet::stream_timestamp_t timestamp) {
-    return (double)sample_spec.stream_timestamp_2_ns(timestamp) / core::Millisecond;
-}
-
-} // namespace
-
 void WatchdogConfig::deduce_defaults(core::nanoseconds_t target_latency) {
     if (target_latency <= 0) {
         target_latency = 200 * core::Millisecond;
@@ -113,13 +104,13 @@ Watchdog::Watchdog(IFrameReader& reader,
             " max_blank_duration=%lu(%.3fms) max_drops_duration=%lu(%.3fms)"
             " drop_detection_window=%lu(%.3fms) warmup_duration=%lu(%.3fms)",
             (unsigned long)max_blank_duration_,
-            timestamp_to_ms(sample_spec_, max_blank_duration_),
+            sample_spec_.stream_timestamp_2_ms(max_blank_duration_),
             (unsigned long)max_drops_duration_,
-            timestamp_to_ms(sample_spec_, max_drops_duration_),
+            sample_spec_.stream_timestamp_2_ms(max_drops_duration_),
             (unsigned long)drops_detection_window_,
-            timestamp_to_ms(sample_spec_, drops_detection_window_),
+            sample_spec_.stream_timestamp_2_ms(drops_detection_window_),
             (unsigned long)warmup_duration_,
-            timestamp_to_ms(sample_spec_, warmup_duration_));
+            sample_spec_.stream_timestamp_2_ms(warmup_duration_));
 
     valid_ = true;
 }
@@ -197,9 +188,9 @@ bool Watchdog::check_blank_timeout_() const {
             " every frame was blank during timeout:"
             " max_blank_duration=%lu(%.3fms) warmup_duration=%lu(%.3fms)",
             (unsigned long)max_blank_duration_,
-            timestamp_to_ms(sample_spec_, max_blank_duration_),
+            sample_spec_.stream_timestamp_2_ms(max_blank_duration_),
             (unsigned long)warmup_duration_,
-            timestamp_to_ms(sample_spec_, warmup_duration_));
+            sample_spec_.stream_timestamp_2_ms(warmup_duration_));
 
     return false;
 }
@@ -246,9 +237,9 @@ bool Watchdog::check_drops_timeout_() {
             " every window had frames with packet drops during timeout:"
             " max_drops_duration=%lu(%.3fms) drop_detection_window=%lu(%.3fms)",
             (unsigned long)max_drops_duration_,
-            timestamp_to_ms(sample_spec_, max_drops_duration_),
+            sample_spec_.stream_timestamp_2_ms(max_drops_duration_),
             (unsigned long)drops_detection_window_,
-            timestamp_to_ms(sample_spec_, drops_detection_window_));
+            sample_spec_.stream_timestamp_2_ms(drops_detection_window_));
 
     return false;
 }
@@ -269,15 +260,15 @@ void Watchdog::update_status_(const Frame& frame) {
     if (!(flags & Frame::FlagNotBlank)) {
         if (in_warmup_) {
             if (flags & Frame::FlagPacketDrops) {
-                symbol = 'B';
-            } else {
-                symbol = 'b';
-            }
-        } else {
-            if (flags & Frame::FlagPacketDrops) {
                 symbol = 'W';
             } else {
                 symbol = 'w';
+            }
+        } else {
+            if (flags & Frame::FlagPacketDrops) {
+                symbol = 'B';
+            } else {
+                symbol = 'b';
             }
         }
     } else if (flags & Frame::FlagNotComplete) {

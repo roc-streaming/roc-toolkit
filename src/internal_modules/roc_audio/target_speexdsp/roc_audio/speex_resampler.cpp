@@ -60,7 +60,8 @@ SpeexResampler::SpeexResampler(core::IArena& arena,
     , in_latency_diff_(0)
     , rate_limiter_(LogReportInterval)
     , valid_(false) {
-    if (!in_spec.is_valid() || !out_spec.is_valid()) {
+    if (!in_spec.is_valid() || !out_spec.is_valid() || !in_spec.is_raw()
+        || !out_spec.is_raw()) {
         roc_log(LogError,
                 "speex resampler: invalid sample spec:"
                 " in_spec=%s out_spec=%s",

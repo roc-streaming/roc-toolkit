@@ -103,8 +103,8 @@ private:
     core::BufferFactory<uint8_t>& buffer_factory_;
 
     const audio::SampleSpec sample_spec_;
-    const size_t samples_per_packet_;
-    const size_t payload_size_;
+    size_t samples_per_packet_;
+    size_t payload_size_;
 
     packet::PacketPtr packet_;
     size_t packet_pos_;

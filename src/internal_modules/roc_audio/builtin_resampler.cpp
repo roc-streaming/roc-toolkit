@@ -145,6 +145,14 @@ BuiltinResampler::BuiltinResampler(core::IArena& arena,
     , qt_dt_(0)
     , cutoff_freq_(0.9f)
     , valid_(false) {
+    roc_log(
+        LogDebug,
+        "builtin resampler: initializing:"
+        " profile=%s window_interp=%lu window_size=%lu frame_size=%lu channels_num=%lu",
+        resampler_profile_to_str(profile), (unsigned long)window_interp_,
+        (unsigned long)window_size_, (unsigned long)frame_size_,
+        (unsigned long)in_spec_.num_channels());
+
     if (!check_config_()) {
         return;
     }
@@ -156,14 +164,6 @@ BuiltinResampler::BuiltinResampler(core::IArena& arena,
     if (!alloc_frames_(buffer_factory)) {
         return;
     }
-
-    roc_log(
-        LogDebug,
-        "builtin resampler: initializing:"
-        " profile=%s window_interp=%lu window_size=%lu frame_size=%lu channels_num=%lu",
-        resampler_profile_to_str(profile), (unsigned long)window_interp_,
-        (unsigned long)window_size_, (unsigned long)frame_size_,
-        (unsigned long)in_spec_.num_channels());
 
     valid_ = true;
 }
@@ -313,7 +313,8 @@ bool BuiltinResampler::alloc_frames_(core::BufferFactory<sample_t>& buffer_facto
 }
 
 bool BuiltinResampler::check_config_() const {
-    if (!in_spec_.is_valid() || !out_spec_.is_valid()) {
+    if (!in_spec_.is_valid() || !out_spec_.is_valid() || !in_spec_.is_raw()
+        || !out_spec_.is_raw()) {
         roc_log(LogError,
                 "builtin resampler: invalid sample spec:"
                 " in_spec=%s out_spec=%s",
@@ -345,8 +346,8 @@ bool BuiltinResampler::check_config_() const {
 
     if (frame_size_ > max_frame_size) {
         roc_log(LogError,
-                "builtin resampler: frame_size is too much: "
-                "max_frame_size=%lu frame_size=%lu num_channels=%lu",
+                "builtin resampler: frame_size is too much:"
+                " max_frame_size=%lu frame_size=%lu num_channels=%lu",
                 (unsigned long)max_frame_size, (unsigned long)frame_size_,
                 (unsigned long)in_spec_.num_channels());
         return false;
@@ -354,7 +355,8 @@ bool BuiltinResampler::check_config_() const {
 
     if ((size_t)1 << window_interp_bits_ != window_interp_) {
         roc_log(LogError,
-                "builtin resampler: window_interp is not power of two: window_interp=%lu",
+                "builtin resampler: window_interp is not power of two:"
+                " window_interp=%lu",
                 (unsigned long)window_interp_);
         return false;
     }
@@ -407,8 +409,8 @@ sample_t BuiltinResampler::sinc_(const fixedpoint_t x, const float fract_x) {
 
 sample_t BuiltinResampler::resample_(const size_t channel_offset) {
     roc_panic_if_msg(qt_sinc_step_ == 0,
-                     "builtin resampler: set scaling must be called "
-                     "before any resampling could be done");
+                     "builtin resampler:"
+                     " set_scaling() must be called before any resampling could be done");
     // Index of first input sample in window.
     size_t ind_begin_prev;
 

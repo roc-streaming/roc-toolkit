@@ -18,11 +18,6 @@ namespace {
 
 const core::nanoseconds_t LogInterval = 5 * core::Second;
 
-double timestamp_to_ms(const SampleSpec& sample_spec,
-                       packet::stream_timestamp_diff_t timestamp) {
-    return (double)sample_spec.stream_timestamp_delta_2_ns(timestamp) / core::Millisecond;
-}
-
 } // namespace
 
 void LatencyConfig::deduce_defaults(core::nanoseconds_t default_target_latency,
@@ -121,9 +116,9 @@ void LatencyConfig::deduce_defaults(core::nanoseconds_t default_target_latency,
 
 LatencyTuner::LatencyTuner(const LatencyConfig& config, const SampleSpec& sample_spec)
     : stream_pos_(0)
-    , update_interval_(sample_spec.ns_2_stream_timestamp(config.scaling_interval))
+    , update_interval_(0)
     , update_pos_(0)
-    , report_interval_(sample_spec.ns_2_stream_timestamp(LogInterval))
+    , report_interval_(0)
     , report_pos_(0)
     , freq_coeff_(0)
     , freq_coeff_max_delta_(config.scaling_tolerance)
@@ -150,19 +145,28 @@ LatencyTuner::LatencyTuner(const LatencyConfig& config, const SampleSpec& sample
             " stale_tolerance=%ld(%.3fms)"
             " scaling_interval=%ld(%.3fms) scaling_tolerance=%f"
             " backend=%s profile=%s",
-            (long)sample_spec.ns_2_stream_timestamp_delta(config.target_latency),
+            (long)sample_spec_.ns_2_stream_timestamp_delta(config.target_latency),
             (double)config.target_latency / core::Millisecond,
-            (long)sample_spec.ns_2_stream_timestamp_delta(config.latency_tolerance),
+            (long)sample_spec_.ns_2_stream_timestamp_delta(config.latency_tolerance),
             (double)config.latency_tolerance / core::Millisecond,
-            (long)sample_spec.ns_2_stream_timestamp_delta(config.stale_tolerance),
+            (long)sample_spec_.ns_2_stream_timestamp_delta(config.stale_tolerance),
             (double)config.stale_tolerance / core::Millisecond,
-            (long)sample_spec.ns_2_stream_timestamp_delta(config.scaling_interval),
+            (long)sample_spec_.ns_2_stream_timestamp_delta(config.scaling_interval),
             (double)config.scaling_interval / core::Millisecond,
             (double)config.scaling_tolerance, latency_tuner_backend_to_str(backend_),
             latency_tuner_profile_to_str(profile_));
 
+    if (config.scaling_interval <= 0) {
+        roc_log(LogError,
+                "latency tuner: invalid config: scaling_interval out of bounds");
+        return;
+    }
+
+    update_interval_ = sample_spec_.ns_2_stream_timestamp(config.scaling_interval);
+    report_interval_ = sample_spec_.ns_2_stream_timestamp(LogInterval);
+
     if (enable_checking_ || enable_tuning_) {
-        target_latency_ = sample_spec.ns_2_stream_timestamp_delta(config.target_latency);
+        target_latency_ = sample_spec_.ns_2_stream_timestamp_delta(config.target_latency);
 
         if (target_latency_ <= 0) {
             roc_log(
@@ -172,12 +176,12 @@ LatencyTuner::LatencyTuner(const LatencyConfig& config, const SampleSpec& sample
         }
 
         if (enable_checking_) {
-            min_latency_ = sample_spec.ns_2_stream_timestamp_delta(
+            min_latency_ = sample_spec_.ns_2_stream_timestamp_delta(
                 config.target_latency - config.latency_tolerance);
-            max_latency_ = sample_spec.ns_2_stream_timestamp_delta(
+            max_latency_ = sample_spec_.ns_2_stream_timestamp_delta(
                 config.target_latency + config.latency_tolerance);
             max_stalling_ =
-                sample_spec.ns_2_stream_timestamp_delta(config.stale_tolerance);
+                sample_spec_.ns_2_stream_timestamp_delta(config.stale_tolerance);
 
             if (target_latency_ < min_latency_ || target_latency_ > max_latency_) {
                 roc_log(LogError,
@@ -322,15 +326,17 @@ bool LatencyTuner::check_bounds_(const packet::stream_timestamp_diff_t latency) 
     }
 
     if (latency < min_latency_ || latency > max_latency_) {
-        roc_log(LogDebug,
-                "latency tuner: latency out of bounds:"
-                " latency=%ld(%.3fms) target=%ld(%.3fms)"
-                " min=%ld(%.3fms) max=%ld(%.3fms) stalling=%ld(%.3fms)",
-                (long)latency, timestamp_to_ms(sample_spec_, latency),
-                (long)target_latency_, timestamp_to_ms(sample_spec_, target_latency_),
-                (long)min_latency_, timestamp_to_ms(sample_spec_, min_latency_),
-                (long)max_latency_, timestamp_to_ms(sample_spec_, max_latency_),
-                (long)niq_stalling_, timestamp_to_ms(sample_spec_, niq_stalling_));
+        roc_log(
+            LogDebug,
+            "latency tuner: latency out of bounds:"
+            " latency=%ld(%.3fms) target=%ld(%.3fms)"
+            " min=%ld(%.3fms) max=%ld(%.3fms) stalling=%ld(%.3fms)",
+            (long)latency, sample_spec_.stream_timestamp_delta_2_ms(latency),
+            (long)target_latency_,
+            sample_spec_.stream_timestamp_delta_2_ms(target_latency_), (long)min_latency_,
+            sample_spec_.stream_timestamp_delta_2_ms(min_latency_), (long)max_latency_,
+            sample_spec_.stream_timestamp_delta_2_ms(max_latency_), (long)niq_stalling_,
+            sample_spec_.stream_timestamp_delta_2_ms(niq_stalling_));
         return false;
     }
 
@@ -365,18 +371,18 @@ void LatencyTuner::report_() {
         report_pos_ += report_interval_;
     }
 
-    roc_log(LogDebug,
-            "latency tuner:"
-            " e2e_latency=%ld(%.3fms) niq_latency=%ld(%.3fms) target_latency=%ld(%.3fms)"
-            " jitter=%ld(%.3fms) stale=%ld(%.3fms)"
-            " fe=%.6f eff_fe=%.6f",
-            (long)e2e_latency_, timestamp_to_ms(sample_spec_, e2e_latency_),
-            (long)niq_latency_, timestamp_to_ms(sample_spec_, niq_latency_),
-            (long)target_latency_, timestamp_to_ms(sample_spec_, target_latency_),
-            (long)jitter_, timestamp_to_ms(sample_spec_, jitter_), (long)niq_stalling_,
-            timestamp_to_ms(sample_spec_, niq_stalling_),
-            (double)(fe_ && freq_coeff_ > 0 ? fe_->freq_coeff() : 0),
-            (double)freq_coeff_);
+    roc_log(
+        LogDebug,
+        "latency tuner:"
+        " e2e_latency=%ld(%.3fms) niq_latency=%ld(%.3fms) target_latency=%ld(%.3fms)"
+        " jitter=%ld(%.3fms) stale=%ld(%.3fms)"
+        " fe=%.6f eff_fe=%.6f",
+        (long)e2e_latency_, sample_spec_.stream_timestamp_delta_2_ms(e2e_latency_),
+        (long)niq_latency_, sample_spec_.stream_timestamp_delta_2_ms(niq_latency_),
+        (long)target_latency_, sample_spec_.stream_timestamp_delta_2_ms(target_latency_),
+        (long)jitter_, sample_spec_.stream_timestamp_delta_2_ms(jitter_),
+        (long)niq_stalling_, sample_spec_.stream_timestamp_delta_2_ms(niq_stalling_),
+        (double)(fe_ && freq_coeff_ > 0 ? fe_->freq_coeff() : 0), (double)freq_coeff_);
 }
 
 const char* latency_tuner_backend_to_str(LatencyTunerBackend backend) {

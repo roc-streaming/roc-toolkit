@@ -192,10 +192,10 @@ private:
 
     packet::stream_timestamp_t stream_pos_;
 
-    const packet::stream_timestamp_t update_interval_;
+    packet::stream_timestamp_t update_interval_;
     packet::stream_timestamp_t update_pos_;
 
-    const packet::stream_timestamp_t report_interval_;
+    packet::stream_timestamp_t report_interval_;
     packet::stream_timestamp_t report_pos_;
 
     float freq_coeff_;

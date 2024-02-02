@@ -180,6 +180,9 @@ public:
     core::nanoseconds_t
     stream_timestamp_2_ns(packet::stream_timestamp_t sts_duration) const;
 
+    //! Convert stream timestamp to milliseconds.
+    double stream_timestamp_2_ms(packet::stream_timestamp_t sts_duration) const;
+
     //! Convert nanoseconds delta to stream timestamp delta.
     //! @remarks
     //!  Same as ns_2_samples_per_chan(), but supports negative deltas.
@@ -191,6 +194,10 @@ public:
     //!  Same as samples_per_chan_2_ns(), but supports negative deltas.
     core::nanoseconds_t
     stream_timestamp_delta_2_ns(packet::stream_timestamp_diff_t sts_delta) const;
+
+    //! Convert stream timestamp delta to milliseconds.
+    double
+    stream_timestamp_delta_2_ms(packet::stream_timestamp_diff_t sts_duration) const;
 
     // @}
 

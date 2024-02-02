@@ -74,7 +74,7 @@ ReceiverSession::ReceiverSession(
 
     delayed_reader_.reset(new (delayed_reader_) packet::DelayedReader(
         *pkt_reader, session_config.latency.target_latency, pkt_encoding->sample_spec));
-    if (!delayed_reader_) {
+    if (!delayed_reader_ || !delayed_reader_->is_valid()) {
         return;
     }
     pkt_reader = delayed_reader_.get();
