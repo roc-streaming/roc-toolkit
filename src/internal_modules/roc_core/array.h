@@ -127,6 +127,38 @@ public:
         return data_[index];
     }
 
+    //! Get reference to first element.
+    T& front() {
+        if (0 == size_) {
+            roc_panic("array: is empty");
+        }
+        return data_[0];
+    }
+
+    //! Get const reference to first element.
+    const T& front() const {
+        if (0 == size_) {
+            roc_panic("array: is empty");
+        }
+        return data_[0];
+    }
+
+    //! Get reference to last element.
+    T& back() {
+        if (0 == size_) {
+            roc_panic("array: is empty");
+        }
+        return data_[size_ - 1];
+    }
+
+    //! Get const reference to last element.
+    const T& back() const {
+        if (0 == size_) {
+            roc_panic("array: is empty");
+        }
+        return data_[size_ - 1];
+    }
+
     //! Append element to array.
     //! @returns
     //!  false if the allocation failed.
