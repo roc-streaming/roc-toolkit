@@ -8,9 +8,19 @@
 
 #include "roc_audio/watchdog.h"
 #include "roc_core/log.h"
+#include "roc_core/time.h"
 
 namespace roc {
 namespace audio {
+
+namespace {
+
+double timestamp_to_ms(const SampleSpec& sample_spec,
+                       packet::stream_timestamp_t timestamp) {
+    return (double)sample_spec.stream_timestamp_2_ns(timestamp) / core::Millisecond;
+}
+
+} // namespace
 
 void WatchdogConfig::deduce_defaults(core::nanoseconds_t target_latency) {
     if (target_latency <= 0) {
@@ -30,7 +40,7 @@ void WatchdogConfig::deduce_defaults(core::nanoseconds_t target_latency) {
             std::min(300 * core::Millisecond, choppy_playback_timeout / 4);
     }
 
-    if(warmup_duration < 0){
+    if (warmup_duration < 0) {
         warmup_duration = target_latency;
     }
 }
@@ -41,49 +51,55 @@ Watchdog::Watchdog(IFrameReader& reader,
                    core::IArena& arena)
     : reader_(reader)
     , sample_spec_(sample_spec)
-    , max_blank_duration_(
-          (packet::stream_timestamp_t)sample_spec.ns_2_stream_timestamp_delta(
-              config.no_playback_timeout))
-    , max_drops_duration_(
-          (packet::stream_timestamp_t)sample_spec.ns_2_stream_timestamp_delta(
-              config.choppy_playback_timeout))
-    , drop_detection_window_(
-          (packet::stream_timestamp_t)sample_spec.ns_2_stream_timestamp_delta(
-              config.choppy_playback_window))
-    , warmup_ending_pos_(
-          (packet::stream_timestamp_t)sample_spec.ns_2_stream_timestamp_delta(
-              config.warmup_duration))
+    , max_blank_duration_(0)
+    , max_drops_duration_(0)
+    , drops_detection_window_(0)
     , curr_read_pos_(0)
-    , last_pos_before_blank_(warmup_ending_pos_)
+    , last_pos_before_blank_(0)
     , last_pos_before_drops_(0)
+    , warmup_duration_(0)
+    , in_warmup_(false)
     , curr_window_flags_(0)
     , status_(arena)
     , status_pos_(0)
-    , status_show_(false)
-    , warmup_status_(bool(warmup_ending_pos_))
+    , show_status_(false)
     , alive_(true)
     , valid_(false) {
     if (config.no_playback_timeout < 0 || config.choppy_playback_timeout < 0
         || config.choppy_playback_window < 0 || config.warmup_duration < 0) {
         roc_log(LogError,
-                "watchdog: invalid config:"
-                " no_packets_timeout=%ld drops_timeout=%ld drop_detection_window=%ld warmup_ending_pos=%ld",
-                (long)config.no_playback_timeout, (long)config.choppy_playback_timeout,
-                (long)config.choppy_playback_window, (long)config.warmup_duration);
+                "watchdog: invalid config: negative duration:"
+                " no_playback_timeout=%.3fms choppy_playback_timeout=%.3fms"
+                " choppy_playback_window=%.3fms warmup_duration=%.3fms",
+                (double)config.no_playback_timeout / core::Millisecond,
+                (double)config.choppy_playback_timeout / core::Millisecond,
+                (double)config.choppy_playback_window / core::Millisecond,
+                (double)config.warmup_duration / core::Millisecond);
         return;
     }
 
-    if (max_drops_duration_ != 0) {
-        if (drop_detection_window_ == 0 || drop_detection_window_ > max_drops_duration_) {
-            roc_log(LogError,
-                    "watchdog: invalid config:"
-                    " drop_detection_window should be in range (0; max_drops_duration]:"
-                    " max_drops_duration=%lu drop_detection_window=%lu warmup_ending_pos=%lu",
-                    (unsigned long)max_drops_duration_,
-                    (unsigned long)drop_detection_window_,
-                    (unsigned long)warmup_ending_pos_);
-            return;
-        }
+    max_blank_duration_ = sample_spec_.ns_2_stream_timestamp(config.no_playback_timeout);
+    max_drops_duration_ =
+        sample_spec_.ns_2_stream_timestamp(config.choppy_playback_timeout);
+    drops_detection_window_ =
+        sample_spec_.ns_2_stream_timestamp(config.choppy_playback_window);
+    warmup_duration_ = sample_spec_.ns_2_stream_timestamp(config.warmup_duration);
+
+    last_pos_before_blank_ = warmup_duration_;
+    in_warmup_ = warmup_duration_ != 0;
+
+    if (max_drops_duration_ != 0
+        && (drops_detection_window_ < 1
+            || drops_detection_window_ > max_drops_duration_)) {
+        roc_log(LogError,
+                "watchdog: invalid config: choppy_playback_window out of bounds:"
+                " no_playback_timeout=%.3fms choppy_playback_timeout=%.3fms"
+                " choppy_playback_window=%.3fms warmup_duration=%.3fms",
+                (double)config.no_playback_timeout / core::Millisecond,
+                (double)config.choppy_playback_timeout / core::Millisecond,
+                (double)config.choppy_playback_window / core::Millisecond,
+                (double)config.warmup_duration / core::Millisecond);
+        return;
     }
 
     if (config.frame_status_window != 0) {
@@ -94,9 +110,16 @@ Watchdog::Watchdog(IFrameReader& reader,
 
     roc_log(LogDebug,
             "watchdog: initializing:"
-            " max_blank_duration=%lu max_drops_duration=%lu drop_detection_window=%lu warmup_ending_pos=%lu",
-            (unsigned long)max_blank_duration_, (unsigned long)max_drops_duration_,
-            (unsigned long)drop_detection_window_, (unsigned long)warmup_ending_pos_);
+            " max_blank_duration=%lu(%.3fms) max_drops_duration=%lu(%.3fms)"
+            " drop_detection_window=%lu(%.3fms) warmup_duration=%lu(%.3fms)",
+            (unsigned long)max_blank_duration_,
+            timestamp_to_ms(sample_spec_, max_blank_duration_),
+            (unsigned long)max_drops_duration_,
+            timestamp_to_ms(sample_spec_, max_drops_duration_),
+            (unsigned long)drops_detection_window_,
+            timestamp_to_ms(sample_spec_, drops_detection_window_),
+            (unsigned long)warmup_duration_,
+            timestamp_to_ms(sample_spec_, warmup_duration_));
 
     valid_ = true;
 }
@@ -125,8 +148,7 @@ bool Watchdog::read(Frame& frame) {
         return false;
     }
 
-    const packet::stream_timestamp_t next_read_pos = packet::stream_timestamp_t(
-        curr_read_pos_ + frame.num_raw_samples() / sample_spec_.num_channels());
+    const packet::stream_timestamp_t next_read_pos = curr_read_pos_ + frame.duration();
 
     update_blank_timeout_(frame, next_read_pos);
     update_drops_timeout_(frame, next_read_pos);
@@ -144,7 +166,7 @@ bool Watchdog::read(Frame& frame) {
         alive_ = false;
     }
 
-    update_warmup_status_();
+    update_warmup_();
 
     return true;
 }
@@ -157,12 +179,12 @@ void Watchdog::update_blank_timeout_(const Frame& frame,
 
     if (frame.flags() & Frame::FlagNonblank) {
         last_pos_before_blank_ = next_read_pos;
-        warmup_status_ = false;
+        in_warmup_ = false;
     }
 }
 
 bool Watchdog::check_blank_timeout_() const {
-    if (max_blank_duration_ == 0 || warmup_status_) {
+    if (max_blank_duration_ == 0 || in_warmup_) {
         return true;
     }
 
@@ -171,10 +193,13 @@ bool Watchdog::check_blank_timeout_() const {
     }
 
     roc_log(LogDebug,
-            "watchdog: blank timeout reached: every frame was blank during timeout:"
-            " curr_read_pos=%lu last_pos_before_blank=%lu max_blank_duration=%lu warmup_ending_pos=%lu",
-            (unsigned long)curr_read_pos_, (unsigned long)last_pos_before_blank_,
-            (unsigned long)max_blank_duration_, (unsigned long)warmup_ending_pos_);
+            "watchdog: no_playback timeout reached:"
+            " every frame was blank during timeout:"
+            " max_blank_duration=%lu(%.3fms) warmup_duration=%lu(%.3fms)",
+            (unsigned long)max_blank_duration_,
+            timestamp_to_ms(sample_spec_, max_blank_duration_),
+            (unsigned long)warmup_duration_,
+            timestamp_to_ms(sample_spec_, warmup_duration_));
 
     return false;
 }
@@ -188,9 +213,9 @@ void Watchdog::update_drops_timeout_(const Frame& frame,
     curr_window_flags_ |= frame.flags();
 
     const packet::stream_timestamp_t window_start =
-        curr_read_pos_ / drop_detection_window_ * drop_detection_window_;
+        curr_read_pos_ / drops_detection_window_ * drops_detection_window_;
 
-    const packet::stream_timestamp_t window_end = window_start + drop_detection_window_;
+    const packet::stream_timestamp_t window_end = window_start + drops_detection_window_;
 
     if (packet::stream_timestamp_le(window_end, next_read_pos)) {
         const unsigned drop_flags = Frame::FlagIncomplete | Frame::FlagDrops;
@@ -199,18 +224,13 @@ void Watchdog::update_drops_timeout_(const Frame& frame,
             last_pos_before_drops_ = next_read_pos;
         }
 
-        if (next_read_pos % drop_detection_window_ == 0) {
+        if (next_read_pos % drops_detection_window_ == 0) {
             curr_window_flags_ = 0;
         } else {
             curr_window_flags_ = frame.flags();
         }
     }
 }
-
-void Watchdog::update_warmup_status_(){
-    warmup_status_ = warmup_status_ && (curr_read_pos_ < warmup_ending_pos_);
-}
-
 
 bool Watchdog::check_drops_timeout_() {
     if (max_drops_duration_ == 0) {
@@ -222,13 +242,19 @@ bool Watchdog::check_drops_timeout_() {
     }
 
     roc_log(LogDebug,
-            "watchdog: drops timeout reached: every window had drops during timeout:"
-            " curr_read_pos=%lu last_pos_before_drops=%lu"
-            " drop_detection_window=%lu max_drops_duration=%lu",
-            (unsigned long)curr_read_pos_, (unsigned long)last_pos_before_drops_,
-            (unsigned long)drop_detection_window_, (unsigned long)max_drops_duration_);
+            "watchdog: choppy_playback timeout reached:"
+            " every window had frames with packet drops during timeout:"
+            " max_drops_duration=%lu(%.3fms) drop_detection_window=%lu(%.3fms)",
+            (unsigned long)max_drops_duration_,
+            timestamp_to_ms(sample_spec_, max_drops_duration_),
+            (unsigned long)drops_detection_window_,
+            timestamp_to_ms(sample_spec_, drops_detection_window_));
 
     return false;
+}
+
+void Watchdog::update_warmup_() {
+    in_warmup_ = in_warmup_ && (curr_read_pos_ < warmup_duration_);
 }
 
 void Watchdog::update_status_(const Frame& frame) {
@@ -241,10 +267,18 @@ void Watchdog::update_status_(const Frame& frame) {
     char symbol = '.';
 
     if (!(flags & Frame::FlagNonblank)) {
-        if (flags & Frame::FlagDrops) {
-            symbol = 'B';
+        if (in_warmup_) {
+            if (flags & Frame::FlagDrops) {
+                symbol = 'B';
+            } else {
+                symbol = 'b';
+            }
         } else {
-            symbol = 'b';
+            if (flags & Frame::FlagDrops) {
+                symbol = 'W';
+            } else {
+                symbol = 'w';
+            }
         }
     } else if (flags & Frame::FlagIncomplete) {
         if (flags & Frame::FlagDrops) {
@@ -258,7 +292,7 @@ void Watchdog::update_status_(const Frame& frame) {
 
     status_[status_pos_] = symbol;
     status_pos_++;
-    status_show_ = status_show_ || symbol != '.';
+    show_status_ = show_status_ || symbol != '.';
 
     if (status_pos_ == status_.size() - 1) {
         flush_status_();
@@ -270,7 +304,7 @@ void Watchdog::flush_status_() {
         return;
     }
 
-    if (status_show_) {
+    if (show_status_) {
         for (; status_pos_ < status_.size(); status_pos_++) {
             status_[status_pos_] = '\0';
         }
@@ -278,7 +312,7 @@ void Watchdog::flush_status_() {
     }
 
     status_pos_ = 0;
-    status_show_ = false;
+    show_status_ = false;
 }
 
 } // namespace audio

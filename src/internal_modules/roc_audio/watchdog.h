@@ -108,9 +108,9 @@ private:
 
     void update_drops_timeout_(const Frame& frame,
                                packet::stream_timestamp_t next_read_pos);
-    void update_warmup_status_();
-
     bool check_drops_timeout_();
+
+    void update_warmup_();
 
     void update_status_(const Frame& frame);
     void flush_status_();
@@ -119,21 +119,22 @@ private:
 
     const audio::SampleSpec sample_spec_;
 
-    const packet::stream_timestamp_t max_blank_duration_;
-    const packet::stream_timestamp_t max_drops_duration_;
-    const packet::stream_timestamp_t drop_detection_window_;
-    const packet::stream_timestamp_t warmup_ending_pos_;
+    packet::stream_timestamp_t max_blank_duration_;
+    packet::stream_timestamp_t max_drops_duration_;
+    packet::stream_timestamp_t drops_detection_window_;
 
     packet::stream_timestamp_t curr_read_pos_;
     packet::stream_timestamp_t last_pos_before_blank_;
     packet::stream_timestamp_t last_pos_before_drops_;
 
+    packet::stream_timestamp_t warmup_duration_;
+    bool in_warmup_;
+
     unsigned curr_window_flags_;
 
     core::Array<char> status_;
     size_t status_pos_;
-    bool status_show_;
-    bool warmup_status_;
+    bool show_status_;
 
     bool alive_;
     bool valid_;
