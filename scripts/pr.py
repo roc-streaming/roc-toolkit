@@ -179,7 +179,7 @@ def query_issue_info(org, repo, issue_number):
             ],
             capture_output=True, text=True, check=True).stdout)
     except subprocess.CalledProcessError as e:
-        error(f'failed to retrieve issue info: {e.output}')
+        error(f'failed to retrieve issue info: {e.stderr.strip()}')
 
     issue_info['issue_title'] = response['title']
     issue_info['issue_url'] = response['html_url']
@@ -198,7 +198,7 @@ def query_pr_info(org, repo, pr_number):
             ['gh', 'api', f'/repos/{org}/{repo}/pulls/{pr_number}'],
             capture_output=True, text=True, check=True).stdout)
     except subprocess.CalledProcessError as e:
-        error(f'failed to retrieve pr info: {e.output}')
+        error(f'failed to retrieve pr info: {e.stderr.strip()}')
 
     pr_info = {
         'pr_link': (org, repo, pr_number),
@@ -256,7 +256,7 @@ def query_pr_actions(org, repo, pr_number):
             ],
             stdout=subprocess.PIPE, check=True).stdout.decode())
     except subprocess.CalledProcessError as e:
-        error(f'failed to retrieve workflow runs: {e.output}')
+        error(f'failed to retrieve workflow runs: {e.stderr.strip()}')
 
     results = {}
     for run in response['workflow_runs']:
@@ -280,7 +280,7 @@ def query_pr_commits(org, repo, pr_number):
             ],
             stdout=subprocess.PIPE, check=True).stdout.decode())
     except subprocess.CalledProcessError as e:
-        error(f'failed to retrieve pr commits: {e.output}')
+        error(f'failed to retrieve pr commits: {e.stderr.strip()}')
 
     results = []
     for commit in response['commits']:
@@ -389,7 +389,7 @@ def show_pr(org, repo, pr_number, show_json):
 
     end()
 
-def verify_pr(org, repo, pr_number, issue_number, issue_miletsone, force,
+def verify_pr(org, repo, pr_number, issue_number, issue_miletsone, no_checks,
               no_issue, no_milestone):
     pr_info = query_pr_info(org, repo, pr_number)
 
@@ -408,19 +408,17 @@ def verify_pr(org, repo, pr_number, issue_number, issue_miletsone, force,
                 error("can't determine milestone associated with issue\n"
                       "assign milestone to issue or use --milestone or --no-milestone")
 
-    if not force:
-        if pr_info['pr_state'] != 'open':
-            error("can't proceed on non-open pr\n"
-                  "use --force to skip this check")
+    if pr_info['pr_state'] != 'open':
+        error("can't proceed on non-open pr")
 
-        if pr_info['pr_draft']:
-            error("can't proceed on draft pr\n"
-                  "use --force to skip this check")
+    if pr_info['pr_draft']:
+        error("can't proceed on draft pr")
 
+    if not no_checks:
         for action_name, action_result in query_pr_actions(org, repo, pr_number):
             if action_result != 'success':
                 error("can't proceed on pr with failed checks\n"
-                      "use --force to skip this check")
+                      "use --no-checks to proceed anyway")
 
 def checkout_pr(org, repo, pr_number):
     pr_info = query_pr_info(org, repo, pr_number)
@@ -458,7 +456,7 @@ def update_pr(org, repo, pr_number, issue_number, issue_milestone,
                 ['gh', 'api', f'/repos/{org}/{repo}/pulls/{pr_number}'],
                 capture_output=True, text=True, check=True).stdout)
         except subprocess.CalledProcessError as e:
-            error(f'failed to retrieve pr info: {e.output}')
+            error(f'failed to retrieve pr info: {e.stderr.strip()}')
 
         body = '{}\n\n{}'.format(
             make_prefix(org, repo, (org, repo, issue_number)),
@@ -641,12 +639,12 @@ action_parser.add_argument('-m', '--milestone', type=str, dest='milestone_name',
                     help="overwrite issue milestone")
 action_parser.add_argument('-M', '--no-milestone', action='store_true', dest='no_milestone',
                     help="don't set issue milestone")
+action_parser.add_argument('--no-checks', action='store_true', dest='no_checks',
+                    help="proceed even if pr checks are failed")
 action_parser.add_argument('--no-push', action='store_true', dest='no_push',
                     help="don't actually push anything")
 action_parser.add_argument('-n', '--dry-run', action='store_true', dest='dry_run',
                     help="don't actually run commands, just print them")
-action_parser.add_argument('-f', '--force', action='store_true', dest='force',
-                    help="proceed even if pr doesn't match criteria")
 
 subparsers = parser.add_subparsers(dest='command')
 
@@ -712,7 +710,7 @@ if args.command == 'rebase':
 
 if args.command == 'link' or args.command == 'unlink':
     verify_pr(args.org, args.repo, args.pr_number, args.issue_number,
-              args.milestone_name, args.force, args.no_issue, args.no_milestone)
+              args.milestone_name, args.no_checks, args.no_issue, args.no_milestone)
     orig_path = enter_worktree()
     pushed = False
     try:
@@ -737,7 +735,7 @@ if args.command == 'merge':
     if int(bool(args.rebase)) + int(bool(args.squash)) != 1:
         error("either --rebase or --squash should be specified")
     verify_pr(args.org, args.repo, args.pr_number, args.issue_number,
-              args.milestone_name, args.force, args.no_issue, args.no_milestone)
+              args.milestone_name, args.no_checks, args.no_issue, args.no_milestone)
     orig_path = enter_worktree()
     merged = False
     try:
