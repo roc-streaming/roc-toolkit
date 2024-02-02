@@ -160,9 +160,8 @@ ReceiverSession::ReceiverSession(
         }
         frm_reader = depacketizer_.get();
 
-        if (session_config.watchdog.no_playback_timeout != 0
-            || session_config.watchdog.choppy_playback_timeout != 0
-            || session_config.watchdog.frame_status_window != 0) {
+        if (session_config.watchdog.no_playback_timeout >= 0
+            || session_config.watchdog.choppy_playback_timeout >= 0) {
             watchdog_.reset(new (watchdog_) audio::Watchdog(
                 *frm_reader, to_spec, session_config.watchdog, arena));
             if (!watchdog_ || !watchdog_->is_valid()) {

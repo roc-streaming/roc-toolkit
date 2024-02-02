@@ -62,47 +62,75 @@ enum LatencyTunerProfile {
 //! Latency settings.
 struct LatencyConfig {
     //! Latency tuner backend to use.
+    //! @remarks
+    //!  Defines which latency to monitor & tune.
     LatencyTunerBackend tuner_backend;
 
     //! Latency tuner profile to use.
+    //! @remarks
+    //!  Defines how smooth is the tuning.
     LatencyTunerProfile tuner_profile;
 
     //! Target latency.
-    //! If zero, latency tuning should be disabled, otherwise an error occurs.
-    //! If negative, default value is used if possible.
+    //! @remarks
+    //!  Latency tuner will try to keep latency close to this value.
+    //! @note
+    //!  If zero, default value is used if possible.
+    //!  Negative value is an error.
     core::nanoseconds_t target_latency;
 
-    //! Maximum allowed deviation from target latency.
-    //! If the latency goes out of bounds, the session is terminated.
-    //! If zero, bounds checks are disabled.
-    //! If negative, default value is used if possible.
-    core::nanoseconds_t latency_tolerance;
+    //! Minimum allowed latency.
+    //! @remarks
+    //!  If the latency goes out of bounds, the session is terminated.
+    //! @note
+    //!  If zero, default value is used if possible.
+    //!  Negative value is allowed.
+    core::nanoseconds_t min_latency;
+
+    //! Maximum allowed latency.
+    //! @remarks
+    //!  If the latency goes out of bounds, the session is terminated.
+    //! @note
+    //!  If zero, default value is used if possible.
+    //!  Negative value is allowed (but doesn't make sense).
+    core::nanoseconds_t max_latency;
 
     //! Maximum delay since last packet before queue is considered stalling.
-    //! If niq_stalling becomes larger than stalling_tolerance, latency
-    //! tolerance checks are temporary disabled.
-    //! If zero, stalling checks are disabled.
-    //! If negative, default value is used if possible.
+    //! @remarks
+    //!  If niq_stalling becomes larger than stalling_tolerance, latency
+    //!  tolerance checks are temporary disabled.
+    //! @note
+    //!  If zero, default value is used if possible.
+    //!  Negative value is an error.
     core::nanoseconds_t stale_tolerance;
 
     //! Scaling update interval.
-    //! How often to run FreqEstimator and update Resampler scaling.
+    //! @remarks
+    //!  How often to run FreqEstimator and update Resampler scaling.
+    //! @note
+    //!  If zero, default value is used.
+    //!  Negative value is an error.
     core::nanoseconds_t scaling_interval;
 
     //! Maximum allowed deviation of freq_coeff from 1.0.
-    //! If the scaling goes out of bounds, it is trimmed.
-    //! For example, 0.01 allows freq_coeff values in range [0.99; 1.01].
+    //! @remarks
+    //!  If the scaling goes out of bounds, it is trimmed.
+    //!  For example, 0.01 allows freq_coeff values in range [0.99; 1.01].
+    //! @note
+    //!  If zero, default value is used.
+    //!  Negative value is an error.
     float scaling_tolerance;
 
     //! Initialize.
     LatencyConfig()
         : tuner_backend(LatencyTunerBackend_Default)
         , tuner_profile(LatencyTunerProfile_Default)
-        , target_latency(-1)
-        , latency_tolerance(-1)
-        , stale_tolerance(-1)
-        , scaling_interval(5 * core::Millisecond)
-        , scaling_tolerance(0.005f) {
+        , target_latency(0)
+        , min_latency(0)
+        , max_latency(0)
+        , stale_tolerance(0)
+        , scaling_interval(0)
+        , scaling_tolerance(0) {
     }
 
     //! Automatically fill missing settings.
@@ -192,10 +220,10 @@ private:
 
     packet::stream_timestamp_t stream_pos_;
 
-    packet::stream_timestamp_t update_interval_;
-    packet::stream_timestamp_t update_pos_;
+    packet::stream_timestamp_diff_t scale_interval_;
+    packet::stream_timestamp_t scale_pos_;
 
-    packet::stream_timestamp_t report_interval_;
+    packet::stream_timestamp_diff_t report_interval_;
     packet::stream_timestamp_t report_pos_;
 
     float freq_coeff_;

@@ -40,10 +40,17 @@ Packetizer::Packetizer(packet::IWriter& writer,
                      "packetizer: required valid sample spec with raw format: %s",
                      sample_spec_to_str(sample_spec_).c_str());
 
-    if (packet_length > 0) {
-        samples_per_packet_ = sample_spec.ns_2_stream_timestamp(packet_length);
-        payload_size_ = payload_encoder.encoded_byte_count(samples_per_packet_);
+    if (packet_length <= 0 || sample_spec.ns_2_stream_timestamp(packet_length) <= 0) {
+        roc_log(LogError,
+                "packetizer: invalid config: packet length is invalid:"
+                " packet_length=%.3fms samples_per_packet=%lu",
+                (double)packet_length / core::Millisecond,
+                (unsigned long)samples_per_packet_);
+        return;
     }
+
+    samples_per_packet_ = sample_spec.ns_2_stream_timestamp(packet_length);
+    payload_size_ = payload_encoder.encoded_byte_count(samples_per_packet_);
 
     roc_log(
         LogDebug,
@@ -51,11 +58,6 @@ Packetizer::Packetizer(packet::IWriter& writer,
         " packet_length=%.3fms samples_per_packet=%lu payload_size=%lu sample_spec=%s",
         (double)packet_length / core::Millisecond, (unsigned long)samples_per_packet_,
         (unsigned long)payload_size_, sample_spec_to_str(sample_spec_).c_str());
-
-    if (samples_per_packet_ == 0 || payload_size_ == 0) {
-        roc_log(LogError, "packetizer: invalid config: packet length out of bounds");
-        return;
-    }
 
     valid_ = true;
 }

@@ -18,21 +18,25 @@ void WatchdogConfig::deduce_defaults(core::nanoseconds_t target_latency) {
         target_latency = 200 * core::Millisecond;
     }
 
-    if (no_playback_timeout < 0) {
+    if (no_playback_timeout == 0) {
         no_playback_timeout = target_latency * 4 / 3;
     }
 
-    if (choppy_playback_timeout < 0) {
+    if (choppy_playback_timeout == 0) {
         choppy_playback_timeout = 2 * core::Second;
     }
 
-    if (choppy_playback_window < 0) {
+    if (choppy_playback_window == 0) {
         choppy_playback_window =
             std::min(300 * core::Millisecond, choppy_playback_timeout / 4);
     }
 
-    if (warmup_duration < 0) {
+    if (warmup_duration == 0) {
         warmup_duration = target_latency;
+    }
+
+    if (frame_status_window == 0) {
+        frame_status_window = 20;
     }
 }
 
@@ -56,48 +60,26 @@ Watchdog::Watchdog(IFrameReader& reader,
     , show_status_(false)
     , alive_(true)
     , valid_(false) {
-    if (config.no_playback_timeout < 0 || config.choppy_playback_timeout < 0
-        || config.choppy_playback_window < 0 || config.warmup_duration < 0) {
-        roc_log(LogError,
-                "watchdog: invalid config: negative duration:"
-                " no_playback_timeout=%.3fms choppy_playback_timeout=%.3fms"
-                " choppy_playback_window=%.3fms warmup_duration=%.3fms",
-                (double)config.no_playback_timeout / core::Millisecond,
-                (double)config.choppy_playback_timeout / core::Millisecond,
-                (double)config.choppy_playback_window / core::Millisecond,
-                (double)config.warmup_duration / core::Millisecond);
-        return;
+    if (config.no_playback_timeout >= 0) {
+        max_blank_duration_ =
+            std::max(sample_spec_.ns_2_stream_timestamp(config.no_playback_timeout), 1u);
     }
 
-    max_blank_duration_ = sample_spec_.ns_2_stream_timestamp(config.no_playback_timeout);
-    max_drops_duration_ =
-        sample_spec_.ns_2_stream_timestamp(config.choppy_playback_timeout);
-    drops_detection_window_ =
-        sample_spec_.ns_2_stream_timestamp(config.choppy_playback_window);
-    warmup_duration_ = sample_spec_.ns_2_stream_timestamp(config.warmup_duration);
+    if (config.choppy_playback_timeout >= 0) {
+        max_drops_duration_ = std::max(
+            sample_spec_.ns_2_stream_timestamp(config.choppy_playback_timeout), 1u);
+
+        drops_detection_window_ = std::max(
+            sample_spec_.ns_2_stream_timestamp(config.choppy_playback_window), 1u);
+    }
+
+    if (config.warmup_duration >= 0) {
+        warmup_duration_ =
+            std::max(sample_spec_.ns_2_stream_timestamp(config.warmup_duration), 1u);
+    }
 
     last_pos_before_blank_ = warmup_duration_;
     in_warmup_ = warmup_duration_ != 0;
-
-    if (max_drops_duration_ != 0
-        && (drops_detection_window_ < 1
-            || drops_detection_window_ > max_drops_duration_)) {
-        roc_log(LogError,
-                "watchdog: invalid config: choppy_playback_window out of bounds:"
-                " no_playback_timeout=%.3fms choppy_playback_timeout=%.3fms"
-                " choppy_playback_window=%.3fms warmup_duration=%.3fms",
-                (double)config.no_playback_timeout / core::Millisecond,
-                (double)config.choppy_playback_timeout / core::Millisecond,
-                (double)config.choppy_playback_window / core::Millisecond,
-                (double)config.warmup_duration / core::Millisecond);
-        return;
-    }
-
-    if (config.frame_status_window != 0) {
-        if (!status_.resize(config.frame_status_window + 1)) {
-            return;
-        }
-    }
 
     roc_log(LogDebug,
             "watchdog: initializing:"
@@ -111,6 +93,20 @@ Watchdog::Watchdog(IFrameReader& reader,
             sample_spec_.stream_timestamp_2_ms(drops_detection_window_),
             (unsigned long)warmup_duration_,
             sample_spec_.stream_timestamp_2_ms(warmup_duration_));
+
+    if (max_drops_duration_ != 0
+        && (drops_detection_window_ < 1
+            || drops_detection_window_ > max_drops_duration_)) {
+        roc_log(LogError,
+                "watchdog: invalid config: drop_detection_window out of bounds");
+        return;
+    }
+
+    if (config.frame_status_window != 0) {
+        if (!status_.resize(config.frame_status_window + 1)) {
+            return;
+        }
+    }
 
     valid_ = true;
 }

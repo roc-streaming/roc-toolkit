@@ -60,7 +60,8 @@ enum {
     FramesPerPacket = SamplesPerPacket / SamplesPerFrame,
 
     Latency = SamplesPerPacket * 8,
-    Tolerance = Latency * 100,
+    MinLatency = -Latency * 100,
+    MaxLatency = +Latency * 100,
     Timeout = Latency * 13,
     Warmup = Latency,
 
@@ -121,8 +122,9 @@ TEST_GROUP(receiver_source) {
     address::Protocol proto1;
     address::Protocol proto2;
 
-    ReceiverConfig make_custom_config(int latency, int latency_tolerance,
-                                      int watchdog_timeout, int watchdog_warmup) {
+    ReceiverConfig make_custom_config(int target_latency, int min_latency,
+                                      int max_latency, int watchdog_timeout,
+                                      int watchdog_warmup) {
         ReceiverConfig config;
 
         config.common.output_sample_spec = output_sample_spec;
@@ -133,9 +135,11 @@ TEST_GROUP(receiver_source) {
         config.default_session.latency.tuner_backend = audio::LatencyTunerBackend_Niq;
         config.default_session.latency.tuner_profile = audio::LatencyTunerProfile_Intact;
         config.default_session.latency.target_latency =
-            latency * core::Second / (int)output_sample_spec.sample_rate();
-        config.default_session.latency.latency_tolerance =
-            latency_tolerance * core::Second / (int)output_sample_spec.sample_rate();
+            target_latency * core::Second / (int)output_sample_spec.sample_rate();
+        config.default_session.latency.min_latency =
+            min_latency * core::Second / (int)output_sample_spec.sample_rate();
+        config.default_session.latency.max_latency =
+            max_latency * core::Second / (int)output_sample_spec.sample_rate();
 
         config.default_session.watchdog.no_playback_timeout =
             watchdog_timeout * core::Second / (int)output_sample_spec.sample_rate();
@@ -150,7 +154,7 @@ TEST_GROUP(receiver_source) {
     }
 
     ReceiverConfig make_default_config() {
-        return make_custom_config(Latency, Tolerance, Timeout, Warmup);
+        return make_custom_config(Latency, MinLatency, MaxLatency, Timeout, Warmup);
     }
 
     void init(int output_sample_rate, audio::ChannelMask output_channels,
@@ -418,8 +422,8 @@ TEST(receiver_source, timeout_smaller_than_latency) {
     init(Rate, Chans, Rate, Chans);
 
     ReceiverSource receiver(
-        make_custom_config(LargeLatency, Tolerance, Timeout, LargeWarmup), encoding_map,
-        packet_factory, byte_buffer_factory, sample_buffer_factory, arena);
+        make_custom_config(LargeLatency, MinLatency, MaxLatency, Timeout, LargeWarmup),
+        encoding_map, packet_factory, byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);

@@ -759,30 +759,43 @@ typedef struct roc_sender_config {
      * Exact semantics of this field, i.e. how latency is defined, depends on
      * \c latency_tuner_backend field.
      *
-     * If latency tuning is enabled on sender (\c latency_tuner_profile), it will
-     * adjust its clock to keep actual latency as close as possible to the target.
+     * If latency tuning is enabled on sender (if \c latency_tuner_profile is not
+     * \ref ROC_LATENCY_TUNER_PROFILE_INTACT), sender will adjust its clock to keep
+     * actual latency as close as possible to the target.
      *
-     * If latency tolerance is set on sender (\c latency_tolerance), it will
-     * restart session when actual latency differs from target too much.
+     * If latency bounding is enabled on sender (if any of \c target_latency,
+     * \c min_latency, or \c max_latency is non-zero), sender will restart session
+     * if actual latency differs too much from target.
      *
-     * If latency tuning or latency tolerance is enabled on sender, you should
-     * explicitly set target latency to a non-zero value, there is no default.
+     * By default, latency tuning and bounding are disabled on sender. If you enable
+     * it on sender, you need to disable it on receiver. You also need to set
+     * \c target_latency to the exact same value on both sides.
      *
-     * By default, latency tuning is disabled on sender. If you enable it on sender,
-     * you need to disable it on receiver. You also need to set \c target_latency
-     * to the same value on both sides.
+     * If zero, no default is used (unlike receiver).
      */
     unsigned long long target_latency;
 
-    /** Maximum allowed delta between current and target latency, in nanoseconds.
+    /** Minimum allowed latency, in nanoseconds.
      *
-     * When set, if delta between actual latency and target latency becomes larger
-     * than the tolerance, the session is restarted.
+     * If latency becomes lower than this value, the session is restarted.
      *
-     * If zero, default value is used based on \c target_latency, if it's set, or
-     * checks are disabled if it's not set. If negative, the checks are disabled.
+     * Negative value for \c min_latency is allowed and is useful since latency can
+     * temporarily become negative on burst losses.
+     *
+     * If zero, default is used only if \c target_latency is set (unlike receiver).
      */
-    long long latency_tolerance;
+    long long min_latency;
+
+    /** Maximum allowed latency, in nanoseconds.
+     *
+     * If latency becomes higher than this value, the session is restarted.
+     *
+     * Negative value for \c max_latency is allowed, but does not have any
+     * practical sense.
+     *
+     * If zero, default is used only if \c target_latency is set (unlike receiver).
+     */
+    long long max_latency;
 } roc_sender_config;
 
 /** Receiver configuration.
@@ -849,27 +862,48 @@ typedef struct roc_receiver_config {
      * Exact semantics of this field, i.e. how latency is defined, depends on
      * \c latency_tuner_backend field.
      *
-     * If latency tuning is enabled on receiver (\c latency_tuner_profile), it will
-     * adjust its clock to keep actual latency as close as possible to the target.
+     * If latency tuning is enabled on receiver (if \c latency_tuner_profile is not
+     * \ref ROC_LATENCY_TUNER_PROFILE_INTACT), receiver will adjust its clock to keep
+     * actual latency as close as possible to the target.
      *
-     * If latency tolerance is set on receiver (\c latency_tolerance), it will
-     * restart session when actual latency differs from target too much.
+     * If latency bounding is enabled on receiver (if any of \c target_latency,
+     * \c min_latency, or \c max_latency is non-zero), receiver will restart session
+     * if actual latency differs too much from target.
      *
-     * If zero, default value is used, unless latency tuning is disabled, in which
-     * case it should be specified explicitly.
+     * By default, latency tuning and bounding are enabled on receiver. If you disable
+     * it on receiver, you likely want to enable it on sender. In this case you also
+     * need to set \c target_latency to the exact same value on both sides.
+     *
+     * If zero, and if \c latency_tuner_profile is not
+     * \ref ROC_LATENCY_TUNER_PROFILE_INTACT, default value is used.
      */
     unsigned long long target_latency;
 
-    /** Maximum allowed delta between current and target latency, in nanoseconds.
+    /** Minimum allowed latency, in nanoseconds.
      *
-     * If the actual latency differs from the target by more than the tolerance, the
-     * session is terminated (it can then restart if traffic keeps coming). Receiver
-     * itself is not terminated; if there are no sessions, it produces zeros.
+     * If latency becomes lower than this value, the session is terminated (it can
+     * then restart if traffic keeps coming). Receiver itself is not terminated;
+     * if there are no sessions, it produces zeros.
      *
-     * If zero, default value is used based on \c target_latency. If negative,
-     * the checks are disabled.
+     * Negative value for \c min_latency is allowed and is useful since latency can
+     * temporarily become negative on burst losses.
+     *
+     * If zero, default value is used.
      */
-    long long latency_tolerance;
+    long long min_latency;
+
+    /** Maximum allowed latency, in nanoseconds.
+     *
+     * If latency becomes higher than this value, the session is terminated (it can
+     * then restart if traffic keeps coming). Receiver itself is not terminated;
+     * if there are no sessions, it produces zeros.
+     *
+     * Negative value for \c max_latency is allowed, but does not have any
+     * practical sense.
+     *
+     * If zero, default value is used.
+     */
+    long long max_latency;
 
     /** Timeout for the lack of playback, in nanoseconds.
      *
@@ -880,7 +914,7 @@ typedef struct roc_receiver_config {
      * This mechanism allows to detect dead, hanging, or incompatible clients that
      * generate unparseable packets.
      *
-     * If zero, default value is used. If negative, the checks are disabled.
+     * If zero, default value is used. If negative, the check is disabled.
      */
     long long no_playback_timeout;
 
@@ -893,7 +927,7 @@ typedef struct roc_receiver_config {
      * This mechanism allows to detect situations when playback continues but there
      * are frequent glitches, for example because there is a high ratio of late packets.
      *
-     * If zero, default value is used. If negative, the checks are disabled.
+     * If zero, default value is used. If negative, the check is disabled.
      */
     long long choppy_playback_timeout;
 } roc_receiver_config;

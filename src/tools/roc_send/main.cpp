@@ -154,10 +154,18 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (args.latency_tolerance_given) {
-        if (!core::parse_duration(args.latency_tolerance_arg,
-                                  sender_config.latency.latency_tolerance)) {
-            roc_log(LogError, "invalid --latency-tolerance");
+    if (args.min_latency_given) {
+        if (!core::parse_duration(args.min_latency_arg,
+                                  sender_config.latency.min_latency)) {
+            roc_log(LogError, "invalid --min-latency");
+            return 1;
+        }
+    }
+
+    if (args.max_latency_given) {
+        if (!core::parse_duration(args.max_latency_arg,
+                                  sender_config.latency.max_latency)) {
+            roc_log(LogError, "invalid --max-latency");
             return 1;
         }
     }

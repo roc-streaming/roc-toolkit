@@ -30,7 +30,10 @@ struct WatchdogConfig {
     //! @remarks
     //!  Maximum allowed period during which every frame is blank. After this period,
     //!  the session is terminated. This mechanism allows to detect dead, hanging, or
-    //!  broken clients. Set to zero to disable.
+    //!  broken clients.
+    //! @note
+    //!  If zero, default value is used.
+    //!  If negative, the check is disabled.
     core::nanoseconds_t no_playback_timeout;
 
     //! Timeout for frequent stuttering, nanoseconds.
@@ -40,12 +43,16 @@ struct WatchdogConfig {
     //!  is incomplete (it may be the same frame). After this period, the session is
     //!  terminated. This mechanism allows to detect the vicious circle when all client
     //!  packets are a bit late and we are constantly dropping them producing unpleasant
-    //!  noise. Set to zero to disable.
+    //!  noise.
+    //! @note
+    //!  If zero, default value is used.
+    //!  If negative, the check is disabled.
     core::nanoseconds_t choppy_playback_timeout;
 
     //! Window size of detecting stuttering, nanoseconds.
-    //! @see
-    //!  choppy_playback_timeout
+    //! @see choppy_playback_timeout
+    //! @note
+    //!  If zero, default value is used.
     core::nanoseconds_t choppy_playback_window;
 
     //! Duration of the warmup phase in the beginning, nanoseconds
@@ -55,20 +62,25 @@ struct WatchdogConfig {
     //!  be terminated in case a non-blank frame occurs during it. This mechanism allows
     //!  watchdog to work with latency longer than no_playback_timeout. Usually is equal
     //!  to target_latency.
+    //! @note
+    //!  If zero, default value is used.
+    //!  If negative, warmup phase is disabled.
     core::nanoseconds_t warmup_duration;
 
     //! Frame status window size for logging, number of frames.
     //! @remarks
     //!  Used for debug logging. Set to zero to disable.
+    //! @note
+    //!  If zero, default value is used.
     size_t frame_status_window;
 
     //! Initialize config with default values.
     WatchdogConfig()
-        : no_playback_timeout(-1)
-        , choppy_playback_timeout(-1)
-        , choppy_playback_window(-1)
-        , warmup_duration(-1)
-        , frame_status_window(20) {
+        : no_playback_timeout(0)
+        , choppy_playback_timeout(0)
+        , choppy_playback_window(0)
+        , warmup_duration(0)
+        , frame_status_window(0) {
     }
 
     //! Automatically fill missing settings.

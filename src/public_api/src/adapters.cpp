@@ -98,10 +98,12 @@ bool sender_config_from_user(node::Context& context,
         out.latency.target_latency = (core::nanoseconds_t)in.target_latency;
     }
 
-    if (in.latency_tolerance < 0) {
-        out.latency.latency_tolerance = 0;
-    } else if (in.latency_tolerance > 0) {
-        out.latency.latency_tolerance = (core::nanoseconds_t)in.latency_tolerance;
+    if (in.min_latency != 0) {
+        out.latency.min_latency = (core::nanoseconds_t)in.min_latency;
+    }
+
+    if (in.max_latency != 0) {
+        out.latency.max_latency = (core::nanoseconds_t)in.max_latency;
     }
 
     out.enable_timing = false;
@@ -155,22 +157,19 @@ bool receiver_config_from_user(node::Context&,
             (core::nanoseconds_t)in.target_latency;
     }
 
-    if (in.latency_tolerance < 0) {
-        out.default_session.latency.latency_tolerance = 0;
-    } else if (in.latency_tolerance > 0) {
-        out.default_session.latency.latency_tolerance =
-            (core::nanoseconds_t)in.latency_tolerance;
+    if (in.min_latency != 0) {
+        out.default_session.latency.min_latency = (core::nanoseconds_t)in.min_latency;
     }
 
-    if (in.no_playback_timeout < 0) {
-        out.default_session.watchdog.no_playback_timeout = 0;
-    } else if (in.no_playback_timeout > 0) {
+    if (in.max_latency != 0) {
+        out.default_session.latency.max_latency = (core::nanoseconds_t)in.max_latency;
+    }
+
+    if (in.no_playback_timeout != 0) {
         out.default_session.watchdog.no_playback_timeout = in.no_playback_timeout;
     }
 
-    if (in.choppy_playback_timeout < 0) {
-        out.default_session.watchdog.choppy_playback_timeout = 0;
-    } else if (in.choppy_playback_timeout > 0) {
+    if (in.choppy_playback_timeout != 0) {
         out.default_session.watchdog.choppy_playback_timeout = in.choppy_playback_timeout;
     }
 
@@ -340,23 +339,22 @@ ROC_ATTR_NO_SANITIZE_UB
 bool channel_set_from_user(audio::ChannelSet& out,
                            roc_channel_layout in,
                            unsigned int in_tracks) {
+    out.clear();
+
     switch (enum_from_user(in)) {
     case ROC_CHANNEL_LAYOUT_MULTITRACK:
-        out.clear();
         out.set_layout(audio::ChanLayout_Multitrack);
         out.set_order(audio::ChanOrder_None);
         out.set_channel_range(0, in_tracks - 1, true);
         return true;
 
     case ROC_CHANNEL_LAYOUT_MONO:
-        out.clear();
         out.set_layout(audio::ChanLayout_Surround);
         out.set_order(audio::ChanOrder_Smpte);
         out.set_channel_mask(audio::ChanMask_Surround_Mono);
         return true;
 
     case ROC_CHANNEL_LAYOUT_STEREO:
-        out.clear();
         out.set_layout(audio::ChanLayout_Surround);
         out.set_order(audio::ChanOrder_Smpte);
         out.set_channel_mask(audio::ChanMask_Surround_Stereo);
