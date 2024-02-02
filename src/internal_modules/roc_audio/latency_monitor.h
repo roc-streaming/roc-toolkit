@@ -128,6 +128,7 @@ private:
     core::nanoseconds_t capture_ts_;
 
     const SampleSpec packet_sample_spec_;
+    const SampleSpec frame_sample_spec_;
 
     bool alive_;
     bool valid_;

@@ -34,6 +34,7 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
     , enable_scaling_(config.tuner_profile != audio::LatencyTunerProfile_Intact)
     , capture_ts_(0)
     , packet_sample_spec_(packet_sample_spec)
+    , frame_sample_spec_(frame_sample_spec)
     , alive_(true)
     , valid_(false) {
     if (!tuner_.is_valid()) {
@@ -68,15 +69,21 @@ LatencyMetrics LatencyMonitor::metrics() const {
 bool LatencyMonitor::read(Frame& frame) {
     roc_panic_if(!is_valid());
 
-    if (!alive_) {
-        return false;
+    if (alive_) {
+        compute_niq_latency_();
+        query_link_meter_();
+
+        if (!pre_process_(frame)) {
+            alive_ = false;
+        }
     }
 
-    compute_niq_latency_();
-    query_link_meter_();
-
-    if (!pre_process_(frame)) {
-        alive_ = false;
+    if (!alive_) {
+        if (frame.num_bytes() != 0) {
+            memset(frame.bytes(), 0, frame.num_bytes());
+            frame.set_duration(
+                frame_sample_spec_.bytes_2_stream_timestamp(frame.num_bytes()));
+        }
         return false;
     }
 
