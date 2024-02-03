@@ -14,7 +14,6 @@
 
 #include "roc_audio/iframe_reader.h"
 #include "roc_audio/mixer.h"
-#include "roc_audio/poison_reader.h"
 #include "roc_audio/profiling_reader.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/iarena.h"
@@ -125,7 +124,6 @@ private:
     StateTracker state_tracker_;
 
     core::Optional<audio::Mixer> mixer_;
-    core::Optional<audio::PoisonReader> poisoner_;
     core::Optional<audio::ProfilingReader> profiler_;
 
     core::List<ReceiverSlot> slots_;

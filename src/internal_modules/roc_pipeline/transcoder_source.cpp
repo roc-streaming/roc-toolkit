@@ -55,13 +55,6 @@ TranscoderSource::TranscoderSource(const TranscoderConfig& config,
                                         audio::Sample_RawFormat,
                                         config_.output_sample_spec.channel_set());
 
-        resampler_poisoner_.reset(new (resampler_poisoner_)
-                                      audio::PoisonReader(*frm_reader));
-        if (!resampler_poisoner_) {
-            return;
-        }
-        frm_reader = resampler_poisoner_.get();
-
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
             arena, buffer_factory, config_.resampler, from_spec, to_spec));
         if (!resampler_) {
@@ -75,12 +68,6 @@ TranscoderSource::TranscoderSource(const TranscoderConfig& config,
         }
         frm_reader = resampler_reader_.get();
     }
-
-    pipeline_poisoner_.reset(new (pipeline_poisoner_) audio::PoisonReader(*frm_reader));
-    if (!pipeline_poisoner_) {
-        return;
-    }
-    frm_reader = pipeline_poisoner_.get();
 
     if (config_.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingReader(

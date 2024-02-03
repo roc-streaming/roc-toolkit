@@ -201,13 +201,6 @@ ReceiverSession::ReceiverSession(
                                         audio::Sample_RawFormat,
                                         common_config.output_sample_spec.channel_set());
 
-        resampler_poisoner_.reset(new (resampler_poisoner_)
-                                      audio::PoisonReader(*frm_reader));
-        if (!resampler_poisoner_) {
-            return;
-        }
-        frm_reader = resampler_poisoner_.get();
-
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
             arena, sample_buffer_factory, session_config.resampler, from_spec, to_spec));
         if (!resampler_) {
@@ -221,12 +214,6 @@ ReceiverSession::ReceiverSession(
         }
         frm_reader = resampler_reader_.get();
     }
-
-    session_poisoner_.reset(new (session_poisoner_) audio::PoisonReader(*frm_reader));
-    if (!session_poisoner_) {
-        return;
-    }
-    frm_reader = session_poisoner_.get();
 
     latency_monitor_.reset(new (latency_monitor_) audio::LatencyMonitor(
         *frm_reader, *source_queue_, *depacketizer_, *source_meter_,

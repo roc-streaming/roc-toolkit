@@ -19,7 +19,6 @@
 #include "roc_audio/iframe_reader.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/latency_monitor.h"
-#include "roc_audio/poison_reader.h"
 #include "roc_audio/resampler_reader.h"
 #include "roc_audio/watchdog.h"
 #include "roc_core/buffer_factory.h"
@@ -145,11 +144,8 @@ private:
 
     core::Optional<audio::ChannelMapperReader> channel_mapper_reader_;
 
-    core::Optional<audio::PoisonReader> resampler_poisoner_;
     core::Optional<audio::ResamplerReader> resampler_reader_;
     core::SharedPtr<audio::IResampler> resampler_;
-
-    core::Optional<audio::PoisonReader> session_poisoner_;
 
     core::Optional<audio::LatencyMonitor> latency_monitor_;
 

@@ -37,12 +37,6 @@ ReceiverSource::ReceiverSource(
     }
     audio::IFrameReader* frm_reader = mixer_.get();
 
-    poisoner_.reset(new (poisoner_) audio::PoisonReader(*frm_reader));
-    if (!poisoner_) {
-        return;
-    }
-    frm_reader = poisoner_.get();
-
     if (config_.common.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingReader(
             *frm_reader, arena, config_.common.output_sample_spec,
