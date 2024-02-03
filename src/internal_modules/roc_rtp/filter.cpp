@@ -43,8 +43,13 @@ status::StatusCode Filter::read(packet::PacketPtr& result_packet) {
 }
 
 bool Filter::validate_(const packet::PacketPtr& packet) {
-    if (!packet->rtp()) {
+    if (!packet->has_flags(packet::Packet::FlagRTP)) {
         roc_log(LogDebug, "rtp filter: unexpected non-rtp packet");
+        return false;
+    }
+
+    if (!packet->has_flags(packet::Packet::FlagAudio)) {
+        roc_log(LogDebug, "rtp filter: unexpected non-audio packet");
         return false;
     }
 

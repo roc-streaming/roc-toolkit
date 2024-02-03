@@ -53,21 +53,26 @@ packet::PacketPtr new_packet(PayloadType pt,
                              packet::seqnum_t sn,
                              packet::stream_timestamp_t ts,
                              core::nanoseconds_t cts = 0,
-                             packet::stream_timestamp_t duration = 0) {
+                             packet::stream_timestamp_t duration = 0,
+                             unsigned flags = (packet::Packet::FlagRTP
+                                               | packet::Packet::FlagAudio)) {
     packet::PacketPtr packet = packet_factory.new_packet();
     CHECK(packet);
 
-    packet->add_flags(packet::Packet::FlagRTP);
-    packet->rtp()->payload_type = pt;
-    packet->rtp()->source_id = src;
-    packet->rtp()->seqnum = sn;
-    packet->rtp()->stream_timestamp = ts;
-    packet->rtp()->capture_timestamp = cts;
-    packet->rtp()->duration = duration;
+    packet->add_flags(flags);
 
-    core::Slice<uint8_t> buffer = buffer_factory.new_buffer();
-    CHECK(buffer);
-    packet->rtp()->payload = buffer;
+    if (packet->rtp()) {
+        packet->rtp()->payload_type = pt;
+        packet->rtp()->source_id = src;
+        packet->rtp()->seqnum = sn;
+        packet->rtp()->stream_timestamp = ts;
+        packet->rtp()->capture_timestamp = cts;
+        packet->rtp()->duration = duration;
+
+        core::Slice<uint8_t> buffer = buffer_factory.new_buffer();
+        CHECK(buffer);
+        packet->rtp()->payload = buffer;
+    }
 
     return packet;
 }
@@ -91,25 +96,25 @@ TEST(filter, all_good) {
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 1, 1);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, filter.read(rp));
+        LONGS_EQUAL(status::StatusOK, filter.read(rp));
         CHECK(wp == rp);
     }
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 2, 2);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, filter.read(rp));
+        LONGS_EQUAL(status::StatusOK, filter.read(rp));
         CHECK(wp == rp);
     }
 
     {
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusNoData, queue.read(rp));
+        LONGS_EQUAL(status::StatusNoData, queue.read(rp));
         CHECK(!rp);
     }
 }
@@ -121,25 +126,25 @@ TEST(filter, payload_id_jump) {
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 1, 1);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, filter.read(rp));
+        LONGS_EQUAL(status::StatusOK, filter.read(rp));
         CHECK(wp == rp);
     }
 
     {
         packet::PacketPtr wp = new_packet(Pt2, Src1, 2, 2);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusNoData, filter.read(rp));
+        LONGS_EQUAL(status::StatusNoData, filter.read(rp));
         CHECK(!rp);
     }
 
     {
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusNoData, queue.read(rp));
+        LONGS_EQUAL(status::StatusNoData, queue.read(rp));
         CHECK(!rp);
     }
 }
@@ -151,25 +156,25 @@ TEST(filter, source_id_jump) {
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 1, 1);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, filter.read(rp));
+        LONGS_EQUAL(status::StatusOK, filter.read(rp));
         CHECK(wp == rp);
     }
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src2, 2, 2);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusNoData, filter.read(rp));
+        LONGS_EQUAL(status::StatusNoData, filter.read(rp));
         CHECK(!rp);
     }
 
     {
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusNoData, queue.read(rp));
+        LONGS_EQUAL(status::StatusNoData, queue.read(rp));
         CHECK(!rp);
     }
 }
@@ -190,25 +195,25 @@ TEST(filter, seqnum_no_jump) {
 
         {
             packet::PacketPtr wp = new_packet(Pt1, Src1, sn1, 1);
-            CHECK_EQUAL(status::StatusOK, queue.write(wp));
+            LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
             packet::PacketPtr rp;
-            CHECK_EQUAL(status::StatusOK, filter.read(rp));
+            LONGS_EQUAL(status::StatusOK, filter.read(rp));
             CHECK(wp == rp);
         }
 
         {
             packet::PacketPtr wp = new_packet(Pt1, Src1, sn2, 2);
-            CHECK_EQUAL(status::StatusOK, queue.write(wp));
+            LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
             packet::PacketPtr rp;
-            CHECK_EQUAL(status::StatusOK, filter.read(rp));
+            LONGS_EQUAL(status::StatusOK, filter.read(rp));
             CHECK(wp == rp);
         }
 
         {
             packet::PacketPtr rp;
-            CHECK_EQUAL(status::StatusNoData, queue.read(rp));
+            LONGS_EQUAL(status::StatusNoData, queue.read(rp));
             CHECK(!rp);
         }
     }
@@ -230,25 +235,25 @@ TEST(filter, seqnum_jump_up) {
 
         {
             packet::PacketPtr wp = new_packet(Pt1, Src1, sn1, 1);
-            CHECK_EQUAL(status::StatusOK, queue.write(wp));
+            LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
             packet::PacketPtr rp;
-            CHECK_EQUAL(status::StatusOK, filter.read(rp));
+            LONGS_EQUAL(status::StatusOK, filter.read(rp));
             CHECK(wp == rp);
         }
 
         {
             packet::PacketPtr wp = new_packet(Pt1, Src1, sn2, 2);
-            CHECK_EQUAL(status::StatusOK, queue.write(wp));
+            LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
             packet::PacketPtr rp;
-            CHECK_EQUAL(status::StatusNoData, filter.read(rp));
+            LONGS_EQUAL(status::StatusNoData, filter.read(rp));
             CHECK(!rp);
         }
 
         {
             packet::PacketPtr rp;
-            CHECK_EQUAL(status::StatusNoData, queue.read(rp));
+            LONGS_EQUAL(status::StatusNoData, queue.read(rp));
             CHECK(!rp);
         }
     }
@@ -270,25 +275,25 @@ TEST(filter, seqnum_jump_down) {
 
         {
             packet::PacketPtr wp = new_packet(Pt1, Src1, sn2, 1);
-            CHECK_EQUAL(status::StatusOK, queue.write(wp));
+            LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
             packet::PacketPtr rp;
-            CHECK_EQUAL(status::StatusOK, filter.read(rp));
+            LONGS_EQUAL(status::StatusOK, filter.read(rp));
             CHECK(wp == rp);
         }
 
         {
             packet::PacketPtr wp = new_packet(Pt1, Src1, sn1, 2);
-            CHECK_EQUAL(status::StatusOK, queue.write(wp));
+            LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
             packet::PacketPtr rp;
-            CHECK_EQUAL(status::StatusNoData, filter.read(rp));
+            LONGS_EQUAL(status::StatusNoData, filter.read(rp));
             CHECK(!rp);
         }
 
         {
             packet::PacketPtr rp;
-            CHECK_EQUAL(status::StatusNoData, queue.read(rp));
+            LONGS_EQUAL(status::StatusNoData, queue.read(rp));
             CHECK(!rp);
         }
     }
@@ -305,34 +310,34 @@ TEST(filter, seqnum_late) {
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, sn1, 1);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, filter.read(rp));
+        LONGS_EQUAL(status::StatusOK, filter.read(rp));
         CHECK(wp == rp);
     }
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, sn2, 2);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, filter.read(rp));
+        LONGS_EQUAL(status::StatusOK, filter.read(rp));
         CHECK(wp == rp);
     }
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, sn3, 3);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, filter.read(rp));
+        LONGS_EQUAL(status::StatusOK, filter.read(rp));
         CHECK(wp == rp);
     }
 
     {
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusNoData, queue.read(rp));
+        LONGS_EQUAL(status::StatusNoData, queue.read(rp));
         CHECK(!rp);
     }
 }
@@ -353,25 +358,25 @@ TEST(filter, timestamp_no_jump) {
 
         {
             packet::PacketPtr wp = new_packet(Pt1, Src1, 1, ts1);
-            CHECK_EQUAL(status::StatusOK, queue.write(wp));
+            LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
             packet::PacketPtr rp;
-            CHECK_EQUAL(status::StatusOK, filter.read(rp));
+            LONGS_EQUAL(status::StatusOK, filter.read(rp));
             CHECK(wp == rp);
         }
 
         {
             packet::PacketPtr wp = new_packet(Pt1, Src1, 2, ts2);
-            CHECK_EQUAL(status::StatusOK, queue.write(wp));
+            LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
             packet::PacketPtr rp;
-            CHECK_EQUAL(status::StatusOK, filter.read(rp));
+            LONGS_EQUAL(status::StatusOK, filter.read(rp));
             CHECK(wp == rp);
         }
 
         {
             packet::PacketPtr rp;
-            CHECK_EQUAL(status::StatusNoData, queue.read(rp));
+            LONGS_EQUAL(status::StatusNoData, queue.read(rp));
             CHECK(!rp);
         }
     }
@@ -393,25 +398,25 @@ TEST(filter, timestamp_jump_up) {
 
         {
             packet::PacketPtr wp = new_packet(Pt1, Src1, 1, ts1);
-            CHECK_EQUAL(status::StatusOK, queue.write(wp));
+            LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
             packet::PacketPtr rp;
-            CHECK_EQUAL(status::StatusOK, filter.read(rp));
+            LONGS_EQUAL(status::StatusOK, filter.read(rp));
             CHECK(wp == rp);
         }
 
         {
             packet::PacketPtr wp = new_packet(Pt1, Src1, 2, ts2);
-            CHECK_EQUAL(status::StatusOK, queue.write(wp));
+            LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
             packet::PacketPtr rp;
-            CHECK_EQUAL(status::StatusNoData, filter.read(rp));
+            LONGS_EQUAL(status::StatusNoData, filter.read(rp));
             CHECK(!rp);
         }
 
         {
             packet::PacketPtr rp;
-            CHECK_EQUAL(status::StatusNoData, queue.read(rp));
+            LONGS_EQUAL(status::StatusNoData, queue.read(rp));
             CHECK(!rp);
         }
     }
@@ -433,25 +438,25 @@ TEST(filter, timestamp_jump_down) {
 
         {
             packet::PacketPtr wp = new_packet(Pt1, Src1, 1, ts2);
-            CHECK_EQUAL(status::StatusOK, queue.write(wp));
+            LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
             packet::PacketPtr rp;
-            CHECK_EQUAL(status::StatusOK, filter.read(rp));
+            LONGS_EQUAL(status::StatusOK, filter.read(rp));
             CHECK(wp == rp);
         }
 
         {
             packet::PacketPtr wp = new_packet(Pt1, Src1, 2, ts1);
-            CHECK_EQUAL(status::StatusOK, queue.write(wp));
+            LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
             packet::PacketPtr rp;
-            CHECK_EQUAL(status::StatusNoData, filter.read(rp));
+            LONGS_EQUAL(status::StatusNoData, filter.read(rp));
             CHECK(!rp);
         }
 
         {
             packet::PacketPtr rp;
-            CHECK_EQUAL(status::StatusNoData, queue.read(rp));
+            LONGS_EQUAL(status::StatusNoData, queue.read(rp));
             CHECK(!rp);
         }
     }
@@ -468,34 +473,34 @@ TEST(filter, timestamp_late) {
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 2, ts1);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, filter.read(rp));
+        LONGS_EQUAL(status::StatusOK, filter.read(rp));
         CHECK(wp == rp);
     }
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 1, ts2);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, filter.read(rp));
+        LONGS_EQUAL(status::StatusOK, filter.read(rp));
         CHECK(wp == rp);
     }
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 3, ts3);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, filter.read(rp));
+        LONGS_EQUAL(status::StatusOK, filter.read(rp));
         CHECK(wp == rp);
     }
 
     {
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusNoData, queue.read(rp));
+        LONGS_EQUAL(status::StatusNoData, queue.read(rp));
         CHECK(!rp);
     }
 }
@@ -507,43 +512,43 @@ TEST(filter, cts_positive) {
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 1, 1, 100);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, filter.read(rp));
+        LONGS_EQUAL(status::StatusOK, filter.read(rp));
         CHECK(wp == rp);
     }
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 2, 2, 50);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, filter.read(rp));
+        LONGS_EQUAL(status::StatusOK, filter.read(rp));
         CHECK(wp == rp);
     }
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 3, 3, 200);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, filter.read(rp));
+        LONGS_EQUAL(status::StatusOK, filter.read(rp));
         CHECK(wp == rp);
     }
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 4, 4, 150);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, filter.read(rp));
+        LONGS_EQUAL(status::StatusOK, filter.read(rp));
         CHECK(wp == rp);
     }
 
     {
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusNoData, queue.read(rp));
+        LONGS_EQUAL(status::StatusNoData, queue.read(rp));
         CHECK(!rp);
     }
 }
@@ -555,43 +560,43 @@ TEST(filter, cts_negative) {
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 1, 1, 100);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, filter.read(rp));
+        LONGS_EQUAL(status::StatusOK, filter.read(rp));
         CHECK(wp == rp);
     }
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 2, 2, -100);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusNoData, filter.read(rp));
+        LONGS_EQUAL(status::StatusNoData, filter.read(rp));
         CHECK(!rp);
     }
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 3, 3, 200);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, filter.read(rp));
+        LONGS_EQUAL(status::StatusOK, filter.read(rp));
         CHECK(wp == rp);
     }
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 4, 4, -200);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusNoData, filter.read(rp));
+        LONGS_EQUAL(status::StatusNoData, filter.read(rp));
         CHECK(!rp);
     }
 
     {
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusNoData, queue.read(rp));
+        LONGS_EQUAL(status::StatusNoData, queue.read(rp));
         CHECK(!rp);
     }
 }
@@ -603,43 +608,43 @@ TEST(filter, cts_zero) {
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 1, 1, 100);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, filter.read(rp));
+        LONGS_EQUAL(status::StatusOK, filter.read(rp));
         CHECK(wp == rp);
     }
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 2, 2, 0);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusNoData, filter.read(rp));
+        LONGS_EQUAL(status::StatusNoData, filter.read(rp));
         CHECK(!rp);
     }
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 3, 3, 200);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, filter.read(rp));
+        LONGS_EQUAL(status::StatusOK, filter.read(rp));
         CHECK(wp == rp);
     }
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 4, 4, 0);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusNoData, filter.read(rp));
+        LONGS_EQUAL(status::StatusNoData, filter.read(rp));
         CHECK(!rp);
     }
 
     {
         packet::PacketPtr rp;
-        CHECK_EQUAL(status::StatusNoData, queue.read(rp));
+        LONGS_EQUAL(status::StatusNoData, queue.read(rp));
         CHECK(!rp);
     }
 }
@@ -653,10 +658,10 @@ TEST(filter, duration_zero) {
     const packet::stream_timestamp_t expected_duration = 32;
 
     packet::PacketPtr wp = new_packet(Pt1, Src1, 0, 0, 0, packet_duration);
-    CHECK_EQUAL(status::StatusOK, queue.write(wp));
+    LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
     packet::PacketPtr rp;
-    CHECK_EQUAL(status::StatusOK, filter.read(rp));
+    LONGS_EQUAL(status::StatusOK, filter.read(rp));
     CHECK(rp);
     CHECK(wp == rp);
 
@@ -671,14 +676,50 @@ TEST(filter, duration_non_zero) {
     const packet::stream_timestamp_t duration = 100;
 
     packet::PacketPtr wp = new_packet(Pt1, Src1, 0, 0, 0, duration);
-    CHECK_EQUAL(status::StatusOK, queue.write(wp));
+    LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
     packet::PacketPtr rp;
-    CHECK_EQUAL(status::StatusOK, filter.read(rp));
+    LONGS_EQUAL(status::StatusOK, filter.read(rp));
     CHECK(rp);
     CHECK(wp == rp);
 
     CHECK_EQUAL(duration, rp->rtp()->duration);
+}
+
+TEST(filter, flags) {
+    packet::Queue queue;
+    audio::PcmDecoder decoder(PayloadSpec);
+    Filter filter(queue, decoder, config, PayloadSpec);
+
+    {
+        packet::PacketPtr wp =
+            new_packet(Pt1, Src1, 1, 1, 100, 1, packet::Packet::FlagRTP);
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
+
+        packet::PacketPtr rp;
+        LONGS_EQUAL(status::StatusNoData, filter.read(rp));
+        CHECK(!rp);
+    }
+
+    {
+        packet::PacketPtr wp =
+            new_packet(Pt1, Src1, 1, 1, 100, 1, packet::Packet::FlagAudio);
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
+
+        packet::PacketPtr rp;
+        LONGS_EQUAL(status::StatusNoData, filter.read(rp));
+        CHECK(!rp);
+    }
+
+    {
+        packet::PacketPtr wp = new_packet(
+            Pt1, Src1, 1, 1, 100, 1, packet::Packet::FlagRTP | packet::Packet::FlagAudio);
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
+
+        packet::PacketPtr rp;
+        LONGS_EQUAL(status::StatusOK, filter.read(rp));
+        CHECK(wp == rp);
+    }
 }
 
 TEST(filter, forward_error) {
@@ -693,7 +734,7 @@ TEST(filter, forward_error) {
         Filter filter(reader, decoder, config, PayloadSpec);
 
         packet::PacketPtr pp;
-        CHECK_EQUAL(code_list[n], filter.read(pp));
+        LONGS_EQUAL(code_list[n], filter.read(pp));
         CHECK(!pp);
     }
 }
