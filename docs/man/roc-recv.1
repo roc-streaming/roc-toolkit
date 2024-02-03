@@ -84,8 +84,11 @@ Target latency, TIME units
 .BI \-\-io\-latency\fB= STRING
 Playback target latency, TIME units
 .TP
-.BI \-\-latency\-tolerance\fB= STRING
-Maximum latency deviation, TIME units
+.BI \-\-min\-latency\fB= STRING
+Minimum allowed latency, TIME units
+.TP
+.BI \-\-max\-latency\fB= STRING
+Maximum allowed latency, TIME units
 .TP
 .BI \-\-no\-play\-timeout\fB= STRING
 No playback timeout, TIME units
@@ -506,8 +509,8 @@ Manually specify thresholds and timeouts:
 .nf
 .ft C
 $ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \e
-    \-\-target\-latency=50ms \-\-latency\-tolerance=20ms \e
-    \-\-no\-play\-timeout=200s \-\-choppy\-play\-timeout=500ms
+    \-\-target\-latency=50ms \-\-min\-latency=40ms \-\-max\-latency 60ms \e
+    \-\-no\-play\-timeout=200ms \-\-choppy\-play\-timeout=500ms
 .ft P
 .fi
 .UNINDENT

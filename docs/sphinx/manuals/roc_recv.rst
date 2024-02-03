@@ -29,7 +29,8 @@ Options
 --reuseaddr                   enable SO_REUSEADDR when binding sockets
 --target-latency=STRING       Target latency, TIME units
 --io-latency=STRING           Playback target latency, TIME units
---latency-tolerance=STRING    Maximum latency deviation, TIME units
+--min-latency=STRING          Minimum allowed latency, TIME units
+--max-latency=STRING          Maximum allowed latency, TIME units
 --no-play-timeout=STRING      No playback timeout, TIME units
 --choppy-play-timeout=STRING  Choppy playback timeout, TIME units
 --frame-len=TIME              Duration of the internal frames, TIME units
@@ -301,8 +302,8 @@ Manually specify thresholds and timeouts:
 .. code::
 
     $ roc-recv -vv -s rtp://0.0.0.0:10001 \
-        --target-latency=50ms --latency-tolerance=20ms \
-        --no-play-timeout=200s --choppy-play-timeout=500ms
+        --target-latency=50ms --min-latency=40ms --max-latency 60ms \
+        --no-play-timeout=200ms --choppy-play-timeout=500ms
 
 Manually specify resampling parameters:
 

@@ -75,8 +75,11 @@ Target latency, TIME units
 .BI \-\-io\-latency\fB= STRING
 Recording target latency, TIME units
 .TP
-.BI \-\-latency\-tolerance\fB= STRING
-Maximum latency deviation, TIME units
+.BI \-\-min\-latency\fB= STRING
+Minimum allowed latency, TIME units
+.TP
+.BI \-\-max\-latency\fB= STRING
+Maximum allowed latency, TIME units
 .TP
 .BI \-\-nbsrc\fB= INT
 Number of source packets in FEC block
@@ -416,7 +419,7 @@ $ roc\-send \-vv \-i file:./input.wav \-s rtp+ldpc://192.168.0.3:10001 \e
 .UNINDENT
 .UNINDENT
 .sp
-Select lower packet length:
+Select smaller packet length:
 .INDENT 0.0
 .INDENT 3.5
 .sp
