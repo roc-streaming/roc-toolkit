@@ -127,6 +127,28 @@ public:
         }
     }
 
+    // Read num_samples samples.
+    // Don't check values.
+    // If base_capture_ts is -1, expect zero CTS, otherwise expect
+    // CTS = base_capture_ts + sample offset.
+    void read_any_samples(size_t num_samples,
+                          const audio::SampleSpec& sample_spec,
+                          core::nanoseconds_t base_capture_ts = -1) {
+        core::Slice<audio::sample_t> samples = alloc_samples_(num_samples, sample_spec);
+        audio::Frame frame(samples.data(), samples.size());
+        CHECK(source_.read(frame));
+
+        check_duration_(frame, sample_spec);
+        check_timestamp_(frame, sample_spec, base_capture_ts);
+
+        abs_offset_ += num_samples;
+        refresh_ts_offset_ = sample_spec.samples_per_chan_2_ns(abs_offset_);
+
+        if (base_capture_ts > 0) {
+            base_cts_ = base_capture_ts;
+        }
+    }
+
     // Get timestamp to be passed to refresh().
     // If base_capture_ts is -1, returns some non-zero base + sample offset,
     // otherwise returns base_capture_ts + sample offset.
