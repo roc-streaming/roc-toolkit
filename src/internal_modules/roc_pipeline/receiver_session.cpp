@@ -304,9 +304,9 @@ void ReceiverSession::generate_reports(const char* report_cname,
     roc_panic_if(!is_valid());
 
     if (n_reports > 0 && packet_router_->has_source_id(packet::Packet::FlagAudio)
-        && source_meter_->has_metrics()) {
-        const audio::LatencyMetrics latency_metrics = latency_monitor_->metrics();
-        const rtp::LinkMetrics link_metrics = source_meter_->metrics();
+        && source_meter_->has_metrics() && source_meter_->has_encoding()) {
+        const audio::LatencyMetrics& latency_metrics = latency_monitor_->metrics();
+        const packet::LinkMetrics& link_metrics = source_meter_->metrics();
 
         rtcp::RecvReport& report = *reports;
 
@@ -315,11 +315,11 @@ void ReceiverSession::generate_reports(const char* report_cname,
         report.sender_source_id =
             packet_router_->get_source_id(packet::Packet::FlagAudio);
         report.report_timestamp = report_time;
-        report.sample_rate = link_metrics.sample_rate;
+        report.sample_rate = source_meter_->encoding().sample_spec.sample_rate();
         report.ext_first_seqnum = link_metrics.ext_first_seqnum;
         report.ext_last_seqnum = link_metrics.ext_last_seqnum;
-        report.fract_loss = link_metrics.fract_loss;
-        report.cum_loss = link_metrics.cum_loss;
+        report.cum_loss = link_metrics.cum_lost_packets;
+        report.fract_loss = link_metrics.fract_lost_packets;
         report.jitter = link_metrics.jitter;
         report.niq_latency = latency_metrics.niq_latency;
         report.niq_stalling = latency_metrics.niq_stalling;
@@ -330,8 +330,8 @@ void ReceiverSession::generate_reports(const char* report_cname,
     }
 
     if (n_reports > 0 && packet_router_->has_source_id(packet::Packet::FlagRepair)
-        && repair_meter_->has_metrics()) {
-        const rtp::LinkMetrics link_metrics = repair_meter_->metrics();
+        && repair_meter_->has_metrics() && repair_meter_->has_encoding()) {
+        const packet::LinkMetrics& link_metrics = repair_meter_->metrics();
 
         rtcp::RecvReport& report = *reports;
 
@@ -340,11 +340,11 @@ void ReceiverSession::generate_reports(const char* report_cname,
         report.sender_source_id =
             packet_router_->get_source_id(packet::Packet::FlagRepair);
         report.report_timestamp = report_time;
-        report.sample_rate = link_metrics.sample_rate;
+        report.sample_rate = repair_meter_->encoding().sample_spec.sample_rate();
         report.ext_first_seqnum = link_metrics.ext_first_seqnum;
         report.ext_last_seqnum = link_metrics.ext_last_seqnum;
-        report.fract_loss = link_metrics.fract_loss;
-        report.cum_loss = link_metrics.cum_loss;
+        report.cum_loss = link_metrics.cum_lost_packets;
+        report.fract_loss = link_metrics.fract_lost_packets;
         report.jitter = link_metrics.jitter;
 
         reports++;
@@ -358,6 +358,8 @@ void ReceiverSession::process_report(const rtcp::SendReport& report) {
     if (packet_router_->has_source_id(packet::Packet::FlagAudio)
         && packet_router_->get_source_id(packet::Packet::FlagAudio)
             == report.sender_source_id) {
+        source_meter_->process_report(report);
+
         timestamp_injector_->update_mapping(report.report_timestamp,
                                             report.stream_timestamp);
     }

@@ -17,6 +17,7 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
 #include "roc_core/time.h"
+#include "roc_packet/ilink_meter.h"
 #include "roc_packet/units.h"
 #include "roc_status/status_code.h"
 
@@ -137,7 +138,7 @@ struct LatencyConfig {
     void deduce_defaults(core::nanoseconds_t default_target_latency, bool is_receiver);
 };
 
-//! Latency metrics.
+//! Latency-related metrics.
 struct LatencyMetrics {
     //! Estimated network incoming queue latency.
     //! An estimate of how much media is buffered in receiver packet queue.
@@ -152,16 +153,10 @@ struct LatencyMetrics {
     //! on receiver.
     core::nanoseconds_t e2e_latency;
 
-    //! Estimated interarrival jitter.
-    //! An estimate of the statistical variance of the RTP data packet
-    //! interarrival time.
-    core::nanoseconds_t jitter;
-
     LatencyMetrics()
         : niq_latency(0)
         , niq_stalling(0)
-        , e2e_latency(0)
-        , jitter(0) {
+        , e2e_latency(0) {
     }
 };
 
@@ -187,8 +182,9 @@ public:
     bool is_valid() const;
 
     //! Pass updated metrics to tuner.
-    //! Tuner will use new metrics next time when advance() is called.
-    void write_metrics(const LatencyMetrics& metrics);
+    //! Tuner will use new values next time when update_stream() is called.
+    void write_metrics(const LatencyMetrics& latency_metrics,
+                       const packet::LinkMetrics& link_metrics);
 
     //! Update stream latency and scaling.
     //! This method performs all actual work:

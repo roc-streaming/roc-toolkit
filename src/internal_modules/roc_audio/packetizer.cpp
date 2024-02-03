@@ -70,7 +70,7 @@ size_t Packetizer::sample_rate() const {
     return sample_spec_.sample_rate();
 }
 
-PacketizerMetrics Packetizer::metrics() const {
+const PacketizerMetrics& Packetizer::metrics() const {
     return metrics_;
 }
 

@@ -20,10 +20,10 @@ FeedbackMonitor::FeedbackMonitor(IFrameWriter& writer,
                                  const LatencyConfig& latency_config,
                                  const SampleSpec& sample_spec)
     : tuner_(latency_config, sample_spec)
-    , metrics_()
-    , has_metrics_(false)
-    , metrics_timeout_(feedback_config.source_timeout)
-    , metrics_ts_(0)
+    , latency_metrics_()
+    , has_feedback_(false)
+    , last_feedback_ts_(0)
+    , feedback_timeout_(feedback_config.source_timeout)
     , writer_(writer)
     , resampler_(resampler)
     , enable_scaling_(latency_config.tuner_profile != audio::LatencyTunerProfile_Intact)
@@ -65,20 +65,21 @@ void FeedbackMonitor::start() {
 }
 
 void FeedbackMonitor::process_feedback(packet::stream_source_t source_id,
-                                       const LatencyMetrics& metrics) {
+                                       const LatencyMetrics& latency_metrics,
+                                       const packet::LinkMetrics& link_metrics) {
     roc_panic_if(!is_valid());
 
     if (!started_) {
         return;
     }
 
-    if (!has_metrics_) {
+    if (!has_feedback_) {
         roc_log(LogInfo, "feedback monitor: got first report from receiver: source=%lu",
                 (unsigned long)source_id);
         source_ = source_id;
     }
 
-    if (has_metrics_ && source_ != source_id) {
+    if (has_feedback_ && source_ != source_id) {
         if (!source_change_limiter_.allow()) {
             // Protection from inadequately frequent SSRC changes.
             // Can happen is feedback monitor is mistakenly created when multiple
@@ -96,9 +97,11 @@ void FeedbackMonitor::process_feedback(packet::stream_source_t source_id,
         source_ = source_id;
     }
 
-    metrics_ = metrics;
-    has_metrics_ = true;
-    metrics_ts_ = core::timestamp(core::ClockMonotonic);
+    latency_metrics_ = latency_metrics;
+    link_metrics_ = link_metrics;
+
+    has_feedback_ = true;
+    last_feedback_ts_ = core::timestamp(core::ClockMonotonic);
 }
 
 void FeedbackMonitor::write(Frame& frame) {
@@ -120,29 +123,33 @@ void FeedbackMonitor::write(Frame& frame) {
     writer_.write(frame);
 }
 
-LatencyMetrics FeedbackMonitor::metrics() const {
-    return metrics_;
+const LatencyMetrics& FeedbackMonitor::latency_metrics() const {
+    return latency_metrics_;
+}
+
+const packet::LinkMetrics& FeedbackMonitor::link_metrics() const {
+    return link_metrics_;
 }
 
 bool FeedbackMonitor::update_tuner_(packet::stream_timestamp_t duration) {
-    if (!has_metrics_) {
+    if (!has_feedback_) {
         return true;
     }
 
-    if (core::timestamp(core::ClockMonotonic) - metrics_ts_ > metrics_timeout_) {
+    if (core::timestamp(core::ClockMonotonic) - last_feedback_ts_ > feedback_timeout_) {
         roc_log(LogInfo,
                 "feedback monitor: no reports from receiver during timeout:"
                 " source=%lu timeout=%.3fms",
-                (unsigned long)source_, (double)metrics_timeout_ / core::Millisecond);
+                (unsigned long)source_, (double)feedback_timeout_ / core::Millisecond);
 
-        has_metrics_ = false;
-        metrics_ts_ = 0;
+        has_feedback_ = false;
+        last_feedback_ts_ = 0;
         source_ = 0;
 
         return true;
     }
 
-    tuner_.write_metrics(metrics_);
+    tuner_.write_metrics(latency_metrics_, link_metrics_);
 
     if (!tuner_.update_stream()) {
         return false;

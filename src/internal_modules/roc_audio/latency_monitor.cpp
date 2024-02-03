@@ -20,7 +20,7 @@ namespace audio {
 LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
                                const packet::SortedQueue& incoming_queue,
                                const Depacketizer& depacketizer,
-                               const rtp::LinkMeter& link_meter,
+                               const packet::ILinkMeter& link_meter,
                                ResamplerReader* resampler,
                                const LatencyConfig& config,
                                const SampleSpec& packet_sample_spec,
@@ -60,10 +60,10 @@ bool LatencyMonitor::is_alive() const {
     return alive_;
 }
 
-LatencyMetrics LatencyMonitor::metrics() const {
+const LatencyMetrics& LatencyMonitor::metrics() const {
     roc_panic_if(!is_valid());
 
-    return metrics_;
+    return latency_metrics_;
 }
 
 bool LatencyMonitor::read(Frame& frame) {
@@ -107,7 +107,7 @@ bool LatencyMonitor::reclock(const core::nanoseconds_t playback_timestamp) {
 }
 
 bool LatencyMonitor::pre_process_(const Frame& frame) {
-    tuner_.write_metrics(metrics_);
+    tuner_.write_metrics(latency_metrics_, link_metrics_);
 
     if (!tuner_.update_stream()) {
         // TODO(gh-183): forward status code
@@ -155,14 +155,15 @@ void LatencyMonitor::compute_niq_latency_() {
     const packet::stream_timestamp_diff_t niq_latency =
         packet::stream_timestamp_diff(niq_tail, niq_head);
 
-    metrics_.niq_latency = packet_sample_spec_.stream_timestamp_delta_2_ns(niq_latency);
+    latency_metrics_.niq_latency =
+        packet_sample_spec_.stream_timestamp_delta_2_ns(niq_latency);
 
     // compute delay since last packet
     const core::nanoseconds_t rts = latest_packet->receive_timestamp();
     const core::nanoseconds_t now = core::timestamp(core::ClockUnix);
 
     if (rts > 0 && rts < now) {
-        metrics_.niq_stalling = now - rts;
+        latency_metrics_.niq_stalling = now - rts;
     }
 }
 
@@ -178,7 +179,7 @@ void LatencyMonitor::compute_e2e_latency_(const core::nanoseconds_t playback_tim
     // delta between time when first sample of last frame is played on receiver and
     // time when first sample of that frame was captured on sender
     // (both timestamps are in receiver clock domain)
-    metrics_.e2e_latency = playback_timestamp - capture_ts_;
+    latency_metrics_.e2e_latency = playback_timestamp - capture_ts_;
 }
 
 void LatencyMonitor::query_link_meter_() {
@@ -186,9 +187,7 @@ void LatencyMonitor::query_link_meter_() {
         return;
     }
 
-    const rtp::LinkMetrics link_metrics = link_meter_.metrics();
-
-    metrics_.jitter = link_metrics.jitter;
+    link_metrics_ = link_meter_.metrics();
 }
 
 bool LatencyMonitor::init_scaling_() {

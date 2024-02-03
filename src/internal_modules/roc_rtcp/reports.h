@@ -127,19 +127,19 @@ struct RecvReport {
     //! count of sequence number cycles.
     packet::ext_seqnum_t ext_last_seqnum;
 
-    //! Fraction of lost packets from 0 to 1.
-    //! The fraction of RTP data packets lost since the previous report was sent.
-    //! Defined to be the number of packets lost divided by the number of packets
-    //! expected. If the loss is negative due to duplicates, set to zero.
-    float fract_loss;
-
     //! Cumulative count of lost packets.
     //! The total number of RTP data packets that have been lost since the beginning
     //! of reception. Defined to be the number of packets expected minus the number of
     //! packets actually received, where the number of packets received includes any
     //! which are late or duplicates. Packets that arrive late are not counted as lost,
     //! and the loss may be negative if there are duplicates.
-    long cum_loss;
+    int64_t cum_loss;
+
+    //! Fraction of lost packets from 0 to 1.
+    //! The fraction of RTP data packets lost since the previous report was sent.
+    //! Defined to be the number of packets lost divided by the number of packets
+    //! expected. If the loss is negative due to duplicates, set to zero.
+    float fract_loss;
 
     //! Estimated interarrival jitter.
     //! An estimate of the statistical variance of the RTP data packet
@@ -179,8 +179,8 @@ struct RecvReport {
         , sample_rate(0)
         , ext_first_seqnum(0)
         , ext_last_seqnum(0)
-        , fract_loss(0)
         , cum_loss(0)
+        , fract_loss(0)
         , jitter(0)
         , niq_latency(0)
         , niq_stalling(0)

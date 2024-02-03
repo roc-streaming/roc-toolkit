@@ -13,17 +13,16 @@
 #define ROC_PIPELINE_METRICS_H_
 
 #include "roc_audio/latency_tuner.h"
-#include "roc_audio/packetizer.h"
 #include "roc_core/stddefs.h"
-#include "roc_rtp/link_meter.h"
+#include "roc_packet/ilink_meter.h"
 
 namespace roc {
 namespace pipeline {
 
 //! Metrics of sender session (connection to receiver).
 struct SenderSessionMetrics {
-    //! Packetization metrics.
-    audio::PacketizerMetrics packets;
+    //! Link metrics.
+    packet::LinkMetrics link;
 
     //! Receiver feedback.
     audio::LatencyMetrics latency;
@@ -45,7 +44,7 @@ struct SenderSlotMetrics {
 //! Metrics of receiver session (connection from sender).
 struct ReceiverSessionMetrics {
     //! Link metrics.
-    rtp::LinkMetrics link;
+    packet::LinkMetrics link;
 
     //! Latency metrics.
     audio::LatencyMetrics latency;

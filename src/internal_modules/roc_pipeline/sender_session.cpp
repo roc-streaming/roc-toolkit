@@ -267,11 +267,9 @@ SenderSessionMetrics SenderSession::get_metrics() const {
     roc_panic_if(!is_valid());
 
     SenderSessionMetrics metrics;
-    if (packetizer_) {
-        metrics.packets = packetizer_->metrics();
-    }
     if (feedback_monitor_) {
-        metrics.latency = feedback_monitor_->metrics();
+        metrics.link = feedback_monitor_->link_metrics();
+        metrics.latency = feedback_monitor_->latency_metrics();
     }
 
     return metrics;
@@ -299,7 +297,7 @@ bool SenderSession::has_send_stream() {
 rtcp::SendReport SenderSession::query_send_stream(core::nanoseconds_t report_time) {
     roc_panic_if(!has_send_stream());
 
-    const audio::PacketizerMetrics packet_metrics = packetizer_->metrics();
+    const audio::PacketizerMetrics& packet_metrics = packetizer_->metrics();
 
     rtcp::SendReport report;
     report.sender_cname = identity_->cname();
@@ -319,13 +317,21 @@ SenderSession::notify_send_stream(packet::stream_source_t recv_source_id,
     roc_panic_if(!has_send_stream());
 
     if (feedback_monitor_ && feedback_monitor_->is_started()) {
-        audio::LatencyMetrics metrics;
-        metrics.niq_latency = recv_report.niq_latency;
-        metrics.niq_stalling = recv_report.niq_stalling;
-        metrics.e2e_latency = recv_report.e2e_latency;
-        metrics.jitter = recv_report.jitter;
+        audio::LatencyMetrics latency_metrics;
+        latency_metrics.niq_latency = recv_report.niq_latency;
+        latency_metrics.niq_stalling = recv_report.niq_stalling;
+        latency_metrics.e2e_latency = recv_report.e2e_latency;
 
-        feedback_monitor_->process_feedback(recv_source_id, metrics);
+        packet::LinkMetrics link_metrics;
+        link_metrics.ext_first_seqnum = recv_report.ext_first_seqnum;
+        link_metrics.ext_last_seqnum = recv_report.ext_last_seqnum;
+        link_metrics.cum_lost_packets = recv_report.cum_loss;
+        link_metrics.fract_lost_packets = recv_report.fract_loss;
+        link_metrics.jitter = recv_report.jitter;
+        link_metrics.rtt = recv_report.rtt;
+
+        feedback_monitor_->process_feedback(recv_source_id, latency_metrics,
+                                            link_metrics);
     }
 
     return status::StatusOK;

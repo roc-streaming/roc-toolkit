@@ -251,22 +251,27 @@ bool LatencyTuner::is_valid() const {
     return valid_;
 }
 
-void LatencyTuner::write_metrics(const LatencyMetrics& metrics) {
+void LatencyTuner::write_metrics(const LatencyMetrics& latency_metrics,
+                                 const packet::LinkMetrics& link_metrics) {
     roc_panic_if(!is_valid());
 
-    if (metrics.niq_latency > 0 || metrics.niq_stalling > 0 || has_niq_latency_) {
-        niq_latency_ = sample_spec_.ns_2_stream_timestamp_delta(metrics.niq_latency);
-        niq_stalling_ = sample_spec_.ns_2_stream_timestamp_delta(metrics.niq_stalling);
+    if (latency_metrics.niq_latency > 0 || latency_metrics.niq_stalling > 0
+        || has_niq_latency_) {
+        niq_latency_ =
+            sample_spec_.ns_2_stream_timestamp_delta(latency_metrics.niq_latency);
+        niq_stalling_ =
+            sample_spec_.ns_2_stream_timestamp_delta(latency_metrics.niq_stalling);
         has_niq_latency_ = true;
     }
 
-    if (metrics.e2e_latency > 0 || has_e2e_latency_) {
-        e2e_latency_ = sample_spec_.ns_2_stream_timestamp_delta(metrics.e2e_latency);
+    if (latency_metrics.e2e_latency > 0 || has_e2e_latency_) {
+        e2e_latency_ =
+            sample_spec_.ns_2_stream_timestamp_delta(latency_metrics.e2e_latency);
         has_e2e_latency_ = true;
     }
 
-    if (metrics.jitter > 0 || has_jitter_) {
-        jitter_ = sample_spec_.ns_2_stream_timestamp_delta(metrics.jitter);
+    if (link_metrics.jitter > 0 || has_jitter_) {
+        jitter_ = sample_spec_.ns_2_stream_timestamp_delta(link_metrics.jitter);
         has_jitter_ = true;
     }
 }

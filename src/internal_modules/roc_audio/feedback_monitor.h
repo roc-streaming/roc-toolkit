@@ -19,6 +19,7 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/rate_limiter.h"
 #include "roc_core/time.h"
+#include "roc_packet/ilink_meter.h"
 
 namespace roc {
 namespace audio {
@@ -78,15 +79,19 @@ public:
 
     //! Process feedback from receiver.
     void process_feedback(packet::stream_source_t source_id,
-                          const LatencyMetrics& metrics);
+                          const LatencyMetrics& latency_metrics,
+                          const packet::LinkMetrics& link_metrics);
 
     //! Write audio frame.
     //! Passes frame to underlying writer.
     //! If feedback monitoring is started, also performs latency tuning.
     virtual void write(Frame& frame);
 
-    //! Get back latest metrics.
-    LatencyMetrics metrics() const;
+    //! Get back latest latency metrics.
+    const LatencyMetrics& latency_metrics() const;
+
+    //! Get back latest link metrics.
+    const packet::LinkMetrics& link_metrics() const;
 
 private:
     bool update_tuner_(packet::stream_timestamp_t duration);
@@ -96,11 +101,12 @@ private:
 
     LatencyTuner tuner_;
 
-    LatencyMetrics metrics_;
-    bool has_metrics_;
+    LatencyMetrics latency_metrics_;
+    packet::LinkMetrics link_metrics_;
 
-    const core::nanoseconds_t metrics_timeout_;
-    core::nanoseconds_t metrics_ts_;
+    bool has_feedback_;
+    core::nanoseconds_t last_feedback_ts_;
+    const core::nanoseconds_t feedback_timeout_;
 
     IFrameWriter& writer_;
 

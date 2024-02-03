@@ -25,6 +25,32 @@ LinkMeter::LinkMeter(const EncodingMap& encoding_map)
     , last_seqnum_lo_(0) {
 }
 
+bool LinkMeter::has_metrics() const {
+    return has_metrics_;
+}
+
+const packet::LinkMetrics& LinkMeter::metrics() const {
+    return metrics_;
+}
+
+bool LinkMeter::has_encoding() const {
+    return encoding_ != NULL;
+}
+
+const Encoding& LinkMeter::encoding() const {
+    if (encoding_ == NULL) {
+        roc_panic("link meter: encoding not available");
+    }
+
+    return *encoding_;
+}
+
+void LinkMeter::process_report(const rtcp::SendReport& report) {
+    // Currently LinkMeter calculates all link metrics except RTT, and
+    // RTT is calculated by RTCP module and passed here.
+    metrics_.rtt = report.rtt;
+}
+
 status::StatusCode LinkMeter::write(const packet::PacketPtr& packet) {
     if (!writer_) {
         roc_panic("link meter: forgot to call set_writer()");
@@ -71,14 +97,6 @@ void LinkMeter::set_reader(packet::IReader& reader) {
     reader_ = &reader;
 }
 
-bool LinkMeter::has_metrics() const {
-    return has_metrics_;
-}
-
-LinkMetrics LinkMeter::metrics() const {
-    return metrics_;
-}
-
 void LinkMeter::update_metrics_(const packet::Packet& packet) {
     const packet::seqnum_t pkt_seqnum = packet.rtp()->seqnum;
 
@@ -98,10 +116,14 @@ void LinkMeter::update_metrics_(const packet::Packet& packet) {
         last_seqnum_lo_ = pkt_seqnum;
     }
 
-    metrics_.sample_rate = encoding_->sample_spec.sample_rate();
-
     metrics_.ext_first_seqnum = first_seqnum_;
     metrics_.ext_last_seqnum = last_seqnum_hi_ + last_seqnum_lo_;
+
+    // TODO(gh-688):
+    //  - fill total_packets
+    //  - fill cum_lost_packets
+    //  - fill fract_lost_packets
+    //  - fill jitter (use encoding_->sample_spec to convert to nanoseconds)
 
     first_packet_ = false;
     has_metrics_ = true;

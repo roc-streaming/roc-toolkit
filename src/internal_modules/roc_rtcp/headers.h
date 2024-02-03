@@ -417,7 +417,7 @@ public:
 
     //! Get cumulative loss.
     //! May be negative in case of packet duplications.
-    long cum_loss() const {
+    int64_t cum_loss() const {
         const uint32_t losses = core::ntoh32u(losses_);
 
         uint32_t cum_loss = get_bit_field<uint32_t>(losses, CumLoss_shift, CumLoss_mask);
@@ -428,12 +428,12 @@ public:
             cum_loss |= ~(uint32_t)CumLoss_mask;
         }
 
-        return (long)(int32_t)cum_loss;
+        return (int64_t)(int32_t)cum_loss;
     }
 
     //! Set cumulative loss.
     //! May be negative in case of packet duplications.
-    void set_cum_loss(long cum_loss) {
+    void set_cum_loss(int64_t cum_loss) {
         if (cum_loss > 0x7FFFFF) {
             cum_loss = 0x7FFFFF;
         } else if (cum_loss < -0x7FFFFF - 1) {

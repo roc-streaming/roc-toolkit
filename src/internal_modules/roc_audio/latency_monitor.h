@@ -22,9 +22,9 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
 #include "roc_core/time.h"
+#include "roc_packet/ilink_meter.h"
 #include "roc_packet/sorted_queue.h"
 #include "roc_packet/units.h"
-#include "roc_rtp/link_meter.h"
 
 namespace roc {
 namespace audio {
@@ -74,7 +74,7 @@ public:
     LatencyMonitor(IFrameReader& frame_reader,
                    const packet::SortedQueue& incoming_queue,
                    const Depacketizer& depacketizer,
-                   const rtp::LinkMeter& link_meter,
+                   const packet::ILinkMeter& link_meter,
                    ResamplerReader* resampler,
                    const LatencyConfig& config,
                    const SampleSpec& packet_sample_spec,
@@ -87,7 +87,7 @@ public:
     bool is_alive() const;
 
     //! Get metrics.
-    LatencyMetrics metrics() const;
+    const LatencyMetrics& metrics() const;
 
     //! Read audio frame from a pipeline.
     //! @remarks
@@ -114,13 +114,15 @@ private:
     bool update_scaling_();
 
     LatencyTuner tuner_;
-    LatencyMetrics metrics_;
+
+    LatencyMetrics latency_metrics_;
+    packet::LinkMetrics link_metrics_;
 
     IFrameReader& frame_reader_;
 
     const packet::SortedQueue& incoming_queue_;
     const Depacketizer& depacketizer_;
-    const rtp::LinkMeter& link_meter_;
+    const packet::ILinkMeter& link_meter_;
 
     ResamplerReader* resampler_;
     const bool enable_scaling_;

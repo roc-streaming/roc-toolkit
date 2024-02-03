@@ -76,7 +76,7 @@ public:
     size_t sample_rate() const;
 
     //! Get metrics.
-    PacketizerMetrics metrics() const;
+    const PacketizerMetrics& metrics() const;
 
     //! Write audio frame.
     virtual void write(Frame& frame);
