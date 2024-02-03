@@ -165,6 +165,36 @@ public:
         insert_(element, NULL);
     }
 
+    //! Pop first element from list.
+    //!
+    //! @remarks
+    //!  - removes first element of list
+    //!  - releases ownership of removed element
+    //!
+    //! @pre
+    //!  the list should not be empty.
+    void pop_front() {
+        if (size_ == 0) {
+            roc_panic("list: is empty");
+        }
+        remove(*container_of_(head_.next));
+    }
+
+    //! Pop last element from list.
+    //!
+    //! @remarks
+    //!  - removes last element of list
+    //!  - releases ownership of removed element
+    //!
+    //! @pre
+    //!  the list should not be empty.
+    void pop_back() {
+        if (size_ == 0) {
+            roc_panic("list: is empty");
+        }
+        remove(*container_of_(head_.prev));
+    }
+
     //! Insert element into list.
     //!
     //! @remarks

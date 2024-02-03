@@ -30,6 +30,44 @@ typedef List<Object, RefCountedOwnership> TestList;
 
 TEST_GROUP(list_ownership) {};
 
+TEST(list_ownership, pop_front) {
+    Object obj1;
+    Object obj2;
+
+    TestList list;
+
+    list.push_back(obj1);
+    list.push_back(obj2);
+    LONGS_EQUAL(1, obj1.getref());
+    LONGS_EQUAL(1, obj2.getref());
+
+    list.pop_front();
+    LONGS_EQUAL(0, obj1.getref());
+    POINTERS_EQUAL(&obj2, list.front().get());
+
+    list.pop_front();
+    LONGS_EQUAL(0, obj2.getref());
+}
+
+TEST(list_ownership, pop_back) {
+    Object obj1;
+    Object obj2;
+
+    TestList list;
+
+    list.push_back(obj1);
+    list.push_back(obj2);
+    LONGS_EQUAL(1, obj1.getref());
+    LONGS_EQUAL(1, obj2.getref());
+
+    list.pop_back();
+    LONGS_EQUAL(0, obj2.getref());
+    POINTERS_EQUAL(&obj1, list.back().get());
+
+    list.pop_back();
+    LONGS_EQUAL(0, obj1.getref());
+}
+
 TEST(list_ownership, push_back) {
     Object obj;
 
