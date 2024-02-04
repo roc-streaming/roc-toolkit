@@ -33,7 +33,7 @@ TEST(parse_units, parse_duration_error) {
     CHECK(!parse_duration(".1s", result));
 }
 
-TEST(parse_units, parse_duration) {
+TEST(parse_units, parse_duration_suffix) {
     nanoseconds_t result = 0;
 
     CHECK(parse_duration("123ns", result));
@@ -53,6 +53,19 @@ TEST(parse_units, parse_duration) {
 
     CHECK(parse_duration("123h", result));
     CHECK(result == 123 * Hour);
+}
+
+TEST(parse_units, parse_duration_sign) {
+    nanoseconds_t result = 0;
+
+    CHECK(parse_duration("123ms", result));
+    CHECK(result == 123 * Millisecond);
+
+    CHECK(parse_duration("+123ms", result));
+    CHECK(result == 123 * Millisecond);
+
+    CHECK(parse_duration("-123ms", result));
+    CHECK(result == -123 * Millisecond);
 }
 
 TEST(parse_units, parse_duration_float_le_one) {
@@ -115,7 +128,7 @@ TEST(parse_units, parse_size_error) {
     CHECK(!parse_size(".1K", result));
 }
 
-TEST(parse_units, parse_size) {
+TEST(parse_units, parse_size_suffix) {
     size_t result = 0;
 
     const size_t kibibyte = 1024;
@@ -181,7 +194,7 @@ TEST(parse_units, parse_size_float_gt_one) {
     CHECK(result == 1181116006);
 }
 
-TEST(parse_units, parse_size_overflows_due_to_multiplier) {
+TEST(parse_units, parse_size_overflow) {
     char s[32];
     snprintf(s, 32, "%lluK", (unsigned long long)SIZE_MAX);
     size_t result = 0;

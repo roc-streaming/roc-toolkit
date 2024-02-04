@@ -22,7 +22,7 @@ Options
 -o, --output=FILE_URI        Output file URI
 --input-format=FILE_FORMAT   Force input file format
 --output-format=FILE_FORMAT  Force output file format
---frame-length=TIME          Duration of the internal frames, TIME units
+--frame-len=TIME             Duration of the internal frames, TIME units
 -r, --rate=INT               Output sample rate, Hz
 --resampler-backend=ENUM     Resampler backend  (possible values="default", "builtin", "speex", "speexdec" default=`default')
 --resampler-profile=ENUM     Resampler profile  (possible values="low", "medium", "high" default=`medium')

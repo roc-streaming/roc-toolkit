@@ -72,15 +72,13 @@ int main(int argc, char** argv) {
         transcoder_config.input_sample_spec.channel_set());
     source_config.sample_spec.set_sample_rate(0);
 
-    if (args.frame_length_given) {
-        if (!core::parse_duration(args.frame_length_arg, source_config.frame_length)) {
-            roc_log(LogError, "invalid --frame-length: bad format");
+    if (args.frame_len_given) {
+        if (!core::parse_duration(args.frame_len_arg, source_config.frame_length)) {
+            roc_log(LogError, "invalid --frame-len: bad format");
             return 1;
         }
-        if (transcoder_config.input_sample_spec.ns_2_samples_overall(
-                source_config.frame_length)
-            <= 0) {
-            roc_log(LogError, "invalid --frame-length: should be > 0");
+        if (source_config.frame_length <= 0) {
+            roc_log(LogError, "invalid --frame-len: should be > 0");
             return 1;
         }
     }

@@ -15,6 +15,7 @@
 #include "roc_core/log.h"
 #include "roc_core/parse_units.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_core/time.h"
 #include "roc_netio/network_loop.h"
 #include "roc_node/context.h"
 #include "roc_node/receiver.h"
@@ -78,9 +79,7 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --frame-len: bad format");
             return 1;
         }
-        if (receiver_config.common.output_sample_spec.ns_2_samples_overall(
-                io_config.frame_length)
-            <= 0) {
+        if (io_config.frame_length <= 0) {
             roc_log(LogError, "invalid --frame-len: should be > 0");
             return 1;
         }
@@ -88,7 +87,11 @@ int main(int argc, char** argv) {
 
     if (args.io_latency_given) {
         if (!core::parse_duration(args.io_latency_arg, io_config.latency)) {
-            roc_log(LogError, "invalid --io-latency");
+            roc_log(LogError, "invalid --io-latency: bad format");
+            return 1;
+        }
+        if (io_config.latency <= 0) {
+            roc_log(LogError, "invalid --io-latency: should be > 0");
             return 1;
         }
     }
@@ -108,7 +111,11 @@ int main(int argc, char** argv) {
         if (!core::parse_duration(
                 args.target_latency_arg,
                 receiver_config.default_session.latency.target_latency)) {
-            roc_log(LogError, "invalid --target-latency");
+            roc_log(LogError, "invalid --target-latency: bad format");
+            return 1;
+        }
+        if (receiver_config.default_session.latency.target_latency <= 0) {
+            roc_log(LogError, "invalid --target-latency: should be > 0");
             return 1;
         }
     }
@@ -116,16 +123,22 @@ int main(int argc, char** argv) {
     if (args.min_latency_given) {
         if (!core::parse_duration(args.min_latency_arg,
                                   receiver_config.default_session.latency.min_latency)) {
-            roc_log(LogError, "invalid --min-latency");
+            roc_log(LogError, "invalid --min-latency: bad format");
             return 1;
+        }
+        if (receiver_config.default_session.latency.min_latency == 0) {
+            receiver_config.default_session.latency.min_latency = -1 * core::Nanosecond;
         }
     }
 
     if (args.max_latency_given) {
         if (!core::parse_duration(args.max_latency_arg,
                                   receiver_config.default_session.latency.max_latency)) {
-            roc_log(LogError, "invalid --max-latency");
+            roc_log(LogError, "invalid --max-latency: bad format");
             return 1;
+        }
+        if (receiver_config.default_session.latency.max_latency == 0) {
+            receiver_config.default_session.latency.max_latency = 1 * core::Nanosecond;
         }
     }
 
@@ -133,7 +146,11 @@ int main(int argc, char** argv) {
         if (!core::parse_duration(
                 args.no_play_timeout_arg,
                 receiver_config.default_session.watchdog.no_playback_timeout)) {
-            roc_log(LogError, "invalid --no-play-timeout");
+            roc_log(LogError, "invalid --no-play-timeout: bad format");
+            return 1;
+        }
+        if (receiver_config.default_session.watchdog.no_playback_timeout <= 0) {
+            roc_log(LogError, "invalid --no-play-timeout: should be > 0");
             return 1;
         }
     }
@@ -142,7 +159,11 @@ int main(int argc, char** argv) {
         if (!core::parse_duration(
                 args.choppy_play_timeout_arg,
                 receiver_config.default_session.watchdog.choppy_playback_timeout)) {
-            roc_log(LogError, "invalid --choppy-play-timeout");
+            roc_log(LogError, "invalid --choppy-play-timeout: bad format");
+            return 1;
+        }
+        if (receiver_config.default_session.watchdog.choppy_playback_timeout <= 0) {
+            roc_log(LogError, "invalid --choppy-play-timeout: should be > 0");
             return 1;
         }
     }
@@ -220,7 +241,7 @@ int main(int argc, char** argv) {
 
     if (args.max_packet_size_given) {
         if (!core::parse_size(args.max_packet_size_arg, context_config.max_packet_size)) {
-            roc_log(LogError, "invalid --max-packet-size");
+            roc_log(LogError, "invalid --max-packet-size: bad format");
             return 1;
         }
         if (context_config.max_packet_size == 0) {
@@ -231,7 +252,7 @@ int main(int argc, char** argv) {
 
     if (args.max_frame_size_given) {
         if (!core::parse_size(args.max_frame_size_arg, context_config.max_frame_size)) {
-            roc_log(LogError, "invalid --max-frame-size");
+            roc_log(LogError, "invalid --max-frame-size: bad format");
             return 1;
         }
         if (context_config.max_frame_size == 0) {

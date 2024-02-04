@@ -66,7 +66,7 @@ bool parse_duration(const char* str, nanoseconds_t& result) {
         return false;
     }
 
-    if (!isdigit(*str) && *str != '-') {
+    if (!isdigit(*str) && *str != '+' && *str != '-') {
         roc_log(LogError,
                 "parse duration: invalid format: not a number, expected"
                 " <float><suffix>, where suffix=<ns|us|ms|s|m|h>");
@@ -84,11 +84,12 @@ bool parse_duration(const char* str, nanoseconds_t& result) {
     }
 
     const double number_multiplied = round(number * (double)multiplier);
-    if (number_multiplied > (double)INT64_MAX) {
+
+    if (number_multiplied > (double)INT64_MAX || number_multiplied < (double)INT64_MIN) {
         roc_log(LogError,
                 "parse duration: number out of range:"
-                " value=%f maximum=%f",
-                number_multiplied, (double)INT64_MAX);
+                " value=%f minimim=%f maximum=%f",
+                number_multiplied, (double)INT64_MIN, (double)INT64_MAX);
         return false;
     }
 
