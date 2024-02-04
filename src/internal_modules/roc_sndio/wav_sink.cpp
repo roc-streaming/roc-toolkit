@@ -7,6 +7,8 @@
  */
 
 #include "roc_sndio/wav_sink.h"
+#include "roc_audio/pcm_format.h"
+#include "roc_audio/sample_format.h"
 #include "roc_core/endian_ops.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
@@ -23,16 +25,40 @@ const size_t DefaultRate = 44100;
 
 WavSink::WavSink(core::IArena& arena, const Config& config)
     : output_file_(NULL)
-    , header_(config.sample_spec.num_channels() != 0 ? config.sample_spec.num_channels()
-                                                     : DefaultChans,
-              config.sample_spec.sample_rate() != 0 ? config.sample_spec.sample_rate()
-                                                    : DefaultRate,
-              sizeof(audio::sample_t) * 8)
     , valid_(false) {
     if (config.latency != 0) {
         roc_log(LogError, "wav sink: setting io latency not supported");
         return;
     }
+
+    sample_spec_ = config.sample_spec;
+
+    if (sample_spec_.sample_format() != audio::SampleFormat_Invalid
+        && (sample_spec_.sample_format() != audio::SampleFormat_Pcm
+            || sample_spec_.pcm_format() != audio::Sample_RawFormat)) {
+        roc_log(LogError, "wav sink: sample format can be only \"-\" or \"%s\"",
+                audio::pcm_format_to_str(audio::Sample_RawFormat));
+        return;
+    }
+
+    if (sample_spec_.sample_format() == audio::SampleFormat_Invalid) {
+        sample_spec_.set_sample_format(audio::SampleFormat_Pcm);
+        sample_spec_.set_pcm_format(audio::Sample_RawFormat);
+    }
+
+    if (sample_spec_.sample_rate() == 0) {
+        sample_spec_.set_sample_rate(DefaultRate);
+    }
+
+    if (!sample_spec_.channel_set().is_valid()) {
+        sample_spec_.channel_set().set_layout(audio::ChanLayout_Surround);
+        sample_spec_.channel_set().set_order(audio::ChanOrder_Smpte);
+        sample_spec_.channel_set().set_channel_range(0, DefaultChans, true);
+    }
+
+    header_.reset(new (header_)
+                      WavHeader(sample_spec_.num_channels(), sample_spec_.sample_rate(),
+                                sizeof(audio::sample_t) * 8));
 
     valid_ = true;
 }
@@ -88,13 +114,7 @@ audio::SampleSpec WavSink::sample_spec() const {
         roc_panic("wav sink: not opened");
     }
 
-    audio::ChannelSet channel_set;
-    channel_set.set_layout(audio::ChanLayout_Surround);
-    channel_set.set_order(audio::ChanOrder_Smpte);
-    channel_set.set_channel_range(0, header_.num_channels() - 1, true);
-
-    return audio::SampleSpec(size_t(header_.sample_rate()), audio::Sample_RawFormat,
-                             channel_set);
+    return sample_spec_;
 }
 
 core::nanoseconds_t WavSink::latency() const {
@@ -124,7 +144,7 @@ void WavSink::write(audio::Frame& frame) {
         }
 
         const WavHeader::WavHeaderData& wav_header =
-            header_.update_and_get_header(n_samples);
+            header_->update_and_get_header(n_samples);
         if (fwrite(&wav_header, sizeof(wav_header), 1, output_file_) != 1) {
             roc_log(LogError, "wav sink: failed to write header: %s",
                     core::errno_to_str(errno).c_str());
@@ -164,8 +184,9 @@ bool WavSink::open_(const char* path) {
     roc_log(LogInfo,
             "wav sink: opened output file:"
             " path=%s out_bits=%lu out_rate=%lu out_ch=%lu",
-            path, (unsigned long)header_.bits_per_sample(),
-            (unsigned long)header_.sample_rate(), (unsigned long)header_.num_channels());
+            path, (unsigned long)header_->bits_per_sample(),
+            (unsigned long)header_->sample_rate(),
+            (unsigned long)header_->num_channels());
 
     return true;
 }

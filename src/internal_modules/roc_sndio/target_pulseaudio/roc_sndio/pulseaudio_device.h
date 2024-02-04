@@ -28,7 +28,7 @@ namespace roc {
 namespace sndio {
 
 //! PulseAudio device.
-//! Base class for PulseAudio source and sink.
+//! Can be either source or sink depending on constructor parameter.
 class PulseaudioDevice : public ISink, public ISource, public core::NonCopyable<> {
 public:
     //! Initialize.
@@ -110,8 +110,8 @@ private:
     bool start_device_info_op_();
     void cancel_device_info_op_();
 
-    void init_stream_params_(const pa_sample_spec& device_sample_spec);
-    bool check_stream_params_() const;
+    bool load_device_params_(const pa_sample_spec& device_spec);
+    void init_stream_params_(const pa_sample_spec& device_spec);
     bool open_stream_();
     void close_stream_();
     ssize_t request_stream_(audio::sample_t* data, size_t size);
@@ -128,15 +128,20 @@ private:
     const DeviceType device_type_;
     const char* device_;
 
-    Config config_;
-    size_t frame_size_;
+    audio::SampleSpec sample_spec_;
+
+    core::nanoseconds_t frame_len_ns_;
+    packet::stream_timestamp_diff_t frame_len_samples_;
+
+    core::nanoseconds_t target_latency_ns_;
+    packet::stream_timestamp_diff_t target_latency_samples_;
+
+    core::nanoseconds_t timeout_ns_;
+    packet::stream_timestamp_diff_t timeout_samples_;
 
     const audio::sample_t* record_frag_data_;
     size_t record_frag_size_;
     bool record_frag_flag_;
-
-    core::nanoseconds_t target_latency_;
-    core::nanoseconds_t timeout_;
 
     bool open_done_;
     bool opened_;
@@ -147,10 +152,10 @@ private:
     pa_stream* stream_;
     pa_time_event* timer_;
 
-    core::nanoseconds_t timer_deadline_;
+    core::nanoseconds_t timer_deadline_ns_;
 
-    pa_sample_spec sample_spec_;
-    pa_buffer_attr buffer_attrs_;
+    pa_sample_spec stream_spec_;
+    pa_buffer_attr buff_attrs_;
 
     core::RateLimiter rate_limiter_;
 };

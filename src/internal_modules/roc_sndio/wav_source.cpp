@@ -21,6 +21,11 @@ WavSource::WavSource(core::IArena& arena, const Config& config)
         return;
     }
 
+    if (config.sample_spec.is_valid()) {
+        roc_log(LogError, "wav source: setting io encoding not supported");
+        return;
+    }
+
     valid_ = true;
 }
 

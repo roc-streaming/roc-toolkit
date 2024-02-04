@@ -16,6 +16,7 @@
 #include "roc_core/array.h"
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/optional.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/units.h"
 #include "roc_sndio/config.h"
@@ -88,8 +89,10 @@ private:
     bool open_(const char* path);
     void close_();
 
+    audio::SampleSpec sample_spec_;
+
     FILE* output_file_;
-    WavHeader header_;
+    core::Optional<WavHeader> header_;
 
     bool valid_;
 };
