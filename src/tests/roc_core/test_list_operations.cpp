@@ -43,7 +43,7 @@ TEST(list_operations, pop_front) {
     }
 
     for (size_t i = 0; i < NumObjects; ++i) {
-        LONGS_EQUAL(NumObjects - i, list.size());
+        LONGS_EQUAL(NumObjects-i, list.size());
 
         list.pop_front();
 
@@ -55,6 +55,67 @@ TEST(list_operations, pop_front) {
     CHECK(list.front() == NULL);
     CHECK(list.back() == NULL);
 
+    LONGS_EQUAL(0, list.size());
+
+    // Testing with push_front
+    for (size_t i = 0; i < NumObjects; ++i) {
+        LONGS_EQUAL(i, list.size());
+        list.push_front(objects[i]);
+    }
+
+    for (size_t i = 0; i < NumObjects; ++i) {
+        LONGS_EQUAL(NumObjects-i, list.size());
+        list.pop_front();
+
+        if (i != NumObjects - 1) {
+            POINTERS_EQUAL(&objects[NumObjects - i - 2], list.front());
+            POINTERS_EQUAL(&objects[0], list.back());
+        }
+    }
+    CHECK(list.front() == NULL);
+    CHECK(list.back() == NULL);
+    LONGS_EQUAL(0, list.size());
+}
+
+TEST(list_operations, pop_back) {
+    for (size_t i = 0; i < NumObjects; ++i) {
+        LONGS_EQUAL(i, list.size());
+
+        list.push_back(objects[i]);
+    }
+
+    for (size_t i = 0; i < NumObjects; ++i) {
+        LONGS_EQUAL(NumObjects-i, list.size());
+
+        list.pop_back();
+
+        if (i != NumObjects - 1) {
+            POINTERS_EQUAL(&objects[0], list.front());
+            POINTERS_EQUAL(&objects[NumObjects - i - 2], list.back());
+        }
+    }
+    CHECK(list.front() == NULL);
+    CHECK(list.back() == NULL);
+
+    LONGS_EQUAL(0, list.size());
+    
+    // Testing with push_front
+    for (size_t i = 0; i < NumObjects; ++i) {
+        LONGS_EQUAL(i, list.size());
+        list.push_front(objects[i]);
+    }
+
+    for (size_t i = 0; i < NumObjects; ++i) {
+        LONGS_EQUAL(NumObjects-i, list.size());
+        list.pop_back();
+
+        if (i != NumObjects - 1) {
+            POINTERS_EQUAL(&objects[i + 1], list.back());
+            POINTERS_EQUAL(&objects[NumObjects - 1], list.front());
+        }
+    }
+    CHECK(list.front() == NULL);
+    CHECK(list.back() == NULL);
     LONGS_EQUAL(0, list.size());
 }
 
