@@ -8,7 +8,7 @@
 
 #include "roc/version.h"
 
-void roc_version_get(roc_version* version) {
+void roc_version_load(roc_version* version) {
     if (!version) {
         return;
     }

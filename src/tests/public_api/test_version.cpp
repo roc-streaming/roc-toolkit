@@ -16,12 +16,12 @@ namespace api {
 TEST_GROUP(version) {};
 
 TEST(version, null) {
-    roc_version_get(NULL);
+    roc_version_load(NULL);
 }
 
 TEST(version, get) {
     roc_version version;
-    roc_version_get(&version);
+    roc_version_load(&version);
 
     UNSIGNED_LONGS_EQUAL(ROC_VERSION_MAJOR, version.major);
     UNSIGNED_LONGS_EQUAL(ROC_VERSION_MINOR, version.minor);

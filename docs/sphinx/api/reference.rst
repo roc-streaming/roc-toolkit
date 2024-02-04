@@ -268,4 +268,4 @@ roc_version
 .. doxygenstruct:: roc_version
    :members:
 
-.. doxygenfunction:: roc_version_get
+.. doxygenfunction:: roc_version_load

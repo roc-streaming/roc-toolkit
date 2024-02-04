@@ -73,7 +73,7 @@ typedef struct roc_version {
  * This function can be used to retrieve actual run-time version of the library.
  * It may be different from the compile-time version when using shared library.
  */
-ROC_API void roc_version_get(roc_version* version);
+ROC_API void roc_version_load(roc_version* version);
 
 #ifdef __cplusplus
 } /* extern "C" */
