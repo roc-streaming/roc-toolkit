@@ -221,13 +221,13 @@ roc_metrics
 
    #include <roc/metrics.h>
 
+.. doxygenstruct:: roc_connection_metrics
+   :members:
+
 .. doxygenstruct:: roc_sender_metrics
    :members:
 
 .. doxygenstruct:: roc_receiver_metrics
-   :members:
-
-.. doxygenstruct:: roc_session_metrics
    :members:
 
 roc_log

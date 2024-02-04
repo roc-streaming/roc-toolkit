@@ -151,14 +151,18 @@ core::nanoseconds_t SenderSlot::refresh(core::nanoseconds_t current_time) {
 }
 
 void SenderSlot::get_metrics(SenderSlotMetrics& slot_metrics,
-                             SenderSessionMetrics* sess_metrics) const {
+                             SenderParticipantMetrics* party_metrics,
+                             size_t* party_count) const {
     roc_panic_if(!is_valid());
 
     slot_metrics = SenderSlotMetrics();
     slot_metrics.is_complete = is_complete();
+    slot_metrics.num_participants = session_.num_participants();
 
-    if (sess_metrics) {
-        *sess_metrics = session_.get_metrics();
+    if (party_metrics && party_count) {
+        session_.get_participant_metrics(party_metrics, party_count);
+    } else if (party_count) {
+        *party_count = 0;
     }
 }
 

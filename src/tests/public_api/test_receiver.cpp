@@ -408,14 +408,33 @@ TEST(receiver, bad_args) {
                                 source_endpoint)
               == 0);
 
-        roc_receiver_metrics metrics;
-        memset(&metrics, 0, sizeof(metrics));
+        roc_receiver_metrics recv_metrics;
+        roc_connection_metrics conn_metrics;
+        size_t conn_metrics_count = 1;
 
-        CHECK(roc_receiver_query(NULL, ROC_SLOT_DEFAULT, &metrics) == -1);
-        CHECK(roc_receiver_query(receiver, 999, &metrics) == -1);
-        CHECK(roc_receiver_query(receiver, ROC_SLOT_DEFAULT, NULL) == -1);
+        // bad
+        CHECK(roc_receiver_query(NULL, ROC_SLOT_DEFAULT, &recv_metrics, &conn_metrics,
+                                 &conn_metrics_count)
+              == -1);
+        CHECK(roc_receiver_query(NULL, 999, &recv_metrics, &conn_metrics,
+                                 &conn_metrics_count)
+              == -1);
+        CHECK(roc_receiver_query(receiver, ROC_SLOT_DEFAULT, &recv_metrics, &conn_metrics,
+                                 NULL)
+              == -1);
 
-        CHECK(roc_receiver_query(receiver, ROC_SLOT_DEFAULT, &metrics) == 0);
+        // good
+        CHECK(roc_receiver_query(receiver, ROC_SLOT_DEFAULT, &recv_metrics, NULL, NULL)
+              == 0);
+        CHECK(roc_receiver_query(receiver, ROC_SLOT_DEFAULT, NULL, &conn_metrics,
+                                 &conn_metrics_count)
+              == 0);
+        CHECK(roc_receiver_query(receiver, ROC_SLOT_DEFAULT, &recv_metrics, NULL,
+                                 &conn_metrics_count)
+              == 0);
+        CHECK(roc_receiver_query(receiver, ROC_SLOT_DEFAULT, &recv_metrics, &conn_metrics,
+                                 &conn_metrics_count)
+              == 0);
 
         CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
         LONGS_EQUAL(0, roc_receiver_close(receiver));

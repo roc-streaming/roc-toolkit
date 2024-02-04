@@ -42,11 +42,24 @@ public:
     bool is_valid() const;
 
     //! Activate interface.
-    bool activate(address::Interface iface, address::Protocol proto);
+    ROC_ATTR_NODISCARD bool activate(address::Interface iface, address::Protocol proto);
+
+    //! Callback for slot metrics.
+    typedef void (*slot_metrics_func_t)(const pipeline::SenderSlotMetrics& slot_metrics,
+                                        void* slot_arg);
+
+    //! Callback for participant metrics.
+    typedef void (*party_metrics_func_t)(
+        const pipeline::SenderParticipantMetrics& party_metrics,
+        size_t party_index,
+        void* party_arg);
 
     //! Get metrics.
-    bool get_metrics(pipeline::SenderSlotMetrics& slot_metrics,
-                     pipeline::SenderSessionMetrics& sess_metrics);
+    ROC_ATTR_NODISCARD bool get_metrics(slot_metrics_func_t slot_metrics_func,
+                                        void* slot_metrics_arg,
+                                        party_metrics_func_t party_metrics_func,
+                                        size_t* party_metrics_size,
+                                        void* party_metrics_arg);
 
     //! Check if everything is connected.
     bool is_complete();
@@ -73,6 +86,9 @@ private:
     pipeline::SenderLoop pipeline_;
     pipeline::SenderLoop::SlotHandle slot_;
     ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
+
+    pipeline::SenderSlotMetrics slot_metrics_;
+    core::Array<pipeline::SenderParticipantMetrics, 8> party_metrics_;
 
     bool valid_;
 };

@@ -23,10 +23,15 @@ namespace {
 core::HeapArena arena;
 packet::PacketFactory packet_factory(arena);
 
-void handle_sess_metrics(const pipeline::ReceiverSessionMetrics& sess_metrics,
-                         size_t sess_index,
-                         void* sess_arg) {
-    ((pipeline::ReceiverSessionMetrics*)sess_arg)[sess_index] = sess_metrics;
+void write_slot_metrics(const pipeline::ReceiverSlotMetrics& slot_metrics,
+                        void* slot_arg) {
+    *(pipeline::ReceiverSlotMetrics*)slot_arg = slot_metrics;
+}
+
+void write_party_metrics(const pipeline::ReceiverParticipantMetrics& party_metrics,
+                         size_t party_index,
+                         void* party_arg) {
+    ((pipeline::ReceiverParticipantMetrics*)party_arg)[party_index] = party_metrics;
 }
 
 } // namespace
@@ -100,24 +105,16 @@ TEST(receiver_decoder, metrics) {
     CHECK(receiver_decoder.is_valid());
 
     pipeline::ReceiverSlotMetrics slot_metrics;
-    pipeline::ReceiverSessionMetrics sess_metrics[10];
-    size_t sess_metrics_size = 0;
+    pipeline::ReceiverParticipantMetrics party_metrics[10];
+    size_t party_count = 0;
 
-    sess_metrics_size = ROC_ARRAY_SIZE(sess_metrics);
-    CHECK(receiver_decoder.get_metrics(slot_metrics, handle_sess_metrics,
-                                       &sess_metrics_size, sess_metrics));
+    party_count = ROC_ARRAY_SIZE(party_metrics);
+    CHECK(receiver_decoder.get_metrics(write_slot_metrics, &slot_metrics,
+                                       write_party_metrics, &party_count,
+                                       &party_metrics));
 
-    CHECK_EQUAL(0, slot_metrics.num_sessions);
-    CHECK_EQUAL(0, sess_metrics_size);
-
-    CHECK(receiver_decoder.activate(address::Iface_AudioSource, address::Proto_RTP));
-
-    sess_metrics_size = ROC_ARRAY_SIZE(sess_metrics);
-    CHECK(receiver_decoder.get_metrics(slot_metrics, handle_sess_metrics,
-                                       &sess_metrics_size, sess_metrics));
-
-    CHECK_EQUAL(0, slot_metrics.num_sessions);
-    CHECK_EQUAL(0, sess_metrics_size);
+    CHECK_EQUAL(0, slot_metrics.num_participants);
+    CHECK_EQUAL(0, party_count);
 }
 
 } // namespace node

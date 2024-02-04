@@ -15,6 +15,7 @@
 #include "roc_address/endpoint_uri.h"
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
+#include "roc_core/attributes.h"
 #include "roc_core/hashmap.h"
 #include "roc_core/mutex.h"
 #include "roc_core/ref_counted.h"
@@ -45,32 +46,34 @@ public:
     bool is_valid();
 
     //! Set interface config.
-    bool configure(slot_index_t slot_index,
-                   address::Interface iface,
-                   const netio::UdpConfig& config);
+    ROC_ATTR_NODISCARD bool configure(slot_index_t slot_index,
+                                      address::Interface iface,
+                                      const netio::UdpConfig& config);
 
     //! Bind to local endpoint.
-    bool
+    ROC_ATTR_NODISCARD bool
     bind(slot_index_t slot_index, address::Interface iface, address::EndpointUri& uri);
 
     //! Remove slot.
-    bool unlink(slot_index_t slot_index);
+    ROC_ATTR_NODISCARD bool unlink(slot_index_t slot_index);
 
-    //! Callback for getting session metrics.
-    typedef void (*sess_metrics_func_t)(
-        const pipeline::ReceiverSessionMetrics& sess_metrics,
-        size_t sess_index,
-        void* sess_arg);
+    //! Callback for slot metrics.
+    typedef void (*slot_metrics_func_t)(const pipeline::ReceiverSlotMetrics& slot_metrics,
+                                        void* slot_arg);
 
-    //! Get slot metrics.
-    //! @remarks
-    //!  Metrics for slot are written into @p slot_metrics.
-    //!  Metrics for each session are passed to @p sess_metrics_func.
-    bool get_metrics(slot_index_t slot_index,
-                     pipeline::ReceiverSlotMetrics& slot_metrics,
-                     sess_metrics_func_t sess_metrics_func,
-                     size_t* sess_metrics_size,
-                     void* sess_metrics_arg);
+    //! Callback for participant metrics.
+    typedef void (*party_metrics_func_t)(
+        const pipeline::ReceiverParticipantMetrics& party_metrics,
+        size_t party_index,
+        void* party_arg);
+
+    //! Get metrics.
+    ROC_ATTR_NODISCARD bool get_metrics(slot_index_t slot_index,
+                                        slot_metrics_func_t slot_metrics_func,
+                                        void* slot_metrics_arg,
+                                        party_metrics_func_t party_metrics_func,
+                                        size_t* party_metrics_size,
+                                        void* party_metrics_arg);
 
     //! Check if there are broken slots.
     bool has_broken();
@@ -138,7 +141,8 @@ private:
     bool used_interfaces_[address::Iface_Max];
     address::Protocol used_protocols_[address::Iface_Max];
 
-    core::Array<pipeline::ReceiverSessionMetrics, 8> sess_metrics_;
+    pipeline::ReceiverSlotMetrics slot_metrics_;
+    core::Array<pipeline::ReceiverParticipantMetrics, 8> party_metrics_;
 
     bool valid_;
 };

@@ -108,13 +108,26 @@ TEST(sender_encoder, bad_args) {
         roc_sender_encoder* encoder = NULL;
         CHECK(roc_sender_encoder_open(context, &sender_config, &encoder) == 0);
 
-        roc_sender_metrics metrics;
-        memset(&metrics, 0, sizeof(metrics));
+        roc_sender_metrics send_metrics;
+        roc_connection_metrics conn_metrics;
+        size_t conn_metrics_count = 1;
 
-        CHECK(roc_sender_encoder_query(NULL, &metrics) == -1);
-        CHECK(roc_sender_encoder_query(encoder, NULL) == -1);
+        // bad
+        CHECK(roc_sender_encoder_query(NULL, &send_metrics, &conn_metrics,
+                                       &conn_metrics_count)
+              == -1);
+        CHECK(roc_sender_encoder_query(encoder, &send_metrics, &conn_metrics, NULL)
+              == -1);
 
-        CHECK(roc_sender_encoder_query(encoder, &metrics) == 0);
+        // good
+        CHECK(roc_sender_encoder_query(encoder, &send_metrics, NULL, NULL) == 0);
+        CHECK(roc_sender_encoder_query(encoder, NULL, &conn_metrics, &conn_metrics_count)
+              == 0);
+        CHECK(roc_sender_encoder_query(encoder, &send_metrics, NULL, &conn_metrics_count)
+              == 0);
+        CHECK(roc_sender_encoder_query(encoder, &send_metrics, &conn_metrics,
+                                       &conn_metrics_count)
+              == 0);
 
         LONGS_EQUAL(0, roc_sender_encoder_close(encoder));
     }

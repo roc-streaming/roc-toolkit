@@ -103,30 +103,30 @@ int roc_receiver_decoder_activate(roc_receiver_decoder* decoder,
 }
 
 int roc_receiver_decoder_query(roc_receiver_decoder* decoder,
-                               roc_receiver_metrics* metrics) {
+                               roc_receiver_metrics* decoder_metrics,
+                               roc_connection_metrics* conn_metrics,
+                               size_t* conn_metrics_count) {
     if (!decoder) {
         roc_log(LogError,
                 "roc_receiver_decoder_query(): invalid arguments: decoder is null");
         return -1;
     }
 
-    if (!metrics) {
+    if (conn_metrics && !conn_metrics_count) {
         roc_log(LogError,
-                "roc_receiver_decoder_query(): invalid arguments: metrics are null");
+                "roc_receiver_decoder_query(): invalid arguments:"
+                " conn_metrics is non-null, but conn_metrics_count is null");
         return -1;
     }
 
     node::ReceiverDecoder* imp_decoder = (node::ReceiverDecoder*)decoder;
 
-    pipeline::ReceiverSlotMetrics slot_metrics;
-
-    if (!imp_decoder->get_metrics(slot_metrics, api::receiver_session_metrics_to_user,
-                                  &metrics->sessions_size, metrics->sessions)) {
+    if (!imp_decoder->get_metrics(api::receiver_slot_metrics_to_user, decoder_metrics,
+                                  api::receiver_participant_metrics_to_user,
+                                  conn_metrics_count, conn_metrics)) {
         roc_log(LogError, "roc_receiver_decoder_query(): operation failed");
         return -1;
     }
-
-    api::receiver_slot_metrics_to_user(*metrics, slot_metrics);
 
     return 0;
 }

@@ -70,10 +70,10 @@ public:
     //! Get number of alive sessions.
     size_t num_sessions() const;
 
-    //! Get metrics for slot and its sessions.
+    //! Get metrics for slot and its participants.
     void get_metrics(ReceiverSlotMetrics& slot_metrics,
-                     ReceiverSessionMetrics* sess_metrics,
-                     size_t* sess_metrics_size) const;
+                     ReceiverParticipantMetrics* party_metrics,
+                     size_t* party_count) const;
 
 private:
     ReceiverEndpoint* create_source_endpoint_(address::Protocol proto,

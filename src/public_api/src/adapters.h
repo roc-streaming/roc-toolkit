@@ -61,17 +61,19 @@ bool interface_from_user(address::Interface& out, const roc_interface& in);
 bool proto_from_user(address::Protocol& out, const roc_protocol& in);
 bool proto_to_user(roc_protocol& out, address::Protocol in);
 
-void receiver_slot_metrics_to_user(roc_receiver_metrics& out,
-                                   const pipeline::ReceiverSlotMetrics& in);
+void receiver_slot_metrics_to_user(const pipeline::ReceiverSlotMetrics& slot_metrics,
+                                   void* slot_arg);
+void receiver_participant_metrics_to_user(
+    const pipeline::ReceiverParticipantMetrics& party_metrics,
+    size_t party_index,
+    void* party_arg);
 
-void receiver_session_metrics_to_user(
-    const pipeline::ReceiverSessionMetrics& sess_metrics,
-    size_t sess_index,
-    void* sess_arg);
-
-void sender_metrics_to_user(roc_sender_metrics& out,
-                            const pipeline::SenderSlotMetrics& in_slot,
-                            const pipeline::SenderSessionMetrics& in_sess);
+void sender_slot_metrics_to_user(const pipeline::SenderSlotMetrics& slot_metrics,
+                                 void* slot_arg);
+void sender_participant_metrics_to_user(
+    const pipeline::SenderParticipantMetrics& party_metrics,
+    size_t party_index,
+    void* party_arg);
 
 LogLevel log_level_from_user(roc_log_level level);
 roc_log_level log_level_to_user(LogLevel level);

@@ -28,6 +28,16 @@ void parse_uri(address::EndpointUri& uri, const char* str) {
     CHECK(uri.verify(address::EndpointUri::Subset_Full));
 }
 
+void write_slot_metrics(const pipeline::SenderSlotMetrics& slot_metrics, void* slot_arg) {
+    *(pipeline::SenderSlotMetrics*)slot_arg = slot_metrics;
+}
+
+void write_party_metrics(const pipeline::SenderParticipantMetrics& party_metrics,
+                         size_t party_index,
+                         void* party_arg) {
+    ((pipeline::SenderParticipantMetrics*)party_arg)[party_index] = party_metrics;
+}
+
 } // namespace
 
 TEST_GROUP(sender) {
@@ -1016,16 +1026,23 @@ TEST(sender, metrics) {
     CHECK(sender.is_valid());
 
     pipeline::SenderSlotMetrics slot_metrics;
-    pipeline::SenderSessionMetrics sess_metrics;
+    pipeline::SenderParticipantMetrics party_metrics[10];
+    size_t party_count = 0;
 
-    CHECK(!sender.get_metrics(DefaultSlot, slot_metrics, sess_metrics));
+    party_count = ROC_ARRAY_SIZE(party_metrics);
+    CHECK(!sender.get_metrics(DefaultSlot, write_slot_metrics, &slot_metrics,
+                              write_party_metrics, &party_count, &party_metrics));
 
     address::EndpointUri source_endp(arena);
     parse_uri(source_endp, "rtp://127.0.0.1:1000");
     CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
 
-    CHECK(sender.get_metrics(DefaultSlot, slot_metrics, sess_metrics));
-    CHECK(slot_metrics.is_complete);
+    party_count = ROC_ARRAY_SIZE(party_metrics);
+    CHECK(sender.get_metrics(DefaultSlot, write_slot_metrics, &slot_metrics,
+                             write_party_metrics, &party_count, &party_metrics));
+
+    CHECK_EQUAL(0, slot_metrics.num_participants);
+    CHECK_EQUAL(0, party_count);
 }
 
 } // namespace node

@@ -46,7 +46,7 @@ class LinkMeter : public packet::ILinkMeter,
                   public core::NonCopyable<> {
 public:
     //! Initialize.
-    LinkMeter(const EncodingMap& encoding_map);
+    explicit LinkMeter(const EncodingMap& encoding_map);
 
     //! Check if metrics are already gathered and can be reported.
     virtual bool has_metrics() const;

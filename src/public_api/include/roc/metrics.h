@@ -20,62 +20,64 @@
 extern "C" {
 #endif
 
-/** Receiver session metrics.
+/** Metrics for a single connection between sender and receiver.
  *
- * Represents metrics of single session connected to receiver.
+ * On receiver, represents one connected sender. Similarly, on sender
+ * represents one connected receiver. It doesn't matter who initiated
+ * connection, sender or receiver.
+ *
+ * Some metrics are calculated locally, and some are periodically retrieved
+ * from remote side via control protocol like \ref ROC_PROTO_RTCP.
  */
-typedef struct roc_session_metrics {
-    /** Estimated network-incoming-queue latency, in nanoseconds.
-     * Defines how much media is buffered in receiver packet queue.
-     */
-    unsigned long long niq_latency;
-
+typedef struct roc_connection_metrics {
     /** Estimated end-to-end latency, in nanoseconds.
      *
-     * Defines how much time passes after frame is written to sender
-     * and before it is read from receiver.
+     * Defines how much time passes after a frame is written to sender and before
+     * it is read from receiver. Consists of sender latency, network latency,
+     * and receiver latency.
      *
-     * Computations are based on RTCP and NTP. If \ref ROC_PROTO_RTCP is not used,
-     * latency will be zero. If NTP clocks of sender and receiver are not synchronized,
-     * latency will be calculated incorrectly.
+     * Computations are based on RTCP and system clock. If \ref ROC_PROTO_RTCP is
+     * not used, latency will be zero. If system clocks of sender and receiver are
+     * not synchronized, latency will be calculated incorrectly.
      *
-     * May be zero initially until enough data is transferred.
+     * May be zero initially, until enough statistics is accumulated.
      */
     unsigned long long e2e_latency;
-} roc_session_metrics;
+} roc_connection_metrics;
 
-/** Receiver slot metrics.
+/** Receiver metrics.
  *
- * Represents metrics of single receiver slot.
+ * Holds receiver-side metrics that are not specific to connection.
+ * If multiple slots are used, each slot has its own metrics.
  */
 typedef struct roc_receiver_metrics {
-    /** Number of sessions connected to receiver slot.
+    /** Number of active connections.
+     *
+     * Defines how much senders are currently connected to receiver.
+     * When there are no connections, receiver produces silence.
      */
-    unsigned int num_sessions;
-
-    /** Pointer to user-defined buffer for session metrics.
-     * If user sets this pointer, it is used to write metrics for
-     * individual sessions.
-     */
-    roc_session_metrics* sessions;
-
-    /** Number of structs in session metrics buffer.
-     * If \c sessions pointer is set, \c sessions_size should define its
-     * size. If number of sessions is greater than provided size, only
-     * metrics for first \c sessions_size sessions will be written. Total
-     * number of sessions is always written to \c num_sessions.
-     */
-    size_t sessions_size;
+    unsigned int connection_count;
 } roc_receiver_metrics;
 
-/** Sender slot metrics.
+/** Sender metrics.
  *
- * Represents metrics of single sender slot.
+ * Holds sender-side metrics that are not specific to connection.
+ * If multiple slots are used, each slot has its own metrics.
  */
 typedef struct roc_sender_metrics {
-    /** Do not use.
+    /** Number of active connections.
+     *
+     * Defines how much receivers are currently discovered.
+     *
+     * If a control or signaling protocol like \ref ROC_PROTO_RTSP or
+     * \ref ROC_PROTO_RTCP is not used, sender doesn't know about receivers and
+     * doesn't have connection metrics.
+     *
+     * If such a protocol is used, in case of unicast, sender will have a single
+     * connection, and in case of multicast, sender may have multiple
+     * connections, one per each discovered receiver.
      */
-    int unused;
+    unsigned int connection_count;
 } roc_sender_metrics;
 
 #ifdef __cplusplus

@@ -106,19 +106,21 @@ void ReceiverSlot::reclock(core::nanoseconds_t playback_time) {
 size_t ReceiverSlot::num_sessions() const {
     roc_panic_if(!is_valid());
 
-    return session_group_.num_sessions();
+    return session_group_.num_participants();
 }
 
 void ReceiverSlot::get_metrics(ReceiverSlotMetrics& slot_metrics,
-                               ReceiverSessionMetrics* sess_metrics,
-                               size_t* sess_metrics_size) const {
+                               ReceiverParticipantMetrics* party_metrics,
+                               size_t* party_count) const {
     roc_panic_if(!is_valid());
 
     slot_metrics = ReceiverSlotMetrics();
-    slot_metrics.num_sessions = session_group_.num_sessions();
+    slot_metrics.num_participants = session_group_.num_participants();
 
-    if (sess_metrics) {
-        session_group_.get_metrics(sess_metrics, sess_metrics_size);
+    if (party_metrics && party_count) {
+        session_group_.get_participant_metrics(party_metrics, party_count);
+    } else if (party_count) {
+        *party_count = 0;
     }
 }
 

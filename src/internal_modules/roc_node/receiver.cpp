@@ -27,7 +27,7 @@ Receiver::Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_co
     , processing_task_(pipeline_)
     , slot_pool_("slot_pool", context.arena())
     , slot_map_(context.arena())
-    , sess_metrics_(context.arena())
+    , party_metrics_(context.arena())
     , valid_(false) {
     roc_log(LogDebug, "receiver node: initializing");
 
@@ -265,16 +265,17 @@ bool Receiver::unlink(slot_index_t slot_index) {
 }
 
 bool Receiver::get_metrics(slot_index_t slot_index,
-                           pipeline::ReceiverSlotMetrics& slot_metrics,
-                           sess_metrics_func_t sess_metrics_func,
-                           size_t* sess_metrics_size,
-                           void* sess_metrics_arg) {
+                           slot_metrics_func_t slot_metrics_func,
+                           void* slot_metrics_arg,
+                           party_metrics_func_t party_metrics_func,
+                           size_t* party_metrics_size,
+                           void* party_metrics_arg) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(is_valid());
 
-    roc_panic_if(!sess_metrics_func);
-    roc_panic_if(!sess_metrics_size);
+    roc_panic_if(!slot_metrics_func);
+    roc_panic_if(!party_metrics_func);
 
     core::SharedPtr<Slot> slot = get_slot_(slot_index, false);
     if (!slot) {
@@ -285,16 +286,18 @@ bool Receiver::get_metrics(slot_index_t slot_index,
         return false;
     }
 
-    if (!sess_metrics_.resize(*sess_metrics_size)) {
-        roc_log(LogError,
-                "receiver node:"
-                " can't get metrics of slot %lu: can't allocate buffer",
-                (unsigned long)slot_index);
-        return false;
+    if (party_metrics_size) {
+        if (!party_metrics_.resize(*party_metrics_size)) {
+            roc_log(LogError,
+                    "receiver node:"
+                    " can't get metrics of slot %lu: can't allocate buffer",
+                    (unsigned long)slot_index);
+            return false;
+        }
     }
 
     pipeline::ReceiverLoop::Tasks::QuerySlot task(
-        slot->handle, slot_metrics, sess_metrics_.data(), sess_metrics_size);
+        slot->handle, slot_metrics_, party_metrics_.data(), party_metrics_size);
     if (!pipeline_.schedule_and_wait(task)) {
         roc_log(LogError,
                 "receiver node:"
@@ -303,8 +306,15 @@ bool Receiver::get_metrics(slot_index_t slot_index,
         return false;
     }
 
-    for (size_t sess_index = 0; sess_index < *sess_metrics_size; sess_index++) {
-        sess_metrics_func(sess_metrics_[sess_index], sess_index, sess_metrics_arg);
+    if (slot_metrics_arg) {
+        slot_metrics_func(slot_metrics_, slot_metrics_arg);
+    }
+
+    if (party_metrics_arg && party_metrics_size) {
+        for (size_t party_index = 0; party_index < *party_metrics_size; party_index++) {
+            party_metrics_func(party_metrics_[party_index], party_index,
+                               party_metrics_arg);
+        }
     }
 
     return true;

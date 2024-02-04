@@ -27,6 +27,7 @@ Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
     , processing_task_(pipeline_)
     , slot_pool_("slot_pool", context.arena())
     , slot_map_(context.arena())
+    , party_metrics_(context.arena())
     , valid_(false) {
     roc_log(LogDebug, "sender node: initializing");
 
@@ -269,11 +270,17 @@ bool Sender::unlink(slot_index_t slot_index) {
 }
 
 bool Sender::get_metrics(slot_index_t slot_index,
-                         pipeline::SenderSlotMetrics& slot_metrics,
-                         pipeline::SenderSessionMetrics& sess_metrics) {
+                         slot_metrics_func_t slot_metrics_func,
+                         void* slot_metrics_arg,
+                         party_metrics_func_t party_metrics_func,
+                         size_t* party_metrics_size,
+                         void* party_metrics_arg) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(is_valid());
+
+    roc_panic_if(!slot_metrics_func);
+    roc_panic_if(!party_metrics_func);
 
     core::SharedPtr<Slot> slot = get_slot_(slot_index, false);
     if (!slot) {
@@ -284,14 +291,35 @@ bool Sender::get_metrics(slot_index_t slot_index,
         return false;
     }
 
-    pipeline::SenderLoop::Tasks::QuerySlot task(slot->handle, slot_metrics,
-                                                &sess_metrics);
+    if (party_metrics_size) {
+        if (!party_metrics_.resize(*party_metrics_size)) {
+            roc_log(LogError,
+                    "sender node:"
+                    " can't get metrics of slot %lu: can't allocate buffer",
+                    (unsigned long)slot_index);
+            return false;
+        }
+    }
+
+    pipeline::SenderLoop::Tasks::QuerySlot task(
+        slot->handle, slot_metrics_, party_metrics_.data(), party_metrics_size);
     if (!pipeline_.schedule_and_wait(task)) {
         roc_log(LogError,
                 "sender node:"
                 " can't get metrics of slot %lu: operation failed",
                 (unsigned long)slot_index);
         return false;
+    }
+
+    if (slot_metrics_arg) {
+        slot_metrics_func(slot_metrics_, slot_metrics_arg);
+    }
+
+    if (party_metrics_arg && party_metrics_size) {
+        for (size_t party_index = 0; party_index < *party_metrics_size; party_index++) {
+            party_metrics_func(party_metrics_[party_index], party_index,
+                               party_metrics_arg);
+        }
     }
 
     return true;
@@ -310,7 +338,8 @@ bool Sender::has_incomplete() {
 
         if (slot->handle) {
             pipeline::SenderSlotMetrics slot_metrics;
-            pipeline::SenderLoop::Tasks::QuerySlot task(slot->handle, slot_metrics, NULL);
+            pipeline::SenderLoop::Tasks::QuerySlot task(slot->handle, slot_metrics, NULL,
+                                                        NULL);
             if (!pipeline_.schedule_and_wait(task)) {
                 return true;
             }

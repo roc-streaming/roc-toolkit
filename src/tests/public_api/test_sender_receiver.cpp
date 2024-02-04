@@ -552,64 +552,7 @@ TEST(sender_receiver, multitrack_separate_contexts) {
     sender.join();
 }
 
-TEST(sender_receiver, metrics_niq) {
-    enum {
-        Flags = test::FlagNonStrict | test::FlagInfinite,
-        FrameChans = 2,
-        PacketChans = 2,
-        MaxSess = 10
-    };
-
-    init_config(Flags, FrameChans, PacketChans);
-
-    test::Context context;
-
-    test::Receiver receiver(context, receiver_conf, sample_step, FrameChans,
-                            test::FrameSamples, Flags);
-
-    receiver.bind();
-
-    test::Sender sender(context, sender_conf, sample_step, FrameChans, test::FrameSamples,
-                        Flags);
-
-    sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), NULL);
-
-    {
-        const roc_receiver_metrics& metrics = receiver.query(MaxSess);
-        UNSIGNED_LONGS_EQUAL(0, metrics.num_sessions);
-        UNSIGNED_LONGS_EQUAL(0, metrics.sessions_size);
-    }
-
-    CHECK(sender.start());
-    CHECK(receiver.start());
-
-    for (;;) {
-        core::sleep_for(core::ClockMonotonic, core::Millisecond);
-
-        const roc_receiver_metrics& metrics = receiver.query(MaxSess);
-        if (metrics.num_sessions == 0) {
-            continue;
-        }
-
-        UNSIGNED_LONGS_EQUAL(1, metrics.num_sessions);
-        UNSIGNED_LONGS_EQUAL(1, metrics.sessions_size);
-
-        if (metrics.sessions[0].niq_latency == 0) {
-            continue;
-        }
-
-        CHECK(metrics.sessions[0].niq_latency > 0);
-        CHECK(metrics.sessions[0].e2e_latency == 0);
-        break;
-    }
-
-    receiver.stop();
-    receiver.join();
-    sender.stop();
-    sender.join();
-}
-
-TEST(sender_receiver, metrics_e2e) {
+TEST(sender_receiver, metrics_measurements) {
     enum {
         Flags = test::FlagNonStrict | test::FlagInfinite | test::FlagRTCP,
         FrameChans = 2,
@@ -633,9 +576,10 @@ TEST(sender_receiver, metrics_e2e) {
                    receiver.control_endpoint());
 
     {
-        const roc_receiver_metrics& metrics = receiver.query(MaxSess);
-        UNSIGNED_LONGS_EQUAL(0, metrics.num_sessions);
-        UNSIGNED_LONGS_EQUAL(0, metrics.sessions_size);
+        receiver.query_metrics(MaxSess);
+
+        UNSIGNED_LONGS_EQUAL(0, receiver.recv_metrics().connection_count);
+        UNSIGNED_LONGS_EQUAL(0, receiver.conn_metrics_count());
     }
 
     CHECK(sender.start());
@@ -644,21 +588,19 @@ TEST(sender_receiver, metrics_e2e) {
     for (;;) {
         core::sleep_for(core::ClockMonotonic, core::Millisecond);
 
-        const roc_receiver_metrics& metrics = receiver.query(MaxSess);
-        if (metrics.num_sessions == 0) {
+        receiver.query_metrics(MaxSess);
+
+        if (receiver.recv_metrics().connection_count == 0) {
             continue;
         }
 
-        UNSIGNED_LONGS_EQUAL(1, metrics.num_sessions);
-        UNSIGNED_LONGS_EQUAL(1, metrics.sessions_size);
+        UNSIGNED_LONGS_EQUAL(1, receiver.recv_metrics().connection_count);
+        UNSIGNED_LONGS_EQUAL(1, receiver.conn_metrics_count());
 
-        if (metrics.sessions[0].niq_latency == 0
-            || metrics.sessions[0].e2e_latency == 0) {
+        if (receiver.conn_metrics(0).e2e_latency == 0) {
             continue;
         }
 
-        CHECK(metrics.sessions[0].niq_latency > 0);
-        CHECK(metrics.sessions[0].e2e_latency > 0);
         break;
     }
 
@@ -668,7 +610,7 @@ TEST(sender_receiver, metrics_e2e) {
     sender.join();
 }
 
-TEST(sender_receiver, metrics_sessions) {
+TEST(sender_receiver, metrics_connections) {
     enum {
         Flags = test::FlagNonStrict | test::FlagInfinite,
         FrameChans = 2,
@@ -696,9 +638,10 @@ TEST(sender_receiver, metrics_sessions) {
     sender_2.connect(receiver.source_endpoint(), receiver.repair_endpoint(), NULL);
 
     {
-        const roc_receiver_metrics& metrics = receiver.query(MaxSess);
-        UNSIGNED_LONGS_EQUAL(0, metrics.num_sessions);
-        UNSIGNED_LONGS_EQUAL(0, metrics.sessions_size);
+        receiver.query_metrics(MaxSess);
+
+        UNSIGNED_LONGS_EQUAL(0, receiver.recv_metrics().connection_count);
+        UNSIGNED_LONGS_EQUAL(0, receiver.conn_metrics_count());
     }
 
     CHECK(sender_1.start());
@@ -708,35 +651,38 @@ TEST(sender_receiver, metrics_sessions) {
     for (;;) {
         core::sleep_for(core::ClockMonotonic, core::Millisecond);
 
-        {
-            const roc_receiver_metrics& metrics = receiver.query(MaxSess);
-            if (metrics.num_sessions != 2) {
-                continue;
-            }
+        receiver.query_metrics(MaxSess);
+
+        if (receiver.recv_metrics().connection_count != 2) {
+            continue;
         }
 
         {
-            const roc_receiver_metrics& metrics = receiver.query(0);
-            UNSIGNED_LONGS_EQUAL(2, metrics.num_sessions);
-            UNSIGNED_LONGS_EQUAL(0, metrics.sessions_size);
+            receiver.query_metrics(0);
+
+            UNSIGNED_LONGS_EQUAL(2, receiver.recv_metrics().connection_count);
+            UNSIGNED_LONGS_EQUAL(0, receiver.conn_metrics_count());
         }
 
         {
-            const roc_receiver_metrics& metrics = receiver.query(1);
-            UNSIGNED_LONGS_EQUAL(2, metrics.num_sessions);
-            UNSIGNED_LONGS_EQUAL(1, metrics.sessions_size);
+            receiver.query_metrics(1);
+
+            UNSIGNED_LONGS_EQUAL(2, receiver.recv_metrics().connection_count);
+            UNSIGNED_LONGS_EQUAL(1, receiver.conn_metrics_count());
         }
 
         {
-            const roc_receiver_metrics& metrics = receiver.query(2);
-            UNSIGNED_LONGS_EQUAL(2, metrics.num_sessions);
-            UNSIGNED_LONGS_EQUAL(2, metrics.sessions_size);
+            receiver.query_metrics(2);
+
+            UNSIGNED_LONGS_EQUAL(2, receiver.recv_metrics().connection_count);
+            UNSIGNED_LONGS_EQUAL(2, receiver.conn_metrics_count());
         }
 
         {
-            const roc_receiver_metrics& metrics = receiver.query(3);
-            UNSIGNED_LONGS_EQUAL(2, metrics.num_sessions);
-            UNSIGNED_LONGS_EQUAL(2, metrics.sessions_size);
+            receiver.query_metrics(3);
+
+            UNSIGNED_LONGS_EQUAL(2, receiver.recv_metrics().connection_count);
+            UNSIGNED_LONGS_EQUAL(2, receiver.conn_metrics_count());
         }
 
         break;
@@ -783,13 +729,15 @@ TEST(sender_receiver, metrics_slots) {
                      NULL);
 
     {
-        const roc_receiver_metrics& metrics1 = receiver.query(MaxSess, Slot1);
-        UNSIGNED_LONGS_EQUAL(0, metrics1.num_sessions);
-        UNSIGNED_LONGS_EQUAL(0, metrics1.sessions_size);
+        receiver.query_metrics(MaxSess, Slot1);
 
-        const roc_receiver_metrics& metrics2 = receiver.query(MaxSess, Slot2);
-        UNSIGNED_LONGS_EQUAL(0, metrics2.num_sessions);
-        UNSIGNED_LONGS_EQUAL(0, metrics2.sessions_size);
+        UNSIGNED_LONGS_EQUAL(0, receiver.recv_metrics().connection_count);
+        UNSIGNED_LONGS_EQUAL(0, receiver.conn_metrics_count());
+
+        receiver.query_metrics(MaxSess, Slot2);
+
+        UNSIGNED_LONGS_EQUAL(0, receiver.recv_metrics().connection_count);
+        UNSIGNED_LONGS_EQUAL(0, receiver.conn_metrics_count());
     }
 
     CHECK(sender_1.start());
@@ -799,20 +747,31 @@ TEST(sender_receiver, metrics_slots) {
     for (;;) {
         core::sleep_for(core::ClockMonotonic, core::Millisecond);
 
-        const roc_receiver_metrics& metrics1 = receiver.query(MaxSess, Slot1);
-        const roc_receiver_metrics& metrics2 = receiver.query(MaxSess, Slot2);
+        receiver.query_metrics(MaxSess, Slot1);
 
-        if (metrics1.num_sessions == 0 || metrics2.num_sessions == 0) {
+        if (receiver.recv_metrics().connection_count == 0) {
             continue;
         }
 
-        UNSIGNED_LONGS_EQUAL(1, metrics1.num_sessions);
-        UNSIGNED_LONGS_EQUAL(1, metrics1.sessions_size);
+        receiver.query_metrics(MaxSess, Slot2);
 
-        UNSIGNED_LONGS_EQUAL(1, metrics2.num_sessions);
-        UNSIGNED_LONGS_EQUAL(1, metrics2.sessions_size);
+        if (receiver.recv_metrics().connection_count == 0) {
+            continue;
+        }
 
         break;
+    }
+
+    {
+        receiver.query_metrics(MaxSess, Slot1);
+
+        UNSIGNED_LONGS_EQUAL(1, receiver.recv_metrics().connection_count);
+        UNSIGNED_LONGS_EQUAL(1, receiver.conn_metrics_count());
+
+        receiver.query_metrics(MaxSess, Slot2);
+
+        UNSIGNED_LONGS_EQUAL(1, receiver.recv_metrics().connection_count);
+        UNSIGNED_LONGS_EQUAL(1, receiver.conn_metrics_count());
     }
 
     receiver.stop();

@@ -365,10 +365,10 @@ void ReceiverSession::process_report(const rtcp::SendReport& report) {
     }
 }
 
-ReceiverSessionMetrics ReceiverSession::get_metrics() const {
+ReceiverParticipantMetrics ReceiverSession::get_metrics() const {
     roc_panic_if(!is_valid());
 
-    ReceiverSessionMetrics metrics;
+    ReceiverParticipantMetrics metrics;
     metrics.link = source_meter_->metrics();
     metrics.latency = latency_monitor_->metrics();
 

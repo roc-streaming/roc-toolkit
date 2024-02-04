@@ -114,7 +114,7 @@ public:
     void process_report(const rtcp::SendReport& report);
 
     //! Get session metrics.
-    ReceiverSessionMetrics get_metrics() const;
+    ReceiverParticipantMetrics get_metrics() const;
 
 private:
     audio::IFrameReader* frame_reader_;

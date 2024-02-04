@@ -84,16 +84,20 @@ public:
     //!  retrieved from pipeline will be actually played on sink
     void reclock_sessions(core::nanoseconds_t playback_time);
 
-    //! Get number of alive sessions.
-    size_t num_sessions() const;
+    //! Get number of remote participants.
+    //! On receiver, one participant corresponds to one ReceiverSession inside
+    //! ReceiverSessionGroup, because we create a separate session for every
+    //! connected participant (remote sender).
+    size_t num_participants() const;
 
-    //! Get metrics for all sessions.
+    //! Get metrics for remote participants.
     //! @remarks
-    //!  @p metrics defines array of metrics structs, and @p metrics_size
+    //!  @p party_metrics points to array of metrics structs, and @p party_count
     //!  defines number of array elements. Metrics are written to given array,
-    //!  and @p metrics_size is updated of actual number of elements written.
-    //!  If there is not enough space for all sessions, result is truncated.
-    void get_metrics(ReceiverSessionMetrics* metrics, size_t* metrics_size) const;
+    //!  and @p party_count is updated of actual number of elements written.
+    //!  If there is not enough space for all metrics, result is truncated.
+    void get_participant_metrics(ReceiverParticipantMetrics* party_metrics,
+                                 size_t* party_count) const;
 
 private:
     // Implementation of rtcp::IParticipant interface.

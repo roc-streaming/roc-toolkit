@@ -263,16 +263,33 @@ core::nanoseconds_t SenderSession::refresh(core::nanoseconds_t current_time) {
     return 0;
 }
 
-SenderSessionMetrics SenderSession::get_metrics() const {
+size_t SenderSession::num_participants() const {
     roc_panic_if(!is_valid());
 
-    SenderSessionMetrics metrics;
     if (feedback_monitor_) {
-        metrics.link = feedback_monitor_->link_metrics();
-        metrics.latency = feedback_monitor_->latency_metrics();
+        return feedback_monitor_->num_participants();
+    } else {
+        return 0;
     }
+}
 
-    return metrics;
+void SenderSession::get_participant_metrics(SenderParticipantMetrics* party_metrics,
+                                            size_t* party_count) const {
+    roc_panic_if(!is_valid());
+
+    roc_panic_if_not(party_metrics);
+    roc_panic_if_not(party_count);
+
+    if (feedback_monitor_) {
+        *party_count = std::min(*party_count, feedback_monitor_->num_participants());
+
+        for (size_t n_part = 0; n_part < *party_count; n_part++) {
+            party_metrics[n_part].link = feedback_monitor_->link_metrics(n_part);
+            party_metrics[n_part].latency = feedback_monitor_->latency_metrics(n_part);
+        }
+    } else {
+        *party_count = 0;
+    }
 }
 
 rtcp::ParticipantInfo SenderSession::participant_info() {

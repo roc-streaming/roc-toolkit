@@ -23,6 +23,16 @@ namespace {
 
 core::HeapArena arena;
 
+void write_slot_metrics(const pipeline::SenderSlotMetrics& slot_metrics, void* slot_arg) {
+    *(pipeline::SenderSlotMetrics*)slot_arg = slot_metrics;
+}
+
+void write_party_metrics(const pipeline::SenderParticipantMetrics& party_metrics,
+                         size_t party_index,
+                         void* party_arg) {
+    ((pipeline::SenderParticipantMetrics*)party_arg)[party_index] = party_metrics;
+}
+
 } // namespace
 
 TEST_GROUP(sender_encoder) {
@@ -108,15 +118,15 @@ TEST(sender_encoder, metrics) {
     CHECK(sender_encoder.is_valid());
 
     pipeline::SenderSlotMetrics slot_metrics;
-    pipeline::SenderSessionMetrics sess_metrics;
+    pipeline::SenderParticipantMetrics party_metrics[10];
+    size_t party_count = 0;
 
-    CHECK(sender_encoder.get_metrics(slot_metrics, sess_metrics));
-    CHECK(!slot_metrics.is_complete);
+    party_count = ROC_ARRAY_SIZE(party_metrics);
+    CHECK(sender_encoder.get_metrics(write_slot_metrics, &slot_metrics,
+                                     write_party_metrics, &party_count, &party_metrics));
 
-    CHECK(sender_encoder.activate(address::Iface_AudioSource, address::Proto_RTP));
-
-    CHECK(sender_encoder.get_metrics(slot_metrics, sess_metrics));
-    CHECK(slot_metrics.is_complete);
+    CHECK_EQUAL(0, slot_metrics.num_participants);
+    CHECK_EQUAL(0, party_count);
 }
 
 } // namespace node

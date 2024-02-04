@@ -68,9 +68,10 @@ public:
     //!  if there are no frames
     core::nanoseconds_t refresh(core::nanoseconds_t current_time);
 
-    //! Get metrics for slot and its session.
+    //! Get metrics for slot and its participants.
     void get_metrics(SenderSlotMetrics& slot_metrics,
-                     SenderSessionMetrics* sess_metrics) const;
+                     SenderParticipantMetrics* party_metrics,
+                     size_t* party_count) const;
 
 private:
     SenderEndpoint* create_source_endpoint_(address::Protocol proto,

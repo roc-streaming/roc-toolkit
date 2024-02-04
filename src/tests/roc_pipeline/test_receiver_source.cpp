@@ -2077,7 +2077,7 @@ TEST(receiver_source, timestamp_mapping_remixing) {
     CHECK(first_ts);
 }
 
-TEST(receiver_source, metrics_sessions) {
+TEST(receiver_source, metrics_participants) {
     enum { Rate = SampleRate, Chans = Chans_Stereo, MaxSess = 10 };
 
     init(Rate, Chans, Rate, Chans);
@@ -2091,13 +2091,13 @@ TEST(receiver_source, metrics_sessions) {
 
     {
         ReceiverSlotMetrics slot_metrics;
-        ReceiverSessionMetrics sess_metrics[MaxSess];
-        size_t sess_metrics_size = MaxSess;
+        ReceiverParticipantMetrics party_metrics[MaxSess];
+        size_t party_metrics_size = MaxSess;
 
-        slot->get_metrics(slot_metrics, sess_metrics, &sess_metrics_size);
+        slot->get_metrics(slot_metrics, party_metrics, &party_metrics_size);
 
-        UNSIGNED_LONGS_EQUAL(0, slot_metrics.num_sessions);
-        UNSIGNED_LONGS_EQUAL(0, sess_metrics_size);
+        UNSIGNED_LONGS_EQUAL(0, slot_metrics.num_participants);
+        UNSIGNED_LONGS_EQUAL(0, party_metrics_size);
     }
 
     packet::IWriter* endpoint1_writer =
@@ -2115,13 +2115,13 @@ TEST(receiver_source, metrics_sessions) {
 
     {
         ReceiverSlotMetrics slot_metrics;
-        ReceiverSessionMetrics sess_metrics[MaxSess];
-        size_t sess_metrics_size = MaxSess;
+        ReceiverParticipantMetrics party_metrics[MaxSess];
+        size_t party_metrics_size = MaxSess;
 
-        slot->get_metrics(slot_metrics, sess_metrics, &sess_metrics_size);
+        slot->get_metrics(slot_metrics, party_metrics, &party_metrics_size);
 
-        UNSIGNED_LONGS_EQUAL(0, slot_metrics.num_sessions);
-        UNSIGNED_LONGS_EQUAL(0, sess_metrics_size);
+        UNSIGNED_LONGS_EQUAL(0, slot_metrics.num_participants);
+        UNSIGNED_LONGS_EQUAL(0, party_metrics_size);
     }
 
     for (size_t np = 0; np < ManyPackets; np++) {
@@ -2136,16 +2136,16 @@ TEST(receiver_source, metrics_sessions) {
 
         {
             ReceiverSlotMetrics slot_metrics;
-            ReceiverSessionMetrics sess_metrics[MaxSess];
-            size_t sess_metrics_size = MaxSess;
+            ReceiverParticipantMetrics party_metrics[MaxSess];
+            size_t party_metrics_size = MaxSess;
 
-            slot->get_metrics(slot_metrics, sess_metrics, &sess_metrics_size);
+            slot->get_metrics(slot_metrics, party_metrics, &party_metrics_size);
 
-            UNSIGNED_LONGS_EQUAL(1, slot_metrics.num_sessions);
-            UNSIGNED_LONGS_EQUAL(1, sess_metrics_size);
+            UNSIGNED_LONGS_EQUAL(1, slot_metrics.num_participants);
+            UNSIGNED_LONGS_EQUAL(1, party_metrics_size);
 
-            CHECK(sess_metrics[0].latency.niq_latency != 0);
-            CHECK(sess_metrics[0].latency.e2e_latency == 0);
+            CHECK(party_metrics[0].latency.niq_latency != 0);
+            CHECK(party_metrics[0].latency.e2e_latency == 0);
         }
     }
 
@@ -2169,19 +2169,19 @@ TEST(receiver_source, metrics_sessions) {
 
         {
             ReceiverSlotMetrics slot_metrics;
-            ReceiverSessionMetrics sess_metrics[MaxSess];
-            size_t sess_metrics_size = MaxSess;
+            ReceiverParticipantMetrics party_metrics[MaxSess];
+            size_t party_metrics_size = MaxSess;
 
-            slot->get_metrics(slot_metrics, sess_metrics, &sess_metrics_size);
+            slot->get_metrics(slot_metrics, party_metrics, &party_metrics_size);
 
-            UNSIGNED_LONGS_EQUAL(2, slot_metrics.num_sessions);
-            UNSIGNED_LONGS_EQUAL(2, sess_metrics_size);
+            UNSIGNED_LONGS_EQUAL(2, slot_metrics.num_participants);
+            UNSIGNED_LONGS_EQUAL(2, party_metrics_size);
 
-            CHECK(sess_metrics[0].latency.niq_latency != 0);
-            CHECK(sess_metrics[0].latency.e2e_latency == 0);
+            CHECK(party_metrics[0].latency.niq_latency != 0);
+            CHECK(party_metrics[0].latency.e2e_latency == 0);
 
-            CHECK(sess_metrics[1].latency.niq_latency != 0);
-            CHECK(sess_metrics[1].latency.e2e_latency == 0);
+            CHECK(party_metrics[1].latency.niq_latency != 0);
+            CHECK(party_metrics[1].latency.e2e_latency == 0);
         }
     }
 }
@@ -2229,56 +2229,56 @@ TEST(receiver_source, metrics_truncation) {
 
     { // metrics_size=0 num_sessions=2
         ReceiverSlotMetrics slot_metrics;
-        ReceiverSessionMetrics sess_metrics[MaxSess];
-        size_t sess_metrics_size = 0;
+        ReceiverParticipantMetrics party_metrics[MaxSess];
+        size_t party_metrics_size = 0;
 
-        slot->get_metrics(slot_metrics, sess_metrics, &sess_metrics_size);
+        slot->get_metrics(slot_metrics, party_metrics, &party_metrics_size);
 
-        UNSIGNED_LONGS_EQUAL(2, slot_metrics.num_sessions);
-        UNSIGNED_LONGS_EQUAL(0, sess_metrics_size);
+        UNSIGNED_LONGS_EQUAL(2, slot_metrics.num_participants);
+        UNSIGNED_LONGS_EQUAL(0, party_metrics_size);
     }
 
     { // metrics_size=1 num_sessions=2
         ReceiverSlotMetrics slot_metrics;
-        ReceiverSessionMetrics sess_metrics[MaxSess];
-        size_t sess_metrics_size = 1;
+        ReceiverParticipantMetrics party_metrics[MaxSess];
+        size_t party_metrics_size = 1;
 
-        slot->get_metrics(slot_metrics, sess_metrics, &sess_metrics_size);
+        slot->get_metrics(slot_metrics, party_metrics, &party_metrics_size);
 
-        UNSIGNED_LONGS_EQUAL(2, slot_metrics.num_sessions);
-        UNSIGNED_LONGS_EQUAL(1, sess_metrics_size);
+        UNSIGNED_LONGS_EQUAL(2, slot_metrics.num_participants);
+        UNSIGNED_LONGS_EQUAL(1, party_metrics_size);
 
-        CHECK(sess_metrics[0].latency.niq_latency > 0);
-        CHECK(sess_metrics[1].latency.niq_latency == 0);
+        CHECK(party_metrics[0].latency.niq_latency > 0);
+        CHECK(party_metrics[1].latency.niq_latency == 0);
     }
 
     { // metrics_size=2 num_sessions=2
         ReceiverSlotMetrics slot_metrics;
-        ReceiverSessionMetrics sess_metrics[MaxSess];
-        size_t sess_metrics_size = 2;
+        ReceiverParticipantMetrics party_metrics[MaxSess];
+        size_t party_metrics_size = 2;
 
-        slot->get_metrics(slot_metrics, sess_metrics, &sess_metrics_size);
+        slot->get_metrics(slot_metrics, party_metrics, &party_metrics_size);
 
-        UNSIGNED_LONGS_EQUAL(2, slot_metrics.num_sessions);
-        UNSIGNED_LONGS_EQUAL(2, sess_metrics_size);
-        CHECK(sess_metrics[0].latency.niq_latency > 0);
-        CHECK(sess_metrics[1].latency.niq_latency > 0);
-        CHECK(sess_metrics[2].latency.niq_latency == 0);
+        UNSIGNED_LONGS_EQUAL(2, slot_metrics.num_participants);
+        UNSIGNED_LONGS_EQUAL(2, party_metrics_size);
+        CHECK(party_metrics[0].latency.niq_latency > 0);
+        CHECK(party_metrics[1].latency.niq_latency > 0);
+        CHECK(party_metrics[2].latency.niq_latency == 0);
     }
 
     { // metrics_size=3 num_sessions=2
         ReceiverSlotMetrics slot_metrics;
-        ReceiverSessionMetrics sess_metrics[MaxSess];
-        size_t sess_metrics_size = 3;
+        ReceiverParticipantMetrics party_metrics[MaxSess];
+        size_t party_metrics_size = 3;
 
-        slot->get_metrics(slot_metrics, sess_metrics, &sess_metrics_size);
+        slot->get_metrics(slot_metrics, party_metrics, &party_metrics_size);
 
-        UNSIGNED_LONGS_EQUAL(2, slot_metrics.num_sessions);
-        UNSIGNED_LONGS_EQUAL(2, sess_metrics_size);
+        UNSIGNED_LONGS_EQUAL(2, slot_metrics.num_participants);
+        UNSIGNED_LONGS_EQUAL(2, party_metrics_size);
 
-        CHECK(sess_metrics[0].latency.niq_latency > 0);
-        CHECK(sess_metrics[1].latency.niq_latency > 0);
-        CHECK(sess_metrics[2].latency.niq_latency == 0);
+        CHECK(party_metrics[0].latency.niq_latency > 0);
+        CHECK(party_metrics[1].latency.niq_latency > 0);
+        CHECK(party_metrics[2].latency.niq_latency == 0);
     }
 }
 
@@ -2323,15 +2323,15 @@ TEST(receiver_source, metrics_niq_latency) {
 
         {
             ReceiverSlotMetrics slot_metrics;
-            ReceiverSessionMetrics sess_metrics[MaxSess];
-            size_t sess_metrics_size = MaxSess;
+            ReceiverParticipantMetrics party_metrics[MaxSess];
+            size_t party_metrics_size = MaxSess;
 
-            slot->get_metrics(slot_metrics, sess_metrics, &sess_metrics_size);
+            slot->get_metrics(slot_metrics, party_metrics, &party_metrics_size);
 
-            UNSIGNED_LONGS_EQUAL(1, slot_metrics.num_sessions);
-            UNSIGNED_LONGS_EQUAL(1, sess_metrics_size);
+            UNSIGNED_LONGS_EQUAL(1, slot_metrics.num_participants);
+            UNSIGNED_LONGS_EQUAL(1, party_metrics_size);
 
-            DOUBLES_EQUAL(virtual_niq_latency, sess_metrics[0].latency.niq_latency,
+            DOUBLES_EQUAL(virtual_niq_latency, party_metrics[0].latency.niq_latency,
                           core::Millisecond * 5);
         }
     }
@@ -2404,16 +2404,16 @@ TEST(receiver_source, metrics_e2e_latency) {
 
         {
             ReceiverSlotMetrics slot_metrics;
-            ReceiverSessionMetrics sess_metrics[MaxSess];
-            size_t sess_metrics_size = MaxSess;
+            ReceiverParticipantMetrics party_metrics[MaxSess];
+            size_t party_metrics_size = MaxSess;
 
-            slot->get_metrics(slot_metrics, sess_metrics, &sess_metrics_size);
+            slot->get_metrics(slot_metrics, party_metrics, &party_metrics_size);
 
-            UNSIGNED_LONGS_EQUAL(1, slot_metrics.num_sessions);
-            UNSIGNED_LONGS_EQUAL(1, sess_metrics_size);
+            UNSIGNED_LONGS_EQUAL(1, slot_metrics.num_participants);
+            UNSIGNED_LONGS_EQUAL(1, party_metrics_size);
 
             if (np != 0) {
-                DOUBLES_EQUAL(virtual_e2e_latency, sess_metrics[0].latency.e2e_latency,
+                DOUBLES_EQUAL(virtual_e2e_latency, party_metrics[0].latency.e2e_latency,
                               core::Millisecond);
             }
         }

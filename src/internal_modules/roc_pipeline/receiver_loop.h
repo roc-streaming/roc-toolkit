@@ -58,15 +58,15 @@ public:
 
         bool (ReceiverLoop::*func_)(Task&); //!< Task implementation method.
 
-        ReceiverSlot* slot_;                   //!< Slot.
-        address::Interface iface_;             //!< Interface.
-        address::Protocol proto_;              //!< Protocol.
-        address::SocketAddr inbound_address_;  //!< Inbound packet address.
-        packet::IWriter* inbound_writer_;      //!< Inbound packet writer.
-        packet::IWriter* outbound_writer_;     //!< Outbound packet writer.
-        ReceiverSlotMetrics* slot_metrics_;    //!< Output for slot metrics.
-        ReceiverSessionMetrics* sess_metrics_; //!< Output for session metrics.
-        size_t* sess_metrics_size_;            //!< Input/output session metrics size.
+        ReceiverSlot* slot_;                        //!< Slot.
+        address::Interface iface_;                  //!< Interface.
+        address::Protocol proto_;                   //!< Protocol.
+        address::SocketAddr inbound_address_;       //!< Inbound packet address.
+        packet::IWriter* inbound_writer_;           //!< Inbound packet writer.
+        packet::IWriter* outbound_writer_;          //!< Outbound packet writer.
+        ReceiverSlotMetrics* slot_metrics_;         //!< Output slot metrics.
+        ReceiverParticipantMetrics* party_metrics_; //!< Output participant metrics.
+        size_t* party_count_;                       //!< Input/output participant count.
     };
 
     //! Subclasses for specific tasks.
@@ -97,8 +97,8 @@ public:
             //!  Metrics are written to provided structs.
             QuerySlot(SlotHandle slot,
                       ReceiverSlotMetrics& slot_metrics,
-                      ReceiverSessionMetrics* sess_metrics,
-                      size_t* sess_metrics_size);
+                      ReceiverParticipantMetrics* party_metrics,
+                      size_t* party_count);
         };
 
         //! Create endpoint on given interface of the slot.

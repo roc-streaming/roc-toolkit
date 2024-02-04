@@ -123,11 +123,28 @@ void FeedbackMonitor::write(Frame& frame) {
     writer_.write(frame);
 }
 
-const LatencyMetrics& FeedbackMonitor::latency_metrics() const {
+size_t FeedbackMonitor::num_participants() const {
+    // TODO(gh-674): collect per-session metrics
+    return has_feedback_ ? 1 : 0;
+}
+
+const LatencyMetrics& FeedbackMonitor::latency_metrics(size_t part_index) const {
+    roc_panic_if_msg(part_index >= num_participants(),
+                     "feedback monitor: participant index out of bounds:"
+                     " index=%lu max=%lu",
+                     (unsigned long)part_index, (unsigned long)num_participants());
+
+    // TODO(gh-674): collect per-session metrics
     return latency_metrics_;
 }
 
-const packet::LinkMetrics& FeedbackMonitor::link_metrics() const {
+const packet::LinkMetrics& FeedbackMonitor::link_metrics(size_t part_index) const {
+    roc_panic_if_msg(part_index >= num_participants(),
+                     "feedback monitor: participant index out of bounds:"
+                     " index=%lu max=%lu",
+                     (unsigned long)part_index, (unsigned long)num_participants());
+
+    // TODO(gh-674): collect per-session metrics
     return link_metrics_;
 }
 

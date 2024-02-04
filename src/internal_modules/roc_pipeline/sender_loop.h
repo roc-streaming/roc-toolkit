@@ -55,14 +55,15 @@ public:
 
         bool (SenderLoop::*func_)(Task&); //!< Task implementation method.
 
-        SenderSlot* slot_;                     //!< Slot.
-        address::Interface iface_;             //!< Interface.
-        address::Protocol proto_;              //!< Protocol.
-        address::SocketAddr outbound_address_; //!< Destination address.
-        packet::IWriter* outbound_writer_;     //!< Destination packet writer.
-        packet::IWriter* inbound_writer_;      //!< Inbound packet writer.
-        SenderSlotMetrics* slot_metrics_;      //!< Output for slot metrics.
-        SenderSessionMetrics* sess_metrics_;   //!< Output for session metrics.
+        SenderSlot* slot_;                        //!< Slot.
+        address::Interface iface_;                //!< Interface.
+        address::Protocol proto_;                 //!< Protocol.
+        address::SocketAddr outbound_address_;    //!< Destination address.
+        packet::IWriter* outbound_writer_;        //!< Destination packet writer.
+        packet::IWriter* inbound_writer_;         //!< Inbound packet writer.
+        SenderSlotMetrics* slot_metrics_;         //!< Output slot metrics.
+        SenderParticipantMetrics* party_metrics_; //!< Output participant metrics.
+        size_t* party_count_;                     //!< Input/output participant count.
     };
 
     //! Subclasses for specific tasks.
@@ -93,7 +94,8 @@ public:
             //!  Metrics are written to provided structs.
             QuerySlot(SlotHandle slot,
                       SenderSlotMetrics& slot_metrics,
-                      SenderSessionMetrics* sess_metrics);
+                      SenderParticipantMetrics* party_metrics,
+                      size_t* party_count);
         };
 
         //! Create endpoint on given interface of the slot.

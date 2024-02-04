@@ -39,22 +39,24 @@ public:
     bool is_valid();
 
     //! Activate interface.
-    bool activate(address::Interface iface, address::Protocol proto);
+    ROC_ATTR_NODISCARD bool activate(address::Interface iface, address::Protocol proto);
 
-    //! Callback for getting session metrics.
-    typedef void (*sess_metrics_func_t)(
-        const pipeline::ReceiverSessionMetrics& sess_metrics,
-        size_t sess_index,
-        void* sess_arg);
+    //! Callback for slot metrics.
+    typedef void (*slot_metrics_func_t)(const pipeline::ReceiverSlotMetrics& slot_metrics,
+                                        void* slot_arg);
+
+    //! Callback for participant metrics.
+    typedef void (*party_metrics_func_t)(
+        const pipeline::ReceiverParticipantMetrics& party_metrics,
+        size_t party_index,
+        void* party_arg);
 
     //! Get metrics.
-    //! @remarks
-    //!  Metrics for slot are written into @p slot_metrics.
-    //!  Metrics for each session are passed to @p sess_metrics_func.
-    bool get_metrics(pipeline::ReceiverSlotMetrics& slot_metrics,
-                     sess_metrics_func_t sess_metrics_func,
-                     size_t* sess_metrics_size,
-                     void* sess_metrics_arg);
+    ROC_ATTR_NODISCARD bool get_metrics(slot_metrics_func_t slot_metrics_func,
+                                        void* slot_metrics_arg,
+                                        party_metrics_func_t party_metrics_func,
+                                        size_t* party_metrics_size,
+                                        void* party_metrics_arg);
 
     //! Write packet for decoding.
     ROC_ATTR_NODISCARD status::StatusCode write(address::Interface iface,
@@ -79,7 +81,8 @@ private:
     pipeline::ReceiverLoop::SlotHandle slot_;
     ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
 
-    core::Array<pipeline::ReceiverSessionMetrics, 8> sess_metrics_;
+    pipeline::ReceiverSlotMetrics slot_metrics_;
+    core::Array<pipeline::ReceiverParticipantMetrics, 8> party_metrics_;
 
     bool valid_;
 };

@@ -19,47 +19,51 @@
 namespace roc {
 namespace pipeline {
 
-//! Metrics of sender session (connection to receiver).
-struct SenderSessionMetrics {
-    //! Link metrics.
-    packet::LinkMetrics link;
-
-    //! Receiver feedback.
-    audio::LatencyMetrics latency;
-
-    SenderSessionMetrics() {
-    }
-};
-
-//! Metrics of sender slot.
-struct SenderSlotMetrics {
-    //! Is slot configuration complete.
-    bool is_complete;
-
-    SenderSlotMetrics()
-        : is_complete(false) {
-    }
-};
-
-//! Metrics of receiver session (connection from sender).
-struct ReceiverSessionMetrics {
+//! Sender-side metrics specific to one participant (remote receiver).
+struct SenderParticipantMetrics {
     //! Link metrics.
     packet::LinkMetrics link;
 
     //! Latency metrics.
     audio::LatencyMetrics latency;
 
-    ReceiverSessionMetrics() {
+    SenderParticipantMetrics() {
     }
 };
 
-//! Metrics of receiver slot.
+//! Sender-side metrics of the whole slot.
+struct SenderSlotMetrics {
+    //! Is slot configuration complete.
+    bool is_complete;
+
+    //! Number of receivers connected to sender slot.
+    size_t num_participants;
+
+    SenderSlotMetrics()
+        : is_complete(false)
+        , num_participants(0) {
+    }
+};
+
+//! Receiver-side metrics specific to one participant (remote sender).
+struct ReceiverParticipantMetrics {
+    //! Link metrics.
+    packet::LinkMetrics link;
+
+    //! Latency metrics.
+    audio::LatencyMetrics latency;
+
+    ReceiverParticipantMetrics() {
+    }
+};
+
+//! Receiver-side metrics of the whole slot.
 struct ReceiverSlotMetrics {
-    //! Number of sessions connected to receiver.
-    size_t num_sessions;
+    //! Number of senders connected to receiver slot.
+    size_t num_participants;
 
     ReceiverSlotMetrics()
-        : num_sessions(0) {
+        : num_participants(0) {
     }
 };
 

@@ -130,28 +130,31 @@ int roc_sender_connect(roc_sender* sender,
     return 0;
 }
 
-int roc_sender_query(roc_sender* sender, roc_slot slot, roc_sender_metrics* metrics) {
+int roc_sender_query(roc_sender* sender,
+                     roc_slot slot,
+                     roc_sender_metrics* slot_metrics,
+                     roc_connection_metrics* conn_metrics,
+                     size_t* conn_metrics_count) {
     if (!sender) {
         roc_log(LogError, "roc_sender_query(): invalid arguments: sender is null");
         return -1;
     }
 
-    if (!metrics) {
-        roc_log(LogError, "roc_sender_query(): invalid arguments: metrics are null");
+    if (conn_metrics && !conn_metrics_count) {
+        roc_log(LogError,
+                "roc_sender_query(): invalid arguments:"
+                " conn_metrics is non-null, but conn_metrics_count is null");
         return -1;
     }
 
     node::Sender* imp_sender = (node::Sender*)sender;
 
-    pipeline::SenderSlotMetrics slot_metrics;
-    pipeline::SenderSessionMetrics sess_metrics;
-
-    if (!imp_sender->get_metrics(slot, slot_metrics, sess_metrics)) {
+    if (!imp_sender->get_metrics(slot, api::sender_slot_metrics_to_user, slot_metrics,
+                                 api::sender_participant_metrics_to_user,
+                                 conn_metrics_count, conn_metrics)) {
         roc_log(LogError, "roc_sender_query(): operation failed");
         return -1;
     }
-
-    api::sender_metrics_to_user(*metrics, slot_metrics, sess_metrics);
 
     return 0;
 }

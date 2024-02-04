@@ -87,11 +87,16 @@ public:
     //! If feedback monitoring is started, also performs latency tuning.
     virtual void write(Frame& frame);
 
-    //! Get back latest latency metrics.
-    const LatencyMetrics& latency_metrics() const;
+    //! Get number of remote participants from which there is feedback.
+    size_t num_participants() const;
 
-    //! Get back latest link metrics.
-    const packet::LinkMetrics& link_metrics() const;
+    //! Get latest latency metrics for session.
+    //! @p part_index should be in range [0; num_participants()-1].
+    const LatencyMetrics& latency_metrics(size_t part_index) const;
+
+    //! Get latest link metrics for session.
+    //! @p part_index should be in range [0; num_participants()-1].
+    const packet::LinkMetrics& link_metrics(size_t part_index) const;
 
 private:
     bool update_tuner_(packet::stream_timestamp_t duration);

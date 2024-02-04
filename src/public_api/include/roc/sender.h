@@ -239,24 +239,42 @@ ROC_API int roc_sender_connect(roc_sender* sender,
 
 /** Query sender slot metrics.
  *
- * Reads sender slot metrics into provided struct.
+ * Reads metrics into provided structs.
+ *
+ * To retrieve metrics of the slot as a whole, set \c slot_metrics to point to a single
+ * \ref roc_sender_metrics struct.
+ *
+ * To retrieve metrics of specific connections of the slot, set \c conn_metrics to point
+ * to an array of \ref roc_connection_metrics structs, and \c conn_metrics_count to the
+ * number of elements in the array. The function will write metrcis to the array (no more
+ * than array size) and update \c conn_metrics_count with the number of elements written.
+ *
+ * Actual number of connections (regardless of the array size) is also written to
+ * \c connection_count field of \ref roc_sender_metrics.
  *
  * **Parameters**
  *  - \p sender should point to an opened sender
  *  - \p slot specifies the sender slot
- *  - \p metrics specifies struct where to write metrics
+ *  - \p slot_metrics defines a struct where to write slot metrics (may be NULL)
+ *  - \p conn_metrics defines an array of structs where to write connection metrics
+ *    (may be NULL)
+ *  - \p conn_metrics_count defines number of elements in array
+ *    (may be NULL if \c conn_metrics is NULL)
  *
  * **Returns**
- *  - returns zero if the slot was successfully removed
+ *  - returns zero if the metrics were successfully retrieved
  *  - returns a negative value if the arguments are invalid
  *  - returns a negative value if the slot does not exist
  *
  * **Ownership**
- *  - doesn't take or share the ownership of \p metrics; it
- *    may be safely deallocated after the function returns
+ *  - doesn't take or share the ownership of the provided buffers;
+ *    they may be safely deallocated after the function returns
  */
-ROC_API int
-roc_sender_query(roc_sender* sender, roc_slot slot, roc_sender_metrics* metrics);
+ROC_API int roc_sender_query(roc_sender* sender,
+                             roc_slot slot,
+                             roc_sender_metrics* slot_metrics,
+                             roc_connection_metrics* conn_metrics,
+                             size_t* conn_metrics_count);
 
 /** Delete sender slot.
  *

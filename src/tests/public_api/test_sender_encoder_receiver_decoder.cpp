@@ -93,7 +93,7 @@ TEST_GROUP(sender_encoder_receiver_decoder) {
         size_t iface_packets[10] = {};
         size_t zero_samples = 0, total_samples = 0;
 
-        unsigned long long max_niq_latency = 0, max_e2e_latency = 0;
+        unsigned long long max_e2e_latency = 0;
 
         bool has_control = false;
 
@@ -181,20 +181,20 @@ TEST_GROUP(sender_encoder_receiver_decoder) {
                 }
             }
             { // check metrics
-                roc_session_metrics sess_metrics;
-                memset(&sess_metrics, 0, sizeof(sess_metrics));
                 roc_receiver_metrics recv_metrics;
                 memset(&recv_metrics, 0, sizeof(recv_metrics));
-                recv_metrics.sessions = &sess_metrics;
-                recv_metrics.sessions_size = 1;
+                roc_connection_metrics conn_metrics;
+                memset(&conn_metrics, 0, sizeof(conn_metrics));
+                size_t conn_metrics_count = 1;
 
-                CHECK(roc_receiver_decoder_query(decoder, &recv_metrics) == 0);
+                CHECK(roc_receiver_decoder_query(decoder, &recv_metrics, &conn_metrics,
+                                                 &conn_metrics_count)
+                      == 0);
 
-                UNSIGNED_LONGS_EQUAL(1, recv_metrics.num_sessions);
-                UNSIGNED_LONGS_EQUAL(1, recv_metrics.sessions_size);
+                UNSIGNED_LONGS_EQUAL(1, recv_metrics.connection_count);
+                UNSIGNED_LONGS_EQUAL(1, conn_metrics_count);
 
-                max_niq_latency = std::max(max_niq_latency, sess_metrics.niq_latency);
-                max_e2e_latency = std::max(max_e2e_latency, sess_metrics.e2e_latency);
+                max_e2e_latency = std::max(max_e2e_latency, conn_metrics.e2e_latency);
             }
         }
 
@@ -207,8 +207,6 @@ TEST_GROUP(sender_encoder_receiver_decoder) {
         }
 
         // check metrics
-        CHECK(max_niq_latency > 0);
-
         if (has_control) {
             CHECK(max_e2e_latency > 0);
         } else {

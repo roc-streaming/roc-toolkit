@@ -123,33 +123,40 @@ ROC_API int roc_receiver_decoder_activate(roc_receiver_decoder* decoder,
 
 /** Query decoder metrics.
  *
- * Reads decoder metrics into provided struct.
+ * Reads metrics into provided structs.
  *
- * To retrieve per-session metrics, set \c sessions field of \ref roc_receiver_metrics
- * to a buffer of \ref roc_session_metrics structs, and \c sessions_size to the number
- * of structs in buffer. The function will write session metrcis to the buffer and
- * update \c sessions_size with the actual number of sessions written.
+ * To retrieve metrics of the decoder as a whole, set \c slot_metrics to point to a single
+ * \ref roc_receiver_metrics struct.
  *
- * If \c sessions_size is lesser than actual number of sessions, metrics for some
- * sessions will be dropped. \c num_sessions will always contain actual total number.
+ * To retrieve metrics of specific connections of the decoder, set \c conn_metrics to
+ * point to an array of \ref roc_connection_metrics structs, and \c conn_metrics_count to
+ * the number of elements in the array. The function will write metrcis to the array (no
+ * more than array size) and update \c conn_metrics_count with the number of elements
+ * written.
  *
- * If \c sessions field is NULL, per-session metrics are not retrieved.
+ * Actual number of connections (regardless of the array size) is also written to
+ * \c connection_count field of \ref roc_receiver_metrics.
  *
  * **Parameters**
- *  - \p decoder should point to an opened decoder
- *  - \p metrics specifies struct where to write metrics
+ *  - \p receiver should point to an opened receiver
+ *  - \p decoder_metrics defines a struct where to write decoder metrics (may be NULL)
+ *  - \p conn_metrics defines an array of structs where to write connection metrics
+ *    (may be NULL)
+ *  - \p conn_metrics_count defines number of elements in array
+ *    (may be NULL if \c conn_metrics is NULL)
  *
  * **Returns**
- *  - returns zero if the slot was successfully removed
+ *  - returns zero if the metrics were successfully retrieved
  *  - returns a negative value if the arguments are invalid
- *  - returns a negative value if the slot does not exist
  *
  * **Ownership**
- *  - doesn't take or share the ownership of \p metrics or its \c sessions field; they
- *    may be safely deallocated after the function returns
+ *  - doesn't take or share the ownership of the provided buffers;
+ *    they may be safely deallocated after the function returns
  */
 ROC_API int roc_receiver_decoder_query(roc_receiver_decoder* decoder,
-                                       roc_receiver_metrics* metrics);
+                                       roc_receiver_metrics* decoder_metrics,
+                                       roc_connection_metrics* conn_metrics,
+                                       size_t* conn_metrics_count);
 
 /** Write packet to decoder.
  *

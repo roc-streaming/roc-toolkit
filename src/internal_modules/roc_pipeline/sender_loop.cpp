@@ -24,7 +24,8 @@ SenderLoop::Task::Task()
     , outbound_writer_(NULL)
     , inbound_writer_(NULL)
     , slot_metrics_(NULL)
-    , sess_metrics_(NULL) {
+    , party_metrics_(NULL)
+    , party_count_(NULL) {
 }
 
 SenderLoop::Tasks::CreateSlot::CreateSlot() {
@@ -49,14 +50,16 @@ SenderLoop::Tasks::DeleteSlot::DeleteSlot(SlotHandle slot) {
 
 SenderLoop::Tasks::QuerySlot::QuerySlot(SlotHandle slot,
                                         SenderSlotMetrics& slot_metrics,
-                                        SenderSessionMetrics* sess_metrics) {
+                                        SenderParticipantMetrics* party_metrics,
+                                        size_t* party_count) {
     func_ = &SenderLoop::task_query_slot_;
     if (!slot) {
         roc_panic("sender loop: slot handle is null");
     }
     slot_ = (SenderSlot*)slot;
     slot_metrics_ = &slot_metrics;
-    sess_metrics_ = sess_metrics;
+    party_metrics_ = party_metrics;
+    party_count_ = party_count;
 }
 
 SenderLoop::Tasks::AddEndpoint::AddEndpoint(SlotHandle slot,
@@ -279,7 +282,7 @@ bool SenderLoop::task_query_slot_(Task& task) {
     roc_panic_if(!task.slot_);
     roc_panic_if(!task.slot_metrics_);
 
-    task.slot_->get_metrics(*task.slot_metrics_, task.sess_metrics_);
+    task.slot_->get_metrics(*task.slot_metrics_, task.party_metrics_, task.party_count_);
     return true;
 }
 

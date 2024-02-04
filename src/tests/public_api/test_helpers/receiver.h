@@ -37,6 +37,7 @@ public:
              size_t frame_size,
              unsigned flags)
         : recv_(NULL)
+        , n_conn_metrics_(0)
         , sample_step_(sample_step)
         , num_chans_(num_chans)
         , frame_samples_(frame_size * num_chans)
@@ -261,19 +262,29 @@ public:
         }
     }
 
-    const roc_receiver_metrics& query(size_t requested_sessions,
-                                      roc_slot slot = ROC_SLOT_DEFAULT) {
-        memset(&recv_metrics_, 0, sizeof(recv_metrics_));
+    void query_metrics(size_t requested_conns, roc_slot slot = ROC_SLOT_DEFAULT) {
+        CHECK(conn_metrics_.resize(requested_conns));
 
-        if (requested_sessions != 0) {
-            CHECK(sess_metrics_.resize(requested_sessions));
-            recv_metrics_.sessions = sess_metrics_.data();
-            recv_metrics_.sessions_size = requested_sessions;
-        }
+        n_conn_metrics_ = requested_conns;
 
-        CHECK(roc_receiver_query(recv_, slot, &recv_metrics_) == 0);
+        CHECK(roc_receiver_query(recv_, slot, &recv_metrics_, conn_metrics_.data(),
+                                 &n_conn_metrics_)
+              == 0);
 
+        CHECK(n_conn_metrics_ <= requested_conns);
+    }
+
+    const roc_receiver_metrics& recv_metrics() const {
         return recv_metrics_;
+    }
+
+    size_t conn_metrics_count() const {
+        return n_conn_metrics_;
+    }
+
+    const roc_connection_metrics& conn_metrics(size_t n) const {
+        CHECK(n < n_conn_metrics_);
+        return conn_metrics_[n];
     }
 
     void stop() {
@@ -295,8 +306,9 @@ private:
     core::Array<roc_endpoint*, 16> repair_endp_;
     core::Array<roc_endpoint*, 16> control_endp_;
 
-    core::Array<roc_session_metrics, 16> sess_metrics_;
     roc_receiver_metrics recv_metrics_;
+    core::Array<roc_connection_metrics, 16> conn_metrics_;
+    size_t n_conn_metrics_;
 
     const float sample_step_;
     const size_t num_chans_;

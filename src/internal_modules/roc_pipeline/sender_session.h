@@ -90,8 +90,20 @@ public:
     //!  if there are no frames
     core::nanoseconds_t refresh(core::nanoseconds_t current_time);
 
-    //! Get session metrics.
-    SenderSessionMetrics get_metrics() const;
+    //! Get number of remote participants.
+    //! On sender, all participants corresponds to a single SenderSession.
+    //! In case of unicast, there is only one participant (remote receiver),
+    //! but in case of multicast, multiple participants may be present.
+    size_t num_participants() const;
+
+    //! Get metrics for remote participants.
+    //! @remarks
+    //!  @p party_metrics points to array of metrics structs, and @p party_count
+    //!  defines number of array elements. Metrics are written to given array,
+    //!  and @p party_count is updated of actual number of elements written.
+    //!  If there is not enough space for all metrics, result is truncated.
+    void get_participant_metrics(SenderParticipantMetrics* party_metrics,
+                                 size_t* party_count) const;
 
 private:
     // Implementation of rtcp::IParticipant interface.

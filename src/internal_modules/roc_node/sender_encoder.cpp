@@ -27,6 +27,7 @@ SenderEncoder::SenderEncoder(Context& context,
                 context.arena())
     , slot_(NULL)
     , processing_task_(pipeline_)
+    , party_metrics_(context.arena())
     , valid_(false) {
     roc_log(LogDebug, "sender encoder node: initializing");
 
@@ -107,18 +108,45 @@ bool SenderEncoder::activate(address::Interface iface, address::Protocol proto) 
     return true;
 }
 
-bool SenderEncoder::get_metrics(pipeline::SenderSlotMetrics& slot_metrics,
-                                pipeline::SenderSessionMetrics& sess_metrics) {
+bool SenderEncoder::get_metrics(slot_metrics_func_t slot_metrics_func,
+                                void* slot_metrics_arg,
+                                party_metrics_func_t party_metrics_func,
+                                size_t* party_metrics_size,
+                                void* party_metrics_arg) {
     core::Mutex::Lock lock(mutex_);
 
     roc_panic_if_not(is_valid());
 
-    pipeline::SenderLoop::Tasks::QuerySlot task(slot_, slot_metrics, &sess_metrics);
+    roc_panic_if(!slot_metrics_func);
+    roc_panic_if(!party_metrics_func);
+
+    if (party_metrics_size) {
+        if (!party_metrics_.resize(*party_metrics_size)) {
+            roc_log(LogError,
+                    "sender encoder node:"
+                    " can't get metrics: can't allocate buffer");
+            return false;
+        }
+    }
+
+    pipeline::SenderLoop::Tasks::QuerySlot task(
+        slot_, slot_metrics_, party_metrics_.data(), party_metrics_size);
     if (!pipeline_.schedule_and_wait(task)) {
         roc_log(LogError,
                 "sender encoder node:"
                 " can't get metrics: operation failed");
         return false;
+    }
+
+    if (slot_metrics_arg) {
+        slot_metrics_func(slot_metrics_, slot_metrics_arg);
+    }
+
+    if (party_metrics_arg && party_metrics_size) {
+        for (size_t party_index = 0; party_index < *party_metrics_size; party_index++) {
+            party_metrics_func(party_metrics_[party_index], party_index,
+                               party_metrics_arg);
+        }
     }
 
     return true;
@@ -130,7 +158,7 @@ bool SenderEncoder::is_complete() {
     roc_panic_if_not(is_valid());
 
     pipeline::SenderSlotMetrics slot_metrics;
-    pipeline::SenderLoop::Tasks::QuerySlot task(slot_, slot_metrics, NULL);
+    pipeline::SenderLoop::Tasks::QuerySlot task(slot_, slot_metrics, NULL, NULL);
     if (!pipeline_.schedule_and_wait(task)) {
         return false;
     }
