@@ -28,9 +28,11 @@
 #include "roc_rtcp/config.h"
 #include "roc_rtcp/headers.h"
 #include "roc_rtcp/iparticipant.h"
+#include "roc_rtcp/loss_estimator.h"
 #include "roc_rtcp/reports.h"
 #include "roc_rtcp/rtt_estimator.h"
 #include "roc_rtcp/sdes.h"
+#include "roc_rtcp/packet_counter.h"
 #include "roc_status/status_code.h"
 
 namespace roc {
@@ -292,18 +294,22 @@ private:
         bool has_remote_recv_report;
         RecvReport remote_recv_report;
         RttEstimator remote_recv_rtt;
+        PacketCounter remote_recv_packet_count;
 
         // Stream is receiving from remote participant and we obtained
         // sender report from it.
         bool has_remote_send_report;
         SendReport remote_send_report;
         RttEstimator remote_send_rtt;
+        PacketCounter remote_send_packet_count;
+        PacketCounter remote_send_byte_count;
 
         // Stream is receiving from remote participant and this is our
         // receiver report to be delivered to remote side.
         // Points to an element of local_recv_reports_ array. Whenever
         // array is resized, rebuild_index_() updates the pointers.
         RecvReport* local_recv_report;
+        LossEstimator local_recv_loss;
 
         // Remote address from where reports are coming.
         address::SocketAddr remote_address;

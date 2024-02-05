@@ -102,6 +102,26 @@ inline bool seqnum_le(const seqnum_t a, const seqnum_t b) {
 //!  Sequence number extended to 32 bits.
 typedef uint32_t ext_seqnum_t;
 
+//! Extended sequence number delta.
+//! @remarks
+//!  Signed version of ext_seqnum_t.
+typedef int32_t ext_seqnum_diff_t;
+
+//! Compute difference between two extended seqnums.
+inline ext_seqnum_diff_t ext_seqnum_diff(const ext_seqnum_t a, const ext_seqnum_t b) {
+    return ext_seqnum_diff_t(a - b);
+}
+
+//! Check if `a` is before `b`, taking possible wrap into account.
+inline bool ext_seqnum_lt(const ext_seqnum_t a, const ext_seqnum_t b) {
+    return ext_seqnum_diff(a, b) < 0;
+}
+
+//! Check if `a` is before or equal to `b`, taking possible wrap into account.
+inline bool ext_seqnum_le(const ext_seqnum_t a, const ext_seqnum_t b) {
+    return ext_seqnum_diff(a, b) <= 0;
+}
+
 //! FEC packet block number.
 //! @remarks
 //!  Defines position of FEC packet block within stream.

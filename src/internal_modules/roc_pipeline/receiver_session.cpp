@@ -318,8 +318,8 @@ void ReceiverSession::generate_reports(const char* report_cname,
         report.sample_rate = source_meter_->encoding().sample_spec.sample_rate();
         report.ext_first_seqnum = link_metrics.ext_first_seqnum;
         report.ext_last_seqnum = link_metrics.ext_last_seqnum;
-        report.cum_loss = link_metrics.cum_lost_packets;
-        report.fract_loss = link_metrics.fract_lost_packets;
+        report.packet_count = link_metrics.total_packets;
+        report.cum_loss = link_metrics.lost_packets;
         report.jitter = link_metrics.jitter;
         report.niq_latency = latency_metrics.niq_latency;
         report.niq_stalling = latency_metrics.niq_stalling;
@@ -343,8 +343,8 @@ void ReceiverSession::generate_reports(const char* report_cname,
         report.sample_rate = repair_meter_->encoding().sample_spec.sample_rate();
         report.ext_first_seqnum = link_metrics.ext_first_seqnum;
         report.ext_last_seqnum = link_metrics.ext_last_seqnum;
-        report.cum_loss = link_metrics.cum_lost_packets;
-        report.fract_loss = link_metrics.fract_lost_packets;
+        report.packet_count = link_metrics.total_packets;
+        report.cum_loss = link_metrics.lost_packets;
         report.jitter = link_metrics.jitter;
 
         reports++;

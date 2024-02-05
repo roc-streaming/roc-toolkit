@@ -7,6 +7,7 @@
  */
 
 #include "roc_audio/feedback_monitor.h"
+#include "roc_audio/packetizer.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/time.h"
@@ -15,15 +16,17 @@ namespace roc {
 namespace audio {
 
 FeedbackMonitor::FeedbackMonitor(IFrameWriter& writer,
+                                 Packetizer& packetizer,
                                  ResamplerWriter* resampler,
                                  const FeedbackConfig& feedback_config,
                                  const LatencyConfig& latency_config,
                                  const SampleSpec& sample_spec)
     : tuner_(latency_config, sample_spec)
-    , latency_metrics_()
+    , use_packetizer_(false)
     , has_feedback_(false)
     , last_feedback_ts_(0)
     , feedback_timeout_(feedback_config.source_timeout)
+    , packetizer_(packetizer)
     , writer_(writer)
     , resampler_(resampler)
     , enable_scaling_(latency_config.tuner_profile != audio::LatencyTunerProfile_Intact)
@@ -100,6 +103,13 @@ void FeedbackMonitor::process_feedback(packet::stream_source_t source_id,
     latency_metrics_ = latency_metrics;
     link_metrics_ = link_metrics;
 
+    if (link_metrics_.total_packets == 0 || use_packetizer_) {
+        // If packet counter is not reported from receiver, fallback to
+        // counter from sender.
+        link_metrics_.total_packets = packetizer_.metrics().packet_count;
+        use_packetizer_ = true;
+    }
+
     has_feedback_ = true;
     last_feedback_ts_ = core::timestamp(core::ClockMonotonic);
 }
@@ -128,21 +138,21 @@ size_t FeedbackMonitor::num_participants() const {
     return has_feedback_ ? 1 : 0;
 }
 
-const LatencyMetrics& FeedbackMonitor::latency_metrics(size_t part_index) const {
-    roc_panic_if_msg(part_index >= num_participants(),
+const LatencyMetrics& FeedbackMonitor::latency_metrics(size_t party_index) const {
+    roc_panic_if_msg(party_index >= num_participants(),
                      "feedback monitor: participant index out of bounds:"
                      " index=%lu max=%lu",
-                     (unsigned long)part_index, (unsigned long)num_participants());
+                     (unsigned long)party_index, (unsigned long)num_participants());
 
     // TODO(gh-674): collect per-session metrics
     return latency_metrics_;
 }
 
-const packet::LinkMetrics& FeedbackMonitor::link_metrics(size_t part_index) const {
-    roc_panic_if_msg(part_index >= num_participants(),
+const packet::LinkMetrics& FeedbackMonitor::link_metrics(size_t party_index) const {
+    roc_panic_if_msg(party_index >= num_participants(),
                      "feedback monitor: participant index out of bounds:"
                      " index=%lu max=%lu",
-                     (unsigned long)part_index, (unsigned long)num_participants());
+                     (unsigned long)party_index, (unsigned long)num_participants());
 
     // TODO(gh-674): collect per-session metrics
     return link_metrics_;

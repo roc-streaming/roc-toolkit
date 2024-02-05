@@ -52,13 +52,13 @@ struct SendReport {
     //! Number of packets sent.
     //! The total number of RTP data packets transmitted by the sender since starting
     //! transmission up until the time of this report.
-    uint32_t packet_count;
+    uint64_t packet_count;
 
     //! Number of bytes sent.
     //! The total number of payload octets (i.e., not including header or padding)
     //! transmitted in RTP data packets by the sender since starting transmission
     //! up until the time this report.
-    uint32_t byte_count;
+    uint64_t byte_count;
 
     //! Estimated offset of remote clock relative to local clock.
     //! If you add it to local timestamp, you get estimated remote timestamp.
@@ -127,6 +127,11 @@ struct RecvReport {
     //! count of sequence number cycles.
     packet::ext_seqnum_t ext_last_seqnum;
 
+    //! Number of packets expected.
+    //! On sender it's derived from ext_first_seqnum and ext_last_seqnum and may
+    //! be zero if necessary XR blocks are not supported.
+    uint64_t packet_count;
+
     //! Cumulative count of lost packets.
     //! The total number of RTP data packets that have been lost since the beginning
     //! of reception. Defined to be the number of packets expected minus the number of
@@ -134,12 +139,6 @@ struct RecvReport {
     //! which are late or duplicates. Packets that arrive late are not counted as lost,
     //! and the loss may be negative if there are duplicates.
     int64_t cum_loss;
-
-    //! Fraction of lost packets from 0 to 1.
-    //! The fraction of RTP data packets lost since the previous report was sent.
-    //! Defined to be the number of packets lost divided by the number of packets
-    //! expected. If the loss is negative due to duplicates, set to zero.
-    float fract_loss;
 
     //! Estimated interarrival jitter.
     //! An estimate of the statistical variance of the RTP data packet
@@ -179,8 +178,8 @@ struct RecvReport {
         , sample_rate(0)
         , ext_first_seqnum(0)
         , ext_last_seqnum(0)
+        , packet_count(0)
         , cum_loss(0)
-        , fract_loss(0)
         , jitter(0)
         , niq_latency(0)
         , niq_stalling(0)

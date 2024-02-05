@@ -44,13 +44,7 @@ struct LinkMetrics {
     //! packets actually received, where the number of packets received includes any
     //! which are late or duplicates. Packets that arrive late are not counted as lost,
     //! and the loss may be negative if there are duplicates.
-    int64_t cum_lost_packets;
-
-    //! Fraction of lost packets from 0 to 1.
-    //! The fraction of RTP data packets lost since the previous report was sent.
-    //! Defined to be the number of packets lost divided by the number of packets
-    //! expected. If the loss is negative due to duplicates, set to zero.
-    float fract_lost_packets;
+    int64_t lost_packets;
 
     //! Estimated interarrival jitter.
     //! An estimate of the statistical variance of the RTP data packet
@@ -67,8 +61,7 @@ struct LinkMetrics {
         : ext_first_seqnum(0)
         , ext_last_seqnum(0)
         , total_packets(0)
-        , cum_lost_packets(0)
-        , fract_lost_packets(0)
+        , lost_packets(0)
         , jitter(0)
         , rtt(0) {
     }

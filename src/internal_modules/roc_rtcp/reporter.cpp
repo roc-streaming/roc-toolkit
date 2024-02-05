@@ -218,8 +218,11 @@ void Reporter::process_sr(const header::SenderReportPacket& sr) {
     stream->remote_send_report.report_timestamp = packet::ntp_2_unix(sr.ntp_timestamp());
     stream->remote_send_report.stream_timestamp = sr.rtp_timestamp();
 
-    stream->remote_send_report.packet_count = sr.packet_count();
-    stream->remote_send_report.byte_count = sr.byte_count();
+    stream->remote_send_report.packet_count =
+        stream->remote_send_packet_count.update(0, sr.packet_count());
+
+    stream->remote_send_report.byte_count =
+        stream->remote_send_byte_count.update(0, sr.byte_count());
 
     // Update remote sender address.
     if (stream->remote_address != report_addr_) {
@@ -281,7 +284,6 @@ void Reporter::process_reception_block(const packet::stream_source_t ssrc,
     stream->remote_recv_report.receiver_source_id = stream->source_id;
     stream->remote_recv_report.sender_source_id = local_source_id_;
 
-    stream->remote_recv_report.fract_loss = blk.fract_loss();
     stream->remote_recv_report.cum_loss = blk.cum_loss();
     stream->remote_recv_report.ext_last_seqnum = blk.last_seqnum();
     stream->remote_recv_report.jitter =
@@ -461,6 +463,10 @@ void Reporter::process_measurement_info_block(const header::XrPacket& xr,
         (unsigned long)send_source_id, (unsigned long)recv_source_id);
 
     stream->remote_recv_report.ext_first_seqnum = blk.first_seq();
+
+    stream->remote_recv_report.packet_count = stream->remote_recv_packet_count.update(
+        stream->remote_recv_report.ext_first_seqnum,
+        stream->remote_recv_report.ext_last_seqnum + 1);
 
     update_stream_(*stream);
 }
@@ -671,8 +677,8 @@ void Reporter::generate_sr(header::SenderReportPacket& sr) {
     sr.set_ntp_timestamp(packet::unix_2_ntp(report_time_));
     sr.set_rtp_timestamp(local_send_report_.stream_timestamp);
 
-    sr.set_packet_count(local_send_report_.packet_count);
-    sr.set_byte_count(local_send_report_.byte_count);
+    sr.set_packet_count((uint32_t)local_send_report_.packet_count);
+    sr.set_byte_count((uint32_t)local_send_report_.byte_count);
 
     // Update time of most recent SR.
     current_sr_ = report_time_;
@@ -710,8 +716,9 @@ void Reporter::generate_reception_block(size_t addr_index,
     blk.set_ssrc(stream->source_id);
 
     blk.set_last_seqnum(stream->local_recv_report->ext_last_seqnum);
-    blk.set_fract_loss(stream->local_recv_report->fract_loss);
     blk.set_cum_loss(stream->local_recv_report->cum_loss);
+    blk.set_fract_loss(stream->local_recv_loss.update(
+        stream->local_recv_report->packet_count, stream->local_recv_report->cum_loss));
 
     if (stream->local_recv_report->jitter > 0) {
         blk.set_jitter(packet::ns_2_stream_timestamp(
@@ -1377,7 +1384,7 @@ void Reporter::validate_recv_report_(const RecvReport& recv_report) {
     if (recv_report.clock_offset != 0 || recv_report.rtt != 0) {
         roc_panic("rtcp reporter:"
                   " query returned invalid receiver report:"
-                  " clock_offset and rtt are read-only fields and should not be set");
+                  " clock_offset and rtt are read-only fields and should be set to zero");
     }
 }
 

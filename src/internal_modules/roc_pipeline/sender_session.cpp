@@ -188,8 +188,8 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
     }
 
     feedback_monitor_.reset(new (feedback_monitor_) audio::FeedbackMonitor(
-        *frm_writer, resampler_writer_.get(), config_.feedback, config_.latency,
-        config_.input_sample_spec));
+        *frm_writer, *packetizer_, resampler_writer_.get(), config_.feedback,
+        config_.latency, config_.input_sample_spec));
     if (!feedback_monitor_ || !feedback_monitor_->is_valid()) {
         return false;
     }
@@ -322,8 +322,8 @@ rtcp::SendReport SenderSession::query_send_stream(core::nanoseconds_t report_tim
     report.report_timestamp = report_time;
     report.stream_timestamp = timestamp_extractor_->get_mapping(report_time);
     report.sample_rate = packetizer_->sample_rate();
-    report.packet_count = (uint32_t)packet_metrics.packet_count;
-    report.byte_count = (uint32_t)packet_metrics.payload_count;
+    report.packet_count = packet_metrics.packet_count;
+    report.byte_count = packet_metrics.payload_count;
 
     return report;
 }
@@ -342,8 +342,8 @@ SenderSession::notify_send_stream(packet::stream_source_t recv_source_id,
         packet::LinkMetrics link_metrics;
         link_metrics.ext_first_seqnum = recv_report.ext_first_seqnum;
         link_metrics.ext_last_seqnum = recv_report.ext_last_seqnum;
-        link_metrics.cum_lost_packets = recv_report.cum_loss;
-        link_metrics.fract_lost_packets = recv_report.fract_loss;
+        link_metrics.total_packets = recv_report.packet_count;
+        link_metrics.lost_packets = recv_report.cum_loss;
         link_metrics.jitter = recv_report.jitter;
         link_metrics.rtt = recv_report.rtt;
 

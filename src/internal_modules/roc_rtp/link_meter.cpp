@@ -121,8 +121,7 @@ void LinkMeter::update_metrics_(const packet::Packet& packet) {
 
     // TODO(gh-688):
     //  - fill total_packets
-    //  - fill cum_lost_packets
-    //  - fill fract_lost_packets
+    //  - fill lost_packets
     //  - fill jitter (use encoding_->sample_spec to convert to nanoseconds)
 
     first_packet_ = false;

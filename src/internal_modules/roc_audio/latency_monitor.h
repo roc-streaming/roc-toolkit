@@ -60,17 +60,6 @@ namespace audio {
 class LatencyMonitor : public IFrameReader, public core::NonCopyable<> {
 public:
     //! Constructor.
-    //!
-    //! @b Parameters
-    //!  - @p frame_reader is inner frame reader for E2E latency calculation
-    //!  - @p incoming_queue and @p depacketizer are used to NIQ latency calculation
-    //!  - @p link_meter is used to obtain link metrics
-    //!  - @p resampler is used to set the scaling factor to compensate clock
-    //!    drift according to calculated latency
-    //!  - @p config defines calculation parameters
-    //!  - @p packet_sample_spec is the sample spec of the input packets
-    //!  - @p frame_sample_spec is the sample spec of the output frames (after
-    //!    resampling)
     LatencyMonitor(IFrameReader& frame_reader,
                    const packet::SortedQueue& incoming_queue,
                    const Depacketizer& depacketizer,

@@ -376,7 +376,6 @@ RecvReport make_recv_report(core::nanoseconds_t time,
     report.sample_rate = SampleRate;
     report.ext_first_seqnum = seed * 10;
     report.ext_last_seqnum = seed * 2000;
-    report.fract_loss = seed * 0.001f;
     report.cum_loss = (long)seed * 3000;
     report.jitter = seed * 400000;
     report.niq_latency = seed * 500000;
@@ -408,7 +407,10 @@ void expect_recv_report(const RecvReport& report,
         CHECK_EQUAL(0, report.ext_first_seqnum);
     }
     CHECK_EQUAL(seed * 2000, report.ext_last_seqnum);
-    DOUBLES_EQUAL(seed * 0.001f, report.fract_loss, 0.005);
+    if (expect_xr) {
+        CHECK_EQUAL(report.ext_last_seqnum - report.ext_first_seqnum + 1,
+                    report.packet_count);
+    }
     CHECK_EQUAL((long)seed * 3000, report.cum_loss);
     expect_timestamp("jitter", seed * 400000, report.jitter, TimestampEpsilon);
     if (expect_xr) {

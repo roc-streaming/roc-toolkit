@@ -14,6 +14,7 @@
 
 #include "roc_audio/iframe_writer.h"
 #include "roc_audio/latency_tuner.h"
+#include "roc_audio/packetizer.h"
 #include "roc_audio/resampler_writer.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/noncopyable.h"
@@ -63,6 +64,7 @@ class FeedbackMonitor : public IFrameWriter, public core::NonCopyable<> {
 public:
     //! Constructor.
     FeedbackMonitor(IFrameWriter& writer,
+                    Packetizer& packetizer,
                     ResamplerWriter* resampler,
                     const FeedbackConfig& feedback_config,
                     const LatencyConfig& latency_config,
@@ -91,12 +93,12 @@ public:
     size_t num_participants() const;
 
     //! Get latest latency metrics for session.
-    //! @p part_index should be in range [0; num_participants()-1].
-    const LatencyMetrics& latency_metrics(size_t part_index) const;
+    //! @p party_index should be in range [0; num_participants()-1].
+    const LatencyMetrics& latency_metrics(size_t party_index) const;
 
     //! Get latest link metrics for session.
-    //! @p part_index should be in range [0; num_participants()-1].
-    const packet::LinkMetrics& link_metrics(size_t part_index) const;
+    //! @p party_index should be in range [0; num_participants()-1].
+    const packet::LinkMetrics& link_metrics(size_t party_index) const;
 
 private:
     bool update_tuner_(packet::stream_timestamp_t duration);
@@ -108,11 +110,13 @@ private:
 
     LatencyMetrics latency_metrics_;
     packet::LinkMetrics link_metrics_;
+    bool use_packetizer_;
 
     bool has_feedback_;
     core::nanoseconds_t last_feedback_ts_;
     const core::nanoseconds_t feedback_timeout_;
 
+    Packetizer& packetizer_;
     IFrameWriter& writer_;
 
     ResamplerWriter* resampler_;

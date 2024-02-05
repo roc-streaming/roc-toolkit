@@ -533,6 +533,7 @@ bool Communicator::next_send_stream_(size_t new_stream_index) {
 }
 
 bool Communicator::next_recv_stream_(size_t new_stream_index) {
+    // See comment in next_send_stream_().
     const size_t next_pkt_recv_stream =
         std::max(cur_pkt_recv_stream_, new_stream_index - recv_stream_index_ + 1);
 
