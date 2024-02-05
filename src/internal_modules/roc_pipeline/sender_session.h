@@ -90,14 +90,18 @@ public:
     //!  if there are no frames
     core::nanoseconds_t refresh(core::nanoseconds_t current_time);
 
-    //! Get number of remote participants.
-    //! On sender, all participants corresponds to a single SenderSession.
-    //! In case of unicast, there is only one participant (remote receiver),
-    //! but in case of multicast, multiple participants may be present.
-    size_t num_participants() const;
+    //! Get slot metrics.
+    //! @remarks
+    //!  These metrics are for the whole slot.
+    //!  For metrics for specific participant, see get_participant_metrics().
+    void get_slot_metrics(SenderSlotMetrics& slot_metrics) const;
 
     //! Get metrics for remote participants.
     //! @remarks
+    //!  On sender, all participants corresponds to a single SenderSession.
+    //!  In case of unicast, there is only one participant (remote receiver),
+    //!  but in case of multicast, multiple participants may be present.
+    //! @note
     //!  @p party_metrics points to array of metrics structs, and @p party_count
     //!  defines number of array elements. Metrics are written to given array,
     //!  and @p party_count is updated of actual number of elements written.

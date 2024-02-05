@@ -84,14 +84,21 @@ public:
     //!  retrieved from pipeline will be actually played on sink
     void reclock_sessions(core::nanoseconds_t playback_time);
 
-    //! Get number of remote participants.
-    //! On receiver, one participant corresponds to one ReceiverSession inside
-    //! ReceiverSessionGroup, because we create a separate session for every
-    //! connected participant (remote sender).
-    size_t num_participants() const;
+    //! Get number of sessions in group.
+    size_t num_sessions() const;
+
+    //! Get slot metrics.
+    //! @remarks
+    //!  These metrics are for the whole slot.
+    //!  For metrics for specific participant, see get_participant_metrics().
+    void get_slot_metrics(ReceiverSlotMetrics& slot_metrics) const;
 
     //! Get metrics for remote participants.
     //! @remarks
+    //!  On receiver, one participant corresponds to one ReceiverSession inside
+    //!  ReceiverSessionGroup, because we create a separate session for every
+    //!  connected participant (remote sender).
+    //! @note
     //!  @p party_metrics points to array of metrics structs, and @p party_count
     //!  defines number of array elements. Metrics are written to given array,
     //!  and @p party_count is updated of actual number of elements written.

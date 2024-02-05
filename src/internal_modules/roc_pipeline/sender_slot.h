@@ -53,9 +53,6 @@ public:
     //! Check if the slot was succefully constructed.
     bool is_valid() const;
 
-    //! Check if slot configuration is complete.
-    bool is_complete() const;
-
     //! Add endpoint.
     SenderEndpoint* add_endpoint(address::Interface iface,
                                  address::Protocol proto,

@@ -263,31 +263,28 @@ core::nanoseconds_t SenderSession::refresh(core::nanoseconds_t current_time) {
     return 0;
 }
 
-size_t SenderSession::num_participants() const {
+void SenderSession::get_slot_metrics(SenderSlotMetrics& slot_metrics) const {
     roc_panic_if(!is_valid());
 
-    if (feedback_monitor_) {
-        return feedback_monitor_->num_participants();
-    } else {
-        return 0;
-    }
+    slot_metrics.source_id = identity_->ssrc();
+    slot_metrics.num_participants =
+        feedback_monitor_ ? feedback_monitor_->num_participants() : 0;
+    slot_metrics.is_complete = (frame_writer_ != NULL);
 }
 
 void SenderSession::get_participant_metrics(SenderParticipantMetrics* party_metrics,
                                             size_t* party_count) const {
     roc_panic_if(!is_valid());
 
-    roc_panic_if_not(party_metrics);
-    roc_panic_if_not(party_count);
-
-    if (feedback_monitor_) {
-        *party_count = std::min(*party_count, feedback_monitor_->num_participants());
+    if (party_metrics && party_count) {
+        *party_count = std::min(
+            *party_count, feedback_monitor_ ? feedback_monitor_->num_participants() : 0);
 
         for (size_t n_part = 0; n_part < *party_count; n_part++) {
             party_metrics[n_part].link = feedback_monitor_->link_metrics(n_part);
             party_metrics[n_part].latency = feedback_monitor_->latency_metrics(n_part);
         }
-    } else {
+    } else if (party_count) {
         *party_count = 0;
     }
 }

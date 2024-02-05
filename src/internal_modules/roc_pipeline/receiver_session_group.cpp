@@ -141,30 +141,36 @@ void ReceiverSessionGroup::reclock_sessions(core::nanoseconds_t playback_time) {
     }
 }
 
-size_t ReceiverSessionGroup::num_participants() const {
+size_t ReceiverSessionGroup::num_sessions() const {
     roc_panic_if(!is_valid());
 
     return sessions_.size();
+}
+
+void ReceiverSessionGroup::get_slot_metrics(ReceiverSlotMetrics& slot_metrics) const {
+    roc_panic_if(!is_valid());
+
+    slot_metrics.source_id = identity_->ssrc();
+    slot_metrics.num_participants = sessions_.size();
 }
 
 void ReceiverSessionGroup::get_participant_metrics(
     ReceiverParticipantMetrics* party_metrics, size_t* party_count) const {
     roc_panic_if(!is_valid());
 
-    roc_panic_if_not(party_metrics);
-    roc_panic_if_not(party_count);
+    if (party_metrics && party_count) {
+        *party_count = std::min(*party_count, sessions_.size());
 
-    *party_count = std::min(*party_count, sessions_.size());
-
-    size_t n = 0;
-
-    for (core::SharedPtr<ReceiverSession> sess = sessions_.front(); sess;
-         sess = sessions_.nextof(*sess)) {
-        if (n == *party_count) {
-            break;
+        size_t n_part = 0;
+        for (core::SharedPtr<ReceiverSession> sess = sessions_.front(); sess;
+             sess = sessions_.nextof(*sess)) {
+            if (n_part == *party_count) {
+                break;
+            }
+            party_metrics[n_part++] = sess->get_metrics();
         }
-        party_metrics[n] = sess->get_metrics();
-        n++;
+    } else if (party_count) {
+        *party_count = 0;
     }
 }
 

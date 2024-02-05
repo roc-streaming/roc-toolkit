@@ -29,10 +29,10 @@
 #include "roc_rtcp/headers.h"
 #include "roc_rtcp/iparticipant.h"
 #include "roc_rtcp/loss_estimator.h"
+#include "roc_rtcp/packet_counter.h"
 #include "roc_rtcp/reports.h"
 #include "roc_rtcp/rtt_estimator.h"
 #include "roc_rtcp/sdes.h"
-#include "roc_rtcp/packet_counter.h"
 #include "roc_status/status_code.h"
 
 namespace roc {

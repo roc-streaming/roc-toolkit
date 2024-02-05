@@ -15,6 +15,7 @@
 #include "roc_audio/latency_tuner.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/ilink_meter.h"
+#include "roc_packet/units.h"
 
 namespace roc {
 namespace pipeline {
@@ -33,15 +34,19 @@ struct SenderParticipantMetrics {
 
 //! Sender-side metrics of the whole slot.
 struct SenderSlotMetrics {
-    //! Is slot configuration complete.
-    bool is_complete;
+    //! Slot source ID.
+    packet::stream_source_t source_id;
 
-    //! Number of receivers connected to sender slot.
+    //! Number of participants (remote receivers) connected to slot.
     size_t num_participants;
 
+    //! Is slot configuration complete (all endpoints bound).
+    bool is_complete;
+
     SenderSlotMetrics()
-        : is_complete(false)
-        , num_participants(0) {
+        : source_id(0)
+        , num_participants(0)
+        , is_complete(false) {
     }
 };
 
@@ -59,11 +64,15 @@ struct ReceiverParticipantMetrics {
 
 //! Receiver-side metrics of the whole slot.
 struct ReceiverSlotMetrics {
-    //! Number of senders connected to receiver slot.
+    //! Slot source ID.
+    packet::stream_source_t source_id;
+
+    //! Number of participants (remote senders) connected to slot.
     size_t num_participants;
 
     ReceiverSlotMetrics()
-        : num_participants(0) {
+        : source_id(0)
+        , num_participants(0) {
     }
 };
 

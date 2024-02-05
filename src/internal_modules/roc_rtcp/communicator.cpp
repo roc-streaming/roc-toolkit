@@ -365,7 +365,7 @@ status::StatusCode Communicator::generate_reports(core::nanoseconds_t current_ti
     }
 
     do {
-        // TODO(gh-14): use IntervalComputer
+        // TODO(gh-674): use IntervalComputer
         next_deadline_ += core::Millisecond * 200;
     } while (next_deadline_ <= current_time);
 

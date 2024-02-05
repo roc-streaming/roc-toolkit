@@ -51,10 +51,6 @@ bool SenderSlot::is_valid() const {
     return valid_;
 }
 
-bool SenderSlot::is_complete() const {
-    return session_.frame_writer() != NULL;
-}
-
 SenderEndpoint* SenderSlot::add_endpoint(address::Interface iface,
                                          address::Protocol proto,
                                          const address::SocketAddr& outbound_address,
@@ -155,14 +151,10 @@ void SenderSlot::get_metrics(SenderSlotMetrics& slot_metrics,
                              size_t* party_count) const {
     roc_panic_if(!is_valid());
 
-    slot_metrics = SenderSlotMetrics();
-    slot_metrics.is_complete = is_complete();
-    slot_metrics.num_participants = session_.num_participants();
+    session_.get_slot_metrics(slot_metrics);
 
-    if (party_metrics && party_count) {
+    if (party_metrics || party_count) {
         session_.get_participant_metrics(party_metrics, party_count);
-    } else if (party_count) {
-        *party_count = 0;
     }
 }
 
