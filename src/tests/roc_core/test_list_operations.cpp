@@ -43,7 +43,7 @@ TEST(list_operations, pop_front) {
     }
 
     for (size_t i = 0; i < NumObjects; ++i) {
-        LONGS_EQUAL(NumObjects-i, list.size());
+        LONGS_EQUAL(NumObjects - i, list.size());
 
         list.pop_front();
 
@@ -64,7 +64,7 @@ TEST(list_operations, pop_front) {
     }
 
     for (size_t i = 0; i < NumObjects; ++i) {
-        LONGS_EQUAL(NumObjects-i, list.size());
+        LONGS_EQUAL(NumObjects - i, list.size());
         list.pop_front();
 
         if (i != NumObjects - 1) {
@@ -85,7 +85,7 @@ TEST(list_operations, pop_back) {
     }
 
     for (size_t i = 0; i < NumObjects; ++i) {
-        LONGS_EQUAL(NumObjects-i, list.size());
+        LONGS_EQUAL(NumObjects - i, list.size());
 
         list.pop_back();
 
@@ -98,7 +98,7 @@ TEST(list_operations, pop_back) {
     CHECK(list.back() == NULL);
 
     LONGS_EQUAL(0, list.size());
-    
+
     // Testing with push_front
     for (size_t i = 0; i < NumObjects; ++i) {
         LONGS_EQUAL(i, list.size());
@@ -106,7 +106,7 @@ TEST(list_operations, pop_back) {
     }
 
     for (size_t i = 0; i < NumObjects; ++i) {
-        LONGS_EQUAL(NumObjects-i, list.size());
+        LONGS_EQUAL(NumObjects - i, list.size());
         list.pop_back();
 
         if (i != NumObjects - 1) {
