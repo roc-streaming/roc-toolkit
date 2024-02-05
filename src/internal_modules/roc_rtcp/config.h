@@ -22,6 +22,9 @@ namespace rtcp {
 
 //! RTCP config.
 struct Config {
+    //! Interval between reports.
+    core::nanoseconds_t report_interval;
+
     //! Timeout to remove inactive streams.
     core::nanoseconds_t inactivity_timeout;
 
@@ -38,7 +41,8 @@ struct Config {
     bool enable_sdes;
 
     Config()
-        : inactivity_timeout(core::Second * 5)
+        : report_interval(core::Millisecond * 200)
+        , inactivity_timeout(core::Second * 5)
         , enable_sr_rr(true)
         , enable_xr(true)
         , enable_sdes(true) {

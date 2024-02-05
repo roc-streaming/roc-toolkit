@@ -1884,8 +1884,9 @@ TEST(receiver_source, timestamp_mapping_one_control_packet) {
                                      src_addr1, dst_addr1, PayloadType_Ch2);
 
     test::ControlWriter control_writer(*control_endpoint, packet_factory,
-                                       byte_buffer_factory, src_id1, src_addr1,
-                                       dst_addr2);
+                                       byte_buffer_factory, src_addr1, dst_addr2);
+
+    control_writer.set_local_source(src_id1);
 
     const core::nanoseconds_t capture_ts_base = 1000000000000000;
     const packet::stream_timestamp_t rtp_base = 1000000;
@@ -1951,8 +1952,9 @@ TEST(receiver_source, timestamp_mapping_periodic_control_packets) {
                                      src_addr1, dst_addr1, PayloadType_Ch2);
 
     test::ControlWriter control_writer(*control_endpoint, packet_factory,
-                                       byte_buffer_factory, src_id1, src_addr1,
-                                       dst_addr2);
+                                       byte_buffer_factory, src_addr1, dst_addr2);
+
+    control_writer.set_local_source(src_id1);
 
     const core::nanoseconds_t capture_ts_step = 1000000000000000;
     const packet::stream_timestamp_t rtp_base = 1000000;
@@ -2021,8 +2023,9 @@ TEST(receiver_source, timestamp_mapping_remixing) {
                                      src_addr1, dst_addr1, PayloadType_Ch1);
 
     test::ControlWriter control_writer(*control_endpoint, packet_factory,
-                                       byte_buffer_factory, src_id1, src_addr1,
-                                       dst_addr2);
+                                       byte_buffer_factory, src_addr1, dst_addr2);
+
+    control_writer.set_local_source(src_id1);
 
     const core::nanoseconds_t unix_base = 1000000000000000;
     const packet::stream_timestamp_t rtp_base = 1000000;
@@ -2077,8 +2080,9 @@ TEST(receiver_source, timestamp_mapping_remixing) {
     CHECK(first_ts);
 }
 
+// Check receiver metrics for multiple remote participants (senders).
 TEST(receiver_source, metrics_participants) {
-    enum { Rate = SampleRate, Chans = Chans_Stereo, MaxSess = 10 };
+    enum { Rate = SampleRate, Chans = Chans_Stereo, MaxParties = 10 };
 
     init(Rate, Chans, Rate, Chans);
 
@@ -2091,8 +2095,8 @@ TEST(receiver_source, metrics_participants) {
 
     {
         ReceiverSlotMetrics slot_metrics;
-        ReceiverParticipantMetrics party_metrics[MaxSess];
-        size_t party_metrics_size = MaxSess;
+        ReceiverParticipantMetrics party_metrics[MaxParties];
+        size_t party_metrics_size = MaxParties;
 
         slot->get_metrics(slot_metrics, party_metrics, &party_metrics_size);
 
@@ -2115,11 +2119,12 @@ TEST(receiver_source, metrics_participants) {
 
     {
         ReceiverSlotMetrics slot_metrics;
-        ReceiverParticipantMetrics party_metrics[MaxSess];
-        size_t party_metrics_size = MaxSess;
+        ReceiverParticipantMetrics party_metrics[MaxParties];
+        size_t party_metrics_size = MaxParties;
 
         slot->get_metrics(slot_metrics, party_metrics, &party_metrics_size);
 
+        CHECK(slot_metrics.source_id != 0);
         UNSIGNED_LONGS_EQUAL(0, slot_metrics.num_participants);
         UNSIGNED_LONGS_EQUAL(0, party_metrics_size);
     }
@@ -2136,11 +2141,12 @@ TEST(receiver_source, metrics_participants) {
 
         {
             ReceiverSlotMetrics slot_metrics;
-            ReceiverParticipantMetrics party_metrics[MaxSess];
-            size_t party_metrics_size = MaxSess;
+            ReceiverParticipantMetrics party_metrics[MaxParties];
+            size_t party_metrics_size = MaxParties;
 
             slot->get_metrics(slot_metrics, party_metrics, &party_metrics_size);
 
+            CHECK(slot_metrics.source_id != 0);
             UNSIGNED_LONGS_EQUAL(1, slot_metrics.num_participants);
             UNSIGNED_LONGS_EQUAL(1, party_metrics_size);
 
@@ -2169,11 +2175,12 @@ TEST(receiver_source, metrics_participants) {
 
         {
             ReceiverSlotMetrics slot_metrics;
-            ReceiverParticipantMetrics party_metrics[MaxSess];
-            size_t party_metrics_size = MaxSess;
+            ReceiverParticipantMetrics party_metrics[MaxParties];
+            size_t party_metrics_size = MaxParties;
 
             slot->get_metrics(slot_metrics, party_metrics, &party_metrics_size);
 
+            CHECK(slot_metrics.source_id != 0);
             UNSIGNED_LONGS_EQUAL(2, slot_metrics.num_participants);
             UNSIGNED_LONGS_EQUAL(2, party_metrics_size);
 
@@ -2189,7 +2196,7 @@ TEST(receiver_source, metrics_participants) {
 // Check how receiver returns metrics if provided buffer for metrics
 // is smaller than needed.
 TEST(receiver_source, metrics_truncation) {
-    enum { Rate = SampleRate, Chans = Chans_Stereo, MaxSess = 10 };
+    enum { Rate = SampleRate, Chans = Chans_Stereo, MaxParties = 10 };
 
     init(Rate, Chans, Rate, Chans);
 
@@ -2227,9 +2234,9 @@ TEST(receiver_source, metrics_truncation) {
 
     UNSIGNED_LONGS_EQUAL(2, receiver.num_sessions());
 
-    { // metrics_size=0 num_sessions=2
+    { // metrics_size=0 num_participants=2
         ReceiverSlotMetrics slot_metrics;
-        ReceiverParticipantMetrics party_metrics[MaxSess];
+        ReceiverParticipantMetrics party_metrics[MaxParties];
         size_t party_metrics_size = 0;
 
         slot->get_metrics(slot_metrics, party_metrics, &party_metrics_size);
@@ -2238,13 +2245,14 @@ TEST(receiver_source, metrics_truncation) {
         UNSIGNED_LONGS_EQUAL(0, party_metrics_size);
     }
 
-    { // metrics_size=1 num_sessions=2
+    { // metrics_size=1 num_participants=2
         ReceiverSlotMetrics slot_metrics;
-        ReceiverParticipantMetrics party_metrics[MaxSess];
+        ReceiverParticipantMetrics party_metrics[MaxParties];
         size_t party_metrics_size = 1;
 
         slot->get_metrics(slot_metrics, party_metrics, &party_metrics_size);
 
+        CHECK(slot_metrics.source_id != 0);
         UNSIGNED_LONGS_EQUAL(2, slot_metrics.num_participants);
         UNSIGNED_LONGS_EQUAL(1, party_metrics_size);
 
@@ -2252,27 +2260,30 @@ TEST(receiver_source, metrics_truncation) {
         CHECK(party_metrics[1].latency.niq_latency == 0);
     }
 
-    { // metrics_size=2 num_sessions=2
+    { // metrics_size=2 num_participants=2
         ReceiverSlotMetrics slot_metrics;
-        ReceiverParticipantMetrics party_metrics[MaxSess];
+        ReceiverParticipantMetrics party_metrics[MaxParties];
         size_t party_metrics_size = 2;
 
         slot->get_metrics(slot_metrics, party_metrics, &party_metrics_size);
 
+        CHECK(slot_metrics.source_id != 0);
         UNSIGNED_LONGS_EQUAL(2, slot_metrics.num_participants);
         UNSIGNED_LONGS_EQUAL(2, party_metrics_size);
+
         CHECK(party_metrics[0].latency.niq_latency > 0);
         CHECK(party_metrics[1].latency.niq_latency > 0);
         CHECK(party_metrics[2].latency.niq_latency == 0);
     }
 
-    { // metrics_size=3 num_sessions=2
+    { // metrics_size=3 num_participants=2
         ReceiverSlotMetrics slot_metrics;
-        ReceiverParticipantMetrics party_metrics[MaxSess];
+        ReceiverParticipantMetrics party_metrics[MaxParties];
         size_t party_metrics_size = 3;
 
         slot->get_metrics(slot_metrics, party_metrics, &party_metrics_size);
 
+        CHECK(slot_metrics.source_id != 0);
         UNSIGNED_LONGS_EQUAL(2, slot_metrics.num_participants);
         UNSIGNED_LONGS_EQUAL(2, party_metrics_size);
 
@@ -2282,9 +2293,20 @@ TEST(receiver_source, metrics_truncation) {
     }
 }
 
-// Check niq_latency metric (network incoming queue size).
+// Check how receiver computes packet metrics:
+// total_packets, lost_packets, ext_first_seqnum, ext_last_seqnum
+IGNORE_TEST(receiver_source, metrics_packet_counters) {
+    // TODO(gh-688): implement test
+}
+
+// Check how receiver computes jitter metric.
+IGNORE_TEST(receiver_source, metrics_jitter) {
+    // TODO(gh-688): implement test
+}
+
+// Check how receiver computes niq_latency metric (network incoming queue size).
 TEST(receiver_source, metrics_niq_latency) {
-    enum { Rate = SampleRate, Chans = Chans_Stereo, MaxSess = 10 };
+    enum { Rate = SampleRate, Chans = Chans_Stereo, MaxParties = 10 };
 
     init(Rate, Chans, Rate, Chans);
 
@@ -2323,11 +2345,12 @@ TEST(receiver_source, metrics_niq_latency) {
 
         {
             ReceiverSlotMetrics slot_metrics;
-            ReceiverParticipantMetrics party_metrics[MaxSess];
-            size_t party_metrics_size = MaxSess;
+            ReceiverParticipantMetrics party_metrics[MaxParties];
+            size_t party_metrics_size = MaxParties;
 
             slot->get_metrics(slot_metrics, party_metrics, &party_metrics_size);
 
+            CHECK(slot_metrics.source_id != 0);
             UNSIGNED_LONGS_EQUAL(1, slot_metrics.num_participants);
             UNSIGNED_LONGS_EQUAL(1, party_metrics_size);
 
@@ -2337,10 +2360,10 @@ TEST(receiver_source, metrics_niq_latency) {
     }
 }
 
-// Check e2e_latency metric (estimated end-to-end latency).
+// Check how receiver computes e2e_latency metric (estimated end-to-end latency).
 // This metrics requires control packets exchange.
 TEST(receiver_source, metrics_e2e_latency) {
-    enum { Rate = SampleRate, Chans = Chans_Stereo, MaxSess = 10 };
+    enum { Rate = SampleRate, Chans = Chans_Stereo, MaxParties = 10 };
 
     init(Rate, Chans, Rate, Chans);
 
@@ -2369,8 +2392,9 @@ TEST(receiver_source, metrics_e2e_latency) {
                                      src_addr1, dst_addr1, PayloadType_Ch2);
 
     test::ControlWriter control_writer(*control_endpoint, packet_factory,
-                                       byte_buffer_factory, src_id1, src_addr1,
-                                       dst_addr2);
+                                       byte_buffer_factory, src_addr1, dst_addr2);
+
+    control_writer.set_local_source(src_id1);
 
     const core::nanoseconds_t capture_ts_base = 1000000000000000;
     const packet::stream_timestamp_t rtp_base = 1000000;
@@ -2404,11 +2428,12 @@ TEST(receiver_source, metrics_e2e_latency) {
 
         {
             ReceiverSlotMetrics slot_metrics;
-            ReceiverParticipantMetrics party_metrics[MaxSess];
-            size_t party_metrics_size = MaxSess;
+            ReceiverParticipantMetrics party_metrics[MaxParties];
+            size_t party_metrics_size = MaxParties;
 
             slot->get_metrics(slot_metrics, party_metrics, &party_metrics_size);
 
+            CHECK(slot_metrics.source_id != 0);
             UNSIGNED_LONGS_EQUAL(1, slot_metrics.num_participants);
             UNSIGNED_LONGS_EQUAL(1, party_metrics_size);
 

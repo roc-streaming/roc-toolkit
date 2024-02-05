@@ -13,12 +13,17 @@
 
 #include "test_helpers/utils.h"
 
+#include "roc_audio/latency_tuner.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/time.h"
+#include "roc_packet/ilink_meter.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/ntp.h"
 #include "roc_packet/packet_factory.h"
+#include "roc_packet/units.h"
 #include "roc_rtcp/builder.h"
+#include "roc_rtcp/headers.h"
 
 namespace roc {
 namespace pipeline {
@@ -30,7 +35,6 @@ public:
     ControlWriter(packet::IWriter& writer,
                   packet::PacketFactory& packet_factory,
                   core::BufferFactory<uint8_t>& buffer_factory,
-                  packet::stream_source_t src_id,
                   const address::SocketAddr& src_addr,
                   const address::SocketAddr& dst_addr)
         : writer_(writer)
@@ -38,7 +42,8 @@ public:
         , buffer_factory_(buffer_factory)
         , src_addr_(src_addr)
         , dst_addr_(dst_addr)
-        , source_(src_id) {
+        , local_source_(0)
+        , remote_source_(0) {
     }
 
     void write_sender_report(packet::ntp_timestamp_t ntp_ts,
@@ -52,15 +57,15 @@ public:
         rtcp::Builder bld(cfg, buff);
 
         rtcp::header::SenderReportPacket sr;
-        sr.set_ssrc(source_);
+        sr.set_ssrc(local_source_);
         sr.set_ntp_timestamp(ntp_ts);
         sr.set_rtp_timestamp(rtp_ts);
 
         rtcp::SdesChunk chunk;
-        chunk.ssrc = source_;
+        chunk.ssrc = local_source_;
         rtcp::SdesItem item;
         item.type = rtcp::header::SDES_CNAME;
-        item.text = "test_cname";
+        item.text = "test_send_cname";
 
         bld.begin_sr(sr);
         bld.end_sr();
@@ -71,11 +76,85 @@ public:
         bld.end_sdes_chunk();
         bld.end_sdes();
 
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, writer_.write(new_packet_(buff)));
+        LONGS_EQUAL(status::StatusOK, writer_.write(new_packet_(buff)));
     }
 
-    void set_source(packet::stream_source_t source) {
-        source_ = source;
+    void write_receiver_report(const audio::SampleSpec& sample_spec) {
+        core::Slice<uint8_t> buff = buffer_factory_.new_buffer();
+        CHECK(buff);
+
+        buff.reslice(0, 0);
+
+        rtcp::Config cfg;
+        rtcp::Builder bld(cfg, buff);
+
+        rtcp::header::ReceiverReportPacket rr;
+        rr.set_ssrc(local_source_);
+
+        rtcp::header::ReceptionReportBlock rr_blk;
+        rr_blk.set_ssrc(remote_source_);
+        rr_blk.set_cum_loss(link_metrics_.lost_packets);
+        rr_blk.set_last_seqnum(link_metrics_.ext_last_seqnum);
+        rr_blk.set_jitter(sample_spec.ns_2_stream_timestamp(link_metrics_.jitter));
+
+        rtcp::header::XrPacket xr;
+        xr.set_ssrc(local_source_);
+
+        rtcp::header::XrMeasurementInfoBlock ms_info;
+        ms_info.set_ssrc(remote_source_);
+        ms_info.set_first_seq((packet::seqnum_t)link_metrics_.ext_first_seqnum);
+
+        rtcp::header::XrDelayMetricsBlock delay_metrics;
+        delay_metrics.set_ssrc(remote_source_);
+        delay_metrics.set_e2e_latency(
+            packet::nanoseconds_2_ntp(latency_metrics_.e2e_latency));
+
+        rtcp::header::XrQueueMetricsBlock queue_metrics;
+        queue_metrics.set_ssrc(remote_source_);
+        queue_metrics.set_niq_latency(
+            packet::nanoseconds_2_ntp(latency_metrics_.niq_latency));
+        queue_metrics.set_niq_stalling(
+            packet::nanoseconds_2_ntp(latency_metrics_.niq_stalling));
+
+        rtcp::SdesChunk chunk;
+        chunk.ssrc = local_source_;
+        rtcp::SdesItem item;
+        item.type = rtcp::header::SDES_CNAME;
+        item.text = "test_recv_cname";
+
+        bld.begin_rr(rr);
+        bld.add_rr_report(rr_blk);
+        bld.end_rr();
+
+        bld.begin_xr(xr);
+        bld.add_xr_measurement_info(ms_info);
+        bld.add_xr_delay_metrics(delay_metrics);
+        bld.add_xr_queue_metrics(queue_metrics);
+        bld.end_xr();
+
+        bld.begin_sdes();
+        bld.begin_sdes_chunk(chunk);
+        bld.add_sdes_item(item);
+        bld.end_sdes_chunk();
+        bld.end_sdes();
+
+        LONGS_EQUAL(status::StatusOK, writer_.write(new_packet_(buff)));
+    }
+
+    void set_local_source(packet::stream_source_t source) {
+        local_source_ = source;
+    }
+
+    void set_remote_source(packet::stream_source_t source) {
+        remote_source_ = source;
+    }
+
+    void set_link_metrics(const packet::LinkMetrics& link_metrics) {
+        link_metrics_ = link_metrics;
+    }
+
+    void set_latency_metrics(const audio::LatencyMetrics& latency_metrics) {
+        latency_metrics_ = latency_metrics;
     }
 
 private:
@@ -101,7 +180,11 @@ private:
     address::SocketAddr src_addr_;
     address::SocketAddr dst_addr_;
 
-    packet::stream_source_t source_;
+    packet::stream_source_t local_source_;
+    packet::stream_source_t remote_source_;
+
+    packet::LinkMetrics link_metrics_;
+    audio::LatencyMetrics latency_metrics_;
 };
 
 } // namespace test

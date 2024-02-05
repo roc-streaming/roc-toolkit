@@ -8,6 +8,7 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "test_helpers/control_writer.h"
 #include "test_helpers/frame_writer.h"
 #include "test_helpers/packet_reader.h"
 
@@ -83,14 +84,32 @@ void create_transport_endpoint(SenderSlot* slot,
     CHECK(!endpoint->inbound_writer());
 }
 
+packet::IWriter* create_control_endpoint(SenderSlot* slot,
+                                         address::Interface iface,
+                                         address::Protocol proto,
+                                         const address::SocketAddr& outbound_address,
+                                         packet::IWriter& outbound_writer) {
+    CHECK(slot);
+    SenderEndpoint* endpoint =
+        slot->add_endpoint(iface, proto, outbound_address, outbound_writer);
+    CHECK(endpoint);
+    CHECK(endpoint->inbound_writer());
+    return endpoint->inbound_writer();
+}
+
 } // namespace
 
 TEST_GROUP(sender_sink) {
     audio::SampleSpec input_sample_spec;
     audio::SampleSpec packet_sample_spec;
 
-    address::Protocol source_proto;
+    address::Protocol proto;
+
+    address::SocketAddr src_addr;
     address::SocketAddr dst_addr;
+
+    packet::stream_source_t src_ssrc;
+    packet::stream_source_t dst_ssrc;
 
     SenderConfig make_config() {
         SenderConfig config;
@@ -137,8 +156,13 @@ TEST_GROUP(sender_sink) {
         packet_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
         packet_sample_spec.channel_set().set_channel_mask(packet_channels);
 
-        source_proto = address::Proto_RTP;
-        dst_addr = test::new_address(123);
+        proto = address::Proto_RTP;
+
+        src_addr = test::new_address(111);
+        dst_addr = test::new_address(222);
+
+        src_ssrc = 0;
+        dst_ssrc = 0;
     }
 };
 
@@ -155,8 +179,7 @@ TEST(sender_sink, write) {
 
     SenderSlot* slot = create_slot(sender);
     CHECK(slot);
-    create_transport_endpoint(slot, address::Iface_AudioSource, source_proto, dst_addr,
-                              queue);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr, queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -195,8 +218,7 @@ TEST(sender_sink, frame_size_small) {
 
     SenderSlot* slot = create_slot(sender);
     CHECK(slot);
-    create_transport_endpoint(slot, address::Iface_AudioSource, source_proto, dst_addr,
-                              queue);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr, queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -235,8 +257,7 @@ TEST(sender_sink, frame_size_large) {
 
     SenderSlot* slot = create_slot(sender);
     CHECK(slot);
-    create_transport_endpoint(slot, address::Iface_AudioSource, source_proto, dst_addr,
-                              queue);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr, queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -269,8 +290,7 @@ TEST(sender_sink, channel_mapping_stereo_to_mono) {
 
     SenderSlot* slot = create_slot(sender);
     CHECK(slot);
-    create_transport_endpoint(slot, address::Iface_AudioSource, source_proto, dst_addr,
-                              queue);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr, queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -303,8 +323,7 @@ TEST(sender_sink, channel_mapping_mono_to_stereo) {
 
     SenderSlot* slot = create_slot(sender);
     CHECK(slot);
-    create_transport_endpoint(slot, address::Iface_AudioSource, source_proto, dst_addr,
-                              queue);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr, queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -337,8 +356,7 @@ TEST(sender_sink, sample_rate_mapping) {
 
     SenderSlot* slot = create_slot(sender);
     CHECK(slot);
-    create_transport_endpoint(slot, address::Iface_AudioSource, source_proto, dst_addr,
-                              queue);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr, queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -372,8 +390,7 @@ TEST(sender_sink, timestamp_mapping) {
     CHECK(sender.is_valid());
 
     SenderSlot* slot = create_slot(sender);
-    create_transport_endpoint(slot, address::Iface_AudioSource, source_proto, dst_addr,
-                              queue);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr, queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -413,8 +430,7 @@ TEST(sender_sink, timestamp_mapping_remixing) {
 
     SenderSlot* slot = create_slot(sender);
     CHECK(slot);
-    create_transport_endpoint(slot, address::Iface_AudioSource, source_proto, dst_addr,
-                              queue);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr, queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -447,6 +463,139 @@ TEST(sender_sink, timestamp_mapping_remixing) {
                                            test::TimestampEpsilonSmpls);
         }
         cts += packet_sample_spec.samples_per_chan_2_ns(pp->rtp()->duration);
+    }
+}
+
+// Check sender metrics for multiple remote participants (receiver).
+IGNORE_TEST(sender_sink, metrics_participants) {
+    // TODO(gh-674): add test for multiple receivers
+}
+
+// Check how sender returns metrics if provided buffer for metrics
+// is smaller than needed.
+IGNORE_TEST(sender_sink, metrics_truncation) {
+    // TODO(gh-674): add test for multiple receivers
+}
+
+// Check how sender fills metrics from feedback reports of remote receiver.
+TEST(sender_sink, metrics_feedback) {
+    enum { Rate = SampleRate, Chans = Chans_Stereo, MaxParties = 10 };
+
+    init(Rate, Chans, Rate, Chans);
+
+    packet::Queue queue;
+
+    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
+                      sample_buffer_factory, arena);
+    CHECK(sender.is_valid());
+
+    SenderSlot* slot = create_slot(sender);
+    CHECK(slot);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr, queue);
+
+    packet::Queue control_outbound_queue;
+    packet::IWriter* control_endpoint =
+        create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
+                                dst_addr, control_outbound_queue);
+    CHECK(control_endpoint);
+
+    test::FrameWriter frame_writer(sender, sample_buffer_factory);
+
+    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory, dst_addr,
+                                     PayloadType_Ch2);
+
+    const core::nanoseconds_t unix_base = 1000000000000000;
+
+    for (size_t nf = 0; nf < ManyFrames; nf++) {
+        frame_writer.write_samples(SamplesPerFrame, input_sample_spec, unix_base);
+        sender.refresh(frame_writer.refresh_ts());
+    }
+
+    for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
+        packet_reader.read_packet(SamplesPerPacket, packet_sample_spec, unix_base);
+    }
+
+    CHECK(control_outbound_queue.size() > 0);
+
+    {
+        SenderSlotMetrics slot_metrics;
+        SenderParticipantMetrics party_metrics[MaxParties];
+        size_t party_metrics_size = MaxParties;
+
+        slot->get_metrics(slot_metrics, party_metrics, &party_metrics_size);
+
+        CHECK(slot_metrics.source_id != 0);
+
+        src_ssrc = slot_metrics.source_id;
+        dst_ssrc = src_ssrc + 99999;
+
+        UNSIGNED_LONGS_EQUAL(0, slot_metrics.num_participants);
+        UNSIGNED_LONGS_EQUAL(0, party_metrics_size);
+    }
+
+    test::ControlWriter control_writer(*control_endpoint, packet_factory,
+                                       byte_buffer_factory, dst_addr, src_addr);
+
+    control_writer.set_local_source(dst_ssrc);
+    control_writer.set_remote_source(src_ssrc);
+
+    for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
+        const unsigned seed = (unsigned)np + 1;
+
+        packet::LinkMetrics link_metrics;
+        link_metrics.ext_first_seqnum = seed * 100;
+        link_metrics.ext_last_seqnum = seed * 200;
+        link_metrics.total_packets = (seed * 200) - (seed * 100) + 1;
+        link_metrics.lost_packets = (int)seed * 40;
+        link_metrics.jitter = (int)seed * core::Millisecond * 50;
+
+        audio::LatencyMetrics latency_metrics;
+        latency_metrics.niq_latency = (int)seed * core::Millisecond * 50;
+        latency_metrics.niq_stalling = (int)seed * core::Millisecond * 60;
+        latency_metrics.e2e_latency = (int)seed * core::Millisecond * 70;
+
+        control_writer.set_link_metrics(link_metrics);
+        control_writer.set_latency_metrics(latency_metrics);
+
+        control_writer.write_receiver_report(packet_sample_spec);
+
+        for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            frame_writer.write_samples(SamplesPerFrame, input_sample_spec, unix_base);
+            sender.refresh(frame_writer.refresh_ts());
+        }
+        packet_reader.read_packet(SamplesPerPacket, packet_sample_spec, unix_base);
+
+        {
+            SenderSlotMetrics slot_metrics;
+            SenderParticipantMetrics party_metrics[MaxParties];
+            size_t party_metrics_size = MaxParties;
+
+            slot->get_metrics(slot_metrics, party_metrics, &party_metrics_size);
+
+            UNSIGNED_LONGS_EQUAL(src_ssrc, slot_metrics.source_id);
+            UNSIGNED_LONGS_EQUAL(1, slot_metrics.num_participants);
+            UNSIGNED_LONGS_EQUAL(1, party_metrics_size);
+
+            UNSIGNED_LONGS_EQUAL(link_metrics.ext_first_seqnum,
+                                 party_metrics[0].link.ext_first_seqnum);
+            UNSIGNED_LONGS_EQUAL(link_metrics.ext_last_seqnum,
+                                 party_metrics[0].link.ext_last_seqnum);
+            UNSIGNED_LONGS_EQUAL(link_metrics.total_packets,
+                                 party_metrics[0].link.total_packets);
+            UNSIGNED_LONGS_EQUAL(link_metrics.lost_packets,
+                                 party_metrics[0].link.lost_packets);
+            DOUBLES_EQUAL((double)link_metrics.jitter,
+                          (double)party_metrics[0].link.jitter, core::Nanosecond);
+
+            DOUBLES_EQUAL((double)latency_metrics.niq_latency,
+                          (double)party_metrics[0].latency.niq_latency,
+                          core::Microsecond * 16);
+            DOUBLES_EQUAL((double)latency_metrics.niq_stalling,
+                          (double)party_metrics[0].latency.niq_stalling,
+                          core::Microsecond * 16);
+            DOUBLES_EQUAL((double)latency_metrics.e2e_latency,
+                          (double)party_metrics[0].latency.e2e_latency, core::Nanosecond);
+        }
     }
 }
 

@@ -366,7 +366,7 @@ status::StatusCode Communicator::generate_reports(core::nanoseconds_t current_ti
 
     do {
         // TODO(gh-674): use IntervalComputer
-        next_deadline_ += core::Millisecond * 200;
+        next_deadline_ += config_.report_interval;
     } while (next_deadline_ <= current_time);
 
     roc_log(LogTrace, "rtcp communicator: generating report packets");
