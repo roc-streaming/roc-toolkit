@@ -54,7 +54,7 @@ TEST(receiver, source) {
     Receiver receiver(context, receiver_config);
     CHECK(receiver.is_valid());
 
-    CHECK_EQUAL(receiver_config.common.output_sample_spec.sample_rate(),
+    LONGS_EQUAL(receiver_config.common.output_sample_spec.sample_rate(),
                 receiver.source().sample_spec().sample_rate());
 }
 
@@ -73,7 +73,7 @@ TEST(receiver, bind) {
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
         CHECK(source_endp.port() != 0);
 
-        CHECK_EQUAL(1, context.network_loop().num_ports());
+        LONGS_EQUAL(1, context.network_loop().num_ports());
     }
     { // two slots
         Context context(context_config, arena);
@@ -96,7 +96,7 @@ TEST(receiver, bind) {
         CHECK(receiver.bind(1, address::Iface_AudioSource, source_endp2));
         CHECK(source_endp2.port() != 0);
 
-        CHECK_EQUAL(2, context.network_loop().num_ports());
+        LONGS_EQUAL(2, context.network_loop().num_ports());
     }
 }
 
@@ -111,7 +111,7 @@ TEST(receiver, configure) {
         netio::UdpConfig iface_config;
         CHECK(receiver.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
@@ -120,7 +120,7 @@ TEST(receiver, configure) {
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
         CHECK(source_endp.port() != 0);
 
-        CHECK_EQUAL(1, context.network_loop().num_ports());
+        LONGS_EQUAL(1, context.network_loop().num_ports());
     }
     { // two slots
         Context context(context_config, arena);
@@ -133,7 +133,7 @@ TEST(receiver, configure) {
         CHECK(receiver.configure(0, address::Iface_AudioSource, iface_config));
         CHECK(receiver.configure(1, address::Iface_AudioSource, iface_config));
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
 
         address::EndpointUri source_endp1(arena);
         parse_uri(source_endp1, "rtp://127.0.0.1:0");
@@ -149,7 +149,7 @@ TEST(receiver, configure) {
         CHECK(receiver.bind(1, address::Iface_AudioSource, source_endp2));
         CHECK(source_endp2.port() != 0);
 
-        CHECK_EQUAL(2, context.network_loop().num_ports());
+        LONGS_EQUAL(2, context.network_loop().num_ports());
     }
 }
 
@@ -168,11 +168,11 @@ TEST(receiver, unlink) {
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
         CHECK(source_endp.port() != 0);
 
-        CHECK_EQUAL(1, context.network_loop().num_ports());
+        LONGS_EQUAL(1, context.network_loop().num_ports());
 
         CHECK(receiver.unlink(DefaultSlot));
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
     }
     { // bind two slots, unlink one slot
         Context context(context_config, arena);
@@ -195,11 +195,11 @@ TEST(receiver, unlink) {
         CHECK(receiver.bind(1, address::Iface_AudioSource, source_endp2));
         CHECK(source_endp2.port() != 0);
 
-        CHECK_EQUAL(2, context.network_loop().num_ports());
+        LONGS_EQUAL(2, context.network_loop().num_ports());
 
         CHECK(receiver.unlink(0));
 
-        CHECK_EQUAL(1, context.network_loop().num_ports());
+        LONGS_EQUAL(1, context.network_loop().num_ports());
     }
     { // bind two slots, unlink two slots
         Context context(context_config, arena);
@@ -222,12 +222,12 @@ TEST(receiver, unlink) {
         CHECK(receiver.bind(1, address::Iface_AudioSource, source_endp2));
         CHECK(source_endp2.port() != 0);
 
-        CHECK_EQUAL(2, context.network_loop().num_ports());
+        LONGS_EQUAL(2, context.network_loop().num_ports());
 
         CHECK(receiver.unlink(0));
         CHECK(receiver.unlink(1));
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
     }
     { // slot with 2 endpoints
         Context context(context_config, arena);
@@ -245,7 +245,7 @@ TEST(receiver, unlink) {
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioControl, control_endp));
 
-        CHECK_EQUAL(2, context.network_loop().num_ports());
+        LONGS_EQUAL(2, context.network_loop().num_ports());
 
         CHECK(receiver.unlink(DefaultSlot));
     }
@@ -270,11 +270,11 @@ TEST(receiver, unlink) {
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioRepair, repair_endp));
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioControl, control_endp));
 
-        CHECK_EQUAL(3, context.network_loop().num_ports());
+        LONGS_EQUAL(3, context.network_loop().num_ports());
 
         CHECK(receiver.unlink(DefaultSlot));
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
     }
 }
 
@@ -291,7 +291,7 @@ TEST(receiver, endpoints_no_fec) {
 
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
 
-        CHECK_EQUAL(1, context.network_loop().num_ports());
+        LONGS_EQUAL(1, context.network_loop().num_ports());
     }
 }
 
@@ -316,7 +316,7 @@ TEST(receiver, endpoints_fec) {
         // fec is not supported
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioRepair, repair_endp));
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
 
         return;
     }
@@ -336,7 +336,7 @@ TEST(receiver, endpoints_fec) {
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioRepair, repair_endp));
 
-        CHECK_EQUAL(2, context.network_loop().num_ports());
+        LONGS_EQUAL(2, context.network_loop().num_ports());
     }
     { // repair port fec scheme mismatch
         Context context(context_config, arena);
@@ -354,7 +354,7 @@ TEST(receiver, endpoints_fec) {
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioRepair, repair_endp));
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
     }
     { // source port fec scheme mismatch
         Context context(context_config, arena);
@@ -372,7 +372,7 @@ TEST(receiver, endpoints_fec) {
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioRepair, repair_endp));
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
     }
     { // repair port provided when fec is disabled
         Context context(context_config, arena);
@@ -390,7 +390,7 @@ TEST(receiver, endpoints_fec) {
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioRepair, repair_endp));
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
     }
 }
 
@@ -407,7 +407,7 @@ TEST(receiver, endpoints_control) {
 
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioControl, control_endp));
 
-        CHECK_EQUAL(1, context.network_loop().num_ports());
+        LONGS_EQUAL(1, context.network_loop().num_ports());
     }
     { // source + control
         Context context(context_config, arena);
@@ -425,7 +425,7 @@ TEST(receiver, endpoints_control) {
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioControl, control_endp));
 
-        CHECK_EQUAL(2, context.network_loop().num_ports());
+        LONGS_EQUAL(2, context.network_loop().num_ports());
     }
     // source + repair + control
     if (fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
@@ -448,7 +448,7 @@ TEST(receiver, endpoints_control) {
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioRepair, repair_endp));
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioControl, control_endp));
 
-        CHECK_EQUAL(3, context.network_loop().num_ports());
+        LONGS_EQUAL(3, context.network_loop().num_ports());
     }
     { // protocol mismatch
         Context context(context_config, arena);
@@ -462,7 +462,7 @@ TEST(receiver, endpoints_control) {
 
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioControl, control_endp));
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
     }
 }
 
@@ -480,7 +480,7 @@ TEST(receiver, bind_errors) {
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
         CHECK(receiver.has_broken());
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
     }
     { // partially invalidated endpoint
         Context context(context_config, arena);
@@ -496,7 +496,7 @@ TEST(receiver, bind_errors) {
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
         CHECK(receiver.has_broken());
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
     }
     { // resolve error
         Context context(context_config, arena);
@@ -511,7 +511,7 @@ TEST(receiver, bind_errors) {
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
         CHECK(receiver.has_broken());
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
     }
     { // address already in use
         Context context(context_config, arena);
@@ -525,7 +525,7 @@ TEST(receiver, bind_errors) {
 
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
 
-        CHECK_EQUAL(1, context.network_loop().num_ports());
+        LONGS_EQUAL(1, context.network_loop().num_ports());
 
         address::EndpointUri control_endp(arena);
         CHECK(control_endp.set_proto(address::Proto_RTCP));
@@ -534,7 +534,7 @@ TEST(receiver, bind_errors) {
 
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
     }
 }
 
@@ -558,7 +558,7 @@ TEST(receiver, configure_errors) {
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
         CHECK(receiver.has_broken());
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
     }
     { // multicast group: IP familty mismatch
         Context context(context_config, arena);
@@ -581,7 +581,7 @@ TEST(receiver, configure_errors) {
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
         CHECK(receiver.has_broken());
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
     }
     { // multicast group: multicast flag mismatch
         Context context(context_config, arena);
@@ -604,7 +604,7 @@ TEST(receiver, configure_errors) {
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
         CHECK(receiver.has_broken());
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
     }
 }
 
@@ -622,13 +622,13 @@ TEST(receiver, flow_errors) {
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
         CHECK(!receiver.has_broken());
 
-        CHECK_EQUAL(1, context.network_loop().num_ports());
+        LONGS_EQUAL(1, context.network_loop().num_ports());
 
         netio::UdpConfig iface_config;
         CHECK(!receiver.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
         CHECK(receiver.has_broken());
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
     }
     { // bind twice
         Context context(context_config, arena);
@@ -643,12 +643,12 @@ TEST(receiver, flow_errors) {
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
         CHECK(!receiver.has_broken());
 
-        CHECK_EQUAL(1, context.network_loop().num_ports());
+        LONGS_EQUAL(1, context.network_loop().num_ports());
 
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
         CHECK(receiver.has_broken());
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
     }
     { // unlink non-existent
         Context context(context_config, arena);
@@ -660,7 +660,7 @@ TEST(receiver, flow_errors) {
         CHECK(!receiver.unlink(DefaultSlot));
         CHECK(!receiver.has_broken());
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
     }
     { // unlink twice
         Context context(context_config, arena);
@@ -681,7 +681,7 @@ TEST(receiver, flow_errors) {
         CHECK(!receiver.unlink(DefaultSlot));
         CHECK(!receiver.has_broken());
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
     }
 }
 
@@ -702,13 +702,13 @@ TEST(receiver, recover) {
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp1));
         CHECK(receiver.has_broken());
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
 
         // can't bind, slot is broken
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp2));
         CHECK(receiver.has_broken());
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
 
         // unlink slot
         CHECK(receiver.unlink(DefaultSlot));
@@ -718,7 +718,7 @@ TEST(receiver, recover) {
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp2));
         CHECK(!receiver.has_broken());
 
-        CHECK_EQUAL(1, context.network_loop().num_ports());
+        LONGS_EQUAL(1, context.network_loop().num_ports());
     }
     { // configure after error
         Context context(context_config, arena);
@@ -736,14 +736,14 @@ TEST(receiver, recover) {
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp1));
         CHECK(receiver.has_broken());
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
 
         // can't configure, slot is broken
         netio::UdpConfig iface_config;
         CHECK(!receiver.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
         CHECK(receiver.has_broken());
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
 
         // unlink slot
         CHECK(receiver.unlink(DefaultSlot));
@@ -753,7 +753,7 @@ TEST(receiver, recover) {
         CHECK(receiver.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
         CHECK(!receiver.has_broken());
 
-        CHECK_EQUAL(0, context.network_loop().num_ports());
+        LONGS_EQUAL(0, context.network_loop().num_ports());
     }
 }
 
@@ -780,8 +780,8 @@ TEST(receiver, metrics) {
     CHECK(receiver.get_metrics(DefaultSlot, write_slot_metrics, &slot_metrics,
                                write_party_metrics, &party_count, &party_metrics));
 
-    CHECK_EQUAL(0, slot_metrics.num_participants);
-    CHECK_EQUAL(0, party_count);
+    LONGS_EQUAL(0, slot_metrics.num_participants);
+    LONGS_EQUAL(0, party_count);
 }
 
 } // namespace node

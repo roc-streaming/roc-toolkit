@@ -196,12 +196,12 @@ TEST(udp_io, one_sender_one_receiver_single_thread_non_blocking_disabled) {
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
-            CHECK_EQUAL(status::StatusOK,
+            LONGS_EQUAL(status::StatusOK,
                         tx_writer->write(new_packet(tx_config, rx_config, p)));
         }
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
-            CHECK_EQUAL(status::StatusOK, rx_queue.read(pp));
+            LONGS_EQUAL(status::StatusOK, rx_queue.read(pp));
             check_packet(pp, tx_config, rx_config, p, i);
         }
     }
@@ -224,12 +224,12 @@ TEST(udp_io, one_sender_one_receiver_single_loop) {
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
-            CHECK_EQUAL(status::StatusOK,
+            LONGS_EQUAL(status::StatusOK,
                         tx_writer->write(new_packet(tx_config, rx_config, p)));
         }
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
-            CHECK_EQUAL(status::StatusOK, rx_queue.read(pp));
+            LONGS_EQUAL(status::StatusOK, rx_queue.read(pp));
             check_packet(pp, tx_config, rx_config, p, i);
         }
     }
@@ -254,12 +254,12 @@ TEST(udp_io, one_sender_one_receiver_separate_loops) {
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
-            CHECK_EQUAL(status::StatusOK,
+            LONGS_EQUAL(status::StatusOK,
                         tx_writer->write(new_packet(tx_config, rx_config, p)));
         }
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
-            CHECK_EQUAL(status::StatusOK, rx_queue.read(pp));
+            LONGS_EQUAL(status::StatusOK, rx_queue.read(pp));
             check_packet(pp, tx_config, rx_config, p, i);
         }
     }
@@ -294,24 +294,24 @@ TEST(udp_io, one_sender_many_receivers) {
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
-            CHECK_EQUAL(status::StatusOK,
+            LONGS_EQUAL(status::StatusOK,
                         tx_writer->write(new_packet(tx_config, rx_config1, p * 10)));
-            CHECK_EQUAL(status::StatusOK,
+            LONGS_EQUAL(status::StatusOK,
                         tx_writer->write(new_packet(tx_config, rx_config2, p * 20)));
-            CHECK_EQUAL(status::StatusOK,
+            LONGS_EQUAL(status::StatusOK,
                         tx_writer->write(new_packet(tx_config, rx_config3, p * 30)));
         }
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp1;
-            CHECK_EQUAL(status::StatusOK, rx_queue1.read(pp1));
+            LONGS_EQUAL(status::StatusOK, rx_queue1.read(pp1));
             check_packet(pp1, tx_config, rx_config1, p * 10, i);
 
             packet::PacketPtr pp2;
-            CHECK_EQUAL(status::StatusOK, rx_queue2.read(pp2));
+            LONGS_EQUAL(status::StatusOK, rx_queue2.read(pp2));
             check_packet(pp2, tx_config, rx_config2, p * 20, i);
 
             packet::PacketPtr pp3;
-            CHECK_EQUAL(status::StatusOK, rx_queue3.read(pp3));
+            LONGS_EQUAL(status::StatusOK, rx_queue3.read(pp3));
             check_packet(pp3, tx_config, rx_config3, p * 30, i);
         }
     }
@@ -350,30 +350,30 @@ TEST(udp_io, many_senders_one_receiver) {
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
-            CHECK_EQUAL(status::StatusOK,
+            LONGS_EQUAL(status::StatusOK,
                         tx_writer1->write(new_packet(tx_config1, rx_config, p * 10)));
         }
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
-            CHECK_EQUAL(status::StatusOK, rx_queue.read(pp));
+            LONGS_EQUAL(status::StatusOK, rx_queue.read(pp));
             check_packet(pp, tx_config1, rx_config, p * 10, i);
         }
         for (int p = 0; p < NumPackets; p++) {
-            CHECK_EQUAL(status::StatusOK,
+            LONGS_EQUAL(status::StatusOK,
                         tx_writer2->write(new_packet(tx_config2, rx_config, p * 20)));
         }
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
-            CHECK_EQUAL(status::StatusOK, rx_queue.read(pp));
+            LONGS_EQUAL(status::StatusOK, rx_queue.read(pp));
             check_packet(pp, tx_config2, rx_config, p * 20, i);
         }
         for (int p = 0; p < NumPackets; p++) {
-            CHECK_EQUAL(status::StatusOK,
+            LONGS_EQUAL(status::StatusOK,
                         tx_writer3->write(new_packet(tx_config3, rx_config, p * 30)));
         }
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
-            CHECK_EQUAL(status::StatusOK, rx_queue.read(pp));
+            LONGS_EQUAL(status::StatusOK, rx_queue.read(pp));
             check_packet(pp, tx_config3, rx_config, p * 30, i);
         }
     }
@@ -404,26 +404,26 @@ TEST(udp_io, bidirectional_ports_one_loop) {
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
-            CHECK_EQUAL(
+            LONGS_EQUAL(
                 status::StatusOK,
                 peer1_tx_writer->write(new_packet(peer1_config, peer2_config, p)));
         }
 
         for (int p = 0; p < NumPackets; p++) {
-            CHECK_EQUAL(
+            LONGS_EQUAL(
                 status::StatusOK,
                 peer2_tx_writer->write(new_packet(peer2_config, peer1_config, p)));
         }
 
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
-            CHECK_EQUAL(status::StatusOK, peer2_rx_queue.read(pp));
+            LONGS_EQUAL(status::StatusOK, peer2_rx_queue.read(pp));
             check_packet(pp, peer1_config, peer2_config, p, i);
         }
 
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
-            CHECK_EQUAL(status::StatusOK, peer1_rx_queue.read(pp));
+            LONGS_EQUAL(status::StatusOK, peer1_rx_queue.read(pp));
             check_packet(pp, peer2_config, peer1_config, p, i);
         }
     }
@@ -457,26 +457,26 @@ TEST(udp_io, bidirectional_ports_separate_loops) {
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
-            CHECK_EQUAL(
+            LONGS_EQUAL(
                 status::StatusOK,
                 peer1_tx_writer->write(new_packet(peer1_config, peer2_config, p)));
         }
 
         for (int p = 0; p < NumPackets; p++) {
-            CHECK_EQUAL(
+            LONGS_EQUAL(
                 status::StatusOK,
                 peer2_tx_writer->write(new_packet(peer2_config, peer1_config, p)));
         }
 
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
-            CHECK_EQUAL(status::StatusOK, peer2_rx_queue.read(pp));
+            LONGS_EQUAL(status::StatusOK, peer2_rx_queue.read(pp));
             check_packet(pp, peer1_config, peer2_config, p, i);
         }
 
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
-            CHECK_EQUAL(status::StatusOK, peer1_rx_queue.read(pp));
+            LONGS_EQUAL(status::StatusOK, peer1_rx_queue.read(pp));
             check_packet(pp, peer2_config, peer1_config, p, i);
         }
     }

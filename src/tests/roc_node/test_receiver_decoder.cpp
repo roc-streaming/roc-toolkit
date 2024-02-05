@@ -48,7 +48,7 @@ TEST(receiver_decoder, source) {
     ReceiverDecoder receiver_decoder(context, receiver_config);
     CHECK(receiver_decoder.is_valid());
 
-    CHECK_EQUAL(receiver_decoder.source().sample_spec().sample_rate(),
+    LONGS_EQUAL(receiver_decoder.source().sample_spec().sample_rate(),
                 receiver_config.common.output_sample_spec.sample_rate());
 }
 
@@ -61,9 +61,10 @@ TEST(receiver_decoder, write) {
 
     packet::PacketPtr pp = packet_factory.new_packet();
 
-    CHECK_EQUAL(status::StatusUnknown,
+    // TODO(gh-183): compare with StatusNotFound
+    LONGS_EQUAL(status::StatusUnknown,
                 receiver_decoder.write(address::Iface_AudioSource, pp));
-    CHECK_EQUAL(status::StatusUnknown,
+    LONGS_EQUAL(status::StatusUnknown,
                 receiver_decoder.write(address::Iface_AudioRepair, pp));
 }
 
@@ -113,8 +114,8 @@ TEST(receiver_decoder, metrics) {
                                        write_party_metrics, &party_count,
                                        &party_metrics));
 
-    CHECK_EQUAL(0, slot_metrics.num_participants);
-    CHECK_EQUAL(0, party_count);
+    LONGS_EQUAL(0, slot_metrics.num_participants);
+    LONGS_EQUAL(0, party_count);
 }
 
 } // namespace node

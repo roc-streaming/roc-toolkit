@@ -47,7 +47,7 @@ TEST(sender_encoder, sink) {
     SenderEncoder sender_encoder(context, sender_config);
     CHECK(sender_encoder.is_valid());
 
-    CHECK_EQUAL(sender_encoder.sink().sample_spec().sample_rate(),
+    LONGS_EQUAL(sender_encoder.sink().sample_spec().sample_rate(),
                 sender_config.input_sample_spec.sample_rate());
 }
 
@@ -61,9 +61,9 @@ TEST(sender_encoder, read) {
     packet::PacketPtr pp;
 
     // TODO(gh-183): compare with StatusNotFound
-    CHECK_EQUAL(status::StatusNoData,
+    LONGS_EQUAL(status::StatusNoData,
                 sender_encoder.read(address::Iface_AudioSource, pp));
-    CHECK_EQUAL(status::StatusNoData,
+    LONGS_EQUAL(status::StatusNoData,
                 sender_encoder.read(address::Iface_AudioRepair, pp));
 }
 
@@ -125,8 +125,8 @@ TEST(sender_encoder, metrics) {
     CHECK(sender_encoder.get_metrics(write_slot_metrics, &slot_metrics,
                                      write_party_metrics, &party_count, &party_metrics));
 
-    CHECK_EQUAL(0, slot_metrics.num_participants);
-    CHECK_EQUAL(0, party_count);
+    LONGS_EQUAL(0, slot_metrics.num_participants);
+    LONGS_EQUAL(0, party_count);
 }
 
 } // namespace node

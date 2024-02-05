@@ -77,25 +77,25 @@ TEST(timestamp_extractor, single_write) {
 
     // write packet
     packet::PacketPtr wp = new_packet(555, rts, cts);
-    UNSIGNED_LONGS_EQUAL(status::StatusOK, extractor.write(wp));
+    LONGS_EQUAL(status::StatusOK, extractor.write(wp));
 
     // ensure packet was passed to inner writer
-    CHECK_EQUAL(1, queue.size());
+    UNSIGNED_LONGS_EQUAL(1, queue.size());
     packet::PacketPtr rp;
-    UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp));
+    LONGS_EQUAL(status::StatusOK, queue.read(rp));
     CHECK_EQUAL(wp, rp);
 
     // get mapping for exact time
     CHECK_TRUE(extractor.has_mapping());
-    CHECK_EQUAL(rts, extractor.get_mapping(cts));
+    UNSIGNED_LONGS_EQUAL(rts, extractor.get_mapping(cts));
 
     // get mapping for time in future
     CHECK_TRUE(extractor.has_mapping());
-    CHECK_EQUAL(rts + 1000, extractor.get_mapping(cts + core::Second));
+    UNSIGNED_LONGS_EQUAL(rts + 1000, extractor.get_mapping(cts + core::Second));
 
     // get mapping for time in past
     CHECK_TRUE(extractor.has_mapping());
-    CHECK_EQUAL(rts - 1000, extractor.get_mapping(cts - core::Second));
+    UNSIGNED_LONGS_EQUAL(rts - 1000, extractor.get_mapping(cts - core::Second));
 }
 
 TEST(timestamp_extractor, failed_to_write_packet) {
@@ -114,7 +114,7 @@ TEST(timestamp_extractor, failed_to_write_packet) {
         TimestampExtractor extractor(writer, sample_spec);
 
         packet::PacketPtr pp = new_packet(555, 0, 0);
-        UNSIGNED_LONGS_EQUAL(codes[n], extractor.write(pp));
+        LONGS_EQUAL(codes[n], extractor.write(pp));
     }
 }
 

@@ -78,7 +78,7 @@ packet::PacketPtr new_packet(IFrameEncoder& encoder,
 
     encoder.begin(pp->rtp()->payload.data(), pp->rtp()->payload.size());
 
-    CHECK_EQUAL(SamplesPerPacket, encoder.write(samples, SamplesPerPacket));
+    UNSIGNED_LONGS_EQUAL(SamplesPerPacket, encoder.write(samples, SamplesPerPacket));
 
     encoder.end();
 
@@ -110,7 +110,7 @@ void expect_output(Depacketizer& depacketizer,
     CHECK(depacketizer.read(frame));
 
     CHECK(core::ns_equal_delta(frame.capture_timestamp(), capt_ts, core::Microsecond));
-    CHECK_EQUAL(sz * frame_spec.num_channels(), frame.num_raw_samples());
+    UNSIGNED_LONGS_EQUAL(sz * frame_spec.num_channels(), frame.num_raw_samples());
     expect_values(frame.raw_samples(), sz * frame_spec.num_channels(), value);
 }
 
@@ -124,7 +124,7 @@ void expect_flags(Depacketizer& depacketizer,
     Frame frame(buf.data(), buf.size());
     CHECK(depacketizer.read(frame));
 
-    CHECK_EQUAL(flags, frame.flags());
+    UNSIGNED_LONGS_EQUAL(flags, frame.flags());
     if (capt_ts >= 0) {
         CHECK(core::ns_equal_delta(frame.capture_timestamp(), capt_ts, epsilon));
     }
@@ -185,7 +185,7 @@ TEST(depacketizer, one_packet_one_read) {
     Depacketizer dp(queue, decoder, frame_spec, false);
     CHECK(dp.is_valid());
 
-    CHECK_EQUAL(status::StatusOK, queue.write(new_packet(encoder, 0, 0.11f, Now)));
+    LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, 0, 0.11f, Now)));
 
     expect_output(dp, SamplesPerPacket, 0.11f, Now);
 }
@@ -198,7 +198,7 @@ TEST(depacketizer, one_packet_multiple_reads) {
     Depacketizer dp(queue, decoder, frame_spec, false);
     CHECK(dp.is_valid());
 
-    CHECK_EQUAL(status::StatusOK, queue.write(new_packet(encoder, 0, 0.11f, Now)));
+    LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, 0, 0.11f, Now)));
 
     core::nanoseconds_t ts = Now;
     for (size_t n = 0; n < SamplesPerPacket; n++) {
@@ -219,7 +219,7 @@ TEST(depacketizer, multiple_packets_one_read) {
 
     core::nanoseconds_t ts = Now;
     for (packet::stream_timestamp_t n = 0; n < NumPackets; n++) {
-        CHECK_EQUAL(status::StatusOK,
+        LONGS_EQUAL(status::StatusOK,
                     queue.write(new_packet(encoder, n * SamplesPerPacket, 0.11f, ts)));
         ts += NsPerPacket;
     }
@@ -240,20 +240,20 @@ TEST(depacketizer, multiple_packets_multiple_reads) {
     CHECK(dp.is_valid());
 
     // Start with a packet with zero capture timestamp.
-    CHECK_EQUAL(status::StatusOK, queue.write(new_packet(encoder, 0, 0.01f, 0)));
+    LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, 0, 0.01f, 0)));
     const size_t samples_per_frame = SamplesPerPacket / FramesPerPacket;
     for (size_t n = 0; n < FramesPerPacket; n++) {
         expect_output(dp, samples_per_frame, 0.01f, 0);
     }
 
     core::nanoseconds_t ts = Now;
-    CHECK_EQUAL(status::StatusOK,
+    LONGS_EQUAL(status::StatusOK,
                 queue.write(new_packet(encoder, 1 * SamplesPerPacket, 0.11f, ts)));
     ts += NsPerPacket;
-    CHECK_EQUAL(status::StatusOK,
+    LONGS_EQUAL(status::StatusOK,
                 queue.write(new_packet(encoder, 2 * SamplesPerPacket, 0.22f, ts)));
     ts += NsPerPacket;
-    CHECK_EQUAL(status::StatusOK,
+    LONGS_EQUAL(status::StatusOK,
                 queue.write(new_packet(encoder, 3 * SamplesPerPacket, 0.33f, ts)));
 
     ts = Now;
@@ -286,11 +286,11 @@ TEST(depacketizer, timestamp_overflow) {
     const packet::stream_timestamp_t ts3 = ts2 + SamplesPerPacket;
 
     core::nanoseconds_t ts = Now;
-    CHECK_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts1, 0.11f, ts)));
+    LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts1, 0.11f, ts)));
     ts += NsPerPacket;
-    CHECK_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts2, 0.22f, ts)));
+    LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts2, 0.22f, ts)));
     ts += NsPerPacket;
-    CHECK_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts3, 0.33f, ts)));
+    LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts3, 0.33f, ts)));
 
     ts = Now;
     expect_output(dp, SamplesPerPacket, 0.11f, ts);
@@ -315,9 +315,9 @@ TEST(depacketizer, drop_late_packets) {
     const core::nanoseconds_t capt_ts2 = Now;
     const core::nanoseconds_t capt_ts3 = ts1 + NsPerPacket;
 
-    CHECK_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts1, 0.11f, capt_ts1)));
-    CHECK_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts2, 0.22f, capt_ts2)));
-    CHECK_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts3, 0.33f, capt_ts3)));
+    LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts1, 0.11f, capt_ts1)));
+    LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts2, 0.22f, capt_ts2)));
+    LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts3, 0.33f, capt_ts3)));
 
     expect_output(dp, SamplesPerPacket, 0.11f, capt_ts1);
     expect_output(dp, SamplesPerPacket, 0.33f, capt_ts3);
@@ -338,9 +338,9 @@ TEST(depacketizer, drop_late_packets_timestamp_overflow) {
     const core::nanoseconds_t capt_ts2 = Now - NsPerPacket;
     const core::nanoseconds_t capt_ts3 = Now + NsPerPacket;
 
-    CHECK_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts1, 0.11f, capt_ts1)));
-    CHECK_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts2, 0.22f, capt_ts2)));
-    CHECK_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts3, 0.33f, capt_ts3)));
+    LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts1, 0.11f, capt_ts1)));
+    LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts2, 0.22f, capt_ts2)));
+    LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts3, 0.33f, capt_ts3)));
 
     expect_output(dp, SamplesPerPacket, 0.11f, capt_ts1);
     expect_output(dp, SamplesPerPacket, 0.33f, capt_ts3);
@@ -365,7 +365,7 @@ TEST(depacketizer, zeros_no_next_packet) {
     Depacketizer dp(queue, decoder, frame_spec, false);
     CHECK(dp.is_valid());
 
-    CHECK_EQUAL(status::StatusOK, queue.write(new_packet(encoder, 0, 0.11f, 0)));
+    LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, 0, 0.11f, 0)));
 
     expect_output(dp, SamplesPerPacket, 0.11f, 0);
     expect_output(dp, SamplesPerPacket, 0.00f, 0); // no packet -- no ts
@@ -382,9 +382,9 @@ TEST(depacketizer, zeros_between_packets) {
     const core::nanoseconds_t capt_ts1 = Now;
     const core::nanoseconds_t capt_ts2 = Now + NsPerPacket * 2;
 
-    CHECK_EQUAL(status::StatusOK,
+    LONGS_EQUAL(status::StatusOK,
                 queue.write(new_packet(encoder, 1 * SamplesPerPacket, 0.11f, capt_ts1)));
-    CHECK_EQUAL(status::StatusOK,
+    LONGS_EQUAL(status::StatusOK,
                 queue.write(new_packet(encoder, 3 * SamplesPerPacket, 0.33f, capt_ts2)));
 
     expect_output(dp, SamplesPerPacket, 0.11f, Now);
@@ -407,8 +407,8 @@ TEST(depacketizer, zeros_between_packets_timestamp_overflow) {
     const core::nanoseconds_t capt_ts2 = Now;
     const core::nanoseconds_t capt_ts3 = Now + NsPerPacket;
 
-    CHECK_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts1, 0.11f, capt_ts1)));
-    CHECK_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts3, 0.33f, capt_ts3)));
+    LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts1, 0.11f, capt_ts1)));
+    LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts3, 0.33f, capt_ts3)));
 
     expect_output(dp, SamplesPerPacket, 0.11f, capt_ts1);
     expect_output(dp, SamplesPerPacket, 0.000f, capt_ts2);
@@ -425,7 +425,7 @@ TEST(depacketizer, zeros_after_packet) {
     Depacketizer dp(queue, decoder, frame_spec, false);
     CHECK(dp.is_valid());
 
-    CHECK_EQUAL(status::StatusOK, queue.write(new_packet(encoder, 0, 0.11f, Now)));
+    LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, 0, 0.11f, Now)));
 
     core::Slice<sample_t> b1 = new_buffer(SamplesPerPacket / 2);
     core::Slice<sample_t> b2 = new_buffer(SamplesPerPacket);
@@ -454,7 +454,7 @@ TEST(depacketizer, packet_after_zeros) {
 
     expect_output(dp, SamplesPerPacket, 0.00f, 0);
 
-    CHECK_EQUAL(status::StatusOK, queue.write(new_packet(encoder, 0, 0.11f, Now)));
+    LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, 0, 0.11f, Now)));
 
     expect_output(dp, SamplesPerPacket, 0.11f, Now);
 }
@@ -477,9 +477,9 @@ TEST(depacketizer, overlapping_packets) {
     const core::nanoseconds_t capt_ts2 = Now + NsPerPacket / 2;
     const core::nanoseconds_t capt_ts3 = Now + NsPerPacket;
 
-    CHECK_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts1, 0.11f, capt_ts1)));
-    CHECK_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts2, 0.22f, capt_ts2)));
-    CHECK_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts3, 0.33f, capt_ts3)));
+    LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts1, 0.11f, capt_ts1)));
+    LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts2, 0.22f, capt_ts2)));
+    LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, ts3, 0.33f, capt_ts3)));
 
     expect_output(dp, SamplesPerPacket, 0.11f, Now);
     expect_output(dp, SamplesPerPacket / 2, 0.22f, Now + NsPerPacket);
@@ -560,7 +560,7 @@ TEST(depacketizer, frame_flags_incompltete_blank) {
 
         for (size_t p = 0; p < PacketsPerFrame; p++) {
             if (packets[n][p] != NULL) {
-                CHECK_EQUAL(status::StatusOK, queue.write(packets[n][p]));
+                LONGS_EQUAL(status::StatusOK, queue.write(packets[n][p]));
             }
         }
 
@@ -595,7 +595,7 @@ TEST(depacketizer, frame_flags_drops) {
     };
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(packets); n++) {
-        CHECK_EQUAL(status::StatusOK, queue.write(packets[n]));
+        LONGS_EQUAL(status::StatusOK, queue.write(packets[n]));
     }
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(frame_flags); n++) {
@@ -626,13 +626,13 @@ TEST(depacketizer, timestamp) {
         capt_ts += frame_spec.samples_per_chan_2_ns(SamplesPerFrame);
 
         CHECK(!dp.is_started());
-        CHECK_EQUAL(0, dp.next_timestamp());
+        UNSIGNED_LONGS_EQUAL(0, dp.next_timestamp());
     }
 
     capt_ts = Now;
     for (size_t n = 0; n < NumPackets; n++) {
         const size_t nsamples = packet::stream_timestamp_t(n * SamplesPerPacket);
-        CHECK_EQUAL(
+        LONGS_EQUAL(
             status::StatusOK,
             queue.write(new_packet(encoder, StartTimestamp + nsamples, 0.1f, capt_ts)));
         capt_ts += frame_spec.samples_per_chan_2_ns(SamplesPerPacket);
@@ -648,7 +648,7 @@ TEST(depacketizer, timestamp) {
         ts += SamplesPerFrame;
 
         CHECK(dp.is_started());
-        CHECK_EQUAL(ts, dp.next_timestamp());
+        UNSIGNED_LONGS_EQUAL(ts, dp.next_timestamp());
     }
 
     for (size_t n = 0; n < NumPackets * FramesPerPacket; n++) {
@@ -658,7 +658,7 @@ TEST(depacketizer, timestamp) {
         ts += SamplesPerFrame;
 
         CHECK(dp.is_started());
-        CHECK_EQUAL(ts, dp.next_timestamp());
+        UNSIGNED_LONGS_EQUAL(ts, dp.next_timestamp());
     }
 }
 
@@ -678,9 +678,9 @@ TEST(depacketizer, timestamp_fract_frame_per_packet) {
 
     core::nanoseconds_t capt_ts = Now + frame_spec.samples_overall_2_ns(SamplesPerPacket);
     // 1st packet in the frame has 0 capture ts, and the next
-    CHECK_EQUAL(status::StatusOK,
+    LONGS_EQUAL(status::StatusOK,
                 queue.write(new_packet(encoder, StartTimestamp, 0.1f, 0)));
-    CHECK_EQUAL(status::StatusOK,
+    LONGS_EQUAL(status::StatusOK,
                 queue.write(new_packet(encoder, StartTimestamp + SamplesPerPacket / NumCh,
                                        0.1f, capt_ts)));
     expect_output(dp, SamplesPerFrame, 0.1f, Now);
@@ -702,7 +702,7 @@ TEST(depacketizer, timestamp_small_non_zero_cts) {
 
     // 1st packet in frame has 0 capture ts
     packet::stream_timestamp_t stream_ts = StartTimestamp;
-    CHECK_EQUAL(status::StatusOK,
+    LONGS_EQUAL(status::StatusOK,
                 queue.write(new_packet(encoder, StartTimestamp, 0.1f, 0)));
     stream_ts += SamplesPerPacket;
 
@@ -710,7 +710,7 @@ TEST(depacketizer, timestamp_small_non_zero_cts) {
     // small value (close to unix epoch)
     core::nanoseconds_t capt_ts = StartCts;
     for (size_t n = 1; n < PacketsPerFrame; n++) {
-        CHECK_EQUAL(status::StatusOK,
+        LONGS_EQUAL(status::StatusOK,
                     queue.write(new_packet(encoder, stream_ts, 0.1f, capt_ts)));
         stream_ts += SamplesPerPacket;
         capt_ts += frame_spec.samples_overall_2_ns(SamplesPerPacket);
@@ -721,7 +721,7 @@ TEST(depacketizer, timestamp_small_non_zero_cts) {
 
     // second frame
     for (size_t n = 0; n < PacketsPerFrame; n++) {
-        CHECK_EQUAL(status::StatusOK,
+        LONGS_EQUAL(status::StatusOK,
                     queue.write(new_packet(encoder, stream_ts, 0.2f, capt_ts)));
         stream_ts += SamplesPerPacket;
         capt_ts += frame_spec.samples_overall_2_ns(SamplesPerPacket);
@@ -751,18 +751,18 @@ TEST(depacketizer, read_after_error) {
         Depacketizer dp(reader, decoder, frame_spec, false);
         CHECK(dp.is_valid());
 
-        CHECK_EQUAL(status::StatusOK, queue.write(new_packet(encoder, 0, 0.11f, Now)));
+        LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, 0, 0.11f, Now)));
 
-        CHECK_EQUAL(0, reader.call_count());
+        UNSIGNED_LONGS_EQUAL(0, reader.call_count());
 
         reader.enable_status_code(codes[n]);
         expect_output(dp, SamplesPerPacket, 0.00f, 0);
-        CHECK_EQUAL(1, reader.call_count());
+        UNSIGNED_LONGS_EQUAL(1, reader.call_count());
         CHECK(dp.is_valid());
 
         reader.disable_status_code();
         expect_output(dp, SamplesPerPacket, 0.11f, Now);
-        CHECK_EQUAL(2, reader.call_count());
+        UNSIGNED_LONGS_EQUAL(2, reader.call_count());
         CHECK(dp.is_valid());
     }
 }

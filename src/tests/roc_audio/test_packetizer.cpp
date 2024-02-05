@@ -75,29 +75,29 @@ public:
 
     void read(packet::IReader& reader, size_t n_samples) {
         packet::PacketPtr pp;
-        CHECK_EQUAL(status::StatusOK, reader.read(pp));
+        LONGS_EQUAL(status::StatusOK, reader.read(pp));
         CHECK(pp);
 
-        CHECK_EQUAL(packet::Packet::FlagRTP | packet::Packet::FlagAudio
-                        | packet::Packet::FlagPrepared,
-                    pp->flags());
+        UNSIGNED_LONGS_EQUAL(packet::Packet::FlagRTP | packet::Packet::FlagAudio
+                                 | packet::Packet::FlagPrepared,
+                             pp->flags());
 
         if (pos_ == 0) {
             src_ = pp->rtp()->source_id;
             sn_ = pp->rtp()->seqnum;
             ts_ = pp->rtp()->stream_timestamp;
         } else {
-            CHECK_EQUAL(src_, pp->rtp()->source_id);
-            CHECK_EQUAL(sn_, pp->rtp()->seqnum);
-            CHECK_EQUAL(ts_, pp->rtp()->stream_timestamp);
+            UNSIGNED_LONGS_EQUAL(src_, pp->rtp()->source_id);
+            UNSIGNED_LONGS_EQUAL(sn_, pp->rtp()->seqnum);
+            UNSIGNED_LONGS_EQUAL(ts_, pp->rtp()->stream_timestamp);
         }
         CHECK(core::ns_equal_delta(pp->rtp()->capture_timestamp, capture_ts_,
                                    core::Microsecond));
         if (capture_ts_) {
             capture_ts_ += frame_spec.samples_per_chan_2_ns(n_samples);
         }
-        CHECK_EQUAL(n_samples, pp->rtp()->duration);
-        CHECK_EQUAL(PayloadType, pp->rtp()->payload_type);
+        UNSIGNED_LONGS_EQUAL(n_samples, pp->rtp()->duration);
+        UNSIGNED_LONGS_EQUAL(PayloadType, pp->rtp()->payload_type);
 
         CHECK(pp->rtp()->header);
         CHECK(pp->rtp()->payload);
@@ -107,7 +107,7 @@ public:
 
         sample_t samples[SamplesPerPacket * NumCh] = {};
 
-        CHECK_EQUAL(n_samples, payload_decoder_.read(samples, SamplesPerPacket));
+        LONGS_EQUAL(n_samples, payload_decoder_.read(samples, SamplesPerPacket));
 
         payload_decoder_.end();
 
@@ -193,11 +193,11 @@ TEST(packetizer, one_buffer_one_packet) {
     PacketChecker packet_checker(decoder);
 
     for (size_t fn = 0; fn < NumFrames; fn++) {
-        CHECK_EQUAL(0, packet_queue.size());
+        UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
 
         frame_maker.write(packetizer, SamplesPerPacket);
 
-        CHECK_EQUAL(1, packet_queue.size());
+        UNSIGNED_LONGS_EQUAL(1, packet_queue.size());
 
         packet_checker.read(packet_queue, SamplesPerPacket);
     }
@@ -225,7 +225,7 @@ TEST(packetizer, one_buffer_multiple_packets) {
         packet_checker.read(packet_queue, SamplesPerPacket);
     }
 
-    CHECK_EQUAL(0, packet_queue.size());
+    UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
 }
 
 TEST(packetizer, multiple_buffers_one_packet) {
@@ -248,12 +248,12 @@ TEST(packetizer, multiple_buffers_one_packet) {
 
     for (size_t pn = 0; pn < NumPackets; pn++) {
         for (size_t fn = 0; fn < FramesPerPacket; fn++) {
-            CHECK_EQUAL(0, packet_queue.size());
+            UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
 
             frame_maker.write(packetizer, SamplesPerPacket / FramesPerPacket);
         }
 
-        CHECK_EQUAL(1, packet_queue.size());
+        UNSIGNED_LONGS_EQUAL(1, packet_queue.size());
 
         packet_checker.read(packet_queue, SamplesPerPacket);
     }
@@ -287,7 +287,7 @@ TEST(packetizer, multiple_buffers_multiple_packets) {
         packet_checker.read(packet_queue, SamplesPerPacket);
     }
 
-    CHECK_EQUAL(0, packet_queue.size());
+    UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
 }
 
 TEST(packetizer, flush) {
@@ -311,7 +311,7 @@ TEST(packetizer, flush) {
         frame_maker.write(packetizer, SamplesPerPacket);
         frame_maker.write(packetizer, SamplesPerPacket - Missing);
 
-        CHECK_EQUAL(2, packet_queue.size());
+        UNSIGNED_LONGS_EQUAL(2, packet_queue.size());
 
         packet_checker.read(packet_queue, SamplesPerPacket);
         packet_checker.read(packet_queue, SamplesPerPacket);
@@ -320,7 +320,7 @@ TEST(packetizer, flush) {
 
         packet_checker.read(packet_queue, SamplesPerPacket - Missing);
 
-        CHECK_EQUAL(0, packet_queue.size());
+        UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
     }
 }
 
@@ -354,7 +354,7 @@ TEST(packetizer, timestamp_zero_cts) {
         packet_checker.read(packet_queue, SamplesPerPacket);
     }
 
-    CHECK_EQUAL(0, packet_queue.size());
+    UNSIGNED_LONGS_EQUAL(0, packet_queue.size());
 }
 
 TEST(packetizer, metrics) {
@@ -375,9 +375,9 @@ TEST(packetizer, metrics) {
 
         const PacketizerMetrics metrics = packetizer.metrics();
 
-        CHECK_EQUAL(pn + 1, metrics.packet_count);
-        CHECK_EQUAL((pn + 1) * SamplesPerPacket * NumCh * sizeof(int16_t),
-                    metrics.payload_count);
+        UNSIGNED_LONGS_EQUAL(pn + 1, metrics.packet_count);
+        UNSIGNED_LONGS_EQUAL((pn + 1) * SamplesPerPacket * NumCh * sizeof(int16_t),
+                             metrics.payload_count);
     }
 }
 

@@ -61,8 +61,8 @@ TEST(link_meter, has_metrics) {
 
     CHECK(!meter.has_metrics());
 
-    CHECK_EQUAL(status::StatusOK, meter.write(new_packet(100)));
-    CHECK_EQUAL(1, queue.size());
+    LONGS_EQUAL(status::StatusOK, meter.write(new_packet(100)));
+    UNSIGNED_LONGS_EQUAL(1, queue.size());
 
     CHECK(meter.has_metrics());
 }
@@ -72,24 +72,24 @@ TEST(link_meter, last_seqnum) {
     LinkMeter meter(encoding_map);
     meter.set_writer(queue);
 
-    CHECK_EQUAL(0, meter.metrics().ext_last_seqnum);
+    UNSIGNED_LONGS_EQUAL(0, meter.metrics().ext_last_seqnum);
 
-    CHECK_EQUAL(status::StatusOK, meter.write(new_packet(100)));
-    CHECK_EQUAL(100, meter.metrics().ext_last_seqnum);
+    LONGS_EQUAL(status::StatusOK, meter.write(new_packet(100)));
+    UNSIGNED_LONGS_EQUAL(100, meter.metrics().ext_last_seqnum);
 
     // seqnum increased, metric updated
-    CHECK_EQUAL(status::StatusOK, meter.write(new_packet(102)));
-    CHECK_EQUAL(102, meter.metrics().ext_last_seqnum);
+    LONGS_EQUAL(status::StatusOK, meter.write(new_packet(102)));
+    UNSIGNED_LONGS_EQUAL(102, meter.metrics().ext_last_seqnum);
 
     // seqnum decreased, ignored
-    CHECK_EQUAL(status::StatusOK, meter.write(new_packet(101)));
-    CHECK_EQUAL(102, meter.metrics().ext_last_seqnum);
+    LONGS_EQUAL(status::StatusOK, meter.write(new_packet(101)));
+    UNSIGNED_LONGS_EQUAL(102, meter.metrics().ext_last_seqnum);
 
     // seqnum increased, metric updated
-    CHECK_EQUAL(status::StatusOK, meter.write(new_packet(103)));
-    CHECK_EQUAL(103, meter.metrics().ext_last_seqnum);
+    LONGS_EQUAL(status::StatusOK, meter.write(new_packet(103)));
+    UNSIGNED_LONGS_EQUAL(103, meter.metrics().ext_last_seqnum);
 
-    CHECK_EQUAL(4, queue.size());
+    UNSIGNED_LONGS_EQUAL(4, queue.size());
 }
 
 TEST(link_meter, last_seqnum_wrap) {
@@ -97,29 +97,29 @@ TEST(link_meter, last_seqnum_wrap) {
     LinkMeter meter(encoding_map);
     meter.set_writer(queue);
 
-    CHECK_EQUAL(0, meter.metrics().ext_last_seqnum);
+    UNSIGNED_LONGS_EQUAL(0, meter.metrics().ext_last_seqnum);
 
     // no overflow
-    CHECK_EQUAL(status::StatusOK, meter.write(new_packet(65533)));
-    CHECK_EQUAL(65533, meter.metrics().ext_last_seqnum);
+    LONGS_EQUAL(status::StatusOK, meter.write(new_packet(65533)));
+    UNSIGNED_LONGS_EQUAL(65533, meter.metrics().ext_last_seqnum);
 
     // no overflow
-    CHECK_EQUAL(status::StatusOK, meter.write(new_packet(65535)));
-    CHECK_EQUAL(65535, meter.metrics().ext_last_seqnum);
+    LONGS_EQUAL(status::StatusOK, meter.write(new_packet(65535)));
+    UNSIGNED_LONGS_EQUAL(65535, meter.metrics().ext_last_seqnum);
 
     // overflow
-    CHECK_EQUAL(status::StatusOK, meter.write(new_packet(2)));
-    CHECK_EQUAL(65537, meter.metrics().ext_last_seqnum);
+    LONGS_EQUAL(status::StatusOK, meter.write(new_packet(2)));
+    UNSIGNED_LONGS_EQUAL(65537, meter.metrics().ext_last_seqnum);
 
     // late packet, ignored
-    CHECK_EQUAL(status::StatusOK, meter.write(new_packet(65534)));
-    CHECK_EQUAL(65537, meter.metrics().ext_last_seqnum);
+    LONGS_EQUAL(status::StatusOK, meter.write(new_packet(65534)));
+    UNSIGNED_LONGS_EQUAL(65537, meter.metrics().ext_last_seqnum);
 
     // new packet
-    CHECK_EQUAL(status::StatusOK, meter.write(new_packet(5)));
-    CHECK_EQUAL(65540, meter.metrics().ext_last_seqnum);
+    LONGS_EQUAL(status::StatusOK, meter.write(new_packet(5)));
+    UNSIGNED_LONGS_EQUAL(65540, meter.metrics().ext_last_seqnum);
 
-    CHECK_EQUAL(5, queue.size());
+    UNSIGNED_LONGS_EQUAL(5, queue.size());
 }
 
 TEST(link_meter, forward_error) {
@@ -127,7 +127,7 @@ TEST(link_meter, forward_error) {
     LinkMeter meter(encoding_map);
     meter.set_writer(writer);
 
-    CHECK_EQUAL(status::StatusNoMem, meter.write(new_packet(100)));
+    LONGS_EQUAL(status::StatusNoMem, meter.write(new_packet(100)));
 }
 
 } // namespace rtp

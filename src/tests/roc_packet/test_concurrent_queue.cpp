@@ -41,7 +41,7 @@ struct TestWriter : core::Thread {
 
     virtual void run() {
         core::sleep_for(core::ClockMonotonic, core::Microsecond * 10);
-        CHECK_EQUAL(status::StatusOK, queue.write(packet));
+        LONGS_EQUAL(status::StatusOK, queue.write(packet));
     }
 };
 
@@ -54,10 +54,10 @@ TEST(concurrent_queue, blocking_queue_write_one_read_one) {
 
     for (size_t i = 0; i < 100; i++) {
         PacketPtr wp = new_packet();
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, queue.read(rp));
+        LONGS_EQUAL(status::StatusOK, queue.read(rp));
         CHECK(wp == rp);
     }
 }
@@ -73,12 +73,12 @@ TEST(concurrent_queue, blocking_queue_write_many_read_many) {
         }
 
         for (size_t j = 0; j < ROC_ARRAY_SIZE(packets); j++) {
-            CHECK_EQUAL(status::StatusOK, queue.write(packets[j]));
+            LONGS_EQUAL(status::StatusOK, queue.write(packets[j]));
         }
 
         for (size_t j = 0; j < ROC_ARRAY_SIZE(packets); j++) {
             PacketPtr pp;
-            CHECK_EQUAL(status::StatusOK, queue.read(pp));
+            LONGS_EQUAL(status::StatusOK, queue.read(pp));
             CHECK(pp == packets[j]);
         }
     }
@@ -95,7 +95,7 @@ TEST(concurrent_queue, blocking_queue_read_empty) {
         writer.join();
 
         PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, queue.read(rp));
+        LONGS_EQUAL(status::StatusOK, queue.read(rp));
         CHECK(wp == rp);
     }
 }
@@ -105,10 +105,10 @@ TEST(concurrent_queue, nonblocking_queue_write_one_read_one) {
 
     for (size_t i = 0; i < 100; i++) {
         PacketPtr wp = new_packet();
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, queue.read(rp));
+        LONGS_EQUAL(status::StatusOK, queue.read(rp));
         CHECK(wp == rp);
     }
 }
@@ -124,12 +124,12 @@ TEST(concurrent_queue, nonblocking_queue_write_many_read_many) {
         }
 
         for (size_t j = 0; j < ROC_ARRAY_SIZE(packets); j++) {
-            CHECK_EQUAL(status::StatusOK, queue.write(packets[j]));
+            LONGS_EQUAL(status::StatusOK, queue.write(packets[j]));
         }
 
         for (size_t j = 0; j < ROC_ARRAY_SIZE(packets); j++) {
             PacketPtr pp;
-            CHECK_EQUAL(status::StatusOK, queue.read(pp));
+            LONGS_EQUAL(status::StatusOK, queue.read(pp));
             CHECK(pp == packets[j]);
         }
     }
@@ -140,14 +140,14 @@ TEST(concurrent_queue, nonblocking_queue_read_empty) {
 
     for (size_t i = 0; i < 100; i++) {
         PacketPtr wp = new_packet();
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, queue.read(rp));
+        LONGS_EQUAL(status::StatusOK, queue.read(rp));
         CHECK(wp == rp);
 
         PacketPtr pp;
-        CHECK_EQUAL(status::StatusNoData, queue.read(pp));
+        LONGS_EQUAL(status::StatusNoData, queue.read(pp));
         CHECK(!pp);
     }
 }

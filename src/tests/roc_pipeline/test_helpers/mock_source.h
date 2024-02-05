@@ -124,7 +124,7 @@ public:
         if (!n_ch_) {
             n_ch_ = sample_spec.num_channels();
         }
-        CHECK_EQUAL(n_ch_, sample_spec.num_channels());
+        LONGS_EQUAL(n_ch_, sample_spec.num_channels());
     }
 
     size_t num_remaining() const {

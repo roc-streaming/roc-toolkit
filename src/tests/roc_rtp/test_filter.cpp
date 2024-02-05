@@ -665,7 +665,7 @@ TEST(filter, duration_zero) {
     CHECK(rp);
     CHECK(wp == rp);
 
-    CHECK_EQUAL(expected_duration, rp->rtp()->duration);
+    UNSIGNED_LONGS_EQUAL(expected_duration, rp->rtp()->duration);
 }
 
 TEST(filter, duration_non_zero) {
@@ -683,7 +683,7 @@ TEST(filter, duration_non_zero) {
     CHECK(rp);
     CHECK(wp == rp);
 
-    CHECK_EQUAL(duration, rp->rtp()->duration);
+    UNSIGNED_LONGS_EQUAL(duration, rp->rtp()->duration);
 }
 
 TEST(filter, flags) {

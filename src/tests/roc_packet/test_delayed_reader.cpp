@@ -74,7 +74,7 @@ TEST(delayed_reader, failed_to_read_packet) {
         CHECK(dr.is_valid());
 
         PacketPtr pp;
-        CHECK_EQUAL(codes[n], dr.read(pp));
+        LONGS_EQUAL(codes[n], dr.read(pp));
         CHECK(!pp);
     }
 }
@@ -85,15 +85,15 @@ TEST(delayed_reader, no_delay) {
     CHECK(dr.is_valid());
 
     PacketPtr pp;
-    CHECK_EQUAL(status::StatusNoData, dr.read(pp));
+    LONGS_EQUAL(status::StatusNoData, dr.read(pp));
     CHECK(!pp);
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         PacketPtr wp = new_packet(n);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, dr.read(rp));
+        LONGS_EQUAL(status::StatusOK, dr.read(rp));
         CHECK(wp == rp);
     }
 }
@@ -107,33 +107,33 @@ TEST(delayed_reader, delay) {
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         PacketPtr p;
-        CHECK_EQUAL(status::StatusNoData, dr.read(p));
+        LONGS_EQUAL(status::StatusNoData, dr.read(p));
         CHECK(!p);
 
         packets[n] = new_packet(n);
-        CHECK_EQUAL(status::StatusOK, queue.write(packets[n]));
+        LONGS_EQUAL(status::StatusOK, queue.write(packets[n]));
     }
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         PacketPtr p;
-        CHECK_EQUAL(status::StatusOK, dr.read(p));
+        LONGS_EQUAL(status::StatusOK, dr.read(p));
         CHECK(p == packets[n]);
     }
 
     PacketPtr pp;
-    CHECK_EQUAL(status::StatusNoData, dr.read(pp));
+    LONGS_EQUAL(status::StatusNoData, dr.read(pp));
     CHECK(!pp);
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         PacketPtr wp = new_packet(NumPackets + n);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, dr.read(rp));
+        LONGS_EQUAL(status::StatusOK, dr.read(rp));
         CHECK(wp == rp);
     }
 
-    CHECK_EQUAL(status::StatusNoData, dr.read(pp));
+    LONGS_EQUAL(status::StatusNoData, dr.read(pp));
     CHECK(!pp);
 }
 
@@ -146,17 +146,17 @@ TEST(delayed_reader, instant) {
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         packets[n] = new_packet(n);
-        CHECK_EQUAL(status::StatusOK, queue.write(packets[n]));
+        LONGS_EQUAL(status::StatusOK, queue.write(packets[n]));
     }
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         PacketPtr p;
-        CHECK_EQUAL(status::StatusOK, dr.read(p));
+        LONGS_EQUAL(status::StatusOK, dr.read(p));
         CHECK(p == packets[n]);
     }
 
     PacketPtr pp;
-    CHECK_EQUAL(status::StatusNoData, dr.read(pp));
+    LONGS_EQUAL(status::StatusNoData, dr.read(pp));
     CHECK(!pp);
 }
 
@@ -169,17 +169,17 @@ TEST(delayed_reader, trim) {
 
     for (seqnum_t n = 0; n < NumPackets * 2; n++) {
         packets[n] = new_packet(n);
-        CHECK_EQUAL(status::StatusOK, queue.write(packets[n]));
+        LONGS_EQUAL(status::StatusOK, queue.write(packets[n]));
     }
 
     for (seqnum_t n = NumPackets; n < NumPackets * 2; n++) {
         PacketPtr p;
-        CHECK_EQUAL(status::StatusOK, dr.read(p));
+        LONGS_EQUAL(status::StatusOK, dr.read(p));
         CHECK(p == packets[n]);
     }
 
     PacketPtr pp;
-    CHECK_EQUAL(status::StatusNoData, dr.read(pp));
+    LONGS_EQUAL(status::StatusNoData, dr.read(pp));
     CHECK(!pp);
 }
 
@@ -192,26 +192,26 @@ TEST(delayed_reader, late_duplicates) {
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         packets[n] = new_packet(n);
-        CHECK_EQUAL(status::StatusOK, queue.write(packets[n]));
+        LONGS_EQUAL(status::StatusOK, queue.write(packets[n]));
     }
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         PacketPtr p;
-        CHECK_EQUAL(status::StatusOK, dr.read(p));
+        LONGS_EQUAL(status::StatusOK, dr.read(p));
         CHECK(p == packets[n]);
     }
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         PacketPtr wp = new_packet(n);
-        CHECK_EQUAL(status::StatusOK, queue.write(wp));
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         PacketPtr rp;
-        CHECK_EQUAL(status::StatusOK, dr.read(rp));
+        LONGS_EQUAL(status::StatusOK, dr.read(rp));
         CHECK(wp == rp);
     }
 
     PacketPtr pp;
-    CHECK_EQUAL(status::StatusNoData, dr.read(pp));
+    LONGS_EQUAL(status::StatusNoData, dr.read(pp));
     CHECK(!pp);
 }
 

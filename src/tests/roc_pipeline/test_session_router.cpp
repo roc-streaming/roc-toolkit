@@ -73,19 +73,19 @@ TEST_GROUP(session_router) {
 TEST(session_router, add_session_remove_session) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(0, router.num_routes());
+    LONGS_EQUAL(0, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_address(addr1));
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
 
     router.remove_session(sess1);
 
-    CHECK_EQUAL(0, router.num_routes());
+    LONGS_EQUAL(0, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_address(addr1));
 }
@@ -93,23 +93,23 @@ TEST(session_router, add_session_remove_session) {
 TEST(session_router, two_sessions) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(0, router.num_routes());
+    LONGS_EQUAL(0, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_address(addr1));
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr2));
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr2));
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess2, ssrc2, addr2));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess2, ssrc2, addr2));
 
-    CHECK_EQUAL(2, router.num_routes());
+    LONGS_EQUAL(2, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess2);
@@ -119,28 +119,28 @@ TEST(session_router, two_sessions) {
 TEST(session_router, add_session_link_ssrc) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(0, router.num_routes());
+    LONGS_EQUAL(0, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr1));
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(!router.find_by_source(ssrc2));
     CHECK(router.find_by_address(addr1) == sess1);
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(!router.find_by_source(ssrc2));
     CHECK(router.find_by_address(addr1) == sess1);
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
@@ -149,17 +149,17 @@ TEST(session_router, add_session_link_ssrc) {
 TEST(session_router, link_ssrc_add_session) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr1));
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
@@ -168,23 +168,23 @@ TEST(session_router, link_ssrc_add_session) {
 TEST(session_router, link_main_add_session_link_extra) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr1));
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(!router.find_by_source(ssrc2));
     CHECK(router.find_by_address(addr1) == sess1);
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
@@ -193,23 +193,23 @@ TEST(session_router, link_main_add_session_link_extra) {
 TEST(session_router, link_extra_add_session_link_main) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr1));
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(2, router.num_routes());
+    LONGS_EQUAL(2, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(!router.find_by_source(ssrc2));
     CHECK(router.find_by_address(addr1) == sess1);
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
@@ -218,26 +218,26 @@ TEST(session_router, link_extra_add_session_link_main) {
 TEST(session_router, link_two_extra_add_session_link_main) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc3, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc3, cname1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_source(ssrc3));
     CHECK(!router.find_by_address(addr1));
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(2, router.num_routes());
+    LONGS_EQUAL(2, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_source(ssrc3));
     CHECK(router.find_by_address(addr1) == sess1);
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess1);
     CHECK(router.find_by_source(ssrc3) == sess1);
@@ -247,29 +247,29 @@ TEST(session_router, link_two_extra_add_session_link_main) {
 TEST(session_router, add_session_link_ssrc_remove_session) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(0, router.num_routes());
+    LONGS_EQUAL(0, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr1));
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(!router.find_by_source(ssrc2));
     CHECK(router.find_by_address(addr1) == sess1);
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
 
     router.remove_session(sess1);
 
-    CHECK_EQUAL(0, router.num_routes());
+    LONGS_EQUAL(0, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr1));
@@ -278,24 +278,24 @@ TEST(session_router, add_session_link_ssrc_remove_session) {
 TEST(session_router, add_session_link_ssrc_unlink_main) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(!router.find_by_source(ssrc2));
     CHECK(router.find_by_address(addr1) == sess1);
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
 
     router.unlink_source(ssrc1);
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(router.find_by_source(ssrc2) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
@@ -304,24 +304,24 @@ TEST(session_router, add_session_link_ssrc_unlink_main) {
 TEST(session_router, add_session_link_ssrc_unlink_extra) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(!router.find_by_source(ssrc2));
     CHECK(router.find_by_address(addr1) == sess1);
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
 
     router.unlink_source(ssrc2);
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(!router.find_by_source(ssrc2));
     CHECK(router.find_by_address(addr1) == sess1);
@@ -330,24 +330,24 @@ TEST(session_router, add_session_link_ssrc_unlink_extra) {
 TEST(session_router, link_ssrc_unlink_main_add_session) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr1));
 
     router.unlink_source(ssrc1);
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr1));
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(2, router.num_routes());
+    LONGS_EQUAL(2, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(!router.find_by_source(ssrc2));
     CHECK(router.find_by_address(addr1) == sess1);
@@ -356,24 +356,24 @@ TEST(session_router, link_ssrc_unlink_main_add_session) {
 TEST(session_router, link_ssrc_unlink_extra_add_session) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr1));
 
     router.unlink_source(ssrc2);
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr1));
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(!router.find_by_source(ssrc2));
     CHECK(router.find_by_address(addr1) == sess1);
@@ -382,30 +382,30 @@ TEST(session_router, link_ssrc_unlink_extra_add_session) {
 TEST(session_router, add_session_remove_session_link_ssrc_add_session) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(0, router.num_routes());
+    LONGS_EQUAL(0, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr1));
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
     router.remove_session(sess1);
 
-    CHECK_EQUAL(0, router.num_routes());
+    LONGS_EQUAL(0, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr1));
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr1));
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
@@ -414,20 +414,20 @@ TEST(session_router, add_session_remove_session_link_ssrc_add_session) {
 TEST(session_router, link_twice_before_add_session) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr1));
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
@@ -436,20 +436,20 @@ TEST(session_router, link_twice_before_add_session) {
 TEST(session_router, link_twice_after_add_session) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(!router.find_by_source(ssrc2));
     CHECK(router.find_by_address(addr1) == sess1);
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
@@ -458,20 +458,20 @@ TEST(session_router, link_twice_after_add_session) {
 TEST(session_router, link_twice_around_add_session) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
@@ -480,13 +480,13 @@ TEST(session_router, link_twice_around_add_session) {
 TEST(session_router, relink_main_ssrc_from_old_cname_to_existing_cname) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname2));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname2));
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess2, ssrc2, addr2));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess2, ssrc2, addr2));
 
-    CHECK_EQUAL(2, router.num_routes());
+    LONGS_EQUAL(2, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess2);
@@ -494,9 +494,9 @@ TEST(session_router, relink_main_ssrc_from_old_cname_to_existing_cname) {
 
     // ssrc1 switches from cname1 to cname2
     // ssrc1 was used with add_session(), so its session also moves to cname2
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname2));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname2));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess1); // updated
@@ -506,14 +506,14 @@ TEST(session_router, relink_main_ssrc_from_old_cname_to_existing_cname) {
 TEST(session_router, relink_extra_ssrc_from_old_cname_to_existing_cname) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname2));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc3, cname2));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname2));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc3, cname2));
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess2, ssrc2, addr2));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess2, ssrc2, addr2));
 
-    CHECK_EQUAL(2, router.num_routes());
+    LONGS_EQUAL(2, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess2);
@@ -522,9 +522,9 @@ TEST(session_router, relink_extra_ssrc_from_old_cname_to_existing_cname) {
 
     // ssrc3 switches from cname2 to cname1
     // ssrc3 was not used with add_session(), so cname1 keeps its session
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc3, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc3, cname1));
 
-    CHECK_EQUAL(2, router.num_routes());
+    LONGS_EQUAL(2, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess2);
@@ -535,13 +535,13 @@ TEST(session_router, relink_extra_ssrc_from_old_cname_to_existing_cname) {
 TEST(session_router, relink_main_ssrc_from_old_cname_to_nonexistent_cname) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc3, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc3, cname1));
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess1);
     CHECK(router.find_by_source(ssrc3) == sess1);
@@ -550,10 +550,10 @@ TEST(session_router, relink_main_ssrc_from_old_cname_to_nonexistent_cname) {
 
     // ssrc1 switches from cname1 to cname2 (which didn't exist yet)
     // ssrc1 was used with add_session(), so its session also moves to cname2
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname2));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname2));
 
     // ssrc2 and ssrc3 remain linked to cname1, without session
-    CHECK_EQUAL(2, router.num_routes());
+    LONGS_EQUAL(2, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_source(ssrc3));
@@ -561,9 +561,9 @@ TEST(session_router, relink_main_ssrc_from_old_cname_to_nonexistent_cname) {
     CHECK(!router.find_by_address(addr2));
 
     // link new session to ssrc3 (and so ssrc2 too)
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess2, ssrc3, addr2));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess2, ssrc3, addr2));
 
-    CHECK_EQUAL(2, router.num_routes());
+    LONGS_EQUAL(2, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess2);
     CHECK(router.find_by_source(ssrc3) == sess2);
@@ -574,13 +574,13 @@ TEST(session_router, relink_main_ssrc_from_old_cname_to_nonexistent_cname) {
 TEST(session_router, relink_extra_ssrc_from_old_cname_to_nonexistent_cname) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc3, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc3, cname1));
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess1);
     CHECK(router.find_by_source(ssrc3) == sess1);
@@ -589,10 +589,10 @@ TEST(session_router, relink_extra_ssrc_from_old_cname_to_nonexistent_cname) {
 
     // ssrc2 and ssrc3 switch from cname1 to cname2 (which didn't exist yet)
     // ssrc2 and ssrc3 weren't used with add_session(), so cname1 keeps its session
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname2));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc3, cname2));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname2));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc3, cname2));
 
-    CHECK_EQUAL(2, router.num_routes());
+    LONGS_EQUAL(2, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_source(ssrc3));
@@ -600,9 +600,9 @@ TEST(session_router, relink_extra_ssrc_from_old_cname_to_nonexistent_cname) {
     CHECK(!router.find_by_address(addr2));
 
     // link new session to ssrc3 (and so ssrc2 too)
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess2, ssrc3, addr2));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess2, ssrc3, addr2));
 
-    CHECK_EQUAL(2, router.num_routes());
+    LONGS_EQUAL(2, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess2);
     CHECK(router.find_by_source(ssrc3) == sess2);
@@ -613,11 +613,11 @@ TEST(session_router, relink_extra_ssrc_from_old_cname_to_nonexistent_cname) {
 TEST(session_router, unlink_ssrc_without_session) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc3, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc3, cname1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_source(ssrc3));
@@ -625,15 +625,15 @@ TEST(session_router, unlink_ssrc_without_session) {
 
     router.unlink_source(ssrc3);
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_source(ssrc3));
     CHECK(!router.find_by_address(addr1));
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess1);
     CHECK(!router.find_by_source(ssrc3));
@@ -643,10 +643,10 @@ TEST(session_router, unlink_ssrc_without_session) {
 TEST(session_router, unlink_ssrc_without_cname) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess2, ssrc2, addr2));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess2, ssrc2, addr2));
 
-    CHECK_EQUAL(2, router.num_routes());
+    LONGS_EQUAL(2, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess2);
@@ -654,7 +654,7 @@ TEST(session_router, unlink_ssrc_without_cname) {
 
     router.unlink_source(ssrc1);
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_address(addr1));
     CHECK(router.find_by_source(ssrc2) == sess2);
@@ -664,26 +664,26 @@ TEST(session_router, unlink_ssrc_without_cname) {
 TEST(session_router, unlink_ssrc_with_session_and_cname) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
 
     router.unlink_source(ssrc1);
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(router.find_by_source(ssrc2) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
 
     router.unlink_source(ssrc2);
 
-    CHECK_EQUAL(0, router.num_routes());
+    LONGS_EQUAL(0, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr1));
@@ -692,9 +692,9 @@ TEST(session_router, unlink_ssrc_with_session_and_cname) {
 TEST(session_router, unlink_nonexistent_ssrc) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
 
@@ -702,14 +702,14 @@ TEST(session_router, unlink_nonexistent_ssrc) {
     router.unlink_source(ssrc2);
 
     // nothing changes
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
 
     // unlink existing
     router.unlink_source(ssrc1);
 
-    CHECK_EQUAL(0, router.num_routes());
+    LONGS_EQUAL(0, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_address(addr1));
 
@@ -717,7 +717,7 @@ TEST(session_router, unlink_nonexistent_ssrc) {
     router.unlink_source(ssrc1);
 
     // nothing changes
-    CHECK_EQUAL(0, router.num_routes());
+    LONGS_EQUAL(0, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_address(addr1));
 }
@@ -725,19 +725,19 @@ TEST(session_router, unlink_nonexistent_ssrc) {
 TEST(session_router, remove_session_with_linked_ssrcs) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
-    CHECK_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc1, cname1));
+    LONGS_EQUAL(status::StatusOK, router.link_source(ssrc2, cname1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_source(ssrc2) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
 
     router.remove_session(sess1);
 
-    CHECK_EQUAL(0, router.num_routes());
+    LONGS_EQUAL(0, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr1));
@@ -746,9 +746,9 @@ TEST(session_router, remove_session_with_linked_ssrcs) {
 TEST(session_router, remove_nonexistent_session) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
 
@@ -756,14 +756,14 @@ TEST(session_router, remove_nonexistent_session) {
     router.remove_session(sess2);
 
     // nothing changes
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
 
     // remove existing
     router.remove_session(sess1);
 
-    CHECK_EQUAL(0, router.num_routes());
+    LONGS_EQUAL(0, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_address(addr1));
 
@@ -771,7 +771,7 @@ TEST(session_router, remove_nonexistent_session) {
     router.remove_session(sess1);
 
     // nothing changes
-    CHECK_EQUAL(0, router.num_routes());
+    LONGS_EQUAL(0, router.num_routes());
     CHECK(!router.find_by_source(ssrc1));
     CHECK(!router.find_by_address(addr1));
 }
@@ -779,17 +779,17 @@ TEST(session_router, remove_nonexistent_session) {
 TEST(session_router, conflict_session_exists) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr2));
 
-    CHECK_EQUAL(status::StatusConflict, router.add_session(sess1, ssrc2, addr2));
+    LONGS_EQUAL(status::StatusConflict, router.add_session(sess1, ssrc2, addr2));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
     CHECK(!router.find_by_source(ssrc2));
@@ -799,17 +799,17 @@ TEST(session_router, conflict_session_exists) {
 TEST(session_router, conflict_address_exists) {
     ReceiverSessionRouter router(arena);
 
-    CHECK_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
+    LONGS_EQUAL(status::StatusOK, router.add_session(sess1, ssrc1, addr1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr2));
 
-    CHECK_EQUAL(status::StatusConflict, router.add_session(sess2, ssrc2, addr1));
+    LONGS_EQUAL(status::StatusConflict, router.add_session(sess2, ssrc2, addr1));
 
-    CHECK_EQUAL(1, router.num_routes());
+    LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
     CHECK(router.find_by_address(addr1) == sess1);
     CHECK(!router.find_by_source(ssrc2));

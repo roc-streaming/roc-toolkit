@@ -97,7 +97,7 @@ TEST(shipper, forward_write_status) {
         Shipper shipper(composer, writer, &address);
 
         PacketPtr pp = new_packet();
-        CHECK_EQUAL(codes[n], shipper.write(pp));
+        LONGS_EQUAL(codes[n], shipper.write(pp));
     }
 }
 
@@ -112,13 +112,13 @@ TEST(shipper, without_address) {
     CHECK((wp->flags() & Packet::FlagUDP) == 0);
     CHECK(!wp->udp());
 
-    CHECK_EQUAL(status::StatusOK, shipper.write(wp));
+    LONGS_EQUAL(status::StatusOK, shipper.write(wp));
 
     CHECK((wp->flags() & Packet::FlagUDP) == 0);
     CHECK(!wp->udp());
 
     packet::PacketPtr rp;
-    CHECK_EQUAL(status::StatusOK, queue.read(rp));
+    LONGS_EQUAL(status::StatusOK, queue.read(rp));
     CHECK(wp == rp);
 }
 
@@ -136,13 +136,13 @@ TEST(shipper, with_address) {
     CHECK((wp->flags() & Packet::FlagUDP) == 0);
     CHECK(!wp->udp());
 
-    CHECK_EQUAL(status::StatusOK, shipper.write(wp));
+    LONGS_EQUAL(status::StatusOK, shipper.write(wp));
 
     CHECK(wp->flags() & Packet::FlagUDP);
     CHECK(address == wp->udp()->dst_addr);
 
     packet::PacketPtr rp;
-    CHECK_EQUAL(status::StatusOK, queue.read(rp));
+    LONGS_EQUAL(status::StatusOK, queue.read(rp));
     CHECK(wp == rp);
 }
 
@@ -157,15 +157,15 @@ TEST(shipper, packet_already_composed) {
     wp->add_flags(Packet::FlagComposed);
 
     CHECK(wp->flags() & Packet::FlagComposed);
-    CHECK_EQUAL(0, composer.compose_call_count);
+    LONGS_EQUAL(0, composer.compose_call_count);
 
-    CHECK_EQUAL(status::StatusOK, shipper.write(wp));
+    LONGS_EQUAL(status::StatusOK, shipper.write(wp));
 
     CHECK(wp->flags() & Packet::FlagComposed);
-    CHECK_EQUAL(0, composer.compose_call_count);
+    LONGS_EQUAL(0, composer.compose_call_count);
 
     packet::PacketPtr rp;
-    CHECK_EQUAL(status::StatusOK, queue.read(rp));
+    LONGS_EQUAL(status::StatusOK, queue.read(rp));
     CHECK(wp == rp);
 }
 
@@ -179,15 +179,15 @@ TEST(shipper, packet_not_composed) {
     PacketPtr wp = new_packet();
 
     CHECK((wp->flags() & Packet::FlagComposed) == 0);
-    CHECK_EQUAL(0, composer.compose_call_count);
+    LONGS_EQUAL(0, composer.compose_call_count);
 
-    CHECK_EQUAL(status::StatusOK, shipper.write(wp));
+    LONGS_EQUAL(status::StatusOK, shipper.write(wp));
 
-    CHECK_EQUAL(1, composer.compose_call_count);
+    LONGS_EQUAL(1, composer.compose_call_count);
     CHECK(wp->flags() & Packet::FlagComposed);
 
     packet::PacketPtr rp;
-    CHECK_EQUAL(status::StatusOK, queue.read(rp));
+    LONGS_EQUAL(status::StatusOK, queue.read(rp));
     CHECK(wp == rp);
 }
 

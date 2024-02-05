@@ -83,7 +83,7 @@ TEST(udp_ports, no_ports) {
     NetworkLoop net_loop(packet_factory, buffer_factory, arena);
     CHECK(net_loop.is_valid());
 
-    CHECK_EQUAL(0, net_loop.num_ports());
+    LONGS_EQUAL(0, net_loop.num_ports());
 }
 
 TEST(udp_ports, add_remove) {
@@ -95,23 +95,23 @@ TEST(udp_ports, add_remove) {
     UdpConfig tx_config = make_udp_config("0.0.0.0", 0);
     UdpConfig rx_config = make_udp_config("0.0.0.0", 0);
 
-    CHECK_EQUAL(0, net_loop.num_ports());
+    LONGS_EQUAL(0, net_loop.num_ports());
 
     NetworkLoop::PortHandle tx_handle = add_port(net_loop, tx_config);
     CHECK(tx_handle);
 
-    CHECK_EQUAL(1, net_loop.num_ports());
+    LONGS_EQUAL(1, net_loop.num_ports());
 
     NetworkLoop::PortHandle rx_handle = add_port(net_loop, rx_config);
     CHECK(rx_handle);
 
-    CHECK_EQUAL(2, net_loop.num_ports());
+    LONGS_EQUAL(2, net_loop.num_ports());
 
     remove_port(net_loop, tx_handle);
-    CHECK_EQUAL(1, net_loop.num_ports());
+    LONGS_EQUAL(1, net_loop.num_ports());
 
     remove_port(net_loop, rx_handle);
-    CHECK_EQUAL(0, net_loop.num_ports());
+    LONGS_EQUAL(0, net_loop.num_ports());
 }
 
 TEST(udp_ports, add_start_remove) {
@@ -123,28 +123,28 @@ TEST(udp_ports, add_start_remove) {
     UdpConfig tx_config = make_udp_config("0.0.0.0", 0);
     UdpConfig rx_config = make_udp_config("0.0.0.0", 0);
 
-    CHECK_EQUAL(0, net_loop.num_ports());
+    LONGS_EQUAL(0, net_loop.num_ports());
 
     NetworkLoop::PortHandle tx_handle = add_port(net_loop, tx_config);
     CHECK(tx_handle);
 
-    CHECK_EQUAL(1, net_loop.num_ports());
+    LONGS_EQUAL(1, net_loop.num_ports());
 
     NetworkLoop::PortHandle rx_handle = add_port(net_loop, rx_config);
     CHECK(rx_handle);
 
-    CHECK_EQUAL(2, net_loop.num_ports());
+    LONGS_EQUAL(2, net_loop.num_ports());
 
     CHECK(start_send(net_loop, tx_handle));
     CHECK(start_recv(net_loop, rx_handle, queue));
 
-    CHECK_EQUAL(2, net_loop.num_ports());
+    LONGS_EQUAL(2, net_loop.num_ports());
 
     remove_port(net_loop, tx_handle);
-    CHECK_EQUAL(1, net_loop.num_ports());
+    LONGS_EQUAL(1, net_loop.num_ports());
 
     remove_port(net_loop, rx_handle);
-    CHECK_EQUAL(0, net_loop.num_ports());
+    LONGS_EQUAL(0, net_loop.num_ports());
 }
 
 TEST(udp_ports, add_remove_add) {
@@ -155,14 +155,14 @@ TEST(udp_ports, add_remove_add) {
 
     NetworkLoop::PortHandle tx_handle = add_port(net_loop, tx_config);
     CHECK(tx_handle);
-    CHECK_EQUAL(1, net_loop.num_ports());
+    LONGS_EQUAL(1, net_loop.num_ports());
 
     remove_port(net_loop, tx_handle);
-    CHECK_EQUAL(0, net_loop.num_ports());
+    LONGS_EQUAL(0, net_loop.num_ports());
 
     tx_handle = add_port(net_loop, tx_config);
     CHECK(tx_handle);
-    CHECK_EQUAL(1, net_loop.num_ports());
+    LONGS_EQUAL(1, net_loop.num_ports());
 }
 
 TEST(udp_ports, add_start_remove_add) {
@@ -173,17 +173,17 @@ TEST(udp_ports, add_start_remove_add) {
 
     NetworkLoop::PortHandle tx_handle = add_port(net_loop, tx_config);
     CHECK(tx_handle);
-    CHECK_EQUAL(1, net_loop.num_ports());
+    LONGS_EQUAL(1, net_loop.num_ports());
 
     CHECK(start_send(net_loop, tx_handle));
-    CHECK_EQUAL(1, net_loop.num_ports());
+    LONGS_EQUAL(1, net_loop.num_ports());
 
     remove_port(net_loop, tx_handle);
-    CHECK_EQUAL(0, net_loop.num_ports());
+    LONGS_EQUAL(0, net_loop.num_ports());
 
     tx_handle = add_port(net_loop, tx_config);
     CHECK(tx_handle);
-    CHECK_EQUAL(1, net_loop.num_ports());
+    LONGS_EQUAL(1, net_loop.num_ports());
 }
 
 TEST(udp_ports, anyaddr) {
@@ -195,24 +195,24 @@ TEST(udp_ports, anyaddr) {
     UdpConfig tx_config = make_udp_config("0.0.0.0", 0);
     UdpConfig rx_config = make_udp_config("0.0.0.0", 0);
 
-    CHECK_EQUAL(0, net_loop.num_ports());
+    LONGS_EQUAL(0, net_loop.num_ports());
 
     NetworkLoop::PortHandle tx_handle = add_port(net_loop, tx_config);
     CHECK(tx_handle);
     CHECK(tx_config.bind_address.port() != 0);
 
-    CHECK_EQUAL(1, net_loop.num_ports());
+    LONGS_EQUAL(1, net_loop.num_ports());
 
     NetworkLoop::PortHandle rx_handle = add_port(net_loop, rx_config);
     CHECK(rx_handle);
     CHECK(rx_config.bind_address.port() != 0);
 
-    CHECK_EQUAL(2, net_loop.num_ports());
+    LONGS_EQUAL(2, net_loop.num_ports());
 
     CHECK(start_send(net_loop, tx_handle));
     CHECK(start_recv(net_loop, rx_handle, queue));
 
-    CHECK_EQUAL(2, net_loop.num_ports());
+    LONGS_EQUAL(2, net_loop.num_ports());
 }
 
 TEST(udp_ports, localhost) {
@@ -224,24 +224,24 @@ TEST(udp_ports, localhost) {
     UdpConfig tx_config = make_udp_config("127.0.0.1", 0);
     UdpConfig rx_config = make_udp_config("127.0.0.1", 0);
 
-    CHECK_EQUAL(0, net_loop.num_ports());
+    LONGS_EQUAL(0, net_loop.num_ports());
 
     NetworkLoop::PortHandle tx_handle = add_port(net_loop, tx_config);
     CHECK(tx_handle);
     CHECK(tx_config.bind_address.port() != 0);
 
-    CHECK_EQUAL(1, net_loop.num_ports());
+    LONGS_EQUAL(1, net_loop.num_ports());
 
     NetworkLoop::PortHandle rx_handle = add_port(net_loop, rx_config);
     CHECK(rx_handle);
     CHECK(rx_config.bind_address.port() != 0);
 
-    CHECK_EQUAL(2, net_loop.num_ports());
+    LONGS_EQUAL(2, net_loop.num_ports());
 
     CHECK(start_send(net_loop, tx_handle));
     CHECK(start_recv(net_loop, rx_handle, queue));
 
-    CHECK_EQUAL(2, net_loop.num_ports());
+    LONGS_EQUAL(2, net_loop.num_ports());
 }
 
 TEST(udp_ports, addrinuse) {
@@ -253,35 +253,35 @@ TEST(udp_ports, addrinuse) {
     UdpConfig tx_config = make_udp_config("127.0.0.1", 0);
     UdpConfig rx_config = make_udp_config("127.0.0.1", 0);
 
-    CHECK_EQUAL(0, net_loop1.num_ports());
+    LONGS_EQUAL(0, net_loop1.num_ports());
 
     NetworkLoop::PortHandle tx_handle = add_port(net_loop1, tx_config);
     CHECK(tx_handle);
     CHECK(tx_config.bind_address.port() != 0);
 
-    CHECK_EQUAL(1, net_loop1.num_ports());
+    LONGS_EQUAL(1, net_loop1.num_ports());
 
     NetworkLoop::PortHandle rx_handle = add_port(net_loop1, rx_config);
     CHECK(rx_handle);
     CHECK(rx_config.bind_address.port() != 0);
 
-    CHECK_EQUAL(2, net_loop1.num_ports());
+    LONGS_EQUAL(2, net_loop1.num_ports());
 
     CHECK(start_send(net_loop1, tx_handle));
     CHECK(start_recv(net_loop1, rx_handle, queue));
 
-    CHECK_EQUAL(2, net_loop1.num_ports());
+    LONGS_EQUAL(2, net_loop1.num_ports());
 
     NetworkLoop net_loop2(packet_factory, buffer_factory, arena);
     CHECK(net_loop2.is_valid());
 
-    CHECK_EQUAL(0, net_loop2.num_ports());
+    LONGS_EQUAL(0, net_loop2.num_ports());
 
     CHECK(!add_port(net_loop2, tx_config));
     CHECK(!add_port(net_loop2, rx_config));
 
-    CHECK_EQUAL(2, net_loop1.num_ports());
-    CHECK_EQUAL(0, net_loop2.num_ports());
+    LONGS_EQUAL(2, net_loop1.num_ports());
+    LONGS_EQUAL(0, net_loop2.num_ports());
 }
 
 TEST(udp_ports, broadcast_sender) {
@@ -290,7 +290,7 @@ TEST(udp_ports, broadcast_sender) {
     NetworkLoop net_loop(packet_factory, buffer_factory, arena);
     CHECK(net_loop.is_valid());
 
-    CHECK_EQUAL(0, net_loop.num_ports());
+    LONGS_EQUAL(0, net_loop.num_ports());
 
     UdpConfig tx_config = make_udp_config("127.0.0.1", 0);
     NetworkLoop::PortHandle tx_handle = add_port(net_loop, tx_config);
@@ -299,7 +299,7 @@ TEST(udp_ports, broadcast_sender) {
 
     CHECK(start_send(net_loop, tx_handle));
 
-    CHECK_EQUAL(1, net_loop.num_ports());
+    LONGS_EQUAL(1, net_loop.num_ports());
 }
 
 TEST(udp_ports, multicast_receiver) {
@@ -308,7 +308,7 @@ TEST(udp_ports, multicast_receiver) {
     NetworkLoop net_loop(packet_factory, buffer_factory, arena);
     CHECK(net_loop.is_valid());
 
-    CHECK_EQUAL(0, net_loop.num_ports());
+    LONGS_EQUAL(0, net_loop.num_ports());
 
     { // miface empty
         UdpConfig rx_config = make_udp_config("224.0.0.1", 0);
@@ -331,7 +331,7 @@ TEST(udp_ports, multicast_receiver) {
         remove_port(net_loop, rx_handle);
     }
 
-    CHECK_EQUAL(0, net_loop.num_ports());
+    LONGS_EQUAL(0, net_loop.num_ports());
 }
 
 TEST(udp_ports, multicast_receiver_error) {
@@ -340,7 +340,7 @@ TEST(udp_ports, multicast_receiver_error) {
     NetworkLoop net_loop(packet_factory, buffer_factory, arena);
     CHECK(net_loop.is_valid());
 
-    CHECK_EQUAL(0, net_loop.num_ports());
+    LONGS_EQUAL(0, net_loop.num_ports());
 
     { // non-multicast address
         UdpConfig rx_config = make_udp_config("127.0.0.1", 0);
@@ -373,7 +373,7 @@ TEST(udp_ports, multicast_receiver_error) {
         }
     }
 
-    CHECK_EQUAL(0, net_loop.num_ports());
+    LONGS_EQUAL(0, net_loop.num_ports());
 }
 
 TEST(udp_ports, bidirectional) {
@@ -384,7 +384,7 @@ TEST(udp_ports, bidirectional) {
 
     UdpConfig config = make_udp_config("0.0.0.0", 0);
 
-    CHECK_EQUAL(0, net_loop.num_ports());
+    LONGS_EQUAL(0, net_loop.num_ports());
 
     NetworkLoop::PortHandle handle = add_port(net_loop, config);
     CHECK(handle);
@@ -393,7 +393,7 @@ TEST(udp_ports, bidirectional) {
     CHECK(start_send(net_loop, handle));
     CHECK(start_recv(net_loop, handle, queue));
 
-    CHECK_EQUAL(1, net_loop.num_ports());
+    LONGS_EQUAL(1, net_loop.num_ports());
 }
 
 } // namespace netio

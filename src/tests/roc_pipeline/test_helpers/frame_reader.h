@@ -201,8 +201,8 @@ private:
 
     void check_duration_(const audio::Frame& frame,
                          const audio::SampleSpec& sample_spec) {
-        CHECK_EQUAL(frame.num_raw_samples() / sample_spec.num_channels(),
-                    frame.duration());
+        UNSIGNED_LONGS_EQUAL(frame.num_raw_samples() / sample_spec.num_channels(),
+                             frame.duration());
     }
 
     sndio::ISource& source_;

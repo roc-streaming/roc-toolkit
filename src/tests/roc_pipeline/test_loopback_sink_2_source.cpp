@@ -233,7 +233,7 @@ void filter_packets(int flags, packet::IReader& reader, packet::IWriter& writer)
             }
         }
 
-        CHECK_EQUAL(status::StatusOK, writer.write(pp));
+        LONGS_EQUAL(status::StatusOK, writer.write(pp));
     }
 }
 
@@ -361,7 +361,7 @@ void send_receive(int flags,
                                       receiver_config.common.output_sample_spec,
                                       recv_base_cts);
 
-            CHECK_EQUAL(num_sessions, receiver.num_sessions());
+            LONGS_EQUAL(num_sessions, receiver.num_sessions());
         }
 
         packet_proxy.deliver(1);

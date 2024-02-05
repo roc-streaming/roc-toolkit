@@ -18,29 +18,29 @@ TEST_GROUP(packet_counter) {};
 TEST(packet_counter, no_wrap) {
     PacketCounter pc;
 
-    CHECK_EQUAL(10, pc.update(200, 210));
-    CHECK_EQUAL(30, pc.update(200, 230));
-    CHECK_EQUAL(30, pc.update(200, 220));
-    CHECK_EQUAL(40, pc.update(200, 240));
+    UNSIGNED_LONGS_EQUAL(10, pc.update(200, 210));
+    UNSIGNED_LONGS_EQUAL(30, pc.update(200, 230));
+    UNSIGNED_LONGS_EQUAL(30, pc.update(200, 220));
+    UNSIGNED_LONGS_EQUAL(40, pc.update(200, 240));
 
-    CHECK_EQUAL(10, pc.update(100, 110));
-    CHECK_EQUAL(20, pc.update(100, 120));
+    UNSIGNED_LONGS_EQUAL(10, pc.update(100, 110));
+    UNSIGNED_LONGS_EQUAL(20, pc.update(100, 120));
 
-    CHECK_EQUAL(10, pc.update(300, 310));
-    CHECK_EQUAL(20, pc.update(300, 320));
+    UNSIGNED_LONGS_EQUAL(10, pc.update(300, 310));
+    UNSIGNED_LONGS_EQUAL(20, pc.update(300, 320));
 }
 
 TEST(packet_counter, wrap) {
     PacketCounter pc;
 
-    CHECK_EQUAL(10, pc.update(0xFFFFFFFF - 30, 0xFFFFFFFF - 20));
-    CHECK_EQUAL(20, pc.update(0xFFFFFFFF - 30, 0xFFFFFFFF - 10));
-    CHECK_EQUAL(40, pc.update(0xFFFFFFFF - 30, 10));
-    CHECK_EQUAL(60, pc.update(0xFFFFFFFF - 30, 30));
-    CHECK_EQUAL(60, pc.update(0xFFFFFFFF - 30, 20));
-    CHECK_EQUAL(70, pc.update(0xFFFFFFFF - 30, 40));
+    UNSIGNED_LONGS_EQUAL(10, pc.update(0xFFFFFFFF - 30, 0xFFFFFFFF - 20));
+    UNSIGNED_LONGS_EQUAL(20, pc.update(0xFFFFFFFF - 30, 0xFFFFFFFF - 10));
+    UNSIGNED_LONGS_EQUAL(40, pc.update(0xFFFFFFFF - 30, 10));
+    UNSIGNED_LONGS_EQUAL(60, pc.update(0xFFFFFFFF - 30, 30));
+    UNSIGNED_LONGS_EQUAL(60, pc.update(0xFFFFFFFF - 30, 20));
+    UNSIGNED_LONGS_EQUAL(70, pc.update(0xFFFFFFFF - 30, 40));
 
-    CHECK_EQUAL(10, pc.update(10, 20));
+    UNSIGNED_LONGS_EQUAL(10, pc.update(10, 20));
 }
 
 } // namespace rtcp
