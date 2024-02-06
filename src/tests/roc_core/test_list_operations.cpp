@@ -167,7 +167,7 @@ TEST(list_operations, push_front_many) {
     CHECK(!list.is_empty());
 }
 
-TEST(list_operations, insert_front) {
+TEST(list_operations, insert_before_front) {
     list.push_back(objects[0]);
     list.insert_before(objects[1], *list.front());
 
@@ -178,11 +178,37 @@ TEST(list_operations, insert_front) {
     CHECK(!list.is_empty());
 }
 
-TEST(list_operations, insert_middle) {
+TEST(list_operations, insert_before_middle) {
     list.push_back(objects[0]);
     list.push_back(objects[1]);
 
     list.insert_before(objects[2], objects[1]);
+
+    POINTERS_EQUAL(&objects[0], list.front());
+    POINTERS_EQUAL(&objects[1], list.back());
+
+    LONGS_EQUAL(3, list.size());
+    CHECK(!list.is_empty());
+
+    POINTERS_EQUAL(&objects[2], list.nextof(*list.front()));
+}
+
+TEST(list_operations, insert_after_back) {
+    list.push_back(objects[0]);
+    list.insert_after(objects[1], *list.back());
+
+    POINTERS_EQUAL(&objects[0], list.front());
+    POINTERS_EQUAL(&objects[1], list.back());
+
+    LONGS_EQUAL(2, list.size());
+    CHECK(!list.is_empty());
+}
+
+TEST(list_operations, insert_after_middle) {
+    list.push_back(objects[0]);
+    list.push_back(objects[1]);
+
+    list.insert_after(objects[2], objects[0]);
 
     POINTERS_EQUAL(&objects[0], list.front());
     POINTERS_EQUAL(&objects[1], list.back());
