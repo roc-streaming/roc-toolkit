@@ -149,7 +149,7 @@ public:
         if (size_ == 0) {
             insert_(element, NULL);
         } else {
-            insert_(element, container_of_(head_.next));
+            insert_(element, head_.next);
         }
     }
 
@@ -205,7 +205,26 @@ public:
     //!  @p element should not be member of any list.
     //!  @p before should be member of this list or NULL.
     void insert_before(T& element, T& before) {
-        insert_(element, &before);
+        insert_(element, before.list_node_data());
+    }
+
+    //! Insert element into list.
+    //!
+    //! @remarks
+    //!  - inserts @p element after @p after
+    //!  - acquires ownership of @p element
+    //!
+    //! @pre
+    //!  @p element should not be member of any list.
+    //!  @p after should be member of this list.
+    void insert_after(T& element, T& after) {
+        ListNode::ListNodeData* data_after = after.list_node_data();
+
+        if (data_after->next == &head_) {
+            insert_(element, NULL);
+        } else {
+            insert_(element, data_after->next);
+        }
     }
 
     //! Remove element from list.
@@ -242,13 +261,11 @@ private:
         }
     }
 
-    void insert_(T& element, T* before) {
+    void insert_(T& element, ListNode::ListNodeData* data_before) {
         ListNode::ListNodeData* data_new = element.list_node_data();
         check_is_member_(data_new, NULL);
 
-        ListNode::ListNodeData* data_before;
-        if (before != NULL) {
-            data_before = before->list_node_data();
+        if (data_before != NULL) {
             check_is_member_(data_before, this);
         } else {
             data_before = &head_;
