@@ -8,6 +8,7 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "test_helpers/control_reader.h"
 #include "test_helpers/control_writer.h"
 #include "test_helpers/frame_reader.h"
 #include "test_helpers/packet_writer.h"
@@ -65,7 +66,11 @@ enum {
     Timeout = Latency * 13,
     Warmup = Latency,
 
+    ReportInterval = SamplesPerPacket * 10,
+    ReportTimeout = Timeout * 2,
+
     ManyPackets = Latency / SamplesPerPacket * 10,
+    ManyReports = 20,
 
     MaxSnJump = ManyPackets * 5,
     MaxTsJump = ManyPackets * 7 * SamplesPerPacket
@@ -85,10 +90,10 @@ ReceiverSlot* create_slot(ReceiverSource& source) {
 
 packet::IWriter* create_transport_endpoint(ReceiverSlot* slot,
                                            address::Interface iface,
-                                           address::Protocol proto) {
+                                           address::Protocol proto,
+                                           const address::SocketAddr& inbound_addr) {
     CHECK(slot);
-    ReceiverEndpoint* endpoint =
-        slot->add_endpoint(iface, proto, address::SocketAddr(), NULL);
+    ReceiverEndpoint* endpoint = slot->add_endpoint(iface, proto, inbound_addr, NULL);
     CHECK(endpoint);
     return &endpoint->inbound_writer();
 }
@@ -96,10 +101,11 @@ packet::IWriter* create_transport_endpoint(ReceiverSlot* slot,
 packet::IWriter* create_control_endpoint(ReceiverSlot* slot,
                                          address::Interface iface,
                                          address::Protocol proto,
+                                         const address::SocketAddr& inbound_addr,
                                          packet::IWriter& outbound_writer) {
     CHECK(slot);
     ReceiverEndpoint* endpoint =
-        slot->add_endpoint(iface, proto, address::SocketAddr(), &outbound_writer);
+        slot->add_endpoint(iface, proto, inbound_addr, &outbound_writer);
     CHECK(endpoint);
     return &endpoint->inbound_writer();
 }
@@ -118,6 +124,9 @@ TEST_GROUP(receiver_source) {
 
     address::SocketAddr dst_addr1;
     address::SocketAddr dst_addr2;
+
+    address::SocketAddr multicast_addr1;
+    address::SocketAddr multicast_addr2;
 
     address::Protocol proto1;
     address::Protocol proto2;
@@ -145,6 +154,9 @@ TEST_GROUP(receiver_source) {
             watchdog_timeout * core::Second / (int)output_sample_spec.sample_rate();
         config.default_session.watchdog.warmup_duration =
             watchdog_warmup * core::Second / (int)output_sample_spec.sample_rate();
+
+        config.common.rtcp.report_interval = ReportInterval * core::Second / SampleRate;
+        config.common.rtcp.inactivity_timeout = ReportTimeout * core::Second / SampleRate;
 
         config.common.rtp_filter.max_sn_jump = MaxSnJump;
         config.common.rtp_filter.max_ts_jump =
@@ -176,11 +188,14 @@ TEST_GROUP(receiver_source) {
         src_id1 = 111;
         src_id2 = 222;
 
-        src_addr1 = test::new_address(1);
-        src_addr2 = test::new_address(2);
+        src_addr1 = test::new_address(11);
+        src_addr2 = test::new_address(12);
 
-        dst_addr1 = test::new_address(3);
-        dst_addr2 = test::new_address(4);
+        dst_addr1 = test::new_address(21);
+        dst_addr2 = test::new_address(22);
+
+        CHECK(multicast_addr1.set_host_port_auto("224.0.0.1", 1111));
+        CHECK(multicast_addr2.set_host_port_auto("224.0.0.1", 2222));
 
         proto1 = address::Proto_RTP;
         proto2 = address::Proto_RTP;
@@ -219,7 +234,7 @@ TEST(receiver_source, one_session) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -256,7 +271,7 @@ TEST(receiver_source, one_session_long_run) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -297,7 +312,7 @@ TEST(receiver_source, initial_latency) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -343,7 +358,7 @@ TEST(receiver_source, initial_latency_timeout) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -383,7 +398,7 @@ TEST(receiver_source, timeout) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -430,7 +445,7 @@ TEST(receiver_source, timeout_smaller_than_latency) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -507,7 +522,7 @@ TEST(receiver_source, min_latency) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -568,7 +583,7 @@ TEST(receiver_source, max_latency) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -635,7 +650,7 @@ TEST(receiver_source, initial_trim) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -674,7 +689,7 @@ TEST(receiver_source, two_sessions_synchronous) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -718,7 +733,7 @@ TEST(receiver_source, two_sessions_overlapping) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -775,14 +790,14 @@ TEST(receiver_source, two_sessions_two_endpoints) {
     CHECK(slot1);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot1, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot1, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     ReceiverSlot* slot2 = create_slot(receiver);
     CHECK(slot2);
 
     packet::IWriter* endpoint2_writer =
-        create_transport_endpoint(slot2, address::Iface_AudioSource, proto2);
+        create_transport_endpoint(slot2, address::Iface_AudioSource, proto2, dst_addr2);
     CHECK(endpoint2_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -826,7 +841,7 @@ TEST(receiver_source, two_sessions_same_address_same_stream) {
     CHECK(slot);
 
     packet::IWriter* endpoint_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -837,7 +852,7 @@ TEST(receiver_source, two_sessions_same_address_same_stream) {
 
     test::PacketWriter packet_writer2(arena, *endpoint_writer, encoding_map,
                                       packet_factory, byte_buffer_factory, src_id1,
-                                      src_addr1, dst_addr2, PayloadType_Ch2);
+                                      src_addr1, dst_addr1, PayloadType_Ch2);
 
     packet_writer1.set_source(11);
     packet_writer2.set_source(11);
@@ -875,7 +890,7 @@ TEST(receiver_source, two_sessions_same_address_different_streams) {
     CHECK(slot);
 
     packet::IWriter* endpoint_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -886,7 +901,7 @@ TEST(receiver_source, two_sessions_same_address_different_streams) {
 
     test::PacketWriter packet_writer2(arena, *endpoint_writer, encoding_map,
                                       packet_factory, byte_buffer_factory, src_id1,
-                                      src_addr1, dst_addr2, PayloadType_Ch2);
+                                      src_addr1, dst_addr1, PayloadType_Ch2);
 
     packet_writer1.set_source(11);
     packet_writer2.set_source(22);
@@ -926,7 +941,7 @@ TEST(receiver_source, seqnum_overflow) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -961,7 +976,7 @@ TEST(receiver_source, seqnum_small_jump) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1006,7 +1021,7 @@ TEST(receiver_source, seqnum_large_jump) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1059,7 +1074,7 @@ TEST(receiver_source, seqnum_reorder) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1100,7 +1115,7 @@ TEST(receiver_source, seqnum_late) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1163,7 +1178,7 @@ TEST(receiver_source, timestamp_overflow) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1200,7 +1215,7 @@ TEST(receiver_source, timestamp_small_jump) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1254,7 +1269,7 @@ TEST(receiver_source, timestamp_large_jump) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1302,7 +1317,7 @@ TEST(receiver_source, timestamp_overlap) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1339,7 +1354,7 @@ TEST(receiver_source, timestamp_reorder) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1398,7 +1413,7 @@ TEST(receiver_source, timestamp_late) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1472,7 +1487,7 @@ TEST(receiver_source, packet_size_small) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1513,7 +1528,7 @@ TEST(receiver_source, packet_size_large) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1560,7 +1575,7 @@ TEST(receiver_source, packet_size_variable) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1598,7 +1613,7 @@ TEST(receiver_source, corrupted_packets_new_session) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1638,7 +1653,7 @@ TEST(receiver_source, corrupted_packets_existing_session) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1701,7 +1716,7 @@ TEST(receiver_source, channel_mapping_stereo_to_mono) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1739,7 +1754,7 @@ TEST(receiver_source, channel_mapping_mono_to_stereo) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1777,7 +1792,7 @@ TEST(receiver_source, sample_rate_mapping) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1817,13 +1832,14 @@ TEST(receiver_source, timestamp_mapping_no_control_packets) {
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
 
-    packet::IWriter* transport_endpoint =
-        create_transport_endpoint(slot, address::Iface_AudioSource, address::Proto_RTP);
+    packet::IWriter* transport_endpoint = create_transport_endpoint(
+        slot, address::Iface_AudioSource, address::Proto_RTP, dst_addr1);
     CHECK(transport_endpoint);
 
     packet::Queue control_outbound_queue;
-    packet::IWriter* control_endpoint = create_control_endpoint(
-        slot, address::Iface_AudioControl, address::Proto_RTCP, control_outbound_queue);
+    packet::IWriter* control_endpoint =
+        create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
+                                dst_addr2, control_outbound_queue);
     CHECK(control_endpoint);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1868,13 +1884,14 @@ TEST(receiver_source, timestamp_mapping_one_control_packet) {
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
 
-    packet::IWriter* transport_endpoint =
-        create_transport_endpoint(slot, address::Iface_AudioSource, address::Proto_RTP);
+    packet::IWriter* transport_endpoint = create_transport_endpoint(
+        slot, address::Iface_AudioSource, address::Proto_RTP, dst_addr1);
     CHECK(transport_endpoint);
 
     packet::Queue control_outbound_queue;
-    packet::IWriter* control_endpoint = create_control_endpoint(
-        slot, address::Iface_AudioControl, address::Proto_RTCP, control_outbound_queue);
+    packet::IWriter* control_endpoint =
+        create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
+                                dst_addr2, control_outbound_queue);
     CHECK(control_endpoint);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -1936,13 +1953,14 @@ TEST(receiver_source, timestamp_mapping_periodic_control_packets) {
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
 
-    packet::IWriter* transport_endpoint =
-        create_transport_endpoint(slot, address::Iface_AudioSource, address::Proto_RTP);
+    packet::IWriter* transport_endpoint = create_transport_endpoint(
+        slot, address::Iface_AudioSource, address::Proto_RTP, dst_addr1);
     CHECK(transport_endpoint);
 
     packet::Queue control_outbound_queue;
-    packet::IWriter* control_endpoint = create_control_endpoint(
-        slot, address::Iface_AudioControl, address::Proto_RTCP, control_outbound_queue);
+    packet::IWriter* control_endpoint =
+        create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
+                                dst_addr2, control_outbound_queue);
     CHECK(control_endpoint);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -2009,13 +2027,14 @@ TEST(receiver_source, timestamp_mapping_remixing) {
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
 
-    packet::IWriter* transport_endpoint =
-        create_transport_endpoint(slot, address::Iface_AudioSource, address::Proto_RTP);
+    packet::IWriter* transport_endpoint = create_transport_endpoint(
+        slot, address::Iface_AudioSource, address::Proto_RTP, dst_addr1);
     CHECK(transport_endpoint);
 
     packet::Queue control_outbound_queue;
-    packet::IWriter* control_endpoint = create_control_endpoint(
-        slot, address::Iface_AudioControl, address::Proto_RTCP, control_outbound_queue);
+    packet::IWriter* control_endpoint =
+        create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
+                                dst_addr2, control_outbound_queue);
     CHECK(control_endpoint);
 
     test::PacketWriter packet_writer(arena, *transport_endpoint, encoding_map,
@@ -2105,7 +2124,7 @@ TEST(receiver_source, metrics_participants) {
     }
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -2208,7 +2227,7 @@ TEST(receiver_source, metrics_truncation) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -2321,7 +2340,7 @@ TEST(receiver_source, metrics_niq_latency) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -2377,12 +2396,13 @@ TEST(receiver_source, metrics_e2e_latency) {
     CHECK(slot);
 
     packet::IWriter* transport_endpoint =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(transport_endpoint);
 
     packet::Queue control_outbound_queue;
-    packet::IWriter* control_endpoint = create_control_endpoint(
-        slot, address::Iface_AudioControl, address::Proto_RTCP, control_outbound_queue);
+    packet::IWriter* control_endpoint =
+        create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
+                                dst_addr2, control_outbound_queue);
     CHECK(control_endpoint);
 
     test::FrameReader frame_reader(receiver, sample_buffer_factory);
@@ -2451,6 +2471,385 @@ TEST(receiver_source, metrics_e2e_latency) {
     }
 }
 
+// Check that no reports are generated by receiver when there are no senders.
+TEST(receiver_source, reports_no_senders) {
+    enum { Rate = SampleRate, Chans = Chans_Stereo };
+
+    init(Rate, Chans, Rate, Chans);
+
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, arena);
+    CHECK(receiver.is_valid());
+
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
+
+    packet::IWriter* transport_endpoint =
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
+    CHECK(transport_endpoint);
+
+    packet::Queue control_outbound_queue;
+    packet::IWriter* control_endpoint =
+        create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
+                                dst_addr2, control_outbound_queue);
+    CHECK(control_endpoint);
+
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+
+    for (size_t np = 0; np < (ReportInterval / SamplesPerPacket) * ManyReports; np++) {
+        for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            receiver.refresh(frame_reader.refresh_ts());
+            frame_reader.read_zero_samples(SamplesPerFrame, output_sample_spec);
+
+            UNSIGNED_LONGS_EQUAL(0, receiver.num_sessions());
+        }
+
+        UNSIGNED_LONGS_EQUAL(0, control_outbound_queue.size());
+    }
+}
+
+// Check reports generated by receiver when there is one sender.
+TEST(receiver_source, reports_one_sender) {
+    enum { Rate = SampleRate, Chans = Chans_Stereo };
+
+    init(Rate, Chans, Rate, Chans);
+
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, arena);
+    CHECK(receiver.is_valid());
+
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
+
+    packet::stream_source_t recv_src_id = 0;
+    packet::stream_source_t send_src_id = 0;
+
+    {
+        ReceiverSlotMetrics slot_metrics;
+        slot->get_metrics(slot_metrics, NULL, NULL);
+        recv_src_id = slot_metrics.source_id;
+        send_src_id = slot_metrics.source_id + 9999;
+    }
+
+    packet::IWriter* transport_endpoint =
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
+    CHECK(transport_endpoint);
+
+    packet::Queue control_outbound_queue;
+    packet::IWriter* control_endpoint =
+        create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
+                                dst_addr2, control_outbound_queue);
+    CHECK(control_endpoint);
+
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+
+    test::PacketWriter packet_writer(arena, *transport_endpoint, encoding_map,
+                                     packet_factory, byte_buffer_factory, send_src_id,
+                                     src_addr1, dst_addr1, PayloadType_Ch2);
+
+    test::ControlWriter control_writer(*control_endpoint, packet_factory,
+                                       byte_buffer_factory, src_addr1, dst_addr2);
+
+    control_writer.set_local_source(send_src_id);
+
+    test::ControlReader control_reader(control_outbound_queue);
+
+    const core::nanoseconds_t capture_ts_base = 1000000000000000;
+    const packet::stream_timestamp_t rtp_base = 1000000;
+
+    packet_writer.set_timestamp(rtp_base);
+    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                output_sample_spec);
+
+    size_t next_report = ReportInterval / SamplesPerPacket;
+
+    for (size_t np = 0; np < (ReportInterval / SamplesPerPacket) * ManyReports; np++) {
+        for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            core::nanoseconds_t expect_ts_base = -1;
+            if (np != 0) {
+                expect_ts_base = capture_ts_base;
+            }
+
+            receiver.refresh(frame_reader.refresh_ts(capture_ts_base));
+            frame_reader.read_nonzero_samples(SamplesPerFrame, output_sample_spec,
+                                              expect_ts_base);
+
+            UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
+        }
+
+        if (np > next_report) {
+            control_reader.read_report();
+
+            CHECK(!control_reader.has_src_addr());
+            CHECK(control_reader.has_dst_addr(src_addr1));
+            CHECK(!control_reader.has_sr());
+            CHECK(control_reader.has_rr(recv_src_id, send_src_id));
+            CHECK(control_reader.has_rrtr(recv_src_id));
+            CHECK(!control_reader.has_dlrr());
+            CHECK(control_reader.has_measurement_info(recv_src_id));
+            CHECK(control_reader.has_delay_metrics(recv_src_id));
+            CHECK(control_reader.has_queue_metrics(recv_src_id));
+
+            next_report = np + ReportInterval / SamplesPerPacket;
+        }
+
+        packet_writer.write_packets(1, SamplesPerPacket, output_sample_spec);
+
+        if (np % (ReportInterval / SamplesPerPacket) == 0) {
+            control_writer.write_sender_report(packet::unix_2_ntp(capture_ts_base),
+                                               rtp_base);
+        }
+    }
+}
+
+// Check reports generated by receiver when there are two unicast senders.
+// Receiver should generate separate report for each sender.
+TEST(receiver_source, reports_two_senders_unicast) {
+    enum { Rate = SampleRate, Chans = Chans_Stereo };
+
+    init(Rate, Chans, Rate, Chans);
+
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, arena);
+    CHECK(receiver.is_valid());
+
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
+
+    packet::stream_source_t recv_src_id = 0;
+    packet::stream_source_t send_src_id1 = 0;
+    packet::stream_source_t send_src_id2 = 0;
+
+    {
+        ReceiverSlotMetrics slot_metrics;
+        slot->get_metrics(slot_metrics, NULL, NULL);
+        recv_src_id = slot_metrics.source_id;
+        send_src_id1 = slot_metrics.source_id + 7777;
+        send_src_id2 = slot_metrics.source_id + 9999;
+    }
+
+    packet::IWriter* transport_endpoint =
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
+    CHECK(transport_endpoint);
+
+    packet::Queue control_outbound_queue;
+    packet::IWriter* control_endpoint =
+        create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
+                                dst_addr2, control_outbound_queue);
+    CHECK(control_endpoint);
+
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+
+    test::PacketWriter packet_writer1(arena, *transport_endpoint, encoding_map,
+                                      packet_factory, byte_buffer_factory, send_src_id1,
+                                      src_addr1, dst_addr1, PayloadType_Ch2);
+
+    test::PacketWriter packet_writer2(arena, *transport_endpoint, encoding_map,
+                                      packet_factory, byte_buffer_factory, send_src_id2,
+                                      src_addr2, dst_addr1, PayloadType_Ch2);
+
+    test::ControlWriter control_writer1(*control_endpoint, packet_factory,
+                                        byte_buffer_factory, src_addr1, dst_addr2);
+
+    test::ControlWriter control_writer2(*control_endpoint, packet_factory,
+                                        byte_buffer_factory, src_addr2, dst_addr2);
+
+    control_writer1.set_cname("test_cname1");
+    control_writer2.set_cname("test_cname2");
+
+    control_writer1.set_local_source(send_src_id1);
+    control_writer2.set_local_source(send_src_id2);
+
+    test::ControlReader control_reader(control_outbound_queue);
+
+    const core::nanoseconds_t capture_ts_base = 1000000000000000;
+    const packet::stream_timestamp_t rtp_base = 1000000;
+
+    packet_writer1.set_timestamp(rtp_base);
+    packet_writer1.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                 output_sample_spec);
+
+    packet_writer2.set_timestamp(rtp_base);
+    packet_writer2.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                 output_sample_spec);
+
+    size_t next_report = ReportInterval / SamplesPerPacket;
+
+    for (size_t np = 0; np < (ReportInterval / SamplesPerPacket) * ManyReports; np++) {
+        for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            core::nanoseconds_t expect_ts_base = -1;
+            if (np != 0) {
+                expect_ts_base = capture_ts_base;
+            }
+
+            receiver.refresh(frame_reader.refresh_ts(capture_ts_base));
+            frame_reader.read_nonzero_samples(SamplesPerFrame, output_sample_spec,
+                                              expect_ts_base);
+        }
+
+        if (np > next_report) {
+            size_t n_sess1 = 0, n_sess2 = 0;
+
+            for (size_t nr = 0; nr < 2; nr++) {
+                control_reader.read_report();
+
+                if (control_reader.dst_addr() == src_addr1) {
+                    CHECK(!control_reader.has_src_addr());
+                    CHECK(control_reader.has_dst_addr(src_addr1));
+                    CHECK(!control_reader.has_sr());
+                    CHECK(control_reader.has_rr(recv_src_id, send_src_id1));
+                    CHECK(control_reader.has_rrtr(recv_src_id));
+                    CHECK(!control_reader.has_dlrr());
+                    CHECK(control_reader.has_measurement_info(recv_src_id));
+                    CHECK(control_reader.has_delay_metrics(recv_src_id));
+                    CHECK(control_reader.has_queue_metrics(recv_src_id));
+                    n_sess1++;
+                } else {
+                    CHECK(!control_reader.has_src_addr());
+                    CHECK(control_reader.has_dst_addr(src_addr2));
+                    CHECK(!control_reader.has_sr());
+                    CHECK(control_reader.has_rr(recv_src_id, send_src_id2));
+                    CHECK(control_reader.has_rrtr(recv_src_id));
+                    CHECK(!control_reader.has_dlrr());
+                    CHECK(control_reader.has_measurement_info(recv_src_id));
+                    CHECK(control_reader.has_delay_metrics(recv_src_id));
+                    CHECK(control_reader.has_queue_metrics(recv_src_id));
+                    n_sess2++;
+                }
+            }
+
+            LONGS_EQUAL(1, n_sess1);
+            LONGS_EQUAL(1, n_sess2);
+
+            next_report = np + ReportInterval / SamplesPerPacket;
+        }
+
+        packet_writer1.write_packets(1, SamplesPerPacket, output_sample_spec);
+        packet_writer2.write_packets(1, SamplesPerPacket, output_sample_spec);
+
+        if (np % (ReportInterval / SamplesPerPacket) == 0) {
+            control_writer1.write_sender_report(packet::unix_2_ntp(capture_ts_base),
+                                                rtp_base);
+            control_writer2.write_sender_report(packet::unix_2_ntp(capture_ts_base),
+                                                rtp_base);
+        }
+    }
+}
+
+// Check reports generated by receiver when there are two senders in multicast session.
+// Receiver should generate single combined report for all senders.
+TEST(receiver_source, reports_two_senders_multicast) {
+    enum { Rate = SampleRate, Chans = Chans_Stereo };
+
+    init(Rate, Chans, Rate, Chans);
+
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
+                            byte_buffer_factory, sample_buffer_factory, arena);
+    CHECK(receiver.is_valid());
+
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
+
+    packet::stream_source_t recv_src_id = 0;
+    packet::stream_source_t send_src_id1 = 0;
+    packet::stream_source_t send_src_id2 = 0;
+
+    {
+        ReceiverSlotMetrics slot_metrics;
+        slot->get_metrics(slot_metrics, NULL, NULL);
+        recv_src_id = slot_metrics.source_id;
+        send_src_id1 = slot_metrics.source_id + 7777;
+        send_src_id2 = slot_metrics.source_id + 9999;
+    }
+
+    packet::IWriter* transport_endpoint = create_transport_endpoint(
+        slot, address::Iface_AudioSource, proto1, multicast_addr1);
+    CHECK(transport_endpoint);
+
+    packet::Queue control_outbound_queue;
+    packet::IWriter* control_endpoint =
+        create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
+                                multicast_addr2, control_outbound_queue);
+    CHECK(control_endpoint);
+
+    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+
+    test::PacketWriter packet_writer1(arena, *transport_endpoint, encoding_map,
+                                      packet_factory, byte_buffer_factory, send_src_id1,
+                                      src_addr1, multicast_addr1, PayloadType_Ch2);
+
+    test::PacketWriter packet_writer2(arena, *transport_endpoint, encoding_map,
+                                      packet_factory, byte_buffer_factory, send_src_id2,
+                                      src_addr2, multicast_addr1, PayloadType_Ch2);
+
+    test::ControlWriter control_writer1(*control_endpoint, packet_factory,
+                                        byte_buffer_factory, src_addr1, multicast_addr2);
+
+    test::ControlWriter control_writer2(*control_endpoint, packet_factory,
+                                        byte_buffer_factory, src_addr2, multicast_addr2);
+
+    control_writer1.set_cname("test_cname1");
+    control_writer2.set_cname("test_cname2");
+
+    control_writer1.set_local_source(send_src_id1);
+    control_writer2.set_local_source(send_src_id2);
+
+    test::ControlReader control_reader(control_outbound_queue);
+
+    const core::nanoseconds_t capture_ts_base = 1000000000000000;
+    const packet::stream_timestamp_t rtp_base = 1000000;
+
+    packet_writer1.set_timestamp(rtp_base);
+    packet_writer1.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                 output_sample_spec);
+
+    packet_writer2.set_timestamp(rtp_base);
+    packet_writer2.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                 output_sample_spec);
+
+    size_t next_report = ReportInterval / SamplesPerPacket;
+
+    for (size_t np = 0; np < (ReportInterval / SamplesPerPacket) * ManyReports; np++) {
+        for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            core::nanoseconds_t expect_ts_base = -1;
+            if (np != 0) {
+                expect_ts_base = capture_ts_base;
+            }
+
+            receiver.refresh(frame_reader.refresh_ts(capture_ts_base));
+            frame_reader.read_nonzero_samples(SamplesPerFrame, output_sample_spec,
+                                              expect_ts_base);
+        }
+
+        if (np > next_report) {
+            control_reader.read_report();
+
+            CHECK(!control_reader.has_src_addr());
+            CHECK(control_reader.has_dst_addr(multicast_addr2));
+            CHECK(!control_reader.has_sr());
+            CHECK(control_reader.has_rr(recv_src_id, send_src_id1));
+            CHECK(control_reader.has_rr(recv_src_id, send_src_id2));
+            CHECK(control_reader.has_rrtr(recv_src_id));
+            CHECK(!control_reader.has_dlrr());
+            CHECK(control_reader.has_measurement_info(recv_src_id));
+            CHECK(control_reader.has_delay_metrics(recv_src_id));
+            CHECK(control_reader.has_queue_metrics(recv_src_id));
+
+            next_report = np + ReportInterval / SamplesPerPacket;
+        }
+
+        packet_writer1.write_packets(1, SamplesPerPacket, output_sample_spec);
+        packet_writer2.write_packets(1, SamplesPerPacket, output_sample_spec);
+
+        if (np % (ReportInterval / SamplesPerPacket) == 0) {
+            control_writer1.write_sender_report(packet::unix_2_ntp(capture_ts_base),
+                                                rtp_base);
+            control_writer2.write_sender_report(packet::unix_2_ntp(capture_ts_base),
+                                                rtp_base);
+        }
+    }
+}
+
 TEST(receiver_source, pipeline_state) {
     enum { Rate = SampleRate, Chans = Chans_Stereo };
 
@@ -2464,7 +2863,7 @@ TEST(receiver_source, pipeline_state) {
     CHECK(slot);
 
     packet::IWriter* endpoint1_writer =
-        create_transport_endpoint(slot, address::Iface_AudioSource, proto1);
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,

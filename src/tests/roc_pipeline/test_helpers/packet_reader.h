@@ -126,7 +126,7 @@ private:
 
     packet::PacketPtr read_packet_() {
         packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, reader_.read(pp));
+        LONGS_EQUAL(status::StatusOK, reader_.read(pp));
         CHECK(pp);
 
         CHECK(pp->flags() & packet::Packet::FlagUDP);

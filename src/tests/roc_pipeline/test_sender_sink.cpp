@@ -8,6 +8,7 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "test_helpers/control_reader.h"
 #include "test_helpers/control_writer.h"
 #include "test_helpers/frame_writer.h"
 #include "test_helpers/packet_reader.h"
@@ -56,7 +57,11 @@ enum {
     SamplesPerPacket = 100,
     FramesPerPacket = SamplesPerPacket / SamplesPerFrame,
 
-    ManyFrames = FramesPerPacket * 20
+    ReportInterval = SamplesPerPacket * 10,
+    ReportTimeout = SamplesPerPacket * 100,
+
+    ManyFrames = FramesPerPacket * 20,
+    ManyReports = 20,
 };
 
 core::HeapArena arena;
@@ -105,11 +110,11 @@ TEST_GROUP(sender_sink) {
 
     address::Protocol proto;
 
-    address::SocketAddr src_addr;
-    address::SocketAddr dst_addr;
+    address::SocketAddr src_addr1;
+    address::SocketAddr src_addr2;
 
-    packet::stream_source_t src_ssrc;
-    packet::stream_source_t dst_ssrc;
+    address::SocketAddr dst_addr1;
+    address::SocketAddr dst_addr2;
 
     SenderConfig make_config() {
         SenderConfig config;
@@ -137,6 +142,9 @@ TEST_GROUP(sender_sink) {
         config.latency.tuner_backend = audio::LatencyTunerBackend_Niq;
         config.latency.tuner_profile = audio::LatencyTunerProfile_Intact;
 
+        config.rtcp.report_interval = ReportInterval * core::Second / SampleRate;
+        config.rtcp.inactivity_timeout = ReportTimeout * core::Second / SampleRate;
+
         return config;
     }
 
@@ -158,15 +166,15 @@ TEST_GROUP(sender_sink) {
 
         proto = address::Proto_RTP;
 
-        src_addr = test::new_address(111);
-        dst_addr = test::new_address(222);
+        src_addr1 = test::new_address(11);
+        src_addr2 = test::new_address(12);
 
-        src_ssrc = 0;
-        dst_ssrc = 0;
+        dst_addr1 = test::new_address(21);
+        dst_addr2 = test::new_address(22);
     }
 };
 
-TEST(sender_sink, write) {
+TEST(sender_sink, basic) {
     enum { Rate = SampleRate, Chans = Chans_Stereo };
 
     init(Rate, Chans, Rate, Chans);
@@ -179,7 +187,7 @@ TEST(sender_sink, write) {
 
     SenderSlot* slot = create_slot(sender);
     CHECK(slot);
-    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr, queue);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -188,8 +196,8 @@ TEST(sender_sink, write) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory, dst_addr,
-                                     PayloadType_Ch2);
+    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
+                                     dst_addr1, PayloadType_Ch2);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
@@ -218,7 +226,7 @@ TEST(sender_sink, frame_size_small) {
 
     SenderSlot* slot = create_slot(sender);
     CHECK(slot);
-    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr, queue);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -227,8 +235,8 @@ TEST(sender_sink, frame_size_small) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory, dst_addr,
-                                     PayloadType_Ch2);
+    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
+                                     dst_addr1, PayloadType_Ch2);
 
     for (size_t np = 0; np < ManySmallFrames / SmallFramesPerPacket; np++) {
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
@@ -257,7 +265,7 @@ TEST(sender_sink, frame_size_large) {
 
     SenderSlot* slot = create_slot(sender);
     CHECK(slot);
-    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr, queue);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -266,8 +274,8 @@ TEST(sender_sink, frame_size_large) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory, dst_addr,
-                                     PayloadType_Ch2);
+    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
+                                     dst_addr1, PayloadType_Ch2);
 
     for (size_t np = 0; np < ManyLargeFrames * PacketsPerLargeFrame; np++) {
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
@@ -290,7 +298,7 @@ TEST(sender_sink, channel_mapping_stereo_to_mono) {
 
     SenderSlot* slot = create_slot(sender);
     CHECK(slot);
-    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr, queue);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -299,8 +307,8 @@ TEST(sender_sink, channel_mapping_stereo_to_mono) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory, dst_addr,
-                                     PayloadType_Ch1);
+    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
+                                     dst_addr1, PayloadType_Ch1);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
@@ -323,7 +331,7 @@ TEST(sender_sink, channel_mapping_mono_to_stereo) {
 
     SenderSlot* slot = create_slot(sender);
     CHECK(slot);
-    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr, queue);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -332,8 +340,8 @@ TEST(sender_sink, channel_mapping_mono_to_stereo) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory, dst_addr,
-                                     PayloadType_Ch2);
+    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
+                                     dst_addr1, PayloadType_Ch2);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
@@ -356,7 +364,7 @@ TEST(sender_sink, sample_rate_mapping) {
 
     SenderSlot* slot = create_slot(sender);
     CHECK(slot);
-    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr, queue);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -368,8 +376,8 @@ TEST(sender_sink, sample_rate_mapping) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory, dst_addr,
-                                     PayloadType_Ch2);
+    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
+                                     dst_addr1, PayloadType_Ch2);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket - 5; np++) {
         packet_reader.read_nonzero_packet(SamplesPerPacket, packet_sample_spec);
@@ -390,7 +398,7 @@ TEST(sender_sink, timestamp_mapping) {
     CHECK(sender.is_valid());
 
     SenderSlot* slot = create_slot(sender);
-    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr, queue);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -401,8 +409,8 @@ TEST(sender_sink, timestamp_mapping) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory, dst_addr,
-                                     PayloadType_Ch2);
+    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
+                                     dst_addr1, PayloadType_Ch2);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec, unix_base);
@@ -430,7 +438,7 @@ TEST(sender_sink, timestamp_mapping_remixing) {
 
     SenderSlot* slot = create_slot(sender);
     CHECK(slot);
-    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr, queue);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
@@ -444,8 +452,8 @@ TEST(sender_sink, timestamp_mapping_remixing) {
         sender.refresh(frame_writer.refresh_ts());
     }
 
-    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory, dst_addr,
-                                     PayloadType_Ch1);
+    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
+                                     dst_addr1, PayloadType_Ch1);
 
     core::nanoseconds_t cts = 0;
     for (size_t np = 0; np < ManyFrames / FramesPerPacket - 5; np++) {
@@ -491,18 +499,19 @@ TEST(sender_sink, metrics_feedback) {
 
     SenderSlot* slot = create_slot(sender);
     CHECK(slot);
-    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr, queue);
+
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
     packet::Queue control_outbound_queue;
     packet::IWriter* control_endpoint =
         create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
-                                dst_addr, control_outbound_queue);
+                                dst_addr2, control_outbound_queue);
     CHECK(control_endpoint);
 
     test::FrameWriter frame_writer(sender, sample_buffer_factory);
 
-    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory, dst_addr,
-                                     PayloadType_Ch2);
+    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
+                                     dst_addr1, PayloadType_Ch2);
 
     const core::nanoseconds_t unix_base = 1000000000000000;
 
@@ -517,6 +526,9 @@ TEST(sender_sink, metrics_feedback) {
 
     CHECK(control_outbound_queue.size() > 0);
 
+    packet::stream_source_t send_src_id = 0;
+    packet::stream_source_t recv_src_id = 0;
+
     {
         SenderSlotMetrics slot_metrics;
         SenderParticipantMetrics party_metrics[MaxParties];
@@ -526,18 +538,18 @@ TEST(sender_sink, metrics_feedback) {
 
         CHECK(slot_metrics.source_id != 0);
 
-        src_ssrc = slot_metrics.source_id;
-        dst_ssrc = src_ssrc + 99999;
+        send_src_id = slot_metrics.source_id;
+        recv_src_id = slot_metrics.source_id + 9999;
 
         UNSIGNED_LONGS_EQUAL(0, slot_metrics.num_participants);
         UNSIGNED_LONGS_EQUAL(0, party_metrics_size);
     }
 
     test::ControlWriter control_writer(*control_endpoint, packet_factory,
-                                       byte_buffer_factory, dst_addr, src_addr);
+                                       byte_buffer_factory, dst_addr1, src_addr1);
 
-    control_writer.set_local_source(dst_ssrc);
-    control_writer.set_remote_source(src_ssrc);
+    control_writer.set_local_source(recv_src_id);
+    control_writer.set_remote_source(send_src_id);
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
         const unsigned seed = (unsigned)np + 1;
@@ -557,7 +569,8 @@ TEST(sender_sink, metrics_feedback) {
         control_writer.set_link_metrics(link_metrics);
         control_writer.set_latency_metrics(latency_metrics);
 
-        control_writer.write_receiver_report(packet_sample_spec);
+        control_writer.write_receiver_report(
+            packet::unix_2_ntp(frame_writer.refresh_ts()), packet_sample_spec);
 
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_writer.write_samples(SamplesPerFrame, input_sample_spec, unix_base);
@@ -572,7 +585,7 @@ TEST(sender_sink, metrics_feedback) {
 
             slot->get_metrics(slot_metrics, party_metrics, &party_metrics_size);
 
-            UNSIGNED_LONGS_EQUAL(src_ssrc, slot_metrics.source_id);
+            UNSIGNED_LONGS_EQUAL(send_src_id, slot_metrics.source_id);
             UNSIGNED_LONGS_EQUAL(1, slot_metrics.num_participants);
             UNSIGNED_LONGS_EQUAL(1, party_metrics_size);
 
@@ -595,6 +608,262 @@ TEST(sender_sink, metrics_feedback) {
                           core::Microsecond * 16);
             DOUBLES_EQUAL((double)latency_metrics.e2e_latency,
                           (double)party_metrics[0].latency.e2e_latency, core::Nanosecond);
+        }
+    }
+}
+
+// Check reports generated by sender when there are no discovered receivers.
+// Generated reports should not have blocks dedicated for specific receivers.
+TEST(sender_sink, reports_no_receivers) {
+    enum { Rate = SampleRate, Chans = Chans_Stereo, MaxParties = 10 };
+
+    init(Rate, Chans, Rate, Chans);
+
+    packet::Queue queue;
+
+    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
+                      sample_buffer_factory, arena);
+    CHECK(sender.is_valid());
+
+    SenderSlot* slot = create_slot(sender);
+    CHECK(slot);
+
+    packet::stream_source_t send_src_id = 0;
+
+    {
+        SenderSlotMetrics slot_metrics;
+        slot->get_metrics(slot_metrics, NULL, NULL);
+        send_src_id = slot_metrics.source_id;
+    }
+
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
+
+    packet::Queue control_outbound_queue;
+    packet::IWriter* control_endpoint =
+        create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
+                                dst_addr2, control_outbound_queue);
+    CHECK(control_endpoint);
+
+    test::FrameWriter frame_writer(sender, sample_buffer_factory);
+
+    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
+                                     dst_addr1, PayloadType_Ch2);
+
+    test::ControlReader control_reader(control_outbound_queue);
+
+    const core::nanoseconds_t unix_base = 1000000000000000;
+
+    size_t next_report = ReportInterval / SamplesPerPacket;
+
+    for (size_t np = 0; np < (ReportInterval / SamplesPerPacket) * ManyReports; np++) {
+        for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            frame_writer.write_samples(SamplesPerFrame, input_sample_spec, unix_base);
+            sender.refresh(frame_writer.refresh_ts());
+        }
+
+        packet_reader.read_packet(SamplesPerPacket, packet_sample_spec, unix_base);
+
+        if (np > next_report) {
+            control_reader.read_report();
+
+            CHECK(!control_reader.has_src_addr());
+            CHECK(control_reader.has_dst_addr(dst_addr2));
+            CHECK(control_reader.has_sr(send_src_id));
+            CHECK(!control_reader.has_rr());
+            CHECK(!control_reader.has_rrtr());
+            CHECK(!control_reader.has_dlrr());
+            CHECK(!control_reader.has_measurement_info());
+            CHECK(!control_reader.has_delay_metrics());
+            CHECK(!control_reader.has_queue_metrics());
+
+            next_report = np + ReportInterval / SamplesPerPacket;
+        }
+    }
+}
+
+// Check reports generated by sender when there is one discovered receiver.
+// Generated reports should have blocks dedicated for receiver.
+TEST(sender_sink, reports_one_receiver) {
+    enum { Rate = SampleRate, Chans = Chans_Stereo, MaxParties = 10 };
+
+    init(Rate, Chans, Rate, Chans);
+
+    packet::Queue queue;
+
+    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
+                      sample_buffer_factory, arena);
+    CHECK(sender.is_valid());
+
+    SenderSlot* slot = create_slot(sender);
+    CHECK(slot);
+
+    packet::stream_source_t send_src_id = 0;
+    packet::stream_source_t recv_src_id = 0;
+
+    {
+        SenderSlotMetrics slot_metrics;
+        slot->get_metrics(slot_metrics, NULL, NULL);
+        send_src_id = slot_metrics.source_id;
+        recv_src_id = slot_metrics.source_id + 9999;
+    }
+
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
+
+    packet::Queue control_outbound_queue;
+    packet::IWriter* control_endpoint =
+        create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
+                                dst_addr2, control_outbound_queue);
+    CHECK(control_endpoint);
+
+    test::FrameWriter frame_writer(sender, sample_buffer_factory);
+
+    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
+                                     dst_addr1, PayloadType_Ch2);
+
+    test::ControlWriter control_writer(*control_endpoint, packet_factory,
+                                       byte_buffer_factory, dst_addr2, src_addr1);
+
+    control_writer.set_local_source(recv_src_id);
+    control_writer.set_remote_source(send_src_id);
+
+    test::ControlReader control_reader(control_outbound_queue);
+
+    const core::nanoseconds_t unix_base = 1000000000000000;
+
+    size_t next_report = ReportInterval / SamplesPerPacket;
+    size_t n_reports = 0;
+
+    for (size_t np = 0; np < (ReportInterval / SamplesPerPacket) * ManyReports; np++) {
+        if (np % (ReportInterval / SamplesPerPacket) == 0) {
+            control_writer.write_receiver_report(
+                packet::unix_2_ntp(frame_writer.refresh_ts()), packet_sample_spec);
+        }
+
+        for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            frame_writer.write_samples(SamplesPerFrame, input_sample_spec, unix_base);
+            sender.refresh(frame_writer.refresh_ts());
+        }
+
+        packet_reader.read_packet(SamplesPerPacket, packet_sample_spec, unix_base);
+
+        if (np > next_report) {
+            control_reader.read_report();
+
+            CHECK(!control_reader.has_src_addr());
+            CHECK(control_reader.has_dst_addr(dst_addr2));
+            CHECK(control_reader.has_sr(send_src_id));
+            CHECK(!control_reader.has_rr());
+            CHECK(!control_reader.has_rrtr());
+            if (n_reports == 0) {
+                CHECK(!control_reader.has_dlrr());
+            } else {
+                CHECK(control_reader.has_dlrr(send_src_id, recv_src_id));
+            }
+            CHECK(!control_reader.has_measurement_info());
+            CHECK(!control_reader.has_delay_metrics());
+            CHECK(!control_reader.has_queue_metrics());
+
+            next_report = np + ReportInterval / SamplesPerPacket;
+            n_reports++;
+        }
+    }
+}
+
+// Check reports generated by sender when there are two discovered receivers.
+// Generated reports should have blocks dedicated for both receivers.
+TEST(sender_sink, reports_two_receivers) {
+    enum { Rate = SampleRate, Chans = Chans_Stereo, MaxParties = 10 };
+
+    init(Rate, Chans, Rate, Chans);
+
+    packet::Queue queue;
+
+    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
+                      sample_buffer_factory, arena);
+    CHECK(sender.is_valid());
+
+    SenderSlot* slot = create_slot(sender);
+    CHECK(slot);
+
+    packet::stream_source_t send_src_id = 0;
+    packet::stream_source_t recv_src_id1 = 0;
+    packet::stream_source_t recv_src_id2 = 0;
+
+    {
+        SenderSlotMetrics slot_metrics;
+        slot->get_metrics(slot_metrics, NULL, NULL);
+        send_src_id = slot_metrics.source_id;
+        recv_src_id1 = slot_metrics.source_id + 7777;
+        recv_src_id2 = slot_metrics.source_id + 9999;
+    }
+
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
+
+    packet::Queue control_outbound_queue;
+    packet::IWriter* control_endpoint =
+        create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
+                                dst_addr2, control_outbound_queue);
+    CHECK(control_endpoint);
+
+    test::FrameWriter frame_writer(sender, sample_buffer_factory);
+
+    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
+                                     dst_addr1, PayloadType_Ch2);
+
+    test::ControlWriter control_writer1(*control_endpoint, packet_factory,
+                                        byte_buffer_factory, dst_addr2, src_addr1);
+
+    test::ControlWriter control_writer2(*control_endpoint, packet_factory,
+                                        byte_buffer_factory, dst_addr2, src_addr2);
+
+    control_writer1.set_local_source(recv_src_id1);
+    control_writer1.set_remote_source(send_src_id);
+
+    control_writer2.set_local_source(recv_src_id2);
+    control_writer2.set_remote_source(send_src_id);
+
+    test::ControlReader control_reader(control_outbound_queue);
+
+    const core::nanoseconds_t unix_base = 1000000000000000;
+
+    size_t next_report = ReportInterval / SamplesPerPacket;
+    size_t n_reports = 0;
+
+    for (size_t np = 0; np < (ReportInterval / SamplesPerPacket) * ManyReports; np++) {
+        if (np % (ReportInterval / SamplesPerPacket) == 0) {
+            control_writer1.write_receiver_report(
+                packet::unix_2_ntp(frame_writer.refresh_ts()), packet_sample_spec);
+            control_writer2.write_receiver_report(
+                packet::unix_2_ntp(frame_writer.refresh_ts()), packet_sample_spec);
+        }
+
+        for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            frame_writer.write_samples(SamplesPerFrame, input_sample_spec, unix_base);
+            sender.refresh(frame_writer.refresh_ts());
+        }
+
+        packet_reader.read_packet(SamplesPerPacket, packet_sample_spec, unix_base);
+
+        if (np > next_report) {
+            control_reader.read_report();
+
+            CHECK(!control_reader.has_src_addr());
+            CHECK(control_reader.has_dst_addr(dst_addr2));
+            CHECK(control_reader.has_sr(send_src_id));
+            CHECK(!control_reader.has_rr());
+            CHECK(!control_reader.has_rrtr());
+            if (n_reports == 0) {
+                CHECK(!control_reader.has_dlrr());
+            } else {
+                CHECK(control_reader.has_dlrr(send_src_id, recv_src_id1));
+                CHECK(control_reader.has_dlrr(send_src_id, recv_src_id2));
+            }
+            CHECK(!control_reader.has_measurement_info());
+            CHECK(!control_reader.has_delay_metrics());
+            CHECK(!control_reader.has_queue_metrics());
+
+            next_report = np + ReportInterval / SamplesPerPacket;
+            n_reports++;
         }
     }
 }

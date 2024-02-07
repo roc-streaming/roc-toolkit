@@ -360,8 +360,7 @@ void Reporter::process_dlrr_subblock(const header::XrPacket& xr,
 
     // Update estimated RTT.
     // Do it only if we sent RR and received SR and DLRR.
-    if (stream->last_local_rr != 0 && stream->last_remote_sr != 0
-        && stream->last_remote_dlrr != 0) {
+    if (stream->last_local_rr != 0 && stream->last_remote_sr != 0) {
         stream->remote_send_rtt.update(
             /* when we sent RR */ stream->last_local_rr,
             /* when remote received RR */ stream->remote_send_report.report_timestamp
@@ -411,8 +410,7 @@ void Reporter::process_rrtr_block(const header::XrPacket& xr,
 
     // Update estimated RTT.
     // Do it only if we sent SR and received RR and DLSR.
-    if (stream->last_local_sr != 0 && stream->last_remote_rr != 0
-        && stream->last_remote_dlsr != 0) {
+    if (stream->last_local_sr != 0 && stream->last_remote_rr != 0) {
         stream->remote_recv_rtt.update(
             /* when we sent SR */ stream->last_local_sr,
             /* when remote received SR */ stream->remote_recv_report.report_timestamp

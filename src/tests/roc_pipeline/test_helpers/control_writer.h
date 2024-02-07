@@ -24,6 +24,7 @@
 #include "roc_packet/units.h"
 #include "roc_rtcp/builder.h"
 #include "roc_rtcp/headers.h"
+#include "roc_rtcp/print_packet.h"
 
 namespace roc {
 namespace pipeline {
@@ -43,7 +44,8 @@ public:
         , src_addr_(src_addr)
         , dst_addr_(dst_addr)
         , local_source_(0)
-        , remote_source_(0) {
+        , remote_source_(0)
+        , cname_("test_cname") {
     }
 
     void write_sender_report(packet::ntp_timestamp_t ntp_ts,
@@ -65,7 +67,7 @@ public:
         chunk.ssrc = local_source_;
         rtcp::SdesItem item;
         item.type = rtcp::header::SDES_CNAME;
-        item.text = "test_send_cname";
+        item.text = cname_;
 
         bld.begin_sr(sr);
         bld.end_sr();
@@ -76,10 +78,13 @@ public:
         bld.end_sdes_chunk();
         bld.end_sdes();
 
+        CHECK(bld.is_ok());
+
         LONGS_EQUAL(status::StatusOK, writer_.write(new_packet_(buff)));
     }
 
-    void write_receiver_report(const audio::SampleSpec& sample_spec) {
+    void write_receiver_report(packet::ntp_timestamp_t ntp_ts,
+                               const audio::SampleSpec& sample_spec) {
         core::Slice<uint8_t> buff = buffer_factory_.new_buffer();
         CHECK(buff);
 
@@ -96,9 +101,14 @@ public:
         rr_blk.set_cum_loss(link_metrics_.lost_packets);
         rr_blk.set_last_seqnum(link_metrics_.ext_last_seqnum);
         rr_blk.set_jitter(sample_spec.ns_2_stream_timestamp(link_metrics_.jitter));
+        rr_blk.set_last_sr(ntp_ts);
+        rr_blk.set_delay_last_sr(0);
 
         rtcp::header::XrPacket xr;
         xr.set_ssrc(local_source_);
+
+        rtcp::header::XrRrtrBlock rrtr;
+        rrtr.set_ntp_timestamp(ntp_ts);
 
         rtcp::header::XrMeasurementInfoBlock ms_info;
         ms_info.set_ssrc(remote_source_);
@@ -120,13 +130,14 @@ public:
         chunk.ssrc = local_source_;
         rtcp::SdesItem item;
         item.type = rtcp::header::SDES_CNAME;
-        item.text = "test_recv_cname";
+        item.text = cname_;
 
         bld.begin_rr(rr);
         bld.add_rr_report(rr_blk);
         bld.end_rr();
 
         bld.begin_xr(xr);
+        bld.add_xr_rrtr(rrtr);
         bld.add_xr_measurement_info(ms_info);
         bld.add_xr_delay_metrics(delay_metrics);
         bld.add_xr_queue_metrics(queue_metrics);
@@ -138,7 +149,13 @@ public:
         bld.end_sdes_chunk();
         bld.end_sdes();
 
+        CHECK(bld.is_ok());
+
         LONGS_EQUAL(status::StatusOK, writer_.write(new_packet_(buff)));
+    }
+
+    void set_cname(const char* cname) {
+        cname_ = cname;
     }
 
     void set_local_source(packet::stream_source_t source) {
@@ -169,6 +186,10 @@ private:
 
         pp->set_buffer(buffer);
 
+        if (core::Logger::instance().get_level() >= LogTrace) {
+            rtcp::print_packet(buffer);
+        }
+
         return pp;
     }
 
@@ -185,6 +206,8 @@ private:
 
     packet::LinkMetrics link_metrics_;
     audio::LatencyMetrics latency_metrics_;
+
+    const char* cname_;
 };
 
 } // namespace test
