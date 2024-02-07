@@ -51,7 +51,7 @@ TEST(sender_encoder, sink) {
                 sender_config.input_sample_spec.sample_rate());
 }
 
-TEST(sender_encoder, read) {
+TEST(sender_encoder, read_packet) {
     Context context(context_config, arena);
     CHECK(context.is_valid());
 
@@ -62,9 +62,32 @@ TEST(sender_encoder, read) {
 
     // TODO(gh-183): compare with StatusNotFound
     LONGS_EQUAL(status::StatusNoData,
-                sender_encoder.read(address::Iface_AudioSource, pp));
+                sender_encoder.read_packet(address::Iface_AudioSource, pp));
+    CHECK(!pp);
     LONGS_EQUAL(status::StatusNoData,
-                sender_encoder.read(address::Iface_AudioRepair, pp));
+                sender_encoder.read_packet(address::Iface_AudioRepair, pp));
+    CHECK(!pp);
+    LONGS_EQUAL(status::StatusNoData,
+                sender_encoder.read_packet(address::Iface_AudioControl, pp));
+    CHECK(!pp);
+}
+
+TEST(sender_encoder, write_packet) {
+    Context context(context_config, arena);
+    CHECK(context.is_valid());
+
+    SenderEncoder sender_encoder(context, sender_config);
+    CHECK(sender_encoder.is_valid());
+
+    packet::PacketPtr pp;
+
+    // TODO(gh-183): compare with StatusNotFound
+    LONGS_EQUAL(status::StatusUnknown,
+                sender_encoder.write_packet(address::Iface_AudioSource, pp));
+    LONGS_EQUAL(status::StatusUnknown,
+                sender_encoder.write_packet(address::Iface_AudioRepair, pp));
+    LONGS_EQUAL(status::StatusUnknown,
+                sender_encoder.write_packet(address::Iface_AudioControl, pp));
 }
 
 TEST(sender_encoder, activate_no_fec) {

@@ -7,6 +7,7 @@
  */
 
 #include "roc_node/sender_encoder.h"
+#include "roc_address/interface.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_pipeline/metrics.h"
@@ -82,7 +83,7 @@ bool SenderEncoder::activate(address::Interface iface, address::Protocol proto) 
     roc_log(LogInfo, "sender encoder node: activating %s interface with protocol %s",
             address::interface_to_str(iface), address::proto_to_str(proto));
 
-    if (endpoint_readers_[iface]) {
+    if (endpoint_readers_[iface] || endpoint_writers_[iface]) {
         roc_log(LogError,
                 "sender encoder node:"
                 " can't activate %s interface: interface already activated",
@@ -104,6 +105,10 @@ bool SenderEncoder::activate(address::Interface iface, address::Protocol proto) 
     }
 
     endpoint_readers_[iface] = endpoint_queues_[iface].get();
+
+    if (iface == address::Iface_AudioControl) {
+        endpoint_writers_[iface] = endpoint_task.get_inbound_writer();
+    }
 
     return true;
 }
@@ -166,8 +171,8 @@ bool SenderEncoder::is_complete() {
     return slot_metrics.is_complete;
 }
 
-status::StatusCode SenderEncoder::read(address::Interface iface,
-                                       packet::PacketPtr& packet) {
+status::StatusCode SenderEncoder::read_packet(address::Interface iface,
+                                              packet::PacketPtr& packet) {
     roc_panic_if_not(is_valid());
 
     roc_panic_if(iface < 0);
@@ -184,6 +189,35 @@ status::StatusCode SenderEncoder::read(address::Interface iface,
     }
 
     return reader->read(packet);
+}
+
+status::StatusCode SenderEncoder::write_packet(address::Interface iface,
+                                               const packet::PacketPtr& packet) {
+    roc_panic_if_not(is_valid());
+
+    roc_panic_if(iface < 0);
+    roc_panic_if(iface >= (int)address::Iface_Max);
+
+    packet::IWriter* writer = endpoint_writers_[iface];
+    if (!writer) {
+        if (!endpoint_readers_[iface]) {
+            roc_log(LogError,
+                    "sender encoder node:"
+                    " can't write to %s interface: interface not activated",
+                    address::interface_to_str(iface));
+            // TODO(gh-183): return StatusNotFound
+            return status::StatusUnknown;
+        } else {
+            roc_log(LogError,
+                    "sender encoder node:"
+                    " can't write to %s interface: interface doesn't support writing",
+                    address::interface_to_str(iface));
+            // TODO(gh-183): return StatusBadOperation
+            return status::StatusUnknown;
+        }
+    }
+
+    return writer->write(packet);
 }
 
 sndio::ISink& SenderEncoder::sink() {

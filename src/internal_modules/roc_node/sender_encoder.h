@@ -65,8 +65,14 @@ public:
     bool is_complete();
 
     //! Read encoded packet.
-    ROC_ATTR_NODISCARD status::StatusCode read(address::Interface iface,
-                                               packet::PacketPtr& packet);
+    ROC_ATTR_NODISCARD status::StatusCode read_packet(address::Interface iface,
+                                                      packet::PacketPtr& packet);
+
+    //! Write packet for decoding.
+    //! @note
+    //!  Typically used to deliver control packets with receiver feedback.
+    ROC_ATTR_NODISCARD status::StatusCode write_packet(address::Interface iface,
+                                                       const packet::PacketPtr& packet);
 
     //! Sink for writing frames for encoding.
     sndio::ISink& sink();
@@ -82,6 +88,7 @@ private:
 
     core::Optional<packet::ConcurrentQueue> endpoint_queues_[address::Iface_Max];
     core::Atomic<packet::IReader*> endpoint_readers_[address::Iface_Max];
+    core::Atomic<packet::IWriter*> endpoint_writers_[address::Iface_Max];
 
     pipeline::SenderLoop pipeline_;
     pipeline::SenderLoop::SlotHandle slot_;

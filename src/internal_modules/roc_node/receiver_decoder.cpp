@@ -82,7 +82,7 @@ bool ReceiverDecoder::activate(address::Interface iface, address::Protocol proto
     roc_log(LogInfo, "receiver decoder node: activating %s interface with protocol %s",
             address::interface_to_str(iface), address::proto_to_str(proto));
 
-    if (endpoint_writers_[iface]) {
+    if (endpoint_readers_[iface] || endpoint_writers_[iface]) {
         roc_log(LogError,
                 "receiver decoder node:"
                 " can't activate %s interface: interface already activated",
@@ -103,6 +103,9 @@ bool ReceiverDecoder::activate(address::Interface iface, address::Protocol proto
         return false;
     }
 
+    if (iface == address::Iface_AudioControl) {
+        endpoint_readers_[iface] = endpoint_queues_[iface].get();
+    }
     endpoint_writers_[iface] = endpoint_task.get_inbound_writer();
 
     return true;
@@ -152,8 +155,8 @@ bool ReceiverDecoder::get_metrics(slot_metrics_func_t slot_metrics_func,
     return true;
 }
 
-status::StatusCode ReceiverDecoder::write(address::Interface iface,
-                                          const packet::PacketPtr& packet) {
+status::StatusCode ReceiverDecoder::write_packet(address::Interface iface,
+                                                 const packet::PacketPtr& packet) {
     roc_panic_if_not(is_valid());
 
     roc_panic_if(iface < 0);
@@ -170,6 +173,35 @@ status::StatusCode ReceiverDecoder::write(address::Interface iface,
     }
 
     return writer->write(packet);
+}
+
+status::StatusCode ReceiverDecoder::read_packet(address::Interface iface,
+                                                packet::PacketPtr& packet) {
+    roc_panic_if_not(is_valid());
+
+    roc_panic_if(iface < 0);
+    roc_panic_if(iface >= (int)address::Iface_Max);
+
+    packet::IReader* reader = endpoint_readers_[iface];
+    if (!reader) {
+        if (!endpoint_writers_[iface]) {
+            roc_log(LogError,
+                    "receiver decoder node:"
+                    " can't read from %s interface: interface not activated",
+                    address::interface_to_str(iface));
+            // TODO(gh-183): return StatusNotFound
+            return status::StatusNoData;
+        } else {
+            roc_log(LogError,
+                    "sender encoder node:"
+                    " can't write to %s interface: interface doesn't support reading",
+                    address::interface_to_str(iface));
+            // TODO(gh-183): return StatusBadOperation
+            return status::StatusNoData;
+        }
+    }
+
+    return reader->read(packet);
 }
 
 sndio::ISource& ReceiverDecoder::source() {

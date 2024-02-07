@@ -198,7 +198,7 @@ int roc_sender_encoder_pop(roc_sender_encoder* encoder,
     }
 
     packet::PacketPtr imp_packet;
-    const status::StatusCode code = imp_encoder->read(imp_iface, imp_packet);
+    const status::StatusCode code = imp_encoder->read_packet(imp_iface, imp_packet);
     if (code != status::StatusOK) {
         // TODO(gh-183): forward status code to user
         if (code != status::StatusNoData) {

@@ -59,8 +59,14 @@ public:
                                         void* party_metrics_arg);
 
     //! Write packet for decoding.
-    ROC_ATTR_NODISCARD status::StatusCode write(address::Interface iface,
-                                                const packet::PacketPtr& packet);
+    ROC_ATTR_NODISCARD status::StatusCode write_packet(address::Interface iface,
+                                                       const packet::PacketPtr& packet);
+
+    //! Read encoded packet.
+    //! @note
+    //!  Typically used to generate control packets with feedback for sender.
+    ROC_ATTR_NODISCARD status::StatusCode read_packet(address::Interface iface,
+                                                      packet::PacketPtr& packet);
 
     //! Source for reading decoded frames.
     sndio::ISource& source();
@@ -75,6 +81,7 @@ private:
     address::SocketAddr bind_address_;
 
     core::Optional<packet::ConcurrentQueue> endpoint_queues_[address::Iface_Max];
+    core::Atomic<packet::IReader*> endpoint_readers_[address::Iface_Max];
     core::Atomic<packet::IWriter*> endpoint_writers_[address::Iface_Max];
 
     pipeline::ReceiverLoop pipeline_;
