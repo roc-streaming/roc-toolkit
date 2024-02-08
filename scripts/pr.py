@@ -237,11 +237,14 @@ def query_pr_info(org, repo, pr_number):
         issue_info = query_issue_info(*pr_info['issue_link'])
         pr_info.update(issue_info)
 
-    pr_info['base_sha'], pr_info['base_ref'] = subprocess.run(
-        ['git', 'ls-remote', pr_info['target_remote'], pr_info['target_branch']],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        check=True).stdout.decode().strip().split()
+    try:
+        pr_info['base_sha'], pr_info['base_ref'] = subprocess.run(
+            ['git', 'ls-remote', pr_info['target_remote'], pr_info['target_branch']],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            check=True).stdout.decode().strip().split()
+    except subprocess.CalledProcessError as e:
+        error(f'failed to retrieve git remote info: {e.stderr.strip()}')
 
     return pr_info
 
