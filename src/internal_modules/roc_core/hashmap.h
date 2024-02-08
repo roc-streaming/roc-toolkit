@@ -203,6 +203,24 @@ public:
         return container_of_(next_node);
     }
 
+    //! Get hashmap element previous to given one.
+    //! Elements are ordered by insertion.
+    //!
+    //! @returns
+    //!  hashmap element preceeding @p element if @p element is not
+    //!  first, or NULL otherwise.
+    //!
+    //! @pre
+    //!  @p element should be member of this hashmap.
+    Pointer prevof(T& element) const {
+        HashmapNode::HashmapNodeData* node = element.hashmap_node_data();
+        HashmapNode::HashmapNodeData* prev_node = impl_.prevof(node);
+        if (!prev_node) {
+            return NULL;
+        }
+        return container_of_(prev_node);
+    }
+
     //! Insert element into hashmap.
     //!
     //! @remarks

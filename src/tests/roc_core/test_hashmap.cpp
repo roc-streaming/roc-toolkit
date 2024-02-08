@@ -58,41 +58,18 @@ private:
     bool visited_;
 };
 
+void format_key(char* key, size_t keysz, size_t n) {
+    StringBuilder b(key, keysz);
+    CHECK(b.append_str("key"));
+    CHECK(b.append_uint((uint64_t)n, 10));
+    CHECK(b.is_ok());
+}
+
+HeapArena arena;
+
 } // namespace
 
-TEST_GROUP(hashmap) {
-    HeapArena arena;
-
-    void format_key(char* key, size_t keysz, size_t n) {
-        StringBuilder b(key, keysz);
-        CHECK(b.append_str("key"));
-        CHECK(b.append_uint((uint64_t)n, 10));
-        CHECK(b.is_ok());
-    }
-
-    template <size_t Capacity> void test_embedded_capacity() {
-        Hashmap<Object, Capacity> hashmap;
-
-        UNSIGNED_LONGS_EQUAL(0, hashmap.capacity());
-
-        size_t n = 0;
-
-        for (;;) {
-            if (!hashmap.grow()) {
-                break;
-            }
-            n++;
-
-            char key[64];
-            format_key(key, sizeof(key), n);
-
-            SharedPtr<Object> obj = new Object(key);
-            CHECK(hashmap.insert(*obj));
-        }
-
-        CHECK((ssize_t)n >= (ssize_t)Capacity);
-    }
-};
+TEST_GROUP(hashmap) {};
 
 TEST(hashmap, empty) {
     Hashmap<Object> hashmap(arena);
@@ -335,7 +312,7 @@ TEST(hashmap, refcounting) {
     UNSIGNED_LONGS_EQUAL(1, obj2->getref());
 }
 
-TEST(hashmap, iterate) {
+TEST(hashmap, iterate_forward) {
     enum { NumElements = 200 };
 
     Hashmap<Object> hashmap(arena);
@@ -368,6 +345,32 @@ TEST(hashmap, iterate) {
     }
 
     UNSIGNED_LONGS_EQUAL(NumElements, pos);
+}
+
+TEST(hashmap, iterate_backward) {
+    enum { NumElements = 200 };
+
+    Hashmap<Object> hashmap(arena);
+
+    SharedPtr<Object> objects[NumElements];
+
+    CHECK(!hashmap.front());
+    CHECK(!hashmap.back());
+
+    for (size_t n = 0; n < NumElements; n++) {
+        char key[64];
+        format_key(key, sizeof(key), n);
+
+        SharedPtr<Object> obj = new Object(key);
+
+        CHECK(hashmap.grow());
+        CHECK(hashmap.insert(*obj));
+
+        objects[n] = obj;
+
+        CHECK(hashmap.front() == objects[0]);
+        CHECK(hashmap.back() == objects[n]);
+    }
 }
 
 TEST(hashmap, iterate_modify) {
@@ -421,6 +424,29 @@ TEST(hashmap, iterate_modify) {
     }
 
     UNSIGNED_LONGS_EQUAL(NumElements, pos);
+}
+
+template <size_t Capacity> void test_embedded_capacity() {
+    Hashmap<Object, Capacity> hashmap;
+
+    UNSIGNED_LONGS_EQUAL(0, hashmap.capacity());
+
+    size_t n = 0;
+
+    for (;;) {
+        if (!hashmap.grow()) {
+            break;
+        }
+        n++;
+
+        char key[64];
+        format_key(key, sizeof(key), n);
+
+        SharedPtr<Object> obj = new Object(key);
+        CHECK(hashmap.insert(*obj));
+    }
+
+    CHECK((ssize_t)n >= (ssize_t)Capacity);
 }
 
 TEST(hashmap, embedded_capacity) {

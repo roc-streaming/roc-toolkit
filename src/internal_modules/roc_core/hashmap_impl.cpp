@@ -105,6 +105,21 @@ HashmapImpl::nextof(HashmapNode::HashmapNodeData* node) const {
     return node->all_next;
 }
 
+HashmapNode::HashmapNodeData*
+HashmapImpl::prevof(HashmapNode::HashmapNodeData* node) const {
+    if (!contains(node)) {
+        roc_panic("hashmap:"
+                  " attempt to use an element which is not a member of %s hashmap",
+                  node->bucket == NULL ? "any" : "this");
+    }
+
+    if (node->all_prev == &all_head_) {
+        return NULL;
+    }
+
+    return node->all_prev;
+}
+
 bool HashmapImpl::insert(HashmapNode::HashmapNodeData* node,
                          hashsum_t hash,
                          const void* key,

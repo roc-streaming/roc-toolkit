@@ -74,6 +74,9 @@ public:
     //! Get hashmap node next to given one.
     HashmapNode::HashmapNodeData* nextof(HashmapNode::HashmapNodeData* node) const;
 
+    //! Get hashmap node previous to given one.
+    HashmapNode::HashmapNodeData* prevof(HashmapNode::HashmapNodeData* node) const;
+
     //! Insert node into hashmap.
     bool insert(HashmapNode::HashmapNodeData* node,
                 hashsum_t hash,
