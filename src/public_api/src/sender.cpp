@@ -205,7 +205,8 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
     }
 
     if (!frame->samples) {
-        roc_log(LogError, "roc_sender_write(): invalid arguments: samples is null");
+        roc_log(LogError,
+                "roc_sender_write(): invalid arguments: frame samples buffer is null");
         return -1;
     }
 

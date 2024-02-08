@@ -131,12 +131,13 @@ int roc_receiver_decoder_query(roc_receiver_decoder* decoder,
     return 0;
 }
 
-int roc_receiver_decoder_push(roc_receiver_decoder* decoder,
-                              roc_interface iface,
-                              const roc_packet* packet) {
+int roc_receiver_decoder_push_packet(roc_receiver_decoder* decoder,
+                                     roc_interface iface,
+                                     const roc_packet* packet) {
     if (!decoder) {
         roc_log(LogError,
-                "roc_receiver_decoder_push(): invalid arguments: decoder is null");
+                "roc_receiver_decoder_push_packet(): invalid arguments:"
+                " decoder is null");
         return -1;
     }
 
@@ -145,26 +146,29 @@ int roc_receiver_decoder_push(roc_receiver_decoder* decoder,
     address::Interface imp_iface;
     if (!api::interface_from_user(imp_iface, iface)) {
         roc_log(LogError,
-                "roc_receiver_decoder_push(): invalid arguments: bad interface");
+                "roc_receiver_decoder_push_packet(): invalid arguments:"
+                " bad interface");
         return -1;
     }
 
     if (!packet) {
         roc_log(LogError,
-                "roc_receiver_decoder_push(): invalid arguments: packet is null");
+                "roc_receiver_decoder_push_packet(): invalid arguments:"
+                " packet is null");
         return -1;
     }
 
     if (!packet->bytes) {
         roc_log(LogError,
-                "roc_receiver_decoder_push(): invalid arguments: packet bytes are null");
+                "roc_receiver_decoder_push_packet(): invalid arguments:"
+                " packet bytes buffer is null");
         return -1;
     }
 
     if (packet->bytes_size == 0) {
-        roc_log(
-            LogError,
-            "roc_receiver_decoder_push(): invalid arguments: packet bytes count is zero");
+        roc_log(LogError,
+                "roc_receiver_decoder_push_packet(): invalid arguments:"
+                " packet bytes count is zero");
         return -1;
     }
 
@@ -172,16 +176,17 @@ int roc_receiver_decoder_push(roc_receiver_decoder* decoder,
         imp_decoder->context().byte_buffer_factory().new_buffer();
     if (!imp_buffer) {
         roc_log(LogError,
-                "roc_receiver_decoder_push(): invalid arguments: can't allocate buffer");
+                "roc_receiver_decoder_push_packet():"
+                " can't allocate buffer of requested size");
         return -1;
     }
 
     if (imp_buffer->size() < packet->bytes_size) {
-        roc_log(
-            LogError,
-            "roc_receiver_decoder_push(): provided packet exceeds maximum packet size:"
-            " provided=%lu maximum=%lu",
-            (unsigned long)packet->bytes_size, (unsigned long)imp_buffer->size());
+        roc_log(LogError,
+                "roc_receiver_decoder_push_packet():"
+                " provided packet exceeds maximum packet size (see roc_context_config):"
+                " provided=%lu maximum=%lu",
+                (unsigned long)packet->bytes_size, (unsigned long)imp_buffer->size());
         return -1;
     }
 
@@ -191,7 +196,8 @@ int roc_receiver_decoder_push(roc_receiver_decoder* decoder,
     packet::PacketPtr imp_packet = imp_decoder->context().packet_factory().new_packet();
     if (!imp_packet) {
         roc_log(LogError,
-                "roc_receiver_decoder_push(): invalid arguments: can't allocate packet");
+                "roc_receiver_decoder_push_packet():"
+                " can't allocate packet");
         return -1;
     }
 
@@ -202,7 +208,8 @@ int roc_receiver_decoder_push(roc_receiver_decoder* decoder,
     if (code != status::StatusOK) {
         // TODO(gh-183): forward status code to user
         roc_log(LogError,
-                "roc_receiver_decoder_push(): can't write packet to decoder: status=%s",
+                "roc_receiver_decoder_push_packet():"
+                " can't write packet to decoder: status=%s",
                 status::code_to_str(code));
 
         return -1;
@@ -211,10 +218,74 @@ int roc_receiver_decoder_push(roc_receiver_decoder* decoder,
     return 0;
 }
 
-int roc_receiver_decoder_pop(roc_receiver_decoder* decoder, roc_frame* frame) {
+int roc_receiver_decoder_pop_feedback_packet(roc_receiver_decoder* decoder,
+                                             roc_interface iface,
+                                             roc_packet* packet) {
     if (!decoder) {
         roc_log(LogError,
-                "roc_receiver_decoder_pop(): invalid arguments: decoder is null");
+                "roc_receiver_decoder_pop_feedback_packet(): invalid arguments:"
+                " decoder is null");
+        return -1;
+    }
+
+    node::ReceiverDecoder* imp_decoder = (node::ReceiverDecoder*)decoder;
+
+    address::Interface imp_iface;
+    if (!api::interface_from_user(imp_iface, iface)) {
+        roc_log(LogError,
+                "roc_receiver_decoder_pop_feedback_packet(): invalid arguments:"
+                " bad interface");
+        return -1;
+    }
+
+    if (!packet) {
+        roc_log(LogError,
+                "roc_receiver_decoder_pop_feedback_packet(): invalid arguments:"
+                " packet is null");
+        return -1;
+    }
+
+    if (!packet->bytes) {
+        roc_log(LogError,
+                "roc_receiver_decoder_pop_feedback_packet(): invalid arguments:"
+                " packet bytes are null");
+        return -1;
+    }
+
+    packet::PacketPtr imp_packet;
+    const status::StatusCode code = imp_decoder->read_packet(imp_iface, imp_packet);
+    if (code != status::StatusOK) {
+        // TODO(gh-183): forward status code to user
+        if (code != status::StatusNoData) {
+            roc_log(LogError,
+                    "roc_receiver_decoder_pop_feedback_packet():"
+                    " can't read packet from decoder: status=%s",
+                    status::code_to_str(code));
+        }
+        return -1;
+    }
+
+    if (packet->bytes_size < imp_packet->buffer().size()) {
+        roc_log(LogError,
+                "roc_receiver_decoder_pop_feedback_packet(): not enough space in "
+                "provided packet:"
+                " provided=%lu needed=%lu",
+                (unsigned long)packet->bytes_size,
+                (unsigned long)imp_packet->buffer().size());
+        return -1;
+    }
+
+    memcpy(packet->bytes, imp_packet->buffer().data(), imp_packet->buffer().size());
+    packet->bytes_size = imp_packet->buffer().size();
+
+    return 0;
+}
+
+int roc_receiver_decoder_pop_frame(roc_receiver_decoder* decoder, roc_frame* frame) {
+    if (!decoder) {
+        roc_log(LogError,
+                "roc_receiver_decoder_pop_frame(): invalid arguments:"
+                " decoder is null");
         return -1;
     }
 
@@ -223,7 +294,9 @@ int roc_receiver_decoder_pop(roc_receiver_decoder* decoder, roc_frame* frame) {
     sndio::ISource& imp_source = imp_decoder->source();
 
     if (!frame) {
-        roc_log(LogError, "roc_receiver_decoder_pop(): invalid arguments: frame is null");
+        roc_log(LogError,
+                "roc_receiver_decoder_pop_frame(): invalid arguments:"
+                " frame is null");
         return -1;
     }
 
@@ -235,7 +308,7 @@ int roc_receiver_decoder_pop(roc_receiver_decoder* decoder, roc_frame* frame) {
 
     if (frame->samples_size % factor != 0) {
         roc_log(LogError,
-                "roc_receiver_decoder_pop(): invalid arguments:"
+                "roc_receiver_decoder_pop_frame(): invalid arguments:"
                 " # of samples should be multiple of %u",
                 (unsigned)factor);
         return -1;
@@ -243,14 +316,17 @@ int roc_receiver_decoder_pop(roc_receiver_decoder* decoder, roc_frame* frame) {
 
     if (!frame->samples) {
         roc_log(LogError,
-                "roc_receiver_decoder_pop(): invalid arguments: samples is null");
+                "roc_receiver_decoder_pop_frame(): invalid arguments:"
+                " frame samples buffer is null");
         return -1;
     }
 
     audio::Frame imp_frame((float*)frame->samples, frame->samples_size / sizeof(float));
 
     if (!imp_source.read(imp_frame)) {
-        roc_log(LogError, "roc_receiver_decoder_pop(): got unexpected eof from source");
+        roc_log(LogError,
+                "roc_receiver_decoder_pop_frame():"
+                " got unexpected eof from source");
         return -1;
     }
 

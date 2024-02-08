@@ -45,17 +45,24 @@ extern "C" {
  *   them (e.g. only audio packets or also redundancy packets).
  *
  * - The audio stream is iteratively pushed to the encoder using
- *   roc_sender_encoder_push(). The sender encodes the stream into packets and accumulates
- *   them in internal queue.
+ *   roc_sender_encoder_push_frame(). The sender encodes the stream into packets and
+ *   accumulates them in internal queue.
  *
  * - The packet stream is iteratively popped from the encoder internal queue using
- *   roc_sender_encoder_pop(). User should retrieve all available packets from all
+ *   roc_sender_encoder_pop_packet(). User should retrieve all available packets from all
  *   activated interfaces every time after pushing a frame.
  *
  * - User is responsible for delivering packets to \ref roc_receiver_decoder and pushing
  *   them to appropriate interfaces of decoder.
  *
- * - The sender is eventually destroyed using roc_sender_encoder_close().
+ * - In addition, if a control interface is activated, the stream of encoded feedback
+ *   packets from decoder is pushed to encoder internal queue using
+ *   roc_sender_encoder_push_feedback_packet().
+ *
+ * - User is responsible for delivering feedback packets from \ref roc_receiver_decoder
+ *   and pushing them to appropriate interfaces of encoder.
+ *
+ * - Encoder is eventually destroyed using roc_sender_encoder_close().
  *
  * **Interfaces and protocols**
  *
@@ -63,9 +70,19 @@ extern "C" {
  * The interface defines the type of the communication with the remote node and the set
  * of the protocols supported by it.
  *
- * Each interface has its own packet queue. When a frame is pushed to the encoder, it
- * may produce multiple packets for each interface queue. The user then should pop
- * packets from each interface that was activated.
+ * Each interface has its own outbound packet queue. When a frame is pushed to the
+ * encoder, it may produce multiple packets for each interface queue. The user then should
+ * pop packets from each interface that was activated.
+ *
+ * **Feedback packets**
+ *
+ * Control interface in addition has inbound packet queue. The user should push feedback
+ * packets from decoder to this queue. When a frame is pushed to encoder, it consumes
+ * those accumulated packets.
+ *
+ * The user should deliver feedback packets from decoder back to encoder. Feedback packets
+ * allow decoder and encoder to exchange metrics like latency and losses, and several
+ * features like latency calculations require feedback to function properly.
  *
  * **Thread safety**
  *
@@ -104,7 +121,7 @@ ROC_API int roc_sender_encoder_open(roc_context* context,
  * Checks that the protocol is valid and supported by the interface, and
  * initializes given interface with given protocol.
  *
- * The user should invoke roc_sender_encoder_pop() for all activated interfaces
+ * The user should invoke roc_sender_encoder_pop_packet() for all activated interfaces
  * and deliver packets to appropriate interfaces of \ref roc_receiver_decoder.
  *
  * **Parameters**
@@ -182,15 +199,43 @@ ROC_API int roc_sender_encoder_query(roc_sender_encoder* encoder,
  *  - doesn't take or share the ownership of \p frame; it may be safely deallocated
  *    after the function returns
  */
-ROC_API int roc_sender_encoder_push(roc_sender_encoder* encoder, const roc_frame* frame);
+ROC_API int roc_sender_encoder_push_frame(roc_sender_encoder* encoder,
+                                          const roc_frame* frame);
+
+/** Write feedback packet to encoder.
+ *
+ * Adds encoded feedback packet to the interface queue.
+ *
+ * The user should iteratively push all delivered feedback packets to appropriate
+ * interfaces. They will be later consumed by roc_sender_encoder_push_frame().
+ *
+ * **Parameters**
+ *  - \p encoder should point to an opened encoder
+ *  - \p packet should point to an initialized packet; it should contain pointer to
+ *    a buffer and it's size; the buffer is fully copied into encoder
+ *
+ * **Returns**
+ *  - returns zero if a packet was successfully copied to encoder
+ *  - returns a negative value if the interface is not activated
+ *  - returns a negative value if the buffer size of the provided packet is too large
+ *  - returns a negative value if the arguments are invalid
+ *  - returns a negative value on resource allocation failure
+ *
+ * **Ownership**
+ *  - doesn't take or share the ownership of \p packet; it may be safely deallocated
+ *    after the function returns
+ */
+ROC_API int roc_sender_encoder_push_feedback_packet(roc_sender_encoder* encoder,
+                                                    roc_interface iface,
+                                                    const roc_packet* packet);
 
 /** Read packet from encoder.
  *
  * Removes encoded packet from interface queue and returns it to the user.
  *
- * Packets are added to the queue from roc_sender_encoder_push(). Each push may produce
- * multiple packets, so the user should iteratively pop packets until error. This should
- * be repeated for all activated interfaces.
+ * Packets are added to the queue from roc_sender_encoder_push_frame(). Each push may
+ * produce multiple packets, so the user should iteratively pop packets until error.
+ * This should be repeated for all activated interfaces.
  *
  * **Parameters**
  *  - \p encoder should point to an opened encoder
@@ -210,9 +255,9 @@ ROC_API int roc_sender_encoder_push(roc_sender_encoder* encoder, const roc_frame
  *  - doesn't take or share the ownership of \p packet; it may be safely deallocated
  *    after the function returns
  */
-ROC_API int roc_sender_encoder_pop(roc_sender_encoder* encoder,
-                                   roc_interface iface,
-                                   roc_packet* packet);
+ROC_API int roc_sender_encoder_pop_packet(roc_sender_encoder* encoder,
+                                          roc_interface iface,
+                                          roc_packet* packet);
 
 /** Close encoder.
  *

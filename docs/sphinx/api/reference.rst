@@ -89,9 +89,11 @@ roc_sender_encoder
 
 .. doxygenfunction:: roc_sender_encoder_query
 
-.. doxygenfunction:: roc_sender_encoder_push
+.. doxygenfunction:: roc_sender_encoder_push_frame
 
-.. doxygenfunction:: roc_sender_encoder_pop
+.. doxygenfunction:: roc_sender_encoder_push_feedback_packet
+
+.. doxygenfunction:: roc_sender_encoder_pop_packet
 
 .. doxygenfunction:: roc_sender_encoder_close
 
@@ -110,9 +112,11 @@ roc_receiver_decoder
 
 .. doxygenfunction:: roc_receiver_decoder_query
 
-.. doxygenfunction:: roc_receiver_decoder_push
+.. doxygenfunction:: roc_receiver_decoder_push_packet
 
-.. doxygenfunction:: roc_receiver_decoder_pop
+.. doxygenfunction:: roc_receiver_decoder_pop_feedback_packet
+
+.. doxygenfunction:: roc_receiver_decoder_pop_frame
 
 .. doxygenfunction:: roc_receiver_decoder_close
 

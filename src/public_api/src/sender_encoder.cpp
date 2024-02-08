@@ -128,10 +128,11 @@ int roc_sender_encoder_query(roc_sender_encoder* encoder,
     return 0;
 }
 
-int roc_sender_encoder_push(roc_sender_encoder* encoder, const roc_frame* frame) {
+int roc_sender_encoder_push_frame(roc_sender_encoder* encoder, const roc_frame* frame) {
     if (!encoder) {
         roc_log(LogError,
-                "roc_sender_encoder_push(): invalid arguments: encoder is null");
+                "roc_sender_encoder_push_frame(): invalid arguments:"
+                " encoder is null");
         return -1;
     }
 
@@ -140,7 +141,9 @@ int roc_sender_encoder_push(roc_sender_encoder* encoder, const roc_frame* frame)
     sndio::ISink& imp_sink = imp_encoder->sink();
 
     if (!frame) {
-        roc_log(LogError, "roc_sender_encoder_push(): invalid arguments: frame is null");
+        roc_log(LogError,
+                "roc_sender_encoder_push_frame(): invalid arguments:"
+                " frame is null");
         return -1;
     }
 
@@ -152,7 +155,7 @@ int roc_sender_encoder_push(roc_sender_encoder* encoder, const roc_frame* frame)
 
     if (frame->samples_size % factor != 0) {
         roc_log(LogError,
-                "roc_sender_encoder_push(): invalid arguments:"
+                "roc_sender_encoder_push_frame(): invalid arguments:"
                 " # of samples should be multiple of %u",
                 (unsigned)factor);
         return -1;
@@ -160,7 +163,8 @@ int roc_sender_encoder_push(roc_sender_encoder* encoder, const roc_frame* frame)
 
     if (!frame->samples) {
         roc_log(LogError,
-                "roc_sender_encoder_push(): invalid arguments: samples is null");
+                "roc_sender_encoder_push_frame(): invalid arguments:"
+                " frame samples buffer is null");
         return -1;
     }
 
@@ -170,11 +174,13 @@ int roc_sender_encoder_push(roc_sender_encoder* encoder, const roc_frame* frame)
     return 0;
 }
 
-int roc_sender_encoder_pop(roc_sender_encoder* encoder,
-                           roc_interface iface,
-                           roc_packet* packet) {
+int roc_sender_encoder_push_feedback_packet(roc_sender_encoder* encoder,
+                                            roc_interface iface,
+                                            const roc_packet* packet) {
     if (!encoder) {
-        roc_log(LogError, "roc_sender_encoder_pop(): invalid arguments: encoder is null");
+        roc_log(LogError,
+                "roc_sender_encoder_push_feedback_packet(): invalid arguments:"
+                " encoder is null");
         return -1;
     }
 
@@ -182,18 +188,110 @@ int roc_sender_encoder_pop(roc_sender_encoder* encoder,
 
     address::Interface imp_iface;
     if (!api::interface_from_user(imp_iface, iface)) {
-        roc_log(LogError, "roc_sender_encoder_pop(): invalid arguments: bad interface");
+        roc_log(LogError,
+                "roc_sender_encoder_push_feedback_packet(): invalid arguments:"
+                " bad interface");
         return -1;
     }
 
     if (!packet) {
-        roc_log(LogError, "roc_sender_encoder_pop(): invalid arguments: packet is null");
+        roc_log(LogError,
+                "roc_sender_encoder_push_feedback_packet(): invalid arguments:"
+                " packet is null");
         return -1;
     }
 
     if (!packet->bytes) {
         roc_log(LogError,
-                "roc_sender_encoder_pop(): invalid arguments: packet bytes are null");
+                "roc_sender_encoder_push_feedback_packet(): invalid arguments:"
+                " packet bytes buffer is null");
+        return -1;
+    }
+
+    if (packet->bytes_size == 0) {
+        roc_log(LogError,
+                "roc_sender_encoder_push_feedback_packet(): invalid arguments:"
+                " packet bytes count is zero");
+        return -1;
+    }
+
+    core::SharedPtr<core::Buffer<uint8_t> > imp_buffer =
+        imp_encoder->context().byte_buffer_factory().new_buffer();
+    if (!imp_buffer) {
+        roc_log(LogError,
+                "roc_sender_encoder_push_feedback_packet():"
+                " can't allocate buffer of requested size");
+        return -1;
+    }
+
+    if (imp_buffer->size() < packet->bytes_size) {
+        roc_log(LogError,
+                "roc_sender_encoder_push_feedback_packet():"
+                " provided packet exceeds maximum packet size (see roc_context_config):"
+                " provided=%lu maximum=%lu",
+                (unsigned long)packet->bytes_size, (unsigned long)imp_buffer->size());
+        return -1;
+    }
+
+    core::Slice<uint8_t> imp_slice(*imp_buffer, 0, packet->bytes_size);
+    memcpy(imp_slice.data(), packet->bytes, packet->bytes_size);
+
+    packet::PacketPtr imp_packet = imp_encoder->context().packet_factory().new_packet();
+    if (!imp_packet) {
+        roc_log(LogError,
+                "roc_sender_encoder_push_feedback_packet():"
+                " can't allocate packet");
+        return -1;
+    }
+
+    imp_packet->add_flags(packet::Packet::FlagUDP);
+    imp_packet->set_buffer(imp_slice);
+
+    const status::StatusCode code = imp_encoder->write_packet(imp_iface, imp_packet);
+    if (code != status::StatusOK) {
+        // TODO(gh-183): forward status code to user
+        roc_log(LogError,
+                "roc_sender_encoder_push_feedback_packet():"
+                " can't write packet to encoder: status=%s",
+                status::code_to_str(code));
+
+        return -1;
+    }
+
+    return 0;
+}
+
+int roc_sender_encoder_pop_packet(roc_sender_encoder* encoder,
+                                  roc_interface iface,
+                                  roc_packet* packet) {
+    if (!encoder) {
+        roc_log(LogError,
+                "roc_sender_encoder_pop_packet(): invalid arguments:"
+                " encoder is null");
+        return -1;
+    }
+
+    node::SenderEncoder* imp_encoder = (node::SenderEncoder*)encoder;
+
+    address::Interface imp_iface;
+    if (!api::interface_from_user(imp_iface, iface)) {
+        roc_log(LogError,
+                "roc_sender_encoder_pop_packet(): invalid arguments:"
+                " bad interface");
+        return -1;
+    }
+
+    if (!packet) {
+        roc_log(LogError,
+                "roc_sender_encoder_pop_packet(): invalid arguments:"
+                " packet is null");
+        return -1;
+    }
+
+    if (!packet->bytes) {
+        roc_log(LogError,
+                "roc_sender_encoder_pop_packet(): invalid arguments:"
+                " packet bytes are null");
         return -1;
     }
 
@@ -203,7 +301,8 @@ int roc_sender_encoder_pop(roc_sender_encoder* encoder,
         // TODO(gh-183): forward status code to user
         if (code != status::StatusNoData) {
             roc_log(LogError,
-                    "roc_sender_encoder_pop(): can't read packet from encoder: status=%s",
+                    "roc_sender_encoder_pop_packet():"
+                    " can't read packet from encoder: status=%s",
                     status::code_to_str(code));
         }
         return -1;
@@ -211,7 +310,7 @@ int roc_sender_encoder_pop(roc_sender_encoder* encoder,
 
     if (packet->bytes_size < imp_packet->buffer().size()) {
         roc_log(LogError,
-                "roc_sender_encoder_pop(): not enough space in provided packet:"
+                "roc_sender_encoder_pop_packet(): not enough space in provided packet:"
                 " provided=%lu needed=%lu",
                 (unsigned long)packet->bytes_size,
                 (unsigned long)imp_packet->buffer().size());

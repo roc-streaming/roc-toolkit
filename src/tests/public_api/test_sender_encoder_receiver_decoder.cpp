@@ -115,7 +115,7 @@ TEST_GROUP(sender_encoder_receiver_decoder) {
                 roc_frame frame;
                 frame.samples = samples;
                 frame.samples_size = test::FrameSamples * sizeof(float);
-                CHECK(roc_sender_encoder_push(encoder, &frame) == 0);
+                CHECK(roc_sender_encoder_push_frame(encoder, &frame) == 0);
             }
             {
                 // simulate small network delay, so that receiver will calculate
@@ -132,11 +132,13 @@ TEST_GROUP(sender_encoder_receiver_decoder) {
                         packet.bytes = bytes;
                         packet.bytes_size = test::MaxBufSize;
 
-                        if (roc_sender_encoder_pop(encoder, ifaces[n_if], &packet) != 0) {
+                        if (roc_sender_encoder_pop_packet(encoder, ifaces[n_if], &packet)
+                            != 0) {
                             break;
                         }
 
-                        CHECK(roc_receiver_decoder_push(decoder, ifaces[n_if], &packet)
+                        CHECK(roc_receiver_decoder_push_packet(decoder, ifaces[n_if],
+                                                               &packet)
                               == 0);
 
                         iface_packets[n_if]++;
@@ -149,7 +151,7 @@ TEST_GROUP(sender_encoder_receiver_decoder) {
                 roc_frame frame;
                 frame.samples = samples;
                 frame.samples_size = test::FrameSamples * sizeof(float);
-                CHECK(roc_receiver_decoder_pop(decoder, &frame) == 0);
+                CHECK(roc_receiver_decoder_pop_frame(decoder, &frame) == 0);
 
                 for (size_t ns = 0; ns < test::FrameSamples; ns++) {
                     total_samples++;

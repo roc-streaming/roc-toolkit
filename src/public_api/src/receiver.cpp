@@ -206,7 +206,8 @@ int roc_receiver_read(roc_receiver* receiver, roc_frame* frame) {
     }
 
     if (!frame->samples) {
-        roc_log(LogError, "roc_receiver_read(): invalid arguments: samples is null");
+        roc_log(LogError,
+                "roc_receiver_read(): invalid arguments: frame samples buffer is null");
         return -1;
     }
 
