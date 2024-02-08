@@ -46,7 +46,7 @@ Network protocols
 
   This example is like `send_receive_rtp.c`, but it creates two endpoints:
    - the first, source endpoint is used to transmit audio stream
-   - the first, repair endpoint is used to transmit redundant stream
+   - the second, repair endpoint is used to transmit redundant stream
 
   The redundant stream is used on receiver to recover lost audio packets.
   This is useful on unreliable networks.

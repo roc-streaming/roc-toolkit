@@ -31,13 +31,13 @@ typedef enum roc_log_level {
 
     /** Error messages.
      * Setting this level enables logging only when something goes wrong, e.g. a user
-     * operation can't be completed, or there is not enough memory for a new session.
+     * operation can't be completed, or there is not enough memory.
      */
     ROC_LOG_ERROR = 1,
 
     /** Informational messages.
      * Setting this level enables logging of important high-level events, like binding
-     * a new port or creating a new session.
+     * a new port or accepting a new connection.
      */
     ROC_LOG_INFO = 2,
 

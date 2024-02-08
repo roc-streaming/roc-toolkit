@@ -25,13 +25,9 @@ DelayedReader::DelayedReader(IReader& reader,
     , started_(false)
     , sample_spec_(sample_spec)
     , valid_(false) {
-    if (target_delay < 0) {
-        roc_log(LogError, "delayed reader: delay out of bounds: target_delay=%.3fms",
-                (double)target_delay / core::Millisecond);
-        return;
+    if (target_delay > 0) {
+        delay_ = sample_spec.ns_2_stream_timestamp(target_delay);
     }
-
-    delay_ = sample_spec.ns_2_stream_timestamp(target_delay);
 
     roc_log(LogDebug, "delayed reader: initializing: delay=%lu(%.3fms)",
             (unsigned long)delay_, sample_spec_.stream_timestamp_2_ms(delay_));

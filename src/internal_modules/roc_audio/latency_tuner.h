@@ -84,16 +84,14 @@ struct LatencyConfig {
     //! @remarks
     //!  If the latency goes out of bounds, the session is terminated.
     //! @note
-    //!  If zero, default value is used if possible.
-    //!  Negative value is allowed.
+    //!  If both min_latency and max_latency are zero, defaults are used.
     core::nanoseconds_t min_latency;
 
     //! Maximum allowed latency.
     //! @remarks
     //!  If the latency goes out of bounds, the session is terminated.
     //! @note
-    //!  If zero, default value is used if possible.
-    //!  Negative value is allowed (but doesn't make sense).
+    //!  If both min_latency and max_latency are zero, defaults are used.
     core::nanoseconds_t max_latency;
 
     //! Maximum delay since last packet before queue is considered stalling.
@@ -228,8 +226,8 @@ private:
     const LatencyTunerBackend backend_;
     const LatencyTunerProfile profile_;
 
-    const bool enable_checking_;
     const bool enable_tuning_;
+    const bool enable_bounds_;
 
     bool has_niq_latency_;
     packet::stream_timestamp_diff_t niq_latency_;

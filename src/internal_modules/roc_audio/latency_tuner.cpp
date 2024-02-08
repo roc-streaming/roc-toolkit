@@ -22,74 +22,7 @@ const core::nanoseconds_t LogInterval = 5 * core::Second;
 
 void LatencyConfig::deduce_defaults(core::nanoseconds_t default_target_latency,
                                     bool is_receiver) {
-    if (target_latency == 0) {
-        if (is_receiver) {
-            if (tuner_profile != LatencyTunerProfile_Intact) {
-                // Latency tuning is enabled on receiver.
-                // Use default if target latency is not specified.
-                target_latency = default_target_latency;
-            } else {
-                // Latency tuning is disabled on receiver.
-                // Most likely, it is enabled on sender. To make tuning work on sender,
-                // user should configure exactly same target latency on both sides.
-                // To make this requirement clear, in this case we don't use any default
-                // and require target latency to be specified explicitly on both sides.
-                target_latency = 0;
-            }
-        } else {
-            // See comment above.
-            // If latency tuning is enabled on sender, we don't use any default
-            // and require target latency to be specified explicitly.
-            target_latency = 0;
-        }
-    }
-
-    if ((min_latency == 0 || max_latency == 0 || stale_tolerance == 0)
-        && target_latency > 0) {
-        // Out formula doesn't work well on latencies close to zero.
-        const core::nanoseconds_t floored_target_latency =
-            std::max(target_latency, core::Millisecond);
-
-        // On sender, apply multiplier to make default tolerance a bit higher than
-        // on receiver. This way, if tolerance is enabled on both sides, receiver
-        // will always trigger first.
-        const int multiplier = is_receiver ? 1 : 2;
-
-        // This formula returns target_latency * N, where N starts with larger
-        // number and approaches 0.5 as target_latency grows.
-        // By default we're very tolerant and allow rather big oscillations.
-        // Examples (for multiplier = 1):
-        //  target=1ms -> tolerance=8ms (x8)
-        //  target=10ms -> tolerance=20ms (x2)
-        //  target=200ms -> tolerance=200ms (x1)
-        //  target=2000ms -> tolerance=1444ms (x0.722)
-        const core::nanoseconds_t latency_tolerance =
-            core::nanoseconds_t(floored_target_latency
-                                * (std::log((200 * core::Millisecond) * 2 * multiplier)
-                                   / std::log(floored_target_latency * 2)));
-
-        if (min_latency == 0) {
-            min_latency = target_latency - latency_tolerance;
-        }
-        if (max_latency == 0) {
-            max_latency = target_latency + latency_tolerance;
-        }
-
-        if (stale_tolerance == 0) {
-            // Consider queue "stalling" if at least 1/4 of the missing latency
-            // is caused by lack of new packets.
-            stale_tolerance = (target_latency - min_latency) / 4;
-        }
-    }
-
-    if (scaling_interval == 0) {
-        scaling_interval = 5 * core::Millisecond;
-    }
-
-    if (scaling_tolerance == 0) {
-        scaling_tolerance = 0.005f;
-    }
-
+    // Deduce defaults for backend and profile.
     if (tuner_backend == LatencyTunerBackend_Default) {
         tuner_backend = LatencyTunerBackend_Niq;
     }
@@ -119,6 +52,93 @@ void LatencyConfig::deduce_defaults(core::nanoseconds_t default_target_latency,
             tuner_profile = LatencyTunerProfile_Intact;
         }
     }
+
+    // Deduce default target latency.
+    if (target_latency == 0) {
+        if (is_receiver) {
+            if (tuner_profile != LatencyTunerProfile_Intact) {
+                // Latency tuning is enabled on receiver.
+                // Use default if target latency is not specified.
+                target_latency = default_target_latency;
+            } else {
+                // Latency tuning is disabled on receiver.
+                // Most likely, it is enabled on sender. To make tuning work on sender,
+                // user should configure exactly same target latency on both sides.
+                // To make this requirement clear, in this case we don't use any default
+                // and require target latency to be specified explicitly on both sides.
+                // So if target latency was not set, we assign an invalid value to it
+                // to trigger config validation failure.
+                target_latency = -1;
+            }
+        } else {
+            if (tuner_profile != LatencyTunerProfile_Intact) {
+                // See comment above.
+                // If latency tuning is enabled on sender, we don't use any default
+                // and require target latency to be specified explicitly.
+                target_latency = -1;
+            }
+        }
+    }
+
+    // If latency tuning is enabled.
+    if (tuner_profile != LatencyTunerProfile_Intact) {
+        // Deduce defaults for min_latency & max_latency if both are zero.
+        if (min_latency == 0 && max_latency == 0) {
+            if (target_latency > 0) {
+                // Out formula doesn't work well on latencies close to zero.
+                const core::nanoseconds_t floored_target_latency =
+                    std::max(target_latency, core::Millisecond);
+
+                // On sender, apply multiplier to make default tolerance a bit higher than
+                // on receiver. This way, if bounding is enabled on both sides, receiver
+                // will always trigger first.
+                const int multiplier = is_receiver ? 1 : 4;
+
+                // This formula returns target_latency * N, where N starts with larger
+                // number and approaches 0.5 as target_latency grows.
+                // By default we're very tolerant and allow rather big oscillations.
+                // Examples (for multiplier = 1):
+                //  target=1ms -> tolerance=8ms (x8)
+                //  target=10ms -> tolerance=20ms (x2)
+                //  target=200ms -> tolerance=200ms (x1)
+                //  target=2000ms -> tolerance=1444ms (x0.722)
+                const core::nanoseconds_t latency_tolerance = core::nanoseconds_t(
+                    floored_target_latency
+                    * (std::log((200 * core::Millisecond) * 2 * multiplier)
+                       / std::log(floored_target_latency * 2)));
+
+                min_latency = target_latency - latency_tolerance;
+                max_latency = target_latency + latency_tolerance;
+            } else {
+                // Can't deduce min_latency & max_latency without target_latency.
+                min_latency = -1;
+                min_latency = -1;
+            }
+        }
+
+        // Deduce defaults for scaling_interval & scaling_tolerance.
+        if (scaling_interval == 0) {
+            scaling_interval = 5 * core::Millisecond;
+        }
+        if (scaling_tolerance == 0) {
+            scaling_tolerance = 0.005f;
+        }
+    }
+
+    // If latency bounding is enabled.
+    if (min_latency != 0 || max_latency != 0) {
+        // Deduce default for stale_tolerance.
+        if (stale_tolerance == 0) {
+            if (target_latency > 0) {
+                // Consider queue "stalling" if at least 1/4 of the missing latency
+                // is caused by lack of new packets.
+                stale_tolerance = (target_latency - min_latency) / 4;
+            } else {
+                // Can't deduce stale_tolerance without target_latency.
+                stale_tolerance = -1;
+            }
+        }
+    }
 }
 
 LatencyTuner::LatencyTuner(const LatencyConfig& config, const SampleSpec& sample_spec)
@@ -131,9 +151,9 @@ LatencyTuner::LatencyTuner(const LatencyConfig& config, const SampleSpec& sample
     , freq_coeff_max_delta_(config.scaling_tolerance)
     , backend_(config.tuner_backend)
     , profile_(config.tuner_profile)
-    , enable_checking_(config.target_latency != 0 || config.min_latency != 0
-                       || config.max_latency != 0)
     , enable_tuning_(config.tuner_profile != audio::LatencyTunerProfile_Intact)
+    , enable_bounds_(config.tuner_profile != audio::LatencyTunerProfile_Intact
+                     || config.min_latency != 0 || config.max_latency != 0)
     , has_niq_latency_(false)
     , niq_latency_(0)
     , niq_stalling_(0)
@@ -166,19 +186,17 @@ LatencyTuner::LatencyTuner(const LatencyConfig& config, const SampleSpec& sample
             (double)config.scaling_tolerance, latency_tuner_backend_to_str(backend_),
             latency_tuner_profile_to_str(profile_));
 
-    if (enable_checking_ || enable_tuning_) {
+    if (config.target_latency < 0) {
+        roc_log(LogError,
+                "latency tuner: invalid config:"
+                " target_latency should be set to non-zero value");
+        return;
+    }
+
+    if (enable_bounds_ || enable_tuning_) {
         target_latency_ = sample_spec_.ns_2_stream_timestamp_delta(config.target_latency);
 
-        if (config.target_latency == 0) {
-            roc_log(LogError,
-                    "latency tuner: invalid config: target_latency is not set:"
-                    " target_latency=%ld(%.3fms)",
-                    (long)sample_spec_.ns_2_stream_timestamp_delta(config.target_latency),
-                    (double)config.target_latency / core::Millisecond);
-            return;
-        }
-
-        if (config.target_latency < 0 || target_latency_ < 0) {
+        if (config.target_latency <= 0 || target_latency_ <= 0) {
             roc_log(LogError,
                     "latency tuner: invalid config: target_latency is invalid:"
                     " target_latency=%ld(%.3fms)",
@@ -187,7 +205,7 @@ LatencyTuner::LatencyTuner(const LatencyConfig& config, const SampleSpec& sample
             return;
         }
 
-        if (enable_checking_) {
+        if (enable_bounds_) {
             min_latency_ = sample_spec_.ns_2_stream_timestamp_delta(config.min_latency);
             max_latency_ = sample_spec_.ns_2_stream_timestamp_delta(config.max_latency);
             max_stalling_ =
@@ -300,7 +318,7 @@ bool LatencyTuner::update_stream() {
         break;
     }
 
-    if (enable_checking_) {
+    if (enable_bounds_) {
         if (!check_bounds_(latency)) {
             return false;
         }

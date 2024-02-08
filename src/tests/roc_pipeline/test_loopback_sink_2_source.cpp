@@ -265,6 +265,9 @@ SenderConfig make_sender_config(int flags,
     config.enable_timing = false;
     config.enable_profiling = true;
 
+    config.latency.tuner_backend = audio::LatencyTunerBackend_Niq;
+    config.latency.tuner_profile = audio::LatencyTunerProfile_Intact;
+
     config.rtcp.report_interval = SamplesPerPacket * core::Second / SampleRate;
     config.rtcp.inactivity_timeout = Timeout * core::Second / SampleRate;
 

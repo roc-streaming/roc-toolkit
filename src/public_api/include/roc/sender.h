@@ -90,7 +90,7 @@ extern "C" {
  * to do it from another thread concurrently with writing frames. Operations with
  * slots won't block concurrent writes.
  *
- * **FEC scheme**
+ * **FEC schemes**
  *
  * If \ref ROC_INTERFACE_CONSOLIDATED is used, it automatically creates all necessary
  * transport interfaces and the user should not bother about them.
@@ -110,13 +110,32 @@ extern "C" {
  * scheme. For example, if \ref ROC_FEC_ENCODING_RS8M is used, the protocols should be
  * \ref ROC_PROTO_RTP_RS8M_SOURCE and \ref ROC_PROTO_RS8M_REPAIR.
  *
- * **Sample rate**
+ * **Transcoding**
  *
- * If the sample rate of the user frames and the sample rate of the network packets are
- * different, the sender employs resampler to convert one rate to another.
+ * If encoding of sender frames and network packets are different, sender automatically
+ * performs all necessary transcoding.
  *
- * Resampling is a quite time-consuming operation. The user can choose between several
- * resampler profiles providing different compromises between CPU consumption and quality.
+ * **Latency tuning and bounding**
+ *
+ * Usually latency tuning and bounding is done on receiver side, but it's possible to
+ * disable it on receiver and enable on sender. It is useful if receiver is does not
+ * support it or does not have enough CPU to do it with good quality. This feature
+ * requires use of \ref ROC_PROTO_RTCP to deliver necessary latency metrics from
+ * receiver to sender.
+ *
+ * If latency tuning is enabled (which is by default disabled on sender), sender
+ * monitors latency and adjusts connection clock to keep latency close to the target
+ * value. The user can configure how the latency is measured, how smooth is the tuning,
+ * and the target value.
+ *
+ * If latency bounding is enabled (which is also by default disabled on sender), sender
+ * also  ensures that latency lies within allowed boundaries, and restarts connection
+ * otherwise. The user can configure those boundaries.
+ *
+ * To adjust connection clock, sender uses resampling with a scaling factor slightly
+ * above or below 1.0. Since resampling may be a quite time-consuming operation, the user
+ * can choose between several resampler backends and profiles providing different
+ * compromises between CPU consumption, quality, and precision.
  *
  * **Clock source**
  *
@@ -185,7 +204,7 @@ ROC_API int roc_sender_open(roc_context* context,
  *
  * **Parameters**
  *  - \p sender should point to an opened sender
- *  - \p slot specifies the sender slot
+ *  - \p slot specifies the sender slot index (if in doubt, use \c ROC_SLOT_DEFAULT)
  *  - \p iface specifies the sender interface
  *  - \p config should be point to an initialized config
  *
@@ -219,7 +238,7 @@ ROC_API int roc_sender_configure(roc_sender* sender,
  *
  * **Parameters**
  *  - \p sender should point to an opened sender
- *  - \p slot specifies the sender slot
+ *  - \p slot specifies the sender slot (if in doubt, use \c ROC_SLOT_DEFAULT)
  *  - \p iface specifies the sender interface
  *  - \p endpoint specifies the receiver endpoint
  *
@@ -254,7 +273,7 @@ ROC_API int roc_sender_connect(roc_sender* sender,
  *
  * **Parameters**
  *  - \p sender should point to an opened sender
- *  - \p slot specifies the sender slot
+ *  - \p slot specifies the sender slot (if in doubt, use \c ROC_SLOT_DEFAULT)
  *  - \p slot_metrics defines a struct where to write slot metrics (may be NULL)
  *  - \p conn_metrics defines an array of structs where to write connection metrics
  *    (may be NULL)

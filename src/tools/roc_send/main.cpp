@@ -166,25 +166,27 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (args.min_latency_given) {
+    if (args.min_latency_given || args.max_latency_given) {
+        if (!args.min_latency_given || !args.max_latency_given) {
+            roc_log(LogError,
+                    "--min-latency and --max-latency should be specified together");
+            return 1;
+        }
+
         if (!core::parse_duration(args.min_latency_arg,
                                   sender_config.latency.min_latency)) {
             roc_log(LogError, "invalid --min-latency: bad format");
             return 1;
         }
-        if (sender_config.latency.min_latency == 0) {
-            sender_config.latency.min_latency = -1 * core::Nanosecond;
-        }
-    }
 
-    if (args.max_latency_given) {
         if (!core::parse_duration(args.max_latency_arg,
                                   sender_config.latency.max_latency)) {
             roc_log(LogError, "invalid --max-latency: bad format");
             return 1;
         }
-        if (sender_config.latency.max_latency == 0) {
-            sender_config.latency.max_latency = 1 * core::Nanosecond;
+        if (sender_config.latency.max_latency <= 0) {
+            roc_log(LogError, "invalid --max-latency: should be > 0");
+            return 1;
         }
     }
 
