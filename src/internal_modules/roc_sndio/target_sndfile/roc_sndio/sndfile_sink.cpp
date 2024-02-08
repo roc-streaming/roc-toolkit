@@ -259,8 +259,8 @@ bool SndfileSink::has_clock() const {
 
 void SndfileSink::write(audio::Frame& frame) {
     roc_panic_if(!valid_);
-    const audio::sample_t* frame_data = frame.samples();
-    size_t frame_size = frame.num_samples();
+    const audio::sample_t* frame_data = frame.raw_samples();
+    size_t frame_size = frame.num_raw_samples();
     audio::sample_t buffer_data[BUFFER_SIZE];
     size_t buffer_pos = 0;
 

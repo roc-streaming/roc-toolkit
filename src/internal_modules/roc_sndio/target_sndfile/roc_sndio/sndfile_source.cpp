@@ -172,10 +172,10 @@ bool SndfileSource::read(audio::Frame& frame) {
         roc_panic("sndfile source: read: non-open input file");
     }
     
-    audio::sample_t * frame_data = frame.samples();
+    audio::sample_t * frame_data = frame.raw_samples();
     size_t num_channels = (size_t)file_info_.channels;
-    sf_count_t frame_left = (sf_count_t)frame.num_samples();
-    sf_count_t samples_per_ch = (sf_count_t)(frame.num_samples() / num_channels);
+    sf_count_t frame_left = (sf_count_t)frame.num_raw_samples();
+    sf_count_t samples_per_ch = (sf_count_t)(frame.num_raw_samples() / num_channels);
 
     sf_count_t n_samples = sf_read_float(file_, frame_data, frame_left);
     if(sf_error(file_) != 0){
@@ -188,7 +188,7 @@ bool SndfileSource::read(audio::Frame& frame) {
     }
 
     if (n_samples < samples_per_ch) {
-        memset(frame.samples() + (unsigned long)n_samples * num_channels, 0,
+        memset(frame.raw_samples() + (unsigned long)n_samples * num_channels, 0,
             (unsigned long)(samples_per_ch - n_samples) * num_channels * sizeof(audio::sample_t));
     }
 
