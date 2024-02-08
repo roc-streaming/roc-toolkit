@@ -183,6 +183,14 @@ bool SndfileSink::open(const char* driver, const char* path) {
     return true;
 }
 
+ISink* SndfileSink::to_sink() {
+    return this;
+}
+
+ISource* SndfileSink::to_source() {
+    return NULL;
+}
+
 DeviceType SndfileSink::type() const {
     return DeviceType_Sink;
 }
