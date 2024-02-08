@@ -168,41 +168,31 @@ void SndfileSource::reclock(core::nanoseconds_t) {
 bool SndfileSource::read(audio::Frame& frame) {
     roc_panic_if(!valid_);
 
-    if (eof_) {
-        return false;
-    }
-
     if (!file_) {
         roc_panic("sndfile source: read: non-open input file");
     }
+    
     audio::sample_t * frame_data = frame.samples();
+    size_t num_channels = (size_t)file_info_.channels;
     sf_count_t frame_left = (sf_count_t)frame.num_samples();
-    sf_count_t buffer_size = frame_left;
+    sf_count_t samples_per_ch = (sf_count_t)(frame.num_samples() / num_channels);
 
-    while (frame_left > 0) {
-        sf_count_t n_samples = sf_read_float(file_, frame_data, buffer_size);
-
-        printf("read %ld bytes\n", n_samples);
-
-        if (n_samples == 0) {
-            printf("eof, n_smaples = 0\n");
-            roc_log(LogDebug, "sndfile source: got eof from sndfile");
-            eof_ = true;
-            break;
-        }
-        
-        frame_left -= n_samples;
+    sf_count_t n_samples = sf_read_float(file_, frame_data, frame_left);
+    if(sf_error(file_) != 0){
+        // TODO(gh-183): return error instead of panic
+        roc_panic("sndfile source: sf_read_float() failed: %s", sf_strerror(file_));
+    }
+    
+    if(n_samples < frame_left){
+        eof_ = true;
     }
 
-    if (frame_left == (sf_count_t)frame.num_samples()) {
-        return false;
+    if (n_samples < samples_per_ch) {
+        memset(frame.samples() + (unsigned long)n_samples * num_channels, 0,
+            (unsigned long)(samples_per_ch - n_samples) * num_channels * sizeof(audio::sample_t));
     }
 
-    if (frame_left > 0) {
-        memset(frame_data, 0, (size_t)frame_left * sizeof(audio::sample_t));
-    }
-
-    return true;
+    return !eof_;
 }
 
 bool SndfileSource::seek_(size_t offset) {
@@ -261,8 +251,8 @@ void SndfileSource::close_() {
 
     roc_log(LogInfo, "sndfile source: closing input");
 
-    int err = sf_close(file_);
-    if (err != 0) {
+    
+    if (int err = sf_close(file_) != 0) {
         roc_panic("sndfile source: sf_close() failed. Cannot close input: %s", sf_error_number(err));
     }
 

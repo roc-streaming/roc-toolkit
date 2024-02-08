@@ -259,8 +259,7 @@ elif 'sndfile' in system_dependencies:
 
     if not is_crosscompiling:
         if not conf.CheckLibWithHeaderExt(
-                'sndfile', 'sndfile.h', 'C',
-                expr='1.25 <= 1.28'): #fix
+                'sndfile', 'sndfile.h', 'C'): #fix
             env.Die("libsndfile >= 1.0.25 not found (see 'config.log' for details)")
     else:
         if not conf.CheckLibWithHeaderExt('sndfile', 'sndfile.h', 'C', run=False):
