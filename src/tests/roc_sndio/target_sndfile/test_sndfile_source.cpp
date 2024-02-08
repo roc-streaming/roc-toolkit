@@ -132,8 +132,7 @@ TEST(sndfile_source, sample_rate_mismatch) {
     source_config.sample_spec.set_sample_rate(SampleRate * 2);
     SndfileSource sndfile_source(arena, source_config);
 
-    CHECK(sndfile_source.open(NULL, file.path()));
-    CHECK(sndfile_source.sample_spec().sample_rate() == SampleRate * 2);
+    CHECK(!sndfile_source.open(NULL, file.path()));
 }
 
 

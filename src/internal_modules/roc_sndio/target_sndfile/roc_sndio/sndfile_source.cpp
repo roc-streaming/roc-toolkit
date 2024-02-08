@@ -41,6 +41,8 @@ SndfileSource::SndfileSource(core::IArena& arena, const Config& config)
 
     memset(&file_info_, 0, sizeof(file_info_));
     sample_rate_ = config.sample_spec.sample_rate();
+    sample_spec_.channel_set().set_layout(audio::ChanLayout_Surround);
+    sample_spec_.channel_set().set_channel_range(0, sample_spec_.num_channels()-1, true);
     valid_ = true;
 }
 
@@ -133,9 +135,11 @@ audio::SampleSpec SndfileSource::sample_spec() const {
         roc_panic("sndfile source: sample_rate(): non-open output file");
     }
 
+    unsigned int chan_mask = sample_spec_.num_channels();
+
     return audio::SampleSpec((size_t)file_info_.samplerate, audio::Sample_RawFormat,
                                  audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
-                                 audio::ChanMask_Surround_Mono);
+                                 chan_mask);
 
 }
 
@@ -231,12 +235,13 @@ bool SndfileSource::open_(const char* path) {
 
     file_ = sf_open(path, SFM_READ, &file_info_);
     if (!file_) {
-        roc_log(LogInfo, "sndfile source: can't open: input=%s", !path ? NULL : path);
+        roc_log(LogInfo, "sndfile source: can't open: input=%s, %s", !path ? NULL : path, sf_strerror(file_));
         return false;
     }
 
-    if (sample_rate_ != 0) {
-        file_info_.samplerate = sample_rate_;
+    if (sample_rate_ != 0 && sample_rate_ != (size_t)file_info_.samplerate) {
+        roc_log(LogInfo, "sndfile source: can't set rate: samplerate in argument is different from file samplerate");
+        return false;
     }
 
     sample_spec_.set_sample_rate((unsigned long)file_info_.samplerate);
