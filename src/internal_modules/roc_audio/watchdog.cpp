@@ -125,11 +125,7 @@ bool Watchdog::read(Frame& frame) {
     roc_panic_if(!is_valid());
 
     if (!alive_) {
-        if (frame.num_bytes() != 0) {
-            memset(frame.bytes(), 0, frame.num_bytes());
-            frame.set_duration(sample_spec_.bytes_2_stream_timestamp(frame.num_bytes()));
-        }
-        return true;
+        return false;
     }
 
     if (!reader_.read(frame)) {

@@ -14,6 +14,7 @@
 
 #include "roc_audio/iframe_reader.h"
 #include "roc_audio/mixer.h"
+#include "roc_audio/pcm_mapper_reader.h"
 #include "roc_audio/profiling_reader.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/iarena.h"
@@ -125,6 +126,7 @@ private:
 
     core::Optional<audio::Mixer> mixer_;
     core::Optional<audio::ProfilingReader> profiler_;
+    core::Optional<audio::PcmMapperReader> pcm_mapper_;
 
     core::List<ReceiverSlot> slots_;
 

@@ -759,7 +759,7 @@ TEST(pcm_mapper, int32_to_int20) {
     compare(expected_output, actual_output, NumOutputBytes);
 }
 
-TEST(pcm_mapper, int20_to_int16) {
+TEST(pcm_mapper, int20_to_int32) {
     uint8_t input[] = {
         // -488281 (0x88ca7), -244140 (0xc4653)
         0x88,

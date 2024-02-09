@@ -127,14 +127,14 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
     audio::IFrameWriter* frm_writer = NULL;
 
     {
-        const audio::SampleSpec from_spec(pkt_encoding->sample_spec.sample_rate(),
-                                          audio::Sample_RawFormat,
-                                          pkt_encoding->sample_spec.channel_set());
+        const audio::SampleSpec in_spec(pkt_encoding->sample_spec.sample_rate(),
+                                        audio::Sample_RawFormat,
+                                        pkt_encoding->sample_spec.channel_set());
 
         packetizer_.reset(new (packetizer_) audio::Packetizer(
             *pkt_writer, source_endpoint->outbound_composer(), *sequencer_,
             *payload_encoder_, packet_factory_, byte_buffer_factory_,
-            config_.packet_length, from_spec));
+            config_.packet_length, in_spec));
         if (!packetizer_ || !packetizer_->is_valid()) {
             return false;
         }
@@ -143,17 +143,17 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
 
     if (pkt_encoding->sample_spec.channel_set()
         != config_.input_sample_spec.channel_set()) {
-        const audio::SampleSpec from_spec(pkt_encoding->sample_spec.sample_rate(),
-                                          audio::Sample_RawFormat,
-                                          config_.input_sample_spec.channel_set());
-
-        const audio::SampleSpec to_spec(pkt_encoding->sample_spec.sample_rate(),
+        const audio::SampleSpec in_spec(pkt_encoding->sample_spec.sample_rate(),
                                         audio::Sample_RawFormat,
-                                        pkt_encoding->sample_spec.channel_set());
+                                        config_.input_sample_spec.channel_set());
+
+        const audio::SampleSpec out_spec(pkt_encoding->sample_spec.sample_rate(),
+                                         audio::Sample_RawFormat,
+                                         pkt_encoding->sample_spec.channel_set());
 
         channel_mapper_writer_.reset(
             new (channel_mapper_writer_) audio::ChannelMapperWriter(
-                *frm_writer, sample_buffer_factory_, from_spec, to_spec));
+                *frm_writer, sample_buffer_factory_, in_spec, out_spec));
         if (!channel_mapper_writer_ || !channel_mapper_writer_->is_valid()) {
             return false;
         }
@@ -163,23 +163,23 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
     if (config_.latency.tuner_profile != audio::LatencyTunerProfile_Intact
         || pkt_encoding->sample_spec.sample_rate()
             != config_.input_sample_spec.sample_rate()) {
-        const audio::SampleSpec from_spec(config_.input_sample_spec.sample_rate(),
-                                          audio::Sample_RawFormat,
-                                          config_.input_sample_spec.channel_set());
-
-        const audio::SampleSpec to_spec(pkt_encoding->sample_spec.sample_rate(),
+        const audio::SampleSpec in_spec(config_.input_sample_spec.sample_rate(),
                                         audio::Sample_RawFormat,
                                         config_.input_sample_spec.channel_set());
 
+        const audio::SampleSpec out_spec(pkt_encoding->sample_spec.sample_rate(),
+                                         audio::Sample_RawFormat,
+                                         config_.input_sample_spec.channel_set());
+
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-            arena_, sample_buffer_factory_, config_.resampler, from_spec, to_spec));
+            arena_, sample_buffer_factory_, config_.resampler, in_spec, out_spec));
 
         if (!resampler_) {
             return false;
         }
 
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
-            *frm_writer, *resampler_, sample_buffer_factory_, from_spec, to_spec));
+            *frm_writer, *resampler_, sample_buffer_factory_, in_spec, out_spec));
 
         if (!resampler_writer_ || !resampler_writer_->is_valid()) {
             return false;

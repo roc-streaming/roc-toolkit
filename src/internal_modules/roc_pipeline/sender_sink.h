@@ -13,6 +13,7 @@
 #define ROC_PIPELINE_SENDER_SINK_H_
 
 #include "roc_audio/fanout.h"
+#include "roc_audio/pcm_mapper_writer.h"
 #include "roc_audio/profiling_writer.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/iarena.h"
@@ -120,6 +121,7 @@ private:
 
     audio::Fanout fanout_;
     core::Optional<audio::ProfilingWriter> profiler_;
+    core::Optional<audio::PcmMapperWriter> pcm_mapper_;
 
     core::List<SenderSlot> slots_;
 

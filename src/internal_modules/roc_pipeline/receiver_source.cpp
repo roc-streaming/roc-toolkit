@@ -30,12 +30,28 @@ ReceiverSource::ReceiverSource(
     , valid_(false) {
     config_.deduce_defaults();
 
+    audio::IFrameReader* frm_reader = NULL;
+
     mixer_.reset(new (mixer_) audio::Mixer(sample_buffer_factory,
                                            config.common.output_sample_spec, true));
     if (!mixer_ || !mixer_->is_valid()) {
         return;
     }
-    audio::IFrameReader* frm_reader = mixer_.get();
+    frm_reader = mixer_.get();
+
+    if (!config_.common.output_sample_spec.is_raw()) {
+        const audio::SampleSpec in_spec(config_.common.output_sample_spec.sample_rate(),
+                                        audio::Sample_RawFormat,
+                                        config_.common.output_sample_spec.channel_set());
+
+        pcm_mapper_.reset(new (pcm_mapper_) audio::PcmMapperReader(
+            *frm_reader, byte_buffer_factory, in_spec,
+            config_.common.output_sample_spec));
+        if (!pcm_mapper_ || !pcm_mapper_->is_valid()) {
+            return;
+        }
+        frm_reader = pcm_mapper_.get();
+    }
 
     if (config_.common.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingReader(

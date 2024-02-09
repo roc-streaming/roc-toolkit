@@ -32,6 +32,19 @@ SenderSink::SenderSink(const SenderConfig& config,
 
     audio::IFrameWriter* frm_writer = &fanout_;
 
+    if (!config_.input_sample_spec.is_raw()) {
+        const audio::SampleSpec out_spec(config_.input_sample_spec.sample_rate(),
+                                         audio::Sample_RawFormat,
+                                         config_.input_sample_spec.channel_set());
+
+        pcm_mapper_.reset(new (pcm_mapper_) audio::PcmMapperWriter(
+            *frm_writer, byte_buffer_factory, config_.input_sample_spec, out_spec));
+        if (!pcm_mapper_ || !pcm_mapper_->is_valid()) {
+            return;
+        }
+        frm_writer = pcm_mapper_.get();
+    }
+
     if (config_.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingWriter(
             *frm_writer, arena, config_.input_sample_spec, config_.profiler));

@@ -98,16 +98,14 @@ TEST_GROUP(watchdog) {
         test_reader.set_flags(frame_flags);
 
         Frame frame(buf.data(), buf.size());
-        CHECK(reader.read(frame));
 
         if (is_read) {
+            CHECK(reader.read(frame));
             for (size_t n = 0; n < frame.num_raw_samples(); n++) {
                 DOUBLES_EQUAL(42.0, (double)frame.raw_samples()[n], 0);
             }
         } else {
-            for (size_t n = 0; n < frame.num_raw_samples(); n++) {
-                DOUBLES_EQUAL(0.0, (double)frame.raw_samples()[n], 0);
-            }
+            CHECK(!reader.read(frame));
         }
     }
 

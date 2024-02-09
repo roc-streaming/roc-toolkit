@@ -57,7 +57,9 @@ bool Mixer::read(Frame& frame) {
 
     // Optimization for single reader case.
     if (readers_.size() == 1) {
-        readers_.front()->read(frame);
+        if (!readers_.front()->read(frame)) {
+            frame.set_duration(frame.num_raw_samples() / sample_spec_.num_channels());
+        }
 
         if (!enable_timestamps_) {
             // When timestamps are disabled, don't forget to zeroize

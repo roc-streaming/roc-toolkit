@@ -79,11 +79,6 @@ bool LatencyMonitor::read(Frame& frame) {
     }
 
     if (!alive_) {
-        if (frame.num_bytes() != 0) {
-            memset(frame.bytes(), 0, frame.num_bytes());
-            frame.set_duration(
-                frame_sample_spec_.bytes_2_stream_timestamp(frame.num_bytes()));
-        }
         return false;
     }
 
