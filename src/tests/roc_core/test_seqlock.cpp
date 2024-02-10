@@ -39,24 +39,24 @@ TEST(seqlock, version) {
     seqlock_version_t v0 = sl.version();
 
     seqlock_version_t v1 = 0;
-    CHECK(sl.try_store_ver(1, v1));
+    CHECK(sl.try_store_v(1, v1));
     CHECK(v1 == sl.version());
     CHECK(v1 != v0);
 
     seqlock_version_t v2 = 0;
-    sl.exclusive_store_ver(2, v2);
+    sl.exclusive_store_v(2, v2);
     CHECK(v2 == sl.version());
     CHECK(v2 != v1);
     CHECK(v2 != v0);
 
     seqlock_version_t v2r1 = 0;
     int val1 = 0;
-    CHECK(sl.try_load_ver(val1, v2r1));
+    CHECK(sl.try_load_v(val1, v2r1));
     CHECK(v2r1 == v2);
 
     seqlock_version_t v2r2 = 0;
     int val2 = 0;
-    sl.wait_load_ver(val2, v2r2);
+    sl.wait_load_v(val2, v2r2);
     CHECK(v2r2 == v2);
 }
 

@@ -55,7 +55,7 @@ public:
 
     //! Store value.
     //! Like try_store(), but also returns updated version.
-    inline bool try_store_ver(const T& value, seqlock_version_t& ver) {
+    inline bool try_store_v(const T& value, seqlock_version_t& ver) {
         return impl_.try_store(ver, &val_, sizeof(val_), &value);
     }
 
@@ -73,7 +73,7 @@ public:
 
     //! Store value.
     //! Like exclusive_store(), but also returns updated version.
-    inline void exclusive_store_ver(const T& value, seqlock_version_t& ver) {
+    inline void exclusive_store_v(const T& value, seqlock_version_t& ver) {
         impl_.exclusive_store(ver, &val_, sizeof(val_), &value);
     }
 
@@ -89,7 +89,7 @@ public:
 
     //! Try to load value and version.
     //! Like try_load(), but also returns version.
-    inline bool try_load_ver(T& value, seqlock_version_t& ver) const {
+    inline bool try_load_v(T& value, seqlock_version_t& ver) const {
         return impl_.try_load_repeat(ver, &val_, sizeof(val_), &value);
     }
 
@@ -105,7 +105,7 @@ public:
 
     //! Load value and version.
     //! Like wait_load(), but also returns version.
-    inline void wait_load_ver(T& value, seqlock_version_t& ver) const {
+    inline void wait_load_v(T& value, seqlock_version_t& ver) const {
         impl_.wait_load(ver, &val_, sizeof(val_), &value);
     }
 

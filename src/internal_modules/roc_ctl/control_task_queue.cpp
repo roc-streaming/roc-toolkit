@@ -197,7 +197,7 @@ void ControlTaskQueue::request_renew_guarded_(ControlTask& task,
     // The new deadline will be applied either by try_renew_inplace_()
     // in this thread, or by fetch_ready_task_() later in event loop thread.
     core::seqlock_version_t version = 0;
-    task.renewed_deadline_.exclusive_store_ver(deadline, version);
+    task.renewed_deadline_.exclusive_store_v(deadline, version);
 
     // Catch bugs.
     ControlTask::validate_deadline(deadline, version);
@@ -617,7 +617,7 @@ void ControlTaskQueue::execute_task_(ControlTask& task) {
         core::nanoseconds_t new_deadline = 0;
         core::seqlock_version_t new_version = 0;
         const bool task_renewed =
-            task.renewed_deadline_.try_load_ver(new_deadline, new_version)
+            task.renewed_deadline_.try_load_v(new_deadline, new_version)
             && new_version != task.effective_version_ && new_deadline >= 0;
 
         // Notify completer and semaphore that task is finished.
@@ -738,7 +738,7 @@ ControlTask* ControlTaskQueue::fetch_ready_task_() {
         core::nanoseconds_t task_deadline = 0;
         core::seqlock_version_t task_version = 0;
 
-        if (!task->renewed_deadline_.try_load_ver(task_deadline, task_version)) {
+        if (!task->renewed_deadline_.try_load_v(task_deadline, task_version)) {
             // Renewed_deadline is being updated concurrently.
             // Re-add task to the queue to try again later.
             roc_log(LogTrace,
