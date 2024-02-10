@@ -411,10 +411,20 @@ void ControlTaskQueue::cancel_task_(ControlTask& task, core::seqlock_version_t v
             (unsigned long long)version);
 
     // This should not happend. If the task was already cancelled, its completer was
-    // already called and the task may be already destroyed. The upper code should
-    // prevent cancelling a task twice even if the user calls async_cancel() twice.
-    roc_panic_if_msg(task.effective_deadline_ == -1,
-                     "control task queue: unexpected already cancelled task in cancel");
+    // already called and the task may be already destroyed. The upper code in control
+    // queue should prevent cancelling a task twice even if the user calls async_cancel()
+    // twice. However, the following situation is possible:
+    //  - user cancels task
+    //  - user re-schedules task
+    //  - task is added to ready queue
+    //  - user cancels it again before it was fetched from ready queue
+    // This is a valid case, because task was re-scheduled before second cancel.
+    // We distinguish this situation by checking version. If it changed, the
+    // task was probably re-scheduled, and it's not legit to panic.
+    roc_panic_if_msg(
+        task.effective_deadline_ == -1 && task.effective_version_ == version,
+        "control task queue: unexpected already cancelled task in cancel: ptr=%p",
+        (void*)&task);
 
     if (paused_queue_.contains(task)) {
         paused_queue_.remove(task);
