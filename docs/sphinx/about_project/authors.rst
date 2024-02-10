@@ -88,3 +88,5 @@ Contributors
 * Anurag Soni <anuragsoni39@yahoo.com>
 * Samad Khan <khan.samad47@gmail.com>
 * Alyssa Ross <hi@alyssa.is>
+* Arseniy136 <zakhvatkinars@gmail.com>
+* Amandeep Singh <as4456@columbia.edu>
