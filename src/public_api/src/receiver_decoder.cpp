@@ -248,7 +248,7 @@ int roc_receiver_decoder_pop_feedback_packet(roc_receiver_decoder* decoder,
     if (!packet->bytes) {
         roc_log(LogError,
                 "roc_receiver_decoder_pop_feedback_packet(): invalid arguments:"
-                " packet bytes are null");
+                " packet bytes buffer is null");
         return -1;
     }
 
@@ -267,8 +267,8 @@ int roc_receiver_decoder_pop_feedback_packet(roc_receiver_decoder* decoder,
 
     if (packet->bytes_size < imp_packet->buffer().size()) {
         roc_log(LogError,
-                "roc_receiver_decoder_pop_feedback_packet(): not enough space in "
-                "provided packet:"
+                "roc_receiver_decoder_pop_feedback_packet():"
+                " not enough space in provided packet:"
                 " provided=%lu needed=%lu",
                 (unsigned long)packet->bytes_size,
                 (unsigned long)imp_packet->buffer().size());

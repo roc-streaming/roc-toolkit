@@ -25,14 +25,14 @@
 extern "C" {
 #endif
 
-/** Receiver decoder node.
+/** Receiver decoder.
  *
  * Receiver decoder gets an encoded network packets from the user, decodes audio stream
- * from them, and provides it back to the user.
+ * from them, and provides decoded stream to the user.
  *
- * Receiver decoder is a simplified networkless version of \ref roc_receiver. It
- * implements the same pipeline, but instead of receiving packets, it just gets them
- * from the user. The user is responsible for delivering these packets to receiver.
+ * Receiver decoder is a networkless version of \ref roc_receiver. It implements the same
+ * pipeline, but instead of receiving packets from network, it gets them from the user.
+ * The user is responsible for carrying packets over network.
  *
  * For detailed description of receiver pipeline, see documentation for \ref roc_receiver.
  *
@@ -67,7 +67,7 @@ extern "C" {
  * **Interfaces and protocols**
  *
  * Receiver decoder may have one or several *interfaces*, as defined in \c
- * roc_interface. The interface defines the type of the communication with the remote node
+ * roc_interface. The interface defines the type of the communication with the remote peer
  * and the set of the protocols supported by it.
  *
  * Each interface has its own inbound packet queue. When a packet is pushed to the

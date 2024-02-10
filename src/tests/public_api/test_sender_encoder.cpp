@@ -133,13 +133,13 @@ TEST(sender_encoder, bad_args) {
     }
 }
 
-TEST(sender_encoder, push_args) {
+TEST(sender_encoder, push_frame_args) {
     roc_sender_encoder* encoder = NULL;
     CHECK(roc_sender_encoder_open(context, &sender_config, &encoder) == 0);
 
     float samples[16] = {};
 
-    { // all good, not activateed
+    { // all good, not activated
         roc_frame frame;
         frame.samples = samples;
         frame.samples_size = ROC_ARRAY_SIZE(samples);
@@ -149,7 +149,7 @@ TEST(sender_encoder, push_args) {
     CHECK(roc_sender_encoder_activate(encoder, ROC_INTERFACE_AUDIO_SOURCE, ROC_PROTO_RTP)
           == 0);
 
-    { // all good, activateed
+    { // all good, activated
         roc_frame frame;
         frame.samples = samples;
         frame.samples_size = ROC_ARRAY_SIZE(samples);
@@ -191,7 +191,92 @@ TEST(sender_encoder, push_args) {
     LONGS_EQUAL(0, roc_sender_encoder_close(encoder));
 }
 
-TEST(sender_encoder, pop_args) {
+TEST(sender_encoder, push_feedback_packet_args) {
+    roc_sender_encoder* encoder = NULL;
+    CHECK(roc_sender_encoder_open(context, &sender_config, &encoder) == 0);
+
+    uint8_t bytes[8192] = {};
+
+    { // not activated
+        roc_packet packet;
+        packet.bytes = bytes;
+        packet.bytes_size = ROC_ARRAY_SIZE(bytes);
+        CHECK(roc_sender_encoder_push_feedback_packet(
+                  encoder, ROC_INTERFACE_AUDIO_CONTROL, &packet)
+              == -1);
+    }
+
+    CHECK(
+        roc_sender_encoder_activate(encoder, ROC_INTERFACE_AUDIO_CONTROL, ROC_PROTO_RTCP)
+        == 0);
+
+    { // null encoder
+        roc_packet packet;
+        packet.bytes = bytes;
+        packet.bytes_size = ROC_ARRAY_SIZE(bytes);
+        CHECK(roc_sender_encoder_push_feedback_packet(NULL, ROC_INTERFACE_AUDIO_CONTROL,
+                                                      &packet)
+              == -1);
+    }
+
+    { // bad interface
+        roc_packet packet;
+        packet.bytes = bytes;
+        packet.bytes_size = ROC_ARRAY_SIZE(bytes);
+        CHECK(roc_sender_encoder_push_feedback_packet(encoder, (roc_interface)-1, &packet)
+              == -1);
+    }
+
+    CHECK(roc_sender_encoder_activate(encoder, ROC_INTERFACE_AUDIO_SOURCE, ROC_PROTO_RTP)
+          == 0);
+
+    { // unsupported interface
+        roc_packet packet;
+        packet.bytes = bytes;
+        packet.bytes_size = ROC_ARRAY_SIZE(bytes);
+        CHECK(roc_sender_encoder_push_feedback_packet(encoder, ROC_INTERFACE_AUDIO_SOURCE,
+                                                      &packet)
+              == -1);
+    }
+
+    { // null packet
+        CHECK(roc_sender_encoder_push_feedback_packet(encoder,
+                                                      ROC_INTERFACE_AUDIO_CONTROL, NULL)
+              == -1);
+    }
+
+    { // null bytes, non-zero byte count
+        roc_packet packet;
+        packet.bytes = NULL;
+        packet.bytes_size = ROC_ARRAY_SIZE(bytes);
+        CHECK(roc_sender_encoder_push_feedback_packet(
+                  encoder, ROC_INTERFACE_AUDIO_CONTROL, &packet)
+              == -1);
+    }
+
+    { // zero byte count
+        roc_packet packet;
+        packet.bytes = bytes;
+        packet.bytes_size = 0;
+        CHECK(roc_sender_encoder_push_feedback_packet(
+                  encoder, ROC_INTERFACE_AUDIO_CONTROL, &packet)
+              == -1);
+    }
+
+    { // large byte count
+        float large_bytes[20000] = {};
+        roc_packet packet;
+        packet.bytes = large_bytes;
+        packet.bytes_size = ROC_ARRAY_SIZE(large_bytes);
+        CHECK(roc_sender_encoder_push_feedback_packet(
+                  encoder, ROC_INTERFACE_AUDIO_CONTROL, &packet)
+              == -1);
+    }
+
+    LONGS_EQUAL(0, roc_sender_encoder_close(encoder));
+}
+
+TEST(sender_encoder, pop_packet_args) {
     roc_sender_encoder* encoder = NULL;
     CHECK(roc_sender_encoder_open(context, &sender_config, &encoder) == 0);
 
@@ -206,7 +291,7 @@ TEST(sender_encoder, pop_args) {
         CHECK(roc_sender_encoder_push_frame(encoder, &frame) == 0);
     }
 
-    float bytes[8192] = {};
+    uint8_t bytes[8192] = {};
 
     { // null encoder
         roc_packet packet;
@@ -223,7 +308,7 @@ TEST(sender_encoder, pop_args) {
         CHECK(roc_sender_encoder_pop_packet(encoder, (roc_interface)-1, &packet) == -1);
     }
 
-    { // unactivateed interface
+    { // unactivated interface
         roc_packet packet;
         packet.bytes = bytes;
         packet.bytes_size = ROC_ARRAY_SIZE(bytes);
@@ -255,7 +340,7 @@ TEST(sender_encoder, pop_args) {
     { // small byte count
         roc_packet packet;
         packet.bytes = bytes;
-        packet.bytes_size = 16;
+        packet.bytes_size = 10;
         CHECK(roc_sender_encoder_pop_packet(encoder, ROC_INTERFACE_AUDIO_SOURCE, &packet)
               == -1);
     }

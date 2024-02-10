@@ -23,7 +23,7 @@ extern "C" {
 
 /** Network endpoint.
  *
- * Endpoint is a network entry point of a node. The definition includes the
+ * Endpoint is a network entry point of a peer. The definition includes the
  * protocol being used, network host and port, and, for some protocols, a
  * resource. All these parts together are unambiguously represented
  * by a URI. The user may set or get the entire URI or its individual parts.

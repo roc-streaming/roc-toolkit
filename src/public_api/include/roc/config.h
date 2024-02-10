@@ -22,19 +22,21 @@ extern "C" {
 
 /** Network slot.
  *
- * A node (sender or receiver) may have multiple slots, which may be independently
+ * A peer (sender or receiver) may have multiple slots, which may be independently
  * bound or connected. You can use multiple slots on sender to connect it to multiple
- * receiver addresses, and you can use multiple slots on receiver to bind it to
+ * receiver addresses, or you can use multiple slots on receiver to bind it to
  * multiple receiver addresses.
  *
- * Slots are numbered from zero and are created implicitly. Just specify slot index
- * when binding or connecting endpoint, and slot will be automatically created if it
- * was not created yet. Numbers does not need to be continuous and can be arbitrary.
+ * Inside each slot, there can be up to one endpoint for each interface type, for
+ * example one source endpoint, one control endpoint, and so on. See \ref roc_interface
+ * for more details.
  *
- * In simple cases, when one slot is enough, just use \c ROC_SLOT_DEFAULT.
+ * Slots are created implicitly. Just specify slot index when binding or connecting
+ * endpoint, and slot will be automatically created if it doesn't exist yet.
+ * Slot indices can be arbitrary numbers and does not need to be continuous.
  *
- * Inside each slot, there can be up to one endpoint for each interface type.
- * See \ref roc_interface for details.
+ * In simple cases, when one slot is enough, just use \c ROC_SLOT_DEFAULT,
+ * which is an alias for slot index zero.
  */
 typedef unsigned long long roc_slot;
 
@@ -47,20 +49,20 @@ static const roc_slot ROC_SLOT_DEFAULT = 0;
 
 /** Network interface.
  *
- * Interface is a way to access the node (sender or receiver) via network.
+ * Interface is a way to access the peer (sender or receiver) via network.
  *
- * Each slot of a node has multiple interfaces, one of each type. The user interconnects
- * nodes by binding one of the first node's interfaces to an URI and then connecting the
- * corresponding second node's interface to that URI.
+ * Each slot of a peer (see \ref roc_slot) has multiple interfaces, one for each of the
+ * interface types. The user interconnects peers by binding an interface of one peer to
+ * an URI, and then connecting the corresponding interface of another peer to that URI.
  *
  * A URI is represented by \ref roc_endpoint object.
  *
- * The interface defines the type of the communication with the remote node and the
+ * The interface defines the type of the communication with the remote peer and the
  * set of protocols (URI schemes) that can be used with this particular interface.
  *
  * \c ROC_INTERFACE_CONSOLIDATED is an interface for high-level protocols which
  * automatically manage all necessary communication: transport streams, control messages,
- * parameter negotiation, etc. When a consolidated connection is established, nodes may
+ * parameter negotiation, etc. When a consolidated connection is established, peers may
  * automatically setup lower-level interfaces like \c ROC_INTERFACE_AUDIO_SOURCE, \c
  * ROC_INTERFACE_AUDIO_REPAIR, and \c ROC_INTERFACE_AUDIO_CONTROL.
  *
@@ -73,10 +75,10 @@ static const roc_slot ROC_SLOT_DEFAULT = 0;
  * unidirectional transport-only interfaces. The first is used to transmit audio stream,
  * and the second is used to transmit redundant repair stream, if FEC is enabled.
  *
- * \c ROC_INTERFACE_AUDIO_CONTROL is a lower-level interface for control streams.
- * If you use \c ROC_INTERFACE_AUDIO_SOURCE and \c ROC_INTERFACE_AUDIO_REPAIR, you
- * usually also need to use \c ROC_INTERFACE_AUDIO_CONTROL to enable carrying additional
- * non-transport information.
+ * \c ROC_INTERFACE_AUDIO_CONTROL is a lower-level bidirectional interface for control
+ * streams. If you use \c ROC_INTERFACE_AUDIO_SOURCE and \c ROC_INTERFACE_AUDIO_REPAIR,
+ * you usually also need to use \c ROC_INTERFACE_AUDIO_CONTROL to enable carrying
+ * additional non-transport information.
  */
 typedef enum roc_interface {
     /** Interface that consolidates all types of streams (source, repair, control).
@@ -232,7 +234,7 @@ typedef enum roc_protocol {
 
 /** Packet encoding.
  * Each packet encoding defines sample format, channel layout, and rate.
- * Each packet encoding is caompatible with specific protocols.
+ * Each packet encoding is compatible with specific protocols.
  */
 typedef enum roc_packet_encoding {
     /** PCM signed 16-bit, 1 channel, 44100 rate.
@@ -263,7 +265,7 @@ typedef enum roc_packet_encoding {
 } roc_packet_encoding;
 
 /** Forward Error Correction encoding.
- * Each FEC encoding is caompatible with specific protocols.
+ * Each FEC encoding is compatible with specific protocols.
  */
 typedef enum roc_fec_encoding {
     /** No FEC encoding.
@@ -384,6 +386,11 @@ typedef struct roc_media_encoding {
  * Defines wo is responsible to invoke read or write in proper time.
  */
 typedef enum roc_clock_source {
+    /** Default clock source.
+     * Current default is \c ROC_CLOCK_SOURCE_EXTERNAL.
+     */
+    ROC_CLOCK_SOURCE_DEFAULT = 0,
+
     /** Sender or receiver is clocked by external user-defined clock.
      *
      * Write and read operations are non-blocking. The user is responsible
@@ -393,7 +400,7 @@ typedef enum roc_clock_source {
      * or destination (to where you write them after obtaining from sender)
      * is active and has its own clock, e.g. it is a sound card.
      */
-    ROC_CLOCK_SOURCE_EXTERNAL = 0,
+    ROC_CLOCK_SOURCE_EXTERNAL = 1,
 
     /** Sender or receiver is clocked by an internal pipeline clock.
      *
@@ -405,7 +412,7 @@ typedef enum roc_clock_source {
      * or destination (to where you write them after obtaining from sender)
      * is passive and does now have clock, e.g. it is a file on disk.
      */
-    ROC_CLOCK_SOURCE_INTERNAL = 1
+    ROC_CLOCK_SOURCE_INTERNAL = 2
 } roc_clock_source;
 
 /** Latency tuner backend.
@@ -717,7 +724,7 @@ typedef struct roc_sender_config {
     /** Clock source to use.
      * Defines whether write operation is blocking or non-blocking.
      *
-     * If zero, \ref ROC_CLOCK_SOURCE_EXTERNAL is used.
+     * If zero, default value is used (\ref ROC_CLOCK_SOURCE_DEFAULT).
      */
     roc_clock_source clock_source;
 
@@ -835,7 +842,7 @@ typedef struct roc_receiver_config {
     /** Clock source.
      * Defines whether read operation is blocking or non-blocking.
      *
-     * If zero, \ref ROC_CLOCK_SOURCE_EXTERNAL is used.
+     * If zero, default value is used (\ref ROC_CLOCK_SOURCE_DEFAULT).
      */
     roc_clock_source clock_source;
 

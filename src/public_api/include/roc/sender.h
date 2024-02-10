@@ -25,7 +25,7 @@
 extern "C" {
 #endif
 
-/** Sender node.
+/** Sender peer.
  *
  * Sender gets an audio stream from the user, encodes it into network packets, and
  * transmits them to a remote receiver.
@@ -61,7 +61,7 @@ extern "C" {
  * zero and are created automatically. In simple cases just use \c ROC_SLOT_DEFAULT.
  *
  * Each slot has its own set of *interfaces*, one per each type defined in \ref
- * roc_interface. The interface defines the type of the communication with the remote node
+ * roc_interface. The interface defines the type of the communication with the remote peer
  * and the set of the protocols supported by it.
  *
  * Supported actions with the interface:
@@ -298,7 +298,7 @@ ROC_API int roc_sender_query(roc_sender* sender,
 /** Delete sender slot.
  *
  * Disconnects, unbinds, and removes all slot interfaces and removes the slot.
- * All associated connections to remote nodes are properly terminated.
+ * All associated connections to remote peers are properly terminated.
  *
  * After unlinking the slot, it can be re-created again by re-using slot index.
  *

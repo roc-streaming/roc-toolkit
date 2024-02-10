@@ -29,7 +29,7 @@ core::BufferFactory<uint8_t> byte_buffer_factory(arena, test::MaxBufSize);
 
 } // namespace
 
-TEST_GROUP(sender_receiver) {
+TEST_GROUP(loopback_sender_2_receiver) {
     roc_sender_config sender_conf;
     roc_receiver_config receiver_conf;
 
@@ -127,7 +127,7 @@ TEST_GROUP(sender_receiver) {
     }
 };
 
-TEST(sender_receiver, bare_rtp) {
+TEST(loopback_sender_2_receiver, bare_rtp) {
     enum { Flags = 0, FrameChans = 2, PacketChans = 2 };
 
     init_config(Flags, FrameChans, PacketChans);
@@ -150,7 +150,7 @@ TEST(sender_receiver, bare_rtp) {
     sender.join();
 }
 
-TEST(sender_receiver, rtp_rtcp) {
+TEST(loopback_sender_2_receiver, rtp_rtcp) {
     enum { Flags = test::FlagRTCP, FrameChans = 2, PacketChans = 2 };
 
     init_config(Flags, FrameChans, PacketChans);
@@ -174,7 +174,7 @@ TEST(sender_receiver, rtp_rtcp) {
     sender.join();
 }
 
-TEST(sender_receiver, rs8m_without_losses) {
+TEST(loopback_sender_2_receiver, rs8m_without_losses) {
     if (!is_rs8m_supported()) {
         return;
     }
@@ -201,7 +201,7 @@ TEST(sender_receiver, rs8m_without_losses) {
     sender.join();
 }
 
-TEST(sender_receiver, rs8m_with_losses) {
+TEST(loopback_sender_2_receiver, rs8m_with_losses) {
     if (!is_rs8m_supported()) {
         return;
     }
@@ -232,7 +232,7 @@ TEST(sender_receiver, rs8m_with_losses) {
     sender.join();
 }
 
-TEST(sender_receiver, ldpc_without_losses) {
+TEST(loopback_sender_2_receiver, ldpc_without_losses) {
     if (!is_ldpc_supported()) {
         return;
     }
@@ -259,7 +259,7 @@ TEST(sender_receiver, ldpc_without_losses) {
     sender.join();
 }
 
-TEST(sender_receiver, ldpc_with_losses) {
+TEST(loopback_sender_2_receiver, ldpc_with_losses) {
     if (!is_ldpc_supported()) {
         return;
     }
@@ -290,7 +290,7 @@ TEST(sender_receiver, ldpc_with_losses) {
     sender.join();
 }
 
-TEST(sender_receiver, separate_context) {
+TEST(loopback_sender_2_receiver, separate_context) {
     enum { Flags = 0, FrameChans = 2, PacketChans = 2 };
 
     init_config(Flags, FrameChans, PacketChans);
@@ -313,7 +313,7 @@ TEST(sender_receiver, separate_context) {
     sender.join();
 }
 
-TEST(sender_receiver, multiple_senders_one_receiver_sequential) {
+TEST(loopback_sender_2_receiver, multiple_senders_one_receiver_sequential) {
     enum { Flags = 0, FrameChans = 2, PacketChans = 2 };
 
     init_config(Flags, FrameChans, PacketChans);
@@ -348,7 +348,7 @@ TEST(sender_receiver, multiple_senders_one_receiver_sequential) {
     sender_2.join();
 }
 
-TEST(sender_receiver, sender_slots) {
+TEST(loopback_sender_2_receiver, sender_slots) {
     enum { Flags = 0, FrameChans = 2, PacketChans = 2, Slot1 = 1, Slot2 = 2 };
 
     init_config(Flags, FrameChans, PacketChans);
@@ -384,7 +384,7 @@ TEST(sender_receiver, sender_slots) {
     sender.join();
 }
 
-TEST(sender_receiver, receiver_slots_sequential) {
+TEST(loopback_sender_2_receiver, receiver_slots_sequential) {
     enum { Flags = 0, FrameChans = 2, PacketChans = 2, Slot1 = 1, Slot2 = 2 };
 
     init_config(Flags, FrameChans, PacketChans);
@@ -422,7 +422,7 @@ TEST(sender_receiver, receiver_slots_sequential) {
     sender_2.join();
 }
 
-TEST(sender_receiver, mono) {
+TEST(loopback_sender_2_receiver, mono) {
     enum { Flags = 0, FrameChans = 1, PacketChans = 1 };
 
     init_config(Flags, FrameChans, PacketChans);
@@ -445,7 +445,7 @@ TEST(sender_receiver, mono) {
     sender.join();
 }
 
-TEST(sender_receiver, stereo_mono_stereo) {
+TEST(loopback_sender_2_receiver, stereo_mono_stereo) {
     enum { Flags = 0, FrameChans = 2, PacketChans = 1 };
 
     init_config(Flags, FrameChans, PacketChans);
@@ -468,7 +468,7 @@ TEST(sender_receiver, stereo_mono_stereo) {
     sender.join();
 }
 
-TEST(sender_receiver, mono_stereo_mono) {
+TEST(loopback_sender_2_receiver, mono_stereo_mono) {
     enum { Flags = 0, FrameChans = 1, PacketChans = 2 };
 
     init_config(Flags, FrameChans, PacketChans);
@@ -491,7 +491,7 @@ TEST(sender_receiver, mono_stereo_mono) {
     sender.join();
 }
 
-TEST(sender_receiver, multitrack) {
+TEST(loopback_sender_2_receiver, multitrack) {
     enum {
         Flags = test::FlagMultitrack,
         FrameChans = 4,
@@ -521,7 +521,7 @@ TEST(sender_receiver, multitrack) {
     sender.join();
 }
 
-TEST(sender_receiver, multitrack_separate_contexts) {
+TEST(loopback_sender_2_receiver, multitrack_separate_contexts) {
     enum {
         Flags = test::FlagMultitrack,
         FrameChans = 4,
@@ -552,7 +552,7 @@ TEST(sender_receiver, multitrack_separate_contexts) {
     sender.join();
 }
 
-TEST(sender_receiver, metrics_measurements) {
+TEST(loopback_sender_2_receiver, metrics_measurements) {
     enum {
         Flags = test::FlagNonStrict | test::FlagInfinite | test::FlagRTCP,
         FrameChans = 2,
@@ -601,6 +601,19 @@ TEST(sender_receiver, metrics_measurements) {
             continue;
         }
 
+        sender.query_metrics(MaxSess);
+
+        if (sender.send_metrics().connection_count == 0) {
+            continue;
+        }
+
+        UNSIGNED_LONGS_EQUAL(1, sender.send_metrics().connection_count);
+        UNSIGNED_LONGS_EQUAL(1, sender.conn_metrics_count());
+
+        if (sender.conn_metrics(0).e2e_latency == 0) {
+            continue;
+        }
+
         break;
     }
 
@@ -610,9 +623,9 @@ TEST(sender_receiver, metrics_measurements) {
     sender.join();
 }
 
-TEST(sender_receiver, metrics_connections) {
+TEST(loopback_sender_2_receiver, metrics_connections) {
     enum {
-        Flags = test::FlagNonStrict | test::FlagInfinite,
+        Flags = test::FlagNonStrict | test::FlagInfinite | test::FlagRTCP,
         FrameChans = 2,
         PacketChans = 2,
         MaxSess = 10
@@ -630,18 +643,34 @@ TEST(sender_receiver, metrics_connections) {
     test::Sender sender_1(context, sender_conf, sample_step, FrameChans,
                           test::FrameSamples, Flags);
 
-    sender_1.connect(receiver.source_endpoint(), receiver.repair_endpoint(), NULL);
+    sender_1.connect(receiver.source_endpoint(), receiver.repair_endpoint(),
+                     receiver.control_endpoint());
 
     test::Sender sender_2(context, sender_conf, sample_step, FrameChans,
                           test::FrameSamples, Flags);
 
-    sender_2.connect(receiver.source_endpoint(), receiver.repair_endpoint(), NULL);
+    sender_2.connect(receiver.source_endpoint(), receiver.repair_endpoint(),
+                     receiver.control_endpoint());
 
     {
         receiver.query_metrics(MaxSess);
 
         UNSIGNED_LONGS_EQUAL(0, receiver.recv_metrics().connection_count);
         UNSIGNED_LONGS_EQUAL(0, receiver.conn_metrics_count());
+    }
+
+    {
+        sender_1.query_metrics(MaxSess);
+
+        UNSIGNED_LONGS_EQUAL(0, sender_1.send_metrics().connection_count);
+        UNSIGNED_LONGS_EQUAL(0, sender_1.conn_metrics_count());
+    }
+
+    {
+        sender_2.query_metrics(MaxSess);
+
+        UNSIGNED_LONGS_EQUAL(0, sender_2.send_metrics().connection_count);
+        UNSIGNED_LONGS_EQUAL(0, sender_2.conn_metrics_count());
     }
 
     CHECK(sender_1.start());
@@ -657,33 +686,38 @@ TEST(sender_receiver, metrics_connections) {
             continue;
         }
 
-        {
-            receiver.query_metrics(0);
+        UNSIGNED_LONGS_EQUAL(2, receiver.recv_metrics().connection_count);
+        UNSIGNED_LONGS_EQUAL(2, receiver.conn_metrics_count());
 
-            UNSIGNED_LONGS_EQUAL(2, receiver.recv_metrics().connection_count);
-            UNSIGNED_LONGS_EQUAL(0, receiver.conn_metrics_count());
+        break;
+    }
+
+    for (;;) {
+        core::sleep_for(core::ClockMonotonic, core::Millisecond);
+
+        sender_1.query_metrics(MaxSess);
+
+        if (sender_1.send_metrics().connection_count != 1) {
+            continue;
         }
 
-        {
-            receiver.query_metrics(1);
+        UNSIGNED_LONGS_EQUAL(1, sender_1.send_metrics().connection_count);
+        UNSIGNED_LONGS_EQUAL(1, sender_1.conn_metrics_count());
 
-            UNSIGNED_LONGS_EQUAL(2, receiver.recv_metrics().connection_count);
-            UNSIGNED_LONGS_EQUAL(1, receiver.conn_metrics_count());
+        break;
+    }
+
+    for (;;) {
+        core::sleep_for(core::ClockMonotonic, core::Millisecond);
+
+        sender_2.query_metrics(MaxSess);
+
+        if (sender_2.send_metrics().connection_count != 1) {
+            continue;
         }
 
-        {
-            receiver.query_metrics(2);
-
-            UNSIGNED_LONGS_EQUAL(2, receiver.recv_metrics().connection_count);
-            UNSIGNED_LONGS_EQUAL(2, receiver.conn_metrics_count());
-        }
-
-        {
-            receiver.query_metrics(3);
-
-            UNSIGNED_LONGS_EQUAL(2, receiver.recv_metrics().connection_count);
-            UNSIGNED_LONGS_EQUAL(2, receiver.conn_metrics_count());
-        }
+        UNSIGNED_LONGS_EQUAL(1, sender_2.send_metrics().connection_count);
+        UNSIGNED_LONGS_EQUAL(1, sender_2.conn_metrics_count());
 
         break;
     }
@@ -696,9 +730,9 @@ TEST(sender_receiver, metrics_connections) {
     sender_2.join();
 }
 
-TEST(sender_receiver, metrics_slots) {
+TEST(loopback_sender_2_receiver, metrics_slots) {
     enum {
-        Flags = test::FlagNonStrict | test::FlagInfinite,
+        Flags = test::FlagNonStrict | test::FlagInfinite | test::FlagRTCP,
         FrameChans = 2,
         PacketChans = 2,
         MaxSess = 10,
@@ -716,17 +750,14 @@ TEST(sender_receiver, metrics_slots) {
     receiver.bind(Slot1);
     receiver.bind(Slot2);
 
-    test::Sender sender_1(context, sender_conf, sample_step, FrameChans,
-                          test::FrameSamples, Flags);
+    test::Sender sender(context, sender_conf, sample_step, FrameChans, test::FrameSamples,
+                        Flags);
 
-    sender_1.connect(receiver.source_endpoint(Slot1), receiver.repair_endpoint(Slot1),
-                     NULL);
+    sender.connect(receiver.source_endpoint(Slot1), receiver.repair_endpoint(Slot1),
+                   receiver.control_endpoint(Slot1), Slot1);
 
-    test::Sender sender_2(context, sender_conf, sample_step, FrameChans,
-                          test::FrameSamples, Flags);
-
-    sender_2.connect(receiver.source_endpoint(Slot2), receiver.repair_endpoint(Slot2),
-                     NULL);
+    sender.connect(receiver.source_endpoint(Slot2), receiver.repair_endpoint(Slot2),
+                   receiver.control_endpoint(Slot2), Slot2);
 
     {
         receiver.query_metrics(MaxSess, Slot1);
@@ -740,8 +771,19 @@ TEST(sender_receiver, metrics_slots) {
         UNSIGNED_LONGS_EQUAL(0, receiver.conn_metrics_count());
     }
 
-    CHECK(sender_1.start());
-    CHECK(sender_2.start());
+    {
+        sender.query_metrics(MaxSess, Slot1);
+
+        UNSIGNED_LONGS_EQUAL(0, sender.send_metrics().connection_count);
+        UNSIGNED_LONGS_EQUAL(0, sender.conn_metrics_count());
+
+        sender.query_metrics(MaxSess, Slot2);
+
+        UNSIGNED_LONGS_EQUAL(0, sender.send_metrics().connection_count);
+        UNSIGNED_LONGS_EQUAL(0, sender.conn_metrics_count());
+    }
+
+    CHECK(sender.start());
     CHECK(receiver.start());
 
     for (;;) {
@@ -774,12 +816,40 @@ TEST(sender_receiver, metrics_slots) {
         UNSIGNED_LONGS_EQUAL(1, receiver.conn_metrics_count());
     }
 
+    for (;;) {
+        core::sleep_for(core::ClockMonotonic, core::Millisecond);
+
+        sender.query_metrics(MaxSess, Slot1);
+
+        if (sender.send_metrics().connection_count == 0) {
+            continue;
+        }
+
+        sender.query_metrics(MaxSess, Slot2);
+
+        if (sender.send_metrics().connection_count == 0) {
+            continue;
+        }
+
+        break;
+    }
+
+    {
+        sender.query_metrics(MaxSess, Slot1);
+
+        UNSIGNED_LONGS_EQUAL(1, sender.send_metrics().connection_count);
+        UNSIGNED_LONGS_EQUAL(1, sender.conn_metrics_count());
+
+        sender.query_metrics(MaxSess, Slot2);
+
+        UNSIGNED_LONGS_EQUAL(1, sender.send_metrics().connection_count);
+        UNSIGNED_LONGS_EQUAL(1, sender.conn_metrics_count());
+    }
+
     receiver.stop();
     receiver.join();
-    sender_1.stop();
-    sender_1.join();
-    sender_2.stop();
-    sender_2.join();
+    sender.stop();
+    sender.join();
 }
 
 } // namespace api

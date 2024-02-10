@@ -194,7 +194,7 @@ status::StatusCode ReceiverDecoder::read_packet(address::Interface iface,
         } else {
             roc_log(LogError,
                     "sender encoder node:"
-                    " can't write to %s interface: interface doesn't support reading",
+                    " can't read from %s interface: interface doesn't support reading",
                     address::interface_to_str(iface));
             // TODO(gh-183): return StatusBadOperation
             return status::StatusNoData;

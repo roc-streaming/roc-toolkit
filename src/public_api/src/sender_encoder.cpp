@@ -291,7 +291,7 @@ int roc_sender_encoder_pop_packet(roc_sender_encoder* encoder,
     if (!packet->bytes) {
         roc_log(LogError,
                 "roc_sender_encoder_pop_packet(): invalid arguments:"
-                " packet bytes are null");
+                " packet bytes buffer is null");
         return -1;
     }
 

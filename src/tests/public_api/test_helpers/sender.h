@@ -14,6 +14,7 @@
 #include "test_helpers/context.h"
 #include "test_helpers/utils.h"
 
+#include "roc_core/array.h"
 #include "roc_core/atomic.h"
 #include "roc_core/panic.h"
 #include "roc_core/thread.h"
@@ -72,6 +73,31 @@ public:
         }
     }
 
+    void query_metrics(size_t requested_conns, roc_slot slot = ROC_SLOT_DEFAULT) {
+        CHECK(conn_metrics_.resize(requested_conns));
+
+        n_conn_metrics_ = requested_conns;
+
+        CHECK(roc_sender_query(sndr_, slot, &send_metrics_, conn_metrics_.data(),
+                               &n_conn_metrics_)
+              == 0);
+
+        CHECK(n_conn_metrics_ <= requested_conns);
+    }
+
+    const roc_sender_metrics& send_metrics() const {
+        return send_metrics_;
+    }
+
+    size_t conn_metrics_count() const {
+        return n_conn_metrics_;
+    }
+
+    const roc_connection_metrics& conn_metrics(size_t n) const {
+        CHECK(n < n_conn_metrics_);
+        return conn_metrics_[n];
+    }
+
     void stop() {
         stopped_ = true;
     }
@@ -100,6 +126,10 @@ private:
     }
 
     roc_sender* sndr_;
+
+    roc_sender_metrics send_metrics_;
+    core::Array<roc_connection_metrics, 16> conn_metrics_;
+    size_t n_conn_metrics_;
 
     const float sample_step_;
     const size_t num_chans_;

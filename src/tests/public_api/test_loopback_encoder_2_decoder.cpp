@@ -33,7 +33,7 @@ core::BufferFactory<uint8_t> byte_buffer_factory(arena, test::MaxBufSize);
 
 } // namespace
 
-TEST_GROUP(sender_encoder_receiver_decoder) {
+TEST_GROUP(loopback_encoder_2_decoder) {
     roc_sender_config sender_conf;
     roc_receiver_config receiver_conf;
 
@@ -53,13 +53,13 @@ TEST_GROUP(sender_encoder_receiver_decoder) {
         sender_conf.packet_encoding = ROC_PACKET_ENCODING_AVP_L16_STEREO;
         sender_conf.packet_length =
             test::PacketSamples * 1000000000ull / test::SampleRate;
-        sender_conf.clock_source = ROC_CLOCK_SOURCE_EXTERNAL;
+        sender_conf.clock_source = ROC_CLOCK_SOURCE_INTERNAL;
 
         memset(&receiver_conf, 0, sizeof(receiver_conf));
         receiver_conf.frame_encoding.rate = test::SampleRate;
         receiver_conf.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
         receiver_conf.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
-        receiver_conf.clock_source = ROC_CLOCK_SOURCE_EXTERNAL;
+        receiver_conf.clock_source = ROC_CLOCK_SOURCE_INTERNAL;
         receiver_conf.latency_tuner_profile = ROC_LATENCY_TUNER_PROFILE_INTACT;
         receiver_conf.target_latency = test::Latency * 1000000000ull / test::SampleRate;
         receiver_conf.no_playback_timeout =
@@ -81,7 +81,7 @@ TEST_GROUP(sender_encoder_receiver_decoder) {
     void run_test(roc_sender_encoder * encoder, roc_receiver_decoder * decoder,
                   const roc_interface* ifaces, size_t num_ifaces) {
         enum {
-            NumFrames = test::Latency / test::FrameSamples * 50,
+            NumFrames = test::Latency * 10 / test::FrameSamples,
             MaxLeadingZeros = test::Latency * 2
         };
 
@@ -91,11 +91,14 @@ TEST_GROUP(sender_encoder_receiver_decoder) {
         bool leading_zeros = true;
 
         size_t iface_packets[10] = {};
+        size_t feedback_packets = 0;
         size_t zero_samples = 0, total_samples = 0;
 
-        unsigned long long max_e2e_latency = 0;
+        unsigned long long max_recv_e2e_latency = 0;
+        unsigned long long max_send_e2e_latency = 0;
 
         bool has_control = false;
+        bool got_all_metrics = false;
 
         for (size_t n_if = 0; n_if < num_ifaces; n_if++) {
             if (ifaces[n_if] == ROC_INTERFACE_AUDIO_CONTROL) {
@@ -103,7 +106,7 @@ TEST_GROUP(sender_encoder_receiver_decoder) {
             }
         }
 
-        for (size_t nf = 0; nf < NumFrames; nf++) {
+        for (size_t nf = 0; nf < NumFrames || !got_all_metrics; nf++) {
             { // write frame to encoder
                 float samples[test::FrameSamples] = {};
 
@@ -116,11 +119,6 @@ TEST_GROUP(sender_encoder_receiver_decoder) {
                 frame.samples = samples;
                 frame.samples_size = test::FrameSamples * sizeof(float);
                 CHECK(roc_sender_encoder_push_frame(encoder, &frame) == 0);
-            }
-            {
-                // simulate small network delay, so that receiver will calculate
-                // non-zero latency
-                core::sleep_for(core::ClockMonotonic, core::Microsecond * 50);
             }
             { // read encoded packets from encoder and write to decoder
                 uint8_t bytes[test::MaxBufSize] = {};
@@ -142,6 +140,29 @@ TEST_GROUP(sender_encoder_receiver_decoder) {
                               == 0);
 
                         iface_packets[n_if]++;
+                    }
+                }
+            }
+            { // read encoded feedback packets from decoder and write to encoder
+                uint8_t bytes[test::MaxBufSize] = {};
+
+                if (has_control) {
+                    for (;;) {
+                        roc_packet packet;
+                        packet.bytes = bytes;
+                        packet.bytes_size = test::MaxBufSize;
+
+                        if (roc_receiver_decoder_pop_feedback_packet(
+                                decoder, ROC_INTERFACE_AUDIO_CONTROL, &packet)
+                            != 0) {
+                            break;
+                        }
+
+                        CHECK(roc_sender_encoder_push_feedback_packet(
+                                  encoder, ROC_INTERFACE_AUDIO_CONTROL, &packet)
+                              == 0);
+
+                        feedback_packets++;
                     }
                 }
             }
@@ -182,7 +203,7 @@ TEST_GROUP(sender_encoder_receiver_decoder) {
                     }
                 }
             }
-            { // check metrics
+            { // check receiver metrics
                 roc_receiver_metrics recv_metrics;
                 memset(&recv_metrics, 0, sizeof(recv_metrics));
                 roc_connection_metrics conn_metrics;
@@ -196,7 +217,33 @@ TEST_GROUP(sender_encoder_receiver_decoder) {
                 UNSIGNED_LONGS_EQUAL(1, recv_metrics.connection_count);
                 UNSIGNED_LONGS_EQUAL(1, conn_metrics_count);
 
-                max_e2e_latency = std::max(max_e2e_latency, conn_metrics.e2e_latency);
+                max_recv_e2e_latency =
+                    std::max(max_recv_e2e_latency, conn_metrics.e2e_latency);
+            }
+            { // check sender metrics
+                roc_sender_metrics send_metrics;
+                memset(&send_metrics, 0, sizeof(send_metrics));
+                roc_connection_metrics conn_metrics;
+                memset(&conn_metrics, 0, sizeof(conn_metrics));
+                size_t conn_metrics_count = 1;
+
+                CHECK(roc_sender_encoder_query(encoder, &send_metrics, &conn_metrics,
+                                               &conn_metrics_count)
+                      == 0);
+
+                if (send_metrics.connection_count != 0) {
+                    UNSIGNED_LONGS_EQUAL(1, send_metrics.connection_count);
+                    UNSIGNED_LONGS_EQUAL(1, conn_metrics_count);
+
+                    max_send_e2e_latency =
+                        std::max(max_send_e2e_latency, conn_metrics.e2e_latency);
+                }
+            }
+
+            if (has_control) {
+                got_all_metrics = max_recv_e2e_latency > 0 && max_send_e2e_latency > 0;
+            } else {
+                got_all_metrics = true;
             }
         }
 
@@ -208,16 +255,25 @@ TEST_GROUP(sender_encoder_receiver_decoder) {
             CHECK(iface_packets[n_if] > 0);
         }
 
+        // check that feedback packets
+        if (has_control) {
+            CHECK(feedback_packets > 0);
+        } else {
+            CHECK(feedback_packets == 0);
+        }
+
         // check metrics
         if (has_control) {
-            CHECK(max_e2e_latency > 0);
+            CHECK(max_recv_e2e_latency > 0);
+            CHECK(max_send_e2e_latency > 0);
         } else {
-            CHECK(max_e2e_latency == 0);
+            CHECK(max_recv_e2e_latency == 0);
+            CHECK(max_send_e2e_latency == 0);
         }
     }
 };
 
-TEST(sender_encoder_receiver_decoder, source) {
+TEST(loopback_encoder_2_decoder, source) {
     sender_conf.fec_encoding = ROC_FEC_ENCODING_DISABLE;
 
     roc_sender_encoder* encoder = NULL;
@@ -245,7 +301,7 @@ TEST(sender_encoder_receiver_decoder, source) {
     LONGS_EQUAL(0, roc_receiver_decoder_close(decoder));
 }
 
-TEST(sender_encoder_receiver_decoder, source_control) {
+TEST(loopback_encoder_2_decoder, source_control) {
     sender_conf.fec_encoding = ROC_FEC_ENCODING_DISABLE;
 
     roc_sender_encoder* encoder = NULL;
@@ -282,7 +338,7 @@ TEST(sender_encoder_receiver_decoder, source_control) {
     LONGS_EQUAL(0, roc_receiver_decoder_close(decoder));
 }
 
-TEST(sender_encoder_receiver_decoder, source_repair) {
+TEST(loopback_encoder_2_decoder, source_repair) {
     if (!is_rs8m_supported()) {
         return;
     }
@@ -326,7 +382,7 @@ TEST(sender_encoder_receiver_decoder, source_repair) {
     LONGS_EQUAL(0, roc_receiver_decoder_close(decoder));
 }
 
-TEST(sender_encoder_receiver_decoder, source_repair_control) {
+TEST(loopback_encoder_2_decoder, source_repair_control) {
     if (!is_rs8m_supported()) {
         return;
     }

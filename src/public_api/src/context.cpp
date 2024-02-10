@@ -111,7 +111,10 @@ int roc_context_close(roc_context* context) {
     node::Context* imp_context = (node::Context*)context;
 
     if (imp_context->getref() != 0) {
-        roc_log(LogError, "roc_context_close(): context is still in use");
+        roc_log(LogError,
+                "roc_context_close(): can't close context:"
+                " there is %d unclosed peer(s) attached to context",
+                (int)imp_context->getref());
         return -1;
     }
 

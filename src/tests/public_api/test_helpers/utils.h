@@ -23,7 +23,7 @@ enum {
     SourcePackets = 10,
     RepairPackets = 7,
 
-    PacketSamples = 50,
+    PacketSamples = 15,
     FrameSamples = PacketSamples * 2,
     TotalSamples = PacketSamples * SourcePackets * 3,
 

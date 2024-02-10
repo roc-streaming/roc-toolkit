@@ -25,14 +25,14 @@
 extern "C" {
 #endif
 
-/** Sender encoder node.
+/** Sender encoder.
  *
  * Sender encoder gets an audio stream from the user, encodes it into network packets, and
- * provides encoded packets back to the user.
+ * provides encoded packets to the user.
  *
- * Sender encoder is a simplified networkless version of \ref roc_sender. It implements
- * the same pipeline, but instead of sending packets, it just provides them to the user.
- * The user is responsible for delivering these packets to receiver.
+ * Sender encoder is a networkless version of \ref roc_sender. It implements the same
+ * pipeline, but instead of sending packets to network, it returns them to the user. The
+ * user is responsible for carrying packets over network.
  *
  * For detailed description of sender pipeline, see documentation for \ref roc_sender.
  *
@@ -67,7 +67,7 @@ extern "C" {
  * **Interfaces and protocols**
  *
  * Sender encoder may have one or several *interfaces*, as defined in \ref roc_interface.
- * The interface defines the type of the communication with the remote node and the set
+ * The interface defines the type of the communication with the remote peer and the set
  * of the protocols supported by it.
  *
  * Each interface has its own outbound packet queue. When a frame is pushed to the

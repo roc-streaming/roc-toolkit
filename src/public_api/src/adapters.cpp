@@ -367,6 +367,7 @@ bool channel_set_from_user(audio::ChannelSet& out,
 ROC_ATTR_NO_SANITIZE_UB
 bool clock_source_from_user(bool& out_timing, roc_clock_source in) {
     switch (enum_from_user(in)) {
+    case ROC_CLOCK_SOURCE_DEFAULT:
     case ROC_CLOCK_SOURCE_EXTERNAL:
         out_timing = false;
         return true;

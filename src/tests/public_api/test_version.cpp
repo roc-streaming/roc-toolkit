@@ -19,7 +19,7 @@ TEST(version, null) {
     roc_version_load(NULL);
 }
 
-TEST(version, get) {
+TEST(version, load) {
     roc_version version;
     roc_version_load(&version);
 
