@@ -50,12 +50,12 @@ packet_flags_to_str::packet_flags_to_str(unsigned flags) {
     bool is_first = true;
 
     for (unsigned i = 0; i < sizeof(flags) * 8; i++) {
-        const Packet::Flag flag = (Packet::Flag)(1 << i);
-        if (flags & (unsigned)flag) {
+        const unsigned flag = (1 << i);
+        if (flags & flag) {
             if (!is_first) {
                 bld.append_str(",");
             }
-            bld.append_str(flag_to_str(flag));
+            bld.append_str(flag_to_str((Packet::Flag)flag));
             is_first = false;
         }
     }
