@@ -34,9 +34,10 @@ public:
 
     //! Frame flags.
     //! Flags are designed the way so that if you combine multiple frames into one,
-    //! (concatenate or mix), bitwise OR of their flags will produce correct result.
-    //! E.g., if at least one frame was non-blank, combined frame will be non-blank,
-    //! if at least one frame was incomplete, combined frame will be incomplete, etc.
+    //! (concatenate or mix), bitwise OR of their flags will give flags for resulting
+    //! frame. E.g., if at least one frame was non-blank, combined frame will be
+    //! non-blank, if at least one frame was incomplete, combined frame will be
+    //! incomplete, etc.
     enum {
         //! Set if the frame has format different from raw samples.
         //! If this flag is set, only bytes() can be used, and raw_samples() panics.
@@ -87,6 +88,9 @@ public:
 
     //! Get frame duration in terms of stream timestamps.
     void set_duration(packet::stream_timestamp_t duration);
+
+    //! Check if capture timestamp is set.
+    bool has_capture_timestamp() const;
 
     //! Get unix-epoch timestamp in ns of the 1st sample.
     core::nanoseconds_t capture_timestamp() const;

@@ -26,30 +26,30 @@ namespace core {
 //!
 //! Copying a slice produces a new slice referring the same data.
 //!
-//! Slice also acts as a kind of shared pointer to Buffer. A buffer wont be freed
+//! Slice also acts as a kind of shared pointer to Buffer. A buffer won't be freed
 //! (returned to pool) until there are slices referring it. Copying a slice
 //! increments the buffer reference counter, and destroying a slice decrements it.
 //!
 //! Slice has two important characteristics:
-//!  - size - the difference between the ending end beginning pointers
+//!  - size - the difference between the ending end beginning pointer
 //!  - capacity - the difference between the actual buffer end and the
-//!               slice beginning pointers
+//!               slice beginning pointer
 //!
 //! Buffers are not resizable. They're allocated from pool and have fixed size,
 //! defined by the pool parameters.
 //!
 //! Slices are resliceable, which means that their pointers to the buffer data
-//! may be moved withing the buffer.
+//! may be moved within the buffer.
 //!
 //! The beginning pointer may be moved only forward. Once moved, it's not allowed
 //! to move it backward again. Moving it decreases the slice size and capacity.
 //! Capacity is affected because it's relative to the beginning pointer.
 //!
-//! The ending pointer maybe freely moved forward and backward withing the slice
+//! The ending pointer may be freely moved forward and backward within the slice
 //! capacity. Moving it affects the slice size, but not capacity.
 //!
 //! In other words, slice capacity may be only decreased by moving beginning pointer,
-//! and slice size may be freely changed withing the slice capacity by moving both
+//! and slice size may be freely changed within the slice capacity by moving both
 //! beginning and ending pointers.
 template <class T> class Slice {
 public:

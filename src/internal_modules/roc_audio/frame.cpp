@@ -92,6 +92,10 @@ void Frame::set_duration(packet::stream_timestamp_t duration) {
     duration_ = duration;
 }
 
+bool Frame::has_capture_timestamp() const {
+    return capture_timestamp_ != 0;
+}
+
 core::nanoseconds_t Frame::capture_timestamp() const {
     return capture_timestamp_;
 }
