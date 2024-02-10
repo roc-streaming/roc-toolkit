@@ -764,12 +764,14 @@ ControlTask* ControlTaskQueue::fetch_ready_task_() {
             continue;
         }
 
-        // The task was removed from the queue, we can now handle it.
-        --ready_queue_size_;
-
         // This will probably destroy the task (if deadline is negative).
         const bool is_ready =
             renew_scheduling_(*task, task_flags, task_deadline, task_version);
+
+        // The task was removed from the queue, we can now handle it.
+        // Don't do it before renewing task, to prevent unnecessary attempt to renew
+        // it in-place from another thread.
+        --ready_queue_size_;
 
         if (!is_ready) {
             // This task should not be processed, it was added to ready queue
