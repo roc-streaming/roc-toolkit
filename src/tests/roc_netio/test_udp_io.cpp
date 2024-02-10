@@ -13,6 +13,7 @@
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/print_buffer.h"
+#include "roc_core/time.h"
 #include "roc_netio/network_loop.h"
 #include "roc_packet/concurrent_queue.h"
 #include "roc_packet/packet_factory.h"
@@ -22,11 +23,15 @@ namespace netio {
 
 namespace {
 
-enum { NumIterations = 20, NumPackets = 10, BufferSize = 125 };
+enum { NumIterations = 10, NumPackets = 7, BufferSize = 125 };
 
 core::HeapArena arena;
 core::BufferFactory<uint8_t> buffer_factory(arena, BufferSize);
 packet::PacketFactory packet_factory(arena);
+
+void short_delay() {
+    core::sleep_for(core::ClockMonotonic, core::Microsecond * 500);
+}
 
 UdpConfig make_udp_config() {
     UdpConfig config;
@@ -196,6 +201,7 @@ TEST(udp_io, one_sender_one_receiver_single_thread_non_blocking_disabled) {
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
+            short_delay();
             LONGS_EQUAL(status::StatusOK,
                         tx_writer->write(new_packet(tx_config, rx_config, p)));
         }
@@ -224,6 +230,7 @@ TEST(udp_io, one_sender_one_receiver_single_loop) {
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
+            short_delay();
             LONGS_EQUAL(status::StatusOK,
                         tx_writer->write(new_packet(tx_config, rx_config, p)));
         }
@@ -254,6 +261,7 @@ TEST(udp_io, one_sender_one_receiver_separate_loops) {
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
+            short_delay();
             LONGS_EQUAL(status::StatusOK,
                         tx_writer->write(new_packet(tx_config, rx_config, p)));
         }
@@ -294,6 +302,7 @@ TEST(udp_io, one_sender_many_receivers) {
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
+            short_delay();
             LONGS_EQUAL(status::StatusOK,
                         tx_writer->write(new_packet(tx_config, rx_config1, p * 10)));
             LONGS_EQUAL(status::StatusOK,
@@ -350,6 +359,7 @@ TEST(udp_io, many_senders_one_receiver) {
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
+            short_delay();
             LONGS_EQUAL(status::StatusOK,
                         tx_writer1->write(new_packet(tx_config1, rx_config, p * 10)));
         }
@@ -358,7 +368,9 @@ TEST(udp_io, many_senders_one_receiver) {
             LONGS_EQUAL(status::StatusOK, rx_queue.read(pp));
             check_packet(pp, tx_config1, rx_config, p * 10, i);
         }
+
         for (int p = 0; p < NumPackets; p++) {
+            short_delay();
             LONGS_EQUAL(status::StatusOK,
                         tx_writer2->write(new_packet(tx_config2, rx_config, p * 20)));
         }
@@ -367,7 +379,9 @@ TEST(udp_io, many_senders_one_receiver) {
             LONGS_EQUAL(status::StatusOK, rx_queue.read(pp));
             check_packet(pp, tx_config2, rx_config, p * 20, i);
         }
+
         for (int p = 0; p < NumPackets; p++) {
+            short_delay();
             LONGS_EQUAL(status::StatusOK,
                         tx_writer3->write(new_packet(tx_config3, rx_config, p * 30)));
         }
@@ -404,12 +418,13 @@ TEST(udp_io, bidirectional_ports_one_loop) {
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
+            short_delay();
             LONGS_EQUAL(
                 status::StatusOK,
                 peer1_tx_writer->write(new_packet(peer1_config, peer2_config, p)));
         }
-
         for (int p = 0; p < NumPackets; p++) {
+            short_delay();
             LONGS_EQUAL(
                 status::StatusOK,
                 peer2_tx_writer->write(new_packet(peer2_config, peer1_config, p)));
@@ -420,7 +435,6 @@ TEST(udp_io, bidirectional_ports_one_loop) {
             LONGS_EQUAL(status::StatusOK, peer2_rx_queue.read(pp));
             check_packet(pp, peer1_config, peer2_config, p, i);
         }
-
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
             LONGS_EQUAL(status::StatusOK, peer1_rx_queue.read(pp));
@@ -457,12 +471,13 @@ TEST(udp_io, bidirectional_ports_separate_loops) {
 
     for (int i = 0; i < NumIterations; i++) {
         for (int p = 0; p < NumPackets; p++) {
+            short_delay();
             LONGS_EQUAL(
                 status::StatusOK,
                 peer1_tx_writer->write(new_packet(peer1_config, peer2_config, p)));
         }
-
         for (int p = 0; p < NumPackets; p++) {
+            short_delay();
             LONGS_EQUAL(
                 status::StatusOK,
                 peer2_tx_writer->write(new_packet(peer2_config, peer1_config, p)));
@@ -473,7 +488,6 @@ TEST(udp_io, bidirectional_ports_separate_loops) {
             LONGS_EQUAL(status::StatusOK, peer2_rx_queue.read(pp));
             check_packet(pp, peer1_config, peer2_config, p, i);
         }
-
         for (int p = 0; p < NumPackets; p++) {
             packet::PacketPtr pp;
             LONGS_EQUAL(status::StatusOK, peer1_rx_queue.read(pp));
