@@ -18,6 +18,7 @@
 
 #include "roc_core/array.h"
 #include "roc_core/atomic.h"
+#include "roc_core/noop_arena.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
 
@@ -37,6 +38,10 @@ public:
              size_t frame_size,
              unsigned flags)
         : recv_(NULL)
+        , source_endp_(core::NoopArena)
+        , repair_endp_(core::NoopArena)
+        , control_endp_(core::NoopArena)
+        , conn_metrics_(core::NoopArena)
         , n_conn_metrics_(0)
         , sample_step_(sample_step)
         , num_chans_(num_chans)

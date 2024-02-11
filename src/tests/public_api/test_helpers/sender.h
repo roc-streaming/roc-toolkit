@@ -16,6 +16,7 @@
 
 #include "roc_core/array.h"
 #include "roc_core/atomic.h"
+#include "roc_core/noop_arena.h"
 #include "roc_core/panic.h"
 #include "roc_core/thread.h"
 
@@ -36,6 +37,7 @@ public:
            size_t frame_size,
            unsigned flags)
         : sndr_(NULL)
+        , conn_metrics_(core::NoopArena)
         , sample_step_(sample_step)
         , num_chans_(num_chans)
         , frame_samples_(frame_size * num_chans)

@@ -46,7 +46,7 @@ public:
                                         const void* key);
 
     //! Initialize empty hashmap.
-    HashmapImpl(void* preallocated_data, size_t num_embedded_buckets, IArena* arena);
+    HashmapImpl(void* preallocated_data, size_t num_embedded_buckets, IArena& arena);
 
     //! Deinitialize.
     ~HashmapImpl();
@@ -130,7 +130,7 @@ private:
     // head of list of all nodes
     HashmapNode::HashmapNodeData all_head_;
 
-    IArena* arena_;
+    IArena& arena_;
 };
 
 } // namespace core
