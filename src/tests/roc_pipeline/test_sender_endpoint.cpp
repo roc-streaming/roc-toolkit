@@ -11,6 +11,7 @@
 #include "roc_address/protocol.h"
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
+#include "roc_core/noop_arena.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_pipeline/sender_endpoint.h"
@@ -23,23 +24,6 @@ namespace roc {
 namespace pipeline {
 
 namespace {
-
-struct NoMemArena : public core::IArena, public core::NonCopyable<> {
-    virtual void* allocate(size_t) {
-        return NULL;
-    }
-
-    virtual void deallocate(void*) {
-    }
-
-    virtual size_t compute_allocated_size(size_t) const {
-        return 0;
-    }
-
-    virtual size_t allocated_size(void*) const {
-        return 0;
-    }
-};
 
 enum { PacketSz = 512 };
 
@@ -90,8 +74,6 @@ TEST(sender_endpoint, no_memory) {
         address::Proto_LDPC_Repair,
     };
 
-    NoMemArena nomem_arena;
-
     for (size_t n = 0; n < ROC_ARRAY_SIZE(protos); ++n) {
         address::SocketAddr addr;
         packet::Queue queue;
@@ -102,7 +84,7 @@ TEST(sender_endpoint, no_memory) {
                               byte_buffer_factory, sample_buffer_factory, arena);
 
         SenderEndpoint endpoint(protos[n], state_tracker, session, addr, queue,
-                                nomem_arena);
+                                core::NoopArena);
         CHECK(!endpoint.is_valid());
     }
 }

@@ -87,18 +87,11 @@ public:
     //!  either raw or smart pointer depending on the ownership policy.
     typedef typename OwnershipPolicy<T>::Pointer Pointer;
 
-    //! Initialize empty hashmap without arena.
-    //! @remarks
-    //!  Hashmap capacity will be limited to the embedded capacity.
-    Hashmap()
-        : impl_(embedded_buckets_.memory(), NumEmbeddedBuckets, NULL) {
-    }
-
     //! Initialize empty hashmap with arena.
     //! @remarks
     //!  Hashmap capacity may grow using arena.
     explicit Hashmap(IArena& arena)
-        : impl_(embedded_buckets_.memory(), NumEmbeddedBuckets, &arena) {
+        : impl_(embedded_buckets_.memory(), NumEmbeddedBuckets, arena) {
     }
 
     //! Release ownership of all elements.

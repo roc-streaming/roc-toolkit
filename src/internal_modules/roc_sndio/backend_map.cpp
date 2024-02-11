@@ -7,12 +7,15 @@
  */
 
 #include "roc_sndio/backend_map.h"
+#include "roc_core/noop_arena.h"
 #include "roc_core/panic.h"
 
 namespace roc {
 namespace sndio {
 
-BackendMap::BackendMap() {
+BackendMap::BackendMap()
+    : backends_(core::NoopArena)
+    , drivers_(core::NoopArena) {
     register_backends_();
     register_drivers_();
 
