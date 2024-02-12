@@ -37,7 +37,7 @@ public:
     bool is_valid() const;
 
     //! Write audio frame.
-    virtual void write(Frame& frame);
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(Frame& frame);
 
 private:
     void write_(sample_t* in_samples,

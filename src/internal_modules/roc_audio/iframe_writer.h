@@ -24,7 +24,7 @@ public:
     virtual ~IFrameWriter();
 
     //! Write audio frame.
-    virtual void write(Frame& frame) = 0;
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(Frame& frame) = 0;
 };
 
 } // namespace audio
