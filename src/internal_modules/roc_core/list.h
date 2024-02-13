@@ -146,11 +146,7 @@ public:
     //! @pre
     //!  @p element should not be member of any list.
     void push_front(T& element) {
-        if (size_ == 0) {
-            insert_(element, NULL);
-        } else {
-            insert_(element, head_.next);
-        }
+        insert_(element, head_.next);
     }
 
     //! Append element to list.
@@ -162,7 +158,7 @@ public:
     //! @pre
     //!  @p element should not be member of any list.
     void push_back(T& element) {
-        insert_(element, NULL);
+        insert_(element, &head_);
     }
 
     //! Pop first element from list.
@@ -177,7 +173,7 @@ public:
         if (size_ == 0) {
             roc_panic("list: is empty");
         }
-        remove(*container_of_(head_.next));
+        remove_(*container_of_(head_.next));
     }
 
     //! Pop last element from list.
@@ -192,7 +188,7 @@ public:
         if (size_ == 0) {
             roc_panic("list: is empty");
         }
-        remove(*container_of_(head_.prev));
+        remove_(*container_of_(head_.prev));
     }
 
     //! Insert element into list.
@@ -218,13 +214,7 @@ public:
     //!  @p element should not be member of any list.
     //!  @p after should be member of this list.
     void insert_after(T& element, T& after) {
-        ListNode::ListNodeData* data_after = after.list_node_data();
-
-        if (data_after->next == &head_) {
-            insert_(element, NULL);
-        } else {
-            insert_(element, data_after->next);
-        }
+        insert_(element, after.list_node_data()->next);
     }
 
     //! Remove element from list.
@@ -236,17 +226,7 @@ public:
     //! @pre
     //!  @p element should be member of this list.
     void remove(T& element) {
-        ListNode::ListNodeData* data = element.list_node_data();
-        check_is_member_(data, this);
-
-        data->prev->next = data->next;
-        data->next->prev = data->prev;
-
-        data->list = NULL;
-
-        size_--;
-
-        OwnershipPolicy<T>::release(element);
+        remove_(element);
     }
 
 private:
@@ -264,12 +244,7 @@ private:
     void insert_(T& element, ListNode::ListNodeData* data_before) {
         ListNode::ListNodeData* data_new = element.list_node_data();
         check_is_member_(data_new, NULL);
-
-        if (data_before != NULL) {
-            check_is_member_(data_before, this);
-        } else {
-            data_before = &head_;
-        }
+        check_is_member_(data_before, this);
 
         data_new->next = data_before;
         data_new->prev = data_before->prev;
@@ -282,6 +257,20 @@ private:
         size_++;
 
         OwnershipPolicy<T>::acquire(element);
+    }
+
+    void remove_(T& element) {
+        ListNode::ListNodeData* data = element.list_node_data();
+        check_is_member_(data, this);
+
+        data->prev->next = data->next;
+        data->next->prev = data->prev;
+
+        data->list = NULL;
+
+        size_--;
+
+        OwnershipPolicy<T>::release(element);
     }
 
     ListNode::ListNodeData head_;
