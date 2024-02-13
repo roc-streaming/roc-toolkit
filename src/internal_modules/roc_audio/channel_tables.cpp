@@ -1,9 +1,5 @@
 /*
- * Copyright (c) 2023 Roc Streaming authors
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * THIS FILE IS AUTO-GENERATED USING `channel_tables_gen.py'. DO NOT EDIT!
  */
 
 #include "roc_audio/channel_tables.h"
@@ -13,60 +9,47 @@ namespace roc {
 namespace audio {
 
 // Table of channel position names.
-const ChannelPositionName ChanPositionNames[ROC_ARRAY_SIZE(ChanPositionNames)] = {
-    { "FL", ChanPos_FrontLeft },      //
-    { "FC", ChanPos_FrontCenter },    //
-    { "FR", ChanPos_FrontRight },     //
-    { "SL", ChanPos_SideLeft },       //
-    { "SR", ChanPos_SideRight },      //
-    { "BL", ChanPos_BackLeft },       //
-    { "BC", ChanPos_BackCenter },     //
-    { "BR", ChanPos_BackRight },      //
-    { "TFL", ChanPos_TopFrontLeft },  //
-    { "TFR", ChanPos_TopFrontRight }, //
-    { "TML", ChanPos_TopMidLeft },    //
-    { "TMR", ChanPos_TopMidRight },   //
-    { "TBL", ChanPos_TopBackLeft },   //
-    { "TBR", ChanPos_TopBackRight },  //
-    { "LFE", ChanPos_LowFrequency },  //
+const ChannelPositionName ChanPositionNames[15] = {
+    { "FL", ChanPos_FrontLeft },
+    { "FC", ChanPos_FrontCenter },
+    { "FR", ChanPos_FrontRight },
+    { "SL", ChanPos_SideLeft },
+    { "SR", ChanPos_SideRight },
+    { "BL", ChanPos_BackLeft },
+    { "BC", ChanPos_BackCenter },
+    { "BR", ChanPos_BackRight },
+    { "TFL", ChanPos_TopFrontLeft },
+    { "TFR", ChanPos_TopFrontRight },
+    { "TML", ChanPos_TopMidLeft },
+    { "TMR", ChanPos_TopMidRight },
+    { "TBL", ChanPos_TopBackLeft },
+    { "TBR", ChanPos_TopBackRight },
+    { "LFE", ChanPos_LowFrequency },
 };
 
 // Table of channel mask names.
-const ChannelMaskName ChanMaskNames[ROC_ARRAY_SIZE(ChanMaskNames)] = {
-    { "mono", ChanMask_Surround_Mono },           //
-    { "stereo", ChanMask_Surround_Stereo },       //
-    { "surround2.1", ChanMask_Surround_2_1 },     //
-    { "surround3.0", ChanMask_Surround_3_0 },     //
-    { "surround3.1", ChanMask_Surround_3_1 },     //
-    { "surround4.0", ChanMask_Surround_4_0 },     //
-    { "surround4.1", ChanMask_Surround_4_1 },     //
-    { "surround5.0", ChanMask_Surround_5_0 },     //
-    { "surround5.1", ChanMask_Surround_5_1 },     //
-    { "surround5.1.2", ChanMask_Surround_5_1_2 }, //
-    { "surround5.1.4", ChanMask_Surround_5_1_4 }, //
-    { "surround6.0", ChanMask_Surround_6_0 },     //
-    { "surround6.1", ChanMask_Surround_6_1 },     //
-    { "surround7.0", ChanMask_Surround_7_0 },     //
-    { "surround7.1", ChanMask_Surround_7_1 },     //
-    { "surround7.1.2", ChanMask_Surround_7_1_2 }, //
-    { "surround7.1.4", ChanMask_Surround_7_1_4 }, //
+const ChannelMaskName ChanMaskNames[17] = {
+    { "mono", ChanMask_Surround_Mono },
+    { "stereo", ChanMask_Surround_Stereo },
+    { "surround2.1", ChanMask_Surround_2_1 },
+    { "surround3.0", ChanMask_Surround_3_0 },
+    { "surround3.1", ChanMask_Surround_3_1 },
+    { "surround4.0", ChanMask_Surround_4_0 },
+    { "surround4.1", ChanMask_Surround_4_1 },
+    { "surround5.0", ChanMask_Surround_5_0 },
+    { "surround5.1", ChanMask_Surround_5_1 },
+    { "surround5.1.2", ChanMask_Surround_5_1_2 },
+    { "surround5.1.4", ChanMask_Surround_5_1_4 },
+    { "surround6.0", ChanMask_Surround_6_0 },
+    { "surround6.1", ChanMask_Surround_6_1 },
+    { "surround7.0", ChanMask_Surround_7_0 },
+    { "surround7.1", ChanMask_Surround_7_1 },
+    { "surround7.1.2", ChanMask_Surround_7_1_2 },
+    { "surround7.1.4", ChanMask_Surround_7_1_4 },
 };
 
-// These tables define supported channel orders.
-//
-// When channel order is applied, the list of channels is filtered, and only
-// channels present in channel mask are kept. The resulting filtered list
-// defines how channels are placed in memory.
-//
-// This allows us to define single list that for multiple channel masks.
-// For example, ITU/SMPTE defines order for each channel mask (5.x, 7.x),
-// but we define only one list ChanOrder_Smpte, and after filtering it
-// becomes suitable for each of the masks.
-//
-// The opposite is also true: if some channel is missing from the order's
-// list, it is considered unsupported by the order and is zeroized.
-
-const ChannelOrderTable ChanOrderTables[ROC_ARRAY_SIZE(ChanOrderTables)] = {
+// Table of channel orders.
+const ChannelOrderTable ChanOrderTables[3] = {
     // ChanOrder_None
     {
         {
@@ -111,36 +94,8 @@ const ChannelOrderTable ChanOrderTables[ROC_ARRAY_SIZE(ChanOrderTables)] = {
     },
 };
 
-// These tables define downmixing coefficients for mapping between different
-// surround channel sets. They are used for both downmixing and upmixing.
-//
-// Mappings should be ordered from smaller to larger masks, becase channel mapper
-// will use the very first pair that covers both output and input masks.
-//
-// Only downmixing mappings are defined. Upmixing mappings are derived
-// automatically from them.
-//
-// Technically, some of the mappings are actually partially downmixing, and
-// partially upmixing, for example mapping from 6.x to 5.1.x downmixes some
-// channels and upmixes others. However, for convenience, we still call it
-// "downmixing" because we consider 6.x to be a "larger" channel set than 5.x.
-//
-// For groups of similar layouts, when possible, mappings are defined only for
-// the most complete layout, and are automatically reused for the rest. For example,
-// mappings for 5.1.2 may be automatically used for 5.1 and 5.0.
-//
-// These tables are based on the following documents:
-//  - ITU-R BS.775-1, ANNEX 4
-//  - A/52, Digital Audio Compression (AC-3) (E-AC-3) Standard, sections 6.1.12 and 7.8
-//
-// Useful links:
-//  https://www.itu.int/dms_pubrec/itu-r/rec/bs/R-REC-BS.775-1-199407-S!!PDF-E.pdf
-//  https://prdatsc.wpenginepowered.com/wp-content/uploads/2021/04/A52-2018.pdf
-//  https://www.audiokinetic.com/en/library/edge/?source=Help&id=downmix_tables
-//  https://trac.ffmpeg.org/wiki/AudioChannelManipulation
-//  https://superuser.com/questions/852400
-
-const ChannelMapTable ChanMapTables[ROC_ARRAY_SIZE(ChanMapTables)] = {
+// Table of channel mappings.
+const ChannelMapTable ChanMapTables[40] = {
     // 2.1->...
     {
         "2.1->1.0",
@@ -148,8 +103,8 @@ const ChannelMapTable ChanMapTables[ROC_ARRAY_SIZE(ChanMapTables)] = {
         ChanMask_Surround_Mono,
         {
             // FC
-            { ChanPos_FrontCenter, ChanPos_FrontLeft, 1.000f },
-            { ChanPos_FrontCenter, ChanPos_FrontRight, 1.000f },
+            { ChanPos_FrontCenter, ChanPos_FrontLeft, 0.707f },
+            { ChanPos_FrontCenter, ChanPos_FrontRight, 0.707f },
         },
     },
     // 3.1->...
@@ -453,11 +408,11 @@ const ChannelMapTable ChanMapTables[ROC_ARRAY_SIZE(ChanMapTables)] = {
             { ChanPos_BackRight, ChanPos_BackRight, 1.000f },
             { ChanPos_BackRight, ChanPos_TopBackRight, 0.707f },
             // TML
-            { ChanPos_TopMidLeft, ChanPos_TopFrontLeft, 1.000f },
-            { ChanPos_TopMidLeft, ChanPos_TopBackLeft, 1.000f },
+            { ChanPos_TopMidLeft, ChanPos_TopFrontLeft, 0.707f },
+            { ChanPos_TopMidLeft, ChanPos_TopBackLeft, 0.707f },
             // TMR
-            { ChanPos_TopMidRight, ChanPos_TopFrontRight, 1.000f },
-            { ChanPos_TopMidRight, ChanPos_TopBackRight, 1.000f },
+            { ChanPos_TopMidRight, ChanPos_TopFrontRight, 0.707f },
+            { ChanPos_TopMidRight, ChanPos_TopBackRight, 0.707f },
             // LFE
             { ChanPos_LowFrequency, ChanPos_LowFrequency, 1.000f },
         },
@@ -728,13 +683,13 @@ const ChannelMapTable ChanMapTables[ROC_ARRAY_SIZE(ChanMapTables)] = {
             { ChanPos_BackRight, ChanPos_SideRight, 1.000f },
             { ChanPos_BackRight, ChanPos_BackRight, 1.000f },
             // TFL
-            { ChanPos_TopFrontLeft, ChanPos_TopMidLeft, 1.000f },
+            { ChanPos_TopFrontLeft, ChanPos_TopMidLeft, 0.707f },
             // TFR
-            { ChanPos_TopFrontRight, ChanPos_TopMidRight, 1.000f },
+            { ChanPos_TopFrontRight, ChanPos_TopMidRight, 0.707f },
             // TBL
-            { ChanPos_TopBackLeft, ChanPos_TopMidLeft, 1.000f },
+            { ChanPos_TopBackLeft, ChanPos_TopMidLeft, 0.707f },
             // TBR
-            { ChanPos_TopBackRight, ChanPos_TopMidRight, 1.000f },
+            { ChanPos_TopBackRight, ChanPos_TopMidRight, 0.707f },
             // LFE
             { ChanPos_LowFrequency, ChanPos_LowFrequency, 1.000f },
         },
@@ -762,6 +717,7 @@ const ChannelMapTable ChanMapTables[ROC_ARRAY_SIZE(ChanMapTables)] = {
             { ChanPos_BackCenter, ChanPos_BackLeft, 1.000f },
             { ChanPos_BackCenter, ChanPos_BackRight, 1.000f },
             { ChanPos_BackCenter, ChanPos_TopMidLeft, 0.707f },
+            { ChanPos_BackCenter, ChanPos_TopMidRight, 0.707f },
             // BR
             { ChanPos_BackRight, ChanPos_SideRight, 1.000f },
             { ChanPos_BackRight, ChanPos_BackRight, 1.000f },
@@ -908,11 +864,11 @@ const ChannelMapTable ChanMapTables[ROC_ARRAY_SIZE(ChanMapTables)] = {
             { ChanPos_BackRight, ChanPos_BackRight, 1.000f },
             { ChanPos_BackRight, ChanPos_TopBackRight, 0.707f },
             // TML
-            { ChanPos_TopMidLeft, ChanPos_TopFrontLeft, 1.000f },
-            { ChanPos_TopMidLeft, ChanPos_TopBackLeft, 1.000f },
+            { ChanPos_TopMidLeft, ChanPos_TopFrontLeft, 0.707f },
+            { ChanPos_TopMidLeft, ChanPos_TopBackLeft, 0.707f },
             // TMR
-            { ChanPos_TopMidRight, ChanPos_TopFrontRight, 1.000f },
-            { ChanPos_TopMidRight, ChanPos_TopBackRight, 1.000f },
+            { ChanPos_TopMidRight, ChanPos_TopFrontRight, 0.707f },
+            { ChanPos_TopMidRight, ChanPos_TopBackRight, 0.707f },
             // LFE
             { ChanPos_LowFrequency, ChanPos_LowFrequency, 1.000f },
         },
@@ -1029,11 +985,11 @@ const ChannelMapTable ChanMapTables[ROC_ARRAY_SIZE(ChanMapTables)] = {
             { ChanPos_BackRight, ChanPos_BackRight, 1.000f },
             { ChanPos_BackRight, ChanPos_TopBackRight, 0.707f },
             // TML
-            { ChanPos_TopMidLeft, ChanPos_TopFrontLeft, 1.000f },
-            { ChanPos_TopMidLeft, ChanPos_TopBackLeft, 1.000f },
+            { ChanPos_TopMidLeft, ChanPos_TopFrontLeft, 0.707f },
+            { ChanPos_TopMidLeft, ChanPos_TopBackLeft, 0.707f },
             // TMR
-            { ChanPos_TopMidRight, ChanPos_TopFrontRight, 1.000f },
-            { ChanPos_TopMidRight, ChanPos_TopBackRight, 1.000f },
+            { ChanPos_TopMidRight, ChanPos_TopFrontRight, 0.707f },
+            { ChanPos_TopMidRight, ChanPos_TopBackRight, 0.707f },
             // LFE
             { ChanPos_LowFrequency, ChanPos_LowFrequency, 1.000f },
         },
