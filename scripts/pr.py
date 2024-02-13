@@ -192,7 +192,7 @@ def query_issue_info(org, repo, issue_number):
     return issue_info
 
 @functools.cache
-def query_pr_info(org, repo, pr_number):
+def query_pr_info(org, repo, pr_number, no_git=False):
     try:
         response = json.loads(subprocess.run(
             ['gh', 'api', f'/repos/{org}/{repo}/pulls/{pr_number}'],
@@ -237,14 +237,15 @@ def query_pr_info(org, repo, pr_number):
         issue_info = query_issue_info(*pr_info['issue_link'])
         pr_info.update(issue_info)
 
-    try:
-        pr_info['base_sha'], pr_info['base_ref'] = subprocess.run(
-            ['git', 'ls-remote', pr_info['target_remote'], pr_info['target_branch']],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            check=True).stdout.decode().strip().split()
-    except subprocess.CalledProcessError as e:
-        error(f'failed to retrieve git remote info: {e.stderr.strip()}')
+    if not no_git:
+        try:
+            pr_info['base_sha'], pr_info['base_ref'] = subprocess.run(
+                ['git', 'ls-remote', pr_info['target_remote'], pr_info['target_branch']],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=True).stdout.decode().strip().split()
+        except subprocess.CalledProcessError as e:
+            error(f'failed to retrieve git remote info: {e.stderr.decode().strip()}')
 
     return pr_info
 
@@ -257,7 +258,7 @@ def query_pr_actions(org, repo, pr_number):
             'gh', 'api',
             f'/repos/{org}/{repo}/actions/runs?event=pull_request',
             ],
-            stdout=subprocess.PIPE, check=True).stdout.decode())
+            capture_output=True, text=True, check=True).stdout)
     except subprocess.CalledProcessError as e:
         error(f'failed to retrieve workflow runs: {e.stderr.strip()}')
 
@@ -281,7 +282,7 @@ def query_pr_commits(org, repo, pr_number):
             '--json', 'commits',
             str(pr_number),
             ],
-            stdout=subprocess.PIPE, check=True).stdout.decode())
+            capture_output=True, text=True, check=True).stdout)
     except subprocess.CalledProcessError as e:
         error(f'failed to retrieve pr commits: {e.stderr.strip()}')
 
@@ -293,7 +294,7 @@ def query_pr_commits(org, repo, pr_number):
 
     return results
 
-def show_pr(org, repo, pr_number, show_json):
+def show_pr(org, repo, pr_number, show_json, no_git):
     pr_info = query_pr_info(org, repo, pr_number)
 
     json_result = OrderedDict()
@@ -657,6 +658,8 @@ show_parser = subparsers.add_parser(
 show_parser.add_argument('pr_number', type=int)
 show_parser.add_argument('--json', action='store_true', dest='json',
                          help="output in json format")
+show_parser.add_argument('--no-git', action='store_true', dest='no_git',
+                         help="don't invoke git, only gh")
 
 rebase_parser = subparsers.add_parser(
     'rebase', parents=[common_parser, action_parser],
@@ -690,7 +693,7 @@ if hasattr(args, 'dry_run'):
 colorama.init()
 
 if args.command == 'show':
-    show_pr(args.org, args.repo, args.pr_number, args.json)
+    show_pr(args.org, args.repo, args.pr_number, args.json, args.no_git)
     exit(0)
 
 if args.command == 'rebase':
