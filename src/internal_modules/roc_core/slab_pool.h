@@ -23,14 +23,21 @@
 namespace roc {
 namespace core {
 
-//! Memory pool flags.
-enum SlabPoolFlags {
-    //! Enable guards for buffer overflow, invalid ownership, etc.
-    SlabPoolFlag_EnableGuards = (1 << 0),
+//! Memory pool guards.
+enum SlabPoolGuard {
+    //! Panic if leaks detected in pool destructor.
+    SlabPool_LeakGuard = (1 << 0),
+    //! Panic if detected buffer overflow when deallocating object.
+    SlabPool_OverflowGuard = (1 << 1),
+    //! Panic if detected ownership mismatch when deallocating object.
+    SlabPool_OwnershipGuard = (1 << 2),
 };
 
-//! Default memory pool flags.
-enum { DefaultSlabPoolFlags = (SlabPoolFlag_EnableGuards) };
+//! Default memory pool guards.
+enum {
+    SlabPool_DefaultGuards =
+        (SlabPool_LeakGuard | SlabPool_OverflowGuard | SlabPool_OwnershipGuard)
+};
 
 //! Memory pool.
 //!
@@ -72,13 +79,13 @@ public:
     //!  - @p object_size defines size of single object in bytes
     //!  - @p min_alloc_bytes defines minimum size in bytes per request to arena
     //!  - @p max_alloc_bytes defines maximum size in bytes per request to arena
-    //!  - @p flags defines options to modify behaviour as indicated in SlabPoolFlags
+    //!  - @p guards defines options to modify behaviour as indicated in SlabPoolGuard
     explicit SlabPool(const char* name,
                       IArena& arena,
                       size_t object_size = sizeof(T),
                       size_t min_alloc_bytes = 0,
                       size_t max_alloc_bytes = 0,
-                      size_t flags = DefaultSlabPoolFlags)
+                      size_t guards = SlabPool_DefaultGuards)
         : impl_(name,
                 arena,
                 object_size,
@@ -86,7 +93,7 @@ public:
                 max_alloc_bytes,
                 embedded_data_.memory(),
                 embedded_data_.size(),
-                flags) {
+                guards) {
     }
 
     //! Get size of the allocation per object.
