@@ -15,8 +15,8 @@
 using namespace roc;
 
 int main(int argc, char** argv) {
-    core::HeapArena::set_flags(core::DefaultHeapArenaFlags
-                               | core::HeapArenaFlag_EnableLeakDetection);
+    core::HeapArena::set_guards(core::HeapArena_DefaultGuards
+                                | core::HeapArena_LeakGuard);
 
     core::CrashHandler crash_handler;
 

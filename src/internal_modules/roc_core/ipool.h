@@ -25,6 +25,7 @@ public:
     virtual ~IPool();
 
     //! Get size of the allocation per object.
+    //! Covers all internal overhead, if any.
     virtual size_t allocation_size() const = 0;
 
     //! Reserve memory for given number of objects.

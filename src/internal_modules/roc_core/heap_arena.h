@@ -20,16 +20,21 @@
 namespace roc {
 namespace core {
 
-//! Heap arena flags.
-enum HeapArenaFlags {
-    //! Enable panic if leaks detected in arena destructor.
-    HeapArenaFlag_EnableLeakDetection = (1 << 0),
-    //! Enable panic if memory violation detected when deallocating chunk.
-    HeapArenaFlag_EnableGuards = (1 << 1),
+//! Heap arena guards.
+enum HeapArenaGuard {
+    //! Panic if leaks detected in arena destructor.
+    HeapArena_LeakGuard = (1 << 0),
+    //! Panic if detected buffer overflow when deallocating chunk.
+    HeapArena_OverflowGuard = (1 << 1),
+    //! Panic if detected ownership mismatch when deallocating chunk.
+    HeapArena_OwnershipGuard = (1 << 2),
 };
 
-//! Default heap arena flags.
-enum { DefaultHeapArenaFlags = (HeapArenaFlag_EnableGuards) };
+//! Default heap arena guards.
+//! Leak guard is disabled by default, because in C API leaks may be caused by user
+//! (e.g. if context wasn't closed before program exit). We don't want to turn bugs
+//! in user code into panics, only bugs in our own code should cause panics.
+enum { HeapArena_DefaultGuards = (HeapArena_OverflowGuard | HeapArena_OwnershipGuard) };
 
 //! Heap arena implementation.
 //!
@@ -63,11 +68,10 @@ public:
     HeapArena();
     ~HeapArena();
 
-    //! Set flags, for all instances.
-    //!
+    //! Set enabled guards, for all instances.
     //! @b Parameters
-    //! - @p flags defines options to modify behaviour as indicated in HeapArenaFlags
-    static void set_flags(size_t flags);
+    //! - @p guards defines options to modify behaviour as indicated in HeapArenaGuard
+    static void set_guards(size_t guards);
 
     //! Get number of allocated blocks.
     size_t num_allocations() const;
@@ -102,10 +106,12 @@ private:
 
     typedef AlignMax ChunkCanary;
 
-    Atomic<int> num_allocations_;
-    Atomic<size_t> num_guard_failures_;
+    bool report_guard_(HeapArenaGuard guard) const;
 
-    static size_t flags_;
+    Atomic<int> num_allocations_;
+    mutable Atomic<size_t> num_guard_failures_;
+
+    static size_t guards_;
 };
 
 } // namespace core
