@@ -281,9 +281,9 @@ void SndfileSink::write(audio::Frame& frame) {
 
         if (buffer_pos > 0) {
             sf_count_t write_count = sf_write_float(file_, buffer_data, (sf_count_t)BUFFER_SIZE); 
-            if (write_count == 0 && frame_size > 0) {
+            if ( (write_count == 0 && frame_size > 0) || sf_error(file_) != 0) {
                 // TODO(gh-183): return error instead of panic
-                roc_panic("sndfile sink: %s, Unable to write entire frame to file. Reached eof", sf_strerror(file_));
+                roc_panic("sndfile sink: sf_write_float(): %s,", sf_strerror(file_));
             }
         }
         buffer_pos = 0;

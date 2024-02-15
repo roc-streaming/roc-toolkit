@@ -96,8 +96,6 @@ private:
 
     bool seek_(size_t offset);
 
-    int get_out_bits_();
-
     core::nanoseconds_t frame_length_;
     audio::SampleSpec sample_spec_;
 
