@@ -219,6 +219,11 @@ AddOption('--disable-libunwind',
           action='store_true',
           help='disable libunwind support required for printing backtrace')
 
+AddOption('--disable-libuuid',
+          dest='disable_libuuid',
+          action='store_true',
+          help='disable libuuid support')
+
 AddOption('--disable-alsa',
           dest='disable_alsa',
           action='store_true',
@@ -795,6 +800,15 @@ else:
     if meta.platform in ['linux', 'unix', 'darwin'] and not GetOption('disable_libunwind'):
         env.Append(ROC_TARGETS=[
             'target_libunwind',
+        ])
+
+    if meta.platform in ['linux'] and not GetOption('disable_libuuid'):
+        env.Append(ROC_TARGETS=[
+            'target_libuuid',
+        ])
+    else:
+        env.Append(ROC_TARGETS=[
+            'target_nouuid',
         ])
 
     env.Append(ROC_TARGETS=[
