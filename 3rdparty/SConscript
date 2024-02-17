@@ -56,6 +56,9 @@ if meta.platform in ['linux'] and 'pulseaudio' in external_dependencies:
 if meta.platform in ['darwin']:
     external_dependencies.discard('libunwind')
 
+if meta.platform in ['linux'] and not GetOption('disable_libuuid'):
+    external_dependencies.add('libuuid')
+
 # tools dependencies
 if not GetOption('disable_tools'):
     external_dependencies.add('gengetopt')
@@ -129,6 +132,18 @@ elif 'libunwind' in system_dependencies:
 
     if not conf.CheckLibWithHeaderExt('unwind', 'libunwind.h', 'C', run=not is_crosscompiling):
         env.Die("libunwind not found (see 'config.log' for details)")
+
+    env = conf.Finish()
+
+# dep: libuuid
+if 'libuuid' in system_dependencies:
+    conf = Configure(env, custom_tests=env.CustomTests)
+
+    if not conf.AddPkgConfigDependency('uuid', '--cflags --libs'):
+        conf.env.AddManualDependency(libs=['uuid'])
+
+    if not conf.CheckLibWithHeaderExt('uuid', 'uuid.h', 'C', run=not is_crosscompiling):
+        env.Die("libuuid not found (see 'config.log' for details)")
 
     env = conf.Finish()
 
