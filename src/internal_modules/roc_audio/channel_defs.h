@@ -87,10 +87,13 @@ enum ChannelPosition {
     //! @name Front speakers.
     //! @remarks
     //!  Placed in the front of the user.
+    //!  FLC and FRC are typically used for 3-channel center speaker.
     // @{
-    ChanPos_FrontLeft,   //!< Front left (FL).
-    ChanPos_FrontCenter, //!< Front center (FC).
-    ChanPos_FrontRight,  //!< Front right (FR).
+    ChanPos_FrontLeft,          //!< Front left (FL).
+    ChanPos_FrontLeftOfCenter,  //!< Front left of center (FLC).
+    ChanPos_FrontCenter,        //!< Front center (FC).
+    ChanPos_FrontRightOfCenter, //!< Front right of center (FRC).
+    ChanPos_FrontRight,         //!< Front right (FR).
     // @}
 
     //! @name Surround speakers.
@@ -114,8 +117,9 @@ enum ChannelPosition {
 
     //! @name Top speakers.
     //! @remarks
-    //!  Placed above the user (in surround x.1.2 and x.1.4).
+    //!  Placed above the user.
     //!  Also known as "height" or "overhead" speakers.
+    //!  TFC and TBC are typically used for 3-channel overhead soundbars.
     // @{
     ChanPos_TopFrontLeft,  //!< Top front left (TFL).
     ChanPos_TopFrontRight, //!< Top front right (TFR).
@@ -146,69 +150,108 @@ typedef uint32_t ChannelMask;
 //! Mono.
 //! Mask: FC.
 //! @code
-//!  +------------------+
-//!  |        FC        |
-//!  |       user       |
-//!  +------------------+
+//!  +----------------------+
+//!  |          FC          |
+//!  |         user         |
+//!  +----------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_Mono = //
     (1 << ChanPos_FrontCenter);
 
+//! Mono + subwoofer.
+//! Mask: FC | LFE.
+//! @code
+//!  +----------------------+
+//!  |          FC          |
+//!  |         user         |
+//!  |              LFE     |
+//!  +----------------------+
+//! @endcode
+static const ChannelMask ChanMask_Surround_1_1 = //
+    ChanMask_Surround_Mono                       //
+    | (1 << ChanPos_LowFrequency);
+
+//! 3-channel center speaker + subwoofer.
+//! Mask: FLC, FC, FRC | LFE.
+//! @code
+//!  +----------------------+
+//!  |      FLC|FC|FRC      |
+//!  |         user         |
+//!  |              LFE     |
+//!  +----------------------+
+//! @endcode
+static const ChannelMask ChanMask_Surround_1_1_3c = //
+    ChanMask_Surround_1_1 |                         //
+    (1 << ChanPos_FrontLeftOfCenter) | (1 << ChanPos_FrontRightOfCenter);
+
 //! Stereo.
 //! Mask: FL, FR.
 //! @code
-//!  +------------------+
-//!  |  FL          FR  |
-//!  |       user       |
-//!  +------------------+
+//!  +----------------------+
+//!  |  FL             FR   |
+//!  |         user         |
+//!  +----------------------+
 //! @endcode
-static const ChannelMask ChanMask_Surround_Stereo =
+static const ChannelMask ChanMask_Surround_Stereo = //
     (1 << ChanPos_FrontLeft) | (1 << ChanPos_FrontRight);
 
 //! Stereo + subwoofer.
 //! Mask: FL, FR | LFE.
-//!  +------------------+
-//!  |  FL          FR  |
-//!  |       user       |
-//!  |             LFE  |
-//!  +------------------+
+//!  +----------------------+
+//!  |  FL             FR   |
+//!  |         user         |
+//!  |              LFE     |
+//!  +----------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_2_1 = //
     ChanMask_Surround_Stereo                     //
     | (1 << ChanPos_LowFrequency);
 
-//! Three front channels.
+//! Three front speakers.
 //! Mask: FL, FC, FR.
 //! @code
-//!  +------------------+
-//!  |  FL    FC    FR  |
-//!  |       user       |
-//!  +------------------+
+//!  +----------------------+
+//!  |  FL      FC      FR  |
+//!  |         user         |
+//!  +----------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_3_0 =
     (1 << ChanPos_FrontLeft) | (1 << ChanPos_FrontCenter) | (1 << ChanPos_FrontRight);
 
-//! Three front channels + subwoofer.
+//! Three front speakers + subwoofer.
 //! Mask: FL, FC, FR | LFE.
 //! @code
-//!  +------------------+
-//!  |  FL    FC    FR  |
-//!  |       user       |
-//!  |             LFE  |
-//!  +------------------+
+//!  +----------------------+
+//!  |  FL      FC      FR  |
+//!  |         user         |
+//!  |              LFE     |
+//!  +----------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_3_1 = //
     ChanMask_Surround_3_0                        //
     | (1 << ChanPos_LowFrequency);
 
+//! Three front speakers + subwoofer, with 3-channel center speaker.
+//! Mask: FL, FLC, FC, FRC, FR | LFE.
+//! @code
+//!  +----------------------+
+//!  |  FL  FLC|FC|FRC  FR  |
+//!  |         user         |
+//!  |              LFE     |
+//!  +----------------------+
+//! @endcode
+static const ChannelMask ChanMask_Surround_3_1_3c = //
+    ChanMask_Surround_3_1                           //
+    | (1 << ChanPos_FrontLeftOfCenter) | (1 << ChanPos_FrontRightOfCenter);
+
 //! Surround 4.0.
 //! Mask: FL, FR, BL, BR.
 //! @code
-//!  +------------------+
-//!  |  FL          FR  |
-//!  |       user       |
-//!  |  BL          BR  |
-//!  +------------------+
+//!  +----------------------+
+//!  |  FL             FR   |
+//!  |         user         |
+//!  |  BL             BR   |
+//!  +----------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_4_0 =         //
     (1 << ChanPos_FrontLeft) | (1 << ChanPos_FrontRight) //
@@ -217,12 +260,12 @@ static const ChannelMask ChanMask_Surround_4_0 =         //
 //! Surround 4.1.
 //! Mask: FL, FR, BL, BR | LFE.
 //! @code
-//!  +------------------+
-//!  |  FL          FR  |
-//!  |       user       |
-//!  |             LFE  |
-//!  |  BL          BR  |
-//!  +------------------+
+//!  +----------------------+
+//!  |  FL             FR   |
+//!  |         user         |
+//!  |              LFE     |
+//!  |  BL             BR   |
+//!  +----------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_4_1 = //
     ChanMask_Surround_4_0                        //
@@ -231,11 +274,11 @@ static const ChannelMask ChanMask_Surround_4_1 = //
 //! Surround 5.0.
 //! Mask: FL, FC, FR, BL, BR.
 //! @code
-//!  +------------------+
-//!  |  FL    FC    FR  |
-//!  |       user       |
-//!  |  BL          BR  |
-//!  +------------------+
+//!  +----------------------+
+//!  |  FL      FC      FR  |
+//!  |         user         |
+//!  |  BL             BR   |
+//!  +----------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_5_0 =                                      //
     (1 << ChanPos_FrontLeft) | (1 << ChanPos_FrontCenter) | (1 << ChanPos_FrontRight) //
@@ -244,59 +287,102 @@ static const ChannelMask ChanMask_Surround_5_0 =                                
 //! Surround 5.1.
 //! Mask: FL, FC, FR, BL, BR | LFE.
 //! @code
-//!  +------------------+
-//!  |  FL    FC    FR  |
-//!  |       user       |
-//!  |             LFE  |
-//!  |  BL          BR  |
-//!  +------------------+
+//!  +----------------------+
+//!  |  FL      FC      FR  |
+//!  |         user         |
+//!  |              LFE     |
+//!  |  BL             BR   |
+//!  +----------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_5_1 = //
     ChanMask_Surround_5_0                        //
     | (1 << ChanPos_LowFrequency);
 
+//! Surround 5.1, with 3-channel center speaker.
+//! Mask: FL, FLC, FC, FRC, FR, BL, BR | LFE.
+//! @code
+//!  +----------------------+
+//!  |  FL  FLC|FC|FRC  FR  |
+//!  |         user         |
+//!  |              LFE     |
+//!  |  BL             BR   |
+//!  +----------------------+
+//! @endcode
+static const ChannelMask ChanMask_Surround_5_1_3c = //
+    ChanMask_Surround_5_1                           //
+    | (1 << ChanPos_FrontLeftOfCenter) | (1 << ChanPos_FrontRightOfCenter);
+
 //! Surround 5.1.2.
 //! Mask: FL, FC, FR, BL, BR | LFE | TML, TMR.
 //! @code
-//!  +------------------+
-//!  |  FL    FC    FR  |
-//!  |                  |
-//!  |   TML user TMR   |
-//!  |             LFE  |
-//!  |  BL          BR  |
-//!  +------------------+
+//!  +----------------------+
+//!  |  FL      FC      FR  |
+//!  |                      |
+//!  |    TML  user  TMR    |
+//!  |              LFE     |
+//!  |  BL             BR   |
+//!  +----------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_5_1_2 = //
-    ChanMask_Surround_5_0                          //
-    | (1 << ChanPos_LowFrequency)                  //
+    ChanMask_Surround_5_1                          //
     | (1 << ChanPos_TopMidLeft) | (1 << ChanPos_TopMidRight);
+
+//! Surround 5.1.2, with 3-channel center speaker.
+//! Mask: FL, FLC, FC, FRC, FR, BL, BR | LFE | TML, TMR.
+//! @code
+//!  +----------------------+
+//!  |  FL  FLC|FC|FRC  FR  |
+//!  |                      |
+//!  |    TML  user  TMR    |
+//!  |              LFE     |
+//!  |  BL             BR   |
+//!  +----------------------+
+//! @endcode
+static const ChannelMask ChanMask_Surround_5_1_2_3c = //
+    ChanMask_Surround_5_1_2                           //
+    | (1 << ChanPos_FrontLeftOfCenter) | (1 << ChanPos_FrontRightOfCenter);
 
 //! Surround 5.1.4.
 //! Mask: FL, FC, FR, BL, BR | LFE | TFL, TFR, TBL, TBR.
 //! @code
-//!  +------------------+
-//!  |  FL    FC    FR  |
-//!  |   TFL      TFR   |
-//!  |       user       |
-//!  |             LFE  |
-//!  |   TBL      TBR   |
-//!  |  BL          BR  |
-//!  +------------------+
+//!  +----------------------+
+//!  |  FL      FC      FR  |
+//!  |    TFL        TFR    |
+//!  |         user         |
+//!  |              LFE     |
+//!  |    TBL        TBR    |
+//!  |  BL             BR   |
+//!  +----------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_5_1_4 = //
-    ChanMask_Surround_5_0                          //
-    | (1 << ChanPos_LowFrequency)                  //
+    ChanMask_Surround_5_1                          //
     | (1 << ChanPos_TopFrontLeft) | (1 << ChanPos_TopFrontRight)
     | (1 << ChanPos_TopBackLeft) | (1 << ChanPos_TopBackRight);
+
+//! Surround 5.1.4, with 3-channel center speaker.
+//! Mask: FL, FLC, FC, FRC, FR, BL, BR | LFE | TFL, TFR, TBL, TBR.
+//! @code
+//!  +----------------------+
+//!  |  FL  FLC|FC|FRC  FR  |
+//!  |    TFL        TFR    |
+//!  |         user         |
+//!  |              LFE     |
+//!  |    TBL        TBR    |
+//!  |  BL             BR   |
+//!  +----------------------+
+//! @endcode
+static const ChannelMask ChanMask_Surround_5_1_4_3c = //
+    ChanMask_Surround_5_1_4                           //
+    | (1 << ChanPos_FrontLeftOfCenter) | (1 << ChanPos_FrontRightOfCenter);
 
 //! Surround 6.0.
 //! Mask: FL, FC, FR, BL, BC, BR.
 //! @code
-//!  +------------------+
-//!  |  FL    FC    FR  |
-//!  |       user       |
-//!  |  BL    BC    BR  |
-//!  +------------------+
+//!  +----------------------+
+//!  |  FL      FC      FR  |
+//!  |         user         |
+//!  |  BL      BC      BR  |
+//!  +----------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_6_0 =                                      //
     (1 << ChanPos_FrontLeft) | (1 << ChanPos_FrontCenter) | (1 << ChanPos_FrontRight) //
@@ -305,25 +391,39 @@ static const ChannelMask ChanMask_Surround_6_0 =                                
 //! Surround 6.1.
 //! Mask: FL, FC, FR, BL, BC, BR | LFE.
 //! @code
-//!  +------------------+
-//!  |  FL    FC    FR  |
-//!  |       user       |
-//!  |             LFE  |
-//!  |  BL    BC    BR  |
-//!  +------------------+
+//!  +----------------------+
+//!  |  FL      FC      FR  |
+//!  |         user         |
+//!  |              LFE     |
+//!  |  BL      BC      BR  |
+//!  +----------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_6_1 = //
     ChanMask_Surround_6_0                        //
     | (1 << ChanPos_LowFrequency);
 
+//! Surround 6.1, with 3-channel center speaker.
+//! Mask: FL, FLC, FC, FRC, FR, BL, BC, BR | LFE.
+//! @code
+//!  +----------------------+
+//!  |  FL  FLC|FC|FRC  FR  |
+//!  |         user         |
+//!  |              LFE     |
+//!  |  BL      BC      BR  |
+//!  +----------------------+
+//! @endcode
+static const ChannelMask ChanMask_Surround_6_1_3c = //
+    ChanMask_Surround_6_1                           //
+    | (1 << ChanPos_FrontLeftOfCenter) | (1 << ChanPos_FrontRightOfCenter);
+
 //! Surround 7.0.
 //! Mask: FL, FC, FR, SL, SR, BL, BR.
 //! @code
-//!  +------------------+
-//!  |  FL    FC    FR  |
-//!  |  SL   user   SR  |
-//!  |    BL      BR    |
-//!  +------------------+
+//!  +----------------------+
+//!  |  FL      FC      FR  |
+//!  |   SL    user    SR   |
+//!  |  BL              BR  |
+//!  +----------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_7_0 =                                      //
     (1 << ChanPos_FrontLeft) | (1 << ChanPos_FrontCenter) | (1 << ChanPos_FrontRight) //
@@ -333,51 +433,95 @@ static const ChannelMask ChanMask_Surround_7_0 =                                
 //! Surround 7.1.
 //! Mask: FL, FC, FR, SL, SR, BL, BR | LFE.
 //! @code
-//!  +------------------+
-//!  |  FL    FC    FR  |
-//!  |  SL   user   SR  |
-//!  |             LFE  |
-//!  |    BL      BR    |
-//!  +------------------+
+//!  +----------------------+
+//!  |  FL      FC      FR  |
+//!  |   SL    user    SR   |
+//!  |              LFE     |
+//!  |  BL              BR  |
+//!  +----------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_7_1 = //
     ChanMask_Surround_7_0                        //
     | (1 << ChanPos_LowFrequency);
 
+//! Surround 7.1, with 3-channel center speaker.
+//! Mask: FL, FLC, FC, FRC, FR, SL, SR, BL, BR | LFE.
+//! @code
+//!  +----------------------+
+//!  |  FL  FLC|FC|FRC  FR  |
+//!  |   SL    user    SR   |
+//!  |              LFE     |
+//!  |  BL              BR  |
+//!  +----------------------+
+//! @endcode
+static const ChannelMask ChanMask_Surround_7_1_3c = //
+    ChanMask_Surround_7_1                           //
+    | (1 << ChanPos_FrontLeftOfCenter) | (1 << ChanPos_FrontRightOfCenter);
+
 //! Surround 7.1.2.
 //! Mask: FL, FC, FR, SL, SR, BL, BR | LFE | TML, TMR.
 //! @code
-//!  +------------------+
-//!  |  FL    FC    FR  |
-//!  |                  |
-//!  |    TML     TMR   |
-//!  |  SL   user   SR  |
-//!  |             LFE  |
-//!  |    BL      BR    |
-//!  +------------------+
+//!  +----------------------+
+//!  |  FL      FC      FR  |
+//!  |                      |
+//!  |    TML        TMR    |
+//!  |   SL    user    SR   |
+//!  |              LFE     |
+//!  |  BL              BR  |
+//!  +----------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_7_1_2 = //
-    ChanMask_Surround_7_0                          //
-    | (1 << ChanPos_LowFrequency)                  //
+    ChanMask_Surround_7_1                          //
     | (1 << ChanPos_TopMidLeft) | (1 << ChanPos_TopMidRight);
+
+//! Surround 7.1.2, with 3-channel center speaker.
+//! Mask: FL, FLC, FC, FRC, FR, SL, SR, BL, BR | LFE | TML, TMR.
+//! @code
+//!  +----------------------+
+//!  |  FL  FLC|FC|FRC  FR  |
+//!  |                      |
+//!  |    TML        TMR    |
+//!  |   SL    user    SR   |
+//!  |              LFE     |
+//!  |  BL              BR  |
+//!  +----------------------+
+//! @endcode
+static const ChannelMask ChanMask_Surround_7_1_2_3c = //
+    ChanMask_Surround_7_1_2                           //
+    | (1 << ChanPos_FrontLeftOfCenter) | (1 << ChanPos_FrontRightOfCenter);
 
 //! Surround 7.1.4.
 //! Mask: FL, FC, FR, SL, SR, BL, BR | LFE | TFL, TFR, TBL, TBR.
 //! @code
-//!  +------------------+
-//!  |  FL    FC    FR  |
-//!  |   TFL      TFR   |
-//!  |  SL   user   SR  |
-//!  |             LFE  |
-//!  |   TBL      TBR   |
-//!  |    BL      BR    |
-//!  +------------------+
+//!  +----------------------+
+//!  |  FL      FC      FR  |
+//!  |    TFL        TFR    |
+//!  |   SL    user    SR   |
+//!  |              LFE     |
+//!  |    TBL        TBR    |
+//!  |  BL              BR  |
+//!  +----------------------+
 //! @endcode
 static const ChannelMask ChanMask_Surround_7_1_4 = //
-    ChanMask_Surround_7_0                          //
-    | (1 << ChanPos_LowFrequency)                  //
+    ChanMask_Surround_7_1                          //
     | (1 << ChanPos_TopFrontLeft) | (1 << ChanPos_TopFrontRight)
     | (1 << ChanPos_TopBackLeft) | (1 << ChanPos_TopBackRight);
+
+//! Surround 7.1.4, with 3-channel center speaker.
+//! Mask: FL, FLC, FC, FRC, FR, SL, SR, BL, BR | LFE | TFL, TFR, TBL, TBR.
+//! @code
+//!  +----------------------+
+//!  |  FL  FLC|FC|FRC  FR  |
+//!  |    TFL        TFR    |
+//!  |   SL    user    SR   |
+//!  |              LFE     |
+//!  |    TBL        TBR    |
+//!  |  BL              BR  |
+//!  +----------------------+
+//! @endcode
+static const ChannelMask ChanMask_Surround_7_1_4_3c = //
+    ChanMask_Surround_7_1_4                           //
+    | (1 << ChanPos_FrontLeftOfCenter) | (1 << ChanPos_FrontRightOfCenter);
 
 //! Get string name of channel layout.
 const char* channel_layout_to_str(ChannelLayout);

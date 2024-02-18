@@ -69,11 +69,17 @@ struct ChannelMapTable {
 
     //! Transformation rules.
     //! Rules are used to fill channel mapping matrix.
-    ChannelMapRule rules[24];
+    ChannelMapRule rules[32];
 };
 
 //! Defines ordered list of channels.
 struct ChannelOrderTable {
+    //! Order name.
+    const char* name;
+
+    //! Order identifier.
+    ChannelOrder order;
+
     //! List of channels.
     //! Last channel is equal to ChanPos_Max.
     ChannelPosition chans[ChanPos_Max + 1];
@@ -99,6 +105,9 @@ extern const ChannelMaskName ChanMaskNames[17];
 //!
 //! The opposite is also true: if some channel is missing from the order's
 //! list, it is considered unsupported by the order and is zeroized.
+//!
+//! Links:
+//!  https://www.itu.int/dms_pubrec/itu-r/rec/bs/R-REC-BS.2102-0-201701-I!!PDF-E.pdf
 extern const ChannelOrderTable ChanOrderTables[ChanOrder_Max];
 
 //! Defines list of mappings between all supported surround channel mask pairs.
@@ -135,7 +144,7 @@ extern const ChannelOrderTable ChanOrderTables[ChanOrder_Max];
 //!  https://www.audiokinetic.com/en/library/edge/?source=Help&id=downmix_tables
 //!  https://trac.ffmpeg.org/wiki/AudioChannelManipulation
 //!  https://superuser.com/questions/852400
-extern const ChannelMapTable ChanMapTables[40];
+extern const ChannelMapTable ChanMapTables[136];
 
 } // namespace audio
 } // namespace roc

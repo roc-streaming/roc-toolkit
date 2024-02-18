@@ -9,6 +9,7 @@
 #include "roc_audio/channel_defs.h"
 #include "roc_audio/channel_tables.h"
 #include "roc_core/macro_helpers.h"
+#include "roc_core/panic.h"
 
 namespace roc {
 namespace audio {
@@ -29,35 +30,23 @@ const char* channel_layout_to_str(ChannelLayout layout) {
 }
 
 const char* channel_order_to_str(ChannelOrder order) {
-    switch (order) {
-    case ChanOrder_None:
-        return "none";
-
-    case ChanOrder_Smpte:
-        return "smpte";
-
-    case ChanOrder_Alsa:
-        return "alsa";
-
-    case ChanOrder_Max:
-        break;
+    if (order >= 0 && order < (int)ROC_ARRAY_SIZE(ChanOrderTables)) {
+        return ChanOrderTables[order].name;
     }
 
-    return "?";
+    return NULL;
 }
 
 const char* channel_pos_to_str(ChannelPosition pos) {
-    for (size_t i = 0; i < ROC_ARRAY_SIZE(ChanPositionNames); i++) {
-        if (ChanPositionNames[i].pos == pos) {
-            return ChanPositionNames[i].name;
-        }
+    if (pos >= 0 && pos < (int)ROC_ARRAY_SIZE(ChanPositionNames)) {
+        return ChanPositionNames[pos].name;
     }
 
     return NULL;
 }
 
 const char* channel_mask_to_str(ChannelMask mask) {
-    for (size_t i = 0; i < ROC_ARRAY_SIZE(ChanMaskNames); i++) {
+    for (size_t i = 0; i < (int)ROC_ARRAY_SIZE(ChanMaskNames); i++) {
         if (ChanMaskNames[i].mask == mask) {
             return ChanMaskNames[i].name;
         }

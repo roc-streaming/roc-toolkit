@@ -8,6 +8,7 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_audio/channel_defs.h"
 #include "roc_audio/channel_tables.h"
 #include "roc_core/macro_helpers.h"
 
@@ -17,6 +18,36 @@ namespace audio {
 namespace {
 
 static ChannelMask all_masks[] = {
+    ChanMask_Surround_Mono,     //
+    ChanMask_Surround_1_1,      //
+    ChanMask_Surround_1_1_3c,   //
+    ChanMask_Surround_Stereo,   //
+    ChanMask_Surround_2_1,      //
+    ChanMask_Surround_3_0,      //
+    ChanMask_Surround_3_1,      //
+    ChanMask_Surround_3_1_3c,   //
+    ChanMask_Surround_4_0,      //
+    ChanMask_Surround_4_1,      //
+    ChanMask_Surround_5_0,      //
+    ChanMask_Surround_5_1,      //
+    ChanMask_Surround_5_1_3c,   //
+    ChanMask_Surround_5_1_2,    //
+    ChanMask_Surround_5_1_2_3c, //
+    ChanMask_Surround_5_1_4,    //
+    ChanMask_Surround_5_1_4_3c, //
+    ChanMask_Surround_6_0,      //
+    ChanMask_Surround_6_1,      //
+    ChanMask_Surround_6_1_3c,   //
+    ChanMask_Surround_7_0,      //
+    ChanMask_Surround_7_1,      //
+    ChanMask_Surround_7_1_3c,   //
+    ChanMask_Surround_7_1_2,    //
+    ChanMask_Surround_7_1_2_3c, //
+    ChanMask_Surround_7_1_4,    //
+    ChanMask_Surround_7_1_4_3c, //
+};
+
+static ChannelMask named_masks[] = {
     ChanMask_Surround_Mono,   //
     ChanMask_Surround_Stereo, //
     ChanMask_Surround_2_1,    //
@@ -37,15 +68,22 @@ static ChannelMask all_masks[] = {
 };
 
 static ChannelMask mapped_masks[] = {
-    ChanMask_Surround_Mono,  //
-    ChanMask_Surround_2_1,   //
-    ChanMask_Surround_3_1,   //
-    ChanMask_Surround_4_1,   //
-    ChanMask_Surround_5_1_2, //
-    ChanMask_Surround_5_1_4, //
-    ChanMask_Surround_6_1,   //
-    ChanMask_Surround_7_1_2, //
-    ChanMask_Surround_7_1_4, //
+    ChanMask_Surround_1_1,      //
+    ChanMask_Surround_1_1_3c,   //
+    ChanMask_Surround_2_1,      //
+    ChanMask_Surround_3_1,      //
+    ChanMask_Surround_3_1_3c,   //
+    ChanMask_Surround_4_1,      //
+    ChanMask_Surround_5_1_2,    //
+    ChanMask_Surround_5_1_2_3c, //
+    ChanMask_Surround_5_1_4,    //
+    ChanMask_Surround_5_1_4_3c, //
+    ChanMask_Surround_6_1,      //
+    ChanMask_Surround_6_1_3c,   //
+    ChanMask_Surround_7_1_2,    //
+    ChanMask_Surround_7_1_2_3c, //
+    ChanMask_Surround_7_1_4,    //
+    ChanMask_Surround_7_1_4_3c, //
 };
 
 int sortpos(ChannelMask ch_mask) {
@@ -115,8 +153,10 @@ TEST(channel_tables, map_tables_combinations) {
             if (!found) {
                 char buf[128] = {};
                 snprintf(buf, sizeof(buf),
-                         "mask combination not covered: input=%u output=%u", (unsigned)i,
-                         (unsigned)j);
+                         "mask combination not covered:"
+                         " input_index=%d (%s) output_index=%d (%s)",
+                         (int)i, channel_mask_to_str(mapped_masks[i]), (int)j,
+                         channel_mask_to_str(mapped_masks[j]));
                 FAIL(buf);
             }
         }
@@ -227,14 +267,13 @@ TEST(channel_tables, map_tables_completeness) {
 // Check validity of order tables.
 TEST(channel_tables, order_tables) {
     for (int n = 0; n < ChanOrder_Max; n++) {
-        CHECK(n >= ChanOrder_None);
-        CHECK(n < ChanOrder_Max);
-
         const ChannelOrder order = (ChannelOrder)n;
-        const ChannelOrderTable& chan_list = ChanOrderTables[order];
+
+        LONGS_EQUAL(order, ChanOrderTables[n].order);
+        CHECK(ChanOrderTables[n].name);
 
         size_t n_chans = 0;
-        while (chan_list.chans[n_chans] != ChanPos_Max) {
+        while (ChanOrderTables[order].chans[n_chans] != ChanPos_Max) {
             n_chans++;
         }
 
@@ -247,7 +286,7 @@ TEST(channel_tables, order_tables) {
 
         for (size_t i = 0; i < n_chans; i++) {
             for (size_t j = i + 1; j < n_chans; j++) {
-                CHECK(chan_list.chans[i] != chan_list.chans[j]);
+                CHECK(ChanOrderTables[order].chans[i] != ChanOrderTables[order].chans[j]);
             }
         }
     }
@@ -255,35 +294,47 @@ TEST(channel_tables, order_tables) {
 
 // Check validity of name tables.
 TEST(channel_tables, name_tables) {
-    for (int ch = 0; ch < ChanPos_Max; ch++) {
-        int found = 0;
+    LONGS_EQUAL(ROC_ARRAY_SIZE(ChanPositionNames), ChanPos_Max);
 
-        for (size_t n = 0; n < ROC_ARRAY_SIZE(ChanPositionNames); n++) {
-            CHECK(ChanPositionNames[n].pos >= 0);
-            CHECK(ChanPositionNames[n].pos < ChanPos_Max);
-            CHECK(ChanPositionNames[n].name);
+    for (int n = 0; n < ChanPos_Max; n++) {
+        const ChannelPosition pos = (ChannelPosition)n;
 
-            if (ChanPositionNames[n].pos == (ChannelPosition)ch) {
-                found++;
-            }
-        }
-
-        LONGS_EQUAL(1, found);
+        LONGS_EQUAL(pos, ChanPositionNames[n].pos);
+        CHECK(ChanPositionNames[n].name);
     }
 
-    for (size_t msk = 0; msk < ROC_ARRAY_SIZE(all_masks); msk++) {
+    LONGS_EQUAL(ROC_ARRAY_SIZE(ChanMaskNames), ROC_ARRAY_SIZE(named_masks));
+
+    for (size_t msk = 0; msk < ROC_ARRAY_SIZE(named_masks); msk++) {
         int found = 0;
 
         for (size_t n = 0; n < ROC_ARRAY_SIZE(ChanMaskNames); n++) {
             CHECK(ChanMaskNames[n].mask);
             CHECK(ChanMaskNames[n].name);
 
-            if (ChanMaskNames[n].mask == all_masks[msk]) {
+            if (ChanMaskNames[n].mask == named_masks[msk]) {
                 found++;
             }
         }
 
         LONGS_EQUAL(1, found);
+    }
+}
+
+// Check that we can retrieve all names.
+TEST(channel_tables, name_functions) {
+    for (int n = 0; n < ChanOrder_Max; n++) {
+        CHECK(channel_order_to_str((ChannelOrder)n));
+        STRCMP_EQUAL(ChanOrderTables[n].name, channel_order_to_str((ChannelOrder)n));
+    }
+
+    for (int n = 0; n < ChanPos_Max; n++) {
+        CHECK(channel_pos_to_str((ChannelPosition)n));
+        STRCMP_EQUAL(ChanPositionNames[n].name, channel_pos_to_str((ChannelPosition)n));
+    }
+
+    for (size_t n = 0; n < ROC_ARRAY_SIZE(named_masks); n++) {
+        CHECK(channel_mask_to_str(named_masks[n]));
     }
 }
 
