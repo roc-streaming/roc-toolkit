@@ -59,7 +59,7 @@ struct ChannelMapRule {
 //! Such representation allows more compact definition in the source
 //! code. The actual matrix is built by channel mapper at runtime.
 struct ChannelMapTable {
-    //! Mapping name.
+    //! Table name.
     const char* name;
 
     //! Channel mask of input stream.
@@ -118,7 +118,7 @@ extern const ChannelOrderTable ChanOrderTables[ChanOrder_Max];
 //! These tables define downmixing coefficients for mapping between different
 //! surround channel sets. They are used for both downmixing and upmixing.
 //!
-//! Mappings should be ordered from smaller to larger masks, becase channel mapper
+//! Mappings should be ordered from smaller to larger masks, because channel mapper
 //! will use the very first pair that covers both output and input masks.
 //!
 //! Only downmixing mappings are defined. Upmixing mappings are derived
@@ -144,9 +144,9 @@ extern const ChannelOrderTable ChanOrderTables[ChanOrder_Max];
 //!  https://www.audiokinetic.com/en/library/edge/?source=Help&id=downmix_tables
 //!  https://trac.ffmpeg.org/wiki/AudioChannelManipulation
 //!  https://superuser.com/questions/852400
-extern const ChannelMapTable ChanMapTables[136];
+extern const ChannelMapTable ChanMapTables[71];
 
 } // namespace audio
 } // namespace roc
 
-#endif //! ROC_AUDIO_CHANNEL_TABLES_H_
+#endif // ROC_AUDIO_CHANNEL_TABLES_H_

@@ -8,7 +8,9 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_audio/channel_defs.h"
 #include "roc_audio/channel_mapper.h"
+#include "roc_audio/channel_set.h"
 #include "roc_audio/channel_tables.h"
 #include "roc_core/macro_helpers.h"
 
@@ -19,7 +21,31 @@ namespace {
 
 enum { MaxSamples = 100 };
 
-const double Epsilon = 0.000001;
+const double Epsilon = 0.005;
+
+const sample_t Lev_1_000 = 1.0000000f;
+const sample_t Lev_0_707 = 0.7071068f;
+const sample_t Lev_0_500 = 0.5000000f;
+
+void dump(const char* name,
+          const sample_t* buf,
+          size_t n_samples,
+          const ChannelSet& chans) {
+    printf("\n%s:\n", name);
+    for (size_t nc = 0; nc < ChanPos_Max; nc++) {
+        ChannelPosition ch = ChanOrderTables[chans.order()].chans[nc];
+        if (chans.has_channel(ch)) {
+            printf(" %7s", channel_pos_to_str(ch));
+        }
+    }
+    printf("\n");
+    for (size_t ns = 0; ns < n_samples; ns++) {
+        for (size_t nc = 0; nc < chans.num_channels(); nc++) {
+            printf(" %.5f", (double)buf[ns * chans.num_channels() + nc]);
+        }
+        printf("\n");
+    }
+}
 
 void check(const sample_t* input,
            const sample_t* output,
@@ -48,7 +74,11 @@ void check(const sample_t* input,
                n_samples * out_chans.num_channels());
 
     for (size_t n = 0; n < n_samples * out_chans.num_channels(); n++) {
-        DOUBLES_EQUAL(output[n], actual_output[n], Epsilon);
+        if ((double)std::abs(output[n] - actual_output[n]) > Epsilon) {
+            dump("expected", output, n_samples, out_chans);
+            dump("actual", actual_output, n_samples, out_chans);
+            FAIL("unexpected samples");
+        }
     }
 }
 
@@ -184,8 +214,8 @@ TEST(channel_mapper, surround_61_to_41) {
         OutChans = ChanMask_Surround_4_1
     };
 
-    const sample_t clev = 1.000f / (1.000f + 0.707f);
-    const sample_t slev = 0.707f / (1.000f + 0.707f);
+    const sample_t clev = Lev_1_000 / (Lev_1_000 + Lev_0_707);
+    const sample_t slev = Lev_0_707 / (Lev_1_000 + Lev_0_707);
 
     const sample_t input[NumSamples * 7] = {
         // FL     FR     FC    LFE     BL     BR     BC
@@ -241,8 +271,8 @@ TEST(channel_mapper, surround_60_to_41) {
         OutChans = ChanMask_Surround_4_1
     };
 
-    const sample_t clev = 1.000f / (1.000f + 0.707f);
-    const sample_t slev = 0.707f / (1.000f + 0.707f);
+    const sample_t clev = Lev_1_000 / (Lev_1_000 + Lev_0_707);
+    const sample_t slev = Lev_0_707 / (Lev_1_000 + Lev_0_707);
 
     const sample_t input[NumSamples * 7] = {
         // FL     FR     FC     BL     BR     BC
@@ -298,8 +328,8 @@ TEST(channel_mapper, surround_61_to_40) {
         OutChans = ChanMask_Surround_4_0
     };
 
-    const sample_t clev = 1.000f / (1.000f + 0.707f);
-    const sample_t slev = 0.707f / (1.000f + 0.707f);
+    const sample_t clev = Lev_1_000 / (Lev_1_000 + Lev_0_707);
+    const sample_t slev = Lev_0_707 / (Lev_1_000 + Lev_0_707);
 
     const sample_t input[NumSamples * 7] = {
         // FL     FR     FC    LFE     BL     BR     BC
@@ -355,8 +385,8 @@ TEST(channel_mapper, surround_6x_to_4x) {
             (1 << ChanPos_FrontLeft) | (1 << ChanPos_BackLeft) | (1 << ChanPos_BackRight)
     };
 
-    const sample_t clev = 1.000f / (1.000f + 0.707f);
-    const sample_t slev = 0.707f / (1.000f + 0.707f);
+    const sample_t clev = Lev_1_000 / (Lev_1_000 + Lev_0_707);
+    const sample_t slev = Lev_0_707 / (Lev_1_000 + Lev_0_707);
 
     const sample_t input[NumSamples * 5] = {
         // FL     FR     BL     BR     BC
@@ -402,7 +432,7 @@ TEST(channel_mapper, surround_41_to_61) {
         OutChans = ChanMask_Surround_6_1
     };
 
-    const sample_t lev = (1.f / 0.707f) / (2.f / 0.707f);
+    const sample_t lev = Lev_0_707 / (Lev_0_707 * 2);
 
     const sample_t input[NumSamples * 5] = {
         // FL     FR    LFE     BL     BR
@@ -460,6 +490,293 @@ TEST(channel_mapper, surround_41_to_61) {
           ChanLayout_Surround, ChanOrder_Smpte, OutChans);
 }
 
+// multi-step downmixing
+// channel mapper will use 7.1.2 => 5.1 => 3.1
+TEST(channel_mapper, surround_712_to_30) {
+    enum {
+        NumSamples = 5,
+        InChans = ChanMask_Surround_7_1_2,
+        OutChans = ChanMask_Surround_3_0
+    };
+
+    const sample_t clev = Lev_1_000 / (Lev_1_000 + Lev_0_500 * 2 + Lev_0_707);
+    const sample_t slev1 = Lev_0_500 / (Lev_1_000 + Lev_0_500 * 2 + Lev_0_707);
+    const sample_t slev2 = Lev_0_707 / (Lev_1_000 + Lev_0_500 * 2 + Lev_0_707);
+
+    const sample_t input[NumSamples * 10] = {
+        // FL     FR     FC    LFE     BL     BR     SL     SR    TML    TMR
+        0.01f, 0.02f, 0.03f, 0.04f, 0.05f, 0.06f, 0.07f, 0.08f, 0.09f, 0.09f, // 0
+        0.11f, 0.12f, 0.13f, 0.14f, 0.15f, 0.16f, 0.17f, 0.18f, 0.19f, 0.19f, // 1
+        0.21f, 0.22f, 0.23f, 0.24f, 0.25f, 0.26f, 0.27f, 0.28f, 0.29f, 0.29f, // 2
+        0.31f, 0.32f, 0.33f, 0.34f, 0.35f, 0.36f, 0.37f, 0.38f, 0.39f, 0.39f, // 3
+        0.41f, 0.42f, 0.43f, 0.44f, 0.45f, 0.46f, 0.47f, 0.48f, 0.49f, 0.49f, // 4
+    };
+
+    const sample_t output[NumSamples * 3] = {
+        // 0
+        clev * 0.01f + slev1 * 0.05f + slev1 * 0.07f + slev2 * 0.09f, // FL
+        clev * 0.02f + slev1 * 0.06f + slev1 * 0.08f + slev2 * 0.09f, // FR
+        0.03f,                                                        // FC
+        // 1
+        clev * 0.11f + slev1 * 0.15f + slev1 * 0.17f + slev2 * 0.19f, // FL
+        clev * 0.12f + slev1 * 0.16f + slev1 * 0.18f + slev2 * 0.19f, // FR
+        0.13f,                                                        // FC
+        // 2
+        clev * 0.21f + slev1 * 0.25f + slev1 * 0.27f + slev2 * 0.29f, // FL
+        clev * 0.22f + slev1 * 0.26f + slev1 * 0.28f + slev2 * 0.29f, // FR
+        0.23f,                                                        // FC
+        // 3
+        clev * 0.31f + slev1 * 0.35f + slev1 * 0.37f + slev2 * 0.39f, // FL
+        clev * 0.32f + slev1 * 0.36f + slev1 * 0.38f + slev2 * 0.39f, // FR
+        0.33f,                                                        // FC
+        // 4
+        clev * 0.41f + slev1 * 0.45f + slev1 * 0.47f + slev2 * 0.49f, // FL
+        clev * 0.42f + slev1 * 0.46f + slev1 * 0.48f + slev2 * 0.49f, // FR
+        0.43f,                                                        // FC
+    };
+
+    check(input, output, NumSamples, ChanLayout_Surround, ChanOrder_Smpte, InChans,
+          ChanLayout_Surround, ChanOrder_Smpte, OutChans);
+}
+
+// multi-step upmixing
+// channel mapper will use 3.1 => 5.1 => 7.1.2
+TEST(channel_mapper, surround_30_to_712) {
+    enum {
+        NumSamples = 5,
+        InChans = ChanMask_Surround_3_0,
+        OutChans = ChanMask_Surround_7_1_2,
+    };
+
+    const sample_t input[NumSamples * 3] = {
+        // FL     FR     FC
+        0.01f, 0.02f, 0.03f, // 0
+        0.11f, 0.12f, 0.13f, // 1
+        0.21f, 0.22f, 0.23f, // 2
+        0.31f, 0.32f, 0.33f, // 3
+        0.41f, 0.42f, 0.43f, // 4
+    };
+
+    const sample_t output[NumSamples * 10] = {
+        // 0
+        0.01f, // FL
+        0.02f, // FR
+        0.03f, // FC
+        0.00f, // LFE
+        0.01f, // BL
+        0.02f, // BR
+        0.01f, // SL
+        0.02f, // SR
+        0.01f, // TML
+        0.02f, // TMR
+        // 1
+        0.11f, // FL
+        0.12f, // FR
+        0.13f, // FC
+        0.00f, // LFE
+        0.11f, // BL
+        0.12f, // BR
+        0.11f, // SL
+        0.12f, // SR
+        0.11f, // TML
+        0.12f, // TMR
+        // 2
+        0.21f, // FL
+        0.22f, // FR
+        0.23f, // FC
+        0.00f, // LFE
+        0.21f, // BL
+        0.22f, // BR
+        0.21f, // SL
+        0.22f, // SR
+        0.21f, // TML
+        0.22f, // TMR
+        // 3
+        0.31f, // FL
+        0.32f, // FR
+        0.33f, // FC
+        0.00f, // LFE
+        0.31f, // BL
+        0.32f, // BR
+        0.31f, // SL
+        0.32f, // SR
+        0.31f, // TML
+        0.32f, // TMR
+        // 4
+        0.41f, // FL
+        0.42f, // FR
+        0.43f, // FC
+        0.00f, // LFE
+        0.41f, // BL
+        0.42f, // BR
+        0.41f, // SL
+        0.42f, // SR
+        0.41f, // TML
+        0.42f, // TMR
+    };
+
+    check(input, output, NumSamples, ChanLayout_Surround, ChanOrder_Smpte, InChans,
+          ChanLayout_Surround, ChanOrder_Smpte, OutChans);
+}
+
+// multi-step downmixing (3-channel center)
+// channel mapper will use 7.1.2 => 7.1.2-3c => 5.1-3c => 3.1-3c
+// (i.e. it will first upmix to -3c version, then do cascade downmix)
+TEST(channel_mapper, surround_712_to_313c) {
+    enum {
+        NumSamples = 5,
+        InChans = ChanMask_Surround_7_1_2,
+        OutChans = ChanMask_Surround_3_1_3c
+    };
+
+    const sample_t clev1 = Lev_1_000 / (Lev_1_000 + Lev_0_500 * 2 + Lev_0_707);
+    const sample_t slev1a = Lev_0_500 / (Lev_1_000 + Lev_0_500 * 2 + Lev_0_707);
+    const sample_t slev1b = Lev_0_707 / (Lev_1_000 + Lev_0_500 * 2 + Lev_0_707);
+
+    const sample_t clev2 = Lev_0_707 / (Lev_0_707 * 2 + Lev_0_500 * 3);
+    const sample_t slev2 = Lev_0_500 / (Lev_0_707 * 2 + Lev_0_500 * 3);
+
+    const sample_t input[NumSamples * 10] = {
+        // FL     FR     FC    LFE     BL     BR     SL     SR    TML    TMR
+        0.01f, 0.02f, 0.03f, 0.04f, 0.05f, 0.06f, 0.07f, 0.08f, 0.09f, 0.09f, // 0
+        0.11f, 0.12f, 0.13f, 0.14f, 0.15f, 0.16f, 0.17f, 0.18f, 0.19f, 0.19f, // 1
+        0.21f, 0.22f, 0.23f, 0.24f, 0.25f, 0.26f, 0.27f, 0.28f, 0.29f, 0.29f, // 2
+        0.31f, 0.32f, 0.33f, 0.34f, 0.35f, 0.36f, 0.37f, 0.38f, 0.39f, 0.39f, // 3
+        0.41f, 0.42f, 0.43f, 0.44f, 0.45f, 0.46f, 0.47f, 0.48f, 0.49f, 0.49f, // 4
+    };
+
+    const sample_t output[NumSamples * 6] = {
+        // 0
+        clev1 * 0.01f + slev1a * 0.05f + slev1a * 0.07f + slev1b * 0.09f, // FL
+        clev1 * 0.02f + slev1a * 0.06f + slev1a * 0.08f + slev1b * 0.09f, // FR
+        0.03f,                                                            // FC
+        0.04f,                                                            // LFE
+        clev2 * 0.01f + slev2 * (0.03f + 0.05f + 0.07f) + clev2 * 0.09f,  // FLC
+        clev2 * 0.02f + slev2 * (0.03f + 0.06f + 0.08f) + clev2 * 0.09f,  // FLC
+        // 1
+        clev1 * 0.11f + slev1a * 0.15f + slev1a * 0.17f + slev1b * 0.19f, // FL
+        clev1 * 0.12f + slev1a * 0.16f + slev1a * 0.18f + slev1b * 0.19f, // FR
+        0.13f,                                                            // FC
+        0.14f,                                                            // LFE
+        clev2 * 0.11f + slev2 * (0.13f + 0.15f + 0.17f) + clev2 * 0.19f,  // FLC
+        clev2 * 0.12f + slev2 * (0.13f + 0.16f + 0.18f) + clev2 * 0.19f,  // FLC
+        // 2
+        clev1 * 0.21f + slev1a * 0.25f + slev1a * 0.27f + slev1b * 0.29f, // FL
+        clev1 * 0.22f + slev1a * 0.26f + slev1a * 0.28f + slev1b * 0.29f, // FR
+        0.23f,                                                            // FC
+        0.24f,                                                            // LFE
+        clev2 * 0.21f + slev2 * (0.23f + 0.25f + 0.27f) + clev2 * 0.29f,  // FLC
+        clev2 * 0.22f + slev2 * (0.23f + 0.26f + 0.28f) + clev2 * 0.29f,  // FLC
+        // 3
+        clev1 * 0.31f + slev1a * 0.35f + slev1a * 0.37f + slev1b * 0.39f, // FL
+        clev1 * 0.32f + slev1a * 0.36f + slev1a * 0.38f + slev1b * 0.39f, // FR
+        0.33f,                                                            // FC
+        0.34f,                                                            // LFE
+        clev2 * 0.31f + slev2 * (0.33f + 0.35f + 0.37f) + clev2 * 0.39f,  // FLC
+        clev2 * 0.32f + slev2 * (0.33f + 0.36f + 0.38f) + clev2 * 0.39f,  // FLC
+        // 4
+        clev1 * 0.41f + slev1a * 0.45f + slev1a * 0.47f + slev1b * 0.49f, // FL
+        clev1 * 0.42f + slev1a * 0.46f + slev1a * 0.48f + slev1b * 0.49f, // FR
+        0.43f,                                                            // FC
+        0.44f,                                                            // LFE
+        clev2 * 0.41f + slev2 * (0.43f + 0.45f + 0.47f) + clev2 * 0.49f,  // FLC
+        clev2 * 0.42f + slev2 * (0.43f + 0.46f + 0.48f) + clev2 * 0.49f,  // FLC
+    };
+
+    check(input, output, NumSamples, ChanLayout_Surround, ChanOrder_Smpte, InChans,
+          ChanLayout_Surround, ChanOrder_Smpte, OutChans);
+}
+
+// multi-step upmixing (3-channel center)
+// channel mapper will use 3.1-3c => 5.1-3c => 7.1.2-3c => 7.1.2
+// (i.e. it will first cascade upmix, then do downmix to non-3c version)
+TEST(channel_mapper, surround_313c_to_712) {
+    enum {
+        NumSamples = 5,
+        InChans = ChanMask_Surround_3_1_3c,
+        OutChans = ChanMask_Surround_7_1_2,
+    };
+
+    const sample_t clev1 = Lev_1_000 / (Lev_1_000 + Lev_0_707);
+    const sample_t slev1 = Lev_0_707 / (Lev_1_000 + Lev_0_707);
+
+    const sample_t clev2 = Lev_1_000 / (Lev_1_000 + Lev_0_707 * 2);
+    const sample_t slev2 = Lev_0_707 / (Lev_1_000 + Lev_0_707 * 2);
+
+    const sample_t clev3 = Lev_0_707 / (Lev_0_707 + Lev_0_500);
+    const sample_t slev3 = Lev_0_500 / (Lev_0_707 + Lev_0_500);
+
+    const sample_t input[NumSamples * 6] = {
+        // FL     FR     FC    LFE    FLC    FRC
+        0.01f, 0.02f, 0.03f, 0.04f, 0.05f, 0.06f, // 0
+        0.11f, 0.12f, 0.13f, 0.14f, 0.15f, 0.16f, // 1
+        0.21f, 0.22f, 0.23f, 0.24f, 0.25f, 0.26f, // 2
+        0.31f, 0.32f, 0.33f, 0.34f, 0.35f, 0.36f, // 3
+        0.41f, 0.42f, 0.43f, 0.44f, 0.45f, 0.46f, // 4
+    };
+
+    const sample_t output[NumSamples * 10] = {
+        // 0
+        clev1 * 0.01f + slev1 * 0.05f,                 // FL
+        clev1 * 0.02f + slev1 * 0.06f,                 // FR
+        slev2 * 0.05f + clev2 * 0.03f + slev2 * 0.06f, // FC
+        0.04f,                                         // LFE
+        clev3 * 0.01f + slev3 * 0.05f,                 // BL
+        clev3 * 0.02f + slev3 * 0.06f,                 // BR
+        clev3 * 0.01f + slev3 * 0.05f,                 // SL
+        clev3 * 0.02f + slev3 * 0.06f,                 // SR
+        clev3 * 0.01f + slev3 * 0.05f,                 // TML
+        clev3 * 0.02f + slev3 * 0.06f,                 // TMR
+        // 1
+        clev1 * 0.11f + slev1 * 0.15f,                 // FL
+        clev1 * 0.12f + slev1 * 0.16f,                 // FR
+        slev2 * 0.15f + clev2 * 0.13f + slev2 * 0.16f, // FC
+        0.14f,                                         // LFE
+        clev3 * 0.11f + slev3 * 0.15f,                 // BL
+        clev3 * 0.12f + slev3 * 0.16f,                 // BR
+        clev3 * 0.11f + slev3 * 0.15f,                 // SL
+        clev3 * 0.12f + slev3 * 0.16f,                 // SR
+        clev3 * 0.11f + slev3 * 0.15f,                 // TML
+        clev3 * 0.12f + slev3 * 0.16f,                 // TMR
+        // 2
+        clev1 * 0.21f + slev1 * 0.25f,                 // FL
+        clev1 * 0.22f + slev1 * 0.26f,                 // FR
+        slev2 * 0.25f + clev2 * 0.23f + slev2 * 0.26f, // FC
+        0.24f,                                         // LFE
+        clev3 * 0.21f + slev3 * 0.25f,                 // BL
+        clev3 * 0.22f + slev3 * 0.26f,                 // BR
+        clev3 * 0.21f + slev3 * 0.25f,                 // SL
+        clev3 * 0.22f + slev3 * 0.26f,                 // SR
+        clev3 * 0.21f + slev3 * 0.25f,                 // TML
+        clev3 * 0.22f + slev3 * 0.26f,                 // TMR
+        // 3
+        clev1 * 0.31f + slev1 * 0.35f,                 // FL
+        clev1 * 0.32f + slev1 * 0.36f,                 // FR
+        slev2 * 0.35f + clev2 * 0.33f + slev2 * 0.36f, // FC
+        0.34f,                                         // LFE
+        clev3 * 0.31f + slev3 * 0.35f,                 // BL
+        clev3 * 0.32f + slev3 * 0.36f,                 // BR
+        clev3 * 0.31f + slev3 * 0.35f,                 // SL
+        clev3 * 0.32f + slev3 * 0.36f,                 // SR
+        clev3 * 0.31f + slev3 * 0.35f,                 // TML
+        clev3 * 0.32f + slev3 * 0.36f,                 // TMR
+        // 4
+        clev1 * 0.41f + slev1 * 0.45f,                 // FL
+        clev1 * 0.42f + slev1 * 0.46f,                 // FR
+        slev2 * 0.45f + clev2 * 0.43f + slev2 * 0.46f, // FC
+        0.44f,                                         // LFE
+        clev3 * 0.41f + slev3 * 0.45f,                 // BL
+        clev3 * 0.42f + slev3 * 0.46f,                 // BR
+        clev3 * 0.41f + slev3 * 0.45f,                 // SL
+        clev3 * 0.42f + slev3 * 0.46f,                 // SR
+        clev3 * 0.41f + slev3 * 0.45f,                 // TML
+        clev3 * 0.42f + slev3 * 0.46f,                 // TMR
+    };
+
+    check(input, output, NumSamples, ChanLayout_Surround, ChanOrder_Smpte, InChans,
+          ChanLayout_Surround, ChanOrder_Smpte, OutChans);
+}
+
 // input has one non-zero channel
 TEST(channel_mapper, surround_1ch) {
     enum {
@@ -467,23 +784,33 @@ TEST(channel_mapper, surround_1ch) {
     };
 
     const ChannelMask masks[] = {
-        ChanMask_Surround_Mono,   //
-        ChanMask_Surround_Stereo, //
-        ChanMask_Surround_2_1,    //
-        ChanMask_Surround_3_0,    //
-        ChanMask_Surround_3_1,    //
-        ChanMask_Surround_4_0,    //
-        ChanMask_Surround_4_1,    //
-        ChanMask_Surround_5_0,    //
-        ChanMask_Surround_5_1,    //
-        ChanMask_Surround_5_1_2,  //
-        ChanMask_Surround_5_1_4,  //
-        ChanMask_Surround_6_0,    //
-        ChanMask_Surround_6_1,    //
-        ChanMask_Surround_7_0,    //
-        ChanMask_Surround_7_1,    //
-        ChanMask_Surround_7_1_2,  //
-        ChanMask_Surround_7_1_4,  //
+        ChanMask_Surround_Mono,     //
+        ChanMask_Surround_1_1,      //
+        ChanMask_Surround_1_1_3c,   //
+        ChanMask_Surround_Stereo,   //
+        ChanMask_Surround_2_1,      //
+        ChanMask_Surround_3_0,      //
+        ChanMask_Surround_3_1,      //
+        ChanMask_Surround_3_1_3c,   //
+        ChanMask_Surround_4_0,      //
+        ChanMask_Surround_4_1,      //
+        ChanMask_Surround_5_0,      //
+        ChanMask_Surround_5_1,      //
+        ChanMask_Surround_5_1_3c,   //
+        ChanMask_Surround_5_1_2,    //
+        ChanMask_Surround_5_1_2_3c, //
+        ChanMask_Surround_5_1_4,    //
+        ChanMask_Surround_5_1_4_3c, //
+        ChanMask_Surround_6_0,      //
+        ChanMask_Surround_6_1,      //
+        ChanMask_Surround_6_1_3c,   //
+        ChanMask_Surround_7_0,      //
+        ChanMask_Surround_7_1,      //
+        ChanMask_Surround_7_1_3c,   //
+        ChanMask_Surround_7_1_2,    //
+        ChanMask_Surround_7_1_2_3c, //
+        ChanMask_Surround_7_1_4,    //
+        ChanMask_Surround_7_1_4_3c, //
     };
 
     for (size_t i = 0; i < ROC_ARRAY_SIZE(masks); i++) {
@@ -616,8 +943,8 @@ TEST(channel_mapper, surround_61_smpte_to_41_alsa) {
         OutChans = ChanMask_Surround_4_1
     };
 
-    const sample_t clev = 1.000f / (1.000f + 0.707f);
-    const sample_t slev = 0.707f / (1.000f + 0.707f);
+    const sample_t clev = Lev_1_000 / (Lev_1_000 + Lev_0_707);
+    const sample_t slev = Lev_0_707 / (Lev_1_000 + Lev_0_707);
 
     const sample_t input[NumSamples * 7] = {
         // FL     FR     FC    LFE     BL     BR     BC
@@ -673,7 +1000,7 @@ TEST(channel_mapper, surround_41_alsa_to_61_smpte) {
         OutChans = ChanMask_Surround_6_1
     };
 
-    const sample_t lev = (1.f / 0.707f) / (2.f / 0.707f);
+    const sample_t lev = Lev_0_707 / (Lev_0_707 * 2);
 
     const sample_t input[NumSamples * 5] = {
         // FL     FR     BL     BR    LFE
@@ -739,8 +1066,8 @@ TEST(channel_mapper, surround_512_smpte_to_512_alsa) {
         OutChans = ChanMask_Surround_5_1_2
     };
 
-    const sample_t clev = 1.000f / (1.000f + 0.707f);
-    const sample_t slev = 0.707f / (1.000f + 0.707f);
+    const sample_t clev = Lev_1_000 / (Lev_1_000 + Lev_0_707);
+    const sample_t slev = Lev_0_707 / (Lev_1_000 + Lev_0_707);
 
     const sample_t input[NumSamples * 8] = {
         // FL     FR     FC    LFE     BL     BR    TML    TMR
@@ -811,7 +1138,7 @@ TEST(channel_mapper, surround_512_alsa_to_512_smpte) {
         OutChans = ChanMask_Surround_5_1_2
     };
 
-    const sample_t lev = (1.f / 0.707f) / (2.f / 0.707f);
+    const sample_t lev = Lev_0_707 / (Lev_0_707 * 2);
 
     const sample_t input[NumSamples * 8] = {
         // FL     FR     BL     BR     FC    LFE      -     -

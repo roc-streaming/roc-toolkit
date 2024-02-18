@@ -19,6 +19,11 @@ ChannelMapperMatrix::ChannelMapperMatrix() {
 }
 
 void ChannelMapperMatrix::build(const ChannelSet& in_chans, const ChannelSet& out_chans) {
+    roc_log(LogDebug,
+            "channel mapper matrix: building mapping:"
+            " in_chans=%s out_chans=%s",
+            channel_set_to_str(in_chans).c_str(), channel_set_to_str(out_chans).c_str());
+
     // Build mapping of logical channel positions to physical index in frame,
     // based on channel order tables.
     IndexMap in_index_map;
@@ -41,14 +46,15 @@ void ChannelMapperMatrix::build(const ChannelSet& in_chans, const ChannelSet& ou
     // Build final matrix that combines downmixing/upmixing and reordering.
     populate_index_matrix_(in_index_map, out_index_map, chan_map);
 
-    // Print matrix to console.
     if (core::Logger::instance().get_level() >= LogTrace) {
-        print_index_matrix_(in_index_map, out_index_map, chan_map);
+        print_index_matrix_(in_index_map, out_index_map);
     }
 }
 
 void ChannelMapperMatrix::build_index_mapping_(IndexMap& result_map,
                                                const ChannelSet& ch_set) {
+    result_map.enabled_chans.set_layout(ChanLayout_Surround);
+
     const ChannelOrderTable& order_table = ChanOrderTables[ch_set.order()];
 
     size_t ch_index = 0; // Physical index of channel in frame.
@@ -84,47 +90,113 @@ bool ChannelMapperMatrix::build_channel_mapping_(ChannelMap& result_map,
         return false;
     }
 
-    // Select channel mapping table that covers conversion from input to output mask.
-    bool map_reversed = false;
-    const ChannelMapTable* map_table = find_table_(in_chans, out_chans, map_reversed);
-    if (!map_table) {
-        return false;
+    ChannelSet cur_in_chans = in_chans;
+    ChannelSet actual_out_chans;
+
+    bool is_first = true;
+
+    for (;;) {
+        // Select table that covers next step of conversion from input to output mask.
+        //
+        // Each iteration we determine whether we want to downmix or upmix.
+        // Depending on the masks, it may happen that we first need to upmix and only
+        // then to downmix. E.g. to map 7.1.2 to 3.1-3c, we will combine the following
+        // mappings into one:
+        //    7.1.2 --(upmix)-> 7.1.2-3c --(downmix)-> 5.1-3c --(downmix)-> 3.1-3c
+        //
+        // It is so because mapping tables don't provide explicit mapping for every
+        // possible combination of channel masks, as there would be too many of them.
+        const bool is_downmixing = can_downmix_(cur_in_chans, out_chans);
+
+        const ChannelMapTable* map_table = NULL;
+        if (is_downmixing) {
+            if ((map_table = next_downmix_table_(cur_in_chans, out_chans))) {
+                actual_out_chans.set_layout(ChanLayout_Surround);
+                actual_out_chans.set_mask(map_table->out_mask);
+            }
+        } else {
+            if ((map_table = next_upmix_table_(cur_in_chans, out_chans))) {
+                actual_out_chans.set_layout(ChanLayout_Surround);
+                actual_out_chans.set_mask(map_table->in_mask);
+            }
+        }
+
+        // No suitable mapping found, end loop.
+        if (!map_table) {
+            break;
+        }
+
+        roc_log(LogDebug,
+                "channel mapper matrix: pulling mapping table:"
+                " table=[%s] dir=%s",
+                map_table->name, is_downmixing ? "downmix" : "upmix");
+
+        // Build matrix from found table.
+        ChannelMap next_map;
+        fill_mapping_from_table_(next_map, *map_table, is_downmixing, cur_in_chans,
+                                 actual_out_chans);
+
+        if (core::Logger::instance().get_level() >= LogTrace) {
+            print_table_matrix_(next_map);
+        }
+
+        if (is_first) {
+            result_map = next_map;
+        } else {
+            // Combine subsequent mappings into one matrix.
+            combine_mappings_(result_map, next_map);
+        }
+
+        // Proceed to next step.
+        // On next iteration, we'll request mapping output of current step
+        // (actual_out_chans) to desired output (out_chans).
+        is_first = false;
+        cur_in_chans = actual_out_chans;
     }
 
-    roc_log(LogDebug,
-            "channel mapper matrix:"
-            " selected mapping table: in_chans=%s out_chans=%s table=[%s] is_reverse=%d",
-            channel_set_to_str(in_chans).c_str(), channel_set_to_str(out_chans).c_str(),
-            map_table->name, (int)map_reversed);
-
-    // Fill mapping matrix based on rules from table.
-    fill_mapping_from_table_(result_map, *map_table, map_reversed, in_chans, out_chans);
-
-    // Normalize matrix.
-    normalize_mapping_(result_map);
-
-    return true;
+    return !is_first;
 }
 
-const ChannelMapTable* ChannelMapperMatrix::find_table_(const ChannelSet& in_chans,
-                                                        const ChannelSet& out_chans,
-                                                        bool& map_reversed) {
-    // Find first downmixing table that covers both output and input masks.
-    // We assume that tables are sorted from "smaller" to "larger" channel masks.
+bool ChannelMapperMatrix::can_downmix_(const ChannelSet& in_chans,
+                                       const ChannelSet& out_chans) {
+    for (size_t i = 0; i < ROC_ARRAY_SIZE(ChanMapTables); i++) {
+        const ChannelMask in_mask = ChanMapTables[i].in_mask;
+
+        if (!in_chans.is_subset(in_mask)) {
+            continue;
+        }
+
+        // Find first cluster of tables which covers in_chans.
+        // Check if there is a table in cluster that covers out_chans.
+        for (size_t j = i; j < ROC_ARRAY_SIZE(ChanMapTables); j++) {
+            if (ChanMapTables[j].in_mask != in_mask) {
+                // No more tables in cluster, give up.
+                break;
+            }
+
+            const ChannelMask out_mask = ChanMapTables[j].out_mask;
+
+            if (out_chans.is_subset(out_mask)) {
+                return true;
+            }
+        }
+
+        // No more tables, give up.
+        break;
+    }
+
+    return false;
+}
+
+const ChannelMapTable*
+ChannelMapperMatrix::next_downmix_table_(const ChannelSet& in_chans,
+                                         const ChannelSet& out_chans) {
     for (size_t n = 0; n < ROC_ARRAY_SIZE(ChanMapTables); n++) {
         const ChannelMapTable& tbl = ChanMapTables[n];
 
-        // Table covers our pair of masks directly,
-        // which means that we're downmixing.
-        if (out_chans.is_subset(tbl.out_mask) && in_chans.is_subset(tbl.in_mask)) {
-            map_reversed = false;
-            return &tbl;
-        }
-
-        // Table covers our pair of masks after being reversed,
-        // which means that we're upmixing.
-        if (in_chans.is_subset(tbl.out_mask) && out_chans.is_subset(tbl.in_mask)) {
-            map_reversed = true;
+        // Find first table that covers downmixing from in_chans to out_chans.
+        if (in_chans.is_subset(tbl.in_mask) && out_chans.is_subset(tbl.out_mask)
+            && !in_chans.is_subset(tbl.out_mask)) {
             return &tbl;
         }
     }
@@ -132,37 +204,93 @@ const ChannelMapTable* ChannelMapperMatrix::find_table_(const ChannelSet& in_cha
     return NULL;
 }
 
-void ChannelMapperMatrix::fill_mapping_from_table_(ChannelMap& result_map,
-                                                   const ChannelMapTable& map_table,
-                                                   bool map_reversed,
-                                                   const ChannelSet& in_chans,
-                                                   const ChannelSet& out_chans) {
-    // Build matrix based on rules from table.
-    for (size_t n = 0; n < ROC_ARRAY_SIZE(map_table.rules); n++) {
-        const ChannelMapRule& rule = map_table.rules[n];
-        if (rule.coeff == 0.f) {
-            // Last rule in table.
+const ChannelMapTable*
+ChannelMapperMatrix::next_upmix_table_(const ChannelSet& in_chans,
+                                       const ChannelSet& out_chans) {
+    const ChannelMapTable* next_tbl = NULL;
+    ChannelSet next_chans = out_chans;
+
+    // Channel mapping tables provide only downmixing matrices, and upmixing
+    // matrices are automatically inferred from them.
+    //
+    // To upmix "A -> B", we need to find downmixing table for "B -> A", and revert it.
+    // To upmix "A -> B -> C", we need to find downmixing tables "C -> B -> A",
+    // revert them, and combine into one. We should do it in reverse order, i.e.
+    // first pull reverted "B -> A" table, and then reverted "C -> B" table.
+    //
+    // Example flow when we want to upmix "A -> B -> C":
+    //
+    //  1. First call to next_upmix_table_() asks for a table for "A -> B -> C".
+    //     We traverse from C to A: "C -> B -> A", and return "B -> A" downmixing table.
+    //     Caller reverts it to "A -> B" upmixing table.
+    //
+    //  2. Second call asks for a table for "B -> C".
+    //     We traverse from C to B, and return "C -> B" downmixing table.
+    //     Caller reverts it to "B -> C" and combined with the previous one.
+    for (;;) {
+        const ChannelMapTable* best_tbl = NULL;
+
+        for (ssize_t n = ROC_ARRAY_SIZE(ChanMapTables) - 1; n >= 0; n--) {
+            const ChannelMapTable& tbl = ChanMapTables[n];
+
+            // Find last table that covers downmixing from out_chans to in_chans.
+            // (We will revert it to upmix from in_chans to out_chans).
+            if (in_chans.is_subset(tbl.out_mask) && next_chans.is_subset(tbl.in_mask)
+                && !next_chans.is_subset(tbl.out_mask)) {
+                best_tbl = &tbl;
+            }
+        }
+
+        if (!best_tbl) {
             break;
         }
 
-        ChannelPosition out_ch = ChanPos_Max;
-        ChannelPosition in_ch = ChanPos_Max;
-        sample_t coeff = 0.f;
+        // Continue backwards search.
+        // Output mask of current iteration becomes input of the next one.
+        // We repeat the process until we find the last step of downmixing sequence,
+        // which will be the first step of upmixing sequence.
+        next_tbl = best_tbl;
+        next_chans.set_mask(best_tbl->out_mask);
+    }
 
-        if (!map_reversed) {
-            out_ch = rule.out_ch;
-            in_ch = rule.in_ch;
-            coeff = rule.coeff;
-        } else {
-            out_ch = rule.in_ch;
-            in_ch = rule.out_ch;
-            coeff = 1.f / rule.coeff;
+    return next_tbl;
+}
+
+void ChannelMapperMatrix::fill_mapping_from_table_(ChannelMap& result_map,
+                                                   const ChannelMapTable& map_table,
+                                                   bool is_downmixing,
+                                                   const ChannelSet& in_chans,
+                                                   const ChannelSet& out_chans) {
+    // Build matrix based on rules from table.
+    ChannelMap temp_map;
+
+    for (size_t n = 0; n < ROC_ARRAY_SIZE(map_table.rules); n++) {
+        const ChannelMapRule& rule = map_table.rules[n];
+        if (rule.coeff == 0.f) {
+            break; // Last rule in table.
         }
 
-        if (in_chans.has_channel(in_ch) && out_chans.has_channel(out_ch)) {
-            result_map.chan_matrix[out_ch][in_ch] = coeff;
+        temp_map.chan_matrix[rule.out_ch][rule.in_ch] = rule.coeff;
+    }
+
+    // Normalize table matrix.
+    normalize_mapping_(temp_map);
+
+    // Get only channels present in masks.
+    for (size_t out_ch = 0; out_ch < ChanPos_Max; out_ch++) {
+        for (size_t in_ch = 0; in_ch < ChanPos_Max; in_ch++) {
+            if (!out_chans.has_channel(out_ch) || !in_chans.has_channel(in_ch)) {
+                continue;
+            }
+
+            result_map.chan_matrix[out_ch][in_ch] = is_downmixing
+                ? temp_map.chan_matrix[out_ch][in_ch]
+                : temp_map.chan_matrix[in_ch][out_ch];
         }
     }
+
+    // Normalize again.
+    normalize_mapping_(result_map);
 }
 
 void ChannelMapperMatrix::fill_fallback_mapping_(ChannelMap& result_map,
@@ -170,15 +298,41 @@ void ChannelMapperMatrix::fill_fallback_mapping_(ChannelMap& result_map,
                                                  const ChannelSet& out_chans) {
     roc_log(LogDebug,
             "channel mapper matrix:"
-            " selected mapping table: in_chans=%s out_chans=%s table=[diagonal]",
-            channel_set_to_str(in_chans).c_str(), channel_set_to_str(out_chans).c_str());
+            " selected mapping table: table=[diagonal]");
 
     // There is no selected channel mapping table, which can happen if no mapping is
     // needed or no matching table is found. In this case we fall back to diagonal
     // mapping matrix, where each channel is mapped just to itself.
     for (size_t ch = 0; ch < ChanPos_Max; ch++) {
-        result_map.chan_matrix[ch][ch] = 1.0f;
+        result_map.chan_matrix[ch][ch] = 1.0;
     }
+}
+
+void ChannelMapperMatrix::combine_mappings_(ChannelMap& prev_map,
+                                            const ChannelMap& next_map) {
+    ChannelMap comb_map;
+
+    for (size_t out_ch = 0; out_ch < ChanPos_Max; out_ch++) {
+        for (size_t next_ch = 0; next_ch < ChanPos_Max; next_ch++) {
+            if (next_map.chan_matrix[out_ch][next_ch] == 0.f) {
+                continue;
+            }
+
+            for (size_t prev_ch = 0; prev_ch < ChanPos_Max; prev_ch++) {
+                if (prev_map.chan_matrix[next_ch][prev_ch] == 0.f) {
+                    continue;
+                }
+
+                comb_map.chan_matrix[out_ch][prev_ch] +=
+                    next_map.chan_matrix[out_ch][next_ch]
+                    * prev_map.chan_matrix[next_ch][prev_ch];
+            }
+        }
+    }
+
+    normalize_mapping_(comb_map);
+
+    prev_map = comb_map;
 }
 
 void ChannelMapperMatrix::normalize_mapping_(ChannelMap& chan_map) {
@@ -202,8 +356,8 @@ void ChannelMapperMatrix::normalize_mapping_(ChannelMap& chan_map) {
 void ChannelMapperMatrix::populate_index_matrix_(const IndexMap& in_index_map,
                                                  const IndexMap& out_index_map,
                                                  const ChannelMap& chan_map) {
-    // Combine two index mappings (for channel reordering) and channel mapping (for
-    // downmixing/upmixing) into a single matrix that performs both transformations.
+    // Combine two index mappings (for channel reordering) and one channel mapping (for
+    // downmixing/upmixing) into a single matrix that performs all transformations.
     for (size_t out_ch = 0; out_ch < ChanPos_Max; out_ch++) {
         if (!out_index_map.enabled_chans.has_channel(out_ch)) {
             continue;
@@ -220,15 +374,51 @@ void ChannelMapperMatrix::populate_index_matrix_(const IndexMap& in_index_map,
             roc_panic_if_not(out_index < ChanPos_Max);
             roc_panic_if_not(in_index < ChanPos_Max);
 
-            index_matrix_[out_index][in_index] = chan_map.chan_matrix[out_ch][in_ch];
+            index_matrix_[out_index][in_index] =
+                (sample_t)chan_map.chan_matrix[out_ch][in_ch];
         }
     }
 }
 
-void ChannelMapperMatrix::print_index_matrix_(const IndexMap& in_index_map,
-                                              const IndexMap& out_index_map,
-                                              const ChannelMap& chan_map) {
+void ChannelMapperMatrix::print_table_matrix_(const ChannelMap& chan_map) {
+    // Prints intermediate mapping build from a single downmixing table.
+    // (Uses logical channel positions, not physical indices.)
     core::Printer prn;
+
+    prn.writef("@ table mapping [%dx%d]\n", (int)ChanPos_Max, (int)ChanPos_Max);
+
+    prn.writef("     ");
+
+    for (size_t in_ch = 0; in_ch < ChanPos_Max; in_ch++) {
+        prn.writef(" %5s", channel_pos_to_str((ChannelPosition)in_ch));
+    }
+
+    prn.writef("\n");
+
+    for (size_t out_ch = 0; out_ch < ChanPos_Max; out_ch++) {
+        prn.writef(" %3s ", channel_pos_to_str((ChannelPosition)out_ch));
+
+        for (size_t in_ch = 0; in_ch < ChanPos_Max; in_ch++) {
+            if (chan_map.chan_matrix[out_ch][in_ch] == 0) {
+                prn.writef(" .....");
+            } else {
+                prn.writef(" %.3f", (double)chan_map.chan_matrix[out_ch][in_ch]);
+            }
+        }
+
+        prn.writef("\n");
+    }
+}
+
+void ChannelMapperMatrix::print_index_matrix_(const IndexMap& in_index_map,
+                                              const IndexMap& out_index_map) {
+    // Print resulting matrix that combines channel reordering and mapping.
+    // (Uses physical channel indices).
+    core::Printer prn;
+
+    prn.writef("@ final mapping [%dx%d]\n",
+               (int)out_index_map.enabled_chans.num_channels(),
+               (int)in_index_map.enabled_chans.num_channels());
 
     prn.writef("     ");
 
@@ -239,7 +429,7 @@ void ChannelMapperMatrix::print_index_matrix_(const IndexMap& in_index_map,
 
         const ChannelPosition in_ch = in_index_map.index_2_chan[in_index];
 
-        prn.writef(" %6s", channel_pos_to_str(in_ch));
+        prn.writef(" %5s", channel_pos_to_str(in_ch));
     }
 
     prn.writef("\n");
@@ -259,9 +449,9 @@ void ChannelMapperMatrix::print_index_matrix_(const IndexMap& in_index_map,
             }
 
             if (index_matrix_[out_index][in_index] == 0) {
-                prn.writef("  .....");
+                prn.writef(" .....");
             } else {
-                prn.writef("  %.3f", (double)index_matrix_[out_index][in_index]);
+                prn.writef(" %.3f", (double)index_matrix_[out_index][in_index]);
             }
         }
 

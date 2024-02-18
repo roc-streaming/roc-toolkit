@@ -58,7 +58,7 @@ enum ChannelOrder {
     //! Order: FL, FR, FC, LFE, BL, BR, BC, SL, SR, TFL, TFR, TBL, TBR, TML, TMR.
     //! @remarks
     //!  This order is actually a superset of what is defined by SMPTE, but when
-    //!  fileterd by actual masks like 5.1 or 7.1, it produces orderings equal
+    //!  filtered by actual masks like 5.1 or 7.1, it produces orderings equal
     //!  to what is defined in the standard.
     //!  When used with masks 2.x - 5.x (but not 6.x), it is also compatible with
     //!  the channel order from AIFF-C, which is used by default in RTP/AVP, as
@@ -79,9 +79,9 @@ enum ChannelOrder {
 //! Surround channel position.
 //! @remarks
 //!  Should be used with ChannelLayout_Surround.
-//!  Defines meaning of channel indicies for mono / stereo / surround sound.
+//!  Defines meaning of channel indices for mono / stereo / surround sound.
 //! @note
-//!  Despide mono, stereo, and 3.x technically are not surround layouts, in
+//!  Despite mono, stereo, and 3.x technically are not surround layouts, in
 //!  the code base they are considered a special case of surround.
 enum ChannelPosition {
     //! @name Front speakers.
