@@ -12,6 +12,7 @@
 #ifndef ROC_AUDIO_CHANNEL_MAPPER_MATRIX_H_
 #define ROC_AUDIO_CHANNEL_MAPPER_MATRIX_H_
 
+#include "roc_audio/channel_defs.h"
 #include "roc_audio/channel_set.h"
 #include "roc_audio/channel_tables.h"
 #include "roc_core/noncopyable.h"
@@ -52,41 +53,64 @@ public:
     //!  @p out_index and @p in_index define physical channel offsets
     //!  in audio frame, not their logical positions.
     sample_t coeff(size_t out_index, size_t in_index) const {
-        return matrix_[out_index][in_index];
+        return index_matrix_[out_index][in_index];
     }
 
 private:
+    // Mapping of physical index in frame <=> logical channel position.
+    // We create one index map for input and one for output.
     struct IndexMap {
-        ChannelSet index_set;
-        size_t index_map[ChanPos_Max];
+        ChannelSet enabled_chans;
+        size_t chan_2_index[ChanPos_Max];
+        ChannelPosition index_2_chan[ChanPos_Max];
 
         IndexMap() {
-            memset(index_map, 0, sizeof(index_map));
+            memset(chan_2_index, 0, sizeof(chan_2_index));
+            memset(index_2_chan, 0, sizeof(index_2_chan));
         }
     };
 
-    const ChannelMapTable* select_mapping_table_(const IndexMap& out_mapping,
-                                                 const IndexMap& in_mapping,
-                                                 bool& map_reversed);
+    // Mapping metrix for downmixing or upmixing from input to output.
+    // Uses logical channel positions.
+    struct ChannelMap {
+        sample_t chan_matrix[ChanPos_Max][ChanPos_Max];
 
-    void build_index_mapping_(IndexMap& mapping, const ChannelSet& ch_set);
+        ChannelMap() {
+            memset(chan_matrix, 0, sizeof(chan_matrix));
+        }
+    };
 
-    void build_table_matrix_(const ChannelMapTable& map_table,
-                             bool map_reversed,
-                             const IndexMap& out_mapping,
-                             const IndexMap& in_mapping);
+    void build_index_mapping_(IndexMap& index_map, const ChannelSet& ch_set);
 
-    void build_diagonal_matrix_(const IndexMap& out_mapping, const IndexMap& in_mapping);
+    bool build_channel_mapping_(ChannelMap& result_map,
+                                const ChannelSet& in_chans,
+                                const ChannelSet& out_chans);
 
-    void normalize_matrix_();
+    const ChannelMapTable* find_table_(const ChannelSet& in_chans,
+                                       const ChannelSet& out_chans,
+                                       bool& map_reversed);
 
-    void set_coeff_(size_t out_ch,
-                    size_t in_ch,
-                    sample_t value,
-                    const IndexMap& out_mapping,
-                    const IndexMap& in_mapping);
+    void fill_mapping_from_table_(ChannelMap& result_map,
+                                  const ChannelMapTable& map_table,
+                                  bool map_reversed,
+                                  const ChannelSet& in_chans,
+                                  const ChannelSet& out_chans);
 
-    sample_t matrix_[ChanPos_Max][ChanPos_Max];
+    void fill_fallback_mapping_(ChannelMap& result_map,
+                                const ChannelSet& in_chans,
+                                const ChannelSet& out_chans);
+
+    void normalize_mapping_(ChannelMap& chan_map);
+
+    void populate_index_matrix_(const IndexMap& in_index_map,
+                                const IndexMap& out_index_map,
+                                const ChannelMap& chan_map);
+
+    void print_index_matrix_(const IndexMap& in_index_map,
+                             const IndexMap& out_index_map,
+                             const ChannelMap& chan_map);
+
+    sample_t index_matrix_[ChanPos_Max][ChanPos_Max];
 };
 
 } // namespace audio
