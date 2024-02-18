@@ -101,18 +101,24 @@ int roc_sender_encoder_activate(roc_sender_encoder* encoder,
 
 int roc_sender_encoder_query(roc_sender_encoder* encoder,
                              roc_sender_metrics* encoder_metrics,
-                             roc_connection_metrics* conn_metrics,
-                             size_t* conn_metrics_count) {
+                             roc_connection_metrics* conn_metrics) {
     if (!encoder) {
         roc_log(LogError,
                 "roc_sender_encoder_query(): invalid arguments: encoder is null");
         return -1;
     }
 
-    if (conn_metrics && !conn_metrics_count) {
+    if (!encoder_metrics) {
         roc_log(LogError,
                 "roc_sender_encoder_query(): invalid arguments:"
-                " conn_metrics is non-null, but conn_metrics_count is null");
+                " encoder_metrics is null");
+        return -1;
+    }
+
+    if (!conn_metrics) {
+        roc_log(LogError,
+                "roc_sender_encoder_query(): invalid arguments:"
+                " conn_metrics is null");
         return -1;
     }
 
@@ -120,7 +126,7 @@ int roc_sender_encoder_query(roc_sender_encoder* encoder,
 
     if (!imp_encoder->get_metrics(api::sender_slot_metrics_to_user, encoder_metrics,
                                   api::sender_participant_metrics_to_user,
-                                  conn_metrics_count, conn_metrics)) {
+                                  conn_metrics)) {
         roc_log(LogError, "roc_sender_encoder_query(): operation failed");
         return -1;
     }

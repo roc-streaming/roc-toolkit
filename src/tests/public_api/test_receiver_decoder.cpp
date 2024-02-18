@@ -121,26 +121,14 @@ TEST(receiver_decoder, bad_args) {
 
         roc_receiver_metrics recv_metrics;
         roc_connection_metrics conn_metrics;
-        size_t conn_metrics_count = 1;
 
         // bad
-        CHECK(roc_receiver_decoder_query(NULL, &recv_metrics, &conn_metrics,
-                                         &conn_metrics_count)
-              == -1);
-        CHECK(roc_receiver_decoder_query(decoder, &recv_metrics, &conn_metrics, NULL)
-              == -1);
+        CHECK(roc_receiver_decoder_query(NULL, &recv_metrics, &conn_metrics) == -1);
+        CHECK(roc_receiver_decoder_query(decoder, NULL, &conn_metrics) == -1);
+        CHECK(roc_receiver_decoder_query(decoder, &recv_metrics, NULL) == -1);
 
         // good
-        CHECK(roc_receiver_decoder_query(decoder, &recv_metrics, NULL, NULL) == 0);
-        CHECK(
-            roc_receiver_decoder_query(decoder, NULL, &conn_metrics, &conn_metrics_count)
-            == 0);
-        CHECK(
-            roc_receiver_decoder_query(decoder, &recv_metrics, NULL, &conn_metrics_count)
-            == 0);
-        CHECK(roc_receiver_decoder_query(decoder, &recv_metrics, &conn_metrics,
-                                         &conn_metrics_count)
-              == 0);
+        CHECK(roc_receiver_decoder_query(decoder, &recv_metrics, &conn_metrics) == 0);
 
         LONGS_EQUAL(0, roc_receiver_decoder_close(decoder));
     }

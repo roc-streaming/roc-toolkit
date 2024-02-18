@@ -141,15 +141,12 @@ TEST(sender_encoder, metrics) {
     CHECK(sender_encoder.is_valid());
 
     pipeline::SenderSlotMetrics slot_metrics;
-    pipeline::SenderParticipantMetrics party_metrics[10];
-    size_t party_count = 0;
+    pipeline::SenderParticipantMetrics party_metrics;
 
-    party_count = ROC_ARRAY_SIZE(party_metrics);
     CHECK(sender_encoder.get_metrics(write_slot_metrics, &slot_metrics,
-                                     write_party_metrics, &party_count, &party_metrics));
+                                     write_party_metrics, &party_metrics));
 
     LONGS_EQUAL(0, slot_metrics.num_participants);
-    LONGS_EQUAL(0, party_count);
 }
 
 } // namespace node

@@ -225,14 +225,11 @@ TEST_GROUP(loopback_encoder_2_decoder) {
                 memset(&recv_metrics, 0, sizeof(recv_metrics));
                 roc_connection_metrics conn_metrics;
                 memset(&conn_metrics, 0, sizeof(conn_metrics));
-                size_t conn_metrics_count = 1;
 
-                CHECK(roc_receiver_decoder_query(decoder, &recv_metrics, &conn_metrics,
-                                                 &conn_metrics_count)
+                CHECK(roc_receiver_decoder_query(decoder, &recv_metrics, &conn_metrics)
                       == 0);
 
                 UNSIGNED_LONGS_EQUAL(1, recv_metrics.connection_count);
-                UNSIGNED_LONGS_EQUAL(1, conn_metrics_count);
 
                 max_recv_e2e_latency =
                     std::max(max_recv_e2e_latency, conn_metrics.e2e_latency);
@@ -242,15 +239,12 @@ TEST_GROUP(loopback_encoder_2_decoder) {
                 memset(&send_metrics, 0, sizeof(send_metrics));
                 roc_connection_metrics conn_metrics;
                 memset(&conn_metrics, 0, sizeof(conn_metrics));
-                size_t conn_metrics_count = 1;
 
-                CHECK(roc_sender_encoder_query(encoder, &send_metrics, &conn_metrics,
-                                               &conn_metrics_count)
+                CHECK(roc_sender_encoder_query(encoder, &send_metrics, &conn_metrics)
                       == 0);
 
                 if (send_metrics.connection_count != 0) {
                     UNSIGNED_LONGS_EQUAL(1, send_metrics.connection_count);
-                    UNSIGNED_LONGS_EQUAL(1, conn_metrics_count);
 
                     max_send_e2e_latency =
                         std::max(max_send_e2e_latency, conn_metrics.e2e_latency);

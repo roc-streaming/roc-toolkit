@@ -27,7 +27,6 @@ ReceiverDecoder::ReceiverDecoder(Context& context,
                 context.arena())
     , slot_(NULL)
     , processing_task_(pipeline_)
-    , party_metrics_(context.arena())
     , valid_(false) {
     roc_log(LogDebug, "receiver decoder node: initializing");
 
@@ -117,7 +116,6 @@ bool ReceiverDecoder::activate(address::Interface iface, address::Protocol proto
 bool ReceiverDecoder::get_metrics(slot_metrics_func_t slot_metrics_func,
                                   void* slot_metrics_arg,
                                   party_metrics_func_t party_metrics_func,
-                                  size_t* party_metrics_size,
                                   void* party_metrics_arg) {
     core::Mutex::Lock lock(mutex_);
 
@@ -126,17 +124,12 @@ bool ReceiverDecoder::get_metrics(slot_metrics_func_t slot_metrics_func,
     roc_panic_if(!slot_metrics_func);
     roc_panic_if(!party_metrics_func);
 
-    if (party_metrics_size) {
-        if (!party_metrics_.resize(*party_metrics_size)) {
-            roc_log(LogError,
-                    "receiver decoder node:"
-                    " can't get metrics: can't allocate buffer");
-            return false;
-        }
-    }
+    pipeline::ReceiverSlotMetrics slot_metrics;
+    pipeline::ReceiverParticipantMetrics party_metrics;
+    size_t party_metrics_size = 1;
 
-    pipeline::ReceiverLoop::Tasks::QuerySlot task(
-        slot_, slot_metrics_, party_metrics_.data(), party_metrics_size);
+    pipeline::ReceiverLoop::Tasks::QuerySlot task(slot_, slot_metrics, &party_metrics,
+                                                  &party_metrics_size);
     if (!pipeline_.schedule_and_wait(task)) {
         roc_log(LogError,
                 "receiver decoder node:"
@@ -145,14 +138,11 @@ bool ReceiverDecoder::get_metrics(slot_metrics_func_t slot_metrics_func,
     }
 
     if (slot_metrics_arg) {
-        slot_metrics_func(slot_metrics_, slot_metrics_arg);
+        slot_metrics_func(slot_metrics, slot_metrics_arg);
     }
 
-    if (party_metrics_arg && party_metrics_size) {
-        for (size_t party_index = 0; party_index < *party_metrics_size; party_index++) {
-            party_metrics_func(party_metrics_[party_index], party_index,
-                               party_metrics_arg);
-        }
+    if (party_metrics_arg) {
+        party_metrics_func(party_metrics, 0, party_metrics_arg);
     }
 
     return true;

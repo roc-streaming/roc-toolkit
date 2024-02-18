@@ -56,7 +56,6 @@ public:
     ROC_ATTR_NODISCARD bool get_metrics(slot_metrics_func_t slot_metrics_func,
                                         void* slot_metrics_arg,
                                         party_metrics_func_t party_metrics_func,
-                                        size_t* party_metrics_size,
                                         void* party_metrics_arg);
 
     //! Write packet for decoding.
@@ -88,9 +87,6 @@ private:
     pipeline::ReceiverLoop pipeline_;
     pipeline::ReceiverLoop::SlotHandle slot_;
     ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
-
-    pipeline::ReceiverSlotMetrics slot_metrics_;
-    core::Array<pipeline::ReceiverParticipantMetrics, 8> party_metrics_;
 
     bool valid_;
 };
