@@ -267,26 +267,16 @@ bool SndfileSink::has_clock() const {
 
 void SndfileSink::write(audio::Frame& frame) {
     roc_panic_if(!valid_);
-    const audio::sample_t* frame_data = frame.raw_samples();
-    size_t frame_size = frame.num_raw_samples();
-    audio::sample_t buffer_data[BUFFER_SIZE];
-    size_t buffer_pos = 0;
+  
+    audio::sample_t* frame_data = frame.raw_samples();
+    sf_count_t frame_left = (sf_count_t)frame.num_raw_samples();
 
-    while (frame_size > 0) {
-        for (; frame_size > 0; buffer_pos++) {
-            buffer_data[buffer_pos] = *frame_data;
-            frame_data++;
-            frame_size--;
-        }
+    // Write entire float buffer in one call
+    sf_count_t count = sf_write_float(file_, frame_data, frame_left);
 
-        if (buffer_pos > 0) {
-            sf_count_t write_count = sf_write_float(file_, buffer_data, (sf_count_t)BUFFER_SIZE); 
-            if ( (write_count == 0 && frame_size > 0) || sf_error(file_) != 0) {
-                // TODO(gh-183): return error instead of panic
-                roc_panic("sndfile sink: sf_write_float(): %s,", sf_strerror(file_));
-            }
-        }
-        buffer_pos = 0;
+    if (count != frame_left || sf_error(file_) != 0) {
+        // TODO(gh-183): return error instead of panic
+        roc_panic("sndfile source: sf_write_float() failed: %s", sf_strerror(file_));
     }
 }
 
