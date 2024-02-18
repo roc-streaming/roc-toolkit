@@ -43,6 +43,8 @@ public:
                                  const Config& config,
                                  core::IArena& arena);
 
+    virtual const char* name() const;
+
 private:
     bool first_created_;
 };

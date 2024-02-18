@@ -36,7 +36,11 @@ public:
                                  const char* path,
                                  const Config& config,
                                  core::IArena& arena);
+
+    virtual const char* name() const;
 };
+
+
 
 } // namespace sndio
 } // namespace roc

@@ -110,5 +110,9 @@ IDevice* SndfileBackend::open_device(DeviceType device_type,
 
     roc_panic("sndfile backend: invalid device type");
 }
+
+const char* SndfileBackend::name() const {
+  return "sndfile"; 
+}
 } // namespace sndio
 } // namespace roc
