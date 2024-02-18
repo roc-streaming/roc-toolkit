@@ -72,7 +72,8 @@ packet::PacketFactory packet_factory(arena);
 rtp::EncodingMap encoding_map(arena);
 
 SenderSlot* create_slot(SenderSink& sink) {
-    SenderSlot* slot = sink.create_slot();
+    SenderSlotConfig slot_config;
+    SenderSlot* slot = sink.create_slot(slot_config);
     CHECK(slot);
     return slot;
 }
@@ -116,8 +117,8 @@ TEST_GROUP(sender_sink) {
     address::SocketAddr dst_addr1;
     address::SocketAddr dst_addr2;
 
-    SenderConfig make_config() {
-        SenderConfig config;
+    SenderSinkConfig make_config() {
+        SenderSinkConfig config;
 
         config.input_sample_spec = input_sample_spec;
 

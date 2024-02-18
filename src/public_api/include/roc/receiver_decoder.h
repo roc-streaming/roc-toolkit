@@ -32,7 +32,9 @@ extern "C" {
  *
  * Receiver decoder is a networkless version of \ref roc_receiver. It implements the same
  * pipeline, but instead of receiving packets from network, it gets them from the user.
- * The user is responsible for carrying packets over network.
+ * The user is responsible for carrying packets over network. Unlike \ref roc_receiver,
+ * it doesn't support multiple slots and conenctions. It consumes traffic from a single
+ * remote peer.
  *
  * For detailed description of receiver pipeline, see documentation for \ref roc_receiver.
  *

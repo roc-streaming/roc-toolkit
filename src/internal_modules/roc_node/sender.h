@@ -38,7 +38,7 @@ public:
     typedef uint64_t slot_index_t;
 
     //! Initialize.
-    Sender(Context& context, const pipeline::SenderConfig& pipeline_config);
+    Sender(Context& context, const pipeline::SenderSinkConfig& pipeline_config);
 
     //! Deinitialize.
     ~Sender();

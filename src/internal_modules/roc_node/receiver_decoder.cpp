@@ -16,7 +16,7 @@ namespace roc {
 namespace node {
 
 ReceiverDecoder::ReceiverDecoder(Context& context,
-                                 const pipeline::ReceiverConfig& pipeline_config)
+                                 const pipeline::ReceiverSourceConfig& pipeline_config)
     : Node(context)
     , pipeline_(*this,
                 pipeline_config,
@@ -36,7 +36,10 @@ ReceiverDecoder::ReceiverDecoder(Context& context,
         return;
     }
 
-    pipeline::ReceiverLoop::Tasks::CreateSlot slot_task;
+    pipeline::ReceiverSlotConfig slot_config;
+    slot_config.enable_routing = false;
+
+    pipeline::ReceiverLoop::Tasks::CreateSlot slot_task(slot_config);
     if (!pipeline_.schedule_and_wait(slot_task)) {
         roc_log(LogError, "receiver decoder node: failed to create slot");
         return;

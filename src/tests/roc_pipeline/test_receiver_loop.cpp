@@ -49,7 +49,8 @@ public:
     }
 
     void start() {
-        task_create_slot_ = new ReceiverLoop::Tasks::CreateSlot();
+        ReceiverSlotConfig slot_config;
+        task_create_slot_ = new ReceiverLoop::Tasks::CreateSlot(slot_config);
         pipeline_.schedule(*task_create_slot_, *this);
     }
 
@@ -103,11 +104,11 @@ private:
 TEST_GROUP(receiver_loop) {
     test::MockScheduler scheduler;
 
-    ReceiverConfig config;
+    ReceiverSourceConfig config;
 
     void setup() {
-        config.default_session.latency.tuner_backend = audio::LatencyTunerBackend_Niq;
-        config.default_session.latency.tuner_profile = audio::LatencyTunerProfile_Intact;
+        config.session_defaults.latency.tuner_backend = audio::LatencyTunerBackend_Niq;
+        config.session_defaults.latency.tuner_profile = audio::LatencyTunerProfile_Intact;
     }
 };
 
@@ -120,7 +121,8 @@ TEST(receiver_loop, endpoints_sync) {
     ReceiverLoop::SlotHandle slot = NULL;
 
     {
-        ReceiverLoop::Tasks::CreateSlot task;
+        ReceiverSlotConfig config;
+        ReceiverLoop::Tasks::CreateSlot task(config);
         CHECK(receiver.schedule_and_wait(task));
         CHECK(task.success());
         CHECK(task.get_handle());

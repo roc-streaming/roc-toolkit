@@ -21,7 +21,7 @@ namespace roc {
 namespace pipeline {
 namespace test {
 
-class MockScheduler : public pipeline::IPipelineTaskScheduler,
+class MockScheduler : public IPipelineTaskScheduler,
                       public ctl::ControlTaskExecutor<MockScheduler> {
     class ProcessingTask : public ctl::ControlTask {
     public:
@@ -66,7 +66,7 @@ public:
         }
     }
 
-    virtual void schedule_task_processing(pipeline::PipelineLoop& pipeline,
+    virtual void schedule_task_processing(PipelineLoop& pipeline,
                                           core::nanoseconds_t deadline) {
         core::Mutex::Lock lock(mutex_);
         if (!task_) {
@@ -75,7 +75,7 @@ public:
         queue_.schedule_at(*task_, deadline, *this, NULL);
     }
 
-    virtual void cancel_task_processing(pipeline::PipelineLoop&) {
+    virtual void cancel_task_processing(PipelineLoop&) {
         core::Mutex::Lock lock(mutex_);
         if (task_) {
             queue_.async_cancel(*task_);

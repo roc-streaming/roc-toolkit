@@ -42,7 +42,7 @@ namespace pipeline {
 class SenderSink : public sndio::ISink, public core::NonCopyable<> {
 public:
     //! Initialize.
-    SenderSink(const SenderConfig& config,
+    SenderSink(const SenderSinkConfig& sink_config,
                const rtp::EncodingMap& encoding_map,
                packet::PacketFactory& packet_factory,
                core::BufferFactory<uint8_t>& byte_buffer_factory,
@@ -53,7 +53,7 @@ public:
     bool is_valid() const;
 
     //! Create slot.
-    SenderSlot* create_slot();
+    SenderSlot* create_slot(const SenderSlotConfig& slot_config);
 
     //! Delete slot.
     void delete_slot(SenderSlot* slot);
@@ -108,7 +108,7 @@ public:
     virtual void write(audio::Frame& frame);
 
 private:
-    SenderConfig config_;
+    SenderSinkConfig sink_config_;
 
     const rtp::EncodingMap& encoding_map_;
 

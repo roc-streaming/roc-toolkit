@@ -42,7 +42,7 @@ int roc_sender_encoder_open(roc_context* context,
         return -1;
     }
 
-    pipeline::SenderConfig imp_config;
+    pipeline::SenderSinkConfig imp_config;
     if (!api::sender_config_from_user(*imp_context, imp_config, *config)) {
         roc_log(LogError, "roc_sender_encoder_open(): invalid arguments: bad config");
         return -1;

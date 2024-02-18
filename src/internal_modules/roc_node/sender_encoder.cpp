@@ -17,7 +17,7 @@ namespace roc {
 namespace node {
 
 SenderEncoder::SenderEncoder(Context& context,
-                             const pipeline::SenderConfig& pipeline_config)
+                             const pipeline::SenderSinkConfig& pipeline_config)
     : Node(context)
     , pipeline_(*this,
                 pipeline_config,
@@ -37,7 +37,9 @@ SenderEncoder::SenderEncoder(Context& context,
         return;
     }
 
-    pipeline::SenderLoop::Tasks::CreateSlot slot_task;
+    pipeline::SenderSlotConfig slot_config;
+
+    pipeline::SenderLoop::Tasks::CreateSlot slot_task(slot_config);
     if (!pipeline_.schedule_and_wait(slot_task)) {
         roc_log(LogError, "sender encoder node: failed to create slot");
         return;

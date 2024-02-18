@@ -30,7 +30,8 @@ namespace node {
 class ReceiverDecoder : public Node, private pipeline::IPipelineTaskScheduler {
 public:
     //! Initialize.
-    ReceiverDecoder(Context& context, const pipeline::ReceiverConfig& pipeline_config);
+    ReceiverDecoder(Context& context,
+                    const pipeline::ReceiverSourceConfig& pipeline_config);
 
     //! Deinitialize.
     ~ReceiverDecoder();

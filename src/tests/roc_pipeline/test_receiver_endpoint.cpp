@@ -57,8 +57,9 @@ TEST(receiver_endpoint, valid) {
     audio::Mixer mixer(sample_buffer_factory, DefaultSampleSpec, false);
 
     StateTracker state_tracker;
-    ReceiverConfig receiver_config;
-    ReceiverSessionGroup session_group(receiver_config, state_tracker, mixer,
+    ReceiverSourceConfig source_config;
+    ReceiverSlotConfig slot_config;
+    ReceiverSessionGroup session_group(source_config, slot_config, state_tracker, mixer,
                                        encoding_map, packet_factory, byte_buffer_factory,
                                        sample_buffer_factory, arena);
 
@@ -71,8 +72,9 @@ TEST(receiver_endpoint, invalid_proto) {
     audio::Mixer mixer(sample_buffer_factory, DefaultSampleSpec, false);
 
     StateTracker state_tracker;
-    ReceiverConfig receiver_config;
-    ReceiverSessionGroup session_group(receiver_config, state_tracker, mixer,
+    ReceiverSourceConfig source_config;
+    ReceiverSlotConfig slot_config;
+    ReceiverSessionGroup session_group(source_config, slot_config, state_tracker, mixer,
                                        encoding_map, packet_factory, byte_buffer_factory,
                                        sample_buffer_factory, arena);
 
@@ -95,10 +97,11 @@ TEST(receiver_endpoint, no_memory) {
         audio::Mixer mixer(sample_buffer_factory, DefaultSampleSpec, false);
 
         StateTracker state_tracker;
-        ReceiverConfig receiver_config;
+        ReceiverSourceConfig source_config;
+        ReceiverSlotConfig slot_config;
         ReceiverSessionGroup session_group(
-            receiver_config, state_tracker, mixer, encoding_map, packet_factory,
-            byte_buffer_factory, sample_buffer_factory, nomem_arena);
+            source_config, slot_config, state_tracker, mixer, encoding_map,
+            packet_factory, byte_buffer_factory, sample_buffer_factory, nomem_arena);
 
         ReceiverEndpoint endpoint(protos[n], state_tracker, session_group, encoding_map,
                                   address::SocketAddr(), NULL, nomem_arena);

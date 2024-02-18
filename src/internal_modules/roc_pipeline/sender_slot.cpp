@@ -14,7 +14,8 @@
 namespace roc {
 namespace pipeline {
 
-SenderSlot::SenderSlot(const SenderConfig& config,
+SenderSlot::SenderSlot(const SenderSinkConfig& sink_config,
+                       const SenderSlotConfig& slot_config,
                        StateTracker& state_tracker,
                        const rtp::EncodingMap& encoding_map,
                        audio::Fanout& fanout,
@@ -23,10 +24,10 @@ SenderSlot::SenderSlot(const SenderConfig& config,
                        core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                        core::IArena& arena)
     : core::RefCounted<SenderSlot, core::ArenaAllocation>(arena)
-    , config_(config)
+    , sink_config_(sink_config)
     , fanout_(fanout)
     , state_tracker_(state_tracker)
-    , session_(config,
+    , session_(sink_config,
                encoding_map,
                packet_factory,
                byte_buffer_factory,
@@ -93,7 +94,8 @@ SenderEndpoint* SenderSlot::add_endpoint(address::Interface iface,
     case address::Iface_AudioSource:
     case address::Iface_AudioRepair:
         if (source_endpoint_
-            && (repair_endpoint_ || config_.fec_encoder.scheme == packet::FEC_None)) {
+            && (repair_endpoint_
+                || sink_config_.fec_encoder.scheme == packet::FEC_None)) {
             if (!session_.create_transport_pipeline(source_endpoint_.get(),
                                                     repair_endpoint_.get())) {
                 return NULL;
@@ -177,7 +179,7 @@ SenderSlot::create_source_endpoint_(address::Protocol proto,
         }
     }
 
-    if (!validate_endpoint_and_pipeline_consistency(config_.fec_encoder.scheme,
+    if (!validate_endpoint_and_pipeline_consistency(sink_config_.fec_encoder.scheme,
                                                     address::Iface_AudioSource, proto)) {
         return NULL;
     }
@@ -212,7 +214,7 @@ SenderSlot::create_repair_endpoint_(address::Protocol proto,
         }
     }
 
-    if (!validate_endpoint_and_pipeline_consistency(config_.fec_encoder.scheme,
+    if (!validate_endpoint_and_pipeline_consistency(sink_config_.fec_encoder.scheme,
                                                     address::Iface_AudioRepair, proto)) {
         return NULL;
     }

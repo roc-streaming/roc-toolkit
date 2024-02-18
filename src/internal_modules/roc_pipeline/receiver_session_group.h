@@ -46,7 +46,8 @@ namespace pipeline {
 class ReceiverSessionGroup : public core::NonCopyable<>, private rtcp::IParticipant {
 public:
     //! Initialize.
-    ReceiverSessionGroup(const ReceiverConfig& receiver_config,
+    ReceiverSessionGroup(const ReceiverSourceConfig& source_config,
+                         const ReceiverSlotConfig& slot_config,
                          StateTracker& state_tracker,
                          audio::Mixer& mixer,
                          const rtp::EncodingMap& encoding_map,
@@ -131,18 +132,18 @@ private:
 
     ReceiverSessionConfig make_session_config_(const packet::PacketPtr& packet) const;
 
-    core::IArena& arena_;
+    const ReceiverSourceConfig source_config_;
+    const ReceiverSlotConfig slot_config_;
 
-    packet::PacketFactory& packet_factory_;
-    core::BufferFactory<uint8_t>& byte_buffer_factory_;
-    core::BufferFactory<audio::sample_t>& sample_buffer_factory_;
+    StateTracker& state_tracker_;
+    audio::Mixer& mixer_;
 
     const rtp::EncodingMap& encoding_map_;
 
-    audio::Mixer& mixer_;
-
-    StateTracker& state_tracker_;
-    const ReceiverConfig& receiver_config_;
+    core::IArena& arena_;
+    packet::PacketFactory& packet_factory_;
+    core::BufferFactory<uint8_t>& byte_buffer_factory_;
+    core::BufferFactory<audio::sample_t>& sample_buffer_factory_;
 
     core::Optional<rtp::Identity> identity_;
 

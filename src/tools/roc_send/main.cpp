@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
         break;
     }
 
-    pipeline::SenderConfig sender_config;
+    pipeline::SenderSinkConfig sender_config;
 
     sndio::Config io_config;
     io_config.sample_spec.set_sample_format(

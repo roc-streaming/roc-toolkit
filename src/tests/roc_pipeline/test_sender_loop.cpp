@@ -49,7 +49,8 @@ public:
     }
 
     void start() {
-        task_create_slot_ = new SenderLoop::Tasks::CreateSlot();
+        SenderSlotConfig slot_config;
+        task_create_slot_ = new SenderLoop::Tasks::CreateSlot(slot_config);
         pipeline_.schedule(*task_create_slot_, *this);
     }
 
@@ -107,7 +108,7 @@ private:
 TEST_GROUP(sender_loop) {
     test::MockScheduler scheduler;
 
-    SenderConfig config;
+    SenderSinkConfig config;
 
     void setup() {
         config.latency.tuner_backend = audio::LatencyTunerBackend_Niq;
@@ -126,7 +127,8 @@ TEST(sender_loop, endpoints_sync) {
     packet::Queue outbound_writer;
 
     {
-        SenderLoop::Tasks::CreateSlot task;
+        SenderSlotConfig config;
+        SenderLoop::Tasks::CreateSlot task(config);
         CHECK(sender.schedule_and_wait(task));
         CHECK(task.success());
         CHECK(task.get_handle());

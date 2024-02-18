@@ -33,7 +33,7 @@ namespace node {
 class SenderEncoder : public Node, private pipeline::IPipelineTaskScheduler {
 public:
     //! Initialize.
-    SenderEncoder(Context& context, const pipeline::SenderConfig& pipeline_config);
+    SenderEncoder(Context& context, const pipeline::SenderSinkConfig& pipeline_config);
 
     //! Deinitialize.
     ~SenderEncoder();

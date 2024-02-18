@@ -24,11 +24,11 @@ namespace api {
 bool context_config_from_user(node::ContextConfig& out, const roc_context_config& in);
 
 bool sender_config_from_user(node::Context& context,
-                             pipeline::SenderConfig& out,
+                             pipeline::SenderSinkConfig& out,
                              const roc_sender_config& in);
 
 bool receiver_config_from_user(node::Context& context,
-                               pipeline::ReceiverConfig& out,
+                               pipeline::ReceiverSourceConfig& out,
                                const roc_receiver_config& in);
 
 bool interface_config_from_user(netio::UdpConfig& out, const roc_interface_config& in);

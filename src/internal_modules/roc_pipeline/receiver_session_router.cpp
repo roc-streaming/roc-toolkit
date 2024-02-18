@@ -45,9 +45,7 @@ ReceiverSessionRouter::find_by_source(packet::stream_source_t source_id) {
 
 core::SharedPtr<ReceiverSession>
 ReceiverSessionRouter::find_by_address(const address::SocketAddr& source_addr) {
-    if (!source_addr) {
-        return NULL;
-    }
+    roc_panic_if(!source_addr);
 
     AddressNode* node = address_route_map_.find(source_addr);
     if (!node) {

@@ -227,10 +227,10 @@ private:
     size_t counter_;
 };
 
-SenderConfig make_sender_config(int flags,
-                                audio::ChannelMask frame_channels,
-                                audio::ChannelMask packet_channels) {
-    SenderConfig config;
+SenderSinkConfig make_sender_config(int flags,
+                                    audio::ChannelMask frame_channels,
+                                    audio::ChannelMask packet_channels) {
+    SenderSinkConfig config;
 
     config.input_sample_spec.set_sample_rate(SampleRate);
     config.input_sample_spec.set_sample_format(audio::SampleFormat_Pcm);
@@ -274,9 +274,9 @@ SenderConfig make_sender_config(int flags,
     return config;
 }
 
-ReceiverConfig make_receiver_config(audio::ChannelMask frame_channels,
-                                    audio::ChannelMask packet_channels) {
-    ReceiverConfig config;
+ReceiverSourceConfig make_receiver_config(audio::ChannelMask frame_channels,
+                                          audio::ChannelMask packet_channels) {
+    ReceiverSourceConfig config;
 
     config.common.output_sample_spec.set_sample_rate(SampleRate);
     config.common.output_sample_spec.set_sample_format(audio::SampleFormat_Pcm);
@@ -290,10 +290,10 @@ ReceiverConfig make_receiver_config(audio::ChannelMask frame_channels,
     config.common.rtcp.report_interval = SamplesPerPacket * core::Second / SampleRate;
     config.common.rtcp.inactivity_timeout = Timeout * core::Second / SampleRate;
 
-    config.default_session.latency.tuner_backend = audio::LatencyTunerBackend_Niq;
-    config.default_session.latency.tuner_profile = audio::LatencyTunerProfile_Intact;
-    config.default_session.latency.target_latency = Latency * core::Second / SampleRate;
-    config.default_session.watchdog.no_playback_timeout =
+    config.session_defaults.latency.tuner_backend = audio::LatencyTunerBackend_Niq;
+    config.session_defaults.latency.tuner_profile = audio::LatencyTunerProfile_Intact;
+    config.session_defaults.latency.target_latency = Latency * core::Second / SampleRate;
+    config.session_defaults.watchdog.no_playback_timeout =
         Timeout * core::Second / SampleRate;
 
     return config;
@@ -420,14 +420,15 @@ void send_receive(int flags,
 
     address::SocketAddr sender_addr = test::new_address(44);
 
-    SenderConfig sender_config =
+    SenderSinkConfig sender_config =
         make_sender_config(flags, frame_channels, packet_channels);
 
     SenderSink sender(sender_config, encoding_map, packet_factory, byte_buffer_factory,
                       sample_buffer_factory, arena);
     CHECK(sender.is_valid());
 
-    SenderSlot* sender_slot = sender.create_slot();
+    SenderSlotConfig sender_slot_config;
+    SenderSlot* sender_slot = sender.create_slot(sender_slot_config);
     CHECK(sender_slot);
 
     SenderEndpoint* sender_source_endpoint = NULL;
@@ -456,14 +457,15 @@ void send_receive(int flags,
         sender_control_endpoint_writer = sender_control_endpoint->inbound_writer();
     }
 
-    ReceiverConfig receiver_config =
+    ReceiverSourceConfig receiver_config =
         make_receiver_config(frame_channels, packet_channels);
 
     ReceiverSource receiver(receiver_config, encoding_map, packet_factory,
                             byte_buffer_factory, sample_buffer_factory, arena);
     CHECK(receiver.is_valid());
 
-    ReceiverSlot* receiver_slot = receiver.create_slot();
+    ReceiverSlotConfig receiver_slot_config;
+    ReceiverSlot* receiver_slot = receiver.create_slot(receiver_slot_config);
     CHECK(receiver_slot);
 
     ReceiverEndpoint* receiver_source_endpoint = NULL;

@@ -56,6 +56,7 @@ public:
         bool (SenderLoop::*func_)(Task&); //!< Task implementation method.
 
         SenderSlot* slot_;                        //!< Slot.
+        SenderSlotConfig slot_config_;            //!< Slot config.
         address::Interface iface_;                //!< Interface.
         address::Protocol proto_;                 //!< Protocol.
         address::SocketAddr outbound_address_;    //!< Destination address.
@@ -73,7 +74,7 @@ public:
         class CreateSlot : public Task {
         public:
             //! Set task parameters.
-            CreateSlot();
+            CreateSlot(const SenderSlotConfig& slot_config);
 
             //! Get created slot handle.
             SlotHandle get_handle() const;
@@ -120,7 +121,7 @@ public:
 
     //! Initialize.
     SenderLoop(IPipelineTaskScheduler& scheduler,
-               const SenderConfig& config,
+               const SenderSinkConfig& sink_config,
                const rtp::EncodingMap& encoding_map,
                packet::PacketFactory& packet_factory,
                core::BufferFactory<uint8_t>& byte_buffer_factory,

@@ -17,7 +17,8 @@ namespace roc {
 namespace pipeline {
 
 ReceiverSessionGroup::ReceiverSessionGroup(
-    const ReceiverConfig& receiver_config,
+    const ReceiverSourceConfig& source_config,
+    const ReceiverSlotConfig& slot_config,
     StateTracker& state_tracker,
     audio::Mixer& mixer,
     const rtp::EncodingMap& encoding_map,
@@ -25,14 +26,15 @@ ReceiverSessionGroup::ReceiverSessionGroup(
     core::BufferFactory<uint8_t>& byte_buffer_factory,
     core::BufferFactory<audio::sample_t>& sample_buffer_factory,
     core::IArena& arena)
-    : arena_(arena)
+    : source_config_(source_config)
+    , slot_config_(slot_config)
+    , state_tracker_(state_tracker)
+    , mixer_(mixer)
+    , encoding_map_(encoding_map)
+    , arena_(arena)
     , packet_factory_(packet_factory)
     , byte_buffer_factory_(byte_buffer_factory)
     , sample_buffer_factory_(sample_buffer_factory)
-    , encoding_map_(encoding_map)
-    , mixer_(mixer)
-    , state_tracker_(state_tracker)
-    , receiver_config_(receiver_config)
     , session_router_(arena)
     , valid_(false) {
     identity_.reset(new (identity_) rtp::Identity());
@@ -62,7 +64,7 @@ bool ReceiverSessionGroup::create_control_pipeline(ReceiverEndpoint* control_end
     rtcp_inbound_addr_ = control_endpoint->inbound_address();
 
     rtcp_communicator_.reset(new (rtcp_communicator_) rtcp::Communicator(
-        receiver_config_.common.rtcp, *this, *control_endpoint->outbound_writer(),
+        source_config_.common.rtcp, *this, *control_endpoint->outbound_writer(),
         *control_endpoint->outbound_composer(), packet_factory_, byte_buffer_factory_,
         arena_));
     if (!rtcp_communicator_ || !rtcp_communicator_->is_valid()) {
@@ -281,28 +283,38 @@ void ReceiverSessionGroup::halt_recv_stream(packet::stream_source_t send_source_
 
 status::StatusCode
 ReceiverSessionGroup::route_transport_packet_(const packet::PacketPtr& packet) {
-    // Find route by packet SSRC.
     core::SharedPtr<ReceiverSession> sess;
 
-    if (packet->has_source_id()) {
-        sess = session_router_.find_by_source(packet->source_id());
-    }
+    if (slot_config_.enable_routing) {
+        // Find route by packet SSRC.
+        if (packet->has_source_id()) {
+            sess = session_router_.find_by_source(packet->source_id());
+        }
 
-    if (!sess && packet->udp()) {
-        // If there is no route found, fallback to finding route by *source* address.
-        //
-        // We assume that packets sent from the same remote source address belong to the
-        // same session.
-        //
-        // This does not conform to RFC 3550 (it mandates routing only by *destination*
-        // address) and is not guaranteed to work, but it works in simple cases, assuming
-        // that sender uses single port to send all packets (which is often the case) and
-        // there are no retranslators involved (which is rarely the case).
-        //
-        // If we have functioning RTCP or RTSP, this fallback logic isn't used because
-        // we'll either find route based on SSRC, or will use separate destination
-        // addresses (and hence separate session groups) for each sender.
-        sess = session_router_.find_by_address(packet->udp()->src_addr);
+        if (!sess && packet->udp()) {
+            // If there is no route found, fallback to finding route by *source* address.
+            //
+            // We assume that packets sent from the same remote source address belong to
+            // the same session.
+            //
+            // This does not conform to RFC 3550 (it mandates routing only by
+            // *destination* address) and is not guaranteed to work, but it works in
+            // simple cases, assuming that sender uses single port to send all packets
+            // (which is often the case) and there are no retranslators involved (which is
+            // rarely the case).
+            //
+            // If we have functioning RTCP or RTSP, this fallback logic isn't used because
+            // we'll either find route based on SSRC, or will use separate destination
+            // addresses (and hence separate session groups) for each sender.
+            sess = session_router_.find_by_address(packet->udp()->src_addr);
+        }
+    } else {
+        // If routing is disabled, we can only have zero or one session.
+        roc_panic_if_not(sessions_.size() == 0 || sessions_.size() == 1);
+
+        if (!sessions_.is_empty()) {
+            sess = sessions_.front();
+        }
     }
 
     if (sess) {
@@ -368,7 +380,7 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
             address::socket_addr_to_str(dst_address).c_str());
 
     core::SharedPtr<ReceiverSession> sess = new (arena_) ReceiverSession(
-        sess_config, receiver_config_.common, encoding_map_, packet_factory_,
+        sess_config, source_config_.common, encoding_map_, packet_factory_,
         byte_buffer_factory_, sample_buffer_factory_, arena_);
 
     if (!sess || !sess->is_valid()) {
@@ -424,7 +436,7 @@ void ReceiverSessionGroup::remove_all_sessions_() {
 
 ReceiverSessionConfig
 ReceiverSessionGroup::make_session_config_(const packet::PacketPtr& packet) const {
-    ReceiverSessionConfig config = receiver_config_.default_session;
+    ReceiverSessionConfig config = source_config_.session_defaults;
 
     packet::RTP* rtp = packet->rtp();
     if (rtp) {

@@ -32,13 +32,13 @@ TEST(context, reference_counting) {
     CHECK(context.getref() == 0);
 
     {
-        pipeline::SenderConfig sender_config;
+        pipeline::SenderSinkConfig sender_config;
         Sender sender(context, sender_config);
 
         CHECK(context.getref() == 1);
 
         {
-            pipeline::ReceiverConfig receiver_config;
+            pipeline::ReceiverSourceConfig receiver_config;
             Receiver receiver(context, receiver_config);
 
             CHECK(context.getref() == 2);

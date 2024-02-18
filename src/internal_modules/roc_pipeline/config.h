@@ -54,10 +54,25 @@ const core::nanoseconds_t DefaultPacketLength = 5 * core::Millisecond;
 //!  networks allow lower latencies, and some networks require higher.
 const core::nanoseconds_t DefaultLatency = 200 * core::Millisecond;
 
-//! Sender parameters.
-struct SenderConfig {
+//! Parameters of sender sink and sender session.
+struct SenderSinkConfig {
+    //! Input sample spec
+    audio::SampleSpec input_sample_spec;
+
     //! Task processing parameters.
     PipelineLoopConfig pipeline_loop;
+
+    //! RTP payload type for audio packets.
+    unsigned payload_type;
+
+    //! Packet length, in nanoseconds.
+    core::nanoseconds_t packet_length;
+
+    //! FEC writer parameters.
+    fec::WriterConfig fec_writer;
+
+    //! FEC encoder parameters.
+    fec::CodecConfig fec_encoder;
 
     //! Latency parameters.
     audio::LatencyConfig latency;
@@ -68,23 +83,11 @@ struct SenderConfig {
     //! Resampler parameters.
     audio::ResamplerConfig resampler;
 
-    //! FEC writer parameters.
-    fec::WriterConfig fec_writer;
+    //! Profiler configuration.
+    audio::ProfilerConfig profiler;
 
-    //! FEC encoder parameters.
-    fec::CodecConfig fec_encoder;
-
-    //! Input sample spec
-    audio::SampleSpec input_sample_spec;
-
-    //! Packet length, in nanoseconds.
-    core::nanoseconds_t packet_length;
-
-    //! RTP payload type for audio packets.
-    unsigned payload_type;
-
-    //! Interleave packets.
-    bool enable_interleaving;
+    //! RTCP config.
+    rtcp::Config rtcp;
 
     //! Constrain receiver speed using a CPU timer according to the sample rate.
     bool enable_timing;
@@ -98,22 +101,56 @@ struct SenderConfig {
     //! Profile moving average of frames being written.
     bool enable_profiling;
 
-    //! Profiler configuration.
-    audio::ProfilerConfig profiler;
-
-    //! RTCP config.
-    rtcp::Config rtcp;
+    //! Interleave packets.
+    bool enable_interleaving;
 
     //! Initialize config.
-    SenderConfig();
+    SenderSinkConfig();
 
     //! Fill unset values with defaults.
     void deduce_defaults();
 };
 
-//! Receiver session parameters.
-//! @remarks
-//!  Defines per-session receiver parameters.
+//! Parameters of sender slot.
+struct SenderSlotConfig {
+    //! Initialize config.
+    SenderSlotConfig();
+
+    //! Fill unset values with defaults.
+    void deduce_defaults();
+};
+
+//! Parameters common for all receiver sessions.
+struct ReceiverCommonConfig {
+    //! Output sample spec.
+    audio::SampleSpec output_sample_spec;
+
+    //! Profiler configuration.
+    audio::ProfilerConfig profiler;
+
+    //! RTP filter parameters.
+    rtp::FilterConfig rtp_filter;
+
+    //! RTCP config.
+    rtcp::Config rtcp;
+
+    //! Constrain receiver speed using a CPU timer according to the sample rate.
+    bool enable_timing;
+
+    //! Automatically invoke reclock before returning frames with invocation time.
+    bool enable_auto_reclock;
+
+    //! Profile moving average of frames being written.
+    bool enable_profiling;
+
+    //! Initialize config.
+    ReceiverCommonConfig();
+
+    //! Fill unset values with defaults.
+    void deduce_defaults();
+};
+
+//! Parameters of receiver session.
 struct ReceiverSessionConfig {
     //! Packet payload type.
     unsigned int payload_type;
@@ -133,6 +170,9 @@ struct ReceiverSessionConfig {
     //! Resampler parameters.
     audio::ResamplerConfig resampler;
 
+    //! Insert weird beeps instead of silence on packet loss.
+    bool enable_beeping;
+
     //! Initialize config.
     ReceiverSessionConfig();
 
@@ -140,54 +180,31 @@ struct ReceiverSessionConfig {
     void deduce_defaults();
 };
 
-//! Receiver common parameters.
-//! @remarks
-//!  Defines receiver parameters common for all sessions.
-struct ReceiverCommonConfig {
-    //! Output sample spec
-    audio::SampleSpec output_sample_spec;
+//! Parameters of receiver session.
+struct ReceiverSourceConfig {
+    //! Task processing parameters.
+    PipelineLoopConfig pipeline_loop;
 
-    //! Constrain receiver speed using a CPU timer according to the sample rate.
-    bool enable_timing;
+    //! Parameters common for all sessions.
+    ReceiverCommonConfig common;
 
-    //! Automatically invoke reclock before returning frames with invocation time.
-    bool enable_auto_reclock;
-
-    //! Profile moving average of frames being written.
-    bool enable_profiling;
-
-    //! Profiler configuration.
-    audio::ProfilerConfig profiler;
-
-    //! RTP filter parameters.
-    rtp::FilterConfig rtp_filter;
-
-    //! RTCP config.
-    rtcp::Config rtcp;
-
-    //! Insert weird beeps instead of silence on packet loss.
-    bool enable_beeping;
+    //! Default parameters for a session.
+    ReceiverSessionConfig session_defaults;
 
     //! Initialize config.
-    ReceiverCommonConfig();
+    ReceiverSourceConfig();
 
     //! Fill unset values with defaults.
     void deduce_defaults();
 };
 
-//! Receiver parameters.
-struct ReceiverConfig {
-    //! Task processing parameters.
-    PipelineLoopConfig pipeline_loop;
-
-    //! Default parameters for receiver session.
-    ReceiverSessionConfig default_session;
-
-    //! Parameters common for all sessions.
-    ReceiverCommonConfig common;
+//! Parameters of receiver slot.
+struct ReceiverSlotConfig {
+    //! Enable routing packets to multiple sessions within slot.
+    bool enable_routing;
 
     //! Initialize config.
-    ReceiverConfig();
+    ReceiverSlotConfig();
 
     //! Fill unset values with defaults.
     void deduce_defaults();
@@ -195,20 +212,20 @@ struct ReceiverConfig {
 
 //! Converter parameters.
 struct TranscoderConfig {
-    //! Resampler parameters.
-    audio::ResamplerConfig resampler;
-
     //! Input sample spec
     audio::SampleSpec input_sample_spec;
 
     //! Output sample spec
     audio::SampleSpec output_sample_spec;
 
-    //! Profile moving average of frames being written.
-    bool enable_profiling;
+    //! Resampler parameters.
+    audio::ResamplerConfig resampler;
 
     //! Profiler configuration.
     audio::ProfilerConfig profiler;
+
+    //! Profile moving average of frames being written.
+    bool enable_profiling;
 
     //! Initialize config.
     TranscoderConfig();

@@ -39,7 +39,8 @@ class SenderSlot : public core::RefCounted<SenderSlot, core::ArenaAllocation>,
                    public core::ListNode {
 public:
     //! Initialize.
-    SenderSlot(const SenderConfig& config,
+    SenderSlot(const SenderSinkConfig& sink_config,
+               const SenderSlotConfig& slot_config,
                StateTracker& state_tracker,
                const rtp::EncodingMap& encoding_map,
                audio::Fanout& fanout,
@@ -81,7 +82,7 @@ private:
                                              const address::SocketAddr& outbound_address,
                                              packet::IWriter& outbound_writer);
 
-    const SenderConfig& config_;
+    const SenderSinkConfig sink_config_;
 
     audio::Fanout& fanout_;
 

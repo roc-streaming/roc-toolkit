@@ -37,7 +37,7 @@ public:
     typedef uint64_t slot_index_t;
 
     //! Initialize.
-    Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_config);
+    Receiver(Context& context, const pipeline::ReceiverSourceConfig& pipeline_config);
 
     //! Deinitialize.
     ~Receiver();

@@ -30,9 +30,11 @@ extern "C" {
  * Sender encoder gets an audio stream from the user, encodes it into network packets, and
  * provides encoded packets to the user.
  *
- * Sender encoder is a networkless version of \ref roc_sender. It implements the same
- * pipeline, but instead of sending packets to network, it returns them to the user. The
- * user is responsible for carrying packets over network.
+ * Sender encoder is a networkless single-stream version of \ref roc_sender. It implements
+ * the same pipeline, but instead of sending packets to network, it returns them to the
+ * user. The user is responsible for carrying packets over network. Unlike \ref
+ * roc_sender, it doesn't support multiple slots and connections. It produces traffic for
+ * a single remote peer.
  *
  * For detailed description of sender pipeline, see documentation for \ref roc_sender.
  *

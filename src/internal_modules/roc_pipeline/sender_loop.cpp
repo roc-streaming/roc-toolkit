@@ -28,8 +28,9 @@ SenderLoop::Task::Task()
     , party_count_(NULL) {
 }
 
-SenderLoop::Tasks::CreateSlot::CreateSlot() {
+SenderLoop::Tasks::CreateSlot::CreateSlot(const SenderSlotConfig& slot_config) {
     func_ = &SenderLoop::task_create_slot_;
+    slot_config_ = slot_config;
 }
 
 SenderLoop::SlotHandle SenderLoop::Tasks::CreateSlot::get_handle() const {
@@ -86,30 +87,31 @@ packet::IWriter* SenderLoop::Tasks::AddEndpoint::get_inbound_writer() const {
 }
 
 SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
-                       const SenderConfig& config,
+                       const SenderSinkConfig& sink_config,
                        const rtp::EncodingMap& encoding_map,
                        packet::PacketFactory& packet_factory,
                        core::BufferFactory<uint8_t>& byte_buffer_factory,
                        core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                        core::IArena& arena)
-    : PipelineLoop(scheduler, config.pipeline_loop, config.input_sample_spec)
-    , sink_(config,
+    : PipelineLoop(scheduler, sink_config.pipeline_loop, sink_config.input_sample_spec)
+    , sink_(sink_config,
             encoding_map,
             packet_factory,
             byte_buffer_factory,
             sample_buffer_factory,
             arena)
     , ticker_ts_(0)
-    , auto_duration_(config.enable_auto_duration)
-    , auto_cts_(config.enable_auto_cts)
-    , sample_spec_(config.input_sample_spec)
+    , auto_duration_(sink_config.enable_auto_duration)
+    , auto_cts_(sink_config.enable_auto_cts)
+    , sample_spec_(sink_config.input_sample_spec)
     , valid_(false) {
     if (!sink_.is_valid()) {
         return;
     }
 
-    if (config.enable_timing) {
-        ticker_.reset(new (ticker_) core::Ticker(config.input_sample_spec.sample_rate()));
+    if (sink_config.enable_timing) {
+        ticker_.reset(new (ticker_)
+                          core::Ticker(sink_config.input_sample_spec.sample_rate()));
         if (!ticker_) {
             return;
         }
@@ -267,7 +269,7 @@ bool SenderLoop::process_task_imp(PipelineTask& basic_task) {
 }
 
 bool SenderLoop::task_create_slot_(Task& task) {
-    task.slot_ = sink_.create_slot();
+    task.slot_ = sink_.create_slot(task.slot_config_);
     return (bool)task.slot_;
 }
 

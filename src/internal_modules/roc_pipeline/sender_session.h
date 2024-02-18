@@ -52,7 +52,7 @@ namespace pipeline {
 class SenderSession : public core::NonCopyable<>, private rtcp::IParticipant {
 public:
     //! Initialize.
-    SenderSession(const SenderConfig& config,
+    SenderSession(const SenderSinkConfig& sink_config,
                   const rtp::EncodingMap& encoding_map,
                   packet::PacketFactory& packet_factory,
                   core::BufferFactory<uint8_t>& byte_buffer_factory,
@@ -126,7 +126,7 @@ private:
 
     core::IArena& arena_;
 
-    const SenderConfig& config_;
+    const SenderSinkConfig sink_config_;
 
     const rtp::EncodingMap& encoding_map_;
 

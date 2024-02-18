@@ -37,7 +37,7 @@ void write_party_metrics(const pipeline::SenderParticipantMetrics& party_metrics
 
 TEST_GROUP(sender_encoder) {
     ContextConfig context_config;
-    pipeline::SenderConfig sender_config;
+    pipeline::SenderSinkConfig sender_config;
 };
 
 TEST(sender_encoder, sink) {

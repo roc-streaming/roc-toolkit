@@ -14,49 +14,50 @@ namespace roc {
 namespace pipeline {
 
 ReceiverSource::ReceiverSource(
-    const ReceiverConfig& config,
+    const ReceiverSourceConfig& source_config,
     const rtp::EncodingMap& encoding_map,
     packet::PacketFactory& packet_factory,
     core::BufferFactory<uint8_t>& byte_buffer_factory,
     core::BufferFactory<audio::sample_t>& sample_buffer_factory,
     core::IArena& arena)
-    : encoding_map_(encoding_map)
+    : source_config_(source_config)
+    , encoding_map_(encoding_map)
     , packet_factory_(packet_factory)
     , byte_buffer_factory_(byte_buffer_factory)
     , sample_buffer_factory_(sample_buffer_factory)
     , arena_(arena)
     , frame_reader_(NULL)
-    , config_(config)
     , valid_(false) {
-    config_.deduce_defaults();
+    source_config_.deduce_defaults();
 
     audio::IFrameReader* frm_reader = NULL;
 
-    mixer_.reset(new (mixer_) audio::Mixer(sample_buffer_factory,
-                                           config.common.output_sample_spec, true));
+    mixer_.reset(new (mixer_) audio::Mixer(
+        sample_buffer_factory, source_config.common.output_sample_spec, true));
     if (!mixer_ || !mixer_->is_valid()) {
         return;
     }
     frm_reader = mixer_.get();
 
-    if (!config_.common.output_sample_spec.is_raw()) {
-        const audio::SampleSpec in_spec(config_.common.output_sample_spec.sample_rate(),
-                                        audio::Sample_RawFormat,
-                                        config_.common.output_sample_spec.channel_set());
+    if (!source_config_.common.output_sample_spec.is_raw()) {
+        const audio::SampleSpec in_spec(
+            source_config_.common.output_sample_spec.sample_rate(),
+            audio::Sample_RawFormat,
+            source_config_.common.output_sample_spec.channel_set());
 
         pcm_mapper_.reset(new (pcm_mapper_) audio::PcmMapperReader(
             *frm_reader, byte_buffer_factory, in_spec,
-            config_.common.output_sample_spec));
+            source_config_.common.output_sample_spec));
         if (!pcm_mapper_ || !pcm_mapper_->is_valid()) {
             return;
         }
         frm_reader = pcm_mapper_.get();
     }
 
-    if (config_.common.enable_profiling) {
+    if (source_config_.common.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingReader(
-            *frm_reader, arena, config_.common.output_sample_spec,
-            config_.common.profiler));
+            *frm_reader, arena, source_config_.common.output_sample_spec,
+            source_config_.common.profiler));
         if (!profiler_ || !profiler_->is_valid()) {
             return;
         }
@@ -75,14 +76,14 @@ bool ReceiverSource::is_valid() const {
     return valid_;
 }
 
-ReceiverSlot* ReceiverSource::create_slot() {
+ReceiverSlot* ReceiverSource::create_slot(const ReceiverSlotConfig& slot_config) {
     roc_panic_if(!is_valid());
 
     roc_log(LogInfo, "receiver source: adding slot");
 
-    core::SharedPtr<ReceiverSlot> slot = new (arena_)
-        ReceiverSlot(config_, state_tracker_, *mixer_, encoding_map_, packet_factory_,
-                     byte_buffer_factory_, sample_buffer_factory_, arena_);
+    core::SharedPtr<ReceiverSlot> slot = new (arena_) ReceiverSlot(
+        source_config_, slot_config, state_tracker_, *mixer_, encoding_map_,
+        packet_factory_, byte_buffer_factory_, sample_buffer_factory_, arena_);
 
     if (!slot || !slot->is_valid()) {
         roc_log(LogError, "receiver source: can't create slot");
@@ -160,7 +161,7 @@ bool ReceiverSource::restart() {
 }
 
 audio::SampleSpec ReceiverSource::sample_spec() const {
-    return config_.common.output_sample_spec;
+    return source_config_.common.output_sample_spec;
 }
 
 core::nanoseconds_t ReceiverSource::latency() const {
@@ -172,7 +173,7 @@ bool ReceiverSource::has_latency() const {
 }
 
 bool ReceiverSource::has_clock() const {
-    return config_.common.enable_timing;
+    return source_config_.common.enable_timing;
 }
 
 void ReceiverSource::reclock(core::nanoseconds_t playback_time) {
