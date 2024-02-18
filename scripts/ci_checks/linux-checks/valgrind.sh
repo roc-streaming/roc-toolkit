@@ -8,7 +8,7 @@ scons -Q \
       --enable-debug \
       --enable-tests \
       --enable-examples \
-      --compiler=clang-13 \
+      --compiler=clang \
       --build-3rdparty=all \
       test
 
@@ -27,7 +27,7 @@ scons -Q \
       --enable-werror \
       --enable-tests \
       --enable-examples \
-      --compiler=clang-13 \
+      --compiler=clang \
       --build-3rdparty=all \
       test
 
