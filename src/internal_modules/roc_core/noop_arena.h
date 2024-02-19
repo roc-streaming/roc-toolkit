@@ -18,7 +18,9 @@
 namespace roc {
 namespace core {
 
-//! No-op arena implementation.
+//! Arena implementation that just fails all allocations.
+//! Can be used with containers that have embedded capacity and arena,
+//! but we want them to use only embedded capacity.
 class NoopArenaImpl : public IArena, public NonCopyable<> {
 public:
     //! Allocate memory no-op.
@@ -40,6 +42,8 @@ public:
     virtual size_t allocated_size(void* ptr) const;
 };
 
+//! Arena implementation that just fails all allocations.
+//! @see NoopArenaImpl.
 static NoopArenaImpl NoopArena;
 
 } // namespace core

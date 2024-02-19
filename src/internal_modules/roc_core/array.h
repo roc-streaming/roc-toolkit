@@ -46,7 +46,7 @@ public:
         : data_(NULL)
         , size_(0)
         , capacity_(0)
-        , arena_(&arena) {
+        , arena_(arena) {
     }
 
     ~Array() {
@@ -275,7 +275,7 @@ private:
         if (n_elems <= EmbeddedCapacity) {
             data = (T*)embedded_data_.memory();
         } else {
-            data = (T*)arena_->allocate(n_elems * sizeof(T));
+            data = (T*)arena_.allocate(n_elems * sizeof(T));
         }
 
         if (!data) {
@@ -291,7 +291,7 @@ private:
 
     void deallocate_(T* data) {
         if ((void*)data != (void*)embedded_data_.memory()) {
-            arena_->deallocate(data);
+            arena_.deallocate(data);
         }
     }
 
@@ -315,7 +315,7 @@ private:
     size_t size_;
     size_t capacity_;
 
-    IArena* arena_;
+    IArena& arena_;
 
     AlignedStorage<EmbeddedCapacity * sizeof(T)> embedded_data_;
 };
