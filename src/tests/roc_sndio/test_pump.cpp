@@ -13,6 +13,7 @@
 
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/temp_file.h"
 #include "roc_sndio/config.h"
@@ -57,6 +58,7 @@ TEST_GROUP(pump) {
 
 TEST(pump, write_read) {
 { 
+
     enum { NumSamples = BufSize * 10 };
     for(size_t n_backend = 0; n_backend < BackendMap::instance().num_backends(); n_backend++){
         test::MockSource mock_source;
@@ -64,16 +66,19 @@ TEST(pump, write_read) {
 
         core::TempFile file("test.wav");
 
-        IBackend &backend = BackendMap::instance().nth_backend(n_backend);
+        core::ScopedPtr<IBackend> backend(BackendMap::instance().nth_backend(n_backend), arena);
         printf("Currently on: %s\n", backend.name());
+        fflush(stdout);
         
         {
             IDevice *backend_device = backend.open_device(DeviceType_Sink, DriverType_File, "wav", file.path(), config, arena);
             if(backend_device == NULL){
                 printf("Failing sink test: %s\n", backend.name());
+                fflush(stdout);
             }
             else{
                 printf("Passing sink test: %s\n", backend.name());
+                fflush(stdout);
                 ISink *backend_sink = backend_device->to_sink();
                 Pump pump(buffer_factory, mock_source, NULL, *backend_sink, BufDuration, SampleSpecs,
                         Pump::ModeOneshot);
@@ -83,14 +88,18 @@ TEST(pump, write_read) {
                 CHECK(mock_source.num_returned() >= NumSamples - BufSize);
             }
         }
+        printf("File path: %s\n", file.path());
+        fflush(stdout);
         
         IDevice *backend_device = backend.open_device(DeviceType_Source, DriverType_File, "wav", file.path(), config, arena);
         if(backend_device == NULL){
             printf("Failing source test: %s\n", backend.name());
+            fflush(stdout);
                 continue;
         }
 
         printf("Passing source test: %s\n\n", backend.name());
+        fflush(stdout);
         ISource * backend_source = backend_device->to_source();
 
         test::MockSink mock_writer;
