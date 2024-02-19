@@ -59,11 +59,12 @@ TEST(pump, write_read) {
 { 
 
     enum { NumSamples = BufSize * 10 };
+    
     for(size_t n_backend = 0; n_backend < BackendMap::instance().num_backends(); n_backend++){
         test::MockSource mock_source;
         mock_source.add(NumSamples);
-
         core::TempFile file("test.wav");
+        
 
         IBackend &backend = BackendMap::instance().nth_backend(n_backend);
         printf("Currently on: %s\n", backend.name());
