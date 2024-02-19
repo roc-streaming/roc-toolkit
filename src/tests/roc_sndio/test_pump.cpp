@@ -13,7 +13,6 @@
 
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
-#include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/temp_file.h"
 #include "roc_sndio/config.h"
@@ -66,7 +65,7 @@ TEST(pump, write_read) {
 
         core::TempFile file("test.wav");
 
-        core::ScopedPtr<IBackend> backend(BackendMap::instance().nth_backend(n_backend), arena);
+        IBackend &backend = BackendMap::instance().nth_backend(n_backend);
         printf("Currently on: %s\n", backend.name());
         fflush(stdout);
         
@@ -99,7 +98,7 @@ TEST(pump, write_read) {
         }
 
         printf("Passing source test: %s\n\n", backend.name());
-        fflush(stdout);
+        
         ISource * backend_source = backend_device->to_source();
 
         test::MockSink mock_writer;
