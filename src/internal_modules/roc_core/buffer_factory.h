@@ -14,9 +14,9 @@
 
 #include "roc_core/allocation_policy.h"
 #include "roc_core/buffer.h"
+#include "roc_core/ipool.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/shared_ptr.h"
-#include "roc_core/slab_pool.h"
 
 namespace roc {
 namespace core {
@@ -28,8 +28,8 @@ template <class T> class BufferFactory : public core::NonCopyable<> {
 public:
     //! Initialization.
     //! @p buffer_size defines number of elements in buffer.
-    BufferFactory(IArena& arena, size_t buffer_size)
-        : buffer_pool_("buffer_pool", arena, sizeof(Buffer<T>) + sizeof(T) * buffer_size)
+    BufferFactory(IPool& pool, size_t buffer_size)
+        : buffer_pool_(pool)
         , buffer_size_(buffer_size) {
     }
 
@@ -44,7 +44,7 @@ public:
     }
 
 private:
-    SlabPool<Buffer<T> > buffer_pool_;
+    IPool& buffer_pool_;
     const size_t buffer_size_;
 };
 

@@ -15,7 +15,7 @@
 #include "roc_core/allocation_policy.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/shared_ptr.h"
-#include "roc_core/slab_pool.h"
+#include "roc_core/ipool.h"
 #include "roc_packet/packet.h"
 
 namespace roc {
@@ -25,13 +25,13 @@ namespace packet {
 class PacketFactory : public core::NonCopyable<> {
 public:
     //! Constructor.
-    PacketFactory(core::IArena& arena);
+    PacketFactory(core::IPool& pool);
 
     //! Create new packet;
     core::SharedPtr<Packet> new_packet();
 
 private:
-    core::SlabPool<Packet> pool_;
+    core::IPool& pool_;
 };
 
 } // namespace packet

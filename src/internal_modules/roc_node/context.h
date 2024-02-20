@@ -55,14 +55,14 @@ public:
     //! Get arena.
     core::IArena& arena();
 
-    //! Get packet factory.
-    packet::PacketFactory& packet_factory();
+    //! Get packet pool.
+    core::IPool& packet_pool();
 
-    //! Get byte buffer factory.
-    core::BufferFactory<uint8_t>& byte_buffer_factory();
+    //! Get byte buffer pool.
+    core::IPool& byte_buffer_pool();
 
-    //! Get sample buffer factory.
-    core::BufferFactory<audio::sample_t>& sample_buffer_factory();
+    //! Get sample buffer pool.
+    core::IPool& sample_buffer_pool();
 
     //! Get encoding map.
     rtp::EncodingMap& encoding_map();
@@ -76,9 +76,9 @@ public:
 private:
     core::IArena& arena_;
 
-    packet::PacketFactory packet_factory_;
-    core::BufferFactory<uint8_t> byte_buffer_factory_;
-    core::BufferFactory<audio::sample_t> sample_buffer_factory_;
+    core::SlabPool<packet::Packet> packet_pool_;
+    core::SlabPool<core::Buffer<uint8_t> > byte_buffer_pool_;
+    core::SlabPool<core::Buffer<audio::sample_t> > sample_buffer_pool_;
 
     rtp::EncodingMap encoding_map_;
 
