@@ -17,6 +17,9 @@ for line in fileinput.input(encoding='utf-8'):
 
 data = numpy.genfromtxt(text, dtype=float, delimiter=',')
 
+if len(data.shape) == 1:
+    data = data[:,numpy.newaxis]
+
 if not columns:
     columns = [None] * data.shape[1]
 
