@@ -84,7 +84,7 @@ void ChannelMapperWriter::write(Frame& in_frame) {
     }
 }
 
-void ChannelMapperWriter::write_(sample_t* in_samples,
+virtual ROC_ATTR_NODISCARD status::StatusCode ChannelMapperWriter::write_(sample_t* in_samples,
                                  size_t n_samples,
                                  unsigned flags,
                                  core::nanoseconds_t capture_ts) {
@@ -98,6 +98,8 @@ void ChannelMapperWriter::write_(sample_t* in_samples,
     out_frame.set_capture_timestamp(capture_ts);
 
     output_writer_.write(out_frame);
+    const status::StatusCode code = fetch_packets_();
+    return code;
 }
 
 } // namespace audio

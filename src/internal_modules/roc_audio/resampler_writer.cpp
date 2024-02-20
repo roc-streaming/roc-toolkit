@@ -73,7 +73,7 @@ bool ResamplerWriter::set_scaling(float multiplier) {
                                   out_sample_spec_.sample_rate(), multiplier);
 }
 
-void ResamplerWriter::write(Frame& in_frame) {
+virtual ROC_ATTR_NODISCARD status::StatusCode ResamplerWriter::write(Frame& in_frame) {
     roc_panic_if_not(is_valid());
 
     if (in_frame.num_raw_samples() % in_sample_spec_.num_channels() != 0) {
@@ -102,7 +102,10 @@ void ResamplerWriter::write(Frame& in_frame) {
             out_frame.set_capture_timestamp(capture_ts_(in_frame, in_pos));
 
             writer_.write(out_frame);
-
+            const status::StatusCode code = fetch_packets_();
+            if (code != StatusOK) {
+                return code;
+            }
             output_buf_pos_ = 0;
         }
     }
@@ -115,9 +118,14 @@ void ResamplerWriter::write(Frame& in_frame) {
         out_frame.set_capture_timestamp(capture_ts_(in_frame, in_pos));
 
         writer_.write(out_frame);
-
+        const status::StatusCode code = fetch_packets_();
+        if (code != StatusOK) {
+            return code;
+        }
         output_buf_pos_ = 0;
     }
+
+    return fetch_packets_();
 }
 
 size_t ResamplerWriter::push_input_(Frame& in_frame, size_t in_pos) {
