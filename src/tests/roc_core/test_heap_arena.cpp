@@ -17,11 +17,10 @@ namespace core {
 // clang-format off
 TEST_GROUP(heap_arena) {
     void setup() {
-        core::HeapArena::set_flags(core::DefaultHeapArenaFlags
-                                    & ~core::HeapArenaFlag_EnableGuards);
+        core::HeapArena::set_guards(0);
     }
     void teardown() {
-        core::HeapArena::set_flags(core::DefaultHeapArenaFlags);
+        core::HeapArena::set_guards(core::HeapArena_DefaultGuards);
     }
 };
 // clang-format on

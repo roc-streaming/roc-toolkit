@@ -37,7 +37,7 @@ SlabPoolImpl::SlabPoolImpl(const char* name,
                            size_t max_alloc_bytes,
                            void* preallocated_data,
                            size_t preallocated_size,
-                           size_t flags)
+                           size_t guards)
     : name_(name)
     , arena_(arena)
     , n_used_slots_(0)
@@ -51,21 +51,23 @@ SlabPoolImpl::SlabPoolImpl(const char* name,
     , slab_max_slots_(slab_max_bytes_ == 0 ? 0 : slots_per_slab_(slab_max_bytes_, false))
     , object_size_(object_size)
     , object_size_padding_(slot_size_ - unaligned_slot_size_)
-    , flags_(flags)
+    , guards_(guards)
     , num_guard_failures_(0) {
-    roc_log(LogDebug,
-            "pool: initializing:"
-            " name=%s object_size=%lu min_slab=%luB(%luS) max_slab=%luB(%luS)",
-            name_, (unsigned long)slot_size_, (unsigned long)slab_min_bytes_,
-            (unsigned long)slab_cur_slots_, (unsigned long)slab_max_bytes_,
-            (unsigned long)slab_max_slots_);
-
     roc_panic_if_not(slab_cur_slots_ > 0);
     roc_panic_if_not(slab_cur_slots_ <= slab_max_slots_ || slab_max_slots_ == 0);
 
     if (preallocated_size > 0) {
         add_preallocated_memory_(preallocated_data, preallocated_size);
     }
+
+    roc_log(LogDebug,
+            "slab pool (%s): initializing:"
+            " slot_size=%lu prealloc_size=%lu(%lu slots)"
+            " min_slab=%lu(%lu slots) max_slab=%lu(%lu slots)",
+            name_, (unsigned long)slot_size_, (unsigned long)preallocated_size,
+            (unsigned long)free_slots_.size(), (unsigned long)slab_min_bytes_,
+            (unsigned long)slab_cur_slots_, (unsigned long)slab_max_bytes_,
+            (unsigned long)slab_max_slots_);
 }
 
 SlabPoolImpl::~SlabPoolImpl() {
@@ -96,7 +98,7 @@ void* SlabPoolImpl::allocate() {
 
 void SlabPoolImpl::deallocate(void* memory) {
     if (memory == NULL) {
-        roc_panic("pool: deallocating null pointer: name=%s", name_);
+        roc_panic("slab pool (%s): attempt to deallocate null pointer", name_);
     }
 
     Slot* slot = take_slot_from_user_(memory);
@@ -143,11 +145,11 @@ SlabPoolImpl::Slot* SlabPoolImpl::take_slot_from_user_(void* memory) {
     const bool is_owner = slot_hdr->owner == this;
 
     if (!is_owner) {
-        num_guard_failures_++;
-        if (flags_ & SlabPoolFlag_EnableGuards) {
-            roc_panic("pool: attempt to deallocate slot not belonging to this pool:"
-                      " name=%s this_pool=%p slot_pool=%p",
-                      name_, (const void*)this, (const void*)slot_hdr->owner);
+        if (report_guard_(SlabPool_OwnershipGuard)) {
+            roc_panic(
+                "slab pool (%s): attempt to deallocate slot not belonging to this pool:"
+                " this_pool=%p slot_pool=%p",
+                name_, (const void*)this, (const void*)slot_hdr->owner);
         }
         return NULL;
     }
@@ -161,10 +163,11 @@ SlabPoolImpl::Slot* SlabPoolImpl::take_slot_from_user_(void* memory) {
         MemoryOps::check_canary(canary_after, object_size_padding_ + sizeof(SlotCanary));
 
     if (!canary_before_ok || !canary_after_ok) {
-        num_guard_failures_++;
-        if (flags_ & SlabPoolFlag_EnableGuards) {
-            roc_panic("pool: detected memory violation: name=%s ok_before=%d ok_after=%d",
-                      name_, (int)canary_before_ok, (int)canary_after_ok);
+        if (report_guard_(SlabPool_OverflowGuard)) {
+            roc_panic("slab pool (%s): detected memory violation:"
+                      " header_guard=%s footer_guard=%s",
+                      name_, canary_before_ok ? "ok" : "corrupted",
+                      canary_after_ok ? "ok" : "corrupted");
         }
     }
 
@@ -189,7 +192,7 @@ SlabPoolImpl::Slot* SlabPoolImpl::acquire_slot_() {
 
 void SlabPoolImpl::release_slot_(Slot* slot) {
     if (n_used_slots_ == 0) {
-        roc_panic("pool: unpaired deallocation: name=%s", name_);
+        roc_panic("slab pool (%s): unpaired deallocation", name_);
     }
 
     n_used_slots_--;
@@ -247,8 +250,11 @@ bool SlabPoolImpl::allocate_new_slab_() {
 
 void SlabPoolImpl::deallocate_everything_() {
     if (n_used_slots_ != 0) {
-        roc_panic("pool: detected memory leak: name=%s n_used=%lu n_free=%lu", name_,
-                  (unsigned long)n_used_slots_, (unsigned long)free_slots_.size());
+        if (report_guard_(SlabPool_LeakGuard)) {
+            roc_panic("slab pool (%s): detected memory leak: n_used=%lu n_free=%lu",
+                      name_, (unsigned long)n_used_slots_,
+                      (unsigned long)free_slots_.size());
+        }
     }
 
     while (Slot* slot = free_slots_.front()) {
@@ -263,7 +269,7 @@ void SlabPoolImpl::deallocate_everything_() {
 
 void SlabPoolImpl::add_preallocated_memory_(void* memory, size_t memory_size) {
     if (memory == NULL) {
-        roc_panic("pool: preallocated memory is null: name=%s", name_);
+        roc_panic("slab pool (%s): preallocated memory is null", name_);
     }
 
     const size_t n_slots = memory_size / slot_size_;
@@ -291,6 +297,11 @@ size_t SlabPoolImpl::slots_per_slab_(size_t slab_size, bool round_up) const {
 
 size_t SlabPoolImpl::slot_offset_(size_t slot_index) const {
     return slab_hdr_size_ + slot_index * slot_size_;
+}
+
+bool SlabPoolImpl::report_guard_(size_t guard) const {
+    num_guard_failures_++;
+    return (guards_ & guard) != 0;
 }
 
 } // namespace core

@@ -64,7 +64,7 @@ public:
                  size_t max_alloc_bytes,
                  void* preallocated_data,
                  size_t preallocated_size,
-                 size_t flags);
+                 size_t guards);
 
     //! Deinitialize.
     ~SlabPoolImpl();
@@ -106,6 +106,8 @@ private:
     size_t slots_per_slab_(size_t slab_size, bool round_up) const;
     size_t slot_offset_(size_t slot_index) const;
 
+    bool report_guard_(size_t guard) const;
+
     Mutex mutex_;
 
     const char* name_;
@@ -128,8 +130,8 @@ private:
     const size_t object_size_;
     const size_t object_size_padding_;
 
-    const size_t flags_;
-    size_t num_guard_failures_;
+    const size_t guards_;
+    mutable size_t num_guard_failures_;
 };
 
 } // namespace core
