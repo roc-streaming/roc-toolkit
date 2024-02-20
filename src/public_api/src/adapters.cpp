@@ -131,6 +131,22 @@ bool sender_config_from_user(node::Context& context,
         return false;
     }
 
+    if (!latency_tuner_backend_from_user(out.latency.tuner_backend,
+                                         in.latency_tuner_backend)) {
+        roc_log(LogError,
+                "bad configuration: invalid roc_sender_config.latency_tuner_backend:"
+                " should be valid enum value");
+        return false;
+    }
+
+    if (!latency_tuner_profile_from_user(out.latency.tuner_profile,
+                                         in.latency_tuner_profile)) {
+        roc_log(LogError,
+                "bad configuration: invalid roc_sender_config.latency_tuner_profile:"
+                " should be valid enum value");
+        return false;
+    }
+
     if (!resampler_backend_from_user(out.resampler.backend, in.resampler_backend)) {
         roc_log(LogError,
                 "bad configuration: invalid roc_sender_config.resampler_backend:"
