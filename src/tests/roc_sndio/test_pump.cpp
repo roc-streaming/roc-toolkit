@@ -13,6 +13,7 @@
 
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/temp_file.h"
 #include "roc_sndio/config.h"
@@ -79,7 +80,7 @@ TEST(pump, write_read) {
             else{
                 printf("Passing sink test: %s\n", backend.name());
                 fflush(stdout);
-                ISink *backend_sink = backend_device->to_sink();
+                core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
                 Pump pump(buffer_factory, mock_source, NULL, *backend_sink, BufDuration, SampleSpecs,
                         Pump::ModeOneshot);
                 CHECK(pump.is_valid());
@@ -100,7 +101,7 @@ TEST(pump, write_read) {
 
         printf("Passing source test: %s\n\n", backend.name());
         
-        ISource * backend_source = backend_device->to_source();
+        core::ScopedPtr<ISource> backend_source(backend_device->to_source(), arena);
 
         test::MockSink mock_writer;
 
