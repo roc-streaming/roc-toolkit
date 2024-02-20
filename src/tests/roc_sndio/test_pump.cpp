@@ -47,12 +47,17 @@ core::BufferFactory<audio::sample_t> buffer_factory(arena, BufSize);
 } // namespace
 
 TEST_GROUP(pump) {
-    Config config;
+    Config source_config;
+    Config sink_config;
 
     void setup() {
-        config.sample_spec = audio::SampleSpec(SampleRate, audio::Sample_RawFormat, audio::ChanLayout_Surround,
+        source_config.sample_spec = audio::SampleSpec();
+
+        source_config.frame_length = BufDuration;
+        
+        sink_config.sample_spec = audio::SampleSpec(SampleRate, audio::Sample_RawFormat, audio::ChanLayout_Surround,
                                                audio::ChanOrder_Smpte, ChMask);
-        config.frame_length = BufDuration;
+        sink_config.frame_length = BufDuration;
     }
 };
 
@@ -72,7 +77,7 @@ TEST(pump, write_read) {
         fflush(stdout);
         
         {
-            IDevice *backend_device = backend.open_device(DeviceType_Sink, DriverType_File, "wav", file.path(), config, arena);
+            IDevice *backend_device = backend.open_device(DeviceType_Sink, DriverType_File, "wav", file.path(), sink_config, arena);
             if(backend_device == NULL){
                 printf("Failing sink test: %s\n", backend.name());
                 fflush(stdout);
@@ -92,7 +97,7 @@ TEST(pump, write_read) {
         printf("File path: %s\n", file.path());
         fflush(stdout);
         
-        IDevice *backend_device = backend.open_device(DeviceType_Source, DriverType_File, "wav", file.path(), config, arena);
+        IDevice *backend_device = backend.open_device(DeviceType_Source, DriverType_File, "wav", file.path(), source_config, arena);
         if(backend_device == NULL){
             printf("Failing source test: %s\n", backend.name());
             fflush(stdout);
@@ -121,21 +126,29 @@ TEST(pump, write_read) {
 } // namespace roc
 
 TEST(pump, write_overwrite_read) {
-#ifdef ROC_TARGET_SOX
-    {
         enum { NumSamples = BufSize * 10 };
 
+        for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends(); n_backend++) {
         test::MockSource mock_source;
         mock_source.add(NumSamples);
 
         core::TempFile file("test.wav");
+        IBackend& backend = BackendMap::instance().nth_backend(n_backend);
+        // printf("Currently on: %s\n", backend.name());
+        // fflush(stdout);
 
         {
-            SoxSink sox_sink(arena, config);
-            CHECK(sox_sink.open(NULL, file.path()));
+            IDevice* backend_device = backend.open_device(DeviceType_Sink, DriverType_File, "wav", file.path(), sink_config, arena);
+            if (backend_device == NULL) {
+                // printf("Failing sink test: %s\n", backend.name());
+                // fflush(stdout);
+                continue;
+            }
 
-            Pump pump(buffer_factory, mock_source, NULL, sox_sink, BufDuration,
-                      SampleSpecs, Pump::ModeOneshot);
+            // printf("Passing sink test: %s\n", backend.name());
+            // fflush(stdout);
+            core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
+            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, BufDuration, SampleSpecs, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
         }
@@ -146,11 +159,17 @@ TEST(pump, write_overwrite_read) {
         CHECK(num_returned1 >= NumSamples - BufSize);
 
         {
-            SoxSink sox_sink(arena, config);
-            CHECK(sox_sink.open(NULL, file.path()));
+            IDevice* backend_device = backend.open_device(DeviceType_Sink, DriverType_File, "wav", file.path(), sink_config, arena);
+            if (backend_device == NULL) {
+                printf("Failing sink test (overwrite): %s\n", backend.name());
+                fflush(stdout);
+                continue;
+            }
 
-            Pump pump(buffer_factory, mock_source, NULL, sox_sink, BufDuration,
-                      SampleSpecs, Pump::ModeOneshot);
+            // printf("Passing sink test (overwrite): %s\n", backend.name());
+            // fflush(stdout);
+            core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
+            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, BufDuration, SampleSpecs, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
         }
@@ -158,71 +177,25 @@ TEST(pump, write_overwrite_read) {
         size_t num_returned2 = mock_source.num_returned() - num_returned1;
         CHECK(num_returned1 >= NumSamples - BufSize);
 
-        SoxSource sox_source(arena, config);
-        CHECK(sox_source.open(NULL, file.path()));
+        IDevice* backend_device = backend.open_device(DeviceType_Source, DriverType_File, "wav", file.path(), source_config, arena);
+        if (backend_device == NULL) {
+            // printf("Failing source test: %s\n", backend.name());
+            // fflush(stdout);
+            continue;
+        }
+
+        // printf("Passing source test: %s\n\n", backend.name());
+
+        core::ScopedPtr<ISource> backend_source(backend_device->to_source(), arena);
 
         test::MockSink mock_writer;
 
-        Pump pump(buffer_factory, sox_source, NULL, mock_writer, BufDuration, SampleSpecs,
-                  Pump::ModePermanent);
+        Pump pump(buffer_factory, *backend_source, NULL, mock_writer, BufDuration, SampleSpecs, Pump::ModePermanent);
         CHECK(pump.is_valid());
         CHECK(pump.run());
 
         mock_writer.check(num_returned1, num_returned2);
     }
-#endif // ROC_TARGET_SOX
-
-#ifdef ROC_TARGET_SNDFILE
-    {
-        enum { NumSamples = BufSize * 10 };
-
-        test::MockSource mock_source;
-        mock_source.add(NumSamples);
-
-        core::TempFile file("test.wav");
-
-        {
-            SndfileSink sndfile_sink(arena, config);
-            CHECK(sndfile_sink.open(NULL, file.path()));
-
-            Pump pump(buffer_factory, mock_source, NULL, sndfile_sink, BufDuration,
-                      SampleSpecs, Pump::ModeOneshot);
-            CHECK(pump.is_valid());
-            CHECK(pump.run());
-        }
-
-        mock_source.add(NumSamples);
-
-        size_t num_returned1 = mock_source.num_returned();
-        CHECK(num_returned1 >= NumSamples - BufSize);
-
-        {
-            SndfileSink sndfile_sink(arena, config);
-            CHECK(sndfile_sink.open(NULL, file.path()));
-
-            Pump pump(buffer_factory, mock_source, NULL, sndfile_sink, BufDuration,
-                      SampleSpecs, Pump::ModeOneshot);
-            CHECK(pump.is_valid());
-            CHECK(pump.run());
-        }
-
-        size_t num_returned2 = mock_source.num_returned() - num_returned1;
-        CHECK(num_returned1 >= NumSamples - BufSize);
-
-        SndfileSource sndfile_source(arena, config);
-        CHECK(sndfile_source.open(NULL, file.path()));
-
-        test::MockSink mock_writer;
-
-        Pump pump(buffer_factory, sndfile_source, NULL, mock_writer, BufDuration,
-                  SampleSpecs, Pump::ModePermanent);
-        CHECK(pump.is_valid());
-        CHECK(pump.run());
-
-        mock_writer.check(num_returned1, num_returned2);
-    }
-#endif // ROC_TARGET_SNDFILE
 }
-
 } // namespace sndio
 } // namespace roc

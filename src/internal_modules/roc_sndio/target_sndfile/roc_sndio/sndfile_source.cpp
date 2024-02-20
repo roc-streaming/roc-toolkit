@@ -20,11 +20,6 @@ SndfileSource::SndfileSource(core::IArena& arena, const Config& config)
     , eof_(false)
     , valid_(false) {
 
-    if (config.sample_spec.num_channels() == 0) {
-        roc_log(LogError, "sndfile source: # of channels is zero");
-        return;
-    }
-
     if (config.latency != 0) {
         roc_log(LogError,
                 "sndfile source: setting io latency not supported by sndfile backend");
@@ -41,8 +36,6 @@ SndfileSource::SndfileSource(core::IArena& arena, const Config& config)
 
     memset(&file_info_, 0, sizeof(file_info_));
     sample_rate_ = config.sample_spec.sample_rate();
-    sample_spec_.channel_set().set_layout(audio::ChanLayout_Surround);
-    sample_spec_.channel_set().set_channel_range(0, sample_spec_.num_channels()-1, true);
     valid_ = true;
 }
 
@@ -135,11 +128,13 @@ audio::SampleSpec SndfileSource::sample_spec() const {
         roc_panic("sndfile source: sample_rate(): non-open output file");
     }
 
-    unsigned int chan_mask = sample_spec_.num_channels();
+    audio::ChannelSet channel_set;
+    channel_set.set_layout(audio::ChanLayout_Surround);
+    channel_set.set_order(audio::ChanOrder_Smpte);
+    channel_set.set_channel_range(0, (size_t)file_info_.channels - 1, true);
 
-    return audio::SampleSpec((size_t)file_info_.samplerate, audio::Sample_RawFormat,
-                                 audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
-                                 chan_mask);
+    return audio::SampleSpec(size_t(file_info_.samplerate), audio::Sample_RawFormat,
+                             channel_set);
 
 }
 

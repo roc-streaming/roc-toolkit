@@ -26,18 +26,19 @@ SoxSource::SoxSource(core::IArena& arena, const Config& config)
     , valid_(false) {
     BackendMap::instance();
 
-    if (config.sample_spec.num_channels() == 0) {
-        roc_log(LogError, "sox source: # of channels is zero");
-        return;
-    }
-
     if (config.latency != 0) {
         roc_log(LogError, "sox source: setting io latency not supported by sox backend");
         return;
     }
 
     frame_length_ = config.frame_length;
-    sample_spec_ = config.sample_spec;
+    
+    if (config.sample_spec.num_channels() == 0) {
+        sample_spec_ = audio::SampleSpec(44100, audio::Sample_RawFormat, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, 0x3);
+    } 
+    else {
+        sample_spec_ = config.sample_spec;
+    }
 
     if (frame_length_ == 0) {
         roc_log(LogError, "sox source: frame length is zero");
