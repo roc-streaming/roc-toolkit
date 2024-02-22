@@ -40,7 +40,6 @@ public:
     //!  either raw or smart pointer depending on the ownership policy.
     typedef typename OwnershipPolicy<T>::Pointer Pointer;
 
-    // todo: descruct a list_impl
     //! Release ownership of containing objects.
     ~List() {
         ListNode::ListNodeData* next_data;
@@ -99,7 +98,7 @@ public:
     //!  @p element should be member of this list.
     Pointer nextof(T& element) const {
         ListNode::ListNodeData* data = element.list_node_data();
-        return static_cast<T*>(impl_.nextof_(data));
+        return static_cast<T*>(impl_.nextof(data));
     }
 
     //! Get list element previous to given one.

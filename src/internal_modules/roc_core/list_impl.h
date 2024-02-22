@@ -19,28 +19,18 @@
 namespace roc {
 namespace core {
 
-//! Intrusive doubly-linked list.
-//!
-//! Does not perform allocations.
-//! Provides O(1) size check, membership check, insertion, and removal.
-//!
-//! @tparam T defines object type, it should inherit ListNode.
-//!
-//! @tparam OwnershipPolicy defines ownership policy which is used to acquire an
-//! element ownership when it's added to the list and release ownership when it's
-//! removed from the list.
 class ListImpl {
 public:
     //! Initialize empty list.
     ListImpl();
 
-    //! Get
+    //! Get number of elements in list.
     size_t size() const;
 
     //! Check if size is zero.
     bool is_empty() const;
 
-    //! Check if element belongs to list.
+    //! Check if data of element belongs to list.
     bool contains_(const ListNode::ListNodeData* data);
 
     //! Get first list element.
@@ -61,7 +51,7 @@ public:
     //!
     //! @pre
     //!  @p element should be member of this list.
-    ListNode* nextof_(ListNode::ListNodeData* data) const;
+    ListNode* nextof(ListNode::ListNodeData* data) const;
 
     //! Get list element previous to given one.
     //!
