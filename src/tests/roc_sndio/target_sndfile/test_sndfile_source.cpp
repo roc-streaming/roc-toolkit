@@ -89,6 +89,7 @@ TEST(sndfile_source, has_clock) {
     CHECK(!sndfile_source.has_clock());
 }
 
+
 TEST(sndfile_source, sample_rate_auto) {
     core::TempFile file("test.wav");
 

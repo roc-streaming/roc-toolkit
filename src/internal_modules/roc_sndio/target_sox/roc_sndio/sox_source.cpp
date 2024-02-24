@@ -369,6 +369,12 @@ bool SoxSource::open_() {
     }
 
     is_file_ = !(input_->handler.flags & SOX_FILE_DEVICE);
+
+    if(is_file_ && in_signal_.rate != input_->signal.rate && in_signal_.rate != 0){
+        roc_log(LogInfo, "sndfile source: can't set rate: samplerate in argument is different from file samplerate");
+        return false;
+    }
+
     sample_spec_.set_sample_rate((unsigned long)input_->signal.rate);
 
     roc_log(LogInfo,

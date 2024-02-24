@@ -44,6 +44,19 @@ const core::nanoseconds_t BufDuration = BufSize * core::Second
 core::HeapArena arena;
 core::BufferFactory<audio::sample_t> buffer_factory(arena, BufSize);
 
+bool supports_wav(IBackend &backend){
+    bool supports = false;
+    core::Array<DriverInfo, MaxDrivers> driver_list;
+    backend.discover_drivers(driver_list);
+    for (size_t n = 0; n < driver_list.size(); n++) {
+        if (strcmp(driver_list[n].name, "wav") == 0) {
+            supports = true;
+            break;
+        }
+    }
+    return supports;
+}
+
 } // namespace
 
 TEST_GROUP(pump) {
@@ -62,52 +75,47 @@ TEST_GROUP(pump) {
 };
 
 TEST(pump, write_read) {
-{ 
-
     enum { NumSamples = BufSize * 10 };
     
     for(size_t n_backend = 0; n_backend < BackendMap::instance().num_backends(); n_backend++){
         test::MockSource mock_source;
         mock_source.add(NumSamples);
         core::TempFile file("test.wav");
-        
 
         IBackend &backend = BackendMap::instance().nth_backend(n_backend);
+
+        if (!supports_wav(backend)) {
+            continue;
+        }
+
         printf("Currently on: %s\n", backend.name());
         fflush(stdout);
-        
+
         {
             IDevice *backend_device = backend.open_device(DeviceType_Sink, DriverType_File, "wav", file.path(), sink_config, arena);
-            if(backend_device == NULL){
-                printf("Failing sink test: %s\n", backend.name());
-                fflush(stdout);
-            }
-            else{
-                printf("Passing sink test: %s\n", backend.name());
-                fflush(stdout);
-                core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
-                Pump pump(buffer_factory, mock_source, NULL, *backend_sink, BufDuration, SampleSpecs,
-                        Pump::ModeOneshot);
-                CHECK(pump.is_valid());
-                CHECK(pump.run());
+            CHECK(backend_device != NULL);
+            printf("Passing sink test: %s\n", backend.name());
+            fflush(stdout);
+            core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
+            CHECK(backend_sink != NULL);
+            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, BufDuration, SampleSpecs,
+                    Pump::ModeOneshot);
+            CHECK(pump.is_valid());
+            CHECK(pump.run());
 
-                CHECK(mock_source.num_returned() >= NumSamples - BufSize);
-            }
+            CHECK(mock_source.num_returned() >= NumSamples - BufSize);  
         }
+
         printf("File path: %s\n", file.path());
         fflush(stdout);
         
         IDevice *backend_device = backend.open_device(DeviceType_Source, DriverType_File, "wav", file.path(), source_config, arena);
-        if(backend_device == NULL){
-            printf("Failing source test: %s\n", backend.name());
-            fflush(stdout);
-                continue;
-        }
+        CHECK(backend_device != NULL);
 
         printf("Passing source test: %s\n\n", backend.name());
         
         core::ScopedPtr<ISource> backend_source(backend_device->to_source(), arena);
-
+        CHECK(backend_source != NULL);
         test::MockSink mock_writer;
 
         Pump pump(buffer_factory,
@@ -123,7 +131,6 @@ TEST(pump, write_read) {
         mock_writer.check(0, mock_source.num_returned());
     }
 }
-} // namespace roc
 
 TEST(pump, write_overwrite_read) {
         enum { NumSamples = BufSize * 10 };
@@ -134,20 +141,16 @@ TEST(pump, write_overwrite_read) {
 
         core::TempFile file("test.wav");
         IBackend& backend = BackendMap::instance().nth_backend(n_backend);
-        // printf("Currently on: %s\n", backend.name());
-        // fflush(stdout);
+
+        if (!supports_wav(backend)) {
+            continue;
+        }
 
         {
             IDevice* backend_device = backend.open_device(DeviceType_Sink, DriverType_File, "wav", file.path(), sink_config, arena);
-            if (backend_device == NULL) {
-                // printf("Failing sink test: %s\n", backend.name());
-                // fflush(stdout);
-                continue;
-            }
-
-            // printf("Passing sink test: %s\n", backend.name());
-            // fflush(stdout);
+            CHECK(backend_device != NULL);
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
+            CHECK(backend_sink != NULL);
             Pump pump(buffer_factory, mock_source, NULL, *backend_sink, BufDuration, SampleSpecs, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
@@ -160,15 +163,9 @@ TEST(pump, write_overwrite_read) {
 
         {
             IDevice* backend_device = backend.open_device(DeviceType_Sink, DriverType_File, "wav", file.path(), sink_config, arena);
-            if (backend_device == NULL) {
-                printf("Failing sink test (overwrite): %s\n", backend.name());
-                fflush(stdout);
-                continue;
-            }
-
-            // printf("Passing sink test (overwrite): %s\n", backend.name());
-            // fflush(stdout);
+            CHECK(backend_device != NULL);
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
+            CHECK(backend_sink != NULL);
             Pump pump(buffer_factory, mock_source, NULL, *backend_sink, BufDuration, SampleSpecs, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
@@ -178,15 +175,9 @@ TEST(pump, write_overwrite_read) {
         CHECK(num_returned1 >= NumSamples - BufSize);
 
         IDevice* backend_device = backend.open_device(DeviceType_Source, DriverType_File, "wav", file.path(), source_config, arena);
-        if (backend_device == NULL) {
-            // printf("Failing source test: %s\n", backend.name());
-            // fflush(stdout);
-            continue;
-        }
-
-        // printf("Passing source test: %s\n\n", backend.name());
-
+        CHECK(backend_device != NULL);
         core::ScopedPtr<ISource> backend_source(backend_device->to_source(), arena);
+        CHECK(backend_source != NULL);
 
         test::MockSink mock_writer;
 
