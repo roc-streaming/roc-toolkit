@@ -19,7 +19,7 @@
 namespace roc {
 namespace core {
 
-//!	Intrusive doubly-linked list implementation class.
+//! Intrusive doubly-linked list implementation class.
 //! Ownership is left up to the main List class.
 
 class ListImpl {

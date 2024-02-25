@@ -6,9 +6,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/list.h
-//! @brief Intrusive doubly-linked list.
-
 #include "roc_core/list_impl.h"
 #include "roc_core/list_node.h"
 #include "roc_core/ownership_policy.h"
