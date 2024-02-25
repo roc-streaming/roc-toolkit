@@ -27,7 +27,7 @@ namespace core {
 //! Does not perform allocations.
 //! Provides O(1) size check, membership check, insertion, and removal.
 //!
-//! @tparam T defines object type, it should inherit ListNode.
+//! @tparam T defines object type, it must inherit from ListNode.
 //!
 //! @tparam OwnershipPolicy defines ownership policy which is used to acquire an
 //! element ownership when it's added to the list and release ownership when it's
@@ -52,7 +52,7 @@ public:
             next_data = data->next;
             data->list = NULL;
 
-            OwnershipPolicy<T>::release(*static_cast<T*>(impl_.container_of_(data)));
+            OwnershipPolicy<T>::release(*static_cast<T*>(impl_.container_of(data)));
         }
 
         impl_.head_.list = NULL;
@@ -71,7 +71,7 @@ public:
     //! Check if element belongs to list.
     bool contains(const T& element) {
         const ListNode::ListNodeData* data = element.list_node_data();
-        return impl_.contains_(data);
+        return impl_.contains(data);
     }
 
     //! Get first list element.
@@ -111,7 +111,7 @@ public:
     //!  @p element should be member of this list.
     Pointer prevof(T& element) const {
         ListNode::ListNodeData* data = element.list_node_data();
-        return static_cast<T*>(impl_.prevof_(data));
+        return static_cast<T*>(impl_.prevof(data));
     }
 
     //! Prepend element to list.
@@ -150,7 +150,7 @@ public:
         if (size() == 0) {
             roc_panic("list: is empty");
         }
-        remove(*static_cast<T*>(impl_.container_of_(impl_.head_.next)));
+        remove(*static_cast<T*>(impl_.container_of(impl_.head_.next)));
     }
 
     //! Pop last element from list.
@@ -165,7 +165,7 @@ public:
         if (size() == 0) {
             roc_panic("list: is empty");
         }
-        remove(*static_cast<T*>(impl_.container_of_(impl_.head_.prev)));
+        remove(*static_cast<T*>(impl_.container_of(impl_.head_.prev)));
     }
 
     //! Insert element into list.
@@ -209,6 +209,16 @@ public:
     }
 
 private:
+    
+    //! Insert element preceding list node data into list.
+    //!
+    //! @remarks
+    //!  - inserts @p element before @p data_before
+    //!  - acquires ownership of @p element
+    //!
+    //! @pre
+    //!  @p element must be member of any list.
+    //!  @p data_before must be registered in this list.
     void insert_(T& element, ListNode::ListNodeData* data_before) {
         impl_.insert(element.list_node_data(), data_before);
 

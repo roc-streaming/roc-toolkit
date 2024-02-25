@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Roc Streaming authors
+ * Copyright (c) 2024 Roc Streaming authors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,76 +25,51 @@ ListImpl::ListImpl()
     head_.list = this;
 }
 
-//! Get number of elements in list.
 size_t ListImpl::size() const {
     return size_;
 }
 
-//! Check if size is zero.
 bool ListImpl::is_empty() const {
     return size_ == 0;
 }
 
-//! Check if data of element belongs to list.
-bool ListImpl::contains_(const ListNode::ListNodeData* data) {
+bool ListImpl::contains(const ListNode::ListNodeData* data) {
     return (data->list == this);
 }
 
-//! Get first list element.
-//! @returns
-//!  first element or NULL if list is empty.
 ListNode* ListImpl::front() const {
     if (size_ == 0) {
         return NULL;
     }
-    return container_of_(head_.next);
+    return container_of(head_.next);
 }
 
-//! Get last list element.
-//! @returns
-//!  last element or NULL if list is empty.
 ListNode* ListImpl::back() const {
     if (size_ == 0) {
         return NULL;
     }
-    return container_of_(head_.prev);
+    return container_of(head_.prev);
 }
 
-//! Get list element next to given one.
-//!
-//! @returns
-//!  list element following @p element if @p element is not
-//!  last, or NULL otherwise.
-//!
-//! @pre
-//!  @p element should be member of this list.
 ListNode* ListImpl::nextof(ListNode::ListNodeData* data) const {
     check_is_member(data, this);
 
     if (data->next == &head_) {
         return NULL;
     }
-    return container_of_(data->next);
+    return container_of(data->next);
 }
 
-//! Get list element previous to given one.
-//!
-//! @returns
-//!  list element preceeding @p element if @p element is not
-//!  first, or NULL otherwise.
-//!
-//! @pre
-//!  @p element should be member of this list.
-ListNode* ListImpl::prevof_(ListNode::ListNodeData* data) const {
+ListNode* ListImpl::prevof(ListNode::ListNodeData* data) const {
     check_is_member(data, this);
 
     if (data->prev == &head_) {
         return NULL;
     }
-    return container_of_(data->prev);
+    return container_of(data->prev);
 }
 
-ListNode* ListImpl::container_of_(ListNode::ListNodeData* data) {
+ListNode* ListImpl::container_of(ListNode::ListNodeData* data) {
     return data->container_of();
 }
 

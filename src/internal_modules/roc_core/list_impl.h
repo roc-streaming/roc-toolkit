@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Roc Streaming authors
+ * Copyright (c) 2024 Roc Streaming authors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -7,7 +7,7 @@
  */
 
 //! @file roc_core/list_impl.h
-//! @brief Intrusive doubly-linked list.
+//! @brief Intrusive doubly-linked list implementation.
 
 #ifndef ROC_CORE_LIST_IMPL_H_
 #define ROC_CORE_LIST_IMPL_H_
@@ -18,6 +18,9 @@
 
 namespace roc {
 namespace core {
+
+//!	Intrusive doubly-linked list implementation class.
+//! Ownership is left up to the main List class.
 
 class ListImpl {
 public:
@@ -30,8 +33,8 @@ public:
     //! Check if size is zero.
     bool is_empty() const;
 
-    //! Check if data of element belongs to list.
-    bool contains_(const ListNode::ListNodeData* data);
+    //! Check whether list node data is registered in list.
+    bool contains(const ListNode::ListNodeData* data);
 
     //! Get first list element.
     //! @returns
@@ -43,45 +46,48 @@ public:
     //!  last element or NULL if list is empty.
     ListNode* back() const;
 
-    //! Get list element next to given one.
+    //! Get list element next to list node data.
     //!
     //! @returns
-    //!  list element following @p element if @p element is not
+    //!  list element following @p data if @p data is not
     //!  last, or NULL otherwise.
     //!
     //! @pre
-    //!  @p element should be member of this list.
+    //!  @p data must be registered in this list.
     ListNode* nextof(ListNode::ListNodeData* data) const;
 
-    //! Get list element previous to given one.
+    //! Get list element previous to list node data.
     //!
     //! @returns
-    //!  list element preceeding @p element if @p element is not
+    //!  element preceeding list node data @p data if element is not
     //!  first, or NULL otherwise.
     //!
     //! @pre
-    //!  @p element should be member of this list.
-    ListNode* prevof_(ListNode::ListNodeData* data) const;
+    //! @p data must be registered in this list.
+    ListNode* prevof(ListNode::ListNodeData* data) const;
 
+    //! Insert new list node data before given list node data.
+    //! 
+    //! @pre
+    //! @p data_before must be registered in this list. 
     void insert(ListNode::ListNodeData* data_new, ListNode::ListNodeData* data_before);
 
-    //! Remove element from list.
-    //!
-    //! @remarks
-    //!  - removes @p element from list
-    //!  - releases ownership of @p element
-    //!
+    //! Remove list node data from list.
+    //! 
     //! @pre
-    //!  @p element should be member of this list.
+    //!  @p data must be registered in this list.
     void remove(ListNode::ListNodeData* data);
 
-    static ListNode* container_of_(ListNode::ListNodeData* data);
+    //! Get element to which list node data @p data belongs.
+    static ListNode* container_of(ListNode::ListNodeData* data);
 
-    ListNode::ListNodeData head_;
-
+    //! Check if list node data is registered in this list. 
     static void check_is_member(const ListNode::ListNodeData* data, const ListImpl* list);
+    
 
 private:
+    ListNode::ListNodeData head_;
+    
     size_t size_;
 };
 
