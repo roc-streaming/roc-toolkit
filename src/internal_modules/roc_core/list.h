@@ -44,7 +44,7 @@ public:
     ~List() {
         ListNode::ListNodeData* next_data;
 
-        for (ListNode::ListNodeData* data = impl_.head_.next; data != &impl_.head_;
+        for (ListNode::ListNodeData* data = impl_.head.next; data != &impl_.head;
              data = next_data) {
             roc_panic_if(data == NULL);
             ListImpl::check_is_member(data, &impl_);
@@ -55,7 +55,7 @@ public:
             OwnershipPolicy<T>::release(*static_cast<T*>(impl_.container_of(data)));
         }
 
-        impl_.head_.list = NULL;
+        impl_.head.list = NULL;
     }
 
     //! Get number of elements in list.
@@ -123,7 +123,7 @@ public:
     //! @pre
     //!  @p element should not be member of any list.
     void push_front(T& element) {
-        insert_(element, impl_.head_.next);
+        insert_(element, impl_.head.next);
     }
 
     //! Append element to list.
@@ -135,7 +135,7 @@ public:
     //! @pre
     //!  @p element should not be member of any list.
     void push_back(T& element) {
-        insert_(element, &impl_.head_);
+        insert_(element, &impl_.head);
     }
 
     //! Pop first element from list.
@@ -150,7 +150,7 @@ public:
         if (size() == 0) {
             roc_panic("list: is empty");
         }
-        remove(*static_cast<T*>(impl_.container_of(impl_.head_.next)));
+        remove(*static_cast<T*>(impl_.container_of(impl_.head.next)));
     }
 
     //! Pop last element from list.
@@ -165,7 +165,7 @@ public:
         if (size() == 0) {
             roc_panic("list: is empty");
         }
-        remove(*static_cast<T*>(impl_.container_of(impl_.head_.prev)));
+        remove(*static_cast<T*>(impl_.container_of(impl_.head.prev)));
     }
 
     //! Insert element into list.

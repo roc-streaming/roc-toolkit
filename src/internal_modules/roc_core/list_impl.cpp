@@ -20,9 +20,9 @@ namespace core {
 
 ListImpl::ListImpl()
     : size_(0) {
-    head_.prev = &head_;
-    head_.next = &head_;
-    head_.list = this;
+    head.prev = &head;
+    head.next = &head;
+    head.list = this;
 }
 
 size_t ListImpl::size() const {
@@ -41,20 +41,20 @@ ListNode* ListImpl::front() const {
     if (size_ == 0) {
         return NULL;
     }
-    return container_of(head_.next);
+    return container_of(head.next);
 }
 
 ListNode* ListImpl::back() const {
     if (size_ == 0) {
         return NULL;
     }
-    return container_of(head_.prev);
+    return container_of(head.prev);
 }
 
 ListNode* ListImpl::nextof(ListNode::ListNodeData* data) const {
     check_is_member(data, this);
 
-    if (data->next == &head_) {
+    if (data->next == &head) {
         return NULL;
     }
     return container_of(data->next);
@@ -63,7 +63,7 @@ ListNode* ListImpl::nextof(ListNode::ListNodeData* data) const {
 ListNode* ListImpl::prevof(ListNode::ListNodeData* data) const {
     check_is_member(data, this);
 
-    if (data->prev == &head_) {
+    if (data->prev == &head) {
         return NULL;
     }
     return container_of(data->prev);

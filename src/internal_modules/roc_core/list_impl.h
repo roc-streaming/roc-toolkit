@@ -84,10 +84,10 @@ public:
     //! Check if list node data is registered in this list. 
     static void check_is_member(const ListNode::ListNodeData* data, const ListImpl* list);
     
+    //! Head of list 
+    ListNode::ListNodeData head;
 
 private:
-    ListNode::ListNodeData head_;
-    
     size_t size_;
 };
 
