@@ -337,9 +337,6 @@ TEST(backend_source, eof_restart) {
         core::TempFile file("test.wav");
         IBackend& backend = BackendMap::instance().nth_backend(n_backend);
 
-        printf("backend: %s\n", backend.name());
-        fflush(stdout);
-
         if (!supports_wav(backend)) {
             continue;
         }

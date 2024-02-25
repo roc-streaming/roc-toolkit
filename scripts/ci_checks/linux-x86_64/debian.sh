@@ -8,5 +8,5 @@ scons -Q \
       --enable-benchmarks \
       --enable-examples \
       --enable-doxygen \
-      --build-3rdparty=libuv,openfec,cpputest,sndfile \
+      --build-3rdparty=libuv,openfec,cpputest \
       test
