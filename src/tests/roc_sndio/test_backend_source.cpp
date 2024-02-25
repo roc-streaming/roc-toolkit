@@ -11,11 +11,11 @@
 #include "test_helpers/mock_source.h"
 
 #include "roc_core/buffer_factory.h"
-#include "roc_core/scoped_ptr.h"
-#include "roc_sndio/backend_map.h"
 #include "roc_core/heap_arena.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/temp_file.h"
+#include "roc_sndio/backend_map.h"
 #include "roc_sndio/pump.h"
 //#ifdef ROC_TARGET_SNDFILE
 #include "roc_sndio/sndfile_sink.h"
@@ -39,8 +39,11 @@ enum {
     NumChans = 2
 };
 
-const audio::SampleSpec
-    SampleSpecs(SampleRate, audio::Sample_RawFormat, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, ChMask);
+const audio::SampleSpec SampleSpecs(SampleRate,
+                                    audio::Sample_RawFormat,
+                                    audio::ChanLayout_Surround,
+                                    audio::ChanOrder_Smpte,
+                                    ChMask);
 
 const core::nanoseconds_t FrameDuration = FrameSize * core::Second
     / core::nanoseconds_t(SampleSpecs.sample_rate() * SampleSpecs.num_channels());
@@ -48,7 +51,7 @@ const core::nanoseconds_t FrameDuration = FrameSize * core::Second
 core::HeapArena arena;
 core::BufferFactory<audio::sample_t> buffer_factory(arena, MaxBufSize);
 
-bool supports_wav(IBackend &backend){
+bool supports_wav(IBackend& backend) {
     bool supports = false;
     core::Array<DriverInfo, MaxDrivers> driver_list;
     backend.discover_drivers(driver_list);
@@ -69,8 +72,9 @@ TEST_GROUP(backend_source) {
     Config source_config;
 
     void setup() {
-        sink_config.sample_spec = audio::SampleSpec(
-            SampleRate, audio::Sample_RawFormat, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, ChMask);
+        sink_config.sample_spec =
+            audio::SampleSpec(SampleRate, audio::Sample_RawFormat,
+                              audio::ChanLayout_Surround, audio::ChanOrder_Smpte, ChMask);
         sink_config.frame_length = FrameDuration;
 
         source_config.sample_spec = audio::SampleSpec();
@@ -84,74 +88,83 @@ TEST(backend_source, noop) {
 }
 
 TEST(backend_source, error) {
-    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends(); n_backend++) {
-        IBackend &backend = BackendMap::instance().nth_backend(n_backend);
-        if(!supports_wav(backend)){
+    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends();
+         n_backend++) {
+        IBackend& backend = BackendMap::instance().nth_backend(n_backend);
+        if (!supports_wav(backend)) {
             continue;
         }
-        IDevice *backend_device = backend.open_device(DeviceType_Source, DriverType_File, NULL, "/bad/file", source_config, arena);
-        CHECK(backend_device == NULL); 
+        IDevice* backend_device = backend.open_device(
+            DeviceType_Source, DriverType_File, NULL, "/bad/file", source_config, arena);
+        CHECK(backend_device == NULL);
     }
 }
 
 TEST(backend_source, has_clock) {
-    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends(); n_backend++) {
-        core::TempFile file("test.wav");
-        IBackend& backend = BackendMap::instance().nth_backend(n_backend);
-        
-        if(!supports_wav(backend)){
-            continue;
-        }
-
-        {
-            test::MockSource mock_source;
-            mock_source.add(MaxBufSize * 10);
-
-            IDevice* backend_device = backend.open_device(DeviceType_Sink, DriverType_File, NULL, file.path(), sink_config, arena);
-            CHECK(backend_device != NULL);
-            core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
-            CHECK(backend_sink != NULL);
-
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, FrameDuration, SampleSpecs, 
-                  Pump::ModeOneshot);
-            CHECK(pump.is_valid());
-            CHECK(pump.run());
-        }
-
-        IDevice* backend_device = backend.open_device(DeviceType_Source, DriverType_File, NULL, file.path(), source_config, arena);
-        CHECK(backend_device != NULL);
-        core::ScopedPtr<ISource> backend_source(backend_device->to_source(), arena);
-        CHECK(backend_source != NULL);
-        CHECK(!backend_source->has_clock()); 
-    } 
-}
-
-TEST(backend_source, sample_rate_auto) {
-    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends(); n_backend++) {
+    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends();
+         n_backend++) {
         core::TempFile file("test.wav");
         IBackend& backend = BackendMap::instance().nth_backend(n_backend);
 
         if (!supports_wav(backend)) {
             continue;
         }
-        
+
         {
             test::MockSource mock_source;
             mock_source.add(MaxBufSize * 10);
 
-            IDevice* backend_device = backend.open_device(DeviceType_Sink, DriverType_File, "wav", file.path(), sink_config, arena);
+            IDevice* backend_device = backend.open_device(
+                DeviceType_Sink, DriverType_File, NULL, file.path(), sink_config, arena);
             CHECK(backend_device != NULL);
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
 
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, FrameDuration, SampleSpecs, Pump::ModeOneshot);
+            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, FrameDuration,
+                      SampleSpecs, Pump::ModeOneshot);
+            CHECK(pump.is_valid());
+            CHECK(pump.run());
+        }
+
+        IDevice* backend_device = backend.open_device(
+            DeviceType_Source, DriverType_File, NULL, file.path(), source_config, arena);
+        CHECK(backend_device != NULL);
+        core::ScopedPtr<ISource> backend_source(backend_device->to_source(), arena);
+        CHECK(backend_source != NULL);
+        CHECK(!backend_source->has_clock());
+    }
+}
+
+TEST(backend_source, sample_rate_auto) {
+    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends();
+         n_backend++) {
+        core::TempFile file("test.wav");
+        IBackend& backend = BackendMap::instance().nth_backend(n_backend);
+
+        if (!supports_wav(backend)) {
+            continue;
+        }
+
+        {
+            test::MockSource mock_source;
+            mock_source.add(MaxBufSize * 10);
+
+            IDevice* backend_device = backend.open_device(
+                DeviceType_Sink, DriverType_File, "wav", file.path(), sink_config, arena);
+            CHECK(backend_device != NULL);
+            core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
+            CHECK(backend_sink != NULL);
+
+            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, FrameDuration,
+                      SampleSpecs, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
         }
         source_config.sample_spec.set_sample_rate(0);
         source_config.frame_length = FrameDuration;
 
-        IDevice *backend_device = backend.open_device(DeviceType_Source, DriverType_File, "wav", file.path(), source_config, arena);
+        IDevice* backend_device = backend.open_device(
+            DeviceType_Source, DriverType_File, "wav", file.path(), source_config, arena);
         CHECK(backend_device != NULL);
         core::ScopedPtr<ISource> backend_source(backend_device->to_source(), arena);
         CHECK(backend_source != NULL);
@@ -161,7 +174,8 @@ TEST(backend_source, sample_rate_auto) {
 }
 
 TEST(backend_source, sample_rate_mismatch) {
-    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends(); n_backend++) {
+    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends();
+         n_backend++) {
         core::TempFile file("test.wav");
         IBackend& backend = BackendMap::instance().nth_backend(n_backend);
 
@@ -173,34 +187,36 @@ TEST(backend_source, sample_rate_mismatch) {
             test::MockSource mock_source;
             mock_source.add(MaxBufSize * 10);
 
-            IDevice* backend_device = backend.open_device(DeviceType_Sink, DriverType_File, "wav", file.path(), sink_config, arena);
+            IDevice* backend_device = backend.open_device(
+                DeviceType_Sink, DriverType_File, "wav", file.path(), sink_config, arena);
             CHECK(backend_device != NULL);
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
 
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, FrameDuration, SampleSpecs, Pump::ModeOneshot);
+            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, FrameDuration,
+                      SampleSpecs, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
         }
-        
+
         source_config.sample_spec.set_sample_rate(SampleRate * 2);
 
-        IDevice * backend_device = backend.open_device(DeviceType_Source, DriverType_File, "wav", file.path(), source_config, arena);
+        IDevice* backend_device = backend.open_device(
+            DeviceType_Source, DriverType_File, "wav", file.path(), source_config, arena);
 
-        if(strcmp(backend.name(), "wav") == 0){  
+        if (strcmp(backend.name(), "wav") == 0) {
             CHECK(backend_device != NULL);
             core::ScopedPtr<ISource> backend_source(backend_device->to_source(), arena);
             CHECK(backend_source != NULL);
-        }
-        else
-        {
+        } else {
             CHECK(backend_device == NULL);
         }
     }
 }
 
 TEST(backend_source, pause_resume) {
-    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends(); n_backend++) {
+    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends();
+         n_backend++) {
         core::TempFile file("test.wav");
         IBackend& backend = BackendMap::instance().nth_backend(n_backend);
 
@@ -212,18 +228,20 @@ TEST(backend_source, pause_resume) {
             test::MockSource mock_source;
             mock_source.add(FrameSize * NumChans * 2);
 
-            IDevice* backend_device = backend.open_device(DeviceType_Sink, DriverType_File, "wav", file.path(), sink_config, arena);
+            IDevice* backend_device = backend.open_device(
+                DeviceType_Sink, DriverType_File, "wav", file.path(), sink_config, arena);
             CHECK(backend_device != NULL);
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
 
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, FrameDuration, SampleSpecs,
-                    Pump::ModeOneshot);
+            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, FrameDuration,
+                      SampleSpecs, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
         }
 
-        IDevice *backend_device = backend.open_device(DeviceType_Source, DriverType_File, "wav", file.path(), source_config, arena);
+        IDevice* backend_device = backend.open_device(
+            DeviceType_Source, DriverType_File, "wav", file.path(), source_config, arena);
         CHECK(backend_device != NULL);
         core::ScopedPtr<ISource> backend_source(backend_device->to_source(), arena);
         CHECK(backend_source != NULL);
@@ -238,7 +256,7 @@ TEST(backend_source, pause_resume) {
         audio::Frame frame2(frame_data2, FrameSize * NumChans);
 
         backend_source->pause();
-        if(strcmp(backend.name(), "SoX") == 0){
+        if (strcmp(backend.name(), "SoX") == 0) {
             CHECK(backend_source->state() == DeviceState_Paused);
 
             CHECK(!backend_source->read(frame2));
@@ -247,8 +265,7 @@ TEST(backend_source, pause_resume) {
             CHECK(backend_source->state() == DeviceState_Active);
 
             CHECK(backend_source->read(frame2));
-        }
-        else{
+        } else {
             CHECK(backend_source->state() == DeviceState_Active);
 
             CHECK(backend_source->read(frame2));
@@ -266,7 +283,8 @@ TEST(backend_source, pause_resume) {
 }
 
 TEST(backend_source, pause_restart) {
-    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends(); n_backend++) {
+    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends();
+         n_backend++) {
         core::TempFile file("test.wav");
         IBackend& backend = BackendMap::instance().nth_backend(n_backend);
 
@@ -278,18 +296,20 @@ TEST(backend_source, pause_restart) {
             test::MockSource mock_source;
             mock_source.add(FrameSize * NumChans * 2);
 
-            IDevice* backend_device = backend.open_device(DeviceType_Sink, DriverType_File, "wav", file.path(), sink_config, arena);
+            IDevice* backend_device = backend.open_device(
+                DeviceType_Sink, DriverType_File, "wav", file.path(), sink_config, arena);
             CHECK(backend_device != NULL);
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
 
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, FrameDuration, SampleSpecs,
-                    Pump::ModeOneshot);
+            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, FrameDuration,
+                      SampleSpecs, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
         }
 
-        IDevice *backend_device = backend.open_device(DeviceType_Source, DriverType_File, "wav", file.path(), source_config, arena);
+        IDevice* backend_device = backend.open_device(
+            DeviceType_Source, DriverType_File, "wav", file.path(), source_config, arena);
         CHECK(backend_device != NULL);
         core::ScopedPtr<ISource> backend_source(backend_device->to_source(), arena);
         CHECK(backend_source != NULL);
@@ -305,7 +325,7 @@ TEST(backend_source, pause_restart) {
         audio::sample_t frame_data2[FrameSize * NumChans] = {};
         audio::Frame frame2(frame_data2, FrameSize * NumChans);
 
-        if(strcmp(backend.name(), "SoX") == 0){
+        if (strcmp(backend.name(), "SoX") == 0) {
             CHECK(backend_source->state() == DeviceState_Paused);
 
             CHECK(!backend_source->read(frame2));
@@ -314,8 +334,7 @@ TEST(backend_source, pause_restart) {
             CHECK(backend_source->state() == DeviceState_Active);
 
             CHECK(backend_source->read(frame2));
-        }
-        else{
+        } else {
             CHECK(backend_source->state() == DeviceState_Active);
 
             CHECK(backend_source->read(frame2));
@@ -333,7 +352,8 @@ TEST(backend_source, pause_restart) {
 }
 
 TEST(backend_source, eof_restart) {
-    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends(); n_backend++) {
+    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends();
+         n_backend++) {
         core::TempFile file("test.wav");
         IBackend& backend = BackendMap::instance().nth_backend(n_backend);
 
@@ -345,18 +365,20 @@ TEST(backend_source, eof_restart) {
             test::MockSource mock_source;
             mock_source.add(FrameSize * NumChans * 2);
 
-            IDevice* backend_device = backend.open_device(DeviceType_Sink, DriverType_File, "wav", file.path(), sink_config, arena);
+            IDevice* backend_device = backend.open_device(
+                DeviceType_Sink, DriverType_File, "wav", file.path(), sink_config, arena);
             CHECK(backend_device != NULL);
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
 
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, FrameDuration, SampleSpecs,
-                    Pump::ModeOneshot);
+            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, FrameDuration,
+                      SampleSpecs, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
         }
 
-        IDevice *backend_device = backend.open_device(DeviceType_Source, DriverType_File, "wav", file.path(), source_config, arena);
+        IDevice* backend_device = backend.open_device(
+            DeviceType_Source, DriverType_File, "wav", file.path(), source_config, arena);
         CHECK(backend_device != NULL);
         core::ScopedPtr<ISource> backend_source(backend_device->to_source(), arena);
         CHECK(backend_source != NULL);
@@ -374,6 +396,6 @@ TEST(backend_source, eof_restart) {
     }
 }
 
-}
+} // namespace sndio
 
-} 
+} // namespace roc

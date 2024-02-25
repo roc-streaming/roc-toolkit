@@ -8,10 +8,10 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/scoped_ptr.h"
-#include "roc_sndio/backend_map.h"
 #include "roc_core/heap_arena.h"
+#include "roc_core/scoped_ptr.h"
 #include "roc_core/temp_file.h"
+#include "roc_sndio/backend_map.h"
 //#ifdef ROC_TARGERT_SNDFILE
 #include "roc_sndio/sndfile_sink.h"
 //#endif // ROC_TARGET_SNDFILE
@@ -43,7 +43,7 @@ TEST_GROUP(backend_sink) {
                                   * sink_config.sample_spec.num_channels());
     }
 
-    bool supports_wav(IBackend &backend){
+    bool supports_wav(IBackend & backend) {
         bool supports = false;
         core::Array<DriverInfo, MaxDrivers> driver_list;
         backend.discover_drivers(driver_list);
@@ -64,24 +64,28 @@ TEST(backend_sink, noop) {
 }
 
 TEST(backend_sink, error) {
-    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends(); n_backend++) {
-        IBackend &backend = BackendMap::instance().nth_backend(n_backend);
-        if(!supports_wav(backend)){
+    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends();
+         n_backend++) {
+        IBackend& backend = BackendMap::instance().nth_backend(n_backend);
+        if (!supports_wav(backend)) {
             continue;
         }
-        IDevice *backend_device = backend.open_device(DeviceType_Sink, DriverType_File, NULL, "/bad/file", sink_config, arena);
-        CHECK(backend_device == NULL); 
+        IDevice* backend_device = backend.open_device(
+            DeviceType_Sink, DriverType_File, NULL, "/bad/file", sink_config, arena);
+        CHECK(backend_device == NULL);
     }
 }
 
 TEST(backend_sink, has_clock) {
-    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends(); n_backend++) {
+    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends();
+         n_backend++) {
         core::TempFile file("test.wav");
-        IBackend &backend = BackendMap::instance().nth_backend(n_backend);
-        if(!supports_wav(backend)){
+        IBackend& backend = BackendMap::instance().nth_backend(n_backend);
+        if (!supports_wav(backend)) {
             continue;
         }
-        IDevice* backend_device = backend.open_device(DeviceType_Sink, DriverType_File, NULL, file.path(), sink_config, arena);
+        IDevice* backend_device = backend.open_device(
+            DeviceType_Sink, DriverType_File, NULL, file.path(), sink_config, arena);
         CHECK(backend_device != NULL);
         core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
         CHECK(backend_sink != NULL);
@@ -91,13 +95,15 @@ TEST(backend_sink, has_clock) {
 
 TEST(backend_sink, sample_rate_auto) {
     sink_config.sample_spec.set_sample_rate(0);
-    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends(); n_backend++) {
+    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends();
+         n_backend++) {
         core::TempFile file("test.wav");
-        IBackend &backend = BackendMap::instance().nth_backend(n_backend);
-        if(!supports_wav(backend)){
+        IBackend& backend = BackendMap::instance().nth_backend(n_backend);
+        if (!supports_wav(backend)) {
             continue;
         }
-        IDevice* backend_device = backend.open_device(DeviceType_Sink, DriverType_File, NULL, file.path(), sink_config, arena);
+        IDevice* backend_device = backend.open_device(
+            DeviceType_Sink, DriverType_File, NULL, file.path(), sink_config, arena);
         CHECK(backend_device != NULL);
         core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
         CHECK(backend_sink != NULL);
@@ -108,13 +114,15 @@ TEST(backend_sink, sample_rate_auto) {
 
 TEST(backend_sink, sample_rate_force) {
     sink_config.sample_spec.set_sample_rate(SampleRate);
-    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends(); n_backend++) {
+    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends();
+         n_backend++) {
         core::TempFile file("test.wav");
-        IBackend &backend = BackendMap::instance().nth_backend(n_backend);
-        if(!supports_wav(backend)){
+        IBackend& backend = BackendMap::instance().nth_backend(n_backend);
+        if (!supports_wav(backend)) {
             continue;
         }
-        IDevice* backend_device = backend.open_device(DeviceType_Sink, DriverType_File, NULL, file.path(), sink_config, arena);
+        IDevice* backend_device = backend.open_device(
+            DeviceType_Sink, DriverType_File, NULL, file.path(), sink_config, arena);
         CHECK(backend_device != NULL);
         core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
         CHECK(backend_sink != NULL);
@@ -123,5 +131,5 @@ TEST(backend_sink, sample_rate_force) {
     }
 }
 
-}
-}
+} // namespace sndio
+} // namespace roc

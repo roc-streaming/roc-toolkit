@@ -32,11 +32,12 @@ SoxSource::SoxSource(core::IArena& arena, const Config& config)
     }
 
     frame_length_ = config.frame_length;
-    
+
     if (config.sample_spec.num_channels() == 0) {
-        sample_spec_ = audio::SampleSpec(44100, audio::Sample_RawFormat, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, 0x3);
-    } 
-    else {
+        sample_spec_ =
+            audio::SampleSpec(44100, audio::Sample_RawFormat, audio::ChanLayout_Surround,
+                              audio::ChanOrder_Smpte, 0x3);
+    } else {
         sample_spec_ = config.sample_spec;
     }
 
@@ -370,8 +371,11 @@ bool SoxSource::open_() {
 
     is_file_ = !(input_->handler.flags & SOX_FILE_DEVICE);
 
-    if(is_file_ && sample_spec_.sample_rate() != input_->signal.rate && sample_spec_.sample_rate() != 0){
-        roc_log(LogInfo, "sndfile source: can't set rate: samplerate in argument is different from file samplerate");
+    if (is_file_ && sample_spec_.sample_rate() != input_->signal.rate
+        && sample_spec_.sample_rate() != 0) {
+        roc_log(LogInfo,
+                "sndfile source: can't set rate: samplerate in argument is different "
+                "from file samplerate");
         return false;
     }
 

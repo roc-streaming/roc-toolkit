@@ -59,7 +59,7 @@ IDevice* PulseaudioBackend::open_device(DeviceType device_type,
     return device.release();
 }
 
-const char* PulseaudioBackend::name() const{
+const char* PulseaudioBackend::name() const {
     return "PulseAudio";
 }
 

@@ -1,3 +1,17 @@
+/*
+ * Copyright (c) 2024 Roc Streaming authors
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+//! @file roc_sndio/target_sndfile/roc_sndio/sndfile_extension_table.h
+//! @brief TODO.
+
+#ifndef ROC_SNDIO_SNDFILE_EXTENSION_TABLE_H_
+#define ROC_SNDIO_SNDFILE_EXTENSION_TABLE_H_
+
 #pragma once
 
 #ifndef ROC_SNDIO_SNDFILE_FILEMAP_H_
@@ -13,9 +27,11 @@ struct FileMap {
     const char* driver_name;
     //! File extension associatied with driver and SF_FORMAT if it exists.
     const char* file_extension;
-}; static FileMap file_type_map[5]= {
-    { SF_FORMAT_MAT4, "mat4", NULL}, { SF_FORMAT_MAT5, "mat5", NULL}, { SF_FORMAT_WAV, "wav", "wav" }, 
-    { SF_FORMAT_NIST, "nist", NULL }, { SF_FORMAT_WAVEX, "wavex", NULL }
 };
+static FileMap file_type_map[5] = { { SF_FORMAT_MAT4, "mat4", NULL },
+                                    { SF_FORMAT_MAT5, "mat5", NULL },
+                                    { SF_FORMAT_WAV, "wav", "wav" },
+                                    { SF_FORMAT_NIST, "nist", NULL },
+                                    { SF_FORMAT_WAVEX, "wavex", NULL } };
 
-#endif
+#endif // ROC_SNDIO_SNDFILE_EXTENSION_TABLE_H_

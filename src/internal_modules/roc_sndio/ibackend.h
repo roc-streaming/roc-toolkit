@@ -40,7 +40,7 @@ public:
                                  const char* path,
                                  const Config& config,
                                  core::IArena& arena) = 0;
-                                
+
     virtual const char* name() const = 0;
 };
 

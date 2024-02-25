@@ -13,7 +13,6 @@
 #include "roc_sndio/wav_sink.h"
 #include "roc_sndio/wav_source.h"
 
-
 namespace roc {
 namespace sndio {
 
@@ -78,7 +77,7 @@ IDevice* WavBackend::open_device(DeviceType device_type,
 }
 
 const char* WavBackend::name() const {
-  return "wav"; 
+    return "wav";
 }
 
 } // namespace sndio

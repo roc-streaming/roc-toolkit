@@ -294,7 +294,7 @@ IDevice* SoxBackend::open_device(DeviceType device_type,
     roc_panic("sox backend: invalid device type");
 }
 
-const char* SoxBackend::name() const{
+const char* SoxBackend::name() const {
     return "SoX";
 }
 

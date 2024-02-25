@@ -5,7 +5,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-#define FORMAT_COUNT 2 //Number of major formats that don't allow for subtype SF_FORMAT_PCM_32;
+
+#define FORMAT_COUNT                                                                     \
+    2 // Number of major formats that don't allow for subtype SF_FORMAT_PCM_32;
 #define BUFFER_SIZE 512
 
 #include "roc_sndio/sndfile_sink.h"
@@ -29,51 +31,54 @@ bool map_to_sndfile(const char** driver, const char* path, SF_INFO& sfinfo) {
     file_extension = dot + 1;
 
     int format_enum = 0;
-    
-    if(*driver == NULL){
-        for(size_t file_map_index = 0; file_map_index < ROC_ARRAY_SIZE(file_type_map); file_map_index++){
-            if(file_type_map[file_map_index].file_extension != NULL){
-                if(strcmp(file_extension, file_type_map[file_map_index].file_extension) == 0){
+
+    if (*driver == NULL) {
+        for (size_t file_map_index = 0; file_map_index < ROC_ARRAY_SIZE(file_type_map);
+             file_map_index++) {
+            if (file_type_map[file_map_index].file_extension != NULL) {
+                if (strcmp(file_extension, file_type_map[file_map_index].file_extension)
+                    == 0) {
                     format_enum = file_type_map[file_map_index].format_id;
                     *driver = file_extension;
                     break;
                 }
             }
         }
-    }
-    else{
-        for(size_t file_map_index = 0; file_map_index < ROC_ARRAY_SIZE(file_type_map); file_map_index++){
-            if(strcmp(*driver, file_type_map[file_map_index].driver_name) == 0){
+    } else {
+        for (size_t file_map_index = 0; file_map_index < ROC_ARRAY_SIZE(file_type_map);
+             file_map_index++) {
+            if (strcmp(*driver, file_type_map[file_map_index].driver_name) == 0) {
                 format_enum = file_type_map[file_map_index].format_id;
                 break;
             }
         }
     }
 
-    if(format_enum == 0){
-        SF_FORMAT_INFO	info ;
+    if (format_enum == 0) {
+        SF_FORMAT_INFO info;
         int major_count, format_index;
-        if (int errnum = sf_command(NULL, SFC_GET_FORMAT_MAJOR_COUNT,
-                                &major_count, sizeof(int))) {
-            roc_panic("sndfile backend: sf_command(SFC_GET_FORMAT_MAJOR_COUNT) failed %s", sf_error_number(errnum));
+        if (int errnum =
+                sf_command(NULL, SFC_GET_FORMAT_MAJOR_COUNT, &major_count, sizeof(int))) {
+            roc_panic("sndfile backend: sf_command(SFC_GET_FORMAT_MAJOR_COUNT) failed %s",
+                      sf_error_number(errnum));
         }
 
-        for (format_index = 0 ; format_index < major_count ; format_index++){	
-            info.format = format_index ;
-            if (int errnum = sf_command(NULL, SFC_GET_FORMAT_MAJOR, &info,
-                                    sizeof(info))) {
-                roc_panic("sndfile backend: sf_command(SFC_GET_FORMAT_MAJOR) failed %s", sf_error_number(errnum));
+        for (format_index = 0; format_index < major_count; format_index++) {
+            info.format = format_index;
+            if (int errnum =
+                    sf_command(NULL, SFC_GET_FORMAT_MAJOR, &info, sizeof(info))) {
+                roc_panic("sndfile backend: sf_command(SFC_GET_FORMAT_MAJOR) failed %s",
+                          sf_error_number(errnum));
             }
 
-            if(*driver == NULL){
-                if(strcmp(info.extension, file_extension) == 0){
+            if (*driver == NULL) {
+                if (strcmp(info.extension, file_extension) == 0) {
                     format_enum = info.format;
                     *driver = file_extension;
                     break;
                 }
-            }
-            else{
-                if(strcmp(info.extension, *driver) == 0){
+            } else {
+                if (strcmp(info.extension, *driver) == 0) {
                     format_enum = info.format;
                     break;
                 }
@@ -81,7 +86,7 @@ bool map_to_sndfile(const char** driver, const char* path, SF_INFO& sfinfo) {
         }
     }
 
-    if(format_enum == 0){
+    if (format_enum == 0) {
         return false;
     }
 
@@ -126,7 +131,6 @@ bool map_to_sndfile(const char** driver, const char* path, SF_INFO& sfinfo) {
 SndfileSink::SndfileSink(core::IArena& arena, const Config& config)
     : file_(NULL)
     , valid_(false) {
-
     if (config.sample_spec.num_channels() == 0) {
         roc_log(LogError, "sndfile sink: # of channels is zero");
         return;
@@ -267,7 +271,7 @@ bool SndfileSink::has_clock() const {
 
 void SndfileSink::write(audio::Frame& frame) {
     roc_panic_if(!valid_);
-  
+
     audio::sample_t* frame_data = frame.raw_samples();
     sf_count_t frame_left = (sf_count_t)frame.num_raw_samples();
 
@@ -284,21 +288,24 @@ bool SndfileSink::open_(const char* driver, const char* path) {
     unsigned long in_rate = (unsigned long)file_info_.samplerate;
 
     unsigned long out_rate = (unsigned long)file_info_.samplerate;
-    
+
     if (!map_to_sndfile(&driver, path, file_info_)) {
         roc_log(LogDebug,
-                "sndfile sink: map_to_sndfile(): Cannot find valid subtype format for major format type");
+                "sndfile sink: map_to_sndfile(): Cannot find valid subtype format for "
+                "major format type");
         return false;
     }
 
     file_ = sf_open(path, SFM_WRITE, &file_info_);
     if (!file_) {
-        roc_log(LogDebug, "sndfile sink: %s, can't open: driver=%s path=%s", sf_strerror(file_), driver, path);
+        roc_log(LogDebug, "sndfile sink: %s, can't open: driver=%s path=%s",
+                sf_strerror(file_), driver, path);
         return false;
     }
 
-    if(sf_command(file_, SFC_SET_UPDATE_HEADER_AUTO, NULL, SF_TRUE) == 0){
-        roc_log(LogDebug, "sndfile sink: sf_command(SFC_SET_UPDATE_HEADER_AUTO) returned false");
+    if (sf_command(file_, SFC_SET_UPDATE_HEADER_AUTO, NULL, SF_TRUE) == 0) {
+        roc_log(LogDebug,
+                "sndfile sink: sf_command(SFC_SET_UPDATE_HEADER_AUTO) returned false");
         return false;
     }
 
@@ -309,11 +316,9 @@ bool SndfileSink::open_(const char* driver, const char* path) {
             " opened: out_rate=%lu in_rate=%lu ch=%lu",
             out_rate, in_rate, (unsigned long)file_info_.channels);
 
-
     sf_count_t err = sf_seek(file_, 0, SEEK_SET);
     if (err == -1) {
-        roc_log(LogError,
-                "sndfile sink: sf_seek(): %s", sf_strerror(file_));
+        roc_log(LogError, "sndfile sink: sf_seek(): %s", sf_strerror(file_));
         return false;
     }
 
@@ -329,7 +334,8 @@ void SndfileSink::close_() {
 
     int err = sf_close(file_);
     if (err != 0) {
-        roc_panic("sndfile sink: sf_close() failed. Cannot close output: %s", sf_error_number(err));
+        roc_panic("sndfile sink: sf_close() failed. Cannot close output: %s",
+                  sf_error_number(err));
     }
 
     file_ = NULL;

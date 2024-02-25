@@ -40,8 +40,6 @@ public:
     virtual const char* name() const;
 };
 
-
-
 } // namespace sndio
 } // namespace roc
 

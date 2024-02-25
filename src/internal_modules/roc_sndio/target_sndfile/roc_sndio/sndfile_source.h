@@ -101,7 +101,7 @@ private:
 
     SNDFILE* file_;
     SF_INFO file_info_;
-    const char * path_;
+    const char* path_;
     size_t sample_rate_;
     bool eof_;
     bool valid_;

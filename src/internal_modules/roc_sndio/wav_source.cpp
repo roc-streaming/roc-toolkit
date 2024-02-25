@@ -159,7 +159,6 @@ bool WavSource::read(audio::Frame& frame) {
 }
 
 bool WavSource::open_(const char* path) {
-    
     if (file_opened_) {
         roc_panic("wav source: already opened");
     }
