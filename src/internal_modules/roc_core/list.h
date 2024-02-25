@@ -209,8 +209,7 @@ public:
     }
 
 private:
-    
-    //! Insert element preceding list node data into list.
+    //! Insert element preceding element with given list node data into list.
     //!
     //! @remarks
     //!  - inserts @p element before @p data_before

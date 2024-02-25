@@ -30,7 +30,7 @@ bool ListImpl::is_empty() const {
     return size_ == 0;
 }
 
-bool ListImpl::contains(const ListNode::ListNodeData* data) {
+bool ListImpl::contains(const ListNode::ListNodeData* data) const {
     return (data->list == this);
 }
 
@@ -98,9 +98,10 @@ void ListImpl::remove(ListNode::ListNodeData* data) {
 }
 
 void ListImpl::check_is_member(const ListNode::ListNodeData* data, const ListImpl* list) {
-    if (data->list != list) {
-        roc_panic("list: list node data is not registered in this list: expected %p, got %p",
-                  (const void*)list, (const void*)data->list);
+    if (!list->contains(data)) {
+        roc_panic(
+            "list: list node data is not registered in this list: expected %p, got %p",
+            (const void*)list, (const void*)data->list);
     }
 }
 
