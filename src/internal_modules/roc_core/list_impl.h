@@ -49,7 +49,7 @@ public:
     //! Get list element next to list node data.
     //!
     //! @returns
-    //!  list element following @p data if @p data is not
+    //!  list element following list node data @p data if @p data is not
     //!  last, or NULL otherwise.
     //!
     //! @pre
