@@ -19,14 +19,14 @@
 #include "roc_sndio/config.h"
 #include "roc_sndio/pump.h"
 #include "roc_sndio/backend_map.h"
-#ifdef ROC_TARGET_SOX
-#include "roc_sndio/sox_sink.h"
-#include "roc_sndio/sox_source.h"
-#endif // ROC_TARGET_SOX
 #ifdef ROC_TARGET_SNDFILE
 #include "roc_sndio/sndfile_sink.h"
 #include "roc_sndio/sndfile_source.h"
 #endif // ROC_TARGET_SNDFILE
+#ifdef ROC_TARGET_SOX
+#include "roc_sndio/sox_sink.h"
+#include "roc_sndio/sox_source.h"
+#endif // ROC_TARGET_SOX
 
 namespace roc {
 namespace sndio {
@@ -88,14 +88,9 @@ TEST(pump, write_read) {
             continue;
         }
 
-        printf("Currently on: %s\n", backend.name());
-        fflush(stdout);
-
         {
             IDevice *backend_device = backend.open_device(DeviceType_Sink, DriverType_File, "wav", file.path(), sink_config, arena);
             CHECK(backend_device != NULL);
-            printf("Passing sink test: %s\n", backend.name());
-            fflush(stdout);
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
             Pump pump(buffer_factory, mock_source, NULL, *backend_sink, BufDuration, SampleSpecs,
@@ -106,13 +101,8 @@ TEST(pump, write_read) {
             CHECK(mock_source.num_returned() >= NumSamples - BufSize);  
         }
 
-        printf("File path: %s\n", file.path());
-        fflush(stdout);
-        
         IDevice *backend_device = backend.open_device(DeviceType_Source, DriverType_File, "wav", file.path(), source_config, arena);
         CHECK(backend_device != NULL);
-
-        printf("Passing source test: %s\n\n", backend.name());
         
         core::ScopedPtr<ISource> backend_source(backend_device->to_source(), arena);
         CHECK(backend_source != NULL);

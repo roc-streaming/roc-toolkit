@@ -17,10 +17,14 @@
 #include "roc_core/stddefs.h"
 #include "roc_core/temp_file.h"
 #include "roc_sndio/pump.h"
+//#ifdef ROC_TARGET_SNDFILE
 #include "roc_sndio/sndfile_sink.h"
 #include "roc_sndio/sndfile_source.h"
+//#endif // ROC_TARGET_SNDFILE
+//#ifdef ROC_TARGET_SOX
 #include "roc_sndio/sox_sink.h"
 #include "roc_sndio/sox_source.h"
+//#endif // ROC_TARGET_SOX
 
 namespace roc {
 namespace sndio {
@@ -82,7 +86,10 @@ TEST(backend_source, noop) {
 TEST(backend_source, error) {
     for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends(); n_backend++) {
         IBackend &backend = BackendMap::instance().nth_backend(n_backend);
-        IDevice *backend_device = backend.open_device(DeviceType_Source, DriverType_File, NULL, "/bad/file", sink_config, arena);
+        if(!supports_wav(backend)){
+            continue;
+        }
+        IDevice *backend_device = backend.open_device(DeviceType_Source, DriverType_File, NULL, "/bad/file", source_config, arena);
         CHECK(backend_device == NULL); 
     }
 }
@@ -92,16 +99,7 @@ TEST(backend_source, has_clock) {
         core::TempFile file("test.wav");
         IBackend& backend = BackendMap::instance().nth_backend(n_backend);
         
-        bool supports_wav = false;
-        core::Array<DriverInfo, MaxDrivers> driver_list;
-        backend.discover_drivers(driver_list);
-        for (size_t n = 0; n < driver_list.size(); n++) {
-            if (strcmp(driver_list[n].name, "wav") == 0) {
-                supports_wav = true;
-                break;
-            }
-        }
-        if(!supports_wav){
+        if(!supports_wav(backend)){
             continue;
         }
 
@@ -373,7 +371,7 @@ TEST(backend_source, eof_restart) {
             CHECK(backend_source->read(frame));
             CHECK(backend_source->read(frame));
             CHECK(!backend_source->read(frame));
-            
+
             CHECK(backend_source->restart());
         }
     }
