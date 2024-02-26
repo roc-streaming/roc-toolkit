@@ -53,7 +53,7 @@ core::BufferFactory<audio::sample_t> buffer_factory(arena, MaxBufSize);
 
 bool supports_wav(IBackend& backend) {
     bool supports = false;
-    core::Array<DriverInfo, MaxDrivers> driver_list;
+    core::Array<DriverInfo, MaxDrivers> driver_list(arena);
     backend.discover_drivers(driver_list);
     for (size_t n = 0; n < driver_list.size(); n++) {
         if (strcmp(driver_list[n].name, "wav") == 0) {

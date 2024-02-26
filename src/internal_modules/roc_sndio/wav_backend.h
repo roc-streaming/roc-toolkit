@@ -35,6 +35,7 @@ public:
                                  const Config& config,
                                  core::IArena& arena);
 
+    //! Returns name of backend.
     virtual const char* name() const;
 };
 

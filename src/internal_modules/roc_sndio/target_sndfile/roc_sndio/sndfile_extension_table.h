@@ -11,11 +11,8 @@
 
 #ifndef ROC_SNDIO_SNDFILE_EXTENSION_TABLE_H_
 #define ROC_SNDIO_SNDFILE_EXTENSION_TABLE_H_
-
-#pragma once
-
-#ifndef ROC_SNDIO_SNDFILE_FILEMAP_H_
-#define ROC_SNDIO_SNDFILE_FILEMAP_H_
+#ifndef ROC_SNDIO_SNDFILE_EXTENSION_TABLE_H_
+#define ROC_SNDIO_SNDFILE_EXTENSION_TABLE_H_
 
 #include "sndfile.h"
 
@@ -33,5 +30,6 @@ static FileMap file_type_map[5] = { { SF_FORMAT_MAT4, "mat4", NULL },
                                     { SF_FORMAT_WAV, "wav", "wav" },
                                     { SF_FORMAT_NIST, "nist", NULL },
                                     { SF_FORMAT_WAVEX, "wavex", NULL } };
+#endif // ROC_SNDIO_SNDFILE_FILEMAP_H_
 
 #endif // ROC_SNDIO_SNDFILE_EXTENSION_TABLE_H_

@@ -40,7 +40,7 @@ public:
                                  const char* path,
                                  const Config& config,
                                  core::IArena& arena) = 0;
-
+    //! Returns name of backend.
     virtual const char* name() const = 0;
 };
 
