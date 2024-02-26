@@ -12,12 +12,12 @@
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/temp_file.h"
 #include "roc_sndio/backend_map.h"
-//#ifdef ROC_TARGERT_SNDFILE
+#ifdef ROC_TARGERT_SNDFILE
 #include "roc_sndio/sndfile_sink.h"
-//#endif // ROC_TARGET_SNDFILE
-//#ifdef ROC_TARGET_SOX
+#endif // ROC_TARGET_SNDFILE
+#ifdef ROC_TARGET_SOX
 #include "roc_sndio/sox_sink.h"
-//#endif // ROC_TARGET_SOX
+#endif // ROC_TARGET_SOX
 
 namespace roc {
 namespace sndio {
@@ -59,8 +59,19 @@ TEST_GROUP(backend_sink) {
 };
 
 TEST(backend_sink, noop) {
-    SndfileSink sndfile_sink(arena, sink_config);
-    SoxSink sox_sink(arena, sink_config);
+    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends();
+         n_backend++) {
+        IBackend& backend = BackendMap::instance().nth_backend(n_backend);
+        if (!supports_wav(backend)) {
+            continue;
+        }
+        core::TempFile file("test.wav");
+        IDevice* backend_device = backend.open_device(
+            DeviceType_Sink, DriverType_File, NULL, file.path(), sink_config, arena);
+        CHECK(backend_device != NULL);
+        core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
+        CHECK(backend_sink != NULL);
+    }
 }
 
 TEST(backend_sink, error) {

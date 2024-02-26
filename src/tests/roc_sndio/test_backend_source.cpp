@@ -17,14 +17,14 @@
 #include "roc_core/temp_file.h"
 #include "roc_sndio/backend_map.h"
 #include "roc_sndio/pump.h"
-//#ifdef ROC_TARGET_SNDFILE
+#ifdef ROC_TARGET_SNDFILE
 #include "roc_sndio/sndfile_sink.h"
 #include "roc_sndio/sndfile_source.h"
-//#endif // ROC_TARGET_SNDFILE
-//#ifdef ROC_TARGET_SOX
+#endif // ROC_TARGET_SNDFILE
+#ifdef ROC_TARGET_SOX
 #include "roc_sndio/sox_sink.h"
 #include "roc_sndio/sox_source.h"
-//#endif // ROC_TARGET_SOX
+#endif // ROC_TARGET_SOX
 
 namespace roc {
 namespace sndio {
@@ -83,8 +83,33 @@ TEST_GROUP(backend_source) {
 };
 
 TEST(backend_source, noop) {
-    SndfileSource sndfile_source(arena, source_config);
-    SoxSource sox_source(arena, source_config);
+    for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends();
+         n_backend++) {
+        core::TempFile file("test.wav");
+        IBackend& backend = BackendMap::instance().nth_backend(n_backend);
+
+        if (!supports_wav(backend)) {
+            continue;
+        }
+        {
+            test::MockSource mock_source;
+            IDevice* backend_device = backend.open_device(
+                DeviceType_Sink, DriverType_File, NULL, file.path(), sink_config, arena);
+            CHECK(backend_device != NULL);
+            core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
+            CHECK(backend_sink != NULL);
+
+            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, FrameDuration,
+                      SampleSpecs, Pump::ModeOneshot);
+            CHECK(pump.is_valid());
+            CHECK(pump.run());
+        }
+        IDevice* backend_device = backend.open_device(
+            DeviceType_Source, DriverType_File, NULL, file.path(), source_config, arena);
+        CHECK(backend_device != NULL);
+        core::ScopedPtr<ISource> backend_source(backend_device->to_source(), arena);
+        CHECK(backend_source != NULL);
+    }
 }
 
 TEST(backend_source, error) {
