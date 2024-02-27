@@ -17,14 +17,6 @@
 #include "roc_core/temp_file.h"
 #include "roc_sndio/backend_map.h"
 #include "roc_sndio/pump.h"
-#ifdef ROC_TARGET_SNDFILE
-#include "roc_sndio/sndfile_sink.h"
-#include "roc_sndio/sndfile_source.h"
-#endif // ROC_TARGET_SNDFILE
-#ifdef ROC_TARGET_SOX
-#include "roc_sndio/sox_sink.h"
-#include "roc_sndio/sox_source.h"
-#endif // ROC_TARGET_SOX
 
 namespace roc {
 namespace sndio {
