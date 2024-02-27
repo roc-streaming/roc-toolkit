@@ -3,7 +3,7 @@
 set -euxo pipefail
 
 brew install --force --overwrite \
-     automake scons libsndfile
+     automake scons
 
 scons -Q \
       --enable-werror \
