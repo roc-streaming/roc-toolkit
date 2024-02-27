@@ -24,5 +24,5 @@ scons -Q \
       --enable-tests \
       --enable-benchmarks \
       --enable-examples \
-      --build-3rdparty=openfec,sndfile \
+      --build-3rdparty=openfec \
       test
