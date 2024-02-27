@@ -13,7 +13,6 @@
 #include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_core/stddefs.h"
 #include "roc_core/temp_file.h"
 #include "roc_sndio/backend_map.h"
 #include "roc_sndio/pump.h"

@@ -12,6 +12,7 @@
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/temp_file.h"
 #include "roc_sndio/backend_map.h"
+#include "roc_sndio/pump.h"
 
 namespace roc {
 namespace sndio {
@@ -88,13 +89,6 @@ TEST(backend_sink, has_clock) {
         IBackend& backend = BackendMap::instance().nth_backend(n_backend);
         if (!supports_aiff(backend)) {
             continue;
-        }
-        {
-            IDevice* backend_device = backend.open_device(
-                DeviceType_Sink, DriverType_File, NULL, file.path(), sink_config, arena);
-            CHECK(backend_device != NULL);
-            core::ScopedPtr<ISource> backend_sink(backend_device->to_source(), arena);
-            CHECK(backend_sink != NULL);
         }
         IDevice* backend_device = backend.open_device(
             DeviceType_Sink, DriverType_File, NULL, file.path(), sink_config, arena);
