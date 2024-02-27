@@ -91,7 +91,7 @@ TEST(backend_source, noop) {
         if (!supports_aiff(backend)) {
             continue;
         }
-        
+
         {
             test::MockSource mock_source;
             IDevice* backend_device = backend.open_device(
@@ -101,7 +101,7 @@ TEST(backend_source, noop) {
             CHECK(backend_sink != NULL);
 
             Pump pump(buffer_factory, mock_source, NULL, *backend_sink, FrameDuration,
-                    SampleSpecs, Pump::ModeOneshot);
+                      SampleSpecs, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
         }
@@ -110,7 +110,6 @@ TEST(backend_source, noop) {
         CHECK(backend_device != NULL);
         core::ScopedPtr<ISource> backend_source(backend_device->to_source(), arena);
         CHECK(backend_source != NULL);
-        
     }
 }
 
