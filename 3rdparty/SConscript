@@ -236,18 +236,10 @@ elif 'speexdsp' in system_dependencies:
 
 # dep: sndfile
 if 'sndfile' in autobuild_dependencies:
-    #sndfile_deps = []
 
-    # DELETE?
     env.BuildThirdParty(thirdparty_versions, 'sndfile')
 
     conf = Configure(env, custom_tests=env.CustomTests)
-
-    #if not 'alsa' in autobuild_dependencies:
-    #    for lib in [
-    #            'asound',
-    #            ]:
-    #        conf.CheckLib(lib)
 
     env = conf.Finish()
 
@@ -259,7 +251,7 @@ elif 'sndfile' in system_dependencies:
 
     if not is_crosscompiling:
         if not conf.CheckLibWithHeaderExt(
-                'sndfile', 'sndfile.h', 'C'): #fix
+                'sndfile', 'sndfile.h', 'C'):
             env.Die("libsndfile >= 1.0.25 not found (see 'config.log' for details)")
     else:
         if not conf.CheckLibWithHeaderExt('sndfile', 'sndfile.h', 'C', run=False):
