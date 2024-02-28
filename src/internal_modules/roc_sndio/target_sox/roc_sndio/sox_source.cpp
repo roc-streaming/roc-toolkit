@@ -32,14 +32,9 @@ SoxSource::SoxSource(core::IArena& arena, const Config& config)
     }
 
     frame_length_ = config.frame_length;
+    
+    sample_spec_ = config.sample_spec;
 
-    if (config.sample_spec.num_channels() == 0) {
-        sample_spec_ =
-            audio::SampleSpec(44100, audio::Sample_RawFormat, audio::ChanLayout_Surround,
-                              audio::ChanOrder_Smpte, 0x3);
-    } else {
-        sample_spec_ = config.sample_spec;
-    }
 
     if (frame_length_ == 0) {
         roc_log(LogError, "sox source: frame length is zero");
@@ -115,13 +110,13 @@ void SoxSource::pause() {
     }
 
     if (!input_) {
-        roc_panic("sox source: pause: non-open input file or device");
+        roc_panic("sox source: pause: non-open device");
     }
 
     roc_log(LogDebug, "sox source: pausing: driver=%s input=%s", driver_name_.c_str(),
             input_name_.c_str());
 
-    if (!is_file_) {
+    if(!is_file_){
         close_();
     }
 
@@ -158,12 +153,17 @@ bool SoxSource::restart() {
 
     if (is_file_ && !eof_) {
         if (!seek_(0)) {
+            roc_panic("Reached");
             roc_log(LogError,
                     "sox source: seek failed when restarting: driver=%s input=%s",
                     driver_name_.c_str(), input_name_.c_str());
             return false;
         }
     } else {
+        if(is_file_){
+            sample_spec_.clear();
+        }
+
         if (input_) {
             close_();
         }
@@ -360,23 +360,24 @@ bool SoxSource::open_() {
         return false;
     }
 
-    if (input_->signal.channels != sample_spec_.num_channels()) {
-        roc_log(LogError,
-                "sox source: can't open: unsupported # of channels: "
-                "expected=%lu actual=%lu",
-                (unsigned long)sample_spec_.num_channels(),
-                (unsigned long)input_->signal.channels);
-        return false;
-    }
-
     is_file_ = !(input_->handler.flags & SOX_FILE_DEVICE);
 
-    if (is_file_ && sample_spec_.sample_rate() != input_->signal.rate
-        && sample_spec_.sample_rate() != 0) {
-        roc_log(LogInfo,
-                "sndfile source: can't set rate: samplerate in argument is different "
-                "from file samplerate");
-        return false;
+    if (is_file_) {
+        if(!sample_spec_.is_empty()){
+            roc_log(LogError, "sox source: setting io encoding for files not supported");
+            return false;
+        }
+        sample_spec_ = sample_spec();
+    }
+    else{
+        if (input_->signal.channels != sample_spec_.num_channels()) {
+            roc_log(LogError,
+                    "sox source: can't open: unsupported # of channels: "
+                    "expected=%lu actual=%lu",
+                    (unsigned long)sample_spec_.num_channels(),
+                    (unsigned long)input_->signal.channels);
+            return false;
+        }
     }
 
     sample_spec_.set_sample_rate((unsigned long)input_->signal.rate);

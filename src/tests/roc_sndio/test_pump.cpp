@@ -47,12 +47,12 @@ const core::nanoseconds_t BufDuration = BufSize * core::Second
 core::HeapArena arena;
 core::BufferFactory<audio::sample_t> buffer_factory(arena, BufSize);
 
-bool supports_aiff(IBackend& backend) {
+bool supports_wav(IBackend& backend) {
     bool supports = false;
     core::Array<DriverInfo, MaxDrivers> driver_list(arena);
     backend.discover_drivers(driver_list);
     for (size_t n = 0; n < driver_list.size(); n++) {
-        if (strcmp(driver_list[n].name, "aiff") == 0) {
+        if (strcmp(driver_list[n].name, "wav") == 0) {
             supports = true;
             break;
         }
@@ -89,7 +89,7 @@ TEST(pump, write_read) {
 
         IBackend& backend = BackendMap::instance().nth_backend(n_backend);
 
-        if (!supports_aiff(backend)) {
+        if (!supports_wav(backend)) {
             continue;
         }
 
@@ -135,7 +135,7 @@ TEST(pump, write_overwrite_read) {
         core::TempFile file("test.wav");
         IBackend& backend = BackendMap::instance().nth_backend(n_backend);
 
-        if (!supports_aiff(backend)) {
+        if (!supports_wav(backend)) {
             continue;
         }
 

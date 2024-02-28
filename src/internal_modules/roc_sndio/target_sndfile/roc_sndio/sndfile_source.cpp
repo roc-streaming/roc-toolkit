@@ -25,6 +25,11 @@ SndfileSource::SndfileSource(core::IArena& arena, const Config& config)
         return;
     }
 
+    if (!config.sample_spec.is_empty()) {
+        roc_log(LogError, "sndfile source: setting io encoding not supported");
+        return;
+    }
+
     frame_length_ = config.frame_length;
     sample_spec_ = config.sample_spec;
 
@@ -228,13 +233,6 @@ bool SndfileSource::open_(const char* path) {
     if (!file_) {
         roc_log(LogInfo, "sndfile source: can't open: input=%s, %s", !path ? NULL : path,
                 sf_strerror(file_));
-        return false;
-    }
-
-    if (sample_rate_ != 0 && sample_rate_ != (size_t)file_info_.samplerate) {
-        roc_log(LogInfo,
-                "sndfile source: can't set rate: samplerate in argument is different "
-                "from file samplerate");
         return false;
     }
 
