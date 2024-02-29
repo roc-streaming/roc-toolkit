@@ -6,8 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#define FORMAT_COUNT                                                                     \
-    2 // Number of major formats that don't allow for 32 bits;
+#define FORMAT_COUNT 2 // Number of major formats that don't allow for 32 bits;
 #define BUFFER_SIZE 512
 
 #include "roc_sndio/sndfile_sink.h"
@@ -151,7 +150,8 @@ SndfileSink::SndfileSink(core::IArena& arena, const Config& config)
     }
 
     memset(&file_info_, 0, sizeof(file_info_));
-    //file_info_.format = (int)config.sample_spec.pcm_format(); this needs to be converted to corresponding enum of sndfile somehow
+    // file_info_.format = (int)config.sample_spec.pcm_format(); this needs to be
+    // converted to corresponding enum of sndfile somehow
     file_info_.format = SF_FORMAT_PCM_32;
     file_info_.channels = (int)config.sample_spec.num_channels();
     file_info_.samplerate = (int)config.sample_spec.sample_rate();
