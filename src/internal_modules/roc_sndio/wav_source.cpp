@@ -14,7 +14,7 @@ namespace roc {
 namespace sndio {
 
 WavSource::WavSource(core::IArena& arena, const Config& config)
-    : file_opened_(false) 
+    : file_opened_(false)
     , eof_(false)
     , valid_(false) {
     if (config.latency != 0) {

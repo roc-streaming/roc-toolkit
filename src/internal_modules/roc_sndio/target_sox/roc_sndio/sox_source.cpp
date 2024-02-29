@@ -32,9 +32,8 @@ SoxSource::SoxSource(core::IArena& arena, const Config& config)
     }
 
     frame_length_ = config.frame_length;
-    
-    sample_spec_ = config.sample_spec;
 
+    sample_spec_ = config.sample_spec;
 
     if (frame_length_ == 0) {
         roc_log(LogError, "sox source: frame length is zero");
@@ -116,7 +115,7 @@ void SoxSource::pause() {
     roc_log(LogDebug, "sox source: pausing: driver=%s input=%s", driver_name_.c_str(),
             input_name_.c_str());
 
-    if(!is_file_){
+    if (!is_file_) {
         close_();
     }
 
@@ -160,7 +159,7 @@ bool SoxSource::restart() {
             return false;
         }
     } else {
-        if(is_file_){
+        if (is_file_) {
             sample_spec_.clear();
         }
 
@@ -363,13 +362,12 @@ bool SoxSource::open_() {
     is_file_ = !(input_->handler.flags & SOX_FILE_DEVICE);
 
     if (is_file_) {
-        if(!sample_spec_.is_empty()){
+        if (!sample_spec_.is_empty()) {
             roc_log(LogError, "sox source: setting io encoding for files not supported");
             return false;
         }
         sample_spec_ = sample_spec();
-    }
-    else{
+    } else {
         if (input_->signal.channels != sample_spec_.num_channels()) {
             roc_log(LogError,
                     "sox source: can't open: unsupported # of channels: "

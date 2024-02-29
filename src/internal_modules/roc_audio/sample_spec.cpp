@@ -138,8 +138,7 @@ bool SampleSpec::is_valid() const {
 }
 
 bool SampleSpec::is_empty() const {
-    return sample_fmt_ == SampleFormat_Invalid
-        && pcm_fmt_ == PcmFormat_Invalid
+    return sample_fmt_ == SampleFormat_Invalid && pcm_fmt_ == PcmFormat_Invalid
         && sample_rate_ == 0 && channel_set_.num_channels() == 0;
 }
 

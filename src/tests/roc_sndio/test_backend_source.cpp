@@ -219,7 +219,7 @@ TEST(backend_source, sample_rate_mismatch) {
 
         IDevice* backend_device = backend.open_device(
             DeviceType_Source, DriverType_File, "wav", file.path(), source_config, arena);
-        
+
         CHECK(backend_device == NULL);
     }
 }
@@ -329,7 +329,7 @@ TEST(backend_source, pause_restart) {
         audio::Frame frame1(frame_data1, FrameSize * NumChans);
 
         // TODO(gh-706): check state
-        
+
         CHECK(backend_source->read(frame1));
 
         backend_source->pause();
@@ -356,8 +356,6 @@ TEST(backend_source, pause_restart) {
 
             CHECK(backend_source->read(frame2));
         }
-
-        
 
         if (memcmp(frame_data1, frame_data2, sizeof(frame_data1)) != 0) {
             FAIL("frames should be equal");
