@@ -66,7 +66,7 @@ public:
     //! Check if sample spec has non-zero rate and valid channel set.
     bool is_valid() const;
     
-    //! Check if sample spec has a zero rate, empty channel set, and invalid_format
+    //! Check if sample spec has a zero rate, empty channel set, and invalid_format.
     bool is_empty() const;
 
     //! Check if samples are in raw format.
