@@ -7,7 +7,7 @@
  */
 
 #define FORMAT_COUNT                                                                     \
-    2 // Number of major formats that don't allow for subtype SF_FORMAT_PCM_32;
+    2 // Number of major formats that don't allow for 32 bits;
 #define BUFFER_SIZE 512
 
 #include "roc_sndio/sndfile_sink.h"
@@ -151,7 +151,7 @@ SndfileSink::SndfileSink(core::IArena& arena, const Config& config)
     }
 
     memset(&file_info_, 0, sizeof(file_info_));
-
+    //file_info_.format = (int)config.sample_spec.pcm_format(); this needs to be converted to corresponding enum of sndfile somehow
     file_info_.format = SF_FORMAT_PCM_32;
     file_info_.channels = (int)config.sample_spec.num_channels();
     file_info_.samplerate = (int)config.sample_spec.sample_rate();
@@ -278,9 +278,10 @@ void SndfileSink::write(audio::Frame& frame) {
     // Write entire float buffer in one call
     sf_count_t count = sf_write_float(file_, frame_data, frame_left);
 
-    if (count != frame_left || sf_error(file_) != 0) {
+    int errnum = sf_error(file_);
+    if (count != frame_left || errnum != 0) {
         // TODO(gh-183): return error instead of panic
-        roc_panic("sndfile source: sf_write_float() failed: %s", sf_strerror(file_));
+        roc_panic("sndfile source: sf_write_float() failed: %s", sf_error_number(errnum));
     }
 }
 

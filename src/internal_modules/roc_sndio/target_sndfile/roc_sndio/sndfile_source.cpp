@@ -254,8 +254,8 @@ void SndfileSource::close_() {
     }
 
     roc_log(LogInfo, "sndfile source: closing input");
-
-    if (int err = sf_close(file_) != 0) {
+    int err = sf_close(file_);
+    if (err != 0) {
         roc_panic("sndfile source: sf_close() failed. Cannot close input: %s",
                   sf_error_number(err));
     }

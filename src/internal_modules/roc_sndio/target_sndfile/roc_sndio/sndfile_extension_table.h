@@ -21,7 +21,7 @@ struct FileMap {
     int format_id;
     //! Name of driver mapped to SF_FORMAT
     const char* driver_name;
-    //! File extension associatied with driver and SF_FORMAT if it exists.
+    //! File extension associated with driver and SF_FORMAT if it exists.
     const char* file_extension;
 };
 static FileMap file_type_map[5] = { { SF_FORMAT_MAT4, "mat4", NULL },
