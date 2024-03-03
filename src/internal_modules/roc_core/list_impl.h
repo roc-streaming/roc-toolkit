@@ -31,9 +31,6 @@ public:
     //! Get number of elements in list.
     size_t size() const;
 
-    //! Check if size is zero.
-    bool is_empty() const;
-
     //! Check whether list node data is registered in list.
     bool contains(const ListNode::ListNodeData* data) const;
 

@@ -65,7 +65,7 @@ public:
 
     //! Check if size is zero.
     bool is_empty() const {
-        return impl_.is_empty();
+        return impl_.size() == 0;
     }
 
     //! Check if element belongs to list.

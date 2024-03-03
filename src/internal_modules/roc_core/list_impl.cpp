@@ -26,10 +26,6 @@ size_t ListImpl::size() const {
     return size_;
 }
 
-bool ListImpl::is_empty() const {
-    return size_ == 0;
-}
-
 bool ListImpl::contains(const ListNode::ListNodeData* data) const {
     return (data->list == this);
 }
