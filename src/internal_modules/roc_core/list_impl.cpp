@@ -22,6 +22,10 @@ ListImpl::ListImpl()
     head.list = this;
 }
 
+ListImpl::~ListImpl() {
+	head.list = NULL;	
+}
+
 size_t ListImpl::size() const {
     return size_;
 }

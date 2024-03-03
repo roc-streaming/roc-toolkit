@@ -28,6 +28,9 @@ public:
     //! Initialize empty list.
     ListImpl();
 
+    //! Destruct list.
+    ~ListImpl();
+
     //! Get number of elements in list.
     size_t size() const;
 
