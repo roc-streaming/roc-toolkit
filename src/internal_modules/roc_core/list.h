@@ -52,7 +52,7 @@ public:
             next_data = data->next;
             data->list = NULL;
 
-            OwnershipPolicy<T>::release(*static_cast<T*>(impl_.container_of(data)));
+            OwnershipPolicy<T>::release(*(container_of_(data)));
         }
 
         impl_.head.list = NULL;
@@ -78,14 +78,14 @@ public:
     //! @returns
     //!  first element or NULL if list is empty.
     Pointer front() const {
-        return static_cast<T*>(impl_.front());
+        return container_of_(impl_.front());
     }
 
     //! Get last list element.
     //! @returns
     //!  last element or NULL if list is empty.
     Pointer back() const {
-        return static_cast<T*>(impl_.back());
+        return container_of_(impl_.back());
     }
 
     //! Get list element next to given one.
@@ -98,7 +98,7 @@ public:
     //!  @p element should be member of this list.
     Pointer nextof(T& element) const {
         ListNode::ListNodeData* data = element.list_node_data();
-        return static_cast<T*>(impl_.nextof(data));
+        return container_of_(impl_.nextof(data));
     }
 
     //! Get list element previous to given one.
@@ -111,7 +111,7 @@ public:
     //!  @p element should be member of this list.
     Pointer prevof(T& element) const {
         ListNode::ListNodeData* data = element.list_node_data();
-        return static_cast<T*>(impl_.prevof(data));
+        return container_of_(impl_.prevof(data));
     }
 
     //! Prepend element to list.
@@ -150,7 +150,7 @@ public:
         if (size() == 0) {
             roc_panic("list: is empty");
         }
-        remove(*static_cast<T*>(impl_.container_of(impl_.head.next)));
+        remove(*(container_of_(impl_.head.next)));
     }
 
     //! Pop last element from list.
@@ -165,7 +165,7 @@ public:
         if (size() == 0) {
             roc_panic("list: is empty");
         }
-        remove(*static_cast<T*>(impl_.container_of(impl_.head.prev)));
+        remove(*(container_of_(impl_.head.prev)));
     }
 
     //! Insert element into list.
@@ -209,7 +209,12 @@ public:
     }
 
 private:
-    
+    static T* container_of_(ListNode::ListNodeData* data) {
+        if (data)
+            return static_cast<T*>(data->container_of());
+        else
+            return NULL;
+    }
     //! Insert element preceding element with given list node data into list.
     //!
     //! @remarks

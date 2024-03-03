@@ -40,12 +40,12 @@ public:
     //! Get first list node.
     //! @returns
     //!  first list node or NULL if list is empty.
-    ListNode* front() const;
+    ListNode::ListNodeData* front() const;
 
     //! Get last list node.
     //! @returns
     //!  last list node or NULL if list is empty.
-    ListNode* back() const;
+    ListNode::ListNodeData* back() const;
 
     //! Get list node next to list node with given list node data.
     //!
@@ -55,7 +55,7 @@ public:
     //!
     //! @pre
     //!  @p data must be registered in this list.
-    ListNode* nextof(ListNode::ListNodeData* data) const;
+    ListNode::ListNodeData* nextof(ListNode::ListNodeData* data) const;
 
     //! Get list node previous to list node with given list node data.
     //!
@@ -65,7 +65,7 @@ public:
     //!
     //! @pre
     //! @p data must be registered in this list.
-    ListNode* prevof(ListNode::ListNodeData* data) const;
+    ListNode::ListNodeData* prevof(ListNode::ListNodeData* data) const;
 
     //! Insert new list node data before given list node data.
     //!
@@ -78,9 +78,6 @@ public:
     //! @pre
     //!  @p data must be registered in this list.
     void remove(ListNode::ListNodeData* data);
-
-    //! Get list node from list node data.
-    static ListNode* container_of(ListNode::ListNodeData* data);
 
     //! Check if list node data is registered in this list.
     static void check_is_member(const ListNode::ListNodeData* data, const ListImpl* list);

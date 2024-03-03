@@ -34,40 +34,36 @@ bool ListImpl::contains(const ListNode::ListNodeData* data) const {
     return (data->list == this);
 }
 
-ListNode* ListImpl::front() const {
+ListNode::ListNodeData* ListImpl::front() const {
     if (size_ == 0) {
         return NULL;
     }
-    return container_of(head.next);
+    return head.next;
 }
 
-ListNode* ListImpl::back() const {
+ListNode::ListNodeData* ListImpl::back() const {
     if (size_ == 0) {
         return NULL;
     }
-    return container_of(head.prev);
+    return head.prev;
 }
 
-ListNode* ListImpl::nextof(ListNode::ListNodeData* data) const {
+ListNode::ListNodeData* ListImpl::nextof(ListNode::ListNodeData* data) const {
     check_is_member(data, this);
 
     if (data->next == &head) {
         return NULL;
     }
-    return container_of(data->next);
+    return data->next;
 }
 
-ListNode* ListImpl::prevof(ListNode::ListNodeData* data) const {
+ListNode::ListNodeData* ListImpl::prevof(ListNode::ListNodeData* data) const {
     check_is_member(data, this);
 
     if (data->prev == &head) {
         return NULL;
     }
-    return container_of(data->prev);
-}
-
-ListNode* ListImpl::container_of(ListNode::ListNodeData* data) {
-    return data->container_of();
+    return data->prev;
 }
 
 void ListImpl::insert(ListNode::ListNodeData* data_new,
