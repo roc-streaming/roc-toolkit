@@ -6,7 +6,7 @@ toolchain="aarch64-linux-gnu"
 compiler="gcc-7.4.1-release"
 cpu="cortex-a53" # armv8
 
-third_party="libuv,libunwind,openfec,alsa,speexdsp,sox,openssl,cpputest"
+third_party="libuv,libunwind,openfec,alsa,speexdsp,sox,openssl,cpputest,sndfile"
 
 for pulse_ver in 8.0 15.99.1
 do

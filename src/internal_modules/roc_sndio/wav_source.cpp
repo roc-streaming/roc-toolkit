@@ -14,14 +14,15 @@ namespace roc {
 namespace sndio {
 
 WavSource::WavSource(core::IArena& arena, const Config& config)
-    : eof_(false)
+    : file_opened_(false)
+    , eof_(false)
     , valid_(false) {
     if (config.latency != 0) {
         roc_log(LogError, "wav source: setting io latency not supported");
         return;
     }
 
-    if (config.sample_spec.is_valid()) {
+    if (!config.sample_spec.is_empty()) {
         roc_log(LogError, "wav source: setting io encoding not supported");
         return;
     }

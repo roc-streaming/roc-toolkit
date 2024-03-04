@@ -13,6 +13,7 @@
 #include "roc_core/macro_helpers.h"
 #include "roc_core/panic.h"
 #include "roc_packet/units.h"
+#include "sample_spec.h"
 
 namespace roc {
 namespace audio {
@@ -134,6 +135,11 @@ bool SampleSpec::is_valid() const {
     return sample_fmt_ != SampleFormat_Invalid
         && ((sample_fmt_ == SampleFormat_Pcm) == (pcm_fmt_ != PcmFormat_Invalid))
         && sample_rate_ != 0 && channel_set_.is_valid();
+}
+
+bool SampleSpec::is_empty() const {
+    return sample_fmt_ == SampleFormat_Invalid && pcm_fmt_ == PcmFormat_Invalid
+        && sample_rate_ == 0 && channel_set_.num_channels() == 0;
 }
 
 bool SampleSpec::is_raw() const {
