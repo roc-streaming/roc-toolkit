@@ -24,7 +24,7 @@ thirdparty_versions = {
     'openfec':          '1.4.2.7',
     'openssl':          '3.0.8',
     'pulseaudio':       '12.2',
-    'sndfile':          '1.0.25',
+    'sndfile':          '1.0.26',
     'sox':              '14.4.2',
     'speexdsp':         '1.2.0',
 
@@ -252,7 +252,7 @@ elif 'sndfile' in system_dependencies:
     if not is_crosscompiling:
         if not conf.CheckLibWithHeaderExt(
                 'sndfile', 'sndfile.h', 'C'):
-            env.Die("libsndfile >= 1.0.25 not found (see 'config.log' for details)")
+            env.Die("libsndfile >= 1.0.26 not found (see 'config.log' for details)")
     else:
         if not conf.CheckLibWithHeaderExt('sndfile', 'sndfile.h', 'C', run=False):
             env.Die("libsndfile not found (see 'config.log' for details)")

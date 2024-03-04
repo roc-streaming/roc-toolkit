@@ -181,9 +181,9 @@ bool SndfileSource::read(audio::Frame& frame) {
     }
 
     audio::sample_t* frame_data = frame.raw_samples();
-    size_t num_channels = (size_t)file_info_.channels;
+    // size_t num_channels = (size_t)file_info_.channels;
     sf_count_t frame_left = (sf_count_t)frame.num_raw_samples();
-    size_t samples_per_ch = frame.num_raw_samples() / num_channels;
+    // size_t samples_per_ch = frame.num_raw_samples() / num_channels;
 
     sf_count_t n_samples = sf_read_float(file_, frame_data, frame_left);
     if (sf_error(file_) != 0) {
@@ -191,14 +191,13 @@ bool SndfileSource::read(audio::Frame& frame) {
         roc_panic("sndfile source: sf_read_float() failed: %s", sf_strerror(file_));
     }
 
-    if (n_samples < frame_left) {
+    if (n_samples == 0) {
         eof_ = true;
     }
 
-    if ((size_t)n_samples < samples_per_ch) {
-        memset(frame.raw_samples() + (size_t)n_samples * num_channels, 0,
-               (samples_per_ch - (size_t)n_samples) * num_channels
-                   * sizeof(audio::sample_t));
+    if (n_samples < frame_left && n_samples != 0) {
+        memset(frame.raw_samples() + (size_t)n_samples, 0,
+               (size_t)(frame_left - n_samples) * sizeof(audio::sample_t));
     }
 
     return !eof_;

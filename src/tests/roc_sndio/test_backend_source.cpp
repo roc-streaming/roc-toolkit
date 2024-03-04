@@ -73,7 +73,7 @@ TEST_GROUP(backend_source) {
     }
 };
 
-TEST(backend_source, noop) {
+TEST(backend_source, read_open) {
     for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends();
          n_backend++) {
         core::TempFile file("test.wav");

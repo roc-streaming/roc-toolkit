@@ -40,13 +40,10 @@ void SndfileBackend::discover_drivers(core::Array<DriverInfo, MaxDrivers>& drive
 
         const char* driver = format_info.extension;
 
-        if ((strcmp(format_info.extension, "wav") == 0)
-            || (strcmp(format_info.extension, "mat") == 0)) {
-            for (size_t map_index = 0; map_index < ROC_ARRAY_SIZE(file_type_map);
-                 map_index++) {
-                if (file_type_map[map_index].format_id == format_info.format) {
-                    driver = file_type_map[map_index].driver_name;
-                }
+        for (size_t map_index = 0; map_index < ROC_ARRAY_SIZE(file_type_map);
+             map_index++) {
+            if (file_type_map[map_index].format_id == format_info.format) {
+                driver = file_type_map[map_index].driver_name;
             }
         }
 

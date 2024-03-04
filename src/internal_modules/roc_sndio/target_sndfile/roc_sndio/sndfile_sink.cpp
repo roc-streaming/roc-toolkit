@@ -6,7 +6,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#define FORMAT_COUNT 2 // Number of major formats that don't allow for 32 bits;
 #define BUFFER_SIZE 512
 
 #include "roc_sndio/sndfile_sink.h"
@@ -19,7 +18,25 @@ namespace roc {
 namespace sndio {
 namespace {
 
-bool map_to_sndfile(const char** driver, const char* path, SF_INFO& sfinfo) {
+bool map_to_sub_format(SF_INFO& file_info_, int format_enum) {
+    // Provides the minimum number of sub formats needed to support all possible major
+    // formats
+    int high_to_low_sub_formats[4] = { SF_FORMAT_PCM_24, SF_FORMAT_PCM_16,
+                                       SF_FORMAT_DPCM_16 };
+
+    for (size_t format_attempt = 0;
+         format_attempt < ROC_ARRAY_SIZE(high_to_low_sub_formats); format_attempt++) {
+        file_info_.format = format_enum | high_to_low_sub_formats[format_attempt];
+
+        if (sf_format_check(&file_info_)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool map_to_sndfile(const char** driver, const char* path, SF_INFO& file_info_) {
     const char* file_extension;
     const char* dot = strrchr(path, '.');
 
@@ -91,38 +108,13 @@ bool map_to_sndfile(const char** driver, const char* path, SF_INFO& sfinfo) {
 
     roc_log(LogDebug, "detected file format type `%s'", *driver);
 
-    sfinfo.format = format_enum | sfinfo.format;
+    file_info_.format = format_enum | file_info_.format;
 
-    if (sf_format_check(&sfinfo)) {
+    if (sf_format_check(&file_info_)) {
         return true;
+    } else {
+        return map_to_sub_format(file_info_, format_enum);
     }
-
-    int temp_format = 0;
-
-    for (int format_attempt = 0; format_attempt < FORMAT_COUNT; format_attempt++) {
-        if (format_enum == SF_FORMAT_XI) {
-            sfinfo.channels = 1;
-            if (format_attempt == 0) {
-                temp_format = format_enum | SF_FORMAT_DPCM_16;
-            } else {
-                temp_format = format_enum | SF_FORMAT_DPCM_8;
-            }
-        } else {
-            if (format_attempt == 0) {
-                temp_format = format_enum | SF_FORMAT_PCM_24;
-            } else {
-                temp_format = format_enum | SF_FORMAT_PCM_16;
-            }
-        }
-
-        sfinfo.format = temp_format;
-
-        if (sf_format_check(&sfinfo)) {
-            return true;
-        }
-    }
-
-    return false;
 }
 
 } // namespace
@@ -142,23 +134,35 @@ SndfileSink::SndfileSink(core::IArena& arena, const Config& config)
     }
 
     frame_length_ = config.frame_length;
-    sample_spec_ = config.sample_spec;
 
     if (frame_length_ == 0) {
         roc_log(LogError, "sndfile sink: frame length is zero");
         return;
     }
 
-    memset(&file_info_, 0, sizeof(file_info_));
-    // file_info_.format = (int)config.sample_spec.pcm_format(); this needs to be
-    // converted to corresponding enum of sndfile somehow
-    file_info_.format = SF_FORMAT_PCM_32;
-    file_info_.channels = (int)config.sample_spec.num_channels();
-    file_info_.samplerate = (int)config.sample_spec.sample_rate();
+    sample_spec_ = config.sample_spec;
 
-    if (file_info_.samplerate == 0) {
-        file_info_.samplerate = 48000;
+    if (sample_spec_.sample_format() == audio::SampleFormat_Invalid) {
+        sample_spec_.set_sample_format(audio::SampleFormat_Pcm);
+        sample_spec_.set_pcm_format(audio::PcmFormat_SInt32);
     }
+
+    if (sample_spec_.sample_rate() == 0) {
+        sample_spec_.set_sample_rate(41000);
+    }
+
+    if (!sample_spec_.channel_set().is_valid()) {
+        sample_spec_.channel_set().set_layout(audio::ChanLayout_Surround);
+        sample_spec_.channel_set().set_order(audio::ChanOrder_Smpte);
+        sample_spec_.channel_set().set_channel_range(0, 2, true);
+    }
+
+    memset(&file_info_, 0, sizeof(file_info_));
+
+    // TODO(gh-696): map format from sample_space
+    file_info_.format = SF_FORMAT_PCM_32;
+    file_info_.channels = (int)sample_spec_.num_channels();
+    file_info_.samplerate = (int)sample_spec_.sample_rate();
 
     valid_ = true;
 }

@@ -53,7 +53,7 @@ TEST_GROUP(backend_sink) {
     }
 };
 
-TEST(backend_sink, noop) {
+TEST(backend_sink, write_open) {
     for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends();
          n_backend++) {
         IBackend& backend = BackendMap::instance().nth_backend(n_backend);

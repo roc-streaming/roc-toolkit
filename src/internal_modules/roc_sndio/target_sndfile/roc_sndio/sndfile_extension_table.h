@@ -7,13 +7,10 @@
  */
 
 //! @file roc_sndio/target_sndfile/roc_sndio/sndfile_extension_table.h
-//! @brief TODO.
+//! @brief Sndfile driver map.
 
 #ifndef ROC_SNDIO_SNDFILE_EXTENSION_TABLE_H_
 #define ROC_SNDIO_SNDFILE_EXTENSION_TABLE_H_
-
-#pragma once
-#include "sndfile.h"
 
 //! Sndfile driver map.
 struct FileMap {
@@ -24,10 +21,8 @@ struct FileMap {
     //! File extension associated with driver and SF_FORMAT if it exists.
     const char* file_extension;
 };
-static FileMap file_type_map[5] = { { SF_FORMAT_MAT4, "mat4", NULL },
-                                    { SF_FORMAT_MAT5, "mat5", NULL },
-                                    { SF_FORMAT_WAV, "wav", "wav" },
-                                    { SF_FORMAT_NIST, "nist", NULL },
-                                    { SF_FORMAT_WAVEX, "wavex", NULL } };
+
+//! Declare the file_type_map as extern
+extern FileMap file_type_map[5];
 
 #endif // ROC_SNDIO_SNDFILE_EXTENSION_TABLE_H_
