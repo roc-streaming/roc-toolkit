@@ -899,7 +899,7 @@ if meta.compiler in ['gcc', 'clang']:
     if meta.platform in ['linux', 'darwin']:
         env.AddManualDependency(libs=['pthread'])
 
-    if meta.platform in ['linux', 'android']:
+    if meta.platform in ['linux', 'android'] or 'gnu' in meta.host:
         if not GetOption('disable_soversion'):
             subenvs.public_libs['SHLIBSUFFIX'] = '{}.{}'.format(
                 subenvs.public_libs['SHLIBSUFFIX'], env['ROC_SOVER'])
