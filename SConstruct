@@ -863,7 +863,7 @@ env.Append(CPPDEFINES=[
     ('__STDC_LIMIT_MACROS', '1'),
 ])
 
-if 'target_posix' in env['ROC_TARGETS'] and meta.platform not in ['darwin', 'unix']:
+if 'target_posix' in env['ROC_TARGETS'] and (meta.platform not in ['darwin', 'unix'] or 'gnu' in meta.host):
     env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', env['ROC_POSIX_PLATFORM'])])
 
 if meta.platform in ['darwin']:
