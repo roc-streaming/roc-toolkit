@@ -128,6 +128,18 @@ elif 'libunwind' in system_dependencies:
 
     env = conf.Finish()
 
+# dep: libuuid
+if 'libuuid' in system_dependencies:
+    conf = Configure(env, custom_tests=env.CustomTests)
+
+    if not conf.AddPkgConfigDependency('uuid', '--cflags --libs'):
+        conf.env.AddManualDependency(libs=['uuid'])
+
+    if not conf.CheckLibWithHeaderExt('uuid', 'uuid.h', 'C', run=not is_crosscompiling):
+        env.Die("libuuid not found (see 'config.log' for details)")
+
+    env = conf.Finish()
+
 # dep: libatomic_ops
 if 'libatomic_ops' in autobuild_dependencies:
     env.BuildThirdParty(thirdparty_versions, 'libatomic_ops')
