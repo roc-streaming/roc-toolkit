@@ -56,9 +56,6 @@ if meta.platform in ['linux'] and 'pulseaudio' in external_dependencies:
 if meta.platform in ['darwin']:
     external_dependencies.discard('libunwind')
 
-if meta.platform in ['linux'] and not GetOption('disable_libuuid'):
-    external_dependencies.add('libuuid')
-
 # tools dependencies
 if not GetOption('disable_tools'):
     external_dependencies.add('gengetopt')
