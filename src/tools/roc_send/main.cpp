@@ -29,24 +29,17 @@
 
 using namespace roc;
 
-int main(int argc, char** argv) {
-    core::HeapArena::set_flags(core::DefaultHeapArenaFlags
-                               | core::HeapArenaFlag_EnableLeakDetection);
-
-    core::HeapArena heap_arena;
-
-    core::CrashHandler crash_handler;
-
-    gengetopt_args_info args;
-
-    const int code = cmdline_parser(argc, argv, &args);
-    if (code != 0) {
-        return code;
+struct Configs {
+    Configs(core::IArena& arena)
+        : arena(arena) {
     }
+    core::IArena& arena;
+    pipeline::SenderSinkConfig sender_config;
+    sndio::Config io_config;
+    node::ContextConfig context_config;
+};
 
-    core::ScopedPtr<gengetopt_args_info, core::CustomAllocation> args_holder(
-        &args, &cmdline_parser_free);
-
+void setup_logger(const gengetopt_args_info& args) {
     core::Logger::instance().set_verbosity(args.verbose_given);
 
     switch (args.color_arg) {
@@ -62,10 +55,12 @@ int main(int argc, char** argv) {
     default:
         break;
     }
+}
 
-    pipeline::SenderSinkConfig sender_config;
+int setup_source_config(Configs& configs, const gengetopt_args_info& args) {
+    const pipeline::SenderSinkConfig& sender_config = configs.sender_config;
+    sndio::Config& io_config = configs.io_config;
 
-    sndio::Config io_config;
     io_config.sample_spec.set_sample_format(
         sender_config.input_sample_spec.sample_format());
     io_config.sample_spec.set_pcm_format(sender_config.input_sample_spec.pcm_format());
@@ -101,8 +96,12 @@ int main(int argc, char** argv) {
         io_config.sample_spec.set_sample_rate((size_t)args.rate_arg);
     }
 
-    sndio::BackendMap::instance().set_frame_size(io_config.frame_length,
-                                                 sender_config.input_sample_spec);
+    return 0;
+}
+
+int setup_sender_config(Configs& configs, const gengetopt_args_info& args) {
+    core::IArena& arena = configs.arena;
+    pipeline::SenderSinkConfig& sender_config = configs.sender_config;
 
     if (args.packet_len_given) {
         if (!core::parse_duration(args.packet_len_arg, sender_config.packet_length)) {
@@ -116,7 +115,7 @@ int main(int argc, char** argv) {
     }
 
     if (args.source_given) {
-        address::EndpointUri source_endpoint(heap_arena);
+        address::EndpointUri source_endpoint(arena);
         if (!address::parse_endpoint_uri(
                 args.source_arg[0], address::EndpointUri::Subset_Full, source_endpoint)) {
             roc_log(LogError, "can't parse --source endpoint: %s", args.source_arg[0]);
@@ -246,7 +245,12 @@ int main(int argc, char** argv) {
     sender_config.enable_interleaving = args.interleaving_flag;
     sender_config.enable_profiling = args.profiling_flag;
 
-    node::ContextConfig context_config;
+    return 0;
+}
+
+int setup_context_config(Configs& configs, const gengetopt_args_info& args) {
+    const pipeline::SenderSinkConfig& sender_config = configs.sender_config;
+    node::ContextConfig& context_config = configs.context_config;
 
     if (args.max_packet_size_given) {
         if (!core::parse_size(args.max_packet_size_arg, context_config.max_packet_size)) {
@@ -278,26 +282,32 @@ int main(int argc, char** argv) {
         }
     }
 
-    node::Context context(context_config, heap_arena);
-    if (!context.is_valid()) {
-        roc_log(LogError, "can't initialize node context");
-        return 1;
-    }
+    return 0;
+}
 
-    sndio::BackendDispatcher backend_dispatcher(context.arena());
+int setup_input(core::ScopedPtr<sndio::ISource>& input_source,
+                sndio::BackendDispatcher& backend_dispatcher,
+                const Configs& configs,
+                const gengetopt_args_info& args,
+                core::IArena& arena) {
+    const sndio::Config& io_config = configs.io_config;
+
+    sndio::BackendMap::instance().set_frame_size(configs.io_config.frame_length,
+                                                 configs.sender_config.input_sample_spec);
+
     if (args.list_supported_given) {
-        if (!address::print_supported(context.arena())) {
+        if (!address::print_supported(arena)) {
             return 1;
         }
 
-        if (!sndio::print_supported(backend_dispatcher, context.arena())) {
+        if (!sndio::print_supported(backend_dispatcher, arena)) {
             return 1;
         }
 
         return 0;
     }
 
-    address::IoUri input_uri(context.arena());
+    address::IoUri input_uri(arena);
     if (args.input_given) {
         if (!address::parse_io_uri(args.input_arg, input_uri)) {
             roc_log(LogError, "invalid --input file or device URI");
@@ -318,14 +328,12 @@ int main(int argc, char** argv) {
         }
     }
 
-    core::ScopedPtr<sndio::ISource> input_source;
     if (input_uri.is_valid()) {
         input_source.reset(
             backend_dispatcher.open_source(input_uri, args.input_format_arg, io_config),
-            context.arena());
+            arena);
     } else {
-        input_source.reset(backend_dispatcher.open_default_source(io_config),
-                           context.arena());
+        input_source.reset(backend_dispatcher.open_default_source(io_config), arena);
     }
     if (!input_source) {
         roc_log(LogError, "can't open input file or device: uri=%s format=%s",
@@ -333,16 +341,13 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    sender_config.enable_timing = !input_source->has_clock();
-    sender_config.input_sample_spec.set_sample_rate(
-        input_source->sample_spec().sample_rate());
+    return 0;
+}
 
-    node::Sender sender(context, sender_config);
-    if (!sender.is_valid()) {
-        roc_log(LogError, "can't create sender node");
-        return 1;
-    }
-
+int setup_sender(node::Sender& sender,
+                 const Configs& configs,
+                 const gengetopt_args_info& args,
+                 core::IArena& arena) {
     if (args.source_given == 0) {
         roc_log(LogError, "at least one --source endpoint should be specified");
         return 1;
@@ -365,7 +370,7 @@ int main(int argc, char** argv) {
     }
 
     for (size_t slot = 0; slot < (size_t)args.source_given; slot++) {
-        address::EndpointUri source_endpoint(context.arena());
+        address::EndpointUri source_endpoint(arena);
         if (!address::parse_endpoint_uri(args.source_arg[slot],
                                          address::EndpointUri::Subset_Full,
                                          source_endpoint)) {
@@ -388,7 +393,7 @@ int main(int argc, char** argv) {
     }
 
     for (size_t slot = 0; slot < (size_t)args.repair_given; slot++) {
-        address::EndpointUri repair_endpoint(context.arena());
+        address::EndpointUri repair_endpoint(arena);
         if (!address::parse_endpoint_uri(args.repair_arg[slot],
                                          address::EndpointUri::Subset_Full,
                                          repair_endpoint)) {
@@ -411,7 +416,7 @@ int main(int argc, char** argv) {
     }
 
     for (size_t slot = 0; slot < (size_t)args.control_given; slot++) {
-        address::EndpointUri control_endpoint(context.arena());
+        address::EndpointUri control_endpoint(arena);
         if (!address::parse_endpoint_uri(args.control_arg[slot],
                                          address::EndpointUri::Subset_Full,
                                          control_endpoint)) {
@@ -442,9 +447,73 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    return 0;
+}
+
+int main(int argc, char** argv) {
+    core::HeapArena::set_flags(core::DefaultHeapArenaFlags
+                               | core::HeapArenaFlag_EnableLeakDetection);
+
+    core::HeapArena arena;
+
+    core::CrashHandler crash_handler;
+
+    gengetopt_args_info args;
+
+    const int code = cmdline_parser(argc, argv, &args);
+    if (code != 0) {
+        return code;
+    }
+
+    core::ScopedPtr<gengetopt_args_info, core::CustomAllocation> args_holder(
+        &args, &cmdline_parser_free);
+
+    setup_logger(args);
+
+    Configs configs(arena);
+
+    int err = setup_source_config(configs, args);
+    if (err != 0)
+        return err;
+
+    err = setup_sender_config(configs, args);
+    if (err != 0)
+        return err;
+
+    err = setup_context_config(configs, args);
+    if (err != 0)
+        return err;
+
+    node::Context context(configs.context_config, arena);
+    if (!context.is_valid()) {
+        roc_log(LogError, "can't initialize node context");
+        return 1;
+    }
+
+    core::ScopedPtr<sndio::ISource> input_source;
+    sndio::BackendDispatcher backend_dispatcher(context.arena());
+
+    err = setup_input(input_source, backend_dispatcher, configs, args, context.arena());
+    if (err != 0)
+        return err;
+
+    configs.sender_config.enable_timing = !input_source->has_clock();
+    configs.sender_config.input_sample_spec.set_sample_rate(
+        input_source->sample_spec().sample_rate());
+
+    node::Sender sender(context, configs.sender_config);
+    if (!sender.is_valid()) {
+        roc_log(LogError, "can't create sender node");
+        return 1;
+    }
+
+    err = setup_sender(sender, configs, args, context.arena());
+    if (err != 0)
+        return err;
+
     sndio::Pump pump(context.sample_buffer_factory(), *input_source, NULL, sender.sink(),
-                     io_config.frame_length, sender_config.input_sample_spec,
-                     sndio::Pump::ModePermanent);
+                     configs.io_config.frame_length,
+                     configs.sender_config.input_sample_spec, sndio::Pump::ModePermanent);
     if (!pump.is_valid()) {
         roc_log(LogError, "can't create audio pump");
         return 1;
