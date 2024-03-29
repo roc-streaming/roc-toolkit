@@ -56,4 +56,6 @@ debian/roc
 
 # personal
 /Makefile
+.justfile
+.projectile
 .unisonignore
