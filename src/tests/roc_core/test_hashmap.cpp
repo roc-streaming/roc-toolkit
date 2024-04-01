@@ -11,6 +11,7 @@
 #include "roc_core/hashmap.h"
 #include "roc_core/hashsum.h"
 #include "roc_core/heap_arena.h"
+#include "roc_core/noop_arena.h"
 #include "roc_core/ref_counted.h"
 #include "roc_core/shared_ptr.h"
 #include "roc_core/string_builder.h"
@@ -427,7 +428,7 @@ TEST(hashmap, iterate_modify) {
 }
 
 template <size_t Capacity> void test_embedded_capacity() {
-    Hashmap<Object, Capacity> hashmap;
+    Hashmap<Object, Capacity> hashmap(core::NoopArena);
 
     UNSIGNED_LONGS_EQUAL(0, hashmap.capacity());
 

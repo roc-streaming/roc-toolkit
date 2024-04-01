@@ -13,7 +13,7 @@ namespace core {
 
 HashmapImpl::HashmapImpl(void* preallocated_data,
                          size_t num_preallocated_buckets,
-                         IArena* arena)
+                         IArena& arena)
     : preallocated_data_(preallocated_data)
     , num_preallocated_buckets_(num_preallocated_buckets)
     , curr_buckets_(NULL)
@@ -225,19 +225,17 @@ bool HashmapImpl::realloc_buckets_(size_t n_buckets) {
     if (n_buckets <= num_preallocated_buckets_
         && curr_buckets_ != (Bucket*)preallocated_data_) {
         buckets = (Bucket*)preallocated_data_;
-    } else if (arena_) {
-        buckets = (Bucket*)arena_->allocate(n_buckets * sizeof(Bucket));
+    } else {
+        buckets = (Bucket*)arena_.allocate(n_buckets * sizeof(Bucket));
         if (buckets == NULL) {
             return false;
         }
-    } else {
-        return false;
     }
 
     memset(buckets, 0, n_buckets * sizeof(Bucket));
 
     if (prev_buckets_ && prev_buckets_ != (Bucket*)preallocated_data_) {
-        arena_->deallocate(prev_buckets_);
+        arena_.deallocate(prev_buckets_);
         prev_buckets_ = NULL;
     }
 
@@ -257,11 +255,11 @@ bool HashmapImpl::realloc_buckets_(size_t n_buckets) {
 
 void HashmapImpl::dealloc_buckets_() {
     if (curr_buckets_ && curr_buckets_ != (Bucket*)preallocated_data_) {
-        arena_->deallocate(curr_buckets_);
+        arena_.deallocate(curr_buckets_);
     }
 
     if (prev_buckets_ && prev_buckets_ != (Bucket*)preallocated_data_) {
-        arena_->deallocate(prev_buckets_);
+        arena_.deallocate(prev_buckets_);
     }
 }
 

@@ -37,7 +37,8 @@ class ReceiverSlot : public core::RefCounted<ReceiverSlot, core::ArenaAllocation
                      public core::ListNode {
 public:
     //! Initialize.
-    ReceiverSlot(const ReceiverConfig& receiver_config,
+    ReceiverSlot(const ReceiverSourceConfig& source_config,
+                 const ReceiverSlotConfig& slot_config,
                  StateTracker& state_tracker,
                  audio::Mixer& mixer,
                  const rtp::EncodingMap& encoding_map,

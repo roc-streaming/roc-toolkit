@@ -154,7 +154,7 @@ ReceiverSession::ReceiverSession(
                                          pkt_encoding->sample_spec.channel_set());
 
         depacketizer_.reset(new (depacketizer_) audio::Depacketizer(
-            *pkt_reader, *payload_decoder_, out_spec, common_config.enable_beeping));
+            *pkt_reader, *payload_decoder_, out_spec, session_config.enable_beeping));
         if (!depacketizer_ || !depacketizer_->is_valid()) {
             return;
         }

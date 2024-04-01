@@ -30,9 +30,11 @@ extern "C" {
  * Sender encoder gets an audio stream from the user, encodes it into network packets, and
  * provides encoded packets to the user.
  *
- * Sender encoder is a networkless version of \ref roc_sender. It implements the same
- * pipeline, but instead of sending packets to network, it returns them to the user. The
- * user is responsible for carrying packets over network.
+ * Sender encoder is a networkless single-stream version of \ref roc_sender. It implements
+ * the same pipeline, but instead of sending packets to network, it returns them to the
+ * user. The user is responsible for carrying packets over network. Unlike \ref
+ * roc_sender, it doesn't support multiple slots and connections. It produces traffic for
+ * a single remote peer.
  *
  * For detailed description of sender pipeline, see documentation for \ref roc_sender.
  *
@@ -142,25 +144,18 @@ ROC_API int roc_sender_encoder_activate(roc_sender_encoder* encoder,
  *
  * Reads metrics into provided structs.
  *
- * To retrieve metrics of the encoder as a whole, set \c slot_metrics to point to a single
- * \ref roc_sender_metrics struct.
+ * Metrics for encoder as a whole are written in \p encoder_metrics. If connection
+ * was already established (which happens after pushing feedback packets from remote
+ * peer to encoder), metrics for connection are written to \p conn_metrics.
  *
- * To retrieve metrics of specific connections of the encoder, set \c conn_metrics to
- * point to an array of \ref roc_connection_metrics structs, and \c conn_metrics_count to
- * the number of elements in the array. The function will write metrcis to the array (no
- * more than array size) and update \c conn_metrics_count with the number of elements
- * written.
- *
- * Actual number of connections (regardless of the array size) is also written to
- * \c connection_count field of \ref roc_sender_metrics.
+ * Encoder can have either no connections or one connection. This is reported via
+ * \c connection_count field of \p encoder_metrics, which is set to either 0 or 1.
  *
  * **Parameters**
  *  - \p sender should point to an opened sender
- *  - \p encoder_metrics defines a struct where to write encoder metrics (may be NULL)
- *  - \p conn_metrics defines an array of structs where to write connection metrics
- *    (may be NULL)
- *  - \p conn_metrics_count defines number of elements in array
- *    (may be NULL if \c conn_metrics is NULL)
+ *  - \p encoder_metrics defines a struct where to write metrics for decoder
+ *  - \p conn_metrics defines a struct where to write metrics for connection
+ *    (if \c connection_count is non-zero)
  *
  * **Returns**
  *  - returns zero if the metrics were successfully retrieved
@@ -172,8 +167,7 @@ ROC_API int roc_sender_encoder_activate(roc_sender_encoder* encoder,
  */
 ROC_API int roc_sender_encoder_query(roc_sender_encoder* encoder,
                                      roc_sender_metrics* encoder_metrics,
-                                     roc_connection_metrics* conn_metrics,
-                                     size_t* conn_metrics_count);
+                                     roc_connection_metrics* conn_metrics);
 
 /** Write frame to encoder.
  *

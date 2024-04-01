@@ -15,14 +15,14 @@
 namespace roc {
 namespace pipeline {
 
-SenderSession::SenderSession(const SenderConfig& config,
+SenderSession::SenderSession(const SenderSinkConfig& sink_config,
                              const rtp::EncodingMap& encoding_map,
                              packet::PacketFactory& packet_factory,
                              core::BufferFactory<uint8_t>& byte_buffer_factory,
                              core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                              core::IArena& arena)
     : arena_(arena)
-    , config_(config)
+    , sink_config_(sink_config)
     , encoding_map_(encoding_map)
     , packet_factory_(packet_factory)
     , byte_buffer_factory_(byte_buffer_factory)
@@ -48,7 +48,8 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
     roc_panic_if(!source_endpoint);
     roc_panic_if(frame_writer_);
 
-    const rtp::Encoding* pkt_encoding = encoding_map_.find_by_pt(config_.payload_type);
+    const rtp::Encoding* pkt_encoding =
+        encoding_map_.find_by_pt(sink_config_.payload_type);
     if (!pkt_encoding) {
         return false;
     }
@@ -75,11 +76,11 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
             return false;
         }
 
-        if (config_.enable_interleaving) {
+        if (sink_config_.enable_interleaving) {
             interleaver_.reset(new (interleaver_) packet::Interleaver(
                 *pkt_writer, arena_,
-                config_.fec_writer.n_source_packets
-                    + config_.fec_writer.n_repair_packets));
+                sink_config_.fec_writer.n_source_packets
+                    + sink_config_.fec_writer.n_repair_packets));
             if (!interleaver_ || !interleaver_->is_valid()) {
                 return false;
             }
@@ -87,16 +88,17 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         }
 
         fec_encoder_.reset(fec::CodecMap::instance().new_encoder(
-                               config_.fec_encoder, byte_buffer_factory_, arena_),
+                               sink_config_.fec_encoder, byte_buffer_factory_, arena_),
                            arena_);
         if (!fec_encoder_) {
             return false;
         }
 
         fec_writer_.reset(new (fec_writer_) fec::Writer(
-            config_.fec_writer, config_.fec_encoder.scheme, *fec_encoder_, *pkt_writer,
-            source_endpoint->outbound_composer(), repair_endpoint->outbound_composer(),
-            packet_factory_, byte_buffer_factory_, arena_));
+            sink_config_.fec_writer, sink_config_.fec_encoder.scheme, *fec_encoder_,
+            *pkt_writer, source_endpoint->outbound_composer(),
+            repair_endpoint->outbound_composer(), packet_factory_, byte_buffer_factory_,
+            arena_));
         if (!fec_writer_ || !fec_writer_->is_valid()) {
             return false;
         }
@@ -116,7 +118,8 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         return false;
     }
 
-    sequencer_.reset(new (sequencer_) rtp::Sequencer(*identity_, config_.payload_type));
+    sequencer_.reset(new (sequencer_)
+                         rtp::Sequencer(*identity_, sink_config_.payload_type));
     if (!sequencer_ || !sequencer_->is_valid()) {
         return false;
     }
@@ -134,7 +137,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         packetizer_.reset(new (packetizer_) audio::Packetizer(
             *pkt_writer, source_endpoint->outbound_composer(), *sequencer_,
             *payload_encoder_, packet_factory_, byte_buffer_factory_,
-            config_.packet_length, in_spec));
+            sink_config_.packet_length, in_spec));
         if (!packetizer_ || !packetizer_->is_valid()) {
             return false;
         }
@@ -142,10 +145,10 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
     }
 
     if (pkt_encoding->sample_spec.channel_set()
-        != config_.input_sample_spec.channel_set()) {
+        != sink_config_.input_sample_spec.channel_set()) {
         const audio::SampleSpec in_spec(pkt_encoding->sample_spec.sample_rate(),
                                         audio::Sample_RawFormat,
-                                        config_.input_sample_spec.channel_set());
+                                        sink_config_.input_sample_spec.channel_set());
 
         const audio::SampleSpec out_spec(pkt_encoding->sample_spec.sample_rate(),
                                          audio::Sample_RawFormat,
@@ -160,19 +163,19 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         frm_writer = channel_mapper_writer_.get();
     }
 
-    if (config_.latency.tuner_profile != audio::LatencyTunerProfile_Intact
+    if (sink_config_.latency.tuner_profile != audio::LatencyTunerProfile_Intact
         || pkt_encoding->sample_spec.sample_rate()
-            != config_.input_sample_spec.sample_rate()) {
-        const audio::SampleSpec in_spec(config_.input_sample_spec.sample_rate(),
+            != sink_config_.input_sample_spec.sample_rate()) {
+        const audio::SampleSpec in_spec(sink_config_.input_sample_spec.sample_rate(),
                                         audio::Sample_RawFormat,
-                                        config_.input_sample_spec.channel_set());
+                                        sink_config_.input_sample_spec.channel_set());
 
         const audio::SampleSpec out_spec(pkt_encoding->sample_spec.sample_rate(),
                                          audio::Sample_RawFormat,
-                                         config_.input_sample_spec.channel_set());
+                                         sink_config_.input_sample_spec.channel_set());
 
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-            arena_, sample_buffer_factory_, config_.resampler, in_spec, out_spec));
+            arena_, sample_buffer_factory_, sink_config_.resampler, in_spec, out_spec));
 
         if (!resampler_) {
             return false;
@@ -188,8 +191,8 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
     }
 
     feedback_monitor_.reset(new (feedback_monitor_) audio::FeedbackMonitor(
-        *frm_writer, *packetizer_, resampler_writer_.get(), config_.feedback,
-        config_.latency, config_.input_sample_spec));
+        *frm_writer, *packetizer_, resampler_writer_.get(), sink_config_.feedback,
+        sink_config_.latency, sink_config_.input_sample_spec));
     if (!feedback_monitor_ || !feedback_monitor_->is_valid()) {
         return false;
     }
@@ -216,7 +219,7 @@ bool SenderSession::create_control_pipeline(SenderEndpoint* control_endpoint) {
     rtcp_outbound_addr_ = control_endpoint->outbound_address();
 
     rtcp_communicator_.reset(new (rtcp_communicator_) rtcp::Communicator(
-        config_.rtcp, *this, control_endpoint->outbound_writer(),
+        sink_config_.rtcp, *this, control_endpoint->outbound_writer(),
         control_endpoint->outbound_composer(), packet_factory_, byte_buffer_factory_,
         arena_));
     if (!rtcp_communicator_ || !rtcp_communicator_->is_valid()) {

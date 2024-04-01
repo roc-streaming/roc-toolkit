@@ -32,7 +32,9 @@ extern "C" {
  *
  * Receiver decoder is a networkless version of \ref roc_receiver. It implements the same
  * pipeline, but instead of receiving packets from network, it gets them from the user.
- * The user is responsible for carrying packets over network.
+ * The user is responsible for carrying packets over network. Unlike \ref roc_receiver,
+ * it doesn't support multiple slots and conenctions. It consumes traffic from a single
+ * remote peer.
  *
  * For detailed description of receiver pipeline, see documentation for \ref roc_receiver.
  *
@@ -142,25 +144,18 @@ ROC_API int roc_receiver_decoder_activate(roc_receiver_decoder* decoder,
  *
  * Reads metrics into provided structs.
  *
- * To retrieve metrics of the decoder as a whole, set \c slot_metrics to point to a single
- * \ref roc_receiver_metrics struct.
+ * Metrics for decoder as a whole are written in \p decoder_metrics. If connection
+ * was already established (which happens after pushing some packets from remote
+ * peer to decoder), metrics for connection are written to \p conn_metrics.
  *
- * To retrieve metrics of specific connections of the decoder, set \c conn_metrics to
- * point to an array of \ref roc_connection_metrics structs, and \c conn_metrics_count to
- * the number of elements in the array. The function will write metrcis to the array (no
- * more than array size) and update \c conn_metrics_count with the number of elements
- * written.
- *
- * Actual number of connections (regardless of the array size) is also written to
- * \c connection_count field of \ref roc_receiver_metrics.
+ * Decoder can have either no connections or one connection. This is reported via
+ * \c connection_count field of \p decoder_metrics, which is set to either 0 or 1.
  *
  * **Parameters**
  *  - \p receiver should point to an opened receiver
- *  - \p decoder_metrics defines a struct where to write decoder metrics (may be NULL)
- *  - \p conn_metrics defines an array of structs where to write connection metrics
- *    (may be NULL)
- *  - \p conn_metrics_count defines number of elements in array
- *    (may be NULL if \c conn_metrics is NULL)
+ *  - \p decoder_metrics defines a struct where to write metrics for decoder
+ *  - \p conn_metrics defines a struct where to write metrics for connection
+ *    (if \c connection_count is non-zero)
  *
  * **Returns**
  *  - returns zero if the metrics were successfully retrieved
@@ -172,8 +167,7 @@ ROC_API int roc_receiver_decoder_activate(roc_receiver_decoder* decoder,
  */
 ROC_API int roc_receiver_decoder_query(roc_receiver_decoder* decoder,
                                        roc_receiver_metrics* decoder_metrics,
-                                       roc_connection_metrics* conn_metrics,
-                                       size_t* conn_metrics_count);
+                                       roc_connection_metrics* conn_metrics);
 
 /** Write packet to decoder.
  *

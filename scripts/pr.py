@@ -250,8 +250,8 @@ def query_pr_info(org, repo, pr_number, no_git=False):
     return pr_info
 
 @functools.cache
-def query_pr_actions(org, repo, pr_number):
-    pr_info = query_pr_info(org, repo, pr_number)
+def query_pr_actions(org, repo, pr_number, no_git=False):
+    pr_info = query_pr_info(org, repo, pr_number, no_git)
 
     try:
         response = json.loads(subprocess.run([
@@ -274,7 +274,7 @@ def query_pr_actions(org, repo, pr_number):
     return sorted(results.items())
 
 @functools.cache
-def query_pr_commits(org, repo, pr_number):
+def query_pr_commits(org, repo, pr_number, no_git=False):
     try:
         response = json.loads(subprocess.run([
             'gh', 'pr', 'view',
@@ -294,8 +294,10 @@ def query_pr_commits(org, repo, pr_number):
 
     return results
 
-def show_pr(org, repo, pr_number, show_json, no_git):
-    pr_info = query_pr_info(org, repo, pr_number)
+def show_pr(org, repo, pr_number, show_json):
+    pr_info = query_pr_info(org, repo, pr_number, no_git=True)
+    pr_actions = query_pr_actions(org, repo, pr_number, no_git=True)
+    pr_commits = query_pr_commits(org, repo, pr_number, no_git=True)
 
     json_result = OrderedDict()
     json_section = {}
@@ -375,7 +377,7 @@ def show_pr(org, repo, pr_number, show_json, no_git):
 
     section('actions')
     has_actions = False
-    for action_name, action_result in query_pr_actions(org, repo, pr_number):
+    for action_name, action_result in pr_actions:
         has_actions = True
         keyval(action_name, action_result,
               Fore.MAGENTA if action_result == 'success' else Fore.RED)
@@ -384,8 +386,7 @@ def show_pr(org, repo, pr_number, show_json, no_git):
 
     section('commits', list)
     has_commits = False
-    for commit_sha, commit_msg, commit_author, commit_email in \
-        query_pr_commits(org, repo, pr_number):
+    for commit_sha, commit_msg, commit_author, commit_email in pr_commits:
         has_commits = True
         commit(commit_sha, commit_msg, commit_author, commit_email)
     if not has_commits:
@@ -658,8 +659,6 @@ show_parser = subparsers.add_parser(
 show_parser.add_argument('pr_number', type=int)
 show_parser.add_argument('--json', action='store_true', dest='json',
                          help="output in json format")
-show_parser.add_argument('--no-git', action='store_true', dest='no_git',
-                         help="don't invoke git, only gh")
 
 rebase_parser = subparsers.add_parser(
     'rebase', parents=[common_parser, action_parser],
@@ -693,7 +692,7 @@ if hasattr(args, 'dry_run'):
 colorama.init()
 
 if args.command == 'show':
-    show_pr(args.org, args.repo, args.pr_number, args.json, args.no_git)
+    show_pr(args.org, args.repo, args.pr_number, args.json)
     exit(0)
 
 if args.command == 'rebase':

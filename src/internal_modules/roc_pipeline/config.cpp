@@ -12,24 +12,41 @@
 namespace roc {
 namespace pipeline {
 
-SenderConfig::SenderConfig()
+SenderSinkConfig::SenderSinkConfig()
     : input_sample_spec(DefaultSampleSpec)
-    , packet_length(DefaultPacketLength)
     , payload_type(rtp::PayloadType_L16_Stereo)
-    , enable_interleaving(false)
+    , packet_length(DefaultPacketLength)
     , enable_timing(false)
     , enable_auto_duration(false)
     , enable_auto_cts(false)
-    , enable_profiling(false) {
+    , enable_profiling(false)
+    , enable_interleaving(false) {
 }
 
-void SenderConfig::deduce_defaults() {
+void SenderSinkConfig::deduce_defaults() {
     latency.deduce_defaults(DefaultLatency, false);
     resampler.deduce_defaults(latency.tuner_backend, latency.tuner_profile);
 }
 
+SenderSlotConfig::SenderSlotConfig() {
+}
+
+void SenderSlotConfig::deduce_defaults() {
+}
+
+ReceiverCommonConfig::ReceiverCommonConfig()
+    : output_sample_spec(DefaultSampleSpec)
+    , enable_timing(false)
+    , enable_auto_reclock(false)
+    , enable_profiling(false) {
+}
+
+void ReceiverCommonConfig::deduce_defaults() {
+}
+
 ReceiverSessionConfig::ReceiverSessionConfig()
-    : payload_type(0) {
+    : payload_type(0)
+    , enable_beeping(false) {
 }
 
 void ReceiverSessionConfig::deduce_defaults() {
@@ -38,23 +55,19 @@ void ReceiverSessionConfig::deduce_defaults() {
     resampler.deduce_defaults(latency.tuner_backend, latency.tuner_profile);
 }
 
-ReceiverCommonConfig::ReceiverCommonConfig()
-    : output_sample_spec(DefaultSampleSpec)
-    , enable_timing(false)
-    , enable_auto_reclock(false)
-    , enable_profiling(false)
-    , enable_beeping(false) {
+ReceiverSourceConfig::ReceiverSourceConfig() {
 }
 
-void ReceiverCommonConfig::deduce_defaults() {
-}
-
-ReceiverConfig::ReceiverConfig() {
-}
-
-void ReceiverConfig::deduce_defaults() {
-    default_session.deduce_defaults();
+void ReceiverSourceConfig::deduce_defaults() {
     common.deduce_defaults();
+    session_defaults.deduce_defaults();
+}
+
+ReceiverSlotConfig::ReceiverSlotConfig()
+    : enable_routing(true) {
+}
+
+void ReceiverSlotConfig::deduce_defaults() {
 }
 
 TranscoderConfig::TranscoderConfig()

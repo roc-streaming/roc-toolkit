@@ -38,7 +38,7 @@ void write_party_metrics(const pipeline::ReceiverParticipantMetrics& party_metri
 
 TEST_GROUP(receiver_decoder) {
     ContextConfig context_config;
-    pipeline::ReceiverConfig receiver_config;
+    pipeline::ReceiverSourceConfig receiver_config;
 };
 
 TEST(receiver_decoder, source) {
@@ -129,16 +129,12 @@ TEST(receiver_decoder, metrics) {
     CHECK(receiver_decoder.is_valid());
 
     pipeline::ReceiverSlotMetrics slot_metrics;
-    pipeline::ReceiverParticipantMetrics party_metrics[10];
-    size_t party_count = 0;
+    pipeline::ReceiverParticipantMetrics party_metrics;
 
-    party_count = ROC_ARRAY_SIZE(party_metrics);
     CHECK(receiver_decoder.get_metrics(write_slot_metrics, &slot_metrics,
-                                       write_party_metrics, &party_count,
-                                       &party_metrics));
+                                       write_party_metrics, &party_metrics));
 
     LONGS_EQUAL(0, slot_metrics.num_participants);
-    LONGS_EQUAL(0, party_count);
 }
 
 } // namespace node

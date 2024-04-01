@@ -54,7 +54,7 @@ bool context_config_from_user(node::ContextConfig& out, const roc_context_config
 
 ROC_ATTR_NO_SANITIZE_UB
 bool sender_config_from_user(node::Context& context,
-                             pipeline::SenderConfig& out,
+                             pipeline::SenderSinkConfig& out,
                              const roc_sender_config& in) {
     if (!sample_spec_from_user(out.input_sample_spec, in.frame_encoding, false)) {
         roc_log(LogError, "bad configuration: invalid roc_sender_config.frame_encoding");
@@ -131,6 +131,22 @@ bool sender_config_from_user(node::Context& context,
         return false;
     }
 
+    if (!latency_tuner_backend_from_user(out.latency.tuner_backend,
+                                         in.latency_tuner_backend)) {
+        roc_log(LogError,
+                "bad configuration: invalid roc_sender_config.latency_tuner_backend:"
+                " should be valid enum value");
+        return false;
+    }
+
+    if (!latency_tuner_profile_from_user(out.latency.tuner_profile,
+                                         in.latency_tuner_profile)) {
+        roc_log(LogError,
+                "bad configuration: invalid roc_sender_config.latency_tuner_profile:"
+                " should be valid enum value");
+        return false;
+    }
+
     if (!resampler_backend_from_user(out.resampler.backend, in.resampler_backend)) {
         roc_log(LogError,
                 "bad configuration: invalid roc_sender_config.resampler_backend:"
@@ -150,27 +166,28 @@ bool sender_config_from_user(node::Context& context,
 
 ROC_ATTR_NO_SANITIZE_UB
 bool receiver_config_from_user(node::Context&,
-                               pipeline::ReceiverConfig& out,
+                               pipeline::ReceiverSourceConfig& out,
                                const roc_receiver_config& in) {
     if (in.target_latency != 0) {
-        out.default_session.latency.target_latency =
+        out.session_defaults.latency.target_latency =
             (core::nanoseconds_t)in.target_latency;
     }
 
     if (in.min_latency != 0) {
-        out.default_session.latency.min_latency = (core::nanoseconds_t)in.min_latency;
+        out.session_defaults.latency.min_latency = (core::nanoseconds_t)in.min_latency;
     }
 
     if (in.max_latency != 0) {
-        out.default_session.latency.max_latency = (core::nanoseconds_t)in.max_latency;
+        out.session_defaults.latency.max_latency = (core::nanoseconds_t)in.max_latency;
     }
 
     if (in.no_playback_timeout != 0) {
-        out.default_session.watchdog.no_playback_timeout = in.no_playback_timeout;
+        out.session_defaults.watchdog.no_playback_timeout = in.no_playback_timeout;
     }
 
     if (in.choppy_playback_timeout != 0) {
-        out.default_session.watchdog.choppy_playback_timeout = in.choppy_playback_timeout;
+        out.session_defaults.watchdog.choppy_playback_timeout =
+            in.choppy_playback_timeout;
     }
 
     out.common.enable_timing = false;
@@ -189,7 +206,7 @@ bool receiver_config_from_user(node::Context&,
         return false;
     }
 
-    if (!latency_tuner_backend_from_user(out.default_session.latency.tuner_backend,
+    if (!latency_tuner_backend_from_user(out.session_defaults.latency.tuner_backend,
                                          in.latency_tuner_backend)) {
         roc_log(LogError,
                 "bad configuration: invalid roc_receiver_config.latency_tuner_backend:"
@@ -197,7 +214,7 @@ bool receiver_config_from_user(node::Context&,
         return false;
     }
 
-    if (!latency_tuner_profile_from_user(out.default_session.latency.tuner_profile,
+    if (!latency_tuner_profile_from_user(out.session_defaults.latency.tuner_profile,
                                          in.latency_tuner_profile)) {
         roc_log(LogError,
                 "bad configuration: invalid roc_receiver_config.latency_tuner_profile:"
@@ -205,7 +222,7 @@ bool receiver_config_from_user(node::Context&,
         return false;
     }
 
-    if (!resampler_backend_from_user(out.default_session.resampler.backend,
+    if (!resampler_backend_from_user(out.session_defaults.resampler.backend,
                                      in.resampler_backend)) {
         roc_log(LogError,
                 "bad configuration: invalid roc_receiver_config.resampler_backend:"
@@ -213,7 +230,7 @@ bool receiver_config_from_user(node::Context&,
         return false;
     }
 
-    if (!resampler_profile_from_user(out.default_session.resampler.profile,
+    if (!resampler_profile_from_user(out.session_defaults.resampler.profile,
                                      in.resampler_profile)) {
         roc_log(LogError,
                 "bad configuration: invalid roc_receiver_config.resampler_profile:"

@@ -13,7 +13,8 @@
 namespace roc {
 namespace pipeline {
 
-ReceiverSlot::ReceiverSlot(const ReceiverConfig& receiver_config,
+ReceiverSlot::ReceiverSlot(const ReceiverSourceConfig& source_config,
+                           const ReceiverSlotConfig& slot_config,
                            StateTracker& state_tracker,
                            audio::Mixer& mixer,
                            const rtp::EncodingMap& encoding_map,
@@ -24,7 +25,8 @@ ReceiverSlot::ReceiverSlot(const ReceiverConfig& receiver_config,
     : core::RefCounted<ReceiverSlot, core::ArenaAllocation>(arena)
     , encoding_map_(encoding_map)
     , state_tracker_(state_tracker)
-    , session_group_(receiver_config,
+    , session_group_(source_config,
+                     slot_config,
                      state_tracker_,
                      mixer,
                      encoding_map,

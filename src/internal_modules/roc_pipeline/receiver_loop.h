@@ -59,6 +59,7 @@ public:
         bool (ReceiverLoop::*func_)(Task&); //!< Task implementation method.
 
         ReceiverSlot* slot_;                        //!< Slot.
+        ReceiverSlotConfig slot_config_;            //!< Slot config.
         address::Interface iface_;                  //!< Interface.
         address::Protocol proto_;                   //!< Protocol.
         address::SocketAddr inbound_address_;       //!< Inbound packet address.
@@ -76,7 +77,7 @@ public:
         class CreateSlot : public Task {
         public:
             //! Set task parameters.
-            CreateSlot();
+            CreateSlot(const ReceiverSlotConfig& slot_config);
 
             //! Get created slot handle.
             SlotHandle get_handle() const;
@@ -123,7 +124,7 @@ public:
 
     //! Initialize.
     ReceiverLoop(IPipelineTaskScheduler& scheduler,
-                 const ReceiverConfig& config,
+                 const ReceiverSourceConfig& source_config,
                  const rtp::EncodingMap& encoding_map,
                  packet::PacketFactory& packet_factory,
                  core::BufferFactory<uint8_t>& byte_buffer_factory,

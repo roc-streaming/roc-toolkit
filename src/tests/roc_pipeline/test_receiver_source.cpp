@@ -83,7 +83,8 @@ packet::PacketFactory packet_factory(arena);
 rtp::EncodingMap encoding_map(arena);
 
 ReceiverSlot* create_slot(ReceiverSource& source) {
-    ReceiverSlot* slot = source.create_slot();
+    ReceiverSlotConfig slot_config;
+    ReceiverSlot* slot = source.create_slot(slot_config);
     CHECK(slot);
     return slot;
 }
@@ -131,28 +132,28 @@ TEST_GROUP(receiver_source) {
     address::Protocol proto1;
     address::Protocol proto2;
 
-    ReceiverConfig make_custom_config(int target_latency, int min_latency,
-                                      int max_latency, int watchdog_timeout,
-                                      int watchdog_warmup) {
-        ReceiverConfig config;
+    ReceiverSourceConfig make_custom_config(int target_latency, int min_latency,
+                                            int max_latency, int watchdog_timeout,
+                                            int watchdog_warmup) {
+        ReceiverSourceConfig config;
 
         config.common.output_sample_spec = output_sample_spec;
 
         config.common.enable_timing = false;
         config.common.enable_profiling = true;
 
-        config.default_session.latency.tuner_backend = audio::LatencyTunerBackend_Niq;
-        config.default_session.latency.tuner_profile = audio::LatencyTunerProfile_Intact;
-        config.default_session.latency.target_latency =
+        config.session_defaults.latency.tuner_backend = audio::LatencyTunerBackend_Niq;
+        config.session_defaults.latency.tuner_profile = audio::LatencyTunerProfile_Intact;
+        config.session_defaults.latency.target_latency =
             target_latency * core::Second / (int)output_sample_spec.sample_rate();
-        config.default_session.latency.min_latency =
+        config.session_defaults.latency.min_latency =
             min_latency * core::Second / (int)output_sample_spec.sample_rate();
-        config.default_session.latency.max_latency =
+        config.session_defaults.latency.max_latency =
             max_latency * core::Second / (int)output_sample_spec.sample_rate();
 
-        config.default_session.watchdog.no_playback_timeout =
+        config.session_defaults.watchdog.no_playback_timeout =
             watchdog_timeout * core::Second / (int)output_sample_spec.sample_rate();
-        config.default_session.watchdog.warmup_duration =
+        config.session_defaults.watchdog.warmup_duration =
             watchdog_warmup * core::Second / (int)output_sample_spec.sample_rate();
 
         config.common.rtcp.report_interval = ReportInterval * core::Second / SampleRate;
@@ -165,7 +166,7 @@ TEST_GROUP(receiver_source) {
         return config;
     }
 
-    ReceiverConfig make_default_config() {
+    ReceiverSourceConfig make_default_config() {
         return make_custom_config(Latency, MinLatency, MaxLatency, Timeout, Warmup);
     }
 

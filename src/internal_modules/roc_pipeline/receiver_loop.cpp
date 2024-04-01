@@ -27,8 +27,9 @@ ReceiverLoop::Task::Task()
     , party_count_(NULL) {
 }
 
-ReceiverLoop::Tasks::CreateSlot::CreateSlot() {
+ReceiverLoop::Tasks::CreateSlot::CreateSlot(const ReceiverSlotConfig& slot_config) {
     func_ = &ReceiverLoop::task_create_slot_;
+    slot_config_ = slot_config;
 }
 
 ReceiverLoop::SlotHandle ReceiverLoop::Tasks::CreateSlot::get_handle() const {
@@ -86,29 +87,30 @@ packet::IWriter* ReceiverLoop::Tasks::AddEndpoint::get_inbound_writer() const {
 }
 
 ReceiverLoop::ReceiverLoop(IPipelineTaskScheduler& scheduler,
-                           const ReceiverConfig& config,
+                           const ReceiverSourceConfig& source_config,
                            const rtp::EncodingMap& encoding_map,
                            packet::PacketFactory& packet_factory,
                            core::BufferFactory<uint8_t>& byte_buffer_factory,
                            core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                            core::IArena& arena)
-    : PipelineLoop(scheduler, config.pipeline_loop, config.common.output_sample_spec)
-    , source_(config,
+    : PipelineLoop(
+        scheduler, source_config.pipeline_loop, source_config.common.output_sample_spec)
+    , source_(source_config,
               encoding_map,
               packet_factory,
               byte_buffer_factory,
               sample_buffer_factory,
               arena)
     , ticker_ts_(0)
-    , auto_reclock_(config.common.enable_auto_reclock)
+    , auto_reclock_(source_config.common.enable_auto_reclock)
     , valid_(false) {
     if (!source_.is_valid()) {
         return;
     }
 
-    if (config.common.enable_timing) {
-        ticker_.reset(new (ticker_)
-                          core::Ticker(config.common.output_sample_spec.sample_rate()));
+    if (source_config.common.enable_timing) {
+        ticker_.reset(new (ticker_) core::Ticker(
+            source_config.common.output_sample_spec.sample_rate()));
         if (!ticker_) {
             return;
         }
@@ -269,7 +271,7 @@ bool ReceiverLoop::process_task_imp(PipelineTask& basic_task) {
 }
 
 bool ReceiverLoop::task_create_slot_(Task& task) {
-    task.slot_ = source_.create_slot();
+    task.slot_ = source_.create_slot(task.slot_config_);
     return (bool)task.slot_;
 }
 

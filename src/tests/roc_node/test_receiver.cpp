@@ -44,7 +44,7 @@ void write_party_metrics(const pipeline::ReceiverParticipantMetrics& party_metri
 
 TEST_GROUP(receiver) {
     ContextConfig context_config;
-    pipeline::ReceiverConfig receiver_config;
+    pipeline::ReceiverSourceConfig receiver_config;
 };
 
 TEST(receiver, source) {

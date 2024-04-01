@@ -45,7 +45,7 @@ int roc_receiver_decoder_open(roc_context* context,
         return -1;
     }
 
-    pipeline::ReceiverConfig imp_config;
+    pipeline::ReceiverSourceConfig imp_config;
     if (!api::receiver_config_from_user(*imp_context, imp_config, *config)) {
         roc_log(LogError, "roc_receiver_decoder_open(): invalid arguments: bad config");
         return -1;
@@ -104,18 +104,24 @@ int roc_receiver_decoder_activate(roc_receiver_decoder* decoder,
 
 int roc_receiver_decoder_query(roc_receiver_decoder* decoder,
                                roc_receiver_metrics* decoder_metrics,
-                               roc_connection_metrics* conn_metrics,
-                               size_t* conn_metrics_count) {
+                               roc_connection_metrics* conn_metrics) {
     if (!decoder) {
         roc_log(LogError,
                 "roc_receiver_decoder_query(): invalid arguments: decoder is null");
         return -1;
     }
 
-    if (conn_metrics && !conn_metrics_count) {
+    if (!decoder_metrics) {
         roc_log(LogError,
                 "roc_receiver_decoder_query(): invalid arguments:"
-                " conn_metrics is non-null, but conn_metrics_count is null");
+                " decoder_metrics is null");
+        return -1;
+    }
+
+    if (!conn_metrics) {
+        roc_log(LogError,
+                "roc_receiver_decoder_query(): invalid arguments:"
+                " conn_metrics is null");
         return -1;
     }
 
@@ -123,7 +129,7 @@ int roc_receiver_decoder_query(roc_receiver_decoder* decoder,
 
     if (!imp_decoder->get_metrics(api::receiver_slot_metrics_to_user, decoder_metrics,
                                   api::receiver_participant_metrics_to_user,
-                                  conn_metrics_count, conn_metrics)) {
+                                  conn_metrics)) {
         roc_log(LogError, "roc_receiver_decoder_query(): operation failed");
         return -1;
     }

@@ -15,7 +15,8 @@
 namespace roc {
 namespace node {
 
-Receiver::Receiver(Context& context, const pipeline::ReceiverConfig& pipeline_config)
+Receiver::Receiver(Context& context,
+                   const pipeline::ReceiverSourceConfig& pipeline_config)
     : Node(context)
     , pipeline_(*this,
                 pipeline_config,
@@ -365,13 +366,16 @@ core::SharedPtr<Receiver::Slot> Receiver::get_slot_(slot_index_t slot_index,
 
     if (!slot) {
         if (auto_create) {
-            pipeline::ReceiverLoop::Tasks::CreateSlot task;
-            if (!pipeline_.schedule_and_wait(task)) {
+            pipeline::ReceiverSlotConfig slot_config;
+            slot_config.enable_routing = true;
+
+            pipeline::ReceiverLoop::Tasks::CreateSlot slot_task(slot_config);
+            if (!pipeline_.schedule_and_wait(slot_task)) {
                 roc_log(LogError, "receiver node: failed to create slot");
                 return NULL;
             }
 
-            slot = new (slot_pool_) Slot(slot_pool_, slot_index, task.get_handle());
+            slot = new (slot_pool_) Slot(slot_pool_, slot_index, slot_task.get_handle());
             if (!slot) {
                 roc_log(LogError, "receiver node: failed to create slot %lu",
                         (unsigned long)slot_index);

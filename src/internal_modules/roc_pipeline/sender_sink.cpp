@@ -14,13 +14,13 @@
 namespace roc {
 namespace pipeline {
 
-SenderSink::SenderSink(const SenderConfig& config,
+SenderSink::SenderSink(const SenderSinkConfig& sink_config,
                        const rtp::EncodingMap& encoding_map,
                        packet::PacketFactory& packet_factory,
                        core::BufferFactory<uint8_t>& byte_buffer_factory,
                        core::BufferFactory<audio::sample_t>& sample_buffer_factory,
                        core::IArena& arena)
-    : config_(config)
+    : sink_config_(sink_config)
     , encoding_map_(encoding_map)
     , packet_factory_(packet_factory)
     , byte_buffer_factory_(byte_buffer_factory)
@@ -28,26 +28,26 @@ SenderSink::SenderSink(const SenderConfig& config,
     , arena_(arena)
     , frame_writer_(NULL)
     , valid_(false) {
-    config_.deduce_defaults();
+    sink_config_.deduce_defaults();
 
     audio::IFrameWriter* frm_writer = &fanout_;
 
-    if (!config_.input_sample_spec.is_raw()) {
-        const audio::SampleSpec out_spec(config_.input_sample_spec.sample_rate(),
+    if (!sink_config_.input_sample_spec.is_raw()) {
+        const audio::SampleSpec out_spec(sink_config_.input_sample_spec.sample_rate(),
                                          audio::Sample_RawFormat,
-                                         config_.input_sample_spec.channel_set());
+                                         sink_config_.input_sample_spec.channel_set());
 
         pcm_mapper_.reset(new (pcm_mapper_) audio::PcmMapperWriter(
-            *frm_writer, byte_buffer_factory, config_.input_sample_spec, out_spec));
+            *frm_writer, byte_buffer_factory, sink_config_.input_sample_spec, out_spec));
         if (!pcm_mapper_ || !pcm_mapper_->is_valid()) {
             return;
         }
         frm_writer = pcm_mapper_.get();
     }
 
-    if (config_.enable_profiling) {
+    if (sink_config_.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingWriter(
-            *frm_writer, arena, config_.input_sample_spec, config_.profiler));
+            *frm_writer, arena, sink_config_.input_sample_spec, sink_config_.profiler));
         if (!profiler_ || !profiler_->is_valid()) {
             return;
         }
@@ -66,14 +66,14 @@ bool SenderSink::is_valid() const {
     return valid_;
 }
 
-SenderSlot* SenderSink::create_slot() {
+SenderSlot* SenderSink::create_slot(const SenderSlotConfig& slot_config) {
     roc_panic_if(!is_valid());
 
     roc_log(LogInfo, "sender sink: adding slot");
 
     core::SharedPtr<SenderSlot> slot = new (arena_)
-        SenderSlot(config_, state_tracker_, encoding_map_, fanout_, packet_factory_,
-                   byte_buffer_factory_, sample_buffer_factory_, arena_);
+        SenderSlot(sink_config_, slot_config, state_tracker_, encoding_map_, fanout_,
+                   packet_factory_, byte_buffer_factory_, sample_buffer_factory_, arena_);
 
     if (!slot || !slot->is_valid()) {
         roc_log(LogError, "sender sink: can't create slot");
@@ -154,7 +154,7 @@ bool SenderSink::restart() {
 }
 
 audio::SampleSpec SenderSink::sample_spec() const {
-    return config_.input_sample_spec;
+    return sink_config_.input_sample_spec;
 }
 
 core::nanoseconds_t SenderSink::latency() const {
@@ -166,7 +166,7 @@ bool SenderSink::has_latency() const {
 }
 
 bool SenderSink::has_clock() const {
-    return config_.enable_timing;
+    return sink_config_.enable_timing;
 }
 
 void SenderSink::write(audio::Frame& frame) {

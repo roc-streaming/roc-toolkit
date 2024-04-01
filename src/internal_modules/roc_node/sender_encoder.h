@@ -33,7 +33,7 @@ namespace node {
 class SenderEncoder : public Node, private pipeline::IPipelineTaskScheduler {
 public:
     //! Initialize.
-    SenderEncoder(Context& context, const pipeline::SenderConfig& pipeline_config);
+    SenderEncoder(Context& context, const pipeline::SenderSinkConfig& pipeline_config);
 
     //! Deinitialize.
     ~SenderEncoder();
@@ -58,7 +58,6 @@ public:
     ROC_ATTR_NODISCARD bool get_metrics(slot_metrics_func_t slot_metrics_func,
                                         void* slot_metrics_arg,
                                         party_metrics_func_t party_metrics_func,
-                                        size_t* party_metrics_size,
                                         void* party_metrics_arg);
 
     //! Check if everything is connected.
@@ -93,9 +92,6 @@ private:
     pipeline::SenderLoop pipeline_;
     pipeline::SenderLoop::SlotHandle slot_;
     ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
-
-    pipeline::SenderSlotMetrics slot_metrics_;
-    core::Array<pipeline::SenderParticipantMetrics, 8> party_metrics_;
 
     bool valid_;
 };

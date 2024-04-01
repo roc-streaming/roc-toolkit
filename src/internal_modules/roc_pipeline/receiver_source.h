@@ -43,7 +43,7 @@ namespace pipeline {
 class ReceiverSource : public sndio::ISource, public core::NonCopyable<> {
 public:
     //! Initialize.
-    ReceiverSource(const ReceiverConfig& config,
+    ReceiverSource(const ReceiverSourceConfig& source_config,
                    const rtp::EncodingMap& encoding_map,
                    packet::PacketFactory& packet_factory,
                    core::BufferFactory<uint8_t>& byte_buffer_factory,
@@ -54,7 +54,7 @@ public:
     bool is_valid() const;
 
     //! Create slot.
-    ReceiverSlot* create_slot();
+    ReceiverSlot* create_slot(const ReceiverSlotConfig& slot_config);
 
     //! Delete slot.
     void delete_slot(ReceiverSlot* slot);
@@ -115,6 +115,8 @@ public:
     virtual bool read(audio::Frame&);
 
 private:
+    ReceiverSourceConfig source_config_;
+
     const rtp::EncodingMap& encoding_map_;
 
     packet::PacketFactory& packet_factory_;
@@ -131,8 +133,6 @@ private:
     core::List<ReceiverSlot> slots_;
 
     audio::IFrameReader* frame_reader_;
-
-    ReceiverConfig config_;
 
     bool valid_;
 };

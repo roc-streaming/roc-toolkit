@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
         break;
     }
 
-    pipeline::ReceiverConfig receiver_config;
+    pipeline::ReceiverSourceConfig receiver_config;
 
     sndio::Config io_config;
     io_config.sample_spec.set_sample_format(
@@ -110,11 +110,11 @@ int main(int argc, char** argv) {
     if (args.target_latency_given) {
         if (!core::parse_duration(
                 args.target_latency_arg,
-                receiver_config.default_session.latency.target_latency)) {
+                receiver_config.session_defaults.latency.target_latency)) {
             roc_log(LogError, "invalid --target-latency: bad format");
             return 1;
         }
-        if (receiver_config.default_session.latency.target_latency <= 0) {
+        if (receiver_config.session_defaults.latency.target_latency <= 0) {
             roc_log(LogError, "invalid --target-latency: should be > 0");
             return 1;
         }
@@ -128,17 +128,17 @@ int main(int argc, char** argv) {
         }
 
         if (!core::parse_duration(args.min_latency_arg,
-                                  receiver_config.default_session.latency.min_latency)) {
+                                  receiver_config.session_defaults.latency.min_latency)) {
             roc_log(LogError, "invalid --min-latency: bad format");
             return 1;
         }
 
         if (!core::parse_duration(args.max_latency_arg,
-                                  receiver_config.default_session.latency.max_latency)) {
+                                  receiver_config.session_defaults.latency.max_latency)) {
             roc_log(LogError, "invalid --max-latency: bad format");
             return 1;
         }
-        if (receiver_config.default_session.latency.max_latency <= 0) {
+        if (receiver_config.session_defaults.latency.max_latency <= 0) {
             roc_log(LogError, "invalid --max-latency: should be > 0");
             return 1;
         }
@@ -147,11 +147,11 @@ int main(int argc, char** argv) {
     if (args.no_play_timeout_given) {
         if (!core::parse_duration(
                 args.no_play_timeout_arg,
-                receiver_config.default_session.watchdog.no_playback_timeout)) {
+                receiver_config.session_defaults.watchdog.no_playback_timeout)) {
             roc_log(LogError, "invalid --no-play-timeout: bad format");
             return 1;
         }
-        if (receiver_config.default_session.watchdog.no_playback_timeout <= 0) {
+        if (receiver_config.session_defaults.watchdog.no_playback_timeout <= 0) {
             roc_log(LogError, "invalid --no-play-timeout: should be > 0");
             return 1;
         }
@@ -160,11 +160,11 @@ int main(int argc, char** argv) {
     if (args.choppy_play_timeout_given) {
         if (!core::parse_duration(
                 args.choppy_play_timeout_arg,
-                receiver_config.default_session.watchdog.choppy_playback_timeout)) {
+                receiver_config.session_defaults.watchdog.choppy_playback_timeout)) {
             roc_log(LogError, "invalid --choppy-play-timeout: bad format");
             return 1;
         }
-        if (receiver_config.default_session.watchdog.choppy_playback_timeout <= 0) {
+        if (receiver_config.session_defaults.watchdog.choppy_playback_timeout <= 0) {
             roc_log(LogError, "invalid --choppy-play-timeout: should be > 0");
             return 1;
         }
@@ -172,7 +172,7 @@ int main(int argc, char** argv) {
 
     switch (args.latency_backend_arg) {
     case latency_backend_arg_niq:
-        receiver_config.default_session.latency.tuner_backend =
+        receiver_config.session_defaults.latency.tuner_backend =
             audio::LatencyTunerBackend_Niq;
         break;
     default:
@@ -181,19 +181,19 @@ int main(int argc, char** argv) {
 
     switch (args.latency_profile_arg) {
     case latency_profile_arg_default:
-        receiver_config.default_session.latency.tuner_profile =
+        receiver_config.session_defaults.latency.tuner_profile =
             audio::LatencyTunerProfile_Default;
         break;
     case latency_profile_arg_responsive:
-        receiver_config.default_session.latency.tuner_profile =
+        receiver_config.session_defaults.latency.tuner_profile =
             audio::LatencyTunerProfile_Responsive;
         break;
     case latency_profile_arg_gradual:
-        receiver_config.default_session.latency.tuner_profile =
+        receiver_config.session_defaults.latency.tuner_profile =
             audio::LatencyTunerProfile_Gradual;
         break;
     case latency_profile_arg_intact:
-        receiver_config.default_session.latency.tuner_profile =
+        receiver_config.session_defaults.latency.tuner_profile =
             audio::LatencyTunerProfile_Intact;
         break;
     default:
@@ -202,18 +202,19 @@ int main(int argc, char** argv) {
 
     switch (args.resampler_backend_arg) {
     case resampler_backend_arg_default:
-        receiver_config.default_session.resampler.backend =
+        receiver_config.session_defaults.resampler.backend =
             audio::ResamplerBackend_Default;
         break;
     case resampler_backend_arg_builtin:
-        receiver_config.default_session.resampler.backend =
+        receiver_config.session_defaults.resampler.backend =
             audio::ResamplerBackend_Builtin;
         break;
     case resampler_backend_arg_speex:
-        receiver_config.default_session.resampler.backend = audio::ResamplerBackend_Speex;
+        receiver_config.session_defaults.resampler.backend =
+            audio::ResamplerBackend_Speex;
         break;
     case resampler_backend_arg_speexdec:
-        receiver_config.default_session.resampler.backend =
+        receiver_config.session_defaults.resampler.backend =
             audio::ResamplerBackend_SpeexDec;
         break;
     default:
@@ -222,22 +223,22 @@ int main(int argc, char** argv) {
 
     switch (args.resampler_profile_arg) {
     case resampler_profile_arg_low:
-        receiver_config.default_session.resampler.profile = audio::ResamplerProfile_Low;
+        receiver_config.session_defaults.resampler.profile = audio::ResamplerProfile_Low;
         break;
     case resampler_profile_arg_medium:
-        receiver_config.default_session.resampler.profile =
+        receiver_config.session_defaults.resampler.profile =
             audio::ResamplerProfile_Medium;
         break;
     case resampler_profile_arg_high:
-        receiver_config.default_session.resampler.profile = audio::ResamplerProfile_High;
+        receiver_config.session_defaults.resampler.profile = audio::ResamplerProfile_High;
         break;
 
     default:
         break;
     }
 
+    receiver_config.session_defaults.enable_beeping = args.beep_flag;
     receiver_config.common.enable_profiling = args.profiling_flag;
-    receiver_config.common.enable_beeping = args.beep_flag;
 
     node::ContextConfig context_config;
 
@@ -380,9 +381,9 @@ int main(int argc, char** argv) {
         pipeline::TranscoderConfig transcoder_config;
 
         transcoder_config.resampler.backend =
-            receiver_config.default_session.resampler.backend;
+            receiver_config.session_defaults.resampler.backend;
         transcoder_config.resampler.profile =
-            receiver_config.default_session.resampler.profile;
+            receiver_config.session_defaults.resampler.profile;
 
         transcoder_config.input_sample_spec =
             audio::SampleSpec(backup_source->sample_spec().sample_rate(),

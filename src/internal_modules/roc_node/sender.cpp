@@ -15,7 +15,7 @@
 namespace roc {
 namespace node {
 
-Sender::Sender(Context& context, const pipeline::SenderConfig& pipeline_config)
+Sender::Sender(Context& context, const pipeline::SenderSinkConfig& pipeline_config)
     : Node(context)
     , pipeline_(*this,
                 pipeline_config,
@@ -399,14 +399,16 @@ core::SharedPtr<Sender::Slot> Sender::get_slot_(slot_index_t slot_index,
 
     if (!slot) {
         if (auto_create) {
-            pipeline::SenderLoop::Tasks::CreateSlot task;
-            if (!pipeline_.schedule_and_wait(task)) {
+            pipeline::SenderSlotConfig slot_config;
+
+            pipeline::SenderLoop::Tasks::CreateSlot slot_task(slot_config);
+            if (!pipeline_.schedule_and_wait(slot_task)) {
                 roc_log(LogError, "sender node: failed to create slot %lu",
                         (unsigned long)slot_index);
                 return NULL;
             }
 
-            slot = new (slot_pool_) Slot(slot_pool_, slot_index, task.get_handle());
+            slot = new (slot_pool_) Slot(slot_pool_, slot_index, slot_task.get_handle());
             if (!slot) {
                 roc_log(LogError, "sender node: failed to create slot %lu",
                         (unsigned long)slot_index);
