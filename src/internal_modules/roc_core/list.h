@@ -42,20 +42,10 @@ public:
 
     //! Release ownership of containing objects.
     ~List() {
-        ListNode::ListNodeData* next_data;
-
-        for (ListNode::ListNodeData* data = impl_.head.next; data != &impl_.head;
-             data = next_data) {
-            roc_panic_if(data == NULL);
-            ListImpl::check_is_member(data, &impl_);
-
-            next_data = data->next;
-            data->list = NULL;
-
-            OwnershipPolicy<T>::release(*(container_of_(data)));
+        while (!is_empty()) {
+            pop_front();
         }
-
-        impl_.head.list = NULL;
+        impl_.~ListImpl();
     }
 
     //! Get number of elements in list.
@@ -123,7 +113,7 @@ public:
     //! @pre
     //!  @p element should not be member of any list.
     void push_front(T& element) {
-        insert_(element, impl_.head.next);
+        insert_(element, impl_.head().next);
     }
 
     //! Append element to list.
@@ -135,7 +125,9 @@ public:
     //! @pre
     //!  @p element should not be member of any list.
     void push_back(T& element) {
-        insert_(element, &impl_.head);
+        impl_.push_back(element.list_node_data());
+
+        OwnershipPolicy<T>::acquire(element);
     }
 
     //! Pop first element from list.
@@ -150,7 +142,7 @@ public:
         if (size() == 0) {
             roc_panic("list: is empty");
         }
-        remove(*(container_of_(impl_.head.next)));
+        remove(*(container_of_(impl_.head().next)));
     }
 
     //! Pop last element from list.
@@ -165,7 +157,7 @@ public:
         if (size() == 0) {
             roc_panic("list: is empty");
         }
-        remove(*(container_of_(impl_.head.prev)));
+        remove(*(container_of_(impl_.head().prev)));
     }
 
     //! Insert element into list.

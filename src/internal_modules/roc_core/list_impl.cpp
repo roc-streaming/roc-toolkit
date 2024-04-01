@@ -17,13 +17,13 @@ namespace core {
 
 ListImpl::ListImpl()
     : size_(0) {
-    head.prev = &head;
-    head.next = &head;
-    head.list = this;
+    _head.prev = &_head;
+    _head.next = &_head;
+    _head.list = this;
 }
 
 ListImpl::~ListImpl() {
-	head.list = NULL;	
+    _head.list = NULL;
 }
 
 size_t ListImpl::size() const {
@@ -38,20 +38,20 @@ ListNode::ListNodeData* ListImpl::front() const {
     if (size_ == 0) {
         return NULL;
     }
-    return head.next;
+    return _head.next;
 }
 
 ListNode::ListNodeData* ListImpl::back() const {
     if (size_ == 0) {
         return NULL;
     }
-    return head.prev;
+    return _head.prev;
 }
 
 ListNode::ListNodeData* ListImpl::nextof(ListNode::ListNodeData* data) const {
     check_is_member(data, this);
 
-    if (data->next == &head) {
+    if (data->next == &_head) {
         return NULL;
     }
     return data->next;
@@ -60,7 +60,7 @@ ListNode::ListNodeData* ListImpl::nextof(ListNode::ListNodeData* data) const {
 ListNode::ListNodeData* ListImpl::prevof(ListNode::ListNodeData* data) const {
     check_is_member(data, this);
 
-    if (data->prev == &head) {
+    if (data->prev == &_head) {
         return NULL;
     }
     return data->prev;
@@ -82,6 +82,10 @@ void ListImpl::insert(ListNode::ListNodeData* data_new,
     size_++;
 }
 
+void ListImpl::push_back(ListNode::ListNodeData* data_new) {
+    insert(data_new, &_head);
+}
+
 void ListImpl::remove(ListNode::ListNodeData* data) {
     check_is_member(data, this);
 
@@ -99,6 +103,11 @@ void ListImpl::check_is_member(const ListNode::ListNodeData* data, const ListImp
             "list: list node data is not registered in this list: expected %p, got %p",
             (const void*)list, (const void*)data->list);
     }
+}
+
+//! Get head of list
+ListNode::ListNodeData ListImpl::head() const {
+    return _head;
 }
 
 } // namespace core

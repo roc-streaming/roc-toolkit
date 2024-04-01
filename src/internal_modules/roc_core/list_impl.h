@@ -73,20 +73,23 @@ public:
     //! @p data_before must be registered in this list.
     void insert(ListNode::ListNodeData* data_new, ListNode::ListNodeData* data_before);
 
+    void push_back(ListNode::ListNodeData* data_new);
+
     //! Remove list node data from list.
     //!
     //! @pre
     //!  @p data must be registered in this list.
     void remove(ListNode::ListNodeData* data);
 
-    //! Check if list node data is registered in this list.
-    static void check_is_member(const ListNode::ListNodeData* data, const ListImpl* list);
-
-    //! Head of list
-    ListNode::ListNodeData head;
+    //! Get head of list
+    ListNode::ListNodeData head() const;
 
 private:
     size_t size_;
+    //! Head of list
+    ListNode::ListNodeData _head;
+    //! Check if list node data is registered in this list.
+    static void check_is_member(const ListNode::ListNodeData* data, const ListImpl* list);
 };
 
 } // namespace core
