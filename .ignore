@@ -1,7 +1,13 @@
+!.ignore
+!.justfile
+!.projectile
+!.unisonignore
+!TODO.org
 3rdparty/_distfiles
+3rdparty/dr_wav
 3rdparty/hedley
 bin
 build
+compile_commands.json
 docs/html
 docs/man
-compile_commands.json
