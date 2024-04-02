@@ -24,13 +24,16 @@ int level_to_android(LogLevel level) {
     case LogInfo:
         return ANDROID_LOG_INFO;
 
+    case LogNote:
     case LogDebug:
+        return ANDROID_LOG_DEBUG;
+
     case LogTrace:
     case LogNone:
         break;
     }
 
-    return ANDROID_LOG_DEBUG;
+    return ANDROID_LOG_VERBOSE;
 }
 
 } // namespace

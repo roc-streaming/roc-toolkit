@@ -46,6 +46,9 @@ void LogBackend::handle(const LogMessage& msg) {
     case LogInfo:
         level = "inf";
         break;
+    case LogNote:
+        level = "nte";
+        break;
     case LogDebug:
         level = "dbg";
         break;
@@ -75,6 +78,9 @@ void LogBackend::handle(const LogMessage& msg) {
             break;
         case LogInfo:
             color = Color_Blue;
+            break;
+        case LogNote:
+            color = Color_Green;
             break;
         default:
             break;

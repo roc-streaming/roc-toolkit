@@ -44,8 +44,9 @@ enum LogLevel {
     LogNone,  //!< Disable all messages.
     LogError, //!< Error message.
     LogInfo,  //!< Informational message.
-    LogDebug, //!< Debug message.
-    LogTrace  //!< Debug message (extra verbosity).
+    LogNote,  //!< Noteworthy debug message.
+    LogDebug, //!< Regular debug message.
+    LogTrace  //!< Extra verbose debug message.
 };
 
 namespace core {

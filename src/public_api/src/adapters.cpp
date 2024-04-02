@@ -671,6 +671,9 @@ LogLevel log_level_from_user(roc_log_level in) {
     case ROC_LOG_INFO:
         return LogInfo;
 
+    case ROC_LOG_NOTE:
+        return LogNote;
+
     case ROC_LOG_DEBUG:
         return LogDebug;
 
@@ -691,6 +694,9 @@ roc_log_level log_level_to_user(LogLevel in) {
 
     case LogInfo:
         return ROC_LOG_INFO;
+
+    case LogNote:
+        return ROC_LOG_NOTE;
 
     case LogDebug:
         return ROC_LOG_DEBUG;
