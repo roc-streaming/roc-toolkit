@@ -73,20 +73,10 @@ public:
     //! @p data_before must be registered in this list.
     void insert(ListNode::ListNodeData* data_new, ListNode::ListNodeData* data_before);
 
-    //! Append element to list.
+    //! Append new list node data.
     //!
     //! @remarks
-    //!  - appends @p element to list
-    //!  - acquires ownership of @p element
-    //!
-    //! @pre
-    //!  @p element should not be member of any list.
-    void push_back(T& element) {
-        impl_.push_back(element.list_node_data());
-
-        OwnershipPolicy<T>::acquire(element);
-    }
-
+    //!  - appends @p data_new
     void push_back(ListNode::ListNodeData* data_new);
 
     //! Remove list node data from list.
