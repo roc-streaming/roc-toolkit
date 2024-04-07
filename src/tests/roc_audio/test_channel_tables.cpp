@@ -67,25 +67,6 @@ static ChannelMask named_masks[] = {
     ChanMask_Surround_7_1_4,  //
 };
 
-static ChannelMask mapped_masks[] = {
-    ChanMask_Surround_1_1,      //
-    ChanMask_Surround_1_1_3c,   //
-    ChanMask_Surround_2_1,      //
-    ChanMask_Surround_3_1,      //
-    ChanMask_Surround_3_1_3c,   //
-    ChanMask_Surround_4_1,      //
-    ChanMask_Surround_5_1_2,    //
-    ChanMask_Surround_5_1_2_3c, //
-    ChanMask_Surround_5_1_4,    //
-    ChanMask_Surround_5_1_4_3c, //
-    ChanMask_Surround_6_1,      //
-    ChanMask_Surround_6_1_3c,   //
-    ChanMask_Surround_7_1_2,    //
-    ChanMask_Surround_7_1_2_3c, //
-    ChanMask_Surround_7_1_4,    //
-    ChanMask_Surround_7_1_4_3c, //
-};
-
 int sortpos(ChannelMask ch_mask) {
     if (ch_mask == 0) {
         return 0;
@@ -110,12 +91,12 @@ void fail(const char* message, const ChannelMapTable& ch_map) {
 TEST_GROUP(channel_tables) {};
 
 // Check that all masks in mapping tables are valid.
-IGNORE_TEST(channel_tables, map_tables_masks) {
+TEST(channel_tables, map_tables_masks) {
     for (size_t n = 0; n < ROC_ARRAY_SIZE(ChanMapTables); n++) {
         bool found_in = false, found_out = false;
 
-        for (size_t i = 0; i < ROC_ARRAY_SIZE(mapped_masks); i++) {
-            if (ChanMapTables[n].in_mask == mapped_masks[i]) {
+        for (size_t i = 0; i < ROC_ARRAY_SIZE(all_masks); i++) {
+            if (ChanMapTables[n].in_mask == all_masks[i]) {
                 found_in = true;
             }
         }
@@ -132,33 +113,6 @@ IGNORE_TEST(channel_tables, map_tables_masks) {
 
         if (!found_out) {
             fail("unexpected output mask", ChanMapTables[n]);
-        }
-    }
-}
-
-// Check that mapping tables cover all masks combinations.
-IGNORE_TEST(channel_tables, map_tables_combinations) {
-    for (size_t i = 1; i < ROC_ARRAY_SIZE(mapped_masks); i++) {
-        for (size_t j = 0; j < i; j++) {
-            bool found = false;
-
-            for (size_t n = 0; n < ROC_ARRAY_SIZE(ChanMapTables); n++) {
-                if (ChanMapTables[n].in_mask == mapped_masks[i]
-                    && ChanMapTables[n].out_mask == mapped_masks[j]) {
-                    found = true;
-                    break;
-                }
-            }
-
-            if (!found) {
-                char buf[128] = {};
-                snprintf(buf, sizeof(buf),
-                         "mask combination not covered:"
-                         " input_index=%d (%s) output_index=%d (%s)",
-                         (int)i, channel_mask_to_str(mapped_masks[i]), (int)j,
-                         channel_mask_to_str(mapped_masks[j]));
-                FAIL(buf);
-            }
         }
     }
 }
