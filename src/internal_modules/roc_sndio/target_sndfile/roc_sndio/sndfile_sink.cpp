@@ -6,9 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#define BUFFER_SIZE 512
-
 #include "roc_sndio/sndfile_sink.h"
+#include "roc_audio/sample_spec_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_sndio/backend_map.h"
@@ -16,13 +15,17 @@
 
 namespace roc {
 namespace sndio {
+
 namespace {
 
 bool map_to_sub_format(SF_INFO& file_info_, int format_enum) {
-    // Provides the minimum number of sub formats needed to support all possible major
-    // formats
-    int high_to_low_sub_formats[4] = { SF_FORMAT_PCM_24, SF_FORMAT_PCM_16,
-                                       SF_FORMAT_DPCM_16 };
+    // Provides the minimum number of sub formats needed to support all
+    // possible major formats
+    int high_to_low_sub_formats[] = {
+        SF_FORMAT_PCM_24,
+        SF_FORMAT_PCM_16,
+        SF_FORMAT_DPCM_16,
+    };
 
     for (size_t format_attempt = 0;
          format_attempt < ROC_ARRAY_SIZE(high_to_low_sub_formats); format_attempt++) {
@@ -37,7 +40,10 @@ bool map_to_sub_format(SF_INFO& file_info_, int format_enum) {
 }
 
 bool map_to_sndfile(const char** driver, const char* path, SF_INFO& file_info_) {
-    const char* file_extension;
+    roc_panic_if(!driver);
+    roc_panic_if(!path);
+
+    const char* file_extension = NULL;
     const char* dot = strrchr(path, '.');
 
     if (!dot || dot == path) {
@@ -48,7 +54,9 @@ bool map_to_sndfile(const char** driver, const char* path, SF_INFO& file_info_) 
 
     int format_enum = 0;
 
+    // First try to select format by iterating through file_map_index.
     if (*driver == NULL) {
+        // If driver is NULL, match by file extension.
         for (size_t file_map_index = 0; file_map_index < ROC_ARRAY_SIZE(file_type_map);
              file_map_index++) {
             if (file_type_map[file_map_index].file_extension != NULL) {
@@ -61,6 +69,7 @@ bool map_to_sndfile(const char** driver, const char* path, SF_INFO& file_info_) 
             }
         }
     } else {
+        // If driver is non-NULL, match by driver name.
         for (size_t file_map_index = 0; file_map_index < ROC_ARRAY_SIZE(file_type_map);
              file_map_index++) {
             if (strcmp(*driver, file_type_map[file_map_index].driver_name) == 0) {
@@ -70,30 +79,34 @@ bool map_to_sndfile(const char** driver, const char* path, SF_INFO& file_info_) 
         }
     }
 
+    // Then try to select format by iterating through all sndfile formats.
     if (format_enum == 0) {
         SF_FORMAT_INFO info;
-        int major_count, format_index;
+        int major_count = 0, format_index = 0;
         if (int errnum =
                 sf_command(NULL, SFC_GET_FORMAT_MAJOR_COUNT, &major_count, sizeof(int))) {
-            roc_panic("sndfile backend: sf_command(SFC_GET_FORMAT_MAJOR_COUNT) failed %s",
-                      sf_error_number(errnum));
+            roc_panic(
+                "sndfile backend: sf_command(SFC_GET_FORMAT_MAJOR_COUNT) failed: %s",
+                sf_error_number(errnum));
         }
 
         for (format_index = 0; format_index < major_count; format_index++) {
             info.format = format_index;
             if (int errnum =
                     sf_command(NULL, SFC_GET_FORMAT_MAJOR, &info, sizeof(info))) {
-                roc_panic("sndfile backend: sf_command(SFC_GET_FORMAT_MAJOR) failed %s",
+                roc_panic("sndfile backend: sf_command(SFC_GET_FORMAT_MAJOR) failed: %s",
                           sf_error_number(errnum));
             }
 
             if (*driver == NULL) {
+                // If driver is NULL, match by file extension.
                 if (strcmp(info.extension, file_extension) == 0) {
                     format_enum = info.format;
                     *driver = file_extension;
                     break;
                 }
             } else {
+                // If driver is non-NULL, match by driver name.
                 if (strcmp(info.extension, *driver) == 0) {
                     format_enum = info.format;
                     break;
@@ -106,13 +119,15 @@ bool map_to_sndfile(const char** driver, const char* path, SF_INFO& file_info_) 
         return false;
     }
 
-    roc_log(LogDebug, "detected file format type `%s'", *driver);
+    roc_log(LogDebug, "detected file format type '%s'", *driver);
 
     file_info_.format = format_enum | file_info_.format;
 
     if (sf_format_check(&file_info_)) {
+        // Format is supported as is.
         return true;
     } else {
+        // Format may be supported if combined with a subformat.
         return map_to_sub_format(file_info_, format_enum);
     }
 }
@@ -130,13 +145,6 @@ SndfileSink::SndfileSink(core::IArena& arena, const Config& config)
     if (config.latency != 0) {
         roc_log(LogError,
                 "sndfile sink: setting io latency not supported by sndfile backend");
-        return;
-    }
-
-    frame_length_ = config.frame_length;
-
-    if (frame_length_ == 0) {
-        roc_log(LogError, "sndfile sink: frame length is zero");
         return;
     }
 
@@ -159,7 +167,7 @@ SndfileSink::SndfileSink(core::IArena& arena, const Config& config)
 
     memset(&file_info_, 0, sizeof(file_info_));
 
-    // TODO(gh-696): map format from sample_space
+    // TODO(gh-696): map format from sample_spec
     file_info_.format = SF_FORMAT_PCM_32;
     file_info_.channels = (int)sample_spec_.num_channels();
     file_info_.samplerate = (int)sample_spec_.sample_rate();
@@ -182,6 +190,10 @@ bool SndfileSink::open(const char* driver, const char* path) {
 
     if (file_) {
         roc_panic("sndfile sink: can't call open() more than once");
+    }
+
+    if (!path) {
+        roc_panic("sndfile sink: path is null");
     }
 
     if (!open_(driver, path)) {
@@ -244,37 +256,21 @@ audio::SampleSpec SndfileSink::sample_spec() const {
 }
 
 core::nanoseconds_t SndfileSink::latency() const {
-    roc_panic_if(!valid_);
-
-    if (!file_) {
-        roc_panic("sndfile sink: latency(): non-open output file");
-    }
-
     return 0;
 }
 
 bool SndfileSink::has_latency() const {
-    roc_panic_if(!valid_);
-
-    if (!file_) {
-        roc_panic("sndfile sink: has_latency(): non-open output file");
-    }
-
     return false;
 }
 
 bool SndfileSink::has_clock() const {
-    roc_panic_if(!valid_);
-
-    if (!file_) {
-        roc_panic("sndfile sink: has_clock(): non-open output file");
-    }
-
     return false;
 }
 
 void SndfileSink::write(audio::Frame& frame) {
-    roc_panic_if(!valid_);
+    if (!file_) {
+        roc_panic("sndfile sink: not opened");
+    }
 
     audio::sample_t* frame_data = frame.raw_samples();
     sf_count_t frame_left = (sf_count_t)frame.num_raw_samples();

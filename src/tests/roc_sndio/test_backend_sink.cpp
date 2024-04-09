@@ -19,7 +19,7 @@ namespace sndio {
 
 namespace {
 
-enum { FrameSize = 500, SampleRate = 44100, ChMask = 0x3 };
+enum { FrameSize = 500, SampleRate = 48000, ChMask = 0x3 };
 
 core::HeapArena arena;
 
@@ -53,7 +53,7 @@ TEST_GROUP(backend_sink) {
     }
 };
 
-TEST(backend_sink, write_open) {
+TEST(backend_sink, open) {
     for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends();
          n_backend++) {
         IBackend& backend = BackendMap::instance().nth_backend(n_backend);

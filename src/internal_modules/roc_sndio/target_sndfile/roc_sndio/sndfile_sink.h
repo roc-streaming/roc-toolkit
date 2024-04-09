@@ -28,8 +28,8 @@ namespace sndio {
 
 //! Sndfile sink.
 //! @remarks
-//!  Writes samples to output file or device.
-//!  Supports multiple drivers for different file types and audio systems.
+//!  Writes samples to output file.
+//!  Supports multiple drivers for different file types.
 class SndfileSink : public ISink, public core::NonCopyable<> {
 public:
     //! Initialize.
@@ -43,11 +43,11 @@ public:
     //! Open output file or device.
     //!
     //! @b Parameters
-    //!  - @p driver is output driver name;
-    //!  - @p path is output file or device name, "-" for stdout.
+    //!  - @p driver is output format name;
+    //!  - @p path is output file name, "-" for stdout.
     //!
     //! @remarks
-    //!  If @p driver or @p path are NULL, defaults are used.
+    //!  If @p driver is NULL, default is used.
     bool open(const char* driver, const char* path);
 
     //! Cast IDevice to ISink.
@@ -93,7 +93,6 @@ private:
     SNDFILE* file_;
     SF_INFO file_info_;
 
-    core::nanoseconds_t frame_length_;
     audio::SampleSpec sample_spec_;
     bool valid_;
 };

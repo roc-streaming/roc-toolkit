@@ -84,7 +84,6 @@ DeviceType SndfileSource::type() const {
 }
 
 DeviceState SndfileSource::state() const {
-    roc_panic_if(!valid_);
     return DeviceState_Active;
 }
 
@@ -124,10 +123,8 @@ bool SndfileSource::restart() {
 }
 
 audio::SampleSpec SndfileSource::sample_spec() const {
-    roc_panic_if(!valid_);
-
     if (!file_) {
-        roc_panic("sndfile source: sample_rate(): non-open output file");
+        roc_panic("sndfile source: not opened");
     }
 
     audio::ChannelSet channel_set;
@@ -140,32 +137,14 @@ audio::SampleSpec SndfileSource::sample_spec() const {
 }
 
 core::nanoseconds_t SndfileSource::latency() const {
-    roc_panic_if(!valid_);
-
-    if (!file_) {
-        roc_panic("sndfile source: latency(): non-open output file");
-    }
-
     return 0;
 }
 
 bool SndfileSource::has_latency() const {
-    roc_panic_if(!valid_);
-
-    if (!file_) {
-        roc_panic("sndfile source: has_latency(): non-open input file");
-    }
-
     return false;
 }
 
 bool SndfileSource::has_clock() const {
-    roc_panic_if(!valid_);
-
-    if (!file_) {
-        roc_panic("sndfile source: has_clock(): non-open input file");
-    }
-
     return false;
 }
 
@@ -204,10 +183,8 @@ bool SndfileSource::read(audio::Frame& frame) {
 }
 
 bool SndfileSource::seek_(size_t offset) {
-    roc_panic_if(!valid_);
-
     if (!file_) {
-        roc_panic("sndfile source: seek: non-open input file");
+        roc_panic("sndfile source: can't seek: not opened");
     }
 
     roc_log(LogDebug, "sndfile source: resetting position to %lu", (unsigned long)offset);

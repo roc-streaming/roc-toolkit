@@ -22,11 +22,11 @@ SndfileBackend::SndfileBackend() {
 
 void SndfileBackend::discover_drivers(core::Array<DriverInfo, MaxDrivers>& driver_list) {
     SF_FORMAT_INFO format_info;
-    int total_number_of_drivers;
+    int total_number_of_drivers = 0;
 
     if (int errnum = sf_command(NULL, SFC_GET_FORMAT_MAJOR_COUNT,
                                 &total_number_of_drivers, sizeof(int))) {
-        roc_panic("sndfile backend: sf_command(SFC_GET_FORMAT_MAJOR_COUNT) failed %s",
+        roc_panic("sndfile backend: sf_command(SFC_GET_FORMAT_MAJOR_COUNT) failed: %s",
                   sf_error_number(errnum));
     }
 
@@ -34,7 +34,7 @@ void SndfileBackend::discover_drivers(core::Array<DriverInfo, MaxDrivers>& drive
         format_info.format = format_index;
         if (int errnum = sf_command(NULL, SFC_GET_FORMAT_MAJOR, &format_info,
                                     sizeof(format_info))) {
-            roc_panic("sndfile backend: sf_command(SFC_GET_FORMAT_MAJOR) failed %s",
+            roc_panic("sndfile backend: sf_command(SFC_GET_FORMAT_MAJOR) failed: %s",
                       sf_error_number(errnum));
         }
 
@@ -50,8 +50,7 @@ void SndfileBackend::discover_drivers(core::Array<DriverInfo, MaxDrivers>& drive
         if (!driver_list.push_back(
                 DriverInfo(driver, DriverType_File,
                            DriverFlag_SupportsSource | DriverFlag_SupportsSink, this))) {
-            roc_panic("sndfile backend: driver_list.push_back(DriverInfo) failed to add "
-                      "driver");
+            roc_panic("sndfile backend: allocation failed");
         }
     }
 }
@@ -114,5 +113,6 @@ IDevice* SndfileBackend::open_device(DeviceType device_type,
 const char* SndfileBackend::name() const {
     return "sndfile";
 }
+
 } // namespace sndio
 } // namespace roc

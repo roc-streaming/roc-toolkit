@@ -492,7 +492,7 @@ bool PulseaudioDevice::load_device_params_(const pa_sample_spec& device_spec) {
     }
 
     if (sample_spec_.sample_rate() == 0) {
-        sample_spec_.set_sample_rate((size_t)device_spec.rate);
+        sample_spec_.set_sample_rate(device_spec.rate);
     }
 
     if (!sample_spec_.channel_set().is_valid()) {
@@ -527,7 +527,7 @@ bool PulseaudioDevice::load_device_params_(const pa_sample_spec& device_spec) {
 
     if (target_latency_ns_ <= 0 || target_latency_samples_ <= 0) {
         roc_log(LogError,
-                "pulseaudio %s: traget latency must be > 0:"
+                "pulseaudio %s: target latency must be > 0:"
                 " target_latency=%.3fms target_latency_samples=%ld",
                 device_type_to_str(device_type_),
                 (double)target_latency_ns_ / core::Millisecond,

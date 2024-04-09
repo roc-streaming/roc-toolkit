@@ -29,8 +29,8 @@ namespace sndio {
 
 //! Sndfile source.
 //! @remarks
-//!  Reads samples from input file or device.
-//!  Supports multiple drivers for different file types and audio systems.
+//!  Reads samples from input file.
+//!  Supports multiple drivers for different file types.
 class SndfileSource : public ISource, private core::NonCopyable<> {
 public:
     //! Initialize.
@@ -44,11 +44,11 @@ public:
     //! Open input file or device.
     //!
     //! @b Parameters
-    //!  - @p driver is input driver name;
-    //!  - @p path is input file or device name, "-" for stdin.
+    //!  - @p driver is input format name;
+    //!  - @p path is input file name, "-" for stdin.
     //!
     //! @remarks
-    //!  If @p driver or @p path are NULL, defaults are used.
+    //!  If @p driver is NULL, default is used.
     bool open(const char* driver, const char* path);
 
     //! Cast IDevice to ISink.

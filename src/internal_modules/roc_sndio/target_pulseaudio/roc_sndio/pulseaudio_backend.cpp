@@ -60,7 +60,7 @@ IDevice* PulseaudioBackend::open_device(DeviceType device_type,
 }
 
 const char* PulseaudioBackend::name() const {
-    return "PulseAudio";
+    return "pulseaudio";
 }
 
 } // namespace sndio

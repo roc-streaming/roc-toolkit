@@ -295,7 +295,7 @@ IDevice* SoxBackend::open_device(DeviceType device_type,
 }
 
 const char* SoxBackend::name() const {
-    return "SoX";
+    return "sox";
 }
 
 } // namespace sndio

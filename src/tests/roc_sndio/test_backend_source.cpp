@@ -25,19 +25,19 @@ namespace {
 enum {
     MaxBufSize = 8192,
     FrameSize = 500,
-    SampleRate = 44100,
+    SampleRate = 48000,
     ChMask = 0x3,
     NumChans = 2
 };
 
-const audio::SampleSpec SampleSpecs(SampleRate,
+const audio::SampleSpec sample_spec(SampleRate,
                                     audio::Sample_RawFormat,
                                     audio::ChanLayout_Surround,
                                     audio::ChanOrder_Smpte,
                                     ChMask);
 
-const core::nanoseconds_t FrameDuration = FrameSize * core::Second
-    / core::nanoseconds_t(SampleSpecs.sample_rate() * SampleSpecs.num_channels());
+const core::nanoseconds_t frame_duration = FrameSize * core::Second
+    / core::nanoseconds_t(sample_spec.sample_rate() * sample_spec.num_channels());
 
 core::HeapArena arena;
 core::BufferFactory<audio::sample_t> buffer_factory(arena, MaxBufSize);
@@ -66,14 +66,14 @@ TEST_GROUP(backend_source) {
         sink_config.sample_spec =
             audio::SampleSpec(SampleRate, audio::Sample_RawFormat,
                               audio::ChanLayout_Surround, audio::ChanOrder_Smpte, ChMask);
-        sink_config.frame_length = FrameDuration;
+        sink_config.frame_length = frame_duration;
 
         source_config.sample_spec = audio::SampleSpec();
-        source_config.frame_length = FrameDuration;
+        source_config.frame_length = frame_duration;
     }
 };
 
-TEST(backend_source, read_open) {
+TEST(backend_source, open) {
     for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends();
          n_backend++) {
         core::TempFile file("test.wav");
@@ -90,8 +90,8 @@ TEST(backend_source, read_open) {
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
 
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, FrameDuration,
-                      SampleSpecs, Pump::ModeOneshot);
+            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, frame_duration,
+                      sample_spec, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
         }
@@ -136,8 +136,8 @@ TEST(backend_source, has_clock) {
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
 
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, FrameDuration,
-                      SampleSpecs, Pump::ModeOneshot);
+            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, frame_duration,
+                      sample_spec, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
         }
@@ -171,13 +171,13 @@ TEST(backend_source, sample_rate_auto) {
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
 
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, FrameDuration,
-                      SampleSpecs, Pump::ModeOneshot);
+            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, frame_duration,
+                      sample_spec, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
         }
         source_config.sample_spec.set_sample_rate(0);
-        source_config.frame_length = FrameDuration;
+        source_config.frame_length = frame_duration;
 
         IDevice* backend_device = backend.open_device(
             DeviceType_Source, DriverType_File, "wav", file.path(), source_config, arena);
@@ -209,8 +209,8 @@ TEST(backend_source, sample_rate_mismatch) {
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
 
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, FrameDuration,
-                      SampleSpecs, Pump::ModeOneshot);
+            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, frame_duration,
+                      sample_spec, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
         }
@@ -244,8 +244,8 @@ TEST(backend_source, pause_resume) {
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
 
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, FrameDuration,
-                      SampleSpecs, Pump::ModeOneshot);
+            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, frame_duration,
+                      sample_spec, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
         }
@@ -267,7 +267,7 @@ TEST(backend_source, pause_resume) {
         audio::Frame frame2(frame_data2, FrameSize * NumChans);
 
         backend_source->pause();
-        if (strcmp(backend.name(), "SoX") == 0) {
+        if (strcmp(backend.name(), "sox") == 0) {
             // TODO(gh-706): check state
 
             CHECK(!backend_source->read(frame2));
@@ -313,8 +313,8 @@ TEST(backend_source, pause_restart) {
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
 
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, FrameDuration,
-                      SampleSpecs, Pump::ModeOneshot);
+            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, frame_duration,
+                      sample_spec, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
         }
@@ -337,7 +337,7 @@ TEST(backend_source, pause_restart) {
         audio::sample_t frame_data2[FrameSize * NumChans] = {};
         audio::Frame frame2(frame_data2, FrameSize * NumChans);
 
-        if (strcmp(backend.name(), "SoX") == 0) {
+        if (strcmp(backend.name(), "sox") == 0) {
             // TODO(gh-706): check state
 
             CHECK(!backend_source->read(frame2));
@@ -383,8 +383,8 @@ TEST(backend_source, eof_restart) {
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
 
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, FrameDuration,
-                      SampleSpecs, Pump::ModeOneshot);
+            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, frame_duration,
+                      sample_spec, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
         }

@@ -19,33 +19,25 @@
 #include "roc_sndio/backend_map.h"
 #include "roc_sndio/config.h"
 #include "roc_sndio/pump.h"
-#ifdef ROC_TARGET_SNDFILE
-#include "roc_sndio/sndfile_sink.h"
-#include "roc_sndio/sndfile_source.h"
-#endif // ROC_TARGET_SNDFILE
-#ifdef ROC_TARGET_SOX
-#include "roc_sndio/sox_sink.h"
-#include "roc_sndio/sox_source.h"
-#endif // ROC_TARGET_SOX
 
 namespace roc {
 namespace sndio {
 
 namespace {
 
-enum { BufSize = 512, SampleRate = 44100, ChMask = 0x3 };
+enum { FrameSize = 512, SampleRate = 48000, ChMask = 0x3 };
 
-const audio::SampleSpec SampleSpecs(SampleRate,
+const audio::SampleSpec sample_spec(SampleRate,
                                     audio::Sample_RawFormat,
                                     audio::ChanLayout_Surround,
                                     audio::ChanOrder_Smpte,
                                     ChMask);
 
-const core::nanoseconds_t BufDuration = BufSize * core::Second
-    / core::nanoseconds_t(SampleSpecs.sample_rate() * SampleSpecs.num_channels());
+const core::nanoseconds_t frame_duration = FrameSize * core::Second
+    / core::nanoseconds_t(sample_spec.sample_rate() * sample_spec.num_channels());
 
 core::HeapArena arena;
-core::BufferFactory<audio::sample_t> buffer_factory(arena, BufSize);
+core::BufferFactory<audio::sample_t> buffer_factory(arena, FrameSize);
 
 bool supports_wav(IBackend& backend) {
     bool supports = false;
@@ -69,17 +61,17 @@ TEST_GROUP(pump) {
     void setup() {
         source_config.sample_spec = audio::SampleSpec();
 
-        source_config.frame_length = BufDuration;
+        source_config.frame_length = frame_duration;
 
         sink_config.sample_spec =
             audio::SampleSpec(SampleRate, audio::Sample_RawFormat,
                               audio::ChanLayout_Surround, audio::ChanOrder_Smpte, ChMask);
-        sink_config.frame_length = BufDuration;
+        sink_config.frame_length = frame_duration;
     }
 };
 
 TEST(pump, write_read) {
-    enum { NumSamples = BufSize * 10 };
+    enum { NumSamples = FrameSize * 10 };
 
     for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends();
          n_backend++) {
@@ -99,12 +91,12 @@ TEST(pump, write_read) {
             CHECK(backend_device != NULL);
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, BufDuration,
-                      SampleSpecs, Pump::ModeOneshot);
+            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, frame_duration,
+                      sample_spec, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
 
-            CHECK(mock_source.num_returned() >= NumSamples - BufSize);
+            CHECK(mock_source.num_returned() >= NumSamples - FrameSize);
         }
 
         IDevice* backend_device = backend.open_device(
@@ -115,8 +107,8 @@ TEST(pump, write_read) {
         CHECK(backend_source != NULL);
         test::MockSink mock_writer;
 
-        Pump pump(buffer_factory, *backend_source, NULL, mock_writer, BufDuration,
-                  SampleSpecs, Pump::ModePermanent);
+        Pump pump(buffer_factory, *backend_source, NULL, mock_writer, frame_duration,
+                  sample_spec, Pump::ModePermanent);
         CHECK(pump.is_valid());
         CHECK(pump.run());
 
@@ -125,7 +117,7 @@ TEST(pump, write_read) {
 }
 
 TEST(pump, write_overwrite_read) {
-    enum { NumSamples = BufSize * 10 };
+    enum { NumSamples = FrameSize * 10 };
 
     for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends();
          n_backend++) {
@@ -145,8 +137,8 @@ TEST(pump, write_overwrite_read) {
             CHECK(backend_device != NULL);
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, BufDuration,
-                      SampleSpecs, Pump::ModeOneshot);
+            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, frame_duration,
+                      sample_spec, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
         }
@@ -154,7 +146,7 @@ TEST(pump, write_overwrite_read) {
         mock_source.add(NumSamples);
 
         size_t num_returned1 = mock_source.num_returned();
-        CHECK(num_returned1 >= NumSamples - BufSize);
+        CHECK(num_returned1 >= NumSamples - FrameSize);
 
         {
             IDevice* backend_device = backend.open_device(
@@ -162,14 +154,14 @@ TEST(pump, write_overwrite_read) {
             CHECK(backend_device != NULL);
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, BufDuration,
-                      SampleSpecs, Pump::ModeOneshot);
+            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, frame_duration,
+                      sample_spec, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
         }
 
         size_t num_returned2 = mock_source.num_returned() - num_returned1;
-        CHECK(num_returned1 >= NumSamples - BufSize);
+        CHECK(num_returned1 >= NumSamples - FrameSize);
 
         IDevice* backend_device = backend.open_device(
             DeviceType_Source, DriverType_File, "wav", file.path(), source_config, arena);
@@ -179,8 +171,8 @@ TEST(pump, write_overwrite_read) {
 
         test::MockSink mock_writer;
 
-        Pump pump(buffer_factory, *backend_source, NULL, mock_writer, BufDuration,
-                  SampleSpecs, Pump::ModePermanent);
+        Pump pump(buffer_factory, *backend_source, NULL, mock_writer, frame_duration,
+                  sample_spec, Pump::ModePermanent);
         CHECK(pump.is_valid());
         CHECK(pump.run());
 
