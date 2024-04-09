@@ -22,6 +22,7 @@
 #include "roc_core/string_buffer.h"
 #include "roc_packet/units.h"
 #include "roc_sndio/config.h"
+#include "roc_sndio/driver.h"
 #include "roc_sndio/isource.h"
 
 namespace roc {
@@ -34,7 +35,7 @@ namespace sndio {
 class SoxSource : public ISource, private core::NonCopyable<> {
 public:
     //! Initialize.
-    SoxSource(core::IArena& arena, const Config& config);
+    SoxSource(core::IArena& arena, const Config& config, DriverType type);
 
     virtual ~SoxSource();
 

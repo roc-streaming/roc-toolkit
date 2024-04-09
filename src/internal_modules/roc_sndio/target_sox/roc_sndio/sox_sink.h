@@ -21,6 +21,7 @@
 #include "roc_core/stddefs.h"
 #include "roc_packet/units.h"
 #include "roc_sndio/config.h"
+#include "roc_sndio/driver.h"
 #include "roc_sndio/isink.h"
 
 namespace roc {
@@ -33,7 +34,7 @@ namespace sndio {
 class SoxSink : public ISink, public core::NonCopyable<> {
 public:
     //! Initialize.
-    SoxSink(core::IArena& arena, const Config& config);
+    SoxSink(core::IArena& arena, const Config& config, DriverType type);
 
     virtual ~SoxSink();
 

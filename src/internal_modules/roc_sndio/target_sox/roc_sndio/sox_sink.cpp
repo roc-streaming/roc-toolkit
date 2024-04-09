@@ -14,7 +14,7 @@
 namespace roc {
 namespace sndio {
 
-SoxSink::SoxSink(core::IArena& arena, const Config& config)
+SoxSink::SoxSink(core::IArena& arena, const Config& config, DriverType type)
     : output_(NULL)
     , buffer_(arena)
     , buffer_size_(0)
@@ -22,18 +22,30 @@ SoxSink::SoxSink(core::IArena& arena, const Config& config)
     , valid_(false) {
     BackendMap::instance();
 
-    if (config.sample_spec.num_channels() == 0) {
-        roc_log(LogError, "sox sink: # of channels is zero");
-        return;
-    }
-
     if (config.latency != 0) {
         roc_log(LogError, "sox sink: setting io latency not supported by sox backend");
         return;
     }
 
-    frame_length_ = config.frame_length;
     sample_spec_ = config.sample_spec;
+
+    if (type == DriverType_File) {
+        sample_spec_.use_defaults(audio::Sample_RawFormat, audio::ChanLayout_Surround,
+                                  audio::ChanOrder_Smpte, audio::ChanMask_Surround_Stereo,
+                                  44100);
+    } else {
+        sample_spec_.use_defaults(audio::Sample_RawFormat, audio::ChanLayout_Surround,
+                                  audio::ChanOrder_Smpte, audio::ChanMask_Surround_Stereo,
+                                  0);
+    }
+
+    if (!sample_spec_.is_raw()) {
+        roc_log(LogError, "sox sink: sample format can be only \"-\" or \"%s\"",
+                audio::pcm_format_to_str(audio::Sample_RawFormat));
+        return;
+    }
+
+    frame_length_ = config.frame_length;
 
     if (frame_length_ == 0) {
         roc_log(LogError, "sox sink: frame length is zero");
@@ -41,8 +53,8 @@ SoxSink::SoxSink(core::IArena& arena, const Config& config)
     }
 
     memset(&out_signal_, 0, sizeof(out_signal_));
-    out_signal_.rate = (sox_rate_t)config.sample_spec.sample_rate();
-    out_signal_.channels = (unsigned)config.sample_spec.num_channels();
+    out_signal_.rate = (sox_rate_t)sample_spec_.sample_rate();
+    out_signal_.channels = (unsigned)sample_spec_.num_channels();
     out_signal_.precision = SOX_SAMPLE_PRECISION;
 
     valid_ = true;
@@ -108,29 +120,17 @@ audio::SampleSpec SoxSink::sample_spec() const {
     roc_panic_if(!valid_);
 
     if (!output_) {
-        roc_panic("sox sink: sample_rate(): non-open output file or device");
+        roc_panic("sox sink: not opened");
     }
 
-    if (output_->signal.channels == 1) {
-        return audio::SampleSpec(size_t(output_->signal.rate), audio::Sample_RawFormat,
-                                 audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
-                                 audio::ChanMask_Surround_Mono);
-    }
-
-    if (output_->signal.channels == 2) {
-        return audio::SampleSpec(size_t(output_->signal.rate), audio::Sample_RawFormat,
-                                 audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
-                                 audio::ChanMask_Surround_Stereo);
-    }
-
-    roc_panic("sox sink: unsupported channel count");
+    return sample_spec_;
 }
 
 core::nanoseconds_t SoxSink::latency() const {
     roc_panic_if(!valid_);
 
     if (!output_) {
-        roc_panic("sox sink: latency(): non-open output file or device");
+        roc_panic("sox sink: not opened");
     }
 
     return 0;
@@ -140,7 +140,7 @@ bool SoxSink::has_latency() const {
     roc_panic_if(!valid_);
 
     if (!output_) {
-        roc_panic("sox sink: has_latency(): non-open output file or device");
+        roc_panic("sox sink: not opened");
     }
 
     return false;
@@ -150,7 +150,7 @@ bool SoxSink::has_clock() const {
     roc_panic_if(!valid_);
 
     if (!output_) {
-        roc_panic("sox sink: has_clock(): non-open output file or device");
+        roc_panic("sox sink: not opened");
     }
 
     return !is_file_;
@@ -208,25 +208,40 @@ bool SoxSink::open_(const char* driver, const char* path) {
 
     is_file_ = !(output_->handler.flags & SOX_FILE_DEVICE);
 
-    unsigned long in_rate = (unsigned long)out_signal_.rate;
-    unsigned long out_rate = (unsigned long)output_->signal.rate;
+    const unsigned long requested_rate = (unsigned long)out_signal_.rate;
+    const unsigned long actual_rate = (unsigned long)output_->signal.rate;
 
-    if (in_rate != 0 && in_rate != out_rate) {
+    if (requested_rate != 0 && requested_rate != actual_rate) {
         roc_log(LogError,
                 "sox sink:"
-                " can't open output file or device with the required sample rate:"
+                " can't open output file or device with the requested sample rate:"
                 " required_by_output=%lu requested_by_user=%lu",
-                out_rate, in_rate);
+                actual_rate, requested_rate);
         return false;
     }
 
-    sample_spec_.set_sample_rate((unsigned long)output_->signal.rate);
+    const unsigned long requested_chans = (unsigned long)out_signal_.channels;
+    const unsigned long actual_chans = (unsigned long)output_->signal.channels;
+
+    if (requested_chans != 0 && requested_chans != actual_chans) {
+        roc_log(LogError,
+                "sox sink:"
+                " can't open output file or device with the requested channel count:"
+                " required_by_output=%lu requested_by_user=%lu",
+                actual_chans, requested_chans);
+        return false;
+    }
+
+    sample_spec_.set_sample_rate(actual_rate);
+    sample_spec_.channel_set().set_layout(audio::ChanLayout_Surround);
+    sample_spec_.channel_set().set_order(audio::ChanOrder_Smpte);
+    sample_spec_.channel_set().set_range(0, actual_chans - 1);
 
     roc_log(LogInfo,
             "sox sink:"
-            " opened: bits=%lu out_rate=%lu in_rate=%lu ch=%lu is_file=%d",
-            (unsigned long)output_->encoding.bits_per_sample, out_rate, in_rate,
-            (unsigned long)output_->signal.channels, (int)is_file_);
+            " opened: bits=%lu rate=%lu req_rate=%lu chans=%lu req_chans=%lu is_file=%d",
+            (unsigned long)output_->encoding.bits_per_sample, actual_rate, requested_rate,
+            actual_chans, requested_chans, (int)is_file_);
 
     return true;
 }
