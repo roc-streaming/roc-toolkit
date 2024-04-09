@@ -177,7 +177,42 @@ bool ChannelSet::is_superset(ChannelMask mask) const {
     return ((words_[0] & mask) == mask);
 }
 
-void ChannelSet::set_channel(const size_t n, const bool enabled) {
+void ChannelSet::set_mask(const ChannelMask mask) {
+    if (mask == 0) {
+        roc_panic("channel set: invalid channel mask");
+    }
+
+    for (size_t n = 0; n < NumWords; n++) {
+        words_[n] = 0;
+    }
+
+    words_[0] = mask;
+
+    update_();
+}
+
+void ChannelSet::set_range(size_t from, size_t to) {
+    if (from >= MaxChannels || to >= MaxChannels) {
+        roc_panic("channel set: subscript out of range: from=%lu to=%lu max_channels=%lu",
+                  (unsigned long)from, (unsigned long)to, (unsigned long)MaxChannels);
+    }
+    if (from > to) {
+        roc_panic("channel set: invalid range: from=%lu to=%lu", (unsigned long)from,
+                  (unsigned long)to);
+    }
+
+    for (size_t n = 0; n < NumWords; n++) {
+        words_[n] = 0;
+    }
+
+    for (size_t n = from; n <= to; n++) {
+        words_[n / WordBits] |= (word_t(1) << (n % WordBits));
+    }
+
+    update_();
+}
+
+void ChannelSet::toggle_channel(const size_t n, const bool enabled) {
     if (n >= MaxChannels) {
         roc_panic("channel set: subscript out of range: channel=%lu max_channels=%lu",
                   (unsigned long)n, (unsigned long)MaxChannels);
@@ -192,9 +227,9 @@ void ChannelSet::set_channel(const size_t n, const bool enabled) {
     update_();
 }
 
-void ChannelSet::set_channel_range(const size_t from,
-                                   const size_t to,
-                                   const bool enabled) {
+void ChannelSet::toggle_channel_range(const size_t from,
+                                      const size_t to,
+                                      const bool enabled) {
     if (from >= MaxChannels || to >= MaxChannels) {
         roc_panic("channel set: subscript out of range: from=%lu to=%lu max_channels=%lu",
                   (unsigned long)from, (unsigned long)to, (unsigned long)MaxChannels);
@@ -210,20 +245,6 @@ void ChannelSet::set_channel_range(const size_t from,
         } else {
             words_[n / WordBits] &= ~(word_t(1) << (n % WordBits));
         }
-    }
-
-    update_();
-}
-
-void ChannelSet::set_channel_mask(const ChannelMask mask) {
-    if (mask == 0) {
-        roc_panic("channel set: invalid channel mask");
-    }
-
-    words_[0] = mask;
-
-    for (size_t n = 1; n < NumWords; n++) {
-        words_[n] = 0;
     }
 
     update_();

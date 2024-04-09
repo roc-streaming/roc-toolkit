@@ -177,14 +177,14 @@ TEST_GROUP(receiver_source) {
         output_sample_spec.set_pcm_format(audio::Sample_RawFormat);
         output_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
         output_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
-        output_sample_spec.channel_set().set_channel_mask(output_channels);
+        output_sample_spec.channel_set().set_mask(output_channels);
 
         packet_sample_spec.set_sample_rate((size_t)packet_sample_rate);
         packet_sample_spec.set_sample_format(audio::SampleFormat_Pcm);
         packet_sample_spec.set_pcm_format(audio::PcmFormat_SInt16_Be);
         packet_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
         packet_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
-        packet_sample_spec.channel_set().set_channel_mask(packet_channels);
+        packet_sample_spec.channel_set().set_mask(packet_channels);
 
         src_id1 = 111;
         src_id2 = 222;

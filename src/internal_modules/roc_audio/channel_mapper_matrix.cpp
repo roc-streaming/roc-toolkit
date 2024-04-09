@@ -103,7 +103,7 @@ void ChannelMapperMatrix::build_index_mapping_(IndexMap& mapping,
         }
 
         if (ch_set.has_channel(ch)) {
-            mapping.index_set.set_channel(ch, true);
+            mapping.index_set.toggle_channel(ch, true);
             mapping.index_map[ch] = ch_index++;
         }
     }

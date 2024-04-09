@@ -260,7 +260,7 @@ TEST(sample_spec, clear) {
     sample_spec.set_pcm_format(PcmFormat_Float32);
     sample_spec.channel_set().set_layout(ChanLayout_Surround);
     sample_spec.channel_set().set_order(ChanOrder_Smpte);
-    sample_spec.channel_set().set_channel_mask(ChanMask_Surround_Stereo);
+    sample_spec.channel_set().set_mask(ChanMask_Surround_Stereo);
 
     // sample spec is valid
     CHECK(sample_spec.is_valid());

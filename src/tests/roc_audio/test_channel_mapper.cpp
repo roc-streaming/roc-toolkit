@@ -33,12 +33,12 @@ void check(const sample_t* input,
     ChannelSet in_chans;
     in_chans.set_layout(in_layout);
     in_chans.set_order(in_order);
-    in_chans.set_channel_mask(in_mask);
+    in_chans.set_mask(in_mask);
 
     ChannelSet out_chans;
     out_chans.set_layout(out_layout);
     out_chans.set_order(out_order);
-    out_chans.set_channel_mask(out_mask);
+    out_chans.set_mask(out_mask);
 
     sample_t actual_output[MaxSamples] = {};
     memset(actual_output, 0xff, MaxSamples * sizeof(sample_t));
@@ -491,12 +491,12 @@ TEST(channel_mapper, surround_1ch) {
             ChannelSet in_chans;
             in_chans.set_layout(ChanLayout_Surround);
             in_chans.set_order(ChanOrder_Smpte);
-            in_chans.set_channel_mask(masks[i]);
+            in_chans.set_mask(masks[i]);
 
             ChannelSet out_chans;
             out_chans.set_layout(ChanLayout_Surround);
             out_chans.set_order(ChanOrder_Smpte);
-            out_chans.set_channel_mask(masks[j]);
+            out_chans.set_mask(masks[j]);
 
             for (size_t ch = 0; ch < ChanPos_Max; ch++) {
                 if (in_chans.has_channel(ch) && out_chans.has_channel(ch)) {

@@ -88,7 +88,7 @@ bool parse_multitrack_mask(const char* str, size_t str_len, ChannelSet& result) 
 
         for (size_t bit = 0; bit < 4; bit++) {
             if (num & (1 << bit)) {
-                result.set_channel(ch_pos, true);
+                result.toggle_channel(ch_pos, true);
             }
             ch_pos++;
         }
@@ -145,7 +145,7 @@ bool parse_sample_spec_imp(const char* str, SampleSpec& sample_spec) {
                 roc_log(LogError, "parse sample spec: invalid channel mask name");
                 return false;
             }
-            sample_spec.channel_set().set_channel_mask(ch_mask);
+            sample_spec.channel_set().set_mask(ch_mask);
         }
 
         action set_surround_channel {
@@ -154,7 +154,7 @@ bool parse_sample_spec_imp(const char* str, SampleSpec& sample_spec) {
                 roc_log(LogError, "parse sample spec: invalid channel name");
                 return false;
             }
-            sample_spec.channel_set().set_channel(ch_pos, true);
+            sample_spec.channel_set().toggle_channel(ch_pos, true);
         }
 
         action set_surround {
@@ -170,7 +170,7 @@ bool parse_sample_spec_imp(const char* str, SampleSpec& sample_spec) {
                     (int)ChannelSet::max_channels() - 1);
                 return false;
             }
-            sample_spec.channel_set().set_channel(ch_pos, true);
+            sample_spec.channel_set().toggle_channel(ch_pos, true);
         }
 
         action set_mtr_range_begin {
@@ -192,7 +192,7 @@ bool parse_sample_spec_imp(const char* str, SampleSpec& sample_spec) {
         }
 
         action set_mtr_range {
-            sample_spec.channel_set().set_channel_range(
+            sample_spec.channel_set().toggle_channel_range(
                 mtr_range_begin, mtr_range_end, true);
         }
 

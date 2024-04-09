@@ -362,19 +362,19 @@ bool channel_set_from_user(audio::ChannelSet& out,
     case ROC_CHANNEL_LAYOUT_MULTITRACK:
         out.set_layout(audio::ChanLayout_Multitrack);
         out.set_order(audio::ChanOrder_None);
-        out.set_channel_range(0, in_tracks - 1, true);
+        out.set_range(0, in_tracks - 1);
         return true;
 
     case ROC_CHANNEL_LAYOUT_MONO:
         out.set_layout(audio::ChanLayout_Surround);
         out.set_order(audio::ChanOrder_Smpte);
-        out.set_channel_mask(audio::ChanMask_Surround_Mono);
+        out.set_mask(audio::ChanMask_Surround_Mono);
         return true;
 
     case ROC_CHANNEL_LAYOUT_STEREO:
         out.set_layout(audio::ChanLayout_Surround);
         out.set_order(audio::ChanOrder_Smpte);
-        out.set_channel_mask(audio::ChanMask_Surround_Stereo);
+        out.set_mask(audio::ChanMask_Surround_Stereo);
         return true;
     }
 

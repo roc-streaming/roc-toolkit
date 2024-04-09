@@ -58,14 +58,14 @@ TEST_GROUP(transcoder_source) {
         input_sample_spec.set_pcm_format(audio::Sample_RawFormat);
         input_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
         input_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
-        input_sample_spec.channel_set().set_channel_mask(input_channels);
+        input_sample_spec.channel_set().set_mask(input_channels);
 
         output_sample_spec.set_sample_rate(SampleRate);
         output_sample_spec.set_sample_format(audio::SampleFormat_Pcm);
         output_sample_spec.set_pcm_format(audio::Sample_RawFormat);
         output_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
         output_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
-        output_sample_spec.channel_set().set_channel_mask(output_channels);
+        output_sample_spec.channel_set().set_mask(output_channels);
     }
 };
 

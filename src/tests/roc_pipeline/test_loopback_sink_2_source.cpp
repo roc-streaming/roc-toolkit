@@ -237,7 +237,7 @@ SenderSinkConfig make_sender_config(int flags,
     config.input_sample_spec.set_pcm_format(audio::Sample_RawFormat);
     config.input_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
     config.input_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
-    config.input_sample_spec.channel_set().set_channel_mask(frame_channels);
+    config.input_sample_spec.channel_set().set_mask(frame_channels);
 
     switch (packet_channels) {
     case Chans_Mono:
@@ -283,7 +283,7 @@ ReceiverSourceConfig make_receiver_config(audio::ChannelMask frame_channels,
     config.common.output_sample_spec.set_pcm_format(audio::Sample_RawFormat);
     config.common.output_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
     config.common.output_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
-    config.common.output_sample_spec.channel_set().set_channel_mask(frame_channels);
+    config.common.output_sample_spec.channel_set().set_mask(frame_channels);
 
     config.common.enable_timing = false;
 
