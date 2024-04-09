@@ -113,6 +113,12 @@ public:
     //!  All other channels are disabled.
     void set_range(size_t from, size_t to);
 
+    //! Set channel mask based on channel count.
+    //! @remarks
+    //!  Tries to find a mask that looks most appropriate for given channel count.
+    //!  Falls back to just enabling first N channels and disabling others.
+    void set_count(size_t count);
+
     //! Enable/disable given channel.
     void toggle_channel(size_t n, bool enabled);
 
@@ -150,7 +156,8 @@ private:
         NumWords = MaxChannels / WordBits
     };
 
-    void update_();
+    void clear_chans_();
+    void index_chans_();
 
     word_t words_[NumWords];
 

@@ -199,7 +199,7 @@ bool SndfileSource::open_() {
     sample_spec_.set_sample_rate((size_t)file_info_.samplerate);
     sample_spec_.channel_set().set_layout(audio::ChanLayout_Surround);
     sample_spec_.channel_set().set_order(audio::ChanOrder_Smpte);
-    sample_spec_.channel_set().set_range(0, (size_t)file_info_.channels - 1);
+    sample_spec_.channel_set().set_count((size_t)file_info_.channels);
 
     roc_log(LogInfo, "sndfile source: opened: %s",
             audio::sample_spec_to_str(sample_spec_).c_str());

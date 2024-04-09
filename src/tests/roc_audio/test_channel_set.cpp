@@ -168,6 +168,16 @@ TEST(channel_set, set_range) {
     }
 }
 
+TEST(channel_set, set_count) {
+    for (size_t count = 0; count < ChannelSet::max_channels(); count++) {
+        ChannelSet ch_set;
+
+        ch_set.set_count(count);
+
+        UNSIGNED_LONGS_EQUAL(count, ch_set.num_channels());
+    }
+}
+
 TEST(channel_set, toggle_channel) {
     { // set small
         ChannelSet ch_set;

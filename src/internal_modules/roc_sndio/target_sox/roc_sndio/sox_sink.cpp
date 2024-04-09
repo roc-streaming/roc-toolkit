@@ -235,7 +235,7 @@ bool SoxSink::open_(const char* driver, const char* path) {
     sample_spec_.set_sample_rate(actual_rate);
     sample_spec_.channel_set().set_layout(audio::ChanLayout_Surround);
     sample_spec_.channel_set().set_order(audio::ChanOrder_Smpte);
-    sample_spec_.channel_set().set_range(0, actual_chans - 1);
+    sample_spec_.channel_set().set_count(actual_chans);
 
     roc_log(LogInfo,
             "sox sink:"

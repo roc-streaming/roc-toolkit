@@ -498,7 +498,7 @@ bool PulseaudioDevice::load_device_params_(const pa_sample_spec& device_spec) {
     if (!sample_spec_.channel_set().is_valid()) {
         sample_spec_.channel_set().set_layout(audio::ChanLayout_Surround);
         sample_spec_.channel_set().set_order(audio::ChanOrder_Smpte);
-        sample_spec_.channel_set().set_range(0, device_spec.channels - 1);
+        sample_spec_.channel_set().set_count(device_spec.channels);
     }
 
     if (!sample_spec_.is_valid()) {

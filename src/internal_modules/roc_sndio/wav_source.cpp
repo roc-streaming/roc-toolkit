@@ -97,7 +97,7 @@ audio::SampleSpec WavSource::sample_spec() const {
     audio::ChannelSet channel_set;
     channel_set.set_layout(audio::ChanLayout_Surround);
     channel_set.set_order(audio::ChanOrder_Smpte);
-    channel_set.set_range(0, wav_.channels - 1);
+    channel_set.set_count(wav_.channels);
 
     return audio::SampleSpec(size_t(wav_.sampleRate), audio::Sample_RawFormat,
                              channel_set);
