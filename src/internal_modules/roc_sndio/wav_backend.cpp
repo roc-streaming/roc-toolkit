@@ -16,6 +16,19 @@
 namespace roc {
 namespace sndio {
 
+namespace {
+
+bool has_suffix(const char* str, const char* suffix) {
+    size_t len_str = strlen(str);
+    size_t len_suffix = strlen(suffix);
+    if (len_suffix > len_str) {
+        return false;
+    }
+    return strncmp(str + len_str - len_suffix, suffix, len_suffix) == 0;
+}
+
+} // namespace
+
 WavBackend::WavBackend() {
 }
 
@@ -33,9 +46,17 @@ IDevice* WavBackend::open_device(DeviceType device_type,
                                  const char* path,
                                  const Config& config,
                                  core::IArena& arena) {
-    if (driver_type != DriverType_File
-        || (driver != NULL && strcmp(driver, "wav") != 0)) {
+    if (driver_type != DriverType_File) {
         return NULL;
+    }
+    if (driver) {
+        if (strcmp(driver, "wav") != 0) {
+            return NULL;
+        }
+    } else {
+        if (!has_suffix(path, ".wav")) {
+            return NULL;
+        }
     }
 
     switch (device_type) {

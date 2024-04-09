@@ -16,13 +16,6 @@
 namespace roc {
 namespace sndio {
 
-namespace {
-
-const size_t DefaultChans = 2;
-const size_t DefaultRate = 44100;
-
-} // namespace
-
 WavSink::WavSink(core::IArena& arena, const Config& config)
     : output_file_(NULL)
     , valid_(false) {
@@ -33,27 +26,14 @@ WavSink::WavSink(core::IArena& arena, const Config& config)
 
     sample_spec_ = config.sample_spec;
 
-    if (sample_spec_.sample_format() != audio::SampleFormat_Invalid
-        && (sample_spec_.sample_format() != audio::SampleFormat_Pcm
-            || sample_spec_.pcm_format() != audio::Sample_RawFormat)) {
+    sample_spec_.use_defaults(audio::Sample_RawFormat, audio::ChanLayout_Surround,
+                              audio::ChanOrder_Smpte, audio::ChanMask_Surround_Stereo,
+                              44100);
+
+    if (!sample_spec_.is_raw()) {
         roc_log(LogError, "wav sink: sample format can be only \"-\" or \"%s\"",
                 audio::pcm_format_to_str(audio::Sample_RawFormat));
         return;
-    }
-
-    if (sample_spec_.sample_format() == audio::SampleFormat_Invalid) {
-        sample_spec_.set_sample_format(audio::SampleFormat_Pcm);
-        sample_spec_.set_pcm_format(audio::Sample_RawFormat);
-    }
-
-    if (sample_spec_.sample_rate() == 0) {
-        sample_spec_.set_sample_rate(DefaultRate);
-    }
-
-    if (!sample_spec_.channel_set().is_valid()) {
-        sample_spec_.channel_set().set_layout(audio::ChanLayout_Surround);
-        sample_spec_.channel_set().set_order(audio::ChanOrder_Smpte);
-        sample_spec_.channel_set().set_channel_range(0, DefaultChans, true);
     }
 
     header_.reset(new (header_)
