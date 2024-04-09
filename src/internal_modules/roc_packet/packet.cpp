@@ -186,5 +186,12 @@ int Packet::compare(const Packet& other) const {
     return 0;
 }
 
+size_t Packet::approx_size(size_t n_samples) {
+    const size_t approx_header_size = 64;
+    const size_t approx_sample_size = 64;
+
+    return approx_header_size + n_samples * approx_sample_size;
+}
+
 } // namespace packet
 } // namespace roc

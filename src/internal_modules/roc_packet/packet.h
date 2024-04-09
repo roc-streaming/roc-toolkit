@@ -96,7 +96,7 @@ public:
     //! Set packet buffer.
     void set_buffer(const core::Slice<uint8_t>& data);
 
-    //! Get protocol-dependant packet payload.
+    //! Get protocol-dependent packet payload.
     //! @remarks
     //!  Returns sub-slice with inner-most packet data.
     //!  E.g. for RTP nested into FECFRAME, returns payload
@@ -152,6 +152,10 @@ public:
     static Packet* container_of(UDP* udp) {
         return ROC_CONTAINER_OF(udp, Packet, udp_);
     }
+
+    //! Estimate number of bytes per packet for given number of samples.
+    //! This is only an approximation, don't rely on it.
+    static size_t approx_size(size_t n_samples);
 
 private:
     unsigned flags_;

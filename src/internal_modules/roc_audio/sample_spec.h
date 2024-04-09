@@ -78,6 +78,16 @@ public:
     //! Unset all fields.
     void clear();
 
+    //! Set missing fields from provided defaults.
+    //! @remarks
+    //!  Updates only those fields which don't have values,
+    //!  with corresponding values provided as arguments.
+    void use_defaults(PcmFormat default_pcm_fmt,
+                      ChannelLayout default_channel_layout,
+                      ChannelOrder default_channel_order,
+                      ChannelMask default_channel_mask,
+                      size_t default_sample_rate);
+
     //! Get sample rate.
     //! @remarks
     //!  Defines sample frequency (number of samples per second).

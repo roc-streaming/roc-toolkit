@@ -66,10 +66,6 @@ int main(int argc, char** argv) {
     pipeline::SenderSinkConfig sender_config;
 
     sndio::Config io_config;
-    io_config.sample_spec.set_sample_format(
-        sender_config.input_sample_spec.sample_format());
-    io_config.sample_spec.set_pcm_format(sender_config.input_sample_spec.pcm_format());
-    io_config.sample_spec.set_channel_set(sender_config.input_sample_spec.channel_set());
 
     if (args.frame_len_given) {
         if (!core::parse_duration(args.frame_len_arg, io_config.frame_length)) {
@@ -93,6 +89,7 @@ int main(int argc, char** argv) {
         }
     }
 
+    // TODO(gh-608): replace --rate with --io-encoding
     if (args.rate_given) {
         if (args.rate_arg <= 0) {
             roc_log(LogError, "invalid --rate: should be > 0");
@@ -101,6 +98,7 @@ int main(int argc, char** argv) {
         io_config.sample_spec.set_sample_rate((size_t)args.rate_arg);
     }
 
+    // TODO(gh-568): remove set_frame_size() after removing sox
     sndio::BackendMap::instance().set_frame_size(io_config.frame_length,
                                                  sender_config.input_sample_spec);
 
@@ -258,13 +256,11 @@ int main(int argc, char** argv) {
             return 1;
         }
     } else {
-        const size_t extra_space = 64;
-        // TODO(gh-608): take size from --packet-encoding instead of assuming
-        // 2 bytes per sample
-        context_config.max_packet_size = 2
-                * sender_config.input_sample_spec.ns_2_samples_overall(
-                    sender_config.packet_length)
-            + extra_space;
+        audio::SampleSpec spec = io_config.sample_spec;
+        spec.use_defaults(audio::Sample_RawFormat, audio::ChanLayout_Surround,
+                          audio::ChanOrder_Smpte, audio::ChanMask_Surround_7_1_4, 48000);
+        context_config.max_packet_size = packet::Packet::approx_size(
+            spec.ns_2_samples_overall(io_config.frame_length));
     }
 
     if (args.max_frame_size_given) {
@@ -334,8 +330,14 @@ int main(int argc, char** argv) {
     }
 
     sender_config.enable_timing = !input_source->has_clock();
-    sender_config.input_sample_spec.set_sample_rate(
-        input_source->sample_spec().sample_rate());
+    sender_config.input_sample_spec = input_source->sample_spec();
+
+    if (!sender_config.input_sample_spec.is_valid()) {
+        roc_log(LogError,
+                "can't detect input encoding, try to set it "
+                "explicitly with --rate option");
+        return 1;
+    }
 
     node::Sender sender(context, sender_config);
     if (!sender.is_valid()) {

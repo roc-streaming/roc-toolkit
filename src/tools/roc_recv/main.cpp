@@ -67,12 +67,6 @@ int main(int argc, char** argv) {
     pipeline::ReceiverSourceConfig receiver_config;
 
     sndio::Config io_config;
-    io_config.sample_spec.set_sample_format(
-        receiver_config.common.output_sample_spec.sample_format());
-    io_config.sample_spec.set_pcm_format(
-        receiver_config.common.output_sample_spec.pcm_format());
-    io_config.sample_spec.set_channel_set(
-        receiver_config.common.output_sample_spec.channel_set());
 
     if (args.frame_len_given) {
         if (!core::parse_duration(args.frame_len_arg, io_config.frame_length)) {
@@ -96,6 +90,7 @@ int main(int argc, char** argv) {
         }
     }
 
+    // TODO(gh-608): replace --rate with --io-encoding
     if (args.rate_given) {
         if (args.rate_arg <= 0) {
             roc_log(LogError, "invalid --rate: should be > 0");
@@ -104,6 +99,7 @@ int main(int argc, char** argv) {
         io_config.sample_spec.set_sample_rate((size_t)args.rate_arg);
     }
 
+    // TODO(gh-568): remove set_frame_size() after removing sox
     sndio::BackendMap::instance().set_frame_size(
         io_config.frame_length, receiver_config.common.output_sample_spec);
 
@@ -264,14 +260,8 @@ int main(int argc, char** argv) {
         }
     } else {
         audio::SampleSpec spec = io_config.sample_spec;
-        if (spec.sample_rate() == 0) {
-            spec.set_sample_rate(48000);
-        }
-        if (spec.num_channels() == 0) {
-            spec.set_channel_set(audio::ChannelSet(audio::ChanLayout_Surround,
-                                                   audio::ChanOrder_Smpte,
-                                                   audio::ChanMask_Surround_7_1_4));
-        }
+        spec.use_defaults(audio::Sample_RawFormat, audio::ChanLayout_Surround,
+                          audio::ChanOrder_Smpte, audio::ChanMask_Surround_7_1_4, 48000);
         context_config.max_frame_size =
             spec.ns_2_samples_overall(io_config.frame_length) * sizeof(audio::sample_t);
     }
@@ -333,12 +323,11 @@ int main(int argc, char** argv) {
     }
 
     receiver_config.common.enable_timing = !output_sink->has_clock();
-    receiver_config.common.output_sample_spec.set_sample_rate(
-        output_sink->sample_spec().sample_rate());
+    receiver_config.common.output_sample_spec = output_sink->sample_spec();
 
-    if (receiver_config.common.output_sample_spec.sample_rate() == 0) {
+    if (!receiver_config.common.output_sample_spec.is_valid()) {
         roc_log(LogError,
-                "can't detect output sample rate, try to set it "
+                "can't detect output encoding, try to set it "
                 "explicitly with --rate option");
         return 1;
     }

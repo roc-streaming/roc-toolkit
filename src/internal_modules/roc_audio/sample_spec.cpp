@@ -13,7 +13,6 @@
 #include "roc_core/macro_helpers.h"
 #include "roc_core/panic.h"
 #include "roc_packet/units.h"
-#include "sample_spec.h"
 
 namespace roc {
 namespace audio {
@@ -154,6 +153,25 @@ void SampleSpec::clear() {
     channel_set_.clear();
 }
 
+void SampleSpec::use_defaults(PcmFormat default_pcm_fmt,
+                              ChannelLayout default_channel_layout,
+                              ChannelOrder default_channel_order,
+                              ChannelMask default_channel_mask,
+                              size_t default_sample_rate) {
+    if (sample_fmt_ == SampleFormat_Invalid && default_pcm_fmt != PcmFormat_Invalid) {
+        set_sample_format(SampleFormat_Pcm);
+        set_pcm_format(default_pcm_fmt);
+    }
+    if (!channel_set_.is_valid() && default_channel_layout != ChanLayout_None) {
+        channel_set_.set_layout(default_channel_layout);
+        channel_set_.set_order(default_channel_order);
+        channel_set_.set_mask(default_channel_mask);
+    }
+    if (sample_rate_ == 0 && default_sample_rate != 0) {
+        set_sample_rate(default_sample_rate);
+    }
+}
+
 SampleFormat SampleSpec::sample_format() const {
     return sample_fmt_;
 }
@@ -163,6 +181,9 @@ void SampleSpec::set_sample_format(SampleFormat sample_fmt) {
 }
 
 PcmFormat SampleSpec::pcm_format() const {
+    if (sample_fmt_ != SampleFormat_Pcm) {
+        return PcmFormat_Invalid;
+    }
     return pcm_fmt_;
 }
 
