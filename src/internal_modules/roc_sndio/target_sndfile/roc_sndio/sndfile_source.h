@@ -91,19 +91,16 @@ public:
     virtual bool read(audio::Frame&);
 
 private:
-    bool open_(const char* path);
+    bool open_();
     void close_();
 
     bool seek_(size_t offset);
 
-    core::nanoseconds_t frame_length_;
     audio::SampleSpec sample_spec_;
 
     SNDFILE* file_;
     SF_INFO file_info_;
-    const char* path_;
-    size_t sample_rate_;
-    bool eof_;
+    core::StringBuffer path_;
     bool valid_;
 };
 

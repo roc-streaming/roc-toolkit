@@ -7,6 +7,7 @@
  */
 
 #include "roc_sndio/sndfile_source.h"
+#include "roc_audio/sample_spec_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_sndio/backend_map.h"
@@ -16,8 +17,7 @@ namespace sndio {
 
 SndfileSource::SndfileSource(core::IArena& arena, const Config& config)
     : file_(NULL)
-    , path_(NULL)
-    , eof_(false)
+    , path_(arena)
     , valid_(false) {
     if (config.latency != 0) {
         roc_log(LogError,
@@ -30,16 +30,7 @@ SndfileSource::SndfileSource(core::IArena& arena, const Config& config)
         return;
     }
 
-    frame_length_ = config.frame_length;
-    sample_spec_ = config.sample_spec;
-
-    if (frame_length_ == 0) {
-        roc_log(LogError, "sndfile source: frame length is zero");
-        return;
-    }
-
     memset(&file_info_, 0, sizeof(file_info_));
-    sample_rate_ = config.sample_spec.sample_rate();
     valid_ = true;
 }
 
@@ -54,17 +45,22 @@ bool SndfileSource::is_valid() const {
 bool SndfileSource::open(const char* driver, const char* path) {
     roc_panic_if(!valid_);
 
-    if (path) {
-        path_ = path;
-    }
-
-    roc_log(LogInfo, "sndfile source: opening: driver=%s path=%s", driver, path);
+    roc_log(LogDebug, "sndfile source: opening: driver=%s path=%s", driver, path);
 
     if (file_) {
         roc_panic("sndfile source: can't call open() more than once");
     }
 
-    if (!open_(path)) {
+    if (!path) {
+        roc_panic("sndfile sink: path is null");
+    }
+
+    if (!path_.assign(path)) {
+        roc_log(LogError, "sndfile source: can't allocate string");
+        return false;
+    }
+
+    if (!open_()) {
         return false;
     }
 
@@ -101,7 +97,7 @@ bool SndfileSource::restart() {
 
     roc_log(LogDebug, "sndfile source: restarting");
 
-    if (!eof_) {
+    if (file_ && file_info_.seekable) {
         if (!seek_(0)) {
             roc_log(LogError, "sndfile source: seek failed when restarting");
             return false;
@@ -111,13 +107,11 @@ bool SndfileSource::restart() {
             close_();
         }
 
-        if (!open_(path_)) {
+        if (!open_()) {
             roc_log(LogError, "sndfile source: open failed when restarting");
             return false;
         }
     }
-
-    eof_ = false;
 
     return true;
 }
@@ -127,13 +121,7 @@ audio::SampleSpec SndfileSource::sample_spec() const {
         roc_panic("sndfile source: not opened");
     }
 
-    audio::ChannelSet channel_set;
-    channel_set.set_layout(audio::ChanLayout_Surround);
-    channel_set.set_order(audio::ChanOrder_Smpte);
-    channel_set.set_channel_range(0, (size_t)file_info_.channels - 1, true);
-
-    return audio::SampleSpec(size_t(file_info_.samplerate), audio::Sample_RawFormat,
-                             channel_set);
+    return sample_spec_;
 }
 
 core::nanoseconds_t SndfileSource::latency() const {
@@ -156,13 +144,11 @@ bool SndfileSource::read(audio::Frame& frame) {
     roc_panic_if(!valid_);
 
     if (!file_) {
-        roc_panic("sndfile source: read: non-open input file");
+        roc_panic("sndfile source: not opened");
     }
 
     audio::sample_t* frame_data = frame.raw_samples();
-    // size_t num_channels = (size_t)file_info_.channels;
     sf_count_t frame_left = (sf_count_t)frame.num_raw_samples();
-    // size_t samples_per_ch = frame.num_raw_samples() / num_channels;
 
     sf_count_t n_samples = sf_read_float(file_, frame_data, frame_left);
     if (sf_error(file_) != 0) {
@@ -170,16 +156,12 @@ bool SndfileSource::read(audio::Frame& frame) {
         roc_panic("sndfile source: sf_read_float() failed: %s", sf_strerror(file_));
     }
 
-    if (n_samples == 0) {
-        eof_ = true;
-    }
-
     if (n_samples < frame_left && n_samples != 0) {
         memset(frame.raw_samples() + (size_t)n_samples, 0,
                (size_t)(frame_left - n_samples) * sizeof(audio::sample_t));
     }
 
-    return !eof_;
+    return n_samples != 0;
 }
 
 bool SndfileSource::seek_(size_t offset) {
@@ -198,28 +180,29 @@ bool SndfileSource::seek_(size_t offset) {
     return true;
 }
 
-bool SndfileSource::open_(const char* path) {
+bool SndfileSource::open_() {
     if (file_) {
         roc_panic("sndfile source: can't open: already opened");
     }
 
     file_info_.format = 0;
 
-    file_ = sf_open(path, SFM_READ, &file_info_);
+    file_ = sf_open(path_.c_str(), SFM_READ, &file_info_);
     if (!file_) {
-        roc_log(LogInfo, "sndfile source: can't open: input=%s, %s", !path ? NULL : path,
+        roc_log(LogInfo, "sndfile source: can't open: input=%s, %s", path_.c_str(),
                 sf_strerror(file_));
         return false;
     }
 
-    sample_spec_.set_sample_rate((unsigned long)file_info_.samplerate);
+    sample_spec_.set_sample_format(audio::SampleFormat_Pcm);
+    sample_spec_.set_pcm_format(audio::Sample_RawFormat);
+    sample_spec_.set_sample_rate((size_t)file_info_.samplerate);
+    sample_spec_.channel_set().set_layout(audio::ChanLayout_Surround);
+    sample_spec_.channel_set().set_order(audio::ChanOrder_Smpte);
+    sample_spec_.channel_set().set_range(0, (size_t)file_info_.channels - 1);
 
-    roc_log(LogInfo,
-            "sndfile source:"
-            " in_rate=%lu out_rate=%lu"
-            " in_ch=%lu out_ch=%lu",
-            (unsigned long)file_info_.samplerate, (unsigned long)sample_rate_,
-            (unsigned long)file_info_.channels, (unsigned long)0);
+    roc_log(LogInfo, "sndfile source: opened: %s",
+            audio::sample_spec_to_str(sample_spec_).c_str());
 
     return true;
 }
@@ -230,10 +213,12 @@ void SndfileSource::close_() {
     }
 
     roc_log(LogInfo, "sndfile source: closing input");
+
     int err = sf_close(file_);
     if (err != 0) {
-        roc_panic("sndfile source: sf_close() failed. Cannot close input: %s",
-                  sf_error_number(err));
+        roc_log(LogError,
+                "sndfile source: sf_close() failed, cannot properly close input: %s",
+                sf_error_number(err));
     }
 
     file_ = NULL;

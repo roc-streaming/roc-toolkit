@@ -137,11 +137,6 @@ bool map_to_sndfile(const char** driver, const char* path, SF_INFO& file_info_) 
 SndfileSink::SndfileSink(core::IArena& arena, const Config& config)
     : file_(NULL)
     , valid_(false) {
-    if (config.sample_spec.num_channels() == 0) {
-        roc_log(LogError, "sndfile sink: # of channels is zero");
-        return;
-    }
-
     if (config.latency != 0) {
         roc_log(LogError,
                 "sndfile sink: setting io latency not supported by sndfile backend");
@@ -150,20 +145,9 @@ SndfileSink::SndfileSink(core::IArena& arena, const Config& config)
 
     sample_spec_ = config.sample_spec;
 
-    if (sample_spec_.sample_format() == audio::SampleFormat_Invalid) {
-        sample_spec_.set_sample_format(audio::SampleFormat_Pcm);
-        sample_spec_.set_pcm_format(audio::PcmFormat_SInt32);
-    }
-
-    if (sample_spec_.sample_rate() == 0) {
-        sample_spec_.set_sample_rate(41000);
-    }
-
-    if (!sample_spec_.channel_set().is_valid()) {
-        sample_spec_.channel_set().set_layout(audio::ChanLayout_Surround);
-        sample_spec_.channel_set().set_order(audio::ChanOrder_Smpte);
-        sample_spec_.channel_set().set_channel_range(0, 2, true);
-    }
+    sample_spec_.use_defaults(audio::Sample_RawFormat, audio::ChanLayout_Surround,
+                              audio::ChanOrder_Smpte, audio::ChanMask_Surround_Stereo,
+                              44100);
 
     memset(&file_info_, 0, sizeof(file_info_));
 
@@ -234,25 +218,11 @@ bool SndfileSink::restart() {
 }
 
 audio::SampleSpec SndfileSink::sample_spec() const {
-    roc_panic_if(!valid_);
-
     if (!file_) {
-        roc_panic("sndfile sink: sample_rate(): non-open output file");
+        roc_panic("sndfile sink: not opened");
     }
 
-    if (file_info_.channels == 1) {
-        return audio::SampleSpec(size_t(file_info_.samplerate), audio::Sample_RawFormat,
-                                 audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
-                                 audio::ChanMask_Surround_Mono);
-    }
-
-    if (file_info_.channels == 2) {
-        return audio::SampleSpec(size_t(file_info_.samplerate), audio::Sample_RawFormat,
-                                 audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
-                                 audio::ChanMask_Surround_Stereo);
-    }
-
-    roc_panic("sndfile sink: unsupported channel count");
+    return sample_spec_;
 }
 
 core::nanoseconds_t SndfileSink::latency() const {
@@ -286,14 +256,10 @@ void SndfileSink::write(audio::Frame& frame) {
 }
 
 bool SndfileSink::open_(const char* driver, const char* path) {
-    unsigned long in_rate = (unsigned long)file_info_.samplerate;
-
-    unsigned long out_rate = (unsigned long)file_info_.samplerate;
-
     if (!map_to_sndfile(&driver, path, file_info_)) {
         roc_log(LogDebug,
-                "sndfile sink: map_to_sndfile(): Cannot find valid subtype format for "
-                "major format type");
+                "sndfile sink: map_to_sndfile():"
+                " cannot find valid subtype format for major format type");
         return false;
     }
 
@@ -312,16 +278,8 @@ bool SndfileSink::open_(const char* driver, const char* path) {
 
     sample_spec_.set_sample_rate((unsigned long)file_info_.samplerate);
 
-    roc_log(LogInfo,
-            "sndfile sink:"
-            " opened: out_rate=%lu in_rate=%lu ch=%lu",
-            out_rate, in_rate, (unsigned long)file_info_.channels);
-
-    sf_count_t err = sf_seek(file_, 0, SEEK_SET);
-    if (err == -1) {
-        roc_log(LogError, "sndfile sink: sf_seek(): %s", sf_strerror(file_));
-        return false;
-    }
+    roc_log(LogInfo, "sndfile sink: opened: %s",
+            audio::sample_spec_to_str(sample_spec_).c_str());
 
     return true;
 }
@@ -335,8 +293,9 @@ void SndfileSink::close_() {
 
     int err = sf_close(file_);
     if (err != 0) {
-        roc_panic("sndfile sink: sf_close() failed. Cannot close output: %s",
-                  sf_error_number(err));
+        roc_log(LogError,
+                "sndfile sink: sf_close() failed, cannot properly close output: %s",
+                sf_error_number(err));
     }
 
     file_ = NULL;
