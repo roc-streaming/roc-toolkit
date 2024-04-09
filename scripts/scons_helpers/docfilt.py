@@ -83,7 +83,7 @@ for line in proc.stderr:
     line = re.sub('WARNING:', 'warning:', line, flags=re.I)
     line = re.sub('ERROR:', 'error:', line, flags=re.I)
 
-    m = re.match('^(warning:\s*|error:\s*)?([^:.]+[.][^:.]+)(:.*)', line)
+    m = re.match(r'^(warning:\s*|error:\s*)?([^:.]+[.][^:.]+)(:.*)', line)
     if m:
         line = (m.group(1) or '') + os.path.relpath(m.group(2), project_dir) + m.group(3)
 
