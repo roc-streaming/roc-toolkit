@@ -33,6 +33,24 @@ CsvDumper::~CsvDumper() {
     close_();
 }
 
+bool CsvDumper::would_write(char type) {
+    roc_panic_if(!valid_);
+
+    if (stop_) {
+        return false;
+    }
+
+    if (!write_mutex_.try_lock()) {
+        return false;
+    }
+
+    const bool would = limiter_(type).would_allow();
+
+    write_mutex_.unlock();
+
+    return would;
+}
+
 void CsvDumper::write(const CsvEntry& entry) {
     roc_panic_if(!valid_);
 
@@ -40,18 +58,24 @@ void CsvDumper::write(const CsvEntry& entry) {
         return;
     }
 
-    {
-        Mutex::Lock lock(mutex_);
-
-        ringbuf_.push_back(entry);
+    if (!write_mutex_.try_lock()) {
+        return;
     }
 
-    sem_.post();
+    if (!limiter_(entry.type).allow()) {
+        write_mutex_.unlock();
+        return;
+    }
+
+    ringbuf_.push_back(entry);
+
+    write_mutex_.unlock();
+    write_sem_.post();
 }
 
 void CsvDumper::stop() {
     stop_ = true;
-    sem_.post();
+    write_sem_.post();
 }
 
 void CsvDumper::run() {
@@ -61,15 +85,12 @@ void CsvDumper::run() {
 
     while (!stop_ || !ringbuf_.is_empty()) {
         if (ringbuf_.is_empty()) {
-            sem_.wait();
+            write_sem_.wait();
         }
 
         CsvEntry entry;
         while (ringbuf_.pop_front(entry)) {
-            if (!allow_(entry)) {
-                continue;
-            }
-            if (!write_(entry)) {
+            if (!dump_(entry)) {
                 break;
             }
         }
@@ -80,16 +101,16 @@ void CsvDumper::run() {
     close_();
 }
 
-bool CsvDumper::allow_(const CsvEntry& entry) {
-    roc_panic_if(!isalnum(entry.type));
+RateLimiter& CsvDumper::limiter_(char type) {
+    roc_panic_if(!isalnum(type));
 
-    const size_t idx = (size_t)entry.type;
+    const size_t idx = (size_t)type;
 
     if (!rate_lims_[idx]) {
         rate_lims_[idx].reset(new (rate_lims_[idx]) RateLimiter(config_.max_interval));
     }
 
-    return rate_lims_[idx]->allow();
+    return *rate_lims_[idx];
 }
 
 bool CsvDumper::open_(const char* path) {
@@ -115,7 +136,7 @@ void CsvDumper::close_() {
     }
 }
 
-bool CsvDumper::write_(const CsvEntry& entry) {
+bool CsvDumper::dump_(const CsvEntry& entry) {
     enum { MaxLineLen = 256 };
 
     roc_panic_if(!file_);

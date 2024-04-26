@@ -44,7 +44,7 @@ struct CsvEntry {
 //! CSV write configuration.
 struct CsvConfig {
     //! Maximum number of queued entries.
-    //! If queue become larger, entries are dropped.
+    //! If queue becomes larger, entries are dropped.
     size_t max_queued;
 
     //! Maximum allowed interval between subsequent entries of same type.
@@ -60,7 +60,7 @@ struct CsvConfig {
 
 //! Asynchronous CSV dumper.
 //! Writes entries to CSV file from background thread.
-//! Recommended to be used from single thread.
+//! Recommended to be used from a single thread.
 class CsvDumper : public Thread {
 public:
     //! Open file.
@@ -71,13 +71,17 @@ public:
     //! Close file.
     ~CsvDumper();
 
-    //! Check if openeded without errors/
+    //! Check if opened without errors.
     bool is_valid() const;
 
+    //! Check whether write() would enqueue or drop entry.
+    //! Lock-free operation.
+    bool would_write(char type);
+
     //! Enqueue entry for writing.
-    //! Makes a copy of entry and pushes it to a lock-free buffer.
-    //! If queue size limit or rate limit is exceeded, entry is dropped.
-    //! Lock-free if used from single thread (e.g. pipeline thread).
+    //! Makes a copy of entry and pushes it to a lock-free ring buffer.
+    //! If buffer size limit or rate limit is exceeded, entry is dropped.
+    //! Lock-free operation.
     void write(const CsvEntry& entry);
 
     //! Stop background thread.
@@ -86,18 +90,18 @@ public:
 private:
     virtual void run();
 
-    bool allow_(const CsvEntry& entry);
+    RateLimiter& limiter_(char type);
 
     bool open_(const char* path);
     void close_();
-    bool write_(const CsvEntry& entry);
+    bool dump_(const CsvEntry& entry);
 
     const CsvConfig config_;
 
     FILE* file_;
 
-    Mutex mutex_;
-    Semaphore sem_;
+    Mutex write_mutex_;
+    Semaphore write_sem_;
     SpscRingBuffer<CsvEntry> ringbuf_;
 
     Optional<RateLimiter> rate_lims_[128];
