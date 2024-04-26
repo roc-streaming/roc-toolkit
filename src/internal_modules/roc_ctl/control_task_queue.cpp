@@ -15,7 +15,8 @@ namespace roc {
 namespace ctl {
 
 ControlTaskQueue::ControlTaskQueue()
-    : started_(false)
+    : Thread("roc_ctrl_task_queue")
+    , started_(false)
     , stop_(false)
     , fetch_ready_(true)
     , ready_queue_size_(0) {

@@ -26,7 +26,8 @@ namespace test {
 class ConnWriter : public core::Thread {
 public:
     ConnWriter(MockConnHandler& handler, IConn& conn, size_t total_bytes)
-        : handler_(handler)
+        : Thread("roc_conn_writer")
+        , handler_(handler)
         , conn_(conn)
         , total_bytes_(total_bytes) {
     }

@@ -84,7 +84,8 @@ private:
 class PushThread : public core::Thread {
 public:
     PushThread()
-        : bf_(NULL)
+        : Thread("roc_push_thread")
+        , bf_(NULL)
         , thread_index_(0) {
     }
 

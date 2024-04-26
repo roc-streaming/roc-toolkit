@@ -25,7 +25,8 @@ namespace test {
 class ConnReader : public core::Thread {
 public:
     ConnReader(MockConnHandler& handler, IConn& conn, size_t total_bytes)
-        : handler_(handler)
+        : Thread("roc_conn_reader")
+        , handler_(handler)
         , conn_(conn)
         , total_bytes_(total_bytes) {
     }

@@ -32,7 +32,8 @@ PacketPtr new_packet() {
 
 struct TestWriter : core::Thread {
     TestWriter(ConcurrentQueue& queue, PacketPtr packet)
-        : queue(queue)
+        : Thread("roc_test_writer")
+        , queue(queue)
         , packet(packet) {
     }
 

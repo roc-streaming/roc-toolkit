@@ -50,13 +50,24 @@ public:
     //!  Blocks until run() returns and thread terminates.
     void join();
 
+    //! Print thread name
+    //! @remarks
+    //! Prints thread name for ease of debugging.
+    void print_name();
+
 protected:
     virtual ~Thread();
 
-    Thread();
+    //! @remarks
+    //! Constructor now takes name argument
+    Thread(const char* name_);
 
     //! Method to be executed in thread.
     virtual void run() = 0;
+
+    //! @remarks
+    //! Method to assign name based on architecture.
+    bool assign_thread_name_();
 
 private:
     static void* thread_runner_(void* ptr);
@@ -65,7 +76,7 @@ private:
 
     int started_;
     Atomic<int> joinable_;
-
+    const char* name_;
     Mutex mutex_;
 };
 

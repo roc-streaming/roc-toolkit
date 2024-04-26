@@ -367,7 +367,8 @@ public:
     AsyncTaskScheduler(TestPipeline& pipeline,
                        TestPipeline::Task& task,
                        TestCompleter* completer)
-        : pipeline_(pipeline)
+        : Thread("roc_async_task_scheduler")
+        , pipeline_(pipeline)
         , task_(task)
         , completer_(completer) {
     }
@@ -389,7 +390,8 @@ private:
 class AsyncTaskProcessor : public core::Thread {
 public:
     AsyncTaskProcessor(TestPipeline& pipeline)
-        : pipeline_(pipeline) {
+        : Thread("roc_async_task_processor")
+        , pipeline_(pipeline) {
     }
 
 private:
@@ -403,7 +405,8 @@ private:
 class AsyncFrameWriter : public core::Thread {
 public:
     AsyncFrameWriter(TestPipeline& pipeline, audio::Frame& frame)
-        : pipeline_(pipeline)
+        : Thread("roc_async_frame_writer")
+        , pipeline_(pipeline)
         , frame_(frame) {
     }
 

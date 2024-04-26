@@ -271,10 +271,10 @@ public:
                  ctl::ControlTaskQueue& control_queue,
                  DelayStats& stats)
         : PipelineLoop(
-            *this,
-            config,
-            audio::SampleSpec(
-                SampleRate, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, Chans))
+              *this,
+              config,
+              audio::SampleSpec(
+                  SampleRate, audio::ChanLayout_Surround, audio::ChanOrder_Smpte, Chans))
         , stats_(stats)
         , control_queue_(control_queue)
         , control_task_(*this) {
@@ -365,7 +365,8 @@ private:
 class TaskThread : public core::Thread, private IPipelineTaskCompleter {
 public:
     TaskThread(TestPipeline& pipeline)
-        : pipeline_(pipeline)
+        : Thread("roc_task_thread")
+        , pipeline_(pipeline)
         , stop_(false) {
     }
 

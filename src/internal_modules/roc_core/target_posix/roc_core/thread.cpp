@@ -61,9 +61,39 @@ bool Thread::enable_realtime() {
     return true;
 }
 
-Thread::Thread()
+// Thread::Thread()
+//     : started_(0)
+//     , joinable_(0)
+//     , name_(nullptr)
+//     {
+// }
+
+Thread::Thread(const char* name_)
     : started_(0)
-    , joinable_(0) {
+    , joinable_(0)
+    , name_(name_) {
+}
+
+bool Thread::assign_thread_name_() {
+    if (name_) {
+#if defined(__FreeBSD__)
+        pthread_set_name_np(pthread_self(), name_);
+        return true;
+#elif defined(__NetBSD__)
+        pthread_setname_np(pthread_self_lwp(), "%s", name_);
+        return true;
+#elif defined(__APPLE__)
+        pthread_setname_np(name_);
+        return true;
+#elif defined(__ANDROID__)
+        pthread_setname_np(pthread_self(), name_);
+        return true;
+#else
+        pthread_setname_np(pthread_self(), name_);
+        return true;
+#endif
+    }
+    return false;
 }
 
 Thread::~Thread() {
@@ -81,6 +111,11 @@ bool Thread::start() {
 
     if (started_) {
         roc_log(LogError, "thread: can't start thread more than once");
+        return false;
+    }
+
+    if (!assign_thread_name_()) {
+        roc_log(LogError, "thread: unable to assign thread name");
         return false;
     }
 
@@ -113,6 +148,11 @@ void Thread::join() {
 void* Thread::thread_runner_(void* ptr) {
     static_cast<Thread*>(ptr)->run();
     return NULL;
+}
+
+// for my own debugging purposes
+void Thread::print_name() {
+    printf("Thread name: %s\n", name_);
 }
 
 } // namespace core

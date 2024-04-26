@@ -21,7 +21,8 @@ namespace {
 class TestThread : public Thread {
 public:
     TestThread(Timer& t)
-        : t_(t)
+        : Thread("roc_test_timer")
+        , t_(t)
         , r_(0) {
     }
 
@@ -87,6 +88,8 @@ TEST(timer, async) {
 
         TestThread thr(t);
         CHECK(thr.start());
+
+        thr.print_name();
 
         thr.wait_running();
         sleep_for(ClockMonotonic, Microsecond * 100);

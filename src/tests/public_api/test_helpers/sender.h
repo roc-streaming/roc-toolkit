@@ -34,7 +34,8 @@ public:
            size_t num_chans,
            size_t frame_size,
            unsigned flags)
-        : sndr_(NULL)
+        : Thread("roc_sender")
+        , sndr_(NULL)
         , sample_step_(sample_step)
         , num_chans_(num_chans)
         , frame_samples_(frame_size * num_chans)
