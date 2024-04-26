@@ -170,17 +170,33 @@ jobs:
             toolchain: aarch64-linux-android29
             shortname: android29-aarch64
 
+          - image: rocstreaming/toolchain-linux-android:ndk26
+            toolchain: aarch64-linux-android29
+            shortname: android29-aarch64-ndk26
+
           - image: rocstreaming/toolchain-linux-android:ndk21
             toolchain: armv7a-linux-androideabi29
             shortname: android29-armv7a
+
+          - image: rocstreaming/toolchain-linux-android:ndk26
+            toolchain: armv7a-linux-androideabi29
+            shortname: android29-armv7a-ndk26
 
           - image: rocstreaming/toolchain-linux-android:ndk21
             toolchain: x86_64-linux-android29
             shortname: android29-x86_64
 
+          - image: rocstreaming/toolchain-linux-android:ndk26
+            toolchain: x86_64-linux-android29
+            shortname: android29-x86_64-ndk26
+
           - image: rocstreaming/toolchain-linux-android:ndk21
             toolchain: i686-linux-android29
             shortname: android29-i686
+
+          - image: rocstreaming/toolchain-linux-android:ndk26
+            toolchain: i686-linux-android29
+            shortname: android29-i686-ndk26
 
     runs-on: ubuntu-latest
 
