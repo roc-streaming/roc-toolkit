@@ -80,6 +80,49 @@ TEST(pump, write_read) {
     mock_writer.check(0, mock_source.num_returned());
 }
 
+TEST(pump, write_read_multiple_formats) {
+    roc::sndio::IBackend* backend = roc::sndio::IBackend::instance();
+    CHECK(backend != NULL);
+
+    roc::core::Array<roc::core::DriverInfo, roc::sndio::MaxDrivers> driver_list;
+    backend->discover_drivers(driver_list);
+
+    for (size_t i = 0; i < driver_list.size(); ++i) {
+
+        if (driver_list[i].type == roc::core::DriverType_File) {
+            const char* format_extension = driver_list[i].extension;
+            enum { NumSamples = BufSize * 10 };
+
+            test::MockSource mock_source;
+            mock_source.add(NumSamples);
+
+            core::TempFile file("test." + format_extension);
+
+            {
+                SoxSink sox_sink(arena, config);
+                CHECK(sox_sink.open(NULL, file.path()));
+
+                Pump pump(buffer_factory, mock_source, NULL, sox_sink, BufDuration, SampleSpecs,
+                                Pump::ModeOneshot);
+                CHECK(pump.is_valid());
+                CHECK(pump.run());
+
+                CHECK(mock_source.num_returned() >= NumSamples - BufSize);
+            }
+
+            SoxSource sox_source(arena, config);
+            CHECK(sox_source.open(NULL, file.path()));
+
+            test::MockSink mock_writer;
+
+            Pump pump(buffer_factory, sox_source, NULL, mock_writer, BufDuration, SampleSpecs,
+              Pump::ModePermanent);
+            CHECK(pump.is_valid());
+            CHECK(pump.run());
+        }
+    }
+}
+
 TEST(pump, write_overwrite_read) {
     enum { NumSamples = BufSize * 10 };
 
