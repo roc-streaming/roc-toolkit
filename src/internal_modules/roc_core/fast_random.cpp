@@ -66,5 +66,20 @@ uint32_t fast_random_range(uint32_t from, uint32_t to) {
     return ret;
 }
 
+// Gaussian PRNG implementation is based on Box-Muller transform:
+// https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
+double fast_random_gaussian() {
+    // Generate two uniform random numbers
+    double u1 = (double)fast_random() / (double)UINT32_MAX;
+    double u2 = (double)fast_random() / (double)UINT32_MAX;
+
+    // Use Box-Muller transform to convert uniform random numbers to normal random numbers
+    double r = std::sqrt(-2.0 * std::log(u1));
+    double theta = 2.0 * M_PI * u2;
+
+    // Return one of the normal random numbers
+    return r * std::cos(theta);
+}
+
 } // namespace core
 } // namespace roc
