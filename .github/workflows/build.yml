@@ -5,8 +5,6 @@ on:
     branches:
       - master
       - develop
-      - feature/*
-      - waspd/*
     tags:
       - v*
   pull_request:
@@ -27,9 +25,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - script: linux-x86_64/ubuntu-24.04
-            image: rocstreaming/env-ubuntu:24.04
-
           - script: linux-x86_64/ubuntu-22.04
             image: rocstreaming/env-ubuntu:22.04
 
@@ -169,7 +164,7 @@ jobs:
           - image: rocstreaming/toolchain-linux-android:ndk21
             toolchain: aarch64-linux-android29
             shortname: android29-aarch64
-
+          
           - image: rocstreaming/toolchain-linux-android:ndk26
             toolchain: aarch64-linux-android29
             shortname: android29-aarch64-ndk26
@@ -227,7 +222,7 @@ jobs:
         include:
           - abi: x86_64
             api: 29
-            ndk: 25.2.9519653
+            ndk: 26.3.11579264
             build_tools: 28.0.3
             cmake: 3.10.2.4988404
             avd_abi: x86_64
