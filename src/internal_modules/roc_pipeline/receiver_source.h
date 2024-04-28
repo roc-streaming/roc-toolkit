@@ -17,6 +17,7 @@
 #include "roc_audio/mixer.h"
 #include "roc_audio/pcm_mapper_reader.h"
 #include "roc_audio/profiling_reader.h"
+#include "roc_core/csv_dumper.h"
 #include "roc_core/iarena.h"
 #include "roc_core/optional.h"
 #include "roc_core/stddefs.h"
@@ -136,6 +137,9 @@ private:
     core::List<ReceiverSlot> slots_;
 
     audio::IFrameReader* frame_reader_;
+
+    const core::CsvConfig dumper_config_;
+    core::Optional<core::CsvDumper> dumper_;
 
     status::StatusCode init_status_;
 };

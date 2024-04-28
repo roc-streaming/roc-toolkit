@@ -51,6 +51,12 @@ struct LinkMetrics {
     //! interarrival time.
     core::nanoseconds_t jitter;
 
+    //! Running max of Jitter.
+    core::nanoseconds_t max_jitter;
+
+    //! Running min of Jitter.
+    core::nanoseconds_t min_jitter;
+
     //! Estimated round-trip time between sender and receiver.
     //! Computed based on NTP-like timestamp exchange implemennted by RTCP protocol.
     //! Read-only field. You can read it on sender, but you should not set
@@ -63,6 +69,8 @@ struct LinkMetrics {
         , total_packets(0)
         , lost_packets(0)
         , jitter(0)
+        , max_jitter(0)
+        , min_jitter(0)
         , rtt(0) {
     }
 };

@@ -42,7 +42,7 @@ TEST(receiver_endpoint, valid) {
     ReceiverSourceConfig source_config;
     ReceiverSlotConfig slot_config;
     ReceiverSessionGroup session_group(source_config, slot_config, state_tracker, mixer,
-                                       encoding_map, packet_factory, frame_factory,
+                                       encoding_map, packet_factory, frame_factory, NULL,
                                        arena);
 
     ReceiverEndpoint endpoint(address::Proto_RTP, state_tracker, session_group,
@@ -57,7 +57,7 @@ TEST(receiver_endpoint, invalid_proto) {
     ReceiverSourceConfig source_config;
     ReceiverSlotConfig slot_config;
     ReceiverSessionGroup session_group(source_config, slot_config, state_tracker, mixer,
-                                       encoding_map, packet_factory, frame_factory,
+                                       encoding_map, packet_factory, frame_factory, NULL,
                                        arena);
 
     ReceiverEndpoint endpoint(address::Proto_None, state_tracker, session_group,
@@ -81,7 +81,7 @@ TEST(receiver_endpoint, no_memory) {
         ReceiverSlotConfig slot_config;
         ReceiverSessionGroup session_group(source_config, slot_config, state_tracker,
                                            mixer, encoding_map, packet_factory,
-                                           frame_factory, core::NoopArena);
+                                           frame_factory, NULL, core::NoopArena);
 
         ReceiverEndpoint endpoint(protos[n], state_tracker, session_group, encoding_map,
                                   address::SocketAddr(), NULL, core::NoopArena);

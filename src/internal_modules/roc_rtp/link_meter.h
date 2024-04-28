@@ -12,7 +12,11 @@
 #ifndef ROC_RTP_LINK_METER_H_
 #define ROC_RTP_LINK_METER_H_
 
+#include "roc_audio/latency_monitor.h"
 #include "roc_audio/sample_spec.h"
+#include "roc_core/csv_dumper.h"
+#include "roc_core/iarena.h"
+#include "roc_core/mov_stats.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
 #include "roc_packet/ilink_meter.h"
@@ -25,7 +29,7 @@
 namespace roc {
 namespace rtp {
 
-//! RTP link meter.
+//! Link meter.
 //!
 //! Computes various link metrics based on sequence of RTP packets.
 //! Inserted into pipeline in two points:
@@ -35,18 +39,21 @@ namespace rtp {
 //!    that should be updated as early as possible.
 //!
 //!  - As a reader, right before decoding packet. Here LinkMeter
-//!    computes metrics that can be updated only when packets
+//!   1 computes metrics that can be updated only when packets
 //!    are going to be played.
 //!
 //! In both cases, LinkMeter passes through packets to/from nested
 //! writer/reader, and updates metrics.
 class LinkMeter : public packet::ILinkMeter,
                   public packet::IWriter,
-                  public packet::IReader,
                   public core::NonCopyable<> {
 public:
     //! Initialize.
-    explicit LinkMeter(const EncodingMap& encoding_map);
+    explicit LinkMeter(core::IArena& arena,
+                       const EncodingMap& encoding_map,
+                       const audio::SampleSpec& sample_spec,
+                       audio::LatencyConfig latency_config,
+                       core::CsvDumper* dumper);
 
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
@@ -75,32 +82,29 @@ public:
     //!  Invoked early in pipeline right after the packet is received.
     virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr& packet);
 
-    //! Read packet and update metrics.
-    //! @remarks
-    //!  Invoked late in pipeline right before the packet is decoded.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(packet::PacketPtr& packet,
-                                                       packet::PacketReadMode mode);
-
     //! Set nested packet writer.
     //! @remarks
     //!  Should be called before first write() call.
     void set_writer(packet::IWriter& writer);
 
-    //! Set nested packet reader.
-    //! @remarks
-    //!  Should be called before first read() call.
-    void set_reader(packet::IReader& reader);
+    //! Get metrics.
+    core::nanoseconds_t mean_jitter() const;
+
+    //! Window length to which metrics relate.
+    size_t running_window_len() const;
 
 private:
-    void update_metrics_(const packet::Packet& packet);
+    void update_jitter_(const packet::Packet& packet);
 
     const EncodingMap& encoding_map_;
     const Encoding* encoding_;
 
     packet::IWriter* writer_;
-    packet::IReader* reader_;
 
-    bool first_packet_;
+    const audio::SampleSpec sample_spec_;
+
+    bool first_packet_jitter_;
+    const size_t win_len_;
     bool has_metrics_;
 
     packet::LinkMetrics metrics_;
@@ -108,6 +112,13 @@ private:
     uint16_t first_seqnum_;
     uint32_t last_seqnum_hi_;
     uint16_t last_seqnum_lo_;
+
+    ssize_t processed_packets_;
+    core::nanoseconds_t prev_packet_enq_ts_;
+    packet::stream_timestamp_t prev_stream_timestamp_;
+    core::MovStats<core::nanoseconds_t> packet_jitter_stats_;
+
+    core::CsvDumper* dumper_;
 };
 
 } // namespace rtp

@@ -54,7 +54,8 @@ void ReceiverSessionConfig::deduce_defaults() {
     resampler.deduce_defaults(latency.tuner_backend, latency.tuner_profile);
 }
 
-ReceiverSourceConfig::ReceiverSourceConfig() {
+ReceiverSourceConfig::ReceiverSourceConfig()
+    : dump_file(NULL) {
 }
 
 void ReceiverSourceConfig::deduce_defaults() {

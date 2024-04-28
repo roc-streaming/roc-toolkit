@@ -98,8 +98,12 @@ bool sender_config_from_user(node::Context& context,
         out.latency.target_latency = (core::nanoseconds_t)in.target_latency;
     }
 
-    if (in.latency_tolerance != 0) {
-        out.latency.latency_tolerance = (core::nanoseconds_t)in.latency_tolerance;
+    if (in.min_latency != 0) {
+        out.latency.min_latency = (core::nanoseconds_t)in.min_latency;
+    }
+
+    if (in.max_latency != 0) {
+        out.latency.max_latency = (core::nanoseconds_t)in.max_latency;
     }
 
     out.enable_cpu_clock = false;
@@ -168,9 +172,24 @@ bool receiver_config_from_user(node::Context&,
             (core::nanoseconds_t)in.target_latency;
     }
 
-    if (in.latency_tolerance != 0) {
-        out.session_defaults.latency.latency_tolerance =
-            (core::nanoseconds_t)in.latency_tolerance;
+    if (in.start_latency != 0) {
+        if (in.target_latency != 0) {
+            roc_log(LogError,
+                    "bad configuration:"
+                    " start latency must be 0 if latency tuning is disabled"
+                    " (target_latency != 0)");
+            return false;
+        }
+        out.session_defaults.latency.start_latency =
+            (core::nanoseconds_t)in.start_latency;
+    }
+
+    if (in.min_latency != 0) {
+        out.session_defaults.latency.min_latency = (core::nanoseconds_t)in.min_latency;
+    }
+
+    if (in.max_latency != 0) {
+        out.session_defaults.latency.max_latency = (core::nanoseconds_t)in.max_latency;
     }
 
     if (in.no_playback_timeout != 0) {

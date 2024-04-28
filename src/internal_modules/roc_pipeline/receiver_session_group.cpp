@@ -8,6 +8,7 @@
 
 #include "roc_pipeline/receiver_session_group.h"
 #include "roc_address/socket_addr_to_str.h"
+#include "roc_core/csv_dumper.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_rtcp/participant_info.h"
@@ -23,6 +24,7 @@ ReceiverSessionGroup::ReceiverSessionGroup(const ReceiverSourceConfig& source_co
                                            const rtp::EncodingMap& encoding_map,
                                            packet::PacketFactory& packet_factory,
                                            audio::FrameFactory& frame_factory,
+                                           core::CsvDumper* dumper,
                                            core::IArena& arena)
     : source_config_(source_config)
     , slot_config_(slot_config)
@@ -33,6 +35,7 @@ ReceiverSessionGroup::ReceiverSessionGroup(const ReceiverSourceConfig& source_co
     , packet_factory_(packet_factory)
     , frame_factory_(frame_factory)
     , session_router_(arena)
+    , dumper_(dumper)
     , init_status_(status::NoStatus) {
     identity_.reset(new (identity_) rtp::Identity());
     if ((init_status_ = identity_->init_status()) != status::StatusOK) {
@@ -388,7 +391,7 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
 
     core::SharedPtr<ReceiverSession> sess =
         new (arena_) ReceiverSession(sess_config, source_config_.common, encoding_map_,
-                                     packet_factory_, frame_factory_, arena_);
+                                     packet_factory_, frame_factory_, dumper_, arena_);
 
     if (!sess) {
         roc_log(LogError, "session group: can't create session, allocation failed");
