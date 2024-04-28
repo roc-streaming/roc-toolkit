@@ -60,7 +60,8 @@ public:
                   rtp::EncodingMap& encoding_map,
                   packet::PacketFactory& packet_factory,
                   audio::FrameFactory& frame_factory,
-                  core::IArena& arena);
+                  core::IArena& arena,
+                  core::CsvDumper* dumper);
 
     //! Check if the pipeline was successfully constructed.
     status::StatusCode init_status() const;
@@ -168,6 +169,8 @@ private:
     address::SocketAddr rtcp_outbound_addr_;
 
     audio::IFrameWriter* frame_writer_;
+
+    core::CsvDumper* dumper_;
 
     status::StatusCode init_status_;
     status::StatusCode fail_status_;

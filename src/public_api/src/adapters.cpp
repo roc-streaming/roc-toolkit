@@ -105,6 +105,14 @@ bool sender_config_from_user(node::Context& context,
         out.latency.latency_tolerance = (core::nanoseconds_t)in.latency_tolerance;
     }
 
+    if (in.min_latency != 0) {
+        out.latency.min_latency = (core::nanoseconds_t)in.min_latency;
+    }
+
+    if (in.max_latency != 0) {
+        out.latency.max_latency = (core::nanoseconds_t)in.max_latency;
+    }
+
     out.enable_cpu_clock = false;
     out.enable_auto_cts = true;
 
@@ -172,6 +180,26 @@ bool receiver_config_from_user(node::Context&,
     if (in.latency_tolerance != 0) {
         out.session_defaults.latency.latency_tolerance =
             (core::nanoseconds_t)in.latency_tolerance;
+    }
+
+    if (in.start_latency != 0) {
+        if (in.target_latency != 0) {
+            roc_log(LogError,
+                    "bad configuration:"
+                    " start latency must be 0 if latency tuning is disabled"
+                    " (target_latency != 0)");
+            return false;
+        }
+        out.session_defaults.latency.start_latency =
+            (core::nanoseconds_t)in.start_latency;
+    }
+
+    if (in.min_latency != 0) {
+        out.session_defaults.latency.min_latency = (core::nanoseconds_t)in.min_latency;
+    }
+
+    if (in.max_latency != 0) {
+        out.session_defaults.latency.max_latency = (core::nanoseconds_t)in.max_latency;
     }
 
     if (in.no_playback_timeout != 0) {
@@ -731,6 +759,16 @@ void receiver_participant_metrics_to_user(
     if (party_metrics.latency.e2e_latency > 0) {
         out.e2e_latency = (unsigned long long)party_metrics.latency.e2e_latency;
     }
+
+    if (party_metrics.link.jitter > 0) {
+        out.mean_jitter = (unsigned long long)party_metrics.link.jitter;
+    }
+
+    if (party_metrics.link.expected_packets > 0) {
+        out.expected_packets = (unsigned long long)party_metrics.link.expected_packets;
+        out.lost_packets =
+            (unsigned long long)std::max(party_metrics.link.lost_packets, (int64_t)0);
+    }
 }
 
 ROC_ATTR_NO_SANITIZE_UB
@@ -754,6 +792,16 @@ void sender_participant_metrics_to_user(
 
     if (party_metrics.latency.e2e_latency > 0) {
         out.e2e_latency = (unsigned long long)party_metrics.latency.e2e_latency;
+    }
+
+    if (party_metrics.link.jitter > 0) {
+        out.mean_jitter = (unsigned long long)party_metrics.link.jitter;
+    }
+
+    if (party_metrics.link.expected_packets > 0) {
+        out.expected_packets = (unsigned long long)party_metrics.link.expected_packets;
+        out.lost_packets =
+            (unsigned long long)std::max(party_metrics.link.lost_packets, (int64_t)0);
     }
 }
 

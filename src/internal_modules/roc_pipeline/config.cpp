@@ -19,7 +19,8 @@ SenderSinkConfig::SenderSinkConfig()
     , enable_cpu_clock(false)
     , enable_auto_cts(false)
     , enable_profiling(false)
-    , enable_interleaving(false) {
+    , enable_interleaving(false)
+    , dump_file(NULL) {
 }
 
 void SenderSinkConfig::deduce_defaults(audio::ProcessorMap& processor_map) {

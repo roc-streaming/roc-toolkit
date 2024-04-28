@@ -20,8 +20,9 @@ FeedbackMonitor::FeedbackMonitor(IFrameWriter& writer,
                                  ResamplerWriter* resampler,
                                  const FeedbackConfig& feedback_config,
                                  const LatencyConfig& latency_config,
-                                 const SampleSpec& sample_spec)
-    : tuner_(latency_config, sample_spec)
+                                 const SampleSpec& sample_spec,
+                                 core::CsvDumper* dumper)
+    : tuner_(latency_config, sample_spec, dumper)
     , use_packetizer_(false)
     , has_feedback_(false)
     , last_feedback_ts_(0)
@@ -104,10 +105,10 @@ void FeedbackMonitor::process_feedback(packet::stream_source_t source_id,
     latency_metrics_ = latency_metrics;
     link_metrics_ = link_metrics;
 
-    if (link_metrics_.total_packets == 0 || use_packetizer_) {
+    if (link_metrics_.expected_packets == 0 || use_packetizer_) {
         // If packet counter is not reported from receiver, fallback to
         // counter from sender.
-        link_metrics_.total_packets = packetizer_.metrics().encoded_packet_count;
+        link_metrics_.expected_packets = packetizer_.metrics().encoded_packet_count;
         use_packetizer_ = true;
     }
 

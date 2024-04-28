@@ -31,7 +31,7 @@ TEST_GROUP(freq_estimator) {
 
 TEST(freq_estimator, initial) {
     for (size_t p = 0; p < ROC_ARRAY_SIZE(Profiles); p++) {
-        FreqEstimator fe(Profiles[p], Target);
+        FreqEstimator fe(Profiles[p], Target, NULL);
 
         DOUBLES_EQUAL(1.0, (double)fe.freq_coeff(), Epsilon);
     }
@@ -39,10 +39,10 @@ TEST(freq_estimator, initial) {
 
 TEST(freq_estimator, aim_queue_size) {
     for (size_t p = 0; p < ROC_ARRAY_SIZE(Profiles); p++) {
-        FreqEstimator fe(Profiles[p], Target);
+        FreqEstimator fe(Profiles[p], Target, NULL);
 
         for (size_t n = 0; n < 1000; n++) {
-            fe.update(Target);
+            fe.update_current_latency(Target);
         }
 
         DOUBLES_EQUAL(1.0, (double)fe.freq_coeff(), Epsilon);
@@ -51,21 +51,21 @@ TEST(freq_estimator, aim_queue_size) {
 
 TEST(freq_estimator, large_queue_size) {
     for (size_t p = 0; p < ROC_ARRAY_SIZE(Profiles); p++) {
-        FreqEstimator fe(Profiles[p], Target);
+        FreqEstimator fe(Profiles[p], Target, NULL);
 
         do {
-            fe.update(Target * 2);
+            fe.update_current_latency(Target * 2);
         } while (fe.freq_coeff() < 1.01f);
     }
 }
 
 TEST(freq_estimator, small_queue_size) {
     for (size_t p = 0; p < ROC_ARRAY_SIZE(Profiles); p++) {
-        FreqEstimator fe(Profiles[p], Target);
+        FreqEstimator fe(Profiles[p], Target, NULL);
 
         do {
-            fe.update(Target / 2);
-        } while (fe.freq_coeff() > 0.99f);
+            fe.update_current_latency(Target / 2);
+        } while (fe.freq_coeff() > 0.997f);
     }
 }
 

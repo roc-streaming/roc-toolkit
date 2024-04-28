@@ -20,9 +20,11 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
                                  rtp::EncodingMap& encoding_map,
                                  packet::PacketFactory& packet_factory,
                                  audio::FrameFactory& frame_factory,
-                                 core::IArena& arena)
+                                 core::IArena& arena,
+                                 core::CsvDumper* dumper)
     : core::RefCounted<ReceiverSession, core::ArenaAllocation>(arena)
     , frame_reader_(NULL)
+    , dumper_(dumper)
     , init_status_(status::NoStatus)
     , fail_status_(status::NoStatus) {
     const rtp::Encoding* pkt_encoding =
@@ -51,7 +53,8 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     }
     pkt_writer = source_queue_.get();
 
-    source_meter_.reset(new (source_meter_) rtp::LinkMeter(encoding_map));
+    source_meter_.reset(new (source_meter_) rtp::LinkMeter(
+        arena, encoding_map, pkt_encoding->sample_spec, session_config.latency, dumper_));
     if ((init_status_ = source_meter_->init_status()) != status::StatusOK) {
         return;
     }
@@ -87,14 +90,14 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     pkt_reader = filter_.get();
 
     delayed_reader_.reset(new (delayed_reader_) packet::DelayedReader(
-        *pkt_reader, session_config.latency.target_latency, pkt_encoding->sample_spec));
+        *pkt_reader,
+        session_config.latency.target_latency != 0 ? session_config.latency.target_latency
+                                                   : session_config.latency.start_latency,
+        pkt_encoding->sample_spec));
     if ((init_status_ = delayed_reader_->init_status()) != status::StatusOK) {
         return;
     }
     pkt_reader = delayed_reader_.get();
-
-    source_meter_->set_reader(*pkt_reader);
-    pkt_reader = source_meter_.get();
 
     if (session_config.fec_decoder.scheme != packet::FEC_None) {
         repair_queue_.reset(new (repair_queue_) packet::SortedQueue(0));
@@ -102,7 +105,9 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
             return;
         }
 
-        repair_meter_.reset(new (repair_meter_) rtp::LinkMeter(encoding_map));
+        repair_meter_.reset(new (repair_meter_) rtp::LinkMeter(
+            arena, encoding_map, pkt_encoding->sample_spec, session_config.latency,
+            dumper_));
         if ((init_status_ = repair_meter_->init_status()) != status::StatusOK) {
             return;
         }
@@ -145,9 +150,6 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
             return;
         }
         pkt_reader = fec_filter_.get();
-
-        repair_meter_->set_reader(*pkt_reader);
-        pkt_reader = repair_meter_.get();
     }
 
     timestamp_injector_.reset(new (timestamp_injector_) rtp::TimestampInjector(
@@ -156,6 +158,9 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         return;
     }
     pkt_reader = timestamp_injector_.get();
+
+    source_meter_->set_reader(*pkt_reader);
+    pkt_reader = source_meter_.get();
 
     // Third part of pipeline: chained frame readers from depacketizer to mixer.
     // Mixed reads frames from this pipeline, and in the end it requests packets
@@ -261,7 +266,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         latency_monitor_.reset(new (latency_monitor_) audio::LatencyMonitor(
             *frm_reader, *source_queue_, *depacketizer_, *source_meter_,
             fec_reader_.get(), resampler_reader_.get(), session_config.latency,
-            pkt_encoding->sample_spec, inout_spec));
+            pkt_encoding->sample_spec, inout_spec, dumper_));
         if ((init_status_ = latency_monitor_->init_status()) != status::StatusOK) {
             return;
         }
@@ -346,7 +351,7 @@ void ReceiverSession::generate_reports(const char* report_cname,
         report.sample_rate = source_meter_->encoding().sample_spec.sample_rate();
         report.ext_first_seqnum = link_metrics.ext_first_seqnum;
         report.ext_last_seqnum = link_metrics.ext_last_seqnum;
-        report.packet_count = link_metrics.total_packets;
+        report.packet_count = link_metrics.expected_packets;
         report.cum_loss = link_metrics.lost_packets;
         report.jitter = link_metrics.jitter;
         report.niq_latency = latency_metrics.niq_latency;
@@ -371,7 +376,7 @@ void ReceiverSession::generate_reports(const char* report_cname,
         report.sample_rate = repair_meter_->encoding().sample_spec.sample_rate();
         report.ext_first_seqnum = link_metrics.ext_first_seqnum;
         report.ext_last_seqnum = link_metrics.ext_last_seqnum;
-        report.packet_count = link_metrics.total_packets;
+        report.packet_count = link_metrics.expected_packets;
         report.cum_loss = link_metrics.lost_packets;
         report.jitter = link_metrics.jitter;
 

@@ -9,6 +9,7 @@
 #include "roc_audio/freq_estimator.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_core/time.h"
 
 namespace roc {
 namespace audio {
@@ -25,6 +26,7 @@ FreqEstimatorConfig make_config(FreqEstimatorProfile profile) {
         config.I = 1e-10;
         config.decimation_factor1 = fe_decim_factor_max;
         config.decimation_factor2 = 0;
+        config.stable_criteria = 0.1;
         break;
 
     case FreqEstimatorProfile_Gradual:
@@ -32,8 +34,11 @@ FreqEstimatorConfig make_config(FreqEstimatorProfile profile) {
         config.I = 5e-9;
         config.decimation_factor1 = fe_decim_factor_max;
         config.decimation_factor2 = fe_decim_factor_max;
+        config.stable_criteria = 0.05;
         break;
     }
+    config.stability_duration_criteria = 15 * core::Second;
+    config.control_action_saturation_cap = 1e-2;
 
     return config;
 }
@@ -62,14 +67,18 @@ double dot_prod(const double* coeff,
 } // namespace
 
 FreqEstimator::FreqEstimator(FreqEstimatorProfile profile,
-                             packet::stream_timestamp_t target_latency)
+                             packet::stream_timestamp_t target_latency,
+                             core::CsvDumper* dumper)
     : config_(make_config(profile))
     , target_(target_latency)
     , dec1_ind_(0)
     , dec2_ind_(0)
     , samples_counter_(0)
     , accum_(0)
-    , coeff_(1) {
+    , coeff_(1)
+    , stable_(false)
+    , last_unstable_time_(core::timestamp(core::ClockMonotonic))
+    , dumper_(dumper) {
     roc_log(LogDebug, "freq estimator: initializing: P=%e I=%e dc1=%lu dc2=%lu",
             config_.P, config_.I, (unsigned long)config_.decimation_factor1,
             (unsigned long)config_.decimation_factor2);
@@ -101,10 +110,13 @@ float FreqEstimator::freq_coeff() const {
     return (float)coeff_;
 }
 
-void FreqEstimator::update(packet::stream_timestamp_t current) {
+void FreqEstimator::update_current_latency(packet::stream_timestamp_t current_latency) {
     double filtered;
 
-    if (run_decimators_(current, filtered)) {
+    if (run_decimators_(current_latency, filtered)) {
+        if (dumper_) {
+            dump_(filtered);
+        }
         coeff_ = run_controller_(filtered);
     }
 }
@@ -149,8 +161,76 @@ bool FreqEstimator::run_decimators_(packet::stream_timestamp_t current,
 double FreqEstimator::run_controller_(double current) {
     const double error = (current - target_);
 
-    accum_ = accum_ + error;
-    return 1 + config_.P * error + config_.I * accum_;
+    roc_log(LogTrace,
+            "freq estimator:"
+            " current latency error: %.0f",
+            error);
+
+    const core::nanoseconds_t now = core::timestamp(core::ClockMonotonic);
+
+    if (std::abs(error) > target_ * config_.stable_criteria && stable_) {
+        stable_ = false;
+        accum_ = 0;
+        last_unstable_time_ = now;
+        roc_log(LogDebug,
+                "freq estimator: "
+                " unstable, %0.f > %.0f / %0.f",
+                config_.stable_criteria, error, target_);
+    } else if (std::abs(error) < target_ * config_.stable_criteria && !stable_
+               && now - last_unstable_time_ > config_.stability_duration_criteria) {
+        stable_ = true;
+        roc_log(LogDebug,
+                "freq estimator: "
+                " stabilized");
+    }
+
+    double res = 0.;
+    // In stable state we are not using P term in order to avoid permanent variation
+    // of resampler control input.
+    if (stable_) {
+        accum_ = accum_ + error;
+        res += config_.I * accum_;
+    } else {
+        res += config_.P * error;
+    }
+    if (std::abs(res) > config_.control_action_saturation_cap) {
+        res = res / std::abs(res) * config_.control_action_saturation_cap;
+    }
+    res += 1.;
+
+    return res;
+}
+
+void FreqEstimator::dump_(double filtered) {
+    core::CsvEntry e;
+    e.type = 'f';
+    e.n_fields = 5;
+    e.fields[0] = core::timestamp(core::ClockUnix);
+    e.fields[1] = filtered;
+    e.fields[2] = target_;
+    e.fields[3] = (filtered - target_) * config_.P;
+    e.fields[4] = accum_ * config_.I;
+    dumper_->write(e);
+}
+
+void FreqEstimator::update_target_latency(packet::stream_timestamp_t target_latency) {
+    target_ = (double)target_latency;
+}
+
+bool FreqEstimator::is_stable() const {
+    return stable_;
+}
+
+static const char* fe_profile_to_str(FreqEstimatorProfile profile) {
+    switch (profile) {
+    case FreqEstimatorProfile_Responsive:
+        return "responsive";
+
+    case FreqEstimatorProfile_Gradual:
+        return "gradual";
+    }
+
+    return "<invalid>";
 }
 
 } // namespace audio

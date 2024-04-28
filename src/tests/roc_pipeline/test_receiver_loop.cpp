@@ -119,6 +119,7 @@ TEST_GROUP(receiver_loop) {
     void setup() {
         config.session_defaults.latency.tuner_backend = audio::LatencyTunerBackend_Niq;
         config.session_defaults.latency.tuner_profile = audio::LatencyTunerProfile_Intact;
+        config.session_defaults.latency.target_latency = DefaultLatency;
     }
 };
 

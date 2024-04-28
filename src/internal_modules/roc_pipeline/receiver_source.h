@@ -18,6 +18,7 @@
 #include "roc_audio/pcm_mapper_reader.h"
 #include "roc_audio/processor_map.h"
 #include "roc_audio/profiling_reader.h"
+#include "roc_core/csv_dumper.h"
 #include "roc_core/iarena.h"
 #include "roc_core/optional.h"
 #include "roc_core/stddefs.h"
@@ -52,6 +53,8 @@ public:
                    core::IPool& frame_pool,
                    core::IPool& frame_buffer_pool,
                    core::IArena& arena);
+
+    ~ReceiverSource();
 
     //! Check if the pipeline was successfully constructed.
     status::StatusCode init_status() const;
@@ -131,6 +134,8 @@ private:
     core::IArena& arena_;
 
     StateTracker state_tracker_;
+
+    core::Optional<core::CsvDumper> dumper_;
 
     core::Optional<audio::Mixer> mixer_;
     core::Optional<audio::ProfilingReader> profiler_;

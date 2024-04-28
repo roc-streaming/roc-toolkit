@@ -25,6 +25,7 @@
 #include "roc_audio/processor_map.h"
 #include "roc_audio/resampler_reader.h"
 #include "roc_audio/watchdog.h"
+#include "roc_core/csv_dumper.h"
 #include "roc_core/iarena.h"
 #include "roc_core/list_node.h"
 #include "roc_core/optional.h"
@@ -69,7 +70,8 @@ public:
                     rtp::EncodingMap& encoding_map,
                     packet::PacketFactory& packet_factory,
                     audio::FrameFactory& frame_factory,
-                    core::IArena& arena);
+                    core::IArena& arena,
+                    core::CsvDumper* dumper);
 
     //! Check if the pipeline was successfully constructed.
     status::StatusCode init_status() const;
@@ -155,6 +157,8 @@ private:
     core::Optional<audio::ResamplerReader> resampler_reader_;
 
     core::Optional<audio::LatencyMonitor> latency_monitor_;
+
+    core::CsvDumper* dumper_;
 
     status::StatusCode init_status_;
     status::StatusCode fail_status_;

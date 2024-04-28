@@ -33,10 +33,8 @@ struct LinkMetrics {
     //! count of seqnum cycles.
     packet::ext_seqnum_t ext_last_seqnum;
 
-    //! Total amount of packets sent or expected to be received.
-    //! On sender, this counter is just incremented every packet.
-    //! On receiver, it is derived from seqnums.
-    uint64_t total_packets;
+    //! Total amount of packets that receiver expects to be delivered.
+    uint64_t expected_packets;
 
     //! Cumulative count of lost packets.
     //! The total number of RTP data packets that have been lost since the beginning
@@ -46,10 +44,30 @@ struct LinkMetrics {
     //! and the loss may be negative if there are duplicates.
     int64_t lost_packets;
 
+    //! Cumulate count of recovered packets.
+    //! How many packets lost packets receiver was able to recover
+    //! by FEC. The sender is not getting this metric so far.
+    uint64_t recovered_packets;
+
     //! Estimated interarrival jitter.
     //! An estimate of the statistical variance of the RTP data packet
     //! interarrival time.
+    //! @note
+    //!  This value is calculated on sliding window on a receiver side and sender
+    //!  side gets this value via RTCP.
     core::nanoseconds_t jitter;
+
+    //! Running max of jitter.
+    //! @note
+    //!  This value is calculated on sliding window on a receiver side and it is not
+    //!  available on sender.
+    core::nanoseconds_t max_jitter;
+
+    //! Running min of jitter.
+    //! @note
+    //!  This value is calculated on sliding window on a receiver side and it is not
+    //!  available on sender.
+    core::nanoseconds_t min_jitter;
 
     //! Estimated round-trip time between sender and receiver.
     //! Computed based on NTP-like timestamp exchange implemennted by RTCP protocol.
@@ -60,9 +78,12 @@ struct LinkMetrics {
     LinkMetrics()
         : ext_first_seqnum(0)
         , ext_last_seqnum(0)
-        , total_packets(0)
+        , expected_packets(0)
         , lost_packets(0)
+        , recovered_packets(0)
         , jitter(0)
+        , max_jitter(0)
+        , min_jitter(0)
         , rtt(0) {
     }
 };

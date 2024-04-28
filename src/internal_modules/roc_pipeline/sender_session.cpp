@@ -19,7 +19,8 @@ SenderSession::SenderSession(const SenderSinkConfig& sink_config,
                              rtp::EncodingMap& encoding_map,
                              packet::PacketFactory& packet_factory,
                              audio::FrameFactory& frame_factory,
-                             core::IArena& arena)
+                             core::IArena& arena,
+                             core::CsvDumper* dumper)
     : arena_(arena)
     , sink_config_(sink_config)
     , processor_map_(processor_map)
@@ -27,6 +28,7 @@ SenderSession::SenderSession(const SenderSinkConfig& sink_config,
     , packet_factory_(packet_factory)
     , frame_factory_(frame_factory)
     , frame_writer_(NULL)
+    , dumper_(dumper)
     , init_status_(status::NoStatus)
     , fail_status_(status::NoStatus) {
     identity_.reset(new (identity_) rtp::Identity());
@@ -211,7 +213,7 @@ SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
 
         feedback_monitor_.reset(new (feedback_monitor_) audio::FeedbackMonitor(
             *frm_writer, *packetizer_, resampler_writer_.get(), sink_config_.feedback,
-            sink_config_.latency, inout_spec));
+            sink_config_.latency, inout_spec, dumper_));
         if ((status = feedback_monitor_->init_status()) != status::StatusOK) {
             return status;
         }
@@ -372,7 +374,7 @@ SenderSession::notify_send_stream(packet::stream_source_t recv_source_id,
         packet::LinkMetrics link_metrics;
         link_metrics.ext_first_seqnum = recv_report.ext_first_seqnum;
         link_metrics.ext_last_seqnum = recv_report.ext_last_seqnum;
-        link_metrics.total_packets = recv_report.packet_count;
+        link_metrics.expected_packets = recv_report.packet_count;
         link_metrics.lost_packets = recv_report.cum_loss;
         link_metrics.jitter = recv_report.jitter;
         link_metrics.rtt = recv_report.rtt;

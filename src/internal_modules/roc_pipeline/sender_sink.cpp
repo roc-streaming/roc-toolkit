@@ -29,6 +29,7 @@ SenderSink::SenderSink(const SenderSinkConfig& sink_config,
     , frame_factory_(frame_pool, frame_buffer_pool)
     , arena_(arena)
     , frame_writer_(NULL)
+    , dumper_config_()
     , init_status_(status::NoStatus) {
     sink_config_.deduce_defaults(processor_map);
 
@@ -68,6 +69,13 @@ SenderSink::SenderSink(const SenderSinkConfig& sink_config,
         frm_writer = profiler_.get();
     }
 
+    if (sink_config_.dump_file) {
+        dumper_.reset(new (dumper_) core::CsvDumper(dumper_config_, arena));
+        if (!dumper_->start()) {
+            return;
+        }
+    }
+
     frame_writer_ = frm_writer;
     init_status_ = status::StatusOK;
 }
@@ -81,9 +89,9 @@ SenderSlot* SenderSink::create_slot(const SenderSlotConfig& slot_config) {
 
     roc_log(LogInfo, "sender sink: adding slot");
 
-    core::SharedPtr<SenderSlot> slot = new (arena_)
-        SenderSlot(sink_config_, slot_config, state_tracker_, processor_map_,
-                   encoding_map_, *fanout_, packet_factory_, frame_factory_, arena_);
+    core::SharedPtr<SenderSlot> slot = new (arena_) SenderSlot(
+        sink_config_, slot_config, state_tracker_, processor_map_, encoding_map_,
+        *fanout_, packet_factory_, frame_factory_, arena_, dumper_.get());
 
     if (!slot) {
         roc_log(LogError, "sender sink: can't create slot, allocation failed");

@@ -102,7 +102,10 @@ struct SenderSinkConfig {
     //! Interleave packets.
     bool enable_interleaving;
 
-    //! Initialize config.
+    //! File to a dump file in csv format with some run-time metrics.
+    const char* dump_file;
+
+    //    Initialize config.
     SenderSinkConfig();
 
     //! Fill unset values with defaults.
@@ -140,6 +143,9 @@ struct ReceiverCommonConfig {
 
     //! Profile moving average of frames being written.
     bool enable_profiling;
+
+    //! Parameters for a logger in csv format with some run-time metrics.
+    core::CsvConfig dumper;
 
     //! Initialize config.
     ReceiverCommonConfig();
@@ -179,6 +185,7 @@ struct ReceiverSessionConfig {
 };
 
 //! Parameters of receiver session.
+//! Top-level config, actual settings are stored in sub-configs.
 struct ReceiverSourceConfig {
     //! Task processing parameters.
     PipelineLoopConfig pipeline_loop;

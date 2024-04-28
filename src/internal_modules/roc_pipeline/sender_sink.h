@@ -129,6 +129,9 @@ private:
 
     audio::IFrameWriter* frame_writer_;
 
+    const core::CsvConfig dumper_config_;
+    core::Optional<core::CsvDumper> dumper_;
+
     status::StatusCode init_status_;
 };
 

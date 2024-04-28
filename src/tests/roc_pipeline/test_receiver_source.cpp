@@ -3559,9 +3559,102 @@ TEST(receiver_source, metrics_truncation) {
 }
 
 // Check how receiver computes packet metrics:
-// total_packets, lost_packets, ext_first_seqnum, ext_last_seqnum
-IGNORE_TEST(receiver_source, metrics_packet_counters) {
-    // TODO(gh-688): implement test
+// expected_packets, lost_packets, ext_first_seqnum, ext_last_seqnum
+TEST(receiver_source, metrics_packet_counters) {
+    enum { InitSeqnum = 0xFFFC };
+    uint32_t seqnum = InitSeqnum;
+    uint32_t prev_seqnum = InitSeqnum;
+    size_t pkt_counter = 0;
+    size_t prev_pkt_counter = 0;
+    size_t pkt_lost_counter = 0;
+    size_t prev_pkt_lost_counter = 0;
+
+    init_with_defaults();
+
+    ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
+                            packet_pool, packet_buffer_pool, frame_pool,
+                            frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
+
+    ReceiverSlot* slot = create_slot(receiver);
+    CHECK(slot);
+
+    {
+        ReceiverSlotMetrics slot_metrics;
+        ReceiverParticipantMetrics party_metrics;
+
+        slot->get_metrics(slot_metrics, &party_metrics, NULL);
+    }
+
+    packet::IWriter* endpoint_writer =
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
+    CHECK(endpoint_writer);
+
+    test::FrameReader frame_reader(receiver, frame_factory);
+
+    test::PacketWriter packet_writer(arena, *endpoint_writer, encoding_map,
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
+    packet_writer.set_seqnum(InitSeqnum);
+    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                output_sample_spec);
+    pkt_counter += Latency / SamplesPerPacket;
+    prev_pkt_counter = pkt_counter;
+    prev_seqnum = seqnum = InitSeqnum + pkt_counter - 1;
+
+    {
+        ReceiverSlotMetrics slot_metrics;
+        ReceiverParticipantMetrics party_metrics;
+        size_t party_metrics_size = 1;
+
+        slot->get_metrics(slot_metrics, &party_metrics, &party_metrics_size);
+
+        CHECK(slot_metrics.source_id != 0);
+    }
+
+    for (size_t np = 0; np < ManyPackets; np++) {
+        const bool lose_pkt = np % 3 == 0 && np;
+        for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            refresh_source(receiver, frame_reader.refresh_ts());
+            frame_reader.read_any_samples(SamplesPerFrame, output_sample_spec);
+
+            UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
+        }
+
+        if (lose_pkt) {
+            packet_writer.skip_packets(1, SamplesPerPacket, output_sample_spec);
+        } else {
+            packet_writer.write_packets(1, SamplesPerPacket, output_sample_spec);
+        }
+
+        {
+            ReceiverSlotMetrics slot_metrics;
+            ReceiverParticipantMetrics party_metrics;
+            size_t party_metrics_size = 1;
+
+            slot->get_metrics(slot_metrics, &party_metrics, &party_metrics_size);
+
+            if (!lose_pkt) {
+                UNSIGNED_LONGS_EQUAL(prev_pkt_counter,
+                                     party_metrics.link.expected_packets);
+                UNSIGNED_LONGS_EQUAL(InitSeqnum, party_metrics.link.ext_first_seqnum);
+                UNSIGNED_LONGS_EQUAL(prev_pkt_lost_counter,
+                                     party_metrics.link.lost_packets);
+                UNSIGNED_LONGS_EQUAL(prev_seqnum, party_metrics.link.ext_last_seqnum);
+            }
+        }
+
+        prev_pkt_lost_counter = pkt_lost_counter;
+        if (lose_pkt) {
+            pkt_lost_counter++;
+        }
+        pkt_counter++;
+        seqnum++;
+        if (!lose_pkt) {
+            prev_pkt_counter = pkt_counter;
+            prev_seqnum = seqnum;
+        }
+    }
 }
 
 // Check how receiver computes jitter metric.

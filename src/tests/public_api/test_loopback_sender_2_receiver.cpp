@@ -590,26 +590,33 @@ TEST(loopback_sender_2_receiver, metrics_measurements) {
             continue;
         }
 
-        UNSIGNED_LONGS_EQUAL(1, receiver.recv_metrics().connection_count);
+        const roc_receiver_metrics& recv_metrics = receiver.recv_metrics();
+        UNSIGNED_LONGS_EQUAL(1, recv_metrics.connection_count);
         UNSIGNED_LONGS_EQUAL(1, receiver.conn_metrics_count());
 
-        if (receiver.conn_metrics(0).e2e_latency == 0) {
+        const roc_connection_metrics& recv_conn_metric = receiver.conn_metrics(0);
+        if (recv_conn_metric.e2e_latency == 0) {
             continue;
         }
 
         sender.query_metrics(MaxSess);
 
-        if (sender.send_metrics().connection_count == 0) {
+        const roc_sender_metrics& send_metrics = sender.send_metrics();
+        if (send_metrics.connection_count == 0) {
             continue;
         }
 
-        UNSIGNED_LONGS_EQUAL(1, sender.send_metrics().connection_count);
+        UNSIGNED_LONGS_EQUAL(1, send_metrics.connection_count);
         UNSIGNED_LONGS_EQUAL(1, sender.conn_metrics_count());
+        const roc_connection_metrics& send_conn_metrics = sender.conn_metrics(0);
 
-        if (sender.conn_metrics(0).e2e_latency == 0) {
+        if (send_conn_metrics.e2e_latency == 0) {
             continue;
         }
 
+        UNSIGNED_LONGS_EQUAL(0, recv_conn_metric.lost_packets);
+        CHECK(send_conn_metrics.expected_packets > 0);
+        CHECK(recv_conn_metric.expected_packets >= send_conn_metrics.expected_packets);
         break;
     }
 
@@ -795,6 +802,10 @@ TEST(loopback_sender_2_receiver, metrics_slots) {
             continue;
         }
 
+        if (receiver.conn_metrics(0).mean_jitter == 0) {
+            continue;
+        }
+
         break;
     }
 
@@ -808,6 +819,9 @@ TEST(loopback_sender_2_receiver, metrics_slots) {
 
         UNSIGNED_LONGS_EQUAL(1, receiver.recv_metrics().connection_count);
         UNSIGNED_LONGS_EQUAL(1, receiver.conn_metrics_count());
+
+        CHECK(receiver.conn_metrics(0).expected_packets > 0);
+        CHECK(receiver.conn_metrics(0).mean_jitter > 0);
     }
 
     for (;;) {
@@ -825,6 +839,10 @@ TEST(loopback_sender_2_receiver, metrics_slots) {
             continue;
         }
 
+        if (sender.conn_metrics(0).mean_jitter == 0) {
+            continue;
+        }
+
         break;
     }
 
@@ -838,6 +856,9 @@ TEST(loopback_sender_2_receiver, metrics_slots) {
 
         UNSIGNED_LONGS_EQUAL(1, sender.send_metrics().connection_count);
         UNSIGNED_LONGS_EQUAL(1, sender.conn_metrics_count());
+
+        CHECK(sender.conn_metrics(0).expected_packets > 0);
+        CHECK(sender.conn_metrics(0).mean_jitter > 0);
     }
 
     receiver.stop();

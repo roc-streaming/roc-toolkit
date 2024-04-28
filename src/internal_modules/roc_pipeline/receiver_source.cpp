@@ -32,6 +32,14 @@ ReceiverSource::ReceiverSource(const ReceiverSourceConfig& source_config,
     , init_status_(status::NoStatus) {
     source_config_.deduce_defaults(processor_map);
 
+    if (source_config.common.dumper.dump_file) {
+        dumper_.reset(new (dumper_) core::CsvDumper(source_config.common.dumper, arena));
+        if (!dumper_->start()) {
+            init_status_ = status::StatusErrFile;
+            return;
+        }
+    }
+
     audio::IFrameReader* frm_reader = NULL;
 
     {
@@ -76,6 +84,13 @@ ReceiverSource::ReceiverSource(const ReceiverSourceConfig& source_config,
     init_status_ = status::StatusOK;
 }
 
+ReceiverSource::~ReceiverSource() {
+    if (dumper_ && dumper_->is_valid() && dumper_->is_joinable()) {
+        dumper_->stop();
+        dumper_->join();
+    }
+}
+
 status::StatusCode ReceiverSource::init_status() const {
     return init_status_;
 }
@@ -85,9 +100,9 @@ ReceiverSlot* ReceiverSource::create_slot(const ReceiverSlotConfig& slot_config)
 
     roc_log(LogInfo, "receiver source: adding slot");
 
-    core::SharedPtr<ReceiverSlot> slot = new (arena_)
-        ReceiverSlot(source_config_, slot_config, state_tracker_, *mixer_, processor_map_,
-                     encoding_map_, packet_factory_, frame_factory_, arena_);
+    core::SharedPtr<ReceiverSlot> slot = new (arena_) ReceiverSlot(
+        source_config_, slot_config, state_tracker_, *mixer_, processor_map_,
+        encoding_map_, packet_factory_, frame_factory_, arena_, dumper_.get());
 
     if (!slot) {
         roc_log(LogError, "receiver source: can't create slot, allocation failed");
