@@ -50,7 +50,7 @@ public:
     //!  - @p arena is used to initialize a packet array
     Reader(const ReaderConfig& config,
            packet::FecScheme fec_scheme,
-           IBlockDecoder& decoder,
+           IBlockDecoder& block_decoder,
            packet::IReader& source_reader,
            packet::IReader& repair_reader,
            packet::IParser& parser,
@@ -70,6 +70,9 @@ public:
     //! @remarks
     //!  When a packet loss is detected, try to restore it from repair packets.
     virtual ROC_ATTR_NODISCARD status::StatusCode read(packet::PacketPtr&);
+
+    //! Get maximal FEC block duratoin seen since last block resize.
+    packet::stream_timestamp_t max_block_duration() const;
 
 private:
     status::StatusCode read_(packet::PacketPtr&);
@@ -108,7 +111,9 @@ private:
 
     void drop_repair_packets_from_prev_blocks_();
 
-    IBlockDecoder& decoder_;
+    void update_block_duration_(const packet::PacketPtr& ptr);
+
+    IBlockDecoder& block_decoder_;
 
     packet::IReader& source_reader_;
     packet::IReader& repair_reader_;
@@ -137,6 +142,10 @@ private:
     bool payload_resized_;
 
     unsigned n_packets_;
+
+    bool prev_block_timestamp_valid_;
+    packet::stream_timestamp_t prev_block_timestamp_;
+    packet::stream_timestamp_diff_t block_max_duration_;
 
     const size_t max_sbn_jump_;
     const packet::FecScheme fec_scheme_;

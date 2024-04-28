@@ -77,6 +77,9 @@ public:
     //!  - generates repair packets and also writes them to the output writer
     virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr&);
 
+    //! Get maximal FEC block duratoin seen since last block resize.
+    packet::stream_timestamp_t max_block_duration() const;
+
 private:
     bool begin_block_(const packet::PacketPtr& pp);
     void end_block_();
@@ -94,6 +97,8 @@ private:
 
     void validate_fec_packet_(const packet::PacketPtr&);
     bool validate_source_packet_(const packet::PacketPtr&);
+
+    void update_block_duration_(const packet::PacketPtr& ptr);
 
     size_t cur_sblen_;
     size_t next_sblen_;
@@ -124,6 +129,10 @@ private:
 
     bool valid_;
     bool alive_;
+
+    bool prev_block_timestamp_valid_;
+    packet::stream_timestamp_t prev_block_timestamp_;
+    packet::stream_timestamp_diff_t block_max_duration_;
 };
 
 } // namespace fec

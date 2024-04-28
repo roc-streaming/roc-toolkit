@@ -144,10 +144,14 @@ struct LatencyMetrics {
     //! on receiver.
     core::nanoseconds_t e2e_latency;
 
+    //! Estimated FEC block duration.
+    core::nanoseconds_t fec_block_duration;
+
     LatencyMetrics()
         : niq_latency(0)
         , niq_stalling(0)
-        , e2e_latency(0) {
+        , e2e_latency(0)
+        , fec_block_duration(0) {
     }
 };
 

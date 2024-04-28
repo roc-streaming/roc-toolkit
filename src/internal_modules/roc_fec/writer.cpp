@@ -39,7 +39,10 @@ Writer::Writer(const WriterConfig& config,
     , cur_packet_(0)
     , fec_scheme_(fec_scheme)
     , valid_(false)
-    , alive_(true) {
+    , alive_(true)
+    , prev_block_timestamp_valid_(false)
+    , prev_block_timestamp_(0)
+    , block_max_duration_(0) {
     cur_sbn_ = (packet::blknum_t)core::fast_random_range(0, packet::blknum_t(-1));
     cur_block_repair_sn_ =
         (packet::seqnum_t)core::fast_random_range(0, packet::seqnum_t(-1));
@@ -88,6 +91,8 @@ bool Writer::resize(size_t sblen, size_t rblen) {
     next_sblen_ = sblen;
     next_rblen_ = rblen;
 
+    prev_block_timestamp_valid_ = false;
+
     return true;
 }
 
@@ -133,6 +138,8 @@ status::StatusCode Writer::write(const packet::PacketPtr& pp) {
 }
 
 bool Writer::begin_block_(const packet::PacketPtr& pp) {
+    update_block_duration_(pp);
+
     if (!apply_sizes_(next_sblen_, next_rblen_, pp->fec()->payload.size())) {
         return false;
     }
@@ -338,6 +345,25 @@ bool Writer::validate_source_packet_(const packet::PacketPtr& pp) {
     }
 
     return true;
+}
+
+void Writer::update_block_duration_(const packet::PacketPtr& ptr) {
+    packet::stream_timestamp_diff_t block_dur = 0;
+    if (prev_block_timestamp_valid_) {
+        block_dur =
+            packet::stream_timestamp_diff(ptr->stream_timestamp(), prev_block_timestamp_);
+    }
+    if (block_dur < 0) {
+        prev_block_timestamp_valid_ = false;
+    } else {
+        block_max_duration_ = std::max(block_max_duration_, block_dur);
+        prev_block_timestamp_ = ptr->stream_timestamp();
+        prev_block_timestamp_valid_ = true;
+    }
+}
+
+packet::stream_timestamp_t Writer::max_block_duration() const {
+    return (packet::stream_timestamp_t)block_max_duration_;
 }
 
 } // namespace fec
