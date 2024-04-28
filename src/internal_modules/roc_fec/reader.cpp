@@ -17,13 +17,13 @@ namespace fec {
 
 Reader::Reader(const ReaderConfig& config,
                packet::FecScheme fec_scheme,
-               IBlockDecoder& decoder,
+               IBlockDecoder& block_decoder,
                packet::IReader& source_reader,
                packet::IReader& repair_reader,
                packet::IParser& parser,
                packet::PacketFactory& packet_factory,
                core::IArena& arena)
-    : decoder_(decoder)
+    : block_decoder_(block_decoder)
     , source_reader_(source_reader)
     , repair_reader_(repair_reader)
     , parser_(parser)
@@ -43,6 +43,8 @@ Reader::Reader(const ReaderConfig& config,
     , repair_block_resized_(false)
     , payload_resized_(false)
     , n_packets_(0)
+    , prev_block_timestamp_valid_(false)
+    , block_max_duration_(0)
     , max_sbn_jump_(config.max_sbn_jump)
     , fec_scheme_(fec_scheme) {
     valid_ = true;
@@ -162,7 +164,6 @@ status::StatusCode Reader::get_next_packet_(packet::PacketPtr& ptr) {
             } else {
                 pp = source_block_[pos++];
             }
-
             next_packet_ = pos;
         } else {
             next_packet_++;
@@ -180,6 +181,12 @@ status::StatusCode Reader::get_next_packet_(packet::PacketPtr& ptr) {
 
 void Reader::next_block_() {
     roc_log(LogTrace, "fec reader: next block: sbn=%lu", (unsigned long)cur_sbn_);
+
+    if (source_block_[0]) {
+        update_block_duration_(source_block_[0]);
+    } else {
+        prev_block_timestamp_valid_ = false;
+    }
 
     for (size_t n = 0; n < source_block_.size(); n++) {
         source_block_[n] = NULL;
@@ -210,7 +217,8 @@ void Reader::try_repair_() {
         return;
     }
 
-    if (!decoder_.begin(source_block_.size(), repair_block_.size(), payload_size_)) {
+    if (!block_decoder_.begin(source_block_.size(), repair_block_.size(),
+                              payload_size_)) {
         roc_log(LogDebug,
                 "fec reader: can't begin decoder block, shutting down:"
                 " sbl=%lu rbl=%lu payload_size=%lu",
@@ -224,14 +232,14 @@ void Reader::try_repair_() {
         if (!source_block_[n]) {
             continue;
         }
-        decoder_.set(n, source_block_[n]->fec()->payload);
+        block_decoder_.set(n, source_block_[n]->fec()->payload);
     }
 
     for (size_t n = 0; n < repair_block_.size(); n++) {
         if (!repair_block_[n]) {
             continue;
         }
-        decoder_.set(source_block_.size() + n, repair_block_[n]->fec()->payload);
+        block_decoder_.set(source_block_.size() + n, repair_block_[n]->fec()->payload);
     }
 
     for (size_t n = 0; n < source_block_.size(); n++) {
@@ -239,7 +247,7 @@ void Reader::try_repair_() {
             continue;
         }
 
-        core::Slice<uint8_t> buffer = decoder_.repair(n);
+        core::Slice<uint8_t> buffer = block_decoder_.repair(n);
         if (!buffer) {
             continue;
         }
@@ -252,7 +260,7 @@ void Reader::try_repair_() {
         source_block_[n] = pp;
     }
 
-    decoder_.end();
+    block_decoder_.end();
     can_repair_ = false;
 }
 
@@ -655,12 +663,12 @@ bool Reader::can_update_source_block_size_(size_t new_sblen) {
         return false;
     }
 
-    if (new_sblen > decoder_.max_block_length()) {
+    if (new_sblen > block_decoder_.max_block_length()) {
         roc_log(LogDebug,
                 "fec reader: can't change source block size above maximum, shutting down:"
                 " cur_sblen=%lu new_sblen=%lu max_blen=%lu",
                 (unsigned long)cur_sblen, (unsigned long)new_sblen,
-                (unsigned long)decoder_.max_block_length());
+                (unsigned long)block_decoder_.max_block_length());
         return (alive_ = false);
     }
 
@@ -674,6 +682,9 @@ bool Reader::update_source_block_size_(size_t new_sblen) {
         source_block_resized_ = true;
         return true;
     }
+
+    prev_block_timestamp_valid_ = false;
+    block_max_duration_ = 0;
 
     if (!source_block_.resize(new_sblen)) {
         roc_log(LogDebug,
@@ -710,12 +721,12 @@ bool Reader::can_update_repair_block_size_(size_t new_blen) {
         return false;
     }
 
-    if (new_blen > decoder_.max_block_length()) {
+    if (new_blen > block_decoder_.max_block_length()) {
         roc_log(LogDebug,
                 "fec reader: can't change repair block size above maximum, shutting down:"
                 " cur_blen=%lu new_blen=%lu max_blen=%lu",
                 (unsigned long)cur_blen, (unsigned long)new_blen,
-                (unsigned long)decoder_.max_block_length());
+                (unsigned long)block_decoder_.max_block_length());
         return (alive_ = false);
     }
 
@@ -733,7 +744,9 @@ bool Reader::update_repair_block_size_(size_t new_blen) {
         return true;
     }
 
-    // should not happen: sblen should be validated and updated already
+    prev_block_timestamp_valid_ = false;
+    block_max_duration_ = 0;
+
     roc_panic_if_not(new_blen > cur_sblen);
 
     const size_t new_rblen = new_blen - cur_sblen;
@@ -787,6 +800,26 @@ void Reader::drop_repair_packets_from_prev_blocks_() {
     if (n_dropped != 0) {
         roc_log(LogDebug, "fec reader: repair queue: dropped=%u", n_dropped);
     }
+}
+
+void Reader::update_block_duration_(const packet::PacketPtr& ptr) {
+    packet::stream_timestamp_diff_t block_dur = 0;
+    if (prev_block_timestamp_valid_) {
+        block_dur =
+            packet::stream_timestamp_diff(ptr->stream_timestamp(), prev_block_timestamp_);
+    }
+    if (block_dur < 0) {
+        roc_log(LogTrace, "fec reader: negative block duration");
+        prev_block_timestamp_valid_ = false;
+    } else {
+        block_max_duration_ = std::max(block_max_duration_, block_dur);
+        prev_block_timestamp_ = ptr->stream_timestamp();
+        prev_block_timestamp_valid_ = true;
+    }
+}
+
+packet::stream_timestamp_t Reader::max_block_duration() const {
+    return (packet::stream_timestamp_t)block_max_duration_;
 }
 
 } // namespace fec

@@ -214,7 +214,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     }
 
     latency_monitor_.reset(new (latency_monitor_) audio::LatencyMonitor(
-        *frm_reader, *source_queue_, *depacketizer_, *source_meter_,
+        *frm_reader, *source_queue_, *depacketizer_, *source_meter_, fec_reader_.get(),
         resampler_reader_.get(), session_config.latency, pkt_encoding->sample_spec,
         common_config.output_sample_spec));
     if (!latency_monitor_ || !latency_monitor_->is_valid()) {

@@ -22,7 +22,7 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
 #include "roc_core/time.h"
-#include "roc_packet/ilink_meter.h"
+#include "roc_fec/reader.h"
 #include "roc_packet/sorted_queue.h"
 #include "roc_packet/units.h"
 
@@ -64,6 +64,7 @@ public:
                    const packet::SortedQueue& incoming_queue,
                    const Depacketizer& depacketizer,
                    const packet::ILinkMeter& link_meter,
+                   const fec::Reader* fec_reader,
                    ResamplerReader* resampler,
                    const LatencyConfig& config,
                    const SampleSpec& packet_sample_spec,
@@ -94,7 +95,7 @@ public:
 private:
     void compute_niq_latency_();
     void compute_e2e_latency_(core::nanoseconds_t playback_timestamp);
-    void query_link_meter_();
+    void query_metrics_();
 
     bool pre_process_(const Frame& frame);
     void post_process_(const Frame& frame);
@@ -112,6 +113,7 @@ private:
     const packet::SortedQueue& incoming_queue_;
     const Depacketizer& depacketizer_;
     const packet::ILinkMeter& link_meter_;
+    const fec::Reader* fec_reader_;
 
     ResamplerReader* resampler_;
     const bool enable_scaling_;
