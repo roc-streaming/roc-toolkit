@@ -8,11 +8,12 @@ Timestamps
 Types of timestamps
 ===================
 
-:doc:`Packets and frames </internals/packets_frames>` have three major types of timestamps:
+:doc:`Packets and frames </internals/packets_frames>` have four major types of timestamps:
 
 * STS - stream timestamp
 * CTS - capture timestamp
 * RTS - receive timestamp
+* QTS - queue timestamp
 
 **Stream timestamp** (STS) describes position of the first sample in packet or frame using abstract stream clock.
 
@@ -34,6 +35,10 @@ Unlike STS, this field does not directly correspond to any field inside RTP pack
 **Receive timestamp** (RTS) is the time when the packet reached incoming network queue.
 
 The clock for RTS is the same as for CTS: local Unix-time UTC clock, counting nanoseconds since Unix Epoch.
+
+This timestamp is used only on receiver and only for packets.
+
+**Queue timestamp** (QTS) is the time when the packet was transferred to a local queue of a sink-thread. The main difference with RTS is thread-switch time.
 
 This timestamp is used only on receiver and only for packets.
 

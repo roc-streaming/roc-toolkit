@@ -33,6 +33,13 @@ struct UDP {
     //! Packet receive timestamp (RTS), nanoseconds since Unix epoch.
     core::nanoseconds_t receive_timestamp;
 
+    //! Timestamp in ns since unix-epoch. It points to a moment when
+    //! the packet was transferred to a sink-thread, that "consumes"
+    //! this packet. The reason to have it separate is that this
+    //! allows us to account additional jitter introduced by
+    //! thread-switch time.
+    core::nanoseconds_t queue_ts;
+
     //! Sender request state.
     uv_udp_send_t request;
 
