@@ -387,7 +387,10 @@ void read_samples(test::FrameReader& frame_reader,
     }
 }
 
-void check_metrics(ReceiverSlot& receiver, SenderSlot& sender, int flags) {
+void check_metrics(ReceiverSlot& receiver,
+                   SenderSlot& sender,
+                   int flags,
+                   PacketProxy& packet_proxy) {
     ReceiverSlotMetrics recv_metrics;
     ReceiverParticipantMetrics recv_party_metrics;
     size_t recv_party_count = 1;
@@ -401,10 +404,17 @@ void check_metrics(ReceiverSlot& receiver, SenderSlot& sender, int flags) {
     CHECK(recv_party_metrics.link.ext_first_seqnum > 0);
     CHECK(recv_party_metrics.link.ext_last_seqnum > 0);
 
-    // TODO(gh-688): check that metrics are non-zero:
-    //  - total_packets
-    //  - lost_packets
-    //  - jitter
+    LONGS_EQUAL((int64_t)recv_party_metrics.link.expected_packets
+                    - recv_party_metrics.link.lost_packets,
+                packet_proxy.n_source());
+    if (flags & FlagLosses) {
+        CHECK(recv_party_metrics.link.lost_packets > 0);
+    } else if (flags & FlagInterleaving) {
+        CHECK(recv_party_metrics.link.lost_packets >= 0);
+    } else {
+        CHECK(recv_party_metrics.link.lost_packets == 0);
+    }
+    CHECK(recv_party_metrics.link.jitter > 0);
 
     CHECK(recv_party_metrics.latency.niq_latency > 0);
     CHECK(recv_party_metrics.latency.niq_stalling >= 0);
@@ -432,10 +442,16 @@ void check_metrics(ReceiverSlot& receiver, SenderSlot& sender, int flags) {
                                   send_party_metrics.link.ext_last_seqnum)
               <= 1);
 
-        // TODO(gh-688): check that metrics are equal on sender and receiver:
-        //  - total_packets
-        //  - lost_packets
-        //  - jitter
+        CHECK((send_party_metrics.link.expected_packets >= packet_proxy.n_source() - 1)
+              && (send_party_metrics.link.expected_packets <= packet_proxy.n_source()));
+
+        UNSIGNED_LONGS_EQUAL(packet_proxy.n_source(),
+                             recv_party_metrics.link.expected_packets);
+
+        UNSIGNED_LONGS_EQUAL(recv_party_metrics.link.lost_packets,
+                             send_party_metrics.link.lost_packets);
+        CHECK(std::abs(recv_party_metrics.link.jitter - send_party_metrics.link.jitter)
+              < 1 * core::Millisecond);
 
         DOUBLES_EQUAL(recv_party_metrics.latency.niq_latency,
                       send_party_metrics.latency.niq_latency, core::Millisecond);
@@ -597,9 +613,17 @@ void send_receive(int flags,
             reverse_proxy.deliver_from(receiver_outbound_queue);
 
             if (num_sessions == 1 && nf > (Latency + Warmup) / SamplesPerFrame) {
-                check_metrics(*receiver_slot, *sender_slot, flags);
+                check_metrics(*receiver_slot, *sender_slot, flags, proxy);
             }
         }
+    }
+    // While receiving interleaved packets losses could be detected incorrectly,
+    // so we postpone the final check for lost packets metric till the whole bunch
+    // of packets is sent.
+    if (flags & FlagInterleaving) {
+        // Here we exclude FlagInterleaving from flags so that check_metrics could
+        // undertake the full check.
+        check_metrics(*receiver_slot, *sender_slot, flags ^ FlagInterleaving, proxy);
     }
 
     if ((flags & FlagDropSource) == 0) {

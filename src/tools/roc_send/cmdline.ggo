@@ -20,10 +20,10 @@ section "Options"
 
     option "reuseaddr" - "enable SO_REUSEADDR when binding sockets" optional
 
-    option "target-latency" - "Target latency, TIME units"
+    option "io-latency" - "Recording target latency, TIME units"
         string optional
 
-    option "io-latency" - "Recording target latency, TIME units"
+    option "target-latency" - "Target latency, TIME units"
         string optional
 
     option "latency-tolerance" - "Maximum deviation from target latency, TIME units"
@@ -65,6 +65,9 @@ section "Options"
     option "interleaving" - "Enable packet interleaving" flag off
 
     option "profiling" - "Enable self profiling" flag off
+
+    option "dump" - "Path for a CSV file where to dump some useful run-time metrics"
+        string optional
 
     option "color" - "Set colored logging mode for stderr output"
         values="auto","always","never" default="auto" enum optional

@@ -63,10 +63,10 @@ TEST_GROUP(session_router) {
 
             sess1 = new (arena)
                 ReceiverSession(session_config, common_config, processor_map,
-                                encoding_map, packet_factory, frame_factory, arena);
+                                encoding_map, packet_factory, frame_factory, arena, NULL);
             sess2 = new (arena)
                 ReceiverSession(session_config, common_config, processor_map,
-                                encoding_map, packet_factory, frame_factory, arena);
+                                encoding_map, packet_factory, frame_factory, arena, NULL);
         }
     }
 };

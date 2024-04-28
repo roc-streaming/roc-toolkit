@@ -43,6 +43,10 @@ struct CsvEntry {
 
 //! CSV write configuration.
 struct CsvConfig {
+    //! Path to the output CSV file.
+    //! Can't be null.
+    const char* dump_file;
+
     //! Maximum number of queued entries.
     //! If queue becomes larger, entries are dropped.
     size_t max_queued;
@@ -53,7 +57,8 @@ struct CsvConfig {
     nanoseconds_t max_interval;
 
     CsvConfig()
-        : max_queued(1000)
+        : dump_file(NULL)
+        , max_queued(1000)
         , max_interval(Millisecond) {
     }
 };
@@ -66,7 +71,7 @@ public:
     //! Open file.
     //! @p path - output file.
     //! @p max_interval - maximum number of writes per second for each entry type.
-    CsvDumper(const char* path, const CsvConfig& config, IArena& arena);
+    CsvDumper(const CsvConfig& config, IArena& arena);
 
     //! Close file.
     ~CsvDumper();

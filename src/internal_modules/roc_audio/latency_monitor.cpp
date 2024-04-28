@@ -10,9 +10,7 @@
 #include "roc_audio/freq_estimator.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_core/stddefs.h"
 #include "roc_core/time.h"
-#include "roc_rtp/link_meter.h"
 
 namespace roc {
 namespace audio {
@@ -25,8 +23,9 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
                                ResamplerReader* resampler,
                                const LatencyConfig& config,
                                const SampleSpec& packet_sample_spec,
-                               const SampleSpec& frame_sample_spec)
-    : tuner_(config, frame_sample_spec)
+                               const SampleSpec& frame_sample_spec,
+                               core::CsvDumper* dumper)
+    : tuner_(config, frame_sample_spec, dumper)
     , frame_reader_(frame_reader)
     , incoming_queue_(incoming_queue)
     , depacketizer_(depacketizer)

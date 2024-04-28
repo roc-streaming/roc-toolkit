@@ -29,13 +29,22 @@ section "Options"
 
     option "reuseaddr" - "enable SO_REUSEADDR when binding sockets" optional
 
-    option "target-latency" - "Target latency, TIME units"
-        string optional
-
     option "io-latency" - "Playback target latency, TIME units"
         string optional
 
+    option "target-latency" - "Target latency, TIME units"
+        string optional
+
     option "latency-tolerance" - "Maximum deviation from target latency, TIME units"
+        string optional
+
+    option "start-latency" - "Start latency, target-latency must be 'auto' or unset, TIME units"
+        string optional
+
+    option "min-latency" - "Minimum allowed latency, target-latency and latency-tolerance must be 0 or unset, TIME units"
+        string optional
+
+    option "max-latency" - "Maximum allowed latency, target-latency and latency-tolerance must be 0 or unset, TIME units"
         string optional
 
     option "no-play-timeout" - "No playback timeout, TIME units"
@@ -75,6 +84,9 @@ section "Options"
         flag off
 
     option "profiling" - "Enable self-profiling" flag off
+
+    option "dump" - "Path for a CSV file where to dump some useful run-time metrics"
+        string optional
 
     option "color" - "Set colored logging mode for stderr output"
         values="auto","always","never" default="auto" enum optional

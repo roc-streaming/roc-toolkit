@@ -7,6 +7,7 @@
  */
 
 #include "roc_pipeline/receiver_slot.h"
+#include "roc_core/csv_dumper.h"
 #include "roc_core/log.h"
 #include "roc_pipeline/endpoint_helpers.h"
 
@@ -21,7 +22,8 @@ ReceiverSlot::ReceiverSlot(const ReceiverSourceConfig& source_config,
                            rtp::EncodingMap& encoding_map,
                            packet::PacketFactory& packet_factory,
                            audio::FrameFactory& frame_factory,
-                           core::IArena& arena)
+                           core::IArena& arena,
+                           core::CsvDumper* dumper)
     : core::RefCounted<ReceiverSlot, core::ArenaAllocation>(arena)
     , encoding_map_(encoding_map)
     , state_tracker_(state_tracker)
@@ -33,7 +35,8 @@ ReceiverSlot::ReceiverSlot(const ReceiverSourceConfig& source_config,
                      encoding_map,
                      packet_factory,
                      frame_factory,
-                     arena)
+                     arena,
+                     dumper)
     , init_status_(status::NoStatus) {
     roc_log(LogDebug, "receiver slot: initializing");
 

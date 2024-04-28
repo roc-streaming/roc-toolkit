@@ -14,11 +14,11 @@
 namespace roc {
 namespace core {
 
-CsvDumper::CsvDumper(const char* path, const CsvConfig& config, IArena& arena)
+CsvDumper::CsvDumper(const CsvConfig& config, IArena& arena)
     : config_(config)
     , ringbuf_(arena, config.max_queued)
     , valid_(false) {
-    if (!open_(path)) {
+    if (!config.dump_file || !open_(config.dump_file)) {
         return;
     }
     valid_ = true;
@@ -165,6 +165,10 @@ bool CsvDumper::dump_(const CsvEntry& entry) {
     }
 
     return true;
+}
+
+bool CsvDumper::is_valid() const {
+    return valid_;
 }
 
 } // namespace core

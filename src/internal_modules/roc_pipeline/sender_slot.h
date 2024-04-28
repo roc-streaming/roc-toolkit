@@ -48,7 +48,8 @@ public:
                audio::Fanout& fanout,
                packet::PacketFactory& packet_factory,
                audio::FrameFactory& frame_factory,
-               core::IArena& arena);
+               core::IArena& arena,
+               core::CsvDumper* dumper);
 
     ~SenderSlot();
 

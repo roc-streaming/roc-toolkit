@@ -68,7 +68,8 @@ public:
                     ResamplerWriter* resampler,
                     const FeedbackConfig& feedback_config,
                     const LatencyConfig& latency_config,
-                    const SampleSpec& sample_spec);
+                    const SampleSpec& sample_spec,
+                    core::CsvDumper* dumper);
 
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;

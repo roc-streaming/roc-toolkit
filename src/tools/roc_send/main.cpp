@@ -443,6 +443,10 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    if (args.dump_given) {
+        sender_config.dump_file = args.dump_arg;
+    }
+
     sndio::Config pump_config;
     pump_config.sample_spec = input_source->sample_spec();
     pump_config.frame_length = io_config.frame_length;
