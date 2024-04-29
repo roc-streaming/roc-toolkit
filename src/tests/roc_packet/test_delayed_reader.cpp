@@ -44,9 +44,9 @@ PacketPtr new_packet(seqnum_t sn) {
     return packet;
 }
 
-class StatusReader : public IReader {
+class MockReader : public IReader {
 public:
-    explicit StatusReader(status::StatusCode code)
+    explicit MockReader(status::StatusCode code)
         : code_(code) {
     }
 
@@ -62,14 +62,14 @@ private:
 
 TEST_GROUP(delayed_reader) {};
 
-TEST(delayed_reader, failed_to_read_packet) {
+TEST(delayed_reader, read_error) {
     const status::StatusCode codes[] = {
-        status::StatusUnknown,
-        status::StatusNoData,
+        status::StatusDrain,
+        status::StatusAbort,
     };
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(codes); ++n) {
-        StatusReader reader(codes[n]);
+        MockReader reader(codes[n]);
         DelayedReader dr(reader, 0, sample_spec);
         CHECK(dr.is_valid());
 
@@ -85,7 +85,7 @@ TEST(delayed_reader, no_delay) {
     CHECK(dr.is_valid());
 
     PacketPtr pp;
-    LONGS_EQUAL(status::StatusNoData, dr.read(pp));
+    LONGS_EQUAL(status::StatusDrain, dr.read(pp));
     CHECK(!pp);
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
@@ -107,7 +107,7 @@ TEST(delayed_reader, delay) {
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         PacketPtr p;
-        LONGS_EQUAL(status::StatusNoData, dr.read(p));
+        LONGS_EQUAL(status::StatusDrain, dr.read(p));
         CHECK(!p);
 
         packets[n] = new_packet(n);
@@ -121,7 +121,7 @@ TEST(delayed_reader, delay) {
     }
 
     PacketPtr pp;
-    LONGS_EQUAL(status::StatusNoData, dr.read(pp));
+    LONGS_EQUAL(status::StatusDrain, dr.read(pp));
     CHECK(!pp);
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
@@ -133,7 +133,7 @@ TEST(delayed_reader, delay) {
         CHECK(wp == rp);
     }
 
-    LONGS_EQUAL(status::StatusNoData, dr.read(pp));
+    LONGS_EQUAL(status::StatusDrain, dr.read(pp));
     CHECK(!pp);
 }
 
@@ -156,7 +156,7 @@ TEST(delayed_reader, instant) {
     }
 
     PacketPtr pp;
-    LONGS_EQUAL(status::StatusNoData, dr.read(pp));
+    LONGS_EQUAL(status::StatusDrain, dr.read(pp));
     CHECK(!pp);
 }
 
@@ -179,7 +179,7 @@ TEST(delayed_reader, trim) {
     }
 
     PacketPtr pp;
-    LONGS_EQUAL(status::StatusNoData, dr.read(pp));
+    LONGS_EQUAL(status::StatusDrain, dr.read(pp));
     CHECK(!pp);
 }
 
@@ -211,7 +211,7 @@ TEST(delayed_reader, late_duplicates) {
     }
 
     PacketPtr pp;
-    LONGS_EQUAL(status::StatusNoData, dr.read(pp));
+    LONGS_EQUAL(status::StatusDrain, dr.read(pp));
     CHECK(!pp);
 }
 

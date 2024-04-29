@@ -149,7 +149,7 @@ TEST(concurrent_queue, nonblocking_queue_read_empty) {
         CHECK(wp == rp);
 
         PacketPtr pp;
-        LONGS_EQUAL(status::StatusNoData, queue.read(pp));
+        LONGS_EQUAL(status::StatusDrain, queue.read(pp));
         CHECK(!pp);
     }
 }

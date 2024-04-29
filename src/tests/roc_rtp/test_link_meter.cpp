@@ -8,6 +8,8 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "test_helpers/status_writer.h"
+
 #include "roc_audio/channel_defs.h"
 #include "roc_core/heap_arena.h"
 #include "roc_packet/packet_factory.h"
@@ -39,20 +41,6 @@ packet::PacketPtr new_packet(packet::seqnum_t sn) {
 
     return packet;
 }
-
-class StatusWriter : public packet::IWriter {
-public:
-    explicit StatusWriter(status::StatusCode code)
-        : code_(code) {
-    }
-
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr&) {
-        return code_;
-    }
-
-private:
-    status::StatusCode code_;
-};
 
 } // namespace
 
@@ -127,7 +115,7 @@ TEST(link_meter, last_seqnum_wrap) {
 }
 
 TEST(link_meter, forward_error) {
-    StatusWriter writer(status::StatusNoMem);
+    test::StatusWriter writer(status::StatusNoMem);
     LinkMeter meter(encoding_map);
     meter.set_writer(writer);
 

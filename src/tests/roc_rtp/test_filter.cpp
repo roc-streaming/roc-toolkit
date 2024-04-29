@@ -8,6 +8,8 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "test_helpers/status_reader.h"
+
 #include "roc_audio/pcm_decoder.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/macro_helpers.h"
@@ -17,7 +19,6 @@
 #include "roc_rtp/filter.h"
 #include "roc_rtp/headers.h"
 #include "roc_status/status_code.h"
-#include "test_helpers/status_reader.h"
 
 namespace roc {
 namespace rtp {
@@ -112,7 +113,7 @@ TEST(filter, all_good) {
 
     {
         packet::PacketPtr rp;
-        LONGS_EQUAL(status::StatusNoData, queue.read(rp));
+        LONGS_EQUAL(status::StatusDrain, queue.read(rp));
         CHECK(!rp);
     }
 }
@@ -136,13 +137,13 @@ TEST(filter, payload_id_jump) {
         LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        LONGS_EQUAL(status::StatusNoData, filter.read(rp));
+        LONGS_EQUAL(status::StatusDrain, filter.read(rp));
         CHECK(!rp);
     }
 
     {
         packet::PacketPtr rp;
-        LONGS_EQUAL(status::StatusNoData, queue.read(rp));
+        LONGS_EQUAL(status::StatusDrain, queue.read(rp));
         CHECK(!rp);
     }
 }
@@ -166,13 +167,13 @@ TEST(filter, source_id_jump) {
         LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        LONGS_EQUAL(status::StatusNoData, filter.read(rp));
+        LONGS_EQUAL(status::StatusDrain, filter.read(rp));
         CHECK(!rp);
     }
 
     {
         packet::PacketPtr rp;
-        LONGS_EQUAL(status::StatusNoData, queue.read(rp));
+        LONGS_EQUAL(status::StatusDrain, queue.read(rp));
         CHECK(!rp);
     }
 }
@@ -211,7 +212,7 @@ TEST(filter, seqnum_no_jump) {
 
         {
             packet::PacketPtr rp;
-            LONGS_EQUAL(status::StatusNoData, queue.read(rp));
+            LONGS_EQUAL(status::StatusDrain, queue.read(rp));
             CHECK(!rp);
         }
     }
@@ -245,13 +246,13 @@ TEST(filter, seqnum_jump_up) {
             LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
             packet::PacketPtr rp;
-            LONGS_EQUAL(status::StatusNoData, filter.read(rp));
+            LONGS_EQUAL(status::StatusDrain, filter.read(rp));
             CHECK(!rp);
         }
 
         {
             packet::PacketPtr rp;
-            LONGS_EQUAL(status::StatusNoData, queue.read(rp));
+            LONGS_EQUAL(status::StatusDrain, queue.read(rp));
             CHECK(!rp);
         }
     }
@@ -285,13 +286,13 @@ TEST(filter, seqnum_jump_down) {
             LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
             packet::PacketPtr rp;
-            LONGS_EQUAL(status::StatusNoData, filter.read(rp));
+            LONGS_EQUAL(status::StatusDrain, filter.read(rp));
             CHECK(!rp);
         }
 
         {
             packet::PacketPtr rp;
-            LONGS_EQUAL(status::StatusNoData, queue.read(rp));
+            LONGS_EQUAL(status::StatusDrain, queue.read(rp));
             CHECK(!rp);
         }
     }
@@ -335,7 +336,7 @@ TEST(filter, seqnum_late) {
 
     {
         packet::PacketPtr rp;
-        LONGS_EQUAL(status::StatusNoData, queue.read(rp));
+        LONGS_EQUAL(status::StatusDrain, queue.read(rp));
         CHECK(!rp);
     }
 }
@@ -374,7 +375,7 @@ TEST(filter, timestamp_no_jump) {
 
         {
             packet::PacketPtr rp;
-            LONGS_EQUAL(status::StatusNoData, queue.read(rp));
+            LONGS_EQUAL(status::StatusDrain, queue.read(rp));
             CHECK(!rp);
         }
     }
@@ -408,13 +409,13 @@ TEST(filter, timestamp_jump_up) {
             LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
             packet::PacketPtr rp;
-            LONGS_EQUAL(status::StatusNoData, filter.read(rp));
+            LONGS_EQUAL(status::StatusDrain, filter.read(rp));
             CHECK(!rp);
         }
 
         {
             packet::PacketPtr rp;
-            LONGS_EQUAL(status::StatusNoData, queue.read(rp));
+            LONGS_EQUAL(status::StatusDrain, queue.read(rp));
             CHECK(!rp);
         }
     }
@@ -448,13 +449,13 @@ TEST(filter, timestamp_jump_down) {
             LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
             packet::PacketPtr rp;
-            LONGS_EQUAL(status::StatusNoData, filter.read(rp));
+            LONGS_EQUAL(status::StatusDrain, filter.read(rp));
             CHECK(!rp);
         }
 
         {
             packet::PacketPtr rp;
-            LONGS_EQUAL(status::StatusNoData, queue.read(rp));
+            LONGS_EQUAL(status::StatusDrain, queue.read(rp));
             CHECK(!rp);
         }
     }
@@ -498,7 +499,7 @@ TEST(filter, timestamp_late) {
 
     {
         packet::PacketPtr rp;
-        LONGS_EQUAL(status::StatusNoData, queue.read(rp));
+        LONGS_EQUAL(status::StatusDrain, queue.read(rp));
         CHECK(!rp);
     }
 }
@@ -546,7 +547,7 @@ TEST(filter, cts_positive) {
 
     {
         packet::PacketPtr rp;
-        LONGS_EQUAL(status::StatusNoData, queue.read(rp));
+        LONGS_EQUAL(status::StatusDrain, queue.read(rp));
         CHECK(!rp);
     }
 }
@@ -570,7 +571,7 @@ TEST(filter, cts_negative) {
         LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        LONGS_EQUAL(status::StatusNoData, filter.read(rp));
+        LONGS_EQUAL(status::StatusDrain, filter.read(rp));
         CHECK(!rp);
     }
 
@@ -588,13 +589,13 @@ TEST(filter, cts_negative) {
         LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        LONGS_EQUAL(status::StatusNoData, filter.read(rp));
+        LONGS_EQUAL(status::StatusDrain, filter.read(rp));
         CHECK(!rp);
     }
 
     {
         packet::PacketPtr rp;
-        LONGS_EQUAL(status::StatusNoData, queue.read(rp));
+        LONGS_EQUAL(status::StatusDrain, queue.read(rp));
         CHECK(!rp);
     }
 }
@@ -618,7 +619,7 @@ TEST(filter, cts_zero) {
         LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        LONGS_EQUAL(status::StatusNoData, filter.read(rp));
+        LONGS_EQUAL(status::StatusDrain, filter.read(rp));
         CHECK(!rp);
     }
 
@@ -636,13 +637,13 @@ TEST(filter, cts_zero) {
         LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        LONGS_EQUAL(status::StatusNoData, filter.read(rp));
+        LONGS_EQUAL(status::StatusDrain, filter.read(rp));
         CHECK(!rp);
     }
 
     {
         packet::PacketPtr rp;
-        LONGS_EQUAL(status::StatusNoData, queue.read(rp));
+        LONGS_EQUAL(status::StatusDrain, queue.read(rp));
         CHECK(!rp);
     }
 }
@@ -695,7 +696,7 @@ TEST(filter, flags) {
         LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        LONGS_EQUAL(status::StatusNoData, filter.read(rp));
+        LONGS_EQUAL(status::StatusDrain, filter.read(rp));
         CHECK(!rp);
     }
 
@@ -705,7 +706,7 @@ TEST(filter, flags) {
         LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         packet::PacketPtr rp;
-        LONGS_EQUAL(status::StatusNoData, filter.read(rp));
+        LONGS_EQUAL(status::StatusDrain, filter.read(rp));
         CHECK(!rp);
     }
 
@@ -722,8 +723,8 @@ TEST(filter, flags) {
 
 TEST(filter, forward_error) {
     const status::StatusCode code_list[] = {
-        status::StatusNoMem,
-        status::StatusNoData,
+        status::StatusDrain,
+        status::StatusAbort,
     };
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(code_list); ++n) {

@@ -25,7 +25,7 @@ status::StatusCode SortedQueue::read(PacketPtr& packet) {
         return status::StatusOK;
     }
 
-    return status::StatusNoData;
+    return status::StatusDrain;
 }
 
 status::StatusCode SortedQueue::write(const PacketPtr& packet) {

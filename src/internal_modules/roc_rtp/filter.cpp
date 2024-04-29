@@ -32,8 +32,8 @@ status::StatusCode Filter::read(packet::PacketPtr& result_packet) {
     }
 
     if (!validate_(next_packet)) {
-        // TODO(gh-183): return StatusAgain
-        return status::StatusNoData;
+        // TODO(gh-183): return StatusRetry
+        return status::StatusDrain;
     }
 
     populate_(next_packet);

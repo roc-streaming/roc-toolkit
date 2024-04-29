@@ -64,12 +64,11 @@ TEST(receiver_decoder, write_packet) {
 
     packet::PacketPtr pp = packet_factory.new_packet();
 
-    // TODO(gh-183): compare with StatusNotFound
-    LONGS_EQUAL(status::StatusUnknown,
+    LONGS_EQUAL(status::StatusBadInterface,
                 receiver_decoder.write_packet(address::Iface_AudioSource, pp));
-    LONGS_EQUAL(status::StatusUnknown,
+    LONGS_EQUAL(status::StatusBadInterface,
                 receiver_decoder.write_packet(address::Iface_AudioRepair, pp));
-    LONGS_EQUAL(status::StatusUnknown,
+    LONGS_EQUAL(status::StatusBadInterface,
                 receiver_decoder.write_packet(address::Iface_AudioControl, pp));
 }
 
@@ -82,14 +81,13 @@ TEST(receiver_decoder, read_packet) {
 
     packet::PacketPtr pp;
 
-    // TODO(gh-183): compare with StatusNotFound
-    LONGS_EQUAL(status::StatusNoData,
+    LONGS_EQUAL(status::StatusBadInterface,
                 receiver_decoder.read_packet(address::Iface_AudioSource, pp));
     CHECK(!pp);
-    LONGS_EQUAL(status::StatusNoData,
+    LONGS_EQUAL(status::StatusBadInterface,
                 receiver_decoder.read_packet(address::Iface_AudioRepair, pp));
     CHECK(!pp);
-    LONGS_EQUAL(status::StatusNoData,
+    LONGS_EQUAL(status::StatusBadInterface,
                 receiver_decoder.read_packet(address::Iface_AudioControl, pp));
     CHECK(!pp);
 }

@@ -105,7 +105,7 @@ public:
 
     void read_eof() {
         packet::PacketPtr pp;
-        LONGS_EQUAL(status::StatusNoData, reader_.read(pp));
+        LONGS_EQUAL(status::StatusDrain, reader_.read(pp));
         CHECK(!pp);
     }
 

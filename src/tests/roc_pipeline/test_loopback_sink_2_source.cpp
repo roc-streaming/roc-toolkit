@@ -157,7 +157,7 @@ public:
             packet::PacketPtr pp;
             const status::StatusCode code = reader.read(pp);
             if (code != status::StatusOK) {
-                UNSIGNED_LONGS_EQUAL(status::StatusNoData, code);
+                UNSIGNED_LONGS_EQUAL(status::StatusDrain, code);
                 break;
             }
 

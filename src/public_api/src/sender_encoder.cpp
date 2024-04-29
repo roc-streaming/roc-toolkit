@@ -304,7 +304,7 @@ int roc_sender_encoder_pop_packet(roc_sender_encoder* encoder,
     const status::StatusCode code = imp_encoder->read_packet(imp_iface, imp_packet);
     if (code != status::StatusOK) {
         // TODO(gh-183): forward status code to user
-        if (code != status::StatusNoData) {
+        if (code != status::StatusDrain) {
             roc_log(LogError,
                     "roc_sender_encoder_pop_packet():"
                     " can't read packet from encoder: status=%s",

@@ -34,13 +34,13 @@ PacketPtr new_packet(seqnum_t sn) {
     return packet;
 }
 
-class StatusWriter : public IWriter, public core::NonCopyable<> {
+class MockWriter : public IWriter, public core::NonCopyable<> {
 public:
-    explicit StatusWriter(IWriter& writer)
+    explicit MockWriter(IWriter& writer)
         : writer_(writer)
         , call_count_(0)
         , code_enabled_(false)
-        , code_(default_code_) {
+        , code_(status::NoStatus) {
     }
 
     virtual ROC_ATTR_NODISCARD status::StatusCode write(const PacketPtr& pp) {
@@ -64,12 +64,10 @@ public:
 
     void disable_status_code() {
         code_enabled_ = false;
-        code_ = default_code_;
+        code_ = status::NoStatus;
     }
 
 private:
-    static const status::StatusCode default_code_ = status::StatusUnknown;
-
     IWriter& writer_;
 
     unsigned call_count_;
@@ -160,15 +158,15 @@ TEST(interleaver, flush) {
     }
 }
 
-TEST(interleaver, failed_to_write_packet) {
+TEST(interleaver, write_error) {
     const status::StatusCode codes[] = {
-        status::StatusUnknown,
-        status::StatusNoData,
+        status::StatusDrain,
+        status::StatusAbort,
     };
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(codes); ++n) {
         Queue queue;
-        StatusWriter writer(queue);
+        MockWriter writer(queue);
         Interleaver intrlvr(writer, arena, 1);
 
         writer.enable_status_code(codes[n]);
@@ -190,15 +188,15 @@ TEST(interleaver, failed_to_write_packet) {
     }
 }
 
-TEST(interleaver, failed_to_flush_packets) {
+TEST(interleaver, flush_error) {
     const size_t block_size = 10;
 
     Queue queue;
-    StatusWriter writer(queue);
+    MockWriter writer(queue);
     Interleaver intrlvr(writer, arena, block_size);
 
-    writer.enable_status_code(status::StatusUnknown);
-    UNSIGNED_LONGS_EQUAL(status::StatusOK, intrlvr.flush());
+    writer.enable_status_code(status::StatusAbort);
+    LONGS_EQUAL(status::StatusOK, intrlvr.flush());
 
     size_t seqnum = 0;
 
@@ -208,7 +206,7 @@ TEST(interleaver, failed_to_flush_packets) {
 
         const status::StatusCode code = intrlvr.write(pp);
         if (code != status::StatusOK) {
-            UNSIGNED_LONGS_EQUAL(status::StatusUnknown, code);
+            LONGS_EQUAL(status::StatusAbort, code);
             break;
         }
     }
@@ -216,7 +214,8 @@ TEST(interleaver, failed_to_flush_packets) {
     UNSIGNED_LONGS_EQUAL(1, writer.call_count());
     UNSIGNED_LONGS_EQUAL(0, queue.size());
 
-    UNSIGNED_LONGS_EQUAL(status::StatusUnknown, intrlvr.flush());
+    LONGS_EQUAL(status::StatusAbort, intrlvr.flush());
+
     UNSIGNED_LONGS_EQUAL(2, writer.call_count());
     UNSIGNED_LONGS_EQUAL(0, queue.size());
 

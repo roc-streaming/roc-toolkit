@@ -28,7 +28,7 @@ status::StatusCode ConcurrentQueue::read(PacketPtr& ptr) {
 
     ptr = queue_.pop_front_exclusive();
     if (!ptr) {
-        return status::StatusNoData;
+        return status::StatusDrain;
     }
 
     return status::StatusOK;

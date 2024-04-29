@@ -8,6 +8,8 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "test_helpers/status_reader.h"
+
 #include "roc_core/heap_arena.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/scoped_ptr.h"
@@ -20,7 +22,6 @@
 #include "roc_rtp/parser.h"
 #include "roc_rtp/timestamp_injector.h"
 #include "roc_status/status_code.h"
-#include "test_helpers/status_reader.h"
 
 namespace roc {
 namespace rtp {
@@ -46,31 +47,6 @@ packet::PacketPtr new_packet(packet::seqnum_t sn, packet::stream_timestamp_t ts)
 } // namespace
 
 TEST_GROUP(timestamp_injector) {};
-
-TEST(timestamp_injector, failed_to_read_packet) {
-    enum {
-        ChMask = 3,
-        SampleRate = 10000,
-    };
-
-    const audio::SampleSpec sample_spec =
-        audio::SampleSpec(SampleRate, audio::Sample_RawFormat, audio::ChanLayout_Surround,
-                          audio::ChanOrder_Smpte, ChMask);
-
-    const status::StatusCode codes[] = {
-        status::StatusUnknown,
-        status::StatusNoData,
-    };
-
-    for (unsigned n = 0; n < ROC_ARRAY_SIZE(codes); ++n) {
-        test::StatusReader reader(codes[n]);
-        TimestampInjector injector(reader, sample_spec);
-
-        packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(codes[n], injector.read(pp));
-        CHECK(!pp);
-    }
-}
 
 TEST(timestamp_injector, negative_and_positive_dn) {
     enum {
@@ -120,6 +96,31 @@ TEST(timestamp_injector, negative_and_positive_dn) {
         // Assume error must be less than 0.1 of samples period.
         CHECK(core::ns_equal_delta(cur_packet_capt_ts, pkt_capt_ts, epsilon));
         cur_packet_capt_ts += ts_step;
+    }
+}
+
+TEST(timestamp_injector, forward_error) {
+    enum {
+        ChMask = 3,
+        SampleRate = 10000,
+    };
+
+    const audio::SampleSpec sample_spec =
+        audio::SampleSpec(SampleRate, audio::Sample_RawFormat, audio::ChanLayout_Surround,
+                          audio::ChanOrder_Smpte, ChMask);
+
+    const status::StatusCode codes[] = {
+        status::StatusDrain,
+        status::StatusAbort,
+    };
+
+    for (unsigned n = 0; n < ROC_ARRAY_SIZE(codes); ++n) {
+        test::StatusReader reader(codes[n]);
+        TimestampInjector injector(reader, sample_spec);
+
+        packet::PacketPtr pp;
+        UNSIGNED_LONGS_EQUAL(codes[n], injector.read(pp));
+        CHECK(!pp);
     }
 }
 

@@ -4601,7 +4601,7 @@ TEST(communicator, generation_error) {
         CHECK_EQUAL(0, peer_queue.size());
     }
     { // forward error from writer
-        MockWriter peer_writer(status::StatusNoData);
+        MockWriter peer_writer(status::StatusDrain);
         MockParticipant peer_part(Cname, Ssrc, Report_ToAddress);
         Communicator peer_comm(config, peer_part, peer_writer, composer, packet_factory,
                                arena);
@@ -4610,7 +4610,7 @@ TEST(communicator, generation_error) {
         core::nanoseconds_t peer_time = 10000000000000000;
 
         peer_part.set_send_report(make_send_report(peer_time, Cname, Ssrc, Seed));
-        LONGS_EQUAL(status::StatusNoData, peer_comm.generate_reports(peer_time));
+        LONGS_EQUAL(status::StatusDrain, peer_comm.generate_reports(peer_time));
         CHECK_EQUAL(0, peer_comm.total_streams());
         CHECK_EQUAL(1, peer_writer.call_count());
     }
@@ -4732,10 +4732,10 @@ TEST(communicator, notification_error) {
     CHECK_EQUAL(1, send_queue.size());
 
     // Tell receiver to return error from notification handler
-    recv_part.set_status(status::StatusNoData);
+    recv_part.set_status(status::StatusDrain);
 
     // Deliver sender report to receiver
-    LONGS_EQUAL(status::StatusNoData,
+    LONGS_EQUAL(status::StatusDrain,
                 recv_comm.process_packet(read_packet(send_queue), recv_time));
     CHECK_EQUAL(1, recv_comm.total_streams());
 

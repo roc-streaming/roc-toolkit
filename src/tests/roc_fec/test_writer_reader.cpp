@@ -683,7 +683,7 @@ TEST(writer_reader, delayed_packets) {
         // the rest packets are "delayed" and were not delivered to reader
         // try to read 11th packet and get NULL
         packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusNoData, reader.read(pp));
+        UNSIGNED_LONGS_EQUAL(status::StatusDrain, reader.read(pp));
         CHECK(!pp);
 
         // deliver "delayed" packets
@@ -937,7 +937,7 @@ TEST(writer_reader, repair_packets_mixed_with_source_packets) {
 
         // Delivered repair packets should not be enough for restore.
         packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusNoData, reader.read(pp));
+        UNSIGNED_LONGS_EQUAL(status::StatusDrain, reader.read(pp));
         CHECK(!pp);
 
         // Deliver first and last 5 source packets.
@@ -1603,7 +1603,7 @@ TEST(writer_reader, zero_source_packets) {
                 const status::StatusCode code = reader.read(p);
 
                 if (n_block == 2 || n_block == 4) {
-                    UNSIGNED_LONGS_EQUAL(status::StatusNoData, code);
+                    UNSIGNED_LONGS_EQUAL(status::StatusDrain, code);
                     CHECK(!p);
                 } else {
                     UNSIGNED_LONGS_EQUAL(status::StatusOK, code);
@@ -1772,7 +1772,7 @@ TEST(writer_reader, zero_payload_size) {
                 const status::StatusCode code = reader.read(p);
 
                 if (n_block == 2 || n_block == 4) {
-                    UNSIGNED_LONGS_EQUAL(status::StatusNoData, code);
+                    UNSIGNED_LONGS_EQUAL(status::StatusDrain, code);
                     CHECK(!p);
                 } else {
                     UNSIGNED_LONGS_EQUAL(status::StatusOK, code);
@@ -1899,7 +1899,7 @@ TEST(writer_reader, sbn_jump) {
         // the reader should detect sbn jump and shutdown
         packet::PacketPtr pp;
         // TODO(gh-183): compare with StatusDead
-        UNSIGNED_LONGS_EQUAL(status::StatusNoData, reader.read(pp));
+        UNSIGNED_LONGS_EQUAL(status::StatusDrain, reader.read(pp));
         CHECK(!pp);
         CHECK(!reader.is_alive());
 
@@ -1907,7 +1907,7 @@ TEST(writer_reader, sbn_jump) {
         UNSIGNED_LONGS_EQUAL(0, dispatcher.repair_size());
 
         // TODO(gh-183): compare with StatusDead
-        UNSIGNED_LONGS_EQUAL(status::StatusNoData, reader.read(pp));
+        UNSIGNED_LONGS_EQUAL(status::StatusDrain, reader.read(pp));
     }
 }
 
@@ -2381,7 +2381,7 @@ TEST(writer_reader, resize_block_repair_first) {
 
         // Try and fail to read first packet from second block.
         packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusNoData, reader.read(pp));
+        UNSIGNED_LONGS_EQUAL(status::StatusDrain, reader.read(pp));
         CHECK(!pp);
 
         // Deliver source packets from second block.
@@ -2569,7 +2569,7 @@ TEST(writer_reader, error_reader_resize_block) {
         // reader should get an error from arena when trying
         // to resize the block and shut down
         packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusNoData, reader.read(pp));
+        UNSIGNED_LONGS_EQUAL(status::StatusDrain, reader.read(pp));
         CHECK(!pp);
         CHECK(!reader.is_alive());
     }
@@ -2654,7 +2654,7 @@ TEST(writer_reader, error_reader_decode_packet) {
         // reader should get an error from arena when trying
         // to repair lost packet and shut down
         packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusNoData, reader.read(pp));
+        UNSIGNED_LONGS_EQUAL(status::StatusDrain, reader.read(pp));
         CHECK(!pp);
         CHECK(!reader.is_alive());
     }
@@ -2792,7 +2792,7 @@ TEST(writer_reader, reader_oversized_source_block) {
 
         // reader should get an error because maximum block size was exceeded
         packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusNoData, reader.read(pp));
+        UNSIGNED_LONGS_EQUAL(status::StatusDrain, reader.read(pp));
         CHECK(!pp);
         CHECK(!reader.is_alive());
     }
@@ -2863,7 +2863,7 @@ TEST(writer_reader, reader_oversized_repair_block) {
 
         // reader should get an error because maximum block size was exceeded
         packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusNoData, reader.read(pp));
+        UNSIGNED_LONGS_EQUAL(status::StatusDrain, reader.read(pp));
         CHECK(!pp);
         CHECK(!reader.is_alive());
     }
@@ -2984,7 +2984,7 @@ TEST(writer_reader, reader_invalid_fec_scheme_source_packet) {
 
         // reader should shut down
         packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusNoData, reader.read(pp));
+        UNSIGNED_LONGS_EQUAL(status::StatusDrain, reader.read(pp));
         CHECK(!pp);
         CHECK(!reader.is_alive());
         UNSIGNED_LONGS_EQUAL(0, source_queue.size());
@@ -3085,7 +3085,7 @@ TEST(writer_reader, reader_invalid_fec_scheme_repair_packet) {
 
         // reader should shut down
         packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusNoData, reader.read(pp));
+        UNSIGNED_LONGS_EQUAL(status::StatusDrain, reader.read(pp));
         CHECK(!pp);
         CHECK(!reader.is_alive());
         UNSIGNED_LONGS_EQUAL(0, source_queue.size());
@@ -3107,7 +3107,7 @@ TEST(writer_reader, failed_to_read_source_packet) {
         CHECK(decoder);
 
         packet::Queue writer_queue;
-        StatusReader source_reader(status::StatusUnknown);
+        StatusReader source_reader(status::StatusAbort);
         packet::Queue repair_reader;
 
         Writer writer(writer_config, codec_config.scheme, *encoder, writer_queue,
@@ -3134,7 +3134,7 @@ TEST(writer_reader, failed_to_read_source_packet) {
         }
 
         packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusUnknown, reader.read(pp));
+        UNSIGNED_LONGS_EQUAL(status::StatusAbort, reader.read(pp));
         CHECK(!pp);
 
         CHECK(reader.is_valid());
@@ -3156,7 +3156,7 @@ TEST(writer_reader, failed_to_read_repair_packet) {
 
         packet::Queue writer_queue;
         packet::Queue source_reader;
-        StatusReader repair_reader(status::StatusUnknown);
+        StatusReader repair_reader(status::StatusAbort);
 
         Writer writer(writer_config, codec_config.scheme, *encoder, writer_queue,
                       source_composer(), repair_composer(), packet_factory, arena);
@@ -3182,7 +3182,7 @@ TEST(writer_reader, failed_to_read_repair_packet) {
         }
 
         packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusUnknown, reader.read(pp));
+        UNSIGNED_LONGS_EQUAL(status::StatusAbort, reader.read(pp));
         CHECK(!pp);
 
         CHECK(reader.is_valid());
@@ -3198,8 +3198,8 @@ TEST(writer_reader, failed_to_read_source_and_repair_packets) {
 
         CHECK(decoder);
 
-        StatusReader source_reader(status::StatusUnknown);
-        StatusReader repair_reader(status::StatusUnknown);
+        StatusReader source_reader(status::StatusAbort);
+        StatusReader repair_reader(status::StatusAbort);
 
         Reader reader(reader_config, codec_config.scheme, *decoder, source_reader,
                       repair_reader, rtp_parser, packet_factory, arena);
@@ -3207,7 +3207,7 @@ TEST(writer_reader, failed_to_read_source_and_repair_packets) {
         CHECK(reader.is_valid());
 
         packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusUnknown, reader.read(pp));
+        UNSIGNED_LONGS_EQUAL(status::StatusAbort, reader.read(pp));
         CHECK(!pp);
 
         CHECK(reader.is_valid());

@@ -787,7 +787,7 @@ TEST(session_router, conflict_session_exists) {
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr2));
 
-    LONGS_EQUAL(status::StatusConflict, router.add_session(sess1, ssrc2, addr2));
+    LONGS_EQUAL(status::StatusNoRoute, router.add_session(sess1, ssrc2, addr2));
 
     LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
@@ -807,7 +807,7 @@ TEST(session_router, conflict_address_exists) {
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr2));
 
-    LONGS_EQUAL(status::StatusConflict, router.add_session(sess2, ssrc2, addr1));
+    LONGS_EQUAL(status::StatusNoRoute, router.add_session(sess2, ssrc2, addr1));
 
     LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);

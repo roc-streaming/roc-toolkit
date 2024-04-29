@@ -73,7 +73,7 @@ status::StatusCode Reader::read(packet::PacketPtr& pp) {
 
     if (!alive_) {
         // TODO(gh-183): return StatusDead
-        return status::StatusNoData;
+        return status::StatusDrain;
     }
 
     status::StatusCode code = read_(pp);
@@ -83,7 +83,7 @@ status::StatusCode Reader::read(packet::PacketPtr& pp) {
     if (!alive_) {
         pp = NULL;
         // TODO(gh-183): return StatusDead
-        return status::StatusNoData;
+        return status::StatusDrain;
     }
 
     return code;
@@ -165,7 +165,7 @@ status::StatusCode Reader::get_next_packet_(packet::PacketPtr& ptr) {
 
             if (pos == source_block_.size()) {
                 if (source_queue_.size() == 0) {
-                    return status::StatusNoData;
+                    return status::StatusDrain;
                 }
             } else {
                 pp = source_block_[pos++];
@@ -304,7 +304,7 @@ status::StatusCode Reader::fetch_packets_(packet::IReader& reader,
 
         status::StatusCode code = reader.read(pp);
         if (code != status::StatusOK) {
-            if (code == status::StatusNoData) {
+            if (code == status::StatusDrain) {
                 break;
             }
             return code;

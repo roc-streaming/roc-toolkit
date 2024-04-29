@@ -60,14 +60,13 @@ TEST(sender_encoder, read_packet) {
 
     packet::PacketPtr pp;
 
-    // TODO(gh-183): compare with StatusNotFound
-    LONGS_EQUAL(status::StatusNoData,
+    LONGS_EQUAL(status::StatusBadInterface,
                 sender_encoder.read_packet(address::Iface_AudioSource, pp));
     CHECK(!pp);
-    LONGS_EQUAL(status::StatusNoData,
+    LONGS_EQUAL(status::StatusBadInterface,
                 sender_encoder.read_packet(address::Iface_AudioRepair, pp));
     CHECK(!pp);
-    LONGS_EQUAL(status::StatusNoData,
+    LONGS_EQUAL(status::StatusBadInterface,
                 sender_encoder.read_packet(address::Iface_AudioControl, pp));
     CHECK(!pp);
 }
@@ -81,12 +80,11 @@ TEST(sender_encoder, write_packet) {
 
     packet::PacketPtr pp;
 
-    // TODO(gh-183): compare with StatusNotFound
-    LONGS_EQUAL(status::StatusUnknown,
+    LONGS_EQUAL(status::StatusBadInterface,
                 sender_encoder.write_packet(address::Iface_AudioSource, pp));
-    LONGS_EQUAL(status::StatusUnknown,
+    LONGS_EQUAL(status::StatusBadInterface,
                 sender_encoder.write_packet(address::Iface_AudioRepair, pp));
-    LONGS_EQUAL(status::StatusUnknown,
+    LONGS_EQUAL(status::StatusBadInterface,
                 sender_encoder.write_packet(address::Iface_AudioControl, pp));
 }
 

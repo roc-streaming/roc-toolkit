@@ -81,10 +81,11 @@ struct MockComposer : public IComposer, public core::NonCopyable<> {
 
 TEST_GROUP(shipper) {};
 
-TEST(shipper, forward_write_status) {
+TEST(shipper, write_error) {
     const status::StatusCode codes[] = {
         status::StatusOK,
-        status::StatusNoMem,
+        status::StatusDrain,
+        status::StatusAbort,
     };
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(codes); ++n) {

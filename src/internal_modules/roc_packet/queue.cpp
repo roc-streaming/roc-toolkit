@@ -15,7 +15,7 @@ namespace packet {
 status::StatusCode Queue::read(PacketPtr& packet) {
     packet = list_.front();
     if (!packet) {
-        return status::StatusNoData;
+        return status::StatusDrain;
     }
     list_.remove(*packet);
     return status::StatusOK;

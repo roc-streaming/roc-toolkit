@@ -63,7 +63,7 @@ status::StatusCode DelayedReader::fetch_packets_() {
     for (;;) {
         status::StatusCode code = reader_.read(pp);
         if (code != status::StatusOK) {
-            if (code == status::StatusNoData) {
+            if (code == status::StatusDrain) {
                 break;
             }
             return code;
@@ -76,7 +76,7 @@ status::StatusCode DelayedReader::fetch_packets_() {
 
     const stream_timestamp_t qs = queue_size_();
     if (qs < delay_) {
-        return status::StatusNoData;
+        return status::StatusDrain;
     }
 
     roc_log(LogDebug,

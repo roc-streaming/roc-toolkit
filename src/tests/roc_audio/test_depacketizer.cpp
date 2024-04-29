@@ -135,7 +135,7 @@ public:
         : reader_(reader)
         , call_count_(0)
         , code_enabled_(false)
-        , code_(default_code_) {
+        , code_(status::NoStatus) {
     }
 
     virtual ROC_ATTR_NODISCARD status::StatusCode read(packet::PacketPtr& pp) {
@@ -155,7 +155,7 @@ public:
 
     void disable_status_code() {
         code_enabled_ = false;
-        code_ = default_code_;
+        code_ = status::NoStatus;
     }
 
     unsigned call_count() const {
@@ -163,8 +163,6 @@ public:
     }
 
 private:
-    static const status::StatusCode default_code_ = status::StatusUnknown;
-
     packet::IReader& reader_;
 
     unsigned call_count_;
@@ -737,8 +735,8 @@ TEST(depacketizer, timestamp_small_non_zero_cts) {
 
 TEST(depacketizer, read_after_error) {
     const status::StatusCode codes[] = {
-        status::StatusUnknown,
-        status::StatusNoData,
+        status::StatusDrain,
+        status::StatusAbort,
     };
 
     for (unsigned n = 0; n < ROC_ARRAY_SIZE(codes); ++n) {

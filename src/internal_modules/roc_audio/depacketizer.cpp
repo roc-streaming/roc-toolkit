@@ -280,7 +280,7 @@ packet::PacketPtr Depacketizer::read_packet_() {
     packet::PacketPtr pp;
     const status::StatusCode code = reader_.read(pp);
     if (code != status::StatusOK) {
-        if (code != status::StatusNoData) {
+        if (code != status::StatusDrain) {
             // TODO(gh-302): forward status
             roc_log(LogError, "depacketizer: failed to read packet: status=%s",
                     status::code_to_str(code));

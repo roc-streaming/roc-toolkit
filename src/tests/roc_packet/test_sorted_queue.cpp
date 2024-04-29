@@ -43,7 +43,7 @@ TEST(sorted_queue, empty) {
     CHECK(!queue.head());
 
     PacketPtr pp;
-    LONGS_EQUAL(status::StatusNoData, queue.read(pp));
+    LONGS_EQUAL(status::StatusDrain, queue.read(pp));
     CHECK(!pp);
 
     LONGS_EQUAL(0, queue.size());
@@ -82,7 +82,7 @@ TEST(sorted_queue, two_packets) {
     CHECK(!queue.head());
 
     PacketPtr pp;
-    LONGS_EQUAL(status::StatusNoData, queue.read(pp));
+    LONGS_EQUAL(status::StatusDrain, queue.read(pp));
     CHECK(!pp);
 
     LONGS_EQUAL(0, queue.size());
@@ -152,7 +152,7 @@ TEST(sorted_queue, out_of_order) {
     CHECK(!queue.head());
 
     PacketPtr pp;
-    LONGS_EQUAL(status::StatusNoData, queue.read(pp));
+    LONGS_EQUAL(status::StatusDrain, queue.read(pp));
     CHECK(!pp);
 }
 
@@ -223,7 +223,7 @@ TEST(sorted_queue, one_duplicate) {
     CHECK(!queue.head());
 
     PacketPtr pp;
-    LONGS_EQUAL(status::StatusNoData, queue.read(pp));
+    LONGS_EQUAL(status::StatusDrain, queue.read(pp));
     CHECK(!pp);
 }
 
@@ -311,7 +311,7 @@ TEST(sorted_queue, overflow_ordered1) {
     LONGS_EQUAL(0, queue.size());
 
     PacketPtr pp;
-    LONGS_EQUAL(status::StatusNoData, queue.read(pp));
+    LONGS_EQUAL(status::StatusDrain, queue.read(pp));
     CHECK(!pp);
 }
 
@@ -343,7 +343,7 @@ TEST(sorted_queue, overflow_ordered2) {
     LONGS_EQUAL(0, queue.size());
 
     PacketPtr pp;
-    LONGS_EQUAL(status::StatusNoData, queue.read(pp));
+    LONGS_EQUAL(status::StatusDrain, queue.read(pp));
     CHECK(!pp);
 }
 
@@ -375,7 +375,7 @@ TEST(sorted_queue, overflow_sorting) {
     LONGS_EQUAL(0, queue.size());
 
     PacketPtr pp;
-    LONGS_EQUAL(status::StatusNoData, queue.read(pp));
+    LONGS_EQUAL(status::StatusDrain, queue.read(pp));
     CHECK(!pp);
 }
 
@@ -413,7 +413,7 @@ TEST(sorted_queue, overflow_out_of_order) {
     LONGS_EQUAL(0, queue.size());
 
     PacketPtr pp;
-    LONGS_EQUAL(status::StatusNoData, queue.read(pp));
+    LONGS_EQUAL(status::StatusDrain, queue.read(pp));
     CHECK(!pp);
 }
 

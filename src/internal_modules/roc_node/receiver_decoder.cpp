@@ -166,8 +166,7 @@ status::StatusCode ReceiverDecoder::write_packet(address::Interface iface,
                 "receiver decoder node:"
                 " can't write to %s interface: interface not activated",
                 address::interface_to_str(iface));
-        // TODO(gh-183): return StatusNotFound
-        return status::StatusUnknown;
+        return status::StatusBadInterface;
     }
 
     return writer->write(packet);
@@ -187,15 +186,13 @@ status::StatusCode ReceiverDecoder::read_packet(address::Interface iface,
                     "receiver decoder node:"
                     " can't read from %s interface: interface not activated",
                     address::interface_to_str(iface));
-            // TODO(gh-183): return StatusNotFound
-            return status::StatusNoData;
+            return status::StatusBadInterface;
         } else {
             roc_log(LogError,
                     "sender encoder node:"
                     " can't read from %s interface: interface doesn't support reading",
                     address::interface_to_str(iface));
-            // TODO(gh-183): return StatusBadOperation
-            return status::StatusNoData;
+            return status::StatusBadOperation;
         }
     }
 

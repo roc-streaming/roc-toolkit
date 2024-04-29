@@ -261,7 +261,7 @@ int roc_receiver_decoder_pop_feedback_packet(roc_receiver_decoder* decoder,
     const status::StatusCode code = imp_decoder->read_packet(imp_iface, imp_packet);
     if (code != status::StatusOK) {
         // TODO(gh-183): forward status code to user
-        if (code != status::StatusNoData) {
+        if (code != status::StatusDrain) {
             roc_log(LogError,
                     "roc_receiver_decoder_pop_feedback_packet():"
                     " can't read packet from decoder: status=%s",

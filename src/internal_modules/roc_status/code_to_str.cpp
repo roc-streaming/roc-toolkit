@@ -7,6 +7,7 @@
  */
 
 #include "roc_status/code_to_str.h"
+#include "roc_core/panic.h"
 #include "roc_status/status_code.h"
 
 namespace roc {
@@ -14,23 +15,49 @@ namespace status {
 
 const char* code_to_str(StatusCode code) {
     switch (code) {
+    case NoStatus:
+        break;
     case StatusOK:
         return "OK";
-    case StatusUnknown:
-        return "Unknown";
-    case StatusNoData:
-        return "NoData";
+    case StatusDrain:
+        return "Drain";
+    case StatusAbort:
+        return "Abort";
+    case StatusEnd:
+        return "End";
     case StatusNoMem:
         return "NoMem";
     case StatusNoSpace:
         return "NoSpace";
-    case StatusLimit:
-        return "Limit";
-    case StatusConflict:
-        return "Conflict";
+    case StatusNoRoute:
+        return "NoRoute";
+    case StatusErrDevice:
+        return "ErrDevice";
+    case StatusErrFile:
+        return "ErrFile";
+    case StatusErrNetwork:
+        return "ErrNetwork";
+    case StatusErrThread:
+        return "ErrThread";
+    case StatusErrRand:
+        return "ErrRand";
+    case StatusBadSlot:
+        return "BadSlot";
+    case StatusBadInterface:
+        return "BadInterface";
+    case StatusBadProtocol:
+        return "BadProtocol";
+    case StatusBadConfig:
+        return "BadConfig";
+    case StatusBadArg:
+        return "BadArg";
+    case StatusBadOperation:
+        return "BadOperation";
     }
 
-    return "<invalid>";
+    // Most likely someone forgot to initialize status to a proper
+    // value and returned it.
+    roc_panic("status: corrupted or uninitialized value: code=%d", code);
 }
 
 } // namespace status
