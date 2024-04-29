@@ -69,12 +69,13 @@ public:
         return false;
     }
 
-    virtual void write(audio::Frame& frame) {
+    virtual status::StatusCode write(audio::Frame& frame) {
         CHECK(pos_ + frame.num_raw_samples() <= MaxSz);
 
         memcpy(samples_ + pos_, frame.raw_samples(),
                frame.num_raw_samples() * sizeof(audio::sample_t));
         pos_ += frame.num_raw_samples();
+        return status::StatusOK;
     }
 
     void check(size_t offset, size_t size) {

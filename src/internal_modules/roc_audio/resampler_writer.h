@@ -43,8 +43,8 @@ public:
     //! Set new resample factor.
     bool set_scaling(float multiplier);
 
-    //! Read audio frame.
-    virtual void write(Frame&);
+    //! Write audio frame.
+    virtual status::StatusCode write(Frame& frame);
 
 private:
     size_t push_input_(Frame& in_frame, size_t in_pos);

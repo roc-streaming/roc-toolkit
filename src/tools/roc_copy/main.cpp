@@ -216,12 +216,17 @@ int main(int argc, char** argv) {
     sndio::Pump pump(frame_buffer_pool, *input_source, NULL, transcoder,
                      source_config.frame_length, transcoder_config.input_sample_spec,
                      sndio::Pump::ModePermanent);
-    if (!pump.is_valid()) {
-        roc_log(LogError, "can't create audio pump");
+    if (pump.init_status() != status::StatusOK) {
+        roc_log(LogError, "can't create audio pump: status=%s",
+                status::code_to_str(pump.init_status()));
         return 1;
     }
 
-    const bool ok = pump.run();
+    const status::StatusCode status = pump.run();
+    if (status != status::StatusOK) {
+        roc_log(LogError, "can't run audio pump: status=%s", status::code_to_str(status));
+        return 1;
+    }
 
-    return ok ? 0 : 1;
+    return 0;
 }

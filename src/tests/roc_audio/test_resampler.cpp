@@ -89,7 +89,7 @@ public:
         return last_ts_;
     }
 
-    virtual void write(Frame& frame) {
+    virtual status::StatusCode write(Frame& frame) {
         last_ts_ = frame.capture_timestamp();
         if (capt_ts_ && epsilon_) {
             if (!started_ && frame.capture_timestamp() != 0) {
@@ -105,6 +105,7 @@ public:
         } else {
             CHECK(frame.capture_timestamp() == 0);
         }
+        return status::StatusOK;
     }
 
 private:

@@ -142,42 +142,42 @@ public:
     size_t num_processed_tasks() const {
         core::Mutex::Lock lock(mutex_);
         UNSIGNED_LONGS_EQUAL(n_processed_tasks_,
-                             (size_t)get_stats_ref().task_processed_total);
+                             (size_t)stats_ref().task_processed_total);
         return n_processed_tasks_;
     }
 
     size_t num_tasks_processed_in_sched() const {
         core::Mutex::Lock lock(mutex_);
-        return (size_t)get_stats_ref().task_processed_in_place;
+        return (size_t)stats_ref().task_processed_in_place;
     }
 
     size_t num_tasks_processed_in_frame() const {
         core::Mutex::Lock lock(mutex_);
-        return (size_t)get_stats_ref().task_processed_in_frame;
+        return (size_t)stats_ref().task_processed_in_frame;
     }
 
     size_t num_tasks_processed_in_proc() const {
         core::Mutex::Lock lock(mutex_);
-        return size_t(get_stats_ref().task_processed_total
-                      - get_stats_ref().task_processed_in_frame
-                      - get_stats_ref().task_processed_in_place);
+        return size_t(stats_ref().task_processed_total
+                      - stats_ref().task_processed_in_frame
+                      - stats_ref().task_processed_in_place);
     }
 
     size_t num_preemptions() const {
         core::Mutex::Lock lock(mutex_);
-        return (size_t)get_stats_ref().preemptions;
+        return (size_t)stats_ref().preemptions;
     }
 
     size_t num_sched_calls() const {
         core::Mutex::Lock lock(mutex_);
-        UNSIGNED_LONGS_EQUAL(n_sched_calls_, (size_t)get_stats_ref().scheduler_calls);
+        UNSIGNED_LONGS_EQUAL(n_sched_calls_, (size_t)stats_ref().scheduler_calls);
         return n_sched_calls_;
     }
 
     size_t num_sched_cancellations() const {
         core::Mutex::Lock lock(mutex_);
         UNSIGNED_LONGS_EQUAL(n_sched_cancellations_,
-                             (size_t)get_stats_ref().scheduler_cancellations);
+                             (size_t)stats_ref().scheduler_cancellations);
         return n_sched_cancellations_;
     }
 
@@ -212,7 +212,7 @@ private:
         return tid_;
     }
 
-    virtual bool process_subframe_imp(audio::Frame& frame) {
+    virtual status::StatusCode process_subframe_imp(audio::Frame& frame) {
         core::Mutex::Lock lock(mutex_);
         bool first_iter = true;
         while (frame_allow_counter_ == 0) {
@@ -231,7 +231,7 @@ private:
         roc_panic_if(frame.flags() != exp_frame_flags_);
         roc_panic_if(frame.capture_timestamp() != exp_frame_cts_);
         n_processed_frames_++;
-        return true;
+        return status::StatusOK;
     }
 
     virtual bool process_task_imp(PipelineTask&) {
@@ -412,7 +412,7 @@ public:
 
 private:
     virtual void run() {
-        pipeline_.process_subframes_and_tasks(frame_);
+        LONGS_EQUAL(status::StatusOK, pipeline_.process_subframes_and_tasks(frame_));
     }
 
     TestPipeline& pipeline_;
@@ -510,7 +510,7 @@ TEST(pipeline_loop, schedule_when_can_process_tasks) {
 
     // process_subframes_and_tasks() should allow task processing
     // until (StartTime + FrameSize * core::Microsecond - NoTaskProcessingGap / 2)
-    CHECK(pipeline.process_subframes_and_tasks(frame));
+    LONGS_EQUAL(status::StatusOK, pipeline.process_subframes_and_tasks(frame));
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_frames());
 
@@ -556,7 +556,7 @@ TEST(pipeline_loop, schedule_when_cant_process_tasks_but_from_processing_thread)
 
     // process_subframes_and_tasks() should allow task processing
     // until (StartTime + FrameSize * core::Microsecond - NoTaskProcessingGap / 2)
-    CHECK(pipeline.process_subframes_and_tasks(frame1));
+    LONGS_EQUAL(status::StatusOK, pipeline.process_subframes_and_tasks(frame1));
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_frames());
 
@@ -600,7 +600,7 @@ TEST(pipeline_loop, schedule_when_cant_process_tasks_then_process_frame) {
 
     // process_subframes_and_tasks() should allow task processing
     // until (StartTime + FrameSize * core::Microsecond - NoTaskProcessingGap / 2)
-    CHECK(pipeline.process_subframes_and_tasks(frame1));
+    LONGS_EQUAL(status::StatusOK, pipeline.process_subframes_and_tasks(frame1));
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_frames());
 
@@ -644,7 +644,7 @@ TEST(pipeline_loop, schedule_when_cant_process_tasks_then_process_frame) {
 
     // process_subframes_and_tasks() should call cancel_task_processing() and
     // process the task from the queue
-    CHECK(pipeline.process_subframes_and_tasks(frame2));
+    LONGS_EQUAL(status::StatusOK, pipeline.process_subframes_and_tasks(frame2));
 
     UNSIGNED_LONGS_EQUAL(2, pipeline.num_processed_frames());
 
@@ -680,7 +680,7 @@ TEST(pipeline_loop, schedule_when_cant_process_tasks_then_process_tasks) {
 
     // process_subframes_and_tasks() should allow task processing
     // until (StartTime + FrameSize * core::Microsecond - NoTaskProcessingGap / 2)
-    CHECK(pipeline.process_subframes_and_tasks(frame1));
+    LONGS_EQUAL(status::StatusOK, pipeline.process_subframes_and_tasks(frame1));
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_frames());
 
@@ -1231,7 +1231,7 @@ TEST(pipeline_loop, process_tasks_interframe_deadline) {
     pipeline.set_tid(ProcessingThread);
 
     // process frame and set inter-frame task processing deadline
-    CHECK(pipeline.process_subframes_and_tasks(frame));
+    LONGS_EQUAL(status::StatusOK, pipeline.process_subframes_and_tasks(frame));
 
     // further calls are done from "background thread"
     pipeline.set_tid(BackgroundThread);
@@ -1854,7 +1854,7 @@ TEST(pipeline_loop, process_frame_min_samples_between_frames) {
 
     // now we have processed MinFrameSize samples, pipeline should call
     // cancel_task_processing() and process pending task1 and task2
-    pipeline.process_subframes_and_tasks(frame2);
+    LONGS_EQUAL(status::StatusOK, pipeline.process_subframes_and_tasks(frame2));
 
     CHECK(task1.success());
     CHECK(task2.success());
@@ -2067,7 +2067,7 @@ TEST(pipeline_loop, schedule_from_completion_completer_called_from_process_frame
     // this should call cancel_task_processing() and then execute task2 and
     // its completion completer
     // task3 should be added to the queue and then immediately processed
-    CHECK(pipeline.process_subframes_and_tasks(frame));
+    LONGS_EQUAL(status::StatusOK, pipeline.process_subframes_and_tasks(frame));
 
     CHECK(task2.success());
     CHECK(task3.success());
@@ -2283,7 +2283,7 @@ TEST(pipeline_loop, schedule_and_wait_until_process_frame_called) {
 
     // this should call cancel_task_scheduling() and process task2 and task3
     // both background schedule_and_wait() calls should finish
-    CHECK(pipeline.process_subframes_and_tasks(frame));
+    LONGS_EQUAL(status::StatusOK, pipeline.process_subframes_and_tasks(frame));
 
     // wait schedule_and_wait() finished
     ts3a.join();
@@ -2319,7 +2319,7 @@ TEST(pipeline_loop, forward_flags_and_cts_small_frame) {
     pipeline.set_time(StartTime);
     pipeline.expect_frame(0.1f, FrameSize, frame_flags, frame_cts);
 
-    CHECK(pipeline.process_subframes_and_tasks(frame));
+    LONGS_EQUAL(status::StatusOK, pipeline.process_subframes_and_tasks(frame));
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_frames());
 }

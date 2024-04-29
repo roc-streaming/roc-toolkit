@@ -115,7 +115,7 @@ void FeedbackMonitor::process_feedback(packet::stream_source_t source_id,
     last_feedback_ts_ = core::timestamp(core::ClockMonotonic);
 }
 
-void FeedbackMonitor::write(Frame& frame) {
+status::StatusCode FeedbackMonitor::write(Frame& frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (started_) {
@@ -125,13 +125,12 @@ void FeedbackMonitor::write(Frame& frame) {
 
         if (enable_scaling_) {
             if (!update_scaling_()) {
-                // TODO(gh-183): return status code
-                roc_panic("feedback monitor: update failed");
+                return status::StatusBadConfig;
             }
         }
     }
 
-    writer_.write(frame);
+    return writer_.write(frame);
 }
 
 size_t FeedbackMonitor::num_participants() const {

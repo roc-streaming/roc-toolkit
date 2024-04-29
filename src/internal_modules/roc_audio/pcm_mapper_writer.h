@@ -38,8 +38,8 @@ public:
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
 
-    //! Read audio frame.
-    virtual void write(Frame& frame);
+    //! Write audio frame.
+    virtual status::StatusCode write(Frame& frame);
 
 private:
     PcmMapper mapper_;

@@ -109,7 +109,7 @@ bool WavSink::has_clock() const {
     return false;
 }
 
-void WavSink::write(audio::Frame& frame) {
+status::StatusCode WavSink::write(audio::Frame& frame) {
     if (!output_file_) {
         roc_panic("wav sink: not opened");
     }
@@ -121,6 +121,7 @@ void WavSink::write(audio::Frame& frame) {
         if (fseek(output_file_, 0, SEEK_SET)) {
             roc_log(LogError, "wav sink: failed to seek to the beginning of the file: %s",
                     core::errno_to_str(errno).c_str());
+            return status::StatusErrFile;
         }
 
         const WavHeader::WavHeaderData& wav_header =
@@ -128,25 +129,31 @@ void WavSink::write(audio::Frame& frame) {
         if (fwrite(&wav_header, sizeof(wav_header), 1, output_file_) != 1) {
             roc_log(LogError, "wav sink: failed to write header: %s",
                     core::errno_to_str(errno).c_str());
+            return status::StatusErrFile;
         }
 
         if (fseek(output_file_, 0, SEEK_END)) {
             roc_log(LogError,
                     "wav sink: failed to seek to append position of the file: %s",
                     core::errno_to_str(errno).c_str());
+            return status::StatusErrFile;
         }
 
         if (fwrite(samples, sizeof(audio::sample_t), n_samples, output_file_)
             != n_samples) {
             roc_log(LogError, "wav sink: failed to write samples: %s",
                     core::errno_to_str(errno).c_str());
+            return status::StatusErrFile;
         }
 
         if (fflush(output_file_)) {
             roc_log(LogError, "wav sink: failed to flush data to the file: %s",
                     core::errno_to_str(errno).c_str());
+            return status::StatusErrFile;
         }
     }
+
+    return status::StatusOK;
 }
 
 bool WavSink::open_(const char* path) {

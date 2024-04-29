@@ -77,7 +77,7 @@ const PacketizerMetrics& Packetizer::metrics() const {
     return metrics_;
 }
 
-void Packetizer::write(Frame& frame) {
+status::StatusCode Packetizer::write(Frame& frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (frame.num_raw_samples() % sample_spec_.num_channels() != 0) {
@@ -90,8 +90,9 @@ void Packetizer::write(Frame& frame) {
 
     while (buffer_samples != 0) {
         if (!packet_) {
-            if (!begin_packet_()) {
-                return;
+            const status::StatusCode code = begin_packet_();
+            if (code != status::StatusOK) {
+                return code;
             }
         }
 
@@ -113,6 +114,8 @@ void Packetizer::write(Frame& frame) {
             end_packet_();
         }
     }
+
+    return status::StatusOK;
 }
 
 void Packetizer::flush() {
@@ -123,23 +126,24 @@ void Packetizer::flush() {
     }
 }
 
-bool Packetizer::begin_packet_() {
-    packet::PacketPtr pp = create_packet_();
-    if (!pp) {
-        return false;
+status::StatusCode Packetizer::begin_packet_() {
+    const status::StatusCode code = create_packet_();
+    if (code != status::StatusOK) {
+        return code;
     }
 
-    packet_ = pp;
+    roc_panic_if(!packet_);
+
     packet_pos_ = 0;
     packet_cts_ = capture_ts_;
 
     // Begin encoding samples into packet.
     payload_encoder_.begin(packet_->payload().data(), packet_->payload().size());
 
-    return true;
+    return status::StatusOK;
 }
 
-void Packetizer::end_packet_() {
+status::StatusCode Packetizer::end_packet_() {
     // How much bytes we've written into packet payload.
     const size_t written_payload_size = payload_encoder_.encoded_byte_count(packet_pos_);
     roc_panic_if_not(written_payload_size <= payload_size_);
@@ -156,8 +160,9 @@ void Packetizer::end_packet_() {
     }
 
     const status::StatusCode code = writer_.write(packet_);
-    // TODO(gh-183): forward status
-    roc_panic_if(code != status::StatusOK);
+    if (code != status::StatusOK) {
+        return code;
+    }
 
     metrics_.packet_count++;
     metrics_.payload_count += written_payload_size;
@@ -165,6 +170,35 @@ void Packetizer::end_packet_() {
     packet_ = NULL;
     packet_pos_ = 0;
     packet_cts_ = 0;
+
+    return status::StatusOK;
+}
+
+status::StatusCode Packetizer::create_packet_() {
+    packet::PacketPtr pp = packet_factory_.new_packet();
+    if (!pp) {
+        roc_log(LogError, "packetizer: can't allocate packet");
+        return status::StatusNoMem;
+    }
+
+    pp->add_flags(packet::Packet::FlagAudio);
+
+    core::Slice<uint8_t> buffer = packet_factory_.new_packet_buffer();
+    if (!buffer) {
+        roc_log(LogError, "packetizer: can't allocate buffer");
+        return status::StatusNoMem;
+    }
+
+    if (!composer_.prepare(*pp, buffer, payload_size_)) {
+        roc_log(LogError, "packetizer: can't prepare packet");
+        return status::StatusNoSpace;
+    }
+    pp->add_flags(packet::Packet::FlagPrepared);
+
+    pp->set_buffer(buffer);
+
+    packet_ = pp;
+    return status::StatusOK;
 }
 
 void Packetizer::pad_packet_(size_t written_payload_size) {
@@ -176,32 +210,6 @@ void Packetizer::pad_packet_(size_t written_payload_size) {
         roc_panic("packetizer: can't pad packet: orig_size=%lu actual_size=%lu",
                   (unsigned long)payload_size_, (unsigned long)written_payload_size);
     }
-}
-
-packet::PacketPtr Packetizer::create_packet_() {
-    packet::PacketPtr packet = packet_factory_.new_packet();
-    if (!packet) {
-        roc_log(LogError, "packetizer: can't allocate packet");
-        return NULL;
-    }
-
-    packet->add_flags(packet::Packet::FlagAudio);
-
-    core::Slice<uint8_t> buffer = packet_factory_.new_packet_buffer();
-    if (!buffer) {
-        roc_log(LogError, "packetizer: can't allocate buffer");
-        return NULL;
-    }
-
-    if (!composer_.prepare(*packet, buffer, payload_size_)) {
-        roc_log(LogError, "packetizer: can't prepare packet");
-        return NULL;
-    }
-    packet->add_flags(packet::Packet::FlagPrepared);
-
-    packet->set_buffer(buffer);
-
-    return packet;
 }
 
 } // namespace audio

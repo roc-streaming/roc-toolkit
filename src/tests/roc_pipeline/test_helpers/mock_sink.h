@@ -75,7 +75,7 @@ public:
         return false;
     }
 
-    virtual void write(audio::Frame& frame) {
+    virtual status::StatusCode write(audio::Frame& frame) {
         CHECK(frame.num_raw_samples() % n_chans_ == 0);
 
         for (size_t ns = 0; ns < frame.num_raw_samples() / n_chans_; ns++) {
@@ -89,6 +89,8 @@ public:
         n_frames_++;
 
         CHECK(frame.capture_timestamp() == 0);
+
+        return status::StatusOK;
     }
 
     void expect_frames(size_t total) {

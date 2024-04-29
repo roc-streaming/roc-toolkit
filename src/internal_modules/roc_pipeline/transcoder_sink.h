@@ -76,7 +76,7 @@ public:
     virtual bool has_clock() const;
 
     //! Write audio frame.
-    virtual void write(audio::Frame& frame);
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(audio::Frame& frame);
 
 private:
     audio::FrameFactory frame_factory_;

@@ -211,7 +211,7 @@ bool SenderLoop::has_clock() const {
     return sink_.has_clock();
 }
 
-void SenderLoop::write(audio::Frame& frame) {
+status::StatusCode SenderLoop::write(audio::Frame& frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (auto_duration_) {
@@ -236,9 +236,7 @@ void SenderLoop::write(audio::Frame& frame) {
     }
 
     // invokes process_subframe_imp() and process_task_imp()
-    if (!process_subframes_and_tasks(frame)) {
-        return;
-    }
+    return process_subframes_and_tasks(frame);
 }
 
 core::nanoseconds_t SenderLoop::timestamp_imp() const {
@@ -249,13 +247,14 @@ uint64_t SenderLoop::tid_imp() const {
     return core::Thread::get_tid();
 }
 
-bool SenderLoop::process_subframe_imp(audio::Frame& frame) {
-    sink_.write(frame);
+status::StatusCode SenderLoop::process_subframe_imp(audio::Frame& frame) {
+    const status::StatusCode status = sink_.write(frame);
 
+    // TODO(gh-183): forward status from refresh()
     // TODO: handle returned deadline and schedule refresh
     sink_.refresh(core::timestamp(core::ClockUnix));
 
-    return true;
+    return status;
 }
 
 bool SenderLoop::process_task_imp(PipelineTask& basic_task) {

@@ -37,7 +37,7 @@ public:
     //! Write audio frame.
     //! @remarks
     //!  Writes samples to every output writer.
-    virtual void write(Frame& frame);
+    virtual status::StatusCode write(Frame& frame);
 
 private:
     core::List<IFrameWriter, core::NoOwnership> writers_;

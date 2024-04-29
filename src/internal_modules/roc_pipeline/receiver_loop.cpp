@@ -232,7 +232,8 @@ bool ReceiverLoop::read(audio::Frame& frame) {
     }
 
     // invokes process_subframe_imp() and process_task_imp()
-    if (!process_subframes_and_tasks(frame)) {
+    if (process_subframes_and_tasks(frame) != status::StatusOK) {
+        // TODO(gh-183): forward status
         return false;
     }
 
@@ -253,11 +254,12 @@ uint64_t ReceiverLoop::tid_imp() const {
     return core::Thread::get_tid();
 }
 
-bool ReceiverLoop::process_subframe_imp(audio::Frame& frame) {
+status::StatusCode ReceiverLoop::process_subframe_imp(audio::Frame& frame) {
     // TODO: handle returned deadline and schedule refresh
     source_.refresh(core::timestamp(core::ClockUnix));
 
-    return source_.read(frame);
+    // TOOD(gh-183): forward status
+    return source_.read(frame) ? status::StatusOK : status::StatusAbort;
 }
 
 bool ReceiverLoop::process_task_imp(PipelineTask& basic_task) {

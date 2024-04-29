@@ -84,7 +84,7 @@ public:
     virtual bool has_clock() const;
 
     //! Write audio frame.
-    virtual void write(audio::Frame& frame);
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(audio::Frame& frame);
 
 private:
     bool open_(const char* driver, const char* path);

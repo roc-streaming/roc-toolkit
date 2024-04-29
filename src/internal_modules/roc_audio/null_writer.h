@@ -22,7 +22,7 @@ namespace audio {
 class NullWriter : public IFrameWriter, public core::NonCopyable<> {
 public:
     //! Write audio frame.
-    virtual void write(Frame& frame);
+    virtual status::StatusCode write(Frame& frame);
 };
 
 } // namespace audio

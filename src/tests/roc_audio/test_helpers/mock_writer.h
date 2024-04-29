@@ -26,7 +26,7 @@ public:
         , n_writes_(0) {
     }
 
-    virtual void write(Frame& frame) {
+    virtual status::StatusCode write(Frame& frame) {
         CHECK(size_ + frame.num_raw_samples() <= MaxSz);
 
         memcpy(samples_ + size_, frame.raw_samples(),
@@ -40,6 +40,8 @@ public:
         frame_timestamps_[n_writes_] = frame.capture_timestamp();
 
         n_writes_++;
+
+        return status::StatusOK;
     }
 
     sample_t get() {

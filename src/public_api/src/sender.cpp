@@ -213,7 +213,13 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
     }
 
     audio::Frame imp_frame((float*)frame->samples, frame->samples_size / sizeof(float));
-    imp_sink.write(imp_frame);
+
+    const status::StatusCode code = imp_sink.write(imp_frame);
+    if (code != status::StatusOK) {
+        roc_log(LogError, "roc_sender_write(): can't write frame: status=%s",
+                status::code_to_str(code));
+        return -1;
+    }
 
     return 0;
 }

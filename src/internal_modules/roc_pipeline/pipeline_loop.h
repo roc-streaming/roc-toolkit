@@ -26,6 +26,7 @@
 #include "roc_pipeline/ipipeline_task_completer.h"
 #include "roc_pipeline/ipipeline_task_scheduler.h"
 #include "roc_pipeline/pipeline_task.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace pipeline {
@@ -291,10 +292,11 @@ protected:
 
     //! Get task processing statistics.
     //! Returned object can't be accessed concurrently with other methods.
-    const Stats& get_stats_ref() const;
+    const Stats& stats_ref() const;
 
     //! Split frame and process subframes and some of the enqueued tasks.
-    bool process_subframes_and_tasks(audio::Frame& frame);
+    ROC_ATTR_NODISCARD status::StatusCode
+    process_subframes_and_tasks(audio::Frame& frame);
 
     //! Get current time.
     virtual core::nanoseconds_t timestamp_imp() const = 0;
@@ -303,7 +305,7 @@ protected:
     virtual uint64_t tid_imp() const = 0;
 
     //! Process subframe.
-    virtual bool process_subframe_imp(audio::Frame& frame) = 0;
+    virtual status::StatusCode process_subframe_imp(audio::Frame& frame) = 0;
 
     //! Process task.
     virtual bool process_task_imp(PipelineTask& task) = 0;
@@ -311,8 +313,8 @@ protected:
 private:
     enum ProcState { ProcNotScheduled, ProcScheduled, ProcRunning };
 
-    bool process_subframes_and_tasks_simple_(audio::Frame& frame);
-    bool process_subframes_and_tasks_precise_(audio::Frame& frame);
+    status::StatusCode process_subframes_and_tasks_simple_(audio::Frame& frame);
+    status::StatusCode process_subframes_and_tasks_precise_(audio::Frame& frame);
 
     bool schedule_and_maybe_process_task_(PipelineTask& task);
     bool maybe_process_tasks_();
@@ -321,9 +323,9 @@ private:
     void cancel_async_task_processing_();
 
     void process_task_(PipelineTask& task, bool notify);
-    bool process_next_subframe_(audio::Frame& frame,
-                                packet::stream_timestamp_t* frame_pos,
-                                packet::stream_timestamp_t frame_duration);
+    status::StatusCode process_next_subframe_(audio::Frame& frame,
+                                              packet::stream_timestamp_t* frame_pos,
+                                              packet::stream_timestamp_t frame_duration);
 
     bool start_subframe_task_processing_();
     bool subframe_task_processing_allowed_(core::nanoseconds_t next_frame_deadline) const;

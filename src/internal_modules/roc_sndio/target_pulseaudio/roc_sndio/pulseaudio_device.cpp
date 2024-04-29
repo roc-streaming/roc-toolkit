@@ -195,10 +195,14 @@ void PulseaudioDevice::reclock(core::nanoseconds_t timestamp) {
     // no-op
 }
 
-void PulseaudioDevice::write(audio::Frame& frame) {
+status::StatusCode PulseaudioDevice::write(audio::Frame& frame) {
     roc_panic_if(device_type_ != DeviceType_Sink);
 
-    request_frame_(frame);
+    if (!request_frame_(frame)) {
+        return status::StatusErrDevice;
+    }
+
+    return status::StatusOK;
 }
 
 bool PulseaudioDevice::read(audio::Frame& frame) {

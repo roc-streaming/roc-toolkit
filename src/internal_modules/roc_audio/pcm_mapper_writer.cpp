@@ -64,7 +64,7 @@ status::StatusCode PcmMapperWriter::init_status() const {
     return init_status_;
 }
 
-void PcmMapperWriter::write(Frame& in_frame) {
+status::StatusCode PcmMapperWriter::write(Frame& in_frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     const size_t max_sample_count =
@@ -102,7 +102,10 @@ void PcmMapperWriter::write(Frame& in_frame) {
         out_frame.set_duration(n_samples);
         out_frame.set_capture_timestamp(out_cts);
 
-        out_writer_.write(out_frame);
+        const status::StatusCode code = out_writer_.write(out_frame);
+        if (code != status::StatusOK) {
+            return code;
+        }
 
         if (out_cts) {
             out_cts += out_spec_.samples_per_chan_2_ns(n_samples);
@@ -110,6 +113,8 @@ void PcmMapperWriter::write(Frame& in_frame) {
 
         in_sample_offset += n_samples;
     }
+
+    return status::StatusOK;
 }
 
 } // namespace audio

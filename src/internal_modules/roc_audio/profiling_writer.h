@@ -35,11 +35,9 @@ public:
     status::StatusCode init_status() const;
 
     //! Write audio frame.
-    virtual void write(Frame& frame);
+    virtual status::StatusCode write(Frame& frame);
 
 private:
-    core::nanoseconds_t write_(Frame& frame);
-
     Profiler profiler_;
     IFrameWriter& writer_;
 };

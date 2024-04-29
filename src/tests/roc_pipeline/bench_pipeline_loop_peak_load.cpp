@@ -296,7 +296,7 @@ public:
     }
 
     void export_counters(benchmark::State& state) {
-        PipelineLoop::Stats st = get_stats_ref();
+        PipelineLoop::Stats st = stats_ref();
 
         state.counters["tp_plc"] =
             round_digits(double(st.task_processed_in_place) / st.task_processed_total, 3);
@@ -330,11 +330,11 @@ private:
         return 0;
     }
 
-    virtual bool process_subframe_imp(audio::Frame&) {
+    virtual status::StatusCode process_subframe_imp(audio::Frame&) {
         stats_.frame_processing_started();
         busy_wait(FrameProcessingDuration);
         stats_.frame_processing_finished();
-        return true;
+        return status::StatusOK;
     }
 
     virtual bool process_task_imp(PipelineTask& basic_task) {
@@ -424,7 +424,7 @@ public:
 
             stats_.frame_started();
 
-            pipeline_.process_subframes_and_tasks(frame);
+            (void)pipeline_.process_subframes_and_tasks(frame);
 
             stats_.frame_finished();
 

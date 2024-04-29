@@ -237,22 +237,25 @@ bool SndfileSink::has_clock() const {
     return false;
 }
 
-void SndfileSink::write(audio::Frame& frame) {
+status::StatusCode SndfileSink::write(audio::Frame& frame) {
     if (!file_) {
         roc_panic("sndfile sink: not opened");
     }
 
     audio::sample_t* frame_data = frame.raw_samples();
-    sf_count_t frame_left = (sf_count_t)frame.num_raw_samples();
+    sf_count_t frame_size = (sf_count_t)frame.num_raw_samples();
 
     // Write entire float buffer in one call
-    sf_count_t count = sf_write_float(file_, frame_data, frame_left);
+    sf_count_t count = sf_write_float(file_, frame_data, frame_size);
 
     int errnum = sf_error(file_);
-    if (count != frame_left || errnum != 0) {
-        // TODO(gh-183): return error instead of panic
-        roc_panic("sndfile source: sf_write_float() failed: %s", sf_error_number(errnum));
+    if (count != frame_size || errnum != 0) {
+        roc_log(LogError, "sndfile source: sf_write_float() failed: %s",
+                sf_error_number(errnum));
+        return status::StatusErrFile;
     }
+
+    return status::StatusOK;
 }
 
 bool SndfileSink::open_(const char* driver, const char* path) {

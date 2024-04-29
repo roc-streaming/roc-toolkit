@@ -93,7 +93,7 @@ TEST(channel_mapper_writer, small_frame_upmix) {
     frame.set_capture_timestamp(timestamp);
     fill_mono(frame, 0.3f);
 
-    mapper_writer.write(frame);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.write(frame));
 
     CHECK_EQUAL(1, mock_writer.n_writes());
 
@@ -127,7 +127,7 @@ TEST(channel_mapper_writer, small_frame_downmix) {
     frame.set_capture_timestamp(timestamp);
     fill_stereo(frame, 0.2f, 0.4f);
 
-    mapper_writer.write(frame);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.write(frame));
 
     CHECK_EQUAL(1, mock_writer.n_writes());
 
@@ -160,7 +160,7 @@ TEST(channel_mapper_writer, small_frame_nocts) {
     frame.set_capture_timestamp(0);
     fill_stereo(frame, 0.2f, 0.4f);
 
-    mapper_writer.write(frame);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.write(frame));
 
     CHECK_EQUAL(1, mock_writer.n_writes());
 
@@ -194,7 +194,7 @@ TEST(channel_mapper_writer, large_frame_upmix) {
     frame.set_capture_timestamp(timestamp);
     fill_mono(frame, 0.3f);
 
-    mapper_writer.write(frame);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.write(frame));
 
     CHECK_EQUAL(6, mock_writer.n_writes());
 
@@ -231,7 +231,7 @@ TEST(channel_mapper_writer, large_frame_downmix) {
     frame.set_capture_timestamp(timestamp);
     fill_stereo(frame, 0.2f, 0.4f);
 
-    mapper_writer.write(frame);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.write(frame));
 
     CHECK_EQUAL(2, mock_writer.n_writes());
 
@@ -267,7 +267,7 @@ TEST(channel_mapper_writer, large_frame_nocts) {
     frame.set_capture_timestamp(0);
     fill_stereo(frame, 0.2f, 0.4f);
 
-    mapper_writer.write(frame);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.write(frame));
 
     CHECK_EQUAL(2, mock_writer.n_writes());
 

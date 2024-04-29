@@ -74,7 +74,7 @@ bool ResamplerWriter::set_scaling(float multiplier) {
                                   out_sample_spec_.sample_rate(), multiplier);
 }
 
-void ResamplerWriter::write(Frame& in_frame) {
+status::StatusCode ResamplerWriter::write(Frame& in_frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (in_frame.num_raw_samples() % in_sample_spec_.num_channels() != 0) {
@@ -86,14 +86,16 @@ void ResamplerWriter::write(Frame& in_frame) {
     while (in_pos < in_frame.num_raw_samples()) {
         const size_t output_buf_remain = output_buf_.size() - output_buf_pos_;
 
-        const size_t num_popped = resampler_.pop_output(
-            output_buf_.data() + output_buf_pos_, output_buf_remain);
+        if (output_buf_remain != 0) {
+            const size_t num_popped = resampler_.pop_output(
+                output_buf_.data() + output_buf_pos_, output_buf_remain);
 
-        if (num_popped < output_buf_remain) {
-            in_pos += push_input_(in_frame, in_pos);
+            if (num_popped < output_buf_remain) {
+                in_pos += push_input_(in_frame, in_pos);
+            }
+
+            output_buf_pos_ += num_popped;
         }
-
-        output_buf_pos_ += num_popped;
 
         if (output_buf_pos_ == output_buf_.size()) {
             Frame out_frame(output_buf_.data(), output_buf_.size());
@@ -102,7 +104,10 @@ void ResamplerWriter::write(Frame& in_frame) {
                                    / out_sample_spec_.num_channels());
             out_frame.set_capture_timestamp(capture_ts_(in_frame, in_pos));
 
-            writer_.write(out_frame);
+            const status::StatusCode code = writer_.write(out_frame);
+            if (code != status::StatusOK) {
+                return code;
+            }
 
             output_buf_pos_ = 0;
         }
@@ -115,10 +120,15 @@ void ResamplerWriter::write(Frame& in_frame) {
                                / out_sample_spec_.num_channels());
         out_frame.set_capture_timestamp(capture_ts_(in_frame, in_pos));
 
-        writer_.write(out_frame);
+        const status::StatusCode code = writer_.write(out_frame);
+        if (code != status::StatusOK) {
+            return code;
+        }
 
         output_buf_pos_ = 0;
     }
+
+    return status::StatusOK;
 }
 
 size_t ResamplerWriter::push_input_(Frame& in_frame, size_t in_pos) {

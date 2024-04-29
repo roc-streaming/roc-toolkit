@@ -27,8 +27,9 @@ public:
     //! Read packet.
     //!
     //! @returns
-    //!  - If a returned code is not status::StatusOK, a packet is never set;
-    //!  - If a packet is set, a returned code is always status::StatusOK.
+    //!  - If packet was successfully read, returns status::StatusOK and sets
+    //!    @p packet to non-null.
+    //!  - Otherwise, returns an error and sets @p packet to null.
     //!
     //! @see status::StatusCode.
     virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr& packet) = 0;

@@ -48,7 +48,7 @@ PipelineLoop::~PipelineLoop() {
     }
 }
 
-const PipelineLoop::Stats& PipelineLoop::get_stats_ref() const {
+const PipelineLoop::Stats& PipelineLoop::stats_ref() const {
     return stats_;
 }
 
@@ -192,21 +192,22 @@ bool PipelineLoop::maybe_process_tasks_() {
     return (n_pending_frames == 0 && pending_tasks_ != 0);
 }
 
-bool PipelineLoop::process_subframes_and_tasks(audio::Frame& frame) {
+status::StatusCode PipelineLoop::process_subframes_and_tasks(audio::Frame& frame) {
     if (config_.enable_precise_task_scheduling) {
         return process_subframes_and_tasks_precise_(frame);
     }
     return process_subframes_and_tasks_simple_(frame);
 }
 
-bool PipelineLoop::process_subframes_and_tasks_simple_(audio::Frame& frame) {
+status::StatusCode
+PipelineLoop::process_subframes_and_tasks_simple_(audio::Frame& frame) {
     ++pending_frames_;
 
     cancel_async_task_processing_();
 
     pipeline_mutex_.lock();
 
-    const bool frame_res = process_subframe_imp(frame);
+    const status::StatusCode frame_status = process_subframe_imp(frame);
 
     pipeline_mutex_.unlock();
 
@@ -214,10 +215,11 @@ bool PipelineLoop::process_subframes_and_tasks_simple_(audio::Frame& frame) {
         schedule_async_task_processing_();
     }
 
-    return frame_res;
+    return frame_status;
 }
 
-bool PipelineLoop::process_subframes_and_tasks_precise_(audio::Frame& frame) {
+status::StatusCode
+PipelineLoop::process_subframes_and_tasks_precise_(audio::Frame& frame) {
     ++pending_frames_;
 
     const core::nanoseconds_t frame_start_time = timestamp_imp();
@@ -229,7 +231,7 @@ bool PipelineLoop::process_subframes_and_tasks_precise_(audio::Frame& frame) {
     core::nanoseconds_t next_frame_deadline = 0;
 
     packet::stream_timestamp_t frame_pos = 0;
-    bool frame_res = false;
+    status::StatusCode frame_status = status::NoStatus;
 
     const packet::stream_timestamp_t frame_duration = frame.has_duration()
         ? frame.duration()
@@ -238,7 +240,7 @@ bool PipelineLoop::process_subframes_and_tasks_precise_(audio::Frame& frame) {
     for (;;) {
         const bool first_iteration = (frame_pos == 0);
 
-        frame_res = process_next_subframe_(frame, &frame_pos, frame_duration);
+        frame_status = process_next_subframe_(frame, &frame_pos, frame_duration);
 
         if (first_iteration) {
             next_frame_deadline =
@@ -259,7 +261,7 @@ bool PipelineLoop::process_subframes_and_tasks_precise_(audio::Frame& frame) {
             }
         }
 
-        if (!frame_res || frame_pos == frame_duration) {
+        if (frame_status != status::StatusOK || frame_pos == frame_duration) {
             break;
         }
     }
@@ -274,7 +276,7 @@ bool PipelineLoop::process_subframes_and_tasks_precise_(audio::Frame& frame) {
         schedule_async_task_processing_();
     }
 
-    return frame_res;
+    return frame_status;
 }
 
 void PipelineLoop::schedule_async_task_processing_() {
@@ -343,9 +345,10 @@ void PipelineLoop::process_task_(PipelineTask& task, bool notify) {
     }
 }
 
-bool PipelineLoop::process_next_subframe_(audio::Frame& frame,
-                                          packet::stream_timestamp_t* frame_pos,
-                                          packet::stream_timestamp_t frame_duration) {
+status::StatusCode
+PipelineLoop::process_next_subframe_(audio::Frame& frame,
+                                     packet::stream_timestamp_t* frame_pos,
+                                     packet::stream_timestamp_t frame_duration) {
     const size_t subframe_duration = max_samples_between_tasks_
         ? std::min(frame_duration - *frame_pos, max_samples_between_tasks_)
         : frame_duration;
@@ -362,7 +365,7 @@ bool PipelineLoop::process_next_subframe_(audio::Frame& frame,
                                         + sample_spec_.stream_timestamp_2_ns(*frame_pos));
     }
 
-    const bool ret = process_subframe_imp(sub_frame);
+    const status::StatusCode status = process_subframe_imp(sub_frame);
 
     subframe_tasks_deadline_ = timestamp_imp() + config_.max_inframe_task_processing;
 
@@ -383,7 +386,7 @@ bool PipelineLoop::process_next_subframe_(audio::Frame& frame,
         }
     }
 
-    return ret;
+    return status;
 }
 
 bool PipelineLoop::start_subframe_task_processing_() {

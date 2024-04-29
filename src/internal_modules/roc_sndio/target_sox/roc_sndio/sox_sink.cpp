@@ -156,7 +156,7 @@ bool SoxSink::has_clock() const {
     return !is_file_;
 }
 
-void SoxSink::write(audio::Frame& frame) {
+status::StatusCode SoxSink::write(audio::Frame& frame) {
     roc_panic_if(!valid_);
 
     const audio::sample_t* frame_data = frame.raw_samples();
@@ -182,7 +182,7 @@ void SoxSink::write(audio::Frame& frame) {
         }
     }
 
-    write_(buffer_data, buffer_pos);
+    return write_(buffer_data, buffer_pos);
 }
 
 bool SoxSink::setup_buffer_() {
@@ -246,12 +246,15 @@ bool SoxSink::open_(const char* driver, const char* path) {
     return true;
 }
 
-void SoxSink::write_(const sox_sample_t* samples, size_t n_samples) {
+status::StatusCode SoxSink::write_(const sox_sample_t* samples, size_t n_samples) {
     if (n_samples > 0) {
         if (sox_write(output_, samples, n_samples) != n_samples) {
             roc_log(LogError, "sox sink: failed to write output buffer");
+            return is_file_ ? status::StatusErrFile : status::StatusErrDevice;
         }
     }
+
+    return status::StatusOK;
 }
 
 void SoxSink::close_() {

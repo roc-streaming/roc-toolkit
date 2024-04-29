@@ -23,10 +23,15 @@ void Fanout::remove_output(IFrameWriter& writer) {
     writers_.remove(writer);
 }
 
-void Fanout::write(Frame& frame) {
+status::StatusCode Fanout::write(Frame& frame) {
     for (IFrameWriter* wp = writers_.front(); wp; wp = writers_.nextof(*wp)) {
-        wp->write(frame);
+        const status::StatusCode code = wp->write(frame);
+        if (code != status::StatusOK) {
+            return code;
+        }
     }
+
+    return status::StatusOK;
 }
 
 } // namespace audio

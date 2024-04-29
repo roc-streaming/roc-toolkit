@@ -44,7 +44,7 @@ template <class T> struct BufferWriter : IFrameWriter {
         n_values = 0;
     }
 
-    virtual void write(Frame& frame) {
+    virtual status::StatusCode write(Frame& frame) {
         size_t pos = 0;
         while (pos < frame.num_bytes()) {
             CHECK(n_values < (int)ROC_ARRAY_SIZE(samples));
@@ -53,6 +53,7 @@ template <class T> struct BufferWriter : IFrameWriter {
             n_values++;
         }
         n_calls++;
+        return status::StatusOK;
     }
 };
 
@@ -72,12 +73,13 @@ struct MetaWriter : IFrameWriter {
         memset(cts, 0, sizeof(cts));
     }
 
-    virtual void write(Frame& frame) {
+    virtual status::StatusCode write(Frame& frame) {
         CHECK(n_calls < MaxCalls);
         duration[n_calls] = frame.duration();
         flags[n_calls] = frame.flags();
         cts[n_calls] = frame.capture_timestamp();
         n_calls++;
+        return status::StatusOK;
     }
 };
 
@@ -101,7 +103,7 @@ template <class T> struct CountGenerator {
         }
 
         Frame frame((uint8_t*)samples, num * sizeof(T));
-        writer.write(frame);
+        LONGS_EQUAL(status::StatusOK, writer.write(frame));
     }
 };
 

@@ -8,6 +8,7 @@
 
 #include "roc_sndio/pump.h"
 #include "roc_core/log.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace sndio {
@@ -24,12 +25,13 @@ Pump::Pump(core::IPool& buffer_pool,
     , backup_source_(backup_source)
     , sink_(sink)
     , sample_spec_(sample_spec)
-    , n_bufs_(0)
-    , oneshot_(mode == ModeOneshot)
-    , stop_(0) {
+    , mode_(mode)
+    , stop_(0)
+    , init_status_(status::NoStatus) {
     size_t frame_size = sample_spec_.ns_2_samples_overall(frame_length);
     if (frame_size == 0) {
         roc_log(LogError, "pump: frame size cannot be 0");
+        init_status_ = status::StatusBadConfig;
         return;
     }
 
@@ -37,28 +39,51 @@ Pump::Pump(core::IPool& buffer_pool,
         roc_log(LogError, "pump: buffer size is too small: required=%lu actual=%lu",
                 (unsigned long)frame_size,
                 (unsigned long)frame_factory_.raw_buffer_size());
+        init_status_ = status::StatusNoSpace;
         return;
     }
 
     frame_buffer_ = frame_factory_.new_raw_buffer();
     if (!frame_buffer_) {
         roc_log(LogError, "pump: can't allocate frame buffer");
+        init_status_ = status::StatusNoMem;
         return;
     }
 
     frame_buffer_.reslice(0, frame_size);
+
+    init_status_ = status::StatusOK;
 }
 
-bool Pump::is_valid() const {
-    return frame_buffer_;
+status::StatusCode Pump::init_status() const {
+    return init_status_;
 }
 
-bool Pump::run() {
+status::StatusCode Pump::run() {
     roc_log(LogDebug, "pump: starting main loop");
 
+    const status::StatusCode code = transfer_loop_();
+
+    roc_log(LogDebug, "pump: exiting main loop");
+
+    return code;
+}
+
+void Pump::stop() {
+    stop_ = 1;
+}
+
+status::StatusCode Pump::transfer_loop_() {
     ISource* current_source = &main_source_;
 
-    while (!stop_) {
+    bool was_active_ = false;
+
+    for (;;) {
+        if (stop_) {
+            roc_log(LogDebug, "pump: got stop request, exiting");
+            return status::StatusAbort;
+        }
+
         // switch between main and backup sources when necessary
         if (main_source_.state() == DeviceState_Active) {
             if (current_source == backup_source_) {
@@ -69,12 +94,13 @@ bool Pump::run() {
                     backup_source_->pause();
                 } else {
                     roc_log(LogError, "pump: can't resume main source");
+                    // TODO(gh-183): forward status from resume()
                 }
             }
         } else {
-            if (oneshot_ && n_bufs_ != 0) {
-                roc_log(LogInfo, "pump: main source become inactive in oneshot mode");
-                break;
+            if (mode_ == ModeOneshot && was_active_) {
+                roc_log(LogInfo, "pump: main source became inactive, exiting");
+                return status::StatusEnd;
             }
 
             if (backup_source_ && current_source != backup_source_) {
@@ -85,39 +111,40 @@ bool Pump::run() {
                     main_source_.pause();
                 } else {
                     roc_log(LogError, "pump: can't restart backup source");
+                    // TODO(gh-183): forward status from restart()
                 }
             }
         }
 
         // read frame
-        if (!transfer_frame_(*current_source)) {
-            roc_log(LogDebug, "pump: got eof from source");
-
+        const status::StatusCode code = transfer_frame_(*current_source);
+        if (code == status::StatusEnd) {
             if (current_source == backup_source_) {
+                roc_log(LogDebug, "pump: got eof from backup source");
                 current_source = &main_source_;
                 continue;
             } else {
-                break;
+                roc_log(LogInfo, "pump: got eof from main source, exiting");
+                return code;
             }
+        } else if (code != status::StatusOK) {
+            roc_log(LogError, "pump: got error from source: status=%s",
+                    status::code_to_str(code));
+            return code;
         }
 
         if (current_source == &main_source_) {
-            n_bufs_++;
+            was_active_ = true;
         }
     }
-
-    roc_log(LogDebug, "pump: exiting main loop, wrote %lu buffers from main source",
-            (unsigned long)n_bufs_);
-
-    return !stop_;
 }
 
-bool Pump::transfer_frame_(ISource& current_source) {
+status::StatusCode Pump::transfer_frame_(ISource& current_source) {
     audio::Frame frame(frame_buffer_.data(), frame_buffer_.size());
 
     // if source has clock, here we block on it
     if (!current_source.read(frame)) {
-        return false;
+        return status::StatusEnd;
     }
 
     if (!frame.has_duration()) {
@@ -144,7 +171,10 @@ bool Pump::transfer_frame_(ISource& current_source) {
 
     // if sink has clock, here we block on it
     // note that either source or sink has clock, but not both
-    sink_.write(frame);
+    const status::StatusCode code = sink_.write(frame);
+    if (code != status::StatusOK) {
+        return code;
+    }
 
     {
         // tell source what is playback time of first sample of last read frame
@@ -161,11 +191,7 @@ bool Pump::transfer_frame_(ISource& current_source) {
         current_source.reclock(core::timestamp(core::ClockUnix) + playback_latency);
     }
 
-    return true;
-}
-
-void Pump::stop() {
-    stop_ = 1;
+    return status::StatusOK;
 }
 
 } // namespace sndio

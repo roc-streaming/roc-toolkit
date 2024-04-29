@@ -38,13 +38,13 @@ public:
     status::StatusCode init_status() const;
 
     //! Write audio frame.
-    virtual void write(Frame& frame);
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(Frame& frame);
 
 private:
-    void write_(sample_t* in_samples,
-                size_t n_samples,
-                unsigned flags,
-                core::nanoseconds_t capture_ts);
+    status::StatusCode write_(sample_t* in_samples,
+                              size_t n_samples,
+                              unsigned flags,
+                              core::nanoseconds_t capture_ts);
 
     IFrameWriter& output_writer_;
     core::Slice<sample_t> output_buf_;

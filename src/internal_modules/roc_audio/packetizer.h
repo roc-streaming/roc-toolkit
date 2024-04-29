@@ -77,7 +77,7 @@ public:
     const PacketizerMetrics& metrics() const;
 
     //! Write audio frame.
-    virtual void write(Frame& frame);
+    virtual status::StatusCode write(Frame& frame);
 
     //! Flush buffered packet, if any.
     //! @remarks
@@ -85,12 +85,11 @@ public:
     void flush();
 
 private:
-    bool begin_packet_();
-    void end_packet_();
+    status::StatusCode begin_packet_();
+    status::StatusCode end_packet_();
 
+    status::StatusCode create_packet_();
     void pad_packet_(size_t written_payload_size);
-
-    packet::PacketPtr create_packet_();
 
     packet::IWriter& writer_;
     packet::IComposer& composer_;

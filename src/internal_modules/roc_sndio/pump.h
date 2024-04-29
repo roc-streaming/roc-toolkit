@@ -51,14 +51,14 @@ public:
          const audio::SampleSpec& sample_spec,
          Mode mode);
 
-    //! Check if the object was successfulyl constructed.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Run the pump.
     //! @remarks
     //!  Run until the stop() is called or, if oneshot mode is enabled,
     //!  the source becomes inactive.
-    ROC_ATTR_NODISCARD bool run();
+    ROC_ATTR_NODISCARD status::StatusCode run();
 
     //! Stop the pump.
     //! @remarks
@@ -66,7 +66,8 @@ public:
     void stop();
 
 private:
-    bool transfer_frame_(ISource& current_source);
+    status::StatusCode transfer_loop_();
+    status::StatusCode transfer_frame_(ISource& current_source);
 
     audio::FrameFactory frame_factory_;
 
@@ -75,13 +76,12 @@ private:
     ISink& sink_;
 
     audio::SampleSpec sample_spec_;
-
     core::Slice<audio::sample_t> frame_buffer_;
 
-    size_t n_bufs_;
-    const bool oneshot_;
-
+    const Mode mode_;
     core::Atomic<int> stop_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace sndio

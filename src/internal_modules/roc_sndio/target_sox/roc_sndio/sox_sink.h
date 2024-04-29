@@ -85,12 +85,12 @@ public:
     virtual bool has_clock() const;
 
     //! Write audio frame.
-    virtual void write(audio::Frame& frame);
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(audio::Frame& frame);
 
 private:
     bool setup_buffer_();
     bool open_(const char* driver, const char* path);
-    void write_(const sox_sample_t* samples, size_t n_samples);
+    status::StatusCode write_(const sox_sample_t* samples, size_t n_samples);
     void close_();
 
     sox_format_t* output_;

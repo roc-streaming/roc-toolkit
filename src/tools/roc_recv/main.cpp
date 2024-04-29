@@ -525,12 +525,17 @@ int main(int argc, char** argv) {
         context.frame_buffer_pool(), receiver.source(), backup_pipeline.get(),
         *output_sink, io_config.frame_length, receiver_config.common.output_sample_spec,
         args.oneshot_flag ? sndio::Pump::ModeOneshot : sndio::Pump::ModePermanent);
-    if (!pump.is_valid()) {
-        roc_log(LogError, "can't create pump");
+    if (pump.init_status() != status::StatusOK) {
+        roc_log(LogError, "can't create audio pump: status=%s",
+                status::code_to_str(pump.init_status()));
         return 1;
     }
 
-    const bool ok = pump.run();
+    const status::StatusCode status = pump.run();
+    if (status != status::StatusOK) {
+        roc_log(LogError, "can't run audio pump: status=%s", status::code_to_str(status));
+        return 1;
+    }
 
-    return ok ? 0 : 1;
+    return 0;
 }

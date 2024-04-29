@@ -149,12 +149,12 @@ private:
     virtual core::nanoseconds_t latency() const;
     virtual bool has_latency() const;
     virtual bool has_clock() const;
-    virtual void write(audio::Frame& frame);
+    virtual status::StatusCode write(audio::Frame& frame);
 
     // Methods of PipelineLoop
     virtual core::nanoseconds_t timestamp_imp() const;
     virtual uint64_t tid_imp() const;
-    virtual bool process_subframe_imp(audio::Frame&);
+    virtual status::StatusCode process_subframe_imp(audio::Frame&);
     virtual bool process_task_imp(PipelineTask&);
 
     // Methods for tasks

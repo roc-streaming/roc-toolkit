@@ -137,10 +137,10 @@ bool TranscoderSink::has_clock() const {
     return false;
 }
 
-void TranscoderSink::write(audio::Frame& frame) {
+status::StatusCode TranscoderSink::write(audio::Frame& frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    frame_writer_->write(frame);
+    return frame_writer_->write(frame);
 }
 
 } // namespace pipeline

@@ -68,7 +68,7 @@ public:
             frame.set_capture_timestamp(last_capture_ts_);
         }
 
-        sink_.write(frame);
+        LONGS_EQUAL(status::StatusOK, sink_.write(frame));
 
         refresh_ts_offset_ = sample_spec.samples_per_chan_2_ns(abs_offset_);
         abs_offset_ += num_samples;

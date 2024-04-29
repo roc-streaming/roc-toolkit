@@ -87,7 +87,7 @@ public:
     //! Write audio frame.
     //! Passes frame to underlying writer.
     //! If feedback monitoring is started, also performs latency tuning.
-    virtual void write(Frame& frame);
+    virtual status::StatusCode write(Frame& frame);
 
     //! Get number of remote participants from which there is feedback.
     size_t num_participants() const;

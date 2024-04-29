@@ -93,8 +93,8 @@ TEST(backend_source, open) {
 
             Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
-            CHECK(pump.is_valid());
-            CHECK(pump.run());
+            LONGS_EQUAL(status::StatusOK, pump.init_status());
+            LONGS_EQUAL(status::StatusEnd, pump.run());
         }
         IDevice* backend_device = backend.open_device(
             DeviceType_Source, DriverType_File, NULL, file.path(), source_config, arena);
@@ -139,8 +139,8 @@ TEST(backend_source, has_clock) {
 
             Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
-            CHECK(pump.is_valid());
-            CHECK(pump.run());
+            LONGS_EQUAL(status::StatusOK, pump.init_status());
+            LONGS_EQUAL(status::StatusEnd, pump.run());
         }
 
         IDevice* backend_device = backend.open_device(
@@ -174,8 +174,8 @@ TEST(backend_source, sample_rate_auto) {
 
             Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
-            CHECK(pump.is_valid());
-            CHECK(pump.run());
+            LONGS_EQUAL(status::StatusOK, pump.init_status());
+            LONGS_EQUAL(status::StatusEnd, pump.run());
         }
         source_config.sample_spec.set_sample_rate(0);
         source_config.frame_length = frame_duration;
@@ -212,8 +212,8 @@ TEST(backend_source, sample_rate_mismatch) {
 
             Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
-            CHECK(pump.is_valid());
-            CHECK(pump.run());
+            LONGS_EQUAL(status::StatusOK, pump.init_status());
+            LONGS_EQUAL(status::StatusEnd, pump.run());
         }
 
         source_config.sample_spec.set_sample_rate(SampleRate * 2);
@@ -247,8 +247,8 @@ TEST(backend_source, pause_resume) {
 
             Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
-            CHECK(pump.is_valid());
-            CHECK(pump.run());
+            LONGS_EQUAL(status::StatusOK, pump.init_status());
+            LONGS_EQUAL(status::StatusEnd, pump.run());
         }
 
         IDevice* backend_device = backend.open_device(
@@ -316,8 +316,8 @@ TEST(backend_source, pause_restart) {
 
             Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
-            CHECK(pump.is_valid());
-            CHECK(pump.run());
+            LONGS_EQUAL(status::StatusOK, pump.init_status());
+            LONGS_EQUAL(status::StatusEnd, pump.run());
         }
 
         IDevice* backend_device = backend.open_device(
@@ -386,8 +386,8 @@ TEST(backend_source, eof_restart) {
 
             Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
-            CHECK(pump.is_valid());
-            CHECK(pump.run());
+            LONGS_EQUAL(status::StatusOK, pump.init_status());
+            LONGS_EQUAL(status::StatusEnd, pump.run());
         }
 
         IDevice* backend_device = backend.open_device(

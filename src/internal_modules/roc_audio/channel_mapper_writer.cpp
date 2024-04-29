@@ -56,7 +56,7 @@ status::StatusCode ChannelMapperWriter::init_status() const {
     return init_status_;
 }
 
-void ChannelMapperWriter::write(Frame& in_frame) {
+status::StatusCode ChannelMapperWriter::write(Frame& in_frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (in_frame.num_raw_samples() % in_spec_.num_channels() != 0) {
@@ -74,7 +74,10 @@ void ChannelMapperWriter::write(Frame& in_frame) {
     while (n_samples != 0) {
         const size_t n_write = std::min(n_samples, max_batch);
 
-        write_(in_samples, n_write, flags, capt_ts);
+        const status::StatusCode code = write_(in_samples, n_write, flags, capt_ts);
+        if (code != status::StatusOK) {
+            return code;
+        }
 
         in_samples += n_write * in_spec_.num_channels();
         n_samples -= n_write;
@@ -83,12 +86,14 @@ void ChannelMapperWriter::write(Frame& in_frame) {
             capt_ts += in_spec_.samples_per_chan_2_ns(n_write);
         }
     }
+
+    return status::StatusOK;
 }
 
-void ChannelMapperWriter::write_(sample_t* in_samples,
-                                 size_t n_samples,
-                                 unsigned flags,
-                                 core::nanoseconds_t capture_ts) {
+status::StatusCode ChannelMapperWriter::write_(sample_t* in_samples,
+                                               size_t n_samples,
+                                               unsigned flags,
+                                               core::nanoseconds_t capture_ts) {
     Frame out_frame(output_buf_.data(), n_samples * out_spec_.num_channels());
 
     mapper_.map(in_samples, n_samples * in_spec_.num_channels(), out_frame.raw_samples(),
@@ -98,7 +103,7 @@ void ChannelMapperWriter::write_(sample_t* in_samples,
     out_frame.set_duration(out_frame.num_raw_samples() / out_spec_.num_channels());
     out_frame.set_capture_timestamp(capture_ts);
 
-    output_writer_.write(out_frame);
+    return output_writer_.write(out_frame);
 }
 
 } // namespace audio

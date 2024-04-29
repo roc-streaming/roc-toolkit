@@ -162,7 +162,7 @@ public:
         if (capture_ts_) {
             capture_ts_ += frame_spec.samples_per_chan_2_ns(num_samples);
         }
-        writer.write(frame);
+        LONGS_EQUAL(status::StatusOK, writer.write(frame));
     }
 
 private:

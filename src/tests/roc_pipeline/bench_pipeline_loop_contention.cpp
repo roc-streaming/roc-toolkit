@@ -89,8 +89,8 @@ private:
         return 0;
     }
 
-    virtual bool process_subframe_imp(audio::Frame&) {
-        return true;
+    virtual status::StatusCode process_subframe_imp(audio::Frame&) {
+        return status::StatusOK;
     }
 
     virtual bool process_task_imp(PipelineTask&) {
