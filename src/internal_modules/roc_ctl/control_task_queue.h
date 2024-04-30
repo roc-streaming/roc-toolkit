@@ -53,7 +53,7 @@ namespace ctl {
 //!    - tasks to be resumed after pause (flags_ & FlagResumed != 0)
 //!    - tasks to be executed as soon as possible (renewed_deadline_ == 0)
 //!    - tasks to be re-scheduled with another deadline (renewed_deadline_ > 0)
-//!    - tasks to be cancelled                          (renewed_deadline_ < 0)
+//!    - tasks to be canceled                           (renewed_deadline_ < 0)
 //!
 //!  - sleeping_queue_ - a sorted queue of tasks with non-zero deadline, scheduled for
 //!    execution in future; the task at the head has the smallest (nearest) deadline;
@@ -69,7 +69,7 @@ namespace ctl {
 //! otherwise is set to infinity (-1). The timer allows to update the deadline
 //! concurrently from any thread.
 //!
-//! When the task is scheduled, re-scheduled, or cancelled, there are two ways to
+//! When the task is scheduled, re-scheduled, or canceled, there are two ways to
 //! complete the operation:
 //!
 //!  - If the event loop thread is sleeping and the task_mutex_ is free, we can acquire
@@ -88,7 +88,7 @@ namespace ctl {
 //! atomic CAS or exchange to handle concurrent lock-free updates correctly.
 //!
 //! There is also "flags_" field that provides additional information about task that is
-//! preserved accross transitions between states; for example that task is being resumed.
+//! preserved across transitions between states; for example that task is being resumed.
 //!
 //! Here are some example flows of the task states:
 //! @code
@@ -115,7 +115,7 @@ namespace ctl {
 //!                or probably is currently being renewed in-place
 //!  - StateSleeping: task renewal is complete and the task was put into the sleeping
 //!                   queue to wait its deadline, or to paused queue to wait resume
-//!  - StateCancelling: task renewal is complete and the task is being cancelled
+//!  - StateCancelling: task renewal is complete and the task is being canceled
 //!                     because it was put to ready queue for cancellation
 //!  - StateProcessing: task is being processed after fetching it either from ready
 //!                     queue (if it was put there for execution) or sleeping queue
@@ -161,7 +161,7 @@ public:
     //!
     //! If @p completer is present, the task should not be destroyed until completer is
     //! invoked. The completer is invoked on event loop thread after once and only once,
-    //! after the task completes or is cancelled. Completer should never block.
+    //! after the task completes or is canceled. Completer should never block.
     //!
     //! The event loop thread assumes that the task may be destroyed right after it is
     //! completed and it's completer is called (if it's present), and don't touch task
@@ -171,7 +171,7 @@ public:
                      IControlTaskExecutor& executor,
                      IControlTaskCompleter* completer);
 
-    //! Tesume task if it's paused.
+    //! Resume task if it's paused.
     //!
     //! - If the task is paused, schedule it for execution.
     //! - If the task is being processed right now (i.e. it's executing or will be
@@ -190,21 +190,21 @@ public:
 
     //! Try to cancel scheduled task execution, if it's not executed yet.
     //!
-    //! - If the task is already completed or is being completed or cancelled, do nothing.
+    //! - If the task is already completed or is being completed or canceled, do nothing.
     //! - If the task is sleeping or paused, cancel task execution.
     //! - If the task is being processed right now (i.e. it's executing or will be
     //!   executing very soon), then postpone decision until task execution ends. After
     //!   the task execution, if the task asked to pause or continue, then cancellation
-    //!   request is fulfilled and the task is cancelled; otherwise cancellation request
+    //!   request is fulfilled and the task is canceled; otherwise cancellation request
     //!   is ignored and the task is completed normally.
     //!
-    //! When the task is being cancelled instead of completed, if it has completer, the
+    //! When the task is being canceled instead of completed, if it has completer, the
     //! completer is invoked.
     void async_cancel(ControlTask& task);
 
     //! Wait until the task is completed.
     //!
-    //! Blocks until the task is completed or cancelled.
+    //! Blocks until the task is completed or canceled.
     //! Does NOT wait until the task completer is called.
     //!
     //! Can not be called concurrently for the same task (will cause crash).

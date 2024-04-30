@@ -51,7 +51,7 @@ struct PipelineLoopConfig {
     //! Set to zero to disable frame splitting.
     core::nanoseconds_t max_frame_length_between_tasks;
 
-    //! Mximum task processing duration happening immediatelly after processing a frame.
+    //! Maximum task processing duration happening immediately after processing a frame.
     //! If this period expires and there are still pending tasks, asynchronous
     //! task processing is scheduled.
     //! At least one task is always processed after each frame, even if this
@@ -61,7 +61,7 @@ struct PipelineLoopConfig {
     //! Time interval during which no task processing is allowed.
     //! This setting is used to prohibit task processing during the time when
     //! next read() or write() call is expected.
-    //! Since it can not be calculated abolutely precisely, and there is always
+    //! Since it can not be calculated absolutely precisely, and there is always
     //! thread switch overhead, scheduler jitter clock drift, we use a wide interval.
     core::nanoseconds_t task_processing_prohibited_interval;
 
@@ -138,7 +138,7 @@ struct PipelineLoopConfig {
 //! invocation by its own. Instead, it relies on the user-provided IPipelineTaskScheduler
 //! object.
 //!
-//! When the pipeline wants to schedule asychronous process_tasks() invocation, it
+//! When the pipeline wants to schedule asynchronous process_tasks() invocation, it
 //! calls IPipelineTaskScheduler::schedule_task_processing(). It's up to the user when and
 //! on which thread to invoke process_tasks(), but pipeline gives a hint with the ideal
 //! invocation time.
@@ -170,7 +170,7 @@ struct PipelineLoopConfig {
 //! When process_tasks() is processing asynchronous tasks, but detects that
 //! process_frame_and_tasks() was invoked concurrently from another thread, it gives
 //! it a way and exits. process_frame_and_tasks() will process the frame and some of
-//! the remaning tasks, and if there are even more tasks remaining, it will invoke
+//! the remaining tasks, and if there are even more tasks remaining, it will invoke
 //! schedule_task_processing() to allow process_tasks() to continue.
 //!
 //! When schedule() and process_tasks() want to invoke schedule_task_processing(), but
@@ -186,7 +186,7 @@ struct PipelineLoopConfig {
 //! process a frame or a task.
 //!
 //! scheduler_mutex_ protects IPipelineTaskScheduler invocations. It should be acquired to
-//! schedule or cancel asycnrhonous task processing.
+//! schedule or cancel asynchronous task processing.
 //!
 //! If pipeline_mutex_ is locked, it's guaranteed that the thread locking it will
 //! check pending tasks after unlocking the mutex and will either process them or
@@ -210,7 +210,7 @@ struct PipelineLoopConfig {
 //! seqlocks for 64-bit counters (which are reduced to atomics on 64-bit CPUs), always
 //! using try_lock() for mutexes and delaying the work if the mutex can't be acquired,
 //! and using semaphores instead of condition variables for signaling (which don't
-//! require blocking on mutex, at least on modern plarforms; e.g. on glibc they're
+//! require blocking on mutex, at least on modern platforms; e.g. on glibc they're
 //! implemented using an atomic and a futex).
 //!
 //! process_frame_and_tasks() is not lock-free because it has to acquire the pipeline
@@ -220,7 +220,7 @@ struct PipelineLoopConfig {
 //!
 //! This approach helps us with our global goal of making all inter-thread interactions
 //! mostly wait-free, so that one thread is never or almost never blocked when another
-//! thead is blocked, preempted, or busy.
+//! thread is blocked, preempted, or busy.
 //!
 //! Benchmarks
 //! ----------

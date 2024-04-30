@@ -51,7 +51,7 @@ public:
 
     ~SenderSlot();
 
-    //! Check if the slot was succefully constructed.
+    //! Check if the slot was successfully constructed.
     bool is_valid() const;
 
     //! Add endpoint.
