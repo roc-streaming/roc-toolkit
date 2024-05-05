@@ -2,6 +2,11 @@ import os.path
 
 Import('env', 'subenvs')
 
+all_targets = []
+
+#
+# validate options
+#
 if [s for s in COMMAND_LINE_TARGETS if s == 'test' or s.startswith('test/')]:
     if not GetOption('enable_tests'):
         env.Die("can't use 'test*' target(s) without `--enable-tests' option")
@@ -10,6 +15,9 @@ if [s for s in COMMAND_LINE_TARGETS if s == 'bench' or s.startswith('bench/')]:
     if not GetOption('enable_benchmarks'):
         env.Die("can't use 'bench*' target(s) without `--enable-benchmarks' option")
 
+#
+# add common includes and defines
+#
 for senv in subenvs.all:
     senv.Append(CPPPATH=['#src/internal_modules'])
 
@@ -20,6 +28,9 @@ for senv in subenvs.all:
     for t in env['ROC_TARGETS']:
         senv.Append(CPPDEFINES=['ROC_{}'.format(t.upper())])
 
+#
+# build internal modules
+#
 all_modules_libs = []
 all_modules_objects = []
 
@@ -41,7 +52,10 @@ for module_name in env['ROC_MODULES']:
     for src_dir in src_dirs:
         src_files = env.GlobFiles(src_dir + '/*.cpp') \
             + env.GlobFiles(src_dir + '/*.rl')
+
         for src_file in src_files:
+            # ensure that every object file has a unique file name
+            # this is needed by compose-libs.py
             tgt_file = os.path.splitext(os.path.relpath(
                 src_file.srcnode().abspath,
                 env.Dir(module_dir).srcnode().abspath))[0]
@@ -49,6 +63,7 @@ for module_name in env['ROC_MODULES']:
             tgt_file = tgt_file.replace(os.sep+os.sep, os.sep)
             tgt_file = tgt_file.replace(os.sep, '_')
             tgt_file = module_name + '_' + tgt_file
+
             if src_file.path.endswith('.cpp'):
                 objects += module_env.Object(target=tgt_file, source=src_file)
             if src_file.path.endswith('.rl'):
@@ -57,6 +72,7 @@ for module_name in env['ROC_MODULES']:
     if not objects:
         continue
 
+    # scons <modulename>
     lib = module_env.StaticLibrary('internal_modules/' + module_name, objects)
     env.Alias(module_name, [lib], env.Action(''))
     env.AlwaysBuild(module_name)
@@ -64,9 +80,15 @@ for module_name in env['ROC_MODULES']:
     all_modules_libs = [lib] + all_modules_libs
     all_modules_objects = objects + all_modules_objects
 
+# scons internal_modules
 env.Alias('internal_modules', all_modules_libs, env.Action(''))
 env.AlwaysBuild('internal_modules')
 
+all_targets += all_modules_libs
+
+#
+# build public api
+#
 if not GetOption('disable_shared') or GetOption('enable_static') or GetOption('enable_examples'):
     libs_env = subenvs.public_libs.DeepClone()
     libs_env.Append(CPPDEFINES=('ROC_MODULE', 'roc_api'))
@@ -77,6 +99,7 @@ if not GetOption('disable_shared') or GetOption('enable_static') or GetOption('e
         source=s) for s in env.GlobFiles('public_api/src/*.cpp')]
     public_api_targets = []
 
+    # shared library
     if not GetOption('disable_shared'):
         should_strip = not GetOption('enable_debug') and libs_env.SupportsStripSharedLibrary()
 
@@ -109,6 +132,7 @@ if not GetOption('disable_shared') or GetOption('enable_static') or GetOption('e
         for lnk in symlinks:
             env.AddDistFile(env['ROC_SYSTEM_LIBDIR'], lnk)
 
+    # static library
     if GetOption('enable_static'):
         thirdparty_libs = libs_env.GetThirdPartyStaticLibs()
 
@@ -137,6 +161,7 @@ if not GetOption('disable_shared') or GetOption('enable_static') or GetOption('e
 
         env.AddDistFile(env['ROC_SYSTEM_LIBDIR'], install_target)
 
+    # scons public_api
     if not GetOption('disable_shared') or GetOption('enable_static'):
         env.Alias('public_api', public_api_targets, env.Action(''))
         env.AlwaysBuild('public_api')
@@ -155,6 +180,11 @@ if not GetOption('disable_shared') or GetOption('enable_static') or GetOption('e
                 version=env['ROC_VERSION'])
             env.AddDistFile(env['ROC_SYSTEM_PCDIR'], pc_file)
 
+    all_targets += public_api_targets
+
+#
+# build examples
+#
 if GetOption('enable_examples'):
     examples_env = subenvs.examples.DeepClone()
     examples_env.Append(CPPPATH=['public_api/include'])
@@ -174,9 +204,15 @@ if GetOption('enable_examples'):
 
         example_targets += [env.Install(env['ROC_BINDIR'], exe)]
 
+    # scons examples
     env.Alias('examples', example_targets, env.Action(''))
     env.AlwaysBuild('examples')
 
+    all_targets += example_targets
+
+#
+# build cli tools
+#
 if not GetOption('disable_tools') \
   or GetOption('enable_tests') or GetOption('enable_benchmarks'):
     sanitizer_objects = []
@@ -188,6 +224,8 @@ if not GetOption('disable_tools'):
         verion_str = '{} ({})'.format(env['ROC_VERSION'], env['ROC_COMMIT'])
     else:
         verion_str = env['ROC_VERSION']
+
+    tool_targets = []
 
     for tool_dir in env.GlobDirs('tools/*'):
         tools_env = subenvs.tools.DeepClone()
@@ -206,11 +244,23 @@ if not GetOption('disable_tools'):
         target = env.Install(env['ROC_BINDIR'],
                     tools_env.Program(exe_name, sources+objects+sanitizer_objects))
 
+        # scons <toolname>
         env.Alias(exe_name, [target], env.Action(''))
         env.AlwaysBuild(exe_name)
 
         env.AddDistFile(env['ROC_SYSTEM_BINDIR'], target)
 
+        tool_targets += [target]
+
+    # scons tools
+    env.Alias('tools', tool_targets, env.Action(''))
+    env.AlwaysBuild('tools')
+
+    all_targets += tool_targets
+
+#
+# build tests
+#
 if GetOption('enable_tests') or GetOption('enable_benchmarks'):
     common_test_env = subenvs.tests.DeepClone()
     common_test_env.Append(CPPDEFINES=('ROC_MODULE', 'roc_test'))
@@ -221,6 +271,8 @@ if GetOption('enable_tests') or GetOption('enable_benchmarks'):
 
     if GetOption('enable_benchmarks'):
         bench_main_object = common_test_env.Object('tests/bench_main.cpp')
+
+    test_targets = []
 
     for test_name in env['ROC_MODULES'] + ['public_api']:
         test_dir = 'tests/' + test_name
@@ -269,6 +321,23 @@ if GetOption('enable_tests') or GetOption('enable_benchmarks'):
 
             exe_file = '{}/{}'.format(env['ROC_BINDIR'], exe_name)
             if kind == 'test':
+                # scons test/<modulename>
+                # scons test
                 env.AddTest(test_name, exe_file)
             else:
+                # scons bench/<modulename>
+                # scons bench
                 env.AddBench(test_name, exe_file)
+
+            test_targets += [target]
+
+    all_targets += test_targets
+
+#
+# install compile_commands
+#
+if env.get('ROC_CLANGDB', None):
+    compile_commands = env['ROC_CLANGDB']
+
+    env.Artifact(compile_commands, all_targets)
+    env.Install('#', compile_commands)

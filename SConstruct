@@ -1149,10 +1149,7 @@ if meta.compiler in ['gcc', 'clang']:
         for var in ['CC', 'CXX']:
             senv[var] = env.WrapClangDb(senv[var], env['ROC_BUILDDIR'])
 
-    compile_commands = '{}/compile_commands.json'.format(env['ROC_BUILDDIR'])
-
-    env.Artifact(compile_commands, '#src')
-    env.Install('#', compile_commands)
+    env['ROC_CLANGDB'] = '{}/compile_commands.json'.format(env['ROC_BUILDDIR'])
 
 # post-process paths after merging environments
 if meta.compiler in ['gcc', 'clang']:
