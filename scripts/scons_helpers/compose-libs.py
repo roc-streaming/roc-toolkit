@@ -40,7 +40,7 @@ def execute_command(cmd):
     if VERBOSE:
         print(cmd, file=sys.stderr)
     proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    out = proc.stdout.read()
+    out = proc.stdout.read().decode()
     code = proc.wait()
     if code != 0:
         print(cmd, file=sys.stderr)
