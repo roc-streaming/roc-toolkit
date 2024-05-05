@@ -1046,7 +1046,7 @@ ctx.pkg_rpath_dir = os.path.join(ctx.pkg_dir, 'rpath')
 ctx.log_file = os.path.join(ctx.pkg_dir, 'build.log')
 ctx.commit_file = os.path.join(ctx.pkg_dir, 'commit')
 
-ctx.prefer_cmake = bool(args.android_platform)
+ctx.prefer_cmake = bool(args.macos_platform or args.android_platform)
 
 #
 # Build package.
