@@ -106,12 +106,22 @@ def FindBrewPackage(env, pkg_name):
     if not brew_prefix:
         return None
 
+    # if pkg-config is not from brew, then don't try to use brew packages implicitly,
+    # that's likely not what the user wants
+    pkg_config = env.get('PKG_CONFIG', None)
+    if not pkg_config or \
+       not env.Which(pkg_config) or \
+       not os.path.abspath(env.Which(pkg_config)[0]).startswith(
+           os.path.abspath(brew_prefix)+os.sep):
+        return None
+
     # $(brew --prefix)/opt/some_pkg should be a link to the latest version of some_pkg,
     # e.g. ../Cellar/some_pkg@1.2/1.2.3/
-    prefix = os.path.join(brew_prefix, 'opt', pkg_name)
-    if not os.path.isdir(prefix):
+    pkg_prefix = os.path.join(brew_prefix, 'opt', pkg_name)
+    if not os.path.isdir(pkg_prefix):
         return None
-    return prefix
+
+    return pkg_prefix
 
 def init(env):
     env.AddMethod(GeneratePkgConfig, 'GeneratePkgConfig')
