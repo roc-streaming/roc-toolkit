@@ -211,7 +211,7 @@ elif 'openssl' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if not conf.AddPkgConfigDependency('libssl', '--cflags --libs', add_prefix=ossl_prefix):
-        conf.env.AddManualDependency(libs=['libssl'], prefix=ossl_prefix)
+        conf.env.AddManualDependency(libs=['ssl'], prefix=ossl_prefix)
 
     if not conf.CheckLibWithHeaderExt('ssl', 'openssl/rand.h', 'C', run=not is_crosscompiling):
         env.Die("OpenSSL not found (see 'config.log' for details)")
