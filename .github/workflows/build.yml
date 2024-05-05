@@ -258,6 +258,82 @@ jobs:
         run: |
           scripts/ci_checks/failure.sh
 
+  android-emu:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - abi: x86_64
+            api: 29
+            ndk: 25.2.9519653
+            cmake: 3.10.2.4988404
+
+    runs-on: ubuntu-latest
+
+    env:
+      ABI: ${{ matrix.abi }}
+      API: ${{ matrix.api }}
+
+    name: android${{ matrix.api }}-${{ matrix.abi }}/emu
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Setup AVD cache
+        uses: actions/cache@v4
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-${{ matrix.abi }}-android${{ matrix.api }}-ndk${{ matrix.ndk }}
+
+      - name: Populate AVD cache
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          arch: ${{ matrix.abi }}
+          ndk: ${{ matrix.ndk }}
+          cmake: ${{ matrix.cmake }}
+          force-avd-creation: false
+          script: |
+            echo "Generated AVD"
+
+      - name: Install dependencies
+        run: |
+          scripts/android_emu/run.sh install
+
+      - name: Build
+        run: |
+          scripts/android_emu/run.sh build
+
+      - name: Run tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          arch: ${{ matrix.abi }}
+          ndk: ${{ matrix.ndk }}
+          cmake: ${{ matrix.cmake }}
+          force-avd-creation: false
+          script: |
+            scripts/android_emu/run.sh prep
+            scripts/android_emu/run.sh test
+
+      - name: Handle failure
+        if: failure()
+        run: |
+          scripts/ci_checks/failure.sh
+
   macos:
     strategy:
       fail-fast: false

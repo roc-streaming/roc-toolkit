@@ -62,6 +62,20 @@ export PATH="${ANDROID_SDK_ROOT}/tools/bin:${PATH}"
 export PATH="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${PATH}"
 export PATH="${toolchain_root}/bin:${PATH}"
 
+if [[ "${action}" == install ]]
+then
+    color_msg "installing dependencies"
+
+    case "${OSTYPE}" in
+        darwin*)
+            brew install scons ragel gengetopt
+            ;;
+        linux*)
+            sudo apt-get install -y scons ragel gengetopt
+            ;;
+    esac
+fi
+
 if [[ "${action}" == build ]]
 then
     color_msg "building project"
