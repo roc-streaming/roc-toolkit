@@ -39,10 +39,20 @@ for module_name in env['ROC_MODULES']:
 
     objects = []
     for src_dir in src_dirs:
-        for cpp in env.GlobFiles(src_dir + '/*.cpp'):
-            objects += module_env.Object(cpp)
-        for rs in env.GlobFiles(src_dir + '/*.rl'):
-            objects += module_gen_env.Ragel(rs)
+        src_files = env.GlobFiles(src_dir + '/*.cpp') \
+            + env.GlobFiles(src_dir + '/*.rl')
+        for src_file in src_files:
+            tgt_file = os.path.splitext(os.path.relpath(
+                src_file.srcnode().abspath,
+                env.Dir(module_dir).srcnode().abspath))[0]
+            tgt_file = tgt_file.replace(module_name, '')
+            tgt_file = tgt_file.replace(os.sep+os.sep, os.sep)
+            tgt_file = tgt_file.replace(os.sep, '_')
+            tgt_file = module_name + '_' + tgt_file
+            if src_file.path.endswith('.cpp'):
+                objects += module_env.Object(target=tgt_file, source=src_file)
+            if src_file.path.endswith('.rl'):
+                objects += module_gen_env.Ragel(target=tgt_file, source=src_file)
 
     if not objects:
         continue
@@ -62,7 +72,9 @@ if not GetOption('disable_shared') or GetOption('enable_static') or GetOption('e
     libs_env.Append(CPPDEFINES=('ROC_MODULE', 'roc_api'))
     libs_env.Append(CPPPATH=['public_api/include'])
 
-    public_api_objects = [libs_env.Object(s) for s in env.GlobFiles('public_api/src/*.cpp')]
+    public_api_objects = [libs_env.Object(
+        target='public_api_' + os.path.splitext(os.path.basename(s.path))[0],
+        source=s) for s in env.GlobFiles('public_api/src/*.cpp')]
     public_api_targets = []
 
     if not GetOption('disable_shared'):

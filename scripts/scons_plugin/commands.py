@@ -94,7 +94,7 @@ def Sphinx(env, output_type, build_dir, output_dir, source_dir, sources, werror=
 
     return env.File(target)
 
-def Ragel(env, source):
+def Ragel(env, source, target=None):
     if 'RAGEL' in env.Dictionary():
         ragel = env['RAGEL']
     else:
@@ -103,19 +103,20 @@ def Ragel(env, source):
     if not isinstance(ragel, str):
         ragel = env.File(ragel).path
 
-    source = env.File(source)
+    rl_file = env.File(source)
 
-    target_name = os.path.splitext(os.path.basename(source.path))[0] + '.cpp'
-    target = os.path.join(str(source.dir), target_name)
+    cpp_file = env.File(os.path.join(
+        str(source.dir),
+        os.path.splitext(os.path.basename(source.path))[0] + '.cpp'))
 
-    env.Command(target, source, SCons.Action.CommandAction(
+    env.Command(cpp_file, rl_file, SCons.Action.CommandAction(
         '{ragel} -o {target} {source}'.format(
             ragel=quote(ragel),
-            target=quote(os.path.join(os.path.dirname(source.path), target_name)),
-            source=quote(source.srcnode().path)),
+            target=quote(cpp_file.path),
+            source=quote(rl_file.srcnode().path)),
         cmdstr = env.PrettyCommand('RAGEL', '$SOURCE', 'purple')))
 
-    return [env.Object(target)]
+    return [env.Object(target=target, source=cpp_file)]
 
 def GenGetOpt(env, source, version):
     if 'GENGETOPT' in env.Dictionary():
