@@ -168,17 +168,17 @@ if not GetOption('disable_shared') or GetOption('enable_static') or GetOption('e
 
         env.AddDistFile(env['ROC_SYSTEM_INCDIR'], '#src/public_api/include/roc')
 
-        if 'PKG_CONFIG_PATH' in env.Dictionary():
-            pc_file = env.GeneratePkgConfig(
-                build_dir='.',
-                filename='roc.pc',
-                prefix=GetOption('prefix'),
-                libdir=env['ROC_SYSTEM_LIBDIR'],
-                name='roc',
-                desc='Real-time audio streaming over the network.',
-                url='https://roc-streaming.org',
-                version=env['ROC_VERSION'])
-            env.AddDistFile(env['ROC_SYSTEM_PCDIR'], pc_file)
+        pc_file = env.GeneratePkgConfig(
+            build_dir='.',
+            filename='roc.pc',
+            prefix=GetOption('prefix'),
+            libdir=env['ROC_SYSTEM_LIBDIR'],
+            name='roc',
+            desc='Real-time audio streaming over the network.',
+            url='https://roc-streaming.org',
+            version=env['ROC_VERSION'])
+
+        env.AddDistFile(env['ROC_SYSTEM_PCDIR'], pc_file)
 
     all_targets += public_api_targets
 

@@ -66,7 +66,7 @@ def _compose_pkg_config_path(env, add_prefix):
         # priority); otherwise use original PKG_CONFIG_PATH is propagated explicitly
         add_pkg_config_path = os.path.join(add_prefix, 'lib', 'pkgconfig')
         if os.path.isdir(add_pkg_config_path):
-            if len(pkg_config_path) > 0:
+            if pkg_config_path:
                 pkg_config_path += ':'
             pkg_config_path += add_pkg_config_path
     return pkg_config_path
@@ -452,30 +452,18 @@ def FindPkgConfigPath(context, prefix):
         context.Result(env['PKG_CONFIG_PATH'])
         return True
 
-    # https://linux.die.net/man/1/pkg-config the default is libdir/pkgconfig
-    env['PKG_CONFIG_PATH'] = os.path.join(env['ROC_SYSTEM_LIBDIR'], 'pkgconfig')
-
     pkg_config = env.get('PKG_CONFIG', None)
     if pkg_config:
-        pkg_config_paths = env.GetCommandOutput(
+        pkg_config_path = env.GetCommandOutput(
             '{pkg_config_cmd} --variable pc_path pkg-config'.format(
                 pkg_config_cmd=quote(pkg_config)))
-        try:
-            path_list = pkg_config_paths.split(':')
-            def _select_path():
-                for path in path_list:
-                    if path.startswith(prefix) and os.path.isdir(path):
-                        return path
-                for path in path_list:
-                    if path.startswith(prefix):
-                        return path
+        if pkg_config_path:
+            env['PKG_CONFIG_PATH'] = pkg_config_path
+            context.Result(env['PKG_CONFIG_PATH'])
+            return True
 
-            path = _select_path()
-            if path:
-                env['PKG_CONFIG_PATH'] = path
-        except:
-            pass
-
+    # https://linux.die.net/man/1/pkg-config the default is libdir/pkgconfig
+    env['PKG_CONFIG_PATH'] = os.path.join(env['ROC_SYSTEM_LIBDIR'], 'pkgconfig')
     context.Result(env['PKG_CONFIG_PATH'])
     return True
 
@@ -500,9 +488,11 @@ def AddPkgConfigDependency(context, package, flags,
         old_libs = env['LIBS'][:]
         env.ParseConfig(cmd)
         new_libs = env['LIBS'][:]
+
         for lib in exclude_libs:
             if lib not in old_libs and lib in new_libs:
                 env['LIBS'].remove(lib)
+
         if not exclude_from_pc:
             if '_DEPS_PCFILES' not in env.Dictionary():
                 env['_DEPS_PCFILES'] = []

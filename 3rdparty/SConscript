@@ -204,7 +204,7 @@ if 'openssl' in autobuild_dependencies:
 
 elif 'openssl' in system_dependencies:
     ossl_prefix = None
-    # macOS: fallback to use a brew-installed openssl (via PKG_CONFIG_PATH)
+    # macOS: fallback to use a brew-installed openssl
     if meta.platform == 'darwin' and not is_crosscompiling:
         ossl_prefix = env.FindBrewPackage('openssl')
 
