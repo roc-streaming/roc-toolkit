@@ -351,12 +351,16 @@ jobs:
             macos-version: 13
             script: standard-build
 
-          - macos-arch: x86_64
-            macos-version: 13
+          - macos-arch: arm64
+            macos-version: 14
+            script: standard-build
+
+          - macos-arch: arm64
+            macos-version: 14
             script: build-3rdparty
 
-          - macos-arch: x86_64
-            macos-version: 13
+          - macos-arch: arm64
+            macos-version: 14
             script: universal-binaries
 
     runs-on: macos-${{ matrix.macos-version }}
