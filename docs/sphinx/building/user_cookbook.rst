@@ -294,10 +294,10 @@ Then you can run the following commands:
     $ cd roc-toolkit
 
     # build libraries and tools
-    $ scons -Q --build-3rdparty=openfec
+    $ scons -Q --build-3rdparty=openfec PKG_CONFIG=`brew --prefix`/bin/pkg-config
 
     # install libraries and tools
-    $ sudo scons -Q --build-3rdparty=openfec install
+    $ sudo scons -Q --build-3rdparty=openfec PKG_CONFIG=`brew --prefix`/bin/pkg-config install
 
 Android
 =======
