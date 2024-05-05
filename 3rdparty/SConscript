@@ -399,7 +399,8 @@ if 'cpputest' in autobuild_dependencies:
 elif 'cpputest' in system_dependencies:
     conf = Configure(subenvs.tests, custom_tests=env.CustomTests)
 
-    if not conf.AddPkgConfigDependency('cpputest', '--cflags --libs'):
+    if not conf.AddPkgConfigDependency('cpputest', '--cflags --libs',
+                                       exclude_libs=['stdc++']):
         conf.env.AddManualDependency(libs=['CppUTest'])
 
     if not conf.CheckLibWithHeaderExt(

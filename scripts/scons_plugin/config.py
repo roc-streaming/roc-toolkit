@@ -480,7 +480,7 @@ def FindPkgConfigPath(context, prefix):
     return True
 
 def AddPkgConfigDependency(context, package, flags,
-                           add_prefix=None, exclude_from_pc=False):
+                           add_prefix=None, exclude_from_pc=False, exclude_libs=[]):
     context.Message("Searching pkg-config package {} ...".format(package))
 
     env = context.env
@@ -497,7 +497,12 @@ def AddPkgConfigDependency(context, package, flags,
 
     cmd += [pkg_config, package, '--silence-errors'] + flags.split()
     try:
+        old_libs = env['LIBS'][:]
         env.ParseConfig(cmd)
+        new_libs = env['LIBS'][:]
+        for lib in exclude_libs:
+            if lib not in old_libs and lib in new_libs:
+                env['LIBS'].remove(lib)
         if not exclude_from_pc:
             if '_DEPS_PCFILES' not in env.Dictionary():
                 env['_DEPS_PCFILES'] = []
