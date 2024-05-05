@@ -209,17 +209,17 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - abi: x86_64
+          - toolchain: aarch64-linux-android29
+            abi: aarch64
             api: 29
             ndk: 25.2.9519653
             build_tools: 28.0.3
             cmake: 3.10.2.4988404
-            avd_abi: x86_64
-            avd_img: default
 
     runs-on: macos-latest
 
     env:
+      TOOLCHAIN: ${{ matrix.toolchain }}
       ABI: ${{ matrix.abi }}
       API: ${{ matrix.api }}
       NDK_VERSION: ${{ matrix.ndk }}
@@ -231,41 +231,27 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install Android components
-        uses: maxim-lobanov/setup-android-tools@v1
+      - name: Install JDK
+        uses: actions/setup-java@v3
         with:
-          cache: true
-          packages: |
-            platforms;android-${{ matrix.api }}
-            build-tools;${{ matrix.build_tools }}
-            ndk;${{ matrix.ndk }}
-            cmake;${{ matrix.cmake }}
-            system-images;android-${{ matrix.api }};${{ matrix.avd_img }};${{ matrix.avd_abi }}
-            emulator
+          java-version: '17'
+          distribution: 'temurin'
 
-      - name: Install system dependencies
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: ''
+
+      - name: Install Android components
         run: |
-          scripts/ci_checks/android/macos.sh
+          sdkmanager 'platforms;android-${{ matrix.api }}'
+          sdkmanager 'build-tools;${{ matrix.build_tools }}'
+          sdkmanager 'ndk;${{ matrix.ndk }}'
+          sdkmanager 'cmake;${{ matrix.cmake }}'
 
       - name: Build
         run: |
-          scripts/android_emu/run.sh build
-
-      - name: Run tests
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: ${{ matrix.api }}
-          arch: ${{ matrix.avd_abi }}
-          target: ${{ matrix.avd_img }}
-          avd-name: roc_device
-          ndk: ${{ matrix.ndk }}
-          cmake: ${{ matrix.cmake }}
-          force-avd-creation: false
-          emulator-options: -no-audio -no-boot-anim -no-window
-          disable-animations: true
-          script: |
-            scripts/android_emu/run.sh prep
-            scripts/android_emu/run.sh test
+          scripts/ci_checks/android/macos.sh
 
       - name: Handle failure
         if: failure()
