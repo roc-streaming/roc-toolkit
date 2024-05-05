@@ -71,6 +71,26 @@ def _compose_pkg_config_path(env, add_prefix):
             pkg_config_path += add_pkg_config_path
     return pkg_config_path
 
+# Workaround for brew / pkg-config weirdeness
+def _fix_brew_libpath(libpath):
+    if not '/Cellar/' in libpath:
+        return libpath # not in brew (quick check)
+
+    if libpath.endswith('/lib'):
+        return libpath # looks good
+
+    brew_prefix = env.GetCommandOutput('brew --prefix')
+    if not brew_prefix:
+        return libpath # can't help
+
+    if not libpath.startswith(brew_prefix+'/Cellar/'):
+        return libpath # not in brew
+
+    if not os.path.isdir(libpath+'/lib'):
+        return libpath # can't help
+
+    return libpath+'/lib'
+
 def CheckLibWithHeaderExt(context, libs, headers, language, expr='1', run=True):
     if not isinstance(headers, list):
         headers = [headers]
@@ -486,12 +506,20 @@ def AddPkgConfigDependency(context, package, flags,
     cmd += [pkg_config, package, '--silence-errors'] + flags.split()
     try:
         old_libs = env['LIBS'][:]
+        old_dirs = env['LIBPATH'][:]
+
         env.ParseConfig(cmd)
+
         new_libs = env['LIBS'][:]
+        new_dirs = env['LIBPATH'][:]
 
         for lib in exclude_libs:
             if lib not in old_libs and lib in new_libs:
                 env['LIBS'].remove(lib)
+
+        for n, libpath in enumerate(new_dirs):
+            if not libpath in old_dirs:
+                env['LIBPATH'][n] = _fix_brew_libpath(libpath)
 
         if not exclude_from_pc:
             if '_DEPS_PCFILES' not in env.Dictionary():
