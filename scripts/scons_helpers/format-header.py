@@ -18,7 +18,7 @@ copyright_str = textwrap.dedent('''
 ''').format(datetime.datetime.now().year)
 
 def is_header(path):
-    return re.search('\.h$', path)
+    return re.search(r'\.h$', path)
 
 def is_test(path):
     _, basename = os.path.split(path)
@@ -51,7 +51,7 @@ def make_guard(path):
 
 def make_doxygen_path(path):
     path = '/'.join(path.split(os.sep))
-    path = re.sub('^\.?/', '', path)
+    path = re.sub(r'^\.?/', '', path)
     return '@file ' + path
 
 def make_doxygen_brief(text):
