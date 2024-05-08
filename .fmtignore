@@ -1,3 +1,6 @@
+src/internal_modules/roc_core/macro_helpers.h
+src/internal_modules/roc_pipeline/receiver_loop.cpp
+src/internal_modules/roc_sndio/wav_header.cpp b/src/internal_modules/roc_sndio/wav_header.cpp
 src/internal_modules/roc_audio/channel_tables.cpp
 src/internal_modules/roc_audio/pcm_format.cpp
 src/internal_modules/roc_core/target_libatomic_ops/roc_core/atomic_ops.h
