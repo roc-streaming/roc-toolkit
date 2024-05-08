@@ -10,7 +10,7 @@ scons -Q --enable-werror --build-3rdparty=all \
       --disable-libunwind \
       --disable-openfec \
       --disable-openssl \
-      --disable-speex \
+      --disable-speexdsp \
       --disable-sox \
       --disable-pulseaudio \
       --disable-sndfile
@@ -24,7 +24,7 @@ scons -Q --enable-werror --build-3rdparty=all \
       --disable-libunwind \
       --disable-openfec \
       --disable-openssl \
-      --disable-speex \
+      --disable-speexdsp \
       --disable-sox \
       --disable-pulseaudio \
       --disable-sndfile \
