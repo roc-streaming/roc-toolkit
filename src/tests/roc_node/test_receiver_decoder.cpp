@@ -46,10 +46,10 @@ TEST_GROUP(receiver_decoder) {
 
 TEST(receiver_decoder, source) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     ReceiverDecoder receiver_decoder(context, receiver_config);
-    CHECK(receiver_decoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver_decoder.init_status());
 
     LONGS_EQUAL(receiver_decoder.source().sample_spec().sample_rate(),
                 receiver_config.common.output_sample_spec.sample_rate());
@@ -57,10 +57,10 @@ TEST(receiver_decoder, source) {
 
 TEST(receiver_decoder, write_packet) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     ReceiverDecoder receiver_decoder(context, receiver_config);
-    CHECK(receiver_decoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver_decoder.init_status());
 
     packet::PacketPtr pp = packet_factory.new_packet();
 
@@ -74,10 +74,10 @@ TEST(receiver_decoder, write_packet) {
 
 TEST(receiver_decoder, read_packet) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     ReceiverDecoder receiver_decoder(context, receiver_config);
-    CHECK(receiver_decoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver_decoder.init_status());
 
     packet::PacketPtr pp;
 
@@ -94,20 +94,20 @@ TEST(receiver_decoder, read_packet) {
 
 TEST(receiver_decoder, activate_no_fec) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     ReceiverDecoder receiver_decoder(context, receiver_config);
-    CHECK(receiver_decoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver_decoder.init_status());
 
     CHECK(receiver_decoder.activate(address::Iface_AudioSource, address::Proto_RTP));
 }
 
 TEST(receiver_decoder, activate_fec) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     ReceiverDecoder receiver_decoder(context, receiver_config);
-    CHECK(receiver_decoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver_decoder.init_status());
 
     if (fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
         CHECK(receiver_decoder.activate(address::Iface_AudioSource,
@@ -124,10 +124,10 @@ TEST(receiver_decoder, activate_fec) {
 
 TEST(receiver_decoder, metrics) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     ReceiverDecoder receiver_decoder(context, receiver_config);
-    CHECK(receiver_decoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver_decoder.init_status());
 
     pipeline::ReceiverSlotMetrics slot_metrics;
     pipeline::ReceiverParticipantMetrics party_metrics;

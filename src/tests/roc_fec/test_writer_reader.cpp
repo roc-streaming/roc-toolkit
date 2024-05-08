@@ -244,8 +244,8 @@ TEST(writer_reader, no_losses) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         fill_all_packets(0);
 
@@ -291,8 +291,8 @@ TEST(writer_reader, 1_loss) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         fill_all_packets(0);
 
@@ -340,8 +340,8 @@ TEST(writer_reader, lost_first_packet_in_first_block) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         // Sending first block except first packet.
         fill_all_packets(0);
@@ -398,8 +398,8 @@ TEST(writer_reader, lost_one_source_and_all_repair_packets) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         // Send first block without one source and all repair packets.
         dispatcher.lose(3);
@@ -470,8 +470,8 @@ TEST(writer_reader, multiple_blocks_1_loss) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         for (size_t block_num = 0; block_num < NumBlocks; ++block_num) {
             size_t lost_sq = size_t(-1);
@@ -544,8 +544,8 @@ TEST(writer_reader, multiple_blocks_in_queue) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         for (size_t block_num = 0; block_num < NumBlocks; ++block_num) {
             fill_all_packets(NumSourcePackets * block_num);
@@ -593,8 +593,7 @@ TEST(writer_reader, interleaved_packets) {
                                           NumRepairPackets);
 
         packet::Interleaver intrlvr(dispatcher, arena, 10);
-
-        CHECK(intrlvr.is_valid());
+        LONGS_EQUAL(status::StatusOK, intrlvr.init_status());
 
         Writer writer(writer_config, codec_config.scheme, *encoder, intrlvr,
                       source_composer(), repair_composer(), packet_factory, arena);
@@ -603,8 +602,8 @@ TEST(writer_reader, interleaved_packets) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         packet::PacketPtr many_packets[NumPackets];
 
@@ -655,8 +654,8 @@ TEST(writer_reader, delayed_packets) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         fill_all_packets(0);
 
@@ -729,8 +728,8 @@ TEST(writer_reader, late_out_of_order_packets) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         fill_all_packets(0);
 
@@ -809,8 +808,8 @@ TEST(writer_reader, repair_packets_before_source_packets) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         packet::seqnum_t wr_sn = 0;
         packet::seqnum_t rd_sn = 0;
@@ -896,8 +895,8 @@ TEST(writer_reader, repair_packets_mixed_with_source_packets) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         packet::seqnum_t wr_sn = 0;
         packet::seqnum_t rd_sn = 0;
@@ -997,8 +996,8 @@ TEST(writer_reader, multiple_repair_attempts) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         fill_all_packets(0);
 
@@ -1078,8 +1077,8 @@ TEST(writer_reader, drop_outdated_block) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         // Send first block.
         fill_all_packets(NumSourcePackets);
@@ -1151,8 +1150,8 @@ TEST(writer_reader, repaired_block_numbering) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         const size_t lost_packet_n = 7;
 
@@ -1241,8 +1240,8 @@ TEST(writer_reader, invalid_esi) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
             fill_all_packets(0);
@@ -1323,8 +1322,8 @@ TEST(writer_reader, invalid_sbl) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
             fill_all_packets(0);
@@ -1400,8 +1399,8 @@ TEST(writer_reader, invalid_nes) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
             fill_all_packets(0);
@@ -1473,8 +1472,8 @@ TEST(writer_reader, invalid_payload_size) {
         Reader reader(reader_config, codec_config.scheme, *decoder, source_queue,
                       repair_queue, rtp_parser, packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
             fill_all_packets(0);
@@ -1562,8 +1561,8 @@ TEST(writer_reader, zero_source_packets) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
             fill_all_packets(0);
@@ -1648,8 +1647,8 @@ TEST(writer_reader, zero_repair_packets) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
             // encode packets and write to queue
@@ -1728,8 +1727,8 @@ TEST(writer_reader, zero_payload_size) {
         Reader reader(reader_config, codec_config.scheme, *decoder, source_queue,
                       repair_queue, rtp_parser, packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
             fill_all_packets(0);
@@ -1819,8 +1818,8 @@ TEST(writer_reader, sbn_jump) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         // write three blocks to the queue
         for (size_t n = 0; n < 3; n++) {
@@ -1933,7 +1932,7 @@ TEST(writer_reader, writer_encode_blocks) {
             Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                           source_composer(), repair_composer(), packet_factory, arena);
 
-            CHECK(writer.is_valid());
+            LONGS_EQUAL(status::StatusOK, writer.init_status());
 
             packet::blknum_t fec_sbn = 0;
 
@@ -2022,7 +2021,7 @@ TEST(writer_reader, writer_resize_blocks) {
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_factory, arena);
 
-        CHECK(writer.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
 
         const size_t source_sizes[] = {
             15, 25, 35, 43, 33, 23, 13, 255 - NumRepairPackets
@@ -2091,8 +2090,8 @@ TEST(writer_reader, resize_block_begin) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(reader.is_valid());
-        CHECK(writer.is_valid());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
 
         const size_t source_sizes[] = {
             15, 25, 35, 43, 33, 23, 13, 255 - NumRepairPackets
@@ -2164,8 +2163,8 @@ TEST(writer_reader, resize_block_middle) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(reader.is_valid());
-        CHECK(writer.is_valid());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
 
         const size_t source_sizes[] = {
             15, 25, 35, 43, 33, 23, 13, 255 - NumRepairPackets
@@ -2260,8 +2259,8 @@ TEST(writer_reader, resize_block_losses) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(reader.is_valid());
-        CHECK(writer.is_valid());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
 
         const size_t source_sizes[] = {
             15, 25, 35, 43, 33, 23, 13, 255 - NumRepairPackets
@@ -2336,8 +2335,8 @@ TEST(writer_reader, resize_block_repair_first) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         packet::seqnum_t wr_sn = 0;
         packet::seqnum_t rd_sn = 0;
@@ -2423,7 +2422,7 @@ TEST(writer_reader, error_writer_resize_block) {
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_factory, mock_arena);
 
-        CHECK(writer.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
 
         size_t sn = 0;
 
@@ -2475,7 +2474,7 @@ TEST(writer_reader, error_writer_encode_packet) {
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_factory, arena);
 
-        CHECK(writer.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
 
         size_t sn = 0;
 
@@ -2531,8 +2530,8 @@ TEST(writer_reader, error_reader_resize_block) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, mock_arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         size_t sn = 0;
 
@@ -2603,8 +2602,8 @@ TEST(writer_reader, error_reader_decode_packet) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         size_t sn = 0;
 
@@ -2687,8 +2686,8 @@ TEST(writer_reader, writer_oversized_block) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         // try to resize writer with an invalid value
         CHECK(!writer.resize(encoder->max_block_length() + 1, NumRepairPackets));
@@ -2758,8 +2757,8 @@ TEST(writer_reader, reader_oversized_source_block) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         // encode packets and write to queue
         for (size_t i = 0; i < NumSourcePackets; ++i) {
@@ -2829,8 +2828,8 @@ TEST(writer_reader, reader_oversized_repair_block) {
                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
                       packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         // encode packets and write to queue
         for (size_t i = 0; i < NumSourcePackets; ++i) {
@@ -2883,7 +2882,7 @@ TEST(writer_reader, writer_invalid_payload_size_change) {
 
         Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
                       source_composer(), repair_composer(), packet_factory, arena);
-        CHECK(writer.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
 
         size_t sn = 0;
 
@@ -2943,8 +2942,8 @@ TEST(writer_reader, reader_invalid_fec_scheme_source_packet) {
         Reader reader(reader_config, codec_config.scheme, *decoder, source_queue,
                       repair_queue, rtp_parser, packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         // encode packets and write to queue
         for (size_t i = 0; i < NumSourcePackets; ++i) {
@@ -3014,8 +3013,8 @@ TEST(writer_reader, reader_invalid_fec_scheme_repair_packet) {
         Reader reader(reader_config, codec_config.scheme, *decoder, source_queue,
                       repair_queue, rtp_parser, packet_factory, arena);
 
-        CHECK(writer.is_valid());
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, writer.init_status());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         // encode packets and write to queue
         for (size_t i = 0; i < NumSourcePackets * 2; ++i) {
@@ -3116,7 +3115,7 @@ TEST(writer_reader, failed_to_read_source_packet) {
         Reader reader(reader_config, codec_config.scheme, *decoder, source_reader,
                       repair_reader, rtp_parser, packet_factory, arena);
 
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         fill_all_packets(0);
         for (size_t i = 0; i < NumSourcePackets; ++i) {
@@ -3137,7 +3136,7 @@ TEST(writer_reader, failed_to_read_source_packet) {
         UNSIGNED_LONGS_EQUAL(status::StatusAbort, reader.read(pp));
         CHECK(!pp);
 
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
     }
 }
 
@@ -3164,7 +3163,7 @@ TEST(writer_reader, failed_to_read_repair_packet) {
         Reader reader(reader_config, codec_config.scheme, *decoder, source_reader,
                       repair_reader, rtp_parser, packet_factory, arena);
 
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         fill_all_packets(0);
         for (size_t i = 0; i < NumSourcePackets; ++i) {
@@ -3185,7 +3184,7 @@ TEST(writer_reader, failed_to_read_repair_packet) {
         UNSIGNED_LONGS_EQUAL(status::StatusAbort, reader.read(pp));
         CHECK(!pp);
 
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
     }
 }
 
@@ -3204,13 +3203,13 @@ TEST(writer_reader, failed_to_read_source_and_repair_packets) {
         Reader reader(reader_config, codec_config.scheme, *decoder, source_reader,
                       repair_reader, rtp_parser, packet_factory, arena);
 
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         packet::PacketPtr pp;
         UNSIGNED_LONGS_EQUAL(status::StatusAbort, reader.read(pp));
         CHECK(!pp);
 
-        CHECK(reader.is_valid());
+        LONGS_EQUAL(status::StatusOK, reader.init_status());
     }
 }
 

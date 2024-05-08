@@ -129,7 +129,7 @@ public:
                core::IArena& arena);
 
     //! Check if the pipeline was successfully constructed.
-    bool is_valid() const;
+    status::StatusCode init_status() const;
 
     //! Get sender sink.
     //! @remarks
@@ -174,7 +174,7 @@ private:
 
     const audio::SampleSpec sample_spec_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace pipeline

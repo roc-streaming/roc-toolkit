@@ -71,7 +71,7 @@ TEST(delayed_reader, read_error) {
     for (size_t n = 0; n < ROC_ARRAY_SIZE(codes); ++n) {
         MockReader reader(codes[n]);
         DelayedReader dr(reader, 0, sample_spec);
-        CHECK(dr.is_valid());
+        LONGS_EQUAL(status::StatusOK, dr.init_status());
 
         PacketPtr pp;
         LONGS_EQUAL(codes[n], dr.read(pp));
@@ -82,7 +82,7 @@ TEST(delayed_reader, read_error) {
 TEST(delayed_reader, no_delay) {
     Queue queue;
     DelayedReader dr(queue, 0, sample_spec);
-    CHECK(dr.is_valid());
+    LONGS_EQUAL(status::StatusOK, dr.init_status());
 
     PacketPtr pp;
     LONGS_EQUAL(status::StatusDrain, dr.read(pp));
@@ -101,7 +101,7 @@ TEST(delayed_reader, no_delay) {
 TEST(delayed_reader, delay) {
     Queue queue;
     DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, sample_spec);
-    CHECK(dr.is_valid());
+    LONGS_EQUAL(status::StatusOK, dr.init_status());
 
     PacketPtr packets[NumPackets];
 
@@ -140,7 +140,7 @@ TEST(delayed_reader, delay) {
 TEST(delayed_reader, instant) {
     Queue queue;
     DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, sample_spec);
-    CHECK(dr.is_valid());
+    LONGS_EQUAL(status::StatusOK, dr.init_status());
 
     PacketPtr packets[NumPackets];
 
@@ -163,7 +163,7 @@ TEST(delayed_reader, instant) {
 TEST(delayed_reader, trim) {
     Queue queue;
     DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, sample_spec);
-    CHECK(dr.is_valid());
+    LONGS_EQUAL(status::StatusOK, dr.init_status());
 
     PacketPtr packets[NumPackets * 2];
 
@@ -186,7 +186,7 @@ TEST(delayed_reader, trim) {
 TEST(delayed_reader, late_duplicates) {
     Queue queue;
     DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, sample_spec);
-    CHECK(dr.is_valid());
+    LONGS_EQUAL(status::StatusOK, dr.init_status());
 
     PacketPtr packets[NumPackets];
 

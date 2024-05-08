@@ -47,8 +47,9 @@ int roc_context_open(const roc_context_config* config, roc_context** result) {
         return -1;
     }
 
-    if (!imp_context->is_valid()) {
-        roc_log(LogError, "roc_context_open(): can't initialize context");
+    if (imp_context->init_status() != status::StatusOK) {
+        roc_log(LogError, "roc_context_open(): can't initialize receiver: status=%s",
+                status::code_to_str(imp_context->init_status()));
         return -1;
     }
 

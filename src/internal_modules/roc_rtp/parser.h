@@ -31,6 +31,9 @@ public:
     //!    packet payload
     Parser(const EncodingMap& encoding_map, packet::IParser* inner_parser);
 
+    //! Check if the object was successfully constructed.
+    virtual status::StatusCode init_status() const;
+
     //! Parse packet from buffer.
     virtual bool parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer);
 

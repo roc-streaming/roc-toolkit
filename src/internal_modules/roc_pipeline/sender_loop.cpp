@@ -104,46 +104,43 @@ SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
     , auto_duration_(sink_config.enable_auto_duration)
     , auto_cts_(sink_config.enable_auto_cts)
     , sample_spec_(sink_config.input_sample_spec)
-    , valid_(false) {
-    if (!sink_.is_valid()) {
+    , init_status_(status::NoStatus) {
+    if ((init_status_ = sink_.init_status()) != status::StatusOK) {
         return;
     }
 
     if (sink_config.enable_timing) {
         ticker_.reset(new (ticker_)
                           core::Ticker(sink_config.input_sample_spec.sample_rate()));
-        if (!ticker_) {
-            return;
-        }
     }
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool SenderLoop::is_valid() const {
-    return valid_;
+status::StatusCode SenderLoop::init_status() const {
+    return init_status_;
 }
 
 sndio::ISink& SenderLoop::sink() {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return *this;
 }
 
 sndio::ISink* SenderLoop::to_sink() {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return this;
 }
 
 sndio::ISource* SenderLoop::to_source() {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return NULL;
 }
 
 sndio::DeviceType SenderLoop::type() const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     core::Mutex::Lock lock(sink_mutex_);
 
@@ -151,7 +148,7 @@ sndio::DeviceType SenderLoop::type() const {
 }
 
 sndio::DeviceState SenderLoop::state() const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     core::Mutex::Lock lock(sink_mutex_);
 
@@ -159,7 +156,7 @@ sndio::DeviceState SenderLoop::state() const {
 }
 
 void SenderLoop::pause() {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     core::Mutex::Lock lock(sink_mutex_);
 
@@ -167,7 +164,7 @@ void SenderLoop::pause() {
 }
 
 bool SenderLoop::resume() {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     core::Mutex::Lock lock(sink_mutex_);
 
@@ -175,7 +172,7 @@ bool SenderLoop::resume() {
 }
 
 bool SenderLoop::restart() {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     core::Mutex::Lock lock(sink_mutex_);
 
@@ -183,7 +180,7 @@ bool SenderLoop::restart() {
 }
 
 audio::SampleSpec SenderLoop::sample_spec() const {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     core::Mutex::Lock lock(sink_mutex_);
 
@@ -191,7 +188,7 @@ audio::SampleSpec SenderLoop::sample_spec() const {
 }
 
 core::nanoseconds_t SenderLoop::latency() const {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     core::Mutex::Lock lock(sink_mutex_);
 
@@ -199,7 +196,7 @@ core::nanoseconds_t SenderLoop::latency() const {
 }
 
 bool SenderLoop::has_latency() const {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     core::Mutex::Lock lock(sink_mutex_);
 
@@ -207,7 +204,7 @@ bool SenderLoop::has_latency() const {
 }
 
 bool SenderLoop::has_clock() const {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     core::Mutex::Lock lock(sink_mutex_);
 
@@ -215,7 +212,7 @@ bool SenderLoop::has_clock() const {
 }
 
 void SenderLoop::write(audio::Frame& frame) {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (auto_duration_) {
         if (frame.has_duration()) {

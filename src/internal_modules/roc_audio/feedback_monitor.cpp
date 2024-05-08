@@ -34,22 +34,23 @@ FeedbackMonitor::FeedbackMonitor(IFrameWriter& writer,
     , source_change_limiter_(feedback_config.source_cooldown)
     , sample_spec_(sample_spec)
     , started_(false)
-    , valid_(false) {
-    if (!tuner_.is_valid()) {
+    , init_status_(status::NoStatus) {
+    if ((init_status_ = tuner_.init_status()) != status::StatusOK) {
         return;
     }
 
     if (enable_scaling_) {
         if (!init_scaling_()) {
+            init_status_ = status::StatusBadConfig;
             return;
         }
     }
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool FeedbackMonitor::is_valid() const {
-    return valid_;
+status::StatusCode FeedbackMonitor::init_status() const {
+    return init_status_;
 }
 
 bool FeedbackMonitor::is_started() const {
@@ -57,7 +58,7 @@ bool FeedbackMonitor::is_started() const {
 }
 
 void FeedbackMonitor::start() {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (started_) {
         return;
@@ -70,7 +71,7 @@ void FeedbackMonitor::start() {
 void FeedbackMonitor::process_feedback(packet::stream_source_t source_id,
                                        const LatencyMetrics& latency_metrics,
                                        const packet::LinkMetrics& link_metrics) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (!started_) {
         return;
@@ -115,7 +116,7 @@ void FeedbackMonitor::process_feedback(packet::stream_source_t source_id,
 }
 
 void FeedbackMonitor::write(Frame& frame) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (started_) {
         if (!update_tuner_(frame.duration())) {

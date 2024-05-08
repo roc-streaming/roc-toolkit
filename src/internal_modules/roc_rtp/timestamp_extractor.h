@@ -29,8 +29,8 @@ public:
     //! Initialize.
     TimestampExtractor(packet::IWriter& writer, const audio::SampleSpec& sample_spec);
 
-    //! Destroy.
-    virtual ~TimestampExtractor();
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Passes pkt downstream and remembers its capture and rtp timestamps.
     virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr& pkt);

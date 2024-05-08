@@ -23,7 +23,7 @@ ResamplerReader::ResamplerReader(IFrameReader& reader,
     , out_sample_spec_(out_sample_spec)
     , last_in_cts_(0)
     , scaling_(1.0f)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     if (!in_sample_spec_.is_valid() || !out_sample_spec_.is_valid()
         || !in_sample_spec_.is_raw() || !out_sample_spec_.is_raw()) {
         roc_panic("resampler reader: required valid sample specs with raw format:"
@@ -39,24 +39,25 @@ ResamplerReader::ResamplerReader(IFrameReader& reader,
                   sample_spec_to_str(out_sample_spec_).c_str());
     }
 
-    if (!resampler_.is_valid()) {
+    if ((init_status_ = resampler_.init_status()) != status::StatusOK) {
         return;
     }
 
     if (!resampler_.set_scaling(in_sample_spec_.sample_rate(),
                                 out_sample_spec_.sample_rate(), 1.0f)) {
+        init_status_ = status::StatusBadConfig;
         return;
     }
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool ResamplerReader::is_valid() const {
-    return valid_;
+status::StatusCode ResamplerReader::init_status() const {
+    return init_status_;
 }
 
 bool ResamplerReader::set_scaling(float multiplier) {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     scaling_ = multiplier;
 
@@ -65,7 +66,7 @@ bool ResamplerReader::set_scaling(float multiplier) {
 }
 
 bool ResamplerReader::read(Frame& out_frame) {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (out_frame.num_raw_samples() % out_sample_spec_.num_channels() != 0) {
         roc_panic("resampler reader: unexpected frame size");

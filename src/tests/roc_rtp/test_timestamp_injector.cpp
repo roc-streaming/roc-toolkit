@@ -79,17 +79,17 @@ TEST(timestamp_injector, negative_and_positive_dn) {
 
     LONGS_EQUAL(0, queue.size());
     for (size_t i = 0; i < NPackets; i++) {
-        UNSIGNED_LONGS_EQUAL(status::StatusOK,
-                             queue.write(new_packet((packet::seqnum_t)i,
-                                                    (packet::stream_timestamp_t)(
-                                                        packet_rtp_ts + i * PacketSz))));
+        LONGS_EQUAL(status::StatusOK,
+                    queue.write(new_packet(
+                        (packet::seqnum_t)i,
+                        (packet::stream_timestamp_t)(packet_rtp_ts + i * PacketSz))));
     }
     LONGS_EQUAL(NPackets, queue.size());
 
     core::nanoseconds_t ts_step = sample_spec.samples_per_chan_2_ns(PacketSz);
     for (size_t i = 0; i < NPackets; i++) {
         packet::PacketPtr packet;
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, injector.read(packet));
+        LONGS_EQUAL(status::StatusOK, injector.read(packet));
         CHECK(packet);
         const core::nanoseconds_t pkt_capt_ts = packet->rtp()->capture_timestamp;
 

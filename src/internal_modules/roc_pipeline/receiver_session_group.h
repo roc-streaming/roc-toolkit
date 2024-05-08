@@ -59,8 +59,8 @@ public:
 
     ~ReceiverSessionGroup();
 
-    //! Check if pipeline was succefully constructed.
-    bool is_valid() const;
+    //! Check if the pipeline was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Create control sub-pipeline.
     //! @note
@@ -68,7 +68,8 @@ public:
     //!  it's created separately using this method. On the other hand,
     //!  transport sub-pipeline is per-session and is created automatically
     //!  when a session is created within group.
-    bool create_control_pipeline(ReceiverEndpoint* control_endpoint);
+    ROC_ATTR_NODISCARD status::StatusCode
+    create_control_pipeline(ReceiverEndpoint* control_endpoint);
 
     //! Route packet to session.
     ROC_ATTR_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet,
@@ -153,7 +154,7 @@ private:
     core::List<ReceiverSession> sessions_;
     ReceiverSessionRouter session_router_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace pipeline

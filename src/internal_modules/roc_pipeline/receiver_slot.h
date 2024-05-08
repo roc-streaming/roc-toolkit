@@ -47,8 +47,8 @@ public:
                  audio::FrameFactory& frame_factory,
                  core::IArena& arena);
 
-    //! Check if the slot was succefully constructed.
-    bool is_valid() const;
+    //! Check if the pipeline was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Add endpoint.
     ReceiverEndpoint* add_endpoint(address::Interface iface,
@@ -96,7 +96,7 @@ private:
     core::Optional<ReceiverEndpoint> repair_endpoint_;
     core::Optional<ReceiverEndpoint> control_endpoint_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace pipeline

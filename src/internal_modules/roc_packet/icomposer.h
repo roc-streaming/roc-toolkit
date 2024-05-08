@@ -14,6 +14,7 @@
 
 #include "roc_core/slice.h"
 #include "roc_packet/packet.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace packet {
@@ -22,6 +23,12 @@ namespace packet {
 class IComposer {
 public:
     virtual ~IComposer();
+
+    //! Check if the object was successfully constructed.
+    //! @returns
+    //!  status::StatusOK if composer was initialized correctly,
+    //!  or error code otherwise.
+    virtual status::StatusCode init_status() const = 0;
 
     //! Adjust buffer to align payload.
     //! @remarks

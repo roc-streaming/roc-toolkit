@@ -39,7 +39,7 @@ class MockScheduler : public IPipelineTaskScheduler,
 public:
     MockScheduler()
         : task_(NULL) {
-        CHECK(queue_.is_valid());
+        LONGS_EQUAL(status::StatusOK, queue_.init_status());
     }
 
     ~MockScheduler() {

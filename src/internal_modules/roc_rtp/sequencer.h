@@ -15,6 +15,7 @@
 #include "roc_core/noncopyable.h"
 #include "roc_packet/isequencer.h"
 #include "roc_rtp/identity.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace rtp {
@@ -25,8 +26,8 @@ public:
     //! Initialize.
     Sequencer(Identity& identity, unsigned int payload_type);
 
-    //! Check if was constructed successfully.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Fill next packet.
     virtual void next(packet::Packet& packet,
@@ -40,7 +41,7 @@ private:
     packet::seqnum_t seqnum_;
     packet::stream_timestamp_t stream_ts_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace rtp

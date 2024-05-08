@@ -118,6 +118,7 @@ TEST(pcm_mapper_writer, raw_to_raw) {
     BufferWriter<sample_t> buf_writer;
     PcmMapperWriter mapper_writer(buf_writer, frame_factory, in_spec, out_spec);
     CountGenerator<sample_t> count_generator(mapper_writer, 0.001f);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     count_generator.generate(SmallFrameSz);
 
@@ -138,6 +139,7 @@ TEST(pcm_mapper_writer, s16_to_raw) {
     BufferWriter<sample_t> buf_writer;
     PcmMapperWriter mapper_writer(buf_writer, frame_factory, in_spec, out_spec);
     CountGenerator<int16_t> count_generator(mapper_writer, 100);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     count_generator.generate(SmallFrameSz);
 
@@ -158,6 +160,7 @@ TEST(pcm_mapper_writer, raw_to_s16) {
     BufferWriter<int16_t> buf_writer;
     PcmMapperWriter mapper_writer(buf_writer, frame_factory, in_spec, out_spec);
     CountGenerator<sample_t> count_generator(mapper_writer, 0.001f);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     count_generator.generate(SmallFrameSz);
 
@@ -178,6 +181,7 @@ TEST(pcm_mapper_writer, s16_to_s32) {
     BufferWriter<int32_t> buf_writer;
     PcmMapperWriter mapper_writer(buf_writer, frame_factory, in_spec, out_spec);
     CountGenerator<int16_t> count_generator(mapper_writer, 100);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     count_generator.generate(SmallFrameSz);
 
@@ -198,6 +202,7 @@ TEST(pcm_mapper_writer, s32_to_s16) {
     BufferWriter<int16_t> buf_writer;
     PcmMapperWriter mapper_writer(buf_writer, frame_factory, in_spec, out_spec);
     CountGenerator<int32_t> count_generator(mapper_writer, 1000);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     count_generator.generate(SmallFrameSz);
 
@@ -222,6 +227,7 @@ TEST(pcm_mapper_writer, split_frame) {
     BufferWriter<sample_t> buf_writer;
     PcmMapperWriter mapper_writer(buf_writer, frame_factory, in_spec, out_spec);
     CountGenerator<int16_t> count_generator(mapper_writer, 10);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     count_generator.generate(LargeFrameSz);
 
@@ -249,6 +255,7 @@ TEST(pcm_mapper_writer, split_frame_loop) {
     BufferWriter<sample_t> buf_writer;
     PcmMapperWriter mapper_writer(buf_writer, frame_factory, in_spec, out_spec);
     CountGenerator<int16_t> count_generator(mapper_writer, 10);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     for (size_t iter = 0; iter < IterCount; iter++) {
         buf_writer.reset();
@@ -273,6 +280,7 @@ TEST(pcm_mapper_writer, duration_mono) {
 
     MetaWriter meta_writer;
     PcmMapperWriter mapper_writer(meta_writer, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     {
         sample_t samples[MaxSamples * 3] = {};
@@ -297,6 +305,7 @@ TEST(pcm_mapper_writer, duration_stereo) {
 
     MetaWriter meta_writer;
     PcmMapperWriter mapper_writer(meta_writer, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     {
         sample_t samples[MaxSamples * 3] = {};
@@ -321,6 +330,7 @@ TEST(pcm_mapper_writer, flags_to_raw) {
 
     MetaWriter meta_writer;
     PcmMapperWriter mapper_writer(meta_writer, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     {
         int16_t samples[MaxSamples * 3] = {};
@@ -346,6 +356,7 @@ TEST(pcm_mapper_writer, flags_from_raw) {
 
     MetaWriter meta_writer;
     PcmMapperWriter mapper_writer(meta_writer, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     {
         sample_t samples[MaxSamples * 3] = {};
@@ -371,6 +382,7 @@ TEST(pcm_mapper_writer, capture_timestamp) {
 
     MetaWriter meta_writer;
     PcmMapperWriter mapper_writer(meta_writer, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     {
         sample_t samples[MaxSamples * 3] = {};

@@ -199,6 +199,7 @@ private:
                                    codec_config, packet_factory, arena),
                                arena);
             CHECK(fec_encoder_);
+            LONGS_EQUAL(status::StatusOK, fec_encoder_->init_status());
 
             // fec writer
             fec_writer_.reset(new (arena)
@@ -206,7 +207,8 @@ private:
                                               fec_queue_, *source_composer_,
                                               *repair_composer_, packet_factory, arena),
                               arena);
-            CHECK(fec_writer_->is_valid());
+            CHECK(fec_writer_);
+            LONGS_EQUAL(status::StatusOK, fec_writer_->init_status());
         }
     }
 

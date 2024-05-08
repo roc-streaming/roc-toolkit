@@ -31,9 +31,9 @@ Profiler::Profiler(core::IArena& arena,
     , last_chunk_num_(0)
     , last_chunk_samples_(0)
     , moving_avg_(0)
+    , buffer_full_(false)
     , sample_spec_(sample_spec)
-    , valid_(false)
-    , buffer_full_(false) {
+    , init_status_(status::NoStatus) {
     if (profiler_config.profiling_interval < 0 || profiler_config.chunk_duration < 0
         || chunk_length_ == 0 || num_chunks_ == 0) {
         roc_log(LogError,
@@ -41,24 +41,26 @@ Profiler::Profiler(core::IArena& arena,
                 " profiling_interval=%.3fms chunk_duration=%.3fms",
                 (double)profiler_config.profiling_interval / core::Millisecond,
                 (double)profiler_config.chunk_duration / core::Millisecond);
+        init_status_ = status::StatusBadConfig;
         return;
     }
 
     if (!chunks_.resize(num_chunks_)) {
         roc_log(LogError, "profiler: can't allocate chunks");
+        init_status_ = status::StatusNoMem;
         return;
     }
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool Profiler::is_valid() const {
-    return valid_;
+status::StatusCode Profiler::init_status() const {
+    return init_status_;
 }
 
 void Profiler::add_frame(packet::stream_timestamp_t frame_duration,
                          core::nanoseconds_t elapsed) {
-    roc_panic_if(!valid_);
+    roc_panic_if(init_status_ != status::StatusOK);
 
     update_moving_avg_(frame_duration, elapsed);
 
@@ -71,6 +73,8 @@ void Profiler::add_frame(packet::stream_timestamp_t frame_duration,
 }
 
 float Profiler::get_moving_avg() {
+    roc_panic_if(init_status_ != status::StatusOK);
+
     if (!buffer_full_) {
         const size_t num_samples_in_moving_avg = (chunk_length_ * last_chunk_num_);
 

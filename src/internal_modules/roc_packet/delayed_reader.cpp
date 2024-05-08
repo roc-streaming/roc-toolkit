@@ -24,7 +24,7 @@ DelayedReader::DelayedReader(IReader& reader,
     , delay_(0)
     , started_(false)
     , sample_spec_(sample_spec)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     if (target_delay > 0) {
         delay_ = sample_spec.ns_2_stream_timestamp(target_delay);
     }
@@ -32,15 +32,15 @@ DelayedReader::DelayedReader(IReader& reader,
     roc_log(LogDebug, "delayed reader: initializing: delay=%lu(%.3fms)",
             (unsigned long)delay_, sample_spec_.stream_timestamp_2_ms(delay_));
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool DelayedReader::is_valid() const {
-    return valid_;
+status::StatusCode DelayedReader::init_status() const {
+    return init_status_;
 }
 
 status::StatusCode DelayedReader::read(PacketPtr& ptr) {
-    roc_panic_if(!valid_);
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (!started_) {
         const status::StatusCode code = fetch_packets_();

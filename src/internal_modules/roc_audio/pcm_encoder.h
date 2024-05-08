@@ -29,6 +29,9 @@ public:
     //! Initialize.
     PcmEncoder(const SampleSpec& sample_spec);
 
+    //! Check if the object was successfully constructed.
+    virtual status::StatusCode init_status() const;
+
     //! Get encoded frame size in bytes for given number of samples per channel.
     virtual size_t encoded_byte_count(size_t num_samples) const;
 

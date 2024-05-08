@@ -240,7 +240,7 @@ void resample_read(IResampler& resampler,
     input_reader.add_zero_samples();
 
     ResamplerReader rr(input_reader, resampler, sample_spec, sample_spec);
-    CHECK(rr.is_valid());
+    LONGS_EQUAL(status::StatusOK, rr.init_status());
     CHECK(rr.set_scaling(scaling));
 
     for (size_t pos = 0; pos < num_samples;) {
@@ -261,7 +261,7 @@ void resample_write(IResampler& resampler,
     test::MockWriter output_writer;
 
     ResamplerWriter rw(output_writer, resampler, frame_factory, sample_spec, sample_spec);
-    CHECK(rw.is_valid());
+    LONGS_EQUAL(status::StatusOK, rw.init_status());
     CHECK(rw.set_scaling(scaling));
 
     for (size_t pos = 0; pos < num_samples;) {
@@ -299,7 +299,7 @@ void resample(ResamplerBackend backend,
     core::SharedPtr<IResampler> resampler = ResamplerMap::instance().new_resampler(
         arena, frame_factory, make_config(backend, profile), sample_spec, sample_spec);
     CHECK(resampler);
-    CHECK(resampler->is_valid());
+    LONGS_EQUAL(status::StatusOK, resampler->init_status());
 
     if (dir == Dir_Read) {
         resample_read(*resampler, in, out, num_samples, sample_spec, scaling);
@@ -341,13 +341,13 @@ TEST(resampler, supported_scalings) {
                                 make_config(backend, supported_profiles[n_prof]), in_spec,
                                 out_spec);
                         CHECK(resampler);
-                        CHECK(resampler->is_valid());
+                        LONGS_EQUAL(status::StatusOK, resampler->init_status());
 
                         test::MockReader input_reader;
                         input_reader.add_zero_samples();
 
                         ResamplerReader rr(input_reader, *resampler, in_spec, out_spec);
-                        CHECK(rr.is_valid());
+                        LONGS_EQUAL(status::StatusOK, rr.init_status());
 
                         for (int n_iter = 0; n_iter < NumIterations; n_iter++) {
                             if (!rr.set_scaling(supported_scalings[n_scale])) {
@@ -400,7 +400,7 @@ TEST(resampler, invalid_scalings) {
                             make_config(backend, supported_profiles[n_prof]), in_spec,
                             out_spec);
                     CHECK(resampler);
-                    CHECK(resampler->is_valid());
+                    LONGS_EQUAL(status::StatusOK, resampler->init_status());
 
                     // bad input rate
                     CHECK(!resampler->set_scaling(0, out_spec.sample_rate(), 1.0f));
@@ -454,7 +454,7 @@ TEST(resampler, scaling_trend) {
                             make_config(backend, ResamplerProfile_Low), in_spec,
                             out_spec);
                     CHECK(resampler);
-                    CHECK(resampler->is_valid());
+                    LONGS_EQUAL(status::StatusOK, resampler->init_status());
 
                     CHECK(resampler->set_scaling(in_spec.sample_rate(),
                                                  out_spec.sample_rate(), scaling));

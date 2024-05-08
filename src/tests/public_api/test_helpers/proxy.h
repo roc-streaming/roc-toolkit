@@ -38,7 +38,7 @@ public:
         , n_source_packets_(n_source_packets)
         , n_repair_packets_(n_repair_packets)
         , pos_(0) {
-        CHECK(net_loop_.is_valid());
+        LONGS_EQUAL(status::StatusOK, net_loop_.init_status());
 
         roc_protocol source_proto;
         CHECK(roc_endpoint_get_protocol(receiver_source_endp, &source_proto) == 0);
@@ -131,10 +131,10 @@ private:
 
         if (pp->udp()->dst_addr == recv_source_config_.bind_address) {
             pp->udp()->dst_addr = receiver_source_endp_;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, source_queue_.write(pp));
+            LONGS_EQUAL(status::StatusOK, source_queue_.write(pp));
         } else {
             pp->udp()->dst_addr = receiver_repair_endp_;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_queue_.write(pp));
+            LONGS_EQUAL(status::StatusOK, repair_queue_.write(pp));
         }
 
         for (;;) {
@@ -158,14 +158,14 @@ private:
         packet::PacketPtr pp;
         status::StatusCode code = reader.read(pp);
         if (code != status::StatusOK) {
-            UNSIGNED_LONGS_EQUAL(status::StatusDrain, code);
+            LONGS_EQUAL(status::StatusDrain, code);
             CHECK(!pp);
             return false;
         }
         CHECK(pp);
         pos_++;
         if (!drop) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer_->write(pp));
+            LONGS_EQUAL(status::StatusOK, writer_->write(pp));
         }
         return true;
     }

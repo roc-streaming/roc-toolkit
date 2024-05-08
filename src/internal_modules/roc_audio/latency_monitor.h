@@ -70,8 +70,8 @@ public:
                    const SampleSpec& packet_sample_spec,
                    const SampleSpec& frame_sample_spec);
 
-    //! Check if the object was initialized successfully.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Check if the stream is still alive.
     bool is_alive() const;
@@ -124,7 +124,8 @@ private:
     const SampleSpec frame_sample_spec_;
 
     bool alive_;
-    bool valid_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace audio

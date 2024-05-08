@@ -27,11 +27,7 @@ template <class I, class T>
 ROC_ATTR_UNUSED I* ctor_func(const CodecConfig& config,
                              packet::PacketFactory& packet_factory,
                              core::IArena& arena) {
-    core::ScopedPtr<T> codec(new (arena) T(config, packet_factory, arena), arena);
-    if (!codec || !codec->is_valid()) {
-        return NULL;
-    }
-    return codec.release();
+    return new (arena) T(config, packet_factory, arena);
 }
 
 } // namespace

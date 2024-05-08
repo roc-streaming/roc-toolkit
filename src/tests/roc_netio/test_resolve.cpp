@@ -44,7 +44,7 @@ TEST_GROUP(resolve) {};
 
 TEST(resolve, ipv4) {
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     address::EndpointUri endpoint_uri(arena);
     CHECK(address::parse_endpoint_uri("rtp://127.0.0.1:123",
@@ -59,7 +59,7 @@ TEST(resolve, ipv4) {
 
 TEST(resolve, ipv6) {
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     address::EndpointUri endpoint_uri(arena);
     CHECK(address::parse_endpoint_uri("rtp://[::1]:123",
@@ -74,7 +74,7 @@ TEST(resolve, ipv6) {
 
 TEST(resolve, hostname) {
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     address::EndpointUri endpoint_uri(arena);
     CHECK(address::parse_endpoint_uri("rtp://localhost:123",
@@ -95,7 +95,7 @@ TEST(resolve, hostname) {
 
 TEST(resolve, standard_port) {
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     address::EndpointUri endpoint_uri(arena);
     CHECK(address::parse_endpoint_uri("rtsp://127.0.0.1",
@@ -109,7 +109,7 @@ TEST(resolve, standard_port) {
 
 TEST(resolve, bad_host) {
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     { // bad ipv4
         address::EndpointUri endpoint_uri(arena);

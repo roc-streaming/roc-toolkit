@@ -31,8 +31,8 @@ public:
                     const SampleSpec& sample_spec,
                     ProfilerConfig profiler_config);
 
-    //! Check if the profiler was succefully constructed.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Write audio frame.
     virtual void write(Frame& frame);

@@ -31,6 +31,9 @@ public:
     //!  If @p max_size is non-zero, it specifies maximum number of packets in queue.
     explicit SortedQueue(size_t max_size);
 
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
+
     //! Add packet to the queue.
     //! @remarks
     //!  - if the maximum queue size is reached, packet is dropped

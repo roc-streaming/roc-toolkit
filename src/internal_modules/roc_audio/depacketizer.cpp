@@ -48,7 +48,7 @@ Depacketizer::Depacketizer(packet::IReader& reader,
     , rate_limiter_(LogInterval)
     , beep_(beep)
     , first_packet_(true)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     roc_panic_if_msg(!sample_spec_.is_valid() || !sample_spec_.is_raw(),
                      "depacketizer: required valid sample spec with raw format: %s",
                      sample_spec_to_str(sample_spec_).c_str());
@@ -56,18 +56,22 @@ Depacketizer::Depacketizer(packet::IReader& reader,
     roc_log(LogDebug, "depacketizer: initializing: n_channels=%lu",
             (unsigned long)sample_spec_.num_channels());
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool Depacketizer::is_valid() const {
-    return valid_;
+status::StatusCode Depacketizer::init_status() const {
+    return init_status_;
 }
 
 bool Depacketizer::is_started() const {
+    roc_panic_if(init_status_ != status::StatusOK);
+
     return !first_packet_;
 }
 
 packet::stream_timestamp_t Depacketizer::next_timestamp() const {
+    roc_panic_if(init_status_ != status::StatusOK);
+
     if (first_packet_) {
         return 0;
     }
@@ -75,6 +79,8 @@ packet::stream_timestamp_t Depacketizer::next_timestamp() const {
 }
 
 bool Depacketizer::read(Frame& frame) {
+    roc_panic_if(init_status_ != status::StatusOK);
+
     read_frame_(frame);
 
     report_stats_();

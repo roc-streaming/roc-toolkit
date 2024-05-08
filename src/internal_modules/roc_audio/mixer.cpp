@@ -20,7 +20,7 @@ Mixer::Mixer(FrameFactory& frame_factory,
              bool enable_timestamps)
     : sample_spec_(sample_spec)
     , enable_timestamps_(enable_timestamps)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     roc_panic_if_msg(!sample_spec_.is_valid() || !sample_spec_.is_raw(),
                      "mixer: required valid sample spec with raw format: %s",
                      sample_spec_to_str(sample_spec_).c_str());
@@ -28,32 +28,33 @@ Mixer::Mixer(FrameFactory& frame_factory,
     temp_buf_ = frame_factory.new_raw_buffer();
     if (!temp_buf_) {
         roc_log(LogError, "mixer: can't allocate temporary buffer");
+        init_status_ = status::StatusNoMem;
         return;
     }
 
     temp_buf_.reslice(0, temp_buf_.capacity());
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool Mixer::is_valid() const {
-    return valid_;
+status::StatusCode Mixer::init_status() const {
+    return init_status_;
 }
 
 void Mixer::add_input(IFrameReader& reader) {
-    roc_panic_if(!valid_);
+    roc_panic_if(init_status_ != status::StatusOK);
 
     readers_.push_back(reader);
 }
 
 void Mixer::remove_input(IFrameReader& reader) {
-    roc_panic_if(!valid_);
+    roc_panic_if(init_status_ != status::StatusOK);
 
     readers_.remove(reader);
 }
 
 bool Mixer::read(Frame& frame) {
-    roc_panic_if(!valid_);
+    roc_panic_if(init_status_ != status::StatusOK);
 
     // Optimization for single reader case.
     if (readers_.size() == 1) {
@@ -62,7 +63,7 @@ bool Mixer::read(Frame& frame) {
         }
 
         if (!enable_timestamps_) {
-            // When timestamps are disabled, don't forget to zeroize
+            // When timestamps are disabled, don't forget to zeroise
             // them in the optimized path.
             frame.set_capture_timestamp(0);
         }
@@ -113,7 +114,7 @@ void Mixer::read_(sample_t* out_data,
     double cts_sum = 0;
     size_t cts_count = 0;
 
-    // Zeroize output frame.
+    // Zeroise output frame.
     memset(out_data, 0, out_size * sizeof(sample_t));
 
     for (IFrameReader* rp = readers_.front(); rp; rp = readers_.nextof(*rp)) {

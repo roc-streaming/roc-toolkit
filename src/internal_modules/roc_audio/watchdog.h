@@ -20,6 +20,7 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
 #include "roc_packet/units.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace audio {
@@ -98,8 +99,8 @@ public:
              const WatchdogConfig& config,
              core::IArena& arena);
 
-    //! Check if object is successfully constructed.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Check if stream is still alive.
     //! @returns
@@ -149,7 +150,7 @@ private:
     bool show_status_;
 
     bool alive_;
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace audio

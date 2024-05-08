@@ -19,6 +19,10 @@ ConcurrentQueue::ConcurrentQueue(Mode mode) {
     }
 }
 
+status::StatusCode ConcurrentQueue::init_status() const {
+    return status::StatusOK;
+}
+
 status::StatusCode ConcurrentQueue::read(PacketPtr& ptr) {
     core::Mutex::Lock lock(read_mutex_);
 

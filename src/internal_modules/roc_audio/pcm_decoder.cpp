@@ -27,6 +27,10 @@ PcmDecoder::PcmDecoder(const SampleSpec& sample_spec)
     , frame_bit_off_(0) {
 }
 
+status::StatusCode PcmDecoder::init_status() const {
+    return status::StatusOK;
+}
+
 packet::stream_timestamp_t PcmDecoder::position() const {
     return stream_pos_;
 }

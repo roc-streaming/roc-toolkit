@@ -57,7 +57,7 @@ TEST(router, one_route) {
     Router router(arena);
 
     Queue queue;
-    CHECK(router.add_route(queue, Packet::FlagAudio));
+    LONGS_EQUAL(status::StatusOK, router.add_route(queue, Packet::FlagAudio));
 
     PacketPtr wpa1 = new_rtp_packet(11, Packet::FlagAudio);
     PacketPtr wpa2 = new_rtp_packet(11, Packet::FlagAudio);
@@ -92,8 +92,8 @@ TEST(router, two_routes) {
 
     Queue queue_a;
     Queue queue_r;
-    CHECK(router.add_route(queue_a, Packet::FlagAudio));
-    CHECK(router.add_route(queue_r, Packet::FlagRepair));
+    LONGS_EQUAL(status::StatusOK, router.add_route(queue_a, Packet::FlagAudio));
+    LONGS_EQUAL(status::StatusOK, router.add_route(queue_r, Packet::FlagRepair));
 
     PacketPtr wpa1 = new_rtp_packet(11, Packet::FlagAudio);
     PacketPtr wpa2 = new_rtp_packet(11, Packet::FlagAudio);
@@ -136,8 +136,8 @@ TEST(router, two_routes_two_sources) {
 
     Queue queue_a;
     Queue queue_r;
-    CHECK(router.add_route(queue_a, Packet::FlagAudio));
-    CHECK(router.add_route(queue_r, Packet::FlagRepair));
+    LONGS_EQUAL(status::StatusOK, router.add_route(queue_a, Packet::FlagAudio));
+    LONGS_EQUAL(status::StatusOK, router.add_route(queue_r, Packet::FlagRepair));
 
     PacketPtr wpa1 = new_rtp_packet(11, Packet::FlagAudio);
     PacketPtr wpa2 = new_rtp_packet(11, Packet::FlagAudio);
@@ -179,7 +179,7 @@ TEST(router, same_route_different_sources) {
     Router router(arena);
 
     Queue queue;
-    CHECK(router.add_route(queue, Packet::FlagAudio));
+    LONGS_EQUAL(status::StatusOK, router.add_route(queue, Packet::FlagAudio));
 
     LONGS_EQUAL(status::StatusOK, router.write(new_rtp_packet(11, Packet::FlagAudio)));
     LONGS_EQUAL(1, queue.size());
@@ -196,10 +196,10 @@ TEST(router, different_routes_same_source) {
     Router router(arena);
 
     Queue queue_a;
-    CHECK(router.add_route(queue_a, Packet::FlagAudio));
+    LONGS_EQUAL(status::StatusOK, router.add_route(queue_a, Packet::FlagAudio));
 
     Queue queue_r;
-    CHECK(router.add_route(queue_r, Packet::FlagRepair));
+    LONGS_EQUAL(status::StatusOK, router.add_route(queue_r, Packet::FlagRepair));
 
     LONGS_EQUAL(status::StatusOK, router.write(new_rtp_packet(11, Packet::FlagAudio)));
     LONGS_EQUAL(status::StatusOK, router.write(new_rtp_packet(11, Packet::FlagRepair)));
@@ -212,10 +212,10 @@ TEST(router, different_routes_different_sources) {
     Router router(arena);
 
     Queue queue_a;
-    CHECK(router.add_route(queue_a, Packet::FlagAudio));
+    LONGS_EQUAL(status::StatusOK, router.add_route(queue_a, Packet::FlagAudio));
 
     Queue queue_r;
-    CHECK(router.add_route(queue_r, Packet::FlagRepair));
+    LONGS_EQUAL(status::StatusOK, router.add_route(queue_r, Packet::FlagRepair));
 
     LONGS_EQUAL(status::StatusOK, router.write(new_rtp_packet(11, Packet::FlagAudio)));
     LONGS_EQUAL(status::StatusOK, router.write(new_rtp_packet(22, Packet::FlagRepair)));
@@ -228,7 +228,7 @@ TEST(router, same_route_first_without_source_then_with_source) {
     Router router(arena);
 
     Queue queue;
-    CHECK(router.add_route(queue, Packet::FlagRepair));
+    LONGS_EQUAL(status::StatusOK, router.add_route(queue, Packet::FlagRepair));
 
     LONGS_EQUAL(status::StatusOK, router.write(new_rtp_packet(11, Packet::FlagRepair)));
     LONGS_EQUAL(1, queue.size());
@@ -245,7 +245,7 @@ TEST(router, same_route_first_with_source_then_without_source) {
     Router router(arena);
 
     Queue queue;
-    CHECK(router.add_route(queue, Packet::FlagRepair));
+    LONGS_EQUAL(status::StatusOK, router.add_route(queue, Packet::FlagRepair));
 
     LONGS_EQUAL(status::StatusOK, router.write(new_fec_packet(Packet::FlagRepair)));
     LONGS_EQUAL(1, queue.size());
@@ -267,8 +267,8 @@ TEST(router, source_id_one_source) {
     LONGS_EQUAL(0, router.get_source_id(Packet::FlagRepair));
 
     Queue queue;
-    CHECK(router.add_route(queue, Packet::FlagAudio));
-    CHECK(router.add_route(queue, Packet::FlagRepair));
+    LONGS_EQUAL(status::StatusOK, router.add_route(queue, Packet::FlagAudio));
+    LONGS_EQUAL(status::StatusOK, router.add_route(queue, Packet::FlagRepair));
 
     CHECK(!router.has_source_id(Packet::FlagAudio));
     CHECK(!router.has_source_id(Packet::FlagRepair));
@@ -296,8 +296,8 @@ TEST(router, source_id_two_sources) {
     LONGS_EQUAL(0, router.get_source_id(Packet::FlagRepair));
 
     Queue queue;
-    CHECK(router.add_route(queue, Packet::FlagAudio));
-    CHECK(router.add_route(queue, Packet::FlagRepair));
+    LONGS_EQUAL(status::StatusOK, router.add_route(queue, Packet::FlagAudio));
+    LONGS_EQUAL(status::StatusOK, router.add_route(queue, Packet::FlagRepair));
 
     CHECK(!router.has_source_id(Packet::FlagAudio));
     CHECK(!router.has_source_id(Packet::FlagRepair));

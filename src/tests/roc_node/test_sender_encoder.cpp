@@ -42,10 +42,10 @@ TEST_GROUP(sender_encoder) {
 
 TEST(sender_encoder, sink) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     SenderEncoder sender_encoder(context, sender_config);
-    CHECK(sender_encoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, sender_encoder.init_status());
 
     LONGS_EQUAL(sender_encoder.sink().sample_spec().sample_rate(),
                 sender_config.input_sample_spec.sample_rate());
@@ -53,10 +53,10 @@ TEST(sender_encoder, sink) {
 
 TEST(sender_encoder, read_packet) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     SenderEncoder sender_encoder(context, sender_config);
-    CHECK(sender_encoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, sender_encoder.init_status());
 
     packet::PacketPtr pp;
 
@@ -73,10 +73,10 @@ TEST(sender_encoder, read_packet) {
 
 TEST(sender_encoder, write_packet) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     SenderEncoder sender_encoder(context, sender_config);
-    CHECK(sender_encoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, sender_encoder.init_status());
 
     packet::PacketPtr pp;
 
@@ -90,12 +90,12 @@ TEST(sender_encoder, write_packet) {
 
 TEST(sender_encoder, activate_no_fec) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     sender_config.fec_encoder.scheme = packet::FEC_None;
 
     SenderEncoder sender_encoder(context, sender_config);
-    CHECK(sender_encoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, sender_encoder.init_status());
     CHECK(!sender_encoder.is_complete());
 
     CHECK(sender_encoder.activate(address::Iface_AudioSource, address::Proto_RTP));
@@ -104,12 +104,12 @@ TEST(sender_encoder, activate_no_fec) {
 
 TEST(sender_encoder, activate_fec) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
 
     SenderEncoder sender_encoder(context, sender_config);
-    CHECK(sender_encoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, sender_encoder.init_status());
     CHECK(!sender_encoder.is_complete());
 
     if (fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
@@ -133,10 +133,10 @@ TEST(sender_encoder, activate_fec) {
 
 TEST(sender_encoder, metrics) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     SenderEncoder sender_encoder(context, sender_config);
-    CHECK(sender_encoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, sender_encoder.init_status());
 
     pipeline::SenderSlotMetrics slot_metrics;
     pipeline::SenderParticipantMetrics party_metrics;

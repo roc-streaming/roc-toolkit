@@ -16,6 +16,7 @@
 #include "roc_core/stddefs.h"
 #include "roc_packet/packet.h"
 #include "roc_packet/units.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace audio {
@@ -24,6 +25,9 @@ namespace audio {
 class IFrameEncoder {
 public:
     virtual ~IFrameEncoder();
+
+    //! Check if the object was successfully constructed.
+    virtual status::StatusCode init_status() const = 0;
 
     //! Get encoded frame size in bytes for given number of samples per channel.
     virtual size_t encoded_byte_count(size_t num_samples) const = 0;

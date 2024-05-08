@@ -22,6 +22,7 @@
 #include "roc_ctl/control_task.h"
 #include "roc_ctl/control_task_executor.h"
 #include "roc_ctl/icontrol_task_completer.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace ctl {
@@ -135,7 +136,7 @@ public:
     virtual ~ControlTaskQueue();
 
     //! Check if the object was successfully constructed.
-    bool is_valid() const;
+    status::StatusCode init_status() const;
 
     //! Enqueue a task for asynchronous execution as soon as possible.
     //!
@@ -223,7 +224,7 @@ public:
 private:
     virtual void run();
 
-    void start_thread_();
+    bool start_thread_();
     void stop_thread_();
 
     void setup_task_(ControlTask& task,
@@ -280,6 +281,8 @@ private:
 
     core::Timer wakeup_timer_;
     core::Mutex task_mutex_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace ctl

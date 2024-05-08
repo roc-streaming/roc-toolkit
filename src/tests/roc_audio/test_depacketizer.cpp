@@ -180,7 +180,7 @@ TEST(depacketizer, one_packet_one_read) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, frame_spec, false);
-    CHECK(dp.is_valid());
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, 0, 0.11f, Now)));
 
@@ -193,7 +193,7 @@ TEST(depacketizer, one_packet_multiple_reads) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, frame_spec, false);
-    CHECK(dp.is_valid());
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, 0, 0.11f, Now)));
 
@@ -212,7 +212,7 @@ TEST(depacketizer, multiple_packets_one_read) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, frame_spec, false);
-    CHECK(dp.is_valid());
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     core::nanoseconds_t ts = Now;
     for (packet::stream_timestamp_t n = 0; n < NumPackets; n++) {
@@ -234,7 +234,7 @@ TEST(depacketizer, multiple_packets_multiple_reads) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, frame_spec, false);
-    CHECK(dp.is_valid());
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     // Start with a packet with zero capture timestamp.
     LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, 0, 0.01f, 0)));
@@ -276,7 +276,7 @@ TEST(depacketizer, timestamp_overflow) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, frame_spec, false);
-    CHECK(dp.is_valid());
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     const packet::stream_timestamp_t ts2 = 0;
     const packet::stream_timestamp_t ts1 = ts2 - SamplesPerPacket;
@@ -303,7 +303,7 @@ TEST(depacketizer, drop_late_packets) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, frame_spec, false);
-    CHECK(dp.is_valid());
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     const packet::stream_timestamp_t ts1 = SamplesPerPacket * 2;
     const packet::stream_timestamp_t ts2 = SamplesPerPacket * 1;
@@ -326,7 +326,7 @@ TEST(depacketizer, drop_late_packets_timestamp_overflow) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, frame_spec, false);
-    CHECK(dp.is_valid());
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     const packet::stream_timestamp_t ts1 = 0;
     const packet::stream_timestamp_t ts2 = ts1 - SamplesPerPacket;
@@ -349,7 +349,7 @@ TEST(depacketizer, zeros_no_packets) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, frame_spec, false);
-    CHECK(dp.is_valid());
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     expect_output(dp, SamplesPerPacket, 0.00f, 0);
 }
@@ -360,7 +360,7 @@ TEST(depacketizer, zeros_no_next_packet) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, frame_spec, false);
-    CHECK(dp.is_valid());
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, 0, 0.11f, 0)));
 
@@ -374,7 +374,7 @@ TEST(depacketizer, zeros_between_packets) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, frame_spec, false);
-    CHECK(dp.is_valid());
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     const core::nanoseconds_t capt_ts1 = Now;
     const core::nanoseconds_t capt_ts2 = Now + NsPerPacket * 2;
@@ -395,7 +395,7 @@ TEST(depacketizer, zeros_between_packets_timestamp_overflow) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, frame_spec, false);
-    CHECK(dp.is_valid());
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     const packet::stream_timestamp_t ts2 = 0;
     const packet::stream_timestamp_t ts1 = ts2 - SamplesPerPacket;
@@ -420,7 +420,7 @@ TEST(depacketizer, zeros_after_packet) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, frame_spec, false);
-    CHECK(dp.is_valid());
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, 0, 0.11f, Now)));
 
@@ -447,7 +447,7 @@ TEST(depacketizer, packet_after_zeros) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, frame_spec, false);
-    CHECK(dp.is_valid());
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     expect_output(dp, SamplesPerPacket, 0.00f, 0);
 
@@ -464,7 +464,7 @@ TEST(depacketizer, overlapping_packets) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, frame_spec, false);
-    CHECK(dp.is_valid());
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     const packet::stream_timestamp_t ts1 = 0;
     const packet::stream_timestamp_t ts2 = SamplesPerPacket / 2;
@@ -553,7 +553,7 @@ TEST(depacketizer, frame_flags_incompltete_blank) {
     for (size_t n = 0; n < ROC_ARRAY_SIZE(packets); n++) {
         PcmDecoder decoder(packet_spec);
         Depacketizer dp(queue, decoder, frame_spec, false);
-        CHECK(dp.is_valid());
+        LONGS_EQUAL(status::StatusOK, dp.init_status());
 
         for (size_t p = 0; p < PacketsPerFrame; p++) {
             if (packets[n][p] != NULL) {
@@ -571,7 +571,7 @@ TEST(depacketizer, frame_flags_drops) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, frame_spec, false);
-    CHECK(dp.is_valid());
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     packet::PacketPtr packets[] = {
         new_packet(encoder, SamplesPerPacket * 4, 0.11f, 0),
@@ -615,7 +615,7 @@ TEST(depacketizer, timestamp) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, frame_spec, false);
-    CHECK(dp.is_valid());
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     core::nanoseconds_t capt_ts = 0;
     for (size_t n = 0; n < NumPackets * FramesPerPacket; n++) {
@@ -671,7 +671,7 @@ TEST(depacketizer, timestamp_fract_frame_per_packet) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, frame_spec, false);
-    CHECK(dp.is_valid());
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     core::nanoseconds_t capt_ts = Now + frame_spec.samples_overall_2_ns(SamplesPerPacket);
     // 1st packet in the frame has 0 capture ts, and the next
@@ -695,7 +695,7 @@ TEST(depacketizer, timestamp_small_non_zero_cts) {
 
     packet::Queue queue;
     Depacketizer dp(queue, decoder, frame_spec, false);
-    CHECK(dp.is_valid());
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     // 1st packet in frame has 0 capture ts
     packet::stream_timestamp_t stream_ts = StartTimestamp;
@@ -746,7 +746,7 @@ TEST(depacketizer, read_after_error) {
         packet::Queue queue;
         TestReader reader(queue);
         Depacketizer dp(reader, decoder, frame_spec, false);
-        CHECK(dp.is_valid());
+        LONGS_EQUAL(status::StatusOK, dp.init_status());
 
         LONGS_EQUAL(status::StatusOK, queue.write(new_packet(encoder, 0, 0.11f, Now)));
 
@@ -755,12 +755,12 @@ TEST(depacketizer, read_after_error) {
         reader.enable_status_code(codes[n]);
         expect_output(dp, SamplesPerPacket, 0.00f, 0);
         UNSIGNED_LONGS_EQUAL(1, reader.call_count());
-        CHECK(dp.is_valid());
+        LONGS_EQUAL(status::StatusOK, dp.init_status());
 
         reader.disable_status_code();
         expect_output(dp, SamplesPerPacket, 0.11f, Now);
         UNSIGNED_LONGS_EQUAL(2, reader.call_count());
-        CHECK(dp.is_valid());
+        LONGS_EQUAL(status::StatusOK, dp.init_status());
     }
 }
 

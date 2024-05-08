@@ -157,7 +157,7 @@ public:
             packet::PacketPtr pp;
             const status::StatusCode code = reader.read(pp);
             if (code != status::StatusOK) {
-                UNSIGNED_LONGS_EQUAL(status::StatusDrain, code);
+                LONGS_EQUAL(status::StatusDrain, code);
                 break;
             }
 
@@ -433,7 +433,7 @@ void send_receive(int flags,
 
     SenderSink sender(sender_config, encoding_map, packet_pool, packet_buffer_pool,
                       frame_buffer_pool, arena);
-    CHECK(sender.is_valid());
+    LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlotConfig sender_slot_config;
     SenderSlot* sender_slot = sender.create_slot(sender_slot_config);
@@ -470,7 +470,7 @@ void send_receive(int flags,
 
     ReceiverSource receiver(receiver_config, encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlotConfig receiver_slot_config;
     ReceiverSlot* receiver_slot = receiver.create_slot(receiver_slot_config);

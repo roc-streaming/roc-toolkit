@@ -24,6 +24,7 @@
 #include "roc_sndio/backend_map.h"
 #include "roc_sndio/print_supported.h"
 #include "roc_sndio/pump.h"
+#include "roc_status/code_to_str.h"
 
 #include "roc_send/cmdline.h"
 
@@ -263,8 +264,9 @@ int main(int argc, char** argv) {
     }
 
     node::Context context(context_config, heap_arena);
-    if (!context.is_valid()) {
-        roc_log(LogError, "can't initialize node context");
+    if (context.init_status() != status::StatusOK) {
+        roc_log(LogError, "can't initialize node context: status=%s",
+                status::code_to_str(context.init_status()));
         return 1;
     }
 
@@ -328,8 +330,9 @@ int main(int argc, char** argv) {
     }
 
     node::Sender sender(context, sender_config);
-    if (!sender.is_valid()) {
-        roc_log(LogError, "can't create sender node");
+    if (sender.init_status() != status::StatusOK) {
+        roc_log(LogError, "can't create sender node: status=%s",
+                status::code_to_str(sender.init_status()));
         return 1;
     }
 

@@ -103,46 +103,43 @@ ReceiverLoop::ReceiverLoop(IPipelineTaskScheduler& scheduler,
               arena)
     , ticker_ts_(0)
     , auto_reclock_(source_config.common.enable_auto_reclock)
-    , valid_(false) {
-    if (!source_.is_valid()) {
+    , init_status_(status::NoStatus) {
+    if ((init_status_ = source_.init_status()) != status::StatusOK) {
         return;
     }
 
     if (source_config.common.enable_timing) {
         ticker_.reset(new (ticker_) core::Ticker(
             source_config.common.output_sample_spec.sample_rate()));
-        if (!ticker_) {
-            return;
-        }
     }
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool ReceiverLoop::is_valid() const {
-    return valid_;
+status::StatusCode ReceiverLoop::init_status() const {
+    return init_status_;
 }
 
 sndio::ISource& ReceiverLoop::source() {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return *this;
 }
 
 sndio::ISink* ReceiverLoop::to_sink() {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return NULL;
 }
 
 sndio::ISource* ReceiverLoop::to_source() {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return this;
 }
 
 sndio::DeviceType ReceiverLoop::type() const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -150,7 +147,7 @@ sndio::DeviceType ReceiverLoop::type() const {
 }
 
 sndio::DeviceState ReceiverLoop::state() const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -158,7 +155,7 @@ sndio::DeviceState ReceiverLoop::state() const {
 }
 
 void ReceiverLoop::pause() {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -166,7 +163,7 @@ void ReceiverLoop::pause() {
 }
 
 bool ReceiverLoop::resume() {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -174,7 +171,7 @@ bool ReceiverLoop::resume() {
 }
 
 bool ReceiverLoop::restart() {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -182,7 +179,7 @@ bool ReceiverLoop::restart() {
 }
 
 audio::SampleSpec ReceiverLoop::sample_spec() const {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -190,7 +187,7 @@ audio::SampleSpec ReceiverLoop::sample_spec() const {
 }
 
 core::nanoseconds_t ReceiverLoop::latency() const {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -198,7 +195,7 @@ core::nanoseconds_t ReceiverLoop::latency() const {
 }
 
 bool ReceiverLoop::has_latency() const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -206,7 +203,7 @@ bool ReceiverLoop::has_latency() const {
 }
 
 bool ReceiverLoop::has_clock() const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     core::Mutex::Lock lock(source_mutex_);
 
@@ -214,7 +211,7 @@ bool ReceiverLoop::has_clock() const {
 }
 
 void ReceiverLoop::reclock(core::nanoseconds_t timestamp) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (auto_reclock_) {
         roc_panic("receiver loop: unexpected reclock() call in auto-reclock mode");
@@ -226,7 +223,7 @@ void ReceiverLoop::reclock(core::nanoseconds_t timestamp) {
 }
 
 bool ReceiverLoop::read(audio::Frame& frame) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     core::Mutex::Lock lock(source_mutex_);
 

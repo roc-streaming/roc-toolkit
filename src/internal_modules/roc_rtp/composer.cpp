@@ -19,6 +19,10 @@ Composer::Composer(packet::IComposer* inner_composer)
     : inner_composer_(inner_composer) {
 }
 
+status::StatusCode Composer::init_status() const {
+    return status::StatusOK;
+}
+
 bool Composer::align(core::Slice<uint8_t>& buffer,
                      size_t header_size,
                      size_t payload_alignment) {

@@ -15,41 +15,42 @@ namespace roc {
 namespace rtp {
 
 Identity::Identity()
-    : valid_(false) {
+    : init_status_(status::NoStatus) {
     if (!core::uuid_generare(cname_, sizeof(cname_))) {
+        init_status_ = status::StatusErrRand;
         return;
     }
 
-    if (!change_ssrc()) {
+    if ((init_status_ = change_ssrc()) != status::StatusOK) {
         return;
     }
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool Identity::is_valid() const {
-    return valid_;
+status::StatusCode Identity::init_status() const {
+    return init_status_;
 }
 
 const char* Identity::cname() const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return cname_;
 }
 
 packet::stream_source_t Identity::ssrc() const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return ssrc_;
 }
 
-bool Identity::change_ssrc() {
+status::StatusCode Identity::change_ssrc() {
     ssrc_ =
         (packet::stream_source_t)core::fast_random_range(1, packet::stream_source_t(-1));
 
     roc_log(LogDebug, "rtp identity: ssrc=%lu cname=%s", (unsigned long)ssrc_, cname_);
 
-    return true;
+    return status::StatusOK;
 }
 
 } // namespace rtp

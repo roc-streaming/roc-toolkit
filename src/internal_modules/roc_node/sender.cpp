@@ -28,17 +28,17 @@ Sender::Sender(Context& context, const pipeline::SenderSinkConfig& pipeline_conf
     , slot_pool_("slot_pool", context.arena())
     , slot_map_(context.arena())
     , party_metrics_(context.arena())
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     roc_log(LogDebug, "sender node: initializing");
 
     memset(used_interfaces_, 0, sizeof(used_interfaces_));
     memset(used_protocols_, 0, sizeof(used_protocols_));
 
-    if (!pipeline_.is_valid()) {
+    if ((init_status_ = pipeline_.init_status()) != status::StatusOK) {
         return;
     }
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
 Sender::~Sender() {
@@ -55,8 +55,8 @@ Sender::~Sender() {
     context().control_loop().wait(processing_task_);
 }
 
-bool Sender::is_valid() const {
-    return valid_;
+status::StatusCode Sender::init_status() const {
+    return init_status_;
 }
 
 bool Sender::configure(slot_index_t slot_index,
@@ -64,7 +64,7 @@ bool Sender::configure(slot_index_t slot_index,
                        const netio::UdpConfig& config) {
     core::Mutex::Lock lock(mutex_);
 
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if(iface < 0);
     roc_panic_if(iface >= (int)address::Iface_Max);
@@ -111,7 +111,7 @@ bool Sender::connect(slot_index_t slot_index,
                      const address::EndpointUri& uri) {
     core::Mutex::Lock lock(mutex_);
 
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if(iface < 0);
     roc_panic_if(iface >= (int)address::Iface_Max);
@@ -250,7 +250,7 @@ bool Sender::connect(slot_index_t slot_index,
 bool Sender::unlink(slot_index_t slot_index) {
     core::Mutex::Lock lock(mutex_);
 
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_log(LogDebug, "sender node: unlinking slot %lu", (unsigned long)slot_index);
 
@@ -277,7 +277,7 @@ bool Sender::get_metrics(slot_index_t slot_index,
                          void* party_metrics_arg) {
     core::Mutex::Lock lock(mutex_);
 
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if(!slot_metrics_func);
     roc_panic_if(!party_metrics_func);
@@ -329,7 +329,7 @@ bool Sender::get_metrics(slot_index_t slot_index,
 bool Sender::has_incomplete() {
     core::Mutex::Lock lock(mutex_);
 
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     for (core::SharedPtr<Slot> slot = slot_map_.front(); slot;
          slot = slot_map_.nextof(*slot)) {
@@ -356,7 +356,7 @@ bool Sender::has_incomplete() {
 bool Sender::has_broken() {
     core::Mutex::Lock lock(mutex_);
 
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     for (core::SharedPtr<Slot> slot = slot_map_.front(); slot;
          slot = slot_map_.nextof(*slot)) {
@@ -369,7 +369,7 @@ bool Sender::has_broken() {
 }
 
 sndio::ISink& Sender::sink() {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return pipeline_.sink();
 }

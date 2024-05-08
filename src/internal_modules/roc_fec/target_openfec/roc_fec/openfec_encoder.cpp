@@ -22,7 +22,7 @@ OpenfecEncoder::OpenfecEncoder(const CodecConfig& config,
     , of_sess_(NULL)
     , buff_tab_(arena)
     , data_tab_(arena)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     if (config.scheme == packet::FEC_ReedSolomon_M8) {
         roc_log(LogDebug, "openfec encoder: initializing: codec=rs m=%u",
                 (unsigned)config.rs_m);
@@ -50,7 +50,7 @@ OpenfecEncoder::OpenfecEncoder(const CodecConfig& config,
 
     of_verbosity = 0;
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
 OpenfecEncoder::~OpenfecEncoder() {
@@ -59,8 +59,8 @@ OpenfecEncoder::~OpenfecEncoder() {
     }
 }
 
-bool OpenfecEncoder::is_valid() const {
-    return valid_;
+status::StatusCode OpenfecEncoder::init_status() const {
+    return init_status_;
 }
 
 size_t OpenfecEncoder::alignment() const {
@@ -68,13 +68,13 @@ size_t OpenfecEncoder::alignment() const {
 }
 
 size_t OpenfecEncoder::max_block_length() const {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return max_block_length_;
 }
 
 bool OpenfecEncoder::begin(size_t sblen, size_t rblen, size_t payload_size) {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (sblen_ == sblen && rblen_ == rblen && payload_size_ == payload_size) {
         return true;
@@ -95,7 +95,7 @@ bool OpenfecEncoder::begin(size_t sblen, size_t rblen, size_t payload_size) {
 }
 
 void OpenfecEncoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (index >= sblen_ + rblen_) {
         roc_panic("openfec encoder: can't write more than %lu data buffers",
@@ -121,7 +121,7 @@ void OpenfecEncoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
 }
 
 void OpenfecEncoder::fill() {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     for (size_t i = sblen_; i < sblen_ + rblen_; ++i) {
         roc_log(LogTrace, "openfec encoder: of_build_repair_symbol(): index=%lu",
@@ -135,7 +135,7 @@ void OpenfecEncoder::fill() {
 }
 
 void OpenfecEncoder::end() {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     for (size_t i = 0; i < buff_tab_.size(); ++i) {
         data_tab_[i] = NULL;

@@ -40,10 +40,13 @@ public:
     //! Initialize.
     Router(core::IArena& arena);
 
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
+
     //! Add route.
     //! @remarks
     //!  Packets that has given @p flags set will be routed to @p writer.
-    ROC_ATTR_NODISCARD bool add_route(IWriter& writer, unsigned flags);
+    ROC_ATTR_NODISCARD status::StatusCode add_route(IWriter& writer, unsigned flags);
 
     //! Check if there is detected source id for given route.
     //! @remarks

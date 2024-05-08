@@ -144,7 +144,22 @@ BuiltinResampler::BuiltinResampler(core::IArena& arena,
     , qt_sample_(float_to_fixedpoint(0))
     , qt_dt_(0)
     , cutoff_freq_(0.9f)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
+    if (!in_spec_.is_valid() || !out_spec_.is_valid() || !in_spec_.is_raw()
+        || !out_spec_.is_raw()) {
+        roc_panic("builtin resampler: required valid sample specs with raw format:"
+                  " in_spec=%s out_spec=%s",
+                  sample_spec_to_str(in_spec_).c_str(),
+                  sample_spec_to_str(out_spec_).c_str());
+    }
+
+    if (in_spec_.channel_set() != out_spec_.channel_set()) {
+        roc_panic("builtin resampler: required identical input and output channel sets:"
+                  " in_spec=%s out_spec=%s",
+                  sample_spec_to_str(in_spec_).c_str(),
+                  sample_spec_to_str(out_spec_).c_str());
+    }
+
     roc_log(
         LogDebug,
         "builtin resampler: initializing:"
@@ -154,25 +169,28 @@ BuiltinResampler::BuiltinResampler(core::IArena& arena,
         (unsigned long)in_spec_.num_channels());
 
     if (!check_config_()) {
+        init_status_ = status::StatusBadConfig;
         return;
     }
 
     if (!fill_sinc_()) {
+        init_status_ = status::StatusNoMem;
         return;
     }
 
     if (!alloc_frames_(frame_factory)) {
+        init_status_ = status::StatusNoMem;
         return;
     }
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
 BuiltinResampler::~BuiltinResampler() {
 }
 
-bool BuiltinResampler::is_valid() const {
-    return valid_;
+status::StatusCode BuiltinResampler::init_status() const {
+    return init_status_;
 }
 
 bool BuiltinResampler::set_scaling(size_t input_sample_rate,
@@ -313,25 +331,6 @@ bool BuiltinResampler::alloc_frames_(FrameFactory& frame_factory) {
 }
 
 bool BuiltinResampler::check_config_() const {
-    if (!in_spec_.is_valid() || !out_spec_.is_valid() || !in_spec_.is_raw()
-        || !out_spec_.is_raw()) {
-        roc_log(LogError,
-                "builtin resampler: invalid sample spec:"
-                " in_spec=%s out_spec=%s",
-                sample_spec_to_str(in_spec_).c_str(),
-                sample_spec_to_str(out_spec_).c_str());
-        return false;
-    }
-
-    if (in_spec_.channel_set() != out_spec_.channel_set()) {
-        roc_log(LogError,
-                "builtin resampler: input and output channel sets should be equal:"
-                " in_spec=%s out_spec=%s",
-                sample_spec_to_str(in_spec_).c_str(),
-                sample_spec_to_str(out_spec_).c_str());
-        return false;
-    }
-
     if (frame_size_ != frame_size_ch_ * in_spec_.num_channels()) {
         roc_log(LogError,
                 "builtin resampler: frame_size is not multiple of num_channels:"

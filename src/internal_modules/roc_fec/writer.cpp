@@ -36,24 +36,31 @@ Writer::Writer(const WriterConfig& config,
     , packet_factory_(packet_factory)
     , repair_block_(arena)
     , first_packet_(true)
+    , alive_(true)
     , cur_packet_(0)
     , fec_scheme_(fec_scheme)
-    , valid_(false)
-    , alive_(true)
     , prev_block_timestamp_valid_(false)
     , prev_block_timestamp_(0)
-    , block_max_duration_(0) {
+    , block_max_duration_(0)
+    , init_status_(status::NoStatus) {
+    if ((init_status_ = encoder_.init_status()) != status::StatusOK) {
+        return;
+    }
+
     cur_sbn_ = (packet::blknum_t)core::fast_random_range(0, packet::blknum_t(-1));
     cur_block_repair_sn_ =
         (packet::seqnum_t)core::fast_random_range(0, packet::seqnum_t(-1));
+
     if (!resize(config.n_source_packets, config.n_repair_packets)) {
+        init_status_ = status::StatusNoMem;
         return;
     }
-    valid_ = true;
+
+    init_status_ = status::StatusOK;
 }
 
-bool Writer::is_valid() const {
-    return valid_;
+status::StatusCode Writer::init_status() const {
+    return init_status_;
 }
 
 bool Writer::is_alive() const {
@@ -65,6 +72,8 @@ packet::stream_timestamp_t Writer::max_block_duration() const {
 }
 
 bool Writer::resize(size_t sblen, size_t rblen) {
+    roc_panic_if(init_status_ != status::StatusOK);
+
     if (next_sblen_ == sblen && next_rblen_ == rblen) {
         return true;
     }
@@ -103,8 +112,8 @@ bool Writer::resize(size_t sblen, size_t rblen) {
 }
 
 status::StatusCode Writer::write(const packet::PacketPtr& pp) {
-    roc_panic_if_not(is_valid());
-    roc_panic_if_not(pp);
+    roc_panic_if(init_status_ != status::StatusOK);
+    roc_panic_if(!pp);
 
     if (!alive_) {
         // TODO(gh-183): return StatusDead

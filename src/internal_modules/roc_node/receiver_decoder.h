@@ -37,8 +37,8 @@ public:
     //! Deinitialize.
     ~ReceiverDecoder();
 
-    //! Check if successfully constructed.
-    bool is_valid();
+    //! Check if the node was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Get packet factory.
     packet::PacketFactory& packet_factory();
@@ -94,7 +94,7 @@ private:
     pipeline::ReceiverLoop::SlotHandle slot_;
     ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace node

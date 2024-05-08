@@ -12,9 +12,11 @@
 #ifndef ROC_RTP_IDENTITY_H_
 #define ROC_RTP_IDENTITY_H_
 
+#include "roc_core/attributes.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/uuid.h"
 #include "roc_packet/units.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace rtp {
@@ -25,12 +27,12 @@ public:
     //! Initialize.
     Identity();
 
-    //! Check if was constructed successfully.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Get generated CNAME.
     //! Uniquely identifies participant across all RTP sessions.
-    //! It is expected that collisions are not practi cally possible.
+    //! It is expected that collisions are not practically possible.
     const char* cname() const;
 
     //! Get generated SSRC.
@@ -40,12 +42,13 @@ public:
 
     //! Regenerate SSRC.
     //! Used in case of SSRC collision.
-    bool change_ssrc();
+    ROC_ATTR_NODISCARD status::StatusCode change_ssrc();
 
 private:
     char cname_[core::UuidLen + 1];
     packet::stream_source_t ssrc_;
-    bool valid_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace rtp

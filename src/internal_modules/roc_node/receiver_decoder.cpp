@@ -28,11 +28,13 @@ ReceiverDecoder::ReceiverDecoder(Context& context,
                 context.arena())
     , slot_(NULL)
     , processing_task_(pipeline_)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     roc_log(LogDebug, "receiver decoder node: initializing");
 
-    if (!pipeline_.is_valid()) {
-        roc_log(LogError, "receiver decoder node: failed to construct pipeline");
+    if ((init_status_ = pipeline_.init_status()) != status::StatusOK) {
+        roc_log(LogError,
+                "receiver decoder node: failed to construct pipeline: status=%s",
+                status::code_to_str(pipeline_.init_status()));
         return;
     }
 
@@ -42,16 +44,18 @@ ReceiverDecoder::ReceiverDecoder(Context& context,
     pipeline::ReceiverLoop::Tasks::CreateSlot slot_task(slot_config);
     if (!pipeline_.schedule_and_wait(slot_task)) {
         roc_log(LogError, "receiver decoder node: failed to create slot");
+        // TODO(gh-183): forward status
         return;
     }
 
     slot_ = slot_task.get_handle();
     if (!slot_) {
         roc_log(LogError, "receiver decoder node: failed to create slot");
+        // TODO(gh-183): forward status
         return;
     }
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
 ReceiverDecoder::~ReceiverDecoder() {
@@ -70,8 +74,8 @@ ReceiverDecoder::~ReceiverDecoder() {
     context().control_loop().wait(processing_task_);
 }
 
-bool ReceiverDecoder::is_valid() {
-    return valid_;
+status::StatusCode ReceiverDecoder::init_status() const {
+    return init_status_;
 }
 
 packet::PacketFactory& ReceiverDecoder::packet_factory() {
@@ -81,7 +85,7 @@ packet::PacketFactory& ReceiverDecoder::packet_factory() {
 bool ReceiverDecoder::activate(address::Interface iface, address::Protocol proto) {
     core::Mutex::Lock lock(mutex_);
 
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if(iface < 0);
     roc_panic_if(iface >= (int)address::Iface_Max);
@@ -124,7 +128,7 @@ bool ReceiverDecoder::get_metrics(slot_metrics_func_t slot_metrics_func,
                                   void* party_metrics_arg) {
     core::Mutex::Lock lock(mutex_);
 
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if(!slot_metrics_func);
     roc_panic_if(!party_metrics_func);
@@ -155,7 +159,7 @@ bool ReceiverDecoder::get_metrics(slot_metrics_func_t slot_metrics_func,
 
 status::StatusCode ReceiverDecoder::write_packet(address::Interface iface,
                                                  const packet::PacketPtr& packet) {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if(iface < 0);
     roc_panic_if(iface >= (int)address::Iface_Max);
@@ -174,7 +178,7 @@ status::StatusCode ReceiverDecoder::write_packet(address::Interface iface,
 
 status::StatusCode ReceiverDecoder::read_packet(address::Interface iface,
                                                 packet::PacketPtr& packet) {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if(iface < 0);
     roc_panic_if(iface >= (int)address::Iface_Max);
@@ -200,7 +204,7 @@ status::StatusCode ReceiverDecoder::read_packet(address::Interface iface,
 }
 
 sndio::ISource& ReceiverDecoder::source() {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return pipeline_.source();
 }

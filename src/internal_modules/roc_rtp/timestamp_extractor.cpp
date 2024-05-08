@@ -29,7 +29,8 @@ TimestampExtractor::TimestampExtractor(packet::IWriter& writer,
     , rate_limiter_(ReportInterval) {
 }
 
-TimestampExtractor::~TimestampExtractor() {
+status::StatusCode TimestampExtractor::init_status() const {
+    return status::StatusOK;
 }
 
 status::StatusCode TimestampExtractor::write(const packet::PacketPtr& pkt) {

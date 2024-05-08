@@ -24,7 +24,7 @@ ChannelMapperWriter::ChannelMapperWriter(IFrameWriter& writer,
     , mapper_(in_spec.channel_set(), out_spec.channel_set())
     , in_spec_(in_spec)
     , out_spec_(out_spec)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     if (!in_spec_.is_valid() || !out_spec_.is_valid() || !in_spec_.is_raw()
         || !out_spec_.is_raw()) {
         roc_panic("channel mapper writer: required valid sample specs with raw format:"
@@ -43,20 +43,21 @@ ChannelMapperWriter::ChannelMapperWriter(IFrameWriter& writer,
     output_buf_ = frame_factory.new_raw_buffer();
     if (!output_buf_) {
         roc_log(LogError, "channel mapper writer: can't allocate temporary buffer");
+        init_status_ = status::StatusNoMem;
         return;
     }
 
     output_buf_.reslice(0, output_buf_.capacity());
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool ChannelMapperWriter::is_valid() const {
-    return valid_;
+status::StatusCode ChannelMapperWriter::init_status() const {
+    return init_status_;
 }
 
 void ChannelMapperWriter::write(Frame& in_frame) {
-    roc_panic_if(!valid_);
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (in_frame.num_raw_samples() % in_spec_.num_channels() != 0) {
         roc_panic("channel mapper writer: unexpected frame size");

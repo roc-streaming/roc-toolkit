@@ -21,6 +21,7 @@
 #include "roc_core/slice.h"
 #include "roc_core/time.h"
 #include "roc_packet/units.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace audio {
@@ -52,8 +53,8 @@ public:
           const SampleSpec& sample_spec,
           bool enable_timestamps);
 
-    //! Check if the mixer was succefully constructed.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Add input reader.
     void add_input(IFrameReader&);
@@ -79,7 +80,7 @@ private:
     const SampleSpec sample_spec_;
     const bool enable_timestamps_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace audio

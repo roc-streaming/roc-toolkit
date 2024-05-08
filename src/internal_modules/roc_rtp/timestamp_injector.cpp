@@ -31,7 +31,8 @@ TimestampInjector::TimestampInjector(packet::IReader& reader,
     , rate_limiter_(ReportInterval) {
 }
 
-TimestampInjector::~TimestampInjector() {
+status::StatusCode TimestampInjector::init_status() const {
+    return status::StatusOK;
 }
 
 status::StatusCode TimestampInjector::read(packet::PacketPtr& pkt) {

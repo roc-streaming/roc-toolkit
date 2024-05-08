@@ -57,6 +57,10 @@ struct MockComposer : public IComposer, public core::NonCopyable<> {
         : compose_call_count(0) {
     }
 
+    virtual status::StatusCode init_status() const {
+        return status::StatusOK;
+    }
+
     virtual bool align(core::Slice<uint8_t>&, size_t, size_t) {
         return true;
     }

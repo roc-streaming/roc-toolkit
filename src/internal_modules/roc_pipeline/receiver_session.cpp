@@ -23,15 +23,19 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
                                  core::IArena& arena)
     : core::RefCounted<ReceiverSession, core::ArenaAllocation>(arena)
     , frame_reader_(NULL)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     const rtp::Encoding* pkt_encoding =
         encoding_map.find_by_pt(session_config.payload_type);
     if (!pkt_encoding) {
+        roc_log(LogError,
+                "receiver session: can't find registered encoding for payload id %u",
+                (unsigned)session_config.payload_type);
+        init_status_ = status::StatusBadConfig;
         return;
     }
 
     packet_router_.reset(new (packet_router_) packet::Router(arena));
-    if (!packet_router_) {
+    if ((init_status_ = packet_router_->init_status()) != status::StatusOK) {
         return;
     }
 
@@ -41,19 +45,20 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     packet::IWriter* pkt_writer = NULL;
 
     source_queue_.reset(new (source_queue_) packet::SortedQueue(0));
-    if (!source_queue_) {
+    if ((init_status_ = source_queue_->init_status()) != status::StatusOK) {
         return;
     }
     pkt_writer = source_queue_.get();
 
     source_meter_.reset(new (source_meter_) rtp::LinkMeter(encoding_map));
-    if (!source_meter_) {
+    if ((init_status_ = source_meter_->init_status()) != status::StatusOK) {
         return;
     }
     source_meter_->set_writer(*pkt_writer);
     pkt_writer = source_meter_.get();
 
-    if (!packet_router_->add_route(*pkt_writer, packet::Packet::FlagAudio)) {
+    if ((init_status_ = packet_router_->add_route(*pkt_writer, packet::Packet::FlagAudio))
+        != status::StatusOK) {
         return;
     }
 
@@ -65,20 +70,24 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     payload_decoder_.reset(pkt_encoding->new_decoder(arena, pkt_encoding->sample_spec),
                            arena);
     if (!payload_decoder_) {
+        init_status_ = status::StatusNoMem;
+        return;
+    }
+    if ((init_status_ = payload_decoder_->init_status()) != status::StatusOK) {
         return;
     }
 
     filter_.reset(new (filter_)
                       rtp::Filter(*pkt_reader, *payload_decoder_,
                                   common_config.rtp_filter, pkt_encoding->sample_spec));
-    if (!filter_) {
+    if ((init_status_ = filter_->init_status()) != status::StatusOK) {
         return;
     }
     pkt_reader = filter_.get();
 
     delayed_reader_.reset(new (delayed_reader_) packet::DelayedReader(
         *pkt_reader, session_config.latency.target_latency, pkt_encoding->sample_spec));
-    if (!delayed_reader_ || !delayed_reader_->is_valid()) {
+    if ((init_status_ = delayed_reader_->init_status()) != status::StatusOK) {
         return;
     }
     pkt_reader = delayed_reader_.get();
@@ -88,17 +97,19 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
 
     if (session_config.fec_decoder.scheme != packet::FEC_None) {
         repair_queue_.reset(new (repair_queue_) packet::SortedQueue(0));
-        if (!repair_queue_) {
+        if ((init_status_ = repair_queue_->init_status()) != status::StatusOK) {
             return;
         }
 
         repair_meter_.reset(new (repair_meter_) rtp::LinkMeter(encoding_map));
-        if (!repair_meter_) {
+        if ((init_status_ = repair_meter_->init_status()) != status::StatusOK) {
             return;
         }
         repair_meter_->set_writer(*repair_queue_);
 
-        if (!packet_router_->add_route(*repair_meter_, packet::Packet::FlagRepair)) {
+        if ((init_status_ =
+                 packet_router_->add_route(*repair_meter_, packet::Packet::FlagRepair))
+            != status::StatusOK) {
             return;
         }
 
@@ -106,18 +117,22 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
                                session_config.fec_decoder, packet_factory, arena),
                            arena);
         if (!fec_decoder_) {
+            init_status_ = status::StatusNoMem;
+            return;
+        }
+        if ((init_status_ = fec_decoder_->init_status()) != status::StatusOK) {
             return;
         }
 
         fec_parser_.reset(new (fec_parser_) rtp::Parser(encoding_map, NULL));
-        if (!fec_parser_) {
+        if ((init_status_ = fec_parser_->init_status()) != status::StatusOK) {
             return;
         }
 
         fec_reader_.reset(new (fec_reader_) fec::Reader(
             session_config.fec_reader, session_config.fec_decoder.scheme, *fec_decoder_,
             *pkt_reader, *repair_queue_, *fec_parser_, packet_factory, arena));
-        if (!fec_reader_ || !fec_reader_->is_valid()) {
+        if ((init_status_ = fec_reader_->init_status()) != status::StatusOK) {
             return;
         }
         pkt_reader = fec_reader_.get();
@@ -125,7 +140,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         fec_filter_.reset(new (fec_filter_) rtp::Filter(*pkt_reader, *payload_decoder_,
                                                         common_config.rtp_filter,
                                                         pkt_encoding->sample_spec));
-        if (!fec_filter_) {
+        if ((init_status_ = fec_filter_->init_status()) != status::StatusOK) {
             return;
         }
         pkt_reader = fec_filter_.get();
@@ -136,7 +151,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
 
     timestamp_injector_.reset(new (timestamp_injector_) rtp::TimestampInjector(
         *pkt_reader, pkt_encoding->sample_spec));
-    if (!timestamp_injector_) {
+    if ((init_status_ = timestamp_injector_->init_status()) != status::StatusOK) {
         return;
     }
     pkt_reader = timestamp_injector_.get();
@@ -153,7 +168,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
 
         depacketizer_.reset(new (depacketizer_) audio::Depacketizer(
             *pkt_reader, *payload_decoder_, out_spec, session_config.enable_beeping));
-        if (!depacketizer_ || !depacketizer_->is_valid()) {
+        if ((init_status_ = depacketizer_->init_status()) != status::StatusOK) {
             return;
         }
         frm_reader = depacketizer_.get();
@@ -162,7 +177,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
             || session_config.watchdog.choppy_playback_timeout >= 0) {
             watchdog_.reset(new (watchdog_) audio::Watchdog(
                 *frm_reader, out_spec, session_config.watchdog, arena));
-            if (!watchdog_ || !watchdog_->is_valid()) {
+            if ((init_status_ = watchdog_->init_status()) != status::StatusOK) {
                 return;
             }
             frm_reader = watchdog_.get();
@@ -182,7 +197,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         channel_mapper_reader_.reset(
             new (channel_mapper_reader_) audio::ChannelMapperReader(
                 *frm_reader, frame_factory, in_spec, out_spec));
-        if (!channel_mapper_reader_ || !channel_mapper_reader_->is_valid()) {
+        if ((init_status_ = channel_mapper_reader_->init_status()) != status::StatusOK) {
             return;
         }
         frm_reader = channel_mapper_reader_.get();
@@ -202,12 +217,16 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
             arena, frame_factory, session_config.resampler, in_spec, out_spec));
         if (!resampler_) {
+            init_status_ = status::StatusNoMem;
+            return;
+        }
+        if ((init_status_ = resampler_->init_status()) != status::StatusOK) {
             return;
         }
 
         resampler_reader_.reset(new (resampler_reader_) audio::ResamplerReader(
             *frm_reader, *resampler_, in_spec, out_spec));
-        if (!resampler_reader_ || !resampler_reader_->is_valid()) {
+        if ((init_status_ = resampler_reader_->init_status()) != status::StatusOK) {
             return;
         }
         frm_reader = resampler_reader_.get();
@@ -217,39 +236,35 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         *frm_reader, *source_queue_, *depacketizer_, *source_meter_, fec_reader_.get(),
         resampler_reader_.get(), session_config.latency, pkt_encoding->sample_spec,
         common_config.output_sample_spec));
-    if (!latency_monitor_ || !latency_monitor_->is_valid()) {
+    if ((init_status_ = latency_monitor_->init_status()) != status::StatusOK) {
         return;
     }
     frm_reader = latency_monitor_.get();
 
-    if (!frm_reader) {
-        return;
-    }
-
     // Top-level frame reader that is added to mixer.
     frame_reader_ = frm_reader;
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool ReceiverSession::is_valid() const {
-    return valid_;
+status::StatusCode ReceiverSession::init_status() const {
+    return init_status_;
 }
 
 audio::IFrameReader& ReceiverSession::frame_reader() {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return *frame_reader_;
 }
 
 status::StatusCode ReceiverSession::route_packet(const packet::PacketPtr& packet) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return packet_router_->write(packet);
 }
 
 bool ReceiverSession::refresh(core::nanoseconds_t current_time,
                               core::nanoseconds_t* next_refresh) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     (void)current_time;
 
@@ -271,13 +286,13 @@ bool ReceiverSession::refresh(core::nanoseconds_t current_time,
 }
 
 bool ReceiverSession::reclock(core::nanoseconds_t playback_time) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return latency_monitor_->reclock(playback_time);
 }
 
 size_t ReceiverSession::num_reports() const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     size_t n_reports = 0;
 
@@ -299,7 +314,7 @@ void ReceiverSession::generate_reports(const char* report_cname,
                                        core::nanoseconds_t report_time,
                                        rtcp::RecvReport* reports,
                                        size_t n_reports) const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (n_reports > 0 && packet_router_->has_source_id(packet::Packet::FlagAudio)
         && source_meter_->has_metrics() && source_meter_->has_encoding()) {
@@ -351,7 +366,7 @@ void ReceiverSession::generate_reports(const char* report_cname,
 }
 
 void ReceiverSession::process_report(const rtcp::SendReport& report) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (packet_router_->has_source_id(packet::Packet::FlagAudio)
         && packet_router_->get_source_id(packet::Packet::FlagAudio)
@@ -364,7 +379,7 @@ void ReceiverSession::process_report(const rtcp::SendReport& report) {
 }
 
 ReceiverParticipantMetrics ReceiverSession::get_metrics() const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     ReceiverParticipantMetrics metrics;
     metrics.link = source_meter_->metrics();

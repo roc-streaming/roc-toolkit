@@ -86,6 +86,7 @@ TEST(channel_mapper_reader, small_frame_upmix) {
 
     test::MockReader mock_reader;
     ChannelMapperReader mapper_reader(mock_reader, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
     const unsigned flags = Frame::FlagNotComplete;
 
@@ -118,6 +119,7 @@ TEST(channel_mapper_reader, small_frame_downmix) {
 
     test::MockReader mock_reader;
     ChannelMapperReader mapper_reader(mock_reader, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
     const unsigned flags = Frame::FlagNotComplete;
 
@@ -148,6 +150,7 @@ TEST(channel_mapper_reader, small_frame_nocts) {
 
     test::MockReader mock_reader;
     ChannelMapperReader mapper_reader(mock_reader, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
     const unsigned flags = Frame::FlagNotComplete;
 
@@ -179,6 +182,7 @@ TEST(channel_mapper_reader, large_frame_upmix) {
 
     test::MockReader mock_reader;
     ChannelMapperReader mapper_reader(mock_reader, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
     const unsigned flags1 = Frame::FlagNotComplete;
     const unsigned flags2 = Frame::FlagPacketDrops;
@@ -213,6 +217,7 @@ TEST(channel_mapper_reader, large_frame_downmix) {
 
     test::MockReader mock_reader;
     ChannelMapperReader mapper_reader(mock_reader, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
     const unsigned flags1 = Frame::FlagNotComplete;
     const unsigned flags2 = Frame::FlagPacketDrops;
@@ -245,6 +250,7 @@ TEST(channel_mapper_reader, large_frame_nocts) {
 
     test::MockReader mock_reader;
     ChannelMapperReader mapper_reader(mock_reader, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
     const unsigned flags1 = Frame::FlagNotComplete;
     const unsigned flags2 = Frame::FlagPacketDrops;

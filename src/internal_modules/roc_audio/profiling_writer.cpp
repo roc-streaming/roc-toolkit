@@ -22,8 +22,8 @@ ProfilingWriter::ProfilingWriter(IFrameWriter& writer,
     , writer_(writer) {
 }
 
-bool ProfilingWriter::is_valid() const {
-    return profiler_.is_valid();
+status::StatusCode ProfilingWriter::init_status() const {
+    return profiler_.init_status();
 }
 
 void ProfilingWriter::write(Frame& frame) {

@@ -50,8 +50,8 @@ public:
 
     ~SenderSlot();
 
-    //! Check if the slot was successfully constructed.
-    bool is_valid() const;
+    //! Check if the pipeline was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Add endpoint.
     SenderEndpoint* add_endpoint(address::Interface iface,
@@ -92,7 +92,7 @@ private:
     StateTracker& state_tracker_;
     SenderSession session_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace pipeline

@@ -126,6 +126,7 @@ TEST(pcm_mapper_reader, raw_to_raw) {
 
     CountReader<sample_t> count_reader(0.001f);
     PcmMapperReader mapper_reader(count_reader, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
     sample_t samples[SmallFrameSz] = {};
     Frame frame(samples, SmallFrameSz);
@@ -148,6 +149,7 @@ TEST(pcm_mapper_reader, s16_to_raw) {
 
     CountReader<int16_t> count_reader(100);
     PcmMapperReader mapper_reader(count_reader, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
     sample_t samples[SmallFrameSz] = {};
     Frame frame(samples, SmallFrameSz);
@@ -170,6 +172,7 @@ TEST(pcm_mapper_reader, raw_to_s16) {
 
     CountReader<sample_t> count_reader(0.001f);
     PcmMapperReader mapper_reader(count_reader, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
     int16_t samples[SmallFrameSz] = {};
     Frame frame((uint8_t*)samples, sizeof(samples));
@@ -192,6 +195,7 @@ TEST(pcm_mapper_reader, s16_to_s32) {
 
     CountReader<int16_t> count_reader(100);
     PcmMapperReader mapper_reader(count_reader, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
     int32_t samples[SmallFrameSz] = {};
     Frame frame((uint8_t*)samples, sizeof(samples));
@@ -214,6 +218,7 @@ TEST(pcm_mapper_reader, s32_to_s16) {
 
     CountReader<int32_t> count_reader(1000);
     PcmMapperReader mapper_reader(count_reader, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
     int16_t samples[SmallFrameSz] = {};
     Frame frame((uint8_t*)samples, sizeof(samples));
@@ -240,6 +245,7 @@ TEST(pcm_mapper_reader, split_frame) {
 
     CountReader<int16_t> count_reader(10);
     PcmMapperReader mapper_reader(count_reader, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
     sample_t samples[LargeFrameSz] = {};
     Frame frame(samples, LargeFrameSz);
@@ -269,6 +275,7 @@ TEST(pcm_mapper_reader, split_frame_loop) {
 
     CountReader<int16_t> count_reader(10);
     PcmMapperReader mapper_reader(count_reader, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
     for (size_t iter = 0; iter < IterCount; iter++) {
         sample_t samples[LargeFrameSz] = {};
@@ -294,6 +301,7 @@ TEST(pcm_mapper_reader, duration_mono) {
 
     CountReader<sample_t> count_reader(0);
     PcmMapperReader mapper_reader(count_reader, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
     sample_t samples[SmallFrameSz] = {};
     Frame frame(samples, SmallFrameSz);
@@ -314,6 +322,7 @@ TEST(pcm_mapper_reader, duration_stereo) {
 
     CountReader<sample_t> count_reader(0);
     PcmMapperReader mapper_reader(count_reader, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
     sample_t samples[SmallFrameSz] = {};
     Frame frame(samples, SmallFrameSz);
@@ -336,6 +345,7 @@ TEST(pcm_mapper_reader, flags_to_raw) {
 
     MetaReader meta_reader;
     PcmMapperReader mapper_reader(meta_reader, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
     meta_reader.flags[0] = Frame::FlagNotRaw;
     meta_reader.flags[1] = Frame::FlagNotRaw | Frame::FlagNotBlank;
@@ -379,6 +389,7 @@ TEST(pcm_mapper_reader, flags_from_raw) {
 
     MetaReader meta_reader;
     PcmMapperReader mapper_reader(meta_reader, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
     meta_reader.flags[0] = 0;
     meta_reader.flags[1] = Frame::FlagNotBlank;
@@ -425,6 +436,7 @@ TEST(pcm_mapper_reader, capture_timestamp) {
 
     MetaReader meta_reader;
     PcmMapperReader mapper_reader(meta_reader, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
     meta_reader.cts[0] = 10000000000;
     meta_reader.cts[1] = 20000000000;

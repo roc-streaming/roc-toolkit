@@ -214,7 +214,7 @@ TEST(receiver_source, no_sessions) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     test::FrameReader frame_reader(receiver, frame_factory);
 
@@ -233,7 +233,7 @@ TEST(receiver_source, one_session) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -270,7 +270,7 @@ TEST(receiver_source, one_session_long_run) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -311,7 +311,7 @@ TEST(receiver_source, initial_latency) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -357,7 +357,7 @@ TEST(receiver_source, initial_latency_timeout) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -397,7 +397,7 @@ TEST(receiver_source, timeout) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -444,7 +444,7 @@ TEST(receiver_source, timeout_smaller_than_latency) {
     ReceiverSource receiver(
         make_custom_config(LargeLatency, LatencyTolerance, Timeout, LargeWarmup),
         encoding_map, packet_pool, packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -519,7 +519,7 @@ TEST(receiver_source, min_latency) {
     ReceiverSource receiver(
         make_custom_config(Latency, SmallTolerance, LargeTimeout, Warmup), encoding_map,
         packet_pool, packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -578,7 +578,7 @@ TEST(receiver_source, max_latency) {
     ReceiverSource receiver(
         make_custom_config(Latency, SmallTolerance, LargeTimeout, Warmup), encoding_map,
         packet_pool, packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -645,7 +645,7 @@ TEST(receiver_source, initial_trim) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -684,7 +684,7 @@ TEST(receiver_source, two_sessions_synchronous) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -728,7 +728,7 @@ TEST(receiver_source, two_sessions_overlapping) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -785,7 +785,7 @@ TEST(receiver_source, two_sessions_two_endpoints) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot1 = create_slot(receiver);
     CHECK(slot1);
@@ -836,7 +836,7 @@ TEST(receiver_source, two_sessions_same_address_same_stream) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -885,7 +885,7 @@ TEST(receiver_source, two_sessions_same_address_different_streams) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -936,7 +936,7 @@ TEST(receiver_source, seqnum_overflow) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -971,7 +971,7 @@ TEST(receiver_source, seqnum_small_jump) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1016,7 +1016,7 @@ TEST(receiver_source, seqnum_large_jump) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1069,7 +1069,7 @@ TEST(receiver_source, seqnum_reorder) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1110,7 +1110,7 @@ TEST(receiver_source, seqnum_late) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1173,7 +1173,7 @@ TEST(receiver_source, timestamp_overflow) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1210,7 +1210,7 @@ TEST(receiver_source, timestamp_small_jump) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1264,7 +1264,7 @@ TEST(receiver_source, timestamp_large_jump) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1312,7 +1312,7 @@ TEST(receiver_source, timestamp_overlap) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1349,7 +1349,7 @@ TEST(receiver_source, timestamp_reorder) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1408,7 +1408,7 @@ TEST(receiver_source, timestamp_late) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1482,7 +1482,7 @@ TEST(receiver_source, packet_size_small) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1523,7 +1523,7 @@ TEST(receiver_source, packet_size_large) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1570,7 +1570,7 @@ TEST(receiver_source, packet_size_variable) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1608,7 +1608,7 @@ TEST(receiver_source, corrupted_packets_new_session) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1648,7 +1648,7 @@ TEST(receiver_source, corrupted_packets_existing_session) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1711,7 +1711,7 @@ TEST(receiver_source, channel_mapping_stereo_to_mono) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1749,7 +1749,7 @@ TEST(receiver_source, channel_mapping_mono_to_stereo) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1787,7 +1787,7 @@ TEST(receiver_source, sample_rate_mapping) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1828,7 +1828,7 @@ TEST(receiver_source, timestamp_mapping_no_control_packets) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1880,7 +1880,7 @@ TEST(receiver_source, timestamp_mapping_one_control_packet) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -1949,7 +1949,7 @@ TEST(receiver_source, timestamp_mapping_periodic_control_packets) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -2023,7 +2023,7 @@ TEST(receiver_source, timestamp_mapping_remixing) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -2108,7 +2108,7 @@ TEST(receiver_source, metrics_participants) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -2222,7 +2222,7 @@ TEST(receiver_source, metrics_truncation) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -2335,7 +2335,7 @@ TEST(receiver_source, metrics_niq_latency) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -2391,7 +2391,7 @@ TEST(receiver_source, metrics_e2e_latency) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -2480,7 +2480,7 @@ TEST(receiver_source, reports_no_senders) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -2517,7 +2517,7 @@ TEST(receiver_source, reports_one_sender) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -2612,7 +2612,7 @@ TEST(receiver_source, reports_two_senders_unicast) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -2746,7 +2746,7 @@ TEST(receiver_source, reports_two_senders_multicast) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);
@@ -2858,7 +2858,7 @@ TEST(receiver_source, pipeline_state) {
 
     ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
                             packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
     CHECK(slot);

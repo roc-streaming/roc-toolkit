@@ -39,7 +39,7 @@ public:
                      core::IArena& arena);
 
     //! Check if the pipeline was successfully constructed.
-    bool is_valid();
+    status::StatusCode init_status() const;
 
     //! Cast IDevice to ISink.
     virtual sndio::ISink* to_sink();
@@ -95,7 +95,7 @@ private:
 
     TranscoderConfig config_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace pipeline

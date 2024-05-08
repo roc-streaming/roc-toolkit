@@ -26,7 +26,7 @@ ResamplerWriter::ResamplerWriter(IFrameWriter& writer,
     , input_buf_pos_(0)
     , output_buf_pos_(0)
     , scaling_(1.f)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     if (!in_sample_spec_.is_valid() || !out_sample_spec_.is_valid()
         || !in_sample_spec_.is_raw() || !out_sample_spec_.is_raw()) {
         roc_panic("resampler writer: required valid sample specs with raw format:"
@@ -42,12 +42,13 @@ ResamplerWriter::ResamplerWriter(IFrameWriter& writer,
                   sample_spec_to_str(out_sample_spec_).c_str());
     }
 
-    if (!resampler_.is_valid()) {
+    if ((init_status_ = resampler_.init_status()) != status::StatusOK) {
         return;
     }
 
     if (!resampler_.set_scaling(in_sample_spec_.sample_rate(),
                                 out_sample_spec_.sample_rate(), 1.0f)) {
+        init_status_ = status::StatusBadConfig;
         return;
     }
 
@@ -57,15 +58,15 @@ ResamplerWriter::ResamplerWriter(IFrameWriter& writer,
     }
     output_buf_.reslice(0, output_buf_.capacity());
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool ResamplerWriter::is_valid() const {
-    return valid_;
+status::StatusCode ResamplerWriter::init_status() const {
+    return init_status_;
 }
 
 bool ResamplerWriter::set_scaling(float multiplier) {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     scaling_ = multiplier;
 
@@ -74,7 +75,7 @@ bool ResamplerWriter::set_scaling(float multiplier) {
 }
 
 void ResamplerWriter::write(Frame& in_frame) {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (in_frame.num_raw_samples() % in_sample_spec_.num_channels() != 0) {
         roc_panic("resampler writer: unexpected frame size");

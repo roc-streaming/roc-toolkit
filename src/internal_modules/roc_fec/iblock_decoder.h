@@ -14,6 +14,7 @@
 
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace fec {
@@ -22,6 +23,9 @@ namespace fec {
 class IBlockDecoder {
 public:
     virtual ~IBlockDecoder();
+
+    //! Check if the object was successfully constructed.
+    virtual status::StatusCode init_status() const = 0;
 
     //! Get the maximum number of encoding symbols for the scheme being used.
     virtual size_t max_block_length() const = 0;

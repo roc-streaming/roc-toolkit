@@ -50,15 +50,15 @@ Communicator::Communicator(const Config& config,
     , processed_packet_count_(0)
     , generated_packet_count_(0)
     , log_limiter_(LogInterval)
-    , valid_(false) {
-    if (!reporter_.is_valid()) {
+    , init_status_(status::NoStatus) {
+    if ((init_status_ = reporter_.init_status()) != status::StatusOK) {
         return;
     }
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool Communicator::is_valid() const {
-    return valid_;
+status::StatusCode Communicator::init_status() const {
+    return init_status_;
 }
 
 size_t Communicator::total_destinations() const {
@@ -71,7 +71,7 @@ size_t Communicator::total_streams() const {
 
 status::StatusCode Communicator::process_packet(const packet::PacketPtr& packet,
                                                 core::nanoseconds_t current_time) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if_msg(!packet, "rtcp communicator: null packet");
     roc_panic_if_msg(!packet->udp(), "rtcp communicator: non-udp packet");
@@ -330,7 +330,7 @@ void Communicator::process_extended_report_(const XrTraverser& xr) {
 }
 
 core::nanoseconds_t Communicator::generation_deadline(core::nanoseconds_t current_time) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if_msg(current_time <= 0,
                      "rtcp communicator: invalid timestamp:"
@@ -347,7 +347,7 @@ core::nanoseconds_t Communicator::generation_deadline(core::nanoseconds_t curren
 }
 
 status::StatusCode Communicator::generate_reports(core::nanoseconds_t current_time) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if_msg(current_time <= 0,
                      "rtcp communicator: invalid timestamp:"
@@ -378,7 +378,7 @@ status::StatusCode Communicator::generate_reports(core::nanoseconds_t current_ti
 }
 
 status::StatusCode Communicator::generate_goodbye(core::nanoseconds_t current_time) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if_msg(current_time <= 0, "rtcp communicator: invalid timestamp");
 

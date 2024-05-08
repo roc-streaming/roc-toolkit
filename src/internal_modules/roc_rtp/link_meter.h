@@ -48,6 +48,9 @@ public:
     //! Initialize.
     explicit LinkMeter(const EncodingMap& encoding_map);
 
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
+
     //! Check if metrics are already gathered and can be reported.
     virtual bool has_metrics() const;
 

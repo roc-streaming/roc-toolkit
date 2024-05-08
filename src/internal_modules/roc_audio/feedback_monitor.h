@@ -70,8 +70,8 @@ public:
                     const LatencyConfig& latency_config,
                     const SampleSpec& sample_spec);
 
-    //! Check if the object was initialized successfully.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Check if feedback monitoring is started.
     bool is_started() const;
@@ -128,7 +128,8 @@ private:
     const SampleSpec sample_spec_;
 
     bool started_;
-    bool valid_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace audio

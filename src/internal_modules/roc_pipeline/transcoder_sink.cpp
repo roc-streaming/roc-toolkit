@@ -21,7 +21,7 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
     : frame_factory_(buffer_pool)
     , frame_writer_(NULL)
     , config_(config)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     config_.deduce_defaults();
 
     audio::IFrameWriter* frm_writer = output_writer;
@@ -42,7 +42,7 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
         channel_mapper_writer_.reset(
             new (channel_mapper_writer_) audio::ChannelMapperWriter(
                 *frm_writer, frame_factory_, from_spec, to_spec));
-        if (!channel_mapper_writer_ || !channel_mapper_writer_->is_valid()) {
+        if ((init_status_ = channel_mapper_writer_->init_status()) != status::StatusOK) {
             return;
         }
         frm_writer = channel_mapper_writer_.get();
@@ -61,12 +61,16 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
             arena, frame_factory_, config_.resampler, from_spec, to_spec));
         if (!resampler_) {
+            init_status_ = status::StatusNoMem;
+            return;
+        }
+        if ((init_status_ = resampler_->init_status()) != status::StatusOK) {
             return;
         }
 
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
             *frm_writer, *resampler_, frame_factory_, from_spec, to_spec));
-        if (!resampler_writer_ || !resampler_writer_->is_valid()) {
+        if ((init_status_ = resampler_writer_->init_status()) != status::StatusOK) {
             return;
         }
         frm_writer = resampler_writer_.get();
@@ -75,22 +79,18 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
     if (config_.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingWriter(
             *frm_writer, arena, config_.input_sample_spec, config_.profiler));
-        if (!profiler_ || !profiler_->is_valid()) {
+        if ((init_status_ = profiler_->init_status()) != status::StatusOK) {
             return;
         }
         frm_writer = profiler_.get();
     }
 
-    if (!frm_writer) {
-        return;
-    }
-
     frame_writer_ = frm_writer;
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool TranscoderSink::is_valid() {
-    return valid_;
+status::StatusCode TranscoderSink::init_status() const {
+    return init_status_;
 }
 
 sndio::ISink* TranscoderSink::to_sink() {
@@ -138,7 +138,7 @@ bool TranscoderSink::has_clock() const {
 }
 
 void TranscoderSink::write(audio::Frame& frame) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     frame_writer_->write(frame);
 }

@@ -29,7 +29,7 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto,
     , sender_session_(sender_session)
     , composer_(NULL)
     , parser_(NULL)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     packet::IComposer* composer = NULL;
     packet::IParser* parser = NULL;
 
@@ -38,7 +38,7 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto,
     case address::Proto_RTP_LDPC_Source:
     case address::Proto_RTP_RS8M_Source:
         rtp_composer_.reset(new (rtp_composer_) rtp::Composer(NULL));
-        if (!rtp_composer_) {
+        if ((init_status_ = rtp_composer_->init_status()) != status::StatusOK) {
             return;
         }
         composer = rtp_composer_.get();
@@ -55,6 +55,10 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto,
                     composer),
             arena);
         if (!fec_composer_) {
+            init_status_ = status::StatusNoMem;
+            return;
+        }
+        if ((init_status_ = fec_composer_->init_status()) != status::StatusOK) {
             return;
         }
         composer = fec_composer_.get();
@@ -66,6 +70,10 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto,
                     composer),
             arena);
         if (!fec_composer_) {
+            init_status_ = status::StatusNoMem;
+            return;
+        }
+        if ((init_status_ = fec_composer_->init_status()) != status::StatusOK) {
             return;
         }
         composer = fec_composer_.get();
@@ -76,6 +84,10 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto,
                 fec::Composer<fec::RS8M_PayloadID, fec::Source, fec::Footer>(composer),
             arena);
         if (!fec_composer_) {
+            init_status_ = status::StatusNoMem;
+            return;
+        }
+        if ((init_status_ = fec_composer_->init_status()) != status::StatusOK) {
             return;
         }
         composer = fec_composer_.get();
@@ -86,6 +98,10 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto,
                 fec::Composer<fec::RS8M_PayloadID, fec::Repair, fec::Header>(composer),
             arena);
         if (!fec_composer_) {
+            init_status_ = status::StatusNoMem;
+            return;
+        }
+        if ((init_status_ = fec_composer_->init_status()) != status::StatusOK) {
             return;
         }
         composer = fec_composer_.get();
@@ -97,13 +113,13 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto,
     switch (proto) {
     case address::Proto_RTCP:
         rtcp_composer_.reset(new (rtcp_composer_) rtcp::Composer());
-        if (!rtcp_composer_) {
+        if ((init_status_ = rtcp_composer_->init_status()) != status::StatusOK) {
             return;
         }
         composer = rtcp_composer_.get();
 
         rtcp_parser_.reset(new (rtcp_parser_) rtcp::Parser());
-        if (!rtcp_parser_) {
+        if ((init_status_ = rtcp_parser_->init_status()) != status::StatusOK) {
             return;
         }
         parser = rtcp_parser_.get();
@@ -117,51 +133,52 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto,
     if (!composer) {
         roc_log(LogError, "sender endpoint: unsupported protocol %s",
                 address::proto_to_str(proto));
+        init_status_ = status::StatusBadProtocol;
         return;
     }
 
     shipper_.reset(new (shipper_)
                        packet::Shipper(*composer, outbound_writer, &outbound_address));
-    if (!shipper_) {
+    if ((init_status_ = shipper_->init_status()) != status::StatusOK) {
         return;
     }
 
     composer_ = composer;
     parser_ = parser;
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool SenderEndpoint::is_valid() const {
-    return valid_;
+status::StatusCode SenderEndpoint::init_status() const {
+    return init_status_;
 }
 
 address::Protocol SenderEndpoint::proto() const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return proto_;
 }
 
 const address::SocketAddr& SenderEndpoint::outbound_address() const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return shipper_->outbound_address();
 }
 
 packet::IComposer& SenderEndpoint::outbound_composer() {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return *composer_;
 }
 
 packet::IWriter& SenderEndpoint::outbound_writer() {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return *shipper_;
 }
 
 packet::IWriter* SenderEndpoint::inbound_writer() {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (!parser_) {
         // Inbound packets are not supported.
@@ -172,7 +189,7 @@ packet::IWriter* SenderEndpoint::inbound_writer() {
 }
 
 status::StatusCode SenderEndpoint::pull_packets(core::nanoseconds_t current_time) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (!parser_) {
         // No inbound packets expected for this endpoint, only outbound.
@@ -202,7 +219,7 @@ status::StatusCode SenderEndpoint::pull_packets(core::nanoseconds_t current_time
 
 // Implementation of inbound_writer().write()
 status::StatusCode SenderEndpoint::write(const packet::PacketPtr& packet) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if(!packet);
     roc_panic_if(!parser_);

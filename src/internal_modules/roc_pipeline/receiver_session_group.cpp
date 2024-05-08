@@ -33,47 +33,56 @@ ReceiverSessionGroup::ReceiverSessionGroup(const ReceiverSourceConfig& source_co
     , packet_factory_(packet_factory)
     , frame_factory_(frame_factory)
     , session_router_(arena)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     identity_.reset(new (identity_) rtp::Identity());
-    if (!identity_ || !identity_->is_valid()) {
+    if ((init_status_ = identity_->init_status()) != status::StatusOK) {
         return;
     }
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
 ReceiverSessionGroup::~ReceiverSessionGroup() {
     remove_all_sessions_();
 }
 
-bool ReceiverSessionGroup::is_valid() const {
-    return valid_;
+status::StatusCode ReceiverSessionGroup::init_status() const {
+    return init_status_;
 }
 
-bool ReceiverSessionGroup::create_control_pipeline(ReceiverEndpoint* control_endpoint) {
-    roc_panic_if(!is_valid());
+status::StatusCode
+ReceiverSessionGroup::create_control_pipeline(ReceiverEndpoint* control_endpoint) {
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if(!control_endpoint);
     roc_panic_if(!control_endpoint->outbound_composer()
                  || !control_endpoint->outbound_writer());
     roc_panic_if(rtcp_communicator_);
 
+    // We will use this address when returning information for
+    // rtcp::Communicator in participant_info().
     rtcp_inbound_addr_ = control_endpoint->inbound_address();
 
+    // We pass this as implementation of rtcp::IParticipant.
+    // rtcp::Communicator will call our methods right now (in constructor)
+    // and later when we call generate_packets() or process_packets().
     rtcp_communicator_.reset(new (rtcp_communicator_) rtcp::Communicator(
         source_config_.common.rtcp, *this, *control_endpoint->outbound_writer(),
         *control_endpoint->outbound_composer(), packet_factory_, arena_));
-    if (!rtcp_communicator_ || !rtcp_communicator_->is_valid()) {
+
+    const status::StatusCode code = rtcp_communicator_->init_status();
+    if (code != status::StatusOK) {
         rtcp_communicator_.reset();
-        return false;
+        rtcp_inbound_addr_.clear();
+        return code;
     }
 
-    return true;
+    return status::StatusOK;
 }
 
 status::StatusCode ReceiverSessionGroup::route_packet(const packet::PacketPtr& packet,
                                                       core::nanoseconds_t current_time) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (packet->has_flags(packet::Packet::FlagControl)) {
         return route_control_packet_(packet, current_time);
@@ -84,7 +93,7 @@ status::StatusCode ReceiverSessionGroup::route_packet(const packet::PacketPtr& p
 
 core::nanoseconds_t
 ReceiverSessionGroup::refresh_sessions(core::nanoseconds_t current_time) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     core::SharedPtr<ReceiverSession> curr, next;
 
@@ -125,7 +134,7 @@ ReceiverSessionGroup::refresh_sessions(core::nanoseconds_t current_time) {
 }
 
 void ReceiverSessionGroup::reclock_sessions(core::nanoseconds_t playback_time) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     core::SharedPtr<ReceiverSession> curr, next;
 
@@ -140,13 +149,13 @@ void ReceiverSessionGroup::reclock_sessions(core::nanoseconds_t playback_time) {
 }
 
 size_t ReceiverSessionGroup::num_sessions() const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return sessions_.size();
 }
 
 void ReceiverSessionGroup::get_slot_metrics(ReceiverSlotMetrics& slot_metrics) const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     slot_metrics.source_id = identity_->ssrc();
     slot_metrics.num_participants = sessions_.size();
@@ -154,7 +163,7 @@ void ReceiverSessionGroup::get_slot_metrics(ReceiverSlotMetrics& slot_metrics) c
 
 void ReceiverSessionGroup::get_participant_metrics(
     ReceiverParticipantMetrics* party_metrics, size_t* party_count) const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (party_metrics && party_count) {
         *party_count = std::min(*party_count, sessions_.size());
@@ -189,7 +198,12 @@ rtcp::ParticipantInfo ReceiverSessionGroup::participant_info() {
 }
 
 void ReceiverSessionGroup::change_source_id() {
-    identity_->change_ssrc();
+    const status::StatusCode code = identity_->change_ssrc();
+
+    if (code != status::StatusOK) {
+        roc_panic("session group: can't change SSRC: status=%s",
+                  status::code_to_str(code));
+    }
 }
 
 size_t ReceiverSessionGroup::num_recv_streams() {
@@ -379,10 +393,11 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
         new (arena_) ReceiverSession(sess_config, source_config_.common, encoding_map_,
                                      packet_factory_, frame_factory_, arena_);
 
-    if (!sess || !sess->is_valid()) {
-        roc_log(LogError, "session group: can't create session, initialization failed");
-        // TODO(gh-183): return status
-        return status::StatusOK;
+    if (!sess || sess->init_status() != status::StatusOK) {
+        roc_log(LogError,
+                "session group: can't create session, initialization failed: status=%s",
+                status::code_to_str(sess->init_status()));
+        return sess->init_status();
     }
 
     status::StatusCode code = sess->route_packet(packet);

@@ -123,7 +123,7 @@ TEST_GROUP(sender_loop) {
 TEST(sender_loop, endpoints_sync) {
     SenderLoop sender(scheduler, config, encoding_map, packet_pool, packet_buffer_pool,
                       frame_buffer_pool, arena);
-    CHECK(sender.is_valid());
+    LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderLoop::SlotHandle slot = NULL;
 
@@ -159,7 +159,7 @@ TEST(sender_loop, endpoints_sync) {
 TEST(sender_loop, endpoints_async) {
     SenderLoop sender(scheduler, config, encoding_map, packet_pool, packet_buffer_pool,
                       frame_buffer_pool, arena);
-    CHECK(sender.is_valid());
+    LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     TaskIssuer ti(sender);
 

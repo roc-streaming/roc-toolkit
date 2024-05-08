@@ -123,7 +123,7 @@ TEST(receiver_loop, endpoints_sync) {
     ReceiverLoop receiver(scheduler, config, encoding_map, packet_pool,
                           packet_buffer_pool, frame_buffer_pool, arena);
 
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverLoop::SlotHandle slot = NULL;
 
@@ -157,7 +157,7 @@ TEST(receiver_loop, endpoints_async) {
     ReceiverLoop receiver(scheduler, config, encoding_map, packet_pool,
                           packet_buffer_pool, frame_buffer_pool, arena);
 
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     TaskIssuer ti(receiver);
 

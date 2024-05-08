@@ -63,8 +63,8 @@ public:
                  packet::PacketFactory& packet_factory,
                  core::IArena& arena);
 
-    //! Check if initialization succeeded.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Get number of tracked destination addresses, for testing.
     size_t total_destinations() const;
@@ -168,7 +168,7 @@ private:
     size_t generated_packet_count_;
     core::RateLimiter log_limiter_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace rtcp

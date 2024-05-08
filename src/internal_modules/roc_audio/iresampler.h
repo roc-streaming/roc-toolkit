@@ -13,9 +13,9 @@
 #define ROC_AUDIO_IRESAMPLER_H_
 
 #include "roc_audio/frame.h"
-#include "roc_core/noncopyable.h"
 #include "roc_core/ref_counted.h"
 #include "roc_core/slice.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace audio {
@@ -24,13 +24,13 @@ namespace audio {
 class IResampler : public core::RefCounted<IResampler, core::ArenaAllocation> {
 public:
     //! Initialization.
-    IResampler(core::IArena& arena);
+    explicit IResampler(core::IArena& arena);
 
     //! Deinitialization.
     virtual ~IResampler();
 
-    //! Check if object is successfully constructed.
-    virtual bool is_valid() const = 0;
+    //! Check if the object was successfully constructed.
+    virtual status::StatusCode init_status() const = 0;
 
     //! Set new resample factor.
     //! @remarks

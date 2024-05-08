@@ -30,8 +30,8 @@ public:
     //! Initialize.
     TimestampInjector(packet::IReader& reader, const audio::SampleSpec& sample_spec);
 
-    //! Virtual destructor.
-    virtual ~TimestampInjector();
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Get packet with filled capture ts field.
     //! @remarks

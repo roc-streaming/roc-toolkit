@@ -47,10 +47,10 @@ TEST_GROUP(sender) {
 
 TEST(sender, sink) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     Sender sender(context, sender_config);
-    CHECK(sender.is_valid());
+    LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     LONGS_EQUAL(sender_config.input_sample_spec.sample_rate(),
                 sender.sink().sample_spec().sample_rate());
@@ -59,10 +59,10 @@ TEST(sender, sink) {
 TEST(sender, connect) {
     { // one slot
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:1000");
@@ -73,10 +73,10 @@ TEST(sender, connect) {
     }
     { // two slots
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp1(arena);
         parse_uri(source_endp1, "rtp://127.0.0.1:1000");
@@ -95,10 +95,10 @@ TEST(sender, connect) {
 TEST(sender, configure) {
     { // one slot
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         netio::UdpConfig iface_config;
         CHECK(sender.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
@@ -114,10 +114,10 @@ TEST(sender, configure) {
     }
     { // two slots
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         netio::UdpConfig iface_config;
         CHECK(sender.configure(0, address::Iface_AudioSource, iface_config));
@@ -142,10 +142,10 @@ TEST(sender, configure) {
 TEST(sender, unlink) {
     { // connect one slot, unlink one slot
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:1000");
@@ -160,10 +160,10 @@ TEST(sender, unlink) {
     }
     { // connect two slots, unlink one slot
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp1(arena);
         parse_uri(source_endp1, "rtp://127.0.0.1:1000");
@@ -183,10 +183,10 @@ TEST(sender, unlink) {
     }
     { // connect two slots, unlink two slots
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp1(arena);
         parse_uri(source_endp1, "rtp://127.0.0.1:1000");
@@ -207,10 +207,10 @@ TEST(sender, unlink) {
     }
     { // slot with 2 endpoints
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:1001");
@@ -230,12 +230,12 @@ TEST(sender, unlink) {
     // slot with 3 endpoints
     if (fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:1001");
@@ -261,12 +261,12 @@ TEST(sender, unlink) {
 TEST(sender, endpoints_no_fec) {
     { // all good
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         sender_config.fec_encoder.scheme = packet::FEC_None;
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:1000");
@@ -278,12 +278,12 @@ TEST(sender, endpoints_no_fec) {
     }
     { // source endpoint not provided
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         sender_config.fec_encoder.scheme = packet::FEC_None;
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         CHECK(!sender.has_incomplete());
 
@@ -295,12 +295,12 @@ TEST(sender, endpoints_fec) {
     // fec not supported
     if (!fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:1001");
@@ -322,12 +322,12 @@ TEST(sender, endpoints_fec) {
     }
     { // all good
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:1001");
@@ -343,12 +343,12 @@ TEST(sender, endpoints_fec) {
     }
     { // fec scheme mismatch (source endpoint)
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+ldpc://127.0.0.1:1000");
@@ -360,12 +360,12 @@ TEST(sender, endpoints_fec) {
     }
     { // fec scheme mismatch (repair endpoint)
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri repair_endp(arena);
         parse_uri(repair_endp, "ldpc://127.0.0.1:1000");
@@ -377,12 +377,12 @@ TEST(sender, endpoints_fec) {
     }
     { // repair port provided when fec is disabled
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         sender_config.fec_encoder.scheme = packet::FEC_None;
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri repair_endp(arena);
         parse_uri(repair_endp, "rs8m://127.0.0.1:1000");
@@ -394,12 +394,12 @@ TEST(sender, endpoints_fec) {
     }
     { // repair port not provided when fec is enabled
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:1000");
@@ -411,12 +411,12 @@ TEST(sender, endpoints_fec) {
     }
     { // source port not provided when fec is enabled
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri repair_endp(arena);
         parse_uri(repair_endp, "rs8m://127.0.0.1:1000");
@@ -430,7 +430,7 @@ TEST(sender, endpoints_fec) {
 
 TEST(sender, endpoints_fec_multiple_slots) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     if (!fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
         return;
@@ -439,7 +439,7 @@ TEST(sender, endpoints_fec_multiple_slots) {
     sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
 
     Sender sender(context, sender_config);
-    CHECK(sender.is_valid());
+    LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     address::EndpointUri source_endp1(arena);
     parse_uri(source_endp1, "rtp+rs8m://127.0.0.1:1001");
@@ -470,13 +470,13 @@ TEST(sender, endpoints_fec_multiple_slots) {
 
 TEST(sender, endpoints_control) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     { // control
         sender_config.fec_encoder.scheme = packet::FEC_None;
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri control_endp(arena);
         parse_uri(control_endp, "rtcp://127.0.0.1:1000");
@@ -490,7 +490,7 @@ TEST(sender, endpoints_control) {
         sender_config.fec_encoder.scheme = packet::FEC_None;
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:1001");
@@ -509,7 +509,7 @@ TEST(sender, endpoints_control) {
         sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:1001");
@@ -531,7 +531,7 @@ TEST(sender, endpoints_control) {
         sender_config.fec_encoder.scheme = packet::FEC_None;
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri control_endp(arena);
         parse_uri(control_endp, "rtp://127.0.0.1:1001");
@@ -546,10 +546,10 @@ TEST(sender, endpoints_control) {
 TEST(sender, connect_errors) {
     { // incomplete endpoint
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp(arena);
         CHECK(source_endp.set_proto(address::Proto_RTP));
@@ -561,10 +561,10 @@ TEST(sender, connect_errors) {
     }
     { // partially invalidated endpoint
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:1000");
@@ -577,10 +577,10 @@ TEST(sender, connect_errors) {
     }
     { // incompatible endpoints
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:1000");
@@ -600,10 +600,10 @@ TEST(sender, connect_errors) {
     }
     { // resolve error
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://invalid.:1000");
@@ -615,10 +615,10 @@ TEST(sender, connect_errors) {
     }
     { // address already in use
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         netio::UdpConfig iface_config;
         address::EndpointUri source_endp(arena);
@@ -646,10 +646,10 @@ TEST(sender, connect_errors) {
 TEST(sender, configure_errors) {
     { // bind address: inappropriate address
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         netio::UdpConfig iface_config;
         CHECK(iface_config.bind_address.set_host_port_auto("8.8.8.8", 0));
@@ -667,10 +667,10 @@ TEST(sender, configure_errors) {
     }
     { // bind address: IP family mismatch
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         netio::UdpConfig iface_config;
         CHECK(iface_config.bind_address.set_host_port_auto("::", 0));
@@ -688,10 +688,10 @@ TEST(sender, configure_errors) {
     }
     { // multicast group: inappropriate address
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         netio::UdpConfig iface_config;
         strcpy(iface_config.multicast_interface, "8.8.8.8");
@@ -709,10 +709,10 @@ TEST(sender, configure_errors) {
     }
     { // multicast group: IP familty mismatch
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         netio::UdpConfig iface_config;
         // set IPv6 group
@@ -732,10 +732,10 @@ TEST(sender, configure_errors) {
     }
     { // multicast group: multicast flag mismatch
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         netio::UdpConfig iface_config;
         // set multicast group
@@ -758,10 +758,10 @@ TEST(sender, configure_errors) {
 TEST(sender, flow_errors) {
     { // configure after connect
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:1000");
@@ -779,10 +779,10 @@ TEST(sender, flow_errors) {
     }
     { // connect twice
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:1000");
@@ -799,10 +799,10 @@ TEST(sender, flow_errors) {
     }
     { // unlink non-existent
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         CHECK(!sender.unlink(DefaultSlot));
         CHECK(!sender.has_broken());
@@ -811,10 +811,10 @@ TEST(sender, flow_errors) {
     }
     { // unlink twice
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:1000");
@@ -835,10 +835,10 @@ TEST(sender, flow_errors) {
 TEST(sender, recover) {
     { // reconnect after error
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp1(arena);
         parse_uri(source_endp1, "rtp://invalid.:1000");
@@ -869,10 +869,10 @@ TEST(sender, recover) {
     }
     { // configure after error
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp1(arena);
         parse_uri(source_endp1, "rtp://invalid.:1000");
@@ -906,7 +906,7 @@ TEST(sender, recover) {
 
 TEST(sender, port_sharing) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     LONGS_EQUAL(0, context.network_loop().num_ports());
 
@@ -918,7 +918,7 @@ TEST(sender, port_sharing) {
 
     { // source and repair shared: same empty config
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:1001");
@@ -933,7 +933,7 @@ TEST(sender, port_sharing) {
     }
     { // source, repair, and control shared: same empty config
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:1001");
@@ -952,7 +952,7 @@ TEST(sender, port_sharing) {
     }
     { // source and repair shared: same non-empty config
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:1001");
@@ -973,7 +973,7 @@ TEST(sender, port_sharing) {
     }
     { // source and repair not shared: different families
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:1001");
@@ -990,7 +990,7 @@ TEST(sender, port_sharing) {
     }
     { // source and repair not shared: different addresses
         Sender sender(context, sender_config);
-        CHECK(sender.is_valid());
+        LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:1001");
@@ -1020,10 +1020,10 @@ TEST(sender, port_sharing) {
 
 TEST(sender, metrics) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     Sender sender(context, sender_config);
-    CHECK(sender.is_valid());
+    LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     pipeline::SenderSlotMetrics slot_metrics;
     pipeline::SenderParticipantMetrics party_metrics[10];

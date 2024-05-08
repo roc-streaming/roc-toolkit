@@ -82,7 +82,7 @@ TEST(transcoder_source, state) {
     test::MockSource mock_source;
 
     TranscoderSource transcoder(make_config(), mock_source, buffer_pool, arena);
-    CHECK(transcoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     mock_source.set_state(sndio::DeviceState_Active);
     CHECK(transcoder.state() == sndio::DeviceState_Active);
@@ -99,7 +99,7 @@ TEST(transcoder_source, pause_resume) {
     test::MockSource mock_source;
 
     TranscoderSource transcoder(make_config(), mock_source, buffer_pool, arena);
-    CHECK(transcoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     transcoder.pause();
     CHECK(transcoder.state() == sndio::DeviceState_Paused);
@@ -118,7 +118,7 @@ TEST(transcoder_source, pause_restart) {
     test::MockSource mock_source;
 
     TranscoderSource transcoder(make_config(), mock_source, buffer_pool, arena);
-    CHECK(transcoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     transcoder.pause();
     CHECK(transcoder.state() == sndio::DeviceState_Paused);
@@ -138,7 +138,7 @@ TEST(transcoder_source, read) {
     mock_source.add(ManyFrames * SamplesPerFrame, input_sample_spec);
 
     TranscoderSource transcoder(make_config(), mock_source, buffer_pool, arena);
-    CHECK(transcoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     test::FrameReader frame_reader(transcoder, frame_factory);
 
@@ -157,7 +157,7 @@ TEST(transcoder_source, eof) {
     test::MockSource mock_source;
 
     TranscoderSource transcoder(make_config(), mock_source, buffer_pool, arena);
-    CHECK(transcoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     core::Slice<audio::sample_t> samples = frame_factory.new_raw_buffer();
     samples.reslice(0, SamplesPerFrame * input_sample_spec.num_channels());
@@ -178,7 +178,7 @@ TEST(transcoder_source, frame_size_small) {
     mock_source.add(ManyFrames * SamplesPerSmallFrame, input_sample_spec);
 
     TranscoderSource transcoder(make_config(), mock_source, buffer_pool, arena);
-    CHECK(transcoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     test::FrameReader frame_reader(transcoder, frame_factory);
 
@@ -198,7 +198,7 @@ TEST(transcoder_source, frame_size_large) {
     mock_source.add(ManyFrames * SamplesPerLargeFrame, input_sample_spec);
 
     TranscoderSource transcoder(make_config(), mock_source, buffer_pool, arena);
-    CHECK(transcoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     test::FrameReader frame_reader(transcoder, frame_factory);
 
@@ -218,7 +218,7 @@ TEST(transcoder_source, channel_mapping_stereo_to_mono) {
     mock_source.add(ManyFrames * SamplesPerFrame, input_sample_spec);
 
     TranscoderSource transcoder(make_config(), mock_source, buffer_pool, arena);
-    CHECK(transcoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     test::FrameReader frame_reader(transcoder, frame_factory);
 
@@ -238,7 +238,7 @@ TEST(transcoder_source, channel_mapping_mono_to_stereo) {
     mock_source.add(ManyFrames * SamplesPerFrame, input_sample_spec);
 
     TranscoderSource transcoder(make_config(), mock_source, buffer_pool, arena);
-    CHECK(transcoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     test::FrameReader frame_reader(transcoder, frame_factory);
 

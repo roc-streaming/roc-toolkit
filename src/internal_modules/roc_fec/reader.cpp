@@ -32,7 +32,6 @@ Reader::Reader(const ReaderConfig& config,
     , repair_queue_(0)
     , source_block_(arena)
     , repair_block_(arena)
-    , valid_(false)
     , alive_(true)
     , started_(false)
     , can_repair_(false)
@@ -46,12 +45,16 @@ Reader::Reader(const ReaderConfig& config,
     , prev_block_timestamp_valid_(false)
     , block_max_duration_(0)
     , max_sbn_jump_(config.max_sbn_jump)
-    , fec_scheme_(fec_scheme) {
-    valid_ = true;
+    , fec_scheme_(fec_scheme)
+    , init_status_(status::NoStatus) {
+    if ((init_status_ = block_decoder_.init_status()) != status::StatusOK) {
+        return;
+    }
+    init_status_ = status::StatusOK;
 }
 
-bool Reader::is_valid() const {
-    return valid_;
+status::StatusCode Reader::init_status() const {
+    return init_status_;
 }
 
 bool Reader::is_started() const {
@@ -63,13 +66,13 @@ bool Reader::is_alive() const {
 }
 
 packet::stream_timestamp_t Reader::max_block_duration() const {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return (packet::stream_timestamp_t)block_max_duration_;
 }
 
 status::StatusCode Reader::read(packet::PacketPtr& pp) {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (!alive_) {
         // TODO(gh-183): return StatusDead

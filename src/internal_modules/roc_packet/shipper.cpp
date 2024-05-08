@@ -21,6 +21,10 @@ Shipper::Shipper(IComposer& composer,
     }
 }
 
+status::StatusCode Shipper::init_status() const {
+    return status::StatusOK;
+}
+
 const address::SocketAddr& Shipper::outbound_address() const {
     return outbound_address_;
 }

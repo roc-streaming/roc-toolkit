@@ -51,7 +51,7 @@ public:
                core::IArena& arena);
 
     //! Check if the pipeline was successfully constructed.
-    bool is_valid() const;
+    status::StatusCode init_status() const;
 
     //! Create slot.
     SenderSlot* create_slot(const SenderSlotConfig& slot_config);
@@ -127,7 +127,7 @@ private:
 
     audio::IFrameWriter* frame_writer_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace pipeline

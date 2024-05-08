@@ -24,6 +24,9 @@ namespace packet {
 //! Packet queue.
 class Queue : public IReader, public IWriter, public core::NonCopyable<> {
 public:
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
+
     //! Read next packet.
     virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr& packet);
 

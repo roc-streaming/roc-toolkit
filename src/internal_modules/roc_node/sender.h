@@ -43,8 +43,8 @@ public:
     //! Deinitialize.
     ~Sender();
 
-    //! Check if successfully constructed.
-    bool is_valid() const;
+    //! Check if the node was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Set interface config.
     ROC_ATTR_NODISCARD bool configure(slot_index_t slot_index,
@@ -158,7 +158,7 @@ private:
     pipeline::SenderSlotMetrics slot_metrics_;
     core::Array<pipeline::SenderParticipantMetrics, 8> party_metrics_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace node

@@ -93,8 +93,8 @@ public:
     Reporter(const Config& config, IParticipant& participant, core::IArena& arena);
     ~Reporter();
 
-    //! Check if initialization succeeded.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Check if there is local sending stream.
     bool is_sending() const;
@@ -482,7 +482,7 @@ private:
     const Config config_;
     const core::nanoseconds_t max_delay_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace rtcp

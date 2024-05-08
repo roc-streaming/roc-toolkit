@@ -66,8 +66,8 @@ public:
                     audio::FrameFactory& frame_factory,
                     core::IArena& arena);
 
-    //! Check if the session was succefully constructed.
-    bool is_valid() const;
+    //! Check if the pipeline was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Get frame reader.
     //! @remarks
@@ -148,7 +148,7 @@ private:
 
     core::Optional<audio::LatencyMonitor> latency_monitor_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace pipeline

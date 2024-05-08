@@ -41,8 +41,9 @@ core::HeapArena arena;
 
 TEST_GROUP(profiler) {};
 
-TEST(profiler, test_moving_average) {
+TEST(profiler, moving_average) {
     Profiler profiler(arena, sample_spec, profiler_config);
+    LONGS_EQUAL(status::StatusOK, profiler.init_status());
 
     TestFrame frames[] = {
         TestFrame(50, 50 * core::Second),      TestFrame(25, 25 * core::Second),

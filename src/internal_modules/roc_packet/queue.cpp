@@ -12,6 +12,10 @@
 namespace roc {
 namespace packet {
 
+status::StatusCode Queue::init_status() const {
+    return status::StatusOK;
+}
+
 status::StatusCode Queue::read(PacketPtr& packet) {
     packet = list_.front();
     if (!packet) {

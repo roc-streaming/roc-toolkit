@@ -25,6 +25,10 @@ LinkMeter::LinkMeter(const EncodingMap& encoding_map)
     , last_seqnum_lo_(0) {
 }
 
+status::StatusCode LinkMeter::init_status() const {
+    return status::StatusOK;
+}
+
 bool LinkMeter::has_metrics() const {
     return has_metrics_;
 }

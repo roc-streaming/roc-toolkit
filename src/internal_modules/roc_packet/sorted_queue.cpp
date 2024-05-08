@@ -18,6 +18,10 @@ SortedQueue::SortedQueue(size_t max_size)
     : max_size_(max_size) {
 }
 
+status::StatusCode SortedQueue::init_status() const {
+    return status::StatusOK;
+}
+
 status::StatusCode SortedQueue::read(PacketPtr& packet) {
     packet = list_.back();
     if (packet) {

@@ -22,8 +22,8 @@ ProfilingReader::ProfilingReader(IFrameReader& reader,
     , reader_(reader) {
 }
 
-bool ProfilingReader::is_valid() const {
-    return profiler_.is_valid();
+status::StatusCode ProfilingReader::init_status() const {
+    return profiler_.init_status();
 }
 
 bool ProfilingReader::read(Frame& frame) {

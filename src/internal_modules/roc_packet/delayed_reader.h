@@ -37,8 +37,8 @@ public:
                   core::nanoseconds_t target_delay,
                   const audio::SampleSpec& sample_spec);
 
-    //! Check if object was constructed successfully.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Read packet.
     virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr&);
@@ -57,7 +57,7 @@ private:
 
     const audio::SampleSpec sample_spec_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace packet

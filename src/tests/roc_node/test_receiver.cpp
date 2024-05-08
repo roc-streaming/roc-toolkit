@@ -49,10 +49,10 @@ TEST_GROUP(receiver) {
 
 TEST(receiver, source) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     Receiver receiver(context, receiver_config);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     LONGS_EQUAL(receiver_config.common.output_sample_spec.sample_rate(),
                 receiver.source().sample_spec().sample_rate());
@@ -61,10 +61,10 @@ TEST(receiver, source) {
 TEST(receiver, bind) {
     { // one slot
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
@@ -77,10 +77,10 @@ TEST(receiver, bind) {
     }
     { // two slots
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri source_endp1(arena);
         parse_uri(source_endp1, "rtp://127.0.0.1:0");
@@ -103,10 +103,10 @@ TEST(receiver, bind) {
 TEST(receiver, configure) {
     { // one slot
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         netio::UdpConfig iface_config;
         CHECK(receiver.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
@@ -124,10 +124,10 @@ TEST(receiver, configure) {
     }
     { // two slots
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         netio::UdpConfig iface_config;
         CHECK(receiver.configure(0, address::Iface_AudioSource, iface_config));
@@ -156,10 +156,10 @@ TEST(receiver, configure) {
 TEST(receiver, unlink) {
     { // bind one slot, unlink one slot
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
@@ -176,10 +176,10 @@ TEST(receiver, unlink) {
     }
     { // bind two slots, unlink one slot
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri source_endp1(arena);
         parse_uri(source_endp1, "rtp://127.0.0.1:0");
@@ -203,10 +203,10 @@ TEST(receiver, unlink) {
     }
     { // bind two slots, unlink two slots
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri source_endp1(arena);
         parse_uri(source_endp1, "rtp://127.0.0.1:0");
@@ -231,10 +231,10 @@ TEST(receiver, unlink) {
     }
     { // slot with 2 endpoints
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
@@ -252,10 +252,10 @@ TEST(receiver, unlink) {
     // slot with 3 endpoints
     if (fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:0");
@@ -281,10 +281,10 @@ TEST(receiver, unlink) {
 TEST(receiver, endpoints_no_fec) {
     { // all good
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
@@ -299,10 +299,10 @@ TEST(receiver, endpoints_fec) {
     // fec not supported
     if (!fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:0");
@@ -322,10 +322,10 @@ TEST(receiver, endpoints_fec) {
     }
     { // all good
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:0");
@@ -340,10 +340,10 @@ TEST(receiver, endpoints_fec) {
     }
     { // repair port fec scheme mismatch
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:0");
@@ -358,10 +358,10 @@ TEST(receiver, endpoints_fec) {
     }
     { // source port fec scheme mismatch
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri repair_endp(arena);
         parse_uri(repair_endp, "rs8m://127.0.0.1:0");
@@ -376,10 +376,10 @@ TEST(receiver, endpoints_fec) {
     }
     { // repair port provided when fec is disabled
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
@@ -397,10 +397,10 @@ TEST(receiver, endpoints_fec) {
 TEST(receiver, endpoints_control) {
     { // control
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri control_endp(arena);
         parse_uri(control_endp, "rtcp://127.0.0.1:0");
@@ -411,10 +411,10 @@ TEST(receiver, endpoints_control) {
     }
     { // source + control
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
@@ -430,10 +430,10 @@ TEST(receiver, endpoints_control) {
     // source + repair + control
     if (fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:0");
@@ -452,10 +452,10 @@ TEST(receiver, endpoints_control) {
     }
     { // protocol mismatch
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri control_endp(arena);
         parse_uri(control_endp, "rtp://127.0.0.1:0");
@@ -469,10 +469,10 @@ TEST(receiver, endpoints_control) {
 TEST(receiver, bind_errors) {
     { // incomplete endpoint
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri source_endp(arena);
         CHECK(source_endp.set_proto(address::Proto_RTP));
@@ -484,10 +484,10 @@ TEST(receiver, bind_errors) {
     }
     { // partially invalidated endpoint
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
@@ -500,10 +500,10 @@ TEST(receiver, bind_errors) {
     }
     { // resolve error
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://invalid.:0");
@@ -515,10 +515,10 @@ TEST(receiver, bind_errors) {
     }
     { // address already in use
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
@@ -541,10 +541,10 @@ TEST(receiver, bind_errors) {
 TEST(receiver, configure_errors) {
     { // multicast group: inappropriate address
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         netio::UdpConfig iface_config;
         strcpy(iface_config.multicast_interface, "8.8.8.8");
@@ -562,10 +562,10 @@ TEST(receiver, configure_errors) {
     }
     { // multicast group: IP familty mismatch
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         netio::UdpConfig iface_config;
         // set IPv6 group
@@ -585,10 +585,10 @@ TEST(receiver, configure_errors) {
     }
     { // multicast group: multicast flag mismatch
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         netio::UdpConfig iface_config;
         // set multicast group
@@ -611,10 +611,10 @@ TEST(receiver, configure_errors) {
 TEST(receiver, flow_errors) {
     { // configure after bind
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
@@ -632,10 +632,10 @@ TEST(receiver, flow_errors) {
     }
     { // bind twice
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
@@ -652,10 +652,10 @@ TEST(receiver, flow_errors) {
     }
     { // unlink non-existent
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         CHECK(!receiver.unlink(DefaultSlot));
         CHECK(!receiver.has_broken());
@@ -664,10 +664,10 @@ TEST(receiver, flow_errors) {
     }
     { // unlink twice
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
@@ -688,10 +688,10 @@ TEST(receiver, flow_errors) {
 TEST(receiver, recover) {
     { // rebind after error
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri source_endp1(arena);
         parse_uri(source_endp1, "rtp://invalid.:0");
@@ -722,10 +722,10 @@ TEST(receiver, recover) {
     }
     { // configure after error
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         address::EndpointUri source_endp1(arena);
         parse_uri(source_endp1, "rtp://invalid.:0");
@@ -759,10 +759,10 @@ TEST(receiver, recover) {
 
 TEST(receiver, metrics) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     Receiver receiver(context, receiver_config);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     pipeline::ReceiverSlotMetrics slot_metrics;
     pipeline::ReceiverParticipantMetrics party_metrics[10];

@@ -220,7 +220,7 @@ TEST_GROUP(task_queue) {};
 
 TEST(task_queue, noop) {
     ControlTaskQueue queue;
-    CHECK(queue.is_valid());
+    LONGS_EQUAL(status::StatusOK, queue.init_status());
 }
 
 TEST(task_queue, schedule_one) {
@@ -228,7 +228,7 @@ TEST(task_queue, schedule_one) {
         TestExecutor executor;
 
         ControlTaskQueue queue;
-        CHECK(queue.is_valid());
+        LONGS_EQUAL(status::StatusOK, queue.init_status());
 
         UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
@@ -253,7 +253,7 @@ TEST(task_queue, schedule_one) {
         TestExecutor executor;
 
         ControlTaskQueue queue;
-        CHECK(queue.is_valid());
+        LONGS_EQUAL(status::StatusOK, queue.init_status());
 
         UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
@@ -280,7 +280,7 @@ TEST(task_queue, schedule_one_no_completer) {
     TestExecutor executor;
 
     ControlTaskQueue queue;
-    CHECK(queue.is_valid());
+    LONGS_EQUAL(status::StatusOK, queue.init_status());
 
     UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
@@ -309,7 +309,7 @@ TEST(task_queue, schedule_many_sequantial) {
     TestExecutor executor;
 
     ControlTaskQueue queue;
-    CHECK(queue.is_valid());
+    LONGS_EQUAL(status::StatusOK, queue.init_status());
 
     for (size_t n = 0; n < NumTasks; n++) {
         UNSIGNED_LONGS_EQUAL(n, executor.num_tasks());
@@ -341,7 +341,7 @@ TEST(task_queue, schedule_many_batched) {
     TestExecutor executor;
 
     ControlTaskQueue queue;
-    CHECK(queue.is_valid());
+    LONGS_EQUAL(status::StatusOK, queue.init_status());
 
     TestExecutor::Task tasks[NumTasks];
     TestCompleter completers[NumTasks];
@@ -390,7 +390,7 @@ TEST(task_queue, schedule_and_wait_one) {
         TestExecutor executor;
 
         ControlTaskQueue queue;
-        CHECK(queue.is_valid());
+        LONGS_EQUAL(status::StatusOK, queue.init_status());
 
         UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
@@ -409,7 +409,7 @@ TEST(task_queue, schedule_and_wait_one) {
         TestExecutor executor;
 
         ControlTaskQueue queue;
-        CHECK(queue.is_valid());
+        LONGS_EQUAL(status::StatusOK, queue.init_status());
 
         UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
@@ -432,7 +432,7 @@ TEST(task_queue, schedule_and_wait_many) {
     TestExecutor executor;
 
     ControlTaskQueue queue;
-    CHECK(queue.is_valid());
+    LONGS_EQUAL(status::StatusOK, queue.init_status());
 
     for (size_t n = 0; n < NumTasks; n++) {
         UNSIGNED_LONGS_EQUAL(n, executor.num_tasks());
@@ -457,7 +457,7 @@ TEST(task_queue, schedule_at_one) {
         TestExecutor executor;
 
         ControlTaskQueue queue;
-        CHECK(queue.is_valid());
+        LONGS_EQUAL(status::StatusOK, queue.init_status());
 
         UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
@@ -483,7 +483,7 @@ TEST(task_queue, schedule_at_one) {
         TestExecutor executor;
 
         ControlTaskQueue queue;
-        CHECK(queue.is_valid());
+        LONGS_EQUAL(status::StatusOK, queue.init_status());
 
         UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
@@ -511,7 +511,7 @@ TEST(task_queue, schedule_at_one_no_completer) {
     TestExecutor executor;
 
     ControlTaskQueue queue;
-    CHECK(queue.is_valid());
+    LONGS_EQUAL(status::StatusOK, queue.init_status());
 
     UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
@@ -540,7 +540,7 @@ TEST(task_queue, schedule_at_many) {
     TestExecutor executor;
 
     ControlTaskQueue queue;
-    CHECK(queue.is_valid());
+    LONGS_EQUAL(status::StatusOK, queue.init_status());
 
     TestExecutor::Task tasks[NumTasks];
     TestCompleter completers[NumTasks];
@@ -596,7 +596,7 @@ TEST(task_queue, schedule_at_reversed) {
     TestExecutor executor;
 
     ControlTaskQueue queue;
-    CHECK(queue.is_valid());
+    LONGS_EQUAL(status::StatusOK, queue.init_status());
 
     TestExecutor::Task tasks[NumTasks];
     TestCompleter completers[NumTasks];
@@ -656,7 +656,7 @@ TEST(task_queue, schedule_at_shuffled) {
     TestExecutor executor;
 
     ControlTaskQueue queue;
-    CHECK(queue.is_valid());
+    LONGS_EQUAL(status::StatusOK, queue.init_status());
 
     UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
@@ -708,7 +708,7 @@ TEST(task_queue, schedule_at_same_deadline) {
     TestExecutor executor;
 
     ControlTaskQueue queue;
-    CHECK(queue.is_valid());
+    LONGS_EQUAL(status::StatusOK, queue.init_status());
 
     UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
@@ -760,7 +760,7 @@ TEST(task_queue, schedule_at_and_schedule) {
     TestExecutor executor;
 
     ControlTaskQueue queue;
-    CHECK(queue.is_valid());
+    LONGS_EQUAL(status::StatusOK, queue.init_status());
 
     UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
@@ -812,7 +812,7 @@ TEST(task_queue, schedule_and_async_cancel) {
     TestExecutor executor;
 
     ControlTaskQueue queue;
-    CHECK(queue.is_valid());
+    LONGS_EQUAL(status::StatusOK, queue.init_status());
 
     UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
@@ -883,7 +883,7 @@ TEST(task_queue, schedule_at_and_async_cancel) {
     TestExecutor executor;
 
     ControlTaskQueue queue;
-    CHECK(queue.is_valid());
+    LONGS_EQUAL(status::StatusOK, queue.init_status());
 
     UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
@@ -956,7 +956,7 @@ TEST(task_queue, cancel_and_wait) {
     TestExecutor executor;
 
     ControlTaskQueue queue;
-    CHECK(queue.is_valid());
+    LONGS_EQUAL(status::StatusOK, queue.init_status());
 
     UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
@@ -984,7 +984,7 @@ TEST(task_queue, cancel_already_finished) {
     TestExecutor executor;
 
     ControlTaskQueue queue;
-    CHECK(queue.is_valid());
+    LONGS_EQUAL(status::StatusOK, queue.init_status());
 
     executor.set_nth_result(0, true);
 
@@ -1011,7 +1011,7 @@ TEST(task_queue, schedule_already_finished) {
     TestExecutor executor;
 
     ControlTaskQueue queue;
-    CHECK(queue.is_valid());
+    LONGS_EQUAL(status::StatusOK, queue.init_status());
 
     executor.set_nth_result(0, true);
     executor.set_nth_result(1, true);
@@ -1041,7 +1041,7 @@ TEST(task_queue, schedule_at_cancel) {
     TestExecutor executor;
 
     ControlTaskQueue queue;
-    CHECK(queue.is_valid());
+    LONGS_EQUAL(status::StatusOK, queue.init_status());
 
     executor.set_nth_result(0, true);
     executor.set_nth_result(1, true);
@@ -1096,7 +1096,7 @@ TEST(task_queue, reschedule_pending) {
     TestExecutor executor;
 
     ControlTaskQueue queue;
-    CHECK(queue.is_valid());
+    LONGS_EQUAL(status::StatusOK, queue.init_status());
 
     UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
@@ -1157,7 +1157,7 @@ TEST(task_queue, reschedule_processing) {
     TestExecutor executor;
 
     ControlTaskQueue queue;
-    CHECK(queue.is_valid());
+    LONGS_EQUAL(status::StatusOK, queue.init_status());
 
     UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
@@ -1204,7 +1204,7 @@ TEST(task_queue, reschedule_succeeded) {
     TestExecutor executor;
 
     ControlTaskQueue queue;
-    CHECK(queue.is_valid());
+    LONGS_EQUAL(status::StatusOK, queue.init_status());
 
     UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
@@ -1244,7 +1244,7 @@ TEST(task_queue, reschedule_failed) {
     TestExecutor executor;
 
     ControlTaskQueue queue;
-    CHECK(queue.is_valid());
+    LONGS_EQUAL(status::StatusOK, queue.init_status());
 
     UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
@@ -1284,7 +1284,7 @@ TEST(task_queue, reschedule_cancelled) {
     TestExecutor executor;
 
     ControlTaskQueue queue;
-    CHECK(queue.is_valid());
+    LONGS_EQUAL(status::StatusOK, queue.init_status());
 
     UNSIGNED_LONGS_EQUAL(0, executor.num_tasks());
 
@@ -1328,7 +1328,7 @@ TEST(task_queue, no_starvation) {
     TestExecutor executor;
 
     ControlTaskQueue queue;
-    CHECK(queue.is_valid());
+    LONGS_EQUAL(status::StatusOK, queue.init_status());
 
     enum { NumTasks = 6 };
 

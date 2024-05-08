@@ -31,6 +31,9 @@ public:
             IWriter& outbound_writer,
             const address::SocketAddr* outbound_address);
 
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
+
     //! Get destination address for outbound packets.
     const address::SocketAddr& outbound_address() const;
 

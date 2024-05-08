@@ -37,11 +37,14 @@ public:
     //! @p mode defines whether reads will be blocking.
     explicit ConcurrentQueue(Mode mode);
 
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
+
     //! Read next packet.
     //! If reads are not concurrent, and queue is non-blocking, then
     //! reads are wait-free. Otherwise they may block.
     //! @see Mode.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr&);
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr& packet);
 
     //! Add packet to the queue.
     //! Wait-free operation.

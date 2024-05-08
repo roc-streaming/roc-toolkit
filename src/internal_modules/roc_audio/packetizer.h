@@ -67,8 +67,8 @@ public:
                core::nanoseconds_t packet_length,
                const SampleSpec& sample_spec);
 
-    //! Check if object is successfully constructed.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Get sample rate.
     size_t sample_rate() const;
@@ -111,7 +111,7 @@ private:
 
     PacketizerMetrics metrics_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace audio

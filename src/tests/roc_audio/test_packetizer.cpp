@@ -186,6 +186,7 @@ TEST(packetizer, one_buffer_one_packet) {
     rtp::Sequencer sequencer(identity, PayloadType);
     Packetizer packetizer(packet_queue, rtp_composer, sequencer, encoder, packet_factory,
                           PacketDuration, frame_spec);
+    LONGS_EQUAL(status::StatusOK, packetizer.init_status());
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
@@ -213,6 +214,7 @@ TEST(packetizer, one_buffer_multiple_packets) {
     rtp::Sequencer sequencer(identity, PayloadType);
     Packetizer packetizer(packet_queue, rtp_composer, sequencer, encoder, packet_factory,
                           PacketDuration, frame_spec);
+    LONGS_EQUAL(status::StatusOK, packetizer.init_status());
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
@@ -240,6 +242,7 @@ TEST(packetizer, multiple_buffers_one_packet) {
     rtp::Sequencer sequencer(identity, PayloadType);
     Packetizer packetizer(packet_queue, rtp_composer, sequencer, encoder, packet_factory,
                           PacketDuration, frame_spec);
+    LONGS_EQUAL(status::StatusOK, packetizer.init_status());
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
@@ -273,6 +276,7 @@ TEST(packetizer, multiple_buffers_multiple_packets) {
     rtp::Sequencer sequencer(identity, PayloadType);
     Packetizer packetizer(packet_queue, rtp_composer, sequencer, encoder, packet_factory,
                           PacketDuration, frame_spec);
+    LONGS_EQUAL(status::StatusOK, packetizer.init_status());
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
@@ -300,6 +304,7 @@ TEST(packetizer, flush) {
     rtp::Sequencer sequencer(identity, PayloadType);
     Packetizer packetizer(packet_queue, rtp_composer, sequencer, encoder, packet_factory,
                           PacketDuration, frame_spec);
+    LONGS_EQUAL(status::StatusOK, packetizer.init_status());
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
@@ -338,6 +343,7 @@ TEST(packetizer, timestamp_zero_cts) {
     rtp::Sequencer sequencer(identity, PayloadType);
     Packetizer packetizer(packet_queue, rtp_composer, sequencer, encoder, packet_factory,
                           PacketDuration, frame_spec);
+    LONGS_EQUAL(status::StatusOK, packetizer.init_status());
 
     const core::nanoseconds_t zero_cts = 0;
 
@@ -365,6 +371,7 @@ TEST(packetizer, metrics) {
     rtp::Sequencer sequencer(identity, PayloadType);
     Packetizer packetizer(packet_queue, rtp_composer, sequencer, encoder, packet_factory,
                           PacketDuration, frame_spec);
+    LONGS_EQUAL(status::StatusOK, packetizer.init_status());
 
     FrameMaker frame_maker;
 

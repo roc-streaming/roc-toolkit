@@ -98,8 +98,8 @@ ControlLoop::ControlLoop(netio::NetworkLoop& network_loop, core::IArena& arena)
 ControlLoop::~ControlLoop() {
 }
 
-bool ControlLoop::is_valid() const {
-    return task_queue_.is_valid();
+status::StatusCode ControlLoop::init_status() const {
+    return task_queue_.init_status();
 }
 
 void ControlLoop::schedule(ControlTask& task, IControlTaskCompleter* completer) {

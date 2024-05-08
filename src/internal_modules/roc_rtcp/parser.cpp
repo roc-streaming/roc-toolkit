@@ -15,6 +15,10 @@ namespace rtcp {
 Parser::Parser() {
 }
 
+status::StatusCode Parser::init_status() const {
+    return status::StatusOK;
+}
+
 bool Parser::parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer) {
     if (!buffer) {
         roc_panic("rtcp parser: buffer is null");

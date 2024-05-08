@@ -24,7 +24,7 @@ ChannelMapperReader::ChannelMapperReader(IFrameReader& reader,
     , mapper_(in_spec.channel_set(), out_spec.channel_set())
     , in_spec_(in_spec)
     , out_spec_(out_spec)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     if (!in_spec_.is_valid() || !out_spec_.is_valid() || !in_spec_.is_raw()
         || !out_spec_.is_raw()) {
         roc_panic("channel mapper reader: required valid sample specs with raw format:"
@@ -43,20 +43,21 @@ ChannelMapperReader::ChannelMapperReader(IFrameReader& reader,
     input_buf_ = frame_factory.new_raw_buffer();
     if (!input_buf_) {
         roc_log(LogError, "channel mapper reader: can't allocate temporary buffer");
+        init_status_ = status::StatusNoMem;
         return;
     }
 
     input_buf_.reslice(0, input_buf_.capacity());
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool ChannelMapperReader::is_valid() const {
-    return valid_;
+status::StatusCode ChannelMapperReader::init_status() const {
+    return init_status_;
 }
 
 bool ChannelMapperReader::read(Frame& out_frame) {
-    roc_panic_if(!valid_);
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (out_frame.num_raw_samples() % out_spec_.num_channels() != 0) {
         roc_panic("channel mapper reader: unexpected frame size");

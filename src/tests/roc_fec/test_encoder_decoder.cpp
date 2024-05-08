@@ -35,6 +35,9 @@ public:
         , buffers_(arena) {
         CHECK(encoder_);
         CHECK(decoder_);
+
+        LONGS_EQUAL(status::StatusOK, encoder_->init_status());
+        LONGS_EQUAL(status::StatusOK, decoder_->init_status());
     }
 
     void encode(size_t n_source, size_t n_repair, size_t p_size) {

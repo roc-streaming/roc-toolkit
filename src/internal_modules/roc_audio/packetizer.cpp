@@ -33,7 +33,7 @@ Packetizer::Packetizer(packet::IWriter& writer,
     , packet_pos_(0)
     , packet_cts_(0)
     , capture_ts_(0)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     roc_panic_if_msg(!sample_spec_.is_valid() || !sample_spec_.is_raw(),
                      "packetizer: required valid sample spec with raw format: %s",
                      sample_spec_to_str(sample_spec_).c_str());
@@ -44,6 +44,7 @@ Packetizer::Packetizer(packet::IWriter& writer,
                 " packet_length=%.3fms samples_per_packet=%lu",
                 (double)packet_length / core::Millisecond,
                 (unsigned long)samples_per_packet_);
+        init_status_ = status::StatusBadConfig;
         return;
     }
 
@@ -57,22 +58,28 @@ Packetizer::Packetizer(packet::IWriter& writer,
         (double)packet_length / core::Millisecond, (unsigned long)samples_per_packet_,
         (unsigned long)payload_size_, sample_spec_to_str(sample_spec_).c_str());
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool Packetizer::is_valid() const {
-    return valid_;
+status::StatusCode Packetizer::init_status() const {
+    return init_status_;
 }
 
 size_t Packetizer::sample_rate() const {
+    roc_panic_if(init_status_ != status::StatusOK);
+
     return sample_spec_.sample_rate();
 }
 
 const PacketizerMetrics& Packetizer::metrics() const {
+    roc_panic_if(init_status_ != status::StatusOK);
+
     return metrics_;
 }
 
 void Packetizer::write(Frame& frame) {
+    roc_panic_if(init_status_ != status::StatusOK);
+
     if (frame.num_raw_samples() % sample_spec_.num_channels() != 0) {
         roc_panic("packetizer: unexpected frame size");
     }
@@ -109,6 +116,8 @@ void Packetizer::write(Frame& frame) {
 }
 
 void Packetizer::flush() {
+    roc_panic_if(init_status_ != status::StatusOK);
+
     if (packet_) {
         end_packet_();
     }

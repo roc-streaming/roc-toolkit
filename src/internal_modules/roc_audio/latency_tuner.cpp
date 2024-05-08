@@ -163,7 +163,7 @@ LatencyTuner::LatencyTuner(const LatencyConfig& config, const SampleSpec& sample
     , max_latency_(0)
     , max_stalling_(0)
     , sample_spec_(sample_spec)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     roc_log(LogDebug,
             "latency tuner: initializing:"
             " target_latency=%ld(%.3fms) latency_tolerance=%ld(%.3fms)"
@@ -185,6 +185,7 @@ LatencyTuner::LatencyTuner(const LatencyConfig& config, const SampleSpec& sample
         roc_log(LogError,
                 "latency tuner: invalid config:"
                 " target_latency should be set to non-zero value");
+        init_status_ = status::StatusBadConfig;
         return;
     }
 
@@ -197,6 +198,7 @@ LatencyTuner::LatencyTuner(const LatencyConfig& config, const SampleSpec& sample
                     " target_latency=%ld(%.3fms)",
                     (long)sample_spec_.ns_2_stream_timestamp_delta(config.target_latency),
                     (double)config.target_latency / core::Millisecond);
+            init_status_ = status::StatusBadConfig;
             return;
         }
 
@@ -215,6 +217,7 @@ LatencyTuner::LatencyTuner(const LatencyConfig& config, const SampleSpec& sample
                         (long)sample_spec_.ns_2_stream_timestamp_delta(
                             config.latency_tolerance),
                         (double)config.latency_tolerance / core::Millisecond);
+                init_status_ = status::StatusBadConfig;
                 return;
             }
         }
@@ -231,6 +234,7 @@ LatencyTuner::LatencyTuner(const LatencyConfig& config, const SampleSpec& sample
                     (long)sample_spec_.ns_2_stream_timestamp_delta(
                         config.scaling_interval),
                     (double)config.scaling_interval / core::Millisecond);
+                init_status_ = status::StatusBadConfig;
                 return;
             }
 
@@ -240,6 +244,7 @@ LatencyTuner::LatencyTuner(const LatencyConfig& config, const SampleSpec& sample
                     "latency tuner: invalid config: scaling_tolerance is out of bounds:"
                     " scaling_tolerance=%f",
                     (double)config.scaling_tolerance);
+                init_status_ = status::StatusBadConfig;
                 return;
             }
 
@@ -249,21 +254,22 @@ LatencyTuner::LatencyTuner(const LatencyConfig& config, const SampleSpec& sample
                                             : FreqEstimatorProfile_Gradual,
                                         (packet::stream_timestamp_t)target_latency_));
             if (!fe_) {
+                init_status_ = status::StatusNoMem;
                 return;
             }
         }
     }
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool LatencyTuner::is_valid() const {
-    return valid_;
+status::StatusCode LatencyTuner::init_status() const {
+    return init_status_;
 }
 
 void LatencyTuner::write_metrics(const LatencyMetrics& latency_metrics,
                                  const packet::LinkMetrics& link_metrics) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (latency_metrics.niq_latency > 0 || latency_metrics.niq_stalling > 0
         || has_niq_latency_) {
@@ -287,7 +293,7 @@ void LatencyTuner::write_metrics(const LatencyMetrics& latency_metrics,
 }
 
 bool LatencyTuner::update_stream() {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     packet::stream_timestamp_diff_t latency = 0;
 
@@ -324,7 +330,7 @@ bool LatencyTuner::update_stream() {
 }
 
 void LatencyTuner::advance_stream(packet::stream_timestamp_t duration) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     stream_pos_ += duration;
 
@@ -332,7 +338,7 @@ void LatencyTuner::advance_stream(packet::stream_timestamp_t duration) {
 }
 
 float LatencyTuner::fetch_scaling() {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (!has_new_freq_coeff_) {
         return 0;

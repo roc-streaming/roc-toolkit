@@ -13,6 +13,7 @@
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_node/sender.h"
+#include "roc_status/code_to_str.h"
 
 using namespace roc;
 
@@ -53,8 +54,9 @@ int roc_sender_open(roc_context* context,
         return -1;
     }
 
-    if (!imp_sender->is_valid()) {
-        roc_log(LogError, "roc_sender_open(): can't initialize sender");
+    if (imp_sender->init_status() != status::StatusOK) {
+        roc_log(LogError, "roc_sender_open(): can't initialize sender: status=%s",
+                status::code_to_str(imp_sender->init_status()));
         return -1;
     }
 

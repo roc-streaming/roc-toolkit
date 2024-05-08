@@ -32,25 +32,25 @@ ReceiverSlot::ReceiverSlot(const ReceiverSourceConfig& source_config,
                      packet_factory,
                      frame_factory,
                      arena)
-    , valid_(false) {
-    if (!session_group_.is_valid()) {
+    , init_status_(status::NoStatus) {
+    roc_log(LogDebug, "receiver slot: initializing");
+
+    if ((init_status_ = session_group_.init_status()) != status::StatusOK) {
         return;
     }
 
-    roc_log(LogDebug, "receiver slot: initializing");
-
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool ReceiverSlot::is_valid() const {
-    return valid_;
+status::StatusCode ReceiverSlot::init_status() const {
+    return init_status_;
 }
 
 ReceiverEndpoint* ReceiverSlot::add_endpoint(address::Interface iface,
                                              address::Protocol proto,
                                              const address::SocketAddr& inbound_address,
                                              packet::IWriter* outbound_writer) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_log(LogDebug, "receiver slot: adding %s endpoint %s",
             address::interface_to_str(iface), address::proto_to_str(proto));
@@ -74,7 +74,7 @@ ReceiverEndpoint* ReceiverSlot::add_endpoint(address::Interface iface,
 }
 
 core::nanoseconds_t ReceiverSlot::refresh(core::nanoseconds_t current_time) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (source_endpoint_) {
         const status::StatusCode code = source_endpoint_->pull_packets(current_time);
@@ -98,13 +98,13 @@ core::nanoseconds_t ReceiverSlot::refresh(core::nanoseconds_t current_time) {
 }
 
 void ReceiverSlot::reclock(core::nanoseconds_t playback_time) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     session_group_.reclock_sessions(playback_time);
 }
 
 size_t ReceiverSlot::num_sessions() const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return session_group_.num_sessions();
 }
@@ -112,7 +112,7 @@ size_t ReceiverSlot::num_sessions() const {
 void ReceiverSlot::get_metrics(ReceiverSlotMetrics& slot_metrics,
                                ReceiverParticipantMetrics* party_metrics,
                                size_t* party_count) const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     session_group_.get_slot_metrics(slot_metrics);
 
@@ -144,7 +144,8 @@ ReceiverSlot::create_source_endpoint_(address::Protocol proto,
         proto, state_tracker_, session_group_, encoding_map_, inbound_address,
         outbound_writer, arena()));
 
-    if (!source_endpoint_ || !source_endpoint_->is_valid()) {
+    if (!source_endpoint_ || source_endpoint_->init_status() != status::StatusOK) {
+        // TODO(gh-183): forward status
         roc_log(LogError, "receiver slot: can't create source endpoint");
         source_endpoint_.reset(NULL);
         return NULL;
@@ -176,7 +177,8 @@ ReceiverSlot::create_repair_endpoint_(address::Protocol proto,
         proto, state_tracker_, session_group_, encoding_map_, inbound_address,
         outbound_writer, arena()));
 
-    if (!repair_endpoint_ || !repair_endpoint_->is_valid()) {
+    if (!repair_endpoint_ || repair_endpoint_->init_status() != status::StatusOK) {
+        // TODO(gh-183): forward status
         roc_log(LogError, "receiver slot: can't create repair endpoint");
         repair_endpoint_.reset(NULL);
         return NULL;
@@ -202,13 +204,16 @@ ReceiverSlot::create_control_endpoint_(address::Protocol proto,
         proto, state_tracker_, session_group_, encoding_map_, inbound_address,
         outbound_writer, arena()));
 
-    if (!control_endpoint_ || !control_endpoint_->is_valid()) {
+    if (!control_endpoint_ || control_endpoint_->init_status() != status::StatusOK) {
+        // TODO(gh-183): forward status
         roc_log(LogError, "receiver slot: can't create control endpoint");
         control_endpoint_.reset(NULL);
         return NULL;
     }
 
-    if (!session_group_.create_control_pipeline(control_endpoint_.get())) {
+    if (session_group_.create_control_pipeline(control_endpoint_.get())
+        != status::StatusOK) {
+        // TODO(gh-183): forward status
         roc_log(LogError, "receiver slot: can't create control pipeline");
         control_endpoint_.reset(NULL);
         return NULL;

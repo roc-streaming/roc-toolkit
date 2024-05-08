@@ -60,8 +60,10 @@ int roc_receiver_decoder_open(roc_context* context,
         return -1;
     }
 
-    if (!imp_decoder->is_valid()) {
-        roc_log(LogError, "roc_receiver_decoder_open(): can't initialize decoder");
+    if (imp_decoder->init_status() != status::StatusOK) {
+        roc_log(LogError,
+                "roc_receiver_decoder_open(): can't initialize decoder: status=%s",
+                status::code_to_str(imp_decoder->init_status()));
         return -1;
     }
 

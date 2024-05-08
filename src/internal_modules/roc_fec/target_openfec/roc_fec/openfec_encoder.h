@@ -40,14 +40,14 @@ namespace fec {
 class OpenfecEncoder : public IBlockEncoder, public core::NonCopyable<> {
 public:
     //! Initialize.
-    explicit OpenfecEncoder(const CodecConfig& config,
-                            packet::PacketFactory& packet_factory,
-                            core::IArena& arena);
+    OpenfecEncoder(const CodecConfig& config,
+                   packet::PacketFactory& packet_factory,
+                   core::IArena& arena);
 
     virtual ~OpenfecEncoder();
 
-    //! Check if object is successfully constructed.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    virtual status::StatusCode init_status() const;
 
     //! Get buffer alignment requirement.
     virtual size_t alignment() const;
@@ -101,7 +101,7 @@ private:
 
     size_t max_block_length_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace fec

@@ -88,13 +88,13 @@ public:
 
         for (size_t i = 0; i < n_source_packets; ++i) {
             packet::PacketPtr pp;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, source_queue_.read(pp));
+            LONGS_EQUAL(status::StatusOK, source_queue_.read(pp));
             CHECK(pp);
         }
 
         for (size_t i = 0; i < n_repair_packets; ++i) {
             packet::PacketPtr pp;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_queue_.read(pp));
+            LONGS_EQUAL(status::StatusOK, repair_queue_.read(pp));
             CHECK(pp);
         }
 
@@ -128,12 +128,12 @@ public:
     void push_stocks() {
         while (source_stock_.head()) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, source_stock_.read(p));
+            LONGS_EQUAL(status::StatusOK, source_stock_.read(p));
             deliver_(p);
         }
         while (repair_stock_.head()) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_stock_.read(p));
+            LONGS_EQUAL(status::StatusOK, repair_stock_.read(p));
             deliver_(p);
         }
     }
@@ -141,7 +141,7 @@ public:
     void push_source_stock(size_t limit) {
         for (size_t n = 0; n < limit; n++) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, source_stock_.read(p));
+            LONGS_EQUAL(status::StatusOK, source_stock_.read(p));
             deliver_(p);
         }
     }
@@ -149,7 +149,7 @@ public:
     void push_repair_stock(size_t limit) {
         for (size_t n = 0; n < limit; n++) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_stock_.read(p));
+            LONGS_EQUAL(status::StatusOK, repair_stock_.read(p));
             deliver_(p);
         }
     }
@@ -180,9 +180,9 @@ private:
         }
 
         if (p->flags() & packet::Packet::FlagAudio) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, source_stock_.write(p));
+            LONGS_EQUAL(status::StatusOK, source_stock_.write(p));
         } else if (p->flags() & packet::Packet::FlagRepair) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_stock_.write(p));
+            LONGS_EQUAL(status::StatusOK, repair_stock_.write(p));
         } else {
             FAIL("unexpected packet type");
         }
@@ -192,11 +192,11 @@ private:
         CHECK(p);
 
         if (p->flags() & packet::Packet::FlagAudio) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK,
-                                 source_queue_.write(reparse_packet_(source_parser_, p)));
+            LONGS_EQUAL(status::StatusOK,
+                        source_queue_.write(reparse_packet_(source_parser_, p)));
         } else if (p->flags() & packet::Packet::FlagRepair) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK,
-                                 repair_queue_.write(reparse_packet_(repair_parser_, p)));
+            LONGS_EQUAL(status::StatusOK,
+                        repair_queue_.write(reparse_packet_(repair_parser_, p)));
         } else {
             FAIL("unexpected packet type");
         }

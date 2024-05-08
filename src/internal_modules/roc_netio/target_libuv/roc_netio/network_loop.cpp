@@ -112,10 +112,12 @@ NetworkLoop::NetworkLoop(core::IPool& packet_pool,
     , stop_sem_initialized_(false)
     , task_sem_initialized_(false)
     , resolver_(*this, loop_)
-    , num_open_ports_(0) {
+    , num_open_ports_(0)
+    , init_status_(status::NoStatus) {
     if (int err = uv_loop_init(&loop_)) {
         roc_log(LogError, "network loop: uv_loop_init(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
+        init_status_ = status::StatusErrNetwork;
         return;
     }
     loop_initialized_ = true;
@@ -123,6 +125,7 @@ NetworkLoop::NetworkLoop(core::IPool& packet_pool,
     if (int err = uv_async_init(&loop_, &stop_sem_, stop_sem_cb_)) {
         roc_log(LogError, "network loop: uv_async_init(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
+        init_status_ = status::StatusErrNetwork;
         return;
     }
     stop_sem_.data = this;
@@ -131,12 +134,18 @@ NetworkLoop::NetworkLoop(core::IPool& packet_pool,
     if (int err = uv_async_init(&loop_, &task_sem_, task_sem_cb_)) {
         roc_log(LogError, "network loop: uv_async_init(): [%s] %s", uv_err_name(err),
                 uv_strerror(err));
+        init_status_ = status::StatusErrNetwork;
         return;
     }
     task_sem_.data = this;
     task_sem_initialized_ = true;
 
-    started_ = Thread::start();
+    if (!(started_ = Thread::start())) {
+        init_status_ = status::StatusErrThread;
+        return;
+    }
+
+    init_status_ = status::StatusOK;
 }
 
 NetworkLoop::~NetworkLoop() {
@@ -172,8 +181,8 @@ NetworkLoop::~NetworkLoop() {
     roc_panic_if(stop_sem_initialized_);
 }
 
-bool NetworkLoop::is_valid() const {
-    return started_;
+status::StatusCode NetworkLoop::init_status() const {
+    return init_status_;
 }
 
 size_t NetworkLoop::num_ports() const {
@@ -181,9 +190,7 @@ size_t NetworkLoop::num_ports() const {
 }
 
 void NetworkLoop::schedule(NetworkTask& task, INetworkTaskCompleter& completer) {
-    if (!is_valid()) {
-        roc_panic("network loop: can't use invalid loop");
-    }
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (task.state_ != NetworkTask::StateInitialized) {
         roc_panic("network loop: can't use the same task multiple times");
@@ -201,9 +208,7 @@ void NetworkLoop::schedule(NetworkTask& task, INetworkTaskCompleter& completer) 
 }
 
 bool NetworkLoop::schedule_and_wait(NetworkTask& task) {
-    if (!is_valid()) {
-        roc_panic("network loop: can't use invalid loop");
-    }
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (task.state_ != NetworkTask::StateInitialized) {
         roc_panic("network loop: can't use the same task multiple times");

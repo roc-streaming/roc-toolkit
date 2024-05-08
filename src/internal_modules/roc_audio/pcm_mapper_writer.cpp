@@ -24,7 +24,7 @@ PcmMapperWriter::PcmMapperWriter(IFrameWriter& writer,
     , in_spec_(in_spec)
     , out_spec_(out_spec)
     , num_ch_(out_spec.num_channels())
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     if (!in_spec_.is_valid() || !out_spec_.is_valid()
         || in_spec_.sample_format() != SampleFormat_Pcm
         || out_spec_.sample_format() != SampleFormat_Pcm) {
@@ -52,19 +52,20 @@ PcmMapperWriter::PcmMapperWriter(IFrameWriter& writer,
     out_buf_ = frame_factory.new_byte_buffer();
     if (!out_buf_) {
         roc_log(LogError, "pcm mapper writer: can't allocate temporary buffer");
+        init_status_ = status::StatusNoMem;
         return;
     }
     out_buf_.reslice(0, out_buf_.capacity());
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool PcmMapperWriter::is_valid() const {
-    return valid_;
+status::StatusCode PcmMapperWriter::init_status() const {
+    return init_status_;
 }
 
 void PcmMapperWriter::write(Frame& in_frame) {
-    roc_panic_if(!valid_);
+    roc_panic_if(init_status_ != status::StatusOK);
 
     const size_t max_sample_count =
         mapper_.output_sample_count(out_buf_.size()) / num_ch_;

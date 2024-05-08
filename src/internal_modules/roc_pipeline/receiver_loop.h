@@ -131,7 +131,7 @@ public:
                  core::IArena& arena);
 
     //! Check if the pipeline was successfully constructed.
-    bool is_valid() const;
+    status::StatusCode init_status() const;
 
     //! Get receiver sources.
     //! @remarks
@@ -174,7 +174,7 @@ private:
 
     const bool auto_reclock_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace pipeline

@@ -18,6 +18,7 @@
 #include "roc_sndio/config.h"
 #include "roc_sndio/print_supported.h"
 #include "roc_sndio/pump.h"
+#include "roc_status/code_to_str.h"
 
 #include "roc_copy/cmdline.h"
 
@@ -206,8 +207,9 @@ int main(int argc, char** argv) {
 
     pipeline::TranscoderSink transcoder(transcoder_config, output_writer,
                                         frame_buffer_pool, arena);
-    if (!transcoder.is_valid()) {
-        roc_log(LogError, "can't create transcoder pipeline");
+    if (transcoder.init_status() != status::StatusOK) {
+        roc_log(LogError, "can't create transcoder pipeline: status=%s",
+                status::code_to_str(transcoder.init_status()));
         return 1;
     }
 

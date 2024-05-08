@@ -29,6 +29,9 @@ public:
     //! Initialize.
     PcmDecoder(const SampleSpec& sample_spec);
 
+    //! Check if the object was successfully constructed.
+    virtual status::StatusCode init_status() const;
+
     //! Get current stream position.
     virtual packet::stream_timestamp_t position() const;
 

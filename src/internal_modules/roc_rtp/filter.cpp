@@ -24,6 +24,10 @@ Filter::Filter(packet::IReader& reader,
     , sample_spec_(sample_spec) {
 }
 
+status::StatusCode Filter::init_status() const {
+    return status::StatusOK;
+}
+
 status::StatusCode Filter::read(packet::PacketPtr& result_packet) {
     packet::PacketPtr next_packet;
     const status::StatusCode code = reader_.read(next_packet);

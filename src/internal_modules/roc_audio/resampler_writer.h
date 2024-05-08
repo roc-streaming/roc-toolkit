@@ -37,8 +37,8 @@ public:
                     const SampleSpec& in_sample_spec,
                     const SampleSpec& out_sample_spec);
 
-    //! Check if object is successfully constructed.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Set new resample factor.
     bool set_scaling(float multiplier);
@@ -63,7 +63,8 @@ private:
     size_t output_buf_pos_;
 
     float scaling_;
-    bool valid_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace audio

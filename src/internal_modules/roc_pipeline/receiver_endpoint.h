@@ -52,8 +52,8 @@ public:
                      packet::IWriter* outbound_writer,
                      core::IArena& arena);
 
-    //! Check if the port pipeline was succefully constructed.
-    bool is_valid() const;
+    //! Check if the pipeline was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Get protocol.
     address::Protocol proto() const;
@@ -118,7 +118,7 @@ private:
     address::SocketAddr inbound_address_;
     core::MpscQueue<packet::Packet> inbound_queue_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace pipeline

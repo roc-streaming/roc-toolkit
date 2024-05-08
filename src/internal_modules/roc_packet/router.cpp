@@ -19,17 +19,21 @@ Router::Router(core::IArena& arena)
     : routes_(arena) {
 }
 
-bool Router::add_route(IWriter& writer, const unsigned flags) {
+status::StatusCode Router::init_status() const {
+    return status::StatusOK;
+}
+
+status::StatusCode Router::add_route(IWriter& writer, const unsigned flags) {
     Route r;
     r.writer = &writer;
     r.flags = flags;
 
     if (!routes_.push_back(r)) {
         roc_log(LogError, "router: can't allocate route");
-        return false;
+        return status::StatusNoMem;
     }
 
-    return true;
+    return status::StatusOK;
 }
 
 bool Router::has_source_id(const unsigned flags) {

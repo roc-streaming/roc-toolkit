@@ -29,6 +29,9 @@ public:
     //! Initialization.
     Composer();
 
+    //! Check if the object was successfully constructed.
+    virtual status::StatusCode init_status() const;
+
     //! Adjust buffer to align payload.
     virtual bool
     align(core::Slice<uint8_t>& buffer, size_t header_size, size_t payload_alignment);

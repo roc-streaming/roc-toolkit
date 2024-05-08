@@ -58,25 +58,21 @@ SpeexResampler::SpeexResampler(core::IArena& arena,
     , initial_out_countdown_(0)
     , initial_in_latency_(0)
     , in_latency_diff_(0)
-    , rate_limiter_(LogReportInterval)
-    , valid_(false) {
+    , report_limiter_(LogReportInterval)
+    , init_status_(status::NoStatus) {
     if (!in_spec.is_valid() || !out_spec.is_valid() || !in_spec.is_raw()
         || !out_spec.is_raw()) {
-        roc_log(LogError,
-                "speex resampler: invalid sample spec:"
-                " in_spec=%s out_spec=%s",
-                sample_spec_to_str(in_spec).c_str(),
-                sample_spec_to_str(out_spec).c_str());
-        return;
+        roc_panic("speex resampler: required valid sample specs with raw format:"
+                  " in_spec=%s out_spec=%s",
+                  sample_spec_to_str(in_spec).c_str(),
+                  sample_spec_to_str(out_spec).c_str());
     }
 
     if (in_spec.channel_set() != out_spec.channel_set()) {
-        roc_log(LogError,
-                "speex resampler: input and output channel sets should be equal:"
-                " in_spec=%s out_spec=%s",
-                sample_spec_to_str(in_spec).c_str(),
-                sample_spec_to_str(out_spec).c_str());
-        return;
+        roc_panic("speex resampler: required identical input and output channel sets:"
+                  " in_spec=%s out_spec=%s",
+                  sample_spec_to_str(in_spec).c_str(),
+                  sample_spec_to_str(out_spec).c_str());
     }
 
     const int quality = get_quality(profile);
@@ -88,6 +84,8 @@ SpeexResampler::SpeexResampler(core::IArena& arena,
     if (err != RESAMPLER_ERR_SUCCESS || !speex_state_) {
         roc_log(LogError, "speex resampler: speex_resampler_init(): [%d] %s", err,
                 get_error_msg(err));
+        init_status_ = err == RESAMPLER_ERR_ALLOC_FAILED ? status::StatusNoMem
+                                                         : status::StatusBadConfig;
         return;
     }
 
@@ -105,11 +103,12 @@ SpeexResampler::SpeexResampler(core::IArena& arena,
 
     if (!(in_frame_ = frame_factory.new_raw_buffer())) {
         roc_log(LogError, "speex resampler: can't allocate frame buffer");
+        init_status_ = status::StatusNoMem;
         return;
     }
     in_frame_.reslice(0, in_frame_size_);
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
 SpeexResampler::~SpeexResampler() {
@@ -118,12 +117,12 @@ SpeexResampler::~SpeexResampler() {
     }
 }
 
-bool SpeexResampler::is_valid() const {
-    return valid_;
+status::StatusCode SpeexResampler::init_status() const {
+    return init_status_;
 }
 
 bool SpeexResampler::set_scaling(size_t input_rate, size_t output_rate, float mult) {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (input_rate == 0 || output_rate == 0 || mult <= 0
         || input_rate * mult > (float)ROC_MAX_OF(spx_uint32_t)
@@ -198,20 +197,20 @@ bool SpeexResampler::set_scaling(size_t input_rate, size_t output_rate, float mu
 }
 
 const core::Slice<sample_t>& SpeexResampler::begin_push_input() {
-    roc_panic_if_not(is_valid());
-    roc_panic_if_not(in_frame_pos_ == in_frame_size_);
+    roc_panic_if(init_status_ != status::StatusOK);
+    roc_panic_if(in_frame_pos_ != in_frame_size_);
 
     return in_frame_;
 }
 
 void SpeexResampler::end_push_input() {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     in_frame_pos_ = 0;
 }
 
 size_t SpeexResampler::pop_output(sample_t* out_buf, size_t out_bufsz) {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     const sample_t* in_frame_data = in_frame_.data();
 
@@ -262,7 +261,7 @@ size_t SpeexResampler::pop_output(sample_t* out_buf, size_t out_bufsz) {
 }
 
 float SpeexResampler::n_left_to_process() const {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return float(in_frame_size_ - in_frame_pos_) + float(in_latency_diff_);
 }
@@ -272,7 +271,7 @@ void SpeexResampler::report_stats_() {
         return;
     }
 
-    if (!rate_limiter_.allow()) {
+    if (!report_limiter_.allow()) {
         return;
     }
 

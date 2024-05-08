@@ -58,8 +58,8 @@ public:
 
     ~DecimationResampler();
 
-    //! Check if object is successfully constructed.
-    virtual bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    virtual status::StatusCode init_status() const;
 
     //! Set new resample factor.
     virtual bool set_scaling(size_t input_rate, size_t output_rate, float multiplier);
@@ -100,7 +100,7 @@ private:
     size_t decim_count_;
     core::RateLimiter report_limiter_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace audio

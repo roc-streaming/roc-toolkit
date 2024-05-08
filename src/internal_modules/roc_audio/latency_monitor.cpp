@@ -38,38 +38,39 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
     , packet_sample_spec_(packet_sample_spec)
     , frame_sample_spec_(frame_sample_spec)
     , alive_(true)
-    , valid_(false) {
-    if (!tuner_.is_valid()) {
+    , init_status_(status::NoStatus) {
+    if ((init_status_ = tuner_.init_status()) != status::StatusOK) {
         return;
     }
 
     if (enable_scaling_) {
         if (!init_scaling_()) {
+            init_status_ = status::StatusBadConfig;
             return;
         }
     }
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool LatencyMonitor::is_valid() const {
-    return valid_;
+status::StatusCode LatencyMonitor::init_status() const {
+    return init_status_;
 }
 
 bool LatencyMonitor::is_alive() const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return alive_;
 }
 
 const LatencyMetrics& LatencyMonitor::metrics() const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return latency_metrics_;
 }
 
 bool LatencyMonitor::read(Frame& frame) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (alive_) {
         compute_niq_latency_();
@@ -94,7 +95,7 @@ bool LatencyMonitor::read(Frame& frame) {
 }
 
 bool LatencyMonitor::reclock(const core::nanoseconds_t playback_timestamp) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     // this method is called when playback time of last frame was reported
     // now we can update e2e latency based on it

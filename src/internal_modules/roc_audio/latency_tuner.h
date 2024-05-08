@@ -173,8 +173,8 @@ public:
     //! Initialize.
     LatencyTuner(const LatencyConfig& config, const SampleSpec& sample_spec);
 
-    //! Check if the object was initialized successfully.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Pass updated metrics to tuner.
     //! Tuner will use new values next time when update_stream() is called.
@@ -245,7 +245,7 @@ private:
 
     const SampleSpec sample_spec_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 //! Get string name of latency backend.

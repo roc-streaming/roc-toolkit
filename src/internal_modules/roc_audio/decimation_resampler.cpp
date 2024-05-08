@@ -44,40 +44,38 @@ DecimationResampler::DecimationResampler(
     , total_count_(0)
     , decim_count_(0)
     , report_limiter_(LogReportInterval)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
+    if (!in_spec.is_valid() || !out_spec.is_valid() || !in_spec.is_raw()
+        || !out_spec.is_raw()) {
+        roc_panic("decimation resampler: required valid sample specs with raw format:"
+                  " in_spec=%s out_spec=%s",
+                  sample_spec_to_str(in_spec).c_str(),
+                  sample_spec_to_str(out_spec).c_str());
+    }
+
+    if (in_spec.channel_set() != out_spec.channel_set()) {
+        roc_panic(
+            "decimation resampler: required identical input and output channel sets:"
+            " in_spec=%s out_spec=%s",
+            sample_spec_to_str(in_spec).c_str(), sample_spec_to_str(out_spec).c_str());
+    }
+
     roc_log(LogDebug,
             "decimation resampler: initializing: "
             " frame_size=%lu num_ch=%lu use_inner_resampler=%d",
             (unsigned long)InputFrameSize, (unsigned long)num_ch_,
             (int)use_inner_resampler_);
 
-    if (!in_spec.is_valid() || !out_spec.is_valid() || !in_spec.is_raw()
-        || !out_spec.is_raw()) {
-        roc_log(LogError,
-                "decimation resampler: invalid sample spec:"
-                " in_spec=%s out_spec=%s",
-                sample_spec_to_str(in_spec).c_str(),
-                sample_spec_to_str(out_spec).c_str());
-        return;
-    }
-
-    if (in_spec.channel_set() != out_spec.channel_set()) {
-        roc_log(LogError,
-                "decimation resampler: input and output channel sets should be equal:"
-                " in_spec=%s out_spec=%s",
-                sample_spec_to_str(in_spec).c_str(),
-                sample_spec_to_str(out_spec).c_str());
-        return;
-    }
-
     if (frame_factory.raw_buffer_size() < InputFrameSize * num_ch_) {
         roc_log(LogError, "decimation resampler: can't allocate temporary buffer");
+        init_status_ = status::StatusNoSpace;
         return;
     }
 
     in_buf_ = frame_factory.new_raw_buffer();
     if (!in_buf_) {
         roc_log(LogError, "decimation resampler: can't allocate temporary buffer");
+        init_status_ = status::StatusNoMem;
         return;
     }
     in_buf_.reslice(0, InputFrameSize * num_ch_);
@@ -85,26 +83,27 @@ DecimationResampler::DecimationResampler(
     last_buf_ = frame_factory.new_raw_buffer();
     if (!last_buf_) {
         roc_log(LogError, "decimation resampler: can't allocate temporary buffer");
+        init_status_ = status::StatusNoMem;
         return;
     }
     last_buf_.reslice(0, num_ch_);
 
     memset(last_buf_.data(), 0, last_buf_.size() * sizeof(sample_t));
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
 DecimationResampler::~DecimationResampler() {
 }
 
-bool DecimationResampler::is_valid() const {
-    return valid_;
+status::StatusCode DecimationResampler::init_status() const {
+    return init_status_;
 }
 
 bool DecimationResampler::set_scaling(size_t input_rate,
                                       size_t output_rate,
                                       float multiplier) {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (input_rate == 0 || output_rate == 0
         || multiplier <= 0
@@ -137,7 +136,7 @@ bool DecimationResampler::set_scaling(size_t input_rate,
 }
 
 const core::Slice<sample_t>& DecimationResampler::begin_push_input() {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (use_inner_resampler_) {
         // return buffer of inner resampler
@@ -149,7 +148,7 @@ const core::Slice<sample_t>& DecimationResampler::begin_push_input() {
 }
 
 void DecimationResampler::end_push_input() {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (use_inner_resampler_) {
         // start reading from inner resampler
@@ -164,7 +163,7 @@ void DecimationResampler::end_push_input() {
 }
 
 size_t DecimationResampler::pop_output(sample_t* out_data, size_t out_size) {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     size_t out_pos = 0;
 
@@ -233,7 +232,7 @@ size_t DecimationResampler::pop_output(sample_t* out_data, size_t out_size) {
 }
 
 float DecimationResampler::n_left_to_process() const {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     // how much samples are pending in our buffer
     float n_samples = float(in_size_ - in_pos_) / output_spec_.sample_rate()

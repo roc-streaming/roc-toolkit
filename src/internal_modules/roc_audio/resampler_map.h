@@ -43,7 +43,8 @@ public:
     //! Check if given backend is supported.
     bool is_supported(ResamplerBackend backend_id) const;
 
-    //! Instantiate IResampler for given backend ID.
+    //! Instantiate IResampler for given configuration.
+    //! The type depends on backend specified in @p config.
     core::SharedPtr<IResampler> new_resampler(core::IArena& arena,
                                               FrameFactory& frame_factory,
                                               const ResamplerConfig& config,

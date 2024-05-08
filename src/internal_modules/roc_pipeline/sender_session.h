@@ -58,15 +58,17 @@ public:
                   audio::FrameFactory& frame_factory,
                   core::IArena& arena);
 
-    //! Check if the session was succefully constructed.
-    bool is_valid() const;
+    //! Check if the pipeline was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Create transport sub-pipeline.
-    bool create_transport_pipeline(SenderEndpoint* source_endpoint,
-                                   SenderEndpoint* repair_endpoint);
+    ROC_ATTR_NODISCARD status::StatusCode
+    create_transport_pipeline(SenderEndpoint* source_endpoint,
+                              SenderEndpoint* repair_endpoint);
 
     //! Create control sub-pipeline.
-    bool create_control_pipeline(SenderEndpoint* control_endpoint);
+    ROC_ATTR_NODISCARD status::StatusCode
+    create_control_pipeline(SenderEndpoint* control_endpoint);
 
     //! Get frame writer.
     //! @remarks
@@ -159,7 +161,7 @@ private:
 
     audio::IFrameWriter* frame_writer_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace pipeline

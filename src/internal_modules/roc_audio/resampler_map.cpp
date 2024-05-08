@@ -95,14 +95,7 @@ core::SharedPtr<IResampler> ResamplerMap::new_resampler(core::IArena& arena,
         return NULL;
     }
 
-    core::SharedPtr<IResampler> resampler =
-        backend->ctor(arena, frame_factory, config.profile, in_spec, out_spec);
-
-    if (!resampler || !resampler->is_valid()) {
-        return NULL;
-    }
-
-    return resampler;
+    return backend->ctor(arena, frame_factory, config.profile, in_spec, out_spec);
 }
 
 void ResamplerMap::add_backend_(const Backend& backend) {

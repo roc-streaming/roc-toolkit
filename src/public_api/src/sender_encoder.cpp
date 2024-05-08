@@ -57,8 +57,10 @@ int roc_sender_encoder_open(roc_context* context,
         return -1;
     }
 
-    if (!imp_encoder->is_valid()) {
-        roc_log(LogError, "roc_sender_encoder_open(): can't initialize encoder");
+    if (imp_encoder->init_status() != status::StatusOK) {
+        roc_log(LogError,
+                "roc_sender_encoder_open(): can't initialize encoder: status=%s",
+                status::code_to_str(imp_encoder->init_status()));
         return -1;
     }
 

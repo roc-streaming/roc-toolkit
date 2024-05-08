@@ -36,17 +36,30 @@ struct ReaderConfig {
     }
 };
 
-//! FEC reader.
+//! FEC reader for block codes.
+//! Works on top of fec::IBlockDecoder, which performs codec-specific operations.
+//! @remarks
+//!  You read packets from fec::Reader.
+//!  fec::Reader fetches packets streams from two readers:
+//!   - stream of source packets - media packets + FEC meta-data
+//!   - stream of repair packets - packets with redundancy
+//!  If there are no losses, fec::Reader just returns source (media)
+//!  packets and ignores repair packets.
+//!  If there are losses, fec::Reader tries to repair missing media packets
+//!  and insert them into the returned stream.
+//!  Losses are detected by gaps in seqnums.
 class Reader : public packet::IReader, public core::NonCopyable<> {
 public:
     //! Initialize.
     //!
     //! @b Parameters
     //!  - @p config contains FEC scheme parameters
-    //!  - @p decoder specifies FEC codec implementation;
-    //!  - @p source_reader specifies input queue with data packets;
-    //!  - @p repair_reader specifies input queue with FEC packets;
-    //!  - @p parser specifies packet parser for restored packets.
+    //!  - @p fec_scheme is FEC codec ID
+    //!  - @p decoder is FEC codec implementation
+    //!  - @p source_reader specifies input queue with data packets
+    //!  - @p repair_reader specifies input queue with FEC packets
+    //!  - @p parser specifies packet parser for restored packets
+    //!  - @p packet_factory is used to allocate restored packets
     //!  - @p arena is used to initialize a packet array
     Reader(const ReaderConfig& config,
            packet::FecScheme fec_scheme,
@@ -57,8 +70,8 @@ public:
            packet::PacketFactory& packet_factory,
            core::IArena& arena);
 
-    //! Check if object is successfully constructed.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Did decoder catch block beginning?
     bool is_started() const;
@@ -126,8 +139,6 @@ private:
     core::Array<packet::PacketPtr> source_block_;
     core::Array<packet::PacketPtr> repair_block_;
 
-    bool valid_;
-
     bool alive_;
     bool started_;
     bool can_repair_;
@@ -149,6 +160,8 @@ private:
 
     const size_t max_sbn_jump_;
     const packet::FecScheme fec_scheme_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace fec

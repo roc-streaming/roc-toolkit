@@ -82,6 +82,7 @@ TEST(channel_mapper_writer, small_frame_upmix) {
 
     test::MockWriter mock_writer;
     ChannelMapperWriter mapper_writer(mock_writer, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     sample_t samples[FrameSz] = {};
     const unsigned flags = Frame::FlagNotComplete;
@@ -115,6 +116,7 @@ TEST(channel_mapper_writer, small_frame_downmix) {
 
     test::MockWriter mock_writer;
     ChannelMapperWriter mapper_writer(mock_writer, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     sample_t samples[FrameSz] = {};
     const unsigned flags = Frame::FlagNotComplete;
@@ -148,6 +150,7 @@ TEST(channel_mapper_writer, small_frame_nocts) {
 
     test::MockWriter mock_writer;
     ChannelMapperWriter mapper_writer(mock_writer, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     sample_t samples[FrameSz] = {};
     const unsigned flags = Frame::FlagNotComplete;
@@ -180,6 +183,7 @@ TEST(channel_mapper_writer, large_frame_upmix) {
 
     test::MockWriter mock_writer;
     ChannelMapperWriter mapper_writer(mock_writer, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     sample_t samples[FrameSz] = {};
     const unsigned flags = Frame::FlagNotComplete;
@@ -216,6 +220,7 @@ TEST(channel_mapper_writer, large_frame_downmix) {
 
     test::MockWriter mock_writer;
     ChannelMapperWriter mapper_writer(mock_writer, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     sample_t samples[FrameSz] = {};
     const unsigned flags = Frame::FlagNotComplete;
@@ -252,6 +257,7 @@ TEST(channel_mapper_writer, large_frame_nocts) {
 
     test::MockWriter mock_writer;
     ChannelMapperWriter mapper_writer(mock_writer, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     sample_t samples[FrameSz] = {};
     const unsigned flags = Frame::FlagNotComplete;

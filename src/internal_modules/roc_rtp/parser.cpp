@@ -18,6 +18,10 @@ Parser::Parser(const EncodingMap& encoding_map, packet::IParser* inner_parser)
     , inner_parser_(inner_parser) {
 }
 
+status::StatusCode Parser::init_status() const {
+    return status::StatusOK;
+}
+
 bool Parser::parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer) {
     if (buffer.size() < sizeof(Header)) {
         roc_log(LogDebug, "rtp parser: bad packet: size<%d (rtp header)",

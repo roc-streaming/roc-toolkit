@@ -49,8 +49,8 @@ public:
     //! Deinitialize.
     ~Context();
 
-    //! Check if successfully constructed.
-    bool is_valid();
+    //! Check if context was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Get arena.
     core::IArena& arena();
@@ -84,6 +84,8 @@ private:
 
     netio::NetworkLoop network_loop_;
     ctl::ControlLoop control_loop_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace node

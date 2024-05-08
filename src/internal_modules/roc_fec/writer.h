@@ -39,15 +39,23 @@ struct WriterConfig {
     }
 };
 
-//! FEC writer.
+//! FEC writer for block codes.
+//! Works on top of fec::IBlockEncoder, which performs codec-specific operations.
+//! @remarks
+//!  You write audio packets to fec::Writer.
+//!  fec::Writer produces to interleaved streams:
+//!   - stream of source packets - original media packets + FEC meta-data
+//!   - stream of repair packets - packets with redundancy
+//!  Interleaved stream of source + repair packets is written to output writer.
 class Writer : public packet::IWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
     //!
     //! @b Parameters
     //!  - @p config contains FEC scheme parameters
-    //!  - @p encoder is used to encode repair packets
-    //!  - @p writer is used to write source and repair packets
+    //!  - @p fec_scheme is FEC codec ID
+    //!  - @p encoder is FEC codec implementation
+    //!  - @p writer is used to write coded source and repair packets
     //!  - @p source_composer is used to format source packets
     //!  - @p repair_composer is used to format repair packets
     //!  - @p packet_factory is used to allocate repair packets
@@ -62,8 +70,8 @@ public:
            packet::PacketFactory& packet_factory,
            core::IArena& arena);
 
-    //! Check if object is successfully constructed.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Check if writer is still working.
     bool is_alive() const;
@@ -119,6 +127,7 @@ private:
     core::Array<packet::PacketPtr> repair_block_;
 
     bool first_packet_;
+    bool alive_;
 
     packet::blknum_t cur_sbn_;
     packet::seqnum_t cur_block_repair_sn_;
@@ -127,12 +136,11 @@ private:
 
     const packet::FecScheme fec_scheme_;
 
-    bool valid_;
-    bool alive_;
-
     bool prev_block_timestamp_valid_;
     packet::stream_timestamp_t prev_block_timestamp_;
     packet::stream_timestamp_diff_t block_max_duration_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace fec

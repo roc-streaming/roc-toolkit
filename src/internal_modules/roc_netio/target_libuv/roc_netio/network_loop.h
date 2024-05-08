@@ -196,8 +196,8 @@ public:
     //!  Wait until background thread finishes.
     virtual ~NetworkLoop();
 
-    //! Check if the object was successfully constructed.
-    bool is_valid() const;
+    //! Check if control loop was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Get number of receiver and sender ports.
     size_t num_ports() const;
@@ -269,6 +269,8 @@ private:
     core::List<BasicPort> closing_ports_;
 
     core::Atomic<int> num_open_ports_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace netio

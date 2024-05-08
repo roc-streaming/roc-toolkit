@@ -59,7 +59,7 @@ Watchdog::Watchdog(IFrameReader& reader,
     , status_pos_(0)
     , show_status_(false)
     , alive_(true)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     if (config.no_playback_timeout >= 0) {
         max_blank_duration_ =
             std::max(sample_spec_.ns_2_stream_timestamp(config.no_playback_timeout), 1u);
@@ -99,6 +99,7 @@ Watchdog::Watchdog(IFrameReader& reader,
             || drops_detection_window_ > max_drops_duration_)) {
         roc_log(LogError,
                 "watchdog: invalid config: drop_detection_window out of bounds");
+        init_status_ = status::StatusBadConfig;
         return;
     }
 
@@ -108,21 +109,21 @@ Watchdog::Watchdog(IFrameReader& reader,
         }
     }
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool Watchdog::is_valid() const {
-    return valid_;
+status::StatusCode Watchdog::init_status() const {
+    return init_status_;
 }
 
 bool Watchdog::is_alive() const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return alive_;
 }
 
 bool Watchdog::read(Frame& frame) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (!alive_) {
         return false;

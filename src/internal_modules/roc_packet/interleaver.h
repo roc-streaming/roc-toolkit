@@ -30,8 +30,8 @@ public:
     //!  them to @p output.
     Interleaver(IWriter& writer, core::IArena& arena, size_t block_size);
 
-    //! Check if object is successfully constructed.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Write next packet.
     //! @remarks
@@ -65,7 +65,7 @@ private:
     size_t next_2_put_;
     size_t next_2_send_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace packet

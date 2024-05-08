@@ -48,7 +48,7 @@ TEST(receiver_endpoint, valid) {
 
     ReceiverEndpoint endpoint(address::Proto_RTP, state_tracker, session_group,
                               encoding_map, address::SocketAddr(), NULL, arena);
-    CHECK(endpoint.is_valid());
+    LONGS_EQUAL(status::StatusOK, endpoint.init_status());
 }
 
 TEST(receiver_endpoint, invalid_proto) {
@@ -63,7 +63,7 @@ TEST(receiver_endpoint, invalid_proto) {
 
     ReceiverEndpoint endpoint(address::Proto_None, state_tracker, session_group,
                               encoding_map, address::SocketAddr(), NULL, arena);
-    CHECK(!endpoint.is_valid());
+    LONGS_EQUAL(status::StatusBadProtocol, endpoint.init_status());
 }
 
 TEST(receiver_endpoint, no_memory) {
@@ -86,8 +86,7 @@ TEST(receiver_endpoint, no_memory) {
 
         ReceiverEndpoint endpoint(protos[n], state_tracker, session_group, encoding_map,
                                   address::SocketAddr(), NULL, core::NoopArena);
-
-        CHECK(!endpoint.is_valid());
+        LONGS_EQUAL(status::StatusNoMem, endpoint.init_status());
     }
 }
 

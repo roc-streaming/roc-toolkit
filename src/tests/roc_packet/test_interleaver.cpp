@@ -83,8 +83,7 @@ TEST_GROUP(interleaver) {};
 TEST(interleaver, read_write) {
     Queue queue;
     Interleaver intrlvr(queue, arena, 10);
-
-    CHECK(intrlvr.is_valid());
+    LONGS_EQUAL(status::StatusOK, intrlvr.init_status());
 
     const size_t num_packets = intrlvr.block_size() * 5;
 
@@ -106,17 +105,17 @@ TEST(interleaver, read_write) {
 
     // Push every packet to interleaver.
     for (size_t i = 0; i < num_packets; i++) {
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, intrlvr.write(packets[i]));
+        LONGS_EQUAL(status::StatusOK, intrlvr.write(packets[i]));
     }
 
-    // Interleaver must put all packets to its writer because we put pricesly
+    // Interleaver must put all packets to its writer because we put precisely
     // integer number of its block_size.
     LONGS_EQUAL(num_packets, queue.size());
 
     // Check that packets have different seqnums.
     for (size_t i = 0; i < num_packets; i++) {
         PacketPtr p;
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(p));
+        LONGS_EQUAL(status::StatusOK, queue.read(p));
         CHECK(p);
         CHECK(p->rtp()->seqnum < num_packets);
         CHECK(!packets_ctr[p->rtp()->seqnum]);
@@ -125,7 +124,7 @@ TEST(interleaver, read_write) {
 
     // Nothing left in queue.
     LONGS_EQUAL(0, queue.size());
-    UNSIGNED_LONGS_EQUAL(status::StatusOK, intrlvr.flush());
+    LONGS_EQUAL(status::StatusOK, intrlvr.flush());
 
     // Nothing left in interleaver.
     LONGS_EQUAL(0, queue.size());
@@ -139,20 +138,19 @@ TEST(interleaver, read_write) {
 TEST(interleaver, flush) {
     Queue queue;
     Interleaver intrlvr(queue, arena, 10);
-
-    CHECK(intrlvr.is_valid());
+    LONGS_EQUAL(status::StatusOK, intrlvr.init_status());
 
     const size_t num_packets = intrlvr.block_size() * 5;
 
     for (size_t n = 0; n < num_packets; n++) {
         PacketPtr wp = new_packet(seqnum_t(n));
 
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, intrlvr.write(wp));
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, intrlvr.flush());
+        LONGS_EQUAL(status::StatusOK, intrlvr.write(wp));
+        LONGS_EQUAL(status::StatusOK, intrlvr.flush());
         LONGS_EQUAL(1, queue.size());
 
         PacketPtr rp;
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp));
+        LONGS_EQUAL(status::StatusOK, queue.read(rp));
         CHECK(wp == rp);
         LONGS_EQUAL(0, queue.size());
     }
@@ -168,6 +166,7 @@ TEST(interleaver, write_error) {
         Queue queue;
         MockWriter writer(queue);
         Interleaver intrlvr(writer, arena, 1);
+        LONGS_EQUAL(status::StatusOK, intrlvr.init_status());
 
         writer.enable_status_code(codes[n]);
 
@@ -178,12 +177,12 @@ TEST(interleaver, write_error) {
         UNSIGNED_LONGS_EQUAL(0, queue.size());
 
         writer.disable_status_code();
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, intrlvr.write(wp));
+        LONGS_EQUAL(status::StatusOK, intrlvr.write(wp));
         UNSIGNED_LONGS_EQUAL(2, writer.call_count());
         UNSIGNED_LONGS_EQUAL(1, queue.size());
 
         PacketPtr rp;
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(rp));
+        LONGS_EQUAL(status::StatusOK, queue.read(rp));
         CHECK(wp == rp);
     }
 }
@@ -194,6 +193,7 @@ TEST(interleaver, flush_error) {
     Queue queue;
     MockWriter writer(queue);
     Interleaver intrlvr(writer, arena, block_size);
+    LONGS_EQUAL(status::StatusOK, intrlvr.init_status());
 
     writer.enable_status_code(status::StatusAbort);
     LONGS_EQUAL(status::StatusOK, intrlvr.flush());
@@ -220,12 +220,12 @@ TEST(interleaver, flush_error) {
     UNSIGNED_LONGS_EQUAL(0, queue.size());
 
     writer.disable_status_code();
-    UNSIGNED_LONGS_EQUAL(status::StatusOK, intrlvr.flush());
+    LONGS_EQUAL(status::StatusOK, intrlvr.flush());
     UNSIGNED_LONGS_EQUAL(seqnum, queue.size());
 
     for (size_t n = 0; n < seqnum; ++n) {
         PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(pp));
+        LONGS_EQUAL(status::StatusOK, queue.read(pp));
         UNSIGNED_LONGS_EQUAL(seqnum_t(n), pp->rtp()->seqnum);
     }
 }

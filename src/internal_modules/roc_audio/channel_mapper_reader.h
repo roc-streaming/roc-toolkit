@@ -19,6 +19,7 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace audio {
@@ -33,8 +34,8 @@ public:
                         const SampleSpec& in_spec,
                         const SampleSpec& out_spec);
 
-    //! Check if the object was succefully constructed.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Read audio frame.
     virtual bool read(Frame& frame);
@@ -53,7 +54,7 @@ private:
     const SampleSpec in_spec_;
     const SampleSpec out_spec_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace audio

@@ -41,8 +41,8 @@ public:
                  const SampleSpec& sample_spec,
                  bool beep);
 
-    //! Was depacketizer constructed without errors?
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Did depacketizer catch first packet?
     bool is_started() const;
@@ -111,7 +111,8 @@ private:
     const bool beep_;
 
     bool first_packet_;
-    bool valid_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace audio

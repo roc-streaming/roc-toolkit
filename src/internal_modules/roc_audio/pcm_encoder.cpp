@@ -24,6 +24,10 @@ PcmEncoder::PcmEncoder(const SampleSpec& sample_spec)
     , frame_bit_off_(0) {
 }
 
+status::StatusCode PcmEncoder::init_status() const {
+    return status::StatusOK;
+}
+
 size_t PcmEncoder::encoded_byte_count(size_t num_samples) const {
     return pcm_mapper_.output_byte_count(num_samples * n_chans_);
 }

@@ -42,8 +42,8 @@ public:
     //! Deinitialize.
     ~Receiver();
 
-    //! Check if successfully constructed.
-    bool is_valid();
+    //! Check if the node was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Set interface config.
     ROC_ATTR_NODISCARD bool configure(slot_index_t slot_index,
@@ -144,7 +144,7 @@ private:
     pipeline::ReceiverSlotMetrics slot_metrics_;
     core::Array<pipeline::ReceiverParticipantMetrics, 8> party_metrics_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace node

@@ -32,6 +32,11 @@ public:
         : inner_parser_(inner_parser) {
     }
 
+    //! Check if the object was successfully constructed.
+    virtual status::StatusCode init_status() const {
+        return status::StatusOK;
+    }
+
     //! Parse packet from buffer.
     virtual bool parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer) {
         if (buffer.size() < sizeof(PayloadID)) {

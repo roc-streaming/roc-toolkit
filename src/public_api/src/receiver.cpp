@@ -13,6 +13,7 @@
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_node/receiver.h"
+#include "roc_status/code_to_str.h"
 
 using namespace roc;
 
@@ -53,8 +54,9 @@ int roc_receiver_open(roc_context* context,
         return -1;
     }
 
-    if (!imp_receiver->is_valid()) {
-        roc_log(LogError, "roc_receiver_open(): can't initialize receiver");
+    if (imp_receiver->init_status() != status::StatusOK) {
+        roc_log(LogError, "roc_receiver_open(): can't initialize receiver: status=%s",
+                status::code_to_str(imp_receiver->init_status()));
         return -1;
     }
 

@@ -28,7 +28,7 @@ TEST(context, reference_counting) {
     ContextConfig context_config;
     Context context(context_config, arena);
 
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
     CHECK(context.getref() == 0);
 
     {

@@ -9,6 +9,7 @@
 #include "roc_pipeline/receiver_source.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace pipeline {
@@ -25,14 +26,14 @@ ReceiverSource::ReceiverSource(const ReceiverSourceConfig& source_config,
     , frame_factory_(frame_buffer_pool)
     , arena_(arena)
     , frame_reader_(NULL)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     source_config_.deduce_defaults();
 
     audio::IFrameReader* frm_reader = NULL;
 
     mixer_.reset(new (mixer_) audio::Mixer(
         frame_factory_, source_config.common.output_sample_spec, true));
-    if (!mixer_ || !mixer_->is_valid()) {
+    if ((init_status_ = mixer_->init_status()) != status::StatusOK) {
         return;
     }
     frm_reader = mixer_.get();
@@ -46,7 +47,7 @@ ReceiverSource::ReceiverSource(const ReceiverSourceConfig& source_config,
         pcm_mapper_.reset(new (pcm_mapper_) audio::PcmMapperReader(
             *frm_reader, frame_factory_, in_spec,
             source_config_.common.output_sample_spec));
-        if (!pcm_mapper_ || !pcm_mapper_->is_valid()) {
+        if ((init_status_ = pcm_mapper_->init_status()) != status::StatusOK) {
             return;
         }
         frm_reader = pcm_mapper_.get();
@@ -56,26 +57,22 @@ ReceiverSource::ReceiverSource(const ReceiverSourceConfig& source_config,
         profiler_.reset(new (profiler_) audio::ProfilingReader(
             *frm_reader, arena, source_config_.common.output_sample_spec,
             source_config_.common.profiler));
-        if (!profiler_ || !profiler_->is_valid()) {
+        if ((init_status_ = profiler_->init_status()) != status::StatusOK) {
             return;
         }
         frm_reader = profiler_.get();
     }
 
-    if (!frm_reader) {
-        return;
-    }
-
     frame_reader_ = frm_reader;
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool ReceiverSource::is_valid() const {
-    return valid_;
+status::StatusCode ReceiverSource::init_status() const {
+    return init_status_;
 }
 
 ReceiverSlot* ReceiverSource::create_slot(const ReceiverSlotConfig& slot_config) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_log(LogInfo, "receiver source: adding slot");
 
@@ -83,8 +80,10 @@ ReceiverSlot* ReceiverSource::create_slot(const ReceiverSlotConfig& slot_config)
         new (arena_) ReceiverSlot(source_config_, slot_config, state_tracker_, *mixer_,
                                   encoding_map_, packet_factory_, frame_factory_, arena_);
 
-    if (!slot || !slot->is_valid()) {
-        roc_log(LogError, "receiver source: can't create slot");
+    if (!slot || slot->init_status() != status::StatusOK) {
+        roc_log(LogError, "receiver source: can't create slot: status=%s",
+                status::code_to_str(slot->init_status()));
+        // TODO(gh-183): forward status
         return NULL;
     }
 
@@ -93,7 +92,7 @@ ReceiverSlot* ReceiverSource::create_slot(const ReceiverSlotConfig& slot_config)
 }
 
 void ReceiverSource::delete_slot(ReceiverSlot* slot) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_log(LogInfo, "receiver source: removing slot");
 
@@ -105,7 +104,7 @@ size_t ReceiverSource::num_sessions() const {
 }
 
 core::nanoseconds_t ReceiverSource::refresh(core::nanoseconds_t current_time) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if_msg(current_time <= 0,
                      "receiver source: invalid timestamp:"
@@ -175,7 +174,7 @@ bool ReceiverSource::has_clock() const {
 }
 
 void ReceiverSource::reclock(core::nanoseconds_t playback_time) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if_msg(playback_time <= 0,
                      "receiver source: invalid timestamp:"
@@ -189,7 +188,7 @@ void ReceiverSource::reclock(core::nanoseconds_t playback_time) {
 }
 
 bool ReceiverSource::read(audio::Frame& frame) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return frame_reader_->read(frame);
 }

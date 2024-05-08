@@ -64,7 +64,7 @@ TEST_GROUP(mixer) {};
 
 TEST(mixer, no_readers) {
     Mixer mixer(frame_factory, sample_spec, true);
-    CHECK(mixer.is_valid());
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     expect_output(mixer, BufSz, 0);
 }
@@ -73,7 +73,7 @@ TEST(mixer, one_reader) {
     test::MockReader reader;
 
     Mixer mixer(frame_factory, sample_spec, true);
-    CHECK(mixer.is_valid());
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     mixer.add_input(reader);
 
@@ -87,7 +87,7 @@ TEST(mixer, one_reader_large) {
     test::MockReader reader;
 
     Mixer mixer(frame_factory, sample_spec, true);
-    CHECK(mixer.is_valid());
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     mixer.add_input(reader);
 
@@ -102,7 +102,7 @@ TEST(mixer, two_readers) {
     test::MockReader reader2;
 
     Mixer mixer(frame_factory, sample_spec, true);
-    CHECK(mixer.is_valid());
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     mixer.add_input(reader1);
     mixer.add_input(reader2);
@@ -121,7 +121,7 @@ TEST(mixer, remove_reader) {
     test::MockReader reader2;
 
     Mixer mixer(frame_factory, sample_spec, true);
-    CHECK(mixer.is_valid());
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     mixer.add_input(reader1);
     mixer.add_input(reader2);
@@ -151,7 +151,7 @@ TEST(mixer, clamp) {
     test::MockReader reader2;
 
     Mixer mixer(frame_factory, sample_spec, true);
-    CHECK(mixer.is_valid());
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     mixer.add_input(reader1);
     mixer.add_input(reader2);
@@ -182,7 +182,7 @@ TEST(mixer, flags) {
     test::MockReader reader2;
 
     Mixer mixer(frame_factory, sample_spec, true);
-    CHECK(mixer.is_valid());
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     mixer.add_input(reader1);
     mixer.add_input(reader2);
@@ -213,7 +213,7 @@ TEST(mixer, timestamps_one_reader) {
     test::MockReader reader;
 
     Mixer mixer(frame_factory, sample_spec, true);
-    CHECK(mixer.is_valid());
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     mixer.add_input(reader);
 
@@ -242,7 +242,7 @@ TEST(mixer, timestamps_two_readers) {
     test::MockReader reader2;
 
     Mixer mixer(frame_factory, sample_spec, true);
-    CHECK(mixer.is_valid());
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     mixer.add_input(reader1);
     mixer.add_input(reader2);
@@ -280,7 +280,7 @@ TEST(mixer, timestamps_partial) {
     test::MockReader reader3;
 
     Mixer mixer(frame_factory, sample_spec, true);
-    CHECK(mixer.is_valid());
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     mixer.add_input(reader1);
     mixer.add_input(reader2);
@@ -327,7 +327,7 @@ TEST(mixer, timestamps_no_overflow) {
     test::MockReader reader2;
 
     Mixer mixer(frame_factory, sample_spec, true);
-    CHECK(mixer.is_valid());
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     mixer.add_input(reader1);
     mixer.add_input(reader2);
@@ -363,7 +363,7 @@ TEST(mixer, timestamps_disabled) {
     test::MockReader reader2;
 
     Mixer mixer(frame_factory, sample_spec, false);
-    CHECK(mixer.is_valid());
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     reader1.enable_timestamps(start_ts, sample_spec);
     reader2.enable_timestamps(start_ts, sample_spec);

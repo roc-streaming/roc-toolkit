@@ -40,14 +40,14 @@ namespace fec {
 class OpenfecDecoder : public IBlockDecoder, public core::NonCopyable<> {
 public:
     //! Initialize.
-    explicit OpenfecDecoder(const CodecConfig& config,
-                            packet::PacketFactory& packet_factory,
-                            core::IArena& arena);
+    OpenfecDecoder(const CodecConfig& config,
+                   packet::PacketFactory& packet_factory,
+                   core::IArena& arena);
 
     virtual ~OpenfecDecoder();
 
-    //! Check if object is successfully constructed.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    virtual status::StatusCode init_status() const;
 
     //! Get the maximum number of encoding symbols for the scheme being used.
     virtual size_t max_block_length() const;
@@ -130,7 +130,7 @@ private:
 
     size_t max_block_length_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace fec

@@ -35,7 +35,7 @@ OpenfecDecoder::OpenfecDecoder(const CodecConfig& config,
     , status_(arena)
     , has_new_packets_(false)
     , decoding_finished_(false)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     if (config.scheme == packet::FEC_ReedSolomon_M8) {
         roc_log(LogDebug, "openfec decoder: initializing: codec=rs m=%u",
                 (unsigned)config.rs_m);
@@ -63,7 +63,7 @@ OpenfecDecoder::OpenfecDecoder(const CodecConfig& config,
 
     of_verbosity = 0;
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
 OpenfecDecoder::~OpenfecDecoder() {
@@ -72,18 +72,18 @@ OpenfecDecoder::~OpenfecDecoder() {
     }
 }
 
-bool OpenfecDecoder::is_valid() const {
-    return valid_;
+status::StatusCode OpenfecDecoder::init_status() const {
+    return init_status_;
 }
 
 size_t OpenfecDecoder::max_block_length() const {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return max_block_length_;
 }
 
 bool OpenfecDecoder::begin(size_t sblen, size_t rblen, size_t payload_size) {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (!resize_tabs_(sblen + rblen)) {
         return false;
@@ -101,7 +101,7 @@ bool OpenfecDecoder::begin(size_t sblen, size_t rblen, size_t payload_size) {
 }
 
 void OpenfecDecoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (index >= sblen_ + rblen_) {
         roc_panic("openfec decoder: index out of bounds: index=%lu size=%lu",
@@ -143,7 +143,7 @@ void OpenfecDecoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
 }
 
 core::Slice<uint8_t> OpenfecDecoder::repair(size_t index) {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (!buff_tab_[index]) {
         update_();

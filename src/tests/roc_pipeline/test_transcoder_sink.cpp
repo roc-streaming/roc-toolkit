@@ -81,7 +81,7 @@ TEST(transcoder_sink, null) {
     init(Rate, Chans, Rate, Chans);
 
     TranscoderSink transcoder(make_config(), NULL, buffer_pool, arena);
-    CHECK(transcoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     test::FrameWriter frame_writer(transcoder, frame_factory);
 
@@ -98,7 +98,7 @@ TEST(transcoder_sink, write) {
     test::MockSink mock_sink(output_sample_spec);
 
     TranscoderSink transcoder(make_config(), &mock_sink, buffer_pool, arena);
-    CHECK(transcoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     test::FrameWriter frame_writer(transcoder, frame_factory);
 
@@ -122,7 +122,7 @@ TEST(transcoder_sink, frame_size_small) {
     test::MockSink mock_sink(output_sample_spec);
 
     TranscoderSink transcoder(make_config(), &mock_sink, buffer_pool, arena);
-    CHECK(transcoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     test::FrameWriter frame_writer(transcoder, frame_factory);
 
@@ -146,7 +146,7 @@ TEST(transcoder_sink, frame_size_large) {
     test::MockSink mock_sink(output_sample_spec);
 
     TranscoderSink transcoder(make_config(), &mock_sink, buffer_pool, arena);
-    CHECK(transcoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     test::FrameWriter frame_writer(transcoder, frame_factory);
 
@@ -166,7 +166,7 @@ TEST(transcoder_sink, channel_mapping_stereo_to_mono) {
     test::MockSink mock_sink(output_sample_spec);
 
     TranscoderSink transcoder(make_config(), &mock_sink, buffer_pool, arena);
-    CHECK(transcoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     test::FrameWriter frame_writer(transcoder, frame_factory);
 
@@ -186,7 +186,7 @@ TEST(transcoder_sink, channel_mapping_mono_to_stereo) {
     test::MockSink mock_sink(output_sample_spec);
 
     TranscoderSink transcoder(make_config(), &mock_sink, buffer_pool, arena);
-    CHECK(transcoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     test::FrameWriter frame_writer(transcoder, frame_factory);
 
