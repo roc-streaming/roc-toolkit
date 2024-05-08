@@ -551,7 +551,7 @@ def link_pr(org, repo, pr_number, action, no_issue):
 
     run_cmd([
         'git', 'filter-branch', '-f', '--msg-filter',
-        f"sed -r -e '1s,^(gh-[0-9]+ +|{org}/[^ ]+ +)?,{commit_prefix},'"+
+        f"sed -r -e '1s,^(gh-[0-9]+ +|{org}/[^ ]+ +|[Ii]ssue *[0-9]+:? +)?,{commit_prefix},'"+
           " -e '1s,\s*\(#[0-9]+\)$,,'",
         f'{base_sha}..HEAD',
         ],
