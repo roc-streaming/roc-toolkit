@@ -47,7 +47,7 @@ enum ResamplerProfile {
     //! Medium quality, medium speed.
     ResamplerProfile_Medium,
 
-    //! Hight quality, low speed.
+    //! High quality, low speed.
     ResamplerProfile_High
 };
 

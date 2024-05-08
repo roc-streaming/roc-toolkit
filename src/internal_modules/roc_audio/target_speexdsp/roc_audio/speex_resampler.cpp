@@ -149,7 +149,7 @@ bool SpeexResampler::set_scaling(size_t input_rate, size_t output_rate, float mu
     //
     // Unfortunately, speex does not allow numerator and denumerator to be larger
     // than certain value. If it happens, either speex_resampler_set_rate_frac()
-    // returns error, or it succeedes, but overflows happen during resampling.
+    // returns error, or it succeeds, but overflows happen during resampling.
     //
     // To work around this, we use floating-point `base` and compute maximum "safe"
     // value which will not cause overflows in speex.
@@ -241,7 +241,7 @@ size_t SpeexResampler::pop_output(sample_t* out_buf, size_t out_bufsz) {
         // required latency.
         //
         // Here we adjust speex behavior to be in-line with other backends. It allows
-        // us to perform latency and timestamp calculations uniformely for all backends.
+        // us to perform latency and timestamp calculations uniformly for all backends.
         if (initial_out_countdown_) {
             const size_t n_samples =
                 std::min((size_t)remaining_out, initial_out_countdown_);

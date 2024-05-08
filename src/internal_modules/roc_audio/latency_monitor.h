@@ -51,7 +51,7 @@ namespace audio {
 //!  - after adding frame to playback buffer, pipeline invokes reclock() method;
 //!    it calculates difference between capture and playback time of the frame,
 //!    which is E2E latency
-//!  - latency monitor has an instance of LatencyTuner; it continously passes
+//!  - latency monitor has an instance of LatencyTuner; it continuously passes
 //!    calculated latencies to it, and obtains scaling factor for resampler
 //!  - latency monitor has a reference to resampler, and periodically passes
 //!    updated scaling factor to it

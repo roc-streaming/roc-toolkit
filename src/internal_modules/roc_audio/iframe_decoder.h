@@ -62,7 +62,7 @@ public:
     //!
     //! @note
     //!  @p frame_position defines the position of the frame in the encoded stream.
-    //!  Decoder updates the decoded stream possition according to @p frame_position,
+    //!  Decoder updates the decoded stream position according to @p frame_position,
     //!  but not necessary to the same value. Encoded and decoded stream positions
     //!  may be slightly different, depending on the codec implementation.
     virtual void begin(packet::stream_timestamp_t frame_position,

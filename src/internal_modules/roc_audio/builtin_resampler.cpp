@@ -457,12 +457,12 @@ sample_t BuiltinResampler::resample_(const size_t channel_offset) {
     fixedpoint_t qt_sinc_cur =
         (fixedpoint_t)((qt_cur_ * (long_fixedpoint_t)qt_sinc_step_) >> FRACT_BIT_COUNT);
 
-    // sinc_table defined in positive half-plane, so at the begining of the window
+    // sinc_table defined in positive half-plane, so at the beginning of the window
     // qt_sinc_cur starts decreasing and after we cross 0 it will be increasing
     // till the end of the window.
     fixedpoint_t qt_sinc_inc = qt_sinc_step_;
 
-    // Compute fractional part of time position at the begining. It wont change during
+    // Compute fractional part of time position at the beginning. It wont change during
     // the run.
     float f_sinc_cur_fract = fractional(qt_sinc_cur << window_interp_bits_);
     sample_t accumulator = 0;

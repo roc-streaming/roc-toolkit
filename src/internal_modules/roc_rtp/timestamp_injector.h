@@ -23,7 +23,7 @@ namespace rtp {
 
 //! Fills capture timestamps in rtp packets.
 //! @remarks
-//!  Gets a pair of a reference unix-time stamp (in ns) and correspondant rtp timestamp,
+//!  Gets a pair of a reference unix-time stamp (in ns) and correspondent rtp timestamp,
 //!  and approximates this dependency to a passing packet.
 class TimestampInjector : public packet::IReader, public core::NonCopyable<> {
 public:

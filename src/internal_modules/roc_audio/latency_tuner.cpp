@@ -36,7 +36,7 @@ void LatencyConfig::deduce_defaults(core::nanoseconds_t default_target_latency,
                 //
                 // If latency is high, we assume the jitter may be also high. In
                 // this case use gradual profile because it can handle high jitter
-                // mich better.
+                // much better.
                 tuner_profile =
                     target_latency > 0 && target_latency < 30 * core::Millisecond
                     ? LatencyTunerProfile_Responsive
@@ -352,7 +352,7 @@ bool LatencyTuner::check_bounds_(const packet::stream_timestamp_diff_t latency) 
         && niq_stalling_ > max_stalling_ && max_stalling_ > 0;
 
     if (latency < min_latency_ && is_stalling) {
-        // There are two possible reasons why queue latency becomes lower than mininmum:
+        // There are two possible reasons why queue latency becomes lower than minimum:
         //  1. either we were not able to compensate clock drift (or compensation is
         //     disabled) and queue slowly exhausted,
         //  2. or there is a burst packet delay or drop, which led to sharp decrease
@@ -367,7 +367,7 @@ bool LatencyTuner::check_bounds_(const packet::stream_timestamp_diff_t latency) 
         //
         // To distinguish between the cases, we check network queue stalling metric,
         // which shows delay since last received packet. If there were no packets
-        // during notabe amount of time, we assume that the second case takes place.
+        // during notable amount of time, we assume that the second case takes place.
         return true;
     }
 

@@ -49,7 +49,7 @@ namespace rtcp {
 //!
 //! For more details about streams and reports, @see IParticipant.
 //!
-//! This is top-level class of roc_rtcp module, glueing together other components:
+//! This is top-level class of roc_rtcp module, gluing together other components:
 //!   - rtcp::Traverser, to iterate through blocks of compound RTCP packets
 //!   - rtcp::Builder, to construct compound RTCP packets
 //!   - rtcp::Reporter, to maintain hash table of active streams, process and generate
@@ -85,7 +85,7 @@ public:
     core::nanoseconds_t generation_deadline(core::nanoseconds_t current_time);
 
     //! Generate and send report packet(s).
-    //! Should be called accroding to generation_deadline().
+    //! Should be called according to generation_deadline().
     //! @p current_time is current time in nanoseconds since Unix epoch.
     //! Invokes IParticipant methods during generation.
     ROC_ATTR_NODISCARD status::StatusCode

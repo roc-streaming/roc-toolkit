@@ -261,7 +261,7 @@ private:
         char cname[rtcp::MaxCnameLen + 1];
 
         // Sender main source ID.
-        // Set to one of the identifiers fomr source_nodes list and
+        // Set to one of the identifiers from source_nodes list and
         // identifies source provided to add_session().
         bool has_main_source_id;
         packet::stream_source_t main_source_id;

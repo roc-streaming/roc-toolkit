@@ -55,7 +55,7 @@ public:
     //! Get underlying object.
     T* operator->() const {
         if (ptr_ == NULL) {
-            roc_panic("optional: attempt to dereference unitialized object");
+            roc_panic("optional: attempt to dereference uninitialized object");
         }
         return ptr_;
     }
@@ -63,7 +63,7 @@ public:
     //! Get underlying reference.
     T& operator*() const {
         if (ptr_ == NULL) {
-            roc_panic("optional: attempt to dereference unitialized object");
+            roc_panic("optional: attempt to dereference uninitialized object");
         }
         return *ptr_;
     }

@@ -733,7 +733,7 @@ bool Reader::update_repair_block_size_(size_t new_blen) {
         return true;
     }
 
-    // shoud not happen: sblen should be validated and updated already
+    // should not happen: sblen should be validated and updated already
     roc_panic_if_not(new_blen > cur_sblen);
 
     const size_t new_rblen = new_blen - cur_sblen;

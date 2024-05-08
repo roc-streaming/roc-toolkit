@@ -1145,7 +1145,7 @@ status::StatusCode Reporter::rebuild_index_() {
         stream->local_recv_report = &local_recv_reports_[recv_idx];
     }
 
-    // Recently rebuilt addreses are moved to the front of the list.
+    // Recently rebuilt addresses are moved to the front of the list.
     // We iterate from back to front and stop when we find first address which
     // was touched during current rebuild. We consider all addresses not
     // touched during rebuild to be not relevant anymore, and remove them.
@@ -1249,7 +1249,7 @@ void Reporter::detect_collision_(packet::stream_source_t source_id) {
 
     // If stream has same SSRC, but not CNAME, we assume that we found SSRC collision.
     // We should first send BYE message with old SSRC, and then change SSRC to a new
-    // random value. We achive this in two steps:
+    // random value. We achieve this in two steps:
     //  - During generation, we return true from need_boodbye() to tell rtcp::Communicator
     //    to call generate_goodbye() and to send BYE message.
     //  - After generation is completed, we call resolve_collision_(), that finishes

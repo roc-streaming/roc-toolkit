@@ -38,7 +38,7 @@ public:
     //! @remarks
     //!  Resizes the given @p buffer so that it can fit the @p packet headers and
     //!  payload. If the packet payload contains an inner packet, calls the inner
-    //!  composer as well The @p payload_size referes to the payload of the most
+    //!  composer as well The @p payload_size refers to the payload of the most
     //!  inner packet. Modifies the @p packet so that its payload fields point to
     //!  the appropriate parts of the @p buffer.
     //! @returns
@@ -62,7 +62,7 @@ public:
     //!  Formats @p packet headers and payloads to the buffer attached to it during
     //!  a previous prepare() call.
     //! @returns
-    //!  true if the packet was successfully composed or false if an error occured.
+    //!  true if the packet was successfully composed or false if an error occurred.
     virtual bool compose(Packet& packet) = 0;
 };
 

@@ -422,7 +422,7 @@ private:
     // Interface implemented by local sender/receiver pipeline.
     IParticipant& participant_;
 
-    // Defines whether participant uses a single static destinatation address
+    // Defines whether participant uses a single static destination address
     // for all all reports, or otherwise sends individual reports to dynamically
     // discovered remote addresses.
     ParticipantReportMode participant_report_mode_;
@@ -451,8 +451,8 @@ private:
     core::SlabPool<Address, PreallocatedAddresses> address_pool_;
     core::Hashmap<Address, PreallocatedAddresses> address_map_;
 
-    // List of all addresss (from address map) ordered by rebuild time.
-    // Recently rebuilt addreses are moved to the front of the list.
+    // List of all addresses (from address map) ordered by rebuild time.
+    // Recently rebuilt addresses are moved to the front of the list.
     // This list always contains all existing addresses.
     core::List<Address, core::NoOwnership> address_lru_;
 

@@ -22,8 +22,8 @@ namespace rtcp {
 //!
 //! @remarks
 //!  Unlike other parsers, this one just records the buffer into RTCP part of the packet
-//!  and doesn't inspect the packet itself. The actual parsing is doing later in
-//!  rtcp::Session using rtcp::Traverser.
+//!  and doesn't inspect the packet itself. The actual parsing is done later in
+//!  rtcp::Communicator using rtcp::Traverser.
 class Parser : public packet::IParser, public core::NonCopyable<> {
 public:
     //! Initialization.
