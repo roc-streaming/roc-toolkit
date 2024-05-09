@@ -1,5 +1,5 @@
 #!/usr/bin/make -f
-export DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+export DEB_HOST_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
 export DEB_BUILD_GNU_TYPE
 export DEB_BUILD_OPTIONS = nocheck
 export DEB_DH_SHLIBDEPS_ARGS_ALL = -- --ignore-missing-info -l/usr/lib/${DEB_BUILD_GNU_TYPE}/pulseaudio --warnings=5 -v
@@ -11,11 +11,11 @@ override_dh_auto_clean:
 	scons clean
 
 override_dh_auto_build:
-	scons --prefix=/usr --host=${DEB_HOST_MULTIARCH} \
+	scons --prefix=/usr --host=${DEB_HOST_GNU_TYPE} \
 		--build-3rdparty=libuv,libunwind,speexdsp,sox,openssl,openfec
 
 override_dh_auto_install:
-	scons --prefix=/usr --host=${DEB_HOST_MULTIARCH} \
+	scons --prefix=/usr --host=${DEB_HOST_GNU_TYPE} \
 		--build-3rdparty=libuv,libunwind,speexdsp,sox,openssl,openfec \
 		install DESTDIR=debian/tmp
 
