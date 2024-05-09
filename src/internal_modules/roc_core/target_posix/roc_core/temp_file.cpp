@@ -31,28 +31,28 @@ TempFile::TempFile(const char* name) {
     }
 
     if (snprintf(dir_, sizeof(dir_), "%s/rocXXXXXX", tempdir) < 0) {
-        roc_log(LogError, "temp file: snprintf: %s", errno_to_str().c_str());
+        roc_log(LogError, "temp file: snprintf(): %s", errno_to_str().c_str());
         return;
     }
 
     if (mkdtemp(dir_) == NULL) {
-        roc_log(LogError, "temp file: mkdtemp: %s: %s", dir_, errno_to_str().c_str());
+        roc_log(LogError, "temp file: mkdtemp(): %s: %s", dir_, errno_to_str().c_str());
         return;
     }
 
     if (snprintf(file_, sizeof(file_), "%s/%s", dir_, name) < 0) {
-        roc_log(LogError, "temp file: snprintf: %s", errno_to_str().c_str());
+        roc_log(LogError, "temp file: snprintf(): %s", errno_to_str().c_str());
         return;
     }
 
     int fd = open(file_, O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC, 0600);
     if (fd == -1) {
-        roc_log(LogError, "temp file: open: %s: %s", file_, errno_to_str().c_str());
+        roc_log(LogError, "temp file: open(): %s: %s", file_, errno_to_str().c_str());
         return;
     }
 
     if (close(fd) == -1) {
-        roc_log(LogError, "temp file: close: %s: %s", file_, errno_to_str().c_str());
+        roc_log(LogError, "temp file: close(): %s: %s", file_, errno_to_str().c_str());
     }
 
     roc_log(LogDebug, "temp file: created %s", file_);
@@ -63,13 +63,14 @@ TempFile::~TempFile() {
         roc_log(LogDebug, "temp file: removing %s", file_);
 
         if (unlink(file_) == -1) {
-            roc_log(LogError, "temp file: unlink: %s: %s", file_, errno_to_str().c_str());
+            roc_log(LogError, "temp file: unlink(): %s: %s", file_,
+                    errno_to_str().c_str());
         }
     }
 
     if (*dir_) {
         if (rmdir(dir_) == -1) {
-            roc_log(LogError, "temp file: rmdir: %s: %s", dir_, errno_to_str().c_str());
+            roc_log(LogError, "temp file: rmdir(): %s: %s", dir_, errno_to_str().c_str());
         }
     }
 }
