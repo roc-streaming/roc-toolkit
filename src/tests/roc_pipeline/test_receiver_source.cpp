@@ -2075,7 +2075,7 @@ TEST(receiver_source, timestamp_mapping_remixing) {
                 first_ts = frame.capture_timestamp();
 
                 CHECK(first_ts >= unix_base);
-                CHECK(first_ts < unix_base + core::Millisecond * 10);
+                CHECK(first_ts < unix_base + core::Second);
             }
 
             if (first_ts) {

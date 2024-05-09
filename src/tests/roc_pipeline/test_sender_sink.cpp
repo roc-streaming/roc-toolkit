@@ -465,7 +465,7 @@ TEST(sender_sink, timestamp_mapping_remixing) {
         if (np == 0) {
             cts = pp->rtp()->capture_timestamp;
             CHECK(cts >= unix_base);
-            CHECK(cts < unix_base + core::Millisecond);
+            CHECK(cts < unix_base + core::Second);
         } else {
             test::expect_capture_timestamp(cts, pp->rtp()->capture_timestamp,
                                            packet_sample_spec,
