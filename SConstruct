@@ -449,7 +449,7 @@ if set(COMMAND_LINE_TARGETS) \
 meta = type('meta', (), {
     field: '' for field in ('build host toolchain platform variant thirdparty_variant '
                             'compiler compiler_ver '
-                            'c11_support fpic_support').split()})
+                            'c11_support gnu_toolchain').split()})
 
 # toolchain triple of the local system (where we're building), e.g. x86_64-pc-linux-gnu
 meta.build = GetOption('build')
@@ -566,6 +566,8 @@ if not meta.platform:
         meta.platform = 'linux'
     elif 'darwin' in meta.host:
         meta.platform = 'darwin'
+    elif 'gnu' in meta.host:
+        meta.platform = 'unix'
 
 if not meta.platform and meta.host == meta.build:
     if os.name == 'posix':
@@ -649,11 +651,6 @@ if meta.platform == 'darwin':
     conf.FindTool('LIPO', [''], [('lipo', None)], required=False)
     conf.FindTool('INSTALL_NAME_TOOL', [''], [('install_name_tool', None)], required=False)
 
-if meta.compiler in ['gcc', 'clang']:
-    meta.fpic_support = True
-else:
-    meta.fpic_support = conf.CheckCompilerOptionSupported('-fPIC', 'cxx')
-
 meta.c11_support = False
 if not GetOption('disable_c11'):
     if meta.compiler == 'gcc':
@@ -662,6 +659,14 @@ if not GetOption('disable_c11'):
         meta.c11_support = meta.compiler_ver[:2] >= (7, 0)
     elif meta.compiler == 'clang' and meta.platform != 'darwin':
         meta.c11_support = meta.compiler_ver[:2] >= (3, 6)
+
+# true if we have full-featured GNU toolchain with all needed compiler and linker options
+# note that macOS is excluded
+meta.gnu_toolchain = False
+if meta.platform in ['linux', 'unix']:
+    meta.gnu_toolchain = 'gnu' in meta.host
+elif meta.platform in ['android']:
+    meta.gnu_toolchain = True
 
 conf.env['ROC_SYSTEM_BINDIR'] = GetOption('bindir')
 conf.env['ROC_SYSTEM_INCDIR'] = GetOption('incdir')
@@ -767,14 +772,15 @@ else:
             'target_posix_pc',
         ])
 
-    if meta.platform in ['linux', 'unix', 'android']:
+    if meta.platform in ['linux', 'android']:
         env.Append(ROC_TARGETS=[
             'target_posix_ext',
         ])
 
-    if (meta.platform in ['linux', 'unix'] and 'gnu' in meta.host) or \
-      meta.platform in ['android', 'darwin']:
+    if meta.platform in ['linux', 'android' 'darwin'] or meta.gnu_toolchain:
         env.Append(ROC_TARGETS=[
+            # GNU C++ Standard Library (libstdc++), or compatible, like
+            # LLVM C++ Standard Library (libc++)
             'target_gnu',
         ])
 
@@ -872,7 +878,8 @@ env.Append(CPPDEFINES=[
     ('__STDC_LIMIT_MACROS', '1'),
 ])
 
-if 'target_posix' in env['ROC_TARGETS'] and (meta.platform not in ['darwin', 'unix'] or 'gnu' in meta.host):
+if 'target_posix' in env['ROC_TARGETS'] and meta.platform not in ['darwin']:
+    # macOS is special, otherwise rely on _POSIX_C_SOURCE
     env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', env['ROC_POSIX_PLATFORM'])])
 
 if meta.platform in ['darwin']:
@@ -912,7 +919,7 @@ if meta.compiler in ['gcc', 'clang']:
     if meta.platform in ['linux', 'darwin']:
         env.AddManualDependency(libs=['pthread'])
 
-    if meta.platform in ['linux', 'android'] or 'gnu' in meta.host:
+    if meta.platform in ['linux', 'android'] or meta.gnu_toolchain:
         if not GetOption('disable_soversion'):
             subenvs.public_libs['SHLIBSUFFIX'] = '{}.{}'.format(
                 subenvs.public_libs['SHLIBSUFFIX'], env['ROC_SOVER'])
@@ -988,11 +995,10 @@ if meta.compiler in ['cc']:
                 '-O3',
             ]})
 
-    if meta.fpic_support:
-        for var in ['CXXFLAGS', 'CFLAGS']:
-            conf.env.Append(**{var: [
-                '-fPIC',
-            ]})
+    for var in ['CXXFLAGS', 'CFLAGS']:
+        conf.env.Append(**{var: [
+            '-fPIC',
+        ]})
 
 if meta.compiler in ['gcc', 'clang']:
     if GetOption('enable_werror'):
