@@ -8,6 +8,7 @@
 
 #include "roc_core/heap_arena.h"
 #include "roc_core/atomic_ops.h"
+#include "roc_core/log.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/memory_ops.h"
 #include "roc_core/panic.h"
@@ -45,12 +46,17 @@ size_t HeapArena::num_guard_failures() const {
 }
 
 void* HeapArena::allocate(size_t size) {
-    num_allocations_++;
-
     const size_t chunk_size =
         sizeof(ChunkHeader) + sizeof(ChunkCanary) + size + sizeof(ChunkCanary);
 
     ChunkHeader* chunk = (ChunkHeader*)malloc(chunk_size);
+
+    if (!chunk) {
+        roc_log(LogError,
+                "heap arena: allocation failed: chunk_size=%lu payload_size=%lu",
+                (unsigned long)chunk_size, (unsigned long)size);
+        return NULL;
+    }
 
     chunk->owner = this;
 
@@ -63,6 +69,8 @@ void* HeapArena::allocate(size_t size) {
     MemoryOps::prepare_canary(canary_after, sizeof(ChunkCanary));
 
     chunk->size = size;
+
+    num_allocations_++;
 
     return memory;
 }
