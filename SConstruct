@@ -752,17 +752,17 @@ if GetOption('override_targets'):
     for t in GetOption('override_targets').split(','):
         env['ROC_TARGETS'] += ['target_' + t]
 else:
-    if meta.platform in ['linux', 'unix', 'darwin']:
+    if meta.platform in ['linux', 'darwin', 'unix']:
         env.Append(ROC_TARGETS=[
             'target_pc',
         ])
 
-    if meta.platform in ['linux', 'unix', 'darwin', 'android']:
+    if meta.platform in ['linux', 'android', 'darwin', 'unix']:
         env.Append(ROC_TARGETS=[
             'target_posix',
         ])
 
-    if meta.platform in ['linux', 'unix', 'darwin']:
+    if meta.platform in ['linux', 'darwin', 'unix']:
         env.Append(ROC_TARGETS=[
             'target_posix_pc',
         ])
@@ -797,7 +797,7 @@ else:
             'target_libatomic_ops',
         ])
 
-    if meta.platform in ['linux', 'unix', 'darwin'] and not GetOption('disable_libunwind'):
+    if meta.platform in ['linux', 'darwin', 'unix'] and not GetOption('disable_libunwind'):
         env.Append(ROC_TARGETS=[
             'target_libunwind',
         ])
