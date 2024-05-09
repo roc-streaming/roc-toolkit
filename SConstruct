@@ -772,7 +772,7 @@ else:
             'target_posix_pc',
         ])
 
-    if meta.platform in ['linux', 'android']:
+    if meta.platform in ['linux', 'android', 'unix']:
         env.Append(ROC_TARGETS=[
             'target_posix_ext',
         ])
