@@ -1,7 +1,6 @@
 PROJECT_NAME            = "Roc Toolkit internal modules"
 PROJECT_BRIEF           = "Roc Toolkit: real-time audio streaming"
 PROJECT_LOGO            = ../../docs/images/icon80.png
-HTML_HEADER             = ../../docs/doxygen/header.html
 
 QUIET                   = YES
 RECURSIVE               = YES
@@ -11,8 +10,7 @@ STRIP_FROM_PATH         = .
 FILE_PATTERNS           = *.h *.dox
 
 EXCLUDE                 =                         \
-    roc_core/target_posix/roc_core/cpu_traits.h   \
-    roc_audio/pcm_funcs.h
+    roc_core/target_posix/roc_core/cpu_traits.h
 
 FULL_PATH_NAMES         = YES
 SOURCE_BROWSER          = YES
