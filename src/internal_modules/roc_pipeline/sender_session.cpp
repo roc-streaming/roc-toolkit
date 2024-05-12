@@ -264,7 +264,7 @@ core::nanoseconds_t SenderSession::refresh(core::nanoseconds_t current_time) {
         if (has_send_stream()) {
             const status::StatusCode code =
                 rtcp_communicator_->generate_reports(current_time);
-            // TODO(gh-183): forward status
+            // TODO(gh-183): forward status (refresh)
             roc_panic_if(code != status::StatusOK);
         }
 

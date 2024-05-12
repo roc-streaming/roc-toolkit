@@ -95,7 +95,7 @@ SenderEndpoint* SenderSlot::add_endpoint(address::Interface iface,
             if (session_.create_transport_pipeline(source_endpoint_.get(),
                                                    repair_endpoint_.get())
                 != status::StatusOK) {
-                // TODO(gh-183): forward status
+                // TODO(gh-183): forward status (control ops)
                 return NULL;
             }
         }
@@ -111,7 +111,7 @@ SenderEndpoint* SenderSlot::add_endpoint(address::Interface iface,
         if (control_endpoint_) {
             if (session_.create_control_pipeline(control_endpoint_.get())
                 != status::StatusOK) {
-                // TODO(gh-183): forward status
+                // TODO(gh-183): forward status (control ops)
                 return NULL;
             }
         }
@@ -129,19 +129,19 @@ core::nanoseconds_t SenderSlot::refresh(core::nanoseconds_t current_time) {
 
     if (source_endpoint_) {
         const status::StatusCode code = source_endpoint_->pull_packets(current_time);
-        // TODO(gh-183): forward status
+        // TODO(gh-183): forward status (refresh)
         roc_panic_if(code != status::StatusOK);
     }
 
     if (repair_endpoint_) {
         const status::StatusCode code = repair_endpoint_->pull_packets(current_time);
-        // TODO(gh-183): forward status
+        // TODO(gh-183): forward status (refresh)
         roc_panic_if(code != status::StatusOK);
     }
 
     if (control_endpoint_) {
         const status::StatusCode code = control_endpoint_->pull_packets(current_time);
-        // TODO(gh-183): forward status
+        // TODO(gh-183): forward status (refresh)
         roc_panic_if(code != status::StatusOK);
     }
 
@@ -187,7 +187,7 @@ SenderSlot::create_source_endpoint_(address::Protocol proto,
     source_endpoint_.reset(new (source_endpoint_) SenderEndpoint(
         proto, state_tracker_, session_, outbound_address, outbound_writer, arena()));
     if (!source_endpoint_ || source_endpoint_->init_status() != status::StatusOK) {
-        // TODO(gh-183): forward status
+        // TODO(gh-183): forward status (control ops)
         roc_log(LogError, "sender slot: can't create source endpoint");
         source_endpoint_.reset(NULL);
         return NULL;
@@ -223,7 +223,7 @@ SenderSlot::create_repair_endpoint_(address::Protocol proto,
     repair_endpoint_.reset(new (repair_endpoint_) SenderEndpoint(
         proto, state_tracker_, session_, outbound_address, outbound_writer, arena()));
     if (!repair_endpoint_ || repair_endpoint_->init_status() != status::StatusOK) {
-        // TODO(gh-183): forward status
+        // TODO(gh-183): forward status (control ops)
         roc_log(LogError, "sender slot: can't create repair endpoint");
         repair_endpoint_.reset(NULL);
         return NULL;
@@ -248,7 +248,7 @@ SenderSlot::create_control_endpoint_(address::Protocol proto,
     control_endpoint_.reset(new (control_endpoint_) SenderEndpoint(
         proto, state_tracker_, session_, outbound_address, outbound_writer, arena()));
     if (!control_endpoint_ || control_endpoint_->init_status() != status::StatusOK) {
-        // TODO(gh-183): forward status
+        // TODO(gh-183): forward status (control ops)
         roc_log(LogError, "sender slot: can't create control endpoint");
         control_endpoint_.reset(NULL);
         return NULL;

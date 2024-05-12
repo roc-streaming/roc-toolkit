@@ -78,19 +78,19 @@ core::nanoseconds_t ReceiverSlot::refresh(core::nanoseconds_t current_time) {
 
     if (source_endpoint_) {
         const status::StatusCode code = source_endpoint_->pull_packets(current_time);
-        // TODO(gh-183): forward status
+        // TODO(gh-183): forward status (refresh)
         roc_panic_if(code != status::StatusOK);
     }
 
     if (repair_endpoint_) {
         const status::StatusCode code = repair_endpoint_->pull_packets(current_time);
-        // TODO(gh-183): forward status
+        // TODO(gh-183): forward status (refresh)
         roc_panic_if(code != status::StatusOK);
     }
 
     if (control_endpoint_) {
         const status::StatusCode code = control_endpoint_->pull_packets(current_time);
-        // TODO(gh-183): forward status
+        // TODO(gh-183): forward status (refresh)
         roc_panic_if(code != status::StatusOK);
     }
 
@@ -145,7 +145,7 @@ ReceiverSlot::create_source_endpoint_(address::Protocol proto,
         outbound_writer, arena()));
 
     if (!source_endpoint_ || source_endpoint_->init_status() != status::StatusOK) {
-        // TODO(gh-183): forward status
+        // TODO(gh-183): forward status (control ops)
         roc_log(LogError, "receiver slot: can't create source endpoint");
         source_endpoint_.reset(NULL);
         return NULL;
@@ -178,7 +178,7 @@ ReceiverSlot::create_repair_endpoint_(address::Protocol proto,
         outbound_writer, arena()));
 
     if (!repair_endpoint_ || repair_endpoint_->init_status() != status::StatusOK) {
-        // TODO(gh-183): forward status
+        // TODO(gh-183): forward status (control ops)
         roc_log(LogError, "receiver slot: can't create repair endpoint");
         repair_endpoint_.reset(NULL);
         return NULL;
@@ -205,7 +205,7 @@ ReceiverSlot::create_control_endpoint_(address::Protocol proto,
         outbound_writer, arena()));
 
     if (!control_endpoint_ || control_endpoint_->init_status() != status::StatusOK) {
-        // TODO(gh-183): forward status
+        // TODO(gh-183): forward status (control ops)
         roc_log(LogError, "receiver slot: can't create control endpoint");
         control_endpoint_.reset(NULL);
         return NULL;
@@ -213,7 +213,7 @@ ReceiverSlot::create_control_endpoint_(address::Protocol proto,
 
     if (session_group_.create_control_pipeline(control_endpoint_.get())
         != status::StatusOK) {
-        // TODO(gh-183): forward status
+        // TODO(gh-183): forward status (control ops)
         roc_log(LogError, "receiver slot: can't create control pipeline");
         control_endpoint_.reset(NULL);
         return NULL;

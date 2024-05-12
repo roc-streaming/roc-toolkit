@@ -83,7 +83,7 @@ ReceiverSlot* ReceiverSource::create_slot(const ReceiverSlotConfig& slot_config)
     if (!slot || slot->init_status() != status::StatusOK) {
         roc_log(LogError, "receiver source: can't create slot: status=%s",
                 status::code_to_str(slot->init_status()));
-        // TODO(gh-183): forward status
+        // TODO(gh-183): forward status (control ops)
         return NULL;
     }
 

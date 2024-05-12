@@ -250,7 +250,7 @@ uint64_t SenderLoop::tid_imp() const {
 status::StatusCode SenderLoop::process_subframe_imp(audio::Frame& frame) {
     const status::StatusCode status = sink_.write(frame);
 
-    // TODO(gh-183): forward status from refresh()
+    // TODO(gh-183): forward status (refresh)
     // TODO: handle returned deadline and schedule refresh
     sink_.refresh(core::timestamp(core::ClockUnix));
 

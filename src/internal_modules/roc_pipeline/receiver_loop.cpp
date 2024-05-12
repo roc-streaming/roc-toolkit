@@ -255,7 +255,7 @@ uint64_t ReceiverLoop::tid_imp() const {
 }
 
 status::StatusCode ReceiverLoop::process_subframe_imp(audio::Frame& frame) {
-    // TODO(gh-183): forward status from refresh()
+    // TODO(gh-183): forward status (refresh)
     // TODO: handle returned deadline and schedule refresh
     source_.refresh(core::timestamp(core::ClockUnix));
 

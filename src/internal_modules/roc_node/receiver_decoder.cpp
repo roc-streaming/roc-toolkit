@@ -44,14 +44,14 @@ ReceiverDecoder::ReceiverDecoder(Context& context,
     pipeline::ReceiverLoop::Tasks::CreateSlot slot_task(slot_config);
     if (!pipeline_.schedule_and_wait(slot_task)) {
         roc_log(LogError, "receiver decoder node: failed to create slot");
-        // TODO(gh-183): forward status
+        // TODO(gh-183): forward status (control ops)
         return;
     }
 
     slot_ = slot_task.get_handle();
     if (!slot_) {
         roc_log(LogError, "receiver decoder node: failed to create slot");
-        // TODO(gh-183): forward status
+        // TODO(gh-183): forward status (control ops)
         return;
     }
 

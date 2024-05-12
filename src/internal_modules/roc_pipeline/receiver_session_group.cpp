@@ -104,7 +104,7 @@ ReceiverSessionGroup::refresh_sessions(core::nanoseconds_t current_time) {
         // in particular query_recv_streams().
         const status::StatusCode code =
             rtcp_communicator_->generate_reports(current_time);
-        // TODO(gh-183): forward status
+        // TODO(gh-183): forward status (refresh)
         roc_panic_if(code != status::StatusOK);
 
         next_deadline = rtcp_communicator_->generation_deadline(current_time);
@@ -337,7 +337,7 @@ ReceiverSessionGroup::route_transport_packet_(const packet::PacketPtr& packet) {
         return create_session_(packet);
     }
 
-    // TODO(gh-183): return status
+    // TODO(gh-183): return status (routing)
     return status::StatusOK;
 }
 
@@ -367,14 +367,14 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
     if (!packet->rtp()) {
         roc_log(LogError,
                 "session group: can't create session, unexpected non-rtp packet");
-        // TODO(gh-183): return status
+        // TODO(gh-183): return status (control ops)
         return status::StatusOK;
     }
 
     if (!packet->udp()) {
         roc_log(LogError,
                 "session group: can't create session, unexpected non-udp packet");
-        // TODO(gh-183): return status
+        // TODO(gh-183): return status (routing)
         return status::StatusOK;
     }
 
@@ -406,7 +406,7 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
             LogError,
             "session group: can't create session, can't handle first packet: status=%s",
             status::code_to_str(code));
-        // TODO(gh-183): handle and return status
+        // TODO(gh-183): handle and return status (routing)
         return status::StatusOK;
     }
 
@@ -415,7 +415,7 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
         roc_log(LogError,
                 "session group: can't create session, can't create route: status=%s",
                 status::code_to_str(code));
-        // TODO(gh-183): handle and return status
+        // TODO(gh-183): handle and return status (routing)
         return status::StatusOK;
     }
 
