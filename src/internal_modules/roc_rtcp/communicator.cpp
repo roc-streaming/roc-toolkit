@@ -478,8 +478,8 @@ bool Communicator::continue_packet_generation_() {
         }
 
         if (dest_addr_index_ >= dest_addr_count_) {
-            // We've reported all blocks for all destination addesses (or maybe
-            // there are no destination addesses), exit generation.
+            // We've reported all blocks for all destination addresses (or maybe
+            // there are no destination addresses), exit generation.
             return false;
         }
 
@@ -567,7 +567,7 @@ status::StatusCode Communicator::generate_packet_(PacketType packet_type,
     }
 
     // Buffer for the whole packet. If RTCP composer is nested into another
-    // composer, packet_data may hold additionals headers or footers around
+    // composer, packet_data may hold additional headers or footers around
     // RTCP. If RTCP composer is the topmost, packet_data and rtcp_data
     // will be identical.
     core::Slice<uint8_t> packet_buffer = buffer_factory_.new_buffer();
