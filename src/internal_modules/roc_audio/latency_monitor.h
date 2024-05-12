@@ -82,7 +82,7 @@ public:
     //! Read audio frame from a pipeline.
     //! @remarks
     //!  Forwards frame from underlying reader as-is.
-    virtual bool read(Frame& frame);
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(Frame& frame);
 
     //! Report playback timestamp of last frame returned by read.
     //! @remarks

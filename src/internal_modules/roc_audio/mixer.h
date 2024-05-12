@@ -66,13 +66,13 @@ public:
     //! @remarks
     //!  Reads samples from every input reader, mixes them, and fills @p frame
     //!  with the result.
-    virtual bool read(Frame& frame);
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(Frame& frame);
 
 private:
-    void read_(sample_t* out_data,
-               size_t out_size,
-               unsigned& out_flags,
-               core::nanoseconds_t& out_cts);
+    status::StatusCode read_(sample_t* out_data,
+                             size_t out_size,
+                             unsigned& out_flags,
+                             core::nanoseconds_t& out_cts);
 
     core::List<IFrameReader, core::NoOwnership> readers_;
     core::Slice<sample_t> temp_buf_;

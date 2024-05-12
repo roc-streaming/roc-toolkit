@@ -330,10 +330,12 @@ int roc_receiver_decoder_pop_frame(roc_receiver_decoder* decoder, roc_frame* fra
 
     audio::Frame imp_frame((float*)frame->samples, frame->samples_size / sizeof(float));
 
-    if (!imp_source.read(imp_frame)) {
+    const status::StatusCode code = imp_source.read(imp_frame);
+    if (code != status::StatusOK) {
         roc_log(LogError,
                 "roc_receiver_decoder_pop_frame():"
-                " got unexpected eof from source");
+                " can't read frame from decoder: status=%s",
+                status::code_to_str(code));
         return -1;
     }
 

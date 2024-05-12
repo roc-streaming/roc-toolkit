@@ -84,7 +84,7 @@ public:
     virtual void reclock(core::nanoseconds_t timestamp);
 
     //! Read frame.
-    virtual bool read(audio::Frame& frame);
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(audio::Frame& frame);
 
 private:
     bool open_(const char* path);

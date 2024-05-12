@@ -42,7 +42,7 @@ void expect_output(Mixer& mixer,
     core::Slice<sample_t> buf = new_buffer(sz);
 
     Frame frame(buf.data(), buf.size());
-    CHECK(mixer.read(frame));
+    LONGS_EQUAL(status::StatusOK, mixer.read(frame));
 
     for (size_t n = 0; n < sz; n++) {
         DOUBLES_EQUAL((double)value, (double)frame.raw_samples()[n], 0.0001);

@@ -165,8 +165,8 @@ TEST(transcoder_source, eof) {
     audio::Frame frame(samples.data(), samples.size());
 
     mock_source.add(SamplesPerFrame, input_sample_spec);
-    CHECK(transcoder.read(frame));
-    CHECK(!transcoder.read(frame));
+    LONGS_EQUAL(status::StatusOK, transcoder.read(frame));
+    LONGS_EQUAL(status::StatusEnd, transcoder.read(frame));
 }
 
 TEST(transcoder_source, frame_size_small) {

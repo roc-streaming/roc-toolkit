@@ -94,7 +94,7 @@ TEST(pump, write_read) {
             Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
             LONGS_EQUAL(status::StatusOK, pump.init_status());
-            LONGS_EQUAL(status::StatusEnd, pump.run());
+            LONGS_EQUAL(status::StatusOK, pump.run());
 
             CHECK(mock_source.num_returned() >= NumSamples - FrameSize);
         }
@@ -110,7 +110,7 @@ TEST(pump, write_read) {
         Pump pump(buffer_pool, *backend_source, NULL, mock_writer, frame_duration,
                   sample_spec, Pump::ModePermanent);
         LONGS_EQUAL(status::StatusOK, pump.init_status());
-        LONGS_EQUAL(status::StatusEnd, pump.run());
+        LONGS_EQUAL(status::StatusOK, pump.run());
 
         mock_writer.check(0, mock_source.num_returned());
     }
@@ -140,7 +140,7 @@ TEST(pump, write_overwrite_read) {
             Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
             LONGS_EQUAL(status::StatusOK, pump.init_status());
-            LONGS_EQUAL(status::StatusEnd, pump.run());
+            LONGS_EQUAL(status::StatusOK, pump.run());
         }
 
         mock_source.add(NumSamples);
@@ -157,7 +157,7 @@ TEST(pump, write_overwrite_read) {
             Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
             LONGS_EQUAL(status::StatusOK, pump.init_status());
-            LONGS_EQUAL(status::StatusEnd, pump.run());
+            LONGS_EQUAL(status::StatusOK, pump.run());
         }
 
         size_t num_returned2 = mock_source.num_returned() - num_returned1;
@@ -174,7 +174,7 @@ TEST(pump, write_overwrite_read) {
         Pump pump(buffer_pool, *backend_source, NULL, mock_writer, frame_duration,
                   sample_spec, Pump::ModePermanent);
         LONGS_EQUAL(status::StatusOK, pump.init_status());
-        LONGS_EQUAL(status::StatusEnd, pump.run());
+        LONGS_EQUAL(status::StatusOK, pump.run());
 
         mock_writer.check(num_returned1, num_returned2);
     }

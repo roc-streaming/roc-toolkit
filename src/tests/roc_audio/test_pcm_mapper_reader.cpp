@@ -46,7 +46,7 @@ template <class T> struct CountReader : IFrameReader {
         n_values = 0;
     }
 
-    virtual bool read(Frame& frame) {
+    virtual status::StatusCode read(Frame& frame) {
         size_t pos = 0;
         while (pos < frame.num_bytes()) {
             *reinterpret_cast<T*>(frame.bytes() + pos) = value;
@@ -55,7 +55,7 @@ template <class T> struct CountReader : IFrameReader {
             n_values++;
         }
         n_calls++;
-        return true;
+        return status::StatusOK;
     }
 };
 
@@ -75,7 +75,7 @@ struct ByteReader : IFrameReader {
         , n_bytes(0) {
     }
 
-    virtual bool read(Frame& frame) {
+    virtual status::StatusCode read(Frame& frame) {
         size_t pos = 0;
         while (pos < frame.num_bytes()) {
             CHECK(buffer_pos < buffer_size);
@@ -85,7 +85,7 @@ struct ByteReader : IFrameReader {
             n_bytes++;
         }
         n_calls++;
-        return true;
+        return status::StatusOK;
     }
 };
 
@@ -103,14 +103,14 @@ struct MetaReader : IFrameReader {
         n_calls = 0;
     }
 
-    virtual bool read(Frame& frame) {
+    virtual status::StatusCode read(Frame& frame) {
         CHECK(pos < ROC_ARRAY_SIZE(flags));
         CHECK(pos < ROC_ARRAY_SIZE(cts));
         frame.set_flags(flags[pos]);
         frame.set_capture_timestamp(cts[pos]);
         pos++;
         n_calls++;
-        return true;
+        return status::StatusOK;
     }
 };
 
@@ -131,7 +131,7 @@ TEST(pcm_mapper_reader, raw_to_raw) {
     sample_t samples[SmallFrameSz] = {};
     Frame frame(samples, SmallFrameSz);
 
-    CHECK(mapper_reader.read(frame));
+    LONGS_EQUAL(status::StatusOK, mapper_reader.read(frame));
 
     LONGS_EQUAL(1, count_reader.n_calls);
     LONGS_EQUAL(SmallFrameSz, count_reader.n_values);
@@ -154,7 +154,7 @@ TEST(pcm_mapper_reader, s16_to_raw) {
     sample_t samples[SmallFrameSz] = {};
     Frame frame(samples, SmallFrameSz);
 
-    CHECK(mapper_reader.read(frame));
+    LONGS_EQUAL(status::StatusOK, mapper_reader.read(frame));
 
     LONGS_EQUAL(1, count_reader.n_calls);
     LONGS_EQUAL(SmallFrameSz, count_reader.n_values);
@@ -177,7 +177,7 @@ TEST(pcm_mapper_reader, raw_to_s16) {
     int16_t samples[SmallFrameSz] = {};
     Frame frame((uint8_t*)samples, sizeof(samples));
 
-    CHECK(mapper_reader.read(frame));
+    LONGS_EQUAL(status::StatusOK, mapper_reader.read(frame));
 
     LONGS_EQUAL(1, count_reader.n_calls);
     LONGS_EQUAL(SmallFrameSz, count_reader.n_values);
@@ -200,7 +200,7 @@ TEST(pcm_mapper_reader, s16_to_s32) {
     int32_t samples[SmallFrameSz] = {};
     Frame frame((uint8_t*)samples, sizeof(samples));
 
-    CHECK(mapper_reader.read(frame));
+    LONGS_EQUAL(status::StatusOK, mapper_reader.read(frame));
 
     LONGS_EQUAL(1, count_reader.n_calls);
     LONGS_EQUAL(SmallFrameSz, count_reader.n_values);
@@ -223,7 +223,7 @@ TEST(pcm_mapper_reader, s32_to_s16) {
     int16_t samples[SmallFrameSz] = {};
     Frame frame((uint8_t*)samples, sizeof(samples));
 
-    CHECK(mapper_reader.read(frame));
+    LONGS_EQUAL(status::StatusOK, mapper_reader.read(frame));
 
     LONGS_EQUAL(1, count_reader.n_calls);
     LONGS_EQUAL(SmallFrameSz, count_reader.n_values);
@@ -250,7 +250,7 @@ TEST(pcm_mapper_reader, split_frame) {
     sample_t samples[LargeFrameSz] = {};
     Frame frame(samples, LargeFrameSz);
 
-    CHECK(mapper_reader.read(frame));
+    LONGS_EQUAL(status::StatusOK, mapper_reader.read(frame));
 
     LONGS_EQUAL(SplitCount, count_reader.n_calls);
     LONGS_EQUAL(LargeFrameSz, count_reader.n_values);
@@ -282,7 +282,7 @@ TEST(pcm_mapper_reader, split_frame_loop) {
         Frame frame(samples, LargeFrameSz);
 
         count_reader.reset();
-        CHECK(mapper_reader.read(frame));
+        LONGS_EQUAL(status::StatusOK, mapper_reader.read(frame));
 
         LONGS_EQUAL(SplitCount, count_reader.n_calls);
         LONGS_EQUAL(LargeFrameSz, count_reader.n_values);
@@ -306,7 +306,7 @@ TEST(pcm_mapper_reader, duration_mono) {
     sample_t samples[SmallFrameSz] = {};
     Frame frame(samples, SmallFrameSz);
 
-    CHECK(mapper_reader.read(frame));
+    LONGS_EQUAL(status::StatusOK, mapper_reader.read(frame));
 
     LONGS_EQUAL(1, count_reader.n_calls);
     LONGS_EQUAL(SmallFrameSz, count_reader.n_values);
@@ -327,7 +327,7 @@ TEST(pcm_mapper_reader, duration_stereo) {
     sample_t samples[SmallFrameSz] = {};
     Frame frame(samples, SmallFrameSz);
 
-    CHECK(mapper_reader.read(frame));
+    LONGS_EQUAL(status::StatusOK, mapper_reader.read(frame));
 
     LONGS_EQUAL(1, count_reader.n_calls);
     LONGS_EQUAL(SmallFrameSz, count_reader.n_values);
@@ -355,7 +355,7 @@ TEST(pcm_mapper_reader, flags_to_raw) {
         sample_t samples[MaxSamples * 3] = {};
         Frame frame(samples, MaxSamples * 3);
 
-        CHECK(mapper_reader.read(frame));
+        LONGS_EQUAL(status::StatusOK, mapper_reader.read(frame));
 
         LONGS_EQUAL(3, meta_reader.n_calls);
 
@@ -371,7 +371,7 @@ TEST(pcm_mapper_reader, flags_to_raw) {
         sample_t samples[MaxSamples * 3] = {};
         Frame frame(samples, MaxSamples * 3);
 
-        CHECK(mapper_reader.read(frame));
+        LONGS_EQUAL(status::StatusOK, mapper_reader.read(frame));
 
         LONGS_EQUAL(6, meta_reader.n_calls);
 
@@ -399,7 +399,7 @@ TEST(pcm_mapper_reader, flags_from_raw) {
         int16_t samples[MaxSamples * 3] = {};
         Frame frame((uint8_t*)samples, sizeof(samples));
 
-        CHECK(mapper_reader.read(frame));
+        LONGS_EQUAL(status::StatusOK, mapper_reader.read(frame));
 
         LONGS_EQUAL(3, meta_reader.n_calls);
 
@@ -416,7 +416,7 @@ TEST(pcm_mapper_reader, flags_from_raw) {
         int16_t samples[MaxSamples * 3] = {};
         Frame frame((uint8_t*)samples, sizeof(samples));
 
-        CHECK(mapper_reader.read(frame));
+        LONGS_EQUAL(status::StatusOK, mapper_reader.read(frame));
 
         LONGS_EQUAL(6, meta_reader.n_calls);
 
@@ -446,7 +446,7 @@ TEST(pcm_mapper_reader, capture_timestamp) {
         sample_t samples[MaxSamples * 3] = {};
         Frame frame(samples, MaxSamples * 3);
 
-        CHECK(mapper_reader.read(frame));
+        LONGS_EQUAL(status::StatusOK, mapper_reader.read(frame));
 
         LONGS_EQUAL(3, meta_reader.n_calls);
 
@@ -461,7 +461,7 @@ TEST(pcm_mapper_reader, capture_timestamp) {
         sample_t samples[MaxSamples * 3] = {};
         Frame frame(samples, MaxSamples * 3);
 
-        CHECK(mapper_reader.read(frame));
+        LONGS_EQUAL(status::StatusOK, mapper_reader.read(frame));
 
         LONGS_EQUAL(6, meta_reader.n_calls);
 

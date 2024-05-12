@@ -248,7 +248,7 @@ void resample_read(IResampler& resampler,
         Frame frame(out + pos,
                     std::min(num_samples - pos,
                              (size_t)OutFrameSize * sample_spec.num_channels()));
-        CHECK(rr.read(frame));
+        LONGS_EQUAL(status::StatusOK, rr.read(frame));
         pos += frame.num_raw_samples();
     }
 }
@@ -365,7 +365,7 @@ TEST(resampler, supported_scalings) {
                             // smoke test
                             sample_t samples[32];
                             Frame frame(samples, ROC_ARRAY_SIZE(samples));
-                            CHECK(rr.read(frame));
+                            LONGS_EQUAL(status::StatusOK, rr.read(frame));
                         }
                     }
                 }
@@ -704,7 +704,7 @@ TEST(resampler, reader_timestamp_passthrough) {
                     {
                         {
                             Frame frame(samples, ROC_ARRAY_SIZE(samples));
-                            CHECK(rreader.read(frame));
+                            LONGS_EQUAL(status::StatusOK, rreader.read(frame));
                             // Since CTS is estimated based scaling, it can happen
                             // to be in past relative to the very first frame, but only
                             // within allowed epsilon.
@@ -713,7 +713,7 @@ TEST(resampler, reader_timestamp_passthrough) {
                         }
                         for (size_t i = 0; i < NumIterations; i++) {
                             Frame frame(samples, ROC_ARRAY_SIZE(samples));
-                            CHECK(rreader.read(frame));
+                            LONGS_EQUAL(status::StatusOK, rreader.read(frame));
                             cur_ts += ts_step;
                             expect_capture_timestamp(cur_ts, frame.capture_timestamp(),
                                                      epsilon);
@@ -726,7 +726,7 @@ TEST(resampler, reader_timestamp_passthrough) {
                     {
                         {
                             Frame frame(samples, ROC_ARRAY_SIZE(samples));
-                            CHECK(rreader.read(frame));
+                            LONGS_EQUAL(status::StatusOK, rreader.read(frame));
                             cur_ts += ts_step;
                             expect_capture_timestamp(cur_ts, frame.capture_timestamp(),
                                                      epsilon);
@@ -735,7 +735,7 @@ TEST(resampler, reader_timestamp_passthrough) {
                         }
                         for (size_t i = 0; i < NumIterations; i++) {
                             Frame frame(samples, ROC_ARRAY_SIZE(samples));
-                            CHECK(rreader.read(frame));
+                            LONGS_EQUAL(status::StatusOK, rreader.read(frame));
                             cur_ts += ts_step;
                             expect_capture_timestamp(cur_ts, frame.capture_timestamp(),
                                                      epsilon);
@@ -748,7 +748,7 @@ TEST(resampler, reader_timestamp_passthrough) {
                     {
                         {
                             Frame frame(samples, ROC_ARRAY_SIZE(samples));
-                            CHECK(rreader.read(frame));
+                            LONGS_EQUAL(status::StatusOK, rreader.read(frame));
                             cur_ts += ts_step;
                             expect_capture_timestamp(cur_ts, frame.capture_timestamp(),
                                                      epsilon);
@@ -757,7 +757,7 @@ TEST(resampler, reader_timestamp_passthrough) {
                         }
                         for (size_t i = 0; i < NumIterations; i++) {
                             Frame frame(samples, ROC_ARRAY_SIZE(samples));
-                            CHECK(rreader.read(frame));
+                            LONGS_EQUAL(status::StatusOK, rreader.read(frame));
                             cur_ts += ts_step;
                             expect_capture_timestamp(cur_ts, frame.capture_timestamp(),
                                                      epsilon);
@@ -936,7 +936,7 @@ TEST(resampler, reader_timestamp_zero_or_small) {
                     for (size_t i = 0; i < NumIterations; i++) {
                         sample_t samples[FrameLen] = {};
                         Frame frame(samples, ROC_ARRAY_SIZE(samples));
-                        CHECK(rreader.read(frame));
+                        LONGS_EQUAL(status::StatusOK, rreader.read(frame));
                         CHECK(frame.capture_timestamp() == 0);
                     }
 
@@ -955,7 +955,7 @@ TEST(resampler, reader_timestamp_zero_or_small) {
                     for (size_t i = 0; i < NumIterations; i++) {
                         sample_t samples[FrameLen] = {};
                         Frame frame(samples, ROC_ARRAY_SIZE(samples));
-                        CHECK(rreader.read(frame));
+                        LONGS_EQUAL(status::StatusOK, rreader.read(frame));
                         if (cur_ts == 0) {
                             if (frame.capture_timestamp() != 0) {
                                 cur_ts = frame.capture_timestamp();

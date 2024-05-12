@@ -139,7 +139,7 @@ void TranscoderSource::reclock(core::nanoseconds_t timestamp) {
     input_source_.reclock(timestamp);
 }
 
-bool TranscoderSource::read(audio::Frame& frame) {
+status::StatusCode TranscoderSource::read(audio::Frame& frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     return frame_reader_->read(frame);

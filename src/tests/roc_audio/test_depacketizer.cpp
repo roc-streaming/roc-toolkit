@@ -106,7 +106,7 @@ void expect_output(Depacketizer& depacketizer,
     core::Slice<sample_t> buf = new_buffer(sz);
 
     Frame frame(buf.data(), buf.size());
-    CHECK(depacketizer.read(frame));
+    LONGS_EQUAL(status::StatusOK, depacketizer.read(frame));
 
     CHECK(core::ns_equal_delta(frame.capture_timestamp(), capt_ts, core::Microsecond));
     UNSIGNED_LONGS_EQUAL(sz * frame_spec.num_channels(), frame.num_raw_samples());
@@ -121,7 +121,7 @@ void expect_flags(Depacketizer& depacketizer,
     const core::nanoseconds_t epsilon = 100 * core::Microsecond;
 
     Frame frame(buf.data(), buf.size());
-    CHECK(depacketizer.read(frame));
+    LONGS_EQUAL(status::StatusOK, depacketizer.read(frame));
 
     UNSIGNED_LONGS_EQUAL(flags, frame.flags());
     if (capt_ts >= 0) {
@@ -430,8 +430,8 @@ TEST(depacketizer, zeros_after_packet) {
     Frame f1(b1.data(), b1.size());
     Frame f2(b2.data(), b2.size());
 
-    dp.read(f1);
-    dp.read(f2);
+    LONGS_EQUAL(status::StatusOK, dp.read(f1));
+    LONGS_EQUAL(status::StatusOK, dp.read(f2));
 
     expect_values(f1.raw_samples(), SamplesPerPacket / 2 * frame_spec.num_channels(),
                   0.11f);

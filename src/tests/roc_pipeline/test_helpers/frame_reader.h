@@ -50,7 +50,7 @@ public:
                       core::nanoseconds_t base_capture_ts = -1) {
         core::Slice<audio::sample_t> samples = alloc_samples_(num_samples, sample_spec);
         audio::Frame frame(samples.data(), samples.size());
-        CHECK(source_.read(frame));
+        LONGS_EQUAL(status::StatusOK, source_.read(frame));
 
         check_duration_(frame, sample_spec);
         check_timestamp_(frame, sample_spec, base_capture_ts);
@@ -81,7 +81,7 @@ public:
                               core::nanoseconds_t base_capture_ts = -1) {
         core::Slice<audio::sample_t> samples = alloc_samples_(num_samples, sample_spec);
         audio::Frame frame(samples.data(), samples.size());
-        CHECK(source_.read(frame));
+        LONGS_EQUAL(status::StatusOK, source_.read(frame));
 
         check_duration_(frame, sample_spec);
         check_timestamp_(frame, sample_spec, base_capture_ts);
@@ -110,7 +110,7 @@ public:
                            core::nanoseconds_t base_capture_ts = -1) {
         core::Slice<audio::sample_t> samples = alloc_samples_(num_samples, sample_spec);
         audio::Frame frame(samples.data(), samples.size());
-        CHECK(source_.read(frame));
+        LONGS_EQUAL(status::StatusOK, source_.read(frame));
 
         check_duration_(frame, sample_spec);
         check_timestamp_(frame, sample_spec, base_capture_ts);
@@ -135,7 +135,7 @@ public:
                           core::nanoseconds_t base_capture_ts = -1) {
         core::Slice<audio::sample_t> samples = alloc_samples_(num_samples, sample_spec);
         audio::Frame frame(samples.data(), samples.size());
-        CHECK(source_.read(frame));
+        LONGS_EQUAL(status::StatusOK, source_.read(frame));
 
         check_duration_(frame, sample_spec);
         check_timestamp_(frame, sample_spec, base_capture_ts);

@@ -69,7 +69,7 @@ const LatencyMetrics& LatencyMonitor::metrics() const {
     return latency_metrics_;
 }
 
-bool LatencyMonitor::read(Frame& frame) {
+status::StatusCode LatencyMonitor::read(Frame& frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (alive_) {
@@ -82,16 +82,17 @@ bool LatencyMonitor::read(Frame& frame) {
     }
 
     if (!alive_) {
-        return false;
+        return status::StatusAbort;
     }
 
-    if (!frame_reader_.read(frame)) {
-        return false;
+    const status::StatusCode code = frame_reader_.read(frame);
+    if (code != status::StatusOK) {
+        return code;
     }
 
     post_process_(frame);
 
-    return true;
+    return status::StatusOK;
 }
 
 bool LatencyMonitor::reclock(const core::nanoseconds_t playback_timestamp) {

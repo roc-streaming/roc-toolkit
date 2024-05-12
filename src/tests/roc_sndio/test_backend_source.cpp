@@ -94,7 +94,7 @@ TEST(backend_source, open) {
             Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
             LONGS_EQUAL(status::StatusOK, pump.init_status());
-            LONGS_EQUAL(status::StatusEnd, pump.run());
+            LONGS_EQUAL(status::StatusOK, pump.run());
         }
         IDevice* backend_device = backend.open_device(
             DeviceType_Source, DriverType_File, NULL, file.path(), source_config, arena);
@@ -140,7 +140,7 @@ TEST(backend_source, has_clock) {
             Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
             LONGS_EQUAL(status::StatusOK, pump.init_status());
-            LONGS_EQUAL(status::StatusEnd, pump.run());
+            LONGS_EQUAL(status::StatusOK, pump.run());
         }
 
         IDevice* backend_device = backend.open_device(
@@ -175,7 +175,7 @@ TEST(backend_source, sample_rate_auto) {
             Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
             LONGS_EQUAL(status::StatusOK, pump.init_status());
-            LONGS_EQUAL(status::StatusEnd, pump.run());
+            LONGS_EQUAL(status::StatusOK, pump.run());
         }
         source_config.sample_spec.set_sample_rate(0);
         source_config.frame_length = frame_duration;
@@ -213,7 +213,7 @@ TEST(backend_source, sample_rate_mismatch) {
             Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
             LONGS_EQUAL(status::StatusOK, pump.init_status());
-            LONGS_EQUAL(status::StatusEnd, pump.run());
+            LONGS_EQUAL(status::StatusOK, pump.run());
         }
 
         source_config.sample_spec.set_sample_rate(SampleRate * 2);
@@ -248,7 +248,7 @@ TEST(backend_source, pause_resume) {
             Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
             LONGS_EQUAL(status::StatusOK, pump.init_status());
-            LONGS_EQUAL(status::StatusEnd, pump.run());
+            LONGS_EQUAL(status::StatusOK, pump.run());
         }
 
         IDevice* backend_device = backend.open_device(
@@ -262,7 +262,7 @@ TEST(backend_source, pause_resume) {
 
         // TODO(gh-706): check state
 
-        CHECK(backend_source->read(frame1));
+        LONGS_EQUAL(status::StatusOK, backend_source->read(frame1));
 
         audio::sample_t frame_data2[FrameSize * NumChans] = {};
         audio::Frame frame2(frame_data2, FrameSize * NumChans);
@@ -271,21 +271,21 @@ TEST(backend_source, pause_resume) {
         if (strcmp(backend.name(), "sox") == 0) {
             // TODO(gh-706): check state
 
-            CHECK(!backend_source->read(frame2));
+            LONGS_EQUAL(status::StatusEnd, backend_source->read(frame2));
 
             CHECK(backend_source->resume());
             // TODO(gh-706): check state
 
-            CHECK(backend_source->read(frame2));
+            LONGS_EQUAL(status::StatusOK, backend_source->read(frame2));
         } else {
             // TODO(gh-706): check state
 
-            CHECK(backend_source->read(frame2));
+            LONGS_EQUAL(status::StatusOK, backend_source->read(frame2));
 
             CHECK(backend_source->resume());
             // TODO(gh-706): check state
 
-            CHECK(!backend_source->read(frame2));
+            LONGS_EQUAL(status::StatusEnd, backend_source->read(frame2));
         }
 
         if (memcmp(frame_data1, frame_data2, sizeof(frame_data1)) == 0) {
@@ -317,7 +317,7 @@ TEST(backend_source, pause_restart) {
             Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
             LONGS_EQUAL(status::StatusOK, pump.init_status());
-            LONGS_EQUAL(status::StatusEnd, pump.run());
+            LONGS_EQUAL(status::StatusOK, pump.run());
         }
 
         IDevice* backend_device = backend.open_device(
@@ -331,7 +331,7 @@ TEST(backend_source, pause_restart) {
 
         // TODO(gh-706): check state
 
-        CHECK(backend_source->read(frame1));
+        LONGS_EQUAL(status::StatusOK, backend_source->read(frame1));
 
         backend_source->pause();
 
@@ -341,21 +341,21 @@ TEST(backend_source, pause_restart) {
         if (strcmp(backend.name(), "sox") == 0) {
             // TODO(gh-706): check state
 
-            CHECK(!backend_source->read(frame2));
+            LONGS_EQUAL(status::StatusEnd, backend_source->read(frame2));
 
             CHECK(backend_source->restart());
             // TODO(gh-706): check state
 
-            CHECK(backend_source->read(frame2));
+            LONGS_EQUAL(status::StatusOK, backend_source->read(frame2));
         } else {
             // TODO(gh-706): check state
 
-            CHECK(backend_source->read(frame2));
+            LONGS_EQUAL(status::StatusOK, backend_source->read(frame2));
 
             CHECK(backend_source->restart());
             // TODO(gh-706): check state
 
-            CHECK(backend_source->read(frame2));
+            LONGS_EQUAL(status::StatusOK, backend_source->read(frame2));
         }
 
         if (memcmp(frame_data1, frame_data2, sizeof(frame_data1)) != 0) {
@@ -387,7 +387,7 @@ TEST(backend_source, eof_restart) {
             Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
             LONGS_EQUAL(status::StatusOK, pump.init_status());
-            LONGS_EQUAL(status::StatusEnd, pump.run());
+            LONGS_EQUAL(status::StatusOK, pump.run());
         }
 
         IDevice* backend_device = backend.open_device(
@@ -400,9 +400,9 @@ TEST(backend_source, eof_restart) {
         audio::Frame frame(frame_data, FrameSize * NumChans);
 
         for (int i = 0; i < 3; i++) {
-            CHECK(backend_source->read(frame));
-            CHECK(backend_source->read(frame));
-            CHECK(!backend_source->read(frame));
+            LONGS_EQUAL(status::StatusOK, backend_source->read(frame));
+            LONGS_EQUAL(status::StatusOK, backend_source->read(frame));
+            LONGS_EQUAL(status::StatusEnd, backend_source->read(frame));
 
             CHECK(backend_source->restart());
         }

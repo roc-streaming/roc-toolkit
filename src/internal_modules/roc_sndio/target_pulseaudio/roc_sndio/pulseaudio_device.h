@@ -78,7 +78,7 @@ public:
     virtual ROC_ATTR_NODISCARD status::StatusCode write(audio::Frame& frame);
 
     //! Read audio frame.
-    virtual bool read(audio::Frame& frame);
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(audio::Frame& frame);
 
 private:
     static void context_state_cb_(pa_context* context, void* userdata);

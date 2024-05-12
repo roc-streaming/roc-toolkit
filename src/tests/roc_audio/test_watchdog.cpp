@@ -49,7 +49,7 @@ public:
         flags_ = flags;
     }
 
-    bool read(Frame& frame) {
+    virtual status::StatusCode read(Frame& frame) {
         if (flags_) {
             frame.set_flags(flags_);
         }
@@ -57,7 +57,7 @@ public:
             frame.raw_samples()[n] = 42;
         }
         frame.set_duration(frame.num_raw_samples() / NumCh);
-        return true;
+        return status::StatusOK;
     }
 
 private:
@@ -100,12 +100,12 @@ TEST_GROUP(watchdog) {
         Frame frame(buf.data(), buf.size());
 
         if (is_read) {
-            CHECK(reader.read(frame));
+            LONGS_EQUAL(status::StatusOK, reader.read(frame));
             for (size_t n = 0; n < frame.num_raw_samples(); n++) {
                 DOUBLES_EQUAL(42.0, (double)frame.raw_samples()[n], 0);
             }
         } else {
-            CHECK(!reader.read(frame));
+            LONGS_EQUAL(status::StatusAbort, reader.read(frame));
         }
     }
 

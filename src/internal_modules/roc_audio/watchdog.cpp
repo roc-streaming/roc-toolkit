@@ -122,15 +122,16 @@ bool Watchdog::is_alive() const {
     return alive_;
 }
 
-bool Watchdog::read(Frame& frame) {
+status::StatusCode Watchdog::read(Frame& frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (!alive_) {
-        return false;
+        return status::StatusAbort;
     }
 
-    if (!reader_.read(frame)) {
-        return false;
+    const status::StatusCode code = reader_.read(frame);
+    if (code != status::StatusOK) {
+        return code;
     }
 
     const packet::stream_timestamp_t next_read_pos = curr_read_pos_ + frame.duration();
@@ -153,7 +154,7 @@ bool Watchdog::read(Frame& frame) {
 
     update_warmup_();
 
-    return true;
+    return status::StatusOK;
 }
 
 void Watchdog::update_blank_timeout_(const Frame& frame,

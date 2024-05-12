@@ -65,7 +65,7 @@ bool ResamplerReader::set_scaling(float multiplier) {
                                   out_sample_spec_.sample_rate(), multiplier);
 }
 
-bool ResamplerReader::read(Frame& out_frame) {
+status::StatusCode ResamplerReader::read(Frame& out_frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (out_frame.num_raw_samples() % out_sample_spec_.num_channels() != 0) {
@@ -81,8 +81,9 @@ bool ResamplerReader::read(Frame& out_frame) {
             resampler_.pop_output(out_frame.raw_samples() + out_pos, out_remain);
 
         if (num_popped < out_remain) {
-            if (!push_input_()) {
-                return false;
+            const status::StatusCode code = push_input_();
+            if (code != status::StatusOK) {
+                return code;
             }
         }
 
@@ -92,16 +93,17 @@ bool ResamplerReader::read(Frame& out_frame) {
     out_frame.set_duration(out_frame.num_raw_samples() / out_sample_spec_.num_channels());
     out_frame.set_capture_timestamp(capture_ts_(out_frame));
 
-    return true;
+    return status::StatusOK;
 }
 
-bool ResamplerReader::push_input_() {
+status::StatusCode ResamplerReader::push_input_() {
     const core::Slice<sample_t>& in_buff = resampler_.begin_push_input();
 
     Frame in_frame(in_buff.data(), in_buff.size());
 
-    if (!reader_.read(in_frame)) {
-        return false;
+    const status::StatusCode code = reader_.read(in_frame);
+    if (code != status::StatusOK) {
+        return code;
     }
 
     resampler_.end_push_input();
@@ -114,7 +116,7 @@ bool ResamplerReader::push_input_() {
             in_cts + in_sample_spec_.samples_overall_2_ns(in_frame.num_raw_samples());
     }
 
-    return true;
+    return status::StatusOK;
 }
 
 // Compute timestamp of first sample of current output frame.

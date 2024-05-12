@@ -84,9 +84,9 @@ public:
         // no-op
     }
 
-    virtual bool read(audio::Frame& frame) {
+    virtual status::StatusCode read(audio::Frame& frame) {
         if (pos_ == size_) {
-            return false;
+            return status::StatusEnd;
         }
 
         size_t ns = frame.num_raw_samples();
@@ -107,7 +107,7 @@ public:
         CHECK(n_ch_ > 0);
         frame.set_duration(frame.num_raw_samples() / n_ch_);
 
-        return true;
+        return status::StatusOK;
     }
 
     void add(size_t num_samples, const audio::SampleSpec& sample_spec) {

@@ -2069,7 +2069,7 @@ TEST(receiver_source, timestamp_mapping_remixing) {
             cur_time += output_sample_spec.samples_overall_2_ns(frame_size);
 
             audio::Frame frame(frame_data, frame_size);
-            CHECK(receiver.read(frame));
+            LONGS_EQUAL(status::StatusOK, receiver.read(frame));
 
             if (!first_ts && frame.capture_timestamp()) {
                 first_ts = frame.capture_timestamp();
@@ -2884,7 +2884,7 @@ TEST(receiver_source, pipeline_state) {
         cur_time += output_sample_spec.samples_overall_2_ns(samples.size());
 
         audio::Frame frame(samples.data(), samples.size());
-        receiver.read(frame);
+        LONGS_EQUAL(status::StatusOK, receiver.read(frame));
     }
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
@@ -2897,7 +2897,7 @@ TEST(receiver_source, pipeline_state) {
         cur_time += output_sample_spec.samples_overall_2_ns(samples.size());
 
         audio::Frame frame(samples.data(), samples.size());
-        receiver.read(frame);
+        LONGS_EQUAL(status::StatusOK, receiver.read(frame));
     }
 
     for (;;) {
@@ -2905,7 +2905,7 @@ TEST(receiver_source, pipeline_state) {
         cur_time += output_sample_spec.samples_overall_2_ns(samples.size());
 
         audio::Frame frame(samples.data(), samples.size());
-        receiver.read(frame);
+        LONGS_EQUAL(status::StatusOK, receiver.read(frame));
 
         if (receiver.state() == sndio::DeviceState_Idle) {
             break;

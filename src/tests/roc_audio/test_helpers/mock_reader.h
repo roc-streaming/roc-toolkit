@@ -28,13 +28,13 @@ public:
         , timestamp_(-1) {
     }
 
-    virtual bool read(Frame& frame) {
+    virtual status::StatusCode read(Frame& frame) {
         total_reads_++;
 
         if (fail_on_empty_) {
             CHECK(pos_ + frame.num_raw_samples() <= size_);
         } else if (pos_ + frame.num_raw_samples() > size_) {
-            return false;
+            return status::StatusEnd;
         }
 
         memcpy(frame.raw_samples(), samples_ + pos_,
@@ -53,7 +53,7 @@ public:
             timestamp_ += sample_spec_.samples_overall_2_ns(frame.num_raw_samples());
         }
 
-        return true;
+        return status::StatusOK;
     }
 
     void enable_timestamps(const core::nanoseconds_t base_timestamp,

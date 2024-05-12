@@ -140,7 +140,7 @@ void SndfileSource::reclock(core::nanoseconds_t) {
     // no-op
 }
 
-bool SndfileSource::read(audio::Frame& frame) {
+status::StatusCode SndfileSource::read(audio::Frame& frame) {
     roc_panic_if(!valid_);
 
     if (!file_) {
@@ -152,8 +152,9 @@ bool SndfileSource::read(audio::Frame& frame) {
 
     sf_count_t n_samples = sf_read_float(file_, frame_data, frame_left);
     if (sf_error(file_) != 0) {
-        // TODO(gh-183): return error instead of panic
-        roc_panic("sndfile source: sf_read_float() failed: %s", sf_strerror(file_));
+        roc_log(LogError, "sndfile source: sf_read_float() failed: %s",
+                sf_strerror(file_));
+        return status::StatusErrFile;
     }
 
     if (n_samples < frame_left && n_samples != 0) {
@@ -161,7 +162,11 @@ bool SndfileSource::read(audio::Frame& frame) {
                (size_t)(frame_left - n_samples) * sizeof(audio::sample_t));
     }
 
-    return n_samples != 0;
+    if (n_samples == 0) {
+        return status::StatusEnd;
+    }
+
+    return status::StatusOK;
 }
 
 bool SndfileSource::seek_(size_t offset) {

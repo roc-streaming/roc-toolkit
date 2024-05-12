@@ -112,7 +112,7 @@ public:
     virtual void reclock(core::nanoseconds_t playback_time);
 
     //! Read audio frame.
-    virtual bool read(audio::Frame&);
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(audio::Frame&);
 
 private:
     ReceiverSourceConfig source_config_;

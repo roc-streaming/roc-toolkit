@@ -42,10 +42,10 @@ public:
     bool set_scaling(float multiplier);
 
     //! Read audio frame.
-    virtual bool read(Frame&);
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(Frame&);
 
 private:
-    bool push_input_();
+    status::StatusCode push_input_();
     core::nanoseconds_t capture_ts_(Frame& out_frame);
 
     IResampler& resampler_;

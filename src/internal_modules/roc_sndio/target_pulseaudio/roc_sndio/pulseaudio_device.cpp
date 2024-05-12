@@ -205,10 +205,14 @@ status::StatusCode PulseaudioDevice::write(audio::Frame& frame) {
     return status::StatusOK;
 }
 
-bool PulseaudioDevice::read(audio::Frame& frame) {
+status::StatusCode PulseaudioDevice::read(audio::Frame& frame) {
     roc_panic_if(device_type_ != DeviceType_Source);
 
-    return request_frame_(frame);
+    if (!request_frame_(frame)) {
+        return status::StatusErrDevice;
+    }
+
+    return status::StatusOK;
 }
 
 bool PulseaudioDevice::request_frame_(audio::Frame& frame) {

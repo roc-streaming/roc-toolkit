@@ -96,7 +96,7 @@ TEST(channel_mapper_reader, small_frame_upmix) {
     sample_t samples[FrameSz] = {};
     Frame frame(samples, FrameSz);
 
-    CHECK(mapper_reader.read(frame));
+    LONGS_EQUAL(status::StatusOK, mapper_reader.read(frame));
 
     CHECK_EQUAL(1, mock_reader.total_reads());
     CHECK_EQUAL(0, mock_reader.num_unread());
@@ -129,7 +129,7 @@ TEST(channel_mapper_reader, small_frame_downmix) {
     sample_t samples[FrameSz] = {};
     Frame frame(samples, FrameSz);
 
-    CHECK(mapper_reader.read(frame));
+    LONGS_EQUAL(status::StatusOK, mapper_reader.read(frame));
 
     CHECK_EQUAL(1, mock_reader.total_reads());
     CHECK_EQUAL(0, mock_reader.num_unread());
@@ -159,7 +159,7 @@ TEST(channel_mapper_reader, small_frame_nocts) {
     sample_t samples[FrameSz] = {};
     Frame frame(samples, FrameSz);
 
-    CHECK(mapper_reader.read(frame));
+    LONGS_EQUAL(status::StatusOK, mapper_reader.read(frame));
 
     CHECK_EQUAL(1, mock_reader.total_reads());
     CHECK_EQUAL(0, mock_reader.num_unread());
@@ -194,7 +194,7 @@ TEST(channel_mapper_reader, large_frame_upmix) {
     sample_t samples[FrameSz] = {};
     Frame frame(samples, FrameSz);
 
-    CHECK(mapper_reader.read(frame));
+    LONGS_EQUAL(status::StatusOK, mapper_reader.read(frame));
 
     CHECK_EQUAL(2, mock_reader.total_reads());
     CHECK_EQUAL(0, mock_reader.num_unread());
@@ -229,7 +229,7 @@ TEST(channel_mapper_reader, large_frame_downmix) {
     sample_t samples[FrameSz] = {};
     Frame frame(samples, FrameSz);
 
-    CHECK(mapper_reader.read(frame));
+    LONGS_EQUAL(status::StatusOK, mapper_reader.read(frame));
 
     CHECK_EQUAL(2, mock_reader.total_reads());
     CHECK_EQUAL(0, mock_reader.num_unread());
@@ -261,7 +261,7 @@ TEST(channel_mapper_reader, large_frame_nocts) {
     sample_t samples[FrameSz] = {};
     Frame frame(samples, FrameSz);
 
-    CHECK(mapper_reader.read(frame));
+    LONGS_EQUAL(status::StatusOK, mapper_reader.read(frame));
 
     CHECK_EQUAL(2, mock_reader.total_reads());
     CHECK_EQUAL(0, mock_reader.num_unread());

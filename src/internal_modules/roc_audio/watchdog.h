@@ -112,7 +112,7 @@ public:
     //! Read audio frame.
     //! @remarks
     //!  Updates stream state and reads frame from the input reader.
-    virtual bool read(Frame& frame);
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(Frame& frame);
 
 private:
     void update_blank_timeout_(const Frame& frame,

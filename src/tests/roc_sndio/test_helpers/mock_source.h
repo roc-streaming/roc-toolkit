@@ -79,7 +79,7 @@ public:
         // no-op
     }
 
-    virtual bool read(audio::Frame& frame) {
+    virtual status::StatusCode read(audio::Frame& frame) {
         size_t ns = frame.num_raw_samples();
         if (ns > size_ - pos_) {
             ns = size_ - pos_;
@@ -95,7 +95,7 @@ public:
                    (frame.num_raw_samples() - ns) * sizeof(audio::sample_t));
         }
 
-        return true;
+        return status::StatusOK;
     }
 
     void add(size_t sz) {

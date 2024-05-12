@@ -78,14 +78,15 @@ packet::stream_timestamp_t Depacketizer::next_timestamp() const {
     return stream_ts_;
 }
 
-bool Depacketizer::read(Frame& frame) {
+status::StatusCode Depacketizer::read(Frame& frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     read_frame_(frame);
 
     report_stats_();
 
-    return true;
+    // TODO(gh-183): forward status
+    return status::StatusOK;
 }
 
 void Depacketizer::read_frame_(Frame& frame) {

@@ -26,22 +26,16 @@ status::StatusCode ProfilingReader::init_status() const {
     return profiler_.init_status();
 }
 
-bool ProfilingReader::read(Frame& frame) {
-    bool ret;
-    const core::nanoseconds_t elapsed = read_(frame, ret);
+status::StatusCode ProfilingReader::read(Frame& frame) {
+    const core::nanoseconds_t started = core::timestamp(core::ClockMonotonic);
+    const status::StatusCode code = reader_.read(frame);
+    const core::nanoseconds_t elapsed = core::timestamp(core::ClockMonotonic) - started;
 
-    if (ret) {
+    if (code == status::StatusOK) {
         profiler_.add_frame(frame.duration(), elapsed);
     }
-    return ret;
-}
 
-core::nanoseconds_t ProfilingReader::read_(Frame& frame, bool& ret) {
-    const core::nanoseconds_t start = core::timestamp(core::ClockMonotonic);
-
-    ret = reader_.read(frame);
-
-    return core::timestamp(core::ClockMonotonic) - start;
+    return code;
 }
 
 } // namespace audio

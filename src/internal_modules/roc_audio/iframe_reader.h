@@ -13,7 +13,9 @@
 #define ROC_AUDIO_IFRAME_READER_H_
 
 #include "roc_audio/frame.h"
+#include "roc_core/attributes.h"
 #include "roc_core/list_node.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace audio {
@@ -23,13 +25,14 @@ class IFrameReader : public core::ListNode<> {
 public:
     virtual ~IFrameReader();
 
-    //! Read audio frame.
-    //! @remarks
-    //!  Frame buffer and its size should be set by caller. The reader
-    //!  should fill the entire buffer and should not resize it.
+    //! Read frame.
+    //!
     //! @returns
-    //!  false if there is nothing to read anymore.
-    virtual bool read(Frame& frame) = 0;
+    //!  If frame was successfully and completely read, returns status::StatusOK,
+    //!  otherwise, returns an error.
+    //!
+    //! @see status::StatusCode.
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(Frame& frame) = 0;
 };
 
 } // namespace audio

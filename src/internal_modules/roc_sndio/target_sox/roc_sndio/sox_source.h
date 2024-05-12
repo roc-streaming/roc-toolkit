@@ -89,7 +89,7 @@ public:
     virtual void reclock(core::nanoseconds_t timestamp);
 
     //! Read frame.
-    virtual bool read(audio::Frame&);
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(audio::Frame&);
 
 private:
     bool setup_names_(const char* driver, const char* path);

@@ -56,7 +56,7 @@ status::StatusCode ChannelMapperReader::init_status() const {
     return init_status_;
 }
 
-bool ChannelMapperReader::read(Frame& out_frame) {
+status::StatusCode ChannelMapperReader::read(Frame& out_frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (out_frame.num_raw_samples() % out_spec_.num_channels() != 0) {
@@ -75,8 +75,10 @@ bool ChannelMapperReader::read(Frame& out_frame) {
         const size_t n_read = std::min(n_samples, max_batch);
 
         core::nanoseconds_t capt_ts = 0;
-        if (!read_(out_samples, n_read, flags, capt_ts)) {
-            return false;
+
+        const status::StatusCode code = read_(out_samples, n_read, flags, capt_ts);
+        if (code != status::StatusOK) {
+            return code;
         }
 
         if (frames_counter == 0) {
@@ -90,16 +92,18 @@ bool ChannelMapperReader::read(Frame& out_frame) {
     out_frame.set_flags(flags);
     out_frame.set_duration(out_frame.num_raw_samples() / out_spec_.num_channels());
 
-    return true;
+    return status::StatusOK;
 }
 
-bool ChannelMapperReader::read_(sample_t* out_samples,
-                                size_t n_samples,
-                                unsigned& flags,
-                                core::nanoseconds_t& capt_ts) {
+status::StatusCode ChannelMapperReader::read_(sample_t* out_samples,
+                                              size_t n_samples,
+                                              unsigned& flags,
+                                              core::nanoseconds_t& capt_ts) {
     Frame in_frame(input_buf_.data(), n_samples * in_spec_.num_channels());
-    if (!input_reader_.read(in_frame)) {
-        return false;
+
+    const status::StatusCode code = input_reader_.read(in_frame);
+    if (code != status::StatusOK) {
+        return code;
     }
 
     mapper_.map(in_frame.raw_samples(), in_frame.num_raw_samples(), out_samples,
@@ -108,7 +112,7 @@ bool ChannelMapperReader::read_(sample_t* out_samples,
     capt_ts = in_frame.capture_timestamp();
     flags |= in_frame.flags();
 
-    return true;
+    return status::StatusOK;
 }
 
 } // namespace audio

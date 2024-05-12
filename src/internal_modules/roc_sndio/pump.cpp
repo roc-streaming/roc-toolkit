@@ -62,7 +62,12 @@ status::StatusCode Pump::init_status() const {
 status::StatusCode Pump::run() {
     roc_log(LogDebug, "pump: starting main loop");
 
-    const status::StatusCode code = transfer_loop_();
+    status::StatusCode code = transfer_loop_();
+
+    if (code == status::StatusEnd) {
+        // EOF is fine
+        code = status::StatusOK;
+    }
 
     roc_log(LogDebug, "pump: exiting main loop");
 
@@ -116,8 +121,8 @@ status::StatusCode Pump::transfer_loop_() {
             }
         }
 
-        // read frame
-        const status::StatusCode code = transfer_frame_(*current_source);
+        // copy one frame
+        const status::StatusCode code = transfer_frame_(*current_source, sink_);
         if (code == status::StatusEnd) {
             if (current_source == backup_source_) {
                 roc_log(LogDebug, "pump: got eof from backup source");
@@ -139,12 +144,13 @@ status::StatusCode Pump::transfer_loop_() {
     }
 }
 
-status::StatusCode Pump::transfer_frame_(ISource& current_source) {
+status::StatusCode Pump::transfer_frame_(ISource& source, ISink& sink) {
     audio::Frame frame(frame_buffer_.data(), frame_buffer_.size());
+    status::StatusCode frame_status = status::NoStatus;
 
     // if source has clock, here we block on it
-    if (!current_source.read(frame)) {
-        return status::StatusEnd;
+    if ((frame_status = source.read(frame)) != status::StatusOK) {
+        return frame_status;
     }
 
     if (!frame.has_duration()) {
@@ -161,9 +167,9 @@ status::StatusCode Pump::transfer_frame_(ISource& current_source) {
         // recording buffer, and should take it into account too
         core::nanoseconds_t capture_latency = 0;
 
-        if (current_source.has_latency()) {
-            capture_latency = current_source.latency()
-                + sample_spec_.stream_timestamp_2_ns(frame.duration());
+        if (source.has_latency()) {
+            capture_latency =
+                source.latency() + sample_spec_.stream_timestamp_2_ns(frame.duration());
         }
 
         frame.set_capture_timestamp(core::timestamp(core::ClockUnix) - capture_latency);
@@ -171,9 +177,8 @@ status::StatusCode Pump::transfer_frame_(ISource& current_source) {
 
     // if sink has clock, here we block on it
     // note that either source or sink has clock, but not both
-    const status::StatusCode code = sink_.write(frame);
-    if (code != status::StatusOK) {
-        return code;
+    if ((frame_status = sink.write(frame)) != status::StatusOK) {
+        return frame_status;
     }
 
     {
@@ -188,7 +193,7 @@ status::StatusCode Pump::transfer_frame_(ISource& current_source) {
                 sink_.latency() - sample_spec_.stream_timestamp_2_ns(frame.duration());
         }
 
-        current_source.reclock(core::timestamp(core::ClockUnix) + playback_latency);
+        source.reclock(core::timestamp(core::ClockUnix) + playback_latency);
     }
 
     return status::StatusOK;

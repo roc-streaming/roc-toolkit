@@ -39,7 +39,7 @@ public:
     status::StatusCode init_status() const;
 
     //! Read audio frame.
-    virtual bool read(Frame& frame);
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(Frame& frame);
 
 private:
     PcmMapper mapper_;

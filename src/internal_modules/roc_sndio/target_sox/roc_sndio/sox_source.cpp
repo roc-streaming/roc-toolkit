@@ -242,11 +242,11 @@ void SoxSource::reclock(core::nanoseconds_t) {
     // no-op
 }
 
-bool SoxSource::read(audio::Frame& frame) {
+status::StatusCode SoxSource::read(audio::Frame& frame) {
     roc_panic_if(!valid_);
 
     if (paused_ || eof_) {
-        return false;
+        return status::StatusEnd;
     }
 
     if (!input_) {
@@ -285,14 +285,14 @@ bool SoxSource::read(audio::Frame& frame) {
     }
 
     if (frame_left == frame.num_raw_samples()) {
-        return false;
+        return status::StatusEnd;
     }
 
     if (frame_left != 0) {
         memset(frame_data, 0, frame_left * sizeof(audio::sample_t));
     }
 
-    return true;
+    return status::StatusOK;
 }
 
 bool SoxSource::seek_(uint64_t offset) {

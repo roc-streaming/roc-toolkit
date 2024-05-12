@@ -180,7 +180,8 @@ int roc_sender_encoder_push_frame(roc_sender_encoder* encoder, const roc_frame* 
 
     const status::StatusCode code = imp_sink.write(imp_frame);
     if (code != status::StatusOK) {
-        roc_log(LogError, "roc_sender_encoder_write(): can't write frame: status=%s",
+        roc_log(LogError,
+                "roc_sender_encoder_write(): can't write frame to encoder: status=%s",
                 status::code_to_str(code));
         return -1;
     }

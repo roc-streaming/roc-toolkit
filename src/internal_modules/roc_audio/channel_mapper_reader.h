@@ -38,13 +38,13 @@ public:
     status::StatusCode init_status() const;
 
     //! Read audio frame.
-    virtual bool read(Frame& frame);
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(Frame& frame);
 
 private:
-    bool read_(sample_t* out_samples,
-               size_t n_samples,
-               unsigned& flags,
-               core::nanoseconds_t& capt_ts);
+    status::StatusCode read_(sample_t* out_samples,
+                             size_t n_samples,
+                             unsigned& flags,
+                             core::nanoseconds_t& capt_ts);
 
     IFrameReader& input_reader_;
     core::Slice<sample_t> input_buf_;

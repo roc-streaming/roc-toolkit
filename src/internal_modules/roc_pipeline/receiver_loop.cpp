@@ -222,7 +222,7 @@ void ReceiverLoop::reclock(core::nanoseconds_t timestamp) {
     source_.reclock(timestamp);
 }
 
-bool ReceiverLoop::read(audio::Frame& frame) {
+status::StatusCode ReceiverLoop::read(audio::Frame& frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     core::Mutex::Lock lock(source_mutex_);
@@ -232,9 +232,9 @@ bool ReceiverLoop::read(audio::Frame& frame) {
     }
 
     // invokes process_subframe_imp() and process_task_imp()
-    if (process_subframes_and_tasks(frame) != status::StatusOK) {
-        // TODO(gh-183): forward status
-        return false;
+    const status::StatusCode code = process_subframes_and_tasks(frame);
+    if (code != status::StatusOK) {
+        return code;
     }
 
     ticker_ts_ += frame.duration();
@@ -243,7 +243,7 @@ bool ReceiverLoop::read(audio::Frame& frame) {
         source_.reclock(core::timestamp(core::ClockUnix));
     }
 
-    return true;
+    return status::StatusOK;
 }
 
 core::nanoseconds_t ReceiverLoop::timestamp_imp() const {
@@ -255,11 +255,11 @@ uint64_t ReceiverLoop::tid_imp() const {
 }
 
 status::StatusCode ReceiverLoop::process_subframe_imp(audio::Frame& frame) {
+    // TODO(gh-183): forward status from refresh()
     // TODO: handle returned deadline and schedule refresh
     source_.refresh(core::timestamp(core::ClockUnix));
 
-    // TOOD(gh-183): forward status
-    return source_.read(frame) ? status::StatusOK : status::StatusAbort;
+    return source_.read(frame);
 }
 
 bool ReceiverLoop::process_task_imp(PipelineTask& basic_task) {

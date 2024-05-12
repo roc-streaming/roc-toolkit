@@ -119,13 +119,13 @@ void WavSource::reclock(core::nanoseconds_t timestamp) {
     // no-op
 }
 
-bool WavSource::read(audio::Frame& frame) {
+status::StatusCode WavSource::read(audio::Frame& frame) {
     if (!file_opened_) {
         roc_panic("wav source: not opened");
     }
 
     if (eof_) {
-        return false;
+        return status::StatusEnd;
     }
 
     audio::sample_t* frame_data = frame.raw_samples();
@@ -149,14 +149,14 @@ bool WavSource::read(audio::Frame& frame) {
     }
 
     if (frame_left == frame.num_raw_samples()) {
-        return false;
+        return status::StatusEnd;
     }
 
     if (frame_left != 0) {
         memset(frame_data, 0, frame_left * sizeof(audio::sample_t));
     }
 
-    return true;
+    return status::StatusOK;
 }
 
 bool WavSource::open_(const char* path) {

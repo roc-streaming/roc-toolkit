@@ -152,7 +152,7 @@ private:
     virtual bool has_latency() const;
     virtual bool has_clock() const;
     virtual void reclock(core::nanoseconds_t timestamp);
-    virtual bool read(audio::Frame&);
+    virtual status::StatusCode read(audio::Frame&);
 
     // Methods of PipelineLoop
     virtual core::nanoseconds_t timestamp_imp() const;

@@ -187,7 +187,7 @@ void ReceiverSource::reclock(core::nanoseconds_t playback_time) {
     }
 }
 
-bool ReceiverSource::read(audio::Frame& frame) {
+status::StatusCode ReceiverSource::read(audio::Frame& frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     return frame_reader_->read(frame);

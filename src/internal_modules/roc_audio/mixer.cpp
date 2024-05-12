@@ -53,23 +53,8 @@ void Mixer::remove_input(IFrameReader& reader) {
     readers_.remove(reader);
 }
 
-bool Mixer::read(Frame& frame) {
+status::StatusCode Mixer::read(Frame& frame) {
     roc_panic_if(init_status_ != status::StatusOK);
-
-    // Optimization for single reader case.
-    if (readers_.size() == 1) {
-        if (!readers_.front()->read(frame)) {
-            frame.set_duration(frame.num_raw_samples() / sample_spec_.num_channels());
-        }
-
-        if (!enable_timestamps_) {
-            // When timestamps are disabled, don't forget to zeroise
-            // them in the optimized path.
-            frame.set_capture_timestamp(0);
-        }
-
-        return true;
-    }
 
     const size_t max_read = temp_buf_.size();
 
@@ -88,7 +73,10 @@ bool Mixer::read(Frame& frame) {
             n_read = max_read;
         }
 
-        read_(samples, n_read, flags, capture_ts);
+        const status::StatusCode code = read_(samples, n_read, flags, capture_ts);
+        if (code != status::StatusOK) {
+            return code;
+        }
 
         samples += n_read;
         n_samples -= n_read;
@@ -98,13 +86,13 @@ bool Mixer::read(Frame& frame) {
     frame.set_duration(frame.num_raw_samples() / sample_spec_.num_channels());
     frame.set_capture_timestamp(capture_ts);
 
-    return true;
+    return status::StatusOK;
 }
 
-void Mixer::read_(sample_t* out_data,
-                  size_t out_size,
-                  unsigned& out_flags,
-                  core::nanoseconds_t& out_cts) {
+status::StatusCode Mixer::read_(sample_t* out_data,
+                                size_t out_size,
+                                unsigned& out_flags,
+                                core::nanoseconds_t& out_cts) {
     roc_panic_if(!out_data);
     roc_panic_if(out_size == 0);
 
@@ -121,8 +109,13 @@ void Mixer::read_(sample_t* out_data,
         sample_t* temp_data = temp_buf_.data();
 
         Frame temp_frame(temp_data, out_size);
-        if (!rp->read(temp_frame)) {
+
+        const status::StatusCode code = rp->read(temp_frame);
+        if (code == status::StatusDrain) {
             continue;
+        }
+        if (code != status::StatusOK) {
+            return code;
         }
 
         for (size_t n = 0; n < out_size; n++) {
@@ -157,6 +150,8 @@ void Mixer::read_(sample_t* out_data,
         out_cts = core::nanoseconds_t(cts_base * ((double)cts_count / n_readers)
                                       + cts_sum / (double)n_readers);
     }
+
+    return status::StatusOK;
 }
 
 } // namespace audio

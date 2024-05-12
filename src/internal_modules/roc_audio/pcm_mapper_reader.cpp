@@ -64,7 +64,7 @@ status::StatusCode PcmMapperReader::init_status() const {
     return init_status_;
 }
 
-bool PcmMapperReader::read(Frame& out_frame) {
+status::StatusCode PcmMapperReader::read(Frame& out_frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     const size_t max_sample_count = mapper_.input_sample_count(in_buf_.size()) / num_ch_;
@@ -86,8 +86,10 @@ bool PcmMapperReader::read(Frame& out_frame) {
         size_t in_bit_offset = 0;
 
         Frame in_frame(in_buf_.data(), in_byte_count);
-        if (!in_reader_.read(in_frame)) {
-            return false;
+
+        const status::StatusCode code = in_reader_.read(in_frame);
+        if (code != status::StatusOK) {
+            return code;
         }
 
         mapper_.map(in_buf_.data(), in_byte_count, in_bit_offset, out_frame.bytes(),
@@ -110,7 +112,7 @@ bool PcmMapperReader::read(Frame& out_frame) {
     out_frame.set_flags(out_flags);
     out_frame.set_duration(out_sample_count);
 
-    return true;
+    return status::StatusOK;
 }
 
 } // namespace audio

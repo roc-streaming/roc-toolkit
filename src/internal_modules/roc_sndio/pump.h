@@ -67,7 +67,7 @@ public:
 
 private:
     status::StatusCode transfer_loop_();
-    status::StatusCode transfer_frame_(ISource& current_source);
+    status::StatusCode transfer_frame_(ISource& source, ISink& sink);
 
     audio::FrameFactory frame_factory_;
 

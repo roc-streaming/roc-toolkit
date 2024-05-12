@@ -48,7 +48,7 @@ public:
     bool is_started() const;
 
     //! Read audio frame.
-    virtual bool read(Frame& frame);
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(Frame& frame);
 
     //! Get next timestamp to be rendered.
     //! @pre
