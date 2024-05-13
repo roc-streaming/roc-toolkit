@@ -1170,6 +1170,27 @@ elif ctx.pkg_name == 'libunwind':
     execute_make(ctx)
     install_files(ctx, 'include/*.h', ctx.pkg_inc_dir)
     install_files(ctx, 'src/.libs/libunwind.a', ctx.pkg_lib_dir)
+elif ctx.pkg_name == 'libuuid':
+    download(
+        ctx,
+        'https://github.com/util-linux/util-linux/archive/refs/tags/v{ctx.pkg_ver}.tar.gz',
+        'util-linux-{ctx.pkg_ver}.tar.gz')
+    unpack(ctx,
+           'util-linux-{ctx.pkg_ver}.tar.gz',
+           'util-linux-{ctx.pkg_ver}')
+    changedir(ctx, 'util-linux-{ctx.pkg_ver}')
+    execute(ctx, './autogen.sh')
+    execute(ctx, './configure --disable-all-programs --enable-libuuid --host={host} {vars} {flags} {opts}'.format(
+        host=ctx.toolchain,
+        vars=format_vars(ctx),
+        flags=format_flags(ctx, cflags='-fcommon -fPIC'),
+        opts=' '.join([
+            '--disable-shared',
+            '--enable-static',
+        ])))
+    execute_make(ctx)
+    install_files(ctx, 'libuuid/uuid.h', ctx.pkg_inc_dir)
+    install_files(ctx, 'src/.libs/libuuid.a', ctx.pkg_lib_dir)
 elif ctx.pkg_name == 'openfec':
     if ctx.variant == 'debug':
         setattr(ctx, 'res_dir', 'bin/Debug')
