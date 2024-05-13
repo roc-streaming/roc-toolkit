@@ -23,7 +23,8 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
                                  core::IArena& arena)
     : core::RefCounted<ReceiverSession, core::ArenaAllocation>(arena)
     , frame_reader_(NULL)
-    , init_status_(status::NoStatus) {
+    , init_status_(status::NoStatus)
+    , fail_status_(status::NoStatus) {
     const rtp::Encoding* pkt_encoding =
         encoding_map.find_by_pt(session_config.payload_type);
     if (!pkt_encoding) {
@@ -253,7 +254,7 @@ status::StatusCode ReceiverSession::init_status() const {
 audio::IFrameReader& ReceiverSession::frame_reader() {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    return *frame_reader_;
+    return *this;
 }
 
 status::StatusCode ReceiverSession::route_packet(const packet::PacketPtr& packet) {
@@ -266,12 +267,8 @@ status::StatusCode ReceiverSession::refresh(core::nanoseconds_t current_time,
                                             core::nanoseconds_t& next_deadline) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    if (watchdog_ && !watchdog_->is_alive()) {
-        return status::StatusAbort;
-    }
-
-    if (!latency_monitor_->is_alive()) {
-        return status::StatusAbort;
+    if (fail_status_ != status::NoStatus) {
+        return fail_status_;
     }
 
     return status::StatusOK;
@@ -378,6 +375,25 @@ ReceiverParticipantMetrics ReceiverSession::get_metrics() const {
     metrics.latency = latency_monitor_->metrics();
 
     return metrics;
+}
+
+status::StatusCode ReceiverSession::read(audio::Frame& frame) {
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    if (fail_status_ != status::NoStatus) {
+        return status::StatusDrain;
+    }
+
+    const status::StatusCode code = frame_reader_->read(frame);
+
+    // If error happens, save it to return later from refresh(), which allows
+    // ReceiverSessionGroup to handle it.
+    if (code != status::StatusOK && code != status::StatusDrain) {
+        fail_status_ = code;
+        return status::StatusDrain;
+    }
+
+    return code;
 }
 
 } // namespace pipeline

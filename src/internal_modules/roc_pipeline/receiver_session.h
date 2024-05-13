@@ -56,7 +56,8 @@ namespace pipeline {
 //!  - a pipeline for processing packets from single sender and converting
 //!    them into audio frames
 class ReceiverSession : public core::RefCounted<ReceiverSession, core::ArenaAllocation>,
-                        public core::ListNode<> {
+                        public core::ListNode<ReceiverSession>,
+                        private audio::IFrameReader {
 public:
     //! Initialize.
     ReceiverSession(const ReceiverSessionConfig& session_config,
@@ -114,6 +115,9 @@ public:
     ReceiverParticipantMetrics get_metrics() const;
 
 private:
+    // Implementation of audio::IFrameReader.
+    virtual status::StatusCode read(audio::Frame& frame);
+
     audio::IFrameReader* frame_reader_;
 
     core::Optional<packet::Router> packet_router_;
@@ -147,6 +151,7 @@ private:
     core::Optional<audio::LatencyMonitor> latency_monitor_;
 
     status::StatusCode init_status_;
+    status::StatusCode fail_status_;
 };
 
 } // namespace pipeline

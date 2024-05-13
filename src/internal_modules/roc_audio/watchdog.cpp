@@ -134,6 +134,15 @@ status::StatusCode Watchdog::read(Frame& frame) {
         return code;
     }
 
+    if (!update_(frame)) {
+        alive_ = false;
+        return status::StatusAbort;
+    }
+
+    return code;
+}
+
+bool Watchdog::update_(Frame& frame) {
     const packet::stream_timestamp_t next_read_pos = curr_read_pos_ + frame.duration();
 
     update_blank_timeout_(frame, next_read_pos);
@@ -144,17 +153,17 @@ status::StatusCode Watchdog::read(Frame& frame) {
 
     if (!check_drops_timeout_()) {
         flush_status_();
-        alive_ = false;
+        return false;
     }
 
     if (!check_blank_timeout_()) {
         flush_status_();
-        alive_ = false;
+        return false;
     }
 
     update_warmup_();
 
-    return status::StatusOK;
+    return true;
 }
 
 void Watchdog::update_blank_timeout_(const Frame& frame,

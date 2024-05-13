@@ -117,13 +117,12 @@ ReceiverSessionGroup::refresh_sessions(core::nanoseconds_t current_time,
         core::nanoseconds_t sess_deadline = 0;
         const status::StatusCode code = curr_sess->refresh(current_time, sess_deadline);
 
-        // Terminate sessions which asked so.
+        // These errors break only session, but not the whole receiver.
         if (code == status::StatusEnd || code == status::StatusAbort) {
-            remove_session_(curr_sess);
+            remove_session_(curr_sess, code);
             continue;
         }
 
-        // Handle other errors.
         if (code != status::StatusOK) {
             return code;
         }
@@ -264,7 +263,7 @@ ReceiverSessionGroup::notify_recv_stream(packet::stream_source_t send_source_id,
     if (old_sess && !session_router_.has_session(old_sess)) {
         // If session existed before link_source(), but does not exist anymore, it
         // means that there are no more routes to that session.
-        remove_session_(old_sess);
+        remove_session_(old_sess, status::NoStatus);
     }
 
     // If there is currently a session for given SSRC, let it process the report.
@@ -288,7 +287,7 @@ void ReceiverSessionGroup::halt_recv_stream(packet::stream_source_t send_source_
     if (old_sess && !session_router_.has_session(old_sess)) {
         // If session existed before unlink_source(), but does not exist anymore, it
         // means that there are no more routes to that session.
-        remove_session_(old_sess);
+        remove_session_(old_sess, status::NoStatus);
     }
 }
 
@@ -428,8 +427,14 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
     return status::StatusOK;
 }
 
-void ReceiverSessionGroup::remove_session_(core::SharedPtr<ReceiverSession> sess) {
-    roc_log(LogInfo, "session group: removing session");
+void ReceiverSessionGroup::remove_session_(core::SharedPtr<ReceiverSession> sess,
+                                           status::StatusCode code) {
+    if (code != status::NoStatus) {
+        roc_log(LogInfo, "session group: removing session: status=%s",
+                status::code_to_str(code));
+    } else {
+        roc_log(LogInfo, "session group: removing session");
+    }
 
     mixer_.remove_input(sess->frame_reader());
     sessions_.remove(*sess);
@@ -442,7 +447,7 @@ void ReceiverSessionGroup::remove_all_sessions_() {
     roc_log(LogDebug, "session group: removing all sessions");
 
     while (!sessions_.is_empty()) {
-        remove_session_(sessions_.back());
+        remove_session_(sessions_.back(), status::NoStatus);
     }
 }
 

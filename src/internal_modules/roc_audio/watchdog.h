@@ -102,11 +102,7 @@ public:
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
 
-    //! Check if stream is still alive.
-    //! @returns
-    //!  false if during the session timeout each frame has an empty flag or the maximum
-    //!  allowed number of consecutive windows that can contain frames that aren't fully
-    //!  filled and contain dropped packets was exceeded.
+    //! Check if the stream was not aborted.
     bool is_alive() const;
 
     //! Read audio frame.
@@ -115,6 +111,8 @@ public:
     virtual ROC_ATTR_NODISCARD status::StatusCode read(Frame& frame);
 
 private:
+    bool update_(Frame& frame);
+
     void update_blank_timeout_(const Frame& frame,
                                packet::stream_timestamp_t next_read_pos);
     bool check_blank_timeout_() const;

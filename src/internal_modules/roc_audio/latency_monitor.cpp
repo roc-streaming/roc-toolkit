@@ -72,16 +72,15 @@ const LatencyMetrics& LatencyMonitor::metrics() const {
 status::StatusCode LatencyMonitor::read(Frame& frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    if (alive_) {
-        compute_niq_latency_();
-        query_metrics_();
-
-        if (!pre_process_(frame)) {
-            alive_ = false;
-        }
+    if (!alive_) {
+        return status::StatusAbort;
     }
 
-    if (!alive_) {
+    compute_niq_latency_();
+    query_metrics_();
+
+    if (!pre_read_()) {
+        alive_ = false;
         return status::StatusAbort;
     }
 
@@ -90,7 +89,7 @@ status::StatusCode LatencyMonitor::read(Frame& frame) {
         return code;
     }
 
-    post_process_(frame);
+    post_read_(frame);
 
     return status::StatusOK;
 }
@@ -103,16 +102,15 @@ void LatencyMonitor::reclock(const core::nanoseconds_t playback_timestamp) {
     compute_e2e_latency_(playback_timestamp);
 }
 
-bool LatencyMonitor::pre_process_(const Frame& frame) {
+bool LatencyMonitor::pre_read_() {
     tuner_.write_metrics(latency_metrics_, link_metrics_);
+
     if (!tuner_.update_stream()) {
-        // TODO(gh-183): forward status code
         return false;
     }
 
     if (enable_scaling_) {
         if (!update_scaling_()) {
-            // TODO(gh-183): forward status code
             return false;
         }
     }
@@ -120,7 +118,7 @@ bool LatencyMonitor::pre_process_(const Frame& frame) {
     return true;
 }
 
-void LatencyMonitor::post_process_(const Frame& frame) {
+void LatencyMonitor::post_read_(const Frame& frame) {
     // for end-2-end latency calculations
     capture_ts_ = frame.capture_timestamp();
 
@@ -179,17 +177,13 @@ void LatencyMonitor::compute_e2e_latency_(const core::nanoseconds_t playback_tim
 }
 
 void LatencyMonitor::query_metrics_() {
-    if (!link_meter_.has_metrics()) {
-        return;
+    if (link_meter_.has_metrics()) {
+        link_metrics_ = link_meter_.metrics();
     }
-
-    link_metrics_ = link_meter_.metrics();
 
     if (fec_reader_) {
         latency_metrics_.fec_block_duration =
             packet_sample_spec_.stream_timestamp_2_ns(fec_reader_->max_block_duration());
-    } else {
-        latency_metrics_.fec_block_duration = 0;
     }
 }
 

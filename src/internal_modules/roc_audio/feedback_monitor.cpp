@@ -125,7 +125,7 @@ status::StatusCode FeedbackMonitor::write(Frame& frame) {
 
         if (enable_scaling_) {
             if (!update_scaling_()) {
-                return status::StatusBadConfig;
+                return status::StatusAbort;
             }
         }
     }

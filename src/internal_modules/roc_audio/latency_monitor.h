@@ -73,7 +73,7 @@ public:
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
 
-    //! Check if the stream is still alive.
+    //! Check if the stream was not aborted.
     bool is_alive() const;
 
     //! Get metrics.
@@ -95,8 +95,8 @@ private:
     void compute_e2e_latency_(core::nanoseconds_t playback_timestamp);
     void query_metrics_();
 
-    bool pre_process_(const Frame& frame);
-    void post_process_(const Frame& frame);
+    bool pre_read_();
+    void post_read_(const Frame& frame);
 
     bool init_scaling_();
     bool update_scaling_();

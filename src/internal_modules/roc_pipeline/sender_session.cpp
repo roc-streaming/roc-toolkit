@@ -26,7 +26,8 @@ SenderSession::SenderSession(const SenderSinkConfig& sink_config,
     , packet_factory_(packet_factory)
     , frame_factory_(frame_factory)
     , frame_writer_(NULL)
-    , init_status_(status::NoStatus) {
+    , init_status_(status::NoStatus)
+    , fail_status_(status::NoStatus) {
     identity_.reset(new (identity_) rtp::Identity());
     if ((init_status_ = identity_->init_status()) != status::StatusOK) {
         return;
@@ -240,10 +241,14 @@ SenderSession::create_control_pipeline(SenderEndpoint* control_endpoint) {
     return status::StatusOK;
 }
 
-audio::IFrameWriter* SenderSession::frame_writer() const {
+audio::IFrameWriter* SenderSession::frame_writer() {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    return frame_writer_;
+    if (!frame_writer_) {
+        return NULL;
+    }
+
+    return this;
 }
 
 status::StatusCode SenderSession::route_packet(const packet::PacketPtr& packet,
@@ -261,16 +266,18 @@ status::StatusCode SenderSession::refresh(core::nanoseconds_t current_time,
                                           core::nanoseconds_t& next_deadline) {
     roc_panic_if(init_status_ != status::StatusOK);
 
+    if (fail_status_ != status::NoStatus) {
+        return fail_status_;
+    }
+
     if (rtcp_communicator_) {
         if (has_send_stream()) {
             const status::StatusCode code =
                 rtcp_communicator_->generate_reports(current_time);
-
             if (code != status::StatusOK) {
                 return code;
             }
         }
-
         next_deadline = rtcp_communicator_->generation_deadline(current_time);
     }
 
@@ -404,6 +411,25 @@ SenderSession::route_control_packet_(const packet::PacketPtr& packet,
 
     // This will invoke IParticipant methods implemented by us.
     return rtcp_communicator_->process_packet(packet, current_time);
+}
+
+status::StatusCode SenderSession::write(audio::Frame& frame) {
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    if (fail_status_ != status::NoStatus) {
+        return status::StatusOK;
+    }
+
+    const status::StatusCode code = frame_writer_->write(frame);
+
+    // If error happens, save it to return later from refresh(), which allows
+    // SenderSlot to handle it.
+    if (code != status::StatusOK) {
+        fail_status_ = code;
+        return status::StatusOK;
+    }
+
+    return code;
 }
 
 } // namespace pipeline

@@ -132,7 +132,7 @@ private:
     bool can_create_session_(const packet::PacketPtr& packet);
 
     status::StatusCode create_session_(const packet::PacketPtr& packet);
-    void remove_session_(core::SharedPtr<ReceiverSession> sess);
+    void remove_session_(core::SharedPtr<ReceiverSession> sess, status::StatusCode code);
     void remove_all_sessions_();
 
     ReceiverSessionConfig make_session_config_(const packet::PacketPtr& packet) const;
@@ -154,7 +154,9 @@ private:
     core::Optional<rtcp::Communicator> rtcp_communicator_;
     address::SocketAddr rtcp_inbound_addr_;
 
-    core::List<ReceiverSession> sessions_;
+    core::
+        List<ReceiverSession, core::RefCountedOwnership, core::ListNode<ReceiverSession> >
+            sessions_;
     ReceiverSessionRouter session_router_;
 
     status::StatusCode init_status_;

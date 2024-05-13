@@ -49,7 +49,9 @@ namespace pipeline {
 //! Contains:
 //!  - a pipeline for processing audio frames from single sender and converting
 //!    them into packets
-class SenderSession : public core::NonCopyable<>, private rtcp::IParticipant {
+class SenderSession : public core::NonCopyable<>,
+                      private rtcp::IParticipant,
+                      private audio::IFrameWriter {
 public:
     //! Initialize.
     SenderSession(const SenderSinkConfig& sink_config,
@@ -75,7 +77,7 @@ public:
     //!  This way samples reach the pipeline.
     //!  Most of the processing, like encoding packets, generating redundancy packets,
     //!  etc, happens during the write operation.
-    audio::IFrameWriter* frame_writer() const;
+    audio::IFrameWriter* frame_writer();
 
     //! Route a packet to the session.
     //! @remarks
@@ -122,6 +124,9 @@ private:
     virtual status::StatusCode notify_send_stream(packet::stream_source_t recv_source_id,
                                                   const rtcp::RecvReport& recv_report);
 
+    // Implementation of audio::IFrameWriter.
+    virtual status::StatusCode write(audio::Frame& frame);
+
     void start_feedback_monitor_();
 
     status::StatusCode route_control_packet_(const packet::PacketPtr& packet,
@@ -164,6 +169,7 @@ private:
     audio::IFrameWriter* frame_writer_;
 
     status::StatusCode init_status_;
+    status::StatusCode fail_status_;
 };
 
 } // namespace pipeline
