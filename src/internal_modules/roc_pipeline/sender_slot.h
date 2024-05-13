@@ -36,7 +36,7 @@ namespace pipeline {
 //!  - one or more related sender endpoints, one per each type
 //!  - one session associated with those endpoints
 class SenderSlot : public core::RefCounted<SenderSlot, core::ArenaAllocation>,
-                   public core::ListNode {
+                   public core::ListNode<> {
 public:
     //! Initialize.
     SenderSlot(const SenderSinkConfig& sink_config,

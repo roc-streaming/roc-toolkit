@@ -259,8 +259,8 @@ private:
     // that receives from us and/or sends to us.
     // Stream is uniquely identified by SSRC of remote participant.
     struct Stream : core::RefCounted<Stream, core::PoolAllocation>,
-                    core::HashmapNode,
-                    core::ListNode {
+                    core::HashmapNode<>,
+                    core::ListNode<> {
         Stream(core::IPool& pool,
                packet::stream_source_t source_id,
                core::nanoseconds_t report_time,
@@ -356,8 +356,8 @@ private:
     // If we're sending all reports to a single preconfigured address, there will be
     // only one instance. Otherwise there will be an instance for every unique address.
     struct Address : core::RefCounted<Address, core::PoolAllocation>,
-                     core::HashmapNode,
-                     core::ListNode {
+                     core::HashmapNode<>,
+                     core::ListNode<> {
         Address(core::IPool& pool,
                 core::IArena& arena,
                 const address::SocketAddr& remote_address,

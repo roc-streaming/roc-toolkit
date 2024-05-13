@@ -21,62 +21,64 @@
 namespace roc {
 namespace core {
 
-//! Base class for hashmap element.
+//! Hashmap node internal data.
+struct HashmapData {
+    //! Previous node in bucket.
+    HashmapData* bucket_prev;
+
+    //! Next node in bucket.
+    HashmapData* bucket_next;
+
+    //! Previous node in list of all nodes.
+    HashmapData* all_prev;
+
+    //! Next node in in list of all nodes.
+    HashmapData* all_next;
+
+    //! Cached node hash.
+    hashsum_t hash;
+
+    //! The bucket this node belongs to.
+    //! @remarks
+    //!  NULL if node is not member of any hashmap.
+    void* bucket;
+
+    HashmapData()
+        : bucket_prev(NULL)
+        , bucket_next(NULL)
+        , all_prev(NULL)
+        , all_next(NULL)
+        , hash(0)
+        , bucket(NULL) {
+    }
+};
+
+//! Base class for Hashmap element.
 //! @remarks
 //!  Object should inherit this class to be able to be a member of Hashmap.
-class HashmapNode : public NonCopyable<HashmapNode> {
+//!  Tag allows to inherit multiple copies of ListNode and include same
+//!  object into multiple lists.
+template <class Tag = void> class HashmapNode : public NonCopyable<HashmapNode<Tag> > {
 public:
-    //! Hashmap node data.
-    struct HashmapNodeData {
-        //! Previous node in bucket.
-        HashmapNodeData* bucket_prev;
-
-        //! Next node in bucket.
-        HashmapNodeData* bucket_next;
-
-        //! Previous node in list of all nodes.
-        HashmapNodeData* all_prev;
-
-        //! Next node in in list of all nodes.
-        HashmapNodeData* all_next;
-
-        //! Cached node hash.
-        hashsum_t hash;
-
-        //! The bucket this node belongs to.
-        //! @remarks
-        //!  NULL if node is not member of any hashmap.
-        void* bucket;
-
-        HashmapNodeData()
-            : bucket_prev(NULL)
-            , bucket_next(NULL)
-            , all_prev(NULL)
-            , all_next(NULL)
-            , hash(0)
-            , bucket(NULL) {
-        }
-
-        //! Get HashmapNode object that contains this HashmapData object.
-        HashmapNode* container_of() {
-            return ROC_CONTAINER_OF(this, HashmapNode, hashmap_data_);
-        }
-    };
-
     ~HashmapNode() {
         if (hashmap_data_.bucket != NULL) {
-            roc_panic("hashmap node:"
-                      " can't call destructor for an element that is still in hashmap");
+            roc_panic(
+                "hashmap node: attempt to destroy node while it's still in hashmap");
         }
     }
 
-    //! Get hashmap node data.
-    HashmapNodeData* hashmap_node_data() const {
+    //! Get pointer to parent node from pointer to internal data.
+    static HashmapNode* hashmap_node(HashmapData* data) {
+        return ROC_CONTAINER_OF(data, HashmapNode, hashmap_data_);
+    }
+
+    //! Get pointer to internal data.
+    HashmapData* hashmap_data() const {
         return &hashmap_data_;
     }
 
 private:
-    mutable HashmapNodeData hashmap_data_;
+    mutable HashmapData hashmap_data_;
 };
 
 } // namespace core

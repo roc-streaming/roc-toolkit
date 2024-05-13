@@ -20,35 +20,40 @@
 namespace roc {
 namespace core {
 
-//! MpscQueue node.
-class MpscQueueNode : public NonCopyable<MpscQueueNode> {
+//! MpscQueue node internal data.
+struct MpscQueueData {
+    //! Next list element.
+    MpscQueueData* next;
+
+    //! Pointer to the containing queue.
+    void* queue;
+
+    MpscQueueData()
+        : next(NULL)
+        , queue(NULL) {
+    }
+};
+
+//! Base class for MpscQueue element.
+//! @remarks
+//!  Object should inherit this class to be able to be a member of MpscQueue.
+//!  Tag allows to inherit multiple copies of ListNode and include same
+//!  object into multiple lists.
+template <class Tag = void>
+class MpscQueueNode : public NonCopyable<MpscQueueNode<Tag> > {
 public:
-    //! List node data.
-    struct MpscQueueData {
-        //! Next list element.
-        MpscQueueData* next;
-
-        //! Pointer to the containing queue.
-        void* queue;
-
-        MpscQueueData()
-            : next(NULL)
-            , queue(NULL) {
-        }
-
-        //! Get MpscQueueNode object that contains this ListData object.
-        MpscQueueNode* container_of() {
-            return ROC_CONTAINER_OF(this, MpscQueueNode, mpsc_queue_data_);
-        }
-    };
-
     ~MpscQueueNode() {
         if (mpsc_queue_data_.queue) {
             roc_panic("mpsc node: attempt to destroy node while it's still in queue");
         }
     }
 
-    //! Get list node data.
+    //! Get pointer to parent node from pointer to internal data.
+    static MpscQueueNode* mpsc_queue_node(MpscQueueData* data) {
+        return ROC_CONTAINER_OF(data, MpscQueueNode, mpsc_queue_data_);
+    }
+
+    //! Get pointer to internal data.
     MpscQueueData* mpsc_queue_data() const {
         return &mpsc_queue_data_;
     }

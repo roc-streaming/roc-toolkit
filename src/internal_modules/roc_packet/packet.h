@@ -35,8 +35,8 @@ typedef core::SharedPtr<Packet> PacketPtr;
 
 //! Packet.
 class Packet : public core::RefCounted<Packet, core::PoolAllocation>,
-               public core::ListNode,
-               public core::MpscQueueNode {
+               public core::ListNode<>,
+               public core::MpscQueueNode<> {
 public:
     //! Constructor.
     explicit Packet(core::IPool& packet_pool);

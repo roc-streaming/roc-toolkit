@@ -19,7 +19,7 @@ namespace roc {
 namespace audio {
 
 //! Frame writer interface.
-class IFrameWriter : public core::ListNode {
+class IFrameWriter : public core::ListNode<> {
 public:
     virtual ~IFrameWriter();
 

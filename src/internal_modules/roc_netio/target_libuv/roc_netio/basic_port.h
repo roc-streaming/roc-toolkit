@@ -37,7 +37,7 @@ namespace netio {
 //!  - if async_close() returned AsyncOp_Started, you should wait until
 //!    close handler callback is invoked before destroying port
 class BasicPort : public core::RefCounted<BasicPort, core::ArenaAllocation>,
-                  public core::ListNode {
+                  public core::ListNode<> {
 public:
     //! Initialize.
     explicit BasicPort(core::IArena&);

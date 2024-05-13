@@ -28,7 +28,7 @@ inline int get_thread_index(const benchmark::State& state) {
 }
 #endif
 
-struct Object : MpscQueueNode {};
+struct Object : MpscQueueNode<> {};
 
 class BM_MpscQueue : public benchmark::Fixture {
 public:

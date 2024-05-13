@@ -36,7 +36,12 @@ namespace core {
 //! @tparam OwnershipPolicy defines ownership policy which is used to acquire an
 //! element ownership when it's added to the queue and release ownership when it's
 //! removed from the queue.
-template <class T, template <class TT> class OwnershipPolicy = RefCountedOwnership>
+//!
+//! @tparam Node defines base class of queue nodes. It is needed if MpscQueueNode
+//! is used with non-default tag.
+template <class T,
+          template <class TT> class OwnershipPolicy = RefCountedOwnership,
+          class Node = MpscQueueNode<> >
 class MpscQueue : public NonCopyable<> {
 public:
     //! Pointer type.
@@ -52,7 +57,7 @@ public:
 
     //! Add object to the end of the queue.
     //! Can be called concurrently.
-    //! Acquires ownership of @p obj.
+    //! Acquires ownership of @p elem.
     //! After this call returns, any thread calling pop_front_exclusive() or
     //! try_pop_front_exclusive() is guaranteed to see a non-empty queue. But note
     //! that the latter can still fail if called concurrently with push_back().
@@ -65,12 +70,12 @@ public:
     //!    calls (because of the spin loop in the implementation of atomic exchange).
     //!  - Concurrent try_pop_front() and pop_front() does not affect this operation.
     //!    Only concurrent push_back() calls can make it spin.
-    void push_back(T& obj) {
-        OwnershipPolicy<T>::acquire(obj);
+    void push_back(T& elem) {
+        OwnershipPolicy<T>::acquire(elem);
 
-        MpscQueueNode::MpscQueueData* node = obj.mpsc_queue_data();
+        MpscQueueData* data = elem.mpsc_queue_data();
 
-        impl_.push_back(node);
+        impl_.push_back(data);
     }
 
     //! Try to remove object from the beginning of the queue (non-blocking version).
@@ -78,22 +83,22 @@ public:
     //! Releases ownership of the returned object.
     //! @remarks
     //!  - Returns NULL if the queue is empty.
-    //!  - May return NULL even if the queue is actially non-empty, in particular if
+    //!  - May return NULL even if the queue is actually non-empty, in particular if
     //!    concurrent push_back() call is running, or if the push_back() results were
     //!    not fully published yet.
     //! @note
     //!  - This operation is both lock-free and wait-free on all architectures, i.e. it
     //!    never waits for sleeping threads and never spins indefinitely.
     Pointer try_pop_front_exclusive() {
-        MpscQueueNode::MpscQueueData* node = impl_.pop_front(false);
-        if (!node) {
+        MpscQueueData* data = impl_.pop_front(false);
+        if (!data) {
             return NULL;
         }
 
-        Pointer obj = static_cast<T*>(node->container_of());
-        OwnershipPolicy<T>::release(*obj);
+        Pointer elem = from_node_data_(data);
+        OwnershipPolicy<T>::release(*elem);
 
-        return obj;
+        return elem;
     }
 
     //! Remove object from the beginning of the queue (blocking version).
@@ -108,18 +113,26 @@ public:
     //!  - On the "fast-path", however, this operation does not wait for any
     //!    threads and just performs a few atomic reads and writes.
     Pointer pop_front_exclusive() {
-        MpscQueueNode::MpscQueueData* node = impl_.pop_front(true);
-        if (!node) {
+        MpscQueueData* data = impl_.pop_front(true);
+        if (!data) {
             return NULL;
         }
 
-        Pointer obj = static_cast<T*>(node->container_of());
-        OwnershipPolicy<T>::release(*obj);
+        Pointer elem = from_node_data_(data);
+        OwnershipPolicy<T>::release(*elem);
 
-        return obj;
+        return elem;
     }
 
 private:
+    static MpscQueueData* to_node_data_(T& elem) {
+        return static_cast<Node&>(elem).mpsc_queue_data();
+    }
+
+    static T* from_node_data_(MpscQueueData* data) {
+        return static_cast<T*>(static_cast<Node*>(Node::mpsc_queue_node(data)));
+    }
+
     MpscQueueImpl impl_;
 };
 

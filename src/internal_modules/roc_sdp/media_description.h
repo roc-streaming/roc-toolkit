@@ -34,7 +34,7 @@ namespace sdp {
 //!  m=<type> <port> <proto> <fmt>
 //! @endcode
 class MediaDescription : public core::RefCounted<MediaDescription, core::ArenaAllocation>,
-                         public core::ListNode {
+                         public core::ListNode<> {
 public:
     //! Initialize empty media description
     MediaDescription(core::IArena& arena);

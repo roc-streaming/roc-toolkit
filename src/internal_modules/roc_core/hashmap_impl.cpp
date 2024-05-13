@@ -43,7 +43,7 @@ size_t HashmapImpl::size() const {
     return size_;
 }
 
-bool HashmapImpl::contains(const HashmapNode::HashmapNodeData* node) const {
+bool HashmapImpl::contains(const HashmapData* node) const {
     if (member_of_bucket_array_(curr_buckets_, n_curr_buckets_, node)) {
         return true;
     }
@@ -55,10 +55,11 @@ bool HashmapImpl::contains(const HashmapNode::HashmapNodeData* node) const {
     return false;
 }
 
-HashmapNode::HashmapNodeData* HashmapImpl::find_node(
-    hashsum_t hash, const void* key, key_equals_callback key_equals) const {
+HashmapData* HashmapImpl::find_node(hashsum_t hash,
+                                    const void* key,
+                                    key_equals_callback key_equals) const {
     if (n_curr_buckets_ != 0) {
-        HashmapNode::HashmapNodeData* elem =
+        HashmapData* elem =
             find_in_bucket_(curr_buckets_[hash % n_curr_buckets_], hash, key, key_equals);
         if (elem) {
             return elem;
@@ -66,7 +67,7 @@ HashmapNode::HashmapNodeData* HashmapImpl::find_node(
     }
 
     if (n_prev_buckets_ != 0) {
-        HashmapNode::HashmapNodeData* elem =
+        HashmapData* elem =
             find_in_bucket_(prev_buckets_[hash % n_prev_buckets_], hash, key, key_equals);
         if (elem) {
             return elem;
@@ -76,22 +77,21 @@ HashmapNode::HashmapNodeData* HashmapImpl::find_node(
     return NULL;
 }
 
-HashmapNode::HashmapNodeData* HashmapImpl::front() const {
+HashmapData* HashmapImpl::front() const {
     if (size() == 0) {
         return NULL;
     }
     return all_head_.all_next;
 }
 
-HashmapNode::HashmapNodeData* HashmapImpl::back() const {
+HashmapData* HashmapImpl::back() const {
     if (size() == 0) {
         return NULL;
     }
     return all_head_.all_prev;
 }
 
-HashmapNode::HashmapNodeData*
-HashmapImpl::nextof(HashmapNode::HashmapNodeData* node) const {
+HashmapData* HashmapImpl::nextof(HashmapData* node) const {
     if (!contains(node)) {
         roc_panic("hashmap:"
                   " attempt to use an element which is not a member of %s hashmap",
@@ -105,8 +105,7 @@ HashmapImpl::nextof(HashmapNode::HashmapNodeData* node) const {
     return node->all_next;
 }
 
-HashmapNode::HashmapNodeData*
-HashmapImpl::prevof(HashmapNode::HashmapNodeData* node) const {
+HashmapData* HashmapImpl::prevof(HashmapData* node) const {
     if (!contains(node)) {
         roc_panic("hashmap:"
                   " attempt to use an element which is not a member of %s hashmap",
@@ -120,7 +119,7 @@ HashmapImpl::prevof(HashmapNode::HashmapNodeData* node) const {
     return node->all_prev;
 }
 
-bool HashmapImpl::insert(HashmapNode::HashmapNodeData* node,
+bool HashmapImpl::insert(HashmapData* node,
                          hashsum_t hash,
                          const void* key,
                          key_equals_callback key_equals) {
@@ -152,7 +151,7 @@ bool HashmapImpl::insert(HashmapNode::HashmapNodeData* node,
     return true;
 }
 
-void HashmapImpl::remove(HashmapNode::HashmapNodeData* node, bool skip_rehash) {
+void HashmapImpl::remove(HashmapData* node, bool skip_rehash) {
     if (!contains(node)) {
         roc_panic("hashmap:"
                   " attempt to remove an element which is not a member of %s hashmap",
@@ -189,12 +188,11 @@ bool HashmapImpl::grow() {
     return true;
 }
 
-HashmapNode::HashmapNodeData*
-HashmapImpl::find_in_bucket_(const Bucket& bucket,
-                             hashsum_t hash,
-                             const void* key,
-                             key_equals_callback key_equals) const {
-    HashmapNode::HashmapNodeData* node = bucket.head;
+HashmapData* HashmapImpl::find_in_bucket_(const Bucket& bucket,
+                                          hashsum_t hash,
+                                          const void* key,
+                                          key_equals_callback key_equals) const {
+    HashmapData* node = bucket.head;
 
     if (node != NULL) {
         do {
@@ -263,8 +261,9 @@ void HashmapImpl::dealloc_buckets_() {
     }
 }
 
-bool HashmapImpl::member_of_bucket_array_(
-    Bucket* buckets, size_t n_buckets, const HashmapNode::HashmapNodeData* node) const {
+bool HashmapImpl::member_of_bucket_array_(Bucket* buckets,
+                                          size_t n_buckets,
+                                          const HashmapData* node) const {
     if (n_buckets == 0) {
         return false;
     }
@@ -280,8 +279,8 @@ HashmapImpl::Bucket& HashmapImpl::select_bucket_(hashsum_t hash) const {
     return curr_buckets_[hash % n_curr_buckets_];
 }
 
-void HashmapImpl::bucket_insert_(Bucket& bucket, HashmapNode::HashmapNodeData* node) {
-    if (HashmapNode::HashmapNodeData* head = bucket.head) {
+void HashmapImpl::bucket_insert_(Bucket& bucket, HashmapData* node) {
+    if (HashmapData* head = bucket.head) {
         node->bucket_next = head;
         node->bucket_prev = head->bucket_prev;
 
@@ -297,7 +296,7 @@ void HashmapImpl::bucket_insert_(Bucket& bucket, HashmapNode::HashmapNodeData* n
     node->bucket = (void*)&bucket;
 }
 
-void HashmapImpl::bucket_remove_(HashmapNode::HashmapNodeData* node) {
+void HashmapImpl::bucket_remove_(HashmapData* node) {
     Bucket& bucket = *(Bucket*)node->bucket;
 
     if (bucket.head == node) {
@@ -319,7 +318,7 @@ void HashmapImpl::bucket_remove_(HashmapNode::HashmapNodeData* node) {
     node->bucket = NULL;
 }
 
-void HashmapImpl::all_list_insert_(HashmapNode::HashmapNodeData* node) {
+void HashmapImpl::all_list_insert_(HashmapData* node) {
     node->all_next = &all_head_;
     node->all_prev = all_head_.all_prev;
 
@@ -327,7 +326,7 @@ void HashmapImpl::all_list_insert_(HashmapNode::HashmapNodeData* node) {
     all_head_.all_prev = node;
 }
 
-void HashmapImpl::all_list_remove_(HashmapNode::HashmapNodeData* node) {
+void HashmapImpl::all_list_remove_(HashmapData* node) {
     node->all_prev->all_next = node->all_next;
     node->all_next->all_prev = node->all_prev;
 }
@@ -380,7 +379,7 @@ void HashmapImpl::proceed_rehash_(bool in_insert) {
     }
 }
 
-void HashmapImpl::migrate_node_(HashmapNode::HashmapNodeData* node) {
+void HashmapImpl::migrate_node_(HashmapData* node) {
     bucket_remove_(node);
 
     Bucket& bucket = select_bucket_(node->hash);

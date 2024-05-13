@@ -140,8 +140,8 @@ private:
     // Map route by source id (ssrc).
     // Allocated from pool.
     struct SourceNode : core::RefCounted<SourceNode, core::PoolAllocation>,
-                        core::HashmapNode,
-                        core::ListNode {
+                        core::HashmapNode<>,
+                        core::ListNode<> {
         Route& parent_route;
         const packet::stream_source_t source_id;
 
@@ -172,7 +172,7 @@ private:
 
     // Map route by source address.
     // Embedded into Route struct.
-    struct AddressNode : core::HashmapNode {
+    struct AddressNode : core::HashmapNode<> {
         Route& route() {
             return *ROC_CONTAINER_OF(this, Route, address_node);
         }
@@ -194,7 +194,7 @@ private:
 
     // Map route by cname.
     // Embedded into Route struct.
-    struct CnameNode : core::HashmapNode {
+    struct CnameNode : core::HashmapNode<> {
         Route& route() {
             return *ROC_CONTAINER_OF(this, Route, cname_node);
         }
@@ -215,7 +215,7 @@ private:
 
     // Map route by session pointer.
     // Embedded into Route struct.
-    struct SessionNode : core::HashmapNode {
+    struct SessionNode : core::HashmapNode<> {
         Route& route() {
             return *ROC_CONTAINER_OF(this, Route, session_node);
         }
@@ -247,7 +247,7 @@ private:
     //
     // All of the mappings are optional. Route struct owns hashmap nodes for all these
     // mappings, to allow including it into corresponding hash tables.
-    struct Route : core::RefCounted<Route, core::PoolAllocation>, core::ListNode {
+    struct Route : core::RefCounted<Route, core::PoolAllocation>, core::ListNode<> {
         // Session to which packets are routed.
         // May be empty.
         core::SharedPtr<ReceiverSession> session;

@@ -20,7 +20,7 @@ namespace core {
 //!  Template allows instantiate distinct non-copyable bases when
 //!  they are inherited by multiple paths. We need this to
 //!  eliminate compiler warnings "inaccessible direct base...".
-template <class T = void> class NonCopyable {
+template <class Tag = void> class NonCopyable {
 protected:
     NonCopyable() {
     }

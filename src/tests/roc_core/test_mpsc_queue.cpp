@@ -22,7 +22,7 @@ struct NoAllocation {
     }
 };
 
-struct Object : RefCounted<Object, NoAllocation>, MpscQueueNode {};
+struct Object : RefCounted<Object, NoAllocation>, MpscQueueNode<> {};
 
 } // namespace
 

@@ -56,7 +56,7 @@ public:
 private:
     enum { PreallocatedNodes = 16 };
 
-    struct Node : core::RefCounted<Node, core::PoolAllocation>, core::HashmapNode {
+    struct Node : core::RefCounted<Node, core::PoolAllocation>, core::HashmapNode<> {
         Node(core::IPool& pool, const Encoding& encoding)
             : core::RefCounted<Node, core::PoolAllocation>(pool)
             , encoding(encoding) {

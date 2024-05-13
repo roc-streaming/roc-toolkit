@@ -27,7 +27,7 @@ struct HeapAllocation {
     }
 };
 
-class Object : public HashmapNode, public RefCounted<Object, HeapAllocation> {
+class Object : public HashmapNode<>, public RefCounted<Object, HeapAllocation> {
 public:
     Object(const char* k) {
         strcpy(key_, k);

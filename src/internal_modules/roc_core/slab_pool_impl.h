@@ -87,8 +87,8 @@ public:
     }
 
 private:
-    struct Slab : ListNode {};
-    struct Slot : ListNode {};
+    struct Slab : ListNode<> {};
+    struct Slot : ListNode<> {};
 
     void* give_slot_to_user_(Slot* slot);
     Slot* take_slot_from_user_(void* memory);

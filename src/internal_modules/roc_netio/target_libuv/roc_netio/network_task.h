@@ -26,7 +26,7 @@ class NetworkLoop;
 class INetworkTaskCompleter;
 
 //! Base class for network loop tasks.
-class NetworkTask : public core::MpscQueueNode {
+class NetworkTask : public core::MpscQueueNode<> {
 public:
     ~NetworkTask();
 

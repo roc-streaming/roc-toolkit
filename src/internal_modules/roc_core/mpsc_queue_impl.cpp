@@ -29,7 +29,7 @@ void MpscQueueImpl::push_back(MpscQueueData* node) {
     push_node_(node);
 }
 
-MpscQueueNode::MpscQueueData* MpscQueueImpl::pop_front(bool can_spin) {
+MpscQueueData* MpscQueueImpl::pop_front(bool can_spin) {
     MpscQueueData* node = pop_node_(can_spin);
     if (node != NULL) {
         change_owner_(node, this, NULL);
@@ -43,7 +43,7 @@ void MpscQueueImpl::push_node_(MpscQueueData* node) {
     AtomicOps::store_release(prev->next, node);
 }
 
-MpscQueueImpl::MpscQueueData* MpscQueueImpl::pop_node_(bool can_spin) {
+MpscQueueData* MpscQueueImpl::pop_node_(bool can_spin) {
     MpscQueueData* head = AtomicOps::load_relaxed(head_);
     MpscQueueData* next = AtomicOps::load_acquire(head->next);
 
@@ -91,12 +91,12 @@ MpscQueueImpl::MpscQueueData* MpscQueueImpl::pop_node_(bool can_spin) {
 }
 
 // Wait until concurrent push_node_() completes and node->next becomes non-NULL.
-// This version may block indefinetely.
+// This version may block indefinitely.
 // Usually it returns immediately. It can block only if the thread performing
 // push_node_() was interrupted exactly after updating tail and before updating
 // next, and is now sleeping. In this rare case, this method will wait until the
 // push_node_() thread is resumed and completed.
-MpscQueueImpl::MpscQueueData* MpscQueueImpl::wait_next_(MpscQueueData* node) {
+MpscQueueData* MpscQueueImpl::wait_next_(MpscQueueData* node) {
     if (MpscQueueData* next = try_wait_next_(node)) {
         return next;
     }
@@ -112,7 +112,7 @@ MpscQueueImpl::MpscQueueData* MpscQueueImpl::wait_next_(MpscQueueData* node) {
 // This version is non-blocking and gives up after a few re-tries.
 // Usually it succeeds. It can fail only in the same rare case when
 // wait_next_() blocks.
-MpscQueueImpl::MpscQueueData* MpscQueueImpl::try_wait_next_(MpscQueueData* node) {
+MpscQueueData* MpscQueueImpl::try_wait_next_(MpscQueueData* node) {
     MpscQueueData* next;
     if ((next = AtomicOps::load_acquire(node->next))) {
         return next;

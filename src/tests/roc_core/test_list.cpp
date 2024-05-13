@@ -24,9 +24,9 @@ struct NoAllocation {
     }
 };
 
-struct Object : ListNode {};
+struct Object : ListNode<> {};
 
-struct RefObject : RefCounted<RefObject, NoAllocation>, ListNode {};
+struct RefObject : RefCounted<RefObject, NoAllocation>, ListNode<> {};
 
 } // namespace
 

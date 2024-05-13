@@ -34,7 +34,7 @@ namespace pipeline {
 //!  - one or more related receiver endpoints, one per each type
 //!  - one session group associated with those endpoints
 class ReceiverSlot : public core::RefCounted<ReceiverSlot, core::ArenaAllocation>,
-                     public core::ListNode {
+                     public core::ListNode<> {
 public:
     //! Initialize.
     ReceiverSlot(const ReceiverSourceConfig& source_config,

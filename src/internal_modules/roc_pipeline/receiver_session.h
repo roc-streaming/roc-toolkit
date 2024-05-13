@@ -56,7 +56,7 @@ namespace pipeline {
 //!  - a pipeline for processing packets from single sender and converting
 //!    them into audio frames
 class ReceiverSession : public core::RefCounted<ReceiverSession, core::ArenaAllocation>,
-                        public core::ListNode {
+                        public core::ListNode<> {
 public:
     //! Initialize.
     ReceiverSession(const ReceiverSessionConfig& session_config,

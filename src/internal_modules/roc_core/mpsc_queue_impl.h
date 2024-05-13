@@ -28,14 +28,12 @@ public:
     ~MpscQueueImpl();
 
     //! Add object to the end of the queue.
-    void push_back(MpscQueueNode::MpscQueueData* node);
+    void push_back(MpscQueueData* node);
 
     //! Remove object from the beginning of the queue.
-    MpscQueueNode::MpscQueueData* pop_front(bool can_spin);
+    MpscQueueData* pop_front(bool can_spin);
 
 private:
-    typedef MpscQueueNode::MpscQueueData MpscQueueData;
-
     void push_node_(MpscQueueData* node);
     MpscQueueData* pop_node_(bool can_spin);
 

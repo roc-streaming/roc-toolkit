@@ -77,9 +77,13 @@ namespace core {
 //! @tparam OwnershipPolicy defines ownership policy which is used to acquire an element
 //! ownership when it's added to the hashmap and release ownership when it's removed
 //! from the hashmap.
+//!
+//! @tparam Node defines base class of hashmap nodes. It is needed if HashmapNode
+//! is used with non-default tag.
 template <class T,
           size_t EmbeddedCapacity = 0,
-          template <class TT> class OwnershipPolicy = RefCountedOwnership>
+          template <class TT> class OwnershipPolicy = RefCountedOwnership,
+          class Node = HashmapNode<> >
 class Hashmap : public NonCopyable<> {
 public:
     //! Pointer type.
@@ -96,13 +100,13 @@ public:
 
     //! Release ownership of all elements.
     ~Hashmap() {
-        HashmapNode::HashmapNodeData* node = impl_.front();
+        HashmapData* data = impl_.front();
 
-        while (node != NULL) {
-            impl_.remove(node, true);
-            T* elem = container_of_(node);
+        while (data != NULL) {
+            impl_.remove(data, true);
+            T* elem = from_node_data_(data);
             OwnershipPolicy<T>::release(*elem);
-            node = impl_.front();
+            data = impl_.front();
         }
     }
 
@@ -127,9 +131,9 @@ public:
     //! @note
     //!  - has O(1) complexity
     //!  - doesn't compute key hashes
-    bool contains(const T& element) const {
-        const HashmapNode::HashmapNodeData* node = element.hashmap_node_data();
-        return impl_.contains(node);
+    bool contains(const T& elem) const {
+        const HashmapData* data = to_node_data_(elem);
+        return impl_.contains(data);
     }
 
     //! Find element in the hashmap by key.
@@ -145,13 +149,13 @@ public:
     //!  The worst case is achieved when the hash function produces many collisions.
     template <class Key> Pointer find(const Key& key) const {
         const hashsum_t hash = T::key_hash(key);
-        HashmapNode::HashmapNodeData* node = impl_.find_node(
+        HashmapData* data = impl_.find_node(
             hash, (const void*)&key,
-            &Hashmap<T, EmbeddedCapacity, OwnershipPolicy>::key_equal_<Key>);
-        if (!node) {
+            &Hashmap<T, EmbeddedCapacity, OwnershipPolicy, Node>::key_equal_<Key>);
+        if (!data) {
             return NULL;
         }
-        return container_of_(node);
+        return from_node_data_(data);
     }
 
     //! Get first element in hashmap.
@@ -159,11 +163,11 @@ public:
     //! @returns
     //!  first element or NULL if hashmap is empty.
     Pointer front() const {
-        HashmapNode::HashmapNodeData* node = impl_.front();
-        if (!node) {
+        HashmapData* data = impl_.front();
+        if (!data) {
             return NULL;
         }
-        return container_of_(node);
+        return from_node_data_(data);
     }
 
     //! Get last element in hashmap.
@@ -171,97 +175,97 @@ public:
     //! @returns
     //!  last element or NULL if hashmap is empty.
     Pointer back() const {
-        HashmapNode::HashmapNodeData* node = impl_.back();
+        HashmapData* node = impl_.back();
         if (!node) {
             return NULL;
         }
-        return container_of_(node);
+        return from_node_data_(node);
     }
 
     //! Get hashmap element next to given one.
     //! Elements are ordered by insertion.
     //!
     //! @returns
-    //!  hashmap element following @p element if @p element is not
+    //!  hashmap element following @p elem if @p elem is not
     //!  last, or NULL otherwise.
     //!
     //! @pre
-    //!  @p element should be member of this hashmap.
-    Pointer nextof(T& element) const {
-        HashmapNode::HashmapNodeData* node = element.hashmap_node_data();
-        HashmapNode::HashmapNodeData* next_node = impl_.nextof(node);
-        if (!next_node) {
+    //!  @p elem should be member of this hashmap.
+    Pointer nextof(T& elem) const {
+        HashmapData* data = to_node_data_(elem);
+        HashmapData* next_data = impl_.nextof(data);
+        if (!next_data) {
             return NULL;
         }
-        return container_of_(next_node);
+        return from_node_data_(next_data);
     }
 
     //! Get hashmap element previous to given one.
     //! Elements are ordered by insertion.
     //!
     //! @returns
-    //!  hashmap element preceeding @p element if @p element is not
+    //!  hashmap element preceding @p elem if @p elem is not
     //!  first, or NULL otherwise.
     //!
     //! @pre
-    //!  @p element should be member of this hashmap.
-    Pointer prevof(T& element) const {
-        HashmapNode::HashmapNodeData* node = element.hashmap_node_data();
-        HashmapNode::HashmapNodeData* prev_node = impl_.prevof(node);
-        if (!prev_node) {
+    //!  @p elem should be member of this hashmap.
+    Pointer prevof(T& elem) const {
+        HashmapData* data = to_node_data_(elem);
+        HashmapData* prev_data = impl_.prevof(data);
+        if (!prev_data) {
             return NULL;
         }
-        return container_of_(prev_node);
+        return from_node_data_(prev_data);
     }
 
     //! Insert element into hashmap.
     //!
     //! @remarks
-    //!  - acquires ownership of @p element
+    //!  - acquires ownership of @p elem
     //!
     //! @returns
     //!  false if the allocation failed
     //!
     //! @pre
-    //!  - @p element should not be member of any hashmap
+    //!  - @p elem should not be member of any hashmap
     //!  - hashmap shouldn't have an element with the same key
     //!
     //! @note
     //!  - has O(1) complexity in average and O(n) in the worst case
     //!  - computes key hash
     //!  - doesn't make allocations or deallocations
-    //!  - proceedes lazy rehashing
+    //!  - proceeds lazy rehashing
     //!
     //! @note
     //!  Insertion speed is higher when insert to remove ratio is close to one or lower,
     //!  and slows down when it becomes higher than one. The slow down is caused by
     //!  the incremental rehashing algorithm.
-    ROC_ATTR_NODISCARD bool insert(T& element) {
-        HashmapNode::HashmapNodeData* node = element.hashmap_node_data();
-        if (!insert_(element.key(), node)) {
+    ROC_ATTR_NODISCARD bool insert(T& elem) {
+        HashmapData* data = to_node_data_(elem);
+        if (!insert_(elem.key(), data)) {
             return false;
         }
-        OwnershipPolicy<T>::acquire(element);
+        OwnershipPolicy<T>::acquire(elem);
         return true;
     }
 
     //! Remove element from hashmap.
     //!
     //! @remarks
-    //!  - releases ownership of @p element
+    //!  - releases ownership of @p elem
     //!
     //! @pre
-    //!  @p element should be member of this hashmap.
+    //!  @p elem should be member of this hashmap.
     //!
     //! @note
     //!  - has O(1) complexity
     //!  - doesn't compute key hash
     //!  - doesn't make allocations or deallocations
-    //!  - proceedes lazy rehashing
-    void remove(T& element) {
-        HashmapNode::HashmapNodeData* node = element.hashmap_node_data();
-        impl_.remove(node, false);
-        OwnershipPolicy<T>::release(element);
+    //!  - proceeds lazy rehashing
+    void remove(T& elem) {
+        HashmapData* data = to_node_data_(elem);
+        impl_.remove(data, false);
+        OwnershipPolicy<T>::release(elem);
     }
 
     //! Grow hashtable capacity.
@@ -286,7 +290,7 @@ public:
 
 private:
     enum {
-        // how much buckets are embeded directly into Hashmap object
+        // how much buckets are embedded directly into Hashmap object
         NumEmbeddedBuckets = ((int)(EmbeddedCapacity == 0        ? 0
                                         : EmbeddedCapacity <= 16 ? 16
                                                                  : EmbeddedCapacity)
@@ -295,23 +299,25 @@ private:
             / HashmapImpl::LoadFactorNum * 2
     };
 
-    static T* container_of_(HashmapNode::HashmapNodeData* data) {
-        return static_cast<T*>(data->container_of());
+    static HashmapData* to_node_data_(const T& elem) {
+        return static_cast<const Node&>(elem).hashmap_data();
     }
 
-    template <class Key>
-    static bool key_equal_(HashmapNode::HashmapNodeData* node, const void* key) {
-        T* elem = container_of_(node);
+    static T* from_node_data_(HashmapData* data) {
+        return static_cast<T*>(static_cast<Node*>(Node::hashmap_node(data)));
+    }
+
+    template <class Key> static bool key_equal_(HashmapData* node, const void* key) {
+        T* elem = from_node_data_(node);
         const Key& key_ref = *(const Key*)key;
         return T::key_equal(elem->key(), key_ref);
     }
 
-    template <class Key>
-    bool insert_(const Key& key, HashmapNode::HashmapNodeData* node) {
+    template <class Key> bool insert_(const Key& key, HashmapData* node) {
         const hashsum_t hash = T::key_hash(key);
         return impl_.insert(
             node, hash, (const void*)&key,
-            &Hashmap<T, EmbeddedCapacity, OwnershipPolicy>::key_equal_<Key>);
+            &Hashmap<T, EmbeddedCapacity, OwnershipPolicy, Node>::key_equal_<Key>);
     }
 
     AlignedStorage<NumEmbeddedBuckets * sizeof(HashmapImpl::Bucket)> embedded_buckets_;

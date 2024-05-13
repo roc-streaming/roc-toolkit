@@ -20,50 +20,51 @@
 namespace roc {
 namespace core {
 
-//! Base class for list element.
+//! List node internal data.
+struct ListData {
+    //! Previous list element.
+    ListData* prev;
+
+    //! Next list element.
+    ListData* next;
+
+    //! The list this node is member of.
+    //! @remarks
+    //!  NULL if node is not member of any list.
+    void* list;
+
+    ListData()
+        : prev(NULL)
+        , next(NULL)
+        , list(NULL) {
+    }
+};
+
+//! Base class for List element.
 //! @remarks
 //!  Object should inherit this class to be able to be a member of List.
-class ListNode : public NonCopyable<ListNode> {
+//!  Tag allows to inherit multiple copies of ListNode and include same
+//!  object into multiple lists.
+template <class Tag = void> class ListNode : public NonCopyable<ListNode<Tag> > {
 public:
-    //! List node data.
-    struct ListNodeData {
-        //! Previous list element.
-        ListNodeData* prev;
-
-        //! Next list element.
-        ListNodeData* next;
-
-        //! The list this node is member of.
-        //! @remarks
-        //!  NULL if node is not member of any list.
-        void* list;
-
-        ListNodeData()
-            : prev(NULL)
-            , next(NULL)
-            , list(NULL) {
-        }
-
-        //! Get ListNode object that contains this ListData object.
-        ListNode* container_of() {
-            return ROC_CONTAINER_OF(this, ListNode, list_data_);
-        }
-    };
-
     ~ListNode() {
         if (list_data_.list != NULL) {
-            roc_panic(
-                "list node: can't call destructor for an element that is still in list");
+            roc_panic("list node: attempt to destroy node while it's still in queue");
         }
     }
 
-    //! Get list node data.
-    ListNodeData* list_node_data() const {
+    //! Get pointer to parent node from pointer to internal data.
+    static ListNode* list_node(ListData* data) {
+        return ROC_CONTAINER_OF(data, ListNode, list_data_);
+    }
+
+    //! Get pointer to internal data.
+    ListData* list_data() const {
         return &list_data_;
     }
 
 private:
-    mutable ListNodeData list_data_;
+    mutable ListData list_data_;
 };
 
 } // namespace core

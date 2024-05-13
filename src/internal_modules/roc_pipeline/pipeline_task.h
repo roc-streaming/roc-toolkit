@@ -24,7 +24,7 @@ class PipelineLoop;
 class IPipelineTaskCompleter;
 
 //! Base class for pipeline tasks.
-class PipelineTask : public core::MpscQueueNode {
+class PipelineTask : public core::MpscQueueNode<> {
 public:
     ~PipelineTask();
 

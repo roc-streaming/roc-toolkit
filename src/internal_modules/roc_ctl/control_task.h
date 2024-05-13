@@ -50,7 +50,7 @@ enum ControlTaskResult {
 typedef ControlTaskResult (IControlTaskExecutor::*ControlTaskFunc)(ControlTask&);
 
 //! Base class for control tasks.
-class ControlTask : public core::MpscQueueNode, public core::ListNode {
+class ControlTask : public core::MpscQueueNode<>, public core::ListNode<> {
 public:
     ~ControlTask();
 

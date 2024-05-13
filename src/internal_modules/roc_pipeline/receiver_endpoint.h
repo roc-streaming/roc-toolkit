@@ -40,7 +40,7 @@ class ReceiverSessionGroup;
 //!  - a pipeline for processing packets from single network endpoint
 //!  - a reference to session group to which packets are routed
 class ReceiverEndpoint : public core::RefCounted<ReceiverEndpoint, core::ArenaAllocation>,
-                         public core::ListNode,
+                         public core::ListNode<>,
                          private packet::IWriter {
 public:
     //! Initialize.

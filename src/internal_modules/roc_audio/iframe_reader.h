@@ -19,7 +19,7 @@ namespace roc {
 namespace audio {
 
 //! Frame reader interface.
-class IFrameReader : public core::ListNode {
+class IFrameReader : public core::ListNode<> {
 public:
     virtual ~IFrameReader();
 

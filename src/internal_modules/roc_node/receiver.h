@@ -91,7 +91,7 @@ private:
         }
     };
 
-    struct Slot : core::RefCounted<Slot, core::PoolAllocation>, core::HashmapNode {
+    struct Slot : core::RefCounted<Slot, core::PoolAllocation>, core::HashmapNode<> {
         const slot_index_t index;
         pipeline::ReceiverLoop::SlotHandle handle;
         Port ports[address::Iface_Max];

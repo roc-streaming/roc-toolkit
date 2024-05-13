@@ -25,7 +25,7 @@ namespace ctl {
 //! Base class for control endpoints.
 class BasicControlEndpoint
     : public core::RefCounted<BasicControlEndpoint, core::ArenaAllocation>,
-      public core::ListNode {
+      public core::ListNode<> {
 public:
     //! Initialization.
     BasicControlEndpoint(core::IArena&);
