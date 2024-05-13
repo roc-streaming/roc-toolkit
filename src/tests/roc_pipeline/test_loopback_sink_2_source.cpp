@@ -526,7 +526,8 @@ void send_receive(int flags,
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, sender_config.input_sample_spec,
                                    send_base_cts);
-        sender.refresh(frame_writer.refresh_ts(send_base_cts));
+        LONGS_EQUAL(status::StatusOK,
+                    sender.refresh(frame_writer.refresh_ts(send_base_cts), NULL));
 
         proxy.deliver_from(sender_outbound_queue);
 
@@ -536,7 +537,9 @@ void send_receive(int flags,
                 recv_base_cts = send_base_cts;
             }
 
-            receiver.refresh(frame_reader.refresh_ts(recv_base_cts));
+            LONGS_EQUAL(status::StatusOK,
+                        receiver.refresh(frame_reader.refresh_ts(recv_base_cts), NULL));
+
             frame_reader.read_samples(SamplesPerFrame, num_sessions,
                                       receiver_config.common.output_sample_spec,
                                       recv_base_cts);

@@ -262,33 +262,25 @@ status::StatusCode ReceiverSession::route_packet(const packet::PacketPtr& packet
     return packet_router_->write(packet);
 }
 
-bool ReceiverSession::refresh(core::nanoseconds_t current_time,
-                              core::nanoseconds_t* next_refresh) {
+status::StatusCode ReceiverSession::refresh(core::nanoseconds_t current_time,
+                                            core::nanoseconds_t& next_deadline) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    (void)current_time;
-
-    if (next_refresh) {
-        *next_refresh = 0;
-    }
-
-    if (watchdog_) {
-        if (!watchdog_->is_alive()) {
-            return false;
-        }
+    if (watchdog_ && !watchdog_->is_alive()) {
+        return status::StatusAbort;
     }
 
     if (!latency_monitor_->is_alive()) {
-        return false;
+        return status::StatusAbort;
     }
 
-    return true;
+    return status::StatusOK;
 }
 
-bool ReceiverSession::reclock(core::nanoseconds_t playback_time) {
+void ReceiverSession::reclock(core::nanoseconds_t playback_time) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    return latency_monitor_->reclock(playback_time);
+    latency_monitor_->reclock(playback_time);
 }
 
 size_t ReceiverSession::num_reports() const {

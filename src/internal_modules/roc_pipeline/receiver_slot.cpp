@@ -73,28 +73,36 @@ ReceiverEndpoint* ReceiverSlot::add_endpoint(address::Interface iface,
     return NULL;
 }
 
-core::nanoseconds_t ReceiverSlot::refresh(core::nanoseconds_t current_time) {
+status::StatusCode ReceiverSlot::refresh(core::nanoseconds_t current_time,
+                                         core::nanoseconds_t& next_deadline) {
     roc_panic_if(init_status_ != status::StatusOK);
 
+    status::StatusCode code = status::NoStatus;
+
     if (source_endpoint_) {
-        const status::StatusCode code = source_endpoint_->pull_packets(current_time);
-        // TODO(gh-183): forward status (refresh)
-        roc_panic_if(code != status::StatusOK);
+        if ((code = source_endpoint_->pull_packets(current_time)) != status::StatusOK) {
+            return code;
+        }
     }
 
     if (repair_endpoint_) {
-        const status::StatusCode code = repair_endpoint_->pull_packets(current_time);
-        // TODO(gh-183): forward status (refresh)
-        roc_panic_if(code != status::StatusOK);
+        if ((code = repair_endpoint_->pull_packets(current_time)) != status::StatusOK) {
+            return code;
+        }
     }
 
     if (control_endpoint_) {
-        const status::StatusCode code = control_endpoint_->pull_packets(current_time);
-        // TODO(gh-183): forward status (refresh)
-        roc_panic_if(code != status::StatusOK);
+        if ((code = control_endpoint_->pull_packets(current_time)) != status::StatusOK) {
+            return code;
+        }
     }
 
-    return session_group_.refresh_sessions(current_time);
+    if ((code = session_group_.refresh_sessions(current_time, next_deadline))
+        != status::StatusOK) {
+        return code;
+    }
+
+    return status::StatusOK;
 }
 
 void ReceiverSlot::reclock(core::nanoseconds_t playback_time) {

@@ -88,9 +88,7 @@ public:
     //! @remarks
     //!  Pipeline invokes this method after adding last frame to
     //!  playback buffer and knowing its playback time.
-    //! @returns
-    //!  false if the session is ended
-    bool reclock(core::nanoseconds_t playback_timestamp);
+    void reclock(core::nanoseconds_t playback_timestamp);
 
 private:
     void compute_niq_latency_();

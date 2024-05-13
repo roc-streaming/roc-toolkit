@@ -201,7 +201,7 @@ TEST(sender_sink, basic) {
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
-        sender.refresh(frame_writer.refresh_ts());
+        LONGS_EQUAL(status::StatusOK, sender.refresh(frame_writer.refresh_ts(), NULL));
     }
 
     test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
@@ -240,7 +240,7 @@ TEST(sender_sink, frame_size_small) {
 
     for (size_t nf = 0; nf < ManySmallFrames; nf++) {
         frame_writer.write_samples(SamplesPerSmallFrame, input_sample_spec);
-        sender.refresh(frame_writer.refresh_ts());
+        LONGS_EQUAL(status::StatusOK, sender.refresh(frame_writer.refresh_ts(), NULL));
     }
 
     test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
@@ -279,7 +279,7 @@ TEST(sender_sink, frame_size_large) {
 
     for (size_t nf = 0; nf < ManyLargeFrames; nf++) {
         frame_writer.write_samples(SamplesPerLargeFrame, input_sample_spec);
-        sender.refresh(frame_writer.refresh_ts());
+        LONGS_EQUAL(status::StatusOK, sender.refresh(frame_writer.refresh_ts(), NULL));
     }
 
     test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
@@ -312,7 +312,7 @@ TEST(sender_sink, channel_mapping_stereo_to_mono) {
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
-        sender.refresh(frame_writer.refresh_ts());
+        LONGS_EQUAL(status::StatusOK, sender.refresh(frame_writer.refresh_ts(), NULL));
     }
 
     test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
@@ -345,7 +345,7 @@ TEST(sender_sink, channel_mapping_mono_to_stereo) {
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
-        sender.refresh(frame_writer.refresh_ts());
+        LONGS_EQUAL(status::StatusOK, sender.refresh(frame_writer.refresh_ts(), NULL));
     }
 
     test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
@@ -381,7 +381,7 @@ TEST(sender_sink, sample_rate_mapping) {
                                        / input_sample_spec.num_channels()
                                        * input_sample_spec.num_channels(),
                                    input_sample_spec);
-        sender.refresh(frame_writer.refresh_ts());
+        LONGS_EQUAL(status::StatusOK, sender.refresh(frame_writer.refresh_ts(), NULL));
     }
 
     test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
@@ -414,7 +414,7 @@ TEST(sender_sink, timestamp_mapping) {
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec, unix_base);
-        sender.refresh(frame_writer.refresh_ts());
+        LONGS_EQUAL(status::StatusOK, sender.refresh(frame_writer.refresh_ts(), NULL));
     }
 
     test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
@@ -457,7 +457,7 @@ TEST(sender_sink, timestamp_mapping_remixing) {
                                        / input_sample_spec.num_channels()
                                        * input_sample_spec.num_channels(),
                                    input_sample_spec, unix_base);
-        sender.refresh(frame_writer.refresh_ts());
+        LONGS_EQUAL(status::StatusOK, sender.refresh(frame_writer.refresh_ts(), NULL));
     }
 
     test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
@@ -525,7 +525,7 @@ TEST(sender_sink, metrics_feedback) {
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec, unix_base);
-        sender.refresh(frame_writer.refresh_ts());
+        LONGS_EQUAL(status::StatusOK, sender.refresh(frame_writer.refresh_ts(), NULL));
     }
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
@@ -582,7 +582,8 @@ TEST(sender_sink, metrics_feedback) {
 
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_writer.write_samples(SamplesPerFrame, input_sample_spec, unix_base);
-            sender.refresh(frame_writer.refresh_ts());
+            LONGS_EQUAL(status::StatusOK,
+                        sender.refresh(frame_writer.refresh_ts(), NULL));
         }
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec, unix_base);
 
@@ -666,7 +667,8 @@ TEST(sender_sink, reports_no_receivers) {
     for (size_t np = 0; np < (ReportInterval / SamplesPerPacket) * ManyReports; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_writer.write_samples(SamplesPerFrame, input_sample_spec, unix_base);
-            sender.refresh(frame_writer.refresh_ts());
+            LONGS_EQUAL(status::StatusOK,
+                        sender.refresh(frame_writer.refresh_ts(), NULL));
         }
 
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec, unix_base);
@@ -749,7 +751,8 @@ TEST(sender_sink, reports_one_receiver) {
 
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_writer.write_samples(SamplesPerFrame, input_sample_spec, unix_base);
-            sender.refresh(frame_writer.refresh_ts());
+            LONGS_EQUAL(status::StatusOK,
+                        sender.refresh(frame_writer.refresh_ts(), NULL));
         }
 
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec, unix_base);
@@ -847,7 +850,8 @@ TEST(sender_sink, reports_two_receivers) {
 
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_writer.write_samples(SamplesPerFrame, input_sample_spec, unix_base);
-            sender.refresh(frame_writer.refresh_ts());
+            LONGS_EQUAL(status::StatusOK,
+                        sender.refresh(frame_writer.refresh_ts(), NULL));
         }
 
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec, unix_base);

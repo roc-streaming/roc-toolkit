@@ -62,15 +62,13 @@ public:
     //! Get number of active sessions.
     size_t num_sessions() const;
 
-    //! Refresh pipeline according to current time.
+    //! Pull packets and refresh pipeline according to current time.
     //! @remarks
-    //!  Should be invoked after writing each frame.
-    //!  Also should be invoked after provided deadline if no frames were
-    //!  written until that deadline expires.
-    //! @returns
-    //!  deadline (absolute time) when refresh should be invoked again
-    //!  if there are no frames
-    core::nanoseconds_t refresh(core::nanoseconds_t current_time);
+    //!  Should be invoked before reading each frame.
+    //!  If there are no frames for a while, should be invoked no
+    //!  later than the deadline returned via @p next_deadline.
+    ROC_ATTR_NODISCARD status::StatusCode refresh(core::nanoseconds_t current_time,
+                                                  core::nanoseconds_t* next_deadline);
 
     //! Cast IDevice to ISink.
     virtual sndio::ISink* to_sink();

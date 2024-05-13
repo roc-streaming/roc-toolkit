@@ -85,19 +85,17 @@ public:
 
     //! Refresh pipeline according to current time.
     //! @remarks
-    //!  writes to @p next_refresh deadline (absolute time) when refresh should
-    //!  be invoked again if there are no frames
-    //! @returns
-    //!  false if the session is ended
-    bool refresh(core::nanoseconds_t current_time, core::nanoseconds_t* next_refresh);
+    //!  Should be invoked before reading each frame.
+    //!  If there are no frames for a while, should be invoked no
+    //!  later than the deadline returned via @p next_deadline.
+    ROC_ATTR_NODISCARD status::StatusCode refresh(core::nanoseconds_t current_time,
+                                                  core::nanoseconds_t& next_deadline);
 
     //! Adjust session clock to match consumer clock.
     //! @remarks
     //!  @p playback_time specified absolute time when first sample of last frame
     //!  retrieved from pipeline will be actually played on sink
-    //! @returns
-    //!  false if the session is ended
-    bool reclock(core::nanoseconds_t playback_time);
+    void reclock(core::nanoseconds_t playback_time);
 
     //! Get number of RTCP reports to be generated.
     size_t num_reports() const;

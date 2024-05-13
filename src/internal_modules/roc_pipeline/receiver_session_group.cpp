@@ -91,60 +91,61 @@ status::StatusCode ReceiverSessionGroup::route_packet(const packet::PacketPtr& p
     return route_transport_packet_(packet);
 }
 
-core::nanoseconds_t
-ReceiverSessionGroup::refresh_sessions(core::nanoseconds_t current_time) {
+status::StatusCode
+ReceiverSessionGroup::refresh_sessions(core::nanoseconds_t current_time,
+                                       core::nanoseconds_t& next_deadline) {
     roc_panic_if(init_status_ != status::StatusOK);
-
-    core::SharedPtr<ReceiverSession> curr, next;
-
-    core::nanoseconds_t next_deadline = 0;
 
     if (rtcp_communicator_) {
         // This will invoke IParticipant methods implemented by us,
         // in particular query_recv_streams().
         const status::StatusCode code =
             rtcp_communicator_->generate_reports(current_time);
-        // TODO(gh-183): forward status (refresh)
-        roc_panic_if(code != status::StatusOK);
+
+        if (code != status::StatusOK) {
+            return code;
+        }
 
         next_deadline = rtcp_communicator_->generation_deadline(current_time);
     }
 
-    for (curr = sessions_.front(); curr; curr = next) {
-        next = sessions_.nextof(*curr);
+    core::SharedPtr<ReceiverSession> curr_sess, next_sess;
+
+    for (curr_sess = sessions_.front(); curr_sess; curr_sess = next_sess) {
+        next_sess = sessions_.nextof(*curr_sess);
 
         core::nanoseconds_t sess_deadline = 0;
+        const status::StatusCode code = curr_sess->refresh(current_time, sess_deadline);
 
-        if (!curr->refresh(current_time, &sess_deadline)) {
-            // Session ended.
-            remove_session_(curr);
+        // Terminate sessions which asked so.
+        if (code == status::StatusEnd || code == status::StatusAbort) {
+            remove_session_(curr_sess);
             continue;
         }
 
+        // Handle other errors.
+        if (code != status::StatusOK) {
+            return code;
+        }
+
         if (sess_deadline != 0) {
-            if (next_deadline == 0) {
-                next_deadline = sess_deadline;
-            } else {
-                next_deadline = std::min(next_deadline, sess_deadline);
-            }
+            next_deadline = (next_deadline == 0 ? sess_deadline
+                                                : std::min(next_deadline, sess_deadline));
         }
     }
 
-    return next_deadline;
+    return status::StatusOK;
 }
 
 void ReceiverSessionGroup::reclock_sessions(core::nanoseconds_t playback_time) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    core::SharedPtr<ReceiverSession> curr, next;
+    core::SharedPtr<ReceiverSession> curr_sess, next_sess;
 
-    for (curr = sessions_.front(); curr; curr = next) {
-        next = sessions_.nextof(*curr);
+    for (curr_sess = sessions_.front(); curr_sess; curr_sess = next_sess) {
+        next_sess = sessions_.nextof(*curr_sess);
 
-        if (!curr->reclock(playback_time)) {
-            // Session ended.
-            remove_session_(curr);
-        }
+        curr_sess->reclock(playback_time);
     }
 }
 

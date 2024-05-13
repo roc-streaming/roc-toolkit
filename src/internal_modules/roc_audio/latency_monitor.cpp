@@ -95,14 +95,12 @@ status::StatusCode LatencyMonitor::read(Frame& frame) {
     return status::StatusOK;
 }
 
-bool LatencyMonitor::reclock(const core::nanoseconds_t playback_timestamp) {
+void LatencyMonitor::reclock(const core::nanoseconds_t playback_timestamp) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     // this method is called when playback time of last frame was reported
     // now we can update e2e latency based on it
     compute_e2e_latency_(playback_timestamp);
-
-    return true;
 }
 
 bool LatencyMonitor::pre_process_(const Frame& frame) {

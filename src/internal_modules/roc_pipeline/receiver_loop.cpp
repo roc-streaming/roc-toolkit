@@ -255,11 +255,21 @@ uint64_t ReceiverLoop::tid_imp() const {
 }
 
 status::StatusCode ReceiverLoop::process_subframe_imp(audio::Frame& frame) {
-    // TODO(gh-183): forward status (refresh)
-    // TODO: handle returned deadline and schedule refresh
-    source_.refresh(core::timestamp(core::ClockUnix));
+    status::StatusCode code = status::NoStatus;
 
-    return source_.read(frame);
+    // TODO(gh-674): handle returned deadline and schedule refresh
+    core::nanoseconds_t next_deadline = 0;
+
+    if ((code = source_.refresh(core::timestamp(core::ClockUnix), &next_deadline))
+        != status::StatusOK) {
+        return code;
+    }
+
+    if ((code = source_.read(frame)) != status::StatusOK) {
+        return code;
+    }
+
+    return status::StatusOK;
 }
 
 bool ReceiverLoop::process_task_imp(PipelineTask& basic_task) {

@@ -59,11 +59,13 @@ public:
                                  const address::SocketAddr& outbound_address,
                                  packet::IWriter& outbound_writer);
 
-    //! Refresh pipeline according to current time.
-    //! @returns
-    //!  deadline (absolute time) when refresh should be invoked again
-    //!  if there are no frames
-    core::nanoseconds_t refresh(core::nanoseconds_t current_time);
+    //! Pull packets and refresh pipeline according to current time.
+    //! @remarks
+    //!  Should be invoked before reading each frame.
+    //!  If there are no frames for a while, should be invoked no
+    //!  later than the deadline returned via @p next_deadline.
+    ROC_ATTR_NODISCARD status::StatusCode refresh(core::nanoseconds_t current_time,
+                                                  core::nanoseconds_t& next_deadline);
 
     //! Get metrics for slot and its participants.
     void get_metrics(SenderSlotMetrics& slot_metrics,

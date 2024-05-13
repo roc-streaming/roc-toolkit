@@ -76,10 +76,13 @@ public:
                                                        core::nanoseconds_t current_time);
 
     //! Refresh pipeline according to current time.
-    //! @returns
-    //!  deadline (absolute time) when refresh should be invoked again
-    //!  if there are no frames
-    core::nanoseconds_t refresh_sessions(core::nanoseconds_t current_time);
+    //! @remarks
+    //!  Should be invoked before reading each frame.
+    //!  If there are no frames for a while, should be invoked no
+    //!  later than the deadline returned via @p next_deadline.
+    ROC_ATTR_NODISCARD status::StatusCode
+    refresh_sessions(core::nanoseconds_t current_time,
+                     core::nanoseconds_t& next_deadline);
 
     //! Adjust session clock to match consumer clock.
     //! @remarks

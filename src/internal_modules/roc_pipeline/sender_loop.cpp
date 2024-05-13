@@ -248,13 +248,21 @@ uint64_t SenderLoop::tid_imp() const {
 }
 
 status::StatusCode SenderLoop::process_subframe_imp(audio::Frame& frame) {
-    const status::StatusCode status = sink_.write(frame);
+    status::StatusCode code = status::NoStatus;
 
-    // TODO(gh-183): forward status (refresh)
-    // TODO: handle returned deadline and schedule refresh
-    sink_.refresh(core::timestamp(core::ClockUnix));
+    if ((code = sink_.write(frame)) != status::StatusOK) {
+        return code;
+    }
 
-    return status;
+    // TODO(gh-674): handle returned deadline and schedule refresh
+    core::nanoseconds_t next_deadline = 0;
+
+    if ((code = sink_.refresh(core::timestamp(core::ClockUnix), &next_deadline))
+        != status::StatusOK) {
+        return code;
+    }
+
+    return status::StatusOK;
 }
 
 bool SenderLoop::process_task_imp(PipelineTask& basic_task) {

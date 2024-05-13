@@ -257,21 +257,24 @@ status::StatusCode SenderSession::route_packet(const packet::PacketPtr& packet,
     roc_panic("sender session: unexpected non-control packet");
 }
 
-core::nanoseconds_t SenderSession::refresh(core::nanoseconds_t current_time) {
+status::StatusCode SenderSession::refresh(core::nanoseconds_t current_time,
+                                          core::nanoseconds_t& next_deadline) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (rtcp_communicator_) {
         if (has_send_stream()) {
             const status::StatusCode code =
                 rtcp_communicator_->generate_reports(current_time);
-            // TODO(gh-183): forward status (refresh)
-            roc_panic_if(code != status::StatusOK);
+
+            if (code != status::StatusOK) {
+                return code;
+            }
         }
 
-        return rtcp_communicator_->generation_deadline(current_time);
+        next_deadline = rtcp_communicator_->generation_deadline(current_time);
     }
 
-    return 0;
+    return status::StatusOK;
 }
 
 void SenderSession::get_slot_metrics(SenderSlotMetrics& slot_metrics) const {

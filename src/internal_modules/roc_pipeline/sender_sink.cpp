@@ -104,7 +104,8 @@ size_t SenderSink::num_sessions() const {
     return state_tracker_.num_active_sessions();
 }
 
-core::nanoseconds_t SenderSink::refresh(core::nanoseconds_t current_time) {
+status::StatusCode SenderSink::refresh(core::nanoseconds_t current_time,
+                                       core::nanoseconds_t* next_deadline) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if_msg(current_time <= 0,
@@ -112,22 +113,23 @@ core::nanoseconds_t SenderSink::refresh(core::nanoseconds_t current_time) {
                      " expected positive value, got %lld",
                      (long long)current_time);
 
-    core::nanoseconds_t next_deadline = 0;
-
     for (core::SharedPtr<SenderSlot> slot = slots_.front(); slot;
          slot = slots_.nextof(*slot)) {
-        const core::nanoseconds_t slot_deadline = slot->refresh(current_time);
+        core::nanoseconds_t slot_deadline = 0;
 
-        if (slot_deadline != 0) {
-            if (next_deadline == 0) {
-                next_deadline = slot_deadline;
-            } else {
-                next_deadline = std::min(next_deadline, slot_deadline);
-            }
+        const status::StatusCode code = slot->refresh(current_time, slot_deadline);
+        if (code != status::StatusOK) {
+            return code;
+        }
+
+        if (next_deadline && slot_deadline != 0) {
+            *next_deadline = *next_deadline == 0
+                ? slot_deadline
+                : std::min(*next_deadline, slot_deadline);
         }
     }
 
-    return next_deadline;
+    return status::StatusOK;
 }
 
 sndio::ISink* SenderSink::to_sink() {
