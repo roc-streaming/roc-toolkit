@@ -721,6 +721,30 @@ TEST(filter, flags) {
     }
 }
 
+TEST(filter, skip_invalid) {
+    packet::Queue queue;
+    audio::PcmDecoder decoder(payload_spec);
+    Filter filter(queue, decoder, config, payload_spec);
+
+    { // 3 bad packets
+        LONGS_EQUAL(status::StatusOK, queue.write(new_packet(Pt1, Src1, 1, 1, 1, 1, 0)));
+        LONGS_EQUAL(status::StatusOK, queue.write(new_packet(Pt1, Src1, 2, 2, 2, 2, 0)));
+        LONGS_EQUAL(status::StatusOK, queue.write(new_packet(Pt1, Src1, 3, 3, 3, 3, 0)));
+    }
+
+    // 1 good packet
+    packet::PacketPtr wp = new_packet(
+        Pt1, Src1, 4, 4, 4, 4, packet::Packet::FlagRTP | packet::Packet::FlagAudio);
+    LONGS_EQUAL(status::StatusOK, queue.write(wp));
+
+    UNSIGNED_LONGS_EQUAL(4, queue.size());
+
+    // read: skip all bad and return good
+    packet::PacketPtr rp;
+    LONGS_EQUAL(status::StatusOK, filter.read(rp));
+    CHECK(wp == rp);
+}
+
 TEST(filter, forward_error) {
     const status::StatusCode code_list[] = {
         status::StatusDrain,

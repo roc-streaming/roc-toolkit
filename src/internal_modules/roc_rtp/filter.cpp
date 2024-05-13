@@ -29,21 +29,22 @@ status::StatusCode Filter::init_status() const {
 }
 
 status::StatusCode Filter::read(packet::PacketPtr& result_packet) {
-    packet::PacketPtr next_packet;
-    const status::StatusCode code = reader_.read(next_packet);
-    if (code != status::StatusOK) {
-        return code;
+    for (;;) {
+        packet::PacketPtr next_packet;
+        const status::StatusCode code = reader_.read(next_packet);
+        if (code != status::StatusOK) {
+            return code;
+        }
+
+        if (!validate_(next_packet)) {
+            continue;
+        }
+
+        populate_(next_packet);
+
+        result_packet = next_packet;
+        return status::StatusOK;
     }
-
-    if (!validate_(next_packet)) {
-        // TODO(gh-183): return StatusRetry
-        return status::StatusDrain;
-    }
-
-    populate_(next_packet);
-
-    result_packet = next_packet;
-    return status::StatusOK;
 }
 
 bool Filter::validate_(const packet::PacketPtr& packet) {
