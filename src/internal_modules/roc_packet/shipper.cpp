@@ -7,6 +7,8 @@
  */
 
 #include "roc_packet/shipper.h"
+#include "roc_core/log.h"
+#include "roc_core/panic.h"
 
 namespace roc {
 namespace packet {
@@ -45,8 +47,8 @@ status::StatusCode Shipper::write(const PacketPtr& packet) {
 
     if (!packet->has_flags(Packet::FlagComposed)) {
         if (!composer_.compose(*packet)) {
-            // TODO(gh-183): return status from composer
-            roc_panic("shipper: can't compose packet");
+            roc_log(LogError, "shipper: can't compose packet");
+            return status::StatusNoSpace;
         }
         packet->add_flags(Packet::FlagComposed);
     }

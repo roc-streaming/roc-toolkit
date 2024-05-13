@@ -61,17 +61,18 @@ status::StatusCode DelayedReader::read(PacketPtr& ptr) {
 status::StatusCode DelayedReader::fetch_packets_() {
     PacketPtr pp;
     for (;;) {
-        status::StatusCode code = reader_.read(pp);
-        if (code != status::StatusOK) {
+        status::StatusCode code = status::NoStatus;
+
+        if ((code = reader_.read(pp)) != status::StatusOK) {
             if (code == status::StatusDrain) {
                 break;
             }
             return code;
         }
 
-        code = queue_.write(pp);
-        // TODO(gh-183): forward status
-        roc_panic_if(code != status::StatusOK);
+        if ((code = queue_.write(pp)) != status::StatusOK) {
+            return code;
+        }
     }
 
     const stream_timestamp_t qs = queue_size_();
