@@ -337,8 +337,7 @@ ReceiverSessionGroup::route_transport_packet_(const packet::PacketPtr& packet) {
         return create_session_(packet);
     }
 
-    // TODO(gh-183): return status (routing)
-    return status::StatusOK;
+    return status::StatusNoRoute;
 }
 
 status::StatusCode
@@ -367,15 +366,13 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
     if (!packet->rtp()) {
         roc_log(LogError,
                 "session group: can't create session, unexpected non-rtp packet");
-        // TODO(gh-183): return status (control ops)
-        return status::StatusOK;
+        return status::StatusNoRoute;
     }
 
     if (!packet->udp()) {
         roc_log(LogError,
                 "session group: can't create session, unexpected non-udp packet");
-        // TODO(gh-183): return status (routing)
-        return status::StatusOK;
+        return status::StatusNoRoute;
     }
 
     const ReceiverSessionConfig sess_config = make_session_config_(packet);
@@ -393,7 +390,12 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
         new (arena_) ReceiverSession(sess_config, source_config_.common, encoding_map_,
                                      packet_factory_, frame_factory_, arena_);
 
-    if (!sess || sess->init_status() != status::StatusOK) {
+    if (!sess) {
+        roc_log(LogError, "session group: can't create session, allocation failed");
+        return status::StatusNoMem;
+    }
+
+    if (sess->init_status() != status::StatusOK) {
         roc_log(LogError,
                 "session group: can't create session, initialization failed: status=%s",
                 status::code_to_str(sess->init_status()));
@@ -406,8 +408,7 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
             LogError,
             "session group: can't create session, can't handle first packet: status=%s",
             status::code_to_str(code));
-        // TODO(gh-183): handle and return status (routing)
-        return status::StatusOK;
+        return code;
     }
 
     code = session_router_.add_session(sess, source_id, src_address);
@@ -415,8 +416,7 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
         roc_log(LogError,
                 "session group: can't create session, can't create route: status=%s",
                 status::code_to_str(code));
-        // TODO(gh-183): handle and return status (routing)
-        return status::StatusOK;
+        return code;
     }
 
     mixer_.add_input(sess->frame_reader());

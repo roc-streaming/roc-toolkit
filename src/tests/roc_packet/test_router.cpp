@@ -48,7 +48,7 @@ TEST(router, no_routes) {
 
     PacketPtr p = new_rtp_packet(11, Packet::FlagAudio);
 
-    LONGS_EQUAL(status::StatusOK, router.write(p));
+    LONGS_EQUAL(status::StatusNoRoute, router.write(p));
 
     LONGS_EQUAL(1, p->getref());
 }
@@ -68,8 +68,8 @@ TEST(router, one_route) {
     LONGS_EQUAL(status::StatusOK, router.write(wpa1));
     LONGS_EQUAL(status::StatusOK, router.write(wpa2));
 
-    LONGS_EQUAL(status::StatusOK, router.write(pf1));
-    LONGS_EQUAL(status::StatusOK, router.write(pf2));
+    LONGS_EQUAL(status::StatusNoRoute, router.write(pf1));
+    LONGS_EQUAL(status::StatusNoRoute, router.write(pf2));
 
     LONGS_EQUAL(2, wpa1->getref());
     LONGS_EQUAL(2, wpa2->getref());
@@ -185,7 +185,8 @@ TEST(router, same_route_different_sources) {
     LONGS_EQUAL(1, queue.size());
 
     // Dropped because have different source.
-    LONGS_EQUAL(status::StatusOK, router.write(new_rtp_packet(22, Packet::FlagAudio)));
+    LONGS_EQUAL(status::StatusNoRoute,
+                router.write(new_rtp_packet(22, Packet::FlagAudio)));
     LONGS_EQUAL(1, queue.size());
 
     LONGS_EQUAL(status::StatusOK, router.write(new_rtp_packet(11, Packet::FlagAudio)));
@@ -234,7 +235,7 @@ TEST(router, same_route_first_without_source_then_with_source) {
     LONGS_EQUAL(1, queue.size());
 
     // Dropped because route has source, and packet doesn't.
-    LONGS_EQUAL(status::StatusOK, router.write(new_fec_packet(Packet::FlagRepair)));
+    LONGS_EQUAL(status::StatusNoRoute, router.write(new_fec_packet(Packet::FlagRepair)));
     LONGS_EQUAL(1, queue.size());
 
     LONGS_EQUAL(status::StatusOK, router.write(new_rtp_packet(11, Packet::FlagRepair)));
@@ -251,7 +252,8 @@ TEST(router, same_route_first_with_source_then_without_source) {
     LONGS_EQUAL(1, queue.size());
 
     // Dropped because route doesn't have source, and packet has.
-    LONGS_EQUAL(status::StatusOK, router.write(new_rtp_packet(11, Packet::FlagRepair)));
+    LONGS_EQUAL(status::StatusNoRoute,
+                router.write(new_rtp_packet(11, Packet::FlagRepair)));
     LONGS_EQUAL(1, queue.size());
 
     LONGS_EQUAL(status::StatusOK, router.write(new_fec_packet(Packet::FlagRepair)));

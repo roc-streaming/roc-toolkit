@@ -96,6 +96,9 @@ public:
 private:
     virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr& packet);
 
+    status::StatusCode handle_packet_(const packet::PacketPtr& packet,
+                                      core::nanoseconds_t current_time);
+
     const address::Protocol proto_;
 
     StateTracker& state_tracker_;

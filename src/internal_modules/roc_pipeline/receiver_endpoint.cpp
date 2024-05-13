@@ -213,16 +213,35 @@ status::StatusCode ReceiverEndpoint::pull_packets(core::nanoseconds_t current_ti
     // queue were added in a very short time or are being added currently. It's
     // acceptable to consider such packets late and pull them next time.
     while (packet::PacketPtr packet = inbound_queue_.try_pop_front_exclusive()) {
-        if (!parser_->parse(*packet, packet->buffer())) {
-            roc_log(LogDebug, "receiver endpoint: can't parse packet");
-            continue;
-        }
-
-        const status::StatusCode code = session_group_.route_packet(packet, current_time);
+        const status::StatusCode code = handle_packet_(packet, current_time);
         state_tracker_.add_pending_packets(-1);
+
         if (code != status::StatusOK) {
             return code;
         }
+    }
+
+    return status::StatusOK;
+}
+
+status::StatusCode ReceiverEndpoint::handle_packet_(const packet::PacketPtr& packet,
+                                                    core::nanoseconds_t current_time) {
+    if (!parser_->parse(*packet, packet->buffer())) {
+        roc_log(LogDebug, "receiver endpoint: dropping bad packet: can't parse");
+        return status::StatusOK;
+    }
+
+    const status::StatusCode code = session_group_.route_packet(packet, current_time);
+
+    if (code == status::StatusNoRoute) {
+        roc_log(LogDebug, "receiver endpoint: dropping bad packet: can't route");
+        return status::StatusOK;
+    }
+
+    if (code != status::StatusOK) {
+        roc_log(LogError, "receiver endpoint: error when handling packet: status=%s",
+                status::code_to_str(code));
+        return code;
     }
 
     return status::StatusOK;

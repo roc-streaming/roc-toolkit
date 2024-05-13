@@ -80,8 +80,15 @@ ReceiverSlot* ReceiverSource::create_slot(const ReceiverSlotConfig& slot_config)
         new (arena_) ReceiverSlot(source_config_, slot_config, state_tracker_, *mixer_,
                                   encoding_map_, packet_factory_, frame_factory_, arena_);
 
-    if (!slot || slot->init_status() != status::StatusOK) {
-        roc_log(LogError, "receiver source: can't create slot: status=%s",
+    if (!slot) {
+        roc_log(LogError, "receiver source: can't create slot, allocation failed");
+        // TODO(gh-183): return StatusNoMem (control ops)
+        return NULL;
+    }
+
+    if (slot->init_status() != status::StatusOK) {
+        roc_log(LogError,
+                "receiver source: can't create slot, initialization failed: status=%s",
                 status::code_to_str(slot->init_status()));
         // TODO(gh-183): forward status (control ops)
         return NULL;

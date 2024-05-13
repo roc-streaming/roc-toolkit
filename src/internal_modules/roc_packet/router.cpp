@@ -70,8 +70,8 @@ status::StatusCode Router::write(const PacketPtr& packet) {
     roc_log(LogDebug, "router: can't route packet, dropping: source=%lu flags=%s",
             (unsigned long)packet->source_id(),
             packet_flags_to_str(packet->flags()).c_str());
-    // TODO(gh-183): return status
-    return status::StatusOK;
+
+    return status::StatusNoRoute;
 }
 
 Router::Route* Router::find_route_(unsigned flags) {
