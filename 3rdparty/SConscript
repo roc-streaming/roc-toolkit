@@ -19,6 +19,7 @@ thirdparty_versions = {
     'json-c':           '0.12-20140410',
     'libatomic_ops':    '7.6.10',
     'libunwind':        '1.2.1',
+    'libuuid':          '2.40.1',
     'libuv':            '1.35.0',
     'ltdl':             '2.4.6',
     'openfec':          '1.4.2.11',
@@ -129,6 +130,21 @@ elif 'libunwind' in system_dependencies:
 
     if not conf.CheckLibWithHeaderExt('unwind', 'libunwind.h', 'C', run=not is_crosscompiling):
         env.Die("libunwind not found (see 'config.log' for details)")
+
+    env = conf.Finish()
+
+# dep: libuuid
+if 'libuuid' in autobuild_dependencies:
+    env.BuildThirdParty(thirdparty_versions, 'libuuid')
+
+elif 'libuuid' in system_dependencies:
+    conf = Configure(env, custom_tests=env.CustomTests)
+
+    if not conf.AddPkgConfigDependency('uuid', '--cflags --libs'):
+        conf.env.AddManualDependency(libs=['uuid'])
+
+    if not conf.CheckLibWithHeaderExt('uuid', 'uuid.h', 'C', run=not is_crosscompiling):
+        env.Die("libuuid not found (see 'config.log' for details)")
 
     env = conf.Finish()
 
