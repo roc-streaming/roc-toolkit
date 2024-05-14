@@ -90,8 +90,8 @@ SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
                        const SenderSinkConfig& sink_config,
                        const rtp::EncodingMap& encoding_map,
                        packet::PacketFactory& packet_factory,
-                       core::BufferFactory<uint8_t>& byte_buffer_factory,
-                       core::BufferFactory<audio::sample_t>& sample_buffer_factory,
+                       core::BufferFactory& byte_buffer_factory,
+                       core::BufferFactory& sample_buffer_factory,
                        core::IArena& arena)
     : PipelineLoop(scheduler, sink_config.pipeline_loop, sink_config.input_sample_spec)
     , sink_(sink_config,

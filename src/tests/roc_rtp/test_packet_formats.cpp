@@ -32,7 +32,7 @@ enum { MaxBufSize = test::PacketInfo::MaxData };
 enum { CanParse = (1 << 0), CanCompose = (1 << 1) };
 
 core::HeapArena arena;
-core::BufferFactory<uint8_t> buffer_factory(arena, MaxBufSize);
+core::BufferFactory buffer_factory(arena, MaxBufSize);
 packet::PacketFactory packet_factory(arena);
 
 core::Slice<uint8_t> new_buffer(const uint8_t* data, size_t datasz) {

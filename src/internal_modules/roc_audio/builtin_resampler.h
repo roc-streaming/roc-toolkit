@@ -40,7 +40,7 @@ class BuiltinResampler : public IResampler, public core::NonCopyable<> {
 public:
     //! Initialize.
     BuiltinResampler(core::IArena& arena,
-                     core::BufferFactory<sample_t>& buffer_factory,
+                     core::BufferFactory& buffer_factory,
                      ResamplerProfile profile,
                      const audio::SampleSpec& in_spec,
                      const audio::SampleSpec& out_spec);
@@ -81,7 +81,7 @@ private:
         return i * in_spec_.num_channels() + ch_offset;
     }
 
-    bool alloc_frames_(core::BufferFactory<sample_t>&);
+    bool alloc_frames_(core::BufferFactory&);
 
     bool check_config_() const;
 

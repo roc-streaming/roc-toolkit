@@ -46,7 +46,7 @@ const size_t FECPayloadSize = 193;
 const size_t MaxBuffSize = 500;
 
 core::HeapArena arena;
-core::BufferFactory<uint8_t> buffer_factory(arena, MaxBuffSize);
+core::BufferFactory buffer_factory(arena, MaxBuffSize);
 packet::PacketFactory packet_factory(arena);
 
 rtp::EncodingMap encoding_map(arena);

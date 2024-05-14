@@ -22,7 +22,7 @@ namespace {
 enum { MaxBufSize = 500 };
 
 core::HeapArena arena;
-core::BufferFactory<uint8_t> buffer_factory(arena, MaxBufSize);
+core::BufferFactory buffer_factory(arena, MaxBufSize);
 packet::PacketFactory packet_factory(arena);
 
 bool resolve_endpoint_address(NetworkLoop& net_loop,

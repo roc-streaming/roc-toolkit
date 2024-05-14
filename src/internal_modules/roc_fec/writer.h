@@ -61,7 +61,7 @@ public:
            packet::IComposer& source_composer,
            packet::IComposer& repair_composer,
            packet::PacketFactory& packet_factory,
-           core::BufferFactory<uint8_t>& buffer_factory,
+           core::BufferFactory& buffer_factory,
            core::IArena& arena);
 
     //! Check if object is successfully constructed.
@@ -112,7 +112,7 @@ private:
     packet::IComposer& repair_composer_;
 
     packet::PacketFactory& packet_factory_;
-    core::BufferFactory<uint8_t>& buffer_factory_;
+    core::BufferFactory& buffer_factory_;
 
     core::Array<packet::PacketPtr> repair_block_;
 

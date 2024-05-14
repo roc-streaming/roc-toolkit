@@ -34,7 +34,7 @@ public:
     //! Initialize.
     TranscoderSource(const TranscoderConfig& config,
                      sndio::ISource& input_source,
-                     core::BufferFactory<audio::sample_t>& buffer_factory,
+                     core::BufferFactory& buffer_factory,
                      core::IArena& arena);
 
     //! Check if the pipeline was successfully constructed.

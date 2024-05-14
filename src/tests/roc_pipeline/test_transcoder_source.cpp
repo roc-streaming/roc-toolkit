@@ -20,9 +20,6 @@ namespace pipeline {
 
 namespace {
 
-const audio::ChannelMask Chans_Mono = audio::ChanMask_Surround_Mono;
-const audio::ChannelMask Chans_Stereo = audio::ChanMask_Surround_Stereo;
-
 enum {
     MaxBufSize = 1000,
 
@@ -32,8 +29,11 @@ enum {
     ManyFrames = 30
 };
 
+const audio::ChannelMask Chans_Mono = audio::ChanMask_Surround_Mono;
+const audio::ChannelMask Chans_Stereo = audio::ChanMask_Surround_Stereo;
+
 core::HeapArena arena;
-core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, MaxBufSize);
+core::BufferFactory sample_buffer_factory(arena, MaxBufSize * sizeof(audio::sample_t));
 
 } // namespace
 

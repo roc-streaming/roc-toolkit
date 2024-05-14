@@ -16,7 +16,7 @@ namespace roc {
 namespace audio {
 
 PcmMapperReader::PcmMapperReader(IFrameReader& reader,
-                                 core::BufferFactory<uint8_t>& buffer_factory,
+                                 core::BufferFactory& buffer_factory,
                                  const SampleSpec& in_spec,
                                  const SampleSpec& out_spec)
     : mapper_(in_spec.pcm_format(), out_spec.pcm_format())

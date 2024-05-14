@@ -52,7 +52,7 @@ public:
     //! Initialize.
     DecimationResampler(const core::SharedPtr<IResampler>& inner_resampler,
                         core::IArena& arena,
-                        core::BufferFactory<sample_t>& buffer_factory,
+                        core::BufferFactory& buffer_factory,
                         const audio::SampleSpec& in_spec,
                         const audio::SampleSpec& out_spec);
 

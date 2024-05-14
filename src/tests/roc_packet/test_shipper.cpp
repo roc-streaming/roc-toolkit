@@ -63,7 +63,7 @@ enum { PacketSz = 128 };
 
 core::HeapArena arena;
 PacketFactory packet_factory(arena);
-core::BufferFactory<uint8_t> buffer_factory(arena, PacketSz);
+core::BufferFactory buffer_factory(arena, PacketSz);
 
 PacketPtr new_packet() {
     PacketPtr packet = packet_factory.new_packet();

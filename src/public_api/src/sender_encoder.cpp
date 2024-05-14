@@ -221,7 +221,7 @@ int roc_sender_encoder_push_feedback_packet(roc_sender_encoder* encoder,
         return -1;
     }
 
-    core::SharedPtr<core::Buffer<uint8_t> > imp_buffer =
+    core::BufferPtr imp_buffer =
         imp_encoder->context().byte_buffer_factory().new_buffer();
     if (!imp_buffer) {
         roc_log(LogError,

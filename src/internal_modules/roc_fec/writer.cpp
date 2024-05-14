@@ -23,7 +23,7 @@ Writer::Writer(const WriterConfig& config,
                packet::IComposer& source_composer,
                packet::IComposer& repair_composer,
                packet::PacketFactory& packet_factory,
-               core::BufferFactory<uint8_t>& buffer_factory,
+               core::BufferFactory& buffer_factory,
                core::IArena& arena)
     : cur_sblen_(0)
     , next_sblen_(0)

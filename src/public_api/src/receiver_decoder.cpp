@@ -178,7 +178,7 @@ int roc_receiver_decoder_push_packet(roc_receiver_decoder* decoder,
         return -1;
     }
 
-    core::SharedPtr<core::Buffer<uint8_t> > imp_buffer =
+    core::BufferPtr imp_buffer =
         imp_decoder->context().byte_buffer_factory().new_buffer();
     if (!imp_buffer) {
         roc_log(LogError,

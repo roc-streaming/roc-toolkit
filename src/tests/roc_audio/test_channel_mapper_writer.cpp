@@ -26,7 +26,7 @@ const double Epsilon = 0.00001;
 enum { MaxSz = 500 };
 
 core::HeapArena arena;
-core::BufferFactory<sample_t> buffer_factory(arena, MaxSz);
+core::BufferFactory buffer_factory(arena, MaxSz * sizeof(sample_t));
 
 void fill_mono(Frame& frame, sample_t value) {
     CHECK(frame.num_raw_samples() > 0);

@@ -190,7 +190,7 @@ public:
     //! @remarks
     //!  Start background thread if the object was successfully constructed.
     NetworkLoop(packet::PacketFactory& packet_factory,
-                core::BufferFactory<uint8_t>& buffer_factory,
+                core::BufferFactory& buffer_factory,
                 core::IArena& arena);
 
     //! Destroy. Stop all receivers and senders.
@@ -250,7 +250,7 @@ private:
     void task_resolve_endpoint_address_(NetworkTask&);
 
     packet::PacketFactory& packet_factory_;
-    core::BufferFactory<uint8_t>& buffer_factory_;
+    core::BufferFactory& buffer_factory_;
     core::IArena& arena_;
 
     bool started_;

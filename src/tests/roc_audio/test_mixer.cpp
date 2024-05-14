@@ -26,8 +26,8 @@ const SampleSpec sample_spec(
     SampleRate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte, ChannelMask);
 
 core::HeapArena arena;
-core::BufferFactory<sample_t> buffer_factory(arena, MaxBufSz);
-core::BufferFactory<sample_t> large_buffer_factory(arena, MaxBufSz * 10);
+core::BufferFactory buffer_factory(arena, MaxBufSz * sizeof(sample_t));
+core::BufferFactory large_buffer_factory(arena, MaxBufSz * 10 * sizeof(sample_t));
 
 core::Slice<sample_t> new_buffer(size_t sz) {
     core::Slice<sample_t> buf = large_buffer_factory.new_buffer();

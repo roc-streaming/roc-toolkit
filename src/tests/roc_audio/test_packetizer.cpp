@@ -51,8 +51,8 @@ const SampleSpec packet_spec(
     SampleRate, PcmFormat_SInt16_Be, ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
 core::HeapArena arena;
-core::BufferFactory<sample_t> sample_buffer_factory(arena, MaxBufSize);
-core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize);
+core::BufferFactory sample_buffer_factory(arena, MaxBufSize * sizeof(sample_t));
+core::BufferFactory byte_buffer_factory(arena, MaxBufSize);
 packet::PacketFactory packet_factory(arena);
 
 rtp::Composer rtp_composer(NULL);

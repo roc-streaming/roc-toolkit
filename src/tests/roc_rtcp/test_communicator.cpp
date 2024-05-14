@@ -66,7 +66,7 @@ const core::nanoseconds_t RttEpsilon = 16 * core::Microsecond;
 
 core::HeapArena arena;
 packet::PacketFactory packet_factory(arena);
-core::BufferFactory<uint8_t> buffer_factory(arena, MaxPacketSz);
+core::BufferFactory buffer_factory(arena, MaxPacketSz);
 Composer composer;
 
 // Mock implementation of IParticipant
@@ -2767,7 +2767,7 @@ TEST(communicator, split_sender_report) {
     Config config;
     config.inactivity_timeout = core::Second * 999;
 
-    core::BufferFactory<uint8_t> small_buffer_factory(arena, SmallPacketSize);
+    core::BufferFactory small_buffer_factory(arena, SmallPacketSize);
 
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
@@ -2867,7 +2867,7 @@ TEST(communicator, split_receiver_report) {
     Config config;
     config.inactivity_timeout = core::Second * 999;
 
-    core::BufferFactory<uint8_t> small_buffer_factory(arena, SmallPacketSize);
+    core::BufferFactory small_buffer_factory(arena, SmallPacketSize);
 
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
@@ -2928,7 +2928,7 @@ TEST(communicator, split_bidirectional_report) {
     Config config;
     config.inactivity_timeout = core::Second * 999;
 
-    core::BufferFactory<uint8_t> small_buffer_factory(arena, SmallPacketSize);
+    core::BufferFactory small_buffer_factory(arena, SmallPacketSize);
 
     packet::Queue local_queue;
     MockParticipant local_part(local_cname, LocalSsrc, Report_ToAddress);
@@ -3655,7 +3655,7 @@ TEST(communicator, report_back_split_reports) {
     Config config;
     config.inactivity_timeout = core::Second * 999;
 
-    core::BufferFactory<uint8_t> small_buffer_factory(arena, SmallPacketSize);
+    core::BufferFactory small_buffer_factory(arena, SmallPacketSize);
 
     packet::Queue local_queue;
     MockParticipant local_part(local_cname, LocalSsrc, Report_Back);
@@ -4648,7 +4648,7 @@ TEST(communicator, generation_error) {
         packet::Queue peer_queue;
         MockParticipant peer_part(Cname, Ssrc, Report_ToAddress);
         // factory creates 5-byte buffers
-        core::BufferFactory<uint8_t> peer_factory(arena, 5);
+        core::BufferFactory peer_factory(arena, 5);
         Communicator peer_comm(config, peer_part, peer_queue, composer, packet_factory,
                                peer_factory, arena);
         CHECK(peer_comm.is_valid());

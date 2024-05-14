@@ -15,14 +15,13 @@
 namespace roc {
 namespace pipeline {
 
-ReceiverSession::ReceiverSession(
-    const ReceiverSessionConfig& session_config,
-    const ReceiverCommonConfig& common_config,
-    const rtp::EncodingMap& encoding_map,
-    packet::PacketFactory& packet_factory,
-    core::BufferFactory<uint8_t>& byte_buffer_factory,
-    core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-    core::IArena& arena)
+ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
+                                 const ReceiverCommonConfig& common_config,
+                                 const rtp::EncodingMap& encoding_map,
+                                 packet::PacketFactory& packet_factory,
+                                 core::BufferFactory& byte_buffer_factory,
+                                 core::BufferFactory& sample_buffer_factory,
+                                 core::IArena& arena)
     : core::RefCounted<ReceiverSession, core::ArenaAllocation>(arena)
     , frame_reader_(NULL)
     , valid_(false) {

@@ -86,10 +86,9 @@ int main(int argc, char** argv) {
     sndio::BackendMap::instance().set_frame_size(source_config.frame_length,
                                                  transcoder_config.input_sample_spec);
 
-    core::BufferFactory<audio::sample_t> buffer_factory(
+    core::BufferFactory buffer_factory(
         arena,
-        transcoder_config.input_sample_spec.ns_2_samples_overall(
-            source_config.frame_length));
+        transcoder_config.input_sample_spec.ns_2_bytes(source_config.frame_length));
 
     address::IoUri input_uri(arena);
     if (args.input_given) {

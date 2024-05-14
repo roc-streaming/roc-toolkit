@@ -42,7 +42,7 @@ public:
                  packet::IWriter& dst_writer,
                  rtp::EncodingMap& encoding_map,
                  packet::PacketFactory& packet_factory,
-                 core::BufferFactory<uint8_t>& buffer_factory,
+                 core::BufferFactory& buffer_factory,
                  packet::stream_source_t src_id,
                  const address::SocketAddr& src_addr,
                  const address::SocketAddr& dst_addr,
@@ -70,7 +70,7 @@ public:
                  packet::IWriter& repair_dst_writer,
                  rtp::EncodingMap& encoding_map,
                  packet::PacketFactory& packet_factory,
-                 core::BufferFactory<uint8_t>& buffer_factory,
+                 core::BufferFactory& buffer_factory,
                  packet::stream_source_t src_id,
                  const address::SocketAddr& src_addr,
                  const address::SocketAddr& source_dst_addr,
@@ -154,7 +154,7 @@ private:
 
     void construct_(core::IArena& arena,
                     packet::PacketFactory& packet_factory,
-                    core::BufferFactory<uint8_t>& buffer_factory,
+                    core::BufferFactory& buffer_factory,
                     rtp::EncodingMap& encoding_map,
                     rtp::PayloadType pt,
                     packet::FecScheme fec_scheme,
@@ -324,7 +324,7 @@ private:
     core::ScopedPtr<audio::IFrameEncoder> payload_encoder_;
 
     packet::PacketFactory& packet_factory_;
-    core::BufferFactory<uint8_t>& buffer_factory_;
+    core::BufferFactory& buffer_factory_;
 
     address::SocketAddr src_addr_;
     address::SocketAddr source_dst_addr_;

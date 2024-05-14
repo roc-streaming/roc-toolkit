@@ -16,16 +16,15 @@
 namespace roc {
 namespace pipeline {
 
-ReceiverSessionGroup::ReceiverSessionGroup(
-    const ReceiverSourceConfig& source_config,
-    const ReceiverSlotConfig& slot_config,
-    StateTracker& state_tracker,
-    audio::Mixer& mixer,
-    const rtp::EncodingMap& encoding_map,
-    packet::PacketFactory& packet_factory,
-    core::BufferFactory<uint8_t>& byte_buffer_factory,
-    core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-    core::IArena& arena)
+ReceiverSessionGroup::ReceiverSessionGroup(const ReceiverSourceConfig& source_config,
+                                           const ReceiverSlotConfig& slot_config,
+                                           StateTracker& state_tracker,
+                                           audio::Mixer& mixer,
+                                           const rtp::EncodingMap& encoding_map,
+                                           packet::PacketFactory& packet_factory,
+                                           core::BufferFactory& byte_buffer_factory,
+                                           core::BufferFactory& sample_buffer_factory,
+                                           core::IArena& arena)
     : source_config_(source_config)
     , slot_config_(slot_config)
     , state_tracker_(state_tracker)

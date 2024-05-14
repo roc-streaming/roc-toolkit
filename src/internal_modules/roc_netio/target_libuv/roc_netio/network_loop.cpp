@@ -103,7 +103,7 @@ NetworkLoop::Tasks::ResolveEndpointAddress::get_address() const {
 }
 
 NetworkLoop::NetworkLoop(packet::PacketFactory& packet_factory,
-                         core::BufferFactory<uint8_t>& buffer_factory,
+                         core::BufferFactory& buffer_factory,
                          core::IArena& arena)
     : packet_factory_(packet_factory)
     , buffer_factory_(buffer_factory)

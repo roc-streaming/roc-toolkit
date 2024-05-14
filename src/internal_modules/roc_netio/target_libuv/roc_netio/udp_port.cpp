@@ -28,7 +28,7 @@ const core::nanoseconds_t PacketLogInterval = 20 * core::Second;
 UdpPort::UdpPort(const UdpConfig& config,
                  uv_loop_t& event_loop,
                  packet::PacketFactory& packet_factory,
-                 core::BufferFactory<uint8_t>& buffer_factory,
+                 core::BufferFactory& buffer_factory,
                  core::IArena& arena)
     : BasicPort(arena)
     , config_(config)
@@ -224,7 +224,7 @@ void UdpPort::alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf) {
 
     UdpPort& self = *(UdpPort*)handle->data;
 
-    core::SharedPtr<core::Buffer<uint8_t> > bp = self.buffer_factory_.new_buffer();
+    core::BufferPtr bp = self.buffer_factory_.new_buffer();
     if (!bp) {
         roc_log(LogError, "udp port: %s: can't allocate buffer", self.descriptor());
 
@@ -266,8 +266,7 @@ void UdpPort::recv_cb_(uv_udp_t* handle,
         }
     }
 
-    core::SharedPtr<core::Buffer<uint8_t> > bp =
-        core::Buffer<uint8_t>::container_of(buf->base);
+    core::BufferPtr bp = core::Buffer::container_of(buf->base);
 
     // one reference for incref() called from alloc_cb_()
     // one reference for the shared pointer above

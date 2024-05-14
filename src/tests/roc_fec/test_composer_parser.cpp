@@ -95,7 +95,7 @@ struct PacketTest {
 };
 
 core::HeapArena arena;
-core::BufferFactory<uint8_t> buffer_factory(arena, 1000);
+core::BufferFactory buffer_factory(arena, 1000);
 packet::PacketFactory packet_factory(arena);
 
 void fill_packet(packet::Packet& packet, bool is_rtp) {

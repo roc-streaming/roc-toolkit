@@ -47,8 +47,8 @@ const core::nanoseconds_t NsPerPacket = packet_spec.samples_overall_2_ns(Samples
 const core::nanoseconds_t Now = 1691499037871419405;
 
 core::HeapArena arena;
-core::BufferFactory<sample_t> sample_buffer_factory(arena, MaxBufSize);
-core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize);
+core::BufferFactory sample_buffer_factory(arena, MaxBufSize * sizeof(sample_t));
+core::BufferFactory byte_buffer_factory(arena, MaxBufSize);
 packet::PacketFactory packet_factory(arena);
 
 rtp::Composer rtp_composer(NULL);

@@ -20,7 +20,7 @@ namespace roc {
 namespace fec {
 
 OpenfecDecoder::OpenfecDecoder(const CodecConfig& config,
-                               core::BufferFactory<uint8_t>& buffer_factory,
+                               core::BufferFactory& buffer_factory,
                                core::IArena& arena)
     : sblen_(0)
     , rblen_(0)

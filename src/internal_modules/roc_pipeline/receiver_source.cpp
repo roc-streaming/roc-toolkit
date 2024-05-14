@@ -13,13 +13,12 @@
 namespace roc {
 namespace pipeline {
 
-ReceiverSource::ReceiverSource(
-    const ReceiverSourceConfig& source_config,
-    const rtp::EncodingMap& encoding_map,
-    packet::PacketFactory& packet_factory,
-    core::BufferFactory<uint8_t>& byte_buffer_factory,
-    core::BufferFactory<audio::sample_t>& sample_buffer_factory,
-    core::IArena& arena)
+ReceiverSource::ReceiverSource(const ReceiverSourceConfig& source_config,
+                               const rtp::EncodingMap& encoding_map,
+                               packet::PacketFactory& packet_factory,
+                               core::BufferFactory& byte_buffer_factory,
+                               core::BufferFactory& sample_buffer_factory,
+                               core::IArena& arena)
     : source_config_(source_config)
     , encoding_map_(encoding_map)
     , packet_factory_(packet_factory)

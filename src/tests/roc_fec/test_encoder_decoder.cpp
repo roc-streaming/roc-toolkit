@@ -24,7 +24,7 @@ namespace {
 const size_t MaxPayloadSize = 1024;
 
 core::HeapArena arena;
-core::BufferFactory<uint8_t> buffer_factory(arena, MaxPayloadSize);
+core::BufferFactory buffer_factory(arena, MaxPayloadSize);
 
 } // namespace
 

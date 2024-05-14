@@ -23,9 +23,9 @@ TEST(composer, align_footer) {
     enum { BufferSize = 100, Alignment = 8 };
 
     core::HeapArena arena;
-    core::BufferFactory<uint8_t> buffer_factory(arena, BufferSize);
+    core::BufferFactory buffer_factory(arena, BufferSize);
 
-    core::SharedPtr<core::Buffer<uint8_t> > buffer = buffer_factory.new_buffer();
+    core::BufferPtr buffer = buffer_factory.new_buffer();
     CHECK(buffer);
     CHECK((unsigned long)buffer->data() % Alignment == 0);
 
@@ -48,9 +48,9 @@ TEST(composer, align_header) {
     enum { BufferSize = 100, Alignment = 8 };
 
     core::HeapArena arena;
-    core::BufferFactory<uint8_t> buffer_factory(arena, BufferSize);
+    core::BufferFactory buffer_factory(arena, BufferSize);
 
-    core::SharedPtr<core::Buffer<uint8_t> > buffer = buffer_factory.new_buffer();
+    core::BufferPtr buffer = buffer_factory.new_buffer();
     CHECK(buffer);
     CHECK((unsigned long)buffer->data() % Alignment == 0);
 
@@ -78,9 +78,9 @@ TEST(composer, align_outer_header) {
     enum { BufferSize = 100, Alignment = 8, OuterHeader = 5 };
 
     core::HeapArena arena;
-    core::BufferFactory<uint8_t> buffer_factory(arena, BufferSize);
+    core::BufferFactory buffer_factory(arena, BufferSize);
 
-    core::SharedPtr<core::Buffer<uint8_t> > buffer = buffer_factory.new_buffer();
+    core::BufferPtr buffer = buffer_factory.new_buffer();
     CHECK(buffer);
     CHECK((unsigned long)buffer->data() % Alignment == 0);
 
@@ -111,7 +111,7 @@ TEST(composer, packet_size) {
     enum { BufferSize = 100, Alignment = 8, PayloadSize = 10 };
 
     core::HeapArena arena;
-    core::BufferFactory<uint8_t> buffer_factory(arena, BufferSize);
+    core::BufferFactory buffer_factory(arena, BufferSize);
     packet::PacketFactory packet_factory(arena);
 
     core::Slice<uint8_t> buffer = buffer_factory.new_buffer();

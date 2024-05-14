@@ -29,8 +29,8 @@ enum { PacketSz = 512 };
 
 core::HeapArena arena;
 packet::PacketFactory packet_factory(arena);
-core::BufferFactory<uint8_t> byte_buffer_factory(arena, PacketSz);
-core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, PacketSz);
+core::BufferFactory byte_buffer_factory(arena, PacketSz);
+core::BufferFactory sample_buffer_factory(arena, PacketSz * sizeof(audio::sample_t));
 rtp::EncodingMap encoding_map(arena);
 
 } // namespace

@@ -20,7 +20,7 @@ namespace {
 enum { MaxBufSize = 1492 };
 
 core::HeapArena arena;
-core::BufferFactory<uint8_t> buffer_factory(arena, MaxBufSize);
+core::BufferFactory buffer_factory(arena, MaxBufSize);
 
 core::Slice<uint8_t> new_buffer() {
     core::Slice<uint8_t> buff = buffer_factory.new_buffer();

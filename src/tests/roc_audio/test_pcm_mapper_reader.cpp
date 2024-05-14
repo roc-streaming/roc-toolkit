@@ -26,7 +26,7 @@ const double Epsilon = 0.0001;
 enum { Rate = 10000, MaxSz = 400, SmallFrameSz = 20 };
 
 core::HeapArena arena;
-core::BufferFactory<uint8_t> buffer_factory(arena, MaxSz);
+core::BufferFactory buffer_factory(arena, MaxSz);
 
 template <class T> struct CountReader : IFrameReader {
     T value;

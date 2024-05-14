@@ -16,7 +16,7 @@ namespace pipeline {
 
 TranscoderSource::TranscoderSource(const TranscoderConfig& config,
                                    sndio::ISource& input_source,
-                                   core::BufferFactory<audio::sample_t>& buffer_factory,
+                                   core::BufferFactory& buffer_factory,
                                    core::IArena& arena)
     : input_source_(input_source)
     , frame_reader_(NULL)

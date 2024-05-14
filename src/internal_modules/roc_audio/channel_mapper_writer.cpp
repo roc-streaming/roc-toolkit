@@ -16,7 +16,7 @@ namespace roc {
 namespace audio {
 
 ChannelMapperWriter::ChannelMapperWriter(IFrameWriter& writer,
-                                         core::BufferFactory<sample_t>& buffer_factory,
+                                         core::BufferFactory& buffer_factory,
                                          const SampleSpec& in_spec,
                                          const SampleSpec& out_spec)
     : output_writer_(writer)

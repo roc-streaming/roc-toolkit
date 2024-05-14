@@ -20,7 +20,7 @@ Packetizer::Packetizer(packet::IWriter& writer,
                        packet::ISequencer& sequencer,
                        IFrameEncoder& payload_encoder,
                        packet::PacketFactory& packet_factory,
-                       core::BufferFactory<uint8_t>& buffer_factory,
+                       core::BufferFactory& buffer_factory,
                        core::nanoseconds_t packet_length,
                        const audio::SampleSpec& sample_spec)
     : writer_(writer)

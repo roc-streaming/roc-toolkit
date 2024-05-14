@@ -33,7 +33,7 @@ public:
     //! Initialize.
     ResamplerWriter(IFrameWriter& writer,
                     IResampler& resampler,
-                    core::BufferFactory<sample_t>& buffer_factory,
+                    core::BufferFactory& buffer_factory,
                     const SampleSpec& in_sample_spec,
                     const SampleSpec& out_sample_spec);
 

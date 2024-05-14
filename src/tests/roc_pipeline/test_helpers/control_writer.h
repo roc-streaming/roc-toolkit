@@ -35,7 +35,7 @@ class ControlWriter : public core::NonCopyable<> {
 public:
     ControlWriter(packet::IWriter& writer,
                   packet::PacketFactory& packet_factory,
-                  core::BufferFactory<uint8_t>& buffer_factory,
+                  core::BufferFactory& buffer_factory,
                   const address::SocketAddr& src_addr,
                   const address::SocketAddr& dst_addr)
         : writer_(writer)
@@ -196,7 +196,7 @@ private:
     packet::IWriter& writer_;
 
     packet::PacketFactory& packet_factory_;
-    core::BufferFactory<uint8_t>& buffer_factory_;
+    core::BufferFactory& buffer_factory_;
 
     address::SocketAddr src_addr_;
     address::SocketAddr dst_addr_;

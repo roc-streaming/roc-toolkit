@@ -34,7 +34,7 @@ public:
           size_t n_repair_packets,
           core::HeapArena& arena,
           packet::PacketFactory& packet_factory,
-          core::BufferFactory<uint8_t>& byte_buffer_factory)
+          core::BufferFactory& byte_buffer_factory)
         : net_loop_(packet_factory, byte_buffer_factory, arena)
         , n_source_packets_(n_source_packets)
         , n_repair_packets_(n_repair_packets)

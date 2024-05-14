@@ -40,7 +40,7 @@ const core::nanoseconds_t frame_duration = FrameSize * core::Second
     / core::nanoseconds_t(sample_spec.sample_rate() * sample_spec.num_channels());
 
 core::HeapArena arena;
-core::BufferFactory<audio::sample_t> buffer_factory(arena, MaxBufSize);
+core::BufferFactory buffer_factory(arena, MaxBufSize * sizeof(audio::sample_t));
 
 bool supports_wav(IBackend& backend) {
     bool supports = false;

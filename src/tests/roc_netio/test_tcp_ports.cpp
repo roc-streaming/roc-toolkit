@@ -26,7 +26,7 @@ namespace {
 enum { MaxBufSize = 500 };
 
 core::HeapArena arena;
-core::BufferFactory<uint8_t> buffer_factory(arena, MaxBufSize);
+core::BufferFactory buffer_factory(arena, MaxBufSize);
 packet::PacketFactory packet_factory(arena);
 
 address::SocketAddr make_address(const char* ip, int port) {

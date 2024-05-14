@@ -74,7 +74,7 @@ public:
     UdpPort(const UdpConfig& config,
             uv_loop_t& event_loop,
             packet::PacketFactory& packet_factory,
-            core::BufferFactory<uint8_t>& buffer_factory,
+            core::BufferFactory& buffer_factory,
             core::IArena& arena);
 
     //! Destroy.
@@ -152,7 +152,7 @@ private:
     uv_os_fd_t fd_;
 
     packet::PacketFactory& packet_factory_;
-    core::BufferFactory<uint8_t>& buffer_factory_;
+    core::BufferFactory& buffer_factory_;
 
     packet::IWriter* inbound_writer_;
     core::MpscQueue<packet::Packet> outbound_queue_;

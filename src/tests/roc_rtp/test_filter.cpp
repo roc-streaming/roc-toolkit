@@ -46,7 +46,7 @@ const audio::SampleSpec PayloadSpec(SampleRate,
 
 core::HeapArena arena;
 packet::PacketFactory packet_factory(arena);
-core::BufferFactory<uint8_t> buffer_factory(arena, PacketSz);
+core::BufferFactory buffer_factory(arena, PacketSz);
 
 packet::PacketPtr new_packet(PayloadType pt,
                              packet::stream_source_t src,

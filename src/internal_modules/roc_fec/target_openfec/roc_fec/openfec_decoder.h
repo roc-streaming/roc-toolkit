@@ -41,7 +41,7 @@ class OpenfecDecoder : public IBlockDecoder, public core::NonCopyable<> {
 public:
     //! Initialize.
     explicit OpenfecDecoder(const CodecConfig& config,
-                            core::BufferFactory<uint8_t>& buffer_factory,
+                            core::BufferFactory& buffer_factory,
                             core::IArena& arena);
 
     virtual ~OpenfecDecoder();
@@ -110,7 +110,7 @@ private:
     of_session_t* of_sess_;
     of_parameters_t* of_sess_params_;
 
-    core::BufferFactory<uint8_t>& buffer_factory_;
+    core::BufferFactory& buffer_factory_;
 
     // received and repaired source and repair packets
     core::Array<core::Slice<uint8_t> > buff_tab_;

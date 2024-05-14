@@ -40,11 +40,11 @@ packet::PacketFactory& Context::packet_factory() {
     return packet_factory_;
 }
 
-core::BufferFactory<uint8_t>& Context::byte_buffer_factory() {
+core::BufferFactory& Context::byte_buffer_factory() {
     return byte_buffer_factory_;
 }
 
-core::BufferFactory<audio::sample_t>& Context::sample_buffer_factory() {
+core::BufferFactory& Context::sample_buffer_factory() {
     return sample_buffer_factory_;
 }
 

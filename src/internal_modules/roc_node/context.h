@@ -59,10 +59,10 @@ public:
     packet::PacketFactory& packet_factory();
 
     //! Get byte buffer factory.
-    core::BufferFactory<uint8_t>& byte_buffer_factory();
+    core::BufferFactory& byte_buffer_factory();
 
     //! Get sample buffer factory.
-    core::BufferFactory<audio::sample_t>& sample_buffer_factory();
+    core::BufferFactory& sample_buffer_factory();
 
     //! Get encoding map.
     rtp::EncodingMap& encoding_map();
@@ -77,8 +77,8 @@ private:
     core::IArena& arena_;
 
     packet::PacketFactory packet_factory_;
-    core::BufferFactory<uint8_t> byte_buffer_factory_;
-    core::BufferFactory<audio::sample_t> sample_buffer_factory_;
+    core::BufferFactory byte_buffer_factory_;
+    core::BufferFactory sample_buffer_factory_;
 
     rtp::EncodingMap encoding_map_;
 

@@ -25,7 +25,7 @@ namespace test {
 // Generate audio frames and write to sink.
 class FrameWriter : public core::NonCopyable<> {
 public:
-    FrameWriter(sndio::ISink& sink, core::BufferFactory<audio::sample_t>& buffer_factory)
+    FrameWriter(sndio::ISink& sink, core::BufferFactory& buffer_factory)
         : sink_(sink)
         , buffer_factory_(buffer_factory)
         , offset_(0)
@@ -89,14 +89,14 @@ public:
         return base_cts_ + refresh_ts_offset_;
     }
 
-    // Get CTS that was set for last writtwn frame.
+    // Get CTS that was set for last written frame.
     core::nanoseconds_t last_capture_ts() const {
         return last_capture_ts_;
     }
 
 private:
     sndio::ISink& sink_;
-    core::BufferFactory<audio::sample_t>& buffer_factory_;
+    core::BufferFactory& buffer_factory_;
 
     uint8_t offset_;
     size_t abs_offset_;

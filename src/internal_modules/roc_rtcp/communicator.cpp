@@ -30,7 +30,7 @@ Communicator::Communicator(const Config& config,
                            packet::IWriter& packet_writer,
                            packet::IComposer& packet_composer,
                            packet::PacketFactory& packet_factory,
-                           core::BufferFactory<uint8_t>& buffer_factory,
+                           core::BufferFactory& buffer_factory,
                            core::IArena& arena)
     : packet_factory_(packet_factory)
     , buffer_factory_(buffer_factory)

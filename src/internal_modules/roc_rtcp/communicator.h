@@ -62,7 +62,7 @@ public:
                  packet::IWriter& packet_writer,
                  packet::IComposer& packet_composer,
                  packet::PacketFactory& packet_factory,
-                 core::BufferFactory<uint8_t>& buffer_factory,
+                 core::BufferFactory& buffer_factory,
                  core::IArena& arena);
 
     //! Check if initialization succeeded.
@@ -140,7 +140,7 @@ private:
     void log_stats_();
 
     packet::PacketFactory& packet_factory_;
-    core::BufferFactory<uint8_t>& buffer_factory_;
+    core::BufferFactory& buffer_factory_;
 
     packet::IWriter& packet_writer_;
     packet::IComposer& packet_composer_;

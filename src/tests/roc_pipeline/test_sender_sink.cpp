@@ -65,8 +65,8 @@ enum {
 };
 
 core::HeapArena arena;
-core::BufferFactory<audio::sample_t> sample_buffer_factory(arena, MaxBufSize);
-core::BufferFactory<uint8_t> byte_buffer_factory(arena, MaxBufSize);
+core::BufferFactory sample_buffer_factory(arena, MaxBufSize * sizeof(audio::sample_t));
+core::BufferFactory byte_buffer_factory(arena, MaxBufSize);
 packet::PacketFactory packet_factory(arena);
 
 rtp::EncodingMap encoding_map(arena);

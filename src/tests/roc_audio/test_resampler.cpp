@@ -47,7 +47,7 @@ const size_t supported_rates[] = {
 const float supported_scalings[] = { 0.99f, 0.999f, 1.000f, 1.001f, 1.01f };
 
 core::HeapArena arena;
-core::BufferFactory<sample_t> buffer_factory(arena, MaxFrameSize);
+core::BufferFactory buffer_factory(arena, MaxFrameSize * sizeof(sample_t));
 
 void expect_capture_timestamp(core::nanoseconds_t expected,
                               core::nanoseconds_t actual,

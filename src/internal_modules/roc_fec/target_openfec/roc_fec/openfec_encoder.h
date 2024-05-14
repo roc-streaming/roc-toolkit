@@ -41,7 +41,7 @@ class OpenfecEncoder : public IBlockEncoder, public core::NonCopyable<> {
 public:
     //! Initialize.
     explicit OpenfecEncoder(const CodecConfig& config,
-                            core::BufferFactory<uint8_t>& buffer_factory,
+                            core::BufferFactory& buffer_factory,
                             core::IArena& arena);
 
     virtual ~OpenfecEncoder();

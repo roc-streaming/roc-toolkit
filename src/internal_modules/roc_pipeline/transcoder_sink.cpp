@@ -16,7 +16,7 @@ namespace pipeline {
 
 TranscoderSink::TranscoderSink(const TranscoderConfig& config,
                                audio::IFrameWriter* output_writer,
-                               core::BufferFactory<audio::sample_t>& buffer_factory,
+                               core::BufferFactory& buffer_factory,
                                core::IArena& arena)
     : frame_writer_(NULL)
     , config_(config)

@@ -34,7 +34,7 @@ enum {
 
 core::HeapArena arena;
 packet::PacketFactory packet_factory(arena);
-core::BufferFactory<uint8_t> byte_buffer_factory(arena, test::MaxBufSize);
+core::BufferFactory byte_buffer_factory(arena, test::MaxBufSize);
 
 } // namespace
 

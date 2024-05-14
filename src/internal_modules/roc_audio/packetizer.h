@@ -65,7 +65,7 @@ public:
                packet::ISequencer& sequencer,
                IFrameEncoder& payload_encoder,
                packet::PacketFactory& packet_factory,
-               core::BufferFactory<uint8_t>& buffer_factory,
+               core::BufferFactory& buffer_factory,
                core::nanoseconds_t packet_length,
                const audio::SampleSpec& sample_spec);
 
@@ -100,7 +100,7 @@ private:
     IFrameEncoder& payload_encoder_;
 
     packet::PacketFactory& packet_factory_;
-    core::BufferFactory<uint8_t>& buffer_factory_;
+    core::BufferFactory& buffer_factory_;
 
     const audio::SampleSpec sample_spec_;
     size_t samples_per_packet_;

@@ -15,7 +15,7 @@
 namespace roc {
 namespace audio {
 
-Mixer::Mixer(core::BufferFactory<sample_t>& buffer_factory,
+Mixer::Mixer(core::BufferFactory& buffer_factory,
              const audio::SampleSpec& sample_spec,
              bool enable_timestamps)
     : sample_spec_(sample_spec)

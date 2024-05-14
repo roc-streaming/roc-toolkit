@@ -37,7 +37,7 @@ const SampleSpec sample_spec(
     SampleRate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
 core::HeapArena arena;
-core::BufferFactory<sample_t> sample_buffer_factory(arena, MaxBufSize);
+core::BufferFactory sample_buffer_factory(arena, MaxBufSize * sizeof(sample_t));
 
 class MockReader : public IFrameReader, public core::NonCopyable<> {
 public:

@@ -26,7 +26,7 @@ namespace {
 enum { NumIterations = 10, NumPackets = 7, BufferSize = 125 };
 
 core::HeapArena arena;
-core::BufferFactory<uint8_t> buffer_factory(arena, BufferSize);
+core::BufferFactory buffer_factory(arena, BufferSize);
 packet::PacketFactory packet_factory(arena);
 
 void short_delay() {

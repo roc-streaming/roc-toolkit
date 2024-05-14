@@ -20,8 +20,8 @@ SenderSlot::SenderSlot(const SenderSinkConfig& sink_config,
                        const rtp::EncodingMap& encoding_map,
                        audio::Fanout& fanout,
                        packet::PacketFactory& packet_factory,
-                       core::BufferFactory<uint8_t>& byte_buffer_factory,
-                       core::BufferFactory<audio::sample_t>& sample_buffer_factory,
+                       core::BufferFactory& byte_buffer_factory,
+                       core::BufferFactory& sample_buffer_factory,
                        core::IArena& arena)
     : core::RefCounted<SenderSlot, core::ArenaAllocation>(arena)
     , sink_config_(sink_config)

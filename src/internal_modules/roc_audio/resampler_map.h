@@ -44,12 +44,11 @@ public:
     bool is_supported(ResamplerBackend backend_id) const;
 
     //! Instantiate IResampler for given backend ID.
-    core::SharedPtr<IResampler>
-    new_resampler(core::IArena& arena,
-                  core::BufferFactory<sample_t>& buffer_factory,
-                  const ResamplerConfig& config,
-                  const audio::SampleSpec& in_spec,
-                  const audio::SampleSpec& out_spec);
+    core::SharedPtr<IResampler> new_resampler(core::IArena& arena,
+                                              core::BufferFactory& buffer_factory,
+                                              const ResamplerConfig& config,
+                                              const audio::SampleSpec& in_spec,
+                                              const audio::SampleSpec& out_spec);
 
 private:
     friend class core::Singleton<ResamplerMap>;
@@ -64,7 +63,7 @@ private:
 
         ResamplerBackend id;
         core::SharedPtr<IResampler> (*ctor)(core::IArena& arena,
-                                            core::BufferFactory<sample_t>& buffer_factory,
+                                            core::BufferFactory& buffer_factory,
                                             ResamplerProfile profile,
                                             const audio::SampleSpec& in_spec,
                                             const audio::SampleSpec& out_spec);

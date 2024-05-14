@@ -24,7 +24,7 @@ namespace {
 
 template <class T>
 core::SharedPtr<IResampler> resampler_ctor(core::IArena& arena,
-                                           core::BufferFactory<sample_t>& buffer_factory,
+                                           core::BufferFactory& buffer_factory,
                                            ResamplerProfile profile,
                                            const audio::SampleSpec& in_spec,
                                            const audio::SampleSpec& out_spec) {
@@ -32,12 +32,11 @@ core::SharedPtr<IResampler> resampler_ctor(core::IArena& arena,
 }
 
 template <class T>
-core::SharedPtr<IResampler>
-resampler_dec_ctor(core::IArena& arena,
-                   core::BufferFactory<sample_t>& buffer_factory,
-                   ResamplerProfile profile,
-                   const audio::SampleSpec& in_spec,
-                   const audio::SampleSpec& out_spec) {
+core::SharedPtr<IResampler> resampler_dec_ctor(core::IArena& arena,
+                                               core::BufferFactory& buffer_factory,
+                                               ResamplerProfile profile,
+                                               const audio::SampleSpec& in_spec,
+                                               const audio::SampleSpec& out_spec) {
     core::SharedPtr<IResampler> inner_resampler =
         new (arena) T(arena, buffer_factory, profile, in_spec, out_spec);
 
@@ -86,7 +85,7 @@ bool ResamplerMap::is_supported(ResamplerBackend backend_id) const {
 
 core::SharedPtr<IResampler>
 ResamplerMap::new_resampler(core::IArena& arena,
-                            core::BufferFactory<sample_t>& buffer_factory,
+                            core::BufferFactory& buffer_factory,
                             const ResamplerConfig& config,
                             const audio::SampleSpec& in_spec,
                             const audio::SampleSpec& out_spec) {

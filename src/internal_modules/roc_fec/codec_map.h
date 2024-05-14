@@ -48,7 +48,7 @@ public:
     //! @returns
     //!  NULL if parameters are invalid or given codec support is not enabled.
     IBlockEncoder* new_encoder(const CodecConfig& config,
-                               core::BufferFactory<uint8_t>& buffer_factory,
+                               core::BufferFactory& buffer_factory,
                                core::IArena& arena) const;
 
     //! Create a new block decoder.
@@ -59,7 +59,7 @@ public:
     //! @returns
     //!  NULL if parameters are invalid or given codec support is not enabled.
     IBlockDecoder* new_decoder(const CodecConfig& config,
-                               core::BufferFactory<uint8_t>& buffer_factory,
+                               core::BufferFactory& buffer_factory,
                                core::IArena& arena) const;
 
 private:
@@ -71,11 +71,11 @@ private:
         packet::FecScheme scheme;
 
         IBlockEncoder* (*encoder_ctor)(const CodecConfig& config,
-                                       core::BufferFactory<uint8_t>& buffer_factory,
+                                       core::BufferFactory& buffer_factory,
                                        core::IArena& arena);
 
         IBlockDecoder* (*decoder_ctor)(const CodecConfig& config,
-                                       core::BufferFactory<uint8_t>& buffer_factory,
+                                       core::BufferFactory& buffer_factory,
                                        core::IArena& arena);
     };
 

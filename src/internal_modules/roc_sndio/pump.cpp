@@ -12,7 +12,7 @@
 namespace roc {
 namespace sndio {
 
-Pump::Pump(core::BufferFactory<audio::sample_t>& buffer_factory,
+Pump::Pump(core::BufferFactory& buffer_factory,
            ISource& source,
            ISource* backup_source,
            ISink& sink,

@@ -29,7 +29,7 @@ class ChannelMapperReader : public IFrameReader, public core::NonCopyable<> {
 public:
     //! Initialize.
     ChannelMapperReader(IFrameReader& reader,
-                        core::BufferFactory<sample_t>& buffer_factory,
+                        core::BufferFactory& buffer_factory,
                         const SampleSpec& in_spec,
                         const SampleSpec& out_spec);
 

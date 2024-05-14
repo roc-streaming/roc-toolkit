@@ -48,7 +48,7 @@ public:
     //! Initialize.
     //! @p buffer_factory is used to allocate a temporary buffer for mixing.
     //! @p enable_timestamps defines whether to enable calculation of capture timestamps.
-    Mixer(core::BufferFactory<sample_t>& buffer_factory,
+    Mixer(core::BufferFactory& buffer_factory,
           const audio::SampleSpec& sample_spec,
           bool enable_timestamps);
 

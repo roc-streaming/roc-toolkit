@@ -26,8 +26,7 @@ namespace test {
 // Read audio frames from source and validate.
 class FrameReader : public core::NonCopyable<> {
 public:
-    FrameReader(sndio::ISource& source,
-                core::BufferFactory<audio::sample_t>& buffer_factory)
+    FrameReader(sndio::ISource& source, core::BufferFactory& buffer_factory)
         : source_(source)
         , buffer_factory_(buffer_factory)
         , offset_(0)
@@ -206,7 +205,7 @@ private:
     }
 
     sndio::ISource& source_;
-    core::BufferFactory<audio::sample_t>& buffer_factory_;
+    core::BufferFactory& buffer_factory_;
 
     uint8_t offset_;
     size_t abs_offset_;

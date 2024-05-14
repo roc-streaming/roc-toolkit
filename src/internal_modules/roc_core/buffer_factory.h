@@ -12,39 +12,30 @@
 #ifndef ROC_CORE_BUFFER_FACTORY_H_
 #define ROC_CORE_BUFFER_FACTORY_H_
 
-#include "roc_core/allocation_policy.h"
 #include "roc_core/buffer.h"
+#include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/shared_ptr.h"
 #include "roc_core/slab_pool.h"
 
 namespace roc {
 namespace core {
 
 //! Buffer factory.
-//! Allows to instantiate fixed-size buffers.
-//! @tparam T define buffer element type.
-template <class T> class BufferFactory : public core::NonCopyable<> {
+//! Allows to instantiate fixed-size byte buffers.
+class BufferFactory : public core::NonCopyable<> {
 public:
     //! Initialization.
-    //! @p buffer_size defines number of elements in buffer.
-    BufferFactory(IArena& arena, size_t buffer_size)
-        : buffer_pool_("buffer_pool", arena, sizeof(Buffer<T>) + sizeof(T) * buffer_size)
-        , buffer_size_(buffer_size) {
-    }
+    //! @p buffer_size defines size in bytes of each buffer.
+    BufferFactory(IArena& arena, size_t buffer_size);
 
-    //! Get number of elements in buffer.
-    size_t buffer_size() const {
-        return buffer_size_;
-    }
+    //! Get buffer size in bytes.
+    size_t buffer_size() const;
 
     //! Allocate new buffer.
-    SharedPtr<Buffer<T> > new_buffer() {
-        return new (buffer_pool_) Buffer<T>(buffer_pool_, buffer_size_);
-    }
+    BufferPtr new_buffer();
 
 private:
-    SlabPool<Buffer<T> > buffer_pool_;
+    SlabPool<Buffer> buffer_pool_;
     const size_t buffer_size_;
 };
 

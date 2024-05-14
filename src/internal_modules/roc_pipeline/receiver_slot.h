@@ -43,8 +43,8 @@ public:
                  audio::Mixer& mixer,
                  const rtp::EncodingMap& encoding_map,
                  packet::PacketFactory& packet_factory,
-                 core::BufferFactory<uint8_t>& byte_buffer_factory,
-                 core::BufferFactory<audio::sample_t>& sample_buffer_factory,
+                 core::BufferFactory& byte_buffer_factory,
+                 core::BufferFactory& sample_buffer_factory,
                  core::IArena& arena);
 
     //! Check if the slot was succefully constructed.
