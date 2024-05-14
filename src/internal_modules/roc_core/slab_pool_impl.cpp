@@ -114,6 +114,16 @@ void SlabPoolImpl::deallocate(void* memory) {
     }
 }
 
+size_t SlabPoolImpl::allocation_size() const {
+    // immutable, no lock
+    return slot_size_;
+}
+
+size_t SlabPoolImpl::object_size() const {
+    // immutable, no lock
+    return object_size_;
+}
+
 size_t SlabPoolImpl::num_guard_failures() const {
     Mutex::Lock lock(mutex_);
 

@@ -26,21 +26,24 @@ public:
     LimitedPool(IPool& pool, MemoryLimiter& memory_limiter);
 
     //! Get size of the allocation per object.
-    size_t allocation_size() const;
+    virtual size_t allocation_size() const;
+
+    //! Get size of the object.
+    virtual size_t object_size() const;
 
     //! Reserve memory for given number of objects.
     //! @returns
     //!  false if allocation failed.
-    ROC_ATTR_NODISCARD bool reserve(size_t n_objects);
+    virtual ROC_ATTR_NODISCARD bool reserve(size_t n_objects);
 
     //! Allocate memory for an object, after checking with the memory limiter.
     //! @returns
     //!  pointer to a maximum aligned uninitialized memory for a new object
     //!  or NULL if memory can't be allocated.
-    void* allocate();
+    virtual void* allocate();
 
     //! Return memory to pool, then update the memory limiter.
-    void deallocate(void* memory);
+    virtual void deallocate(void* memory);
 
 private:
     IPool& pool_;

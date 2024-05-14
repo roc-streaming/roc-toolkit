@@ -28,6 +28,9 @@ public:
     //! Covers all internal overhead, if any.
     virtual size_t allocation_size() const = 0;
 
+    //! Get size of the object (without overhead).
+    virtual size_t object_size() const = 0;
+
     //! Reserve memory for given number of objects.
     //! @returns
     //!  false if allocation failed.

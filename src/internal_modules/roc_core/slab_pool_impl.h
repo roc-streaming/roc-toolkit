@@ -78,13 +78,14 @@ public:
     //! Return memory to pool.
     void deallocate(void* memory);
 
+    //! Get size of the allocation per object.
+    size_t allocation_size() const;
+
+    //! Get size of the object.
+    size_t object_size() const;
+
     //! Get number of guard failures.
     size_t num_guard_failures() const;
-
-    //! Get size of the allocation per object.
-    size_t allocation_size() const {
-        return slot_size_;
-    }
 
 private:
     struct Slab : ListNode<> {};

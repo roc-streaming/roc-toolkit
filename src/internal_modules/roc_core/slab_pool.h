@@ -97,22 +97,27 @@ public:
     }
 
     //! Get size of the allocation per object.
-    size_t allocation_size() const {
+    virtual size_t allocation_size() const {
         return impl_.allocation_size();
     }
 
+    //! Get size of the object.
+    virtual size_t object_size() const {
+        return impl_.object_size();
+    }
+
     //! Reserve memory for given number of objects.
-    ROC_ATTR_NODISCARD bool reserve(size_t n_objects) {
+    virtual ROC_ATTR_NODISCARD bool reserve(size_t n_objects) {
         return impl_.reserve(n_objects);
     }
 
     //! Allocate memory for an object.
-    void* allocate() {
+    virtual void* allocate() {
         return impl_.allocate();
     }
 
     //! Return memory to pool.
-    void deallocate(void* memory) {
+    virtual void deallocate(void* memory) {
         impl_.deallocate(memory);
     }
 

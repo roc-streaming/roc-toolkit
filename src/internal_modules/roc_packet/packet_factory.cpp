@@ -16,7 +16,7 @@ PacketFactory::PacketFactory(core::IArena& arena)
     : pool_("packet_pool", arena) {
 }
 
-core::SharedPtr<Packet> PacketFactory::new_packet() {
+PacketPtr PacketFactory::new_packet() {
     return new (pool_) Packet(pool_);
 }
 

@@ -28,7 +28,7 @@ public:
     PacketFactory(core::IArena& arena);
 
     //! Create new packet;
-    core::SharedPtr<Packet> new_packet();
+    PacketPtr new_packet();
 
 private:
     core::SlabPool<Packet> pool_;

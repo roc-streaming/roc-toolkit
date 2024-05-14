@@ -20,6 +20,10 @@ size_t LimitedPool::allocation_size() const {
     return pool_.allocation_size();
 }
 
+size_t LimitedPool::object_size() const {
+    return pool_.object_size();
+}
+
 ROC_ATTR_NODISCARD bool LimitedPool::reserve(size_t n_objects) {
     return pool_.reserve(n_objects);
 }
