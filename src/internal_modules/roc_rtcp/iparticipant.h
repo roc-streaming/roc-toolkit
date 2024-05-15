@@ -92,7 +92,7 @@ public:
     //! Reports will be used to generate RTCP packets for remote senders.
     //! @p reports points to a buffer of @p n_reports size,
     //! where @p n_reports <= num_recv_streams().
-    virtual void query_recv_streams(rtcp::RecvReport* reports,
+    virtual void query_recv_streams(RecvReport* reports,
                                     size_t n_reports,
                                     core::nanoseconds_t report_time) {
     }

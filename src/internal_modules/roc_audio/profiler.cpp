@@ -16,7 +16,7 @@ namespace roc {
 namespace audio {
 
 Profiler::Profiler(core::IArena& arena,
-                   const audio::SampleSpec& sample_spec,
+                   const SampleSpec& sample_spec,
                    ProfilerConfig profiler_config)
     : rate_limiter_(profiler_config.profiling_interval)
     , interval_(profiler_config.profiling_interval)

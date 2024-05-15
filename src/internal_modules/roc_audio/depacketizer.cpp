@@ -34,7 +34,7 @@ inline void write_beep(sample_t* buf, size_t bufsz) {
 
 Depacketizer::Depacketizer(packet::IReader& reader,
                            IFrameDecoder& payload_decoder,
-                           const audio::SampleSpec& sample_spec,
+                           const SampleSpec& sample_spec,
                            bool beep)
     : reader_(reader)
     , payload_decoder_(payload_decoder)

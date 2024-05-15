@@ -48,8 +48,8 @@ inline int get_quality(ResamplerProfile profile) {
 SpeexResampler::SpeexResampler(core::IArena& arena,
                                FrameFactory& frame_factory,
                                ResamplerProfile profile,
-                               const audio::SampleSpec& in_spec,
-                               const audio::SampleSpec& out_spec)
+                               const SampleSpec& in_spec,
+                               const SampleSpec& out_spec)
     : IResampler(arena)
     , speex_state_(NULL)
     , num_ch_((spx_uint32_t)in_spec.num_channels())

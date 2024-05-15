@@ -51,8 +51,8 @@ private:
     IResampler& resampler_;
     IFrameReader& reader_;
 
-    const audio::SampleSpec in_sample_spec_;
-    const audio::SampleSpec out_sample_spec_;
+    const SampleSpec in_sample_spec_;
+    const SampleSpec out_sample_spec_;
 
     // timestamp of the last sample +1 of the last frame pushed into resampler
     core::nanoseconds_t last_in_cts_;

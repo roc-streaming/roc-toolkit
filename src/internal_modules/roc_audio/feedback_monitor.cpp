@@ -29,7 +29,7 @@ FeedbackMonitor::FeedbackMonitor(IFrameWriter& writer,
     , packetizer_(packetizer)
     , writer_(writer)
     , resampler_(resampler)
-    , enable_scaling_(latency_config.tuner_profile != audio::LatencyTunerProfile_Intact)
+    , enable_scaling_(latency_config.tuner_profile != LatencyTunerProfile_Intact)
     , source_(0)
     , source_change_limiter_(feedback_config.source_cooldown)
     , sample_spec_(sample_spec)

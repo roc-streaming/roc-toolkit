@@ -38,7 +38,7 @@ public:
     //!  - @p beep enables weird beeps instead of silence on packet loss
     Depacketizer(packet::IReader& reader,
                  IFrameDecoder& payload_decoder,
-                 const audio::SampleSpec& sample_spec,
+                 const SampleSpec& sample_spec,
                  bool beep);
 
     //! Was depacketizer constructed without errors?
@@ -94,7 +94,7 @@ private:
     packet::IReader& reader_;
     IFrameDecoder& payload_decoder_;
 
-    const audio::SampleSpec sample_spec_;
+    const SampleSpec sample_spec_;
 
     packet::PacketPtr packet_;
 

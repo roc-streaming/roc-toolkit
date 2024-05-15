@@ -94,7 +94,7 @@ class Watchdog : public IFrameReader, public core::NonCopyable<> {
 public:
     //! Initialize.
     Watchdog(IFrameReader& reader,
-             const audio::SampleSpec& sample_spec,
+             const SampleSpec& sample_spec,
              const WatchdogConfig& config,
              core::IArena& arena);
 
@@ -129,7 +129,7 @@ private:
 
     IFrameReader& reader_;
 
-    const audio::SampleSpec sample_spec_;
+    const SampleSpec sample_spec_;
 
     packet::stream_timestamp_t max_blank_duration_;
     packet::stream_timestamp_t max_drops_duration_;

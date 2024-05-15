@@ -29,8 +29,8 @@ DecimationResampler::DecimationResampler(
     const core::SharedPtr<IResampler>& inner_resampler,
     core::IArena& arena,
     FrameFactory& frame_factory,
-    const audio::SampleSpec& in_spec,
-    const audio::SampleSpec& out_spec)
+    const SampleSpec& in_spec,
+    const SampleSpec& out_spec)
     : IResampler(arena)
     , inner_resampler_(inner_resampler)
     , use_inner_resampler_(in_spec.sample_rate() != out_spec.sample_rate())

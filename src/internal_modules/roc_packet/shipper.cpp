@@ -35,11 +35,11 @@ status::StatusCode Shipper::write(const PacketPtr& packet) {
         }
     }
 
-    if (!packet->has_flags(packet::Packet::FlagPrepared)) {
+    if (!packet->has_flags(Packet::FlagPrepared)) {
         roc_panic("shipper: unexpected packet: should be prepared");
     }
 
-    if (!packet->has_flags(packet::Packet::FlagComposed)) {
+    if (!packet->has_flags(Packet::FlagComposed)) {
         if (!composer_.compose(*packet)) {
             // TODO(gh-183): return status from composer
             roc_panic("shipper: can't compose packet");

@@ -28,7 +28,7 @@ public:
     //! Initialization.
     ProfilingWriter(IFrameWriter& writer,
                     core::IArena& arena,
-                    const audio::SampleSpec& sample_spec,
+                    const SampleSpec& sample_spec,
                     ProfilerConfig profiler_config);
 
     //! Check if the profiler was succefully constructed.

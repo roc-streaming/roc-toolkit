@@ -53,8 +53,8 @@ private:
     IResampler& resampler_;
     IFrameWriter& writer_;
 
-    const audio::SampleSpec in_sample_spec_;
-    const audio::SampleSpec out_sample_spec_;
+    const SampleSpec in_sample_spec_;
+    const SampleSpec out_sample_spec_;
 
     core::Slice<sample_t> input_buf_;
     core::Slice<sample_t> output_buf_;

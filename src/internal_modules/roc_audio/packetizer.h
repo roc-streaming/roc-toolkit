@@ -65,7 +65,7 @@ public:
                IFrameEncoder& payload_encoder,
                packet::PacketFactory& packet_factory,
                core::nanoseconds_t packet_length,
-               const audio::SampleSpec& sample_spec);
+               const SampleSpec& sample_spec);
 
     //! Check if object is successfully constructed.
     bool is_valid() const;
@@ -99,7 +99,7 @@ private:
 
     packet::PacketFactory& packet_factory_;
 
-    const audio::SampleSpec sample_spec_;
+    const SampleSpec sample_spec_;
     size_t samples_per_packet_;
     size_t payload_size_;
 

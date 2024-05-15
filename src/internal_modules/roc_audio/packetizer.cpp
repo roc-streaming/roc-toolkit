@@ -21,7 +21,7 @@ Packetizer::Packetizer(packet::IWriter& writer,
                        IFrameEncoder& payload_encoder,
                        packet::PacketFactory& packet_factory,
                        core::nanoseconds_t packet_length,
-                       const audio::SampleSpec& sample_spec)
+                       const SampleSpec& sample_spec)
     : writer_(writer)
     , composer_(composer)
     , sequencer_(sequencer)

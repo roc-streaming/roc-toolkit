@@ -41,7 +41,7 @@ void WatchdogConfig::deduce_defaults(core::nanoseconds_t target_latency) {
 }
 
 Watchdog::Watchdog(IFrameReader& reader,
-                   const audio::SampleSpec& sample_spec,
+                   const SampleSpec& sample_spec,
                    const WatchdogConfig& config,
                    core::IArena& arena)
     : reader_(reader)

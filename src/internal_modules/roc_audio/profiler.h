@@ -66,7 +66,7 @@ class Profiler : public core::NonCopyable<> {
 public:
     //! Initialization.
     Profiler(core::IArena& arena,
-             const audio::SampleSpec& sample_spec,
+             const SampleSpec& sample_spec,
              ProfilerConfig profiler_config);
 
     //! Check if the profiler was succefully constructed.
@@ -96,7 +96,7 @@ private:
 
     float moving_avg_;
 
-    const audio::SampleSpec sample_spec_;
+    const SampleSpec sample_spec_;
 
     bool valid_;
     bool buffer_full_;

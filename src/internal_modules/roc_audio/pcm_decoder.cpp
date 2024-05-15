@@ -58,7 +58,7 @@ void PcmDecoder::begin(packet::stream_timestamp_t frame_position,
         packet::stream_timestamp_t(pcm_mapper_.input_sample_count(frame_size) / n_chans_);
 }
 
-size_t PcmDecoder::read(audio::sample_t* samples, size_t n_samples) {
+size_t PcmDecoder::read(sample_t* samples, size_t n_samples) {
     if (!frame_data_) {
         roc_panic("pcm decoder: read should be called only between begin/end");
     }

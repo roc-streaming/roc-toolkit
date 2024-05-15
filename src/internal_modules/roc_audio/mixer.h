@@ -49,7 +49,7 @@ public:
     //! @p buffer_factory is used to allocate a temporary buffer for mixing.
     //! @p enable_timestamps defines whether to enable calculation of capture timestamps.
     Mixer(FrameFactory& frame_factory,
-          const audio::SampleSpec& sample_spec,
+          const SampleSpec& sample_spec,
           bool enable_timestamps);
 
     //! Check if the mixer was succefully constructed.
@@ -76,7 +76,7 @@ private:
     core::List<IFrameReader, core::NoOwnership> readers_;
     core::Slice<sample_t> temp_buf_;
 
-    const audio::SampleSpec sample_spec_;
+    const SampleSpec sample_spec_;
     const bool enable_timestamps_;
 
     bool valid_;

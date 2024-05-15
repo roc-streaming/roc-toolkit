@@ -107,8 +107,8 @@ inline size_t get_window_size(ResamplerProfile profile) {
 }
 
 inline size_t get_frame_size(size_t window_size,
-                             const audio::SampleSpec& in_spec,
-                             const audio::SampleSpec& out_spec) {
+                             const SampleSpec& in_spec,
+                             const SampleSpec& out_spec) {
     const float scaling =
         (float)in_spec.sample_rate() / (float)out_spec.sample_rate() * 1.5f;
 
@@ -120,8 +120,8 @@ inline size_t get_frame_size(size_t window_size,
 BuiltinResampler::BuiltinResampler(core::IArena& arena,
                                    FrameFactory& frame_factory,
                                    ResamplerProfile profile,
-                                   const audio::SampleSpec& in_spec,
-                                   const audio::SampleSpec& out_spec)
+                                   const SampleSpec& in_spec,
+                                   const SampleSpec& out_spec)
     : IResampler(arena)
     , in_spec_(in_spec)
     , out_spec_(out_spec)

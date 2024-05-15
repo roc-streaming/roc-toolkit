@@ -42,8 +42,8 @@ public:
     BuiltinResampler(core::IArena& arena,
                      FrameFactory& frame_factory,
                      ResamplerProfile profile,
-                     const audio::SampleSpec& in_spec,
-                     const audio::SampleSpec& out_spec);
+                     const SampleSpec& in_spec,
+                     const SampleSpec& out_spec);
 
     ~BuiltinResampler();
 
@@ -93,8 +93,8 @@ private:
     // (e.g. left -- 0, right -- 1, etc.).
     sample_t resample_(size_t channel_offset);
 
-    const audio::SampleSpec in_spec_;
-    const audio::SampleSpec out_spec_;
+    const SampleSpec in_spec_;
+    const SampleSpec out_spec_;
 
     core::Slice<sample_t> frames_[3];
     size_t n_ready_frames_;

@@ -53,8 +53,8 @@ public:
     DecimationResampler(const core::SharedPtr<IResampler>& inner_resampler,
                         core::IArena& arena,
                         FrameFactory& frame_factory,
-                        const audio::SampleSpec& in_spec,
-                        const audio::SampleSpec& out_spec);
+                        const SampleSpec& in_spec,
+                        const SampleSpec& out_spec);
 
     ~DecimationResampler();
 
@@ -82,8 +82,8 @@ private:
     const core::SharedPtr<IResampler> inner_resampler_;
     bool use_inner_resampler_;
 
-    audio::SampleSpec input_spec_;
-    audio::SampleSpec output_spec_;
+    SampleSpec input_spec_;
+    SampleSpec output_spec_;
     float multiplier_;
 
     const size_t num_ch_;

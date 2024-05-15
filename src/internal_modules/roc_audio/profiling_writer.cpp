@@ -16,7 +16,7 @@ namespace audio {
 
 ProfilingWriter::ProfilingWriter(IFrameWriter& writer,
                                  core::IArena& arena,
-                                 const audio::SampleSpec& sample_spec,
+                                 const SampleSpec& sample_spec,
                                  ProfilerConfig profiler_config)
     : profiler_(arena, sample_spec, profiler_config)
     , writer_(writer) {

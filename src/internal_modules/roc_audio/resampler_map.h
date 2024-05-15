@@ -47,8 +47,8 @@ public:
     core::SharedPtr<IResampler> new_resampler(core::IArena& arena,
                                               FrameFactory& frame_factory,
                                               const ResamplerConfig& config,
-                                              const audio::SampleSpec& in_spec,
-                                              const audio::SampleSpec& out_spec);
+                                              const SampleSpec& in_spec,
+                                              const SampleSpec& out_spec);
 
 private:
     friend class core::Singleton<ResamplerMap>;
@@ -65,8 +65,8 @@ private:
         core::SharedPtr<IResampler> (*ctor)(core::IArena& arena,
                                             FrameFactory& frame_factory,
                                             ResamplerProfile profile,
-                                            const audio::SampleSpec& in_spec,
-                                            const audio::SampleSpec& out_spec);
+                                            const SampleSpec& in_spec,
+                                            const SampleSpec& out_spec);
     };
 
     ResamplerMap();

@@ -39,7 +39,7 @@ void PcmEncoder::begin(void* frame_data, size_t frame_size) {
     frame_byte_size_ = frame_size;
 }
 
-size_t PcmEncoder::write(const audio::sample_t* samples, size_t n_samples) {
+size_t PcmEncoder::write(const sample_t* samples, size_t n_samples) {
     if (!frame_data_) {
         roc_panic("pcm encoder: write should be called only between begin/end");
     }
