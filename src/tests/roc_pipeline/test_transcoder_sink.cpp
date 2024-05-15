@@ -11,8 +11,8 @@
 #include "test_helpers/frame_writer.h"
 #include "test_helpers/mock_sink.h"
 
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
+#include "roc_core/slab_pool.h"
 #include "roc_pipeline/transcoder_sink.h"
 
 namespace roc {
@@ -33,7 +33,12 @@ const audio::ChannelMask Chans_Mono = audio::ChanMask_Surround_Mono;
 const audio::ChannelMask Chans_Stereo = audio::ChanMask_Surround_Stereo;
 
 core::HeapArena arena;
-core::BufferFactory sample_buffer_factory(arena, MaxBufSize * sizeof(audio::sample_t));
+
+core::SlabPool<core::Buffer> buffer_pool("frame_buffer_pool",
+                                         arena,
+                                         sizeof(core::Buffer)
+                                             + MaxBufSize * sizeof(audio::sample_t));
+audio::FrameFactory frame_factory(buffer_pool);
 
 } // namespace
 
@@ -75,10 +80,10 @@ TEST(transcoder_sink, null) {
 
     init(Rate, Chans, Rate, Chans);
 
-    TranscoderSink transcoder(make_config(), NULL, sample_buffer_factory, arena);
+    TranscoderSink transcoder(make_config(), NULL, buffer_pool, arena);
     CHECK(transcoder.is_valid());
 
-    test::FrameWriter frame_writer(transcoder, sample_buffer_factory);
+    test::FrameWriter frame_writer(transcoder, frame_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
@@ -92,10 +97,10 @@ TEST(transcoder_sink, write) {
 
     test::MockSink mock_sink(output_sample_spec);
 
-    TranscoderSink transcoder(make_config(), &mock_sink, sample_buffer_factory, arena);
+    TranscoderSink transcoder(make_config(), &mock_sink, buffer_pool, arena);
     CHECK(transcoder.is_valid());
 
-    test::FrameWriter frame_writer(transcoder, sample_buffer_factory);
+    test::FrameWriter frame_writer(transcoder, frame_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
@@ -116,10 +121,10 @@ TEST(transcoder_sink, frame_size_small) {
 
     test::MockSink mock_sink(output_sample_spec);
 
-    TranscoderSink transcoder(make_config(), &mock_sink, sample_buffer_factory, arena);
+    TranscoderSink transcoder(make_config(), &mock_sink, buffer_pool, arena);
     CHECK(transcoder.is_valid());
 
-    test::FrameWriter frame_writer(transcoder, sample_buffer_factory);
+    test::FrameWriter frame_writer(transcoder, frame_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerSmallFrame, input_sample_spec);
@@ -140,10 +145,10 @@ TEST(transcoder_sink, frame_size_large) {
 
     test::MockSink mock_sink(output_sample_spec);
 
-    TranscoderSink transcoder(make_config(), &mock_sink, sample_buffer_factory, arena);
+    TranscoderSink transcoder(make_config(), &mock_sink, buffer_pool, arena);
     CHECK(transcoder.is_valid());
 
-    test::FrameWriter frame_writer(transcoder, sample_buffer_factory);
+    test::FrameWriter frame_writer(transcoder, frame_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerLargeFrame, input_sample_spec);
@@ -160,10 +165,10 @@ TEST(transcoder_sink, channel_mapping_stereo_to_mono) {
 
     test::MockSink mock_sink(output_sample_spec);
 
-    TranscoderSink transcoder(make_config(), &mock_sink, sample_buffer_factory, arena);
+    TranscoderSink transcoder(make_config(), &mock_sink, buffer_pool, arena);
     CHECK(transcoder.is_valid());
 
-    test::FrameWriter frame_writer(transcoder, sample_buffer_factory);
+    test::FrameWriter frame_writer(transcoder, frame_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
@@ -180,10 +185,10 @@ TEST(transcoder_sink, channel_mapping_mono_to_stereo) {
 
     test::MockSink mock_sink(output_sample_spec);
 
-    TranscoderSink transcoder(make_config(), &mock_sink, sample_buffer_factory, arena);
+    TranscoderSink transcoder(make_config(), &mock_sink, buffer_pool, arena);
     CHECK(transcoder.is_valid());
 
-    test::FrameWriter frame_writer(transcoder, sample_buffer_factory);
+    test::FrameWriter frame_writer(transcoder, frame_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec);

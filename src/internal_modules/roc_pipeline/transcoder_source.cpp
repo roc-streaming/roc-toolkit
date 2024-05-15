@@ -16,9 +16,10 @@ namespace pipeline {
 
 TranscoderSource::TranscoderSource(const TranscoderConfig& config,
                                    sndio::ISource& input_source,
-                                   core::BufferFactory& buffer_factory,
+                                   core::IPool& buffer_pool,
                                    core::IArena& arena)
-    : input_source_(input_source)
+    : frame_factory_(buffer_pool)
+    , input_source_(input_source)
     , frame_reader_(NULL)
     , config_(config)
     , valid_(false) {
@@ -38,7 +39,7 @@ TranscoderSource::TranscoderSource(const TranscoderConfig& config,
 
         channel_mapper_reader_.reset(
             new (channel_mapper_reader_) audio::ChannelMapperReader(
-                *frm_reader, buffer_factory, from_spec, to_spec));
+                *frm_reader, frame_factory_, from_spec, to_spec));
         if (!channel_mapper_reader_ || !channel_mapper_reader_->is_valid()) {
             return;
         }
@@ -56,7 +57,7 @@ TranscoderSource::TranscoderSource(const TranscoderConfig& config,
                                         config_.output_sample_spec.channel_set());
 
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-            arena, buffer_factory, config_.resampler, from_spec, to_spec));
+            arena, frame_factory_, config_.resampler, from_spec, to_spec));
         if (!resampler_) {
             return;
         }

@@ -13,10 +13,9 @@
 #include "test_helpers/frame_writer.h"
 #include "test_helpers/packet_reader.h"
 
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
+#include "roc_core/slab_pool.h"
 #include "roc_core/time.h"
-#include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_pipeline/sender_sink.h"
 #include "roc_rtp/encoding_map.h"
@@ -65,9 +64,17 @@ enum {
 };
 
 core::HeapArena arena;
-core::BufferFactory sample_buffer_factory(arena, MaxBufSize * sizeof(audio::sample_t));
-core::BufferFactory byte_buffer_factory(arena, MaxBufSize);
-packet::PacketFactory packet_factory(arena);
+
+core::SlabPool<packet::Packet> packet_pool("packet_pool", arena);
+core::SlabPool<core::Buffer>
+    packet_buffer_pool("packet_buffer_pool", arena, sizeof(core::Buffer) + MaxBufSize);
+core::SlabPool<core::Buffer>
+    frame_buffer_pool("frame_buffer_pool",
+                      arena,
+                      sizeof(core::Buffer) + MaxBufSize * sizeof(audio::sample_t));
+
+packet::PacketFactory packet_factory(packet_pool, packet_buffer_pool);
+audio::FrameFactory frame_factory(frame_buffer_pool);
 
 rtp::EncodingMap encoding_map(arena);
 
@@ -182,15 +189,15 @@ TEST(sender_sink, basic) {
 
     packet::Queue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
-                      sample_buffer_factory, arena);
+    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
+                      frame_buffer_pool, arena);
     CHECK(sender.is_valid());
 
     SenderSlot* slot = create_slot(sender);
     CHECK(slot);
     create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
-    test::FrameWriter frame_writer(sender, sample_buffer_factory);
+    test::FrameWriter frame_writer(sender, frame_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
@@ -221,15 +228,15 @@ TEST(sender_sink, frame_size_small) {
 
     packet::Queue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
-                      sample_buffer_factory, arena);
+    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
+                      frame_buffer_pool, arena);
     CHECK(sender.is_valid());
 
     SenderSlot* slot = create_slot(sender);
     CHECK(slot);
     create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
-    test::FrameWriter frame_writer(sender, sample_buffer_factory);
+    test::FrameWriter frame_writer(sender, frame_factory);
 
     for (size_t nf = 0; nf < ManySmallFrames; nf++) {
         frame_writer.write_samples(SamplesPerSmallFrame, input_sample_spec);
@@ -260,15 +267,15 @@ TEST(sender_sink, frame_size_large) {
 
     packet::Queue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
-                      sample_buffer_factory, arena);
+    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
+                      frame_buffer_pool, arena);
     CHECK(sender.is_valid());
 
     SenderSlot* slot = create_slot(sender);
     CHECK(slot);
     create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
-    test::FrameWriter frame_writer(sender, sample_buffer_factory);
+    test::FrameWriter frame_writer(sender, frame_factory);
 
     for (size_t nf = 0; nf < ManyLargeFrames; nf++) {
         frame_writer.write_samples(SamplesPerLargeFrame, input_sample_spec);
@@ -293,15 +300,15 @@ TEST(sender_sink, channel_mapping_stereo_to_mono) {
 
     packet::Queue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
-                      sample_buffer_factory, arena);
+    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
+                      frame_buffer_pool, arena);
     CHECK(sender.is_valid());
 
     SenderSlot* slot = create_slot(sender);
     CHECK(slot);
     create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
-    test::FrameWriter frame_writer(sender, sample_buffer_factory);
+    test::FrameWriter frame_writer(sender, frame_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
@@ -326,15 +333,15 @@ TEST(sender_sink, channel_mapping_mono_to_stereo) {
 
     packet::Queue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
-                      sample_buffer_factory, arena);
+    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
+                      frame_buffer_pool, arena);
     CHECK(sender.is_valid());
 
     SenderSlot* slot = create_slot(sender);
     CHECK(slot);
     create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
-    test::FrameWriter frame_writer(sender, sample_buffer_factory);
+    test::FrameWriter frame_writer(sender, frame_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
@@ -359,15 +366,15 @@ TEST(sender_sink, sample_rate_mapping) {
 
     packet::Queue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
-                      sample_buffer_factory, arena);
+    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
+                      frame_buffer_pool, arena);
     CHECK(sender.is_valid());
 
     SenderSlot* slot = create_slot(sender);
     CHECK(slot);
     create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
-    test::FrameWriter frame_writer(sender, sample_buffer_factory);
+    test::FrameWriter frame_writer(sender, frame_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame * InputRate / PacketRate
@@ -394,14 +401,14 @@ TEST(sender_sink, timestamp_mapping) {
 
     packet::Queue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
-                      sample_buffer_factory, arena);
+    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
+                      frame_buffer_pool, arena);
     CHECK(sender.is_valid());
 
     SenderSlot* slot = create_slot(sender);
     create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
-    test::FrameWriter frame_writer(sender, sample_buffer_factory);
+    test::FrameWriter frame_writer(sender, frame_factory);
 
     const core::nanoseconds_t unix_base = 1000000000000000;
 
@@ -433,15 +440,15 @@ TEST(sender_sink, timestamp_mapping_remixing) {
 
     packet::Queue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
-                      sample_buffer_factory, arena);
+    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
+                      frame_buffer_pool, arena);
     CHECK(sender.is_valid());
 
     SenderSlot* slot = create_slot(sender);
     CHECK(slot);
     create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
-    test::FrameWriter frame_writer(sender, sample_buffer_factory);
+    test::FrameWriter frame_writer(sender, frame_factory);
 
     const core::nanoseconds_t unix_base = 1000000000000000;
 
@@ -494,8 +501,8 @@ TEST(sender_sink, metrics_feedback) {
 
     packet::Queue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
-                      sample_buffer_factory, arena);
+    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
+                      frame_buffer_pool, arena);
     CHECK(sender.is_valid());
 
     SenderSlot* slot = create_slot(sender);
@@ -509,7 +516,7 @@ TEST(sender_sink, metrics_feedback) {
                                 dst_addr2, control_outbound_queue);
     CHECK(control_endpoint);
 
-    test::FrameWriter frame_writer(sender, sample_buffer_factory);
+    test::FrameWriter frame_writer(sender, frame_factory);
 
     test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
                                      dst_addr1, PayloadType_Ch2);
@@ -546,8 +553,8 @@ TEST(sender_sink, metrics_feedback) {
         UNSIGNED_LONGS_EQUAL(0, party_metrics_size);
     }
 
-    test::ControlWriter control_writer(*control_endpoint, packet_factory,
-                                       byte_buffer_factory, dst_addr1, src_addr1);
+    test::ControlWriter control_writer(*control_endpoint, packet_factory, dst_addr1,
+                                       src_addr1);
 
     control_writer.set_local_source(recv_src_id);
     control_writer.set_remote_source(send_src_id);
@@ -622,8 +629,8 @@ TEST(sender_sink, reports_no_receivers) {
 
     packet::Queue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
-                      sample_buffer_factory, arena);
+    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
+                      frame_buffer_pool, arena);
     CHECK(sender.is_valid());
 
     SenderSlot* slot = create_slot(sender);
@@ -645,7 +652,7 @@ TEST(sender_sink, reports_no_receivers) {
                                 dst_addr2, control_outbound_queue);
     CHECK(control_endpoint);
 
-    test::FrameWriter frame_writer(sender, sample_buffer_factory);
+    test::FrameWriter frame_writer(sender, frame_factory);
 
     test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
                                      dst_addr1, PayloadType_Ch2);
@@ -691,8 +698,8 @@ TEST(sender_sink, reports_one_receiver) {
 
     packet::Queue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
-                      sample_buffer_factory, arena);
+    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
+                      frame_buffer_pool, arena);
     CHECK(sender.is_valid());
 
     SenderSlot* slot = create_slot(sender);
@@ -716,13 +723,13 @@ TEST(sender_sink, reports_one_receiver) {
                                 dst_addr2, control_outbound_queue);
     CHECK(control_endpoint);
 
-    test::FrameWriter frame_writer(sender, sample_buffer_factory);
+    test::FrameWriter frame_writer(sender, frame_factory);
 
     test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
                                      dst_addr1, PayloadType_Ch2);
 
-    test::ControlWriter control_writer(*control_endpoint, packet_factory,
-                                       byte_buffer_factory, dst_addr2, src_addr1);
+    test::ControlWriter control_writer(*control_endpoint, packet_factory, dst_addr2,
+                                       src_addr1);
 
     control_writer.set_local_source(recv_src_id);
     control_writer.set_remote_source(send_src_id);
@@ -779,8 +786,8 @@ TEST(sender_sink, reports_two_receivers) {
 
     packet::Queue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_factory, byte_buffer_factory,
-                      sample_buffer_factory, arena);
+    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
+                      frame_buffer_pool, arena);
     CHECK(sender.is_valid());
 
     SenderSlot* slot = create_slot(sender);
@@ -806,16 +813,16 @@ TEST(sender_sink, reports_two_receivers) {
                                 dst_addr2, control_outbound_queue);
     CHECK(control_endpoint);
 
-    test::FrameWriter frame_writer(sender, sample_buffer_factory);
+    test::FrameWriter frame_writer(sender, frame_factory);
 
     test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
                                      dst_addr1, PayloadType_Ch2);
 
-    test::ControlWriter control_writer1(*control_endpoint, packet_factory,
-                                        byte_buffer_factory, dst_addr2, src_addr1);
+    test::ControlWriter control_writer1(*control_endpoint, packet_factory, dst_addr2,
+                                        src_addr1);
 
-    test::ControlWriter control_writer2(*control_endpoint, packet_factory,
-                                        byte_buffer_factory, dst_addr2, src_addr2);
+    test::ControlWriter control_writer2(*control_endpoint, packet_factory, dst_addr2,
+                                        src_addr2);
 
     control_writer1.set_local_source(recv_src_id1);
     control_writer1.set_remote_source(send_src_id);

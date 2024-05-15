@@ -12,11 +12,12 @@
 #ifndef ROC_SNDIO_PUMP_H_
 #define ROC_SNDIO_PUMP_H_
 
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/sample.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/atomic.h"
 #include "roc_core/attributes.h"
-#include "roc_core/buffer_factory.h"
+#include "roc_core/ipool.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
@@ -42,7 +43,7 @@ public:
     };
 
     //! Initialize.
-    Pump(core::BufferFactory& buffer_factory,
+    Pump(core::IPool& buffer_pool,
          ISource& source,
          ISource* backup_source,
          ISink& sink,
@@ -66,6 +67,8 @@ public:
 
 private:
     bool transfer_frame_(ISource& current_source);
+
+    audio::FrameFactory frame_factory_;
 
     ISource& main_source_;
     ISource* backup_source_;

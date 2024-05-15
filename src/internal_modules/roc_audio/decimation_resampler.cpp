@@ -28,7 +28,7 @@ const size_t InputFrameSize = 16;
 DecimationResampler::DecimationResampler(
     const core::SharedPtr<IResampler>& inner_resampler,
     core::IArena& arena,
-    core::BufferFactory& buffer_factory,
+    FrameFactory& frame_factory,
     const audio::SampleSpec& in_spec,
     const audio::SampleSpec& out_spec)
     : IResampler(arena)
@@ -70,19 +70,19 @@ DecimationResampler::DecimationResampler(
         return;
     }
 
-    if (buffer_factory.buffer_size() < InputFrameSize * num_ch_) {
+    if (frame_factory.raw_buffer_size() < InputFrameSize * num_ch_) {
         roc_log(LogError, "decimation resampler: can't allocate temporary buffer");
         return;
     }
 
-    in_buf_ = buffer_factory.new_buffer();
+    in_buf_ = frame_factory.new_raw_buffer();
     if (!in_buf_) {
         roc_log(LogError, "decimation resampler: can't allocate temporary buffer");
         return;
     }
     in_buf_.reslice(0, InputFrameSize * num_ch_);
 
-    last_buf_ = buffer_factory.new_buffer();
+    last_buf_ = frame_factory.new_raw_buffer();
     if (!last_buf_) {
         roc_log(LogError, "decimation resampler: can't allocate temporary buffer");
         return;

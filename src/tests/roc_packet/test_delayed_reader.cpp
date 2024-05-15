@@ -20,7 +20,7 @@ namespace packet {
 
 namespace {
 
-enum { SampleRate = 1000, NumSamples = 100, NumPackets = 30 };
+enum { SampleRate = 1000, NumSamples = 100, NumPackets = 30, MaxBufSize = 100 };
 
 const core::nanoseconds_t NsPerSample = core::Second / SampleRate;
 
@@ -31,7 +31,7 @@ const audio::SampleSpec sample_spec(SampleRate,
                                     audio::ChanMask_Surround_Stereo);
 
 core::HeapArena arena;
-PacketFactory packet_factory(arena);
+PacketFactory packet_factory(arena, MaxBufSize);
 
 PacketPtr new_packet(seqnum_t sn) {
     PacketPtr packet = packet_factory.new_packet();

@@ -15,11 +15,9 @@
 #include "roc_audio/resampler_map.h"
 #include "roc_audio/resampler_reader.h"
 #include "roc_audio/resampler_writer.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace audio {
@@ -47,7 +45,7 @@ const size_t supported_rates[] = {
 const float supported_scalings[] = { 0.99f, 0.999f, 1.000f, 1.001f, 1.01f };
 
 core::HeapArena arena;
-core::BufferFactory buffer_factory(arena, MaxFrameSize * sizeof(sample_t));
+FrameFactory frame_factory(arena, MaxFrameSize * sizeof(sample_t));
 
 void expect_capture_timestamp(core::nanoseconds_t expected,
                               core::nanoseconds_t actual,
@@ -70,7 +68,7 @@ class TimestampChecker : public IFrameWriter {
 public:
     TimestampChecker(const core::nanoseconds_t capt_ts,
                      const core::nanoseconds_t epsilon,
-                     const audio::SampleSpec& sample_spec)
+                     const SampleSpec& sample_spec)
         : capt_ts_(capt_ts)
         , last_ts_(0)
         , epsilon_(epsilon)
@@ -113,7 +111,7 @@ private:
     core::nanoseconds_t capt_ts_;
     core::nanoseconds_t last_ts_;
     core::nanoseconds_t epsilon_;
-    const audio::SampleSpec& sample_spec_;
+    const SampleSpec& sample_spec_;
     sample_t scale_;
     bool started_;
 };
@@ -262,8 +260,7 @@ void resample_write(IResampler& resampler,
                     float scaling) {
     test::MockWriter output_writer;
 
-    ResamplerWriter rw(output_writer, resampler, buffer_factory, sample_spec,
-                       sample_spec);
+    ResamplerWriter rw(output_writer, resampler, frame_factory, sample_spec, sample_spec);
     CHECK(rw.is_valid());
     CHECK(rw.set_scaling(scaling));
 
@@ -300,7 +297,7 @@ void resample(ResamplerBackend backend,
               const SampleSpec& sample_spec,
               float scaling) {
     core::SharedPtr<IResampler> resampler = ResamplerMap::instance().new_resampler(
-        arena, buffer_factory, make_config(backend, profile), sample_spec, sample_spec);
+        arena, frame_factory, make_config(backend, profile), sample_spec, sample_spec);
     CHECK(resampler);
     CHECK(resampler->is_valid());
 
@@ -340,7 +337,7 @@ TEST(resampler, supported_scalings) {
 
                         core::SharedPtr<IResampler> resampler =
                             ResamplerMap::instance().new_resampler(
-                                arena, buffer_factory,
+                                arena, frame_factory,
                                 make_config(backend, supported_profiles[n_prof]), in_spec,
                                 out_spec);
                         CHECK(resampler);
@@ -399,7 +396,7 @@ TEST(resampler, invalid_scalings) {
 
                     core::SharedPtr<IResampler> resampler =
                         ResamplerMap::instance().new_resampler(
-                            arena, buffer_factory,
+                            arena, frame_factory,
                             make_config(backend, supported_profiles[n_prof]), in_spec,
                             out_spec);
                     CHECK(resampler);
@@ -453,7 +450,7 @@ TEST(resampler, scaling_trend) {
 
                     core::SharedPtr<IResampler> resampler =
                         ResamplerMap::instance().new_resampler(
-                            arena, buffer_factory,
+                            arena, frame_factory,
                             make_config(backend, ResamplerProfile_Low), in_spec,
                             out_spec);
                     CHECK(resampler);
@@ -678,7 +675,7 @@ TEST(resampler, reader_timestamp_passthrough) {
 
                     core::SharedPtr<IResampler> resampler =
                         ResamplerMap::instance().new_resampler(
-                            arena, buffer_factory,
+                            arena, frame_factory,
                             make_config(backend, supported_profiles[n_prof]), in_spec,
                             out_spec);
 
@@ -800,7 +797,7 @@ TEST(resampler, writer_timestamp_passthrough) {
 
                     core::SharedPtr<IResampler> resampler =
                         ResamplerMap::instance().new_resampler(
-                            arena, buffer_factory,
+                            arena, frame_factory,
                             make_config(backend, supported_profiles[n_prof]), in_spec,
                             out_spec);
 
@@ -814,7 +811,7 @@ TEST(resampler, writer_timestamp_passthrough) {
 
                     TimestampChecker ts_checker(start_ts, epsilon, out_spec);
 
-                    ResamplerWriter rwriter(ts_checker, *resampler, buffer_factory,
+                    ResamplerWriter rwriter(ts_checker, *resampler, frame_factory,
                                             in_spec, out_spec);
                     // Immediate sample rate.
                     float scale = 1.0f;
@@ -921,7 +918,7 @@ TEST(resampler, reader_timestamp_zero_or_small) {
 
                     core::SharedPtr<IResampler> resampler =
                         ResamplerMap::instance().new_resampler(
-                            arena, buffer_factory,
+                            arena, frame_factory,
                             make_config(backend, supported_profiles[n_prof]), in_spec,
                             out_spec);
 
@@ -1005,7 +1002,7 @@ TEST(resampler, writer_timestamp_zero_or_small) {
 
                     core::SharedPtr<IResampler> resampler =
                         ResamplerMap::instance().new_resampler(
-                            arena, buffer_factory,
+                            arena, frame_factory,
                             make_config(backend, supported_profiles[n_prof]), in_spec,
                             out_spec);
 
@@ -1015,7 +1012,7 @@ TEST(resampler, writer_timestamp_zero_or_small) {
 
                     TimestampChecker ts_checker(0, epsilon, out_spec);
 
-                    ResamplerWriter rwriter(ts_checker, *resampler, buffer_factory,
+                    ResamplerWriter rwriter(ts_checker, *resampler, frame_factory,
                                             in_spec, out_spec);
 
                     // Set scaling.

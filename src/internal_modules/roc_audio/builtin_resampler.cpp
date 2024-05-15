@@ -118,7 +118,7 @@ inline size_t get_frame_size(size_t window_size,
 } // namespace
 
 BuiltinResampler::BuiltinResampler(core::IArena& arena,
-                                   core::BufferFactory& buffer_factory,
+                                   FrameFactory& frame_factory,
                                    ResamplerProfile profile,
                                    const audio::SampleSpec& in_spec,
                                    const audio::SampleSpec& out_spec)
@@ -161,7 +161,7 @@ BuiltinResampler::BuiltinResampler(core::IArena& arena,
         return;
     }
 
-    if (!alloc_frames_(buffer_factory)) {
+    if (!alloc_frames_(frame_factory)) {
         return;
     }
 
@@ -297,9 +297,9 @@ float BuiltinResampler::n_left_to_process() const {
     return fixedpoint_to_float(2 * qt_frame_size_ - qt_sample_) * in_spec_.num_channels();
 }
 
-bool BuiltinResampler::alloc_frames_(core::BufferFactory& buffer_factory) {
+bool BuiltinResampler::alloc_frames_(FrameFactory& frame_factory) {
     for (size_t n = 0; n < ROC_ARRAY_SIZE(frames_); n++) {
-        frames_[n] = buffer_factory.new_buffer();
+        frames_[n] = frame_factory.new_raw_buffer();
 
         if (!frames_[n]) {
             roc_log(LogError, "builtin resampler: can't allocate frame buffer");

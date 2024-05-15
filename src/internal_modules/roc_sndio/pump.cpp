@@ -12,14 +12,15 @@
 namespace roc {
 namespace sndio {
 
-Pump::Pump(core::BufferFactory& buffer_factory,
+Pump::Pump(core::IPool& buffer_pool,
            ISource& source,
            ISource* backup_source,
            ISink& sink,
            core::nanoseconds_t frame_length,
            const audio::SampleSpec& sample_spec,
            Mode mode)
-    : main_source_(source)
+    : frame_factory_(buffer_pool)
+    , main_source_(source)
     , backup_source_(backup_source)
     , sink_(sink)
     , sample_spec_(sample_spec)
@@ -32,13 +33,14 @@ Pump::Pump(core::BufferFactory& buffer_factory,
         return;
     }
 
-    if (buffer_factory.buffer_size() < frame_size) {
+    if (frame_factory_.raw_buffer_size() < frame_size) {
         roc_log(LogError, "pump: buffer size is too small: required=%lu actual=%lu",
-                (unsigned long)frame_size, (unsigned long)buffer_factory.buffer_size());
+                (unsigned long)frame_size,
+                (unsigned long)frame_factory_.raw_buffer_size());
         return;
     }
 
-    frame_buffer_ = buffer_factory.new_buffer();
+    frame_buffer_ = frame_factory_.new_raw_buffer();
     if (!frame_buffer_) {
         roc_log(LogError, "pump: can't allocate frame buffer");
         return;

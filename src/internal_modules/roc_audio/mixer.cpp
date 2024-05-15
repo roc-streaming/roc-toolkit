@@ -15,7 +15,7 @@
 namespace roc {
 namespace audio {
 
-Mixer::Mixer(core::BufferFactory& buffer_factory,
+Mixer::Mixer(FrameFactory& frame_factory,
              const audio::SampleSpec& sample_spec,
              bool enable_timestamps)
     : sample_spec_(sample_spec)
@@ -25,7 +25,7 @@ Mixer::Mixer(core::BufferFactory& buffer_factory,
                      "mixer: required valid sample spec with raw format: %s",
                      sample_spec_to_str(sample_spec_).c_str());
 
-    temp_buf_ = buffer_factory.new_buffer();
+    temp_buf_ = frame_factory.new_raw_buffer();
     if (!temp_buf_) {
         roc_log(LogError, "mixer: can't allocate temporary buffer");
         return;

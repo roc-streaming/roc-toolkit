@@ -11,7 +11,7 @@
 #include "test_helpers/mock_writer.h"
 
 #include "roc_audio/fanout.h"
-#include "roc_core/buffer_factory.h"
+#include "roc_audio/frame_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/stddefs.h"
 
@@ -23,10 +23,10 @@ namespace {
 enum { BufSz = 100, MaxSz = 500 };
 
 core::HeapArena arena;
-core::BufferFactory buffer_factory(arena, MaxSz * sizeof(sample_t));
+FrameFactory frame_factory(arena, MaxSz * sizeof(sample_t));
 
 core::Slice<sample_t> new_buffer(size_t sz) {
-    core::Slice<sample_t> buf = buffer_factory.new_buffer();
+    core::Slice<sample_t> buf = frame_factory.new_raw_buffer();
     buf.reslice(0, sz);
     return buf;
 }

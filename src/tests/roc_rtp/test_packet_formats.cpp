@@ -13,7 +13,6 @@
 #include "test_packets/rtp_l16_2ch_300s_80pad.h"
 #include "test_packets/rtp_l16_2ch_320s.h"
 
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
@@ -32,11 +31,10 @@ enum { MaxBufSize = test::PacketInfo::MaxData };
 enum { CanParse = (1 << 0), CanCompose = (1 << 1) };
 
 core::HeapArena arena;
-core::BufferFactory buffer_factory(arena, MaxBufSize);
-packet::PacketFactory packet_factory(arena);
+packet::PacketFactory packet_factory(arena, MaxBufSize);
 
 core::Slice<uint8_t> new_buffer(const uint8_t* data, size_t datasz) {
-    core::Slice<uint8_t> buf = buffer_factory.new_buffer();
+    core::Slice<uint8_t> buf = packet_factory.new_packet_buffer();
     if (data) {
         buf.reslice(0, datasz);
         memcpy(buf.data(), data, datasz);

@@ -11,7 +11,6 @@
 #include "test_helpers/mock_reader.h"
 
 #include "roc_audio/mixer.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/stddefs.h"
 
@@ -20,17 +19,17 @@ namespace audio {
 
 namespace {
 
-enum { BufSz = 100, SampleRate = 44100, ChannelMask = 0x1, MaxBufSz = 500 };
+enum { BufSz = 100, MaxBufSz = 500, SampleRate = 44100, ChannelMask = 0x1 };
 
 const SampleSpec sample_spec(
     SampleRate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte, ChannelMask);
 
 core::HeapArena arena;
-core::BufferFactory buffer_factory(arena, MaxBufSz * sizeof(sample_t));
-core::BufferFactory large_buffer_factory(arena, MaxBufSz * 10 * sizeof(sample_t));
+FrameFactory frame_factory(arena, MaxBufSz * sizeof(sample_t));
+FrameFactory large_frame_factory(arena, MaxBufSz * 10 * sizeof(sample_t));
 
 core::Slice<sample_t> new_buffer(size_t sz) {
-    core::Slice<sample_t> buf = large_buffer_factory.new_buffer();
+    core::Slice<sample_t> buf = large_frame_factory.new_raw_buffer();
     buf.reslice(0, sz);
     return buf;
 }
@@ -64,7 +63,7 @@ void expect_output(Mixer& mixer,
 TEST_GROUP(mixer) {};
 
 TEST(mixer, no_readers) {
-    Mixer mixer(buffer_factory, sample_spec, true);
+    Mixer mixer(frame_factory, sample_spec, true);
     CHECK(mixer.is_valid());
 
     expect_output(mixer, BufSz, 0);
@@ -73,7 +72,7 @@ TEST(mixer, no_readers) {
 TEST(mixer, one_reader) {
     test::MockReader reader;
 
-    Mixer mixer(buffer_factory, sample_spec, true);
+    Mixer mixer(frame_factory, sample_spec, true);
     CHECK(mixer.is_valid());
 
     mixer.add_input(reader);
@@ -87,7 +86,7 @@ TEST(mixer, one_reader) {
 TEST(mixer, one_reader_large) {
     test::MockReader reader;
 
-    Mixer mixer(buffer_factory, sample_spec, true);
+    Mixer mixer(frame_factory, sample_spec, true);
     CHECK(mixer.is_valid());
 
     mixer.add_input(reader);
@@ -102,7 +101,7 @@ TEST(mixer, two_readers) {
     test::MockReader reader1;
     test::MockReader reader2;
 
-    Mixer mixer(buffer_factory, sample_spec, true);
+    Mixer mixer(frame_factory, sample_spec, true);
     CHECK(mixer.is_valid());
 
     mixer.add_input(reader1);
@@ -121,7 +120,7 @@ TEST(mixer, remove_reader) {
     test::MockReader reader1;
     test::MockReader reader2;
 
-    Mixer mixer(buffer_factory, sample_spec, true);
+    Mixer mixer(frame_factory, sample_spec, true);
     CHECK(mixer.is_valid());
 
     mixer.add_input(reader1);
@@ -151,7 +150,7 @@ TEST(mixer, clamp) {
     test::MockReader reader1;
     test::MockReader reader2;
 
-    Mixer mixer(buffer_factory, sample_spec, true);
+    Mixer mixer(frame_factory, sample_spec, true);
     CHECK(mixer.is_valid());
 
     mixer.add_input(reader1);
@@ -182,7 +181,7 @@ TEST(mixer, flags) {
     test::MockReader reader1;
     test::MockReader reader2;
 
-    Mixer mixer(buffer_factory, sample_spec, true);
+    Mixer mixer(frame_factory, sample_spec, true);
     CHECK(mixer.is_valid());
 
     mixer.add_input(reader1);
@@ -213,7 +212,7 @@ TEST(mixer, timestamps_one_reader) {
 
     test::MockReader reader;
 
-    Mixer mixer(buffer_factory, sample_spec, true);
+    Mixer mixer(frame_factory, sample_spec, true);
     CHECK(mixer.is_valid());
 
     mixer.add_input(reader);
@@ -242,7 +241,7 @@ TEST(mixer, timestamps_two_readers) {
     test::MockReader reader1;
     test::MockReader reader2;
 
-    Mixer mixer(buffer_factory, sample_spec, true);
+    Mixer mixer(frame_factory, sample_spec, true);
     CHECK(mixer.is_valid());
 
     mixer.add_input(reader1);
@@ -280,7 +279,7 @@ TEST(mixer, timestamps_partial) {
     test::MockReader reader2;
     test::MockReader reader3;
 
-    Mixer mixer(buffer_factory, sample_spec, true);
+    Mixer mixer(frame_factory, sample_spec, true);
     CHECK(mixer.is_valid());
 
     mixer.add_input(reader1);
@@ -327,7 +326,7 @@ TEST(mixer, timestamps_no_overflow) {
     test::MockReader reader1;
     test::MockReader reader2;
 
-    Mixer mixer(buffer_factory, sample_spec, true);
+    Mixer mixer(frame_factory, sample_spec, true);
     CHECK(mixer.is_valid());
 
     mixer.add_input(reader1);
@@ -363,7 +362,7 @@ TEST(mixer, timestamps_disabled) {
     test::MockReader reader1;
     test::MockReader reader2;
 
-    Mixer mixer(buffer_factory, sample_spec, false);
+    Mixer mixer(frame_factory, sample_spec, false);
     CHECK(mixer.is_valid());
 
     reader1.enable_timestamps(start_ts, sample_spec);

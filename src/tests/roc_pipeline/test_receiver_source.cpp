@@ -15,10 +15,9 @@
 
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
+#include "roc_core/slab_pool.h"
 #include "roc_core/time.h"
-#include "roc_packet/packet_factory.h"
 #include "roc_pipeline/receiver_source.h"
 #include "roc_rtp/encoding_map.h"
 
@@ -77,9 +76,18 @@ enum {
 };
 
 core::HeapArena arena;
-core::BufferFactory sample_buffer_factory(arena, MaxBufSize * sizeof(audio::sample_t));
-core::BufferFactory byte_buffer_factory(arena, MaxBufSize);
-packet::PacketFactory packet_factory(arena);
+
+core::SlabPool<packet::Packet> packet_pool("packet_pool", arena);
+core::SlabPool<core::Buffer>
+    packet_buffer_pool("packet_buffer_pool", arena, sizeof(core::Buffer) + MaxBufSize);
+core::SlabPool<core::Buffer>
+    frame_buffer_pool("frame_buffer_pool",
+                      arena,
+                      sizeof(core::Buffer) + MaxBufSize * sizeof(audio::sample_t));
+
+packet::PacketFactory packet_factory(packet_pool, packet_buffer_pool);
+audio::FrameFactory frame_factory(frame_buffer_pool);
+
 rtp::EncodingMap encoding_map(arena);
 
 ReceiverSlot* create_slot(ReceiverSource& source) {
@@ -208,11 +216,11 @@ TEST(receiver_source, no_sessions) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     for (size_t nf = 0; nf < ManyPackets * FramesPerPacket; nf++) {
         receiver.refresh(frame_reader.refresh_ts());
@@ -227,8 +235,8 @@ TEST(receiver_source, one_session) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -238,11 +246,11 @@ TEST(receiver_source, one_session) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
                                 packet_sample_spec);
@@ -264,8 +272,8 @@ TEST(receiver_source, one_session_long_run) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -275,11 +283,11 @@ TEST(receiver_source, one_session_long_run) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
                                 packet_sample_spec);
@@ -305,8 +313,8 @@ TEST(receiver_source, initial_latency) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -316,11 +324,11 @@ TEST(receiver_source, initial_latency) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     for (size_t np = 0; np < Latency / SamplesPerPacket - 1; np++) {
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
@@ -351,8 +359,8 @@ TEST(receiver_source, initial_latency_timeout) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -362,11 +370,11 @@ TEST(receiver_source, initial_latency_timeout) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
 
@@ -391,8 +399,8 @@ TEST(receiver_source, timeout) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -402,11 +410,11 @@ TEST(receiver_source, timeout) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
                                 packet_sample_spec);
@@ -439,7 +447,7 @@ TEST(receiver_source, timeout_smaller_than_latency) {
 
     ReceiverSource receiver(
         make_custom_config(LargeLatency, MinLatency, MaxLatency, Timeout, LargeWarmup),
-        encoding_map, packet_factory, byte_buffer_factory, sample_buffer_factory, arena);
+        encoding_map, packet_pool, packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -449,11 +457,11 @@ TEST(receiver_source, timeout_smaller_than_latency) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     for (size_t np = 0; np < LargeLatency / SamplesPerPacket - 1; np++) {
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
@@ -515,8 +523,8 @@ TEST(receiver_source, min_latency) {
 
     ReceiverSource receiver(make_custom_config(Latency, SmallMinLatency, LargeMaxLatency,
                                                LargeTimeout, Warmup),
-                            encoding_map, packet_factory, byte_buffer_factory,
-                            sample_buffer_factory, arena);
+                            encoding_map, packet_pool, packet_buffer_pool,
+                            frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -526,11 +534,11 @@ TEST(receiver_source, min_latency) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     for (size_t np = 0; np < Latency / SamplesPerPacket - 1; np++) {
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
@@ -576,8 +584,8 @@ TEST(receiver_source, max_latency) {
 
     ReceiverSource receiver(make_custom_config(Latency, LargeMinLatency, SmallMaxLatency,
                                                LargeTimeout, Warmup),
-                            encoding_map, packet_factory, byte_buffer_factory,
-                            sample_buffer_factory, arena);
+                            encoding_map, packet_pool, packet_buffer_pool,
+                            frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -587,11 +595,11 @@ TEST(receiver_source, max_latency) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     for (size_t np = 0; np < Latency / SamplesPerPacket - 1; np++) {
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
@@ -643,8 +651,8 @@ TEST(receiver_source, initial_trim) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -654,11 +662,11 @@ TEST(receiver_source, initial_trim) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     packet_writer.write_packets(Latency * 3 / SamplesPerPacket, SamplesPerPacket,
                                 packet_sample_spec);
@@ -682,8 +690,8 @@ TEST(receiver_source, two_sessions_synchronous) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -693,15 +701,15 @@ TEST(receiver_source, two_sessions_synchronous) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer1(arena, *endpoint1_writer, encoding_map,
-                                      packet_factory, byte_buffer_factory, src_id1,
-                                      src_addr1, dst_addr1, PayloadType_Ch2);
+                                      packet_factory, src_id1, src_addr1, dst_addr1,
+                                      PayloadType_Ch2);
 
     test::PacketWriter packet_writer2(arena, *endpoint1_writer, encoding_map,
-                                      packet_factory, byte_buffer_factory, src_id2,
-                                      src_addr2, dst_addr1, PayloadType_Ch2);
+                                      packet_factory, src_id2, src_addr2, dst_addr1,
+                                      PayloadType_Ch2);
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
         packet_writer1.write_packets(1, SamplesPerPacket, output_sample_spec);
@@ -726,8 +734,8 @@ TEST(receiver_source, two_sessions_overlapping) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -737,11 +745,11 @@ TEST(receiver_source, two_sessions_overlapping) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer1(arena, *endpoint1_writer, encoding_map,
-                                      packet_factory, byte_buffer_factory, src_id1,
-                                      src_addr1, dst_addr1, PayloadType_Ch2);
+                                      packet_factory, src_id1, src_addr1, dst_addr1,
+                                      PayloadType_Ch2);
 
     packet_writer1.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
                                  output_sample_spec);
@@ -758,8 +766,8 @@ TEST(receiver_source, two_sessions_overlapping) {
     }
 
     test::PacketWriter packet_writer2(arena, *endpoint1_writer, encoding_map,
-                                      packet_factory, byte_buffer_factory, src_id2,
-                                      src_addr2, dst_addr1, PayloadType_Ch2);
+                                      packet_factory, src_id2, src_addr2, dst_addr1,
+                                      PayloadType_Ch2);
 
     packet_writer2.set_offset(packet_writer1.offset() - Latency);
     packet_writer2.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
@@ -783,8 +791,8 @@ TEST(receiver_source, two_sessions_two_endpoints) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot1 = create_slot(receiver);
@@ -801,15 +809,15 @@ TEST(receiver_source, two_sessions_two_endpoints) {
         create_transport_endpoint(slot2, address::Iface_AudioSource, proto2, dst_addr2);
     CHECK(endpoint2_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer1(arena, *endpoint1_writer, encoding_map,
-                                      packet_factory, byte_buffer_factory, src_id1,
-                                      src_addr1, dst_addr1, PayloadType_Ch2);
+                                      packet_factory, src_id1, src_addr1, dst_addr1,
+                                      PayloadType_Ch2);
 
     test::PacketWriter packet_writer2(arena, *endpoint2_writer, encoding_map,
-                                      packet_factory, byte_buffer_factory, src_id2,
-                                      src_addr2, dst_addr2, PayloadType_Ch2);
+                                      packet_factory, src_id2, src_addr2, dst_addr2,
+                                      PayloadType_Ch2);
 
     for (size_t np = 0; np < Latency / SamplesPerPacket; np++) {
         packet_writer1.write_packets(1, SamplesPerPacket, output_sample_spec);
@@ -834,8 +842,8 @@ TEST(receiver_source, two_sessions_same_address_same_stream) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -845,15 +853,15 @@ TEST(receiver_source, two_sessions_same_address_same_stream) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer1(arena, *endpoint_writer, encoding_map,
-                                      packet_factory, byte_buffer_factory, src_id1,
-                                      src_addr1, dst_addr1, PayloadType_Ch2);
+                                      packet_factory, src_id1, src_addr1, dst_addr1,
+                                      PayloadType_Ch2);
 
     test::PacketWriter packet_writer2(arena, *endpoint_writer, encoding_map,
-                                      packet_factory, byte_buffer_factory, src_id1,
-                                      src_addr1, dst_addr1, PayloadType_Ch2);
+                                      packet_factory, src_id1, src_addr1, dst_addr1,
+                                      PayloadType_Ch2);
 
     packet_writer1.set_source(11);
     packet_writer2.set_source(11);
@@ -883,8 +891,8 @@ TEST(receiver_source, two_sessions_same_address_different_streams) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -894,15 +902,15 @@ TEST(receiver_source, two_sessions_same_address_different_streams) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer1(arena, *endpoint_writer, encoding_map,
-                                      packet_factory, byte_buffer_factory, src_id1,
-                                      src_addr1, dst_addr1, PayloadType_Ch2);
+                                      packet_factory, src_id1, src_addr1, dst_addr1,
+                                      PayloadType_Ch2);
 
     test::PacketWriter packet_writer2(arena, *endpoint_writer, encoding_map,
-                                      packet_factory, byte_buffer_factory, src_id1,
-                                      src_addr1, dst_addr1, PayloadType_Ch2);
+                                      packet_factory, src_id1, src_addr1, dst_addr1,
+                                      PayloadType_Ch2);
 
     packet_writer1.set_source(11);
     packet_writer2.set_source(22);
@@ -934,8 +942,8 @@ TEST(receiver_source, seqnum_overflow) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -945,11 +953,11 @@ TEST(receiver_source, seqnum_overflow) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     packet_writer.set_seqnum(packet::seqnum_t(-1) - ManyPackets / 2);
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
@@ -969,8 +977,8 @@ TEST(receiver_source, seqnum_small_jump) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -980,11 +988,11 @@ TEST(receiver_source, seqnum_small_jump) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
                                 packet_sample_spec);
@@ -1014,8 +1022,8 @@ TEST(receiver_source, seqnum_large_jump) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -1025,11 +1033,11 @@ TEST(receiver_source, seqnum_large_jump) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
                                 packet_sample_spec);
@@ -1067,8 +1075,8 @@ TEST(receiver_source, seqnum_reorder) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -1078,11 +1086,11 @@ TEST(receiver_source, seqnum_reorder) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     size_t pos = 0;
 
@@ -1108,8 +1116,8 @@ TEST(receiver_source, seqnum_late) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -1119,11 +1127,11 @@ TEST(receiver_source, seqnum_late) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
                                 packet_sample_spec);
@@ -1171,8 +1179,8 @@ TEST(receiver_source, timestamp_overflow) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -1182,11 +1190,11 @@ TEST(receiver_source, timestamp_overflow) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     packet_writer.set_timestamp(packet::stream_timestamp_t(-1)
                                 - ManyPackets * SamplesPerPacket / 2);
@@ -1208,8 +1216,8 @@ TEST(receiver_source, timestamp_small_jump) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -1219,11 +1227,11 @@ TEST(receiver_source, timestamp_small_jump) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
                                 packet_sample_spec);
@@ -1262,8 +1270,8 @@ TEST(receiver_source, timestamp_large_jump) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -1273,11 +1281,11 @@ TEST(receiver_source, timestamp_large_jump) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
                                 packet_sample_spec);
@@ -1310,8 +1318,8 @@ TEST(receiver_source, timestamp_overlap) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -1321,11 +1329,11 @@ TEST(receiver_source, timestamp_overlap) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
                                 packet_sample_spec);
@@ -1347,8 +1355,8 @@ TEST(receiver_source, timestamp_reorder) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -1358,11 +1366,11 @@ TEST(receiver_source, timestamp_reorder) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
                                 packet_sample_spec);
@@ -1406,8 +1414,8 @@ TEST(receiver_source, timestamp_late) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -1417,11 +1425,11 @@ TEST(receiver_source, timestamp_late) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
                                 packet_sample_spec);
@@ -1480,8 +1488,8 @@ TEST(receiver_source, packet_size_small) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -1491,11 +1499,11 @@ TEST(receiver_source, packet_size_small) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     packet_writer.write_packets(Latency / SamplesPerSmallPacket, SamplesPerSmallPacket,
                                 packet_sample_spec);
@@ -1521,8 +1529,8 @@ TEST(receiver_source, packet_size_large) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -1532,11 +1540,11 @@ TEST(receiver_source, packet_size_large) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     packet_writer.write_packets(Latency / SamplesPerLargePacket, SamplesPerLargePacket,
                                 packet_sample_spec);
@@ -1568,8 +1576,8 @@ TEST(receiver_source, packet_size_variable) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -1579,11 +1587,11 @@ TEST(receiver_source, packet_size_variable) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     size_t available = 0;
 
@@ -1606,8 +1614,8 @@ TEST(receiver_source, corrupted_packets_new_session) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -1617,11 +1625,11 @@ TEST(receiver_source, corrupted_packets_new_session) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     packet_writer.set_corrupt(true);
 
@@ -1646,8 +1654,8 @@ TEST(receiver_source, corrupted_packets_existing_session) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -1657,11 +1665,11 @@ TEST(receiver_source, corrupted_packets_existing_session) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
                                 packet_sample_spec);
@@ -1709,8 +1717,8 @@ TEST(receiver_source, channel_mapping_stereo_to_mono) {
 
     init(Rate, OutputChans, Rate, PacketChans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -1720,11 +1728,11 @@ TEST(receiver_source, channel_mapping_stereo_to_mono) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
                                 packet_sample_spec);
@@ -1747,8 +1755,8 @@ TEST(receiver_source, channel_mapping_mono_to_stereo) {
 
     init(Rate, OutputChans, Rate, PacketChans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -1758,11 +1766,11 @@ TEST(receiver_source, channel_mapping_mono_to_stereo) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch1);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch1);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
                                 packet_sample_spec);
@@ -1785,8 +1793,8 @@ TEST(receiver_source, sample_rate_mapping) {
 
     init(OutputRate, Chans, PacketRate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -1796,11 +1804,11 @@ TEST(receiver_source, sample_rate_mapping) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
                                 packet_sample_spec);
@@ -1826,8 +1834,8 @@ TEST(receiver_source, timestamp_mapping_no_control_packets) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -1843,11 +1851,11 @@ TEST(receiver_source, timestamp_mapping_no_control_packets) {
                                 dst_addr2, control_outbound_queue);
     CHECK(control_endpoint);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *transport_endpoint, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     // Expect no CTS.
     const core::nanoseconds_t capture_ts_base = -1;
@@ -1878,8 +1886,8 @@ TEST(receiver_source, timestamp_mapping_one_control_packet) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -1895,14 +1903,14 @@ TEST(receiver_source, timestamp_mapping_one_control_packet) {
                                 dst_addr2, control_outbound_queue);
     CHECK(control_endpoint);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *transport_endpoint, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
-    test::ControlWriter control_writer(*control_endpoint, packet_factory,
-                                       byte_buffer_factory, src_addr1, dst_addr2);
+    test::ControlWriter control_writer(*control_endpoint, packet_factory, src_addr1,
+                                       dst_addr2);
 
     control_writer.set_local_source(src_id1);
 
@@ -1947,8 +1955,8 @@ TEST(receiver_source, timestamp_mapping_periodic_control_packets) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -1964,14 +1972,14 @@ TEST(receiver_source, timestamp_mapping_periodic_control_packets) {
                                 dst_addr2, control_outbound_queue);
     CHECK(control_endpoint);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *transport_endpoint, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
-    test::ControlWriter control_writer(*control_endpoint, packet_factory,
-                                       byte_buffer_factory, src_addr1, dst_addr2);
+    test::ControlWriter control_writer(*control_endpoint, packet_factory, src_addr1,
+                                       dst_addr2);
 
     control_writer.set_local_source(src_id1);
 
@@ -2021,8 +2029,8 @@ TEST(receiver_source, timestamp_mapping_remixing) {
 
     init(OutputRate, OutputChans, PacketRate, PacketChans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -2039,11 +2047,11 @@ TEST(receiver_source, timestamp_mapping_remixing) {
     CHECK(control_endpoint);
 
     test::PacketWriter packet_writer(arena, *transport_endpoint, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch1);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch1);
 
-    test::ControlWriter control_writer(*control_endpoint, packet_factory,
-                                       byte_buffer_factory, src_addr1, dst_addr2);
+    test::ControlWriter control_writer(*control_endpoint, packet_factory, src_addr1,
+                                       dst_addr2);
 
     control_writer.set_local_source(src_id1);
 
@@ -2106,8 +2114,8 @@ TEST(receiver_source, metrics_participants) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -2128,11 +2136,11 @@ TEST(receiver_source, metrics_participants) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer1(arena, *endpoint1_writer, encoding_map,
-                                      packet_factory, byte_buffer_factory, src_id1,
-                                      src_addr1, dst_addr1, PayloadType_Ch2);
+                                      packet_factory, src_id1, src_addr1, dst_addr1,
+                                      PayloadType_Ch2);
 
     packet_writer1.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
                                  output_sample_spec);
@@ -2176,8 +2184,8 @@ TEST(receiver_source, metrics_participants) {
     }
 
     test::PacketWriter packet_writer2(arena, *endpoint1_writer, encoding_map,
-                                      packet_factory, byte_buffer_factory, src_id2,
-                                      src_addr2, dst_addr1, PayloadType_Ch2);
+                                      packet_factory, src_id2, src_addr2, dst_addr1,
+                                      PayloadType_Ch2);
 
     packet_writer2.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
                                  output_sample_spec);
@@ -2220,8 +2228,8 @@ TEST(receiver_source, metrics_truncation) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -2231,15 +2239,15 @@ TEST(receiver_source, metrics_truncation) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer1(arena, *endpoint1_writer, encoding_map,
-                                      packet_factory, byte_buffer_factory, src_id1,
-                                      src_addr1, dst_addr1, PayloadType_Ch2);
+                                      packet_factory, src_id1, src_addr1, dst_addr1,
+                                      PayloadType_Ch2);
 
     test::PacketWriter packet_writer2(arena, *endpoint1_writer, encoding_map,
-                                      packet_factory, byte_buffer_factory, src_id2,
-                                      src_addr2, dst_addr1, PayloadType_Ch2);
+                                      packet_factory, src_id2, src_addr2, dst_addr1,
+                                      PayloadType_Ch2);
 
     packet_writer1.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
                                  output_sample_spec);
@@ -2333,8 +2341,8 @@ TEST(receiver_source, metrics_niq_latency) {
     const core::nanoseconds_t virtual_niq_latency =
         output_sample_spec.samples_per_chan_2_ns(Latency);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -2344,11 +2352,11 @@ TEST(receiver_source, metrics_niq_latency) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(endpoint1_writer);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
     packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
                                 output_sample_spec);
@@ -2389,8 +2397,8 @@ TEST(receiver_source, metrics_e2e_latency) {
 
     const core::nanoseconds_t virtual_e2e_latency = core::Millisecond * 555;
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -2406,14 +2414,14 @@ TEST(receiver_source, metrics_e2e_latency) {
                                 dst_addr2, control_outbound_queue);
     CHECK(control_endpoint);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *transport_endpoint, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
-    test::ControlWriter control_writer(*control_endpoint, packet_factory,
-                                       byte_buffer_factory, src_addr1, dst_addr2);
+    test::ControlWriter control_writer(*control_endpoint, packet_factory, src_addr1,
+                                       dst_addr2);
 
     control_writer.set_local_source(src_id1);
 
@@ -2478,8 +2486,8 @@ TEST(receiver_source, reports_no_senders) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -2495,7 +2503,7 @@ TEST(receiver_source, reports_no_senders) {
                                 dst_addr2, control_outbound_queue);
     CHECK(control_endpoint);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     for (size_t np = 0; np < (ReportInterval / SamplesPerPacket) * ManyReports; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
@@ -2515,8 +2523,8 @@ TEST(receiver_source, reports_one_sender) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -2542,14 +2550,14 @@ TEST(receiver_source, reports_one_sender) {
                                 dst_addr2, control_outbound_queue);
     CHECK(control_endpoint);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer(arena, *transport_endpoint, encoding_map,
-                                     packet_factory, byte_buffer_factory, send_src_id,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, send_src_id, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
-    test::ControlWriter control_writer(*control_endpoint, packet_factory,
-                                       byte_buffer_factory, src_addr1, dst_addr2);
+    test::ControlWriter control_writer(*control_endpoint, packet_factory, src_addr1,
+                                       dst_addr2);
 
     control_writer.set_local_source(send_src_id);
 
@@ -2610,8 +2618,8 @@ TEST(receiver_source, reports_two_senders_unicast) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -2639,21 +2647,21 @@ TEST(receiver_source, reports_two_senders_unicast) {
                                 dst_addr2, control_outbound_queue);
     CHECK(control_endpoint);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer1(arena, *transport_endpoint, encoding_map,
-                                      packet_factory, byte_buffer_factory, send_src_id1,
-                                      src_addr1, dst_addr1, PayloadType_Ch2);
+                                      packet_factory, send_src_id1, src_addr1, dst_addr1,
+                                      PayloadType_Ch2);
 
     test::PacketWriter packet_writer2(arena, *transport_endpoint, encoding_map,
-                                      packet_factory, byte_buffer_factory, send_src_id2,
-                                      src_addr2, dst_addr1, PayloadType_Ch2);
+                                      packet_factory, send_src_id2, src_addr2, dst_addr1,
+                                      PayloadType_Ch2);
 
-    test::ControlWriter control_writer1(*control_endpoint, packet_factory,
-                                        byte_buffer_factory, src_addr1, dst_addr2);
+    test::ControlWriter control_writer1(*control_endpoint, packet_factory, src_addr1,
+                                        dst_addr2);
 
-    test::ControlWriter control_writer2(*control_endpoint, packet_factory,
-                                        byte_buffer_factory, src_addr2, dst_addr2);
+    test::ControlWriter control_writer2(*control_endpoint, packet_factory, src_addr2,
+                                        dst_addr2);
 
     control_writer1.set_cname("test_cname1");
     control_writer2.set_cname("test_cname2");
@@ -2744,8 +2752,8 @@ TEST(receiver_source, reports_two_senders_multicast) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -2773,21 +2781,21 @@ TEST(receiver_source, reports_two_senders_multicast) {
                                 multicast_addr2, control_outbound_queue);
     CHECK(control_endpoint);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     test::PacketWriter packet_writer1(arena, *transport_endpoint, encoding_map,
-                                      packet_factory, byte_buffer_factory, send_src_id1,
-                                      src_addr1, multicast_addr1, PayloadType_Ch2);
+                                      packet_factory, send_src_id1, src_addr1,
+                                      multicast_addr1, PayloadType_Ch2);
 
     test::PacketWriter packet_writer2(arena, *transport_endpoint, encoding_map,
-                                      packet_factory, byte_buffer_factory, send_src_id2,
-                                      src_addr2, multicast_addr1, PayloadType_Ch2);
+                                      packet_factory, send_src_id2, src_addr2,
+                                      multicast_addr1, PayloadType_Ch2);
 
-    test::ControlWriter control_writer1(*control_endpoint, packet_factory,
-                                        byte_buffer_factory, src_addr1, multicast_addr2);
+    test::ControlWriter control_writer1(*control_endpoint, packet_factory, src_addr1,
+                                        multicast_addr2);
 
-    test::ControlWriter control_writer2(*control_endpoint, packet_factory,
-                                        byte_buffer_factory, src_addr2, multicast_addr2);
+    test::ControlWriter control_writer2(*control_endpoint, packet_factory, src_addr2,
+                                        multicast_addr2);
 
     control_writer1.set_cname("test_cname1");
     control_writer2.set_cname("test_cname2");
@@ -2856,8 +2864,8 @@ TEST(receiver_source, pipeline_state) {
 
     init(Rate, Chans, Rate, Chans);
 
-    ReceiverSource receiver(make_default_config(), encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(make_default_config(), encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlot* slot = create_slot(receiver);
@@ -2868,10 +2876,10 @@ TEST(receiver_source, pipeline_state) {
     CHECK(endpoint1_writer);
 
     test::PacketWriter packet_writer(arena, *endpoint1_writer, encoding_map,
-                                     packet_factory, byte_buffer_factory, src_id1,
-                                     src_addr1, dst_addr1, PayloadType_Ch2);
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
 
-    core::Slice<audio::sample_t> samples = sample_buffer_factory.new_buffer();
+    core::Slice<audio::sample_t> samples = frame_factory.new_raw_buffer();
     CHECK(samples);
     samples.reslice(0, FramesPerPacket * output_sample_spec.num_channels());
 

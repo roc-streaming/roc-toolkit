@@ -19,6 +19,21 @@ namespace packet {
 
 namespace {
 
+enum { MaxBufSize = 100 };
+
+core::HeapArena arena;
+PacketFactory packet_factory(arena, MaxBufSize);
+
+PacketPtr new_packet(seqnum_t sn) {
+    PacketPtr packet = packet_factory.new_packet();
+    CHECK(packet);
+
+    packet->add_flags(Packet::FlagRTP);
+    packet->rtp()->seqnum = sn;
+
+    return packet;
+}
+
 class StatusWriter : public IWriter, public core::NonCopyable<> {
 public:
     explicit StatusWriter(IWriter& writer)
@@ -61,19 +76,6 @@ private:
     bool code_enabled_;
     status::StatusCode code_;
 };
-
-core::HeapArena arena;
-PacketFactory packet_factory(arena);
-
-PacketPtr new_packet(seqnum_t sn) {
-    PacketPtr packet = packet_factory.new_packet();
-    CHECK(packet);
-
-    packet->add_flags(Packet::FlagRTP);
-    packet->rtp()->seqnum = sn;
-
-    return packet;
-}
 
 } // namespace
 

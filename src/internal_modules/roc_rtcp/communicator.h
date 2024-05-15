@@ -12,7 +12,6 @@
 #ifndef ROC_RTCP_COMMUNICATOR_H_
 #define ROC_RTCP_COMMUNICATOR_H_
 
-#include "roc_core/buffer_factory.h"
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/rate_limiter.h"
@@ -62,7 +61,6 @@ public:
                  packet::IWriter& packet_writer,
                  packet::IComposer& packet_composer,
                  packet::PacketFactory& packet_factory,
-                 core::BufferFactory& buffer_factory,
                  core::IArena& arena);
 
     //! Check if initialization succeeded.
@@ -140,7 +138,6 @@ private:
     void log_stats_();
 
     packet::PacketFactory& packet_factory_;
-    core::BufferFactory& buffer_factory_;
 
     packet::IWriter& packet_writer_;
     packet::IComposer& packet_composer_;

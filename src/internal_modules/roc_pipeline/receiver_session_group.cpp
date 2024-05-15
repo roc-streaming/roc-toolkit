@@ -22,8 +22,7 @@ ReceiverSessionGroup::ReceiverSessionGroup(const ReceiverSourceConfig& source_co
                                            audio::Mixer& mixer,
                                            const rtp::EncodingMap& encoding_map,
                                            packet::PacketFactory& packet_factory,
-                                           core::BufferFactory& byte_buffer_factory,
-                                           core::BufferFactory& sample_buffer_factory,
+                                           audio::FrameFactory& frame_factory,
                                            core::IArena& arena)
     : source_config_(source_config)
     , slot_config_(slot_config)
@@ -32,8 +31,7 @@ ReceiverSessionGroup::ReceiverSessionGroup(const ReceiverSourceConfig& source_co
     , encoding_map_(encoding_map)
     , arena_(arena)
     , packet_factory_(packet_factory)
-    , byte_buffer_factory_(byte_buffer_factory)
-    , sample_buffer_factory_(sample_buffer_factory)
+    , frame_factory_(frame_factory)
     , session_router_(arena)
     , valid_(false) {
     identity_.reset(new (identity_) rtp::Identity());
@@ -64,8 +62,7 @@ bool ReceiverSessionGroup::create_control_pipeline(ReceiverEndpoint* control_end
 
     rtcp_communicator_.reset(new (rtcp_communicator_) rtcp::Communicator(
         source_config_.common.rtcp, *this, *control_endpoint->outbound_writer(),
-        *control_endpoint->outbound_composer(), packet_factory_, byte_buffer_factory_,
-        arena_));
+        *control_endpoint->outbound_composer(), packet_factory_, arena_));
     if (!rtcp_communicator_ || !rtcp_communicator_->is_valid()) {
         rtcp_communicator_.reset();
         return false;
@@ -378,9 +375,9 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
             address::socket_addr_to_str(src_address).c_str(),
             address::socket_addr_to_str(dst_address).c_str());
 
-    core::SharedPtr<ReceiverSession> sess = new (arena_) ReceiverSession(
-        sess_config, source_config_.common, encoding_map_, packet_factory_,
-        byte_buffer_factory_, sample_buffer_factory_, arena_);
+    core::SharedPtr<ReceiverSession> sess =
+        new (arena_) ReceiverSession(sess_config, source_config_.common, encoding_map_,
+                                     packet_factory_, frame_factory_, arena_);
 
     if (!sess || !sess->is_valid()) {
         roc_log(LogError, "session group: can't create session, initialization failed");

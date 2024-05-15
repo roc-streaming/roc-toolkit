@@ -9,11 +9,11 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_audio/depacketizer.h"
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/iframe_decoder.h"
 #include "roc_audio/iframe_encoder.h"
 #include "roc_audio/pcm_decoder.h"
 #include "roc_audio/pcm_encoder.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_packet/packet_factory.h"
@@ -47,9 +47,8 @@ const core::nanoseconds_t NsPerPacket = packet_spec.samples_overall_2_ns(Samples
 const core::nanoseconds_t Now = 1691499037871419405;
 
 core::HeapArena arena;
-core::BufferFactory sample_buffer_factory(arena, MaxBufSize * sizeof(sample_t));
-core::BufferFactory byte_buffer_factory(arena, MaxBufSize);
-packet::PacketFactory packet_factory(arena);
+packet::PacketFactory packet_factory(arena, MaxBufSize);
+FrameFactory frame_factory(arena, MaxBufSize * sizeof(sample_t));
 
 rtp::Composer rtp_composer(NULL);
 
@@ -60,7 +59,7 @@ packet::PacketPtr new_packet(IFrameEncoder& encoder,
     packet::PacketPtr pp = packet_factory.new_packet();
     CHECK(pp);
 
-    core::Slice<uint8_t> bp = byte_buffer_factory.new_buffer();
+    core::Slice<uint8_t> bp = packet_factory.new_packet_buffer();
     CHECK(bp);
 
     CHECK(rtp_composer.prepare(*pp, bp, encoder.encoded_byte_count(SamplesPerPacket)));
@@ -88,7 +87,7 @@ packet::PacketPtr new_packet(IFrameEncoder& encoder,
 }
 
 core::Slice<sample_t> new_buffer(size_t n_samples) {
-    core::Slice<sample_t> buffer = sample_buffer_factory.new_buffer();
+    core::Slice<sample_t> buffer = frame_factory.new_raw_buffer();
     CHECK(buffer);
     buffer.reslice(0, n_samples * frame_spec.num_channels());
     return buffer;

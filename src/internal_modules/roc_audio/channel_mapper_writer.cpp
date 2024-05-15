@@ -16,7 +16,7 @@ namespace roc {
 namespace audio {
 
 ChannelMapperWriter::ChannelMapperWriter(IFrameWriter& writer,
-                                         core::BufferFactory& buffer_factory,
+                                         FrameFactory& frame_factory,
                                          const SampleSpec& in_spec,
                                          const SampleSpec& out_spec)
     : output_writer_(writer)
@@ -40,7 +40,7 @@ ChannelMapperWriter::ChannelMapperWriter(IFrameWriter& writer,
                   sample_spec_to_str(out_spec).c_str());
     }
 
-    output_buf_ = buffer_factory.new_buffer();
+    output_buf_ = frame_factory.new_raw_buffer();
     if (!output_buf_) {
         roc_log(LogError, "channel mapper writer: can't allocate temporary buffer");
         return;

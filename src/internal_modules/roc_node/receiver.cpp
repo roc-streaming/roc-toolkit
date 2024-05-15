@@ -21,9 +21,9 @@ Receiver::Receiver(Context& context,
     , pipeline_(*this,
                 pipeline_config,
                 context.encoding_map(),
-                context.packet_factory(),
-                context.byte_buffer_factory(),
-                context.sample_buffer_factory(),
+                context.packet_pool(),
+                context.packet_buffer_pool(),
+                context.frame_buffer_pool(),
                 context.arena())
     , processing_task_(pipeline_)
     , slot_pool_("slot_pool", context.arena())

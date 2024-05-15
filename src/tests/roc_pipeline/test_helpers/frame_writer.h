@@ -13,7 +13,7 @@
 
 #include "test_helpers/utils.h"
 
-#include "roc_core/buffer_factory.h"
+#include "roc_audio/frame_factory.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
 #include "roc_sndio/isink.h"
@@ -25,9 +25,9 @@ namespace test {
 // Generate audio frames and write to sink.
 class FrameWriter : public core::NonCopyable<> {
 public:
-    FrameWriter(sndio::ISink& sink, core::BufferFactory& buffer_factory)
+    FrameWriter(sndio::ISink& sink, audio::FrameFactory& frame_factory)
         : sink_(sink)
-        , buffer_factory_(buffer_factory)
+        , frame_factory_(frame_factory)
         , offset_(0)
         , abs_offset_(0)
         // By default, we set base_cts_ to some non-zero value, so that if base_capture_ts
@@ -45,7 +45,7 @@ public:
     void write_samples(size_t num_samples,
                        const audio::SampleSpec& sample_spec,
                        core::nanoseconds_t base_capture_ts = -1) {
-        core::Slice<audio::sample_t> samples = buffer_factory_.new_buffer();
+        core::Slice<audio::sample_t> samples = frame_factory_.new_raw_buffer();
         CHECK(samples);
         samples.reslice(0, num_samples * sample_spec.num_channels());
 
@@ -96,7 +96,7 @@ public:
 
 private:
     sndio::ISink& sink_;
-    core::BufferFactory& buffer_factory_;
+    audio::FrameFactory& frame_factory_;
 
     uint8_t offset_;
     size_t abs_offset_;

@@ -8,8 +8,8 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/watchdog.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/slice.h"
 
@@ -37,7 +37,7 @@ const SampleSpec sample_spec(
     SampleRate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
 core::HeapArena arena;
-core::BufferFactory sample_buffer_factory(arena, MaxBufSize * sizeof(sample_t));
+FrameFactory frame_factory(arena, MaxBufSize * sizeof(sample_t));
 
 class MockReader : public IFrameReader, public core::NonCopyable<> {
 public:
@@ -70,7 +70,7 @@ TEST_GROUP(watchdog) {
     MockReader test_reader;
 
     core::Slice<sample_t> new_buffer(size_t sz) {
-        core::Slice<sample_t> buf = sample_buffer_factory.new_buffer();
+        core::Slice<sample_t> buf = frame_factory.new_raw_buffer();
         buf.reslice(0, sz * NumCh);
         return buf;
     }

@@ -15,7 +15,7 @@
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
 #include "roc_audio/fanout.h"
-#include "roc_core/buffer_factory.h"
+#include "roc_audio/frame_factory.h"
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
@@ -45,8 +45,7 @@ public:
                const rtp::EncodingMap& encoding_map,
                audio::Fanout& fanout,
                packet::PacketFactory& packet_factory,
-               core::BufferFactory& byte_buffer_factory,
-               core::BufferFactory& sample_buffer_factory,
+               audio::FrameFactory& frame_factory,
                core::IArena& arena);
 
     ~SenderSlot();

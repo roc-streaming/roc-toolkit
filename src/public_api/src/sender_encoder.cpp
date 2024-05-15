@@ -221,8 +221,7 @@ int roc_sender_encoder_push_feedback_packet(roc_sender_encoder* encoder,
         return -1;
     }
 
-    core::BufferPtr imp_buffer =
-        imp_encoder->context().byte_buffer_factory().new_buffer();
+    core::BufferPtr imp_buffer = imp_encoder->packet_factory().new_packet_buffer();
     if (!imp_buffer) {
         roc_log(LogError,
                 "roc_sender_encoder_push_feedback_packet():"
@@ -242,7 +241,7 @@ int roc_sender_encoder_push_feedback_packet(roc_sender_encoder* encoder,
     core::Slice<uint8_t> imp_slice(*imp_buffer, 0, packet->bytes_size);
     memcpy(imp_slice.data(), packet->bytes, packet->bytes_size);
 
-    packet::PacketPtr imp_packet = imp_encoder->context().packet_factory().new_packet();
+    packet::PacketPtr imp_packet = imp_encoder->packet_factory().new_packet();
     if (!imp_packet) {
         roc_log(LogError,
                 "roc_sender_encoder_push_feedback_packet():"

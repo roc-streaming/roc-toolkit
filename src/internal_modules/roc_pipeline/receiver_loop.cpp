@@ -89,17 +89,17 @@ packet::IWriter* ReceiverLoop::Tasks::AddEndpoint::get_inbound_writer() const {
 ReceiverLoop::ReceiverLoop(IPipelineTaskScheduler& scheduler,
                            const ReceiverSourceConfig& source_config,
                            const rtp::EncodingMap& encoding_map,
-                           packet::PacketFactory& packet_factory,
-                           core::BufferFactory& byte_buffer_factory,
-                           core::BufferFactory& sample_buffer_factory,
+                           core::IPool& packet_pool,
+                           core::IPool& packet_buffer_pool,
+                           core::IPool& frame_buffer_pool,
                            core::IArena& arena)
     : PipelineLoop(
         scheduler, source_config.pipeline_loop, source_config.common.output_sample_spec)
     , source_(source_config,
               encoding_map,
-              packet_factory,
-              byte_buffer_factory,
-              sample_buffer_factory,
+              packet_pool,
+              packet_buffer_pool,
+              frame_buffer_pool,
               arena)
     , ticker_ts_(0)
     , auto_reclock_(source_config.common.enable_auto_reclock)

@@ -14,6 +14,7 @@
 
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/mixer.h"
 #include "roc_core/iarena.h"
 #include "roc_core/list_node.h"
@@ -43,8 +44,7 @@ public:
                  audio::Mixer& mixer,
                  const rtp::EncodingMap& encoding_map,
                  packet::PacketFactory& packet_factory,
-                 core::BufferFactory& byte_buffer_factory,
-                 core::BufferFactory& sample_buffer_factory,
+                 audio::FrameFactory& frame_factory,
                  core::IArena& arena);
 
     //! Check if the slot was succefully constructed.

@@ -13,12 +13,12 @@
 #define ROC_FEC_OPENFEC_DECODER_H_
 
 #include "roc_core/array.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
 #include "roc_fec/codec_config.h"
 #include "roc_fec/iblock_decoder.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_packet/units.h"
 
 extern "C" {
@@ -41,7 +41,7 @@ class OpenfecDecoder : public IBlockDecoder, public core::NonCopyable<> {
 public:
     //! Initialize.
     explicit OpenfecDecoder(const CodecConfig& config,
-                            core::BufferFactory& buffer_factory,
+                            packet::PacketFactory& packet_factory,
                             core::IArena& arena);
 
     virtual ~OpenfecDecoder();
@@ -110,7 +110,7 @@ private:
     of_session_t* of_sess_;
     of_parameters_t* of_sess_params_;
 
-    core::BufferFactory& buffer_factory_;
+    packet::PacketFactory& packet_factory_;
 
     // received and repaired source and repair packets
     core::Array<core::Slice<uint8_t> > buff_tab_;

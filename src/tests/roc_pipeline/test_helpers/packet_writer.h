@@ -14,7 +14,6 @@
 #include "test_helpers/utils.h"
 
 #include "roc_audio/iframe_encoder.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_fec/codec_map.h"
@@ -42,7 +41,6 @@ public:
                  packet::IWriter& dst_writer,
                  rtp::EncodingMap& encoding_map,
                  packet::PacketFactory& packet_factory,
-                 core::BufferFactory& buffer_factory,
                  packet::stream_source_t src_id,
                  const address::SocketAddr& src_addr,
                  const address::SocketAddr& dst_addr,
@@ -50,7 +48,6 @@ public:
         : source_writer_(&dst_writer)
         , repair_writer_(NULL)
         , packet_factory_(packet_factory)
-        , buffer_factory_(buffer_factory)
         , src_addr_(src_addr)
         , source_dst_addr_(dst_addr)
         , repair_dst_addr_()
@@ -60,8 +57,8 @@ public:
         , pt_(pt)
         , offset_(0)
         , corrupt_(false) {
-        construct_(arena, packet_factory, buffer_factory, encoding_map, pt,
-                   packet::FEC_None, fec::WriterConfig());
+        construct_(arena, packet_factory, encoding_map, pt, packet::FEC_None,
+                   fec::WriterConfig());
     }
 
     // Initialize with FEC (produce source + repair packets)
@@ -70,7 +67,6 @@ public:
                  packet::IWriter& repair_dst_writer,
                  rtp::EncodingMap& encoding_map,
                  packet::PacketFactory& packet_factory,
-                 core::BufferFactory& buffer_factory,
                  packet::stream_source_t src_id,
                  const address::SocketAddr& src_addr,
                  const address::SocketAddr& source_dst_addr,
@@ -81,7 +77,6 @@ public:
         : source_writer_(&source_dst_writer)
         , repair_writer_(&repair_dst_writer)
         , packet_factory_(packet_factory)
-        , buffer_factory_(buffer_factory)
         , src_addr_(src_addr)
         , source_dst_addr_(source_dst_addr)
         , repair_dst_addr_(repair_dst_addr)
@@ -91,8 +86,7 @@ public:
         , pt_(pt)
         , offset_(0)
         , corrupt_(false) {
-        construct_(arena, packet_factory, buffer_factory, encoding_map, pt, fec_scheme,
-                   fec_config);
+        construct_(arena, packet_factory, encoding_map, pt, fec_scheme, fec_config);
     }
 
     void write_packets(size_t num_packets,
@@ -154,7 +148,6 @@ private:
 
     void construct_(core::IArena& arena,
                     packet::PacketFactory& packet_factory,
-                    core::BufferFactory& buffer_factory,
                     rtp::EncodingMap& encoding_map,
                     rtp::PayloadType pt,
                     packet::FecScheme fec_scheme,
@@ -203,16 +196,16 @@ private:
             fec::CodecConfig codec_config;
             codec_config.scheme = fec_scheme;
             fec_encoder_.reset(fec::CodecMap::instance().new_encoder(
-                                   codec_config, buffer_factory, arena),
+                                   codec_config, packet_factory, arena),
                                arena);
             CHECK(fec_encoder_);
 
             // fec writer
-            fec_writer_.reset(
-                new (arena) fec::Writer(fec_config, fec_scheme, *fec_encoder_, fec_queue_,
-                                        *source_composer_, *repair_composer_,
-                                        packet_factory, buffer_factory, arena),
-                arena);
+            fec_writer_.reset(new (arena)
+                                  fec::Writer(fec_config, fec_scheme, *fec_encoder_,
+                                              fec_queue_, *source_composer_,
+                                              *repair_composer_, packet_factory, arena),
+                              arena);
             CHECK(fec_writer_->is_valid());
         }
     }
@@ -276,7 +269,7 @@ private:
 
         pp->add_flags(packet::Packet::FlagAudio);
 
-        core::Slice<uint8_t> bp = buffer_factory_.new_buffer();
+        core::Slice<uint8_t> bp = packet_factory_.new_packet_buffer();
         CHECK(bp);
 
         CHECK(source_composer_->prepare(
@@ -324,7 +317,6 @@ private:
     core::ScopedPtr<audio::IFrameEncoder> payload_encoder_;
 
     packet::PacketFactory& packet_factory_;
-    core::BufferFactory& buffer_factory_;
 
     address::SocketAddr src_addr_;
     address::SocketAddr source_dst_addr_;

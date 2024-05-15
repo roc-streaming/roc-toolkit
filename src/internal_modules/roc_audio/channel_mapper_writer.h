@@ -13,9 +13,9 @@
 #define ROC_AUDIO_CHANNEL_MAPPER_WRITER_H_
 
 #include "roc_audio/channel_mapper.h"
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/iframe_writer.h"
 #include "roc_audio/sample_spec.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
@@ -29,7 +29,7 @@ class ChannelMapperWriter : public IFrameWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
     ChannelMapperWriter(IFrameWriter& writer,
-                        core::BufferFactory& buffer_factory,
+                        FrameFactory& frame_factory,
                         const SampleSpec& in_spec,
                         const SampleSpec& out_spec);
 

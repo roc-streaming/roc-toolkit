@@ -21,8 +21,11 @@ namespace rtp {
 
 namespace {
 
+enum { PacketSz = 100 };
+
 core::HeapArena arena;
-packet::PacketFactory packet_factory(arena);
+packet::PacketFactory packet_factory(arena, PacketSz);
+
 EncodingMap encoding_map(arena);
 
 packet::PacketPtr new_packet(packet::seqnum_t sn) {

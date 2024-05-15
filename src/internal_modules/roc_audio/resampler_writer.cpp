@@ -16,7 +16,7 @@ namespace audio {
 
 ResamplerWriter::ResamplerWriter(IFrameWriter& writer,
                                  IResampler& resampler,
-                                 core::BufferFactory& buffer_factory,
+                                 FrameFactory& frame_factory,
                                  const SampleSpec& in_sample_spec,
                                  const SampleSpec& out_sample_spec)
     : resampler_(resampler)
@@ -51,7 +51,7 @@ ResamplerWriter::ResamplerWriter(IFrameWriter& writer,
         return;
     }
 
-    if (!(output_buf_ = buffer_factory.new_buffer())) {
+    if (!(output_buf_ = frame_factory.new_raw_buffer())) {
         roc_log(LogError, "resampler writer: can't allocate buffer for output frame");
         return;
     }

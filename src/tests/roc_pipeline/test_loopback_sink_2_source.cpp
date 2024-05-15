@@ -11,11 +11,10 @@
 #include "test_helpers/frame_reader.h"
 #include "test_helpers/frame_writer.h"
 
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
+#include "roc_core/slab_pool.h"
 #include "roc_fec/codec_map.h"
 #include "roc_packet/ireader.h"
-#include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_pipeline/receiver_source.h"
 #include "roc_pipeline/sender_sink.h"
@@ -103,9 +102,18 @@ enum {
 };
 
 core::HeapArena arena;
-core::BufferFactory sample_buffer_factory(arena, MaxBufSize * sizeof(audio::sample_t));
-core::BufferFactory byte_buffer_factory(arena, MaxBufSize);
-packet::PacketFactory packet_factory(arena);
+
+core::SlabPool<packet::Packet> packet_pool("packet_pool", arena);
+core::SlabPool<core::Buffer>
+    packet_buffer_pool("packet_buffer_pool", arena, sizeof(core::Buffer) + MaxBufSize);
+core::SlabPool<core::Buffer>
+    frame_buffer_pool("frame_buffer_pool",
+                      arena,
+                      sizeof(core::Buffer) + MaxBufSize * sizeof(audio::sample_t));
+
+packet::PacketFactory packet_factory(packet_pool, packet_buffer_pool);
+audio::FrameFactory frame_factory(frame_buffer_pool);
+
 rtp::EncodingMap encoding_map(arena);
 
 // Copy sequence of packets to multiple writers.
@@ -423,8 +431,8 @@ void send_receive(int flags,
     SenderSinkConfig sender_config =
         make_sender_config(flags, frame_channels, packet_channels);
 
-    SenderSink sender(sender_config, encoding_map, packet_factory, byte_buffer_factory,
-                      sample_buffer_factory, arena);
+    SenderSink sender(sender_config, encoding_map, packet_pool, packet_buffer_pool,
+                      frame_buffer_pool, arena);
     CHECK(sender.is_valid());
 
     SenderSlotConfig sender_slot_config;
@@ -460,8 +468,8 @@ void send_receive(int flags,
     ReceiverSourceConfig receiver_config =
         make_receiver_config(frame_channels, packet_channels);
 
-    ReceiverSource receiver(receiver_config, encoding_map, packet_factory,
-                            byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverSource receiver(receiver_config, encoding_map, packet_pool,
+                            packet_buffer_pool, frame_buffer_pool, arena);
     CHECK(receiver.is_valid());
 
     ReceiverSlotConfig receiver_slot_config;
@@ -504,7 +512,7 @@ void send_receive(int flags,
         virtual_e2e_latency = core::Millisecond * 100;
     }
 
-    test::FrameWriter frame_writer(sender, sample_buffer_factory);
+    test::FrameWriter frame_writer(sender, frame_factory);
 
     PacketProxy proxy(packet_factory, sender_addr, receiver_source_endpoint_writer,
                       receiver_repair_endpoint_writer, receiver_control_endpoint_writer,
@@ -513,7 +521,7 @@ void send_receive(int flags,
     PacketProxy reverse_proxy(packet_factory, receiver_control_addr, NULL, NULL,
                               sender_control_endpoint_writer, flags);
 
-    test::FrameReader frame_reader(receiver, sample_buffer_factory);
+    test::FrameReader frame_reader(receiver, frame_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, sender_config.input_sample_spec,

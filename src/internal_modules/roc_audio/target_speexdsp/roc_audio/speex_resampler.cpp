@@ -46,7 +46,7 @@ inline int get_quality(ResamplerProfile profile) {
 } // namespace
 
 SpeexResampler::SpeexResampler(core::IArena& arena,
-                               core::BufferFactory& buffer_factory,
+                               FrameFactory& frame_factory,
                                ResamplerProfile profile,
                                const audio::SampleSpec& in_spec,
                                const audio::SampleSpec& out_spec)
@@ -95,7 +95,7 @@ SpeexResampler::SpeexResampler(core::IArena& arena,
     initial_in_latency_ = (size_t)speex_resampler_get_input_latency(speex_state_);
 
     in_frame_size_ = in_frame_pos_ = std::min(
-        initial_in_latency_ * in_spec.num_channels(), buffer_factory.buffer_size());
+        initial_in_latency_ * in_spec.num_channels(), frame_factory.raw_buffer_size());
 
     roc_log(LogDebug,
             "speex resampler: initializing:"
@@ -103,7 +103,7 @@ SpeexResampler::SpeexResampler(core::IArena& arena,
             resampler_profile_to_str(profile), quality, (unsigned long)in_frame_size_,
             (unsigned long)num_ch_);
 
-    if (!(in_frame_ = buffer_factory.new_buffer())) {
+    if (!(in_frame_ = frame_factory.new_raw_buffer())) {
         roc_log(LogError, "speex resampler: can't allocate frame buffer");
         return;
     }

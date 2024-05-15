@@ -14,7 +14,7 @@ namespace roc {
 namespace fec {
 
 OpenfecEncoder::OpenfecEncoder(const CodecConfig& config,
-                               core::BufferFactory& buffer_factory,
+                               packet::PacketFactory& packet_factory,
                                core::IArena& arena)
     : sblen_(0)
     , rblen_(0)

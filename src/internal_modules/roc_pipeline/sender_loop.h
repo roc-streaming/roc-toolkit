@@ -12,8 +12,8 @@
 #ifndef ROC_PIPELINE_SENDER_LOOP_H_
 #define ROC_PIPELINE_SENDER_LOOP_H_
 
-#include "roc_core/buffer_factory.h"
 #include "roc_core/iarena.h"
+#include "roc_core/ipool.h"
 #include "roc_core/mutex.h"
 #include "roc_core/ticker.h"
 #include "roc_pipeline/config.h"
@@ -123,9 +123,9 @@ public:
     SenderLoop(IPipelineTaskScheduler& scheduler,
                const SenderSinkConfig& sink_config,
                const rtp::EncodingMap& encoding_map,
-               packet::PacketFactory& packet_factory,
-               core::BufferFactory& byte_buffer_factory,
-               core::BufferFactory& sample_buffer_factory,
+               core::IPool& packet_pool,
+               core::IPool& packet_buffer_pool,
+               core::IPool& frame_buffer_pool,
                core::IArena& arena);
 
     //! Check if the pipeline was successfully constructed.

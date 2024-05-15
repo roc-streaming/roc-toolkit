@@ -16,7 +16,6 @@
 #include "roc_audio/iframe_writer.h"
 #include "roc_audio/sample.h"
 #include "roc_audio/sample_spec.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
 #include "roc_packet/icomposer.h"
@@ -65,7 +64,6 @@ public:
                packet::ISequencer& sequencer,
                IFrameEncoder& payload_encoder,
                packet::PacketFactory& packet_factory,
-               core::BufferFactory& buffer_factory,
                core::nanoseconds_t packet_length,
                const audio::SampleSpec& sample_spec);
 
@@ -100,7 +98,6 @@ private:
     IFrameEncoder& payload_encoder_;
 
     packet::PacketFactory& packet_factory_;
-    core::BufferFactory& buffer_factory_;
 
     const audio::SampleSpec sample_spec_;
     size_t samples_per_packet_;

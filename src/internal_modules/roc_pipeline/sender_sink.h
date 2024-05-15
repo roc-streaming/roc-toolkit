@@ -13,10 +13,11 @@
 #define ROC_PIPELINE_SENDER_SINK_H_
 
 #include "roc_audio/fanout.h"
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/pcm_mapper_writer.h"
 #include "roc_audio/profiling_writer.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/iarena.h"
+#include "roc_core/ipool.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
 #include "roc_packet/packet_factory.h"
@@ -44,9 +45,9 @@ public:
     //! Initialize.
     SenderSink(const SenderSinkConfig& sink_config,
                const rtp::EncodingMap& encoding_map,
-               packet::PacketFactory& packet_factory,
-               core::BufferFactory& byte_buffer_factory,
-               core::BufferFactory& sample_buffer_factory,
+               core::IPool& packet_pool,
+               core::IPool& packet_buffer_pool,
+               core::IPool& frame_buffer_pool,
                core::IArena& arena);
 
     //! Check if the pipeline was successfully constructed.
@@ -112,9 +113,8 @@ private:
 
     const rtp::EncodingMap& encoding_map_;
 
-    packet::PacketFactory& packet_factory_;
-    core::BufferFactory& byte_buffer_factory_;
-    core::BufferFactory& sample_buffer_factory_;
+    packet::PacketFactory packet_factory_;
+    audio::FrameFactory frame_factory_;
     core::IArena& arena_;
 
     StateTracker state_tracker_;

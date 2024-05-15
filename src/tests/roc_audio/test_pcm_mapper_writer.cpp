@@ -10,10 +10,8 @@
 
 #include "roc_audio/pcm_format.h"
 #include "roc_audio/pcm_mapper_writer.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/macro_helpers.h"
-#include "roc_core/stddefs.h"
 #include "roc_core/time.h"
 #include "roc_packet/units.h"
 
@@ -24,10 +22,10 @@ namespace {
 
 const double Epsilon = 0.0001;
 
-enum { Rate = 10000, MaxSz = 400, SmallFrameSz = 20 };
+enum { Rate = 10000, MaxBytes = 400, SmallFrameSz = 20 };
 
 core::HeapArena arena;
-core::BufferFactory buffer_factory(arena, MaxSz);
+FrameFactory frame_factory(arena, MaxBytes);
 
 template <class T> struct BufferWriter : IFrameWriter {
     T samples[10000];
@@ -118,7 +116,7 @@ TEST(pcm_mapper_writer, raw_to_raw) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     BufferWriter<sample_t> buf_writer;
-    PcmMapperWriter mapper_writer(buf_writer, buffer_factory, in_spec, out_spec);
+    PcmMapperWriter mapper_writer(buf_writer, frame_factory, in_spec, out_spec);
     CountGenerator<sample_t> count_generator(mapper_writer, 0.001f);
 
     count_generator.generate(SmallFrameSz);
@@ -138,7 +136,7 @@ TEST(pcm_mapper_writer, s16_to_raw) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     BufferWriter<sample_t> buf_writer;
-    PcmMapperWriter mapper_writer(buf_writer, buffer_factory, in_spec, out_spec);
+    PcmMapperWriter mapper_writer(buf_writer, frame_factory, in_spec, out_spec);
     CountGenerator<int16_t> count_generator(mapper_writer, 100);
 
     count_generator.generate(SmallFrameSz);
@@ -158,7 +156,7 @@ TEST(pcm_mapper_writer, raw_to_s16) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     BufferWriter<int16_t> buf_writer;
-    PcmMapperWriter mapper_writer(buf_writer, buffer_factory, in_spec, out_spec);
+    PcmMapperWriter mapper_writer(buf_writer, frame_factory, in_spec, out_spec);
     CountGenerator<sample_t> count_generator(mapper_writer, 0.001f);
 
     count_generator.generate(SmallFrameSz);
@@ -178,7 +176,7 @@ TEST(pcm_mapper_writer, s16_to_s32) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     BufferWriter<int32_t> buf_writer;
-    PcmMapperWriter mapper_writer(buf_writer, buffer_factory, in_spec, out_spec);
+    PcmMapperWriter mapper_writer(buf_writer, frame_factory, in_spec, out_spec);
     CountGenerator<int16_t> count_generator(mapper_writer, 100);
 
     count_generator.generate(SmallFrameSz);
@@ -198,7 +196,7 @@ TEST(pcm_mapper_writer, s32_to_s16) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     BufferWriter<int16_t> buf_writer;
-    PcmMapperWriter mapper_writer(buf_writer, buffer_factory, in_spec, out_spec);
+    PcmMapperWriter mapper_writer(buf_writer, frame_factory, in_spec, out_spec);
     CountGenerator<int32_t> count_generator(mapper_writer, 1000);
 
     count_generator.generate(SmallFrameSz);
@@ -214,7 +212,7 @@ TEST(pcm_mapper_writer, s32_to_s16) {
 // Pass large input frame, so that internally it's split into multiple
 // smaller output frames.
 TEST(pcm_mapper_writer, split_frame) {
-    enum { SplitCount = 10, LargeFrameSz = MaxSz / sizeof(sample_t) * SplitCount };
+    enum { SplitCount = 10, LargeFrameSz = MaxBytes / sizeof(sample_t) * SplitCount };
 
     const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
                              ChanMask_Surround_Mono);
@@ -222,7 +220,7 @@ TEST(pcm_mapper_writer, split_frame) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     BufferWriter<sample_t> buf_writer;
-    PcmMapperWriter mapper_writer(buf_writer, buffer_factory, in_spec, out_spec);
+    PcmMapperWriter mapper_writer(buf_writer, frame_factory, in_spec, out_spec);
     CountGenerator<int16_t> count_generator(mapper_writer, 10);
 
     count_generator.generate(LargeFrameSz);
@@ -240,7 +238,7 @@ TEST(pcm_mapper_writer, split_frame_loop) {
     enum {
         IterCount = 20,
         SplitCount = 10,
-        LargeFrameSz = MaxSz / sizeof(sample_t) * SplitCount
+        LargeFrameSz = MaxBytes / sizeof(sample_t) * SplitCount
     };
 
     const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
@@ -249,7 +247,7 @@ TEST(pcm_mapper_writer, split_frame_loop) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     BufferWriter<sample_t> buf_writer;
-    PcmMapperWriter mapper_writer(buf_writer, buffer_factory, in_spec, out_spec);
+    PcmMapperWriter mapper_writer(buf_writer, frame_factory, in_spec, out_spec);
     CountGenerator<int16_t> count_generator(mapper_writer, 10);
 
     for (size_t iter = 0; iter < IterCount; iter++) {
@@ -266,7 +264,7 @@ TEST(pcm_mapper_writer, split_frame_loop) {
 }
 
 TEST(pcm_mapper_writer, duration_mono) {
-    enum { MaxSamples = MaxSz / sizeof(sample_t) };
+    enum { MaxSamples = MaxBytes / sizeof(sample_t) };
 
     const SampleSpec in_spec(Rate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte,
                              ChanMask_Surround_Mono);
@@ -274,7 +272,7 @@ TEST(pcm_mapper_writer, duration_mono) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     MetaWriter meta_writer;
-    PcmMapperWriter mapper_writer(meta_writer, buffer_factory, in_spec, out_spec);
+    PcmMapperWriter mapper_writer(meta_writer, frame_factory, in_spec, out_spec);
 
     {
         sample_t samples[MaxSamples * 3] = {};
@@ -290,7 +288,7 @@ TEST(pcm_mapper_writer, duration_mono) {
 }
 
 TEST(pcm_mapper_writer, duration_stereo) {
-    enum { MaxSamples = MaxSz / sizeof(sample_t) };
+    enum { MaxSamples = MaxBytes / sizeof(sample_t) };
 
     const SampleSpec in_spec(Rate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte,
                              ChanMask_Surround_Stereo);
@@ -298,7 +296,7 @@ TEST(pcm_mapper_writer, duration_stereo) {
                               ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
     MetaWriter meta_writer;
-    PcmMapperWriter mapper_writer(meta_writer, buffer_factory, in_spec, out_spec);
+    PcmMapperWriter mapper_writer(meta_writer, frame_factory, in_spec, out_spec);
 
     {
         sample_t samples[MaxSamples * 3] = {};
@@ -314,7 +312,7 @@ TEST(pcm_mapper_writer, duration_stereo) {
 }
 
 TEST(pcm_mapper_writer, flags_to_raw) {
-    enum { MaxSamples = MaxSz / sizeof(sample_t) };
+    enum { MaxSamples = MaxBytes / sizeof(sample_t) };
 
     const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
                              ChanMask_Surround_Mono);
@@ -322,7 +320,7 @@ TEST(pcm_mapper_writer, flags_to_raw) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     MetaWriter meta_writer;
-    PcmMapperWriter mapper_writer(meta_writer, buffer_factory, in_spec, out_spec);
+    PcmMapperWriter mapper_writer(meta_writer, frame_factory, in_spec, out_spec);
 
     {
         int16_t samples[MaxSamples * 3] = {};
@@ -339,7 +337,7 @@ TEST(pcm_mapper_writer, flags_to_raw) {
 }
 
 TEST(pcm_mapper_writer, flags_from_raw) {
-    enum { MaxSamples = MaxSz / sizeof(int16_t) };
+    enum { MaxSamples = MaxBytes / sizeof(int16_t) };
 
     const SampleSpec in_spec(Rate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte,
                              ChanMask_Surround_Mono);
@@ -347,7 +345,7 @@ TEST(pcm_mapper_writer, flags_from_raw) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     MetaWriter meta_writer;
-    PcmMapperWriter mapper_writer(meta_writer, buffer_factory, in_spec, out_spec);
+    PcmMapperWriter mapper_writer(meta_writer, frame_factory, in_spec, out_spec);
 
     {
         sample_t samples[MaxSamples * 3] = {};
@@ -364,7 +362,7 @@ TEST(pcm_mapper_writer, flags_from_raw) {
 }
 
 TEST(pcm_mapper_writer, capture_timestamp) {
-    enum { MaxSamples = MaxSz / sizeof(sample_t) };
+    enum { MaxSamples = MaxBytes / sizeof(sample_t) };
 
     const SampleSpec in_spec(Rate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte,
                              ChanMask_Surround_Mono);
@@ -372,7 +370,7 @@ TEST(pcm_mapper_writer, capture_timestamp) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     MetaWriter meta_writer;
-    PcmMapperWriter mapper_writer(meta_writer, buffer_factory, in_spec, out_spec);
+    PcmMapperWriter mapper_writer(meta_writer, frame_factory, in_spec, out_spec);
 
     {
         sample_t samples[MaxSamples * 3] = {};

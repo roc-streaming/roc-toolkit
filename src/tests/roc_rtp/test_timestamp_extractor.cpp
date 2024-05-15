@@ -8,7 +8,6 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
@@ -26,22 +25,10 @@ namespace rtp {
 
 namespace {
 
-class StatusWriter : public packet::IWriter, public core::NonCopyable<> {
-public:
-    explicit StatusWriter(status::StatusCode code)
-        : code_(code) {
-    }
-
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr&) {
-        return code_;
-    }
-
-private:
-    status::StatusCode code_;
-};
+enum { MaxBufSize = 100 };
 
 core::HeapArena arena;
-static packet::PacketFactory packet_factory(arena);
+packet::PacketFactory packet_factory(arena, MaxBufSize);
 
 packet::PacketPtr new_packet(packet::seqnum_t sn,
                              packet::stream_timestamp_t ts,
@@ -56,6 +43,21 @@ packet::PacketPtr new_packet(packet::seqnum_t sn,
 
     return packet;
 }
+
+class StatusWriter : public packet::IWriter, public core::NonCopyable<> {
+public:
+    explicit StatusWriter(status::StatusCode code)
+        : code_(code) {
+    }
+
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr&) {
+        return code_;
+    }
+
+private:
+    status::StatusCode code_;
+};
+
 } // namespace
 
 TEST_GROUP(timestamp_extractor) {};

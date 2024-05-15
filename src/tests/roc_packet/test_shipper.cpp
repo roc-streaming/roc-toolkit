@@ -8,7 +8,6 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
@@ -19,6 +18,25 @@ namespace roc {
 namespace packet {
 
 namespace {
+
+enum { PacketSz = 128 };
+
+core::HeapArena arena;
+PacketFactory packet_factory(arena, PacketSz);
+
+PacketPtr new_packet() {
+    PacketPtr packet = packet_factory.new_packet();
+    CHECK(packet);
+
+    packet->add_flags(Packet::FlagRTP | Packet::FlagPrepared);
+    packet->rtp()->payload_type = rtp::PayloadType_L16_Stereo;
+
+    core::Slice<uint8_t> buffer = packet_factory.new_packet_buffer();
+    CHECK(buffer);
+    packet->rtp()->payload = buffer;
+
+    return packet;
+}
 
 class MockWriter : public IWriter, public core::NonCopyable<> {
 public:
@@ -58,26 +76,6 @@ struct MockComposer : public IComposer, public core::NonCopyable<> {
 
     unsigned compose_call_count;
 };
-
-enum { PacketSz = 128 };
-
-core::HeapArena arena;
-PacketFactory packet_factory(arena);
-core::BufferFactory buffer_factory(arena, PacketSz);
-
-PacketPtr new_packet() {
-    PacketPtr packet = packet_factory.new_packet();
-    CHECK(packet);
-
-    packet->add_flags(Packet::FlagRTP | Packet::FlagPrepared);
-    packet->rtp()->payload_type = rtp::PayloadType_L16_Stereo;
-
-    core::Slice<uint8_t> buffer = buffer_factory.new_buffer();
-    CHECK(buffer);
-    packet->rtp()->payload = buffer;
-
-    return packet;
-}
 
 } // namespace
 

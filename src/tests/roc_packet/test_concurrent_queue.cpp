@@ -21,8 +21,10 @@ namespace packet {
 
 namespace {
 
+enum { MaxBufSize = 100 };
+
 core::HeapArena arena;
-PacketFactory packet_factory(arena);
+PacketFactory packet_factory(arena, MaxBufSize);
 
 PacketPtr new_packet() {
     PacketPtr packet = packet_factory.new_packet();

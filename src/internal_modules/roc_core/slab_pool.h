@@ -80,12 +80,12 @@ public:
     //!  - @p min_alloc_bytes defines minimum size in bytes per request to arena
     //!  - @p max_alloc_bytes defines maximum size in bytes per request to arena
     //!  - @p guards defines options to modify behaviour as indicated in SlabPoolGuard
-    explicit SlabPool(const char* name,
-                      IArena& arena,
-                      size_t object_size = sizeof(T),
-                      size_t min_alloc_bytes = 0,
-                      size_t max_alloc_bytes = 0,
-                      size_t guards = SlabPool_DefaultGuards)
+    SlabPool(const char* name,
+             IArena& arena,
+             size_t object_size = sizeof(T),
+             size_t min_alloc_bytes = 0,
+             size_t max_alloc_bytes = 0,
+             size_t guards = SlabPool_DefaultGuards)
         : impl_(name,
                 arena,
                 object_size,

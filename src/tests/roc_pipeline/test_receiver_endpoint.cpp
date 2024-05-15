@@ -13,12 +13,10 @@
 #include "roc_audio/sample.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/noop_arena.h"
-#include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/receiver_endpoint.h"
 #include "roc_pipeline/receiver_session_group.h"
-#include "roc_status/status_code.h"
 
 namespace roc {
 namespace pipeline {
@@ -28,9 +26,10 @@ namespace {
 enum { PacketSz = 512 };
 
 core::HeapArena arena;
-packet::PacketFactory packet_factory(arena);
-core::BufferFactory byte_buffer_factory(arena, PacketSz);
-core::BufferFactory sample_buffer_factory(arena, PacketSz * sizeof(audio::sample_t));
+
+packet::PacketFactory packet_factory(arena, PacketSz);
+audio::FrameFactory frame_factory(arena, PacketSz * sizeof(audio::sample_t));
+
 rtp::EncodingMap encoding_map(arena);
 
 } // namespace
@@ -38,14 +37,14 @@ rtp::EncodingMap encoding_map(arena);
 TEST_GROUP(receiver_endpoint) {};
 
 TEST(receiver_endpoint, valid) {
-    audio::Mixer mixer(sample_buffer_factory, DefaultSampleSpec, false);
+    audio::Mixer mixer(frame_factory, DefaultSampleSpec, false);
 
     StateTracker state_tracker;
     ReceiverSourceConfig source_config;
     ReceiverSlotConfig slot_config;
     ReceiverSessionGroup session_group(source_config, slot_config, state_tracker, mixer,
-                                       encoding_map, packet_factory, byte_buffer_factory,
-                                       sample_buffer_factory, arena);
+                                       encoding_map, packet_factory, frame_factory,
+                                       arena);
 
     ReceiverEndpoint endpoint(address::Proto_RTP, state_tracker, session_group,
                               encoding_map, address::SocketAddr(), NULL, arena);
@@ -53,14 +52,14 @@ TEST(receiver_endpoint, valid) {
 }
 
 TEST(receiver_endpoint, invalid_proto) {
-    audio::Mixer mixer(sample_buffer_factory, DefaultSampleSpec, false);
+    audio::Mixer mixer(frame_factory, DefaultSampleSpec, false);
 
     StateTracker state_tracker;
     ReceiverSourceConfig source_config;
     ReceiverSlotConfig slot_config;
     ReceiverSessionGroup session_group(source_config, slot_config, state_tracker, mixer,
-                                       encoding_map, packet_factory, byte_buffer_factory,
-                                       sample_buffer_factory, arena);
+                                       encoding_map, packet_factory, frame_factory,
+                                       arena);
 
     ReceiverEndpoint endpoint(address::Proto_None, state_tracker, session_group,
                               encoding_map, address::SocketAddr(), NULL, arena);
@@ -76,14 +75,14 @@ TEST(receiver_endpoint, no_memory) {
     };
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(protos); ++n) {
-        audio::Mixer mixer(sample_buffer_factory, DefaultSampleSpec, false);
+        audio::Mixer mixer(frame_factory, DefaultSampleSpec, false);
 
         StateTracker state_tracker;
         ReceiverSourceConfig source_config;
         ReceiverSlotConfig slot_config;
-        ReceiverSessionGroup session_group(
-            source_config, slot_config, state_tracker, mixer, encoding_map,
-            packet_factory, byte_buffer_factory, sample_buffer_factory, core::NoopArena);
+        ReceiverSessionGroup session_group(source_config, slot_config, state_tracker,
+                                           mixer, encoding_map, packet_factory,
+                                           frame_factory, core::NoopArena);
 
         ReceiverEndpoint endpoint(protos[n], state_tracker, session_group, encoding_map,
                                   address::SocketAddr(), NULL, core::NoopArena);

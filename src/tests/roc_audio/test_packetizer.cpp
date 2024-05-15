@@ -8,14 +8,13 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/iframe_decoder.h"
 #include "roc_audio/iframe_encoder.h"
 #include "roc_audio/packetizer.h"
 #include "roc_audio/pcm_decoder.h"
 #include "roc_audio/pcm_encoder.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
-#include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_rtp/composer.h"
 #include "roc_rtp/identity.h"
@@ -51,9 +50,8 @@ const SampleSpec packet_spec(
     SampleRate, PcmFormat_SInt16_Be, ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
 core::HeapArena arena;
-core::BufferFactory sample_buffer_factory(arena, MaxBufSize * sizeof(sample_t));
-core::BufferFactory byte_buffer_factory(arena, MaxBufSize);
-packet::PacketFactory packet_factory(arena);
+packet::PacketFactory packet_factory(arena, MaxBufSize);
+FrameFactory frame_factory(arena, MaxBufSize * sizeof(sample_t));
 
 rtp::Composer rtp_composer(NULL);
 
@@ -147,7 +145,7 @@ public:
     }
 
     void write(IFrameWriter& writer, size_t num_samples) {
-        core::Slice<sample_t> buf = sample_buffer_factory.new_buffer();
+        core::Slice<sample_t> buf = frame_factory.new_raw_buffer();
         CHECK(buf);
 
         buf.reslice(0, num_samples * NumCh);
@@ -187,7 +185,7 @@ TEST(packetizer, one_buffer_one_packet) {
     rtp::Identity identity;
     rtp::Sequencer sequencer(identity, PayloadType);
     Packetizer packetizer(packet_queue, rtp_composer, sequencer, encoder, packet_factory,
-                          byte_buffer_factory, PacketDuration, frame_spec);
+                          PacketDuration, frame_spec);
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
@@ -214,7 +212,7 @@ TEST(packetizer, one_buffer_multiple_packets) {
     rtp::Identity identity;
     rtp::Sequencer sequencer(identity, PayloadType);
     Packetizer packetizer(packet_queue, rtp_composer, sequencer, encoder, packet_factory,
-                          byte_buffer_factory, PacketDuration, frame_spec);
+                          PacketDuration, frame_spec);
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
@@ -241,7 +239,7 @@ TEST(packetizer, multiple_buffers_one_packet) {
     rtp::Identity identity;
     rtp::Sequencer sequencer(identity, PayloadType);
     Packetizer packetizer(packet_queue, rtp_composer, sequencer, encoder, packet_factory,
-                          byte_buffer_factory, PacketDuration, frame_spec);
+                          PacketDuration, frame_spec);
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
@@ -274,7 +272,7 @@ TEST(packetizer, multiple_buffers_multiple_packets) {
     rtp::Identity identity;
     rtp::Sequencer sequencer(identity, PayloadType);
     Packetizer packetizer(packet_queue, rtp_composer, sequencer, encoder, packet_factory,
-                          byte_buffer_factory, PacketDuration, frame_spec);
+                          PacketDuration, frame_spec);
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
@@ -301,7 +299,7 @@ TEST(packetizer, flush) {
     rtp::Identity identity;
     rtp::Sequencer sequencer(identity, PayloadType);
     Packetizer packetizer(packet_queue, rtp_composer, sequencer, encoder, packet_factory,
-                          byte_buffer_factory, PacketDuration, frame_spec);
+                          PacketDuration, frame_spec);
 
     FrameMaker frame_maker;
     PacketChecker packet_checker(decoder);
@@ -339,7 +337,7 @@ TEST(packetizer, timestamp_zero_cts) {
     rtp::Identity identity;
     rtp::Sequencer sequencer(identity, PayloadType);
     Packetizer packetizer(packet_queue, rtp_composer, sequencer, encoder, packet_factory,
-                          byte_buffer_factory, PacketDuration, frame_spec);
+                          PacketDuration, frame_spec);
 
     const core::nanoseconds_t zero_cts = 0;
 
@@ -366,7 +364,7 @@ TEST(packetizer, metrics) {
     rtp::Identity identity;
     rtp::Sequencer sequencer(identity, PayloadType);
     Packetizer packetizer(packet_queue, rtp_composer, sequencer, encoder, packet_factory,
-                          byte_buffer_factory, PacketDuration, frame_spec);
+                          PacketDuration, frame_spec);
 
     FrameMaker frame_maker;
 

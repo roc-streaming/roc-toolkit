@@ -31,11 +31,10 @@ public:
     Proxy(const roc_endpoint* receiver_source_endp,
           const roc_endpoint* receiver_repair_endp,
           size_t n_source_packets,
-          size_t n_repair_packets,
-          core::HeapArena& arena,
-          packet::PacketFactory& packet_factory,
-          core::BufferFactory& byte_buffer_factory)
-        : net_loop_(packet_factory, byte_buffer_factory, arena)
+          size_t n_repair_packets)
+        : packet_pool_("proxy_packet_pool", arena_)
+        , buffer_pool_("proxy_buffer_pool", arena_, 2000)
+        , net_loop_(packet_pool_, buffer_pool_, arena_)
         , n_source_packets_(n_source_packets)
         , n_repair_packets_(n_repair_packets)
         , pos_(0) {
@@ -170,6 +169,11 @@ private:
         }
         return true;
     }
+
+    core::HeapArena arena_;
+
+    core::SlabPool<packet::Packet> packet_pool_;
+    core::SlabPool<core::Buffer> buffer_pool_;
 
     netio::UdpConfig send_config_;
     netio::UdpConfig recv_source_config_;

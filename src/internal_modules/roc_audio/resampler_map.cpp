@@ -24,24 +24,24 @@ namespace {
 
 template <class T>
 core::SharedPtr<IResampler> resampler_ctor(core::IArena& arena,
-                                           core::BufferFactory& buffer_factory,
+                                           FrameFactory& frame_factory,
                                            ResamplerProfile profile,
                                            const audio::SampleSpec& in_spec,
                                            const audio::SampleSpec& out_spec) {
-    return new (arena) T(arena, buffer_factory, profile, in_spec, out_spec);
+    return new (arena) T(arena, frame_factory, profile, in_spec, out_spec);
 }
 
 template <class T>
 core::SharedPtr<IResampler> resampler_dec_ctor(core::IArena& arena,
-                                               core::BufferFactory& buffer_factory,
+                                               FrameFactory& frame_factory,
                                                ResamplerProfile profile,
                                                const audio::SampleSpec& in_spec,
                                                const audio::SampleSpec& out_spec) {
     core::SharedPtr<IResampler> inner_resampler =
-        new (arena) T(arena, buffer_factory, profile, in_spec, out_spec);
+        new (arena) T(arena, frame_factory, profile, in_spec, out_spec);
 
     return new (arena)
-        DecimationResampler(inner_resampler, arena, buffer_factory, in_spec, out_spec);
+        DecimationResampler(inner_resampler, arena, frame_factory, in_spec, out_spec);
 }
 
 } // namespace
@@ -85,7 +85,7 @@ bool ResamplerMap::is_supported(ResamplerBackend backend_id) const {
 
 core::SharedPtr<IResampler>
 ResamplerMap::new_resampler(core::IArena& arena,
-                            core::BufferFactory& buffer_factory,
+                            FrameFactory& frame_factory,
                             const ResamplerConfig& config,
                             const audio::SampleSpec& in_spec,
                             const audio::SampleSpec& out_spec) {
@@ -97,7 +97,7 @@ ResamplerMap::new_resampler(core::IArena& arena,
     }
 
     core::SharedPtr<IResampler> resampler =
-        backend->ctor(arena, buffer_factory, config.profile, in_spec, out_spec);
+        backend->ctor(arena, frame_factory, config.profile, in_spec, out_spec);
 
     if (!resampler || !resampler->is_valid()) {
         return NULL;

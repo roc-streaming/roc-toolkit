@@ -9,7 +9,6 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_address/socket_addr.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/cond.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/mutex.h"
@@ -25,8 +24,8 @@ namespace {
 enum { MaxBufSize = 500 };
 
 core::HeapArena arena;
-core::BufferFactory buffer_factory(arena, MaxBufSize);
-packet::PacketFactory packet_factory(arena);
+core::SlabPool<core::Buffer> buffer_pool("buffer_pool", arena, MaxBufSize);
+core::SlabPool<packet::Packet> packet_pool("packet_pool", arena);
 
 UdpConfig make_receiver_config(const char* ip, int port) {
     UdpConfig config;
@@ -151,7 +150,7 @@ private:
 TEST_GROUP(tasks) {};
 
 TEST(tasks, synchronous_add) {
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
     CHECK(net_loop.is_valid());
 
     UdpConfig config = make_receiver_config("127.0.0.1", 0);
@@ -168,7 +167,7 @@ TEST(tasks, synchronous_add) {
 }
 
 TEST(tasks, synchronous_add_recv_remove) {
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
     CHECK(net_loop.is_valid());
 
     UdpConfig config = make_receiver_config("127.0.0.1", 0);
@@ -196,7 +195,7 @@ TEST(tasks, synchronous_add_recv_remove) {
 }
 
 TEST(tasks, asynchronous_add) {
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
     CHECK(net_loop.is_valid());
 
     UdpConfig config = make_receiver_config("127.0.0.1", 0);
@@ -217,7 +216,7 @@ TEST(tasks, asynchronous_add) {
 }
 
 TEST(tasks, asynchronous_add_recv_remove) {
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
     CHECK(net_loop.is_valid());
 
     UdpConfig config = make_receiver_config("127.0.0.1", 0);

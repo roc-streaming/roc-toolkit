@@ -86,9 +86,10 @@ int main(int argc, char** argv) {
     sndio::BackendMap::instance().set_frame_size(source_config.frame_length,
                                                  transcoder_config.input_sample_spec);
 
-    core::BufferFactory buffer_factory(
-        arena,
-        transcoder_config.input_sample_spec.ns_2_bytes(source_config.frame_length));
+    core::SlabPool<core::Buffer> frame_buffer_pool(
+        "frame_buffer_pool", arena,
+        sizeof(core::Buffer)
+            + transcoder_config.input_sample_spec.ns_2_bytes(source_config.frame_length));
 
     address::IoUri input_uri(arena);
     if (args.input_given) {
@@ -203,14 +204,14 @@ int main(int argc, char** argv) {
         output_writer = output_sink.get();
     }
 
-    pipeline::TranscoderSink transcoder(transcoder_config, output_writer, buffer_factory,
-                                        arena);
+    pipeline::TranscoderSink transcoder(transcoder_config, output_writer,
+                                        frame_buffer_pool, arena);
     if (!transcoder.is_valid()) {
         roc_log(LogError, "can't create transcoder pipeline");
         return 1;
     }
 
-    sndio::Pump pump(buffer_factory, *input_source, NULL, transcoder,
+    sndio::Pump pump(frame_buffer_pool, *input_source, NULL, transcoder,
                      source_config.frame_length, transcoder_config.input_sample_spec,
                      sndio::Pump::ModePermanent);
     if (!pump.is_valid()) {

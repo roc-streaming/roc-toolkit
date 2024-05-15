@@ -10,10 +10,8 @@
 
 #include "roc_audio/pcm_format.h"
 #include "roc_audio/pcm_mapper_reader.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/macro_helpers.h"
-#include "roc_core/stddefs.h"
 #include "roc_core/time.h"
 
 namespace roc {
@@ -23,10 +21,10 @@ namespace {
 
 const double Epsilon = 0.0001;
 
-enum { Rate = 10000, MaxSz = 400, SmallFrameSz = 20 };
+enum { Rate = 10000, MaxBytes = 400, SmallFrameSz = 20 };
 
 core::HeapArena arena;
-core::BufferFactory buffer_factory(arena, MaxSz);
+FrameFactory frame_factory(arena, MaxBytes);
 
 template <class T> struct CountReader : IFrameReader {
     T value;
@@ -127,7 +125,7 @@ TEST(pcm_mapper_reader, raw_to_raw) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     CountReader<sample_t> count_reader(0.001f);
-    PcmMapperReader mapper_reader(count_reader, buffer_factory, in_spec, out_spec);
+    PcmMapperReader mapper_reader(count_reader, frame_factory, in_spec, out_spec);
 
     sample_t samples[SmallFrameSz] = {};
     Frame frame(samples, SmallFrameSz);
@@ -149,7 +147,7 @@ TEST(pcm_mapper_reader, s16_to_raw) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     CountReader<int16_t> count_reader(100);
-    PcmMapperReader mapper_reader(count_reader, buffer_factory, in_spec, out_spec);
+    PcmMapperReader mapper_reader(count_reader, frame_factory, in_spec, out_spec);
 
     sample_t samples[SmallFrameSz] = {};
     Frame frame(samples, SmallFrameSz);
@@ -171,7 +169,7 @@ TEST(pcm_mapper_reader, raw_to_s16) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     CountReader<sample_t> count_reader(0.001f);
-    PcmMapperReader mapper_reader(count_reader, buffer_factory, in_spec, out_spec);
+    PcmMapperReader mapper_reader(count_reader, frame_factory, in_spec, out_spec);
 
     int16_t samples[SmallFrameSz] = {};
     Frame frame((uint8_t*)samples, sizeof(samples));
@@ -193,7 +191,7 @@ TEST(pcm_mapper_reader, s16_to_s32) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     CountReader<int16_t> count_reader(100);
-    PcmMapperReader mapper_reader(count_reader, buffer_factory, in_spec, out_spec);
+    PcmMapperReader mapper_reader(count_reader, frame_factory, in_spec, out_spec);
 
     int32_t samples[SmallFrameSz] = {};
     Frame frame((uint8_t*)samples, sizeof(samples));
@@ -215,7 +213,7 @@ TEST(pcm_mapper_reader, s32_to_s16) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     CountReader<int32_t> count_reader(1000);
-    PcmMapperReader mapper_reader(count_reader, buffer_factory, in_spec, out_spec);
+    PcmMapperReader mapper_reader(count_reader, frame_factory, in_spec, out_spec);
 
     int16_t samples[SmallFrameSz] = {};
     Frame frame((uint8_t*)samples, sizeof(samples));
@@ -233,7 +231,7 @@ TEST(pcm_mapper_reader, s32_to_s16) {
 // Request large output frame, so that internally it's split into multiple
 // smaller input frames.
 TEST(pcm_mapper_reader, split_frame) {
-    enum { SplitCount = 10, LargeFrameSz = MaxSz / sizeof(int16_t) * SplitCount };
+    enum { SplitCount = 10, LargeFrameSz = MaxBytes / sizeof(int16_t) * SplitCount };
 
     const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
                              ChanMask_Surround_Mono);
@@ -241,7 +239,7 @@ TEST(pcm_mapper_reader, split_frame) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     CountReader<int16_t> count_reader(10);
-    PcmMapperReader mapper_reader(count_reader, buffer_factory, in_spec, out_spec);
+    PcmMapperReader mapper_reader(count_reader, frame_factory, in_spec, out_spec);
 
     sample_t samples[LargeFrameSz] = {};
     Frame frame(samples, LargeFrameSz);
@@ -261,7 +259,7 @@ TEST(pcm_mapper_reader, split_frame_loop) {
     enum {
         IterCount = 20,
         SplitCount = 10,
-        LargeFrameSz = MaxSz / sizeof(int16_t) * SplitCount
+        LargeFrameSz = MaxBytes / sizeof(int16_t) * SplitCount
     };
 
     const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
@@ -270,7 +268,7 @@ TEST(pcm_mapper_reader, split_frame_loop) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     CountReader<int16_t> count_reader(10);
-    PcmMapperReader mapper_reader(count_reader, buffer_factory, in_spec, out_spec);
+    PcmMapperReader mapper_reader(count_reader, frame_factory, in_spec, out_spec);
 
     for (size_t iter = 0; iter < IterCount; iter++) {
         sample_t samples[LargeFrameSz] = {};
@@ -295,7 +293,7 @@ TEST(pcm_mapper_reader, duration_mono) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     CountReader<sample_t> count_reader(0);
-    PcmMapperReader mapper_reader(count_reader, buffer_factory, in_spec, out_spec);
+    PcmMapperReader mapper_reader(count_reader, frame_factory, in_spec, out_spec);
 
     sample_t samples[SmallFrameSz] = {};
     Frame frame(samples, SmallFrameSz);
@@ -315,7 +313,7 @@ TEST(pcm_mapper_reader, duration_stereo) {
                               ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
     CountReader<sample_t> count_reader(0);
-    PcmMapperReader mapper_reader(count_reader, buffer_factory, in_spec, out_spec);
+    PcmMapperReader mapper_reader(count_reader, frame_factory, in_spec, out_spec);
 
     sample_t samples[SmallFrameSz] = {};
     Frame frame(samples, SmallFrameSz);
@@ -329,7 +327,7 @@ TEST(pcm_mapper_reader, duration_stereo) {
 }
 
 TEST(pcm_mapper_reader, flags_to_raw) {
-    enum { MaxSamples = MaxSz / sizeof(int16_t) };
+    enum { MaxSamples = MaxBytes / sizeof(int16_t) };
 
     const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
                              ChanMask_Surround_Mono);
@@ -337,7 +335,7 @@ TEST(pcm_mapper_reader, flags_to_raw) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     MetaReader meta_reader;
-    PcmMapperReader mapper_reader(meta_reader, buffer_factory, in_spec, out_spec);
+    PcmMapperReader mapper_reader(meta_reader, frame_factory, in_spec, out_spec);
 
     meta_reader.flags[0] = Frame::FlagNotRaw;
     meta_reader.flags[1] = Frame::FlagNotRaw | Frame::FlagNotBlank;
@@ -372,7 +370,7 @@ TEST(pcm_mapper_reader, flags_to_raw) {
 }
 
 TEST(pcm_mapper_reader, flags_from_raw) {
-    enum { MaxSamples = MaxSz / sizeof(sample_t) };
+    enum { MaxSamples = MaxBytes / sizeof(sample_t) };
 
     const SampleSpec in_spec(Rate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte,
                              ChanMask_Surround_Mono);
@@ -380,7 +378,7 @@ TEST(pcm_mapper_reader, flags_from_raw) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     MetaReader meta_reader;
-    PcmMapperReader mapper_reader(meta_reader, buffer_factory, in_spec, out_spec);
+    PcmMapperReader mapper_reader(meta_reader, frame_factory, in_spec, out_spec);
 
     meta_reader.flags[0] = 0;
     meta_reader.flags[1] = Frame::FlagNotBlank;
@@ -418,7 +416,7 @@ TEST(pcm_mapper_reader, flags_from_raw) {
 }
 
 TEST(pcm_mapper_reader, capture_timestamp) {
-    enum { MaxSamples = MaxSz / sizeof(sample_t) };
+    enum { MaxSamples = MaxBytes / sizeof(sample_t) };
 
     const SampleSpec in_spec(Rate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte,
                              ChanMask_Surround_Mono);
@@ -426,7 +424,7 @@ TEST(pcm_mapper_reader, capture_timestamp) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     MetaReader meta_reader;
-    PcmMapperReader mapper_reader(meta_reader, buffer_factory, in_spec, out_spec);
+    PcmMapperReader mapper_reader(meta_reader, frame_factory, in_spec, out_spec);
 
     meta_reader.cts[0] = 10000000000;
     meta_reader.cts[1] = 20000000000;

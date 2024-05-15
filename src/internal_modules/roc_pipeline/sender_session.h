@@ -15,11 +15,11 @@
 #include "roc_address/socket_addr.h"
 #include "roc_audio/channel_mapper_writer.h"
 #include "roc_audio/feedback_monitor.h"
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/iframe_encoder.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/packetizer.h"
 #include "roc_audio/resampler_writer.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
@@ -55,8 +55,7 @@ public:
     SenderSession(const SenderSinkConfig& sink_config,
                   const rtp::EncodingMap& encoding_map,
                   packet::PacketFactory& packet_factory,
-                  core::BufferFactory& byte_buffer_factory,
-                  core::BufferFactory& sample_buffer_factory,
+                  audio::FrameFactory& frame_factory,
                   core::IArena& arena);
 
     //! Check if the session was succefully constructed.
@@ -131,8 +130,7 @@ private:
     const rtp::EncodingMap& encoding_map_;
 
     packet::PacketFactory& packet_factory_;
-    core::BufferFactory& byte_buffer_factory_;
-    core::BufferFactory& sample_buffer_factory_;
+    audio::FrameFactory& frame_factory_;
 
     core::Optional<rtp::Identity> identity_;
     core::Optional<rtp::Sequencer> sequencer_;

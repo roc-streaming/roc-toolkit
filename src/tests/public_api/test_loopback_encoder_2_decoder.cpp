@@ -10,8 +10,6 @@
 
 #include "test_helpers/utils.h"
 
-#include "roc_core/buffer_factory.h"
-#include "roc_core/heap_arena.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/time.h"
@@ -31,10 +29,6 @@ enum {
     NoFlags = 0,
     FlagLosses = (1 << 0),
 };
-
-core::HeapArena arena;
-packet::PacketFactory packet_factory(arena);
-core::BufferFactory byte_buffer_factory(arena, test::MaxBufSize);
 
 } // namespace
 

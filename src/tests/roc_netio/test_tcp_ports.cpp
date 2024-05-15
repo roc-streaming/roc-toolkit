@@ -8,15 +8,14 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_address/socket_addr_to_str.h"
-#include "roc_core/buffer_factory.h"
-#include "roc_core/heap_arena.h"
-#include "roc_netio/network_loop.h"
-#include "roc_packet/packet_factory.h"
-
 #include "test_helpers/conn_expectation.h"
 #include "test_helpers/mock_conn_acceptor.h"
 #include "test_helpers/mock_conn_handler.h"
+
+#include "roc_address/socket_addr_to_str.h"
+#include "roc_core/heap_arena.h"
+#include "roc_core/slab_pool.h"
+#include "roc_netio/network_loop.h"
 
 namespace roc {
 namespace netio {
@@ -26,8 +25,8 @@ namespace {
 enum { MaxBufSize = 500 };
 
 core::HeapArena arena;
-core::BufferFactory buffer_factory(arena, MaxBufSize);
-packet::PacketFactory packet_factory(arena);
+core::SlabPool<core::Buffer> buffer_pool("buffer_pool", arena, MaxBufSize);
+core::SlabPool<packet::Packet> packet_pool("packet_pool", arena);
 
 address::SocketAddr make_address(const char* ip, int port) {
     address::SocketAddr address;
@@ -148,7 +147,7 @@ void terminate_and_wait(test::MockConnHandler& handler,
 TEST_GROUP(tcp_ports) {};
 
 TEST(tcp_ports, no_ports) {
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
     CHECK(net_loop.is_valid());
 
     UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
@@ -161,7 +160,7 @@ TEST(tcp_ports, add_anyaddr) {
     test::MockConnAcceptor acceptor;
     acceptor.push_handler(server_conn_handler);
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
     CHECK(net_loop.is_valid());
 
     TcpServerConfig server_config = make_server_config("0.0.0.0", 0);
@@ -208,7 +207,7 @@ TEST(tcp_ports, add_localhost) {
     test::MockConnAcceptor acceptor;
     acceptor.push_handler(server_conn_handler);
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
     CHECK(net_loop.is_valid());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
@@ -255,7 +254,7 @@ TEST(tcp_ports, add_addrinuse) {
     test::MockConnAcceptor acceptor;
     acceptor.push_handler(server_conn_handler);
 
-    NetworkLoop net_loop1(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop1(packet_pool, buffer_pool, arena);
     CHECK(net_loop1.is_valid());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
@@ -284,7 +283,7 @@ TEST(tcp_ports, add_addrinuse) {
 
     POINTERS_EQUAL(server_conn, acceptor.wait_added());
 
-    NetworkLoop net_loop2(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop2(packet_pool, buffer_pool, arena);
     CHECK(net_loop2.is_valid());
 
     UNSIGNED_LONGS_EQUAL(0, net_loop2.num_ports());
@@ -307,7 +306,7 @@ TEST(tcp_ports, add_remove) {
     test::MockConnAcceptor acceptor;
     acceptor.push_handler(server_conn_handler);
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
     CHECK(net_loop.is_valid());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
@@ -353,7 +352,7 @@ TEST(tcp_ports, add_remove) {
 TEST(tcp_ports, add_remove_add) {
     test::MockConnAcceptor acceptor;
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
     CHECK(net_loop.is_valid());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
@@ -383,7 +382,7 @@ TEST(tcp_ports, connect_one_server_one_client) {
     test::MockConnAcceptor acceptor;
     acceptor.push_handler(server_conn_handler);
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
     CHECK(net_loop.is_valid());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
@@ -425,7 +424,7 @@ TEST(tcp_ports, connect_one_server_many_clients) {
     acceptor.push_handler(server_conn_handler1);
     acceptor.push_handler(server_conn_handler2);
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
     CHECK(net_loop.is_valid());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
@@ -490,13 +489,13 @@ TEST(tcp_ports, connect_one_server_many_clients_many_loops) {
     acceptor.push_handler(server_conn_handler1);
     acceptor.push_handler(server_conn_handler2);
 
-    NetworkLoop net_loop_client1(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop_client1(packet_pool, buffer_pool, arena);
     CHECK(net_loop_client1.is_valid());
 
-    NetworkLoop net_loop_client2(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop_client2(packet_pool, buffer_pool, arena);
     CHECK(net_loop_client2.is_valid());
 
-    NetworkLoop net_loop_server(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop_server(packet_pool, buffer_pool, arena);
     CHECK(net_loop_server.is_valid());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
@@ -563,7 +562,7 @@ TEST(tcp_ports, connect_many_servers_many_clients) {
     test::MockConnAcceptor acceptor2;
     acceptor2.push_handler(server_conn_handler2);
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
     CHECK(net_loop.is_valid());
 
     TcpServerConfig server_config1 = make_server_config("127.0.0.1", 0);
@@ -632,10 +631,10 @@ TEST(tcp_ports, connect_many_servers_many_clients_many_loops) {
     test::MockConnAcceptor acceptor2;
     acceptor2.push_handler(server_conn_handler2);
 
-    NetworkLoop net_loop_client(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop_client(packet_pool, buffer_pool, arena);
     CHECK(net_loop_client.is_valid());
 
-    NetworkLoop net_loop_server(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop_server(packet_pool, buffer_pool, arena);
     CHECK(net_loop_server.is_valid());
 
     TcpServerConfig server_config1 = make_server_config("127.0.0.1", 0);
@@ -699,7 +698,7 @@ TEST(tcp_ports, connect_error) {
     test::MockConnAcceptor acceptor;
     acceptor.push_handler(server_conn_handler1);
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
     CHECK(net_loop.is_valid());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
@@ -739,7 +738,7 @@ TEST(tcp_ports, acceptor_error) {
 
     test::MockConnAcceptor acceptor;
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
     CHECK(net_loop.is_valid());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
@@ -790,7 +789,7 @@ TEST(tcp_ports, terminate_client_connection_normal) {
     test::MockConnAcceptor acceptor;
     acceptor.push_handler(server_conn_handler);
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
     CHECK(net_loop.is_valid());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
@@ -841,7 +840,7 @@ TEST(tcp_ports, terminate_client_connection_failure) {
     test::MockConnAcceptor acceptor;
     acceptor.push_handler(server_conn_handler);
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
     CHECK(net_loop.is_valid());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
@@ -893,7 +892,7 @@ TEST(tcp_ports, terminate_server_connection_normal) {
     test::MockConnAcceptor acceptor;
     acceptor.push_handler(server_conn_handler);
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
     CHECK(net_loop.is_valid());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
@@ -944,7 +943,7 @@ TEST(tcp_ports, terminate_server_connection_failure) {
     test::MockConnAcceptor acceptor;
     acceptor.push_handler(server_conn_handler);
 
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
     CHECK(net_loop.is_valid());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);

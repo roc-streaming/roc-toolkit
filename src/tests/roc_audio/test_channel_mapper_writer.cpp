@@ -11,7 +11,6 @@
 #include "test_helpers/mock_writer.h"
 
 #include "roc_audio/channel_mapper_writer.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/time.h"
@@ -26,7 +25,7 @@ const double Epsilon = 0.00001;
 enum { MaxSz = 500 };
 
 core::HeapArena arena;
-core::BufferFactory buffer_factory(arena, MaxSz * sizeof(sample_t));
+FrameFactory frame_factory(arena, MaxSz * sizeof(sample_t));
 
 void fill_mono(Frame& frame, sample_t value) {
     CHECK(frame.num_raw_samples() > 0);
@@ -82,7 +81,7 @@ TEST(channel_mapper_writer, small_frame_upmix) {
                               ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
     test::MockWriter mock_writer;
-    ChannelMapperWriter mapper_writer(mock_writer, buffer_factory, in_spec, out_spec);
+    ChannelMapperWriter mapper_writer(mock_writer, frame_factory, in_spec, out_spec);
 
     sample_t samples[FrameSz] = {};
     const unsigned flags = Frame::FlagNotComplete;
@@ -115,7 +114,7 @@ TEST(channel_mapper_writer, small_frame_downmix) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockWriter mock_writer;
-    ChannelMapperWriter mapper_writer(mock_writer, buffer_factory, in_spec, out_spec);
+    ChannelMapperWriter mapper_writer(mock_writer, frame_factory, in_spec, out_spec);
 
     sample_t samples[FrameSz] = {};
     const unsigned flags = Frame::FlagNotComplete;
@@ -148,7 +147,7 @@ TEST(channel_mapper_writer, small_frame_nocts) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockWriter mock_writer;
-    ChannelMapperWriter mapper_writer(mock_writer, buffer_factory, in_spec, out_spec);
+    ChannelMapperWriter mapper_writer(mock_writer, frame_factory, in_spec, out_spec);
 
     sample_t samples[FrameSz] = {};
     const unsigned flags = Frame::FlagNotComplete;
@@ -180,7 +179,7 @@ TEST(channel_mapper_writer, large_frame_upmix) {
                               ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
     test::MockWriter mock_writer;
-    ChannelMapperWriter mapper_writer(mock_writer, buffer_factory, in_spec, out_spec);
+    ChannelMapperWriter mapper_writer(mock_writer, frame_factory, in_spec, out_spec);
 
     sample_t samples[FrameSz] = {};
     const unsigned flags = Frame::FlagNotComplete;
@@ -216,7 +215,7 @@ TEST(channel_mapper_writer, large_frame_downmix) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockWriter mock_writer;
-    ChannelMapperWriter mapper_writer(mock_writer, buffer_factory, in_spec, out_spec);
+    ChannelMapperWriter mapper_writer(mock_writer, frame_factory, in_spec, out_spec);
 
     sample_t samples[FrameSz] = {};
     const unsigned flags = Frame::FlagNotComplete;
@@ -252,7 +251,7 @@ TEST(channel_mapper_writer, large_frame_nocts) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockWriter mock_writer;
-    ChannelMapperWriter mapper_writer(mock_writer, buffer_factory, in_spec, out_spec);
+    ChannelMapperWriter mapper_writer(mock_writer, frame_factory, in_spec, out_spec);
 
     sample_t samples[FrameSz] = {};
     const unsigned flags = Frame::FlagNotComplete;

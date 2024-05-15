@@ -9,7 +9,6 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_address/protocol.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/noop_arena.h"
 #include "roc_packet/packet_factory.h"
@@ -28,9 +27,10 @@ namespace {
 enum { PacketSz = 512 };
 
 core::HeapArena arena;
-packet::PacketFactory packet_factory(arena);
-core::BufferFactory byte_buffer_factory(arena, PacketSz);
-core::BufferFactory sample_buffer_factory(arena, PacketSz * sizeof(audio::sample_t));
+
+packet::PacketFactory packet_factory(arena, PacketSz);
+audio::FrameFactory frame_factory(arena, PacketSz * sizeof(audio::sample_t));
+
 rtp::EncodingMap encoding_map(arena);
 
 } // namespace
@@ -43,8 +43,8 @@ TEST(sender_endpoint, valid) {
 
     SenderSinkConfig sink_config;
     StateTracker state_tracker;
-    SenderSession session(sink_config, encoding_map, packet_factory, byte_buffer_factory,
-                          sample_buffer_factory, arena);
+    SenderSession session(sink_config, encoding_map, packet_factory, frame_factory,
+                          arena);
 
     SenderEndpoint endpoint(address::Proto_RTP, state_tracker, session, addr, queue,
                             arena);
@@ -58,8 +58,8 @@ TEST(sender_endpoint, invalid_proto) {
 
     SenderSinkConfig sink_config;
     StateTracker state_tracker;
-    SenderSession session(sink_config, encoding_map, packet_factory, byte_buffer_factory,
-                          sample_buffer_factory, arena);
+    SenderSession session(sink_config, encoding_map, packet_factory, frame_factory,
+                          arena);
 
     SenderEndpoint endpoint(address::Proto_None, state_tracker, session, addr, queue,
                             arena);
@@ -80,8 +80,8 @@ TEST(sender_endpoint, no_memory) {
 
         SenderSinkConfig sink_config;
         StateTracker state_tracker;
-        SenderSession session(sink_config, encoding_map, packet_factory,
-                              byte_buffer_factory, sample_buffer_factory, arena);
+        SenderSession session(sink_config, encoding_map, packet_factory, frame_factory,
+                              arena);
 
         SenderEndpoint endpoint(protos[n], state_tracker, session, addr, queue,
                                 core::NoopArena);

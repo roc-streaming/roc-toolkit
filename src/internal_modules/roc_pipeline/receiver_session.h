@@ -15,13 +15,13 @@
 #include "roc_address/socket_addr.h"
 #include "roc_audio/channel_mapper_reader.h"
 #include "roc_audio/depacketizer.h"
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/iframe_decoder.h"
 #include "roc_audio/iframe_reader.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/latency_monitor.h"
 #include "roc_audio/resampler_reader.h"
 #include "roc_audio/watchdog.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/iarena.h"
 #include "roc_core/list_node.h"
 #include "roc_core/optional.h"
@@ -63,8 +63,7 @@ public:
                     const ReceiverCommonConfig& common_config,
                     const rtp::EncodingMap& encoding_map,
                     packet::PacketFactory& packet_factory,
-                    core::BufferFactory& byte_buffer_factory,
-                    core::BufferFactory& sample_buffer_factory,
+                    audio::FrameFactory& frame_factory,
                     core::IArena& arena);
 
     //! Check if the session was succefully constructed.

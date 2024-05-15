@@ -16,9 +16,10 @@ namespace pipeline {
 
 TranscoderSink::TranscoderSink(const TranscoderConfig& config,
                                audio::IFrameWriter* output_writer,
-                               core::BufferFactory& buffer_factory,
+                               core::IPool& buffer_pool,
                                core::IArena& arena)
-    : frame_writer_(NULL)
+    : frame_factory_(buffer_pool)
+    , frame_writer_(NULL)
     , config_(config)
     , valid_(false) {
     config_.deduce_defaults();
@@ -40,7 +41,7 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
 
         channel_mapper_writer_.reset(
             new (channel_mapper_writer_) audio::ChannelMapperWriter(
-                *frm_writer, buffer_factory, from_spec, to_spec));
+                *frm_writer, frame_factory_, from_spec, to_spec));
         if (!channel_mapper_writer_ || !channel_mapper_writer_->is_valid()) {
             return;
         }
@@ -58,13 +59,13 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
                                         config_.input_sample_spec.channel_set());
 
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-            arena, buffer_factory, config_.resampler, from_spec, to_spec));
+            arena, frame_factory_, config_.resampler, from_spec, to_spec));
         if (!resampler_) {
             return;
         }
 
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
-            *frm_writer, *resampler_, buffer_factory, from_spec, to_spec));
+            *frm_writer, *resampler_, frame_factory_, from_spec, to_spec));
         if (!resampler_writer_ || !resampler_writer_->is_valid()) {
             return;
         }

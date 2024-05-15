@@ -28,7 +28,6 @@ const core::nanoseconds_t PacketLogInterval = 20 * core::Second;
 UdpPort::UdpPort(const UdpConfig& config,
                  uv_loop_t& event_loop,
                  packet::PacketFactory& packet_factory,
-                 core::BufferFactory& buffer_factory,
                  core::IArena& arena)
     : BasicPort(arena)
     , config_(config)
@@ -43,7 +42,6 @@ UdpPort::UdpPort(const UdpConfig& config,
     , closed_(false)
     , fd_()
     , packet_factory_(packet_factory)
-    , buffer_factory_(buffer_factory)
     , inbound_writer_(NULL)
     , rate_limiter_(PacketLogInterval) {
     BasicPort::update_descriptor();
@@ -224,7 +222,7 @@ void UdpPort::alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf) {
 
     UdpPort& self = *(UdpPort*)handle->data;
 
-    core::BufferPtr bp = self.buffer_factory_.new_buffer();
+    core::BufferPtr bp = self.packet_factory_.new_packet_buffer();
     if (!bp) {
         roc_log(LogError, "udp port: %s: can't allocate buffer", self.descriptor());
 

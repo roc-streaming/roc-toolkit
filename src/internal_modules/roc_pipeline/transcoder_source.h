@@ -13,10 +13,11 @@
 #define ROC_PIPELINE_TRANSCODER_SOURCE_H_
 
 #include "roc_audio/channel_mapper_reader.h"
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/profiling_reader.h"
 #include "roc_audio/resampler_reader.h"
-#include "roc_core/buffer_factory.h"
+#include "roc_core/ipool.h"
 #include "roc_core/optional.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_pipeline/config.h"
@@ -34,7 +35,7 @@ public:
     //! Initialize.
     TranscoderSource(const TranscoderConfig& config,
                      sndio::ISource& input_source,
-                     core::BufferFactory& buffer_factory,
+                     core::IPool& buffer_pool,
                      core::IArena& arena);
 
     //! Check if the pipeline was successfully constructed.
@@ -80,6 +81,8 @@ public:
     virtual bool read(audio::Frame&);
 
 private:
+    audio::FrameFactory frame_factory_;
+
     core::Optional<audio::ChannelMapperReader> channel_mapper_reader_;
 
     core::Optional<audio::ResamplerReader> resampler_reader_;

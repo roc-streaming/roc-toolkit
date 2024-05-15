@@ -20,19 +20,13 @@ SenderSlot::SenderSlot(const SenderSinkConfig& sink_config,
                        const rtp::EncodingMap& encoding_map,
                        audio::Fanout& fanout,
                        packet::PacketFactory& packet_factory,
-                       core::BufferFactory& byte_buffer_factory,
-                       core::BufferFactory& sample_buffer_factory,
+                       audio::FrameFactory& frame_factory,
                        core::IArena& arena)
     : core::RefCounted<SenderSlot, core::ArenaAllocation>(arena)
     , sink_config_(sink_config)
     , fanout_(fanout)
     , state_tracker_(state_tracker)
-    , session_(sink_config,
-               encoding_map,
-               packet_factory,
-               byte_buffer_factory,
-               sample_buffer_factory,
-               arena)
+    , session_(sink_config, encoding_map, packet_factory, frame_factory, arena)
     , valid_(false) {
     if (!session_.is_valid()) {
         return;

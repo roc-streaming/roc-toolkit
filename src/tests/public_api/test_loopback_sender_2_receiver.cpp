@@ -21,14 +21,6 @@
 namespace roc {
 namespace api {
 
-namespace {
-
-core::HeapArena arena;
-packet::PacketFactory packet_factory(arena);
-core::BufferFactory byte_buffer_factory(arena, test::MaxBufSize);
-
-} // namespace
-
 TEST_GROUP(loopback_sender_2_receiver) {
     roc_sender_config sender_conf;
     roc_receiver_config receiver_conf;
@@ -218,8 +210,7 @@ TEST(loopback_sender_2_receiver, rs8m_with_losses) {
     receiver.bind();
 
     test::Proxy proxy(receiver.source_endpoint(), receiver.repair_endpoint(),
-                      test::SourcePackets, test::RepairPackets, arena, packet_factory,
-                      byte_buffer_factory);
+                      test::SourcePackets, test::RepairPackets);
 
     test::Sender sender(context, sender_conf, sample_step, FrameChans, test::FrameSamples,
                         Flags);
@@ -276,8 +267,7 @@ TEST(loopback_sender_2_receiver, ldpc_with_losses) {
     receiver.bind();
 
     test::Proxy proxy(receiver.source_endpoint(), receiver.repair_endpoint(),
-                      test::SourcePackets, test::RepairPackets, arena, packet_factory,
-                      byte_buffer_factory);
+                      test::SourcePackets, test::RepairPackets);
 
     test::Sender sender(context, sender_conf, sample_step, FrameChans, test::FrameSamples,
                         Flags);

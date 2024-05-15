@@ -23,7 +23,6 @@ Writer::Writer(const WriterConfig& config,
                packet::IComposer& source_composer,
                packet::IComposer& repair_composer,
                packet::PacketFactory& packet_factory,
-               core::BufferFactory& buffer_factory,
                core::IArena& arena)
     : cur_sblen_(0)
     , next_sblen_(0)
@@ -35,7 +34,6 @@ Writer::Writer(const WriterConfig& config,
     , source_composer_(source_composer)
     , repair_composer_(repair_composer)
     , packet_factory_(packet_factory)
-    , buffer_factory_(buffer_factory)
     , repair_block_(arena)
     , first_packet_(true)
     , cur_packet_(0)
@@ -224,7 +222,7 @@ packet::PacketPtr Writer::make_repair_packet_(packet::seqnum_t pack_n) {
         return NULL;
     }
 
-    core::Slice<uint8_t> buffer = buffer_factory_.new_buffer();
+    core::Slice<uint8_t> buffer = packet_factory_.new_packet_buffer();
     if (!buffer) {
         roc_log(LogError, "fec writer: can't allocate buffer");
         // TODO(gh-183): return StatusNoMem

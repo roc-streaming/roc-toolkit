@@ -15,11 +15,13 @@ namespace node {
 
 Context::Context(const ContextConfig& config, core::IArena& arena)
     : arena_(arena)
-    , packet_factory_(arena_)
-    , byte_buffer_factory_(arena_, config.max_packet_size)
-    , sample_buffer_factory_(arena_, config.max_frame_size / sizeof(audio::sample_t))
+    , packet_pool_("packet_pool", arena_)
+    , packet_buffer_pool_(
+          "packet_buffer_pool", arena_, sizeof(core::Buffer) + config.max_packet_size)
+    , frame_buffer_pool_(
+          "frame_buffer_pool", arena_, sizeof(core::Buffer) + config.max_frame_size)
     , encoding_map_(arena_)
-    , network_loop_(packet_factory_, byte_buffer_factory_, arena_)
+    , network_loop_(packet_pool_, packet_buffer_pool_, arena_)
     , control_loop_(network_loop_, arena_) {
     roc_log(LogDebug, "context: initializing");
 }
@@ -36,16 +38,16 @@ core::IArena& Context::arena() {
     return arena_;
 }
 
-packet::PacketFactory& Context::packet_factory() {
-    return packet_factory_;
+core::IPool& Context::packet_pool() {
+    return packet_pool_;
 }
 
-core::BufferFactory& Context::byte_buffer_factory() {
-    return byte_buffer_factory_;
+core::IPool& Context::packet_buffer_pool() {
+    return packet_buffer_pool_;
 }
 
-core::BufferFactory& Context::sample_buffer_factory() {
-    return sample_buffer_factory_;
+core::IPool& Context::frame_buffer_pool() {
+    return frame_buffer_pool_;
 }
 
 rtp::EncodingMap& Context::encoding_map() {

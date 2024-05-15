@@ -12,10 +12,12 @@
 #ifndef ROC_PIPELINE_RECEIVER_SESSION_GROUP_H_
 #define ROC_PIPELINE_RECEIVER_SESSION_GROUP_H_
 
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/mixer.h"
 #include "roc_core/iarena.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_pipeline/metrics.h"
 #include "roc_pipeline/receiver_endpoint.h"
 #include "roc_pipeline/receiver_session.h"
@@ -52,8 +54,7 @@ public:
                          audio::Mixer& mixer,
                          const rtp::EncodingMap& encoding_map,
                          packet::PacketFactory& packet_factory,
-                         core::BufferFactory& byte_buffer_factory,
-                         core::BufferFactory& sample_buffer_factory,
+                         audio::FrameFactory& frame_factory,
                          core::IArena& arena);
 
     ~ReceiverSessionGroup();
@@ -142,8 +143,7 @@ private:
 
     core::IArena& arena_;
     packet::PacketFactory& packet_factory_;
-    core::BufferFactory& byte_buffer_factory_;
-    core::BufferFactory& sample_buffer_factory_;
+    audio::FrameFactory& frame_factory_;
 
     core::Optional<rtp::Identity> identity_;
 

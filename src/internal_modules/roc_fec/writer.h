@@ -13,7 +13,6 @@
 #define ROC_FEC_WRITER_H_
 
 #include "roc_core/array.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
@@ -61,7 +60,6 @@ public:
            packet::IComposer& source_composer,
            packet::IComposer& repair_composer,
            packet::PacketFactory& packet_factory,
-           core::BufferFactory& buffer_factory,
            core::IArena& arena);
 
     //! Check if object is successfully constructed.
@@ -112,7 +110,6 @@ private:
     packet::IComposer& repair_composer_;
 
     packet::PacketFactory& packet_factory_;
-    core::BufferFactory& buffer_factory_;
 
     core::Array<packet::PacketPtr> repair_block_;
 

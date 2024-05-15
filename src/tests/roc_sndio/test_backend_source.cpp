@@ -10,9 +10,9 @@
 
 #include "test_helpers/mock_source.h"
 
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_core/slab_pool.h"
 #include "roc_core/temp_file.h"
 #include "roc_sndio/backend_map.h"
 #include "roc_sndio/pump.h"
@@ -40,7 +40,8 @@ const core::nanoseconds_t frame_duration = FrameSize * core::Second
     / core::nanoseconds_t(sample_spec.sample_rate() * sample_spec.num_channels());
 
 core::HeapArena arena;
-core::BufferFactory buffer_factory(arena, MaxBufSize * sizeof(audio::sample_t));
+core::SlabPool<core::Buffer> buffer_pool(
+    "buffer_pool", arena, sizeof(core::Buffer) + MaxBufSize * sizeof(audio::sample_t));
 
 bool supports_wav(IBackend& backend) {
     bool supports = false;
@@ -90,7 +91,7 @@ TEST(backend_source, open) {
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
 
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, frame_duration,
+            Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
@@ -136,7 +137,7 @@ TEST(backend_source, has_clock) {
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
 
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, frame_duration,
+            Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
@@ -171,7 +172,7 @@ TEST(backend_source, sample_rate_auto) {
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
 
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, frame_duration,
+            Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
@@ -209,7 +210,7 @@ TEST(backend_source, sample_rate_mismatch) {
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
 
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, frame_duration,
+            Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
@@ -244,7 +245,7 @@ TEST(backend_source, pause_resume) {
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
 
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, frame_duration,
+            Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
@@ -313,7 +314,7 @@ TEST(backend_source, pause_restart) {
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
 
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, frame_duration,
+            Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
@@ -383,7 +384,7 @@ TEST(backend_source, eof_restart) {
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
 
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, frame_duration,
+            Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());

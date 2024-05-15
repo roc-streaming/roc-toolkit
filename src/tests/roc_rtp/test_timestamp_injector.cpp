@@ -8,7 +8,6 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/scoped_ptr.h"
@@ -28,8 +27,10 @@ namespace rtp {
 
 namespace {
 
+enum { MaxBufSize = 100 };
+
 core::HeapArena arena;
-static packet::PacketFactory packet_factory(arena);
+packet::PacketFactory packet_factory(arena, MaxBufSize);
 
 packet::PacketPtr new_packet(packet::seqnum_t sn, packet::stream_timestamp_t ts) {
     packet::PacketPtr packet = packet_factory.new_packet();

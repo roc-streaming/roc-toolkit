@@ -13,11 +13,11 @@
 #define ROC_AUDIO_DECIMATION_RESAMPLER_H_
 
 #include "roc_audio/frame.h"
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/iframe_reader.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/sample.h"
 #include "roc_audio/sample_spec.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/rate_limiter.h"
 #include "roc_core/slice.h"
@@ -52,7 +52,7 @@ public:
     //! Initialize.
     DecimationResampler(const core::SharedPtr<IResampler>& inner_resampler,
                         core::IArena& arena,
-                        core::BufferFactory& buffer_factory,
+                        FrameFactory& frame_factory,
                         const audio::SampleSpec& in_spec,
                         const audio::SampleSpec& out_spec);
 

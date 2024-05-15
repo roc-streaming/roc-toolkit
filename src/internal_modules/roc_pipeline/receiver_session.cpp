@@ -19,8 +19,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
                                  const ReceiverCommonConfig& common_config,
                                  const rtp::EncodingMap& encoding_map,
                                  packet::PacketFactory& packet_factory,
-                                 core::BufferFactory& byte_buffer_factory,
-                                 core::BufferFactory& sample_buffer_factory,
+                                 audio::FrameFactory& frame_factory,
                                  core::IArena& arena)
     : core::RefCounted<ReceiverSession, core::ArenaAllocation>(arena)
     , frame_reader_(NULL)
@@ -104,7 +103,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         }
 
         fec_decoder_.reset(fec::CodecMap::instance().new_decoder(
-                               session_config.fec_decoder, byte_buffer_factory, arena),
+                               session_config.fec_decoder, packet_factory, arena),
                            arena);
         if (!fec_decoder_) {
             return;
@@ -182,7 +181,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
 
         channel_mapper_reader_.reset(
             new (channel_mapper_reader_) audio::ChannelMapperReader(
-                *frm_reader, sample_buffer_factory, in_spec, out_spec));
+                *frm_reader, frame_factory, in_spec, out_spec));
         if (!channel_mapper_reader_ || !channel_mapper_reader_->is_valid()) {
             return;
         }
@@ -201,7 +200,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
                                          common_config.output_sample_spec.channel_set());
 
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-            arena, sample_buffer_factory, session_config.resampler, in_spec, out_spec));
+            arena, frame_factory, session_config.resampler, in_spec, out_spec));
         if (!resampler_) {
             return;
         }

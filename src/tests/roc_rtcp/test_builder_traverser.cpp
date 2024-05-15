@@ -8,8 +8,8 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_rtcp/builder.h"
 #include "roc_rtcp/headers.h"
 #include "roc_rtcp/traverser.h"
@@ -21,10 +21,10 @@ namespace {
 enum { MaxBufSize = 1492 };
 
 core::HeapArena arena;
-core::BufferFactory buffer_factory(arena, MaxBufSize);
+packet::PacketFactory packet_factory(arena, MaxBufSize);
 
 core::Slice<uint8_t> new_buffer() {
-    core::Slice<uint8_t> buff = buffer_factory.new_buffer();
+    core::Slice<uint8_t> buff = packet_factory.new_packet_buffer();
     CHECK(buff);
     return buff.subslice(0, 0);
 }

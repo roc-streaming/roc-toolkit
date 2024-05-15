@@ -9,7 +9,6 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_audio/pcm_decoder.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/time.h"
@@ -38,15 +37,14 @@ enum {
     MaxTsJump = 1000
 };
 
-const audio::SampleSpec PayloadSpec(SampleRate,
-                                    audio::PcmFormat_SInt16_Be,
-                                    audio::ChanLayout_Surround,
-                                    audio::ChanOrder_Smpte,
-                                    ChMask);
+const audio::SampleSpec payload_spec(SampleRate,
+                                     audio::PcmFormat_SInt16_Be,
+                                     audio::ChanLayout_Surround,
+                                     audio::ChanOrder_Smpte,
+                                     ChMask);
 
 core::HeapArena arena;
-packet::PacketFactory packet_factory(arena);
-core::BufferFactory buffer_factory(arena, PacketSz);
+packet::PacketFactory packet_factory(arena, PacketSz);
 
 packet::PacketPtr new_packet(PayloadType pt,
                              packet::stream_source_t src,
@@ -69,7 +67,7 @@ packet::PacketPtr new_packet(PayloadType pt,
         packet->rtp()->capture_timestamp = cts;
         packet->rtp()->duration = duration;
 
-        core::Slice<uint8_t> buffer = buffer_factory.new_buffer();
+        core::Slice<uint8_t> buffer = packet_factory.new_packet_buffer();
         CHECK(buffer);
         packet->rtp()->payload = buffer;
     }
@@ -91,8 +89,8 @@ TEST_GROUP(filter) {
 
 TEST(filter, all_good) {
     packet::Queue queue;
-    audio::PcmDecoder decoder(PayloadSpec);
-    Filter filter(queue, decoder, config, PayloadSpec);
+    audio::PcmDecoder decoder(payload_spec);
+    Filter filter(queue, decoder, config, payload_spec);
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 1, 1);
@@ -121,8 +119,8 @@ TEST(filter, all_good) {
 
 TEST(filter, payload_id_jump) {
     packet::Queue queue;
-    audio::PcmDecoder decoder(PayloadSpec);
-    Filter filter(queue, decoder, config, PayloadSpec);
+    audio::PcmDecoder decoder(payload_spec);
+    Filter filter(queue, decoder, config, payload_spec);
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 1, 1);
@@ -151,8 +149,8 @@ TEST(filter, payload_id_jump) {
 
 TEST(filter, source_id_jump) {
     packet::Queue queue;
-    audio::PcmDecoder decoder(PayloadSpec);
-    Filter filter(queue, decoder, config, PayloadSpec);
+    audio::PcmDecoder decoder(payload_spec);
+    Filter filter(queue, decoder, config, payload_spec);
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 1, 1);
@@ -190,8 +188,8 @@ TEST(filter, seqnum_no_jump) {
         const packet::seqnum_t sn2 = packet::seqnum_t(sn1 + MaxSnJump);
 
         packet::Queue queue;
-        audio::PcmDecoder decoder(PayloadSpec);
-        Filter filter(queue, decoder, config, PayloadSpec);
+        audio::PcmDecoder decoder(payload_spec);
+        Filter filter(queue, decoder, config, payload_spec);
 
         {
             packet::PacketPtr wp = new_packet(Pt1, Src1, sn1, 1);
@@ -230,8 +228,8 @@ TEST(filter, seqnum_jump_up) {
         const packet::seqnum_t sn2 = packet::seqnum_t(sn1 + MaxSnJump + 1);
 
         packet::Queue queue;
-        audio::PcmDecoder decoder(PayloadSpec);
-        Filter filter(queue, decoder, config, PayloadSpec);
+        audio::PcmDecoder decoder(payload_spec);
+        Filter filter(queue, decoder, config, payload_spec);
 
         {
             packet::PacketPtr wp = new_packet(Pt1, Src1, sn1, 1);
@@ -270,8 +268,8 @@ TEST(filter, seqnum_jump_down) {
         const packet::seqnum_t sn2 = packet::seqnum_t(sn1 + MaxSnJump + 1);
 
         packet::Queue queue;
-        audio::PcmDecoder decoder(PayloadSpec);
-        Filter filter(queue, decoder, config, PayloadSpec);
+        audio::PcmDecoder decoder(payload_spec);
+        Filter filter(queue, decoder, config, payload_spec);
 
         {
             packet::PacketPtr wp = new_packet(Pt1, Src1, sn2, 1);
@@ -305,8 +303,8 @@ TEST(filter, seqnum_late) {
     const packet::seqnum_t sn3 = sn2 + MaxSnJump + 1;
 
     packet::Queue queue;
-    audio::PcmDecoder decoder(PayloadSpec);
-    Filter filter(queue, decoder, config, PayloadSpec);
+    audio::PcmDecoder decoder(payload_spec);
+    Filter filter(queue, decoder, config, payload_spec);
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, sn1, 1);
@@ -353,8 +351,8 @@ TEST(filter, timestamp_no_jump) {
         const packet::stream_timestamp_t ts2 = ts1 + MaxTsJump;
 
         packet::Queue queue;
-        audio::PcmDecoder decoder(PayloadSpec);
-        Filter filter(queue, decoder, config, PayloadSpec);
+        audio::PcmDecoder decoder(payload_spec);
+        Filter filter(queue, decoder, config, payload_spec);
 
         {
             packet::PacketPtr wp = new_packet(Pt1, Src1, 1, ts1);
@@ -393,8 +391,8 @@ TEST(filter, timestamp_jump_up) {
         const packet::stream_timestamp_t ts2 = ts1 + MaxTsJump + 10;
 
         packet::Queue queue;
-        audio::PcmDecoder decoder(PayloadSpec);
-        Filter filter(queue, decoder, config, PayloadSpec);
+        audio::PcmDecoder decoder(payload_spec);
+        Filter filter(queue, decoder, config, payload_spec);
 
         {
             packet::PacketPtr wp = new_packet(Pt1, Src1, 1, ts1);
@@ -433,8 +431,8 @@ TEST(filter, timestamp_jump_down) {
         const packet::stream_timestamp_t ts2 = ts1 + MaxTsJump + 10;
 
         packet::Queue queue;
-        audio::PcmDecoder decoder(PayloadSpec);
-        Filter filter(queue, decoder, config, PayloadSpec);
+        audio::PcmDecoder decoder(payload_spec);
+        Filter filter(queue, decoder, config, payload_spec);
 
         {
             packet::PacketPtr wp = new_packet(Pt1, Src1, 1, ts2);
@@ -468,8 +466,8 @@ TEST(filter, timestamp_late) {
     const packet::stream_timestamp_t ts3 = ts2 + MaxTsJump + 1;
 
     packet::Queue queue;
-    audio::PcmDecoder decoder(PayloadSpec);
-    Filter filter(queue, decoder, config, PayloadSpec);
+    audio::PcmDecoder decoder(payload_spec);
+    Filter filter(queue, decoder, config, payload_spec);
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 2, ts1);
@@ -507,8 +505,8 @@ TEST(filter, timestamp_late) {
 
 TEST(filter, cts_positive) {
     packet::Queue queue;
-    audio::PcmDecoder decoder(PayloadSpec);
-    Filter filter(queue, decoder, config, PayloadSpec);
+    audio::PcmDecoder decoder(payload_spec);
+    Filter filter(queue, decoder, config, payload_spec);
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 1, 1, 100);
@@ -555,8 +553,8 @@ TEST(filter, cts_positive) {
 
 TEST(filter, cts_negative) {
     packet::Queue queue;
-    audio::PcmDecoder decoder(PayloadSpec);
-    Filter filter(queue, decoder, config, PayloadSpec);
+    audio::PcmDecoder decoder(payload_spec);
+    Filter filter(queue, decoder, config, payload_spec);
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 1, 1, 100);
@@ -603,8 +601,8 @@ TEST(filter, cts_negative) {
 
 TEST(filter, cts_zero) {
     packet::Queue queue;
-    audio::PcmDecoder decoder(PayloadSpec);
-    Filter filter(queue, decoder, config, PayloadSpec);
+    audio::PcmDecoder decoder(payload_spec);
+    Filter filter(queue, decoder, config, payload_spec);
 
     {
         packet::PacketPtr wp = new_packet(Pt1, Src1, 1, 1, 100);
@@ -651,8 +649,8 @@ TEST(filter, cts_zero) {
 
 TEST(filter, duration_zero) {
     packet::Queue queue;
-    audio::PcmDecoder decoder(PayloadSpec);
-    Filter filter(queue, decoder, config, PayloadSpec);
+    audio::PcmDecoder decoder(payload_spec);
+    Filter filter(queue, decoder, config, payload_spec);
 
     const packet::stream_timestamp_t packet_duration = 0;
     const packet::stream_timestamp_t expected_duration = 32;
@@ -670,8 +668,8 @@ TEST(filter, duration_zero) {
 
 TEST(filter, duration_non_zero) {
     packet::Queue queue;
-    audio::PcmDecoder decoder(PayloadSpec);
-    Filter filter(queue, decoder, config, PayloadSpec);
+    audio::PcmDecoder decoder(payload_spec);
+    Filter filter(queue, decoder, config, payload_spec);
 
     const packet::stream_timestamp_t duration = 100;
 
@@ -688,8 +686,8 @@ TEST(filter, duration_non_zero) {
 
 TEST(filter, flags) {
     packet::Queue queue;
-    audio::PcmDecoder decoder(PayloadSpec);
-    Filter filter(queue, decoder, config, PayloadSpec);
+    audio::PcmDecoder decoder(payload_spec);
+    Filter filter(queue, decoder, config, payload_spec);
 
     {
         packet::PacketPtr wp =
@@ -730,8 +728,8 @@ TEST(filter, forward_error) {
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(code_list); ++n) {
         test::StatusReader reader(code_list[n]);
-        audio::PcmDecoder decoder(PayloadSpec);
-        Filter filter(reader, decoder, config, PayloadSpec);
+        audio::PcmDecoder decoder(payload_spec);
+        Filter filter(reader, decoder, config, payload_spec);
 
         packet::PacketPtr pp;
         LONGS_EQUAL(code_list[n], filter.read(pp));

@@ -16,7 +16,7 @@ namespace roc {
 namespace audio {
 
 ChannelMapperReader::ChannelMapperReader(IFrameReader& reader,
-                                         core::BufferFactory& buffer_factory,
+                                         FrameFactory& frame_factory,
                                          const SampleSpec& in_spec,
                                          const SampleSpec& out_spec)
     : input_reader_(reader)
@@ -40,7 +40,7 @@ ChannelMapperReader::ChannelMapperReader(IFrameReader& reader,
                   sample_spec_to_str(out_spec).c_str());
     }
 
-    input_buf_ = buffer_factory.new_buffer();
+    input_buf_ = frame_factory.new_raw_buffer();
     if (!input_buf_) {
         roc_log(LogError, "channel mapper reader: can't allocate temporary buffer");
         return;

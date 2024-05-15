@@ -14,14 +14,17 @@
 #include "roc_fec/codec_map.h"
 #include "roc_node/context.h"
 #include "roc_node/receiver_decoder.h"
+#include "roc_packet/packet_factory.h"
 
 namespace roc {
 namespace node {
 
 namespace {
 
+enum { MaxBufSize = 100 };
+
 core::HeapArena arena;
-packet::PacketFactory packet_factory(arena);
+packet::PacketFactory packet_factory(arena, MaxBufSize);
 
 void write_slot_metrics(const pipeline::ReceiverSlotMetrics& slot_metrics,
                         void* slot_arg) {

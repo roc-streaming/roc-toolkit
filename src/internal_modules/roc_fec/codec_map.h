@@ -12,13 +12,13 @@
 #ifndef ROC_FEC_CODEC_MAP_H_
 #define ROC_FEC_CODEC_MAP_H_
 
-#include "roc_core/buffer_factory.h"
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/singleton.h"
 #include "roc_fec/codec_config.h"
 #include "roc_fec/iblock_decoder.h"
 #include "roc_fec/iblock_encoder.h"
+#include "roc_packet/packet_factory.h"
 
 namespace roc {
 namespace fec {
@@ -48,7 +48,7 @@ public:
     //! @returns
     //!  NULL if parameters are invalid or given codec support is not enabled.
     IBlockEncoder* new_encoder(const CodecConfig& config,
-                               core::BufferFactory& buffer_factory,
+                               packet::PacketFactory& packet_factory,
                                core::IArena& arena) const;
 
     //! Create a new block decoder.
@@ -59,7 +59,7 @@ public:
     //! @returns
     //!  NULL if parameters are invalid or given codec support is not enabled.
     IBlockDecoder* new_decoder(const CodecConfig& config,
-                               core::BufferFactory& buffer_factory,
+                               packet::PacketFactory& packet_factory,
                                core::IArena& arena) const;
 
 private:
@@ -71,11 +71,11 @@ private:
         packet::FecScheme scheme;
 
         IBlockEncoder* (*encoder_ctor)(const CodecConfig& config,
-                                       core::BufferFactory& buffer_factory,
+                                       packet::PacketFactory& packet_factory,
                                        core::IArena& arena);
 
         IBlockDecoder* (*decoder_ctor)(const CodecConfig& config,
-                                       core::BufferFactory& buffer_factory,
+                                       packet::PacketFactory& packet_factory,
                                        core::IArena& arena);
     };
 

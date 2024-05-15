@@ -23,6 +23,7 @@
 #include "roc_node/node.h"
 #include "roc_packet/concurrent_queue.h"
 #include "roc_packet/ireader.h"
+#include "roc_packet/packet_factory.h"
 #include "roc_pipeline/ipipeline_task_scheduler.h"
 #include "roc_pipeline/sender_loop.h"
 
@@ -40,6 +41,9 @@ public:
 
     //! Check if successfully constructed.
     bool is_valid() const;
+
+    //! Get packet factory.
+    packet::PacketFactory& packet_factory();
 
     //! Activate interface.
     ROC_ATTR_NODISCARD bool activate(address::Interface iface, address::Protocol proto);
@@ -88,6 +92,8 @@ private:
     core::Optional<packet::ConcurrentQueue> endpoint_queues_[address::Iface_Max];
     core::Atomic<packet::IReader*> endpoint_readers_[address::Iface_Max];
     core::Atomic<packet::IWriter*> endpoint_writers_[address::Iface_Max];
+
+    packet::PacketFactory packet_factory_;
 
     pipeline::SenderLoop pipeline_;
     pipeline::SenderLoop::SlotHandle slot_;

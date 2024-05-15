@@ -19,8 +19,7 @@ ReceiverSlot::ReceiverSlot(const ReceiverSourceConfig& source_config,
                            audio::Mixer& mixer,
                            const rtp::EncodingMap& encoding_map,
                            packet::PacketFactory& packet_factory,
-                           core::BufferFactory& byte_buffer_factory,
-                           core::BufferFactory& sample_buffer_factory,
+                           audio::FrameFactory& frame_factory,
                            core::IArena& arena)
     : core::RefCounted<ReceiverSlot, core::ArenaAllocation>(arena)
     , encoding_map_(encoding_map)
@@ -31,8 +30,7 @@ ReceiverSlot::ReceiverSlot(const ReceiverSourceConfig& source_config,
                      mixer,
                      encoding_map,
                      packet_factory,
-                     byte_buffer_factory,
-                     sample_buffer_factory,
+                     frame_factory,
                      arena)
     , valid_(false) {
     if (!session_group_.is_valid()) {

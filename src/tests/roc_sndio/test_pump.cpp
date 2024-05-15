@@ -11,7 +11,6 @@
 #include "test_helpers/mock_sink.h"
 #include "test_helpers/mock_source.h"
 
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
@@ -37,7 +36,8 @@ const core::nanoseconds_t frame_duration = FrameSize * core::Second
     / core::nanoseconds_t(sample_spec.sample_rate() * sample_spec.num_channels());
 
 core::HeapArena arena;
-core::BufferFactory buffer_factory(arena, FrameSize * sizeof(audio::sample_t));
+core::SlabPool<core::Buffer> buffer_pool(
+    "buffer_pool", arena, sizeof(core::Buffer) + FrameSize * sizeof(audio::sample_t));
 
 bool supports_wav(IBackend& backend) {
     bool supports = false;
@@ -91,7 +91,7 @@ TEST(pump, write_read) {
             CHECK(backend_device != NULL);
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, frame_duration,
+            Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
@@ -107,7 +107,7 @@ TEST(pump, write_read) {
         CHECK(backend_source != NULL);
         test::MockSink mock_writer;
 
-        Pump pump(buffer_factory, *backend_source, NULL, mock_writer, frame_duration,
+        Pump pump(buffer_pool, *backend_source, NULL, mock_writer, frame_duration,
                   sample_spec, Pump::ModePermanent);
         CHECK(pump.is_valid());
         CHECK(pump.run());
@@ -137,7 +137,7 @@ TEST(pump, write_overwrite_read) {
             CHECK(backend_device != NULL);
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, frame_duration,
+            Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
@@ -154,7 +154,7 @@ TEST(pump, write_overwrite_read) {
             CHECK(backend_device != NULL);
             core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
             CHECK(backend_sink != NULL);
-            Pump pump(buffer_factory, mock_source, NULL, *backend_sink, frame_duration,
+            Pump pump(buffer_pool, mock_source, NULL, *backend_sink, frame_duration,
                       sample_spec, Pump::ModeOneshot);
             CHECK(pump.is_valid());
             CHECK(pump.run());
@@ -171,7 +171,7 @@ TEST(pump, write_overwrite_read) {
 
         test::MockSink mock_writer;
 
-        Pump pump(buffer_factory, *backend_source, NULL, mock_writer, frame_duration,
+        Pump pump(buffer_pool, *backend_source, NULL, mock_writer, frame_duration,
                   sample_spec, Pump::ModePermanent);
         CHECK(pump.is_valid());
         CHECK(pump.run());

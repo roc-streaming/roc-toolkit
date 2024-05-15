@@ -18,15 +18,13 @@ namespace pipeline {
 SenderSession::SenderSession(const SenderSinkConfig& sink_config,
                              const rtp::EncodingMap& encoding_map,
                              packet::PacketFactory& packet_factory,
-                             core::BufferFactory& byte_buffer_factory,
-                             core::BufferFactory& sample_buffer_factory,
+                             audio::FrameFactory& frame_factory,
                              core::IArena& arena)
     : arena_(arena)
     , sink_config_(sink_config)
     , encoding_map_(encoding_map)
     , packet_factory_(packet_factory)
-    , byte_buffer_factory_(byte_buffer_factory)
-    , sample_buffer_factory_(sample_buffer_factory)
+    , frame_factory_(frame_factory)
     , frame_writer_(NULL)
     , valid_(false) {
     identity_.reset(new (identity_) rtp::Identity());
@@ -87,8 +85,8 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
             pkt_writer = interleaver_.get();
         }
 
-        fec_encoder_.reset(fec::CodecMap::instance().new_encoder(
-                               sink_config_.fec_encoder, byte_buffer_factory_, arena_),
+        fec_encoder_.reset(fec::CodecMap::instance().new_encoder(sink_config_.fec_encoder,
+                                                                 packet_factory_, arena_),
                            arena_);
         if (!fec_encoder_) {
             return false;
@@ -97,8 +95,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         fec_writer_.reset(new (fec_writer_) fec::Writer(
             sink_config_.fec_writer, sink_config_.fec_encoder.scheme, *fec_encoder_,
             *pkt_writer, source_endpoint->outbound_composer(),
-            repair_endpoint->outbound_composer(), packet_factory_, byte_buffer_factory_,
-            arena_));
+            repair_endpoint->outbound_composer(), packet_factory_, arena_));
         if (!fec_writer_ || !fec_writer_->is_valid()) {
             return false;
         }
@@ -136,8 +133,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
 
         packetizer_.reset(new (packetizer_) audio::Packetizer(
             *pkt_writer, source_endpoint->outbound_composer(), *sequencer_,
-            *payload_encoder_, packet_factory_, byte_buffer_factory_,
-            sink_config_.packet_length, in_spec));
+            *payload_encoder_, packet_factory_, sink_config_.packet_length, in_spec));
         if (!packetizer_ || !packetizer_->is_valid()) {
             return false;
         }
@@ -156,7 +152,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
 
         channel_mapper_writer_.reset(
             new (channel_mapper_writer_) audio::ChannelMapperWriter(
-                *frm_writer, sample_buffer_factory_, in_spec, out_spec));
+                *frm_writer, frame_factory_, in_spec, out_spec));
         if (!channel_mapper_writer_ || !channel_mapper_writer_->is_valid()) {
             return false;
         }
@@ -175,14 +171,14 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
                                          sink_config_.input_sample_spec.channel_set());
 
         resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-            arena_, sample_buffer_factory_, sink_config_.resampler, in_spec, out_spec));
+            arena_, frame_factory_, sink_config_.resampler, in_spec, out_spec));
 
         if (!resampler_) {
             return false;
         }
 
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
-            *frm_writer, *resampler_, sample_buffer_factory_, in_spec, out_spec));
+            *frm_writer, *resampler_, frame_factory_, in_spec, out_spec));
 
         if (!resampler_writer_ || !resampler_writer_->is_valid()) {
             return false;
@@ -220,8 +216,7 @@ bool SenderSession::create_control_pipeline(SenderEndpoint* control_endpoint) {
 
     rtcp_communicator_.reset(new (rtcp_communicator_) rtcp::Communicator(
         sink_config_.rtcp, *this, control_endpoint->outbound_writer(),
-        control_endpoint->outbound_composer(), packet_factory_, byte_buffer_factory_,
-        arena_));
+        control_endpoint->outbound_composer(), packet_factory_, arena_));
     if (!rtcp_communicator_ || !rtcp_communicator_->is_valid()) {
         rtcp_communicator_.reset();
         return false;

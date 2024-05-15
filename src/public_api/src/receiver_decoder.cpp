@@ -178,8 +178,7 @@ int roc_receiver_decoder_push_packet(roc_receiver_decoder* decoder,
         return -1;
     }
 
-    core::BufferPtr imp_buffer =
-        imp_decoder->context().byte_buffer_factory().new_buffer();
+    core::BufferPtr imp_buffer = imp_decoder->packet_factory().new_packet_buffer();
     if (!imp_buffer) {
         roc_log(LogError,
                 "roc_receiver_decoder_push_packet():"
@@ -199,7 +198,7 @@ int roc_receiver_decoder_push_packet(roc_receiver_decoder* decoder,
     core::Slice<uint8_t> imp_slice(*imp_buffer, 0, packet->bytes_size);
     memcpy(imp_slice.data(), packet->bytes, packet->bytes_size);
 
-    packet::PacketPtr imp_packet = imp_decoder->context().packet_factory().new_packet();
+    packet::PacketPtr imp_packet = imp_decoder->packet_factory().new_packet();
     if (!imp_packet) {
         roc_log(LogError,
                 "roc_receiver_decoder_push_packet():"

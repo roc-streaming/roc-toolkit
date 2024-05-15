@@ -15,7 +15,6 @@
 #include <uv.h>
 
 #include "roc_address/socket_addr.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/iarena.h"
 #include "roc_core/list.h"
 #include "roc_core/list_node.h"
@@ -74,7 +73,6 @@ public:
     UdpPort(const UdpConfig& config,
             uv_loop_t& event_loop,
             packet::PacketFactory& packet_factory,
-            core::BufferFactory& buffer_factory,
             core::IArena& arena);
 
     //! Destroy.
@@ -152,7 +150,6 @@ private:
     uv_os_fd_t fd_;
 
     packet::PacketFactory& packet_factory_;
-    core::BufferFactory& buffer_factory_;
 
     packet::IWriter* inbound_writer_;
     core::MpscQueue<packet::Packet> outbound_queue_;

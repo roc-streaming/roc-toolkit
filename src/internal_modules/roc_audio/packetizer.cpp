@@ -20,7 +20,6 @@ Packetizer::Packetizer(packet::IWriter& writer,
                        packet::ISequencer& sequencer,
                        IFrameEncoder& payload_encoder,
                        packet::PacketFactory& packet_factory,
-                       core::BufferFactory& buffer_factory,
                        core::nanoseconds_t packet_length,
                        const audio::SampleSpec& sample_spec)
     : writer_(writer)
@@ -28,7 +27,6 @@ Packetizer::Packetizer(packet::IWriter& writer,
     , sequencer_(sequencer)
     , payload_encoder_(payload_encoder)
     , packet_factory_(packet_factory)
-    , buffer_factory_(buffer_factory)
     , sample_spec_(sample_spec)
     , samples_per_packet_(0)
     , payload_size_(0)
@@ -180,7 +178,7 @@ packet::PacketPtr Packetizer::create_packet_() {
 
     packet->add_flags(packet::Packet::FlagAudio);
 
-    core::Slice<uint8_t> buffer = buffer_factory_.new_buffer();
+    core::Slice<uint8_t> buffer = packet_factory_.new_packet_buffer();
     if (!buffer) {
         roc_log(LogError, "packetizer: can't allocate buffer");
         return NULL;

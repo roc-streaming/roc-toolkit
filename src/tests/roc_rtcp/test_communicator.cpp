@@ -9,7 +9,6 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_address/socket_addr_to_str.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/time.h"
 #include "roc_packet/packet_factory.h"
@@ -42,7 +41,7 @@ namespace rtcp {
 
 namespace {
 
-enum { MaxPacketSz = 1000, SampleRate = 50000 };
+enum { MaxPacketSz = 1000, SmallPacketSz = 500, TinyPacketSz = 5, SampleRate = 50000 };
 
 enum {
     Seed = 100,
@@ -65,8 +64,11 @@ const core::nanoseconds_t TimestampEpsilon = 1 * core::Nanosecond;
 const core::nanoseconds_t RttEpsilon = 16 * core::Microsecond;
 
 core::HeapArena arena;
-packet::PacketFactory packet_factory(arena);
-core::BufferFactory buffer_factory(arena, MaxPacketSz);
+
+packet::PacketFactory packet_factory(arena, MaxPacketSz);
+packet::PacketFactory small_packet_factory(arena, SmallPacketSz);
+packet::PacketFactory tiny_packet_factory(arena, TinyPacketSz);
+
 Composer composer;
 
 // Mock implementation of IParticipant
@@ -632,13 +634,13 @@ TEST(communicator, one_sender_one_receiver) {
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send_time = 10000000000000000;
@@ -698,19 +700,19 @@ TEST(communicator, two_senders_one_receiver) {
     packet::Queue send1_queue;
     MockParticipant send1_part(Send1Cname, Send1Ssrc, Report_ToAddress);
     Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(send1_comm.is_valid());
 
     packet::Queue send2_queue;
     MockParticipant send2_part(Send2Cname, Send2Ssrc, Report_ToAddress);
     Communicator send2_comm(config, send2_part, send2_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(send2_comm.is_valid());
 
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send1_time = 10000000000000000;
@@ -809,19 +811,19 @@ TEST(communicator, one_sender_two_receivers) {
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv1_queue;
     MockParticipant recv1_part(Recv1Cname, Recv1Ssrc, Report_Back);
     Communicator recv1_comm(config, recv1_part, recv1_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(recv1_comm.is_valid());
 
     packet::Queue recv2_queue;
     MockParticipant recv2_part(Recv2Cname, Recv2Ssrc, Report_Back);
     Communicator recv2_comm(config, recv2_part, recv2_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(recv2_comm.is_valid());
 
     core::nanoseconds_t send_time = 10000000000000000;
@@ -912,13 +914,13 @@ TEST(communicator, receiver_report_first) {
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send_time = 10000000000000000;
@@ -979,13 +981,13 @@ TEST(communicator, bidirectional_peers) {
     packet::Queue peer1_queue;
     MockParticipant peer1_part(Peer1Cname, Peer1Ssrc, Report_ToAddress);
     Communicator peer1_comm(config, peer1_part, peer1_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(peer1_comm.is_valid());
 
     packet::Queue peer2_queue;
     MockParticipant peer2_part(Peer2Cname, Peer2Ssrc, Report_ToAddress);
     Communicator peer2_comm(config, peer2_part, peer2_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(peer2_comm.is_valid());
 
     core::nanoseconds_t peer1_time = 10000000000000000;
@@ -1092,25 +1094,25 @@ TEST(communicator, long_run) {
     packet::Queue send1_queue;
     MockParticipant send1_part(Send1Cname, Send1Ssrc, Report_ToAddress);
     Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(send1_comm.is_valid());
 
     packet::Queue send2_queue;
     MockParticipant send2_part(Send2Cname, Send2Ssrc, Report_ToAddress);
     Communicator send2_comm(config, send2_part, send2_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(send2_comm.is_valid());
 
     packet::Queue recv1_queue;
     MockParticipant recv1_part(Recv1Cname, Recv1Ssrc, Report_Back);
     Communicator recv1_comm(config, recv1_part, recv1_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(recv1_comm.is_valid());
 
     packet::Queue recv2_queue;
     MockParticipant recv2_part(Recv2Cname, Recv2Ssrc, Report_Back);
     Communicator recv2_comm(config, recv2_part, recv2_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(recv2_comm.is_valid());
 
     core::nanoseconds_t send1_time = 10000000000000000;
@@ -1281,13 +1283,13 @@ TEST(communicator, halt_goodbye) {
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send_time = 10000000000000000;
@@ -1345,19 +1347,19 @@ TEST(communicator, halt_timeout) {
     packet::Queue send1_queue;
     MockParticipant send1_part(Send1Cname, SendSsrc1, Report_ToAddress);
     Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(send1_comm.is_valid());
 
     packet::Queue send2_queue;
     MockParticipant send2_part(Send2Cname, SendSsrc2, Report_ToAddress);
     Communicator send2_comm(config, send2_part, send2_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(send2_comm.is_valid());
 
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send1_time = 10000000000000000;
@@ -1465,19 +1467,19 @@ TEST(communicator, halt_cname_change) {
     packet::Queue send1_queue;
     MockParticipant send1_part(SendCnameA, SendSsrc, Report_ToAddress);
     Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(send1_comm.is_valid());
 
     packet::Queue send2_queue;
     MockParticipant send2_part(SendCnameB, SendSsrc, Report_ToAddress);
     Communicator send2_comm(config, send2_part, send2_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(send2_comm.is_valid());
 
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send_time = 10000000000000000;
@@ -1541,7 +1543,7 @@ TEST(communicator, cname_comes_earlier) {
     packet::Queue send1_queue;
     MockParticipant send1_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send1_comm(send1_config, send1_part, send1_queue, composer,
-                            packet_factory, buffer_factory, arena);
+                            packet_factory, arena);
     CHECK(send1_comm.is_valid());
 
     Config send2_config;
@@ -1552,14 +1554,14 @@ TEST(communicator, cname_comes_earlier) {
     packet::Queue send2_queue;
     MockParticipant send2_part(NoCname, SendSsrc, Report_ToAddress);
     Communicator send2_comm(send2_config, send2_part, send2_queue, composer,
-                            packet_factory, buffer_factory, arena);
+                            packet_factory, arena);
     CHECK(send2_comm.is_valid());
 
     Config recv_config;
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send_time = 10000000000000000;
@@ -1620,7 +1622,7 @@ TEST(communicator, cname_comes_later) {
     packet::Queue send1_queue;
     MockParticipant send1_part(NoCname, SendSsrc, Report_ToAddress);
     Communicator send1_comm(send1_config, send1_part, send1_queue, composer,
-                            packet_factory, buffer_factory, arena);
+                            packet_factory, arena);
     CHECK(send1_comm.is_valid());
 
     Config send2_config;
@@ -1631,14 +1633,14 @@ TEST(communicator, cname_comes_later) {
     packet::Queue send2_queue;
     MockParticipant send2_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send2_comm(send2_config, send2_part, send2_queue, composer,
-                            packet_factory, buffer_factory, arena);
+                            packet_factory, arena);
     CHECK(send2_comm.is_valid());
 
     Config recv_config;
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send_time = 10000000000000000;
@@ -1702,19 +1704,19 @@ TEST(communicator, collision_send_report) {
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrcA, Report_ToAddress);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     packet::Queue send1_queue;
     MockParticipant send1_part(Send1Cname, Send1Ssrc, Report_ToAddress);
     Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(send1_comm.is_valid());
 
     packet::Queue send2_queue;
     MockParticipant send2_part(Send2Cname, Send2Ssrc, Report_ToAddress);
     Communicator send2_comm(config, send2_part, send2_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(send2_comm.is_valid());
 
     core::nanoseconds_t recv_time = 10000000000000000;
@@ -1846,19 +1848,19 @@ TEST(communicator, collision_recv_report) {
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrcA, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv1_queue;
     MockParticipant recv1_part(Recv1Cname, Recv1Ssrc, Report_ToAddress);
     Communicator recv1_comm(config, recv1_part, recv1_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(recv1_comm.is_valid());
 
     packet::Queue recv2_queue;
     MockParticipant recv2_part(Recv2Cname, Recv2Ssrc, Report_ToAddress);
     Communicator recv2_comm(config, recv2_part, recv2_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(recv2_comm.is_valid());
 
     core::nanoseconds_t send_time = 10000000000000000;
@@ -1987,19 +1989,19 @@ TEST(communicator, collision_unrelated_recv_report) {
     packet::Queue send1_queue;
     MockParticipant send1_part(Send1Cname, Send1SsrcA, Report_ToAddress);
     Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(send1_comm.is_valid());
 
     packet::Queue recv1_queue;
     MockParticipant recv1_part(Recv1Cname, Recv1Ssrc, Report_ToAddress);
     Communicator recv1_comm(config, recv1_part, recv1_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(recv1_comm.is_valid());
 
     packet::Queue recv2_queue;
     MockParticipant recv2_part(Recv2Cname, Recv2Ssrc, Report_ToAddress);
     Communicator recv2_comm(config, recv2_part, recv2_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(recv2_comm.is_valid());
 
     core::nanoseconds_t send1_time = 10000000000000000;
@@ -2128,13 +2130,13 @@ TEST(communicator, collision_sdes_different_cname) {
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrcA, Report_ToAddress);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     packet::Queue send1_queue;
     MockParticipant send1_part(Send1Cname, Send1Ssrc, Report_ToAddress);
     Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(send1_comm.is_valid());
 
     Config send2_config;
@@ -2145,7 +2147,7 @@ TEST(communicator, collision_sdes_different_cname) {
     packet::Queue send2_queue;
     MockParticipant send2_part(Send2Cname, Send2Ssrc, Report_ToAddress);
     Communicator send2_comm(send2_config, send2_part, send2_queue, composer,
-                            packet_factory, buffer_factory, arena);
+                            packet_factory, arena);
     CHECK(send2_comm.is_valid());
 
     core::nanoseconds_t recv_time = 10000000000000000;
@@ -2275,13 +2277,13 @@ TEST(communicator, collision_sdes_same_cname) {
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     packet::Queue send1_queue;
     MockParticipant send1_part(Send1Cname, Send1Ssrc, Report_ToAddress);
     Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(send1_comm.is_valid());
 
     Config send2_config;
@@ -2292,7 +2294,7 @@ TEST(communicator, collision_sdes_same_cname) {
     packet::Queue send2_queue;
     MockParticipant send2_part(Send2Cname, Send2Ssrc, Report_ToAddress);
     Communicator send2_comm(send2_config, send2_part, send2_queue, composer,
-                            packet_factory, buffer_factory, arena);
+                            packet_factory, arena);
     CHECK(send2_comm.is_valid());
 
     core::nanoseconds_t recv_time = 10000000000000000;
@@ -2384,13 +2386,13 @@ TEST(communicator, network_loop) {
     packet::Queue local_queue;
     MockParticipant local_part(LocalCname, LocalSsrc, Report_ToAddress);
     Communicator local_comm(config, local_part, local_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(local_comm.is_valid());
 
     packet::Queue remote_queue;
     MockParticipant remote_part(RemoteCname, RemoteSsrc, Report_ToAddress);
     Communicator remote_comm(config, remote_part, remote_queue, composer, packet_factory,
-                             buffer_factory, arena);
+                             arena);
     CHECK(remote_comm.is_valid());
 
     core::nanoseconds_t local_time = 10000000000000000;
@@ -2490,14 +2492,14 @@ TEST(communicator, missing_sender_sdes) {
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(send_config, send_part, send_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(send_comm.is_valid());
 
     Config recv_config;
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
     Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send_time = 10000000000000000;
@@ -2532,7 +2534,7 @@ TEST(communicator, missing_receiver_sdes) {
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(send_config, send_part, send_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(send_comm.is_valid());
 
     Config recv_config;
@@ -2542,7 +2544,7 @@ TEST(communicator, missing_receiver_sdes) {
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
     Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send_time = 10000000000000000;
@@ -2583,14 +2585,14 @@ TEST(communicator, missing_sender_sr) {
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(send_config, send_part, send_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(send_comm.is_valid());
 
     Config recv_config;
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
     Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send_time = 10000000000000000;
@@ -2624,7 +2626,7 @@ TEST(communicator, missing_receiver_rr) {
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(send_config, send_part, send_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(send_comm.is_valid());
 
     Config recv_config;
@@ -2634,7 +2636,7 @@ TEST(communicator, missing_receiver_rr) {
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
     Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send_time = 10000000000000000;
@@ -2673,14 +2675,14 @@ TEST(communicator, missing_sender_xr) {
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(send_config, send_part, send_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(send_comm.is_valid());
 
     Config recv_config;
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
     Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send_time = 10000000000000000;
@@ -2716,7 +2718,7 @@ TEST(communicator, missing_receiver_xr) {
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(send_config, send_part, send_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(send_comm.is_valid());
 
     Config recv_config;
@@ -2726,7 +2728,7 @@ TEST(communicator, missing_receiver_xr) {
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
     Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send_time = 10000000000000000;
@@ -2754,25 +2756,17 @@ TEST(communicator, missing_receiver_xr) {
 
 // Sender report is too large and is split into multiple packets
 TEST(communicator, split_sender_report) {
-    enum {
-        SendSsrc = 100,
-        RecvSsrc = 200,
-        NumReports = 80,
-        NumPackets = 3,
-        SmallPacketSize = 500
-    };
+    enum { SendSsrc = 100, RecvSsrc = 200, NumReports = 80, NumPackets = 3 };
 
     const char* SendCname = "send_cname";
 
     Config config;
     config.inactivity_timeout = core::Second * 999;
 
-    core::BufferFactory small_buffer_factory(arena, SmallPacketSize);
-
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
-    Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
-                           small_buffer_factory, arena);
+    Communicator send_comm(config, send_part, send_queue, composer, small_packet_factory,
+                           arena);
     CHECK(send_comm.is_valid());
 
     core::nanoseconds_t send_time = 10000000000000000;
@@ -2792,8 +2786,8 @@ TEST(communicator, split_sender_report) {
 
         packet::Queue recv_queue;
         MockParticipant recv_part(recv_cname, recv_ssrc, Report_ToAddress);
-        Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                               small_buffer_factory, arena);
+        Communicator recv_comm(config, recv_part, recv_queue, composer,
+                               small_packet_factory, arena);
         CHECK(recv_comm.is_valid());
 
         // Generate receiver report
@@ -2828,8 +2822,8 @@ TEST(communicator, split_sender_report) {
 
     packet::Queue recv_queue;
     MockParticipant recv_part(recv_cname, recv_ssrc, Report_ToAddress);
-    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           small_buffer_factory, arena);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, small_packet_factory,
+                           arena);
     CHECK(recv_comm.is_valid());
 
     // Deliver sender report packets to one of the receivers
@@ -2853,13 +2847,7 @@ TEST(communicator, split_sender_report) {
 
 // Receiver report is too large and is split into multiple packets
 TEST(communicator, split_receiver_report) {
-    enum {
-        SendSsrc = 100,
-        RecvSsrc = 200,
-        NumReports = 15,
-        NumPackets = 5,
-        SmallPacketSize = 500
-    };
+    enum { SendSsrc = 100, RecvSsrc = 200, NumReports = 15, NumPackets = 5 };
 
     const char* SendCname = "send_cname";
     const char* RecvCname = "recv_cname";
@@ -2867,18 +2855,16 @@ TEST(communicator, split_receiver_report) {
     Config config;
     config.inactivity_timeout = core::Second * 999;
 
-    core::BufferFactory small_buffer_factory(arena, SmallPacketSize);
-
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
-    Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
-                           small_buffer_factory, arena);
+    Communicator send_comm(config, send_part, send_queue, composer, small_packet_factory,
+                           arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
-    Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           small_buffer_factory, arena);
+    Communicator recv_comm(config, recv_part, recv_queue, composer, small_packet_factory,
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send_time = 10000000000000000;
@@ -2915,25 +2901,17 @@ TEST(communicator, split_receiver_report) {
 
 // Bidirectional peer report is too large and is split into multiple packets
 TEST(communicator, split_bidirectional_report) {
-    enum {
-        LocalSsrc = 100,
-        RemoteSsrc = 200,
-        NumReports = 15,
-        NumPackets = 8,
-        SmallPacketSize = 500
-    };
+    enum { LocalSsrc = 100, RemoteSsrc = 200, NumReports = 15, NumPackets = 8 };
 
     const char* local_cname = "local_cname";
 
     Config config;
     config.inactivity_timeout = core::Second * 999;
 
-    core::BufferFactory small_buffer_factory(arena, SmallPacketSize);
-
     packet::Queue local_queue;
     MockParticipant local_part(local_cname, LocalSsrc, Report_ToAddress);
-    Communicator local_comm(config, local_part, local_queue, composer, packet_factory,
-                            small_buffer_factory, arena);
+    Communicator local_comm(config, local_part, local_queue, composer,
+                            small_packet_factory, arena);
     CHECK(local_comm.is_valid());
 
     core::nanoseconds_t local_time = 10000000000000000;
@@ -2955,7 +2933,7 @@ TEST(communicator, split_bidirectional_report) {
         packet::Queue remote_queue;
         MockParticipant remote_part(remote_cname, remote_ssrc, Report_ToAddress);
         Communicator remote_comm(config, remote_part, remote_queue, composer,
-                                 packet_factory, small_buffer_factory, arena);
+                                 small_packet_factory, arena);
         CHECK(remote_comm.is_valid());
 
         // Generate remote peer report
@@ -2997,8 +2975,8 @@ TEST(communicator, split_bidirectional_report) {
 
     packet::Queue remote_queue;
     MockParticipant remote_part(remote_cname, remote_ssrc, Report_ToAddress);
-    Communicator remote_comm(config, remote_part, remote_queue, composer, packet_factory,
-                             small_buffer_factory, arena);
+    Communicator remote_comm(config, remote_part, remote_queue, composer,
+                             small_packet_factory, arena);
     CHECK(remote_comm.is_valid());
 
     // Deliver local peer report packets to one of the remote peers
@@ -3041,19 +3019,19 @@ TEST(communicator, report_to_address_sender) {
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     send_part.set_report_address(send_dest_addr);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv1_queue;
     MockParticipant recv1_part(Recv1Cname, Recv1Ssrc, Report_ToAddress);
     Communicator recv1_comm(config, recv1_part, recv1_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(recv1_comm.is_valid());
 
     packet::Queue recv2_queue;
     MockParticipant recv2_part(Recv2Cname, Recv2Ssrc, Report_ToAddress);
     Communicator recv2_comm(config, recv2_part, recv2_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(recv2_comm.is_valid());
 
     core::nanoseconds_t send_time = 10000000000000000;
@@ -3178,7 +3156,7 @@ TEST(communicator, report_to_address_receiver) {
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
     recv_part.set_report_address(recv_dest_addr);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t recv_time = 10000000000000000;
@@ -3222,19 +3200,19 @@ TEST(communicator, report_back_sender) {
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_Back);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv1_queue;
     MockParticipant recv1_part(Recv1Cname, Recv1Ssrc, Report_ToAddress);
     Communicator recv1_comm(config, recv1_part, recv1_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(recv1_comm.is_valid());
 
     packet::Queue recv2_queue;
     MockParticipant recv2_part(Recv2Cname, Recv2Ssrc, Report_ToAddress);
     Communicator recv2_comm(config, recv2_part, recv2_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(recv2_comm.is_valid());
 
     core::nanoseconds_t send_time = 10000000000000000;
@@ -3358,19 +3336,19 @@ TEST(communicator, report_back_receiver) {
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     packet::Queue send1_queue;
     MockParticipant send1_part(Send1Cname, Send1Ssrc, Report_ToAddress);
     Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(send1_comm.is_valid());
 
     packet::Queue send2_queue;
     MockParticipant send2_part(Send2Cname, Send2Ssrc, Report_ToAddress);
     Communicator send2_comm(config, send2_part, send2_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(send2_comm.is_valid());
 
     core::nanoseconds_t recv_time = 10000000000000000;
@@ -3509,25 +3487,25 @@ TEST(communicator, report_back_combine_reports) {
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     packet::Queue send1_queue;
     MockParticipant send1_part(Send1Cname, Send1Ssrc, Report_ToAddress);
     Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(send1_comm.is_valid());
 
     packet::Queue send2_queue;
     MockParticipant send2_part(Send2Cname, Send2Ssrc, Report_ToAddress);
     Communicator send2_comm(config, send2_part, send2_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(send2_comm.is_valid());
 
     packet::Queue send3_queue;
     MockParticipant send3_part(Send3Cname, Send3Ssrc, Report_ToAddress);
     Communicator send3_comm(config, send3_part, send3_queue, composer, packet_factory,
-                            buffer_factory, arena);
+                            arena);
     CHECK(send3_comm.is_valid());
 
     core::nanoseconds_t recv_time = 10000000000000000;
@@ -3632,13 +3610,7 @@ TEST(communicator, report_back_combine_reports) {
 // Same as above, but reports to same address are also split into multiple packets
 // because they're too big
 TEST(communicator, report_back_split_reports) {
-    enum {
-        LocalSsrc = 100,
-        NumGroups = 2,
-        PeersPerGroup = 20,
-        PacketsPerGroup = 5,
-        SmallPacketSize = 500
-    };
+    enum { LocalSsrc = 100, NumGroups = 2, PeersPerGroup = 20, PacketsPerGroup = 5 };
 
     const char* local_cname = "local_cname";
 
@@ -3655,12 +3627,10 @@ TEST(communicator, report_back_split_reports) {
     Config config;
     config.inactivity_timeout = core::Second * 999;
 
-    core::BufferFactory small_buffer_factory(arena, SmallPacketSize);
-
     packet::Queue local_queue;
     MockParticipant local_part(local_cname, LocalSsrc, Report_Back);
-    Communicator local_comm(config, local_part, local_queue, composer, packet_factory,
-                            small_buffer_factory, arena);
+    Communicator local_comm(config, local_part, local_queue, composer,
+                            small_packet_factory, arena);
     CHECK(local_comm.is_valid());
 
     core::nanoseconds_t local_time = 10000000000000000;
@@ -3680,7 +3650,7 @@ TEST(communicator, report_back_split_reports) {
             packet::Queue remote_queue;
             MockParticipant remote_part(remote_cname, remote_ssrc, Report_ToAddress);
             Communicator remote_comm(config, remote_part, remote_queue, composer,
-                                     packet_factory, small_buffer_factory, arena);
+                                     small_packet_factory, arena);
             CHECK(remote_comm.is_valid());
 
             // Generate remote peer report
@@ -3763,13 +3733,13 @@ TEST(communicator, rtt) {
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send_time = SendStartTime;
@@ -3867,13 +3837,13 @@ TEST(communicator, rtt_clock_drift) {
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send_time = SendStartTime;
@@ -3958,13 +3928,13 @@ TEST(communicator, rtt_network_jitter) {
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send_time = SendStartTime;
@@ -4051,13 +4021,13 @@ TEST(communicator, rtt_network_losses) {
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send_time = SendStartTime;
@@ -4151,13 +4121,13 @@ TEST(communicator, rtt_network_delays) {
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send_time = SendStartTime;
@@ -4269,13 +4239,13 @@ TEST(communicator, rtt_network_reordering) {
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send_time = SendStartTime;
@@ -4405,13 +4375,13 @@ TEST(communicator, rtt_network_duplicates) {
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send_time = SendStartTime;
@@ -4535,13 +4505,13 @@ TEST(communicator, rtt_missing_xr) {
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send_time = SendStartTime;
@@ -4611,7 +4581,7 @@ TEST(communicator, generation_error) {
         packet::Queue peer_queue;
         MockParticipant peer_part(Cname, Ssrc, Report_ToAddress);
         Communicator peer_comm(config, peer_part, peer_queue, composer, packet_factory,
-                               buffer_factory, peer_arena);
+                               peer_arena);
         CHECK(peer_comm.is_valid());
 
         core::nanoseconds_t peer_time = 10000000000000000;
@@ -4634,7 +4604,7 @@ TEST(communicator, generation_error) {
         MockWriter peer_writer(status::StatusNoData);
         MockParticipant peer_part(Cname, Ssrc, Report_ToAddress);
         Communicator peer_comm(config, peer_part, peer_writer, composer, packet_factory,
-                               buffer_factory, arena);
+                               arena);
         CHECK(peer_comm.is_valid());
 
         core::nanoseconds_t peer_time = 10000000000000000;
@@ -4647,10 +4617,9 @@ TEST(communicator, generation_error) {
     { // buffer factory w/ small buffers
         packet::Queue peer_queue;
         MockParticipant peer_part(Cname, Ssrc, Report_ToAddress);
-        // factory creates 5-byte buffers
-        core::BufferFactory peer_factory(arena, 5);
-        Communicator peer_comm(config, peer_part, peer_queue, composer, packet_factory,
-                               peer_factory, arena);
+        // factory creates unreasonably small buffers
+        Communicator peer_comm(config, peer_part, peer_queue, composer,
+                               tiny_packet_factory, arena);
         CHECK(peer_comm.is_valid());
 
         core::nanoseconds_t peer_time = 10000000000000000;
@@ -4674,7 +4643,7 @@ TEST(communicator, processing_error) {
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, recv_arena);
+                           recv_arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send_time = 10000000000000000;
@@ -4698,7 +4667,7 @@ TEST(communicator, processing_error) {
         packet::Queue send_queue;
         MockParticipant send_part(send_cname, send_ssrc, Report_ToAddress);
         Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
-                               buffer_factory, arena);
+                               arena);
         CHECK(send_comm.is_valid());
 
         // Generate sender report
@@ -4744,13 +4713,13 @@ TEST(communicator, notification_error) {
     packet::Queue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(send_comm.is_valid());
 
     packet::Queue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
-                           buffer_factory, arena);
+                           arena);
     CHECK(recv_comm.is_valid());
 
     core::nanoseconds_t send_time = 10000000000000000;

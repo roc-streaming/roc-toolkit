@@ -15,9 +15,9 @@
 #include "roc_audio/sample.h"
 #include "roc_core/allocation_policy.h"
 #include "roc_core/atomic.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/iarena.h"
 #include "roc_core/ref_counted.h"
+#include "roc_core/slab_pool.h"
 #include "roc_ctl/control_loop.h"
 #include "roc_netio/network_loop.h"
 #include "roc_packet/packet_factory.h"
@@ -55,14 +55,14 @@ public:
     //! Get arena.
     core::IArena& arena();
 
-    //! Get packet factory.
-    packet::PacketFactory& packet_factory();
+    //! Get packet pool.
+    core::IPool& packet_pool();
 
-    //! Get byte buffer factory.
-    core::BufferFactory& byte_buffer_factory();
+    //! Get packet buffer pool.
+    core::IPool& packet_buffer_pool();
 
-    //! Get sample buffer factory.
-    core::BufferFactory& sample_buffer_factory();
+    //! Get frame buffer pool.
+    core::IPool& frame_buffer_pool();
 
     //! Get encoding map.
     rtp::EncodingMap& encoding_map();
@@ -76,9 +76,9 @@ public:
 private:
     core::IArena& arena_;
 
-    packet::PacketFactory packet_factory_;
-    core::BufferFactory byte_buffer_factory_;
-    core::BufferFactory sample_buffer_factory_;
+    core::SlabPool<packet::Packet> packet_pool_;
+    core::SlabPool<core::Buffer> packet_buffer_pool_;
+    core::SlabPool<core::Buffer> frame_buffer_pool_;
 
     rtp::EncodingMap encoding_map_;
 

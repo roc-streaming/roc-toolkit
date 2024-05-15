@@ -11,15 +11,16 @@
 #include "roc_core/heap_arena.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/sorted_queue.h"
-#include "roc_status/status_code.h"
 
 namespace roc {
 namespace packet {
 
 namespace {
 
+enum { MaxBufSize = 100 };
+
 core::HeapArena arena;
-PacketFactory packet_factory(arena);
+PacketFactory packet_factory(arena, MaxBufSize);
 
 PacketPtr new_packet(seqnum_t sn) {
     PacketPtr packet = packet_factory.new_packet();

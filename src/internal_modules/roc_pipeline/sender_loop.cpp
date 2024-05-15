@@ -89,16 +89,16 @@ packet::IWriter* SenderLoop::Tasks::AddEndpoint::get_inbound_writer() const {
 SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
                        const SenderSinkConfig& sink_config,
                        const rtp::EncodingMap& encoding_map,
-                       packet::PacketFactory& packet_factory,
-                       core::BufferFactory& byte_buffer_factory,
-                       core::BufferFactory& sample_buffer_factory,
+                       core::IPool& packet_pool,
+                       core::IPool& packet_buffer_pool,
+                       core::IPool& frame_buffer_pool,
                        core::IArena& arena)
     : PipelineLoop(scheduler, sink_config.pipeline_loop, sink_config.input_sample_spec)
     , sink_(sink_config,
             encoding_map,
-            packet_factory,
-            byte_buffer_factory,
-            sample_buffer_factory,
+            packet_pool,
+            packet_buffer_pool,
+            frame_buffer_pool,
             arena)
     , ticker_ts_(0)
     , auto_duration_(sink_config.enable_auto_duration)

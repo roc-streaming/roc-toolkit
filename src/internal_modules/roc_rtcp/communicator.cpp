@@ -30,10 +30,8 @@ Communicator::Communicator(const Config& config,
                            packet::IWriter& packet_writer,
                            packet::IComposer& packet_composer,
                            packet::PacketFactory& packet_factory,
-                           core::BufferFactory& buffer_factory,
                            core::IArena& arena)
     : packet_factory_(packet_factory)
-    , buffer_factory_(buffer_factory)
     , packet_writer_(packet_writer)
     , packet_composer_(packet_composer)
     , config_(config)
@@ -553,7 +551,7 @@ status::StatusCode Communicator::generate_packet_(PacketType packet_type,
     }
 
     // Buffer for RTCP packet data
-    core::Slice<uint8_t> payload_buffer = buffer_factory_.new_buffer();
+    core::Slice<uint8_t> payload_buffer = packet_factory_.new_packet_buffer();
     if (!payload_buffer) {
         roc_log(LogError, "rtcp communicator: can't create buffer");
         return status::StatusNoMem;
@@ -570,7 +568,7 @@ status::StatusCode Communicator::generate_packet_(PacketType packet_type,
     // composer, packet_data may hold additional headers or footers around
     // RTCP. If RTCP composer is the topmost, packet_data and rtcp_data
     // will be identical.
-    core::Slice<uint8_t> packet_buffer = buffer_factory_.new_buffer();
+    core::Slice<uint8_t> packet_buffer = packet_factory_.new_packet_buffer();
     if (!packet_buffer) {
         roc_log(LogError, "rtcp communicator: can't create buffer");
         return status::StatusNoMem;

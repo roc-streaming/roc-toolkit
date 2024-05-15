@@ -8,10 +8,10 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/pcm_decoder.h"
 #include "roc_audio/pcm_encoder.h"
 #include "roc_audio/pcm_format.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/scoped_ptr.h"
 
@@ -41,7 +41,7 @@ enum { SampleRate = 44100, MaxChans = 8, MaxBufSize = 2000 };
 const double Epsilon = 0.00001;
 
 core::HeapArena arena;
-core::BufferFactory byte_buffer_factory(arena, MaxBufSize);
+FrameFactory frame_factory(arena, MaxBufSize);
 
 sample_t nth_sample(uint8_t n) {
     return sample_t(n) / sample_t(1 << 8);
@@ -106,7 +106,7 @@ IFrameDecoder* new_decoder(size_t id) {
 }
 
 core::Slice<uint8_t> new_buffer(size_t buffer_size) {
-    core::Slice<uint8_t> bp = byte_buffer_factory.new_buffer();
+    core::Slice<uint8_t> bp = frame_factory.new_byte_buffer();
     CHECK(bp);
 
     bp.reslice(0, buffer_size);

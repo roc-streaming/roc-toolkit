@@ -102,11 +102,10 @@ NetworkLoop::Tasks::ResolveEndpointAddress::get_address() const {
     return resolve_req_.resolved_address;
 }
 
-NetworkLoop::NetworkLoop(packet::PacketFactory& packet_factory,
-                         core::BufferFactory& buffer_factory,
+NetworkLoop::NetworkLoop(core::IPool& packet_pool,
+                         core::IPool& buffer_pool,
                          core::IArena& arena)
-    : packet_factory_(packet_factory)
-    , buffer_factory_(buffer_factory)
+    : packet_factory_(packet_pool, buffer_pool)
     , arena_(arena)
     , started_(false)
     , loop_initialized_(false)
@@ -386,8 +385,8 @@ void NetworkLoop::close_all_sems_() {
 void NetworkLoop::task_add_udp_port_(NetworkTask& base_task) {
     Tasks::AddUdpPort& task = (Tasks::AddUdpPort&)base_task;
 
-    core::SharedPtr<UdpPort> port = new (arena_)
-        UdpPort(*task.config_, loop_, packet_factory_, buffer_factory_, arena_);
+    core::SharedPtr<UdpPort> port =
+        new (arena_) UdpPort(*task.config_, loop_, packet_factory_, arena_);
     if (!port) {
         roc_log(LogError, "network loop: can't add udp port %s: allocate failed",
                 address::socket_addr_to_str(task.config_->bind_address).c_str());

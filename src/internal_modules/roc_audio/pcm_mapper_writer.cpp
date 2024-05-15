@@ -16,7 +16,7 @@ namespace roc {
 namespace audio {
 
 PcmMapperWriter::PcmMapperWriter(IFrameWriter& writer,
-                                 core::BufferFactory& buffer_factory,
+                                 FrameFactory& frame_factory,
                                  const SampleSpec& in_spec,
                                  const SampleSpec& out_spec)
     : mapper_(in_spec.pcm_format(), out_spec.pcm_format())
@@ -49,7 +49,7 @@ PcmMapperWriter::PcmMapperWriter(IFrameWriter& writer,
                   sample_spec_to_str(out_spec_).c_str());
     }
 
-    out_buf_ = buffer_factory.new_buffer();
+    out_buf_ = frame_factory.new_byte_buffer();
     if (!out_buf_) {
         roc_log(LogError, "pcm mapper writer: can't allocate temporary buffer");
         return;

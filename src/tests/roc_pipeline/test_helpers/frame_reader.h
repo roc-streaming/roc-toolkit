@@ -13,7 +13,7 @@
 
 #include "test_helpers/utils.h"
 
-#include "roc_core/buffer_factory.h"
+#include "roc_audio/frame_factory.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
 #include "roc_core/time.h"
@@ -26,9 +26,9 @@ namespace test {
 // Read audio frames from source and validate.
 class FrameReader : public core::NonCopyable<> {
 public:
-    FrameReader(sndio::ISource& source, core::BufferFactory& buffer_factory)
+    FrameReader(sndio::ISource& source, audio::FrameFactory& frame_factory)
         : source_(source)
-        , buffer_factory_(buffer_factory)
+        , frame_factory_(frame_factory)
         , offset_(0)
         , abs_offset_(0)
         // By default, we set base_cts_ to some non-zero value, so that if base_capture_ts
@@ -175,7 +175,7 @@ public:
 private:
     core::Slice<audio::sample_t> alloc_samples_(size_t num_samples,
                                                 const audio::SampleSpec& sample_spec) {
-        core::Slice<audio::sample_t> samples = buffer_factory_.new_buffer();
+        core::Slice<audio::sample_t> samples = frame_factory_.new_raw_buffer();
         CHECK(samples);
 
         samples.reslice(0, num_samples * sample_spec.num_channels());
@@ -205,7 +205,7 @@ private:
     }
 
     sndio::ISource& source_;
-    core::BufferFactory& buffer_factory_;
+    audio::FrameFactory& frame_factory_;
 
     uint8_t offset_;
     size_t abs_offset_;

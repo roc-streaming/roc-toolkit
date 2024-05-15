@@ -9,7 +9,6 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/array.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/fast_random.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/log.h"
@@ -24,15 +23,15 @@ namespace {
 const size_t MaxPayloadSize = 1024;
 
 core::HeapArena arena;
-core::BufferFactory buffer_factory(arena, MaxPayloadSize);
+packet::PacketFactory packet_factory(arena, MaxPayloadSize);
 
 } // namespace
 
 class Codec {
 public:
     Codec(const CodecConfig& config)
-        : encoder_(CodecMap::instance().new_encoder(config, buffer_factory, arena), arena)
-        , decoder_(CodecMap::instance().new_decoder(config, buffer_factory, arena), arena)
+        : encoder_(CodecMap::instance().new_encoder(config, packet_factory, arena), arena)
+        , decoder_(CodecMap::instance().new_decoder(config, packet_factory, arena), arena)
         , buffers_(arena) {
         CHECK(encoder_);
         CHECK(decoder_);
@@ -81,7 +80,7 @@ public:
 
 private:
     core::Slice<uint8_t> make_buffer_(size_t p_size) {
-        core::Slice<uint8_t> buf = buffer_factory.new_buffer();
+        core::Slice<uint8_t> buf = packet_factory.new_packet_buffer();
         buf.reslice(0, p_size);
         for (size_t j = 0; j < buf.size(); ++j) {
             buf.data()[j] = (uint8_t)core::fast_random_range(0, 0xff);

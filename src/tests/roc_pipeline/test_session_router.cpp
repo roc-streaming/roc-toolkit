@@ -10,7 +10,6 @@
 
 #include "test_helpers/utils.h"
 
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_pipeline/receiver_session_router.h"
@@ -24,9 +23,10 @@ namespace {
 enum { MaxBufSize = 1000 };
 
 core::HeapArena arena;
-core::BufferFactory sample_buffer_factory(arena, MaxBufSize * sizeof(audio::sample_t));
-core::BufferFactory byte_buffer_factory(arena, MaxBufSize);
-packet::PacketFactory packet_factory(arena);
+
+packet::PacketFactory packet_factory(arena, MaxBufSize);
+audio::FrameFactory frame_factory(arena, MaxBufSize * sizeof(audio::sample_t));
+
 rtp::EncodingMap encoding_map(arena);
 
 } // namespace
@@ -60,12 +60,12 @@ TEST_GROUP(session_router) {
             ReceiverSessionConfig session_config;
             ReceiverCommonConfig common_config;
 
-            sess1 = new (arena) ReceiverSession(
-                session_config, common_config, encoding_map, packet_factory,
-                byte_buffer_factory, sample_buffer_factory, arena);
-            sess2 = new (arena) ReceiverSession(
-                session_config, common_config, encoding_map, packet_factory,
-                byte_buffer_factory, sample_buffer_factory, arena);
+            sess1 =
+                new (arena) ReceiverSession(session_config, common_config, encoding_map,
+                                            packet_factory, frame_factory, arena);
+            sess2 =
+                new (arena) ReceiverSession(session_config, common_config, encoding_map,
+                                            packet_factory, frame_factory, arena);
         }
     }
 };

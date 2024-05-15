@@ -9,10 +9,9 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_address/socket_addr_to_str.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
+#include "roc_core/slab_pool.h"
 #include "roc_netio/network_loop.h"
-#include "roc_packet/packet_factory.h"
 
 namespace roc {
 namespace netio {
@@ -22,8 +21,8 @@ namespace {
 enum { MaxBufSize = 500 };
 
 core::HeapArena arena;
-core::BufferFactory buffer_factory(arena, MaxBufSize);
-packet::PacketFactory packet_factory(arena);
+core::SlabPool<core::Buffer> buffer_pool("buffer_pool", arena, MaxBufSize);
+core::SlabPool<packet::Packet> packet_pool("packet_pool", arena);
 
 bool resolve_endpoint_address(NetworkLoop& net_loop,
                               const address::EndpointUri& endpoint_uri,
@@ -44,7 +43,7 @@ bool resolve_endpoint_address(NetworkLoop& net_loop,
 TEST_GROUP(resolve) {};
 
 TEST(resolve, ipv4) {
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
     CHECK(net_loop.is_valid());
 
     address::EndpointUri endpoint_uri(arena);
@@ -59,7 +58,7 @@ TEST(resolve, ipv4) {
 }
 
 TEST(resolve, ipv6) {
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
     CHECK(net_loop.is_valid());
 
     address::EndpointUri endpoint_uri(arena);
@@ -74,7 +73,7 @@ TEST(resolve, ipv6) {
 }
 
 TEST(resolve, hostname) {
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
     CHECK(net_loop.is_valid());
 
     address::EndpointUri endpoint_uri(arena);
@@ -95,7 +94,7 @@ TEST(resolve, hostname) {
 }
 
 TEST(resolve, standard_port) {
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
     CHECK(net_loop.is_valid());
 
     address::EndpointUri endpoint_uri(arena);
@@ -109,7 +108,7 @@ TEST(resolve, standard_port) {
 }
 
 TEST(resolve, bad_host) {
-    NetworkLoop net_loop(packet_factory, buffer_factory, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
     CHECK(net_loop.is_valid());
 
     { // bad ipv4

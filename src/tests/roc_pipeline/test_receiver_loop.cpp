@@ -10,10 +10,9 @@
 
 #include "test_helpers/mock_scheduler.h"
 
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
+#include "roc_core/slab_pool.h"
 #include "roc_fec/codec_map.h"
-#include "roc_packet/packet_factory.h"
 #include "roc_pipeline/receiver_loop.h"
 #include "roc_rtp/encoding_map.h"
 
@@ -25,9 +24,17 @@ namespace {
 enum { MaxBufSize = 1000 };
 
 core::HeapArena arena;
-core::BufferFactory sample_buffer_factory(arena, MaxBufSize * sizeof(audio::sample_t));
-core::BufferFactory byte_buffer_factory(arena, MaxBufSize);
-packet::PacketFactory packet_factory(arena);
+
+core::SlabPool<packet::Packet> packet_pool("packet_pool", arena);
+core::SlabPool<core::Buffer>
+    packet_buffer_pool("packet_buffer_pool", arena, sizeof(core::Buffer) + MaxBufSize);
+core::SlabPool<core::Buffer>
+    frame_buffer_pool("frame_buffer_pool",
+                      arena,
+                      sizeof(core::Buffer) + MaxBufSize * sizeof(audio::sample_t));
+
+packet::PacketFactory packet_factory(packet_pool, packet_buffer_pool);
+audio::FrameFactory frame_factory(frame_buffer_pool);
 
 rtp::EncodingMap encoding_map(arena);
 
@@ -113,8 +120,8 @@ TEST_GROUP(receiver_loop) {
 };
 
 TEST(receiver_loop, endpoints_sync) {
-    ReceiverLoop receiver(scheduler, config, encoding_map, packet_factory,
-                          byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverLoop receiver(scheduler, config, encoding_map, packet_pool,
+                          packet_buffer_pool, frame_buffer_pool, arena);
 
     CHECK(receiver.is_valid());
 
@@ -147,8 +154,8 @@ TEST(receiver_loop, endpoints_sync) {
 }
 
 TEST(receiver_loop, endpoints_async) {
-    ReceiverLoop receiver(scheduler, config, encoding_map, packet_factory,
-                          byte_buffer_factory, sample_buffer_factory, arena);
+    ReceiverLoop receiver(scheduler, config, encoding_map, packet_pool,
+                          packet_buffer_pool, frame_buffer_pool, arena);
 
     CHECK(receiver.is_valid());
 

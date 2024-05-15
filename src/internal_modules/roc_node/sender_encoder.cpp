@@ -19,12 +19,13 @@ namespace node {
 SenderEncoder::SenderEncoder(Context& context,
                              const pipeline::SenderSinkConfig& pipeline_config)
     : Node(context)
+    , packet_factory_(context.packet_pool(), context.packet_buffer_pool())
     , pipeline_(*this,
                 pipeline_config,
                 context.encoding_map(),
-                context.packet_factory(),
-                context.byte_buffer_factory(),
-                context.sample_buffer_factory(),
+                context.packet_pool(),
+                context.packet_buffer_pool(),
+                context.frame_buffer_pool(),
                 context.arena())
     , slot_(NULL)
     , processing_task_(pipeline_)
@@ -71,6 +72,10 @@ SenderEncoder::~SenderEncoder() {
 
 bool SenderEncoder::is_valid() const {
     return valid_;
+}
+
+packet::PacketFactory& SenderEncoder::packet_factory() {
+    return packet_factory_;
 }
 
 bool SenderEncoder::activate(address::Interface iface, address::Protocol proto) {

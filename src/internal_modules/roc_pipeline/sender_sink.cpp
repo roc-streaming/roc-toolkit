@@ -16,15 +16,14 @@ namespace pipeline {
 
 SenderSink::SenderSink(const SenderSinkConfig& sink_config,
                        const rtp::EncodingMap& encoding_map,
-                       packet::PacketFactory& packet_factory,
-                       core::BufferFactory& byte_buffer_factory,
-                       core::BufferFactory& sample_buffer_factory,
+                       core::IPool& packet_pool,
+                       core::IPool& packet_buffer_pool,
+                       core::IPool& frame_buffer_pool,
                        core::IArena& arena)
     : sink_config_(sink_config)
     , encoding_map_(encoding_map)
-    , packet_factory_(packet_factory)
-    , byte_buffer_factory_(byte_buffer_factory)
-    , sample_buffer_factory_(sample_buffer_factory)
+    , packet_factory_(packet_pool, packet_buffer_pool)
+    , frame_factory_(frame_buffer_pool)
     , arena_(arena)
     , frame_writer_(NULL)
     , valid_(false) {
@@ -38,7 +37,7 @@ SenderSink::SenderSink(const SenderSinkConfig& sink_config,
                                          sink_config_.input_sample_spec.channel_set());
 
         pcm_mapper_.reset(new (pcm_mapper_) audio::PcmMapperWriter(
-            *frm_writer, byte_buffer_factory, sink_config_.input_sample_spec, out_spec));
+            *frm_writer, frame_factory_, sink_config_.input_sample_spec, out_spec));
         if (!pcm_mapper_ || !pcm_mapper_->is_valid()) {
             return;
         }
@@ -71,9 +70,9 @@ SenderSlot* SenderSink::create_slot(const SenderSlotConfig& slot_config) {
 
     roc_log(LogInfo, "sender sink: adding slot");
 
-    core::SharedPtr<SenderSlot> slot = new (arena_)
-        SenderSlot(sink_config_, slot_config, state_tracker_, encoding_map_, fanout_,
-                   packet_factory_, byte_buffer_factory_, sample_buffer_factory_, arena_);
+    core::SharedPtr<SenderSlot> slot =
+        new (arena_) SenderSlot(sink_config_, slot_config, state_tracker_, encoding_map_,
+                                fanout_, packet_factory_, frame_factory_, arena_);
 
     if (!slot || !slot->is_valid()) {
         roc_log(LogError, "sender sink: can't create slot");

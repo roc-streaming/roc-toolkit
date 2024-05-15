@@ -11,7 +11,6 @@
 #include "test_helpers/mock_reader.h"
 
 #include "roc_audio/channel_mapper_reader.h"
-#include "roc_core/buffer_factory.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/time.h"
@@ -26,7 +25,7 @@ const double Epsilon = 0.00001;
 enum { MaxSz = 500 };
 
 core::HeapArena arena;
-core::BufferFactory buffer_factory(arena, MaxSz * sizeof(sample_t));
+FrameFactory frame_factory(arena, MaxSz * sizeof(sample_t));
 
 void add_mono(test::MockReader& mock_reader,
               size_t size,
@@ -86,7 +85,7 @@ TEST(channel_mapper_reader, small_frame_upmix) {
     const core::nanoseconds_t start_ts = 1000000;
 
     test::MockReader mock_reader;
-    ChannelMapperReader mapper_reader(mock_reader, buffer_factory, in_spec, out_spec);
+    ChannelMapperReader mapper_reader(mock_reader, frame_factory, in_spec, out_spec);
 
     const unsigned flags = Frame::FlagNotComplete;
 
@@ -118,7 +117,7 @@ TEST(channel_mapper_reader, small_frame_downmix) {
     const core::nanoseconds_t start_ts = 1000000;
 
     test::MockReader mock_reader;
-    ChannelMapperReader mapper_reader(mock_reader, buffer_factory, in_spec, out_spec);
+    ChannelMapperReader mapper_reader(mock_reader, frame_factory, in_spec, out_spec);
 
     const unsigned flags = Frame::FlagNotComplete;
 
@@ -148,7 +147,7 @@ TEST(channel_mapper_reader, small_frame_nocts) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader;
-    ChannelMapperReader mapper_reader(mock_reader, buffer_factory, in_spec, out_spec);
+    ChannelMapperReader mapper_reader(mock_reader, frame_factory, in_spec, out_spec);
 
     const unsigned flags = Frame::FlagNotComplete;
 
@@ -179,7 +178,7 @@ TEST(channel_mapper_reader, large_frame_upmix) {
     const core::nanoseconds_t start_ts = 1000000;
 
     test::MockReader mock_reader;
-    ChannelMapperReader mapper_reader(mock_reader, buffer_factory, in_spec, out_spec);
+    ChannelMapperReader mapper_reader(mock_reader, frame_factory, in_spec, out_spec);
 
     const unsigned flags1 = Frame::FlagNotComplete;
     const unsigned flags2 = Frame::FlagPacketDrops;
@@ -213,7 +212,7 @@ TEST(channel_mapper_reader, large_frame_downmix) {
     const core::nanoseconds_t start_ts = 1000000;
 
     test::MockReader mock_reader;
-    ChannelMapperReader mapper_reader(mock_reader, buffer_factory, in_spec, out_spec);
+    ChannelMapperReader mapper_reader(mock_reader, frame_factory, in_spec, out_spec);
 
     const unsigned flags1 = Frame::FlagNotComplete;
     const unsigned flags2 = Frame::FlagPacketDrops;
@@ -245,7 +244,7 @@ TEST(channel_mapper_reader, large_frame_nocts) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader;
-    ChannelMapperReader mapper_reader(mock_reader, buffer_factory, in_spec, out_spec);
+    ChannelMapperReader mapper_reader(mock_reader, frame_factory, in_spec, out_spec);
 
     const unsigned flags1 = Frame::FlagNotComplete;
     const unsigned flags2 = Frame::FlagPacketDrops;
