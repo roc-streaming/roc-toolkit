@@ -81,9 +81,9 @@ status::StatusCode PcmMapperWriter::write(Frame& in_frame) {
 
     unsigned out_flags = in_frame.flags();
     if (out_spec_.is_raw()) {
-        out_flags &= ~(unsigned)Frame::FlagNotRaw;
+        out_flags &= ~(unsigned)Frame::HasEncoding;
     } else {
-        out_flags |= (unsigned)Frame::FlagNotRaw;
+        out_flags |= (unsigned)Frame::HasEncoding;
     }
 
     while (in_bit_offset < in_bit_count) {

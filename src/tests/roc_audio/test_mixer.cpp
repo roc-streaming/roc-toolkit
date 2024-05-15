@@ -188,16 +188,16 @@ TEST(mixer, flags) {
     mixer.add_input(reader2);
 
     reader1.add_samples(BigBatch, 0.1f, 0);
-    reader1.add_samples(BigBatch, 0.1f, Frame::FlagNotBlank);
+    reader1.add_samples(BigBatch, 0.1f, Frame::HasSignal);
     reader1.add_samples(BigBatch, 0.1f, 0);
 
-    reader2.add_samples(BigBatch, 0.1f, Frame::FlagNotComplete);
+    reader2.add_samples(BigBatch, 0.1f, Frame::HasHoles);
     reader2.add_samples(BigBatch / 2, 0.1f, 0);
-    reader2.add_samples(BigBatch / 2, 0.1f, Frame::FlagPacketDrops);
+    reader2.add_samples(BigBatch / 2, 0.1f, Frame::HasPacketDrops);
     reader2.add_samples(BigBatch, 0.1f, 0);
 
-    expect_output(mixer, BigBatch, 0.2f, Frame::FlagNotComplete);
-    expect_output(mixer, BigBatch, 0.2f, Frame::FlagNotBlank | Frame::FlagPacketDrops);
+    expect_output(mixer, BigBatch, 0.2f, Frame::HasHoles);
+    expect_output(mixer, BigBatch, 0.2f, Frame::HasSignal | Frame::HasPacketDrops);
     expect_output(mixer, BigBatch, 0.2f, 0);
 
     CHECK(reader1.num_unread() == 0);

@@ -45,11 +45,11 @@ void Frame::set_flags(unsigned flags) {
 }
 
 bool Frame::is_raw() const {
-    return (flags_ & FlagNotRaw) == 0;
+    return (flags_ & HasEncoding) == 0;
 }
 
 sample_t* Frame::raw_samples() const {
-    if (flags_ & FlagNotRaw) {
+    if (flags_ & HasEncoding) {
         roc_panic("frame: frame is not in raw format");
     }
 
@@ -57,7 +57,7 @@ sample_t* Frame::raw_samples() const {
 }
 
 size_t Frame::num_raw_samples() const {
-    if (flags_ & FlagNotRaw) {
+    if (flags_ & HasEncoding) {
         roc_panic("frame: frame is not in raw format");
     }
 
@@ -110,10 +110,10 @@ void Frame::set_capture_timestamp(core::nanoseconds_t capture_ts) {
 
 void Frame::print() const {
     char flags_str[] = {
-        !(flags_ & FlagNotRaw) ? 'r' : '.',
-        !(flags_ & FlagNotBlank) ? 'b' : '.',
-        (flags_ & FlagNotComplete) ? 'i' : '.',
-        (flags_ & FlagPacketDrops) ? 'd' : '.',
+        !(flags_ & HasEncoding) ? 'r' : '.',
+        !(flags_ & HasSignal) ? 'b' : '.',
+        (flags_ & HasHoles) ? 'i' : '.',
+        (flags_ & HasPacketDrops) ? 'd' : '.',
         '\0',
     };
 
@@ -121,7 +121,7 @@ void Frame::print() const {
     p.writef("@ frame flags=[%s] dur=%lu cts=%lld\n", flags_str, (unsigned long)duration_,
              (long long)capture_timestamp_);
 
-    if (flags_ & FlagNotRaw) {
+    if (flags_ & HasEncoding) {
         core::print_memory(bytes(), num_bytes());
     } else {
         core::print_memory(raw_samples(), num_raw_samples());

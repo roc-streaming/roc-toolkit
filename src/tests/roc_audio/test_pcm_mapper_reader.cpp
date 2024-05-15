@@ -347,9 +347,9 @@ TEST(pcm_mapper_reader, flags_to_raw) {
     PcmMapperReader mapper_reader(meta_reader, frame_factory, in_spec, out_spec);
     LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
-    meta_reader.flags[0] = Frame::FlagNotRaw;
-    meta_reader.flags[1] = Frame::FlagNotRaw | Frame::FlagNotBlank;
-    meta_reader.flags[2] = Frame::FlagNotRaw | Frame::FlagNotComplete;
+    meta_reader.flags[0] = Frame::HasEncoding;
+    meta_reader.flags[1] = Frame::HasEncoding | Frame::HasSignal;
+    meta_reader.flags[2] = Frame::HasEncoding | Frame::HasHoles;
 
     {
         sample_t samples[MaxSamples * 3] = {};
@@ -359,13 +359,13 @@ TEST(pcm_mapper_reader, flags_to_raw) {
 
         LONGS_EQUAL(3, meta_reader.n_calls);
 
-        UNSIGNED_LONGS_EQUAL(Frame::FlagNotBlank | Frame::FlagNotComplete, frame.flags());
+        UNSIGNED_LONGS_EQUAL(Frame::HasSignal | Frame::HasHoles, frame.flags());
     }
 
-    meta_reader.flags[3] = Frame::FlagNotRaw;
+    meta_reader.flags[3] = Frame::HasEncoding;
     meta_reader.flags[4] =
-        Frame::FlagNotRaw | Frame::FlagNotBlank | Frame::FlagPacketDrops;
-    meta_reader.flags[5] = Frame::FlagNotRaw;
+        Frame::HasEncoding | Frame::HasSignal | Frame::HasPacketDrops;
+    meta_reader.flags[5] = Frame::HasEncoding;
 
     {
         sample_t samples[MaxSamples * 3] = {};
@@ -375,7 +375,7 @@ TEST(pcm_mapper_reader, flags_to_raw) {
 
         LONGS_EQUAL(6, meta_reader.n_calls);
 
-        UNSIGNED_LONGS_EQUAL(Frame::FlagNotBlank | Frame::FlagPacketDrops, frame.flags());
+        UNSIGNED_LONGS_EQUAL(Frame::HasSignal | Frame::HasPacketDrops, frame.flags());
     }
 }
 
@@ -392,8 +392,8 @@ TEST(pcm_mapper_reader, flags_from_raw) {
     LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
     meta_reader.flags[0] = 0;
-    meta_reader.flags[1] = Frame::FlagNotBlank;
-    meta_reader.flags[2] = Frame::FlagNotComplete;
+    meta_reader.flags[1] = Frame::HasSignal;
+    meta_reader.flags[2] = Frame::HasHoles;
 
     {
         int16_t samples[MaxSamples * 3] = {};
@@ -403,13 +403,13 @@ TEST(pcm_mapper_reader, flags_from_raw) {
 
         LONGS_EQUAL(3, meta_reader.n_calls);
 
-        UNSIGNED_LONGS_EQUAL(Frame::FlagNotRaw | Frame::FlagNotBlank
-                                 | Frame::FlagNotComplete,
+        UNSIGNED_LONGS_EQUAL(Frame::HasEncoding | Frame::HasSignal
+                                 | Frame::HasHoles,
                              frame.flags());
     }
 
     meta_reader.flags[3] = 0;
-    meta_reader.flags[4] = Frame::FlagNotBlank | Frame::FlagPacketDrops;
+    meta_reader.flags[4] = Frame::HasSignal | Frame::HasPacketDrops;
     meta_reader.flags[5] = 0;
 
     {
@@ -420,8 +420,8 @@ TEST(pcm_mapper_reader, flags_from_raw) {
 
         LONGS_EQUAL(6, meta_reader.n_calls);
 
-        UNSIGNED_LONGS_EQUAL(Frame::FlagNotRaw | Frame::FlagNotBlank
-                                 | Frame::FlagPacketDrops,
+        UNSIGNED_LONGS_EQUAL(Frame::HasEncoding | Frame::HasSignal
+                                 | Frame::HasPacketDrops,
                              frame.flags());
     }
 }

@@ -104,9 +104,9 @@ status::StatusCode PcmMapperReader::read(Frame& out_frame) {
     }
 
     if (out_spec_.is_raw()) {
-        out_flags &= ~(unsigned)Frame::FlagNotRaw;
+        out_flags &= ~(unsigned)Frame::HasEncoding;
     } else {
-        out_flags |= (unsigned)Frame::FlagNotRaw;
+        out_flags |= (unsigned)Frame::HasEncoding;
     }
 
     out_frame.set_flags(out_flags);

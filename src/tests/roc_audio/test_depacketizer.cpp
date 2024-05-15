@@ -534,14 +534,14 @@ TEST(depacketizer, frame_flags_incompltete_blank) {
     };
 
     unsigned frame_flags[] = {
-        Frame::FlagNotBlank,
-        Frame::FlagNotComplete | Frame::FlagNotBlank,
-        Frame::FlagNotComplete | Frame::FlagNotBlank,
-        Frame::FlagNotComplete | Frame::FlagNotBlank,
-        Frame::FlagNotComplete | Frame::FlagNotBlank,
-        Frame::FlagNotComplete,
-        Frame::FlagNotBlank,
-        Frame::FlagNotComplete,
+        Frame::HasSignal,
+        Frame::HasHoles | Frame::HasSignal,
+        Frame::HasHoles | Frame::HasSignal,
+        Frame::HasHoles | Frame::HasSignal,
+        Frame::HasHoles | Frame::HasSignal,
+        Frame::HasHoles,
+        Frame::HasSignal,
+        Frame::HasHoles,
     };
 
     core::nanoseconds_t capt_ts[] = {
@@ -584,11 +584,11 @@ TEST(depacketizer, frame_flags_drops) {
     };
 
     unsigned frame_flags[] = {
-        Frame::FlagNotBlank,                             //
-        Frame::FlagNotBlank | Frame::FlagPacketDrops,    //
-        Frame::FlagNotBlank,                             //
-        Frame::FlagNotComplete | Frame::FlagPacketDrops, //
-        Frame::FlagNotBlank,                             //
+        Frame::HasSignal,                         //
+        Frame::HasSignal | Frame::HasPacketDrops, //
+        Frame::HasSignal,                         //
+        Frame::HasHoles | Frame::HasPacketDrops,  //
+        Frame::HasSignal,                         //
     };
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(packets); n++) {

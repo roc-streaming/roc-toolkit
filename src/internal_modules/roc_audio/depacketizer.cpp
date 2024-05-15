@@ -303,15 +303,15 @@ void Depacketizer::set_frame_props_(Frame& frame, const FrameInfo& info) {
     unsigned flags = 0;
 
     if (info.n_decoded_samples != 0) {
-        flags |= Frame::FlagNotBlank;
+        flags |= Frame::HasSignal;
     }
 
     if (info.n_decoded_samples < frame.num_raw_samples()) {
-        flags |= Frame::FlagNotComplete;
+        flags |= Frame::HasHoles;
     }
 
     if (info.n_dropped_packets != 0) {
-        flags |= Frame::FlagPacketDrops;
+        flags |= Frame::HasPacketDrops;
     }
 
     frame.set_flags(flags);

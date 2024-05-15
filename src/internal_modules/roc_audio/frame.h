@@ -35,25 +35,25 @@ public:
     //! Frame flags.
     //! Flags are designed the way so that if you combine multiple frames into one,
     //! (concatenate or mix), bitwise OR of their flags will give flags for resulting
-    //! frame. E.g., if at least one frame was non-blank, combined frame will be
-    //! non-blank, if at least one frame was incomplete, combined frame will be
-    //! incomplete, etc.
-    enum {
-        //! Set if the frame has format different from raw samples.
-        //! If this flag is set, only bytes() can be used, and raw_samples() panics.
-        FlagNotRaw = (1 << 0),
+    //! frame. E.g., if at least one frame has holes, combined frame has holes as
+    //! well, if at least one frame has signal, combined frame also has signal, etc.
+    enum Flags {
+        //! Set if the frame uses custom encoding instead of raw samples.
+        //! If this flag is set, raw_samples() cannot be used and will panic.
+        //! Only bytes() can be used in this case.
+        HasEncoding = (1 << 0),
 
-        //! Set if the frame has at least some samples from packets.
+        //! Set if the frame has at least some samples filled from packets.
         //! If this flag is clear, frame is completely zero because of lack of packets.
-        FlagNotBlank = (1 << 1),
+        HasSignal = (1 << 1),
 
         //! Set if the frame is not fully filled with samples from packets.
         //! If this flag is set, frame is partially zero because of lack of packets.
-        FlagNotComplete = (1 << 2),
+        HasHoles = (1 << 2),
 
         //! Set if some late packets were dropped while the frame was being built.
-        //! It's not necessarily that the frame itself is blank or incomplete.
-        FlagPacketDrops = (1 << 3)
+        //! It's not necessarily that the frame itself has no signal or has holes.
+        HasPacketDrops = (1 << 3)
     };
 
     //! Get flags.
@@ -63,7 +63,7 @@ public:
     void set_flags(unsigned flags);
 
     //! Check frame data is raw samples.
-    //! Returns true if FlagAltFormat is not set.
+    //! Returns true if HasEncoding flag is unset.
     bool is_raw() const;
 
     //! Get frame data as raw samples.

@@ -85,7 +85,7 @@ TEST(channel_mapper_writer, small_frame_upmix) {
     LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     sample_t samples[FrameSz] = {};
-    const unsigned flags = Frame::FlagNotComplete;
+    const unsigned flags = Frame::HasHoles;
     const core::nanoseconds_t timestamp = 1000000;
 
     Frame frame(samples, FrameSz);
@@ -119,7 +119,7 @@ TEST(channel_mapper_writer, small_frame_downmix) {
     LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     sample_t samples[FrameSz] = {};
-    const unsigned flags = Frame::FlagNotComplete;
+    const unsigned flags = Frame::HasHoles;
     const core::nanoseconds_t timestamp = 1000000;
 
     Frame frame(samples, FrameSz);
@@ -153,7 +153,7 @@ TEST(channel_mapper_writer, small_frame_nocts) {
     LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     sample_t samples[FrameSz] = {};
-    const unsigned flags = Frame::FlagNotComplete;
+    const unsigned flags = Frame::HasHoles;
 
     Frame frame(samples, FrameSz);
     frame.set_flags(flags);
@@ -186,7 +186,7 @@ TEST(channel_mapper_writer, large_frame_upmix) {
     LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     sample_t samples[FrameSz] = {};
-    const unsigned flags = Frame::FlagNotComplete;
+    const unsigned flags = Frame::HasHoles;
     const core::nanoseconds_t timestamp = 1000000;
 
     Frame frame(samples, FrameSz);
@@ -223,7 +223,7 @@ TEST(channel_mapper_writer, large_frame_downmix) {
     LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     sample_t samples[FrameSz] = {};
-    const unsigned flags = Frame::FlagNotComplete;
+    const unsigned flags = Frame::HasHoles;
     const core::nanoseconds_t timestamp = 1000000;
 
     Frame frame(samples, FrameSz);
@@ -260,7 +260,7 @@ TEST(channel_mapper_writer, large_frame_nocts) {
     LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     sample_t samples[FrameSz] = {};
-    const unsigned flags = Frame::FlagNotComplete;
+    const unsigned flags = Frame::HasHoles;
 
     Frame frame(samples, FrameSz);
     frame.set_flags(flags);

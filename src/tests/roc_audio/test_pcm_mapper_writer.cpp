@@ -337,15 +337,15 @@ TEST(pcm_mapper_writer, flags_to_raw) {
     {
         int16_t samples[MaxSamples * 3] = {};
         Frame frame((uint8_t*)samples, sizeof(samples));
-        frame.set_flags(Frame::FlagNotRaw | Frame::FlagNotBlank);
+        frame.set_flags(Frame::HasEncoding | Frame::HasSignal);
         mapper_writer.write(frame);
     }
 
     LONGS_EQUAL(3, meta_writer.n_calls);
 
-    LONGS_EQUAL(Frame::FlagNotBlank, meta_writer.flags[0]);
-    LONGS_EQUAL(Frame::FlagNotBlank, meta_writer.flags[1]);
-    LONGS_EQUAL(Frame::FlagNotBlank, meta_writer.flags[2]);
+    LONGS_EQUAL(Frame::HasSignal, meta_writer.flags[0]);
+    LONGS_EQUAL(Frame::HasSignal, meta_writer.flags[1]);
+    LONGS_EQUAL(Frame::HasSignal, meta_writer.flags[2]);
 }
 
 TEST(pcm_mapper_writer, flags_from_raw) {
@@ -363,15 +363,15 @@ TEST(pcm_mapper_writer, flags_from_raw) {
     {
         sample_t samples[MaxSamples * 3] = {};
         Frame frame(samples, MaxSamples * 3);
-        frame.set_flags(Frame::FlagNotBlank);
+        frame.set_flags(Frame::HasSignal);
         mapper_writer.write(frame);
     }
 
     LONGS_EQUAL(3, meta_writer.n_calls);
 
-    LONGS_EQUAL(Frame::FlagNotRaw | Frame::FlagNotBlank, meta_writer.flags[0]);
-    LONGS_EQUAL(Frame::FlagNotRaw | Frame::FlagNotBlank, meta_writer.flags[1]);
-    LONGS_EQUAL(Frame::FlagNotRaw | Frame::FlagNotBlank, meta_writer.flags[2]);
+    LONGS_EQUAL(Frame::HasEncoding | Frame::HasSignal, meta_writer.flags[0]);
+    LONGS_EQUAL(Frame::HasEncoding | Frame::HasSignal, meta_writer.flags[1]);
+    LONGS_EQUAL(Frame::HasEncoding | Frame::HasSignal, meta_writer.flags[2]);
 }
 
 TEST(pcm_mapper_writer, capture_timestamp) {
