@@ -51,7 +51,7 @@ namespace core {
 //! there are differences. Load factor value is taken from it as well.
 //! Prime numbers for sizes are from https://planetmath.org/goodhashtableprimes.
 //!
-//! @tparam T defines object type, it should inherit HashmapNode and additionally
+//! @tparam T defines object type, it must inherit HashmapNode and additionally
 //! implement three methods:
 //!
 //! @code

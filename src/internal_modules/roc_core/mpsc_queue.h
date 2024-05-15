@@ -31,7 +31,7 @@ namespace core {
 //!  - https://int08h.com/post/ode-to-a-vyukov-queue/
 //!  - https://github.com/samanbarghi/MPSCQ
 //!
-//! @tparam T defines object type, it should inherit MpscQueueNode.
+//! @tparam T defines object type, it must inherit MpscQueueNode.
 //!
 //! @tparam OwnershipPolicy defines ownership policy which is used to acquire an
 //! element ownership when it's added to the queue and release ownership when it's
@@ -73,8 +73,7 @@ public:
     void push_back(T& elem) {
         OwnershipPolicy<T>::acquire(elem);
 
-        MpscQueueData* data = elem.mpsc_queue_data();
-
+        MpscQueueData* data = to_node_data_(elem);
         impl_.push_back(data);
     }
 
