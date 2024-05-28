@@ -12,19 +12,30 @@
 #ifndef ROC_AUDIO_FANOUT_H_
 #define ROC_AUDIO_FANOUT_H_
 
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/iframe_writer.h"
 #include "roc_audio/sample.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/slice.h"
 
 namespace roc {
 namespace audio {
 
 //! Fanout.
+//!
 //! Duplicates audio stream to multiple output writers.
+//!
+//! Since StatusPart and StatusDrain are not allowed for write operations
+//! Fanout does not need any special handling, unlike Mixer.
 class Fanout : public IFrameWriter, public core::NonCopyable<> {
 public:
+    //! Initialize.
+    Fanout(const SampleSpec& sample_spec);
+
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
+
     //! Check if writer is already added.
     bool has_output(IFrameWriter&);
 
@@ -37,10 +48,14 @@ public:
     //! Write audio frame.
     //! @remarks
     //!  Writes samples to every output writer.
-    virtual status::StatusCode write(Frame& frame);
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(Frame& frame);
 
 private:
-    core::List<IFrameWriter, core::NoOwnership> writers_;
+    core::List<IFrameWriter, core::NoOwnership> frame_writers_;
+
+    const SampleSpec sample_spec_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace audio

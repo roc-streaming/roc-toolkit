@@ -44,7 +44,7 @@ public:
 
     ~MockScheduler() {
         if (task_) {
-            FAIL("wait_done() was not called before desctructor");
+            FAIL("wait_done() was not called before destructor");
         }
     }
 

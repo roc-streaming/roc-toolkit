@@ -61,6 +61,9 @@ public:
     //! Get packet buffer pool.
     core::IPool& packet_buffer_pool();
 
+    //! Get frame pool.
+    core::IPool& frame_pool();
+
     //! Get frame buffer pool.
     core::IPool& frame_buffer_pool();
 
@@ -78,6 +81,8 @@ private:
 
     core::SlabPool<packet::Packet> packet_pool_;
     core::SlabPool<core::Buffer> packet_buffer_pool_;
+
+    core::SlabPool<audio::Frame> frame_pool_;
     core::SlabPool<core::Buffer> frame_buffer_pool_;
 
     rtp::EncodingMap encoding_map_;

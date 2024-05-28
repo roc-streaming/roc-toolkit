@@ -22,6 +22,7 @@
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/units.h"
+#include "roc_sndio/config.h"
 #include "roc_sndio/isink.h"
 #include "roc_sndio/isource.h"
 
@@ -43,12 +44,12 @@ public:
     };
 
     //! Initialize.
-    Pump(core::IPool& buffer_pool,
+    Pump(core::IPool& frame_pool,
+         core::IPool& frame_buffer_pool,
          ISource& source,
          ISource* backup_source,
          ISink& sink,
-         core::nanoseconds_t frame_length,
-         const audio::SampleSpec& sample_spec,
+         const Config& config,
          Mode mode);
 
     //! Check if the object was successfully constructed.
@@ -66,19 +67,25 @@ public:
     void stop();
 
 private:
-    status::StatusCode transfer_loop_();
+    status::StatusCode next_();
+    status::StatusCode switch_source_(ISource* new_source);
     status::StatusCode transfer_frame_(ISource& source, ISink& sink);
 
     audio::FrameFactory frame_factory_;
 
     ISource& main_source_;
     ISource* backup_source_;
+    ISource* current_source_;
     ISink& sink_;
 
-    audio::SampleSpec sample_spec_;
-    core::Slice<audio::sample_t> frame_buffer_;
+    const audio::SampleSpec sample_spec_;
+
+    audio::FramePtr frame_;
+    const size_t frame_size_;
+    const packet::stream_timestamp_t frame_duration_;
 
     const Mode mode_;
+    bool was_active_;
     core::Atomic<int> stop_;
 
     status::StatusCode init_status_;

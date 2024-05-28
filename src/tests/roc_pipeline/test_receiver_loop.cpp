@@ -28,13 +28,15 @@ core::HeapArena arena;
 core::SlabPool<packet::Packet> packet_pool("packet_pool", arena);
 core::SlabPool<core::Buffer>
     packet_buffer_pool("packet_buffer_pool", arena, sizeof(core::Buffer) + MaxBufSize);
+
+core::SlabPool<audio::Frame> frame_pool("frame_pool", arena);
 core::SlabPool<core::Buffer>
     frame_buffer_pool("frame_buffer_pool",
                       arena,
                       sizeof(core::Buffer) + MaxBufSize * sizeof(audio::sample_t));
 
 packet::PacketFactory packet_factory(packet_pool, packet_buffer_pool);
-audio::FrameFactory frame_factory(frame_buffer_pool);
+audio::FrameFactory frame_factory(frame_pool, frame_buffer_pool);
 
 rtp::EncodingMap encoding_map(arena);
 
@@ -121,7 +123,7 @@ TEST_GROUP(receiver_loop) {
 
 TEST(receiver_loop, endpoints_sync) {
     ReceiverLoop receiver(scheduler, config, encoding_map, packet_pool,
-                          packet_buffer_pool, frame_buffer_pool, arena);
+                          packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
 
     LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
@@ -155,7 +157,7 @@ TEST(receiver_loop, endpoints_sync) {
 
 TEST(receiver_loop, endpoints_async) {
     ReceiverLoop receiver(scheduler, config, encoding_map, packet_pool,
-                          packet_buffer_pool, frame_buffer_pool, arena);
+                          packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
 
     LONGS_EQUAL(status::StatusOK, receiver.init_status());
 

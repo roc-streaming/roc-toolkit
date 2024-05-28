@@ -168,7 +168,8 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
                                          pkt_encoding->sample_spec.channel_set());
 
         depacketizer_.reset(new (depacketizer_) audio::Depacketizer(
-            *pkt_reader, *payload_decoder_, out_spec, session_config.enable_beeping));
+            *pkt_reader, *payload_decoder_, frame_factory, out_spec,
+            session_config.enable_beeping));
         if ((init_status_ = depacketizer_->init_status()) != status::StatusOK) {
             return;
         }
@@ -226,7 +227,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         }
 
         resampler_reader_.reset(new (resampler_reader_) audio::ResamplerReader(
-            *frm_reader, *resampler_, in_spec, out_spec));
+            *frm_reader, frame_factory, *resampler_, in_spec, out_spec));
         if ((init_status_ = resampler_reader_->init_status()) != status::StatusOK) {
             return;
         }
@@ -377,14 +378,15 @@ ReceiverParticipantMetrics ReceiverSession::get_metrics() const {
     return metrics;
 }
 
-status::StatusCode ReceiverSession::read(audio::Frame& frame) {
+status::StatusCode ReceiverSession::read(audio::Frame& frame,
+                                         packet::stream_timestamp_t duration) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (fail_status_ != status::NoStatus) {
         return status::StatusDrain;
     }
 
-    const status::StatusCode code = frame_reader_->read(frame);
+    const status::StatusCode code = frame_reader_->read(frame, duration);
 
     // If error happens, save it to return later from refresh(), which allows
     // ReceiverSessionGroup to handle it.

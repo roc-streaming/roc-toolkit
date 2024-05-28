@@ -13,39 +13,42 @@
 namespace roc {
 namespace sndio {
 
-WavSource::WavSource(core::IArena& arena, const Config& config)
-    : file_opened_(false)
+WavSource::WavSource(audio::FrameFactory& frame_factory,
+                     core::IArena& arena,
+                     const Config& config)
+    : frame_factory_(frame_factory)
+    , file_opened_(false)
     , eof_(false)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     if (config.latency != 0) {
         roc_log(LogError, "wav source: setting io latency not supported");
+        init_status_ = status::StatusBadConfig;
         return;
     }
 
     if (!config.sample_spec.is_empty()) {
         roc_log(LogError, "wav source: setting io encoding not supported");
+        init_status_ = status::StatusBadConfig;
         return;
     }
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
 WavSource::~WavSource() {
     close_();
 }
 
-bool WavSource::is_valid() const {
-    return valid_;
+status::StatusCode WavSource::init_status() const {
+    return init_status_;
 }
 
-bool WavSource::open(const char* path) {
-    roc_panic_if(!valid_);
+status::StatusCode WavSource::open(const char* path) {
+    return open_(path);
+}
 
-    if (!open_(path)) {
-        return false;
-    }
-
-    return true;
+DeviceType WavSource::type() const {
+    return DeviceType_Source;
 }
 
 ISink* WavSource::to_sink() {
@@ -56,55 +59,16 @@ ISource* WavSource::to_source() {
     return this;
 }
 
-DeviceType WavSource::type() const {
-    return DeviceType_Source;
-}
-
-DeviceState WavSource::state() const {
-    return DeviceState_Active;
-}
-
-void WavSource::pause() {
-    // no-op
-}
-
-bool WavSource::resume() {
-    return true;
-}
-
-bool WavSource::restart() {
-    if (!file_opened_) {
-        roc_panic("wav source: not opened");
-    }
-
-    roc_log(LogDebug, "wav source: restarting");
-
-    if (!drwav_seek_to_pcm_frame(&wav_, 0)) {
-        roc_log(LogError, "wav source: seek failed when restarting");
-        return false;
-    }
-
-    eof_ = false;
-
-    return true;
-}
-
 audio::SampleSpec WavSource::sample_spec() const {
     if (!file_opened_) {
         roc_panic("wav source: not opened");
     }
 
-    audio::ChannelSet channel_set;
-    channel_set.set_layout(audio::ChanLayout_Surround);
-    channel_set.set_order(audio::ChanOrder_Smpte);
-    channel_set.set_count(wav_.channels);
-
-    return audio::SampleSpec(size_t(wav_.sampleRate), audio::Sample_RawFormat,
-                             channel_set);
+    return sample_spec_;
 }
 
-core::nanoseconds_t WavSource::latency() const {
-    return 0;
+bool WavSource::has_state() const {
+    return false;
 }
 
 bool WavSource::has_latency() const {
@@ -115,11 +79,29 @@ bool WavSource::has_clock() const {
     return false;
 }
 
+status::StatusCode WavSource::rewind() {
+    if (!file_opened_) {
+        roc_panic("wav source: not opened");
+    }
+
+    roc_log(LogDebug, "wav source: rewinding");
+
+    if (!drwav_seek_to_pcm_frame(&wav_, 0)) {
+        roc_log(LogError, "wav source: seek failed when rewinding");
+        return status::StatusErrFile;
+    }
+
+    eof_ = false;
+
+    return status::StatusOK;
+}
+
 void WavSource::reclock(core::nanoseconds_t timestamp) {
     // no-op
 }
 
-status::StatusCode WavSource::read(audio::Frame& frame) {
+status::StatusCode WavSource::read(audio::Frame& frame,
+                                   packet::stream_timestamp_t duration) {
     if (!file_opened_) {
         roc_panic("wav source: not opened");
     }
@@ -128,8 +110,16 @@ status::StatusCode WavSource::read(audio::Frame& frame) {
         return status::StatusEnd;
     }
 
+    if (!frame_factory_.reallocate_frame(
+            frame, sample_spec_.stream_timestamp_2_bytes(duration))) {
+        return status::StatusNoMem;
+    }
+
+    frame.set_raw(true);
+
     audio::sample_t* frame_data = frame.raw_samples();
     size_t frame_left = frame.num_raw_samples();
+    size_t frame_size = 0;
 
     while (frame_left != 0) {
         size_t n_samples = frame_left;
@@ -146,20 +136,24 @@ status::StatusCode WavSource::read(audio::Frame& frame) {
 
         frame_data += n_samples;
         frame_left -= n_samples;
+        frame_size += n_samples;
     }
 
-    if (frame_left == frame.num_raw_samples()) {
+    if (frame_size == 0) {
         return status::StatusEnd;
     }
 
-    if (frame_left != 0) {
-        memset(frame_data, 0, frame_left * sizeof(audio::sample_t));
+    frame.set_num_raw_samples(frame_size);
+    frame.set_duration(frame_size / sample_spec_.num_channels());
+
+    if (frame.duration() < duration) {
+        return status::StatusPart;
     }
 
     return status::StatusOK;
 }
 
-bool WavSource::open_(const char* path) {
+status::StatusCode WavSource::open_(const char* path) {
     if (file_opened_) {
         roc_panic("wav source: already opened");
     }
@@ -167,7 +161,7 @@ bool WavSource::open_(const char* path) {
     if (!drwav_init_file(&wav_, path, NULL)) {
         roc_log(LogDebug, "wav sink: can't open input file: %s",
                 core::errno_to_str(errno).c_str());
-        return false;
+        return status::StatusErrFile;
     }
 
     roc_log(LogInfo,
@@ -176,8 +170,16 @@ bool WavSource::open_(const char* path) {
             path, (unsigned long)wav_.bitsPerSample, (unsigned long)wav_.sampleRate,
             (unsigned long)wav_.channels);
 
+    sample_spec_.set_sample_rate((size_t)wav_.sampleRate);
+    sample_spec_.set_sample_format(audio::SampleFormat_Pcm);
+    sample_spec_.set_pcm_format(audio::Sample_RawFormat);
+    sample_spec_.channel_set().set_layout(audio::ChanLayout_Surround);
+    sample_spec_.channel_set().set_order(audio::ChanOrder_Smpte);
+    sample_spec_.channel_set().set_count((size_t)wav_.channels);
+
     file_opened_ = true;
-    return true;
+
+    return status::StatusOK;
 }
 
 void WavSource::close_() {

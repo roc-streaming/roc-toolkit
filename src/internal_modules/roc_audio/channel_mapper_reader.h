@@ -29,7 +29,7 @@ namespace audio {
 class ChannelMapperReader : public IFrameReader, public core::NonCopyable<> {
 public:
     //! Initialize.
-    ChannelMapperReader(IFrameReader& reader,
+    ChannelMapperReader(IFrameReader& frame_reader,
                         FrameFactory& frame_factory,
                         const SampleSpec& in_spec,
                         const SampleSpec& out_spec);
@@ -38,16 +38,14 @@ public:
     status::StatusCode init_status() const;
 
     //! Read audio frame.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(Frame& frame);
+    virtual ROC_ATTR_NODISCARD status::StatusCode
+    read(Frame& frame, packet::stream_timestamp_t duration);
 
 private:
-    status::StatusCode read_(sample_t* out_samples,
-                             size_t n_samples,
-                             unsigned& flags,
-                             core::nanoseconds_t& capt_ts);
+    FrameFactory& frame_factory_;
+    IFrameReader& frame_reader_;
 
-    IFrameReader& input_reader_;
-    core::Slice<sample_t> input_buf_;
+    FramePtr in_frame_;
 
     ChannelMapper mapper_;
 

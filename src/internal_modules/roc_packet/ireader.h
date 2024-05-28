@@ -26,6 +26,10 @@ public:
 
     //! Read packet.
     //!
+    //! @note
+    //!  Reader always returns a new packet.
+    //!  @p packet is output-only parameter.
+    //!
     //! @returns
     //!  - If packet was successfully read, returns status::StatusOK and sets
     //!    @p packet to non-null.

@@ -106,13 +106,15 @@ core::HeapArena arena;
 core::SlabPool<packet::Packet> packet_pool("packet_pool", arena);
 core::SlabPool<core::Buffer>
     packet_buffer_pool("packet_buffer_pool", arena, sizeof(core::Buffer) + MaxBufSize);
+
+core::SlabPool<audio::Frame> frame_pool("frame_pool", arena);
 core::SlabPool<core::Buffer>
     frame_buffer_pool("frame_buffer_pool",
                       arena,
                       sizeof(core::Buffer) + MaxBufSize * sizeof(audio::sample_t));
 
 packet::PacketFactory packet_factory(packet_pool, packet_buffer_pool);
-audio::FrameFactory frame_factory(frame_buffer_pool);
+audio::FrameFactory frame_factory(frame_pool, frame_buffer_pool);
 
 rtp::EncodingMap encoding_map(arena);
 
@@ -270,7 +272,7 @@ SenderSinkConfig make_sender_config(int flags,
     config.fec_writer.n_repair_packets = RepairPackets;
 
     config.enable_interleaving = (flags & FlagInterleaving);
-    config.enable_timing = false;
+    config.enable_cpu_clock = false;
     config.enable_profiling = true;
 
     config.latency.tuner_backend = audio::LatencyTunerBackend_Niq;
@@ -293,7 +295,7 @@ ReceiverSourceConfig make_receiver_config(audio::ChannelMask frame_channels,
     config.common.output_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
     config.common.output_sample_spec.channel_set().set_mask(frame_channels);
 
-    config.common.enable_timing = false;
+    config.common.enable_cpu_clock = false;
 
     config.common.rtcp.report_interval = SamplesPerPacket * core::Second / SampleRate;
     config.common.rtcp.inactivity_timeout = Timeout * core::Second / SampleRate;
@@ -432,7 +434,7 @@ void send_receive(int flags,
         make_sender_config(flags, frame_channels, packet_channels);
 
     SenderSink sender(sender_config, encoding_map, packet_pool, packet_buffer_pool,
-                      frame_buffer_pool, arena);
+                      frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlotConfig sender_slot_config;
@@ -469,7 +471,7 @@ void send_receive(int flags,
         make_receiver_config(frame_channels, packet_channels);
 
     ReceiverSource receiver(receiver_config, encoding_map, packet_pool,
-                            packet_buffer_pool, frame_buffer_pool, arena);
+                            packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlotConfig receiver_slot_config;

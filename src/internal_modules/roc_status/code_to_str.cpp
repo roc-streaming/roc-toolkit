@@ -19,6 +19,8 @@ const char* code_to_str(StatusCode code) {
         break;
     case StatusOK:
         return "OK";
+    case StatusPart:
+        return "Part";
     case StatusDrain:
         return "Drain";
     case StatusAbort:
@@ -27,10 +29,10 @@ const char* code_to_str(StatusCode code) {
         return "End";
     case StatusNoMem:
         return "NoMem";
-    case StatusNoSpace:
-        return "NoSpace";
     case StatusNoRoute:
         return "NoRoute";
+    case StatusNoDriver:
+        return "NoDriver";
     case StatusErrDevice:
         return "ErrDevice";
     case StatusErrFile:
@@ -49,6 +51,8 @@ const char* code_to_str(StatusCode code) {
         return "BadProtocol";
     case StatusBadConfig:
         return "BadConfig";
+    case StatusBadBuffer:
+        return "BadBuffer";
     case StatusBadArg:
         return "BadArg";
     case StatusBadOperation:

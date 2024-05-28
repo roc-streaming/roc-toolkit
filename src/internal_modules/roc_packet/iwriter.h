@@ -26,6 +26,10 @@ public:
 
     //! Write packet.
     //!
+    //! @note
+    //!  Writer is allowed to store shared pointer to the packet.
+    //!  It can assume that the packet is read-only.
+    //!
     //! @returns
     //!  - If packet was successfully and completely written, returns status::StatusOK,
     //!    otherwise, returns an error.

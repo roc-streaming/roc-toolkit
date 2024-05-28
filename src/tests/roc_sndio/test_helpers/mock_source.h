@@ -11,6 +11,8 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_audio/frame_factory.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/time.h"
 #include "roc_sndio/isource.h"
 
@@ -20,9 +22,15 @@ namespace test {
 
 class MockSource : public ISource {
 public:
-    MockSource()
-        : pos_(0)
+    MockSource(audio::FrameFactory& frame_factory, const audio::SampleSpec& sample_spec)
+        : frame_factory_(frame_factory)
+        , sample_spec_(sample_spec)
+        , pos_(0)
         , size_(0) {
+    }
+
+    virtual DeviceType type() const {
+        return DeviceType_Source;
     }
 
     virtual ISink* to_sink() {
@@ -33,8 +41,12 @@ public:
         return this;
     }
 
-    virtual DeviceType type() const {
-        return DeviceType_Source;
+    virtual audio::SampleSpec sample_spec() const {
+        return audio::SampleSpec();
+    }
+
+    virtual bool has_state() const {
+        return true;
     }
 
     virtual DeviceState state() const {
@@ -45,26 +57,14 @@ public:
         }
     }
 
-    virtual void pause() {
+    virtual status::StatusCode pause() {
         FAIL("not implemented");
+        return status::StatusAbort;
     }
 
-    virtual bool resume() {
+    virtual status::StatusCode resume() {
         FAIL("not implemented");
-        return false;
-    }
-
-    virtual bool restart() {
-        FAIL("not implemented");
-        return false;
-    }
-
-    virtual audio::SampleSpec sample_spec() const {
-        return audio::SampleSpec();
-    }
-
-    virtual core::nanoseconds_t latency() const {
-        return 0;
+        return status::StatusAbort;
     }
 
     virtual bool has_latency() const {
@@ -75,11 +75,23 @@ public:
         return false;
     }
 
+    virtual status::StatusCode rewind() {
+        FAIL("not implemented");
+        return status::StatusAbort;
+    }
+
     virtual void reclock(core::nanoseconds_t) {
         // no-op
     }
 
-    virtual status::StatusCode read(audio::Frame& frame) {
+    virtual status::StatusCode read(audio::Frame& frame,
+                                    packet::stream_timestamp_t duration) {
+        CHECK(frame_factory_.reallocate_frame(
+            frame, sample_spec_.stream_timestamp_2_bytes(duration)));
+
+        frame.set_raw(true);
+        frame.set_duration(duration);
+
         size_t ns = frame.num_raw_samples();
         if (ns > size_ - pos_) {
             ns = size_ - pos_;
@@ -117,6 +129,9 @@ private:
     audio::sample_t nth_sample_(size_t n) {
         return audio::sample_t(uint8_t(n)) / audio::sample_t(1 << 8);
     }
+
+    audio::FrameFactory& frame_factory_;
+    const audio::SampleSpec sample_spec_;
 
     audio::sample_t samples_[MaxSz];
     size_t pos_;

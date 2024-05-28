@@ -14,49 +14,49 @@
 namespace roc {
 namespace audio {
 
-ResamplerWriter::ResamplerWriter(IFrameWriter& writer,
-                                 IResampler& resampler,
+ResamplerWriter::ResamplerWriter(IFrameWriter& frame_writer,
                                  FrameFactory& frame_factory,
+                                 IResampler& resampler,
                                  const SampleSpec& in_sample_spec,
                                  const SampleSpec& out_sample_spec)
-    : resampler_(resampler)
-    , writer_(writer)
-    , in_sample_spec_(in_sample_spec)
-    , out_sample_spec_(out_sample_spec)
-    , input_buf_pos_(0)
-    , output_buf_pos_(0)
+    : frame_factory_(frame_factory)
+    , frame_writer_(frame_writer)
+    , resampler_(resampler)
+    , in_spec_(in_sample_spec)
+    , out_spec_(out_sample_spec)
+    , in_buf_pos_(0)
+    , out_frame_pos_(0)
     , scaling_(1.f)
     , init_status_(status::NoStatus) {
-    if (!in_sample_spec_.is_valid() || !out_sample_spec_.is_valid()
-        || !in_sample_spec_.is_raw() || !out_sample_spec_.is_raw()) {
+    if (!in_spec_.is_valid() || !out_spec_.is_valid() || !in_spec_.is_raw()
+        || !out_spec_.is_raw()) {
         roc_panic("resampler writer: required valid sample specs with raw format:"
                   " in_spec=%s out_spec=%s",
-                  sample_spec_to_str(in_sample_spec_).c_str(),
-                  sample_spec_to_str(out_sample_spec_).c_str());
+                  sample_spec_to_str(in_spec_).c_str(),
+                  sample_spec_to_str(out_spec_).c_str());
     }
 
-    if (in_sample_spec_.channel_set() != out_sample_spec_.channel_set()) {
+    if (in_spec_.channel_set() != out_spec_.channel_set()) {
         roc_panic("resampler writer: required identical input and output channel sets:"
                   " in_spec=%s out_spec=%s",
-                  sample_spec_to_str(in_sample_spec_).c_str(),
-                  sample_spec_to_str(out_sample_spec_).c_str());
+                  sample_spec_to_str(in_spec_).c_str(),
+                  sample_spec_to_str(out_spec_).c_str());
     }
 
     if ((init_status_ = resampler_.init_status()) != status::StatusOK) {
         return;
     }
 
-    if (!resampler_.set_scaling(in_sample_spec_.sample_rate(),
-                                out_sample_spec_.sample_rate(), 1.0f)) {
+    if (!resampler_.set_scaling(in_spec_.sample_rate(), out_spec_.sample_rate(), 1.0f)) {
         init_status_ = status::StatusBadConfig;
         return;
     }
 
-    if (!(output_buf_ = frame_factory.new_raw_buffer())) {
-        roc_log(LogError, "resampler writer: can't allocate buffer for output frame");
+    out_frame_ = frame_factory_.allocate_frame(0);
+    if (!out_frame_) {
+        init_status_ = status::StatusNoMem;
         return;
     }
-    output_buf_.reslice(0, output_buf_.capacity());
 
     init_status_ = status::StatusOK;
 }
@@ -70,83 +70,87 @@ bool ResamplerWriter::set_scaling(float multiplier) {
 
     scaling_ = multiplier;
 
-    return resampler_.set_scaling(in_sample_spec_.sample_rate(),
-                                  out_sample_spec_.sample_rate(), multiplier);
+    return resampler_.set_scaling(in_spec_.sample_rate(), out_spec_.sample_rate(),
+                                  multiplier);
 }
 
 status::StatusCode ResamplerWriter::write(Frame& in_frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    if (in_frame.num_raw_samples() % in_sample_spec_.num_channels() != 0) {
-        roc_panic("resampler writer: unexpected frame size");
-    }
+    in_spec_.validate_frame(in_frame);
 
-    size_t in_pos = 0;
+    const size_t in_frame_size = in_frame.num_raw_samples();
+    size_t in_frame_pos = 0;
 
-    while (in_pos < in_frame.num_raw_samples()) {
-        const size_t output_buf_remain = output_buf_.size() - output_buf_pos_;
-
-        if (output_buf_remain != 0) {
-            const size_t num_popped = resampler_.pop_output(
-                output_buf_.data() + output_buf_pos_, output_buf_remain);
-
-            if (num_popped < output_buf_remain) {
-                in_pos += push_input_(in_frame, in_pos);
+    while (in_frame_pos < in_frame_size) {
+        if (out_frame_pos_ == 0) {
+            if (!frame_factory_.reallocate_frame(*out_frame_,
+                                                 frame_factory_.byte_buffer_size())) {
+                return status::StatusNoMem;
             }
 
-            output_buf_pos_ += num_popped;
+            out_frame_->set_raw(true);
         }
 
-        if (output_buf_pos_ == output_buf_.size()) {
-            Frame out_frame(output_buf_.data(), output_buf_.size());
+        const size_t out_frame_remain = out_frame_->num_raw_samples() - out_frame_pos_;
 
-            out_frame.set_duration(out_frame.num_raw_samples()
-                                   / out_sample_spec_.num_channels());
-            out_frame.set_capture_timestamp(capture_ts_(in_frame, in_pos));
+        if (out_frame_remain != 0) {
+            const size_t num_popped = resampler_.pop_output(
+                out_frame_->raw_samples() + out_frame_pos_, out_frame_remain);
 
-            const status::StatusCode code = writer_.write(out_frame);
+            if (num_popped < out_frame_remain) {
+                in_frame_pos += push_input_(in_frame, in_frame_pos);
+            }
+
+            out_frame_pos_ += num_popped;
+        }
+
+        if (out_frame_pos_ == out_frame_->num_raw_samples()
+            || (out_frame_pos_ != 0 && in_frame_pos == in_frame_size)) {
+            const status::StatusCode code = write_output_(in_frame, in_frame_pos);
             if (code != status::StatusOK) {
                 return code;
             }
 
-            output_buf_pos_ = 0;
+            out_frame_pos_ = 0;
         }
-    }
-
-    if (output_buf_pos_ != 0) {
-        Frame out_frame(output_buf_.data(), output_buf_pos_);
-
-        out_frame.set_duration(out_frame.num_raw_samples()
-                               / out_sample_spec_.num_channels());
-        out_frame.set_capture_timestamp(capture_ts_(in_frame, in_pos));
-
-        const status::StatusCode code = writer_.write(out_frame);
-        if (code != status::StatusOK) {
-            return code;
-        }
-
-        output_buf_pos_ = 0;
     }
 
     return status::StatusOK;
 }
 
-size_t ResamplerWriter::push_input_(Frame& in_frame, size_t in_pos) {
-    if (input_buf_pos_ == 0) {
-        input_buf_ = resampler_.begin_push_input();
+status::StatusCode ResamplerWriter::write_output_(const Frame& in_frame,
+                                                  size_t in_frame_pos) {
+    const packet::stream_timestamp_t duration =
+        packet::stream_timestamp_t(out_frame_pos_ / out_spec_.num_channels());
+
+    out_frame_->set_flags(in_frame.flags());
+    out_frame_->set_num_raw_samples(out_frame_pos_);
+    out_frame_->set_duration(duration);
+    out_frame_->set_capture_timestamp(capture_ts_(in_frame, in_frame_pos));
+
+    return frame_writer_.write(*out_frame_);
+}
+
+size_t ResamplerWriter::push_input_(Frame& in_frame, size_t in_frame_pos) {
+    if (!in_buf_) {
+        in_buf_ = resampler_.begin_push_input();
+        in_buf_pos_ = 0;
     }
 
     const size_t num_copy =
-        std::min(in_frame.num_raw_samples() - in_pos, input_buf_.size() - input_buf_pos_);
+        std::min(in_frame.num_raw_samples() - in_frame_pos, in_buf_.size() - in_buf_pos_);
 
-    memcpy(input_buf_.data() + input_buf_pos_, in_frame.raw_samples() + in_pos,
+    memcpy(in_buf_.data() + in_buf_pos_, in_frame.raw_samples() + in_frame_pos,
            num_copy * sizeof(sample_t));
 
-    input_buf_pos_ += num_copy;
+    in_buf_pos_ += num_copy;
 
-    if (input_buf_pos_ == input_buf_.size()) {
-        input_buf_pos_ = 0;
+    if (in_buf_pos_ == in_buf_.size()) {
         resampler_.end_push_input();
+
+        in_buf_.reset();
+        in_buf_pos_ = 0;
     }
 
     return num_copy;
@@ -155,7 +159,8 @@ size_t ResamplerWriter::push_input_(Frame& in_frame, size_t in_pos) {
 // Compute timestamp of first sample of current output frame.
 // We have timestamps in input frames, and we should find to
 // which time our output frame does correspond in input stream.
-core::nanoseconds_t ResamplerWriter::capture_ts_(Frame& in_frame, size_t in_pos) {
+core::nanoseconds_t ResamplerWriter::capture_ts_(const Frame& in_frame,
+                                                 size_t in_frame_pos) {
     if (in_frame.capture_timestamp() == 0) {
         // We didn't receive input frame with non-zero cts yet,
         // so for now we keep cts zero.
@@ -167,20 +172,20 @@ core::nanoseconds_t ResamplerWriter::capture_ts_(Frame& in_frame, size_t in_pos)
 
     // Add number of samples copied from input frame to our buffer and then to resampler.
     // Now we have tail of input stream.
-    out_cts += in_sample_spec_.samples_overall_2_ns(in_pos);
+    out_cts += in_spec_.samples_overall_2_ns(in_frame_pos);
 
     // Subtract number of samples pending in our buffer and not copied to resampler yet.
     // Now we have tail of input stream inside resampler.
-    out_cts -= in_sample_spec_.samples_overall_2_ns(input_buf_pos_);
+    out_cts -= in_spec_.samples_overall_2_ns(in_buf_pos_);
 
     // Subtract number of input samples that resampler haven't processed yet.
     // Now we have point in input stream corresponding to tail of output frame.
-    out_cts -= in_sample_spec_.fract_samples_overall_2_ns(resampler_.n_left_to_process());
+    out_cts -= in_spec_.fract_samples_overall_2_ns(resampler_.n_left_to_process());
 
     // Subtract length of current output frame multiplied by scaling.
     // Now we have point in input stream corresponding to head of output frame.
-    out_cts -= core::nanoseconds_t(out_sample_spec_.samples_overall_2_ns(output_buf_pos_)
-                                   * scaling_);
+    out_cts -=
+        core::nanoseconds_t(out_spec_.samples_overall_2_ns(out_frame_pos_) * scaling_);
 
     if (out_cts < 0) {
         // Input frame cts was very close to zero (unix epoch), in this case we

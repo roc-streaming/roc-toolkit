@@ -11,7 +11,9 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/iframe_reader.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
@@ -20,22 +22,43 @@ namespace test {
 
 class MockReader : public IFrameReader {
 public:
-    explicit MockReader(bool fail_on_empty = true)
-        : total_reads_(0)
+    MockReader(FrameFactory& frame_factory, const SampleSpec& sample_spec)
+        : frame_factory_(frame_factory)
+        , sample_spec_(sample_spec)
+        , total_reads_(0)
         , pos_(0)
         , size_(0)
-        , fail_on_empty_(fail_on_empty)
-        , timestamp_(-1) {
+        , timestamp_(-1)
+        , max_duration_(0)
+        , status_(status::NoStatus)
+        , last_status_(status::NoStatus) {
     }
 
-    virtual status::StatusCode read(Frame& frame) {
+    virtual status::StatusCode read(Frame& frame,
+                                    packet::stream_timestamp_t requested_duration) {
+        if (status_ != status::NoStatus && status_ != status::StatusOK) {
+            return (last_status_ = status_);
+        }
+
+        packet::stream_timestamp_t duration = std::min(
+            requested_duration,
+            packet::stream_timestamp_t((size_ - pos_) / sample_spec_.num_channels()));
+
+        if (max_duration_ != 0) {
+            duration = std::min(duration, max_duration_);
+        }
+
+        if (duration == 0) {
+            return (last_status_ = status::StatusEnd);
+        }
+
         total_reads_++;
 
-        if (fail_on_empty_) {
-            CHECK(pos_ + frame.num_raw_samples() <= size_);
-        } else if (pos_ + frame.num_raw_samples() > size_) {
-            return status::StatusEnd;
-        }
+        CHECK(frame_factory_.reallocate_frame(
+            frame, sample_spec_.stream_timestamp_2_bytes(duration)));
+
+        frame.set_raw(true);
+        frame.set_duration(duration);
 
         memcpy(frame.raw_samples(), samples_ + pos_,
                frame.num_raw_samples() * sizeof(sample_t));
@@ -53,13 +76,20 @@ public:
             timestamp_ += sample_spec_.samples_overall_2_ns(frame.num_raw_samples());
         }
 
-        return status::StatusOK;
+        return (last_status_ = (duration == requested_duration ? status::StatusOK
+                                                               : status::StatusPart));
     }
 
-    void enable_timestamps(const core::nanoseconds_t base_timestamp,
-                           const SampleSpec& sample_spec) {
+    void set_status(status::StatusCode status) {
+        status_ = status;
+    }
+
+    void set_limit(packet::stream_timestamp_t max_duration) {
+        max_duration_ = max_duration;
+    }
+
+    void enable_timestamps(const core::nanoseconds_t base_timestamp) {
         timestamp_ = base_timestamp;
-        sample_spec_ = sample_spec;
     }
 
     void add_samples(size_t size, sample_t value, unsigned flags = 0) {
@@ -88,8 +118,15 @@ public:
         return size_ - pos_;
     }
 
+    status::StatusCode last_status() const {
+        return last_status_;
+    }
+
 private:
     enum { MaxSz = 100000 };
+
+    FrameFactory& frame_factory_;
+    SampleSpec sample_spec_;
 
     size_t total_reads_;
 
@@ -97,10 +134,13 @@ private:
     unsigned flags_[MaxSz];
     size_t pos_;
     size_t size_;
-    const bool fail_on_empty_;
 
-    SampleSpec sample_spec_;
     core::nanoseconds_t timestamp_;
+
+    packet::stream_timestamp_t max_duration_;
+
+    status::StatusCode status_;
+    status::StatusCode last_status_;
 };
 
 } // namespace test

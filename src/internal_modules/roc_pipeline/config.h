@@ -89,11 +89,8 @@ struct SenderSinkConfig {
     //! RTCP config.
     rtcp::Config rtcp;
 
-    //! Constrain receiver speed using a CPU timer according to the sample rate.
-    bool enable_timing;
-
-    //! Automatically fill duration of input frames.
-    bool enable_auto_duration;
+    //! Block write operations on CPU timer according to the sample rate.
+    bool enable_cpu_clock;
 
     //! Automatically fill capture timestamps of input frames with invocation time.
     bool enable_auto_cts;
@@ -134,8 +131,8 @@ struct ReceiverCommonConfig {
     //! RTCP config.
     rtcp::Config rtcp;
 
-    //! Constrain receiver speed using a CPU timer according to the sample rate.
-    bool enable_timing;
+    //! Block read operations on CPU timer according to the sample rate.
+    bool enable_cpu_clock;
 
     //! Automatically invoke reclock before returning frames with invocation time.
     bool enable_auto_reclock;

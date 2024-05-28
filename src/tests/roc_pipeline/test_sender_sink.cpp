@@ -68,13 +68,15 @@ core::HeapArena arena;
 core::SlabPool<packet::Packet> packet_pool("packet_pool", arena);
 core::SlabPool<core::Buffer>
     packet_buffer_pool("packet_buffer_pool", arena, sizeof(core::Buffer) + MaxBufSize);
+
+core::SlabPool<audio::Frame> frame_pool("frame_pool", arena);
 core::SlabPool<core::Buffer>
     frame_buffer_pool("frame_buffer_pool",
                       arena,
                       sizeof(core::Buffer) + MaxBufSize * sizeof(audio::sample_t));
 
 packet::PacketFactory packet_factory(packet_pool, packet_buffer_pool);
-audio::FrameFactory frame_factory(frame_buffer_pool);
+audio::FrameFactory frame_factory(frame_pool, frame_buffer_pool);
 
 rtp::EncodingMap encoding_map(arena);
 
@@ -144,7 +146,7 @@ TEST_GROUP(sender_sink) {
             SamplesPerPacket * core::Second / (int)packet_sample_spec.sample_rate();
 
         config.enable_interleaving = false;
-        config.enable_timing = false;
+        config.enable_cpu_clock = false;
         config.enable_profiling = true;
 
         config.latency.tuner_backend = audio::LatencyTunerBackend_Niq;
@@ -190,7 +192,7 @@ TEST(sender_sink, basic) {
     packet::Queue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_buffer_pool, arena);
+                      frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -229,7 +231,7 @@ TEST(sender_sink, frame_size_small) {
     packet::Queue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_buffer_pool, arena);
+                      frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -268,7 +270,7 @@ TEST(sender_sink, frame_size_large) {
     packet::Queue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_buffer_pool, arena);
+                      frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -301,7 +303,7 @@ TEST(sender_sink, channel_mapping_stereo_to_mono) {
     packet::Queue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_buffer_pool, arena);
+                      frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -334,7 +336,7 @@ TEST(sender_sink, channel_mapping_mono_to_stereo) {
     packet::Queue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_buffer_pool, arena);
+                      frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -367,7 +369,7 @@ TEST(sender_sink, sample_rate_mapping) {
     packet::Queue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_buffer_pool, arena);
+                      frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -402,7 +404,7 @@ TEST(sender_sink, timestamp_mapping) {
     packet::Queue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_buffer_pool, arena);
+                      frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -441,7 +443,7 @@ TEST(sender_sink, timestamp_mapping_remixing) {
     packet::Queue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_buffer_pool, arena);
+                      frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -502,7 +504,7 @@ TEST(sender_sink, metrics_feedback) {
     packet::Queue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_buffer_pool, arena);
+                      frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -631,7 +633,7 @@ TEST(sender_sink, reports_no_receivers) {
     packet::Queue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_buffer_pool, arena);
+                      frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -701,7 +703,7 @@ TEST(sender_sink, reports_one_receiver) {
     packet::Queue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_buffer_pool, arena);
+                      frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -790,7 +792,7 @@ TEST(sender_sink, reports_two_receivers) {
     packet::Queue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_buffer_pool, arena);
+                      frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);

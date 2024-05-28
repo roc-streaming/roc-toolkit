@@ -14,26 +14,17 @@
 namespace roc {
 namespace audio {
 
-Frame::Frame(sample_t* samples, size_t num_samples)
-    : bytes_((uint8_t*)samples)
-    , num_bytes_(num_samples * sizeof(sample_t))
-    , flags_(0)
-    , duration_(0)
-    , capture_timestamp_(0) {
-    if (!samples) {
-        roc_panic("frame: samples buffer is null");
-    }
+Frame::Frame(core::IPool& frame_pool)
+    : core::RefCounted<Frame, core::PoolAllocation>(frame_pool) {
+    clear();
 }
 
-Frame::Frame(uint8_t* bytes, size_t num_bytes)
-    : bytes_(bytes)
-    , num_bytes_(num_bytes)
-    , flags_(0)
-    , duration_(0)
-    , capture_timestamp_(0) {
-    if (!bytes) {
-        roc_panic("frame: bytes buffer is null");
-    }
+void Frame::clear() {
+    buffer_.reset();
+    is_raw_ = false;
+    flags_ = 0;
+    duration_ = 0;
+    capture_timestamp_ = 0;
 }
 
 unsigned Frame::flags() const {
@@ -41,35 +32,87 @@ unsigned Frame::flags() const {
 }
 
 void Frame::set_flags(unsigned flags) {
-    flags_ = flags;
+    flags_ = (uint16_t)flags;
+}
+
+const core::Slice<uint8_t>& Frame::buffer() {
+    return buffer_;
+}
+
+void Frame::set_buffer(const core::Slice<uint8_t>& new_buffer) {
+    if (buffer_) {
+        roc_panic("frame: buffer already set");
+    }
+    if (!new_buffer) {
+        roc_panic("frame: attempt to set empty buffer");
+    }
+
+    buffer_ = new_buffer;
 }
 
 bool Frame::is_raw() const {
-    return (flags_ & HasEncoding) == 0;
+    return is_raw_;
+}
+
+void Frame::set_raw(bool raw) {
+    is_raw_ = raw;
 }
 
 sample_t* Frame::raw_samples() const {
-    if (flags_ & HasEncoding) {
+    if (!is_raw_) {
         roc_panic("frame: frame is not in raw format");
     }
 
-    return (sample_t*)bytes_;
+    return (sample_t*)buffer_.data();
 }
 
 size_t Frame::num_raw_samples() const {
-    if (flags_ & HasEncoding) {
+    if (!is_raw_) {
         roc_panic("frame: frame is not in raw format");
     }
 
-    return num_bytes_ / sizeof(sample_t);
+    return buffer_.size() / sizeof(sample_t);
+}
+
+void Frame::set_num_raw_samples(size_t n_samples) {
+    if (!is_raw_) {
+        roc_panic("frame: frame is not in raw format");
+    }
+
+    if (!buffer_) {
+        roc_panic("frame: frame does not have a buffer");
+    }
+
+    if (buffer_.capacity() < n_samples * sizeof(sample_t)) {
+        roc_panic("frame: frame buffer does not have enough capacity:"
+                  " requested=%lu available=%lu",
+                  (unsigned long)n_samples,
+                  (unsigned long)buffer_.capacity() / sizeof(sample_t));
+    }
+
+    buffer_.reslice(0, n_samples * sizeof(sample_t));
 }
 
 uint8_t* Frame::bytes() const {
-    return bytes_;
+    return buffer_.data();
 }
 
 size_t Frame::num_bytes() const {
-    return num_bytes_;
+    return buffer_.size();
+}
+
+void Frame::set_num_bytes(size_t n_bytes) {
+    if (!buffer_) {
+        roc_panic("frame: frame does not have a buffer");
+    }
+
+    if (buffer_.capacity() < n_bytes) {
+        roc_panic("frame: frame buffer does not have enough capacity:"
+                  " requested=%lu available=%lu",
+                  (unsigned long)n_bytes, (unsigned long)buffer_.capacity());
+    }
+
+    buffer_.reslice(0, n_bytes);
 }
 
 bool Frame::has_duration() const {
@@ -110,21 +153,20 @@ void Frame::set_capture_timestamp(core::nanoseconds_t capture_ts) {
 
 void Frame::print() const {
     char flags_str[] = {
-        !(flags_ & HasEncoding) ? 'r' : '.',
-        !(flags_ & HasSignal) ? 'b' : '.',
-        (flags_ & HasHoles) ? 'i' : '.',
-        (flags_ & HasPacketDrops) ? 'd' : '.',
+        !(flags_ & HasSignal) ? 'b' : '.',     // b=blank
+        (flags_ & HasHoles) ? 'i' : '.',       // i=incomplete
+        (flags_ & HasPacketDrops) ? 'd' : '.', // d=drops
         '\0',
     };
 
     core::Printer p;
-    p.writef("@ frame flags=[%s] dur=%lu cts=%lld\n", flags_str, (unsigned long)duration_,
-             (long long)capture_timestamp_);
+    p.writef("@ frame flags=[%s] raw=%d dur=%lu cts=%lld\n", flags_str, (int)!!is_raw_,
+             (unsigned long)duration_, (long long)capture_timestamp_);
 
-    if (flags_ & HasEncoding) {
-        core::print_memory(bytes(), num_bytes());
-    } else {
+    if (is_raw_) {
         core::print_memory(raw_samples(), num_raw_samples());
+    } else {
+        core::print_memory(bytes(), num_bytes());
     }
 }
 

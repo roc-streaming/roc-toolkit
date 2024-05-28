@@ -22,24 +22,33 @@ namespace {
 
 enum { BufSz = 100, MaxSz = 500 };
 
+const SampleSpec sample_spec(44100,
+                             Sample_RawFormat,
+                             ChanLayout_Surround,
+                             ChanOrder_Smpte,
+                             ChanMask_Surround_Stereo);
+
 core::HeapArena arena;
 FrameFactory frame_factory(arena, MaxSz * sizeof(sample_t));
 
-core::Slice<sample_t> new_buffer(size_t sz) {
-    core::Slice<sample_t> buf = frame_factory.new_raw_buffer();
-    buf.reslice(0, sz);
-    return buf;
+FramePtr new_frame(size_t sz) {
+    FramePtr frame = frame_factory.allocate_frame(sz * sizeof(sample_t));
+    CHECK(frame);
+
+    frame->set_raw(true);
+    frame->set_duration(sz / sample_spec.num_channels());
+
+    return frame;
 }
 
 void write_frame(Fanout& fanout, size_t sz, sample_t value) {
-    core::Slice<sample_t> buf = new_buffer(sz);
+    FramePtr frame = new_frame(sz);
 
-    Frame frame(buf.data(), buf.size());
     for (size_t n = 0; n < sz; n++) {
-        frame.raw_samples()[n] = value;
+        frame->raw_samples()[n] = value;
     }
 
-    fanout.write(frame);
+    LONGS_EQUAL(status::StatusOK, fanout.write(*frame));
 }
 
 void expect_written(test::MockWriter& mock_writer, size_t sz, sample_t value) {
@@ -53,7 +62,7 @@ void expect_written(test::MockWriter& mock_writer, size_t sz, sample_t value) {
 TEST_GROUP(fanout) {};
 
 TEST(fanout, no_writers) {
-    Fanout fanout;
+    Fanout fanout(sample_spec);
 
     write_frame(fanout, BufSz, 0.11f);
 }
@@ -61,35 +70,35 @@ TEST(fanout, no_writers) {
 TEST(fanout, one_output) {
     test::MockWriter writer;
 
-    Fanout fanout;
+    Fanout fanout(sample_spec);
     fanout.add_output(writer);
 
     write_frame(fanout, BufSz, 0.11f);
 
-    CHECK(writer.num_unread() == BufSz);
+    LONGS_EQUAL(BufSz, writer.num_unread());
     expect_written(writer, BufSz, 0.11f);
 
-    CHECK(writer.num_unread() == 0);
+    LONGS_EQUAL(0, writer.num_unread());
 }
 
 TEST(fanout, two_outputs) {
     test::MockWriter writer1;
     test::MockWriter writer2;
 
-    Fanout fanout;
+    Fanout fanout(sample_spec);
     fanout.add_output(writer1);
     fanout.add_output(writer2);
 
     write_frame(fanout, BufSz, 0.11f);
 
-    CHECK(writer1.num_unread() == BufSz);
+    LONGS_EQUAL(BufSz, writer1.num_unread());
     expect_written(writer1, BufSz, 0.11f);
 
-    CHECK(writer2.num_unread() == BufSz);
+    LONGS_EQUAL(BufSz, writer2.num_unread());
     expect_written(writer2, BufSz, 0.11f);
 
-    CHECK(writer1.num_unread() == 0);
-    CHECK(writer2.num_unread() == 0);
+    LONGS_EQUAL(0, writer1.num_unread());
+    LONGS_EQUAL(0, writer2.num_unread());
 }
 
 TEST(fanout, remove_output) {
@@ -97,29 +106,29 @@ TEST(fanout, remove_output) {
     test::MockWriter writer2;
     test::MockWriter writer3;
 
-    Fanout fanout;
+    Fanout fanout(sample_spec);
     fanout.add_output(writer1);
     fanout.add_output(writer2);
     fanout.add_output(writer3);
 
     write_frame(fanout, BufSz, 0.11f);
 
-    CHECK(writer1.num_unread() == BufSz);
-    CHECK(writer2.num_unread() == BufSz);
-    CHECK(writer3.num_unread() == BufSz);
+    LONGS_EQUAL(BufSz, writer1.num_unread());
+    LONGS_EQUAL(BufSz, writer2.num_unread());
+    LONGS_EQUAL(BufSz, writer3.num_unread());
 
     fanout.remove_output(writer2);
 
     write_frame(fanout, BufSz, 0.22f);
 
-    CHECK(writer1.num_unread() == BufSz * 2);
-    CHECK(writer2.num_unread() == BufSz);
-    CHECK(writer3.num_unread() == BufSz * 2);
+    LONGS_EQUAL(BufSz * 2, writer1.num_unread());
+    LONGS_EQUAL(BufSz, writer2.num_unread());
+    LONGS_EQUAL(BufSz * 2, writer3.num_unread());
 }
 
 TEST(fanout, has_output) {
     test::MockWriter writer;
-    Fanout fanout;
+    Fanout fanout(sample_spec);
 
     CHECK(!fanout.has_output(writer));
 
@@ -128,6 +137,33 @@ TEST(fanout, has_output) {
 
     fanout.remove_output(writer);
     CHECK(!fanout.has_output(writer));
+}
+
+TEST(fanout, forward_error) {
+    test::MockWriter writer1;
+    test::MockWriter writer2;
+
+    Fanout fanout(sample_spec);
+    fanout.add_output(writer1);
+    fanout.add_output(writer2);
+
+    FramePtr frame = new_frame(BufSz);
+    CHECK(frame);
+
+    writer1.set_status(status::StatusAbort);
+    writer2.set_status(status::StatusOK);
+
+    LONGS_EQUAL(status::StatusAbort, fanout.write(*frame));
+
+    writer1.set_status(status::StatusOK);
+    writer2.set_status(status::StatusAbort);
+
+    LONGS_EQUAL(status::StatusAbort, fanout.write(*frame));
+
+    writer1.set_status(status::StatusOK);
+    writer2.set_status(status::StatusOK);
+
+    LONGS_EQUAL(status::StatusOK, fanout.write(*frame));
 }
 
 } // namespace audio

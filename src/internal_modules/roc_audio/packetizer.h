@@ -77,12 +77,12 @@ public:
     const PacketizerMetrics& metrics() const;
 
     //! Write audio frame.
-    virtual status::StatusCode write(Frame& frame);
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(Frame& frame);
 
     //! Flush buffered packet, if any.
     //! @remarks
     //!  Packet is padded to match fixed size.
-    void flush();
+    ROC_ATTR_NODISCARD status::StatusCode flush();
 
 private:
     status::StatusCode begin_packet_();

@@ -15,12 +15,12 @@
 namespace roc {
 namespace audio {
 
-ChannelMapperWriter::ChannelMapperWriter(IFrameWriter& writer,
+ChannelMapperWriter::ChannelMapperWriter(IFrameWriter& frame_writer,
                                          FrameFactory& frame_factory,
                                          const SampleSpec& in_spec,
                                          const SampleSpec& out_spec)
-    : output_writer_(writer)
-    , output_buf_()
+    : frame_factory_(frame_factory)
+    , frame_writer_(frame_writer)
     , mapper_(in_spec.channel_set(), out_spec.channel_set())
     , in_spec_(in_spec)
     , out_spec_(out_spec)
@@ -40,14 +40,11 @@ ChannelMapperWriter::ChannelMapperWriter(IFrameWriter& writer,
                   sample_spec_to_str(out_spec).c_str());
     }
 
-    output_buf_ = frame_factory.new_raw_buffer();
-    if (!output_buf_) {
-        roc_log(LogError, "channel mapper writer: can't allocate temporary buffer");
+    out_frame_ = frame_factory_.allocate_frame(0);
+    if (!out_frame_) {
         init_status_ = status::StatusNoMem;
         return;
     }
-
-    output_buf_.reslice(0, output_buf_.capacity());
 
     init_status_ = status::StatusOK;
 }
@@ -59,51 +56,46 @@ status::StatusCode ChannelMapperWriter::init_status() const {
 status::StatusCode ChannelMapperWriter::write(Frame& in_frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    if (in_frame.num_raw_samples() % in_spec_.num_channels() != 0) {
-        roc_panic("channel mapper writer: unexpected frame size");
-    }
+    in_spec_.validate_frame(in_frame);
 
-    const size_t max_batch = output_buf_.size() / out_spec_.num_channels();
+    const size_t in_size = in_frame.num_raw_samples();
+    size_t in_pos = 0;
 
-    core::nanoseconds_t capt_ts = in_frame.capture_timestamp();
-    sample_t* in_samples = in_frame.raw_samples();
-    size_t n_samples = in_frame.num_raw_samples() / in_spec_.num_channels();
+    while (in_pos < in_size) {
+        const packet::stream_timestamp_t remained_duration =
+            packet::stream_timestamp_t((in_size - in_pos) / in_spec_.num_channels());
 
-    const unsigned flags = in_frame.flags();
+        const packet::stream_timestamp_t capped_duration = out_spec_.cap_frame_duration(
+            remained_duration, frame_factory_.byte_buffer_size());
 
-    while (n_samples != 0) {
-        const size_t n_write = std::min(n_samples, max_batch);
+        const size_t in_batch_size = capped_duration * in_spec_.num_channels();
 
-        const status::StatusCode code = write_(in_samples, n_write, flags, capt_ts);
-        if (code != status::StatusOK) {
-            return code;
+        if (!frame_factory_.reallocate_frame(
+                *out_frame_, out_spec_.stream_timestamp_2_bytes(capped_duration))) {
+            return status::StatusNoMem;
         }
 
-        in_samples += n_write * in_spec_.num_channels();
-        n_samples -= n_write;
+        out_frame_->set_flags(in_frame.flags());
+        out_frame_->set_raw(true);
+        out_frame_->set_duration(capped_duration);
 
-        if (capt_ts) {
-            capt_ts += in_spec_.samples_per_chan_2_ns(n_write);
+        if (in_frame.capture_timestamp() != 0) {
+            out_frame_->set_capture_timestamp(in_frame.capture_timestamp()
+                                              + in_spec_.samples_overall_2_ns(in_pos));
+        }
+
+        mapper_.map(in_frame.raw_samples() + in_pos, in_batch_size,
+                    out_frame_->raw_samples(), out_frame_->num_raw_samples());
+
+        in_pos += in_batch_size;
+
+        const status::StatusCode code = frame_writer_.write(*out_frame_);
+        if (code != status::StatusOK) {
+            return code;
         }
     }
 
     return status::StatusOK;
-}
-
-status::StatusCode ChannelMapperWriter::write_(sample_t* in_samples,
-                                               size_t n_samples,
-                                               unsigned flags,
-                                               core::nanoseconds_t capture_ts) {
-    Frame out_frame(output_buf_.data(), n_samples * out_spec_.num_channels());
-
-    mapper_.map(in_samples, n_samples * in_spec_.num_channels(), out_frame.raw_samples(),
-                out_frame.num_raw_samples());
-
-    out_frame.set_flags(flags);
-    out_frame.set_duration(out_frame.num_raw_samples() / out_spec_.num_channels());
-    out_frame.set_capture_timestamp(capture_ts);
-
-    return output_writer_.write(out_frame);
 }
 
 } // namespace audio

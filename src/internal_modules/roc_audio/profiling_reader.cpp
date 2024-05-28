@@ -26,12 +26,13 @@ status::StatusCode ProfilingReader::init_status() const {
     return profiler_.init_status();
 }
 
-status::StatusCode ProfilingReader::read(Frame& frame) {
+status::StatusCode ProfilingReader::read(Frame& frame,
+                                         packet::stream_timestamp_t duration) {
     const core::nanoseconds_t started = core::timestamp(core::ClockMonotonic);
-    const status::StatusCode code = reader_.read(frame);
+    const status::StatusCode code = reader_.read(frame, duration);
     const core::nanoseconds_t elapsed = core::timestamp(core::ClockMonotonic) - started;
 
-    if (code == status::StatusOK) {
+    if (code == status::StatusOK || code == status::StatusPart) {
         profiler_.add_frame(frame.duration(), elapsed);
     }
 

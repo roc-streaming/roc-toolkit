@@ -56,16 +56,6 @@ int main(int argc, char** argv) {
         break;
     }
 
-    core::HeapArena arena;
-    sndio::BackendDispatcher backend_dispatcher(arena);
-
-    if (args.list_supported_given) {
-        if (!sndio::print_supported(backend_dispatcher, arena)) {
-            return 1;
-        }
-        return 0;
-    }
-
     pipeline::TranscoderConfig transcoder_config;
 
     sndio::Config source_config;
@@ -84,13 +74,25 @@ int main(int argc, char** argv) {
         }
     }
 
-    sndio::BackendMap::instance().set_frame_size(source_config.frame_length,
-                                                 transcoder_config.input_sample_spec);
+    core::HeapArena arena;
 
+    core::SlabPool<audio::Frame> frame_pool("frame_pool", arena);
     core::SlabPool<core::Buffer> frame_buffer_pool(
         "frame_buffer_pool", arena,
         sizeof(core::Buffer)
             + transcoder_config.input_sample_spec.ns_2_bytes(source_config.frame_length));
+
+    sndio::BackendDispatcher backend_dispatcher(frame_pool, frame_buffer_pool, arena);
+
+    sndio::BackendMap::instance().set_frame_size(source_config.frame_length,
+                                                 transcoder_config.input_sample_spec);
+
+    if (args.list_supported_given) {
+        if (!sndio::print_supported(backend_dispatcher, arena)) {
+            return 1;
+        }
+        return 0;
+    }
 
     address::IoUri input_uri(arena);
     if (args.input_given) {
@@ -107,18 +109,26 @@ int main(int argc, char** argv) {
 
     core::ScopedPtr<sndio::ISource> input_source;
     if (input_uri.is_valid()) {
-        input_source.reset(backend_dispatcher.open_source(
-                               input_uri, args.input_format_arg, source_config),
-                           arena);
+        const status::StatusCode code = backend_dispatcher.open_source(
+            input_uri, args.input_format_arg, source_config, input_source);
+
+        if (code != status::StatusOK) {
+            roc_log(LogError, "can't open --input file or device: status=%s",
+                    status::code_to_str(code));
+            return 1;
+        }
     } else {
-        input_source.reset(backend_dispatcher.open_default_source(source_config), arena);
-    }
-    if (!input_source) {
-        roc_log(LogError, "can't open input: %s", args.input_arg);
-        return 1;
+        const status::StatusCode code =
+            backend_dispatcher.open_default_source(source_config, input_source);
+
+        if (code != status::StatusOK) {
+            roc_log(LogError, "can't open default --input file or device: status=%s",
+                    status::code_to_str(code));
+            return 1;
+        }
     }
     if (input_source->has_clock()) {
-        roc_log(LogError, "unsupported input: %s", args.input_arg);
+        roc_log(LogError, "unsupported --input type");
         return 1;
     }
 
@@ -188,24 +198,32 @@ int main(int argc, char** argv) {
     core::ScopedPtr<sndio::ISink> output_sink;
     if (args.output_given) {
         if (output_uri.is_valid()) {
-            output_sink.reset(backend_dispatcher.open_sink(
-                                  output_uri, args.output_format_arg, sink_config),
-                              arena);
+            const status::StatusCode code = backend_dispatcher.open_sink(
+                output_uri, args.output_format_arg, sink_config, output_sink);
+
+            if (code != status::StatusOK) {
+                roc_log(LogError, "can't open --output file or device: status=%s",
+                        status::code_to_str(code));
+                return 1;
+            }
         } else {
-            output_sink.reset(backend_dispatcher.open_default_sink(sink_config), arena);
-        }
-        if (!output_sink) {
-            roc_log(LogError, "can't open output: %s", args.output_arg);
-            return 1;
+            const status::StatusCode code =
+                backend_dispatcher.open_default_sink(sink_config, output_sink);
+
+            if (code != status::StatusOK) {
+                roc_log(LogError, "can't open default --output device: status=%s",
+                        status::code_to_str(code));
+                return 1;
+            }
         }
         if (output_sink->has_clock()) {
-            roc_log(LogError, "unsupported output: %s", args.output_arg);
+            roc_log(LogError, "unsupported --output type");
             return 1;
         }
         output_writer = output_sink.get();
     }
 
-    pipeline::TranscoderSink transcoder(transcoder_config, output_writer,
+    pipeline::TranscoderSink transcoder(transcoder_config, output_writer, frame_pool,
                                         frame_buffer_pool, arena);
     if (transcoder.init_status() != status::StatusOK) {
         roc_log(LogError, "can't create transcoder pipeline: status=%s",
@@ -213,9 +231,12 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    sndio::Pump pump(frame_buffer_pool, *input_source, NULL, transcoder,
-                     source_config.frame_length, transcoder_config.input_sample_spec,
-                     sndio::Pump::ModePermanent);
+    sndio::Config pump_config;
+    pump_config.sample_spec = input_source->sample_spec();
+    pump_config.frame_length = source_config.frame_length;
+
+    sndio::Pump pump(frame_pool, frame_buffer_pool, *input_source, NULL, transcoder,
+                     pump_config, sndio::Pump::ModePermanent);
     if (pump.init_status() != status::StatusOK) {
         roc_log(LogError, "can't create audio pump: status=%s",
                 status::code_to_str(pump.init_status()));

@@ -272,7 +272,7 @@ TEST(sender, endpoints_no_fec) {
         parse_uri(source_endp, "rtp://127.0.0.1:1000");
 
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(!sender.has_incomplete());
+        CHECK(!sender.has_incomplete_slots());
 
         LONGS_EQUAL(1, context.network_loop().num_ports());
     }
@@ -285,7 +285,7 @@ TEST(sender, endpoints_no_fec) {
         Sender sender(context, sender_config);
         LONGS_EQUAL(status::StatusOK, sender.init_status());
 
-        CHECK(!sender.has_incomplete());
+        CHECK(!sender.has_incomplete_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
@@ -307,14 +307,14 @@ TEST(sender, endpoints_fec) {
 
         // fec is not supported
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(sender.has_incomplete());
+        CHECK(sender.has_incomplete_slots());
 
         address::EndpointUri repair_endp(arena);
         parse_uri(repair_endp, "rs8m://127.0.0.1:1002");
 
         // fec is not supported
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioRepair, repair_endp));
-        CHECK(sender.has_incomplete());
+        CHECK(sender.has_incomplete_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
 
@@ -337,7 +337,7 @@ TEST(sender, endpoints_fec) {
 
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioRepair, repair_endp));
-        CHECK(!sender.has_incomplete());
+        CHECK(!sender.has_incomplete_slots());
 
         LONGS_EQUAL(1, context.network_loop().num_ports());
     }
@@ -354,7 +354,7 @@ TEST(sender, endpoints_fec) {
         parse_uri(source_endp, "rtp+ldpc://127.0.0.1:1000");
 
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(sender.has_incomplete());
+        CHECK(sender.has_incomplete_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
@@ -371,7 +371,7 @@ TEST(sender, endpoints_fec) {
         parse_uri(repair_endp, "ldpc://127.0.0.1:1000");
 
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioRepair, repair_endp));
-        CHECK(sender.has_incomplete());
+        CHECK(sender.has_incomplete_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
@@ -388,7 +388,7 @@ TEST(sender, endpoints_fec) {
         parse_uri(repair_endp, "rs8m://127.0.0.1:1000");
 
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioRepair, repair_endp));
-        CHECK(sender.has_incomplete());
+        CHECK(sender.has_incomplete_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
@@ -405,7 +405,7 @@ TEST(sender, endpoints_fec) {
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:1000");
 
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(sender.has_incomplete());
+        CHECK(sender.has_incomplete_slots());
 
         LONGS_EQUAL(1, context.network_loop().num_ports());
     }
@@ -422,7 +422,7 @@ TEST(sender, endpoints_fec) {
         parse_uri(repair_endp, "rs8m://127.0.0.1:1000");
 
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioRepair, repair_endp));
-        CHECK(sender.has_incomplete());
+        CHECK(sender.has_incomplete_slots());
 
         LONGS_EQUAL(1, context.network_loop().num_ports());
     }
@@ -453,18 +453,18 @@ TEST(sender, endpoints_fec_multiple_slots) {
     address::EndpointUri repair_endp2(arena);
     parse_uri(repair_endp2, "rs8m://127.0.0.1:2002");
 
-    CHECK(!sender.has_incomplete());
+    CHECK(!sender.has_incomplete_slots());
 
     CHECK(sender.connect(0, address::Iface_AudioSource, source_endp1));
     CHECK(sender.connect(1, address::Iface_AudioSource, source_endp2));
 
-    CHECK(sender.has_incomplete());
+    CHECK(sender.has_incomplete_slots());
     LONGS_EQUAL(2, context.network_loop().num_ports());
 
     CHECK(sender.connect(0, address::Iface_AudioRepair, repair_endp1));
     CHECK(sender.connect(1, address::Iface_AudioRepair, repair_endp2));
 
-    CHECK(!sender.has_incomplete());
+    CHECK(!sender.has_incomplete_slots());
     LONGS_EQUAL(2, context.network_loop().num_ports());
 }
 
@@ -482,7 +482,7 @@ TEST(sender, endpoints_control) {
         parse_uri(control_endp, "rtcp://127.0.0.1:1000");
 
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioControl, control_endp));
-        CHECK(sender.has_incomplete());
+        CHECK(sender.has_incomplete_slots());
 
         LONGS_EQUAL(1, context.network_loop().num_ports());
     }
@@ -500,7 +500,7 @@ TEST(sender, endpoints_control) {
 
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioControl, control_endp));
-        CHECK(!sender.has_incomplete());
+        CHECK(!sender.has_incomplete_slots());
 
         LONGS_EQUAL(1, context.network_loop().num_ports());
     }
@@ -523,7 +523,7 @@ TEST(sender, endpoints_control) {
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioRepair, repair_endp));
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioControl, control_endp));
-        CHECK(!sender.has_incomplete());
+        CHECK(!sender.has_incomplete_slots());
 
         LONGS_EQUAL(1, context.network_loop().num_ports());
     }
@@ -537,7 +537,7 @@ TEST(sender, endpoints_control) {
         parse_uri(control_endp, "rtp://127.0.0.1:1001");
 
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioControl, control_endp));
-        CHECK(sender.has_incomplete());
+        CHECK(sender.has_incomplete_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
@@ -555,7 +555,7 @@ TEST(sender, connect_errors) {
         CHECK(source_endp.set_proto(address::Proto_RTP));
 
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(sender.has_broken());
+        CHECK(sender.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
@@ -571,7 +571,7 @@ TEST(sender, connect_errors) {
         CHECK(source_endp.set_port(-1));
 
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(sender.has_broken());
+        CHECK(sender.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
@@ -586,7 +586,7 @@ TEST(sender, connect_errors) {
         parse_uri(source_endp, "rtp://127.0.0.1:1000");
 
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(!sender.has_broken());
+        CHECK(!sender.has_broken_slots());
 
         LONGS_EQUAL(1, context.network_loop().num_ports());
 
@@ -594,7 +594,7 @@ TEST(sender, connect_errors) {
         parse_uri(repair_endp, "ldpc://127.0.0.1:1000");
 
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioRepair, repair_endp));
-        CHECK(sender.has_broken());
+        CHECK(sender.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
@@ -609,7 +609,7 @@ TEST(sender, connect_errors) {
         parse_uri(source_endp, "rtp://invalid.:1000");
 
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(sender.has_broken());
+        CHECK(sender.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
@@ -655,13 +655,13 @@ TEST(sender, configure_errors) {
         CHECK(iface_config.bind_address.set_host_port_auto("8.8.8.8", 0));
 
         CHECK(sender.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
-        CHECK(!sender.has_broken());
+        CHECK(!sender.has_broken_slots());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:1000");
 
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(sender.has_broken());
+        CHECK(sender.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
@@ -676,13 +676,13 @@ TEST(sender, configure_errors) {
         CHECK(iface_config.bind_address.set_host_port_auto("::", 0));
 
         CHECK(sender.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
-        CHECK(!sender.has_broken());
+        CHECK(!sender.has_broken_slots());
 
         address::EndpointUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:1000");
 
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(sender.has_broken());
+        CHECK(sender.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
@@ -697,13 +697,13 @@ TEST(sender, configure_errors) {
         strcpy(iface_config.multicast_interface, "8.8.8.8");
 
         CHECK(sender.configure(DefaultSlot, address::Iface_AudioControl, iface_config));
-        CHECK(!sender.has_broken());
+        CHECK(!sender.has_broken_slots());
 
         address::EndpointUri control_endp(arena);
         parse_uri(control_endp, "rtcp://127.0.0.1:1000");
 
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioControl, control_endp));
-        CHECK(sender.has_broken());
+        CHECK(sender.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
@@ -719,14 +719,14 @@ TEST(sender, configure_errors) {
         strcpy(iface_config.multicast_interface, "::");
 
         CHECK(sender.configure(DefaultSlot, address::Iface_AudioControl, iface_config));
-        CHECK(!sender.has_broken());
+        CHECK(!sender.has_broken_slots());
 
         address::EndpointUri control_endp(arena);
         // connect to IPv4 address
         parse_uri(control_endp, "rtcp://224.0.0.1:1000");
 
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioControl, control_endp));
-        CHECK(sender.has_broken());
+        CHECK(sender.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
@@ -742,14 +742,14 @@ TEST(sender, configure_errors) {
         strcpy(iface_config.multicast_interface, "0.0.0.0");
 
         CHECK(sender.configure(DefaultSlot, address::Iface_AudioControl, iface_config));
-        CHECK(!sender.has_broken());
+        CHECK(!sender.has_broken_slots());
 
         address::EndpointUri control_endp(arena);
         // connect to non-multicast address
         parse_uri(control_endp, "rtcp://127.0.0.1:1000");
 
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioControl, control_endp));
-        CHECK(sender.has_broken());
+        CHECK(sender.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
@@ -767,13 +767,13 @@ TEST(sender, flow_errors) {
         parse_uri(source_endp, "rtp://127.0.0.1:1000");
 
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(!sender.has_broken());
+        CHECK(!sender.has_broken_slots());
 
         LONGS_EQUAL(1, context.network_loop().num_ports());
 
         netio::UdpConfig iface_config;
         CHECK(!sender.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
-        CHECK(sender.has_broken());
+        CHECK(sender.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
@@ -788,12 +788,12 @@ TEST(sender, flow_errors) {
         parse_uri(source_endp, "rtp://127.0.0.1:1000");
 
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(!sender.has_broken());
+        CHECK(!sender.has_broken_slots());
 
         LONGS_EQUAL(1, context.network_loop().num_ports());
 
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(sender.has_broken());
+        CHECK(sender.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
@@ -805,7 +805,7 @@ TEST(sender, flow_errors) {
         LONGS_EQUAL(status::StatusOK, sender.init_status());
 
         CHECK(!sender.unlink(DefaultSlot));
-        CHECK(!sender.has_broken());
+        CHECK(!sender.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
@@ -820,13 +820,13 @@ TEST(sender, flow_errors) {
         parse_uri(source_endp, "rtp://127.0.0.1:1000");
 
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(!sender.has_broken());
+        CHECK(!sender.has_broken_slots());
 
         CHECK(sender.unlink(DefaultSlot));
-        CHECK(!sender.has_broken());
+        CHECK(!sender.has_broken_slots());
 
         CHECK(!sender.unlink(DefaultSlot));
-        CHECK(!sender.has_broken());
+        CHECK(!sender.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
@@ -847,23 +847,23 @@ TEST(sender, recover) {
         parse_uri(source_endp2, "rtp://127.0.0.1:1000");
 
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp1));
-        CHECK(sender.has_broken());
+        CHECK(sender.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
 
         // can't connect, slot is broken
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp2));
-        CHECK(sender.has_broken());
+        CHECK(sender.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
 
         // unlink slot
         CHECK(sender.unlink(DefaultSlot));
-        CHECK(!sender.has_broken());
+        CHECK(!sender.has_broken_slots());
 
         // can connect
         CHECK(sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp2));
-        CHECK(!sender.has_broken());
+        CHECK(!sender.has_broken_slots());
 
         LONGS_EQUAL(1, context.network_loop().num_ports());
     }
@@ -881,24 +881,24 @@ TEST(sender, recover) {
         parse_uri(source_endp2, "rtp://127.0.0.1:1000");
 
         CHECK(!sender.connect(DefaultSlot, address::Iface_AudioSource, source_endp1));
-        CHECK(sender.has_broken());
+        CHECK(sender.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
 
         // can't configure, slot is broken
         netio::UdpConfig iface_config;
         CHECK(!sender.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
-        CHECK(sender.has_broken());
+        CHECK(sender.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
 
         // unlink slot
         CHECK(sender.unlink(DefaultSlot));
-        CHECK(!sender.has_broken());
+        CHECK(!sender.has_broken_slots());
 
         // can configure
         CHECK(sender.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
-        CHECK(!sender.has_broken());
+        CHECK(!sender.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }

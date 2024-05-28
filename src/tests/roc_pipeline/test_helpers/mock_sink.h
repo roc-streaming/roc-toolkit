@@ -29,6 +29,10 @@ public:
         , n_chans_(sample_spec.num_channels()) {
     }
 
+    virtual sndio::DeviceType type() const {
+        return sndio::DeviceType_Sink;
+    }
+
     virtual sndio::ISink* to_sink() {
         return this;
     }
@@ -37,34 +41,12 @@ public:
         return NULL;
     }
 
-    virtual sndio::DeviceType type() const {
-        return sndio::DeviceType_Sink;
-    }
-
-    virtual sndio::DeviceState state() const {
-        return sndio::DeviceState_Active;
-    }
-
-    virtual void pause() {
-        FAIL("not implemented");
-    }
-
-    virtual bool resume() {
-        FAIL("not implemented");
-        return false;
-    }
-
-    virtual bool restart() {
-        FAIL("not implemented");
-        return false;
-    }
-
     virtual audio::SampleSpec sample_spec() const {
         return audio::SampleSpec();
     }
 
-    virtual core::nanoseconds_t latency() const {
-        return 0;
+    virtual bool has_state() const {
+        return false;
     }
 
     virtual bool has_latency() const {

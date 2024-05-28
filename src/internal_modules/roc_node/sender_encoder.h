@@ -68,14 +68,20 @@ public:
     bool is_complete();
 
     //! Read encoded packet.
-    ROC_ATTR_NODISCARD status::StatusCode read_packet(address::Interface iface,
-                                                      packet::PacketPtr& packet);
+    ROC_ATTR_NODISCARD status::StatusCode
+    read_packet(address::Interface iface, void* bytes, size_t* n_bytes);
 
     //! Write packet for decoding.
     //! @note
     //!  Typically used to deliver control packets with receiver feedback.
-    ROC_ATTR_NODISCARD status::StatusCode write_packet(address::Interface iface,
-                                                       const packet::PacketPtr& packet);
+    ROC_ATTR_NODISCARD status::StatusCode
+    write_packet(address::Interface iface, const void* bytes, size_t n_bytes);
+
+    //! Write frame.
+    //! @remarks
+    //!  Performs necessary checks and allocations on top of ISink::write(),
+    //!  needed when working with byte buffers instead of Frame objects.
+    ROC_ATTR_NODISCARD status::StatusCode write_frame(const void* bytes, size_t n_bytes);
 
     //! Sink for writing frames for encoding.
     sndio::ISink& sink();
@@ -85,7 +91,7 @@ private:
                                           core::nanoseconds_t delay);
     virtual void cancel_task_processing(pipeline::PipelineLoop&);
 
-    core::Mutex mutex_;
+    core::Mutex control_mutex_;
 
     address::SocketAddr dest_address_;
 
@@ -93,11 +99,17 @@ private:
     core::Atomic<packet::IReader*> endpoint_readers_[address::Iface_Max];
     core::Atomic<packet::IWriter*> endpoint_writers_[address::Iface_Max];
 
-    packet::PacketFactory packet_factory_;
-
     pipeline::SenderLoop pipeline_;
     pipeline::SenderLoop::SlotHandle slot_;
     ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
+
+    packet::PacketFactory packet_factory_;
+
+    core::Mutex frame_mutex_;
+
+    audio::FrameFactory frame_factory_;
+    audio::FramePtr frame_;
+    audio::SampleSpec sample_spec_;
 
     status::StatusCode init_status_;
 };

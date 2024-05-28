@@ -23,21 +23,25 @@ Receiver::Receiver(Context& context,
                 context.encoding_map(),
                 context.packet_pool(),
                 context.packet_buffer_pool(),
+                context.frame_pool(),
                 context.frame_buffer_pool(),
                 context.arena())
     , processing_task_(pipeline_)
     , slot_pool_("slot_pool", context.arena())
     , slot_map_(context.arena())
     , party_metrics_(context.arena())
+    , frame_factory_(context.frame_pool(), context.frame_buffer_pool())
     , init_status_(status::NoStatus) {
     roc_log(LogDebug, "receiver node: initializing");
-
-    memset(used_interfaces_, 0, sizeof(used_interfaces_));
-    memset(used_protocols_, 0, sizeof(used_protocols_));
 
     if ((init_status_ = pipeline_.init_status()) != status::StatusOK) {
         return;
     }
+
+    sample_spec_ = pipeline_.source().sample_spec();
+
+    memset(used_interfaces_, 0, sizeof(used_interfaces_));
+    memset(used_protocols_, 0, sizeof(used_protocols_));
 
     init_status_ = status::StatusOK;
 }
@@ -63,7 +67,7 @@ status::StatusCode Receiver::init_status() const {
 bool Receiver::configure(slot_index_t slot_index,
                          address::Interface iface,
                          const netio::UdpConfig& config) {
-    core::Mutex::Lock lock(mutex_);
+    core::Mutex::Lock lock(control_mutex_);
 
     roc_panic_if(init_status_ != status::StatusOK);
 
@@ -110,7 +114,7 @@ bool Receiver::configure(slot_index_t slot_index,
 bool Receiver::bind(slot_index_t slot_index,
                     address::Interface iface,
                     address::EndpointUri& uri) {
-    core::Mutex::Lock lock(mutex_);
+    core::Mutex::Lock lock(control_mutex_);
 
     roc_panic_if(init_status_ != status::StatusOK);
 
@@ -244,7 +248,7 @@ bool Receiver::bind(slot_index_t slot_index,
 }
 
 bool Receiver::unlink(slot_index_t slot_index) {
-    core::Mutex::Lock lock(mutex_);
+    core::Mutex::Lock lock(control_mutex_);
 
     roc_panic_if(init_status_ != status::StatusOK);
 
@@ -271,7 +275,7 @@ bool Receiver::get_metrics(slot_index_t slot_index,
                            party_metrics_func_t party_metrics_func,
                            size_t* party_metrics_size,
                            void* party_metrics_arg) {
-    core::Mutex::Lock lock(mutex_);
+    core::Mutex::Lock lock(control_mutex_);
 
     roc_panic_if(init_status_ != status::StatusOK);
 
@@ -322,8 +326,8 @@ bool Receiver::get_metrics(slot_index_t slot_index,
     return true;
 }
 
-bool Receiver::has_broken() {
-    core::Mutex::Lock lock(mutex_);
+bool Receiver::has_broken_slots() {
+    core::Mutex::Lock lock(control_mutex_);
 
     roc_panic_if(init_status_ != status::StatusOK);
 
@@ -335,6 +339,43 @@ bool Receiver::has_broken() {
     }
 
     return false;
+}
+
+status::StatusCode Receiver::read_frame(void* bytes, size_t n_bytes) {
+    core::Mutex::Lock lock(frame_mutex_);
+
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    roc_panic_if(!bytes);
+    roc_panic_if(n_bytes == 0);
+
+    if (!sample_spec_.validate_frame_size(n_bytes)) {
+        return status::StatusBadBuffer;
+    }
+
+    if (!frame_) {
+        if (!(frame_ = frame_factory_.allocate_frame_no_buffer())) {
+            return status::StatusNoMem;
+        }
+    }
+
+    // Attach pre-allocated buffer to frame.
+    // This allows source to write result directly into user buffer.
+    core::BufferView frame_buffer(bytes, n_bytes);
+    frame_->set_buffer(frame_buffer);
+
+    const status::StatusCode code =
+        pipeline_.source().read(*frame_, sample_spec_.bytes_2_stream_timestamp(n_bytes));
+
+    if (code == status::StatusOK && frame_->bytes() != bytes) {
+        // If source used another buffer, copy result from it.
+        memmove(bytes, frame_->bytes(), n_bytes);
+    }
+
+    // Detach buffer, clear frame for re-use.
+    frame_->clear();
+
+    return code;
 }
 
 sndio::ISource& Receiver::source() {

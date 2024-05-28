@@ -32,11 +32,13 @@ inline void write_beep(sample_t* buf, size_t bufsz) {
 
 } // namespace
 
-Depacketizer::Depacketizer(packet::IReader& reader,
+Depacketizer::Depacketizer(packet::IReader& packet_reader,
                            IFrameDecoder& payload_decoder,
+                           FrameFactory& frame_factory,
                            const SampleSpec& sample_spec,
                            bool beep)
-    : reader_(reader)
+    : frame_factory_(frame_factory)
+    , packet_reader_(packet_reader)
     , payload_decoder_(payload_decoder)
     , sample_spec_(sample_spec)
     , stream_ts_(0)
@@ -78,33 +80,36 @@ packet::stream_timestamp_t Depacketizer::next_timestamp() const {
     return stream_ts_;
 }
 
-status::StatusCode Depacketizer::read(Frame& frame) {
+status::StatusCode Depacketizer::read(Frame& out_frame,
+                                      packet::stream_timestamp_t requested_duration) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    read_frame_(frame);
+    const packet::stream_timestamp_t capped_duration = sample_spec_.cap_frame_duration(
+        requested_duration, frame_factory_.byte_buffer_size());
+
+    if (!frame_factory_.reallocate_frame(
+            out_frame, sample_spec_.stream_timestamp_2_bytes(capped_duration))) {
+        return status::StatusNoMem;
+    }
+
+    out_frame.set_raw(true);
+
+    sample_t* buff_ptr = out_frame.raw_samples();
+    sample_t* buff_end = out_frame.raw_samples() + out_frame.num_raw_samples();
+
+    FrameInfo frame_info;
+
+    while (buff_ptr < buff_end) {
+        buff_ptr = read_samples_(buff_ptr, buff_end, frame_info);
+    }
+    roc_panic_if(buff_ptr != buff_end);
+
+    set_frame_info_(out_frame, frame_info);
 
     report_stats_();
 
-    // TODO(gh-183): forward status
-    return status::StatusOK;
-}
-
-void Depacketizer::read_frame_(Frame& frame) {
-    if (frame.num_raw_samples() % sample_spec_.num_channels() != 0) {
-        roc_panic("depacketizer: unexpected frame size");
-    }
-
-    sample_t* buff_ptr = frame.raw_samples();
-    sample_t* buff_end = frame.raw_samples() + frame.num_raw_samples();
-
-    FrameInfo info;
-
-    while (buff_ptr < buff_end) {
-        buff_ptr = read_samples_(buff_ptr, buff_end, info);
-    }
-
-    roc_panic_if(buff_ptr != buff_end);
-    set_frame_props_(frame, info);
+    // TODO(gh-183): forward status from packet reader
+    return capped_duration == requested_duration ? status::StatusOK : status::StatusPart;
 }
 
 sample_t*
@@ -285,7 +290,7 @@ void Depacketizer::update_packet_(FrameInfo& info) {
 
 packet::PacketPtr Depacketizer::read_packet_() {
     packet::PacketPtr pp;
-    const status::StatusCode code = reader_.read(pp);
+    const status::StatusCode code = packet_reader_.read(pp);
     if (code != status::StatusOK) {
         if (code != status::StatusDrain) {
             // TODO(gh-302): forward status
@@ -299,7 +304,7 @@ packet::PacketPtr Depacketizer::read_packet_() {
     return pp;
 }
 
-void Depacketizer::set_frame_props_(Frame& frame, const FrameInfo& info) {
+void Depacketizer::set_frame_info_(Frame& frame, const FrameInfo& info) {
     unsigned flags = 0;
 
     if (info.n_decoded_samples != 0) {

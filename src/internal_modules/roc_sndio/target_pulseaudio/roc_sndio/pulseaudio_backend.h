@@ -23,18 +23,22 @@ class PulseaudioBackend : public IBackend, core::NonCopyable<> {
 public:
     PulseaudioBackend();
 
+    //! Returns name of backend.
+    virtual const char* name() const;
+
     //! Append supported drivers to the list.
     virtual void discover_drivers(core::Array<DriverInfo, MaxDrivers>& driver_list);
 
     //! Create and open a sink or source.
-    virtual IDevice* open_device(DeviceType device_type,
-                                 DriverType driver_type,
-                                 const char* driver,
-                                 const char* path,
-                                 const Config& config,
-                                 core::IArena& arena);
-
-    virtual const char* name() const;
+    virtual ROC_ATTR_NODISCARD status::StatusCode
+    open_device(DeviceType device_type,
+                DriverType driver_type,
+                const char* driver,
+                const char* path,
+                const Config& config,
+                audio::FrameFactory& frame_factory,
+                core::IArena& arena,
+                IDevice** result);
 };
 
 } // namespace sndio

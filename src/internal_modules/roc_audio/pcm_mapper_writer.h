@@ -30,7 +30,7 @@ namespace audio {
 class PcmMapperWriter : public IFrameWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
-    PcmMapperWriter(IFrameWriter& writer,
+    PcmMapperWriter(IFrameWriter& frame_writer,
                     FrameFactory& frame_factory,
                     const SampleSpec& in_spec,
                     const SampleSpec& out_spec);
@@ -39,13 +39,15 @@ public:
     status::StatusCode init_status() const;
 
     //! Write audio frame.
-    virtual status::StatusCode write(Frame& frame);
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(Frame& frame);
 
 private:
-    PcmMapper mapper_;
+    FrameFactory& frame_factory_;
+    IFrameWriter& frame_writer_;
 
-    IFrameWriter& out_writer_;
-    core::Slice<uint8_t> out_buf_;
+    FramePtr out_frame_;
+
+    PcmMapper mapper_;
 
     const SampleSpec in_spec_;
     const SampleSpec out_spec_;

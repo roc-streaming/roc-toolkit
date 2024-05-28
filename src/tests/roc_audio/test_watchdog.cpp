@@ -23,7 +23,7 @@ enum {
 
     NumCh = 2,
     ChMask = 0x3,
-    SamplesPerFrame = 5,
+    SamplesPerFrame = 6,
 
     SampleRate = 1000,
 
@@ -33,508 +33,617 @@ enum {
     BreakageWindowsPerTimeout = BrokenPlaybackTimeout / BreakageWindow
 };
 
+const sample_t magic_sample = 42;
+
 const SampleSpec sample_spec(
     SampleRate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
 core::HeapArena arena;
 FrameFactory frame_factory(arena, MaxBufSize * sizeof(sample_t));
 
-class MockReader : public IFrameReader, public core::NonCopyable<> {
+WatchdogConfig
+make_config(int no_playback_timeout, int broken_playback_timeout, int warmup_duration) {
+    WatchdogConfig config;
+    config.no_playback_timeout =
+        no_playback_timeout >= 0 ? no_playback_timeout * core::Second / SampleRate : -1;
+    config.choppy_playback_timeout = broken_playback_timeout >= 0
+        ? broken_playback_timeout * core::Second / SampleRate
+        : -1;
+    config.choppy_playback_window = BreakageWindow * core::Second / SampleRate;
+    config.warmup_duration =
+        warmup_duration >= 0 ? warmup_duration * core::Second / SampleRate : -1;
+    return config;
+}
+
+void expect_read(status::StatusCode expected_status,
+                 Watchdog& watchdog,
+                 size_t requested_duration,
+                 size_t expected_duration = 0) {
+    if (expected_duration == 0) {
+        expected_duration = requested_duration;
+    }
+
+    FramePtr frame = frame_factory.allocate_frame_no_buffer();
+    CHECK(frame);
+
+    LONGS_EQUAL(expected_status, watchdog.read(*frame, requested_duration));
+
+    if (expected_status == status::StatusOK || expected_status == status::StatusPart) {
+        CHECK(frame->is_raw());
+        UNSIGNED_LONGS_EQUAL(expected_duration * NumCh, frame->num_raw_samples());
+        UNSIGNED_LONGS_EQUAL(expected_duration, frame->duration());
+
+        for (size_t n = 0; n < frame->num_raw_samples(); n++) {
+            DOUBLES_EQUAL(magic_sample, (double)frame->raw_samples()[n], 0);
+        }
+
+        CHECK(watchdog.is_alive());
+    } else {
+        CHECK(!watchdog.is_alive());
+    }
+}
+
+void expect_n_reads(status::StatusCode expected_status,
+                    Watchdog& watchdog,
+                    size_t duration,
+                    size_t read_count) {
+    for (size_t n = 0; n < read_count; n++) {
+        expect_read(expected_status, watchdog, duration);
+    }
+}
+
+class MetaReader : public IFrameReader, public core::NonCopyable<> {
 public:
-    MockReader()
-        : flags_(0) {
+    MetaReader()
+        : flags_(0)
+        , max_duration_(0)
+        , status_(status::NoStatus)
+        , last_status_(status::NoStatus) {
+    }
+
+    virtual status::StatusCode read(Frame& frame,
+                                    packet::stream_timestamp_t requested_duration) {
+        if (status_ != status::NoStatus) {
+            return (last_status_ = status_);
+        }
+
+        packet::stream_timestamp_t duration = requested_duration;
+
+        if (max_duration_ != 0) {
+            duration = std::min(duration, max_duration_);
+        }
+
+        CHECK(frame_factory.reallocate_frame(
+            frame, sample_spec.stream_timestamp_2_bytes(duration)));
+
+        frame.set_flags(flags_);
+        frame.set_raw(true);
+        frame.set_duration(frame.num_raw_samples() / NumCh);
+
+        for (size_t n = 0; n < frame.num_raw_samples(); n++) {
+            frame.raw_samples()[n] = magic_sample;
+        }
+
+        return (last_status_ = (duration == requested_duration ? status::StatusOK
+                                                               : status::StatusPart));
     }
 
     void set_flags(unsigned flags) {
         flags_ = flags;
     }
 
-    virtual status::StatusCode read(Frame& frame) {
-        if (flags_) {
-            frame.set_flags(flags_);
-        }
-        for (size_t n = 0; n < frame.num_raw_samples(); n++) {
-            frame.raw_samples()[n] = 42;
-        }
-        frame.set_duration(frame.num_raw_samples() / NumCh);
-        return status::StatusOK;
+    void set_limit(packet::stream_timestamp_t max_duration) {
+        max_duration_ = max_duration;
+    }
+
+    void set_status(status::StatusCode status) {
+        status_ = status;
+    }
+
+    status::StatusCode last_status() const {
+        return last_status_;
     }
 
 private:
     unsigned flags_;
+    packet::stream_timestamp_t max_duration_;
+    status::StatusCode status_;
+    status::StatusCode last_status_;
 };
 
 } // namespace
 
-TEST_GROUP(watchdog) {
-    MockReader test_reader;
-
-    core::Slice<sample_t> new_buffer(size_t sz) {
-        core::Slice<sample_t> buf = frame_factory.new_raw_buffer();
-        buf.reslice(0, sz * NumCh);
-        return buf;
-    }
-
-    WatchdogConfig make_config(int no_playback_timeout, int broken_playback_timeout,
-                               int warmup_duration) {
-        WatchdogConfig config;
-        config.no_playback_timeout = no_playback_timeout >= 0
-            ? no_playback_timeout * core::Second / SampleRate
-            : -1;
-        config.choppy_playback_timeout = broken_playback_timeout >= 0
-            ? broken_playback_timeout * core::Second / SampleRate
-            : -1;
-        config.choppy_playback_window = BreakageWindow * core::Second / SampleRate;
-        config.warmup_duration =
-            warmup_duration >= 0 ? warmup_duration * core::Second / SampleRate : -1;
-        return config;
-    }
-
-    void check_read(IFrameReader & reader, bool is_read, size_t fsz,
-                    unsigned frame_flags) {
-        core::Slice<sample_t> buf = new_buffer(fsz);
-        memset(buf.data(), 0xff, buf.size() * sizeof(sample_t));
-
-        test_reader.set_flags(frame_flags);
-
-        Frame frame(buf.data(), buf.size());
-
-        if (is_read) {
-            LONGS_EQUAL(status::StatusOK, reader.read(frame));
-            for (size_t n = 0; n < frame.num_raw_samples(); n++) {
-                DOUBLES_EQUAL(42.0, (double)frame.raw_samples()[n], 0);
-            }
-        } else {
-            LONGS_EQUAL(status::StatusAbort, reader.read(frame));
-        }
-    }
-
-    void check_n_reads(IFrameReader & reader, bool is_read, size_t fsz, size_t it_num,
-                       unsigned frame_flags) {
-        for (size_t n = 0; n < it_num; n++) {
-            check_read(reader, is_read, fsz, frame_flags);
-        }
-    }
-};
-
-TEST(watchdog, no_playback_timeout_no_frames) {
-    Watchdog watchdog(test_reader, sample_spec,
-                      make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, -1), arena);
-    LONGS_EQUAL(status::StatusOK, watchdog.init_status());
-
-    CHECK(watchdog.is_alive());
-}
+TEST_GROUP(watchdog) {};
 
 TEST(watchdog, no_playback_timeout_blank_frames) {
-    Watchdog watchdog(test_reader, sample_spec,
+    MetaReader meta_reader;
+    Watchdog watchdog(meta_reader, sample_spec,
                       make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, -1), arena);
     LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
     for (packet::stream_timestamp_t n = 0; n < (NoPlaybackTimeout / SamplesPerFrame) - 1;
          n++) {
-        check_read(watchdog, true, SamplesPerFrame, 0);
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(0);
+        expect_read(status::StatusOK, watchdog, SamplesPerFrame);
     }
 
-    check_read(watchdog, false, SamplesPerFrame, 0);
-    CHECK(!watchdog.is_alive());
+    meta_reader.set_flags(0);
+    expect_read(status::StatusAbort, watchdog, SamplesPerFrame);
 
-    check_read(watchdog, false, SamplesPerFrame, Frame::HasSignal);
-    CHECK(!watchdog.is_alive());
+    meta_reader.set_flags(Frame::HasSignal);
+    expect_read(status::StatusAbort, watchdog, SamplesPerFrame);
 }
 
 TEST(watchdog, no_playback_timeout_blank_and_non_blank_frames) {
     CHECK(NoPlaybackTimeout % SamplesPerFrame == 0);
 
-    Watchdog watchdog(test_reader, sample_spec,
+    MetaReader meta_reader;
+    Watchdog watchdog(meta_reader, sample_spec,
                       make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, -1), arena);
     LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
     for (unsigned int i = 0; i < 2; i++) {
         for (packet::stream_timestamp_t n = 0;
              n < (NoPlaybackTimeout / SamplesPerFrame) - 1; n++) {
-            check_read(watchdog, true, SamplesPerFrame, 0);
-            CHECK(watchdog.is_alive());
+            meta_reader.set_flags(0);
+            expect_read(status::StatusOK, watchdog, SamplesPerFrame);
         }
 
-        check_read(watchdog, true, SamplesPerFrame, Frame::HasSignal);
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal);
+        expect_read(status::StatusOK, watchdog, SamplesPerFrame);
     }
 }
 
 TEST(watchdog, no_playback_timeout_enabled_disabled) {
     { // enabled
-        Watchdog watchdog(test_reader, sample_spec,
+        MetaReader meta_reader;
+        Watchdog watchdog(meta_reader, sample_spec,
                           make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, -1),
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
         for (packet::stream_timestamp_t n = 0;
              n < (NoPlaybackTimeout / SamplesPerFrame) - 1; n++) {
-            check_read(watchdog, true, SamplesPerFrame, 0);
-            CHECK(watchdog.is_alive());
+            meta_reader.set_flags(0);
+            expect_read(status::StatusOK, watchdog, SamplesPerFrame);
         }
 
-        check_read(watchdog, false, SamplesPerFrame, 0);
-        CHECK(!watchdog.is_alive());
+        meta_reader.set_flags(0);
+        expect_read(status::StatusAbort, watchdog, SamplesPerFrame);
     }
     { // disabled
-        Watchdog watchdog(test_reader, sample_spec,
+        MetaReader meta_reader;
+        Watchdog watchdog(meta_reader, sample_spec,
                           make_config(-1, BrokenPlaybackTimeout, -1), arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
         for (packet::stream_timestamp_t n = 0;
              n < (NoPlaybackTimeout / SamplesPerFrame) - 1; n++) {
-            check_read(watchdog, true, SamplesPerFrame, 0);
-            CHECK(watchdog.is_alive());
+            meta_reader.set_flags(0);
+            expect_read(status::StatusOK, watchdog, SamplesPerFrame);
         }
 
-        check_read(watchdog, true, SamplesPerFrame, 0);
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(0);
+        expect_read(status::StatusOK, watchdog, SamplesPerFrame);
     }
 }
 
 TEST(watchdog, broken_playback_timeout_equal_frame_sizes) {
     {
-        Watchdog watchdog(test_reader, sample_spec,
+        MetaReader meta_reader;
+        Watchdog watchdog(meta_reader, sample_spec,
                           make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, -1),
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
-        check_n_reads(watchdog, true, BreakageWindow, BreakageWindowsPerTimeout - 1,
-                      Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        expect_n_reads(status::StatusOK, watchdog, BreakageWindow,
+                       BreakageWindowsPerTimeout - 1);
 
-        check_read(watchdog, true, BreakageWindow, Frame::HasSignal);
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal);
+        expect_read(status::StatusOK, watchdog, BreakageWindow);
 
-        check_read(watchdog, true, BreakageWindow, Frame::HasSignal);
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal);
+        expect_read(status::StatusOK, watchdog, BreakageWindow);
     }
     {
-        Watchdog watchdog(test_reader, sample_spec,
+        MetaReader meta_reader;
+        Watchdog watchdog(meta_reader, sample_spec,
                           make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, -1),
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
-        check_read(watchdog, true, BreakageWindow, Frame::HasSignal);
-        check_n_reads(watchdog, true, BreakageWindow, BreakageWindowsPerTimeout - 2,
-                      Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
-        check_read(watchdog, true, BreakageWindow, Frame::HasSignal);
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal);
+        expect_read(status::StatusOK, watchdog, BreakageWindow);
 
-        check_n_reads(watchdog, true, BreakageWindow, BreakageWindowsPerTimeout,
-                      Frame::HasSignal);
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        expect_n_reads(status::StatusOK, watchdog, BreakageWindow,
+                       BreakageWindowsPerTimeout - 2);
+
+        meta_reader.set_flags(Frame::HasSignal);
+        expect_read(status::StatusOK, watchdog, BreakageWindow);
+
+        meta_reader.set_flags(Frame::HasSignal);
+        expect_n_reads(status::StatusOK, watchdog, BreakageWindow,
+                       BreakageWindowsPerTimeout);
     }
     {
-        Watchdog watchdog(test_reader, sample_spec,
+        MetaReader meta_reader;
+        Watchdog watchdog(meta_reader, sample_spec,
                           make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, -1),
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
-        check_read(watchdog, true, BreakageWindow, Frame::HasSignal);
-        check_n_reads(watchdog, true, BreakageWindow, BreakageWindowsPerTimeout - 1,
-                      Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal);
+        expect_read(status::StatusOK, watchdog, BreakageWindow);
 
-        check_read(watchdog, true, BreakageWindow, Frame::HasSignal);
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        expect_n_reads(status::StatusOK, watchdog, BreakageWindow,
+                       BreakageWindowsPerTimeout - 1);
+
+        meta_reader.set_flags(Frame::HasSignal);
+        expect_read(status::StatusOK, watchdog, BreakageWindow);
     }
     {
-        Watchdog watchdog(test_reader, sample_spec,
+        MetaReader meta_reader;
+        Watchdog watchdog(meta_reader, sample_spec,
                           make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, -1),
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
-        check_n_reads(watchdog, true, BreakageWindow, BreakageWindowsPerTimeout - 1,
-                      Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
-        check_read(watchdog, true, BreakageWindow, Frame::HasSignal | Frame::HasHoles);
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        expect_n_reads(status::StatusOK, watchdog, BreakageWindow,
+                       BreakageWindowsPerTimeout - 1);
 
-        check_read(watchdog, true, BreakageWindow, Frame::HasSignal);
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles);
+        expect_read(status::StatusOK, watchdog, BreakageWindow);
+
+        meta_reader.set_flags(Frame::HasSignal);
+        expect_read(status::StatusOK, watchdog, BreakageWindow);
     }
     {
-        Watchdog watchdog(test_reader, sample_spec,
+        MetaReader meta_reader;
+        Watchdog watchdog(meta_reader, sample_spec,
                           make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, -1),
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
-        check_n_reads(watchdog, true, BreakageWindow, BreakageWindowsPerTimeout - 1,
-                      Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
-        check_read(watchdog, true, BreakageWindow,
-                   Frame::HasSignal | Frame::HasPacketDrops);
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        expect_n_reads(status::StatusOK, watchdog, BreakageWindow,
+                       BreakageWindowsPerTimeout - 1);
 
-        check_read(watchdog, true, BreakageWindow, Frame::HasSignal);
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasPacketDrops);
+        expect_read(status::StatusOK, watchdog, BreakageWindow);
+
+        meta_reader.set_flags(Frame::HasSignal);
+        expect_read(status::StatusOK, watchdog, BreakageWindow);
     }
     {
-        Watchdog watchdog(test_reader, sample_spec,
+        MetaReader meta_reader;
+        Watchdog watchdog(meta_reader, sample_spec,
                           make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, -1),
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
-        check_n_reads(watchdog, true, BreakageWindow, BreakageWindowsPerTimeout - 1,
-                      Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
-        check_read(watchdog, false, BreakageWindow,
-                   Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
-        CHECK(!watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        expect_n_reads(status::StatusOK, watchdog, BreakageWindow,
+                       BreakageWindowsPerTimeout - 1);
 
-        check_read(watchdog, false, BreakageWindow, Frame::HasSignal);
-        CHECK(!watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        expect_read(status::StatusAbort, watchdog, BreakageWindow);
+
+        meta_reader.set_flags(Frame::HasSignal);
+        expect_read(status::StatusAbort, watchdog, BreakageWindow);
     }
 }
 
 TEST(watchdog, broken_playback_timeout_mixed_frame_sizes) {
     {
-        Watchdog watchdog(test_reader, sample_spec,
+        MetaReader meta_reader;
+        Watchdog watchdog(meta_reader, sample_spec,
                           make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, -1),
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
-        check_read(watchdog, true, BreakageWindow * (BreakageWindowsPerTimeout - 1),
-                   Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
-        check_read(watchdog, true, BreakageWindow / 2, Frame::HasSignal);
-        check_read(watchdog, true, BreakageWindow - BreakageWindow / 2, Frame::HasSignal);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        expect_read(status::StatusOK, watchdog,
+                    BreakageWindow * (BreakageWindowsPerTimeout - 1));
 
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal);
+        expect_read(status::StatusOK, watchdog, BreakageWindow / 2);
+
+        meta_reader.set_flags(Frame::HasSignal);
+        expect_read(status::StatusOK, watchdog, BreakageWindow - BreakageWindow / 2);
     }
     {
-        Watchdog watchdog(test_reader, sample_spec,
+        MetaReader meta_reader;
+        Watchdog watchdog(meta_reader, sample_spec,
                           make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, -1),
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
-        check_read(watchdog, true, BreakageWindow * (BreakageWindowsPerTimeout - 1),
-                   Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
-        check_read(watchdog, true, BreakageWindow / 2,
-                   Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
-        check_read(watchdog, false, BreakageWindow - BreakageWindow / 2,
-                   Frame::HasSignal);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        expect_read(status::StatusOK, watchdog,
+                    BreakageWindow * (BreakageWindowsPerTimeout - 1));
 
-        CHECK(!watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        expect_read(status::StatusOK, watchdog, BreakageWindow / 2);
+
+        meta_reader.set_flags(Frame::HasSignal);
+        expect_read(status::StatusAbort, watchdog, BreakageWindow - BreakageWindow / 2);
     }
     {
-        Watchdog watchdog(test_reader, sample_spec,
+        MetaReader meta_reader;
+        Watchdog watchdog(meta_reader, sample_spec,
                           make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, -1),
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
-        check_read(watchdog, true, BreakageWindow * (BreakageWindowsPerTimeout - 1),
-                   Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
-        check_read(watchdog, true, BreakageWindow / 2, Frame::HasSignal);
-        check_read(watchdog, false, BreakageWindow - BreakageWindow / 2,
-                   Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        expect_read(status::StatusOK, watchdog,
+                    BreakageWindow * (BreakageWindowsPerTimeout - 1));
 
-        CHECK(!watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal);
+        expect_read(status::StatusOK, watchdog, BreakageWindow / 2);
+
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        expect_read(status::StatusAbort, watchdog, BreakageWindow - BreakageWindow / 2);
     }
 }
 
 TEST(watchdog, broken_playback_timeout_constant_drops) {
-    Watchdog watchdog(test_reader, sample_spec,
+    MetaReader meta_reader;
+    Watchdog watchdog(meta_reader, sample_spec,
                       make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, -1), arena);
     LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
     for (packet::stream_timestamp_t n = 0; n < BreakageWindowsPerTimeout - 1; n++) {
-        check_read(watchdog, true, BreakageWindow / 2,
-                   Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
-        check_read(watchdog, true, BreakageWindow - BreakageWindow / 2, Frame::HasSignal);
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        expect_read(status::StatusOK, watchdog, BreakageWindow / 2);
+
+        meta_reader.set_flags(Frame::HasSignal);
+        expect_read(status::StatusOK, watchdog, BreakageWindow - BreakageWindow / 2);
     }
 
-    check_read(watchdog, true, BreakageWindow / 2,
-               Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
-    check_read(watchdog, false, BreakageWindow - BreakageWindow / 2, Frame::HasSignal);
-    CHECK(!watchdog.is_alive());
+    meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+    expect_read(status::StatusOK, watchdog, BreakageWindow / 2);
+
+    meta_reader.set_flags(Frame::HasSignal);
+    expect_read(status::StatusAbort, watchdog, BreakageWindow - BreakageWindow / 2);
 }
 
 TEST(watchdog, broken_playback_timeout_frame_overlaps_with_breakage_window) {
     {
-        Watchdog watchdog(test_reader, sample_spec,
+        MetaReader meta_reader;
+        Watchdog watchdog(meta_reader, sample_spec,
                           make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, -1),
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        expect_read(status::StatusOK, watchdog, BreakageWindow);
 
-        check_read(watchdog, true, BreakageWindow,
-                   Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
-        check_read(watchdog, true, BreakageWindow, Frame::HasSignal);
-        check_read(watchdog, true, BrokenPlaybackTimeout - BreakageWindow,
-                   Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal);
+        expect_read(status::StatusOK, watchdog, BreakageWindow);
 
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        expect_read(status::StatusOK, watchdog, BrokenPlaybackTimeout - BreakageWindow);
     }
     {
-        Watchdog watchdog(test_reader, sample_spec,
+        MetaReader meta_reader;
+        Watchdog watchdog(meta_reader, sample_spec,
                           make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, -1),
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        expect_read(status::StatusOK, watchdog, BreakageWindow + 1);
 
-        check_read(watchdog, true, BreakageWindow + 1,
-                   Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
-        check_read(watchdog, true, BreakageWindow - 1, Frame::HasSignal);
-        check_read(watchdog, false, BrokenPlaybackTimeout - BreakageWindow,
-                   Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal);
+        expect_read(status::StatusOK, watchdog, BreakageWindow - 1);
 
-        CHECK(!watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        expect_read(status::StatusAbort, watchdog,
+                    BrokenPlaybackTimeout - BreakageWindow);
     }
     {
-        Watchdog watchdog(test_reader, sample_spec,
+        MetaReader meta_reader;
+        Watchdog watchdog(meta_reader, sample_spec,
                           make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, -1),
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal);
+        expect_read(status::StatusOK, watchdog, BrokenPlaybackTimeout - BreakageWindow);
 
-        check_read(watchdog, true, BrokenPlaybackTimeout - BreakageWindow,
-                   Frame::HasSignal);
-        check_read(watchdog, true, BreakageWindow + 1,
-                   Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        expect_read(status::StatusOK, watchdog, BreakageWindow + 1);
 
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal);
+        expect_read(status::StatusOK, watchdog, BreakageWindow - 1);
 
-        check_read(watchdog, true, BreakageWindow - 1, Frame::HasSignal);
-        check_read(watchdog, true, BrokenPlaybackTimeout - BreakageWindow,
-                   Frame::HasSignal);
-
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal);
+        expect_read(status::StatusOK, watchdog, BrokenPlaybackTimeout - BreakageWindow);
     }
     {
-        Watchdog watchdog(test_reader, sample_spec,
+        MetaReader meta_reader;
+        Watchdog watchdog(meta_reader, sample_spec,
                           make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, -1),
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal);
+        expect_read(status::StatusOK, watchdog, BrokenPlaybackTimeout - BreakageWindow);
 
-        check_read(watchdog, true, BrokenPlaybackTimeout - BreakageWindow,
-                   Frame::HasSignal);
-        check_read(watchdog, true, BreakageWindow + 1,
-                   Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        expect_read(status::StatusOK, watchdog, BreakageWindow + 1);
 
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal);
+        expect_read(status::StatusOK, watchdog, BreakageWindow - 1);
 
-        check_read(watchdog, true, BreakageWindow - 1, Frame::HasSignal);
-        check_read(watchdog, false, BrokenPlaybackTimeout - BreakageWindow,
-                   Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
-
-        CHECK(!watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        expect_read(status::StatusAbort, watchdog,
+                    BrokenPlaybackTimeout - BreakageWindow);
     }
 }
 
 TEST(watchdog, broken_playback_timeout_enabled_disabled) {
     { // enabled
-        Watchdog watchdog(test_reader, sample_spec,
+        MetaReader meta_reader;
+        Watchdog watchdog(meta_reader, sample_spec,
                           make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, -1),
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
         for (packet::stream_timestamp_t n = 0;
              n < (BrokenPlaybackTimeout / SamplesPerFrame) - 1; n++) {
-            check_read(watchdog, true, SamplesPerFrame,
-                       Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
-            CHECK(watchdog.is_alive());
+            meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles
+                                  | Frame::HasPacketDrops);
+            expect_read(status::StatusOK, watchdog, SamplesPerFrame);
         }
 
-        check_read(watchdog, false, SamplesPerFrame,
-                   Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
-        CHECK(!watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        expect_read(status::StatusAbort, watchdog, SamplesPerFrame);
     }
     { // disabled
-        Watchdog watchdog(test_reader, sample_spec,
+        MetaReader meta_reader;
+        Watchdog watchdog(meta_reader, sample_spec,
                           make_config(NoPlaybackTimeout, -1, -1), arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
         for (packet::stream_timestamp_t n = 0;
              n < (BrokenPlaybackTimeout / SamplesPerFrame) - 1; n++) {
-            check_read(watchdog, true, SamplesPerFrame,
-                       Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
-            CHECK(watchdog.is_alive());
+            meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles
+                                  | Frame::HasPacketDrops);
+            expect_read(status::StatusOK, watchdog, SamplesPerFrame);
         }
 
-        check_read(watchdog, true, SamplesPerFrame,
-                   Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        expect_read(status::StatusOK, watchdog, SamplesPerFrame);
     }
 }
 
 TEST(watchdog, warmup_shorter_than_timeout) {
     enum { Warmup = NoPlaybackTimeout / 2 };
 
-    Watchdog watchdog(test_reader, sample_spec,
+    MetaReader meta_reader;
+    Watchdog watchdog(meta_reader, sample_spec,
                       make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, Warmup),
                       arena);
     LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
     for (packet::stream_timestamp_t n = 0; n < Warmup / SamplesPerFrame; n++) {
-        check_read(watchdog, true, SamplesPerFrame, 0);
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(0);
+        expect_read(status::StatusOK, watchdog, SamplesPerFrame);
     }
 
     for (packet::stream_timestamp_t n = 0; n < NoPlaybackTimeout / SamplesPerFrame - 1;
          n++) {
-        check_read(watchdog, true, SamplesPerFrame, 0);
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(0);
+        expect_read(status::StatusOK, watchdog, SamplesPerFrame);
     }
 
-    check_read(watchdog, false, SamplesPerFrame, 0);
-    CHECK(!watchdog.is_alive());
+    meta_reader.set_flags(0);
+    expect_read(status::StatusAbort, watchdog, SamplesPerFrame);
 }
 
 TEST(watchdog, warmup_longer_than_timeout) {
     enum { Warmup = NoPlaybackTimeout * 10 };
 
-    Watchdog watchdog(test_reader, sample_spec,
+    MetaReader meta_reader;
+    Watchdog watchdog(meta_reader, sample_spec,
                       make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, Warmup),
                       arena);
     LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
     for (packet::stream_timestamp_t n = 0; n < Warmup / SamplesPerFrame; n++) {
-        check_read(watchdog, true, SamplesPerFrame, 0);
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(0);
+        expect_read(status::StatusOK, watchdog, SamplesPerFrame);
     }
 
     for (packet::stream_timestamp_t n = 0; n < NoPlaybackTimeout / SamplesPerFrame - 1;
          n++) {
-        check_read(watchdog, true, SamplesPerFrame, 0);
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(0);
+        expect_read(status::StatusOK, watchdog, SamplesPerFrame);
     }
 
-    check_read(watchdog, false, SamplesPerFrame, 0);
-    CHECK(!watchdog.is_alive());
+    meta_reader.set_flags(0);
+    expect_read(status::StatusAbort, watchdog, SamplesPerFrame);
 }
 
 TEST(watchdog, warmup_early_nonblank) {
     enum { Warmup = NoPlaybackTimeout * 10 };
 
-    Watchdog watchdog(test_reader, sample_spec,
+    MetaReader meta_reader;
+    Watchdog watchdog(meta_reader, sample_spec,
                       make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, Warmup),
                       arena);
     LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
     for (packet::stream_timestamp_t n = 0; n < (Warmup / 2) / SamplesPerFrame; n++) {
-        check_read(watchdog, true, SamplesPerFrame, 0);
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(0);
+        expect_read(status::StatusOK, watchdog, SamplesPerFrame);
     }
 
-    check_read(watchdog, true, SamplesPerFrame, Frame::HasSignal);
-    CHECK(watchdog.is_alive());
+    meta_reader.set_flags(Frame::HasSignal);
+    expect_read(status::StatusOK, watchdog, SamplesPerFrame);
 
     for (packet::stream_timestamp_t n = 0; n < (NoPlaybackTimeout / SamplesPerFrame) - 1;
          n++) {
-        check_read(watchdog, true, SamplesPerFrame, 0);
-        CHECK(watchdog.is_alive());
+        meta_reader.set_flags(0);
+        expect_read(status::StatusOK, watchdog, SamplesPerFrame);
     }
 
-    check_read(watchdog, false, SamplesPerFrame, 0);
-    CHECK(!watchdog.is_alive());
+    meta_reader.set_flags(0);
+    expect_read(status::StatusAbort, watchdog, SamplesPerFrame);
 
-    check_read(watchdog, false, SamplesPerFrame, Frame::HasSignal);
-    CHECK(!watchdog.is_alive());
+    meta_reader.set_flags(Frame::HasSignal);
+    expect_read(status::StatusAbort, watchdog, SamplesPerFrame);
+}
+
+// Forwarding error from underlying reader.
+TEST(watchdog, forward_error) {
+    MetaReader meta_reader;
+    Watchdog watchdog(meta_reader, sample_spec,
+                      make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, -1), arena);
+    LONGS_EQUAL(status::StatusOK, watchdog.init_status());
+
+    const status::StatusCode status_list[] = {
+        status::StatusDrain,
+        status::StatusAbort,
+    };
+
+    for (size_t st_n = 0; st_n < ROC_ARRAY_SIZE(status_list); st_n++) {
+        meta_reader.set_status(status_list[st_n]);
+
+        FramePtr frame = frame_factory.allocate_frame_no_buffer();
+        CHECK(frame);
+
+        LONGS_EQUAL(status_list[st_n], watchdog.read(*frame, SamplesPerFrame));
+        LONGS_EQUAL(status_list[st_n], meta_reader.last_status());
+    }
+}
+
+// Forwarding partial read from underlying reader.
+TEST(watchdog, forward_partial) {
+    MetaReader meta_reader;
+    Watchdog watchdog(meta_reader, sample_spec,
+                      make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, -1), arena);
+    LONGS_EQUAL(status::StatusOK, watchdog.init_status());
+
+    meta_reader.set_limit(SamplesPerFrame / 2);
+
+    for (packet::stream_timestamp_t n = 0;
+         n < ((NoPlaybackTimeout / SamplesPerFrame) - 1) * 2; n++) {
+        meta_reader.set_flags(0);
+        expect_read(status::StatusPart, watchdog, SamplesPerFrame, SamplesPerFrame / 2);
+    }
+
+    meta_reader.set_flags(0);
+    expect_read(status::StatusPart, watchdog, SamplesPerFrame, SamplesPerFrame / 2);
+
+    meta_reader.set_flags(0);
+    expect_read(status::StatusAbort, watchdog, SamplesPerFrame);
 }
 
 } // namespace audio

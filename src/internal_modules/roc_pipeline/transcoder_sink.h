@@ -36,38 +36,27 @@ public:
     //! Initialize.
     TranscoderSink(const TranscoderConfig& config,
                    audio::IFrameWriter* output_writer,
-                   core::IPool& buffer_pool,
+                   core::IPool& frame_pool,
+                   core::IPool& frame_buffer_pool,
                    core::IArena& arena);
 
     //! Check if the pipeline was successfully constructed.
     status::StatusCode init_status() const;
 
-    //! Cast IDevice to ISink.
-    virtual sndio::ISink* to_sink();
-
-    //! Cast IDevice to ISink.
-    virtual sndio::ISource* to_source();
-
-    //! Get device type.
+    //! Get type (sink or source).
     virtual sndio::DeviceType type() const;
 
-    //! Get device state.
-    virtual sndio::DeviceState state() const;
+    //! Try to cast to ISink.
+    virtual sndio::ISink* to_sink();
 
-    //! Pause reading.
-    virtual void pause();
-
-    //! Resume paused reading.
-    virtual bool resume();
-
-    //! Restart reading from the beginning.
-    virtual bool restart();
+    //! Try to cast to ISource.
+    virtual sndio::ISource* to_source();
 
     //! Get sample specification of the sink.
     virtual audio::SampleSpec sample_spec() const;
 
-    //! Get latency of the sink.
-    virtual core::nanoseconds_t latency() const;
+    //! Check if the sink supports state updates.
+    virtual bool has_state() const;
 
     //! Check if the sink supports latency reports.
     virtual bool has_latency() const;
@@ -75,7 +64,7 @@ public:
     //! Check if the sink has own clock.
     virtual bool has_clock() const;
 
-    //! Write audio frame.
+    //! Write frame.
     virtual ROC_ATTR_NODISCARD status::StatusCode write(audio::Frame& frame);
 
 private:

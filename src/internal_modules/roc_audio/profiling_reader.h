@@ -35,7 +35,8 @@ public:
     status::StatusCode init_status() const;
 
     //! Read audio frame.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(Frame& frame);
+    virtual ROC_ATTR_NODISCARD status::StatusCode
+    read(Frame& frame, packet::stream_timestamp_t duration);
 
 private:
     core::nanoseconds_t read_(Frame& frame, bool& ret);

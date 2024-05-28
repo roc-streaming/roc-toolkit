@@ -14,13 +14,9 @@
 
 #include <dr_wav.h>
 
-#include "roc_audio/sample_spec.h"
-#include "roc_core/array.h"
-#include "roc_core/iarena.h"
+#include "roc_audio/frame_factory.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/stddefs.h"
 #include "roc_core/string_buffer.h"
-#include "roc_packet/units.h"
 #include "roc_sndio/config.h"
 #include "roc_sndio/isource.h"
 
@@ -28,51 +24,36 @@ namespace roc {
 namespace sndio {
 
 //! WAV source.
+//! @remarks
+//!  Reads samples from input WAV file.
 class WavSource : public ISource, private core::NonCopyable<> {
 public:
     //! Initialize.
-    WavSource(core::IArena& arena, const Config& config);
-
-    virtual ~WavSource();
+    WavSource(audio::FrameFactory& frame_factory,
+              core::IArena& arena,
+              const Config& config);
+    ~WavSource();
 
     //! Check if the object was successfully constructed.
-    bool is_valid() const;
+    status::StatusCode init_status() const;
 
-    //! Open input file or device.
-    //!
-    //! @b Parameters
-    //!  - @p path is input file or device name, "-" for stdin.
-    //!
-    //! @remarks
-    //!  If @p path is NULL, defaults are used.
-    bool open(const char* path);
-
-    //! Cast IDevice to ISink.
-    virtual ISink* to_sink();
-
-    //! Cast IDevice to ISink.
-    virtual ISource* to_source();
+    //! Open source.
+    ROC_ATTR_NODISCARD status::StatusCode open(const char* device);
 
     //! Get device type.
     virtual DeviceType type() const;
 
-    //! Get device state.
-    virtual DeviceState state() const;
+    //! Try to cast to ISink.
+    virtual ISink* to_sink();
 
-    //! Pause reading.
-    virtual void pause();
-
-    //! Resume paused reading.
-    virtual bool resume();
-
-    //! Restart reading from the beginning.
-    virtual bool restart();
+    //! Try to cast to ISource.
+    virtual ISource* to_source();
 
     //! Get sample specification of the source.
     virtual audio::SampleSpec sample_spec() const;
 
-    //! Get latency of the source.
-    virtual core::nanoseconds_t latency() const;
+    //! Check if the source supports state updates.
+    virtual bool has_state() const;
 
     //! Check if the source supports latency reports.
     virtual bool has_latency() const;
@@ -80,21 +61,29 @@ public:
     //! Check if the source has own clock.
     virtual bool has_clock() const;
 
+    //! Restart reading from beginning.
+    virtual ROC_ATTR_NODISCARD status::StatusCode rewind();
+
     //! Adjust source clock to match consumer clock.
     virtual void reclock(core::nanoseconds_t timestamp);
 
     //! Read frame.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(audio::Frame& frame);
+    virtual ROC_ATTR_NODISCARD status::StatusCode
+    read(audio::Frame& frame, packet::stream_timestamp_t duration);
 
 private:
-    bool open_(const char* path);
+    status::StatusCode open_(const char* path);
     void close_();
+
+    audio::FrameFactory& frame_factory_;
+
+    audio::SampleSpec sample_spec_;
 
     drwav wav_;
     bool file_opened_;
     bool eof_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace sndio

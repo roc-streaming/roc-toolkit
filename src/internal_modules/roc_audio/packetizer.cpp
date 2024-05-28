@@ -77,16 +77,15 @@ const PacketizerMetrics& Packetizer::metrics() const {
     return metrics_;
 }
 
-status::StatusCode Packetizer::write(Frame& frame) {
+status::StatusCode Packetizer::write(Frame& in_frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    if (frame.num_raw_samples() % sample_spec_.num_channels() != 0) {
-        roc_panic("packetizer: unexpected frame size");
-    }
+    sample_spec_.validate_frame(in_frame);
 
-    const sample_t* buffer_ptr = frame.raw_samples();
-    size_t buffer_samples = frame.num_raw_samples() / sample_spec_.num_channels();
-    capture_ts_ = frame.capture_timestamp();
+    const sample_t* buffer_ptr = in_frame.raw_samples();
+    size_t buffer_samples = in_frame.num_raw_samples() / sample_spec_.num_channels();
+
+    capture_ts_ = in_frame.capture_timestamp();
 
     while (buffer_samples != 0) {
         if (!packet_) {
@@ -111,19 +110,27 @@ status::StatusCode Packetizer::write(Frame& frame) {
         }
 
         if (packet_pos_ == samples_per_packet_) {
-            end_packet_();
+            const status::StatusCode code = end_packet_();
+            if (code != status::StatusOK) {
+                return code;
+            }
         }
     }
 
     return status::StatusOK;
 }
 
-void Packetizer::flush() {
+status::StatusCode Packetizer::flush() {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (packet_) {
-        end_packet_();
+        const status::StatusCode code = end_packet_();
+        if (code != status::StatusOK) {
+            return code;
+        }
     }
+
+    return status::StatusOK;
 }
 
 status::StatusCode Packetizer::begin_packet_() {
@@ -191,7 +198,7 @@ status::StatusCode Packetizer::create_packet_() {
 
     if (!composer_.prepare(*pp, buffer, payload_size_)) {
         roc_log(LogError, "packetizer: can't prepare packet");
-        return status::StatusNoSpace;
+        return status::StatusNoMem;
     }
     pp->add_flags(packet::Packet::FlagPrepared);
 

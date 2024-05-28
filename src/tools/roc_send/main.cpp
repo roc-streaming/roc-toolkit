@@ -270,7 +270,9 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    sndio::BackendDispatcher backend_dispatcher(context.arena());
+    sndio::BackendDispatcher backend_dispatcher(
+        context.frame_pool(), context.frame_buffer_pool(), context.arena());
+
     if (args.list_supported_given) {
         if (!address::print_supported(context.arena())) {
             return 1;
@@ -306,20 +308,26 @@ int main(int argc, char** argv) {
 
     core::ScopedPtr<sndio::ISource> input_source;
     if (input_uri.is_valid()) {
-        input_source.reset(
-            backend_dispatcher.open_source(input_uri, args.input_format_arg, io_config),
-            context.arena());
+        const status::StatusCode code = backend_dispatcher.open_source(
+            input_uri, args.input_format_arg, io_config, input_source);
+
+        if (code != status::StatusOK) {
+            roc_log(LogError, "can't open --input file or device: status=%s",
+                    status::code_to_str(code));
+            return 1;
+        }
     } else {
-        input_source.reset(backend_dispatcher.open_default_source(io_config),
-                           context.arena());
-    }
-    if (!input_source) {
-        roc_log(LogError, "can't open input file or device: uri=%s format=%s",
-                args.input_arg, args.input_format_arg);
-        return 1;
+        const status::StatusCode code =
+            backend_dispatcher.open_default_source(io_config, input_source);
+
+        if (code != status::StatusOK) {
+            roc_log(LogError, "can't open default --input device: status=%s",
+                    status::code_to_str(code));
+            return 1;
+        }
     }
 
-    sender_config.enable_timing = !input_source->has_clock();
+    sender_config.enable_cpu_clock = !input_source->has_clock();
     sender_config.input_sample_spec = input_source->sample_spec();
 
     if (!sender_config.input_sample_spec.is_valid()) {
@@ -427,7 +435,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (sender.has_incomplete()) {
+    if (sender.has_incomplete_slots()) {
         roc_log(
             LogError,
             "incomplete sender configuration:"
@@ -435,9 +443,12 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    sndio::Pump pump(context.frame_buffer_pool(), *input_source, NULL, sender.sink(),
-                     io_config.frame_length, sender_config.input_sample_spec,
-                     sndio::Pump::ModePermanent);
+    sndio::Config pump_config;
+    pump_config.sample_spec = input_source->sample_spec();
+    pump_config.frame_length = io_config.frame_length;
+
+    sndio::Pump pump(context.frame_pool(), context.frame_buffer_pool(), *input_source,
+                     NULL, sender.sink(), pump_config, sndio::Pump::ModePermanent);
     if (pump.init_status() != status::StatusOK) {
         roc_log(LogError, "can't create audio pump: status=%s",
                 status::code_to_str(pump.init_status()));

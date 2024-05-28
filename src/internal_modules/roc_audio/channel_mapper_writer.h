@@ -25,11 +25,11 @@ namespace roc {
 namespace audio {
 
 //! Channel mapper writer.
-//! Reads frames from nested writer and maps them to another channel mask.
+//! Maps samples to another channel mask and writes them to nested writer.
 class ChannelMapperWriter : public IFrameWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
-    ChannelMapperWriter(IFrameWriter& writer,
+    ChannelMapperWriter(IFrameWriter& frame_writer,
                         FrameFactory& frame_factory,
                         const SampleSpec& in_spec,
                         const SampleSpec& out_spec);
@@ -41,13 +41,10 @@ public:
     virtual ROC_ATTR_NODISCARD status::StatusCode write(Frame& frame);
 
 private:
-    status::StatusCode write_(sample_t* in_samples,
-                              size_t n_samples,
-                              unsigned flags,
-                              core::nanoseconds_t capture_ts);
+    FrameFactory& frame_factory_;
+    IFrameWriter& frame_writer_;
 
-    IFrameWriter& output_writer_;
-    core::Slice<sample_t> output_buf_;
+    FramePtr out_frame_;
 
     ChannelMapper mapper_;
 

@@ -12,6 +12,7 @@
 #ifndef ROC_AUDIO_DEPACKETIZER_H_
 #define ROC_AUDIO_DEPACKETIZER_H_
 
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/iframe_decoder.h"
 #include "roc_audio/iframe_reader.h"
 #include "roc_audio/sample.h"
@@ -32,12 +33,13 @@ public:
     //! Initialization.
     //!
     //! @b Parameters
-    //!  - @p reader is used to read packets
+    //!  - @p packet_reader is used to read packets
     //!  - @p payload_decoder is used to extract samples from packets
     //!  - @p sample_spec describes output frames
     //!  - @p beep enables weird beeps instead of silence on packet loss
-    Depacketizer(packet::IReader& reader,
+    Depacketizer(packet::IReader& packet_reader,
                  IFrameDecoder& payload_decoder,
+                 FrameFactory& frame_factory,
                  const SampleSpec& sample_spec,
                  bool beep);
 
@@ -48,7 +50,8 @@ public:
     bool is_started() const;
 
     //! Read audio frame.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(Frame& frame);
+    virtual ROC_ATTR_NODISCARD status::StatusCode
+    read(Frame& frame, packet::stream_timestamp_t duration);
 
     //! Get next timestamp to be rendered.
     //! @pre
@@ -77,8 +80,6 @@ private:
         }
     };
 
-    void read_frame_(Frame& frame);
-
     sample_t* read_samples_(sample_t* buff_ptr, sample_t* buff_end, FrameInfo& info);
 
     sample_t* read_packet_samples_(sample_t* buff_ptr, sample_t* buff_end);
@@ -87,11 +88,12 @@ private:
     void update_packet_(FrameInfo& info);
     packet::PacketPtr read_packet_();
 
-    void set_frame_props_(Frame& frame, const FrameInfo& info);
+    void set_frame_info_(Frame& frame, const FrameInfo& info);
 
     void report_stats_();
 
-    packet::IReader& reader_;
+    FrameFactory& frame_factory_;
+    packet::IReader& packet_reader_;
     IFrameDecoder& payload_decoder_;
 
     const SampleSpec sample_spec_;

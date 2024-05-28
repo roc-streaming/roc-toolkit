@@ -4625,7 +4625,7 @@ TEST(communicator, generation_error) {
         core::nanoseconds_t peer_time = 10000000000000000;
 
         peer_part.set_send_report(make_send_report(peer_time, Cname, Ssrc, Seed));
-        LONGS_EQUAL(status::StatusNoSpace, peer_comm.generate_reports(peer_time));
+        LONGS_EQUAL(status::StatusNoMem, peer_comm.generate_reports(peer_time));
         CHECK_EQUAL(0, peer_comm.total_streams());
         CHECK_EQUAL(0, peer_queue.size());
     }

@@ -102,7 +102,8 @@ enum {
     Chans = 0x1,
     FrameSize = 5000, // duration of the frame (5000 = 5ms)
     NumIterations = 3000,
-    WarmupIterations = 10
+    WarmupIterations = 10,
+    FrameBufSize = 100
 };
 
 // computation time of a frame
@@ -121,6 +122,11 @@ const size_t MinTaskBurst = 1;
 const size_t MaxTaskBurst = 10;
 
 core::HeapArena arena;
+
+core::SlabPool<audio::Frame> frame_pool("frame_pool", arena);
+core::SlabPool<core::Buffer> frame_buffer_pool("frame_buffer_pool", arena, FrameBufSize);
+
+audio::FrameFactory frame_factory(frame_pool, frame_buffer_pool);
 
 double round_digits(double x, unsigned int digits) {
     double fac = pow(10, digits);
@@ -276,7 +282,10 @@ public:
                                          audio::Sample_RawFormat,
                                          audio::ChanLayout_Surround,
                                          audio::ChanOrder_Smpte,
-                                         Chans))
+                                         Chans),
+                       frame_pool,
+                       frame_buffer_pool,
+                       Dir_WriteFrames)
         , stats_(stats)
         , control_queue_(control_queue)
         , control_task_(*this) {
@@ -330,7 +339,8 @@ private:
         return 0;
     }
 
-    virtual status::StatusCode process_subframe_imp(audio::Frame&) {
+    virtual status::StatusCode process_subframe_imp(audio::Frame& frame,
+                                                    packet::stream_timestamp_t duration) {
         stats_.frame_processing_started();
         busy_wait(FrameProcessingDuration);
         stats_.frame_processing_finished();
@@ -415,20 +425,18 @@ public:
 
         size_t ts = 0;
 
-        audio::sample_t data[FrameSize];
-
-        audio::Frame frame(data, FrameSize);
+        audio::FramePtr frame = frame_factory.allocate_frame(FrameSize);
 
         while (state_.KeepRunning()) {
             ticker.wait(ts);
 
             stats_.frame_started();
 
-            (void)pipeline_.process_subframes_and_tasks(frame);
+            (void)pipeline_.process_subframes_and_tasks(*frame, frame->duration());
 
             stats_.frame_finished();
 
-            ts += frame.num_raw_samples();
+            ts += frame->num_raw_samples();
         }
     }
 

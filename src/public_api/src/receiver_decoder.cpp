@@ -180,38 +180,9 @@ int roc_receiver_decoder_push_packet(roc_receiver_decoder* decoder,
         return -1;
     }
 
-    core::BufferPtr imp_buffer = imp_decoder->packet_factory().new_packet_buffer();
-    if (!imp_buffer) {
-        roc_log(LogError,
-                "roc_receiver_decoder_push_packet():"
-                " can't allocate buffer of requested size");
-        return -1;
-    }
+    const status::StatusCode code =
+        imp_decoder->write_packet(imp_iface, packet->bytes, packet->bytes_size);
 
-    if (imp_buffer->size() < packet->bytes_size) {
-        roc_log(LogError,
-                "roc_receiver_decoder_push_packet():"
-                " provided packet exceeds maximum packet size (see roc_context_config):"
-                " provided=%lu maximum=%lu",
-                (unsigned long)packet->bytes_size, (unsigned long)imp_buffer->size());
-        return -1;
-    }
-
-    core::Slice<uint8_t> imp_slice(*imp_buffer, 0, packet->bytes_size);
-    memcpy(imp_slice.data(), packet->bytes, packet->bytes_size);
-
-    packet::PacketPtr imp_packet = imp_decoder->packet_factory().new_packet();
-    if (!imp_packet) {
-        roc_log(LogError,
-                "roc_receiver_decoder_push_packet():"
-                " can't allocate packet");
-        return -1;
-    }
-
-    imp_packet->add_flags(packet::Packet::FlagUDP);
-    imp_packet->set_buffer(imp_slice);
-
-    const status::StatusCode code = imp_decoder->write_packet(imp_iface, imp_packet);
     if (code != status::StatusOK) {
         // TODO(gh-183): forward status code to user
         roc_log(LogError,
@@ -259,8 +230,9 @@ int roc_receiver_decoder_pop_feedback_packet(roc_receiver_decoder* decoder,
         return -1;
     }
 
-    packet::PacketPtr imp_packet;
-    const status::StatusCode code = imp_decoder->read_packet(imp_iface, imp_packet);
+    const status::StatusCode code =
+        imp_decoder->read_packet(imp_iface, packet->bytes, &packet->bytes_size);
+
     if (code != status::StatusOK) {
         // TODO(gh-183): forward status code to user
         if (code != status::StatusDrain) {
@@ -271,19 +243,6 @@ int roc_receiver_decoder_pop_feedback_packet(roc_receiver_decoder* decoder,
         }
         return -1;
     }
-
-    if (packet->bytes_size < imp_packet->buffer().size()) {
-        roc_log(LogError,
-                "roc_receiver_decoder_pop_feedback_packet():"
-                " not enough space in provided packet:"
-                " provided=%lu needed=%lu",
-                (unsigned long)packet->bytes_size,
-                (unsigned long)imp_packet->buffer().size());
-        return -1;
-    }
-
-    memcpy(packet->bytes, imp_packet->buffer().data(), imp_packet->buffer().size());
-    packet->bytes_size = imp_packet->buffer().size();
 
     return 0;
 }
@@ -298,8 +257,6 @@ int roc_receiver_decoder_pop_frame(roc_receiver_decoder* decoder, roc_frame* fra
 
     node::ReceiverDecoder* imp_decoder = (node::ReceiverDecoder*)decoder;
 
-    sndio::ISource& imp_source = imp_decoder->source();
-
     if (!frame) {
         roc_log(LogError,
                 "roc_receiver_decoder_pop_frame(): invalid arguments:"
@@ -311,16 +268,6 @@ int roc_receiver_decoder_pop_frame(roc_receiver_decoder* decoder, roc_frame* fra
         return 0;
     }
 
-    const size_t factor = imp_source.sample_spec().num_channels() * sizeof(float);
-
-    if (frame->samples_size % factor != 0) {
-        roc_log(LogError,
-                "roc_receiver_decoder_pop_frame(): invalid arguments:"
-                " # of samples should be multiple of %u",
-                (unsigned)factor);
-        return -1;
-    }
-
     if (!frame->samples) {
         roc_log(LogError,
                 "roc_receiver_decoder_pop_frame(): invalid arguments:"
@@ -328,9 +275,9 @@ int roc_receiver_decoder_pop_frame(roc_receiver_decoder* decoder, roc_frame* fra
         return -1;
     }
 
-    audio::Frame imp_frame((float*)frame->samples, frame->samples_size / sizeof(float));
+    const status::StatusCode code =
+        imp_decoder->read_frame(frame->samples, frame->samples_size);
 
-    const status::StatusCode code = imp_source.read(imp_frame);
     if (code != status::StatusOK) {
         roc_log(LogError,
                 "roc_receiver_decoder_pop_frame():"

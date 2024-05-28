@@ -14,12 +14,11 @@
 
 #include <sox.h>
 
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/array.h"
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/stddefs.h"
-#include "roc_packet/units.h"
 #include "roc_sndio/config.h"
 #include "roc_sndio/driver.h"
 #include "roc_sndio/isink.h"
@@ -34,49 +33,41 @@ namespace sndio {
 class SoxSink : public ISink, public core::NonCopyable<> {
 public:
     //! Initialize.
-    SoxSink(core::IArena& arena, const Config& config, DriverType type);
-
-    virtual ~SoxSink();
+    SoxSink(audio::FrameFactory& frame_factory,
+            core::IArena& arena,
+            const Config& config,
+            DriverType driver_type);
+    ~SoxSink();
 
     //! Check if the object was successfully constructed.
-    bool is_valid() const;
+    status::StatusCode init_status() const;
 
-    //! Open output file or device.
-    //!
-    //! @b Parameters
-    //!  - @p driver is output driver name;
-    //!  - @p path is output file or device name, "-" for stdout.
-    //!
-    //! @remarks
-    //!  If @p driver or @p path are NULL, defaults are used.
-    bool open(const char* driver, const char* path);
-
-    //! Cast IDevice to ISink.
-    virtual ISink* to_sink();
-
-    //! Cast IDevice to ISink.
-    virtual ISource* to_source();
+    //! Open sink.
+    ROC_ATTR_NODISCARD status::StatusCode open(const char* driver, const char* path);
 
     //! Get device type.
     virtual DeviceType type() const;
 
-    //! Get device state.
-    virtual DeviceState state() const;
+    //! Try to cast to ISink.
+    virtual ISink* to_sink();
 
-    //! Pause reading.
-    virtual void pause();
-
-    //! Resume paused reading.
-    virtual bool resume();
-
-    //! Restart reading from the beginning.
-    virtual bool restart();
+    //! Try to cast to ISource.
+    virtual ISource* to_source();
 
     //! Get sample specification of the sink.
     virtual audio::SampleSpec sample_spec() const;
 
-    //! Get latency of the sink.
-    virtual core::nanoseconds_t latency() const;
+    //! Check if the sink supports state updates.
+    virtual bool has_state() const;
+
+    //! Get sink state.
+    virtual DeviceState state() const;
+
+    //! Pause sink.
+    virtual ROC_ATTR_NODISCARD status::StatusCode pause();
+
+    //! Resume sink.
+    virtual ROC_ATTR_NODISCARD status::StatusCode resume();
 
     //! Check if the sink supports latency reports.
     virtual bool has_latency() const;
@@ -84,14 +75,20 @@ public:
     //! Check if the sink has own clock.
     virtual bool has_clock() const;
 
-    //! Write audio frame.
+    //! Write frame.
     virtual ROC_ATTR_NODISCARD status::StatusCode write(audio::Frame& frame);
 
 private:
-    bool setup_buffer_();
-    bool open_(const char* driver, const char* path);
+    status::StatusCode init_names_(const char* driver, const char* path);
+    status::StatusCode init_buffer_();
+
+    status::StatusCode open_();
     status::StatusCode write_(const sox_sample_t* samples, size_t n_samples);
     void close_();
+
+    const DriverType driver_type_;
+    core::StringBuffer driver_name_;
+    core::StringBuffer output_name_;
 
     sox_format_t* output_;
     sox_signalinfo_t out_signal_;
@@ -101,8 +98,9 @@ private:
     core::nanoseconds_t frame_length_;
     audio::SampleSpec sample_spec_;
 
-    bool is_file_;
-    bool valid_;
+    bool paused_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace sndio

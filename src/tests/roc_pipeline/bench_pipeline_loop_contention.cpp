@@ -33,10 +33,14 @@ enum {
     Chans = 0x1,
     NumThreads = 16,
     NumIterations = 1000000,
-    BatchSize = 10000
+    BatchSize = 10000,
+    FrameBufSize = 100
 };
 
 core::HeapArena arena;
+
+core::SlabPool<audio::Frame> frame_pool("frame_pool", arena);
+core::SlabPool<core::Buffer> frame_buffer_pool("frame_buffer_pool", arena, FrameBufSize);
 
 class NoopPipeline : public PipelineLoop,
                      private IPipelineTaskScheduler,
@@ -54,7 +58,10 @@ public:
                                          audio::Sample_RawFormat,
                                          audio::ChanLayout_Surround,
                                          audio::ChanOrder_Smpte,
-                                         Chans))
+                                         Chans),
+                       frame_pool,
+                       frame_buffer_pool,
+                       Dir_WriteFrames)
         , control_queue_(control_queue)
         , control_task_(*this) {
     }
@@ -89,11 +96,12 @@ private:
         return 0;
     }
 
-    virtual status::StatusCode process_subframe_imp(audio::Frame&) {
+    virtual status::StatusCode process_subframe_imp(audio::Frame& frame,
+                                                    packet::stream_timestamp_t duration) {
         return status::StatusOK;
     }
 
-    virtual bool process_task_imp(PipelineTask&) {
+    virtual bool process_task_imp(PipelineTask& task) {
         return true;
     }
 

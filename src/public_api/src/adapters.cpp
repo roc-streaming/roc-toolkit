@@ -102,8 +102,7 @@ bool sender_config_from_user(node::Context& context,
         out.latency.latency_tolerance = (core::nanoseconds_t)in.latency_tolerance;
     }
 
-    out.enable_timing = false;
-    out.enable_auto_duration = true;
+    out.enable_cpu_clock = false;
     out.enable_auto_cts = true;
 
     out.enable_interleaving = in.packet_interleaving;
@@ -120,7 +119,7 @@ bool sender_config_from_user(node::Context& context,
         out.fec_writer.n_repair_packets = in.fec_block_repair_packets;
     }
 
-    if (!clock_source_from_user(out.enable_timing, in.clock_source)) {
+    if (!clock_source_from_user(out.enable_cpu_clock, in.clock_source)) {
         roc_log(LogError,
                 "bad configuration: invalid roc_sender_config.clock_source:"
                 " should be valid enum value");
@@ -183,7 +182,7 @@ bool receiver_config_from_user(node::Context&,
             in.choppy_playback_timeout;
     }
 
-    out.common.enable_timing = false;
+    out.common.enable_cpu_clock = false;
     out.common.enable_auto_reclock = true;
 
     if (!sample_spec_from_user(out.common.output_sample_spec, in.frame_encoding, false)) {
@@ -192,7 +191,7 @@ bool receiver_config_from_user(node::Context&,
         return false;
     }
 
-    if (!clock_source_from_user(out.common.enable_timing, in.clock_source)) {
+    if (!clock_source_from_user(out.common.enable_cpu_clock, in.clock_source)) {
         roc_log(LogError,
                 "bad configuration: invalid roc_receiver_config.clock_source:"
                 " should be valid enum value");

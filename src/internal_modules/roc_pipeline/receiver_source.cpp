@@ -18,12 +18,13 @@ ReceiverSource::ReceiverSource(const ReceiverSourceConfig& source_config,
                                const rtp::EncodingMap& encoding_map,
                                core::IPool& packet_pool,
                                core::IPool& packet_buffer_pool,
+                               core::IPool& frame_pool,
                                core::IPool& frame_buffer_pool,
                                core::IArena& arena)
     : source_config_(source_config)
     , encoding_map_(encoding_map)
     , packet_factory_(packet_pool, packet_buffer_pool)
-    , frame_factory_(frame_buffer_pool)
+    , frame_factory_(frame_pool, frame_buffer_pool)
     , arena_(arena)
     , frame_reader_(NULL)
     , init_status_(status::NoStatus) {
@@ -138,6 +139,10 @@ status::StatusCode ReceiverSource::refresh(core::nanoseconds_t current_time,
     return status::StatusOK;
 }
 
+sndio::DeviceType ReceiverSource::type() const {
+    return sndio::DeviceType_Source;
+}
+
 sndio::ISink* ReceiverSource::to_sink() {
     return NULL;
 }
@@ -146,40 +151,40 @@ sndio::ISource* ReceiverSource::to_source() {
     return this;
 }
 
-sndio::DeviceType ReceiverSource::type() const {
-    return sndio::DeviceType_Source;
+audio::SampleSpec ReceiverSource::sample_spec() const {
+    return source_config_.common.output_sample_spec;
+}
+
+bool ReceiverSource::has_state() const {
+    return true;
 }
 
 sndio::DeviceState ReceiverSource::state() const {
     return state_tracker_.get_state();
 }
 
-void ReceiverSource::pause() {
-    // no-op
+status::StatusCode ReceiverSource::pause() {
+    return status::StatusOK;
 }
 
-bool ReceiverSource::resume() {
-    return true;
-}
-
-bool ReceiverSource::restart() {
-    return true;
-}
-
-audio::SampleSpec ReceiverSource::sample_spec() const {
-    return source_config_.common.output_sample_spec;
-}
-
-core::nanoseconds_t ReceiverSource::latency() const {
-    return 0;
+status::StatusCode ReceiverSource::resume() {
+    return status::StatusOK;
 }
 
 bool ReceiverSource::has_latency() const {
     return false;
 }
 
+core::nanoseconds_t ReceiverSource::latency() const {
+    return 0;
+}
+
 bool ReceiverSource::has_clock() const {
-    return source_config_.common.enable_timing;
+    return source_config_.common.enable_cpu_clock;
+}
+
+status::StatusCode ReceiverSource::rewind() {
+    return status::StatusOK;
 }
 
 void ReceiverSource::reclock(core::nanoseconds_t playback_time) {
@@ -196,10 +201,11 @@ void ReceiverSource::reclock(core::nanoseconds_t playback_time) {
     }
 }
 
-status::StatusCode ReceiverSource::read(audio::Frame& frame) {
+status::StatusCode ReceiverSource::read(audio::Frame& frame,
+                                        packet::stream_timestamp_t duration) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    return frame_reader_->read(frame);
+    return frame_reader_->read(frame, duration);
 }
 
 } // namespace pipeline

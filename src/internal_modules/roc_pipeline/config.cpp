@@ -16,8 +16,7 @@ SenderSinkConfig::SenderSinkConfig()
     : input_sample_spec(DefaultSampleSpec)
     , payload_type(rtp::PayloadType_L16_Stereo)
     , packet_length(DefaultPacketLength)
-    , enable_timing(false)
-    , enable_auto_duration(false)
+    , enable_cpu_clock(false)
     , enable_auto_cts(false)
     , enable_profiling(false)
     , enable_interleaving(false) {
@@ -36,7 +35,7 @@ void SenderSlotConfig::deduce_defaults() {
 
 ReceiverCommonConfig::ReceiverCommonConfig()
     : output_sample_spec(DefaultSampleSpec)
-    , enable_timing(false)
+    , enable_cpu_clock(false)
     , enable_auto_reclock(false)
     , enable_profiling(false) {
 }

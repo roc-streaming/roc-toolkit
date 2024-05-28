@@ -14,7 +14,6 @@
 
 #include <sox.h>
 
-#include "roc_audio/sample_spec.h"
 #include "roc_core/noncopyable.h"
 #include "roc_sndio/ibackend.h"
 
@@ -32,18 +31,22 @@ public:
     void set_frame_size(core::nanoseconds_t frame_length,
                         const audio::SampleSpec& sample_spec);
 
+    //! Returns name of backend.
+    virtual const char* name() const;
+
     //! Append supported drivers to the list.
     virtual void discover_drivers(core::Array<DriverInfo, MaxDrivers>& driver_list);
 
     //! Create and open a sink or source.
-    virtual IDevice* open_device(DeviceType device_type,
-                                 DriverType driver_type,
-                                 const char* driver,
-                                 const char* path,
-                                 const Config& config,
-                                 core::IArena& arena);
-    //! Returns name of backend.
-    virtual const char* name() const;
+    virtual ROC_ATTR_NODISCARD status::StatusCode
+    open_device(DeviceType device_type,
+                DriverType driver_type,
+                const char* driver,
+                const char* path,
+                const Config& config,
+                audio::FrameFactory& frame_factory,
+                core::IArena& arena,
+                IDevice** result);
 
 private:
     bool first_created_;

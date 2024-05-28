@@ -7,6 +7,7 @@
  */
 
 #include "roc_sndio/isource.h"
+#include "roc_core/panic.h"
 
 namespace roc {
 namespace sndio {

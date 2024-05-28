@@ -35,50 +35,55 @@ public:
     //! Initialize.
     TranscoderSource(const TranscoderConfig& config,
                      sndio::ISource& input_source,
-                     core::IPool& buffer_pool,
+                     core::IPool& frame_pool,
+                     core::IPool& frame_buffer_pool,
                      core::IArena& arena);
 
     //! Check if the pipeline was successfully constructed.
     status::StatusCode init_status() const;
 
-    //! Cast IDevice to ISink.
-    virtual sndio::ISink* to_sink();
-
-    //! Cast IDevice to ISink.
-    virtual sndio::ISource* to_source();
-
-    //! Get device type.
+    //! Get type (sink or source).
     virtual sndio::DeviceType type() const;
 
-    //! Get device state.
-    virtual sndio::DeviceState state() const;
+    //! Try to cast to ISink.
+    virtual sndio::ISink* to_sink();
 
-    //! Pause reading.
-    virtual void pause();
-
-    //! Resume paused reading.
-    virtual bool resume();
-
-    //! Restart reading from the beginning.
-    virtual bool restart();
+    //! Try to cast to ISource.
+    virtual sndio::ISource* to_source();
 
     //! Get sample specification of the source.
     virtual audio::SampleSpec sample_spec() const;
 
-    //! Get latency of the source.
-    virtual core::nanoseconds_t latency() const;
+    //! Check if the source supports state updates.
+    virtual bool has_state() const;
+
+    //! Get current source state.
+    virtual sndio::DeviceState state() const;
+
+    //! Pause source.
+    virtual ROC_ATTR_NODISCARD status::StatusCode pause();
+
+    //! Resume source.
+    virtual ROC_ATTR_NODISCARD status::StatusCode resume();
 
     //! Check if the source supports latency reports.
     virtual bool has_latency() const;
 
-    //! Check if the sink has own clock.
+    //! Get latency of the source.
+    virtual core::nanoseconds_t latency() const;
+
+    //! Check if the source has own clock.
     virtual bool has_clock() const;
 
-    //! Adjust source clock to match consumer clock.
-    virtual void reclock(core::nanoseconds_t timestamp);
+    //! Restart reading from beginning.
+    virtual ROC_ATTR_NODISCARD status::StatusCode rewind();
+
+    //! Adjust sessions clock to match consumer clock.
+    virtual void reclock(core::nanoseconds_t playback_time);
 
     //! Read frame.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(audio::Frame&);
+    virtual ROC_ATTR_NODISCARD status::StatusCode
+    read(audio::Frame& frame, packet::stream_timestamp_t duration);
 
 private:
     audio::FrameFactory frame_factory_;

@@ -16,11 +16,14 @@
 namespace roc {
 namespace sndio {
 
-WavSink::WavSink(core::IArena& arena, const Config& config)
+WavSink::WavSink(audio::FrameFactory& frame_factory,
+                 core::IArena& arena,
+                 const Config& config)
     : output_file_(NULL)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     if (config.latency != 0) {
         roc_log(LogError, "wav sink: setting io latency not supported");
+        init_status_ = status::StatusBadConfig;
         return;
     }
 
@@ -33,6 +36,7 @@ WavSink::WavSink(core::IArena& arena, const Config& config)
     if (!sample_spec_.is_raw()) {
         roc_log(LogError, "wav sink: sample format can be only \"-\" or \"%s\"",
                 audio::pcm_format_to_str(audio::Sample_RawFormat));
+        init_status_ = status::StatusBadConfig;
         return;
     }
 
@@ -40,25 +44,23 @@ WavSink::WavSink(core::IArena& arena, const Config& config)
                       WavHeader(sample_spec_.num_channels(), sample_spec_.sample_rate(),
                                 sizeof(audio::sample_t) * 8));
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
 WavSink::~WavSink() {
     close_();
 }
 
-bool WavSink::is_valid() const {
-    return valid_;
+status::StatusCode WavSink::init_status() const {
+    return init_status_;
 }
 
-bool WavSink::open(const char* path) {
-    roc_panic_if(!valid_);
+status::StatusCode WavSink::open(const char* path) {
+    return open_(path);
+}
 
-    if (!open_(path)) {
-        return false;
-    }
-
-    return true;
+DeviceType WavSink::type() const {
+    return DeviceType_Sink;
 }
 
 ISink* WavSink::to_sink() {
@@ -69,26 +71,6 @@ ISource* WavSink::to_source() {
     return NULL;
 }
 
-DeviceType WavSink::type() const {
-    return DeviceType_Sink;
-}
-
-DeviceState WavSink::state() const {
-    return DeviceState_Active;
-}
-
-void WavSink::pause() {
-    // no-op
-}
-
-bool WavSink::resume() {
-    return true;
-}
-
-bool WavSink::restart() {
-    return true;
-}
-
 audio::SampleSpec WavSink::sample_spec() const {
     if (!output_file_) {
         roc_panic("wav sink: not opened");
@@ -97,8 +79,8 @@ audio::SampleSpec WavSink::sample_spec() const {
     return sample_spec_;
 }
 
-core::nanoseconds_t WavSink::latency() const {
-    return 0;
+bool WavSink::has_state() const {
+    return false;
 }
 
 bool WavSink::has_latency() const {
@@ -156,16 +138,17 @@ status::StatusCode WavSink::write(audio::Frame& frame) {
     return status::StatusOK;
 }
 
-bool WavSink::open_(const char* path) {
+status::StatusCode WavSink::open_(const char* path) {
     if (output_file_) {
         roc_panic("wav sink: already opened");
     }
 
     output_file_ = fopen(path, "w");
+
     if (!output_file_) {
         roc_log(LogDebug, "wav sink: can't open output file: %s",
                 core::errno_to_str(errno).c_str());
-        return false;
+        return status::StatusErrFile;
     }
 
     roc_log(LogInfo,
@@ -175,7 +158,7 @@ bool WavSink::open_(const char* path) {
             (unsigned long)header_->sample_rate(),
             (unsigned long)header_->num_channels());
 
-    return true;
+    return status::StatusOK;
 }
 
 void WavSink::close_() {
@@ -186,8 +169,8 @@ void WavSink::close_() {
     roc_log(LogDebug, "wav sink: closing output file");
 
     if (fclose(output_file_)) {
-        roc_panic("wav sink: can't close output file: %s",
-                  core::errno_to_str(errno).c_str());
+        roc_log(LogError, "wav sink: can't properly close output file: %s",
+                core::errno_to_str(errno).c_str());
     }
 
     output_file_ = NULL;

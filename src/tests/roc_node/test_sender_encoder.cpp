@@ -21,6 +21,8 @@ namespace node {
 
 namespace {
 
+enum { MaxBufSize = 100 };
+
 core::HeapArena arena;
 
 void write_slot_metrics(const pipeline::SenderSlotMetrics& slot_metrics, void* slot_arg) {
@@ -60,15 +62,18 @@ TEST(sender_encoder, read_packet) {
 
     packet::PacketPtr pp;
 
-    LONGS_EQUAL(status::StatusBadInterface,
-                sender_encoder.read_packet(address::Iface_AudioSource, pp));
-    CHECK(!pp);
-    LONGS_EQUAL(status::StatusBadInterface,
-                sender_encoder.read_packet(address::Iface_AudioRepair, pp));
-    CHECK(!pp);
-    LONGS_EQUAL(status::StatusBadInterface,
-                sender_encoder.read_packet(address::Iface_AudioControl, pp));
-    CHECK(!pp);
+    uint8_t packet[MaxBufSize] = {};
+    size_t packet_size = sizeof(packet);
+
+    LONGS_EQUAL(
+        status::StatusBadInterface,
+        sender_encoder.read_packet(address::Iface_AudioSource, packet, &packet_size));
+    LONGS_EQUAL(
+        status::StatusBadInterface,
+        sender_encoder.read_packet(address::Iface_AudioRepair, packet, &packet_size));
+    LONGS_EQUAL(
+        status::StatusBadInterface,
+        sender_encoder.read_packet(address::Iface_AudioControl, packet, &packet_size));
 }
 
 TEST(sender_encoder, write_packet) {
@@ -78,14 +83,17 @@ TEST(sender_encoder, write_packet) {
     SenderEncoder sender_encoder(context, sender_config);
     LONGS_EQUAL(status::StatusOK, sender_encoder.init_status());
 
-    packet::PacketPtr pp;
+    uint8_t packet[MaxBufSize] = {};
 
-    LONGS_EQUAL(status::StatusBadInterface,
-                sender_encoder.write_packet(address::Iface_AudioSource, pp));
-    LONGS_EQUAL(status::StatusBadInterface,
-                sender_encoder.write_packet(address::Iface_AudioRepair, pp));
-    LONGS_EQUAL(status::StatusBadInterface,
-                sender_encoder.write_packet(address::Iface_AudioControl, pp));
+    LONGS_EQUAL(
+        status::StatusBadInterface,
+        sender_encoder.write_packet(address::Iface_AudioSource, packet, sizeof(packet)));
+    LONGS_EQUAL(
+        status::StatusBadInterface,
+        sender_encoder.write_packet(address::Iface_AudioRepair, packet, sizeof(packet)));
+    LONGS_EQUAL(
+        status::StatusBadInterface,
+        sender_encoder.write_packet(address::Iface_AudioControl, packet, sizeof(packet)));
 }
 
 TEST(sender_encoder, activate_no_fec) {

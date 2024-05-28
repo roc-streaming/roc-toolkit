@@ -13,6 +13,7 @@
 #define ROC_PIPELINE_PIPELINE_LOOP_H_
 
 #include "roc_audio/frame.h"
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/atomic.h"
 #include "roc_core/mpsc_queue.h"
@@ -247,6 +248,12 @@ public:
     void process_tasks();
 
 protected:
+    //! Pipeline direction.
+    enum Direction {
+        Dir_ReadFrames,  //!< Reading frames from pipeline.
+        Dir_WriteFrames, //!< Writing frames to pipeline.
+    };
+
     //! Task processing statistics.
     struct Stats {
         //! Total number of tasks processed.
@@ -280,7 +287,10 @@ protected:
     //! Initialization.
     PipelineLoop(IPipelineTaskScheduler& scheduler,
                  const PipelineLoopConfig& config,
-                 const audio::SampleSpec& sample_spec);
+                 const audio::SampleSpec& sample_spec,
+                 core::IPool& frame_pool,
+                 core::IPool& frame_buffer_pool,
+                 Direction direction);
 
     virtual ~PipelineLoop();
 
@@ -296,7 +306,8 @@ protected:
 
     //! Split frame and process subframes and some of the enqueued tasks.
     ROC_ATTR_NODISCARD status::StatusCode
-    process_subframes_and_tasks(audio::Frame& frame);
+    process_subframes_and_tasks(audio::Frame& frame,
+                                packet::stream_timestamp_t frame_duration);
 
     //! Get current time.
     virtual core::nanoseconds_t timestamp_imp() const = 0;
@@ -305,7 +316,9 @@ protected:
     virtual uint64_t tid_imp() const = 0;
 
     //! Process subframe.
-    virtual status::StatusCode process_subframe_imp(audio::Frame& frame) = 0;
+    virtual status::StatusCode
+    process_subframe_imp(audio::Frame& frame,
+                         packet::stream_timestamp_t frame_duration) = 0;
 
     //! Process task.
     virtual bool process_task_imp(PipelineTask& task) = 0;
@@ -313,8 +326,12 @@ protected:
 private:
     enum ProcState { ProcNotScheduled, ProcScheduled, ProcRunning };
 
-    status::StatusCode process_subframes_and_tasks_simple_(audio::Frame& frame);
-    status::StatusCode process_subframes_and_tasks_precise_(audio::Frame& frame);
+    status::StatusCode
+    process_subframes_and_tasks_simple_(audio::Frame& frame,
+                                        packet::stream_timestamp_t frame_duration);
+    status::StatusCode
+    process_subframes_and_tasks_precise_(audio::Frame& frame,
+                                         packet::stream_timestamp_t frame_duration);
 
     bool schedule_and_maybe_process_task_(PipelineTask& task);
     bool maybe_process_tasks_();
@@ -323,9 +340,13 @@ private:
     void cancel_async_task_processing_();
 
     void process_task_(PipelineTask& task, bool notify);
-    status::StatusCode process_next_subframe_(audio::Frame& frame,
-                                              packet::stream_timestamp_t* frame_pos,
-                                              packet::stream_timestamp_t frame_duration);
+    status::StatusCode next_subframe_(audio::Frame& frame,
+                                      packet::stream_timestamp_t* frame_pos,
+                                      packet::stream_timestamp_t frame_duration);
+    status::StatusCode process_subframe_(audio::Frame& frame,
+                                         packet::stream_timestamp_t frame_duration,
+                                         packet::stream_timestamp_t subframe_pos,
+                                         packet::stream_timestamp_t subframe_duration);
 
     bool start_subframe_task_processing_();
     bool subframe_task_processing_allowed_(core::nanoseconds_t next_frame_deadline) const;
@@ -340,6 +361,7 @@ private:
 
     // configuration
     const PipelineLoopConfig config_;
+    const Direction direction_;
 
     const audio::SampleSpec sample_spec_;
 
@@ -347,6 +369,10 @@ private:
     const packet::stream_timestamp_t max_samples_between_tasks_;
 
     const core::nanoseconds_t no_task_proc_half_interval_;
+
+    // sub-frame allocation
+    audio::FrameFactory frame_factory_;
+    audio::FramePtr subframe_;
 
     // used to schedule asynchronous work
     IPipelineTaskScheduler& scheduler_;

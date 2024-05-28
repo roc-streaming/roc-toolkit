@@ -53,6 +53,9 @@ public:
     core::BufferPtr new_packet_buffer();
 
     //! Allocate packet.
+    //! @remarks
+    //!  Returned packet does not have a buffer, it should be allocated and
+    //!  attached to the packet manually.
     PacketPtr new_packet();
 
 private:

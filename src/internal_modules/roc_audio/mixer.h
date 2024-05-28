@@ -18,36 +18,36 @@
 #include "roc_audio/sample_spec.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/slice.h"
 #include "roc_core/time.h"
-#include "roc_packet/units.h"
-#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace audio {
 
 //! Mixer.
+//!
 //! Mixes multiple input streams into one output stream.
 //!
-//! For example, these two input streams:
-//! @code
-//!  1, 2, 3, ...
-//!  4, 5, 6, ...
-//! @endcode
+//! Features:
+//!  - If requested duration is larger than maximum frame buffer size, mixer
+//!    splits request into multiple read operations and concatenates results.
 //!
-//! are transformed into this output stream:
-//! @code
-//!  5, 7, 9, ...
-//! @endcode
+//!  - If pipeline element reports a partial read (StatusPart), mixer repeats
+//!    reads until requested amount of samples is accumulated.
 //!
-//! If timestamps are enabled, mixer computes capture timestamp of output
-//! frame as the average capture timestamps of all mixed input frames.
-//! This makes sense only when all inputs are synchronized and their
-//! timestamps are close to each other.
+//!  - If pipeline element reports temporary lack of data (StatusDrain), mixer
+//!    skips this element during current read.
+//!
+//!    (In other words, StatusPart and StatusDrain never leave mixer. Mixer
+//!    always returns as much samples as requested).
+//!
+//!  - If timestamps are enabled, mixer computes capture timestamp of output
+//!    frame as the average capture timestamps of all mixed input frames.
+//!
+//!    (This makes sense only when all inputs are synchronized and their
+//!    timestamps are close to each other).
 class Mixer : public IFrameReader, public core::NonCopyable<> {
 public:
     //! Initialize.
-    //! @p buffer_factory is used to allocate a temporary buffer for mixing.
     //! @p enable_timestamps defines whether to enable calculation of capture timestamps.
     Mixer(FrameFactory& frame_factory,
           const SampleSpec& sample_spec,
@@ -66,18 +66,31 @@ public:
     //! @remarks
     //!  Reads samples from every input reader, mixes them, and fills @p frame
     //!  with the result.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(Frame& frame);
+    //! @note
+    //!  Requested @p duration is allowed to be larger than maximum buffer
+    //!  size, but only if @p frame has pre-allocated buffer big enough.
+    virtual ROC_ATTR_NODISCARD status::StatusCode
+    read(Frame& frame, packet::stream_timestamp_t duration);
 
 private:
-    status::StatusCode read_(sample_t* out_data,
-                             size_t out_size,
-                             unsigned& out_flags,
-                             core::nanoseconds_t& out_cts);
+    status::StatusCode mix_all_(sample_t* out_data,
+                                size_t out_size,
+                                unsigned& out_flags,
+                                core::nanoseconds_t& out_cts);
 
-    core::List<IFrameReader, core::NoOwnership> readers_;
-    core::Slice<sample_t> temp_buf_;
+    status::StatusCode mix_one_(IFrameReader& frame_reader,
+                                sample_t* out_data,
+                                size_t out_size,
+                                unsigned& out_flags,
+                                core::nanoseconds_t& out_cts);
+
+    FrameFactory& frame_factory_;
+    core::List<IFrameReader, core::NoOwnership> frame_readers_;
+
+    FramePtr in_frame_;
 
     const SampleSpec sample_spec_;
+    const size_t max_read_;
     const bool enable_timestamps_;
 
     status::StatusCode init_status_;

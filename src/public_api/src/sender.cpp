@@ -185,8 +185,6 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
 
     node::Sender* imp_sender = (node::Sender*)sender;
 
-    sndio::ISink& imp_sink = imp_sender->sink();
-
     if (!frame) {
         roc_log(LogError, "roc_sender_write(): invalid arguments: frame is null");
         return -1;
@@ -196,25 +194,15 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
         return 0;
     }
 
-    const size_t factor = imp_sink.sample_spec().num_channels() * sizeof(float);
-
-    if (frame->samples_size % factor != 0) {
-        roc_log(LogError,
-                "roc_sender_write(): invalid arguments:"
-                " # of samples should be multiple of %u",
-                (unsigned)factor);
-        return -1;
-    }
-
     if (!frame->samples) {
         roc_log(LogError,
                 "roc_sender_write(): invalid arguments: frame samples buffer is null");
         return -1;
     }
 
-    audio::Frame imp_frame((float*)frame->samples, frame->samples_size / sizeof(float));
+    const status::StatusCode code =
+        imp_sender->write_frame(frame->samples, frame->samples_size);
 
-    const status::StatusCode code = imp_sink.write(imp_frame);
     if (code != status::StatusOK) {
         roc_log(LogError, "roc_sender_write(): can't write frame: status=%s",
                 status::code_to_str(code));

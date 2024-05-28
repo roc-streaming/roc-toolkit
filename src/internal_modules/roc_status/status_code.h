@@ -27,6 +27,18 @@ enum StatusCode {
     //! Operation completed successfully.
     StatusOK,
 
+    //! Returned less data than requested.
+    //! @remarks
+    //!  Indicates that the returned data is shorter than requested. This can
+    //!  happen due to some sort of buffering or batching and does NOT mean
+    //!  that there is no more data in stream.
+    //! @note
+    //!  Example: we've requested 100 samples, but got only 60. We are allowed
+    //!  to request 40 more samples if we need it.
+    //! @pre
+    //!  This status can be returned only from read operation.
+    StatusPart,
+
     //! Stream is empty currently, but more to come later.
     //! @remarks
     //!  Indicates that we can't read more data right now and should try later,
@@ -34,6 +46,8 @@ enum StatusCode {
     //! @note
     //!  Example: we've read all packets from incoming queue and it became
     //!  empty (drained), but more packets are expected.
+    //! @pre
+    //!  This status can be returned only from read operation.
     StatusDrain,
 
     //! Stream aborted prematurely.
@@ -60,13 +74,6 @@ enum StatusCode {
     //!  Example: not enough memory when creating new session.
     StatusNoMem,
 
-    //! Insufficient buffer space.
-    //! @remarks
-    //!  Indicates that configured buffer size(s) and too small to fulfill request.
-    //! @note
-    //!  Example: packet size exceeds configured maximum buffer size.
-    StatusNoSpace,
-
     //! No route found.
     //! @remarks
     //!  Indicates that there is no suitable route to handle request.
@@ -74,6 +81,14 @@ enum StatusCode {
     //!  Example: we're trying to write a packet, but there is no exiting session
     //!  to which it belongs.
     StatusNoRoute,
+
+    //! No driver found.
+    //! @remarks
+    //!  Indicates that there is no suitable driver to open sink or source.
+    //! @note
+    //!  Example: we're trying to open an mp3 file using a backend that
+    //!  supports only wav files.
+    StatusNoDriver,
 
     //! Failure with audio device.
     //! @remarks
@@ -139,6 +154,17 @@ enum StatusCode {
     //!  Example: config fields have invalid values or are not consistent
     //!  with each other.
     StatusBadConfig,
+
+    //! Provided buffer has inappropriate size.
+    //! @remarks
+    //!  Indicates the output buffer provided by user is insufficient to hold
+    //!  result, or input buffer provided by user is larger than allowed
+    //!  maximum, or buffer size does not fulfill other requirements.
+    //! @note
+    //!  Example: user tries to read packet into a buffer, but packet is
+    //!  larger than the buffer; user tries to write frame, but frame
+    //!  size is not multiple of sample size.
+    StatusBadBuffer,
 
     //! Bad argument.
     //! @remark

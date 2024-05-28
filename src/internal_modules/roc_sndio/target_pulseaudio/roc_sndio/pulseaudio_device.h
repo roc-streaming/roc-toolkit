@@ -15,6 +15,8 @@
 #include <pulse/pulseaudio.h>
 
 #include "roc_audio/frame.h"
+#include "roc_audio/frame_factory.h"
+#include "roc_core/attributes.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/rate_limiter.h"
 #include "roc_core/stddefs.h"
@@ -32,53 +34,67 @@ namespace sndio {
 class PulseaudioDevice : public ISink, public ISource, public core::NonCopyable<> {
 public:
     //! Initialize.
-    PulseaudioDevice(const Config& config, DeviceType device_type);
+    PulseaudioDevice(audio::FrameFactory& frame_factory,
+                     core::IArena& arena,
+                     const Config& config,
+                     DeviceType device_type);
     ~PulseaudioDevice();
 
-    //! Open output device.
-    bool open(const char* device);
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
-    //! Cast IDevice to ISink.
-    virtual ISink* to_sink();
-
-    //! Cast IDevice to ISink.
-    virtual ISource* to_source();
+    //! Open device.
+    ROC_ATTR_NODISCARD status::StatusCode open(const char* device);
 
     //! Get device type.
     virtual DeviceType type() const;
 
+    //! Try to cast to ISink.
+    virtual ISink* to_sink();
+
+    //! Try to cast to ISource.
+    virtual ISource* to_source();
+
+    //! Get sample specification of the device.
+    virtual audio::SampleSpec sample_spec() const;
+
+    //! Check if the device supports state updates.
+    virtual bool has_state() const;
+
     //! Get device state.
     virtual DeviceState state() const;
 
-    //! Pause reading.
-    virtual void pause();
+    //! Pause device.
+    virtual ROC_ATTR_NODISCARD status::StatusCode pause();
 
-    //! Resume paused reading.
-    virtual bool resume();
-
-    //! Restart reading from the beginning.
-    virtual bool restart();
-
-    //! Get sample specification of the sink.
-    virtual audio::SampleSpec sample_spec() const;
-
-    //! Get latency of the sink.
-    virtual core::nanoseconds_t latency() const;
+    //! Resume device.
+    virtual ROC_ATTR_NODISCARD status::StatusCode resume();
 
     //! Check if the device supports latency reports.
     virtual bool has_latency() const;
 
+    //! Get latency of the device.
+    virtual core::nanoseconds_t latency() const;
+
     //! Check if the device has own clock.
     virtual bool has_clock() const;
 
-    //! Adjust source clock to match consumer clock.
+    //! Restart reading from beginning.
+    virtual ROC_ATTR_NODISCARD status::StatusCode rewind();
+
+    //! Adjust device clock to match consumer clock.
     virtual void reclock(core::nanoseconds_t timestamp);
 
-    //! Write audio frame.
+    //! Write frame.
+    //! @note
+    //!  Used if device is sink.
     virtual ROC_ATTR_NODISCARD status::StatusCode write(audio::Frame& frame);
 
-    //! Read audio frame.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(audio::Frame& frame);
+    //! Read frame.
+    //! @note
+    //!  Used if device is source.
+    virtual ROC_ATTR_NODISCARD status::StatusCode
+    read(audio::Frame& frame, packet::stream_timestamp_t duration);
 
 private:
     static void context_state_cb_(pa_context* context, void* userdata);
@@ -94,15 +110,15 @@ private:
                           const struct timeval* tv,
                           void* userdata);
 
-    bool request_frame_(audio::Frame& frame);
+    status::StatusCode handle_request_(audio::sample_t* data, size_t size);
 
     void want_mainloop_() const;
-    bool start_mainloop_();
+    status::StatusCode start_mainloop_();
     void stop_mainloop_();
 
-    bool open_();
+    status::StatusCode open_();
     void close_();
-    void set_opened_(bool opened);
+    void set_open_status_(status::StatusCode code);
 
     bool open_context_();
     void close_context_();
@@ -128,6 +144,7 @@ private:
     const DeviceType device_type_;
     const char* device_;
 
+    audio::FrameFactory& frame_factory_;
     audio::SampleSpec sample_spec_;
 
     core::nanoseconds_t frame_len_ns_;
@@ -144,7 +161,7 @@ private:
     bool record_frag_flag_;
 
     bool open_done_;
-    bool opened_;
+    status::StatusCode open_status_;
 
     pa_threaded_mainloop* mainloop_;
     pa_context* context_;
@@ -158,6 +175,8 @@ private:
     pa_buffer_attr buff_attrs_;
 
     core::RateLimiter rate_limiter_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace sndio

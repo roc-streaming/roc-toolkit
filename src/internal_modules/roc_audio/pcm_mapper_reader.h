@@ -30,7 +30,7 @@ namespace audio {
 class PcmMapperReader : public IFrameReader, public core::NonCopyable<> {
 public:
     //! Initialize.
-    PcmMapperReader(IFrameReader& reader,
+    PcmMapperReader(IFrameReader& frame_reader,
                     FrameFactory& frame_factory,
                     const SampleSpec& in_spec,
                     const SampleSpec& out_spec);
@@ -39,13 +39,16 @@ public:
     status::StatusCode init_status() const;
 
     //! Read audio frame.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(Frame& frame);
+    virtual ROC_ATTR_NODISCARD status::StatusCode
+    read(Frame& frame, packet::stream_timestamp_t duration);
 
 private:
-    PcmMapper mapper_;
+    FrameFactory& frame_factory_;
+    IFrameReader& frame_reader_;
 
-    IFrameReader& in_reader_;
-    core::Slice<uint8_t> in_buf_;
+    FramePtr in_frame_;
+
+    PcmMapper mapper_;
 
     const SampleSpec in_spec_;
     const SampleSpec out_spec_;

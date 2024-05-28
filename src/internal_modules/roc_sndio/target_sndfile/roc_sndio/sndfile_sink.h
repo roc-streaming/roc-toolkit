@@ -7,19 +7,17 @@
  */
 
 //! @file roc_sndio/target_sndfile/roc_sndio/sndfile_sink.h
-//! @brief SndFile sink.
+//! @brief Sndfile sink.
 
 #ifndef ROC_SNDIO_SNDFILE_SINK_H_
 #define ROC_SNDIO_SNDFILE_SINK_H_
 
 #include <sndfile.h>
 
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/sample_spec.h"
-#include "roc_core/array.h"
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/stddefs.h"
-#include "roc_packet/units.h"
 #include "roc_sndio/config.h"
 #include "roc_sndio/isink.h"
 
@@ -33,49 +31,31 @@ namespace sndio {
 class SndfileSink : public ISink, public core::NonCopyable<> {
 public:
     //! Initialize.
-    SndfileSink(core::IArena& arena, const Config& config);
-
-    virtual ~SndfileSink();
+    SndfileSink(audio::FrameFactory& frame_factory,
+                core::IArena& arena,
+                const Config& config);
+    ~SndfileSink();
 
     //! Check if the object was successfully constructed.
-    bool is_valid() const;
+    status::StatusCode init_status() const;
 
-    //! Open output file or device.
-    //!
-    //! @b Parameters
-    //!  - @p driver is output format name;
-    //!  - @p path is output file name, "-" for stdout.
-    //!
-    //! @remarks
-    //!  If @p driver is NULL, default is used.
-    bool open(const char* driver, const char* path);
-
-    //! Cast IDevice to ISink.
-    virtual ISink* to_sink();
-
-    //! Cast IDevice to ISink.
-    virtual ISource* to_source();
+    //! Open sink.
+    ROC_ATTR_NODISCARD status::StatusCode open(const char* driver, const char* path);
 
     //! Get device type.
     virtual DeviceType type() const;
 
-    //! Get device state.
-    virtual DeviceState state() const;
+    //! Try to cast to ISink.
+    virtual ISink* to_sink();
 
-    //! Pause reading.
-    virtual void pause();
-
-    //! Resume paused reading.
-    virtual bool resume();
-
-    //! Restart reading from the beginning.
-    virtual bool restart();
+    //! Try to cast to ISource.
+    virtual ISource* to_source();
 
     //! Get sample specification of the sink.
     virtual audio::SampleSpec sample_spec() const;
 
-    //! Get latency of the sink.
-    virtual core::nanoseconds_t latency() const;
+    //! Check if the sink supports state updates.
+    virtual bool has_state() const;
 
     //! Check if the sink supports latency reports.
     virtual bool has_latency() const;
@@ -83,18 +63,19 @@ public:
     //! Check if the sink has own clock.
     virtual bool has_clock() const;
 
-    //! Write audio frame.
+    //! Write frame.
     virtual ROC_ATTR_NODISCARD status::StatusCode write(audio::Frame& frame);
 
 private:
-    bool open_(const char* driver, const char* path);
+    status::StatusCode open_(const char* driver, const char* path);
     void close_();
 
     SNDFILE* file_;
     SF_INFO file_info_;
 
     audio::SampleSpec sample_spec_;
-    bool valid_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace sndio

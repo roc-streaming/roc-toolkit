@@ -10,11 +10,11 @@
 
 #include "roc_core/log.h"
 #include "roc_core/macro_helpers.h"
-#include "roc_core/scoped_lock.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_sndio/sox_backend.h"
 #include "roc_sndio/sox_sink.h"
 #include "roc_sndio/sox_source.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace sndio {
@@ -180,6 +180,10 @@ void SoxBackend::set_frame_size(core::nanoseconds_t frame_length,
     sox_get_globals()->bufsiz = size * sizeof(sox_sample_t);
 }
 
+const char* SoxBackend::name() const {
+    return "sox";
+}
+
 void SoxBackend::discover_drivers(core::Array<DriverInfo, MaxDrivers>& driver_list) {
     for (size_t n = 0; n < ROC_ARRAY_SIZE(default_drivers); n++) {
         const sox_format_handler_t* handler =
@@ -223,12 +227,14 @@ void SoxBackend::discover_drivers(core::Array<DriverInfo, MaxDrivers>& driver_li
     }
 }
 
-IDevice* SoxBackend::open_device(DeviceType device_type,
-                                 DriverType driver_type,
-                                 const char* driver,
-                                 const char* path,
-                                 const Config& config,
-                                 core::IArena& arena) {
+status::StatusCode SoxBackend::open_device(DeviceType device_type,
+                                           DriverType driver_type,
+                                           const char* driver,
+                                           const char* path,
+                                           const Config& config,
+                                           audio::FrameFactory& frame_factory,
+                                           core::IArena& arena,
+                                           IDevice** result) {
     first_created_ = true;
 
     driver = map_to_sox_driver(driver);
@@ -236,57 +242,73 @@ IDevice* SoxBackend::open_device(DeviceType device_type,
     if (driver && is_driver_hidden(driver)) {
         roc_log(LogDebug, "sox backend: driver is not supported: driver=%s path=%s",
                 driver, path);
-        return NULL;
+        return status::StatusNoDriver;
     }
 
     const sox_format_handler_t* handler = sox_write_handler(path, driver, NULL);
     if (!handler) {
         roc_log(LogDebug, "sox backend: driver is not available: driver=%s path=%s",
                 driver, path);
-        return NULL;
+        return status::StatusNoDriver;
     }
 
     if (!check_handler_type(handler, driver_type)) {
         roc_log(LogDebug, "sox backend: mismatching driver type: driver=%s path=%s",
                 driver, path);
-        return NULL;
+        return status::StatusNoDriver;
     }
 
     switch (device_type) {
     case DeviceType_Sink: {
-        core::ScopedPtr<SoxSink> sink(new (arena) SoxSink(arena, config, driver_type),
-                                      arena);
-        if (!sink || !sink->is_valid()) {
-            roc_log(LogDebug, "sox backend: can't construct sink: driver=%s path=%s",
-                    driver, path);
-            return NULL;
+        core::ScopedPtr<SoxSink> sink(
+            new (arena) SoxSink(frame_factory, arena, config, driver_type), arena);
+
+        if (!sink) {
+            roc_log(LogDebug, "sox backend: can't allocate sink: path=%s", path);
+            return status::StatusNoMem;
         }
 
-        if (!sink->open(driver, path)) {
-            roc_log(LogDebug, "sox backend: open failed: driver=%s path=%s", driver,
-                    path);
-            return NULL;
+        if (sink->init_status() != status::StatusOK) {
+            roc_log(LogDebug, "sox backend: can't initialize sink: path=%s status=%s",
+                    path, status::code_to_str(sink->init_status()));
+            return sink->init_status();
         }
 
-        return sink.release();
+        const status::StatusCode code = sink->open(driver, path);
+        if (code != status::StatusOK) {
+            roc_log(LogDebug, "sox backend: can't open sink: path=%s status=%s", path,
+                    status::code_to_str(code));
+            return code;
+        }
+
+        *result = sink.release();
+        return status::StatusOK;
     } break;
 
     case DeviceType_Source: {
         core::ScopedPtr<SoxSource> source(
-            new (arena) SoxSource(arena, config, driver_type), arena);
-        if (!source || !source->is_valid()) {
-            roc_log(LogDebug, "sox backend: can't construct source: driver=%s path=%s",
-                    driver, path);
-            return NULL;
+            new (arena) SoxSource(frame_factory, arena, config, driver_type), arena);
+
+        if (!source) {
+            roc_log(LogDebug, "sox backend: can't allocate source: path=%s", path);
+            return status::StatusNoMem;
         }
 
-        if (!source->open(driver, path)) {
-            roc_log(LogDebug, "sox backend: open failed: driver=%s path=%s", driver,
-                    path);
-            return NULL;
+        if (source->init_status() != status::StatusOK) {
+            roc_log(LogDebug, "sox backend: can't initialize source: path=%s status=%s",
+                    path, status::code_to_str(source->init_status()));
+            return source->init_status();
         }
 
-        return source.release();
+        const status::StatusCode code = source->open(driver, path);
+        if (code != status::StatusOK) {
+            roc_log(LogDebug, "sox backend: can't open source: path=%s status=%s", path,
+                    status::code_to_str(code));
+            return code;
+        }
+
+        *result = source.release();
+        return status::StatusOK;
     } break;
 
     default:
@@ -294,10 +316,6 @@ IDevice* SoxBackend::open_device(DeviceType device_type,
     }
 
     roc_panic("sox backend: invalid device type");
-}
-
-const char* SoxBackend::name() const {
-    return "sox";
 }
 
 } // namespace sndio

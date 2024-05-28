@@ -18,16 +18,18 @@ namespace node {
 ReceiverDecoder::ReceiverDecoder(Context& context,
                                  const pipeline::ReceiverSourceConfig& pipeline_config)
     : Node(context)
-    , packet_factory_(context.packet_pool(), context.packet_buffer_pool())
     , pipeline_(*this,
                 pipeline_config,
                 context.encoding_map(),
                 context.packet_pool(),
                 context.packet_buffer_pool(),
+                context.frame_pool(),
                 context.frame_buffer_pool(),
                 context.arena())
     , slot_(NULL)
     , processing_task_(pipeline_)
+    , packet_factory_(context.packet_pool(), context.packet_buffer_pool())
+    , frame_factory_(context.frame_pool(), context.frame_buffer_pool())
     , init_status_(status::NoStatus) {
     roc_log(LogDebug, "receiver decoder node: initializing");
 
@@ -37,6 +39,8 @@ ReceiverDecoder::ReceiverDecoder(Context& context,
                 status::code_to_str(pipeline_.init_status()));
         return;
     }
+
+    sample_spec_ = pipeline_.source().sample_spec();
 
     pipeline::ReceiverSlotConfig slot_config;
     slot_config.enable_routing = false;
@@ -78,12 +82,8 @@ status::StatusCode ReceiverDecoder::init_status() const {
     return init_status_;
 }
 
-packet::PacketFactory& ReceiverDecoder::packet_factory() {
-    return packet_factory_;
-}
-
 bool ReceiverDecoder::activate(address::Interface iface, address::Protocol proto) {
-    core::Mutex::Lock lock(mutex_);
+    core::Mutex::Lock lock(control_mutex_);
 
     roc_panic_if(init_status_ != status::StatusOK);
 
@@ -126,7 +126,7 @@ bool ReceiverDecoder::get_metrics(slot_metrics_func_t slot_metrics_func,
                                   void* slot_metrics_arg,
                                   party_metrics_func_t party_metrics_func,
                                   void* party_metrics_arg) {
-    core::Mutex::Lock lock(mutex_);
+    core::Mutex::Lock lock(control_mutex_);
 
     roc_panic_if(init_status_ != status::StatusOK);
 
@@ -158,11 +158,43 @@ bool ReceiverDecoder::get_metrics(slot_metrics_func_t slot_metrics_func,
 }
 
 status::StatusCode ReceiverDecoder::write_packet(address::Interface iface,
-                                                 const packet::PacketPtr& packet) {
+                                                 const void* bytes,
+                                                 size_t n_bytes) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if(iface < 0);
     roc_panic_if(iface >= (int)address::Iface_Max);
+
+    roc_panic_if(!bytes);
+    roc_panic_if(n_bytes == 0);
+
+    if (n_bytes > packet_factory_.packet_buffer_size()) {
+        roc_log(LogError,
+                "receiver decoder node:"
+                " provided packet exceeds maximum packet size (see roc_context_config):"
+                " provided=%lu maximum=%lu",
+                (unsigned long)n_bytes,
+                (unsigned long)packet_factory_.packet_buffer_size());
+        return status::StatusBadBuffer;
+    }
+
+    core::Slice<uint8_t> buffer = packet_factory_.new_packet_buffer();
+    if (!buffer) {
+        roc_log(LogError, "receiver decoder node: can't allocate buffer");
+        return status::StatusNoMem;
+    }
+
+    buffer.reslice(0, n_bytes);
+    memcpy(buffer.data(), bytes, n_bytes);
+
+    packet::PacketPtr packet = packet_factory_.new_packet();
+    if (!packet) {
+        roc_log(LogError, "receiver decoder node: can't allocate packet");
+        return status::StatusNoMem;
+    }
+
+    packet->add_flags(packet::Packet::FlagUDP);
+    packet->set_buffer(buffer);
 
     packet::IWriter* writer = endpoint_writers_[iface];
     if (!writer) {
@@ -176,12 +208,15 @@ status::StatusCode ReceiverDecoder::write_packet(address::Interface iface,
     return writer->write(packet);
 }
 
-status::StatusCode ReceiverDecoder::read_packet(address::Interface iface,
-                                                packet::PacketPtr& packet) {
+status::StatusCode
+ReceiverDecoder::read_packet(address::Interface iface, void* bytes, size_t* n_bytes) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if(iface < 0);
     roc_panic_if(iface >= (int)address::Iface_Max);
+
+    roc_panic_if(!bytes);
+    roc_panic_if(n_bytes == 0);
 
     packet::IReader* reader = endpoint_readers_[iface];
     if (!reader) {
@@ -193,14 +228,69 @@ status::StatusCode ReceiverDecoder::read_packet(address::Interface iface,
             return status::StatusBadInterface;
         } else {
             roc_log(LogError,
-                    "sender encoder node:"
+                    "receiver decoder node:"
                     " can't read from %s interface: interface doesn't support reading",
                     address::interface_to_str(iface));
             return status::StatusBadOperation;
         }
     }
 
-    return reader->read(packet);
+    packet::PacketPtr packet;
+    const status::StatusCode code = reader->read(packet);
+    if (code != status::StatusOK) {
+        return code;
+    }
+
+    if (*n_bytes < packet->buffer().size()) {
+        roc_log(LogError,
+                "receiver decoder node:"
+                " not enough space in provided packet:"
+                " provided=%lu needed=%lu",
+                (unsigned long)n_bytes, (unsigned long)packet->buffer().size());
+        return status::StatusBadBuffer;
+    }
+
+    memcpy(bytes, packet->buffer().data(), packet->buffer().size());
+    *n_bytes = packet->buffer().size();
+
+    return status::StatusOK;
+}
+
+status::StatusCode ReceiverDecoder::read_frame(void* bytes, size_t n_bytes) {
+    core::Mutex::Lock lock(frame_mutex_);
+
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    roc_panic_if(!bytes);
+    roc_panic_if(n_bytes == 0);
+
+    if (!sample_spec_.validate_frame_size(n_bytes)) {
+        return status::StatusBadBuffer;
+    }
+
+    if (!frame_) {
+        if (!(frame_ = frame_factory_.allocate_frame_no_buffer())) {
+            return status::StatusNoMem;
+        }
+    }
+
+    // Attach pre-allocated buffer to frame.
+    // This allows source to write result directly into user buffer.
+    core::BufferView frame_buffer(bytes, n_bytes);
+    frame_->set_buffer(frame_buffer);
+
+    const status::StatusCode code =
+        pipeline_.source().read(*frame_, sample_spec_.bytes_2_stream_timestamp(n_bytes));
+
+    if (code == status::StatusOK && frame_->bytes() != bytes) {
+        // If source used another buffer, copy result from it.
+        memmove(bytes, frame_->bytes(), n_bytes);
+    }
+
+    // Detach buffer, clear frame for re-use.
+    frame_->clear();
+
+    return code;
 }
 
 sndio::ISource& ReceiverDecoder::source() {

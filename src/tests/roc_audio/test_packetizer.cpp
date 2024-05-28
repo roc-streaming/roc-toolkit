@@ -59,6 +59,17 @@ sample_t nth_sample(uint8_t n) {
     return sample_t(n) / sample_t(1 << 8);
 }
 
+FramePtr new_frame(size_t samples_per_chan) {
+    FramePtr frame =
+        frame_factory.allocate_frame(samples_per_chan * NumCh * sizeof(sample_t));
+    CHECK(frame);
+
+    frame->set_raw(true);
+    frame->set_duration((packet::stream_timestamp_t)samples_per_chan);
+
+    return frame;
+}
+
 class PacketChecker {
 public:
     PacketChecker(IFrameDecoder& payload_decoder, core::nanoseconds_t capture_ts = Now)
@@ -144,30 +155,41 @@ public:
         , capture_ts_(capture_ts) {
     }
 
-    void write(IFrameWriter& writer, size_t num_samples) {
-        core::Slice<sample_t> buf = frame_factory.new_raw_buffer();
-        CHECK(buf);
+    void write(IFrameWriter& writer, size_t samples_per_chan) {
+        FramePtr frame = new_frame(samples_per_chan);
 
-        buf.reslice(0, num_samples * NumCh);
-
-        for (size_t n = 0; n < num_samples; n++) {
+        for (size_t n = 0; n < samples_per_chan; n++) {
             for (size_t c = 0; c < NumCh; c++) {
-                buf.data()[n * NumCh + c] = nth_sample(value_);
+                frame->raw_samples()[n * NumCh + c] = nth_sample(value_);
                 value_++;
             }
         }
 
-        Frame frame(buf.data(), buf.size());
-        frame.set_capture_timestamp(capture_ts_);
+        frame->set_capture_timestamp(capture_ts_);
         if (capture_ts_) {
-            capture_ts_ += frame_spec.samples_per_chan_2_ns(num_samples);
+            capture_ts_ += frame_spec.samples_per_chan_2_ns(samples_per_chan);
         }
-        LONGS_EQUAL(status::StatusOK, writer.write(frame));
+
+        LONGS_EQUAL(status::StatusOK, writer.write(*frame));
     }
 
 private:
     uint8_t value_;
     core::nanoseconds_t capture_ts_;
+};
+
+class StatusWriter : public packet::IWriter {
+public:
+    explicit StatusWriter(status::StatusCode code)
+        : code_(code) {
+    }
+
+    virtual status::StatusCode write(const packet::PacketPtr& packet) {
+        return code_;
+    }
+
+private:
+    status::StatusCode code_;
 };
 
 } // namespace
@@ -319,7 +341,7 @@ TEST(packetizer, flush) {
         packet_checker.read(packet_queue, SamplesPerPacket);
         packet_checker.read(packet_queue, SamplesPerPacket);
 
-        packetizer.flush();
+        LONGS_EQUAL(status::StatusOK, packetizer.flush());
 
         packet_checker.read(packet_queue, SamplesPerPacket - Missing);
 
@@ -384,6 +406,24 @@ TEST(packetizer, metrics) {
         UNSIGNED_LONGS_EQUAL((pn + 1) * SamplesPerPacket * NumCh * sizeof(int16_t),
                              metrics.payload_count);
     }
+}
+
+TEST(packetizer, forward_error) {
+    PcmEncoder encoder(packet_spec);
+    PcmDecoder decoder(packet_spec);
+
+    StatusWriter packet_writer(status::StatusAbort);
+
+    rtp::Identity identity;
+    rtp::Sequencer sequencer(identity, PayloadType);
+    Packetizer packetizer(packet_writer, rtp_composer, sequencer, encoder, packet_factory,
+                          PacketDuration, frame_spec);
+    LONGS_EQUAL(status::StatusOK, packetizer.init_status());
+
+    FramePtr frame = new_frame(SamplesPerPacket);
+    CHECK(frame);
+
+    LONGS_EQUAL(status::StatusAbort, packetizer.write(*frame));
 }
 
 } // namespace audio

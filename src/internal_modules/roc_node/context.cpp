@@ -18,6 +18,7 @@ Context::Context(const ContextConfig& config, core::IArena& arena)
     , packet_pool_("packet_pool", arena_)
     , packet_buffer_pool_(
           "packet_buffer_pool", arena_, sizeof(core::Buffer) + config.max_packet_size)
+    , frame_pool_("frame_pool", arena_)
     , frame_buffer_pool_(
           "frame_buffer_pool", arena_, sizeof(core::Buffer) + config.max_frame_size)
     , encoding_map_(arena_)
@@ -59,6 +60,10 @@ core::IPool& Context::packet_pool() {
 
 core::IPool& Context::packet_buffer_pool() {
     return packet_buffer_pool_;
+}
+
+core::IPool& Context::frame_pool() {
+    return frame_pool_;
 }
 
 core::IPool& Context::frame_buffer_pool() {

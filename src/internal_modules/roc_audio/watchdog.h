@@ -108,7 +108,8 @@ public:
     //! Read audio frame.
     //! @remarks
     //!  Updates stream state and reads frame from the input reader.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(Frame& frame);
+    virtual ROC_ATTR_NODISCARD status::StatusCode
+    read(Frame& frame, packet::stream_timestamp_t duration);
 
 private:
     bool update_(Frame& frame);

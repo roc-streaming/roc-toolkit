@@ -134,12 +134,15 @@ bool map_to_sndfile(const char** driver, const char* path, SF_INFO& file_info_) 
 
 } // namespace
 
-SndfileSink::SndfileSink(core::IArena& arena, const Config& config)
+SndfileSink::SndfileSink(audio::FrameFactory& frame_factory,
+                         core::IArena& arena,
+                         const Config& config)
     : file_(NULL)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     if (config.latency != 0) {
         roc_log(LogError,
                 "sndfile sink: setting io latency not supported by sndfile backend");
+        init_status_ = status::StatusBadConfig;
         return;
     }
 
@@ -149,27 +152,32 @@ SndfileSink::SndfileSink(core::IArena& arena, const Config& config)
                               audio::ChanOrder_Smpte, audio::ChanMask_Surround_Stereo,
                               44100);
 
+    // TODO(gh-696): map format from sample_spec
+    if (!sample_spec_.is_raw()) {
+        roc_log(LogError, "sndfile sink: sample format can be only \"-\" or \"%s\"",
+                audio::pcm_format_to_str(audio::Sample_RawFormat));
+        init_status_ = status::StatusBadConfig;
+        return;
+    }
+
     memset(&file_info_, 0, sizeof(file_info_));
 
-    // TODO(gh-696): map format from sample_spec
     file_info_.format = SF_FORMAT_PCM_32;
     file_info_.channels = (int)sample_spec_.num_channels();
     file_info_.samplerate = (int)sample_spec_.sample_rate();
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
 SndfileSink::~SndfileSink() {
     close_();
 }
 
-bool SndfileSink::is_valid() const {
-    return valid_;
+status::StatusCode SndfileSink::init_status() const {
+    return init_status_;
 }
 
-bool SndfileSink::open(const char* driver, const char* path) {
-    roc_panic_if(!valid_);
-
+status::StatusCode SndfileSink::open(const char* driver, const char* path) {
     roc_log(LogDebug, "sndfile sink: opening: driver=%s path=%s", driver, path);
 
     if (file_) {
@@ -180,11 +188,11 @@ bool SndfileSink::open(const char* driver, const char* path) {
         roc_panic("sndfile sink: path is null");
     }
 
-    if (!open_(driver, path)) {
-        return false;
-    }
+    return open_(driver, path);
+}
 
-    return true;
+DeviceType SndfileSink::type() const {
+    return DeviceType_Sink;
 }
 
 ISink* SndfileSink::to_sink() {
@@ -195,28 +203,6 @@ ISource* SndfileSink::to_source() {
     return NULL;
 }
 
-DeviceType SndfileSink::type() const {
-    return DeviceType_Sink;
-}
-
-DeviceState SndfileSink::state() const {
-    return DeviceState_Active;
-}
-
-void SndfileSink::pause() {
-    // no-op
-}
-
-bool SndfileSink::resume() {
-    // no-op
-    return true;
-}
-
-bool SndfileSink::restart() {
-    // no-op
-    return true;
-}
-
 audio::SampleSpec SndfileSink::sample_spec() const {
     if (!file_) {
         roc_panic("sndfile sink: not opened");
@@ -225,8 +211,8 @@ audio::SampleSpec SndfileSink::sample_spec() const {
     return sample_spec_;
 }
 
-core::nanoseconds_t SndfileSink::latency() const {
-    return 0;
+bool SndfileSink::has_state() const {
+    return false;
 }
 
 bool SndfileSink::has_latency() const {
@@ -246,45 +232,45 @@ status::StatusCode SndfileSink::write(audio::Frame& frame) {
     sf_count_t frame_size = (sf_count_t)frame.num_raw_samples();
 
     // Write entire float buffer in one call
-    sf_count_t count = sf_write_float(file_, frame_data, frame_size);
+    const sf_count_t count = sf_write_float(file_, frame_data, frame_size);
+    const int err = sf_error(file_);
 
-    int errnum = sf_error(file_);
-    if (count != frame_size || errnum != 0) {
+    if (count != frame_size || err != 0) {
         roc_log(LogError, "sndfile source: sf_write_float() failed: %s",
-                sf_error_number(errnum));
+                sf_error_number(err));
         return status::StatusErrFile;
     }
 
     return status::StatusOK;
 }
 
-bool SndfileSink::open_(const char* driver, const char* path) {
+status::StatusCode SndfileSink::open_(const char* driver, const char* path) {
     if (!map_to_sndfile(&driver, path, file_info_)) {
         roc_log(LogDebug,
                 "sndfile sink: map_to_sndfile():"
                 " cannot find valid subtype format for major format type");
-        return false;
+        return status::StatusErrFile;
     }
 
     file_ = sf_open(path, SFM_WRITE, &file_info_);
     if (!file_) {
         roc_log(LogDebug, "sndfile sink: %s, can't open: driver=%s path=%s",
                 sf_strerror(file_), driver, path);
-        return false;
+        return status::StatusErrFile;
     }
 
     if (sf_command(file_, SFC_SET_UPDATE_HEADER_AUTO, NULL, SF_TRUE) == 0) {
         roc_log(LogDebug,
                 "sndfile sink: sf_command(SFC_SET_UPDATE_HEADER_AUTO) returned false");
-        return false;
+        return status::StatusErrFile;
     }
 
-    sample_spec_.set_sample_rate((unsigned long)file_info_.samplerate);
+    sample_spec_.set_sample_rate((size_t)file_info_.samplerate);
 
     roc_log(LogInfo, "sndfile sink: opened: %s",
             audio::sample_spec_to_str(sample_spec_).c_str());
 
-    return true;
+    return status::StatusOK;
 }
 
 void SndfileSink::close_() {
@@ -294,7 +280,7 @@ void SndfileSink::close_() {
 
     roc_log(LogDebug, "sndfile sink: closing output");
 
-    int err = sf_close(file_);
+    const int err = sf_close(file_);
     if (err != 0) {
         roc_log(LogError,
                 "sndfile sink: sf_close() failed, cannot properly close output: %s",

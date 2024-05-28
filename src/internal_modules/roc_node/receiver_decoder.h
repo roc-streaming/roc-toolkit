@@ -40,9 +40,6 @@ public:
     //! Check if the node was successfully constructed.
     status::StatusCode init_status() const;
 
-    //! Get packet factory.
-    packet::PacketFactory& packet_factory();
-
     //! Activate interface.
     ROC_ATTR_NODISCARD bool activate(address::Interface iface, address::Protocol proto);
 
@@ -63,14 +60,20 @@ public:
                                         void* party_metrics_arg);
 
     //! Write packet for decoding.
-    ROC_ATTR_NODISCARD status::StatusCode write_packet(address::Interface iface,
-                                                       const packet::PacketPtr& packet);
+    ROC_ATTR_NODISCARD status::StatusCode
+    write_packet(address::Interface iface, const void* bytes, size_t n_bytes);
 
     //! Read encoded packet.
     //! @note
     //!  Typically used to generate control packets with feedback for sender.
-    ROC_ATTR_NODISCARD status::StatusCode read_packet(address::Interface iface,
-                                                      packet::PacketPtr& packet);
+    ROC_ATTR_NODISCARD status::StatusCode
+    read_packet(address::Interface iface, void* bytes, size_t* n_bytes);
+
+    //! Read frame into byte buffer.
+    //! @remarks
+    //!  Performs necessary checks and allocations on top of ISource::read(),
+    //!  needed when working with byte buffers instead of Frame objects.
+    ROC_ATTR_NODISCARD status::StatusCode read_frame(void* bytes, size_t n_bytes);
 
     //! Source for reading decoded frames.
     sndio::ISource& source();
@@ -80,7 +83,7 @@ private:
                                           core::nanoseconds_t delay);
     virtual void cancel_task_processing(pipeline::PipelineLoop&);
 
-    core::Mutex mutex_;
+    core::Mutex control_mutex_;
 
     address::SocketAddr bind_address_;
 
@@ -88,11 +91,17 @@ private:
     core::Atomic<packet::IReader*> endpoint_readers_[address::Iface_Max];
     core::Atomic<packet::IWriter*> endpoint_writers_[address::Iface_Max];
 
-    packet::PacketFactory packet_factory_;
-
     pipeline::ReceiverLoop pipeline_;
     pipeline::ReceiverLoop::SlotHandle slot_;
     ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
+
+    packet::PacketFactory packet_factory_;
+
+    core::Mutex frame_mutex_;
+
+    audio::FrameFactory frame_factory_;
+    audio::FramePtr frame_;
+    audio::SampleSpec sample_spec_;
 
     status::StatusCode init_status_;
 };

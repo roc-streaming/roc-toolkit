@@ -23,6 +23,10 @@ public:
         : pos_(0) {
     }
 
+    virtual DeviceType type() const {
+        return DeviceType_Sink;
+    }
+
     virtual ISink* to_sink() {
         return this;
     }
@@ -31,34 +35,26 @@ public:
         return NULL;
     }
 
-    virtual DeviceType type() const {
-        return DeviceType_Sink;
+    virtual audio::SampleSpec sample_spec() const {
+        return audio::SampleSpec();
+    }
+
+    virtual bool has_state() const {
+        return true;
     }
 
     virtual DeviceState state() const {
         return DeviceState_Active;
     }
 
-    virtual void pause() {
+    virtual status::StatusCode pause() {
         FAIL("not implemented");
+        return status::StatusAbort;
     }
 
-    virtual bool resume() {
+    virtual status::StatusCode resume() {
         FAIL("not implemented");
-        return false;
-    }
-
-    virtual bool restart() {
-        FAIL("not implemented");
-        return false;
-    }
-
-    virtual audio::SampleSpec sample_spec() const {
-        return audio::SampleSpec();
-    }
-
-    virtual core::nanoseconds_t latency() const {
-        return 0;
+        return status::StatusAbort;
     }
 
     virtual bool has_latency() const {

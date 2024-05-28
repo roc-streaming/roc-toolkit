@@ -28,6 +28,8 @@ core::HeapArena arena;
 core::SlabPool<packet::Packet> packet_pool("packet_pool", arena);
 core::SlabPool<core::Buffer>
     packet_buffer_pool("packet_buffer_pool", arena, sizeof(core::Buffer) + MaxBufSize);
+
+core::SlabPool<audio::Frame> frame_pool("frame_pool", arena);
 core::SlabPool<core::Buffer>
     frame_buffer_pool("frame_buffer_pool",
                       arena,
@@ -122,7 +124,7 @@ TEST_GROUP(sender_loop) {
 
 TEST(sender_loop, endpoints_sync) {
     SenderLoop sender(scheduler, config, encoding_map, packet_pool, packet_buffer_pool,
-                      frame_buffer_pool, arena);
+                      frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderLoop::SlotHandle slot = NULL;
@@ -158,7 +160,7 @@ TEST(sender_loop, endpoints_sync) {
 
 TEST(sender_loop, endpoints_async) {
     SenderLoop sender(scheduler, config, encoding_map, packet_pool, packet_buffer_pool,
-                      frame_buffer_pool, arena);
+                      frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     TaskIssuer ti(sender);

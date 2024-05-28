@@ -12,11 +12,16 @@
 #include "roc_core/stddefs.h"
 #include "roc_sndio/driver.h"
 #include "roc_sndio/pulseaudio_device.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace sndio {
 
 PulseaudioBackend::PulseaudioBackend() {
+}
+
+const char* PulseaudioBackend::name() const {
+    return "pulseaudio";
 }
 
 void PulseaudioBackend::discover_drivers(
@@ -29,38 +34,46 @@ void PulseaudioBackend::discover_drivers(
     }
 }
 
-IDevice* PulseaudioBackend::open_device(DeviceType device_type,
-                                        DriverType driver_type,
-                                        const char* driver,
-                                        const char* path,
-                                        const Config& config,
-                                        core::IArena& arena) {
+status::StatusCode PulseaudioBackend::open_device(DeviceType device_type,
+                                                  DriverType driver_type,
+                                                  const char* driver,
+                                                  const char* path,
+                                                  const Config& config,
+                                                  audio::FrameFactory& frame_factory,
+                                                  core::IArena& arena,
+                                                  IDevice** result) {
     if (driver_type != DriverType_Device) {
-        return NULL;
+        return status::StatusNoDriver;
     }
 
     if (driver && strcmp(driver, "pulse") != 0) {
-        return NULL;
+        return status::StatusNoDriver;
     }
 
     core::ScopedPtr<PulseaudioDevice> device(
-        new (arena) PulseaudioDevice(config, device_type), arena);
+        new (arena) PulseaudioDevice(frame_factory, arena, config, device_type), arena);
 
     if (!device) {
-        roc_log(LogDebug, "pulseaudio backend: can't construct device: path=%s", path);
-        return NULL;
+        roc_log(LogDebug, "pulseaudio backend: can't allocate device: path=%s", path);
+        return status::StatusNoMem;
     }
 
-    if (!device->open(path)) {
-        roc_log(LogDebug, "pulseaudio backend: can't open device: path=%s", path);
-        return NULL;
+    if (device->init_status() != status::StatusOK) {
+        roc_log(LogDebug,
+                "pulseaudio backend: can't initialize device: path=%s status=%s", path,
+                status::code_to_str(device->init_status()));
+        return device->init_status();
     }
 
-    return device.release();
-}
+    const status::StatusCode code = device->open(path);
+    if (code != status::StatusOK) {
+        roc_log(LogDebug, "pulseaudio backend: can't open device: path=%s status=%s",
+                path, status::code_to_str(code));
+        return code;
+    }
 
-const char* PulseaudioBackend::name() const {
-    return "pulseaudio";
+    *result = device.release();
+    return status::StatusOK;
 }
 
 } // namespace sndio

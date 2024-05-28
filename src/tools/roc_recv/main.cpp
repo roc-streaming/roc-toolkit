@@ -263,7 +263,8 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    sndio::BackendDispatcher backend_dispatcher(context.arena());
+    sndio::BackendDispatcher backend_dispatcher(
+        context.frame_pool(), context.frame_buffer_pool(), context.arena());
 
     if (args.list_supported_given) {
         if (!address::print_supported(context.arena())) {
@@ -300,26 +301,32 @@ int main(int argc, char** argv) {
 
     core::ScopedPtr<sndio::ISink> output_sink;
     if (output_uri.is_valid()) {
-        output_sink.reset(
-            backend_dispatcher.open_sink(output_uri, args.output_format_arg, io_config),
-            context.arena());
+        const status::StatusCode code = backend_dispatcher.open_sink(
+            output_uri, args.output_format_arg, io_config, output_sink);
+
+        if (code != status::StatusOK) {
+            roc_log(LogError, "can't open --output file or device: status=%s",
+                    status::code_to_str(code));
+            return 1;
+        }
     } else {
-        output_sink.reset(backend_dispatcher.open_default_sink(io_config),
-                          context.arena());
-    }
-    if (!output_sink) {
-        roc_log(LogError, "can't open output file or device: uri=%s format=%s",
-                args.output_arg, args.output_format_arg);
-        return 1;
+        const status::StatusCode code =
+            backend_dispatcher.open_default_sink(io_config, output_sink);
+
+        if (code != status::StatusOK) {
+            roc_log(LogError, "can't open default --output device: status=%s",
+                    status::code_to_str(code));
+            return 1;
+        }
     }
 
-    receiver_config.common.enable_timing = !output_sink->has_clock();
+    receiver_config.common.enable_cpu_clock = !output_sink->has_clock();
     receiver_config.common.output_sample_spec = output_sink->sample_spec();
 
     if (!receiver_config.common.output_sample_spec.is_valid()) {
         roc_log(LogError,
-                "can't detect output encoding, try to set it "
-                "explicitly with --rate option");
+                "can't detect output encoding, try to set it"
+                " explicitly with --rate option");
         return 1;
     }
 
@@ -348,13 +355,12 @@ int main(int argc, char** argv) {
             }
         }
 
-        backup_source.reset(
-            backend_dispatcher.open_source(backup_uri, args.backup_format_arg, io_config),
-            context.arena());
+        const status::StatusCode code = backend_dispatcher.open_source(
+            backup_uri, args.backup_format_arg, io_config, backup_source);
 
-        if (!backup_source) {
-            roc_log(LogError, "can't open backup file or device: uri=%s format=%s",
-                    args.backup_arg, args.backup_format_arg);
+        if (code != status::StatusOK) {
+            roc_log(LogError, "can't open --backup file or device: status=%s",
+                    status::code_to_str(code));
             return 1;
         }
 
@@ -375,11 +381,16 @@ int main(int argc, char** argv) {
                               receiver_config.common.output_sample_spec.channel_set());
 
         backup_pipeline.reset(new (context.arena()) pipeline::TranscoderSource(
-                                  transcoder_config, *backup_source,
+                                  transcoder_config, *backup_source, context.frame_pool(),
                                   context.frame_buffer_pool(), context.arena()),
                               context.arena());
         if (!backup_pipeline) {
-            roc_log(LogError, "can't create backup pipeline");
+            roc_log(LogError, "can't allocate backup pipeline");
+            return 1;
+        }
+        if (backup_pipeline->init_status() != status::StatusOK) {
+            roc_log(LogError, "can't create backup pipeline: status=%s",
+                    status::code_to_str(backup_pipeline->init_status()));
             return 1;
         }
     }
@@ -521,10 +532,14 @@ int main(int argc, char** argv) {
         }
     }
 
-    sndio::Pump pump(
-        context.frame_buffer_pool(), receiver.source(), backup_pipeline.get(),
-        *output_sink, io_config.frame_length, receiver_config.common.output_sample_spec,
-        args.oneshot_flag ? sndio::Pump::ModeOneshot : sndio::Pump::ModePermanent);
+    sndio::Config pump_config;
+    pump_config.sample_spec = output_sink->sample_spec();
+    pump_config.frame_length = io_config.frame_length;
+
+    sndio::Pump pump(context.frame_pool(), context.frame_buffer_pool(), receiver.source(),
+                     backup_pipeline.get(), *output_sink, pump_config,
+                     args.oneshot_flag ? sndio::Pump::ModeOneshot
+                                       : sndio::Pump::ModePermanent);
     if (pump.init_status() != status::StatusOK) {
         roc_log(LogError, "can't create audio pump: status=%s",
                 status::code_to_str(pump.init_status()));

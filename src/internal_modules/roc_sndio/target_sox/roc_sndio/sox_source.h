@@ -14,13 +14,12 @@
 
 #include <sox.h>
 
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/array.h"
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/stddefs.h"
 #include "roc_core/string_buffer.h"
-#include "roc_packet/units.h"
 #include "roc_sndio/config.h"
 #include "roc_sndio/driver.h"
 #include "roc_sndio/isource.h"
@@ -35,49 +34,41 @@ namespace sndio {
 class SoxSource : public ISource, private core::NonCopyable<> {
 public:
     //! Initialize.
-    SoxSource(core::IArena& arena, const Config& config, DriverType type);
-
-    virtual ~SoxSource();
+    SoxSource(audio::FrameFactory& frame_factory,
+              core::IArena& arena,
+              const Config& config,
+              DriverType driver_type);
+    ~SoxSource();
 
     //! Check if the object was successfully constructed.
-    bool is_valid() const;
+    status::StatusCode init_status() const;
 
-    //! Open input file or device.
-    //!
-    //! @b Parameters
-    //!  - @p driver is input driver name;
-    //!  - @p path is input file or device name, "-" for stdin.
-    //!
-    //! @remarks
-    //!  If @p driver or @p path are NULL, defaults are used.
-    bool open(const char* driver, const char* path);
-
-    //! Cast IDevice to ISink.
-    virtual ISink* to_sink();
-
-    //! Cast IDevice to ISink.
-    virtual ISource* to_source();
+    //! Open sink.
+    ROC_ATTR_NODISCARD status::StatusCode open(const char* driver, const char* path);
 
     //! Get device type.
     virtual DeviceType type() const;
 
-    //! Get device state.
-    virtual DeviceState state() const;
+    //! Try to cast to ISink.
+    virtual ISink* to_sink();
 
-    //! Pause reading.
-    virtual void pause();
-
-    //! Resume paused reading.
-    virtual bool resume();
-
-    //! Restart reading from the beginning.
-    virtual bool restart();
+    //! Try to cast to ISource.
+    virtual ISource* to_source();
 
     //! Get sample specification of the source.
     virtual audio::SampleSpec sample_spec() const;
 
-    //! Get latency of the source.
-    virtual core::nanoseconds_t latency() const;
+    //! Check if the source supports state updates.
+    virtual bool has_state() const;
+
+    //! Get source state.
+    virtual DeviceState state() const;
+
+    //! Pause source.
+    virtual ROC_ATTR_NODISCARD status::StatusCode pause();
+
+    //! Resume source.
+    virtual ROC_ATTR_NODISCARD status::StatusCode resume();
 
     //! Check if the source supports latency reports.
     virtual bool has_latency() const;
@@ -85,21 +76,27 @@ public:
     //! Check if the source has own clock.
     virtual bool has_clock() const;
 
+    //! Restart reading from beginning.
+    virtual ROC_ATTR_NODISCARD status::StatusCode rewind();
+
     //! Adjust source clock to match consumer clock.
     virtual void reclock(core::nanoseconds_t timestamp);
 
     //! Read frame.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(audio::Frame&);
+    virtual ROC_ATTR_NODISCARD status::StatusCode
+    read(audio::Frame& frame, packet::stream_timestamp_t duration);
 
 private:
-    bool setup_names_(const char* driver, const char* path);
-    bool setup_buffer_();
+    status::StatusCode init_names_(const char* driver, const char* path);
+    status::StatusCode init_buffer_();
 
-    bool open_();
+    status::StatusCode open_();
+    status::StatusCode seek_(uint64_t offset);
     void close_();
 
-    bool seek_(uint64_t offset);
+    audio::FrameFactory& frame_factory_;
 
+    const DriverType driver_type_;
     core::StringBuffer driver_name_;
     core::StringBuffer input_name_;
 
@@ -111,10 +108,10 @@ private:
     sox_format_t* input_;
     sox_signalinfo_t in_signal_;
 
-    bool is_file_;
     bool eof_;
     bool paused_;
-    bool valid_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace sndio

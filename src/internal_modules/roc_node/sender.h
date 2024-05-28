@@ -78,10 +78,16 @@ public:
                                         void* party_metrics_arg);
 
     //! Check if there are incomplete or broken slots.
-    bool has_incomplete();
+    bool has_incomplete_slots();
 
     //! Check if there are broken slots.
-    bool has_broken();
+    bool has_broken_slots();
+
+    //! Write frame.
+    //! @remarks
+    //!  Performs necessary checks and allocations on top of ISink::write(),
+    //!  needed when working with byte buffers instead of Frame objects.
+    ROC_ATTR_NODISCARD status::StatusCode write_frame(const void* bytes, size_t n_bytes);
 
     //! Get sender sink.
     sndio::ISink& sink();
@@ -144,7 +150,7 @@ private:
                                           core::nanoseconds_t delay);
     virtual void cancel_task_processing(pipeline::PipelineLoop&);
 
-    core::Mutex mutex_;
+    core::Mutex control_mutex_;
 
     pipeline::SenderLoop pipeline_;
     ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
@@ -157,6 +163,12 @@ private:
 
     pipeline::SenderSlotMetrics slot_metrics_;
     core::Array<pipeline::SenderParticipantMetrics, 8> party_metrics_;
+
+    core::Mutex frame_mutex_;
+
+    audio::FrameFactory frame_factory_;
+    audio::FramePtr frame_;
+    audio::SampleSpec sample_spec_;
 
     status::StatusCode init_status_;
 };

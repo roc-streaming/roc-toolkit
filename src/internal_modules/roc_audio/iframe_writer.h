@@ -15,6 +15,7 @@
 #include "roc_audio/frame.h"
 #include "roc_core/attributes.h"
 #include "roc_core/list_node.h"
+#include "roc_packet/units.h"
 #include "roc_status/status_code.h"
 
 namespace roc {
@@ -27,11 +28,16 @@ public:
 
     //! Write frame.
     //!
+    //! @note
+    //!  - Write is NOT allowed to modify the frame or its buffer, only read it.
+    //!  - Writer is NOT allowed to store a reference to the frame or its buffer
+    //!    for later use. After writer returns, caller may modify or destroy
+    //!    frame or buffer.
+    //!
     //! @returns
-    //!  - If frame was successfully and completely written, returns status::StatusOK,
-    //!    otherwise, returns an error.
-    //!  - In case of error, it's not guaranteed that pipeline state didn't change,
-    //!    e.g. part of the frame may be written.
+    //!  - If frame was successfully and completely written, returns status::StatusOK.
+    //!  - Otherwise, returns an error. In this case it's not known whether anything
+    //!    were written or not, and no further writes are expected.
     //!
     //! @see status::StatusCode.
     virtual ROC_ATTR_NODISCARD status::StatusCode write(Frame& frame) = 0;

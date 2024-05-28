@@ -118,6 +118,8 @@ void FeedbackMonitor::process_feedback(packet::stream_source_t source_id,
 status::StatusCode FeedbackMonitor::write(Frame& frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
+    sample_spec_.validate_frame(frame);
+
     if (started_) {
         if (!update_tuner_(frame.duration())) {
             // TODO(gh-674): change sender SSRC to restart session

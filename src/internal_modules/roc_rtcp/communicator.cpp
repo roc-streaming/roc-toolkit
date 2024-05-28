@@ -578,7 +578,7 @@ status::StatusCode Communicator::generate_packet_(PacketType packet_type,
     // Prepare packet to be able to hold our RTCP packet data
     if (!packet_composer_.prepare(*packet, packet_buffer, payload_buffer.size())) {
         roc_log(LogError, "rtcp communicator: can't prepare packet");
-        return status::StatusNoSpace;
+        return status::StatusNoMem;
     }
     packet->add_flags(packet::Packet::FlagPrepared);
 
@@ -628,12 +628,12 @@ Communicator::generate_packet_payload_(PacketType packet_type,
                 // Even one block can't fit into the buffer, so all we
                 // can do is to report failure and exit.
                 max_pkt_streams_ = 1;
-                return status::StatusNoSpace;
+                return status::StatusNoMem;
             }
 
             // Repeat current packet generation with reduced limit.
             // We will eventually either find value for max_pkt_blocks_
-            // that does not cause errors, or report StatusNoSpace (see above).
+            // that does not cause errors, or report StatusNoMem (see above).
             // Normally this search will happen only once and then the
             // found value of max_pkt_blocks_ will be reused.
             max_pkt_streams_ = cur_pkt_send_stream_ + cur_pkt_recv_stream_ - 1;

@@ -13,6 +13,8 @@
 #define ROC_AUDIO_SAMPLE_SPEC_H_
 
 #include "roc_audio/channel_set.h"
+#include "roc_audio/frame.h"
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/pcm_format.h"
 #include "roc_audio/sample.h"
 #include "roc_audio/sample_format.h"
@@ -236,6 +238,24 @@ public:
     //! @pre
     //!  sample_format() should be PCM.
     size_t ns_2_bytes(core::nanoseconds_t duration) const;
+
+    // @}
+
+    //! @name Frame helpers
+    //! @{
+
+    //! Check if frame corresponds to the sample spec.
+    //! Panic if something is wrong.
+    void validate_frame(Frame& frame) const;
+
+    //! Check if frame size is multiple of sample size and channel count.
+    //! Returns false if size is invalid.
+    ROC_ATTR_NODISCARD bool validate_frame_size(size_t n_bytes);
+
+    //! Cap duration to fit given buffer size in bytes.
+    //! Returns @p duration or smaller value.
+    packet::stream_timestamp_t cap_frame_duration(packet::stream_timestamp_t duration,
+                                                  size_t n_bytes) const;
 
     // @}
 

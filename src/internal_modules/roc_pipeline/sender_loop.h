@@ -125,6 +125,7 @@ public:
                const rtp::EncodingMap& encoding_map,
                core::IPool& packet_pool,
                core::IPool& packet_buffer_pool,
+               core::IPool& frame_pool,
                core::IPool& frame_buffer_pool,
                core::IArena& arena);
 
@@ -138,23 +139,24 @@ public:
 
 private:
     // Methods of sndio::ISink
+    virtual sndio::DeviceType type() const;
     virtual sndio::ISink* to_sink();
     virtual sndio::ISource* to_source();
-    virtual sndio::DeviceType type() const;
-    virtual sndio::DeviceState state() const;
-    virtual void pause();
-    virtual bool resume();
-    virtual bool restart();
     virtual audio::SampleSpec sample_spec() const;
-    virtual core::nanoseconds_t latency() const;
+    virtual bool has_state() const;
+    virtual sndio::DeviceState state() const;
+    virtual status::StatusCode pause();
+    virtual status::StatusCode resume();
     virtual bool has_latency() const;
+    virtual core::nanoseconds_t latency() const;
     virtual bool has_clock() const;
     virtual status::StatusCode write(audio::Frame& frame);
 
     // Methods of PipelineLoop
     virtual core::nanoseconds_t timestamp_imp() const;
     virtual uint64_t tid_imp() const;
-    virtual status::StatusCode process_subframe_imp(audio::Frame&);
+    virtual status::StatusCode process_subframe_imp(audio::Frame& frame,
+                                                    packet::stream_timestamp_t duration);
     virtual bool process_task_imp(PipelineTask&);
 
     // Methods for tasks
@@ -169,7 +171,6 @@ private:
     core::Optional<core::Ticker> ticker_;
     core::Ticker::ticks_t ticker_ts_;
 
-    const bool auto_duration_;
     const bool auto_cts_;
 
     const audio::SampleSpec sample_spec_;

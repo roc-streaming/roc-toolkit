@@ -19,18 +19,25 @@ SenderSink::SenderSink(const SenderSinkConfig& sink_config,
                        const rtp::EncodingMap& encoding_map,
                        core::IPool& packet_pool,
                        core::IPool& packet_buffer_pool,
+                       core::IPool& frame_pool,
                        core::IPool& frame_buffer_pool,
                        core::IArena& arena)
     : sink_config_(sink_config)
     , encoding_map_(encoding_map)
     , packet_factory_(packet_pool, packet_buffer_pool)
-    , frame_factory_(frame_buffer_pool)
+    , frame_factory_(frame_pool, frame_buffer_pool)
     , arena_(arena)
     , frame_writer_(NULL)
     , init_status_(status::NoStatus) {
     sink_config_.deduce_defaults();
 
-    audio::IFrameWriter* frm_writer = &fanout_;
+    audio::IFrameWriter* frm_writer = NULL;
+
+    fanout_.reset(new (fanout_) audio::Fanout(sink_config_.input_sample_spec));
+    if ((init_status_ = fanout_->init_status()) != status::StatusOK) {
+        return;
+    }
+    frm_writer = fanout_.get();
 
     if (!sink_config_.input_sample_spec.is_raw()) {
         const audio::SampleSpec out_spec(sink_config_.input_sample_spec.sample_rate(),
@@ -69,7 +76,7 @@ SenderSlot* SenderSink::create_slot(const SenderSlotConfig& slot_config) {
 
     core::SharedPtr<SenderSlot> slot =
         new (arena_) SenderSlot(sink_config_, slot_config, state_tracker_, encoding_map_,
-                                fanout_, packet_factory_, frame_factory_, arena_);
+                                *fanout_, packet_factory_, frame_factory_, arena_);
 
     if (!slot) {
         roc_log(LogError, "sender sink: can't create slot, allocation failed");
@@ -132,6 +139,10 @@ status::StatusCode SenderSink::refresh(core::nanoseconds_t current_time,
     return status::StatusOK;
 }
 
+sndio::DeviceType SenderSink::type() const {
+    return sndio::DeviceType_Sink;
+}
+
 sndio::ISink* SenderSink::to_sink() {
     return this;
 }
@@ -140,40 +151,36 @@ sndio::ISource* SenderSink::to_source() {
     return NULL;
 }
 
-sndio::DeviceType SenderSink::type() const {
-    return sndio::DeviceType_Sink;
+audio::SampleSpec SenderSink::sample_spec() const {
+    return sink_config_.input_sample_spec;
+}
+
+bool SenderSink::has_state() const {
+    return true;
 }
 
 sndio::DeviceState SenderSink::state() const {
     return state_tracker_.get_state();
 }
 
-void SenderSink::pause() {
-    // no-op
+status::StatusCode SenderSink::pause() {
+    return status::StatusOK;
 }
 
-bool SenderSink::resume() {
-    return true;
-}
-
-bool SenderSink::restart() {
-    return true;
-}
-
-audio::SampleSpec SenderSink::sample_spec() const {
-    return sink_config_.input_sample_spec;
-}
-
-core::nanoseconds_t SenderSink::latency() const {
-    return 0;
+status::StatusCode SenderSink::resume() {
+    return status::StatusOK;
 }
 
 bool SenderSink::has_latency() const {
     return false;
 }
 
+core::nanoseconds_t SenderSink::latency() const {
+    return 0;
+}
+
 bool SenderSink::has_clock() const {
-    return sink_config_.enable_timing;
+    return sink_config_.enable_cpu_clock;
 }
 
 status::StatusCode SenderSink::write(audio::Frame& frame) {

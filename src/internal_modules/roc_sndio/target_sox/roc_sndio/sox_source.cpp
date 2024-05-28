@@ -14,28 +14,34 @@
 namespace roc {
 namespace sndio {
 
-SoxSource::SoxSource(core::IArena& arena, const Config& config, DriverType type)
-    : driver_name_(arena)
+SoxSource::SoxSource(audio::FrameFactory& frame_factory,
+                     core::IArena& arena,
+                     const Config& config,
+                     DriverType driver_type)
+    : frame_factory_(frame_factory)
+    , driver_type_(driver_type)
+    , driver_name_(arena)
     , input_name_(arena)
     , buffer_(arena)
     , buffer_size_(0)
     , input_(NULL)
-    , is_file_(false)
     , eof_(false)
     , paused_(false)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     BackendMap::instance();
 
     if (config.latency != 0) {
         roc_log(LogError, "sox source: setting io latency not supported by sox backend");
+        init_status_ = status::StatusBadConfig;
         return;
     }
 
     sample_spec_ = config.sample_spec;
 
-    if (type == DriverType_File) {
+    if (driver_type_ == DriverType_File) {
         if (!sample_spec_.is_empty()) {
             roc_log(LogError, "sox source: setting io encoding for files not supported");
+            init_status_ = status::StatusBadConfig;
             return;
         }
     } else {
@@ -46,6 +52,7 @@ SoxSource::SoxSource(core::IArena& arena, const Config& config, DriverType type)
         if (!sample_spec_.is_raw()) {
             roc_log(LogError, "sox sink: sample format can be only \"-\" or \"%s\"",
                     audio::pcm_format_to_str(audio::Sample_RawFormat));
+            init_status_ = status::StatusBadConfig;
             return;
         }
     }
@@ -54,6 +61,7 @@ SoxSource::SoxSource(core::IArena& arena, const Config& config, DriverType type)
 
     if (frame_length_ == 0) {
         roc_log(LogError, "sox source: frame length is zero");
+        init_status_ = status::StatusBadConfig;
         return;
     }
 
@@ -62,39 +70,43 @@ SoxSource::SoxSource(core::IArena& arena, const Config& config, DriverType type)
     in_signal_.channels = (unsigned)sample_spec_.num_channels();
     in_signal_.precision = SOX_SAMPLE_PRECISION;
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
 SoxSource::~SoxSource() {
     close_();
 }
 
-bool SoxSource::is_valid() const {
-    return valid_;
+status::StatusCode SoxSource::init_status() const {
+    return init_status_;
 }
 
-bool SoxSource::open(const char* driver, const char* path) {
-    roc_panic_if(!valid_);
-
+status::StatusCode SoxSource::open(const char* driver, const char* path) {
     roc_log(LogInfo, "sox source: opening: driver=%s path=%s", driver, path);
 
     if (buffer_.size() != 0 || input_) {
         roc_panic("sox source: can't call open() more than once");
     }
 
-    if (!setup_names_(driver, path)) {
-        return false;
+    status::StatusCode code = status::NoStatus;
+
+    if ((code = init_names_(driver, path)) != status::StatusOK) {
+        return code;
     }
 
-    if (!open_()) {
-        return false;
+    if ((code = open_()) != status::StatusOK) {
+        return code;
     }
 
-    if (!setup_buffer_()) {
-        return false;
+    if ((code = init_buffer_()) != status::StatusOK) {
+        return code;
     }
 
-    return true;
+    return status::StatusOK;
+}
+
+DeviceType SoxSource::type() const {
+    return DeviceType_Source;
 }
 
 ISink* SoxSource::to_sink() {
@@ -105,13 +117,19 @@ ISource* SoxSource::to_source() {
     return this;
 }
 
-DeviceType SoxSource::type() const {
-    return DeviceType_Source;
+audio::SampleSpec SoxSource::sample_spec() const {
+    if (!input_ && !paused_) {
+        roc_panic("sox source: not opened");
+    }
+
+    return sample_spec_;
+}
+
+bool SoxSource::has_state() const {
+    return driver_type_ == DriverType_Device;
 }
 
 DeviceState SoxSource::state() const {
-    roc_panic_if(!valid_);
-
     if (paused_) {
         return DeviceState_Paused;
     } else {
@@ -119,142 +137,107 @@ DeviceState SoxSource::state() const {
     }
 }
 
-void SoxSource::pause() {
-    roc_panic_if(!valid_);
-
+status::StatusCode SoxSource::pause() {
     if (paused_) {
-        return;
+        return status::StatusOK;
     }
 
     if (!input_) {
-        roc_panic("sox source: pause: non-open device");
+        roc_panic("sox source: not opened");
     }
 
     roc_log(LogDebug, "sox source: pausing: driver=%s input=%s", driver_name_.c_str(),
             input_name_.c_str());
 
-    if (!is_file_) {
+    if (driver_type_ == DriverType_Device) {
         close_();
     }
 
     paused_ = true;
+
+    return status::StatusOK;
 }
 
-bool SoxSource::resume() {
-    roc_panic_if(!valid_);
-
+status::StatusCode SoxSource::resume() {
     if (!paused_) {
-        return true;
+        return status::StatusOK;
     }
 
     roc_log(LogDebug, "sox source: resuming: driver=%s input=%s", driver_name_.c_str(),
             input_name_.c_str());
 
     if (!input_) {
-        if (!open_()) {
-            roc_log(LogError, "sox source: open failed when resuming: driver=%s input=%s",
-                    driver_name_.c_str(), input_name_.c_str());
-            return false;
+        const status::StatusCode code = open_();
+        if (code != status::StatusOK) {
+            return code;
         }
     }
 
     paused_ = false;
-    return true;
+
+    return status::StatusOK;
 }
 
-bool SoxSource::restart() {
-    roc_panic_if(!valid_);
+bool SoxSource::has_latency() const {
+    return false;
+}
 
-    roc_log(LogDebug, "sox source: restarting: driver=%s input=%s", driver_name_.c_str(),
+bool SoxSource::has_clock() const {
+    return driver_type_ == DriverType_Device;
+}
+
+status::StatusCode SoxSource::rewind() {
+    roc_log(LogDebug, "sox source: rewinding: driver=%s input=%s", driver_name_.c_str(),
             input_name_.c_str());
 
-    if (is_file_ && !eof_) {
-        if (!seek_(0)) {
-            roc_log(LogError,
-                    "sox source: seek failed when restarting: driver=%s input=%s",
-                    driver_name_.c_str(), input_name_.c_str());
-            return false;
+    if (driver_type_ == DriverType_File && !eof_) {
+        const status::StatusCode code = seek_(0);
+        if (code != status::StatusOK) {
+            return code;
         }
     } else {
-        if (is_file_) {
-            sample_spec_.clear();
-        }
+        sample_spec_.clear();
 
         if (input_) {
             close_();
         }
 
-        if (!open_()) {
-            roc_log(LogError,
-                    "sox source: open failed when restarting: driver=%s input=%s",
-                    driver_name_.c_str(), input_name_.c_str());
-            return false;
+        const status::StatusCode code = open_();
+        if (code != status::StatusOK) {
+            return code;
         }
     }
 
     paused_ = false;
     eof_ = false;
 
-    return true;
+    return status::StatusOK;
 }
 
-audio::SampleSpec SoxSource::sample_spec() const {
-    roc_panic_if(!valid_);
-
-    if (!input_) {
-        roc_panic("sox source: sample_rate(): non-open output file or device");
-    }
-
-    return sample_spec_;
-}
-
-core::nanoseconds_t SoxSource::latency() const {
-    roc_panic_if(!valid_);
-
-    if (!input_) {
-        roc_panic("sox source: latency(): non-open output file or device");
-    }
-
-    return 0;
-}
-
-bool SoxSource::has_latency() const {
-    roc_panic_if(!valid_);
-
-    if (!input_) {
-        roc_panic("sox source: has_latency(): non-open input file or device");
-    }
-
-    return false;
-}
-
-bool SoxSource::has_clock() const {
-    roc_panic_if(!valid_);
-
-    if (!input_) {
-        roc_panic("sox source: has_clock(): non-open input file or device");
-    }
-
-    return !is_file_;
-}
-
-void SoxSource::reclock(core::nanoseconds_t) {
+void SoxSource::reclock(core::nanoseconds_t timestamp) {
     // no-op
 }
 
-status::StatusCode SoxSource::read(audio::Frame& frame) {
-    roc_panic_if(!valid_);
+status::StatusCode SoxSource::read(audio::Frame& frame,
+                                   packet::stream_timestamp_t duration) {
+    if (!input_ && !paused_) {
+        roc_panic("sox source: read: non-open input file or device");
+    }
 
     if (paused_ || eof_) {
         return status::StatusEnd;
     }
 
-    if (!input_) {
-        roc_panic("sox source: read: non-open input file or device");
+    if (!frame_factory_.reallocate_frame(
+            frame, sample_spec_.stream_timestamp_2_bytes(duration))) {
+        return status::StatusNoMem;
     }
+
+    frame.set_raw(true);
 
     audio::sample_t* frame_data = frame.raw_samples();
     size_t frame_left = frame.num_raw_samples();
+    size_t frame_size = 0;
 
     sox_sample_t* buffer_data = buffer_.data();
 
@@ -282,75 +265,57 @@ status::StatusCode SoxSource::read(audio::Frame& frame) {
 
         frame_data += n_samples;
         frame_left -= n_samples;
+        frame_size += n_samples;
     }
 
-    if (frame_left == frame.num_raw_samples()) {
+    if (frame_size == 0) {
         return status::StatusEnd;
     }
 
-    if (frame_left != 0) {
-        memset(frame_data, 0, frame_left * sizeof(audio::sample_t));
+    frame.set_num_raw_samples(frame_size);
+    frame.set_duration(frame_size / sample_spec_.num_channels());
+
+    if (frame.duration() < duration) {
+        return status::StatusPart;
     }
 
     return status::StatusOK;
 }
 
-bool SoxSource::seek_(uint64_t offset) {
-    roc_panic_if(!valid_);
-
-    if (!input_) {
-        roc_panic("sox source: seek: non-open input file or device");
-    }
-
-    if (!is_file_) {
-        roc_panic("sox source: seek: not a file");
-    }
-
-    roc_log(LogDebug, "sox source: resetting position to %lu", (unsigned long)offset);
-
-    int err = sox_seek(input_, offset, SOX_SEEK_SET);
-    if (err != SOX_SUCCESS) {
-        roc_log(LogError, "sox source: can't reset position to %lu: %s",
-                (unsigned long)offset, sox_strerror(err));
-        return false;
-    }
-
-    return true;
-}
-
-bool SoxSource::setup_names_(const char* driver, const char* path) {
+status::StatusCode SoxSource::init_names_(const char* driver, const char* path) {
     if (driver) {
         if (!driver_name_.assign(driver)) {
             roc_log(LogError, "sox source: can't allocate string");
-            return false;
+            return status::StatusNoMem;
         }
     }
 
     if (path) {
         if (!input_name_.assign(path)) {
             roc_log(LogError, "sox source: can't allocate string");
-            return false;
+            return status::StatusNoMem;
         }
     }
 
-    return true;
+    return status::StatusOK;
 }
 
-bool SoxSource::setup_buffer_() {
+status::StatusCode SoxSource::init_buffer_() {
     buffer_size_ = sample_spec_.ns_2_samples_overall(frame_length_);
     if (buffer_size_ == 0) {
         roc_log(LogError, "sox source: buffer size is zero");
-        return false;
+        return status::StatusBadConfig;
     }
+
     if (!buffer_.resize(buffer_size_)) {
         roc_log(LogError, "sox source: can't allocate sample buffer");
-        return false;
+        return status::StatusNoMem;
     }
 
-    return true;
+    return status::StatusOK;
 }
 
-bool SoxSource::open_() {
+status::StatusCode SoxSource::open_() {
     if (input_) {
         roc_panic("sox source: already opened");
     }
@@ -361,10 +326,9 @@ bool SoxSource::open_() {
     if (!input_) {
         roc_log(LogInfo, "sox source: can't open: driver=%s input=%s",
                 driver_name_.c_str(), input_name_.c_str());
-        return false;
+        return driver_type_ == DriverType_Device ? status::StatusErrDevice
+                                                 : status::StatusErrFile;
     }
-
-    is_file_ = !(input_->handler.flags & SOX_FILE_DEVICE);
 
     const unsigned long requested_rate = (unsigned long)in_signal_.rate;
     const unsigned long actual_rate = (unsigned long)input_->signal.rate;
@@ -375,7 +339,8 @@ bool SoxSource::open_() {
                 " can't open input file or device with the requested sample rate:"
                 " required_by_input=%lu requested_by_user=%lu",
                 actual_rate, requested_rate);
-        return false;
+        return driver_type_ == DriverType_Device ? status::StatusErrDevice
+                                                 : status::StatusErrFile;
     }
 
     const unsigned long requested_chans = (unsigned long)in_signal_.channels;
@@ -387,7 +352,8 @@ bool SoxSource::open_() {
                 " can't open input file or device with the requested channel count:"
                 " required_by_input=%lu requested_by_user=%lu",
                 actual_chans, requested_chans);
-        return false;
+        return driver_type_ == DriverType_Device ? status::StatusErrDevice
+                                                 : status::StatusErrFile;
     }
 
     sample_spec_.set_sample_format(audio::SampleFormat_Pcm);
@@ -401,9 +367,22 @@ bool SoxSource::open_() {
             "sox source:"
             " opened: bits=%lu rate=%lu req_rate=%lu chans=%lu req_chans=%lu is_file=%d",
             (unsigned long)input_->encoding.bits_per_sample, actual_rate, requested_rate,
-            actual_chans, requested_chans, (int)is_file_);
+            actual_chans, requested_chans, (int)(driver_type_ == DriverType_File));
 
-    return true;
+    return status::StatusOK;
+}
+
+status::StatusCode SoxSource::seek_(uint64_t offset) {
+    roc_log(LogDebug, "sox source: resetting position to %lu", (unsigned long)offset);
+
+    const int err = sox_seek(input_, offset, SOX_SEEK_SET);
+    if (err != SOX_SUCCESS) {
+        roc_log(LogError, "sox source: can't reset position to %lu: %s",
+                (unsigned long)offset, sox_strerror(err));
+        return status::StatusErrFile;
+    }
+
+    return status::StatusOK;
 }
 
 void SoxSource::close_() {
@@ -413,7 +392,7 @@ void SoxSource::close_() {
 
     roc_log(LogInfo, "sox source: closing input");
 
-    int err = sox_close(input_);
+    const int err = sox_close(input_);
     if (err != SOX_SUCCESS) {
         roc_panic("sox source: can't close input: %s", sox_strerror(err));
     }

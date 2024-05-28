@@ -16,9 +16,10 @@ namespace pipeline {
 
 TranscoderSink::TranscoderSink(const TranscoderConfig& config,
                                audio::IFrameWriter* output_writer,
-                               core::IPool& buffer_pool,
+                               core::IPool& frame_pool,
+                               core::IPool& frame_buffer_pool,
                                core::IArena& arena)
-    : frame_factory_(buffer_pool)
+    : frame_factory_(frame_pool, frame_buffer_pool)
     , frame_writer_(NULL)
     , config_(config)
     , init_status_(status::NoStatus) {
@@ -69,7 +70,7 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
         }
 
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
-            *frm_writer, *resampler_, frame_factory_, from_spec, to_spec));
+            *frm_writer, frame_factory_, *resampler_, from_spec, to_spec));
         if ((init_status_ = resampler_writer_->init_status()) != status::StatusOK) {
             return;
         }
@@ -93,6 +94,10 @@ status::StatusCode TranscoderSink::init_status() const {
     return init_status_;
 }
 
+sndio::DeviceType TranscoderSink::type() const {
+    return sndio::DeviceType_Sink;
+}
+
 sndio::ISink* TranscoderSink::to_sink() {
     return this;
 }
@@ -101,32 +106,12 @@ sndio::ISource* TranscoderSink::to_source() {
     return NULL;
 }
 
-sndio::DeviceType TranscoderSink::type() const {
-    return sndio::DeviceType_Sink;
-}
-
-sndio::DeviceState TranscoderSink::state() const {
-    return sndio::DeviceState_Active;
-}
-
-void TranscoderSink::pause() {
-    // no-op
-}
-
-bool TranscoderSink::resume() {
-    return true;
-}
-
-bool TranscoderSink::restart() {
-    return true;
-}
-
 audio::SampleSpec TranscoderSink::sample_spec() const {
     return config_.output_sample_spec;
 }
 
-core::nanoseconds_t TranscoderSink::latency() const {
-    return 0;
+bool TranscoderSink::has_state() const {
+    return false;
 }
 
 bool TranscoderSink::has_latency() const {

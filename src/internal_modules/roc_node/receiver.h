@@ -76,7 +76,13 @@ public:
                                         void* party_metrics_arg);
 
     //! Check if there are broken slots.
-    bool has_broken();
+    bool has_broken_slots();
+
+    //! Read frame.
+    //! @remarks
+    //!  Performs necessary checks and allocations on top of ISource::read(),
+    //!  used when working with raw byte buffers instead of Frame objects.
+    ROC_ATTR_NODISCARD status::StatusCode read_frame(void* bytes, size_t n_bytes);
 
     //! Get receiver source.
     sndio::ISource& source();
@@ -130,7 +136,7 @@ private:
                                           core::nanoseconds_t delay);
     virtual void cancel_task_processing(pipeline::PipelineLoop&);
 
-    core::Mutex mutex_;
+    core::Mutex control_mutex_;
 
     pipeline::ReceiverLoop pipeline_;
     ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
@@ -143,6 +149,12 @@ private:
 
     pipeline::ReceiverSlotMetrics slot_metrics_;
     core::Array<pipeline::ReceiverParticipantMetrics, 8> party_metrics_;
+
+    core::Mutex frame_mutex_;
+
+    audio::FrameFactory frame_factory_;
+    audio::FramePtr frame_;
+    audio::SampleSpec sample_spec_;
 
     status::StatusCode init_status_;
 };

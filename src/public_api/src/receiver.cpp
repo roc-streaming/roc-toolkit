@@ -186,8 +186,6 @@ int roc_receiver_read(roc_receiver* receiver, roc_frame* frame) {
 
     node::Receiver* imp_receiver = (node::Receiver*)receiver;
 
-    sndio::ISource& imp_source = imp_receiver->source();
-
     if (!frame) {
         roc_log(LogError, "roc_receiver_read(): invalid arguments: frame is null");
         return -1;
@@ -197,25 +195,15 @@ int roc_receiver_read(roc_receiver* receiver, roc_frame* frame) {
         return 0;
     }
 
-    const size_t factor = imp_source.sample_spec().num_channels() * sizeof(float);
-
-    if (frame->samples_size % factor != 0) {
-        roc_log(LogError,
-                "roc_receiver_read(): invalid arguments:"
-                " # of samples should be multiple of %u",
-                (unsigned)factor);
-        return -1;
-    }
-
     if (!frame->samples) {
         roc_log(LogError,
                 "roc_receiver_read(): invalid arguments: frame samples buffer is null");
         return -1;
     }
 
-    audio::Frame imp_frame((float*)frame->samples, frame->samples_size / sizeof(float));
+    const status::StatusCode code =
+        imp_receiver->read_frame(frame->samples, frame->samples_size);
 
-    const status::StatusCode code = imp_source.read(imp_frame);
     if (code != status::StatusOK) {
         roc_log(LogError, "roc_receiver_read(): can't read frame from decoder: status=%s",
                 status::code_to_str(code));

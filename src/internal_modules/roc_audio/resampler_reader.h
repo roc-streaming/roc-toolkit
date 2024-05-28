@@ -13,6 +13,7 @@
 #define ROC_AUDIO_RESAMPLER_READER_H_
 
 #include "roc_audio/frame.h"
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/iframe_reader.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/sample.h"
@@ -30,10 +31,11 @@ namespace audio {
 class ResamplerReader : public IFrameReader, public core::NonCopyable<> {
 public:
     //! Initialize.
-    ResamplerReader(IFrameReader& reader,
+    ResamplerReader(IFrameReader& frame_reader,
+                    FrameFactory& frame_factory,
                     IResampler& resampler,
-                    const SampleSpec& in_sample_spec,
-                    const SampleSpec& out_sample_spec);
+                    const SampleSpec& in_spec,
+                    const SampleSpec& out_spec);
 
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
@@ -42,17 +44,24 @@ public:
     bool set_scaling(float multiplier);
 
     //! Read audio frame.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(Frame&);
+    virtual ROC_ATTR_NODISCARD status::StatusCode
+    read(Frame& frame, packet::stream_timestamp_t duration);
 
 private:
     status::StatusCode push_input_();
-    core::nanoseconds_t capture_ts_(Frame& out_frame);
+    core::nanoseconds_t capture_ts_(const Frame& out_frame);
+
+    FrameFactory& frame_factory_;
+    IFrameReader& frame_reader_;
 
     IResampler& resampler_;
-    IFrameReader& reader_;
 
-    const SampleSpec in_sample_spec_;
-    const SampleSpec out_sample_spec_;
+    const SampleSpec in_spec_;
+    const SampleSpec out_spec_;
+
+    core::Slice<sample_t> in_buf_;
+    size_t in_buf_pos_;
+    FramePtr in_frame_;
 
     // timestamp of the last sample +1 of the last frame pushed into resampler
     core::nanoseconds_t last_in_cts_;

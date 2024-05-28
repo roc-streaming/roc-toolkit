@@ -15,12 +15,13 @@
 namespace roc {
 namespace audio {
 
-PcmMapperReader::PcmMapperReader(IFrameReader& reader,
+PcmMapperReader::PcmMapperReader(IFrameReader& frame_reader,
                                  FrameFactory& frame_factory,
                                  const SampleSpec& in_spec,
                                  const SampleSpec& out_spec)
-    : mapper_(in_spec.pcm_format(), out_spec.pcm_format())
-    , in_reader_(reader)
+    : frame_factory_(frame_factory)
+    , frame_reader_(frame_reader)
+    , mapper_(in_spec.pcm_format(), out_spec.pcm_format())
     , in_spec_(in_spec)
     , out_spec_(out_spec)
     , num_ch_(out_spec.num_channels())
@@ -49,13 +50,11 @@ PcmMapperReader::PcmMapperReader(IFrameReader& reader,
                   sample_spec_to_str(out_spec_).c_str());
     }
 
-    in_buf_ = frame_factory.new_byte_buffer();
-    if (!in_buf_) {
-        roc_log(LogError, "pcm mapper reader: can't allocate temporary buffer");
+    in_frame_ = frame_factory_.allocate_frame(0);
+    if (!in_frame_) {
         init_status_ = status::StatusNoMem;
         return;
     }
-    in_buf_.reslice(0, in_buf_.capacity());
 
     init_status_ = status::StatusOK;
 }
@@ -64,55 +63,54 @@ status::StatusCode PcmMapperReader::init_status() const {
     return init_status_;
 }
 
-status::StatusCode PcmMapperReader::read(Frame& out_frame) {
+status::StatusCode PcmMapperReader::read(Frame& out_frame,
+                                         packet::stream_timestamp_t requested_duration) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    const size_t max_sample_count = mapper_.input_sample_count(in_buf_.size()) / num_ch_;
+    packet::stream_timestamp_t capped_duration = out_spec_.cap_frame_duration(
+        requested_duration, frame_factory_.byte_buffer_size());
 
-    const size_t out_sample_count =
-        mapper_.output_sample_count(out_frame.num_bytes()) / num_ch_;
-    size_t out_sample_offset = 0;
+    capped_duration =
+        in_spec_.cap_frame_duration(capped_duration, frame_factory_.byte_buffer_size());
 
-    const size_t out_bit_count = mapper_.output_bit_count(out_sample_count * num_ch_);
+    if (!frame_factory_.reallocate_frame(
+            *in_frame_, in_spec_.stream_timestamp_2_bytes(capped_duration))) {
+        return status::StatusNoMem;
+    }
+
+    const status::StatusCode code = frame_reader_.read(*in_frame_, capped_duration);
+    if (code != status::StatusOK && code != status::StatusPart) {
+        return code;
+    }
+
+    in_spec_.validate_frame(*in_frame_);
+
+    const packet::stream_timestamp_t resulted_duration = in_frame_->duration();
+
+    if (!frame_factory_.reallocate_frame(
+            out_frame, out_spec_.stream_timestamp_2_bytes(resulted_duration))) {
+        return status::StatusNoMem;
+    }
+
+    out_frame.set_flags(in_frame_->flags());
+    out_frame.set_raw(out_spec_.is_raw());
+    out_frame.set_duration(resulted_duration);
+    out_frame.set_capture_timestamp(in_frame_->capture_timestamp());
+
+    const size_t out_byte_count = mapper_.output_byte_count(resulted_duration * num_ch_);
     size_t out_bit_offset = 0;
 
-    unsigned out_flags = 0;
+    const size_t in_byte_count = mapper_.input_byte_count(resulted_duration * num_ch_);
+    size_t in_bit_offset = 0;
 
-    while (out_bit_offset < out_bit_count) {
-        const size_t n_samples =
-            std::min(out_sample_count - out_sample_offset, max_sample_count);
+    mapper_.map(in_frame_->bytes(), in_byte_count, in_bit_offset, out_frame.bytes(),
+                out_byte_count, out_bit_offset, resulted_duration * num_ch_);
 
-        const size_t in_byte_count = mapper_.input_byte_count(n_samples * num_ch_);
-        size_t in_bit_offset = 0;
+    roc_panic_if(out_bit_offset != out_byte_count * 8);
+    roc_panic_if(in_bit_offset != in_byte_count * 8);
 
-        Frame in_frame(in_buf_.data(), in_byte_count);
-
-        const status::StatusCode code = in_reader_.read(in_frame);
-        if (code != status::StatusOK) {
-            return code;
-        }
-
-        mapper_.map(in_buf_.data(), in_byte_count, in_bit_offset, out_frame.bytes(),
-                    out_frame.num_bytes(), out_bit_offset, n_samples * num_ch_);
-
-        out_flags |= in_frame.flags();
-        if (out_sample_offset == 0) {
-            out_frame.set_capture_timestamp(in_frame.capture_timestamp());
-        }
-
-        out_sample_offset += n_samples;
-    }
-
-    if (out_spec_.is_raw()) {
-        out_flags &= ~(unsigned)Frame::HasEncoding;
-    } else {
-        out_flags |= (unsigned)Frame::HasEncoding;
-    }
-
-    out_frame.set_flags(out_flags);
-    out_frame.set_duration(out_sample_count);
-
-    return status::StatusOK;
+    return resulted_duration == requested_duration ? status::StatusOK
+                                                   : status::StatusPart;
 }
 
 } // namespace audio

@@ -116,7 +116,8 @@ public:
 
 private:
     // Implementation of audio::IFrameReader.
-    virtual status::StatusCode read(audio::Frame& frame);
+    virtual status::StatusCode read(audio::Frame& frame,
+                                    packet::stream_timestamp_t duration);
 
     audio::IFrameReader* frame_reader_;
 

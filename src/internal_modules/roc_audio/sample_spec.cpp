@@ -346,5 +346,78 @@ size_t SampleSpec::ns_2_bytes(core::nanoseconds_t duration) const {
     return stream_timestamp_2_bytes(ns_2_stream_timestamp(duration));
 }
 
+void SampleSpec::validate_frame(Frame& frame) const {
+    roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
+                     sample_spec_to_str(*this).c_str());
+
+    if (frame.num_bytes() == 0) {
+        roc_panic("sample spec: invalid frame: no bytes: spec=%s",
+                  sample_spec_to_str(*this).c_str());
+    }
+
+    if (!frame.has_duration()) {
+        roc_panic("sample spec: invalid frame: no duration: spec=%s",
+                  sample_spec_to_str(*this).c_str());
+    }
+
+    if (frame.capture_timestamp() < 0) {
+        roc_panic("sample spec: invalid frame: negative cts: spec=%s",
+                  sample_spec_to_str(*this).c_str());
+    }
+
+    if (is_raw()) {
+        if (!frame.is_raw()) {
+            roc_panic("sample spec: invalid frame: expected raw format: spec=%s",
+                      sample_spec_to_str(*this).c_str());
+        }
+
+        if (frame.duration() * num_channels() != frame.num_raw_samples()
+            || frame.num_raw_samples() * sizeof(sample_t) != frame.num_bytes()) {
+            roc_panic("sample spec: invalid frame: mismatching sizes:"
+                      " n_samples=%lu n_bytes=%lu duration=%lu spec=%s",
+                      (unsigned long)frame.num_raw_samples(),
+                      (unsigned long)frame.num_bytes(), (unsigned long)frame.duration(),
+                      sample_spec_to_str(*this).c_str());
+        }
+    } else {
+        if (frame.is_raw()) {
+            roc_panic("sample spec: invalid frame: expected non-raw format: spec=%s",
+                      sample_spec_to_str(*this).c_str());
+        }
+    }
+}
+
+bool SampleSpec::validate_frame_size(size_t n_bytes) {
+    roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
+                     sample_spec_to_str(*this).c_str());
+
+    if (sample_fmt_ != SampleFormat_Pcm || pcm_width_ % 8 != 0) {
+        return true;
+    }
+
+    const size_t factor = stream_timestamp_2_bytes(1);
+
+    if (n_bytes % factor == 0) {
+        return true;
+    }
+
+    roc_log(LogError,
+            "sample spec: invalid frame buffer size: should be multiple of %u, got %lu"
+            " (%u bytes per sample, %u channels)",
+            (unsigned)factor, (unsigned long)n_bytes, (unsigned)(pcm_width_ / 8),
+            (unsigned)num_channels());
+
+    return false;
+}
+
+packet::stream_timestamp_t
+SampleSpec::cap_frame_duration(packet::stream_timestamp_t duration,
+                               size_t buffer_size) const {
+    roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
+                     sample_spec_to_str(*this).c_str());
+
+    return std::min(duration, bytes_2_stream_timestamp(buffer_size));
+}
+
 } // namespace audio
 } // namespace roc

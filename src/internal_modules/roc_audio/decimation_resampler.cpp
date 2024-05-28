@@ -68,7 +68,7 @@ DecimationResampler::DecimationResampler(
 
     if (frame_factory.raw_buffer_size() < InputFrameSize * num_ch_) {
         roc_log(LogError, "decimation resampler: can't allocate temporary buffer");
-        init_status_ = status::StatusNoSpace;
+        init_status_ = status::StatusNoMem;
         return;
     }
 

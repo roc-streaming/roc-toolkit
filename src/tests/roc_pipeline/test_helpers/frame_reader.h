@@ -48,18 +48,16 @@ public:
                       size_t num_sessions,
                       const audio::SampleSpec& sample_spec,
                       core::nanoseconds_t base_capture_ts = -1) {
-        core::Slice<audio::sample_t> samples = alloc_samples_(num_samples, sample_spec);
-        audio::Frame frame(samples.data(), samples.size());
-        LONGS_EQUAL(status::StatusOK, source_.read(frame));
+        audio::FramePtr frame = read_frame_(num_samples, sample_spec);
 
-        check_duration_(frame, sample_spec);
-        check_timestamp_(frame, sample_spec, base_capture_ts);
+        check_duration_(*frame, sample_spec);
+        check_timestamp_(*frame, sample_spec, base_capture_ts);
 
         for (size_t ns = 0; ns < num_samples; ns++) {
             for (size_t nc = 0; nc < sample_spec.num_channels(); nc++) {
                 DOUBLES_EQUAL(
                     (double)nth_sample(offset_) * num_sessions,
-                    (double)frame.raw_samples()[ns * sample_spec.num_channels() + nc],
+                    (double)frame->raw_samples()[ns * sample_spec.num_channels() + nc],
                     SampleEpsilon);
             }
             offset_++;
@@ -79,16 +77,14 @@ public:
     void read_nonzero_samples(size_t num_samples,
                               const audio::SampleSpec& sample_spec,
                               core::nanoseconds_t base_capture_ts = -1) {
-        core::Slice<audio::sample_t> samples = alloc_samples_(num_samples, sample_spec);
-        audio::Frame frame(samples.data(), samples.size());
-        LONGS_EQUAL(status::StatusOK, source_.read(frame));
+        audio::FramePtr frame = read_frame_(num_samples, sample_spec);
 
-        check_duration_(frame, sample_spec);
-        check_timestamp_(frame, sample_spec, base_capture_ts);
+        check_duration_(*frame, sample_spec);
+        check_timestamp_(*frame, sample_spec, base_capture_ts);
 
         size_t non_zero = 0;
         for (size_t ns = 0; ns < num_samples * sample_spec.num_channels(); ns++) {
-            if (frame.raw_samples()[ns] != 0) {
+            if (frame->raw_samples()[ns] != 0) {
                 non_zero++;
             }
         }
@@ -108,15 +104,13 @@ public:
     void read_zero_samples(size_t num_samples,
                            const audio::SampleSpec& sample_spec,
                            core::nanoseconds_t base_capture_ts = -1) {
-        core::Slice<audio::sample_t> samples = alloc_samples_(num_samples, sample_spec);
-        audio::Frame frame(samples.data(), samples.size());
-        LONGS_EQUAL(status::StatusOK, source_.read(frame));
+        audio::FramePtr frame = read_frame_(num_samples, sample_spec);
 
-        check_duration_(frame, sample_spec);
-        check_timestamp_(frame, sample_spec, base_capture_ts);
+        check_duration_(*frame, sample_spec);
+        check_timestamp_(*frame, sample_spec, base_capture_ts);
 
         for (size_t n = 0; n < num_samples * sample_spec.num_channels(); n++) {
-            DOUBLES_EQUAL(0.0, (double)frame.raw_samples()[n], SampleEpsilon);
+            DOUBLES_EQUAL(0.0, (double)frame->raw_samples()[n], SampleEpsilon);
         }
         abs_offset_ += num_samples;
         refresh_ts_offset_ = sample_spec.samples_per_chan_2_ns(abs_offset_);
@@ -133,12 +127,10 @@ public:
     void read_any_samples(size_t num_samples,
                           const audio::SampleSpec& sample_spec,
                           core::nanoseconds_t base_capture_ts = -1) {
-        core::Slice<audio::sample_t> samples = alloc_samples_(num_samples, sample_spec);
-        audio::Frame frame(samples.data(), samples.size());
-        LONGS_EQUAL(status::StatusOK, source_.read(frame));
+        audio::FramePtr frame = read_frame_(num_samples, sample_spec);
 
-        check_duration_(frame, sample_spec);
-        check_timestamp_(frame, sample_spec, base_capture_ts);
+        check_duration_(*frame, sample_spec);
+        check_timestamp_(*frame, sample_spec, base_capture_ts);
 
         abs_offset_ += num_samples;
         refresh_ts_offset_ = sample_spec.samples_per_chan_2_ns(abs_offset_);
@@ -173,13 +165,20 @@ public:
     }
 
 private:
-    core::Slice<audio::sample_t> alloc_samples_(size_t num_samples,
-                                                const audio::SampleSpec& sample_spec) {
-        core::Slice<audio::sample_t> samples = frame_factory_.new_raw_buffer();
-        CHECK(samples);
+    audio::FramePtr read_frame_(size_t num_samples,
+                                const audio::SampleSpec& sample_spec) {
+        audio::FramePtr frame = frame_factory_.allocate_frame_no_buffer();
+        CHECK(frame);
 
-        samples.reslice(0, num_samples * sample_spec.num_channels());
-        return samples;
+        packet::stream_timestamp_t duration = packet::stream_timestamp_t(num_samples);
+
+        LONGS_EQUAL(status::StatusOK, source_.read(*frame, duration));
+
+        CHECK(frame->is_raw());
+        CHECK(frame->raw_samples());
+        LONGS_EQUAL(num_samples * sample_spec.num_channels(), frame->num_raw_samples());
+
+        return frame;
     }
 
     void check_timestamp_(const audio::Frame& frame,

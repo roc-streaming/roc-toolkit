@@ -91,17 +91,23 @@ SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
                        const rtp::EncodingMap& encoding_map,
                        core::IPool& packet_pool,
                        core::IPool& packet_buffer_pool,
+                       core::IPool& frame_pool,
                        core::IPool& frame_buffer_pool,
                        core::IArena& arena)
-    : PipelineLoop(scheduler, sink_config.pipeline_loop, sink_config.input_sample_spec)
+    : PipelineLoop(scheduler,
+                   sink_config.pipeline_loop,
+                   sink_config.input_sample_spec,
+                   frame_pool,
+                   frame_buffer_pool,
+                   Dir_WriteFrames)
     , sink_(sink_config,
             encoding_map,
             packet_pool,
             packet_buffer_pool,
+            frame_pool,
             frame_buffer_pool,
             arena)
     , ticker_ts_(0)
-    , auto_duration_(sink_config.enable_auto_duration)
     , auto_cts_(sink_config.enable_auto_cts)
     , sample_spec_(sink_config.input_sample_spec)
     , init_status_(status::NoStatus) {
@@ -109,7 +115,7 @@ SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
         return;
     }
 
-    if (sink_config.enable_timing) {
+    if (sink_config.enable_cpu_clock) {
         ticker_.reset(new (ticker_)
                           core::Ticker(sink_config.input_sample_spec.sample_rate()));
     }
@@ -122,90 +128,66 @@ status::StatusCode SenderLoop::init_status() const {
 }
 
 sndio::ISink& SenderLoop::sink() {
-    roc_panic_if(init_status_ != status::StatusOK);
-
     return *this;
 }
 
-sndio::ISink* SenderLoop::to_sink() {
-    roc_panic_if(init_status_ != status::StatusOK);
-
-    return this;
-}
-
-sndio::ISource* SenderLoop::to_source() {
-    roc_panic_if(init_status_ != status::StatusOK);
-
-    return NULL;
-}
-
 sndio::DeviceType SenderLoop::type() const {
-    roc_panic_if(init_status_ != status::StatusOK);
-
     core::Mutex::Lock lock(sink_mutex_);
 
     return sink_.type();
 }
 
-sndio::DeviceState SenderLoop::state() const {
-    roc_panic_if(init_status_ != status::StatusOK);
-
-    core::Mutex::Lock lock(sink_mutex_);
-
-    return sink_.state();
+sndio::ISink* SenderLoop::to_sink() {
+    return this;
 }
 
-void SenderLoop::pause() {
-    roc_panic_if(init_status_ != status::StatusOK);
-
-    core::Mutex::Lock lock(sink_mutex_);
-
-    sink_.pause();
-}
-
-bool SenderLoop::resume() {
-    roc_panic_if(init_status_ != status::StatusOK);
-
-    core::Mutex::Lock lock(sink_mutex_);
-
-    return sink_.resume();
-}
-
-bool SenderLoop::restart() {
-    roc_panic_if(init_status_ != status::StatusOK);
-
-    core::Mutex::Lock lock(sink_mutex_);
-
-    return sink_.restart();
+sndio::ISource* SenderLoop::to_source() {
+    return NULL;
 }
 
 audio::SampleSpec SenderLoop::sample_spec() const {
-    roc_panic_if(init_status_ != status::StatusOK);
-
     core::Mutex::Lock lock(sink_mutex_);
 
     return sink_.sample_spec();
 }
 
-core::nanoseconds_t SenderLoop::latency() const {
-    roc_panic_if(init_status_ != status::StatusOK);
-
+bool SenderLoop::has_state() const {
     core::Mutex::Lock lock(sink_mutex_);
 
-    return sink_.latency();
+    return sink_.has_state();
+}
+
+sndio::DeviceState SenderLoop::state() const {
+    core::Mutex::Lock lock(sink_mutex_);
+
+    return sink_.state();
+}
+
+status::StatusCode SenderLoop::pause() {
+    core::Mutex::Lock lock(sink_mutex_);
+
+    return sink_.pause();
+}
+
+status::StatusCode SenderLoop::resume() {
+    core::Mutex::Lock lock(sink_mutex_);
+
+    return sink_.resume();
 }
 
 bool SenderLoop::has_latency() const {
-    roc_panic_if(init_status_ != status::StatusOK);
-
     core::Mutex::Lock lock(sink_mutex_);
 
     return sink_.has_latency();
 }
 
-bool SenderLoop::has_clock() const {
-    roc_panic_if(init_status_ != status::StatusOK);
+core::nanoseconds_t SenderLoop::latency() const {
+    core::Mutex::Lock lock(sink_mutex_);
 
+    return sink_.latency();
+}
+
+bool SenderLoop::has_clock() const {
     core::Mutex::Lock lock(sink_mutex_);
 
     return sink_.has_clock();
@@ -213,13 +195,6 @@ bool SenderLoop::has_clock() const {
 
 status::StatusCode SenderLoop::write(audio::Frame& frame) {
     roc_panic_if(init_status_ != status::StatusOK);
-
-    if (auto_duration_) {
-        if (frame.has_duration()) {
-            roc_panic("sender loop: unexpected non-zero duration in auto-duration mode");
-        }
-        frame.set_duration(sample_spec_.bytes_2_stream_timestamp(frame.num_bytes()));
-    }
 
     if (auto_cts_) {
         if (frame.capture_timestamp() != 0) {
@@ -236,7 +211,7 @@ status::StatusCode SenderLoop::write(audio::Frame& frame) {
     }
 
     // invokes process_subframe_imp() and process_task_imp()
-    return process_subframes_and_tasks(frame);
+    return process_subframes_and_tasks(frame, frame.duration());
 }
 
 core::nanoseconds_t SenderLoop::timestamp_imp() const {
@@ -247,7 +222,8 @@ uint64_t SenderLoop::tid_imp() const {
     return core::Thread::get_tid();
 }
 
-status::StatusCode SenderLoop::process_subframe_imp(audio::Frame& frame) {
+status::StatusCode SenderLoop::process_subframe_imp(audio::Frame& frame,
+                                                    packet::stream_timestamp_t duration) {
     status::StatusCode code = status::NoStatus;
 
     if ((code = sink_.write(frame)) != status::StatusOK) {

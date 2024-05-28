@@ -195,7 +195,7 @@ SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         }
 
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
-            *frm_writer, *resampler_, frame_factory_, in_spec, out_spec));
+            *frm_writer, frame_factory_, *resampler_, in_spec, out_spec));
 
         if ((status = resampler_writer_->init_status()) != status::StatusOK) {
             return status;

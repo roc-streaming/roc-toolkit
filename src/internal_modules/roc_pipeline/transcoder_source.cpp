@@ -16,9 +16,10 @@ namespace pipeline {
 
 TranscoderSource::TranscoderSource(const TranscoderConfig& config,
                                    sndio::ISource& input_source,
-                                   core::IPool& buffer_pool,
+                                   core::IPool& frame_pool,
+                                   core::IPool& frame_buffer_pool,
                                    core::IArena& arena)
-    : frame_factory_(buffer_pool)
+    : frame_factory_(frame_pool, frame_buffer_pool)
     , input_source_(input_source)
     , frame_reader_(NULL)
     , config_(config)
@@ -67,7 +68,7 @@ TranscoderSource::TranscoderSource(const TranscoderConfig& config,
         }
 
         resampler_reader_.reset(new (resampler_reader_) audio::ResamplerReader(
-            *frm_reader, *resampler_, from_spec, to_spec));
+            *frm_reader, frame_factory_, *resampler_, from_spec, to_spec));
         if ((init_status_ = resampler_reader_->init_status()) != status::StatusOK) {
             return;
         }
@@ -91,6 +92,10 @@ status::StatusCode TranscoderSource::init_status() const {
     return init_status_;
 }
 
+sndio::DeviceType TranscoderSource::type() const {
+    return input_source_.type();
+}
+
 sndio::ISink* TranscoderSource::to_sink() {
     return NULL;
 }
@@ -99,50 +104,51 @@ sndio::ISource* TranscoderSource::to_source() {
     return this;
 }
 
-sndio::DeviceType TranscoderSource::type() const {
-    return input_source_.type();
+audio::SampleSpec TranscoderSource::sample_spec() const {
+    return config_.output_sample_spec;
+}
+
+bool TranscoderSource::has_state() const {
+    return input_source_.has_state();
 }
 
 sndio::DeviceState TranscoderSource::state() const {
     return input_source_.state();
 }
 
-void TranscoderSource::pause() {
-    input_source_.pause();
+status::StatusCode TranscoderSource::pause() {
+    return input_source_.pause();
 }
 
-bool TranscoderSource::resume() {
+status::StatusCode TranscoderSource::resume() {
     return input_source_.resume();
 }
 
-bool TranscoderSource::restart() {
-    return input_source_.restart();
-}
-
-audio::SampleSpec TranscoderSource::sample_spec() const {
-    return config_.output_sample_spec;
+bool TranscoderSource::has_latency() const {
+    return input_source_.has_latency();
 }
 
 core::nanoseconds_t TranscoderSource::latency() const {
-    return 0;
-}
-
-bool TranscoderSource::has_latency() const {
-    return false;
+    return input_source_.latency();
 }
 
 bool TranscoderSource::has_clock() const {
     return input_source_.has_clock();
 }
 
+status::StatusCode TranscoderSource::rewind() {
+    return input_source_.rewind();
+}
+
 void TranscoderSource::reclock(core::nanoseconds_t timestamp) {
     input_source_.reclock(timestamp);
 }
 
-status::StatusCode TranscoderSource::read(audio::Frame& frame) {
+status::StatusCode TranscoderSource::read(audio::Frame& frame,
+                                          packet::stream_timestamp_t duration) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    return frame_reader_->read(frame);
+    return frame_reader_->read(frame, duration);
 }
 
 } // namespace pipeline

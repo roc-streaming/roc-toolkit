@@ -15,12 +15,13 @@
 namespace roc {
 namespace audio {
 
-PcmMapperWriter::PcmMapperWriter(IFrameWriter& writer,
+PcmMapperWriter::PcmMapperWriter(IFrameWriter& frame_writer,
                                  FrameFactory& frame_factory,
                                  const SampleSpec& in_spec,
                                  const SampleSpec& out_spec)
-    : mapper_(in_spec.pcm_format(), out_spec.pcm_format())
-    , out_writer_(writer)
+    : frame_factory_(frame_factory)
+    , frame_writer_(frame_writer)
+    , mapper_(in_spec.pcm_format(), out_spec.pcm_format())
     , in_spec_(in_spec)
     , out_spec_(out_spec)
     , num_ch_(out_spec.num_channels())
@@ -49,13 +50,11 @@ PcmMapperWriter::PcmMapperWriter(IFrameWriter& writer,
                   sample_spec_to_str(out_spec_).c_str());
     }
 
-    out_buf_ = frame_factory.new_byte_buffer();
-    if (!out_buf_) {
-        roc_log(LogError, "pcm mapper writer: can't allocate temporary buffer");
+    out_frame_ = frame_factory_.allocate_frame(0);
+    if (!out_frame_) {
         init_status_ = status::StatusNoMem;
         return;
     }
-    out_buf_.reslice(0, out_buf_.capacity());
 
     init_status_ = status::StatusOK;
 }
@@ -67,51 +66,52 @@ status::StatusCode PcmMapperWriter::init_status() const {
 status::StatusCode PcmMapperWriter::write(Frame& in_frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    const size_t max_sample_count =
-        mapper_.output_sample_count(out_buf_.size()) / num_ch_;
+    in_spec_.validate_frame(in_frame);
 
-    const size_t in_sample_count =
-        mapper_.input_sample_count(in_frame.num_bytes()) / num_ch_;
-    size_t in_sample_offset = 0;
+    const size_t in_size = in_frame.num_bytes();
+    size_t in_pos = 0;
 
-    const size_t in_bit_count = mapper_.input_bit_count(in_sample_count * num_ch_);
-    size_t in_bit_offset = 0;
+    while (in_pos < in_size) {
+        const packet::stream_timestamp_t remained_duration =
+            in_spec_.bytes_2_stream_timestamp(in_size - in_pos);
 
-    core::nanoseconds_t out_cts = in_frame.capture_timestamp();
+        const packet::stream_timestamp_t capped_duration = out_spec_.cap_frame_duration(
+            remained_duration, frame_factory_.byte_buffer_size());
 
-    unsigned out_flags = in_frame.flags();
-    if (out_spec_.is_raw()) {
-        out_flags &= ~(unsigned)Frame::HasEncoding;
-    } else {
-        out_flags |= (unsigned)Frame::HasEncoding;
-    }
+        if (!frame_factory_.reallocate_frame(
+                *out_frame_, out_spec_.stream_timestamp_2_bytes(capped_duration))) {
+            return status::StatusNoMem;
+        }
 
-    while (in_bit_offset < in_bit_count) {
-        const size_t n_samples =
-            std::min(in_sample_count - in_sample_offset, max_sample_count);
+        out_frame_->set_flags(in_frame.flags());
+        out_frame_->set_raw(out_spec_.is_raw());
+        out_frame_->set_duration(capped_duration);
 
-        const size_t out_byte_count = mapper_.output_byte_count(n_samples * num_ch_);
+        if (in_frame.capture_timestamp() != 0) {
+            out_frame_->set_capture_timestamp(in_frame.capture_timestamp()
+                                              + in_spec_.bytes_2_ns(in_pos));
+        }
+
+        const size_t out_byte_count =
+            mapper_.output_byte_count(capped_duration * num_ch_);
         size_t out_bit_offset = 0;
 
-        mapper_.map(in_frame.bytes(), in_frame.num_bytes(), in_bit_offset,
-                    out_buf_.data(), out_byte_count, out_bit_offset, n_samples * num_ch_);
+        const size_t in_byte_count = mapper_.input_byte_count(capped_duration * num_ch_);
+        size_t in_bit_offset = 0;
 
-        Frame out_frame(out_buf_.data(), out_byte_count);
+        mapper_.map(in_frame.bytes() + in_pos, in_byte_count, in_bit_offset,
+                    out_frame_->bytes(), out_byte_count, out_bit_offset,
+                    capped_duration * num_ch_);
 
-        out_frame.set_flags(out_flags);
-        out_frame.set_duration(n_samples);
-        out_frame.set_capture_timestamp(out_cts);
+        roc_panic_if(out_bit_offset != out_byte_count * 8);
+        roc_panic_if(in_bit_offset != in_byte_count * 8);
 
-        const status::StatusCode code = out_writer_.write(out_frame);
+        in_pos += in_byte_count;
+
+        const status::StatusCode code = frame_writer_.write(*out_frame_);
         if (code != status::StatusOK) {
             return code;
         }
-
-        if (out_cts) {
-            out_cts += out_spec_.samples_per_chan_2_ns(n_samples);
-        }
-
-        in_sample_offset += n_samples;
     }
 
     return status::StatusOK;

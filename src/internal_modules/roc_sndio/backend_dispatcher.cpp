@@ -10,6 +10,7 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_sndio/backend_map.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace sndio {
@@ -59,37 +60,53 @@ bool match_driver(const DriverInfo& driver_info,
 
 } // namespace
 
-BackendDispatcher::BackendDispatcher(core::IArena& arena)
-    : arena_(arena) {
+BackendDispatcher::BackendDispatcher(core::IPool& frame_pool,
+                                     core::IPool& buffer_pool,
+                                     core::IArena& arena)
+    : frame_factory_(frame_pool, buffer_pool)
+    , arena_(arena) {
 }
 
-ISink* BackendDispatcher::open_default_sink(const Config& config) {
-    IDevice* device = open_default_device_(DeviceType_Sink, config);
-    if (!device) {
-        return NULL;
+status::StatusCode BackendDispatcher::open_default_sink(const Config& config,
+                                                        core::ScopedPtr<ISink>& result) {
+    IDevice* device = NULL;
+
+    const status::StatusCode code =
+        open_default_device_(DeviceType_Sink, config, &device);
+    if (code != status::StatusOK) {
+        return code;
     }
 
-    roc_panic_if_msg(device->type() != DeviceType_Sink || !device->to_sink(),
-                     "backend dispatcher: unexpected non-sink device");
+    roc_panic_if_msg(!device || device->type() != DeviceType_Sink || !device->to_sink(),
+                     "backend dispatcher: unexpected device");
 
-    return device->to_sink();
+    result.reset(device->to_sink(), arena_);
+    return status::StatusOK;
 }
 
-ISource* BackendDispatcher::open_default_source(const Config& config) {
-    IDevice* device = open_default_device_(DeviceType_Source, config);
-    if (!device) {
-        return NULL;
+status::StatusCode
+BackendDispatcher::open_default_source(const Config& config,
+                                       core::ScopedPtr<ISource>& result) {
+    IDevice* device = NULL;
+
+    const status::StatusCode code =
+        open_default_device_(DeviceType_Source, config, &device);
+    if (code != status::StatusOK) {
+        return code;
     }
 
-    roc_panic_if_msg(device->type() != DeviceType_Source || !device->to_source(),
-                     "backend dispatcher: unexpected non-source device");
+    roc_panic_if_msg(!device || device->type() != DeviceType_Source
+                         || !device->to_source(),
+                     "backend dispatcher: unexpected device");
 
-    return device->to_source();
+    result.reset(device->to_source(), arena_);
+    return status::StatusOK;
 }
 
-ISink* BackendDispatcher::open_sink(const address::IoUri& uri,
-                                    const char* force_format,
-                                    const Config& config) {
+status::StatusCode BackendDispatcher::open_sink(const address::IoUri& uri,
+                                                const char* force_format,
+                                                const Config& config,
+                                                core::ScopedPtr<ISink>& result) {
     if (!uri.is_valid()) {
         roc_panic("backend dispatcher: invalid uri");
     }
@@ -97,21 +114,25 @@ ISink* BackendDispatcher::open_sink(const address::IoUri& uri,
     const DriverType driver_type = select_driver_type(uri);
     const char* driver_name = select_driver_name(uri, force_format);
 
-    IDevice* device =
-        open_device_(DeviceType_Sink, driver_type, driver_name, uri.path(), config);
-    if (!device) {
-        return NULL;
+    IDevice* device = NULL;
+
+    const status::StatusCode code = open_device_(
+        DeviceType_Sink, driver_type, driver_name, uri.path(), config, &device);
+    if (code != status::StatusOK) {
+        return code;
     }
 
-    roc_panic_if_msg(device->type() != DeviceType_Sink || !device->to_sink(),
-                     "backend dispatcher: unexpected non-sink device");
+    roc_panic_if_msg(!device || device->type() != DeviceType_Sink || !device->to_sink(),
+                     "backend dispatcher: unexpected device");
 
-    return device->to_sink();
+    result.reset(device->to_sink(), arena_);
+    return status::StatusOK;
 }
 
-ISource* BackendDispatcher::open_source(const address::IoUri& uri,
-                                        const char* force_format,
-                                        const Config& config) {
+status::StatusCode BackendDispatcher::open_source(const address::IoUri& uri,
+                                                  const char* force_format,
+                                                  const Config& config,
+                                                  core::ScopedPtr<ISource>& result) {
     if (!uri.is_valid()) {
         roc_panic("backend dispatcher: invalid uri");
     }
@@ -119,16 +140,20 @@ ISource* BackendDispatcher::open_source(const address::IoUri& uri,
     const DriverType driver_type = select_driver_type(uri);
     const char* driver_name = select_driver_name(uri, force_format);
 
-    IDevice* device =
-        open_device_(DeviceType_Source, driver_type, driver_name, uri.path(), config);
-    if (!device) {
-        return NULL;
+    IDevice* device = NULL;
+
+    const status::StatusCode code = open_device_(
+        DeviceType_Source, driver_type, driver_name, uri.path(), config, &device);
+    if (code != status::StatusOK) {
+        return code;
     }
 
-    roc_panic_if_msg(device->type() != DeviceType_Source || !device->to_source(),
-                     "backend dispatcher: unexpected non-source device");
+    roc_panic_if_msg(!device || device->type() != DeviceType_Source
+                         || !device->to_source(),
+                     "backend dispatcher: unexpected device");
 
-    return device->to_source();
+    result.reset(device->to_source(), arena_);
+    return status::StatusOK;
 }
 
 bool BackendDispatcher::get_supported_schemes(core::StringList& result) {
@@ -139,7 +164,10 @@ bool BackendDispatcher::get_supported_schemes(core::StringList& result) {
 
         // every device driver has its own scheme
         if (driver_info.type == DriverType_Device) {
-            if (!result.find(driver_info.name) && !result.push_back(driver_info.name)) {
+            if (result.find(driver_info.name)) {
+                continue;
+            }
+            if (!result.push_back(driver_info.name)) {
                 return false;
             }
         }
@@ -160,7 +188,10 @@ bool BackendDispatcher::get_supported_formats(core::StringList& result) {
         const DriverInfo& driver_info = BackendMap::instance().nth_driver(n);
 
         if (driver_info.type == DriverType_File) {
-            if (!result.find(driver_info.name) && !result.push_back(driver_info.name)) {
+            if (result.find(driver_info.name)) {
+                continue;
+            }
+            if (!result.push_back(driver_info.name)) {
                 return false;
             }
         }
@@ -169,12 +200,15 @@ bool BackendDispatcher::get_supported_formats(core::StringList& result) {
     return true;
 }
 
-IDevice* BackendDispatcher::open_default_device_(DeviceType device_type,
-                                                 const Config& config) {
+status::StatusCode BackendDispatcher::open_default_device_(DeviceType device_type,
+                                                           const Config& config,
+                                                           IDevice** result) {
     const unsigned driver_flags =
         unsigned(DriverFlag_IsDefault
                  | (device_type == DeviceType_Sink ? DriverFlag_SupportsSink
                                                    : DriverFlag_SupportsSource));
+
+    status::StatusCode code = status::StatusNoDriver;
 
     for (size_t n = 0; n < BackendMap::instance().num_drivers(); n++) {
         const DriverInfo& driver_info = BackendMap::instance().nth_driver(n);
@@ -183,26 +217,37 @@ IDevice* BackendDispatcher::open_default_device_(DeviceType device_type,
             continue;
         }
 
-        IDevice* device = BackendMap::instance().nth_driver(n).backend->open_device(
-            device_type, DriverType_Device, BackendMap::instance().nth_driver(n).name,
-            "default", config, arena_);
-        if (device) {
-            return device;
+        code = driver_info.backend->open_device(device_type, DriverType_Device,
+                                                driver_info.name, "default", config,
+                                                frame_factory_, arena_, result);
+
+        if (code == status::StatusOK) {
+            return code;
         }
+
+        roc_log(LogDebug,
+                "backend dispatcher: got error from driver:"
+                " driver=%s status=%s",
+                driver_info.name, status::code_to_str(code));
     }
 
-    roc_log(LogError, "backend dispatcher: failed to open default device");
-    return NULL;
+    roc_log(LogError, "backend dispatcher: failed to open default %s: status=%s",
+            device_type_to_str(device_type), status::code_to_str(code));
+
+    return code;
 }
 
-IDevice* BackendDispatcher::open_device_(DeviceType device_type,
-                                         DriverType driver_type,
-                                         const char* driver_name,
-                                         const char* path,
-                                         const Config& config) {
+status::StatusCode BackendDispatcher::open_device_(DeviceType device_type,
+                                                   DriverType driver_type,
+                                                   const char* driver_name,
+                                                   const char* path,
+                                                   const Config& config,
+                                                   IDevice** result) {
     const unsigned driver_flags =
         (device_type == DeviceType_Sink ? DriverFlag_SupportsSink
                                         : DriverFlag_SupportsSource);
+
+    status::StatusCode code = status::StatusNoDriver;
 
     if (driver_name != NULL) {
         for (size_t n = 0; n < BackendMap::instance().num_drivers(); n++) {
@@ -212,29 +257,44 @@ IDevice* BackendDispatcher::open_device_(DeviceType device_type,
                 continue;
             }
 
-            IDevice* device = BackendMap::instance().nth_driver(n).backend->open_device(
-                device_type, driver_type, driver_name, path, config, arena_);
-            if (device) {
-                return device;
+            code = driver_info.backend->open_device(device_type, driver_type,
+                                                    driver_info.name, path, config,
+                                                    frame_factory_, arena_, result);
+
+            if (code == status::StatusOK) {
+                return code;
             }
+
+            roc_log(LogDebug,
+                    "backend dispatcher: got error from driver:"
+                    " driver=%s status=%s",
+                    driver_info.name, status::code_to_str(code));
         }
     } else {
         for (size_t n = 0; n < BackendMap::instance().num_backends(); n++) {
             IBackend& backend = BackendMap::instance().nth_backend(n);
 
-            IDevice* device =
-                backend.open_device(device_type, driver_type, NULL, path, config, arena_);
-            if (device) {
-                return device;
+            code = backend.open_device(device_type, driver_type, NULL, path, config,
+                                       frame_factory_, arena_, result);
+
+            if (code == status::StatusOK) {
+                return code;
             }
+
+            roc_log(LogDebug,
+                    "backend dispatcher: got error from backend:"
+                    " backend=%s status=%s",
+                    backend.name(), status::code_to_str(code));
         }
     }
 
-    roc_log(LogError, "backend dispatcher: failed to open %s: type=%s driver=%s path=%s",
+    roc_log(LogError,
+            "backend dispatcher: failed to open %s:"
+            " driver_type=%s driver_name=%s path=%s status=%s",
             device_type_to_str(device_type), driver_type_to_str(driver_type), driver_name,
-            path);
+            path, status::code_to_str(code));
 
-    return NULL;
+    return code;
 }
 
 } // namespace sndio
