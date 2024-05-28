@@ -13,7 +13,7 @@
 #include "roc_audio/pcm_mapper.h"
 #include "roc_core/log.h"
 #include "roc_core/macro_helpers.h"
-#include "roc_core/print_buffer.h"
+#include "roc_core/print_memory.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
@@ -54,10 +54,10 @@ template <class T> void report(const T* expected, const T* actual, size_t n_item
     printf("\n");
 
     printf("expected:\n");
-    core::print_buffer(expected, n_items);
+    core::print_memory(expected, n_items);
 
     printf("actual:\n");
-    core::print_buffer(actual, n_items);
+    core::print_memory(actual, n_items);
 }
 
 template <class T> void compare(const T* expected, const T* actual, size_t n_items) {

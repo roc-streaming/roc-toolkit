@@ -11,7 +11,6 @@
 #include "roc_address/socket_addr.h"
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/heap_arena.h"
-#include "roc_core/print_buffer.h"
 #include "roc_core/slab_pool.h"
 #include "roc_core/time.h"
 #include "roc_netio/network_loop.h"

@@ -13,7 +13,7 @@
 #define ROC_CORE_SLICE_H_
 
 #include "roc_core/buffer.h"
-#include "roc_core/print_buffer.h"
+#include "roc_core/print_memory.h"
 #include "roc_core/shared_ptr.h"
 
 namespace roc {
@@ -179,10 +179,10 @@ public:
     //! Print slice to stderr.
     void print() const {
         if (buffer_) {
-            core::print_buffer_slice(data_, size_, (T*)buffer_->data(),
+            core::print_memory_slice(data_, size_, (T*)buffer_->data(),
                                      buffer_->size() / sizeof(T));
         } else {
-            core::print_buffer_slice(data_, size_, NULL, 0);
+            core::print_memory_slice(data_, size_, NULL, 0);
         }
     }
 

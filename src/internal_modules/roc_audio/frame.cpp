@@ -8,7 +8,7 @@
 
 #include "roc_audio/frame.h"
 #include "roc_core/panic.h"
-#include "roc_core/print_buffer.h"
+#include "roc_core/print_memory.h"
 #include "roc_core/printer.h"
 
 namespace roc {
@@ -122,9 +122,9 @@ void Frame::print() const {
              (long long)capture_timestamp_);
 
     if (flags_ & FlagNotRaw) {
-        core::print_buffer(bytes(), num_bytes());
+        core::print_memory(bytes(), num_bytes());
     } else {
-        core::print_buffer(raw_samples(), num_raw_samples());
+        core::print_memory(raw_samples(), num_raw_samples());
     }
 }
 

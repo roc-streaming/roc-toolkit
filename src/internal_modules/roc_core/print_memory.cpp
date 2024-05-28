@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/print_buffer.h"
+#include "roc_core/print_memory.h"
 #include "roc_core/printer.h"
 
 namespace roc {
@@ -157,7 +157,7 @@ void print_impl_t(Printer& p, const T* data, size_t size, size_t from, size_t to
     }
 }
 
-template <class T> void print_buffer_t(const T* data, size_t size) {
+template <class T> void print_memory_t(const T* data, size_t size) {
     Printer p;
 
     p.writef("@ buffer: type=%s size=%lu\n", type_to_str<T>(), (unsigned long)size);
@@ -166,7 +166,7 @@ template <class T> void print_buffer_t(const T* data, size_t size) {
 }
 
 template <class T>
-void print_buffer_slice_t(const T* inner,
+void print_memory_slice_t(const T* inner,
                           size_t inner_size,
                           const T* outer,
                           size_t outer_size) {
@@ -185,114 +185,114 @@ void print_buffer_slice_t(const T* inner,
 
 } // namespace
 
-void print_buffer(const uint8_t* data, size_t size) {
-    print_buffer_t(data, size);
+void print_memory(const uint8_t* data, size_t size) {
+    print_memory_t(data, size);
 }
 
-void print_buffer(const uint16_t* data, size_t size) {
-    print_buffer_t(data, size);
+void print_memory(const uint16_t* data, size_t size) {
+    print_memory_t(data, size);
 }
 
-void print_buffer(const uint32_t* data, size_t size) {
-    print_buffer_t(data, size);
+void print_memory(const uint32_t* data, size_t size) {
+    print_memory_t(data, size);
 }
 
-void print_buffer(const uint64_t* data, size_t size) {
-    print_buffer_t(data, size);
+void print_memory(const uint64_t* data, size_t size) {
+    print_memory_t(data, size);
 }
 
-void print_buffer(const int8_t* data, size_t size) {
-    print_buffer_t(data, size);
+void print_memory(const int8_t* data, size_t size) {
+    print_memory_t(data, size);
 }
 
-void print_buffer(const int16_t* data, size_t size) {
-    print_buffer_t(data, size);
+void print_memory(const int16_t* data, size_t size) {
+    print_memory_t(data, size);
 }
 
-void print_buffer(const int32_t* data, size_t size) {
-    print_buffer_t(data, size);
+void print_memory(const int32_t* data, size_t size) {
+    print_memory_t(data, size);
 }
 
-void print_buffer(const int64_t* data, size_t size) {
-    print_buffer_t(data, size);
+void print_memory(const int64_t* data, size_t size) {
+    print_memory_t(data, size);
 }
 
-void print_buffer(const float* data, size_t size) {
-    print_buffer_t(data, size);
+void print_memory(const float* data, size_t size) {
+    print_memory_t(data, size);
 }
 
-void print_buffer(const double* data, size_t size) {
-    print_buffer_t(data, size);
+void print_memory(const double* data, size_t size) {
+    print_memory_t(data, size);
 }
 
-void print_buffer_slice(const uint8_t* inner,
+void print_memory_slice(const uint8_t* inner,
                         size_t inner_size,
                         const uint8_t* outer,
                         size_t outer_size) {
-    print_buffer_slice_t(inner, inner_size, outer, outer_size);
+    print_memory_slice_t(inner, inner_size, outer, outer_size);
 }
 
-void print_buffer_slice(const uint16_t* inner,
+void print_memory_slice(const uint16_t* inner,
                         size_t inner_size,
                         const uint16_t* outer,
                         size_t outer_size) {
-    print_buffer_slice_t(inner, inner_size, outer, outer_size);
+    print_memory_slice_t(inner, inner_size, outer, outer_size);
 }
 
-void print_buffer_slice(const uint32_t* inner,
+void print_memory_slice(const uint32_t* inner,
                         size_t inner_size,
                         const uint32_t* outer,
                         size_t outer_size) {
-    print_buffer_slice_t(inner, inner_size, outer, outer_size);
+    print_memory_slice_t(inner, inner_size, outer, outer_size);
 }
 
-void print_buffer_slice(const uint64_t* inner,
+void print_memory_slice(const uint64_t* inner,
                         size_t inner_size,
                         const uint64_t* outer,
                         size_t outer_size) {
-    print_buffer_slice_t(inner, inner_size, outer, outer_size);
+    print_memory_slice_t(inner, inner_size, outer, outer_size);
 }
 
-void print_buffer_slice(const int8_t* inner,
+void print_memory_slice(const int8_t* inner,
                         size_t inner_size,
                         const int8_t* outer,
                         size_t outer_size) {
-    print_buffer_slice_t(inner, inner_size, outer, outer_size);
+    print_memory_slice_t(inner, inner_size, outer, outer_size);
 }
 
-void print_buffer_slice(const int16_t* inner,
+void print_memory_slice(const int16_t* inner,
                         size_t inner_size,
                         const int16_t* outer,
                         size_t outer_size) {
-    print_buffer_slice_t(inner, inner_size, outer, outer_size);
+    print_memory_slice_t(inner, inner_size, outer, outer_size);
 }
 
-void print_buffer_slice(const int32_t* inner,
+void print_memory_slice(const int32_t* inner,
                         size_t inner_size,
                         const int32_t* outer,
                         size_t outer_size) {
-    print_buffer_slice_t(inner, inner_size, outer, outer_size);
+    print_memory_slice_t(inner, inner_size, outer, outer_size);
 }
 
-void print_buffer_slice(const int64_t* inner,
+void print_memory_slice(const int64_t* inner,
                         size_t inner_size,
                         const int64_t* outer,
                         size_t outer_size) {
-    print_buffer_slice_t(inner, inner_size, outer, outer_size);
+    print_memory_slice_t(inner, inner_size, outer, outer_size);
 }
 
-void print_buffer_slice(const float* inner,
+void print_memory_slice(const float* inner,
                         size_t inner_size,
                         const float* outer,
                         size_t outer_size) {
-    print_buffer_slice_t(inner, inner_size, outer, outer_size);
+    print_memory_slice_t(inner, inner_size, outer, outer_size);
 }
 
-void print_buffer_slice(const double* inner,
+void print_memory_slice(const double* inner,
                         size_t inner_size,
                         const double* outer,
                         size_t outer_size) {
-    print_buffer_slice_t(inner, inner_size, outer, outer_size);
+    print_memory_slice_t(inner, inner_size, outer, outer_size);
 }
 
 } // namespace core

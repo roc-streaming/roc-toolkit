@@ -8,7 +8,7 @@
 
 #include "roc_packet/print_packet.h"
 #include "roc_address/socket_addr_to_str.h"
-#include "roc_core/print_buffer.h"
+#include "roc_core/print_memory.h"
 #include "roc_core/printer.h"
 #include "roc_packet/fec_scheme_to_str.h"
 #include "roc_packet/packet.h"
@@ -40,7 +40,7 @@ void print_packet(const Packet& pkt, int flags) {
             (unsigned long)pkt.rtp()->payload.size());
 
         if ((flags & PrintPayload) && pkt.rtp()->payload) {
-            core::print_buffer(pkt.rtp()->payload.data(), pkt.rtp()->payload.size());
+            core::print_memory(pkt.rtp()->payload.data(), pkt.rtp()->payload.size());
         }
     }
 
@@ -54,7 +54,7 @@ void print_packet(const Packet& pkt, int flags) {
                  (unsigned long)pkt.fec()->payload.size());
 
         if ((flags & PrintPayload) && pkt.fec()->payload) {
-            core::print_buffer(pkt.fec()->payload.data(), pkt.fec()->payload.size());
+            core::print_memory(pkt.fec()->payload.data(), pkt.fec()->payload.size());
         }
     }
 
