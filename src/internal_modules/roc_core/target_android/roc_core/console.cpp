@@ -14,14 +14,11 @@
 namespace roc {
 namespace core {
 
-Console::Console() {
-}
-
-bool Console::colors_supported() {
+bool console_supports_colors() {
     return false;
 }
 
-void Console::println(const char* format, ...) {
+void console_println(const char* format, ...) {
     va_list args;
     va_start(args, format);
 
@@ -30,7 +27,7 @@ void Console::println(const char* format, ...) {
     va_end(args);
 }
 
-void Console::println_color(Color color, const char* format, ...) {
+void console_println(Color color, const char* format, ...) {
     va_list args;
     va_start(args, format);
 

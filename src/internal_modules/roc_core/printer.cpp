@@ -16,14 +16,14 @@ namespace core {
 
 namespace {
 
-void println_console(const char* buf, size_t bufsz) {
-    Console::instance().println("%.*s", (int)bufsz, buf);
+void default_println_func(const char* buf, size_t bufsz) {
+    console_println("%.*s", (int)bufsz, buf);
 }
 
 } // namespace
 
 Printer::Printer(PrintlnFunc println_func)
-    : println_(println_func ? println_func : &println_console)
+    : println_(println_func ? println_func : default_println_func)
     , bufsz_(0) {
 }
 

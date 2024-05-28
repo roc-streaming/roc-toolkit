@@ -6,11 +6,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include <pthread.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
+#include "roc_core/atomic_ops.h"
 #include "roc_core/console.h"
 
 // ANSI Color Codes.
@@ -33,6 +36,12 @@ namespace roc {
 namespace core {
 
 namespace {
+
+// Serializes console operations.
+pthread_mutex_t console_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+// -1 means unknown, 0 means no support, +1 means have support.
+int console_colors = -1;
 
 bool env_has_no_color() {
     const char* no_color = getenv("NO_COLOR");
@@ -99,16 +108,23 @@ const char* color_code(Color color) {
 
 } // namespace
 
-Console::Console()
-    : colors_supported_(detect_color_support()) {
+bool console_supports_colors() {
+    int colors = AtomicOps::load_seq_cst(console_colors);
+
+    if (colors == -1) {
+        pthread_mutex_lock(&console_mutex);
+
+        colors = detect_color_support() ? 1 : 0;
+        AtomicOps::store_seq_cst(console_colors, colors);
+
+        pthread_mutex_unlock(&console_mutex);
+    }
+
+    return colors;
 }
 
-bool Console::colors_supported() {
-    return colors_supported_;
-}
-
-void Console::println(const char* format, ...) {
-    Mutex::Lock lock(mutex_);
+void console_println(const char* format, ...) {
+    pthread_mutex_lock(&console_mutex);
 
     va_list args;
     va_start(args, format);
@@ -117,12 +133,16 @@ void Console::println(const char* format, ...) {
 
     fprintf(stderr, "\n");
     fflush(stderr);
+
+    pthread_mutex_unlock(&console_mutex);
 }
 
-void Console::println_color(Color color, const char* format, ...) {
-    Mutex::Lock lock(mutex_);
+void console_println(Color color, const char* format, ...) {
+    const bool use_colors = (color != Color_None) && console_supports_colors();
 
-    if (colors_supported_ && color != Color_None) {
+    pthread_mutex_lock(&console_mutex);
+
+    if (use_colors) {
         fprintf(stderr, "%s", color_code(color));
     }
 
@@ -131,12 +151,14 @@ void Console::println_color(Color color, const char* format, ...) {
     vfprintf(stderr, format, args);
     va_end(args);
 
-    if (colors_supported_ && color != Color_None) {
+    if (use_colors) {
         fprintf(stderr, "%s", COLOR_RESET);
     }
 
     fprintf(stderr, "\n");
     fflush(stderr);
+
+    pthread_mutex_unlock(&console_mutex);
 }
 
 } // namespace core
