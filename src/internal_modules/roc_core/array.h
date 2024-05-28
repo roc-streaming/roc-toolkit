@@ -77,22 +77,20 @@ public:
     //! @remarks
     //!  Returns null if the array is empty.
     T* data() {
-        if (size_) {
-            return data_;
-        } else {
-            return NULL;
+        if (size_ == 0) {
+            roc_panic("array: is empty");
         }
+        return data_;
     }
 
     //! Get pointer to first element.
     //! @remarks
     //!  Returns null if the array is empty.
     const T* data() const {
-        if (size_) {
-            return data_;
-        } else {
-            return NULL;
+        if (size_ == 0) {
+            roc_panic("array: is empty");
         }
+        return data_;
     }
 
     //! Get element at given position.
@@ -119,7 +117,7 @@ public:
 
     //! Get reference to first element.
     T& front() {
-        if (0 == size_) {
+        if (size_ == 0) {
             roc_panic("array: is empty");
         }
         return data_[0];
@@ -127,7 +125,7 @@ public:
 
     //! Get const reference to first element.
     const T& front() const {
-        if (0 == size_) {
+        if (size_ == 0) {
             roc_panic("array: is empty");
         }
         return data_[0];
@@ -135,7 +133,7 @@ public:
 
     //! Get reference to last element.
     T& back() {
-        if (0 == size_) {
+        if (size_ == 0) {
             roc_panic("array: is empty");
         }
         return data_[size_ - 1];
@@ -143,7 +141,7 @@ public:
 
     //! Get const reference to last element.
     const T& back() const {
-        if (0 == size_) {
+        if (size_ == 0) {
             roc_panic("array: is empty");
         }
         return data_[size_ - 1];
@@ -155,7 +153,7 @@ public:
     //! @note
     //!  has amortized O(1) complexity, O(n) in worst case.
     ROC_ATTR_NODISCARD bool push_back(const T& value) {
-        if (!grow_exp(size() + 1)) {
+        if (!grow_exp(size_ + 1)) {
             return false;
         }
 

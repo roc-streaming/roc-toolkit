@@ -201,8 +201,6 @@ TEST(array, pop_back) {
 TEST(array, data_pointer) {
     Array<Object, EmbeddedCap> array(arena);
 
-    CHECK(array.data() == NULL);
-
     CHECK(array.resize(NumObjects));
 
     CHECK(array.data() != NULL);

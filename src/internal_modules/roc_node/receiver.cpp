@@ -298,7 +298,8 @@ bool Receiver::get_metrics(slot_index_t slot_index,
     }
 
     pipeline::ReceiverLoop::Tasks::QuerySlot task(
-        slot->handle, slot_metrics_, party_metrics_.data(), party_metrics_size);
+        slot->handle, slot_metrics_,
+        party_metrics_.size() != 0 ? party_metrics_.data() : NULL, party_metrics_size);
     if (!pipeline_.schedule_and_wait(task)) {
         roc_log(LogError,
                 "receiver node:"
