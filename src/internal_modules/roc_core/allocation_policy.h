@@ -88,12 +88,12 @@ private:
     DestroyFunc destroy_func_;
 };
 
-//! Allocation policy for objects that does not have automatical deallocation.
+//! Allocation policy for objects that does not have automatic deallocation.
 class ManualAllocation {
 public:
     //! No-op.
     //! When SharedPtr or ScopedPtr "destroys" object, nothing happens.
-    //! The user is reponsible for destroying it manually.
+    //! The user is responsible for destroying it manually.
     template <class T> void destroy(T&) {
     }
 };

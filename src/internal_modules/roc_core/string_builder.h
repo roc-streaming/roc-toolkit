@@ -24,7 +24,7 @@ namespace core {
 //! String builder.
 //!
 //! Allows to incrementally build a string. Doesn't own the string itself, but
-//! insetead holds a reference to external fixed-size or dynamic buffer.
+//! instead holds a reference to external fixed-size or dynamic buffer.
 //
 //! Supports "dry run" mode when no actual writing happens. This can be used
 //! to calculate the required buffer size before writing.
