@@ -71,7 +71,7 @@ public:
     ROC_ATTR_NODISCARD bool grow(size_t desired_len);
 
     //! Grow capacity to be able to hold desired number of characters.
-    //! Capacity is increased exponentionally.
+    //! Capacity is increased exponentially.
     //! @returns
     //!  false if allocation failed.
     ROC_ATTR_NODISCARD bool grow_exp(size_t desired_len);

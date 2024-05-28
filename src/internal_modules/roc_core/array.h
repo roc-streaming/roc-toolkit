@@ -58,7 +58,6 @@ public:
     }
 
     //! Get maximum number of elements that can be added without reallocation.
-    //! If array has arena, capacity can be grown.
     size_t capacity() const {
         return capacity_;
     }
