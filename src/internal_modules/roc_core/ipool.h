@@ -58,7 +58,8 @@ public:
 //! Placement new for core::IPool.
 //! @note
 //!  nothrow forces compiler to check for NULL return value before calling ctor.
-inline void* operator new(size_t, roc::core::IPool& pool) throw() {
+inline void* operator new(size_t size, roc::core::IPool& pool) throw() {
+    roc_panic_if(pool.object_size() < size);
     return pool.allocate();
 }
 
