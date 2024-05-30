@@ -59,7 +59,7 @@ public:
     packet::stream_timestamp_t next_timestamp() const;
 
 private:
-    struct FrameInfo {
+    struct FrameStats {
         // Number of samples decoded from packets into the frame.
         size_t n_decoded_samples;
 
@@ -72,7 +72,7 @@ private:
         // This frame first sample timestamp.
         core::nanoseconds_t capture_ts;
 
-        FrameInfo()
+        FrameStats()
             : n_decoded_samples(0)
             , n_filled_samples(0)
             , n_dropped_packets(0)
@@ -80,15 +80,16 @@ private:
         }
     };
 
-    sample_t* read_samples_(sample_t* buff_ptr, sample_t* buff_end, FrameInfo& info);
+    sample_t* read_samples_(sample_t* buff_ptr, sample_t* buff_end, FrameStats& stats);
 
     sample_t* read_packet_samples_(sample_t* buff_ptr, sample_t* buff_end);
     sample_t* read_missing_samples_(sample_t* buff_ptr, sample_t* buff_end);
 
-    void update_packet_(FrameInfo& info);
-    packet::PacketPtr read_packet_();
+    status::StatusCode update_packet_(FrameStats& frame_stats);
+    status::StatusCode fetch_packet_();
+    bool start_packet_();
 
-    void set_frame_info_(Frame& frame, const FrameInfo& info);
+    void commit_frame_(Frame& frame, const FrameStats& stats);
 
     void report_stats_();
 
@@ -104,9 +105,12 @@ private:
     core::nanoseconds_t next_capture_ts_;
     bool valid_capture_ts_;
 
-    packet::stream_timestamp_t zero_samples_;
-    packet::stream_timestamp_t missing_samples_;
-    packet::stream_timestamp_t packet_samples_;
+    size_t padding_samples_;
+    size_t missing_samples_;
+    size_t decoded_samples_;
+
+    size_t fetched_packets_;
+    size_t dropped_packets_;
 
     core::RateLimiter rate_limiter_;
 
