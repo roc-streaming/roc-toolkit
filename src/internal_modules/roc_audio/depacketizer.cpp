@@ -103,8 +103,9 @@ status::StatusCode Depacketizer::read(Frame& frame,
 
     while (buff_ptr < buff_end) {
         const status::StatusCode code = update_packet_(frame_stats);
-        // TODO(gh-183): forward status from packet reader
-        (void)code;
+        if (code != status::StatusOK && code != status::StatusDrain) {
+            return code;
+        }
 
         buff_ptr = read_samples_(buff_ptr, buff_end, frame_stats);
     }
