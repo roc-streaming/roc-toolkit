@@ -7,7 +7,7 @@
  */
 
 //! @file roc_core/mov_stats.h
-//! @brief Profiler.
+//! @brief Rolling window moving average and variance.
 
 #ifndef ROC_CORE_MOV_STATS_H_
 #define ROC_CORE_MOV_STATS_H_
@@ -15,7 +15,7 @@
 #include "roc_core/array.h"
 #include "roc_core/iarena.h"
 #include "roc_core/panic.h"
-#include "roc_core/queue.h"
+#include "roc_core/ring_queue.h"
 
 namespace roc {
 namespace core {
@@ -26,8 +26,6 @@ namespace core {
 //! described in https://www.dsprelated.com/showthread/comp.dsp/97276-1.php
 //!
 //! @tparam T defines a sample type.
-//!
-//! @note T should be trivially copyable.
 template <typename T> class MovStats {
 public:
     //! Initialize.
@@ -45,9 +43,14 @@ public:
         , queue_max_(arena, win_len + 1)
         , curr_max_(T(0))
         , queue_min_(arena, win_len + 1)
-        , curr_min_(T(0)) {
+        , curr_min_(T(0))
+        , valid_(false) {
         if (win_len == 0) {
             roc_panic("mov stats: window length must be greater than 0");
+        }
+
+        if (!queue_max_.is_valid() || !queue_min_.is_valid()) {
+            return;
         }
 
         if (!buffer_.resize(win_len)) {
@@ -56,8 +59,13 @@ public:
         if (!buffer2_.resize(win_len)) {
             return;
         }
-        memset(buffer_.data(), 0, sizeof(T) * buffer_.size());
-        memset(buffer2_.data(), 0, sizeof(T) * buffer2_.size());
+
+        valid_ = true;
+    }
+
+    //! Check that initial allocation succeeded.
+    bool is_valid() const {
+        return valid_;
     }
 
     //! Shift rolling window by one sample x.
@@ -148,11 +156,6 @@ public:
         return true;
     }
 
-    //! Check that initial allocation succeeded.
-    bool is_valid() const {
-        return buffer_.data() && buffer2_.data();
-    }
-
 private:
     //! Keeping a sliding max by using a sorted deque.
     //! @remarks
@@ -216,10 +219,12 @@ private:
     bool full_;
     bool first_;
 
-    Queue<T> queue_max_;
+    RingQueue<T> queue_max_;
     T curr_max_;
-    Queue<T> queue_min_;
+    RingQueue<T> queue_min_;
     T curr_min_;
+
+    bool valid_;
 };
 
 } // namespace core
