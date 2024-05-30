@@ -29,8 +29,8 @@ public:
     //! Check if the object was successfully constructed.
     virtual status::StatusCode init_status() const = 0;
 
-    //! Get encoded frame size in bytes for given number of samples per channel.
-    virtual size_t encoded_byte_count(size_t num_samples) const = 0;
+    //! Get encoded frame size in bytes for given number of samples (per channel).
+    virtual size_t encoded_byte_count(size_t n_samples) const = 0;
 
     //! Start encoding a new frame.
     //!
@@ -43,7 +43,7 @@ public:
     //!
     //! @b Parameters
     //!  - @p samples - samples to be encoded
-    //!  - @p n_samples - number of samples to be encoded, for all channel
+    //!  - @p n_samples - number of samples to be encoded (per channel)
     //!
     //! @remarks
     //!  Encodes samples and writes to the current frame.

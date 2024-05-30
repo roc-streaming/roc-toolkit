@@ -27,14 +27,13 @@ namespace audio {
 namespace {
 
 enum {
-    SamplesPerPacket = 200,
+    SamplesPerPacket = 200, // per channel
     SampleRate = 100,
 
     NumCh = 2,
     ChMask = 0x3,
 
     MaxBufSize = 4000,
-    SamplesSize = SamplesPerPacket * NumCh
 };
 
 const SampleSpec frame_spec(
@@ -43,7 +42,8 @@ const SampleSpec frame_spec(
 const SampleSpec packet_spec(
     SampleRate, PcmFormat_SInt16_Be, ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
-const core::nanoseconds_t NsPerPacket = packet_spec.samples_overall_2_ns(SamplesSize);
+const core::nanoseconds_t NsPerPacket =
+    packet_spec.samples_per_chan_2_ns(SamplesPerPacket);
 const core::nanoseconds_t Now = 1691499037871419405;
 
 core::HeapArena arena;
@@ -70,8 +70,8 @@ packet::PacketPtr new_packet(IFrameEncoder& encoder,
     pp->rtp()->duration = SamplesPerPacket;
     pp->rtp()->capture_timestamp = capt_ts;
 
-    sample_t samples[SamplesSize];
-    for (size_t n = 0; n < SamplesSize; n++) {
+    sample_t samples[SamplesPerPacket * NumCh];
+    for (size_t n = 0; n < SamplesPerPacket * NumCh; n++) {
         samples[n] = value;
     }
 
@@ -669,12 +669,13 @@ TEST(depacketizer, timestamp_fract_frame_per_packet) {
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
-    core::nanoseconds_t capt_ts = Now + frame_spec.samples_overall_2_ns(SamplesPerPacket);
+    core::nanoseconds_t capt_ts =
+        Now + frame_spec.samples_per_chan_2_ns(SamplesPerPacket);
     // 1st packet in the frame has 0 capture ts, and the next
     write_packet(queue, new_packet(encoder, StartTimestamp, 0.1f, 0));
-    write_packet(
-        queue,
-        new_packet(encoder, StartTimestamp + SamplesPerPacket / NumCh, 0.1f, capt_ts));
+    write_packet(queue,
+                 new_packet(encoder, StartTimestamp + SamplesPerPacket, 0.1f, capt_ts));
+
     expect_output(dp, SamplesPerFrame, 0.1f, Now);
 }
 
@@ -703,7 +704,7 @@ TEST(depacketizer, timestamp_small_non_zero_cts) {
     for (size_t n = 1; n < PacketsPerFrame; n++) {
         write_packet(queue, new_packet(encoder, stream_ts, 0.1f, capt_ts));
         stream_ts += SamplesPerPacket;
-        capt_ts += frame_spec.samples_overall_2_ns(SamplesPerPacket);
+        capt_ts += frame_spec.samples_per_chan_2_ns(SamplesPerPacket);
     }
 
     // remember cts that should be used for second frame
@@ -713,7 +714,7 @@ TEST(depacketizer, timestamp_small_non_zero_cts) {
     for (size_t n = 0; n < PacketsPerFrame; n++) {
         write_packet(queue, new_packet(encoder, stream_ts, 0.2f, capt_ts));
         stream_ts += SamplesPerPacket;
-        capt_ts += frame_spec.samples_overall_2_ns(SamplesPerPacket);
+        capt_ts += frame_spec.samples_per_chan_2_ns(SamplesPerPacket);
     }
 
     // first frame has zero cts

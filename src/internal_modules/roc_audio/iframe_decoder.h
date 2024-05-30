@@ -77,7 +77,7 @@ public:
     //!
     //! @b Parameters
     //!  - @p samples - buffer to write decoded samples to
-    //!  - @p n_samples - number of samples to be decoded per channel
+    //!  - @p n_samples - number of samples to be decoded (per channel)
     //!
     //! @remarks
     //!  Decodes samples from the current frame and writes them to the provided buffer.
