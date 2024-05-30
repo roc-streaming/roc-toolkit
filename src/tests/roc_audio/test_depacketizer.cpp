@@ -33,7 +33,7 @@ enum {
     NumCh = 2,
     ChMask = 0x3,
 
-    MaxBufSize = 4000,
+    MaxBufSize = 16000,
 };
 
 const SampleSpec frame_spec(
@@ -48,7 +48,7 @@ const core::nanoseconds_t Now = 1691499037871419405;
 
 core::HeapArena arena;
 packet::PacketFactory packet_factory(arena, MaxBufSize);
-FrameFactory frame_factory(arena, MaxBufSize * sizeof(sample_t));
+FrameFactory frame_factory(arena, MaxBufSize);
 
 rtp::Composer rtp_composer(NULL);
 
@@ -117,6 +117,30 @@ void expect_output(Depacketizer& depacketizer,
 
     expect_values(frame->raw_samples(), samples_per_chan * frame_spec.num_channels(),
                   value);
+}
+
+void expect_partial(Depacketizer& depacketizer,
+                    size_t requested_samples_per_chan,
+                    size_t expected_samples_per_chan,
+                    sample_t value,
+                    core::nanoseconds_t capt_ts) {
+    FramePtr frame = frame_factory.allocate_frame_no_buffer();
+    CHECK(frame);
+
+    LONGS_EQUAL(status::StatusPart,
+                depacketizer.read(
+                    *frame, (packet::stream_timestamp_t)requested_samples_per_chan));
+
+    CHECK(frame->is_raw());
+
+    UNSIGNED_LONGS_EQUAL(expected_samples_per_chan, frame->duration());
+    UNSIGNED_LONGS_EQUAL(expected_samples_per_chan * frame_spec.num_channels(),
+                         frame->num_raw_samples());
+
+    CHECK(core::ns_equal_delta(frame->capture_timestamp(), capt_ts, core::Microsecond));
+
+    expect_values(frame->raw_samples(),
+                  expected_samples_per_chan * frame_spec.num_channels(), value);
 }
 
 void expect_flags(Depacketizer& depacketizer,
@@ -726,6 +750,39 @@ TEST(depacketizer, timestamp_small_non_zero_cts) {
     expect_output(dp, SamplesPerPacket * PacketsPerFrame, 0.2f, second_frame_capt_ts);
 }
 
+// Request big frame.
+// Duration is capped so that both output frame could fit max size.
+TEST(depacketizer, partial_on_big_read) {
+    enum {
+        // maximum # of samples that can fit one frame
+        MaxFrameSamples = MaxBufSize / sizeof(sample_t) / NumCh,
+        // # of frames to generate
+        NumFrames = 5,
+        // # of packets to fill given # of frames
+        NumPackets = (MaxFrameSamples / SamplesPerPacket) * NumFrames
+    };
+
+    PcmEncoder encoder(packet_spec);
+    PcmDecoder decoder(packet_spec);
+
+    packet::Queue queue;
+    Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
+
+    core::nanoseconds_t pkt_cts = Now;
+    for (packet::stream_timestamp_t n = 0; n < NumPackets; n++) {
+        write_packet(queue, new_packet(encoder, n * SamplesPerPacket, 0.11f, pkt_cts));
+        pkt_cts += frame_spec.samples_per_chan_2_ns(SamplesPerPacket);
+    }
+
+    core::nanoseconds_t frm_cts = Now;
+    for (int n = 0; n < 1; n++) {
+        expect_partial(dp, MaxFrameSamples * NumFrames, MaxFrameSamples, 0.11f, frm_cts);
+        frm_cts += frame_spec.samples_per_chan_2_ns(MaxFrameSamples);
+    }
+}
+
+// Forward error from packet reader.
 TEST(depacketizer, forward_error) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
@@ -751,6 +808,51 @@ TEST(depacketizer, forward_error) {
     // try to read more
     // get error because depacketizer tries to read packet
     expect_error(dp, SamplesPerPacket, status::StatusAbort);
+}
+
+// Attach to frame pre-allocated buffers of different sizes before reading.
+TEST(depacketizer, preallocated_buffer) {
+    enum { FrameSz = MaxBufSize / 10 };
+
+    const size_t buffer_list[] = {
+        FrameSz * 50, // big size (reader should use it)
+        FrameSz,      // exact size (reader should use it)
+        FrameSz - 1,  // small size (reader should replace buffer)
+        0,            // no buffer (reader should allocate buffer)
+    };
+
+    PcmEncoder encoder(packet_spec);
+    PcmDecoder decoder(packet_spec);
+
+    for (size_t bn = 0; bn < ROC_ARRAY_SIZE(buffer_list); bn++) {
+        const size_t orig_buf_sz = buffer_list[bn];
+
+        packet::Queue queue;
+        StatusReader reader(queue);
+        Depacketizer dp(reader, decoder, frame_factory, frame_spec, false);
+        LONGS_EQUAL(status::StatusOK, dp.init_status());
+
+        FrameFactory mock_factory(arena, orig_buf_sz * sizeof(sample_t));
+        FramePtr frame = orig_buf_sz > 0 ? mock_factory.allocate_frame(0)
+                                         : mock_factory.allocate_frame_no_buffer();
+
+        core::Slice<uint8_t> orig_buf = frame->buffer();
+
+        LONGS_EQUAL(status::StatusOK,
+                    dp.read(*frame, FrameSz / frame_spec.num_channels()));
+
+        CHECK(frame->buffer());
+
+        if (orig_buf_sz >= FrameSz) {
+            CHECK(frame->buffer() == orig_buf);
+        } else {
+            CHECK(frame->buffer() != orig_buf);
+        }
+
+        LONGS_EQUAL(FrameSz / frame_spec.num_channels(), frame->duration());
+        LONGS_EQUAL(FrameSz, frame->num_raw_samples());
+        LONGS_EQUAL(FrameSz * sizeof(sample_t), frame->num_bytes());
+    }
 }
 
 } // namespace audio
