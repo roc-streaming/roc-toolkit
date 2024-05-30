@@ -35,7 +35,7 @@ packet::PacketPtr new_packet(packet::seqnum_t sn) {
     packet->add_flags(packet::Packet::FlagRTP | packet::Packet::FlagUDP);
     packet->rtp()->payload_type = PayloadType_L16_Stereo;
     packet->rtp()->seqnum = sn;
-    packet->udp()->queue_ts = 666;
+    packet->udp()->queue_timestamp = 666;
 
     return packet;
 }

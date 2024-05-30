@@ -14,7 +14,7 @@ namespace packet {
 
 UDP::UDP()
     : receive_timestamp(0)
-    , queue_ts(0) {
+    , queue_timestamp(0) {
     memset(&request, 0, sizeof(request));
 }
 

@@ -56,7 +56,7 @@ status::StatusCode Router::write(const PacketPtr& packet) {
     if (Route* route = find_route_(packet->flags())) {
         if (allow_route_(*route, *packet)) {
             if (packet->udp()) {
-                packet->udp()->queue_ts = core::timestamp(core::ClockUnix);
+                packet->udp()->queue_timestamp = core::timestamp(core::ClockUnix);
             }
 
             return route->writer->write(packet);
