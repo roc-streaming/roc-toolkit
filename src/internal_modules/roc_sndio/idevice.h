@@ -46,14 +46,14 @@ public:
 
     //! Resume device after pause.
     //! @returns
-    //!  false if an error occured.
+    //!  false if an error occurred.
     virtual bool resume() = 0;
 
     //! Restart device.
     //! @remarks
     //!  If device was paused, it's automatically resumed.
     //! @returns
-    //!  false if an error occured.
+    //!  false if an error occurred.
     virtual bool restart() = 0;
 
     //! Get sample specification of the device.
