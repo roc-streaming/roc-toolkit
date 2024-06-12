@@ -5,8 +5,8 @@ Basic features
 ==============
 
 - |:ballot_box_with_check:| Real-time streaming with guaranteed latency
-- |:ballot_box_with_check:| Clock drift compensation driven by receiver
-- |:ballot_box_with_check:| Clock drift compensation driven by sender
+- |:ballot_box_with_check:| Latency tuning and clock drift compensation driven by receiver
+- |:ballot_box_with_check:| Latency tuning and clock drift compensation driven by sender
 - |:ballot_box_with_check:| Packet loss recovery using FEC
 - |:ballot_box_with_check:| Session multiplexing
 - |:ballot_box_with_check:| Stream breakage detection
@@ -45,6 +45,7 @@ Extensibility
 - |:white_large_square:| Provide custom allocator
 - |:ballot_box_with_check:| Register custom payload types
 - |:white_large_square:| Register custom codecs
+- |:white_large_square:| Register custom PLC
 - |:white_large_square:| Register custom mixer
 
 Protocols
@@ -63,12 +64,13 @@ Codecs
 ======
 
 - |:ballot_box_with_check:| PCM
-- |:white_large_square:| Opus
-- |:white_large_square:| Vorbis
 - |:white_large_square:| FLAC
+- |:white_large_square:| Vorbis
+- |:white_large_square:| Opus
 - |:ballot_box_with_check:| Reed-Solomon FEC
 - |:ballot_box_with_check:| LDPC-Staircase FEC
 - |:white_large_square:| RaptorQ FEC
+- |:white_large_square:| Convolutional FEC
 
 Audio backends
 ==============
@@ -82,8 +84,8 @@ Audio backends
 - |:white_large_square:| WASAPI (Windows)
 - |:ballot_box_with_check:| SoX (universal)
 - |:white_large_square:| FFmpeg
-- |:white_large_square:| libsndfile
-- |:white_large_square:| WAV
+- |:ballot_box_with_check:| libsndfile
+- |:ballot_box_with_check:| WAV
 
 API
 ===
@@ -91,7 +93,6 @@ API
 - |:ballot_box_with_check:| Single-stream transport API (roc_sender / roc_receiver)
 - |:white_large_square:| Multi-stream transport API (roc_transceiver)
 - |:ballot_box_with_check:| Codec API (roc_sender_encoder / roc_receiver_decoder)
-- |:white_large_square:| Relay API (roc_relay)
 - |:white_large_square:| Discovery API (roc_publisher / roc_explorer)
 
 Tools
@@ -99,7 +100,7 @@ Tools
 
 - |:ballot_box_with_check:| Sender (roc-send)
 - |:ballot_box_with_check:| Receiver (roc-recv)
-- |:white_large_square:| Relay (roc-relay)
+- |:ballot_box_with_check:| Loopback (roc-copy)
 - |:white_large_square:| Daemon (rocd)
 
 Integrations
@@ -107,7 +108,7 @@ Integrations
 
 - |:ballot_box_with_check:| Roc-based transport for PulseAudio (roc-pulse)
 - |:ballot_box_with_check:| Roc-based transport for PipeWire (roc-source, roc-sink)
-- |:white_large_square:| Virtual audio device for macOS (roc-vad)
+- |:ballot_box_with_check:| Virtual audio device for macOS (roc-vad)
 - |:white_large_square:| Virtual audio device for Windows
 
 Bindings
@@ -121,6 +122,7 @@ Portability
 ===========
 
 - |:ballot_box_with_check:| Linux
+- |:ballot_box_with_check:| GNU/Hurd
 - |:ballot_box_with_check:| Other \*nix systems
 - |:ballot_box_with_check:| macOS
 - |:ballot_box_with_check:| Android
