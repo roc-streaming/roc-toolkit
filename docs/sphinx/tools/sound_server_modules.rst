@@ -38,3 +38,14 @@ Module                                                                Descriptio
 ===================================================================== ====================================================================
 
 The idea is similar to Roc PulseAudio modules. Unlike PulseAudio modules, PipeWire modules are not part of Roc, but are provided by PipeWire itself.
+
+macOS virtual device
+====================
+
+`Roc VAD <https://github.com/roc-streaming/roc-vad>`_ implements macOS driver for Virtual Audio Device (VAD).
+
+You can create output device (virtual speakers) that streams all sound to remote peer. Similarly, you can create input device (virtual microphone) that receives sound from remote peers.
+
+Driver can be configured from command-line, or programmatically via gRPC interface, which allows to use it in your own projects.
+
+For further details, please refer to the project documentation.
