@@ -1,7 +1,7 @@
 %undefine _disable_source_fetch
 
 Name:       roc-toolkit
-Version:    0.3.0
+Version:    0.4.0
 Release:    1%{?dist}
 Summary:    Real-time audio streaming over the network
 License:    MPL-2.0 AND CECILL-C AND BSD

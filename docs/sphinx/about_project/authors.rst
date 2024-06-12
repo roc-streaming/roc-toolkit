@@ -90,3 +90,8 @@ Contributors
 * Alyssa Ross <hi@alyssa.is>
 * Arseniy136 <zakhvatkinars@gmail.com>
 * Amandeep Singh <as4456@columbia.edu>
+* Veronika <veronikarovnik@gmail.com>
+* Samuel Thibault <samuel.thibault@ens-lyon.org>
+* James Osborn <https://github.com/JamesOsborn-SE>
+* LinaLinn <lina.cloud@outlook.de>
+* Poussinou <fravincent77@yahoo.fr>

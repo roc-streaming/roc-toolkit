@@ -34,7 +34,7 @@ function find_email() {
     then
         local github_email="$(gh api "/users/$1/events/public" \
             --jq '(.[].payload.commits | select(. != null))[].author.email' \
-            | grep -v users.noreply.github.com \
+            | grep -v noreply \
             | sort -u \
             | head -1)"
 
@@ -47,7 +47,7 @@ function find_email() {
     if [[ ! -z "${2:-}" ]]
     then
         local gitlog_email="$(git log --all --pretty=format:"%an <%ae>" | sort -u | \
-            grep -vF users.noreply.github.com | grep -F "$2" | sed -re 's,.*<(.*)>,\1,')"
+            grep -vF noreply | grep -F "$2" | sed -re 's,.*<(.*)>,\1,')"
 
         if [[ "${gitlog_email}" != "" ]]
         then
@@ -81,7 +81,7 @@ function update_author() {
     contact_name="$(echo "${contact_name}" | sed -re 's,(\S+)\s+(\S+),\u\1 \u\2,g')"
 
     local contact_addr=""
-    if [[ -z "${commit_email}" ]] || echo "${commit_email}" | grep -q users.noreply.github.com
+    if [[ -z "${commit_email}" ]] || echo "${commit_email}" | grep -q noreply
     then
         contact_addr="$(find_email "${github_login}" "${commit_name}")"
     else
