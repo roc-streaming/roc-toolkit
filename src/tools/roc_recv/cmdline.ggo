@@ -35,10 +35,7 @@ section "Options"
     option "io-latency" - "Playback target latency, TIME units"
         string optional
 
-    option "min-latency" - "Minimum allowed latency, TIME units"
-        string optional
-
-    option "max-latency" - "Maximum allowed latency, TIME units"
+    option "latency-tolerance" - "Maximum deviation from target latency, TIME units"
         string optional
 
     option "no-play-timeout" - "No playback timeout, TIME units"

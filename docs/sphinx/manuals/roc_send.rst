@@ -26,8 +26,7 @@ Options
 --reuseaddr                 enable SO_REUSEADDR when binding sockets
 --target-latency=STRING     Target latency, TIME units
 --io-latency=STRING         Recording target latency, TIME units
---min-latency=STRING        Minimum allowed latency, TIME units
---max-latency=STRING        Maximum allowed latency, TIME units
+--latency-tolerance=STRING  Maximum deviation from target latency, TIME units
 --nbsrc=INT                 Number of source packets in FEC block
 --nbrpr=INT                 Number of repair packets in FEC block
 --packet-len=STRING         Outgoing packet length, TIME units

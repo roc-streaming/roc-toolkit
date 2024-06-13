@@ -51,7 +51,6 @@ C API
 
   * replace ``roc_clock_sync_backend`` with ``roc_latency_tuner_backend``
   * replace ``roc_clock_sync_profile`` with ``roc_latency_tuner_profile``
-  * replace ``latency_tolerance`` with ``min_latency`` and ``max_latency``
 
 * rework metrics API (`gh-681 <https://github.com/roc-streaming/roc-toolkit/issues/681>`_)
 
@@ -82,7 +81,6 @@ Command-line tools
 * rework latency configuration:
 
   * rename ``--sess-latency`` to ``--target-latency``
-  * replace ``--latency-tolerance`` with ``--min-latency`` and ``--max-latency``
   * replace ``--clock-backend`` with ``--latency-backend``
   * replace ``--clock-profile`` with ``--latency-profile``
 

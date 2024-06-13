@@ -80,19 +80,13 @@ struct LatencyConfig {
     //!  Negative value is an error.
     core::nanoseconds_t target_latency;
 
-    //! Minimum allowed latency.
+    //! Maximum allowed deviation from target latency.
     //! @remarks
     //!  If the latency goes out of bounds, the session is terminated.
     //! @note
-    //!  If both min_latency and max_latency are zero, defaults are used.
-    core::nanoseconds_t min_latency;
-
-    //! Maximum allowed latency.
-    //! @remarks
-    //!  If the latency goes out of bounds, the session is terminated.
-    //! @note
-    //!  If both min_latency and max_latency are zero, defaults are used.
-    core::nanoseconds_t max_latency;
+    //!  If zero, default value is used if possible.
+    //!  Negative value is an error.
+    core::nanoseconds_t latency_tolerance;
 
     //! Maximum delay since last packet before queue is considered stalling.
     //! @remarks
@@ -125,8 +119,7 @@ struct LatencyConfig {
         : tuner_backend(LatencyTunerBackend_Default)
         , tuner_profile(LatencyTunerProfile_Default)
         , target_latency(0)
-        , min_latency(0)
-        , max_latency(0)
+        , latency_tolerance(0)
         , stale_tolerance(0)
         , scaling_interval(0)
         , scaling_tolerance(0) {

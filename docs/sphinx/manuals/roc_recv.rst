@@ -29,8 +29,7 @@ Options
 --reuseaddr                   enable SO_REUSEADDR when binding sockets
 --target-latency=STRING       Target latency, TIME units
 --io-latency=STRING           Playback target latency, TIME units
---min-latency=STRING          Minimum allowed latency, TIME units
---max-latency=STRING          Maximum allowed latency, TIME units
+--latency-tolerance=STRING    Maximum deviation from target latency, TIME units
 --no-play-timeout=STRING      No playback timeout, TIME units
 --choppy-play-timeout=STRING  Choppy playback timeout, TIME units
 --frame-len=TIME              Duration of the internal frames, TIME units

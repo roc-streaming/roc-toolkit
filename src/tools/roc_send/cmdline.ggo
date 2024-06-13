@@ -26,10 +26,7 @@ section "Options"
     option "io-latency" - "Recording target latency, TIME units"
         string optional
 
-    option "min-latency" - "Minimum allowed latency, TIME units"
-        string optional
-
-    option "max-latency" - "Maximum allowed latency, TIME units"
+    option "latency-tolerance" - "Maximum deviation from target latency, TIME units"
         string optional
 
     option "nbsrc" - "Number of source packets in FEC block"
