@@ -22,10 +22,18 @@ Compilers:
 * GCC (>= 4.4)
 * Clang (>= 3.4)
 
+Libc:
+
+* glibc
+* musl
+* uClibc
+* macOS libSystem
+* Bionic
+
 What is tested
 --------------
 
-The following specific platform configurations are tested on a **regular basis**, partially :doc:`on CI </development/continuous_integration>`, and partially :doc:`on hardware </portability/tested_devices>`.
+The following specific platform configurations are tested on a regular basis, partially :doc:`on CI </development/continuous_integration>`, and partially :doc:`on hardware </portability/tested_devices>`.
 
 Linux distributions:
 
@@ -37,6 +45,7 @@ Linux distributions:
 * Arch Linux (latest)
 * Alpine Linux (latest)
 * Raspberry Pi OS (latest)
+* OpenWrt (17.01, 12.09)
 
 Android versions:
 
@@ -46,9 +55,9 @@ Android versions:
 
 macOS versions:
 
+* macOS 14 (Sonoma)
 * macOS 13 (Ventura)
 * macOS 12 (Monterey)
-* macOS 11 (Big Sur)
 
 Hardware architectures:
 
@@ -57,3 +66,4 @@ Hardware architectures:
 * ARMv8-A (Cortex-A 64-bit, Apple M1)
 * ARMv7-A (Cortex-A 32-bit)
 * ARMv6
+* MIPS32 24K

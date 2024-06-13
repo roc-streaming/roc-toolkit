@@ -17,6 +17,12 @@ Download debian packages from `latest release <https://github.com/roc-streaming/
 
     $ sudo apt install ./roc_*.deb ./libroc_*.deb ./libroc-dev_*.deb
 
+Or install from package manager:
+
+.. code::
+
+    $ sudo apt install libroc-dev roc-toolkit-tools
+
 Fedora
 ------
 
@@ -29,7 +35,7 @@ Arch Linux
 
 .. code::
 
-    $ sudo pacman -S roc-toolkit libpulse sox
+    $ sudo pacman -S roc-toolkit libpulse libsndfile sox
 
 Alpine Linux
 ------------
@@ -37,6 +43,13 @@ Alpine Linux
 .. code::
 
     $ sudo apk add roc-toolkit roc-toolkit-libs roc-toolkit-dev
+
+NixOS
+-----
+
+.. code::
+
+    $ nix-shell -p roc-toolkit
 
 Linux (from sources)
 ====================
@@ -203,6 +216,10 @@ Linux (cross-compile)
 Raspberry Pi (64-bit)
 ---------------------
 
+.. note::
+
+   `toolchain image <https://hub.docker.com/r/rocstreaming/toolchain-aarch64-linux-gnu>`__
+
 .. code::
 
     # clone repo
@@ -226,6 +243,10 @@ Raspberry Pi (64-bit)
 
 Raspberry Pi 2 and later (32-bit)
 ---------------------------------
+
+.. note::
+
+   `toolchain image <https://hub.docker.com/r/rocstreaming/toolchain-arm-linux-gnueabihf>`__
 
 .. code::
 
@@ -251,6 +272,10 @@ Raspberry Pi 2 and later (32-bit)
 Raspberry Pi 1 and Zero (32-bit)
 --------------------------------
 
+.. note::
+
+   `toolchain image <https://hub.docker.com/r/rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi>`__
+
 .. code::
 
     # clone repo
@@ -271,12 +296,74 @@ Raspberry Pi 1 and Zero (32-bit)
     # install Roc dependencies
     $ ssh <address> apt-get install libasound2 libpulse0 libltdl7
 
+OpenWrt (MIPS32 24Kc, Artheos, musl)
+------------------------------------
+
+.. note::
+
+   `toolchain image <https://hub.docker.com/r/rocstreaming/toolchain-mips-openwrt-linux-atheros>`__
+
+.. code::
+
+    # clone repo
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
+    $ cd roc-toolkit
+
+    # build libraries and tools
+    $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
+        rocstreaming/toolchain-mips-openwrt-linux-atheros:17.01 \
+          scons -Q \
+            --host=mips-openwrt-linux-musl \
+            --build-3rdparty=all \
+            --disable-libunwind \
+            --disable-pulseaudio \
+            --disable-sox
+
+    # install Roc binaries
+    $ scp ./bin/mips-openwrt-linux-musl/roc-{recv,send,conv} <address>:/usr/bin
+    $ scp ./bin/mips-openwrt-linux-musl/libroc.so.*.* <address>:/usr/lib
+
+    # install Roc dependencies
+    $ ssh <address> opkg install libstdcpp librt alsa-lib
+
+OpenWrt (MIPS32 24Kc, Artheos, uClibc)
+--------------------------------------
+
+.. note::
+
+   `toolchain image <https://hub.docker.com/r/rocstreaming/toolchain-mips-openwrt-linux-atheros>`__
+
+.. code::
+
+    # clone repo
+    $ git clone https://github.com/roc-streaming/roc-toolkit.git
+    $ cd roc-toolkit
+
+    # build libraries and tools
+    $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
+        rocstreaming/toolchain-mips-openwrt-linux-atheros:12.09 \
+          scons -Q \
+            --host=mips-openwrt-linux-uclibc \
+            --build-3rdparty=all \
+            --disable-libunwind \
+            --disable-pulseaudio \
+            --disable-sox \
+            --disable-sndfile \
+            --disable-openssl
+
+    # install Roc binaries
+    $ scp ./bin/mips-openwrt-linux-uclibc/roc-{recv,send,conv} <address>:/usr/bin
+    $ scp ./bin/mips-openwrt-linux-uclibc/libroc.so.*.* <address>:/usr/lib
+
+    # install Roc dependencies
+    $ ssh <address> opkg install libstdcpp librt alsa-lib
+
 macOS
 =====
 
 Prerequisites:
 
-* Install XCode Command Line Tools
+* Install `XCode Command Line Tools <https://www.freecodecamp.org/news/install-xcode-command-line-tools/>`_
 * Install `Homebrew <https://brew.sh/>`_
 
 Then you can run the following commands:
@@ -310,6 +397,10 @@ Android
 
 Building C library for Android using Docker
 -------------------------------------------
+
+.. note::
+
+   `toolchain image <https://hub.docker.com/r/rocstreaming/toolchain-linux-android>`__
 
 .. code::
 
@@ -353,7 +444,7 @@ Building C library for Android using Docker
             --host=i686-linux-android28 \
             --build-3rdparty=all
 
-Building C library for Android on macOS
+Building C library for Android natively
 ---------------------------------------
 
 Prerequisites:
@@ -364,6 +455,8 @@ Prerequisites:
 
 * Ensure that ``ANDROID_HOME`` is exported and points to the root directory of Android SDK.
 
+* Install ``scons``.
+
 Then you can run the following commands:
 
 .. code::
@@ -373,9 +466,6 @@ Then you can run the following commands:
     $ sdkmanager 'build-tools;28.0.3'
     $ sdkmanager 'ndk;21.4.7075529'
     $ sdkmanager 'cmake;3.10.2.4988404'
-
-    # install build tools
-    $ brew install scons ragel gengetopt
 
     # add toolchains to PATH
     $ export PATH="$ANDROID_HOME/ndk/21.4.7075529/toolchains/llvm/prebuilt/darwin-x86_64/bin:$PATH"

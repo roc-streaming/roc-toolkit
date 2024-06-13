@@ -113,6 +113,7 @@ Portability
 
 * add Ubuntu 24.04 to CI (`gh-634 <https://github.com/roc-streaming/roc-toolkit/issues/634>`_)
 * add macOS 14 (arm64) to CI
+* add OpenWrt with uCLibc and musl (MIPS32) to CI
 * fix build on Debian GNU/Hurd
 * improve handling of unknown unix-like platforms in scons
 

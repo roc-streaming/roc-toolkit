@@ -164,6 +164,30 @@ Alternatively, you can install the toolchain manually:
     $ cd "${ROC_DIR}"
     $ scons --host=arm-bcm2708hardfp-linux-gnueabi --build-3rdparty=all
 
+.. _mips-openwrt-linux-atheros:
+
+OpenWrt Atheros MIPS32 24Kc toolchains
+======================================
+
+Here is how you can build Roc with prebuilt Artheos OpenWrt toolchains using `rocstreaming/toolchain-mips-openwrt-linux-atheros <https://hub.docker.com/r/rocstreaming/toolchain-mips-openwrt-linux-atheros/>`_ Docker image:
+
+.. code::
+
+    $ cd /path/to/roc
+    $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
+        rocstreaming/toolchain-mips-openwrt-linux-atheros:17.01 \
+          scons \
+            --host=mips-openwrt-linux-musl \
+            --build-3rdparty=all \
+            --disable-libunwind \
+            --disable-pulseaudio \
+            --disable-sox
+
+Currently two toolchains are packaged:
+
+* ``17.01`` -- OpenWrt 17.01 / ar71xx / musl (`openwrt archive <https://archive.openwrt.org/releases/17.01.7/targets/ar71xx/generic/>`__)
+* ``12.09`` -- OpenWrt 12.09 / ar71xx / uClibc (`openwrt archive <https://archive.openwrt.org/attitude_adjustment/12.09/ar71xx/generic/>`__)
+
 Debian and Ubuntu toolchains
 ============================
 

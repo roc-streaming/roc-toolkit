@@ -67,6 +67,19 @@ Orange Pi Lite 2
 .. image:: https://roc-streaming.org/images/tested_devices/orange_pi_lite_2.jpg
    :width: 300px
 
+OpenEmbed SOM9331 v1
+--------------------
+
+* Website: https://openwrt.org/toh/openembed/som9331_v1/
+* OS: OpenWrt 17.01 32-bit
+* Toolchain: :ref:`mips-openwrt-linux-atheros <mips-openwrt-linux-atheros>`
+* CPU: MIPS32 24Kc Atheros AR9331 400 MHz
+* RAM: 32MB
+* Wi-Fi: 802.11 b/g/n
+
+.. image:: https://roc-streaming.org/images/tested_devices/som9331_v1.jpg
+   :width: 300px
+
 Linux desktop computers
 =======================
 
