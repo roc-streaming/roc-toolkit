@@ -1080,6 +1080,7 @@ if ctx.pkg_name == 'libuv':
             shutil.copy('libuv.a', '../libuv.a')
         changedir(ctx, '..')
     else:
+        subst_files(ctx, 'src/unix/core.c', ' dup3', ' uv__dup3')
         execute(ctx, './autogen.sh')
         execute(ctx, './configure --host={host} {vars} {flags} {opts}'.format(
             host=ctx.toolchain,
@@ -1518,6 +1519,8 @@ elif ctx.pkg_name == 'cpputest':
                 opts=' '.join([
                     # disable memory leak detection which is too hard to use properly
                     '--disable-memory-leak-detection',
+                    # doesn't work on older platforms
+                    '--disable-extensions',
                     '--enable-static',
                 ])))
         execute_make(ctx)
