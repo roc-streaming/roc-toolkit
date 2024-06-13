@@ -114,6 +114,38 @@ jobs:
         run: |
           scripts/ci_checks/failure.sh
 
+  linux-mips:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - script: linux-mips/openwrt-linux-musl
+            image: rocstreaming/toolchain-mips-openwrt-linux-atheros:17.01
+
+          - script: linux-mips/openwrt-linux-uclibc
+            image: rocstreaming/toolchain-mips-openwrt-linux-atheros:12.09
+
+    name: ${{ matrix.script }}
+    steps:
+      - name: Pull docker image
+        run: docker pull ${{ matrix.image }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build and test
+        run: |
+          scripts/ci_checks/docker.sh ${{ matrix.image }} scripts/ci_checks/${{ matrix.script }}.sh
+
+      - name: Handle failure
+        if: failure()
+        run: |
+          scripts/ci_checks/failure.sh
+
   linux-checks:
     runs-on: ubuntu-latest
 
