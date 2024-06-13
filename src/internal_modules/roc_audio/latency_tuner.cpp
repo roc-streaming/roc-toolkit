@@ -147,6 +147,7 @@ LatencyTuner::LatencyTuner(const LatencyConfig& config, const SampleSpec& sample
     , scale_pos_(0)
     , report_interval_(sample_spec.ns_2_stream_timestamp_delta(LogInterval))
     , report_pos_(0)
+    , has_new_freq_coeff_(false)
     , freq_coeff_(0)
     , freq_coeff_max_delta_(config.scaling_tolerance)
     , backend_(config.tuner_backend)
@@ -339,9 +340,14 @@ void LatencyTuner::advance_stream(packet::stream_timestamp_t duration) {
     report_();
 }
 
-float LatencyTuner::get_scaling() const {
+float LatencyTuner::fetch_scaling() {
     roc_panic_if(!is_valid());
 
+    if (!has_new_freq_coeff_) {
+        return 0;
+    }
+
+    has_new_freq_coeff_ = false;
     return freq_coeff_;
 }
 
@@ -402,6 +408,8 @@ void LatencyTuner::compute_scaling_(packet::stream_timestamp_diff_t latency) {
         fe_->update((packet::stream_timestamp_t)latency);
         scale_pos_ += (packet::stream_timestamp_t)scale_interval_;
     }
+
+    has_new_freq_coeff_ = true;
 
     freq_coeff_ = fe_->freq_coeff();
     freq_coeff_ = std::min(freq_coeff_, 1.0f + freq_coeff_max_delta_);

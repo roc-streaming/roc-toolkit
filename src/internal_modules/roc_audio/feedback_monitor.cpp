@@ -201,8 +201,7 @@ bool FeedbackMonitor::init_scaling_() {
 bool FeedbackMonitor::update_scaling_() {
     roc_panic_if_not(resampler_);
 
-    const float scaling = tuner_.get_scaling();
-
+    const float scaling = tuner_.fetch_scaling();
     if (scaling > 0) {
         if (!resampler_->set_scaling(scaling)) {
             roc_log(LogDebug,

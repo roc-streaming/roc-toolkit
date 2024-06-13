@@ -198,12 +198,13 @@ public:
     //! Should be called after updating stream.
     void advance_stream(packet::stream_timestamp_t duration);
 
-    //! Get computed scaling.
-    //! Latency tuner expects that this scaling will applied to the stream
-    //! resampler, so that the latency will slowly achieve target value.
-    //! Returned value is close to 1.0.
-    //! If no scaling was computed yet, it returns 0.0.
-    float get_scaling() const;
+    //! If scaling has changed, returns updated value.
+    //! Otherwise, returns zero.
+    //! @remarks
+    //!  Latency tuner expects that this scaling will applied to the stream
+    //!  resampler, so that the latency will slowly achieve target value.
+    //!  Returned value is close to 1.0.
+    float fetch_scaling();
 
 private:
     bool check_bounds_(packet::stream_timestamp_diff_t latency);
@@ -220,6 +221,7 @@ private:
     packet::stream_timestamp_diff_t report_interval_;
     packet::stream_timestamp_t report_pos_;
 
+    bool has_new_freq_coeff_;
     float freq_coeff_;
     const float freq_coeff_max_delta_;
 
