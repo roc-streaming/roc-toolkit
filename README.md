@@ -2,7 +2,7 @@
 
 # Roc Toolkit: real-time audio streaming
 
-[![Build](https://github.com/roc-streaming/roc-toolkit/workflows/build/badge.svg?branch=master)](https://github.com/roc-streaming/roc-toolkit/actions/workflows/build.yml?query=branch%3Amaster) [![GitHub release](https://img.shields.io/github/release/roc-streaming/roc-toolkit.svg)](https://github.com/roc-streaming/roc-toolkit/releases) [![Matrix chat](https://matrix.to/img/matrix-badge.svg)](https://app.element.io/#/room/#roc-streaming:matrix.org)
+[![build](https://github.com/roc-streaming/roc-toolkit/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/roc-streaming/roc-toolkit/actions/workflows/build.yml) [![release](https://img.shields.io/github/release/roc-streaming/roc-toolkit.svg)](https://github.com/roc-streaming/roc-toolkit/releases) [![matrix](https://matrix.to/img/matrix-badge.svg)](https://app.element.io/#/room/#roc-streaming:matrix.org)
 
 Roc is a toolkit for real-time audio streaming over the network.
 
@@ -46,8 +46,8 @@ See details on continuous integration [here](https://roc-streaming.org/toolkit/d
 
 Branch    | Status
 --------- | ------
-`master`  | [![](https://github.com/roc-streaming/roc-toolkit/workflows/build/badge.svg?branch=master)](https://github.com/roc-streaming/roc-toolkit/actions/workflows/build.yml?query=branch%3Amaster)
-`develop` | [![](https://github.com/roc-streaming/roc-toolkit/workflows/build/badge.svg?branch=develop)](https://github.com/roc-streaming/roc-toolkit/actions/workflows/build.yml?query=branch%3Adevelop)
+`master`  | [![build](https://github.com/roc-streaming/roc-toolkit/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/roc-streaming/roc-toolkit/actions/workflows/build.yml)
+`develop` | [![build](https://github.com/roc-streaming/roc-toolkit/actions/workflows/build.yml/badge.svg?branch=develop)](https://github.com/roc-streaming/roc-toolkit/actions/workflows/build.yml)
 
 Versioning
 ----------

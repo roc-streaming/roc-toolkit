@@ -8,9 +8,7 @@ Changelog
 ..
     Features
     C API
-    Bindings
     Command-line tools
-    Applications
     Bug fixes
     Portability
     Security
@@ -73,11 +71,6 @@ C API
 
 * rename ``roc_version_get()`` to ``roc_version_load()``
 
-Bindings
---------
-
-* ``generate_bindings.py`` moved to separate repo (`bindgen <https://github.com/roc-streaming/bindgen/>`_)
-
 Command-line tools
 ------------------
 
@@ -96,11 +89,6 @@ Command-line tools
 
 * support floats for sizes and durations (`gh-654 <https://github.com/roc-streaming/roc-toolkit/issues/654>`_)
 * support ``NO_COLOR`` and ``FORCE_COLOR`` environment variables (`gh-564 <https://github.com/roc-streaming/roc-toolkit/issues/564>`_)
-
-Applications
-------------
-
-* first release of virtual audio device for macOS (`roc-vad <https://github.com/roc-streaming/roc-vad>`_)
 
 Bug fixes
 ---------
@@ -248,11 +236,6 @@ C API
 * add ``ROC_RESAMPLER_BACKEND_SPEEXDEC`` backend
 
 * add ``ROC_VERSION`` and ``ROC_VERSION_CODE()``
-
-Bindings
---------
-
-* add script for generating enums in bindings repos (java, go)
 
 Command-line tools
 ------------------
@@ -515,12 +498,6 @@ C API
 * add ``roc_clock_source``
 * add ``roc_version`` and friends
 
-Bindings
---------
-
-* add Go bindings (`roc-go <https://github.com/roc-streaming/roc-go/>`_)
-* add Java bindings (`roc-java <https://github.com/roc-streaming/roc-java/>`_)
-
 Command-line tools
 ------------------
 
@@ -528,12 +505,6 @@ Command-line tools
 * add ``--backup`` option to ``roc-recv``
 * replace ``--frame-size`` with ``--frame-length`` and ``--frame-limit``
 * remove ``--resampler-interp`` and ``--resampler-window``
-
-Applications
-------------
-
-* move PulseAudio modules to `roc-pulse <https://github.com/roc-streaming/roc-pulse/>`_ repo
-* add `roc-droid <https://github.com/roc-streaming/roc-droid/>`_ Android app
 
 Bug fixes
 ---------
@@ -812,11 +783,6 @@ Command-line tools
 ------------------
 
 * initial version of command-line tools (roc-send, roc-recv, roc-conv)
-
-Applications
-------------
-
-* initial version of PulseAudio transport (module-roc-sink, module-roc-sink-input)
 
 Portability
 -----------
