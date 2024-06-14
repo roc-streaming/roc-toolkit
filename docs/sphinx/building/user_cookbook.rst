@@ -60,8 +60,8 @@ Ubuntu / Debian
 .. code::
 
     # for Roc
-    $ sudo apt-get install g++ pkg-config scons ragel gengetopt \
-        libuv1-dev libunwind-dev libspeexdsp-dev libsox-dev libssl-dev libpulse-dev
+    $ sudo apt-get install g++ pkg-config scons ragel gengetopt libuv1-dev libunwind-dev \
+        libspeexdsp-dev libsox-dev libsndfile1-dev libssl-dev libpulse-dev
 
     # for 3rd-parties
     $ sudo apt-get install libtool intltool autoconf automake make cmake meson
@@ -82,8 +82,8 @@ Fedora
 .. code::
 
     # for Roc
-    $ sudo dnf install gcc-c++ pkgconfig scons ragel gengetopt \
-        libuv-devel libunwind-devel speexdsp-devel sox-devel openssl-devel pulseaudio-libs-devel
+    $ sudo dnf install gcc-c++ pkgconfig scons ragel gengetopt libuv-devel libunwind-devel \
+        speexdsp-devel sox-devel libsndfile-devel openssl-devel pulseaudio-libs-devel
 
     # for 3rd-parties
     $ sudo dnf install libtool intltool autoconf automake make cmake
@@ -104,8 +104,8 @@ openSUSE
 .. code::
 
     # for Roc
-    $ sudo zypper install gcc-c++ scons ragel gengetopt \
-        libuv-devel libunwind-devel speexdsp-devel sox-devel libopenssl-3-devel libpulse-devel
+    $ sudo zypper install gcc-c++ scons ragel gengetopt libuv-devel libunwind-devel \
+        speexdsp-devel sox-devel libsndfile-devel libopenssl-3-devel libpulse-devel
 
     # for 3rd-parties
     $ sudo zypper install pkg-config intltool libtool autoconf automake make cmake
@@ -129,8 +129,8 @@ Centos
     $ sudo yum install epel-release
 
     # for Roc
-    $ sudo yum install gcc-c++ pkgconfig scons ragel gengetopt \
-        libunwind-devel speex-devel sox-devel openssl11-devel pulseaudio-libs-devel
+    $ sudo yum install gcc-c++ pkgconfig scons ragel gengetopt libunwind-devel \
+        speex-devel sox-devel libsndfile-devel openssl11-devel pulseaudio-libs-devel
 
     # for 3rd-parties
     $ sudo yum install libtool intltool autoconf automake make cmake
@@ -151,8 +151,8 @@ Arch Linux
 .. code::
 
     # for Roc
-    $ sudo pacman -S gcc pkgconf scons ragel gengetopt \
-        libuv libunwind speexdsp sox openssl gsm libpulse
+    $ sudo pacman -S gcc pkgconf scons ragel gengetopt libuv libunwind \
+        speexdsp sox libsndfile openssl gsm libpulse
 
     # for 3rd-parties
     $ sudo pacman -S grep gawk libtool intltool autoconf automake make cmake
@@ -173,8 +173,8 @@ Alpine Linux
 .. code::
 
     # for Roc
-    $ sudo apk add g++ pkgconf scons ragel gengetopt \
-        libuv-dev libunwind-dev speexdsp-dev sox-dev openssl-dev pulseaudio-dev
+    $ sudo apk add g++ pkgconf scons ragel gengetopt libuv-dev libunwind-dev \
+        speexdsp-dev sox-dev libsndfile-dev openssl-dev pulseaudio-dev
 
     # for 3rd-parties
     $ sudo apk add libtool autoconf automake make cmake
@@ -195,8 +195,9 @@ NixOS
 .. code::
 
     # for Roc and 3rd-parties
-    $ nix-shell -p gcc autoconf automake cmake gengetopt gnumake intltool libpulseaudio \
-        libtool libunwind libuv meson pkg-config ragel scons sox openssl speexdsp
+    $ nix-shell -p gcc autoconf automake cmake gengetopt gnumake intltool libtool meson \
+        pkg-config scons ragel \
+        libuv libunwind speexdsp sox libsndfile openssl libpulseaudio
 
     # clone repo
     $ git clone https://github.com/roc-streaming/roc-toolkit.git
@@ -371,7 +372,7 @@ Then you can run the following commands:
 .. code::
 
     # for Roc
-    $ brew install pkg-config scons ragel gengetopt libuv speexdsp sox openssl@3
+    $ brew install pkg-config scons ragel gengetopt libuv speexdsp sox libsndfile openssl@3
 
     # for 3rd-parties
     $ brew install libtool autoconf automake make cmake

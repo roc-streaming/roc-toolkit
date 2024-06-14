@@ -14,14 +14,18 @@ Basically, it is a network transport, highly specialized for the real-time strea
 
 The project is conceived as a swiss army knife for real-time streaming. It is designed to support a variety of network protocols, encodings, FEC schemes, and related features. Users can build custom configurations dedicated for specific use cases, while balancing quality, robustness, bandwidth, and compatibility.
 
-What problems does it solve?
-----------------------------
+What problems it aims to solve?
+-------------------------------
 
 .. seealso:: :doc:`/about_project/features`
 
+.. note::
+
+   Implementation of some of the below is still work in progress. See :doc:`/development/roadmap` for details.
+
 Real-time streaming needs a special approach. When we create software for it, we must address several problems.
 
-When the network is not reliable (e.g. Wi-Fi or Internet), we need to handle losses. We can't just use a reliable protocol like TCP, because the latency would suffer. We also can't just ignore losses, because the service quality would suffer.
+When the network is not reliable (e.g. Wi-Fi or Internet), we need to handle losses. We can't just mindlessly use a reliable protocol like TCP, because the latency would suffer. We also can't just ignore losses, because the service quality would suffer.
 
 When network conditions are not known beforehand, or are varying in time, we should adapt to changes dynamically. In response to changed conditions, we may need to adjust latency, compression level, redundancy level, and other parameters on fly.
 
@@ -33,20 +37,20 @@ The real-time requirement leads to a compromise between many factors like qualit
 
 Many applications that need real-time streaming often need similar related features. Encryption, QoS control, playback synchronization, to name a few. Such features are also in the scope of this project.
 
-What are project goals?
------------------------
+What are project priorities?
+----------------------------
 
-At the very high level, the project has the following goals:
+At the very high level, the main focus of the project is on these features:
 
-* *guaranteed latency* --- implement real-time streaming with guaranteed latency;
-* *high quality streaming* --- support CD- and DVD-quality audio streams;
-* *robust playback* --- provide good quality of service even on unreliable networks;
+* *guaranteed fixed or bounded latency* --- monitor and tune latency so that it always meets placed constraints;
+* *high quality streaming* --- support CD- and DVD-quality lossless audio streams and compression algorithms suitable for music;
+* *robust playback* --- provide good quality of service even on unreliable networks using lossless packet repair;
 * *high-level and easy to use interface* --- implement a simple and high-level API that hides all the complexity from user;
 * *work "from the box" with optional tuning* --- provide good defaults that work in many environments; and allow fine tuning to achieve best results for specific setup;
-* *adaptive algorithms* --- support adjusting to environment conditions on fly;
-* *comprehensive toolset* --- support multiple protocols and codecs, and give the user the full control of them;
+* *use of adaptive algorithms* --- support adjusting to changing environment conditions on fly;
+* *providing a comprehensive toolset* --- support multiple protocols and codecs, and let the user decide which to use;
 * *portability* --- support multiple operating systems and hardware architectures;
-* *interoperability* --- rely on open, standard protocols.
+* *interoperability* --- rely on open, standard protocols and support communication with compatible implementations.
 
 When do I need it?
 ------------------
@@ -64,7 +68,6 @@ Example applications:
 * concert or hall sound systems
 * online jamming (playing music together remotely)
 * streaming platforms for radio
-* cloud streaming
 
 How do I use it?
 ----------------

@@ -8,7 +8,7 @@ High-level features
 
 * streaming CD-quality audio using RTP
 
-* maintaining pre-configured fixed latency
+* maintaining pre-configured fixed or bounded latency
 
 * restoring lost packets using Forward Erasure Correction codes
 
@@ -17,8 +17,8 @@ High-level features
 
 * resampling
 
-  * converting between the sender and receiver clock domains (on receiver)
-  * converting between the network and input/output sample rates (on receiver and sender)
+  * converting between the sender and receiver clock domains to compensate clock drift
+  * converting between the network and input/output sample rates
   * configurable resampler backends and profiles for different CPU and quality requirements
 
 * multiplexing
@@ -43,9 +43,11 @@ Protocols and encodings
 
 * RTP
 
-  * RTP AVP L16 encoding (lossless 44100Hz PCM 16-bit stereo)
+  * RTP AVPF L16 encoding (lossless 44100Hz PCM 16-bit stereo or mono)
 
 * RTCP
+
+* RTCP XR
 
 * FECFRAME
 
@@ -62,23 +64,32 @@ API and tools
   * roc_sender --- send audio stream to receiver
   * roc_receiver --- receive and mix audio streams from senders
 
+* codec API
+
+  * roc_sender_encoder --- encode audio stream into packets
+  * roc_receiver_decoder --- decode audio stream from packets
+
 * command-line tools
 
   * roc-send --- read audio stream from audio device or file and send to receiver
   * roc-recv --- receive and mix audio streams from senders and write to audio device or file
   * roc-copy --- copy audio between local audio devices or files
 
-* PulseAudio modules
-
-  * module-roc-sink --- send audio stream written to the sink to receiver
-  * module-roc-sink-input --- receive and mix audio streams from senders and write to the connected sink
-
 * PipeWire modules
 
   * roc-sink --- send audio stream written to the sink to receiver
   * roc-source --- receive and mix audio streams from senders and write to the connected apps
 
-* Mobile apps
+* PulseAudio modules
+
+  * module-roc-sink --- send audio stream written to the sink to receiver
+  * module-roc-sink-input --- receive and mix audio streams from senders and write to the connected sink
+
+* macOS virtual device
+
+  * roc-vad --- streaming audio device with CLI and gRPC interface
+
+* mobile apps
 
   * Roc Droid -- Android app that connects your phone to other Roc senders and receivers
 
@@ -89,7 +100,7 @@ Bindings
 
 * supported languages:
 
-  * C and C++
+  * C (or C++)
   * Go
   * Java
 
@@ -108,6 +119,5 @@ Portability
 
   * x86_64
   * i686
-  * ARMv6
-  * ARMv7 (Cortex-A 32-bit)
-  * ARMv8 (Cortex-A 64-bit)
+  * ARM
+  * MIPS

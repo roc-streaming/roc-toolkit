@@ -76,6 +76,8 @@ The following table lists implemented audio backends:
 ==================== =========== ===============
 backend              drivers     description
 ==================== =========== ===============
-SoxBackend           many        universal backend that supports many audio systems and file formats using libsox
 PulseaudioBackend    ``pulse``   native PulseAudio backend using libpulse
+SndfileBackend       many        read and write various audio files using libsndfile
+WavBackend           ``wav``     read and write audio files without external dependencies
+SoxBackend           many        universal backend that supports many audio systems and file formats using libsox
 ==================== =========== ===============

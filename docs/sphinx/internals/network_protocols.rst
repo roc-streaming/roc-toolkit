@@ -1,13 +1,15 @@
 Network protocols
 *****************
 
-Roc needs several network protocols to deliver data between the sender and the receiver.
+Roc uses several network protocols for exchanging data between sender and receiver.
 
-Roc doesn't invent new protocols. Instead, it relies on existing open standards to take advantage of their careful design and potential interoperability with other software. Roc implements all protocols by itself, for two reasons. First, not all protocols have a suitable open implementation. Second, the protocol support is tightly integrated into the Roc pipeline and it would be hard to employ a stand-alone implementation.
+Roc avoids inventing new protocols and relies on existing open standards, to take advantage of their careful design and potential interoperability with other software. Roc implements from scratch most protocols (but not codecs). Sometimes there is just no suitable and reusable open implementation. Often the protocol logic must be tightly integrated into the pipeline and it would be hard to employ a stand-alone implementation.
 
-Although Roc is designed to support arbitrary protocols, so far all supported protocols are RTP-based. RTP by itself is very basic but also very extensible. To employ RTP, one needs to select an RTP profile and, if necessary, some RTP extensions. Roc employs RTP Audio/Video Profile which specifies how to stream audio and video using RTP. Roc also employs FEC Framework, which specifies how to incorporate various FEC schemes into RTP.
+Although Roc is designed to support arbitrary protocols, and most of the code is generic, so far all supported protocols are RTP-based. RTP by itself is very basic but also very extensible. To employ RTP, one needs to select an RTP profile and, if necessary, some RTP extensions.
 
-Note that employing FEC Framework increases the service quality but also breaks interoperability with RTP implementations that are not aware of this extension. If you need compatibility with such applications, you should disable FEC in Roc
+As a basis, Roc uses RTP Audio/Video Profile (AVPF) which specifies how to stream audio and video using RTP.
+
+It also employs FEC Framework (FECFRAME), which specifies how to incorporate various FEC schemes into RTP. Using FECFRAME may prevent interoperability with third-party RTP implementations that don't support it. If you need compatibility with such applications, you can disable FEC.
 
 Roc also employs various RTCP extensions to exchange non-media reports between sender and receiver. Usually this doesn't break interoperability with implementations that don't support extensions, however some features may not work with such implementations (e.g. sender-side latency tuning).
 
