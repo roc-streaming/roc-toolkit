@@ -27,6 +27,9 @@ jobs:
           - repo: roc-vad
             branch: main
 
+          - repo: rocd
+            branch: main
+
           - repo: rt-tests
             branch: main
 
