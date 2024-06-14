@@ -5,6 +5,7 @@ Development
    :maxdepth: 1
 
    development/changelog
+   development/history
    development/roadmap
    development/contribution_guidelines
    development/coding_guidelines
