@@ -46,8 +46,8 @@ See details on continuous integration [here](https://roc-streaming.org/toolkit/d
 
 Branch    | Status
 --------- | ------
-`master`  | [![build](https://github.com/roc-streaming/roc-toolkit/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/roc-streaming/roc-toolkit/actions/workflows/build.yml)
-`develop` | [![build](https://github.com/roc-streaming/roc-toolkit/actions/workflows/build.yml/badge.svg?branch=develop)](https://github.com/roc-streaming/roc-toolkit/actions/workflows/build.yml)
+`master`  | [![build](https://github.com/roc-streaming/roc-toolkit/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/roc-streaming/roc-toolkit/actions/workflows/build.yml?query=branch%3Amaster)
+`develop` | [![build](https://github.com/roc-streaming/roc-toolkit/actions/workflows/build.yml/badge.svg?branch=develop)](https://github.com/roc-streaming/roc-toolkit/actions/workflows/build.yml?query=branch%3Adevelop)
 
 Versioning
 ----------
