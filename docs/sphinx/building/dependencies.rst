@@ -80,7 +80,7 @@ Runtime dependencies
 
    * - `OpenSSL <https://www.openssl.org/>`_
      - >= 1.1.1
-     - optional, used for SRTP and DTLS support
+     - optional, used for SRTP and DTLS support and CSPRNG
 
    * - `PulseAudio <https://www.freedesktop.org/wiki/Software/PulseAudio/>`_
      - >= 5.0
@@ -88,6 +88,10 @@ Runtime dependencies
 
    * - `SoX <https://sox.sourceforge.net>`_
      - >= 14.4.0
+     - optional, used for audio I/O
+
+   * - `libsndfile <https://libsndfile.github.io/libsndfile/>`_
+     - >= 1.0.26
      - optional, used for audio I/O
 
    * - `SpeexDSP <https://github.com/xiph/speexdsp>`_
