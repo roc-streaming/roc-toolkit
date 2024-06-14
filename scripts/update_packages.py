@@ -58,6 +58,7 @@ def update_deb_changelog():
     first = True
 
     for line in in_file.readlines():
+        pad = re.sub(r'^(\s*).*$', r'\1', line.rstrip())
         line = line.strip()
 
         if line.startswith('==='):
@@ -79,8 +80,10 @@ def update_deb_changelog():
             fprint(f'  [ {prev_line} ]')
 
         if line.startswith('* '):
+            line = re.sub(r'`([^` ]+)\s*<[^` >]+>`_+', r'\1', line)
+            line = re.sub(r'``', '`', line)
             fprint('\n'.join(textwrap.wrap(
-                line, width=80, initial_indent='  ', subsequent_indent='    ')))
+                line, width=80, initial_indent=('  '+pad), subsequent_indent=('    '+pad))))
 
         prev_line = line
 

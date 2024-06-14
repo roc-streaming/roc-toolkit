@@ -14,13 +14,16 @@ Changelog
     Bug fixes
     Portability
     Security
+    Dependencies
     Internals
     Build system
     Packaging
     Tests
     Documentation
 
-Version 0.4.0 (Jun 00, 2024)
+.. _v0.4.0:
+
+Version 0.4.0 (Jun 14, 2024)
 ============================
 
 .. note::
@@ -117,6 +120,11 @@ Portability
 * fix build on Debian GNU/Hurd
 * improve handling of unknown unix-like platforms in scons
 
+Dependencies
+------------
+
+* new optional dependency: libsndfile, used in CLI tools (`gh-246 <https://github.com/roc-streaming/roc-toolkit/issues/246>`_)
+
 Internals
 ---------
 
@@ -150,6 +158,8 @@ Documentation
 
 * document audio backends
 * document sponsored work
+
+.. _v0.3.0:
 
 Version 0.3.0 (Nov 22, 2023)
 ============================
@@ -294,6 +304,8 @@ Documentation
 * fix pulseaudio C API examples
 * numerous improvements and updates in sphinx documentation
 
+.. _v0.2.6:
+
 Version 0.2.6 (Nov 05, 2023)
 ============================
 
@@ -307,6 +319,8 @@ Packaging
 * build debian packages on debian:bullseye
 * in debian packages, statically link all dependencies except ``libc``, ``libasound``, ``libpulse``
 * ensure that packages are installable on debian:oldstable, debian:stable, ubuntu:20.04, ubuntu:22.04, ubuntu:latest
+
+.. _v0.2.5:
 
 Version 0.2.5 (Jul 28, 2023)
 ============================
@@ -325,6 +339,8 @@ Build system
 
 * fix compiler type detection when compiler is specified via ``CC`` or ``CXX`` variable
 * export symbols of dependencies built by ``--build-3rdparty`` when building static library (``libroc.a``), to avoid linker errors when using it
+
+.. _v0.2.4:
 
 Version 0.2.4 (May 13, 2023)
 ============================
@@ -377,8 +393,10 @@ Documentation
 
 * minor updates
 
-Version 0.2.3 (Mar 9, 2023)
-===========================
+.. _v0.2.3:
+
+Version 0.2.3 (Mar 09, 2023)
+============================
 
 .. note::
 
@@ -418,6 +436,8 @@ Documentation
 
 * minor updates
 
+.. _v0.2.2:
+
 Version 0.2.2 (Feb 27, 2023)
 ============================
 
@@ -448,6 +468,8 @@ Documentation
 
 * minor updates
 
+.. _v0.2.1:
+
 Version 0.2.1 (Dec 26, 2022)
 ============================
 
@@ -464,6 +486,8 @@ Documentation
 -------------
 
 * minor updates
+
+.. _v0.2.0:
 
 Version 0.2.0 (Dec 19, 2022)
 ============================
@@ -571,8 +595,10 @@ Documentation
 * document Android bulding and testing
 * lots of small updates
 
-Version 0.1.5 (Apr 5, 2020)
-===========================
+.. _v0.1.5:
+
+Version 0.1.5 (Apr 05, 2020)
+============================
 
 .. note::
 
@@ -601,8 +627,10 @@ Build system
 * switch to libuv 1.35.0 by default in ``--build-3rdparty``
 * check for unknown names in ``--build-3rdparty``
 
-Version 0.1.4 (Feb 6, 2020)
-===========================
+.. _v0.1.4:
+
+Version 0.1.4 (Feb 06, 2020)
+============================
 
 .. note::
 
@@ -628,6 +656,8 @@ Documentation
 * update PulseAudio version numbers in "User cookbook"
 * update CONTRIBUTING and "Coding guidelines"
 * update maintainers and contributors list
+
+.. _v0.1.3:
 
 Version 0.1.3 (Oct 21, 2019)
 ============================
@@ -662,6 +692,8 @@ Build system
 * fix PulseAudio version parsing
 * automatically apply memfd patch when building PulseAudio
 * automatically fix libasound includes when building PulseAudio
+
+.. _v0.1.2:
 
 Version 0.1.2 (Aug 14, 2019)
 ============================
@@ -707,6 +739,8 @@ Documentation
 * add new pages: "Usage", "Publications", "Licensing", "Contacts", "Authors"
 * replace "Guidelines" page with "Contribution Guidelines", "Coding guidelines", and "Version control"
 
+.. _v0.1.1:
+
 Version 0.1.1 (Jun 18, 2019)
 ============================
 
@@ -745,6 +779,8 @@ Tests
 
 * fix resampler AWGN tests
 * add travis job to run tests under valgrind
+
+.. _v0.1.0:
 
 Version 0.1.0 (May 28, 2019)
 ============================
