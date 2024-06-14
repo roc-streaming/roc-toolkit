@@ -494,7 +494,7 @@ else:
             meta.compiler = 'cc'
 
 if not meta.compiler:
-    env.Die("can't detect compiler name, please specify '--compiler={name}' manually, "
+    env.Die("can't detect compiler name, please specify '--compiler=<name>' manually, "
             "should be one of: {}", ', '.join(supported_compilers))
 
 if not meta.compiler in supported_compilers:
@@ -543,7 +543,7 @@ if not meta.build:
         meta.build = env.ParseConfigGuess(conf.env['CONFIG_GUESS'])
 
 if not meta.build:
-    env.Die(("can't detect system type, please specify '--build={type}' manually, "
+    env.Die(("can't detect system type, please specify '--build=<type>' manually, "
              "e.g. '--build=x86_64-pc-linux-gnu'"))
 
 if not meta.host:
@@ -574,7 +574,7 @@ if not meta.platform and meta.host == meta.build:
         meta.platform = 'unix'
 
 if not meta.platform:
-    env.Die("can't detect platform name, please specify '--platform={name}' manually, "
+    env.Die("can't detect platform name, please specify '--platform=<name>' manually, "
             "should be one of: {}", ', '.join(supported_platforms))
 
 if meta.platform not in supported_platforms:
