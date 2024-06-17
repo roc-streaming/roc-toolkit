@@ -198,28 +198,38 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - image: rocstreaming/toolchain-linux-android:ndk21
-            toolchain: aarch64-linux-android29
-            shortname: android29-aarch64
+          # newest tested NDK and API
+          - toolchain: aarch64-linux-android34
+            ndk: ndk26
 
-          - image: rocstreaming/toolchain-linux-android:ndk21
-            toolchain: armv7a-linux-androideabi29
-            shortname: android29-armv7a
+          - toolchain: armv7a-linux-androideabi34
+            ndk: ndk26
 
-          - image: rocstreaming/toolchain-linux-android:ndk21
-            toolchain: x86_64-linux-android29
-            shortname: android29-x86_64
+          - toolchain: x86_64-linux-android34
+            ndk: ndk26
 
-          - image: rocstreaming/toolchain-linux-android:ndk21
-            toolchain: i686-linux-android29
-            shortname: android29-i686
+          - toolchain: i686-linux-android34
+            ndk: ndk26
+
+          # oldest tested NDK and API
+          - toolchain: aarch64-linux-android29
+            ndk: ndk21
+
+          - toolchain: armv7a-linux-androideabi29
+            ndk: ndk21
+
+          - toolchain: x86_64-linux-android29
+            ndk: ndk21
+
+          - toolchain: i686-linux-android29
+            ndk: ndk21
 
     runs-on: ubuntu-latest
 
-    name: ${{ matrix.shortname }}/linux
+    name: android-linux-${{ matrix.ndk }}/${{ matrix.toolchain }}
     steps:
       - name: Pull docker image
-        run: docker pull ${{ matrix.image }}
+        run: docker pull rocstreaming/toolchain-linux-android:${{ matrix.ndk }}
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -228,7 +238,7 @@ jobs:
 
       - name: Build
         run: |
-          scripts/ci_checks/docker.sh ${{ matrix.image }} \
+          scripts/ci_checks/docker.sh rocstreaming/toolchain-linux-android:${{ matrix.ndk }} \
             scripts/ci_checks/android/linux.sh ${{ matrix.toolchain }}
 
       - name: Handle failure
@@ -241,10 +251,21 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # newest tested versions
+          - toolchain: aarch64-linux-android34
+            abi: aarch64
+            api: 34
+            ndk-major: 26
+            ndk: 26.3.11579264
+            build_tools: 34.0.0
+            cmake: 3.22.1
+
+          # oldest tested versions
           - toolchain: aarch64-linux-android29
             abi: aarch64
             api: 29
-            ndk: 25.2.9519653
+            ndk-major: 21
+            ndk: 21.4.7075529
             build_tools: 28.0.3
             cmake: 3.10.2.4988404
 
@@ -256,7 +277,7 @@ jobs:
       API: ${{ matrix.api }}
       NDK_VERSION: ${{ matrix.ndk }}
 
-    name: android${{ matrix.api }}-${{ matrix.abi }}/macos
+    name: android-macos-ndk${{ matrix.ndk-major }}/${{ matrix.toolchain }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -295,9 +316,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # newest tested versions
+          - abi: x86_64
+            api: 33
+            ndk-major: 26
+            ndk: 26.3.11579264
+            cmake: 3.22.1
+
+          # oldset tested versions
           - abi: x86_64
             api: 29
-            ndk: 25.2.9519653
+            ndk-major: 21
+            ndk: 21.4.7075529
             cmake: 3.10.2.4988404
 
     runs-on: ubuntu-latest
@@ -306,7 +336,7 @@ jobs:
       ABI: ${{ matrix.abi }}
       API: ${{ matrix.api }}
 
-    name: android${{ matrix.api }}-${{ matrix.abi }}/emu
+    name: android-emu-ndk${{ matrix.ndk-major }}/${{ matrix.abi }}-android${{ matrix.api }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -315,10 +345,7 @@ jobs:
 
       - name: Enable KVM
         run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
-            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
+          scripts/android_emu/emulator.sh enable_kvm
 
       - name: Setup AVD cache
         uses: actions/cache@v4
@@ -343,11 +370,11 @@ jobs:
 
       - name: Install dependencies
         run: |
-          scripts/android_emu/run.sh install
+          scripts/android_emu/project.sh install_deps
 
       - name: Build
         run: |
-          scripts/android_emu/run.sh build
+          scripts/android_emu/project.sh build
 
       - name: Run tests
         uses: reactivecircus/android-emulator-runner@v2
@@ -358,8 +385,8 @@ jobs:
           cmake: ${{ matrix.cmake }}
           force-avd-creation: false
           script: |
-            scripts/android_emu/run.sh prep
-            scripts/android_emu/run.sh test
+            scripts/android_emu/emulator.sh create_routes
+            scripts/android_emu/project.sh run_tests
 
       - name: Handle failure
         if: failure()
@@ -371,18 +398,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - macos-arch: x86_64
-            macos-version: 11
-            script: standard-build
-
-          - macos-arch: x86_64
-            macos-version: 12
-            script: standard-build
-
-          - macos-arch: x86_64
-            macos-version: 13
-            script: standard-build
-
           - macos-arch: arm64
             macos-version: 14
             script: standard-build
@@ -394,6 +409,14 @@ jobs:
           - macos-arch: arm64
             macos-version: 14
             script: universal-binaries
+
+          - macos-arch: x86_64
+            macos-version: 13
+            script: standard-build
+
+          - macos-arch: x86_64
+            macos-version: 12
+            script: standard-build
 
     runs-on: macos-${{ matrix.macos-version }}
 

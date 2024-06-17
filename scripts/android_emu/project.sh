@@ -11,8 +11,6 @@ function run_cmd() {
     "$@" || exit 1
 }
 
-action="${1:-}"
-
 if [ -z "${ANDROID_NDK_ROOT:-}" ]
 then
     export ANDROID_NDK_ROOT="${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}"
@@ -62,7 +60,9 @@ export PATH="${ANDROID_SDK_ROOT}/tools/bin:${PATH}"
 export PATH="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${PATH}"
 export PATH="${toolchain_root}/bin:${PATH}"
 
-if [[ "${action}" == install ]]
+action="${1:-}"
+
+if [[ "${action}" == install_deps ]]
 then
     color_msg "installing dependencies"
 
@@ -90,22 +90,7 @@ then
           --build-3rdparty=libuv,openfec,openssl,speexdsp,cpputest
 fi
 
-if [[ "${action}" == prep ]]
-then
-    color_msg "configuring routes"
-
-    adb shell "ip a" | grep 'state UP' | cut -d':' -f2 | awk '{print $1}' | cut -d'@' -f1 |
-        while read iface
-        do
-            if ! adb shell ip route show table all | \
-                    grep -qF "224.0.0.0/4 dev ${iface} table local"
-            then
-                run_cmd adb shell "su 0 ip route add 224.0.0.0/4 dev ${iface} table local"
-            fi
-        done
-fi
-
-if [[ "${action}" == test ]]
+if [[ "${action}" == run_tests ]]
 then
     color_msg "running tests"
 
