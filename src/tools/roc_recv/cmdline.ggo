@@ -41,6 +41,9 @@ section "Options"
     option "no-play-timeout" - "No playback timeout, TIME units"
         string optional
 
+    option "prebuf-len" - "Length of packet prebuffer, TIME units"
+        string optional
+
     option "choppy-play-timeout" - "Choppy playback timeout, TIME units"
         string optional
 

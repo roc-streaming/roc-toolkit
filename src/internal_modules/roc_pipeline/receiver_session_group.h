@@ -124,6 +124,8 @@ private:
     status::StatusCode route_transport_packet_(const packet::PacketPtr& packet);
     status::StatusCode route_control_packet_(const packet::PacketPtr& packet,
                                              core::nanoseconds_t current_time);
+    void enqueue_prebuf_packet_(const packet::PacketPtr& packet);
+    void dequeue_prebuf_packets_(ReceiverSession& sess);
 
     bool can_create_session_(const packet::PacketPtr& packet);
 
@@ -152,6 +154,8 @@ private:
 
     core::List<ReceiverSession> sessions_;
     ReceiverSessionRouter session_router_;
+
+    core::List<packet::Packet> prebuf_packets_;
 
     bool valid_;
 };

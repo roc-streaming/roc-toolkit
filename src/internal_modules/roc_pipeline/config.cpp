@@ -46,16 +46,21 @@ void ReceiverCommonConfig::deduce_defaults() {
 
 ReceiverSessionConfig::ReceiverSessionConfig()
     : payload_type(0)
+    , prebuf_len(0)
     , enable_beeping(false) {
 }
 
 void ReceiverSessionConfig::deduce_defaults() {
+    if (prebuf_len == 0) {
+        prebuf_len = latency.target_latency;
+    }
     latency.deduce_defaults(DefaultLatency, true);
     watchdog.deduce_defaults(latency.target_latency);
     resampler.deduce_defaults(latency.tuner_backend, latency.tuner_profile);
 }
 
-ReceiverSourceConfig::ReceiverSourceConfig() {
+ReceiverSourceConfig::ReceiverSourceConfig()
+    : max_session_packets(0) {
 }
 
 void ReceiverSourceConfig::deduce_defaults() {

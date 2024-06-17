@@ -910,6 +910,14 @@ typedef struct roc_receiver_config {
      * If zero, default value is used. If negative, the check is disabled.
      */
     long long choppy_playback_timeout;
+
+    /** Packet prebuffer length, in nanoseconds.
+     * Packets received for sessions that have not yet been created
+     * will be buffered. Any packets older than the prebuf_len
+     * will be discarded.
+     * If zero, default value is used.
+     */
+    unsigned long long prebuf_len;
 } roc_receiver_config;
 
 /** Interface configuration.
