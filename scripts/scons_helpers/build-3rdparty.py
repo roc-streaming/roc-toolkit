@@ -381,9 +381,11 @@ def apply_patch(ctx, dir_path, patch_url, patch_name):
         dir_path,
         '../' + patch_name), ignore_error=True)
 
-def format_vars(ctx, disable_launcher=False):
+def format_vars(ctx, disable_launcher=False, env=None):
     ret = []
-    for k, v in ctx.env.items():
+    if not env:
+        env = ctx.env
+    for k, v in env.items():
         if k == 'COMPILER_LAUNCHER':
             continue
         elif k in ['CC', 'CXX'] and not disable_launcher:
@@ -720,6 +722,24 @@ def detect_compiler_family(env, toolchain, family):
                 return False
 
     return True
+
+def detect_compiler_presence(compiler):
+    try:
+        subprocess.run([compiler, '-v'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
+
+def detect_native_cc_cxx_compilers():
+    for compiler in ["gcc", "clang", "cc"]:
+        if detect_compiler_presence(compiler):
+            CC_native_compiler = compiler
+            break
+    for compiler in ["g++", "clang++"]:
+        if detect_compiler_presence(compiler):
+            CXX_native_compiler = compiler
+            break
+    return {'CC' : CC_native_compiler, 'CXX' : CXX_native_compiler}
 
 # Guess platform argument for OpenSSL's Configure script basing on toolchain string.
 # (see `./Configure LIST` for a list of all platforms and their format)
@@ -1462,6 +1482,7 @@ elif ctx.pkg_name == 'json-c':
     install_tree(ctx, '.', ctx.pkg_inc_dir, include=['*.h'])
     install_files(ctx, '.libs/libjson-c.a', ctx.pkg_lib_dir)
 elif ctx.pkg_name == 'gengetopt':
+    native_compiler = detect_native_cc_cxx_compilers(); 
     download(
         ctx,
         'https://ftp.gnu.org/gnu/gengetopt/gengetopt-{ctx.pkg_ver}.tar.gz',
@@ -1471,10 +1492,15 @@ elif ctx.pkg_name == 'gengetopt':
         'gengetopt-{ctx.pkg_ver}.tar.gz',
         'gengetopt-{ctx.pkg_ver}')
     changedir(ctx, 'src/gengetopt-{ctx.pkg_ver}')
-    execute(ctx, './configure', clear_env=True)
+    execute(ctx, './configure {vars}'.format(
+        vars=format_vars(ctx, False, env={'CC' : native_compiler['CC'],
+        'CXX' : native_compiler['CXX'],
+        'COMPILER_LAUNCHER' : ctx.env.get('COMPILER_LAUNCHER', None)}),
+        clear_env=True))
     execute_make(ctx, cpu_count=0) # -j is buggy for gengetopt
     install_files(ctx, 'src/gengetopt', ctx.pkg_bin_dir)
 elif ctx.pkg_name == 'ragel':
+    native_compiler = detect_native_cc_cxx_compilers();
     download(
         ctx,
         'https://www.colm.net/files/ragel/ragel-{ctx.pkg_ver}.tar.gz',
@@ -1484,7 +1510,12 @@ elif ctx.pkg_name == 'ragel':
         'ragel-{ctx.pkg_ver}.tar.gz',
         'ragel-{ctx.pkg_ver}')
     changedir(ctx, 'src/ragel-{ctx.pkg_ver}')
-    execute(ctx, './configure', clear_env=True)
+    compiler_launcher = ctx.env.get('COMPILER_LAUNCHER', None)
+    execute(ctx, './configure {vars}'.format(
+        vars=format_vars(ctx, False, env={'CC' : native_compiler['CC'],
+        'CXX' : native_compiler['CXX'],
+        'COMPILER_LAUNCHER' : ctx.env.get('COMPILER_LAUNCHER', None)}),
+        clear_env=True))
     execute_make(ctx)
     install_files(ctx, 'ragel/ragel', ctx.pkg_bin_dir)
 elif ctx.pkg_name == 'cpputest':
