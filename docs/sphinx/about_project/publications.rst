@@ -3,6 +3,8 @@ Publications
 
 This page lists some useful or interesting articles and blog posts, ordered by the publication date.
 
+* `Roc Toolkit 0.4 + updated tutorial for live audio streaming <https://gavv.net/articles/roc-0.4/>`_
+
 * `Roc Toolkit 0.3 is out! <https://gavv.net/articles/roc-0.3/>`_
 
 * `Updated tutorial for Roc 0.2 <https://gavv.net/articles/roc-tutorial-0.2/>`_
