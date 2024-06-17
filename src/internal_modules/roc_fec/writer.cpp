@@ -60,6 +60,10 @@ bool Writer::is_alive() const {
     return alive_;
 }
 
+packet::stream_timestamp_t Writer::max_block_duration() const {
+    return (packet::stream_timestamp_t)block_max_duration_;
+}
+
 bool Writer::resize(size_t sblen, size_t rblen) {
     if (next_sblen_ == sblen && next_rblen_ == rblen) {
         return true;
@@ -91,6 +95,8 @@ bool Writer::resize(size_t sblen, size_t rblen) {
     next_sblen_ = sblen;
     next_rblen_ = rblen;
 
+    // max_block_duration() reports maximum duration since last resize,
+    // so when resize happens, we reset maximum.
     prev_block_timestamp_valid_ = false;
 
     return true;
@@ -347,23 +353,22 @@ bool Writer::validate_source_packet_(const packet::PacketPtr& pp) {
     return true;
 }
 
-void Writer::update_block_duration_(const packet::PacketPtr& ptr) {
+void Writer::update_block_duration_(const packet::PacketPtr& curr_block_pkt) {
     packet::stream_timestamp_diff_t block_dur = 0;
     if (prev_block_timestamp_valid_) {
-        block_dur =
-            packet::stream_timestamp_diff(ptr->stream_timestamp(), prev_block_timestamp_);
+        block_dur = packet::stream_timestamp_diff(curr_block_pkt->stream_timestamp(),
+                                                  prev_block_timestamp_);
     }
     if (block_dur < 0) {
+        roc_log(LogTrace, "fec reader: negative block duration: prev_ts=%lu curr_ts=%lu",
+                (unsigned long)prev_block_timestamp_,
+                (unsigned long)curr_block_pkt->stream_timestamp());
         prev_block_timestamp_valid_ = false;
     } else {
         block_max_duration_ = std::max(block_max_duration_, block_dur);
-        prev_block_timestamp_ = ptr->stream_timestamp();
+        prev_block_timestamp_ = curr_block_pkt->stream_timestamp();
         prev_block_timestamp_valid_ = true;
     }
-}
-
-packet::stream_timestamp_t Writer::max_block_duration() const {
-    return (packet::stream_timestamp_t)block_max_duration_;
 }
 
 } // namespace fec

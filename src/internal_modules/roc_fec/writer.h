@@ -68,6 +68,9 @@ public:
     //! Check if writer is still working.
     bool is_alive() const;
 
+    //! Get maximal FEC block duration seen since last block resize.
+    packet::stream_timestamp_t max_block_duration() const;
+
     //! Set number of source packets per block.
     bool resize(size_t sblen, size_t rblen);
 
@@ -76,9 +79,6 @@ public:
     //!  - writes the given source packet to the output writer
     //!  - generates repair packets and also writes them to the output writer
     virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr&);
-
-    //! Get maximal FEC block duratoin seen since last block resize.
-    packet::stream_timestamp_t max_block_duration() const;
 
 private:
     bool begin_block_(const packet::PacketPtr& pp);
@@ -98,7 +98,7 @@ private:
     void validate_fec_packet_(const packet::PacketPtr&);
     bool validate_source_packet_(const packet::PacketPtr&);
 
-    void update_block_duration_(const packet::PacketPtr& ptr);
+    void update_block_duration_(const packet::PacketPtr& curr_block_pkt);
 
     size_t cur_sblen_;
     size_t next_sblen_;

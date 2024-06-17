@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Roc Streaming authors
+ * Copyright (c) 2024 Roc Streaming authors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -59,20 +59,6 @@ Composer<RS8M_PayloadID, Source, Footer> rs8m_source_composer(&rtp_composer);
 Composer<RS8M_PayloadID, Repair, Header> rs8m_repair_composer(NULL);
 Composer<LDPC_Source_PayloadID, Source, Footer> ldpc_source_composer(&rtp_composer);
 Composer<LDPC_Repair_PayloadID, Repair, Header> ldpc_repair_composer(NULL);
-
-class StatusReader : public packet::IReader {
-public:
-    explicit StatusReader(status::StatusCode code)
-        : code_(code) {
-    }
-
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(packet::PacketPtr&) {
-        return code_;
-    }
-
-private:
-    status::StatusCode code_;
-};
 
 } // namespace
 
@@ -248,7 +234,7 @@ TEST(block_duration, no_losses) {
         fill_all_packets(i_block * NumSourcePackets);
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
+            LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
         }
         if (i_block > 0) {
             UNSIGNED_LONGS_EQUAL(NumSourcePackets * 10, writer.max_block_duration());
@@ -257,7 +243,7 @@ TEST(block_duration, no_losses) {
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p));
             if (i_block == 0) {
                 UNSIGNED_LONGS_EQUAL(0, reader.max_block_duration());
             } else {
@@ -299,7 +285,7 @@ TEST(block_duration, lost_first_packet_in_first_block) {
     dispatcher.lose(0);
     UNSIGNED_LONGS_EQUAL(0, writer.max_block_duration());
     for (size_t i = 0; i < NumSourcePackets; ++i) {
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
+        LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
     }
 
     // Sending 2nd, 3rd and 4th blocks lossless.
@@ -307,8 +293,8 @@ TEST(block_duration, lost_first_packet_in_first_block) {
         dispatcher.clear_losses();
         fill_all_packets(i_block * NumSourcePackets);
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK,
-                                 writer.write(source_packets[i % NumSourcePackets]));
+            LONGS_EQUAL(status::StatusOK,
+                        writer.write(source_packets[i % NumSourcePackets]));
             UNSIGNED_LONGS_EQUAL(NumSourcePackets * 10, writer.max_block_duration());
         }
         dispatcher.push_stocks();
@@ -317,7 +303,7 @@ TEST(block_duration, lost_first_packet_in_first_block) {
     // Receive every sent packet except the first one.
     for (size_t i = 1; i < NumSourcePackets * 4; ++i) {
         packet::PacketPtr p;
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+        LONGS_EQUAL(status::StatusOK, reader.read(p));
         if (i < NumSourcePackets * 3 - 1) {
             UNSIGNED_LONGS_EQUAL(0, reader.max_block_duration());
         } else {
@@ -360,8 +346,8 @@ TEST(block_duration, lost_first_packet_in_third_block) {
         }
         fill_all_packets(i_block * NumSourcePackets);
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK,
-                                 writer.write(source_packets[i % NumSourcePackets]));
+            LONGS_EQUAL(status::StatusOK,
+                        writer.write(source_packets[i % NumSourcePackets]));
             if (i_block > 0) {
                 UNSIGNED_LONGS_EQUAL(NumSourcePackets * 10, writer.max_block_duration());
             }
@@ -372,7 +358,7 @@ TEST(block_duration, lost_first_packet_in_third_block) {
     // Receive every sent packet except the first one.
     for (size_t i = 1; i < NumSourcePackets * 4; ++i) {
         packet::PacketPtr p;
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+        LONGS_EQUAL(status::StatusOK, reader.read(p));
         if (i <= NumSourcePackets * 2 - 1) {
             UNSIGNED_LONGS_EQUAL(0, reader.max_block_duration());
         } else {
@@ -415,8 +401,8 @@ TEST(block_duration, lost_almost_every_packet) {
             if (i > 0) {
                 dispatcher.lose(i);
             }
-            UNSIGNED_LONGS_EQUAL(status::StatusOK,
-                                 writer.write(source_packets[i % NumSourcePackets]));
+            LONGS_EQUAL(status::StatusOK,
+                        writer.write(source_packets[i % NumSourcePackets]));
             if (i_block > 0) {
                 UNSIGNED_LONGS_EQUAL(NumSourcePackets * 10, writer.max_block_duration());
             }
@@ -427,7 +413,7 @@ TEST(block_duration, lost_almost_every_packet) {
     // Receive every sent packet except the first one.
     for (size_t i = 0; i < 4; ++i) {
         packet::PacketPtr p;
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+        LONGS_EQUAL(status::StatusOK, reader.read(p));
         UNSIGNED_LONGS_EQUAL(NumSourcePackets * 10 * i, p->stream_timestamp());
         if (i < 2) {
             UNSIGNED_LONGS_EQUAL(0, reader.max_block_duration());
@@ -471,8 +457,8 @@ TEST(block_duration, lost_single_block) {
             if (i_block == 3) {
                 dispatcher.lose(i);
             }
-            UNSIGNED_LONGS_EQUAL(status::StatusOK,
-                                 writer.write(source_packets[i % NumSourcePackets]));
+            LONGS_EQUAL(status::StatusOK,
+                        writer.write(source_packets[i % NumSourcePackets]));
             if (i_block > 0) {
                 UNSIGNED_LONGS_EQUAL(NumSourcePackets * 10, writer.max_block_duration());
             }
@@ -483,7 +469,7 @@ TEST(block_duration, lost_single_block) {
     // Receive every sent packet except the first one.
     for (size_t i = 0; i < 4 * NumSourcePackets; ++i) {
         packet::PacketPtr p;
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+        LONGS_EQUAL(status::StatusOK, reader.read(p));
         if (i >= 3 * NumSourcePackets) {
             UNSIGNED_LONGS_EQUAL(10 * (i + NumSourcePackets), p->stream_timestamp());
         } else {
@@ -546,7 +532,7 @@ TEST(block_duration, resize_block_middle) {
             packets[i] = fill_one_packet(wr_sn, FECPayloadSize);
             wr_sn++;
 
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(packets[i]));
+            LONGS_EQUAL(status::StatusOK, writer.write(packets[i]));
         }
         dispatcher.push_stocks();
         if (i_block >= 4) {
@@ -560,7 +546,7 @@ TEST(block_duration, resize_block_middle) {
     for (size_t i_block = 0; i_block < 10; ++i_block) {
         packet::PacketPtr p;
         for (size_t i_packet = 0; i_packet < sb_len[i_block]; i_packet++) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p));
             if ((i_block == 2 || i_block == 5 || i_block > 7)
                 && i_packet < sb_len[i_block] - 1) {
                 UNSIGNED_LONGS_EQUAL(sb_len[i_block] * 10, reader.max_block_duration());

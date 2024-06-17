@@ -222,7 +222,6 @@ TEST_GROUP(writer_reader) {
 
 TEST(writer_reader, no_losses) {
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
-        const size_t n_blocks = 5;
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
@@ -248,36 +247,22 @@ TEST(writer_reader, no_losses) {
         CHECK(writer.is_valid());
         CHECK(reader.is_valid());
 
-        for (size_t i_block = 0; i_block < n_blocks; ++i_block) {
-            fill_all_packets(i_block * NumSourcePackets);
+        fill_all_packets(0);
 
-            for (size_t i = 0; i < NumSourcePackets; ++i) {
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
-            }
-            if (i_block > 0) {
-                CHECK(writer.max_block_duration() == NumSourcePackets * 10);
-            }
-            dispatcher.push_stocks();
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
+        }
+        dispatcher.push_stocks();
 
-            UNSIGNED_LONGS_EQUAL(NumSourcePackets, dispatcher.source_size());
-            UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
+        UNSIGNED_LONGS_EQUAL(NumSourcePackets, dispatcher.source_size());
+        UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
 
-            for (size_t i = 0; i < NumSourcePackets; ++i) {
-                packet::PacketPtr p;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
-                if (i_block == 0) {
-                    CHECK(reader.max_block_duration() == 0);
-                } else {
-                    CHECK(reader.is_started());
-                    if (i_block > 1) {
-                        //                        CHECK(reader.max_block_duration() ==
-                        //                        NumSourcePackets * 10);
-                    }
-                }
-                CHECK(p);
-                check_audio_packet(p, i + i_block * NumSourcePackets);
-                check_restored(p, false);
-            }
+        for (size_t i = 0; i < NumSourcePackets; ++i) {
+            packet::PacketPtr p;
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            CHECK(p);
+            check_audio_packet(p, i);
+            check_restored(p, false);
         }
     }
 }
@@ -361,7 +346,6 @@ TEST(writer_reader, lost_first_packet_in_first_block) {
         // Sending first block except first packet.
         fill_all_packets(0);
         dispatcher.lose(0);
-        CHECK(writer.max_block_duration() == 0);
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
         }
@@ -371,7 +355,6 @@ TEST(writer_reader, lost_first_packet_in_first_block) {
         fill_all_packets(NumSourcePackets);
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
-            CHECK(writer.max_block_duration() == NumSourcePackets * 10);
         }
         dispatcher.push_stocks();
 
@@ -381,12 +364,8 @@ TEST(writer_reader, lost_first_packet_in_first_block) {
             UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
             if (i < NumSourcePackets) {
                 CHECK(!reader.is_started());
-                CHECK(reader.max_block_duration() == 0);
             } else {
                 CHECK(reader.is_started());
-                // The first packet of the previous block was lost -- still unable to
-                // get the difference in ts.
-                CHECK(reader.max_block_duration() == 0);
             }
             check_audio_packet(p, i);
             check_restored(p, false);

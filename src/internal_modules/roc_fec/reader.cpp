@@ -62,6 +62,12 @@ bool Reader::is_alive() const {
     return alive_;
 }
 
+packet::stream_timestamp_t Reader::max_block_duration() const {
+    roc_panic_if_not(is_valid());
+
+    return (packet::stream_timestamp_t)block_max_duration_;
+}
+
 status::StatusCode Reader::read(packet::PacketPtr& pp) {
     roc_panic_if_not(is_valid());
 
@@ -683,6 +689,8 @@ bool Reader::update_source_block_size_(size_t new_sblen) {
         return true;
     }
 
+    // max_block_duration() reports maximum duration since last resize,
+    // so when resize happens, we reset maximum.
     prev_block_timestamp_valid_ = false;
     block_max_duration_ = 0;
 
@@ -744,9 +752,12 @@ bool Reader::update_repair_block_size_(size_t new_blen) {
         return true;
     }
 
+    // max_block_duration() reports maximum duration since last resize,
+    // so when resize happens, we reset maximum.
     prev_block_timestamp_valid_ = false;
     block_max_duration_ = 0;
 
+    // should not happen: sblen should be validated in upper code
     roc_panic_if_not(new_blen > cur_sblen);
 
     const size_t new_rblen = new_blen - cur_sblen;
@@ -802,24 +813,22 @@ void Reader::drop_repair_packets_from_prev_blocks_() {
     }
 }
 
-void Reader::update_block_duration_(const packet::PacketPtr& ptr) {
+void Reader::update_block_duration_(const packet::PacketPtr& curr_block_pkt) {
     packet::stream_timestamp_diff_t block_dur = 0;
     if (prev_block_timestamp_valid_) {
-        block_dur =
-            packet::stream_timestamp_diff(ptr->stream_timestamp(), prev_block_timestamp_);
+        block_dur = packet::stream_timestamp_diff(curr_block_pkt->stream_timestamp(),
+                                                  prev_block_timestamp_);
     }
     if (block_dur < 0) {
-        roc_log(LogTrace, "fec reader: negative block duration");
+        roc_log(LogTrace, "fec reader: negative block duration: prev_ts=%lu curr_ts=%lu",
+                (unsigned long)prev_block_timestamp_,
+                (unsigned long)curr_block_pkt->stream_timestamp());
         prev_block_timestamp_valid_ = false;
     } else {
         block_max_duration_ = std::max(block_max_duration_, block_dur);
-        prev_block_timestamp_ = ptr->stream_timestamp();
+        prev_block_timestamp_ = curr_block_pkt->stream_timestamp();
         prev_block_timestamp_valid_ = true;
     }
-}
-
-packet::stream_timestamp_t Reader::max_block_duration() const {
-    return (packet::stream_timestamp_t)block_max_duration_;
 }
 
 } // namespace fec

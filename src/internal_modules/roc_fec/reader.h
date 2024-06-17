@@ -66,13 +66,13 @@ public:
     //! Is decoder alive?
     bool is_alive() const;
 
+    //! Get maximal FEC block duration seen since last block resize.
+    packet::stream_timestamp_t max_block_duration() const;
+
     //! Read packet.
     //! @remarks
     //!  When a packet loss is detected, try to restore it from repair packets.
     virtual ROC_ATTR_NODISCARD status::StatusCode read(packet::PacketPtr&);
-
-    //! Get maximal FEC block duratoin seen since last block resize.
-    packet::stream_timestamp_t max_block_duration() const;
 
 private:
     status::StatusCode read_(packet::PacketPtr&);
@@ -111,7 +111,7 @@ private:
 
     void drop_repair_packets_from_prev_blocks_();
 
-    void update_block_duration_(const packet::PacketPtr& ptr);
+    void update_block_duration_(const packet::PacketPtr& curr_block_pkt);
 
     IBlockDecoder& block_decoder_;
 
