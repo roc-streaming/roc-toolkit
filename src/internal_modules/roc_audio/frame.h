@@ -43,11 +43,11 @@ public:
 
         //! Set if the frame is not fully filled with samples from packets.
         //! If this flag is set, frame is partially zero because of lack of packets.
-        HasHoles = (1 << 1),
+        HasGaps = (1 << 1),
 
         //! Set if some late packets were dropped while the frame was being built.
         //! It's not necessarily that the frame itself has no signal or has holes.
-        HasPacketDrops = (1 << 2)
+        HasDrops = (1 << 2)
     };
 
     //! Construct empty frame.

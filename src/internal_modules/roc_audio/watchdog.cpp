@@ -215,7 +215,7 @@ void Watchdog::update_drops_timeout_(const Frame& frame,
     const packet::stream_timestamp_t window_end = window_start + drops_detection_window_;
 
     if (packet::stream_timestamp_le(window_end, next_read_pos)) {
-        const unsigned drop_flags = Frame::HasHoles | Frame::HasPacketDrops;
+        const unsigned drop_flags = Frame::HasGaps | Frame::HasDrops;
 
         if ((curr_window_flags_ & drop_flags) != drop_flags) {
             last_pos_before_drops_ = next_read_pos;
@@ -265,25 +265,25 @@ void Watchdog::update_status_(const Frame& frame) {
 
     if (!(flags & Frame::HasSignal)) {
         if (in_warmup_) {
-            if (flags & Frame::HasPacketDrops) {
+            if (flags & Frame::HasDrops) {
                 symbol = 'W';
             } else {
                 symbol = 'w';
             }
         } else {
-            if (flags & Frame::HasPacketDrops) {
+            if (flags & Frame::HasDrops) {
                 symbol = 'B';
             } else {
                 symbol = 'b';
             }
         }
-    } else if (flags & Frame::HasHoles) {
-        if (flags & Frame::HasPacketDrops) {
+    } else if (flags & Frame::HasGaps) {
+        if (flags & Frame::HasDrops) {
             symbol = 'I';
         } else {
             symbol = 'i';
         }
-    } else if (flags & Frame::HasPacketDrops) {
+    } else if (flags & Frame::HasDrops) {
         symbol = 'D';
     }
 

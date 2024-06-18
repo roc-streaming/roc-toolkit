@@ -214,7 +214,7 @@ TEST(channel_mapper_reader, big_read_upmix) {
     LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
     const unsigned flags1 = Frame::HasSignal;
-    const unsigned flags2 = Frame::HasHoles;
+    const unsigned flags2 = Frame::HasGaps;
 
     mock_reader.enable_timestamps(start_cts);
     add_mono(mock_reader, MaxSz, 0.3f, flags1);
@@ -256,7 +256,7 @@ TEST(channel_mapper_reader, big_read_downmix) {
     LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
     const unsigned flags1 = Frame::HasSignal;
-    const unsigned flags2 = Frame::HasHoles;
+    const unsigned flags2 = Frame::HasGaps;
 
     mock_reader.enable_timestamps(start_cts);
     add_stereo(mock_reader, MaxSz * 2, 0.2f, 0.4f, flags1);
@@ -296,7 +296,7 @@ TEST(channel_mapper_reader, big_read_no_cts) {
     LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
     const unsigned flags1 = Frame::HasSignal;
-    const unsigned flags2 = Frame::HasHoles;
+    const unsigned flags2 = Frame::HasGaps;
 
     add_stereo(mock_reader, MaxSz * 2, 0.2f, 0.4f, flags1);
     add_stereo(mock_reader, MaxSz * 2, 0.5f, 0.5f, flags2);

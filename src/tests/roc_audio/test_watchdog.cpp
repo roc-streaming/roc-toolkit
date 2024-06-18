@@ -236,7 +236,7 @@ TEST(watchdog, broken_playback_timeout_equal_frame_sizes) {
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
         expect_n_reads(status::StatusOK, watchdog, BreakageWindow,
                        BreakageWindowsPerTimeout - 1);
 
@@ -256,7 +256,7 @@ TEST(watchdog, broken_playback_timeout_equal_frame_sizes) {
         meta_reader.set_flags(Frame::HasSignal);
         expect_read(status::StatusOK, watchdog, BreakageWindow);
 
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
         expect_n_reads(status::StatusOK, watchdog, BreakageWindow,
                        BreakageWindowsPerTimeout - 2);
 
@@ -277,7 +277,7 @@ TEST(watchdog, broken_playback_timeout_equal_frame_sizes) {
         meta_reader.set_flags(Frame::HasSignal);
         expect_read(status::StatusOK, watchdog, BreakageWindow);
 
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
         expect_n_reads(status::StatusOK, watchdog, BreakageWindow,
                        BreakageWindowsPerTimeout - 1);
 
@@ -291,11 +291,11 @@ TEST(watchdog, broken_playback_timeout_equal_frame_sizes) {
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
         expect_n_reads(status::StatusOK, watchdog, BreakageWindow,
                        BreakageWindowsPerTimeout - 1);
 
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps);
         expect_read(status::StatusOK, watchdog, BreakageWindow);
 
         meta_reader.set_flags(Frame::HasSignal);
@@ -308,11 +308,11 @@ TEST(watchdog, broken_playback_timeout_equal_frame_sizes) {
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
         expect_n_reads(status::StatusOK, watchdog, BreakageWindow,
                        BreakageWindowsPerTimeout - 1);
 
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasDrops);
         expect_read(status::StatusOK, watchdog, BreakageWindow);
 
         meta_reader.set_flags(Frame::HasSignal);
@@ -325,11 +325,11 @@ TEST(watchdog, broken_playback_timeout_equal_frame_sizes) {
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
         expect_n_reads(status::StatusOK, watchdog, BreakageWindow,
                        BreakageWindowsPerTimeout - 1);
 
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
         expect_read(status::StatusAbort, watchdog, BreakageWindow);
 
         meta_reader.set_flags(Frame::HasSignal);
@@ -345,7 +345,7 @@ TEST(watchdog, broken_playback_timeout_mixed_frame_sizes) {
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
         expect_read(status::StatusOK, watchdog,
                     BreakageWindow * (BreakageWindowsPerTimeout - 1));
 
@@ -362,11 +362,11 @@ TEST(watchdog, broken_playback_timeout_mixed_frame_sizes) {
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
         expect_read(status::StatusOK, watchdog,
                     BreakageWindow * (BreakageWindowsPerTimeout - 1));
 
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
         expect_read(status::StatusOK, watchdog, BreakageWindow / 2);
 
         meta_reader.set_flags(Frame::HasSignal);
@@ -379,14 +379,14 @@ TEST(watchdog, broken_playback_timeout_mixed_frame_sizes) {
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
         expect_read(status::StatusOK, watchdog,
                     BreakageWindow * (BreakageWindowsPerTimeout - 1));
 
         meta_reader.set_flags(Frame::HasSignal);
         expect_read(status::StatusOK, watchdog, BreakageWindow / 2);
 
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
         expect_read(status::StatusAbort, watchdog, BreakageWindow - BreakageWindow / 2);
     }
 }
@@ -398,14 +398,14 @@ TEST(watchdog, broken_playback_timeout_constant_drops) {
     LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
     for (packet::stream_timestamp_t n = 0; n < BreakageWindowsPerTimeout - 1; n++) {
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
         expect_read(status::StatusOK, watchdog, BreakageWindow / 2);
 
         meta_reader.set_flags(Frame::HasSignal);
         expect_read(status::StatusOK, watchdog, BreakageWindow - BreakageWindow / 2);
     }
 
-    meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+    meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
     expect_read(status::StatusOK, watchdog, BreakageWindow / 2);
 
     meta_reader.set_flags(Frame::HasSignal);
@@ -420,13 +420,13 @@ TEST(watchdog, broken_playback_timeout_frame_overlaps_with_breakage_window) {
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
         expect_read(status::StatusOK, watchdog, BreakageWindow);
 
         meta_reader.set_flags(Frame::HasSignal);
         expect_read(status::StatusOK, watchdog, BreakageWindow);
 
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
         expect_read(status::StatusOK, watchdog, BrokenPlaybackTimeout - BreakageWindow);
     }
     {
@@ -436,13 +436,13 @@ TEST(watchdog, broken_playback_timeout_frame_overlaps_with_breakage_window) {
                           arena);
         LONGS_EQUAL(status::StatusOK, watchdog.init_status());
 
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
         expect_read(status::StatusOK, watchdog, BreakageWindow + 1);
 
         meta_reader.set_flags(Frame::HasSignal);
         expect_read(status::StatusOK, watchdog, BreakageWindow - 1);
 
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
         expect_read(status::StatusAbort, watchdog,
                     BrokenPlaybackTimeout - BreakageWindow);
     }
@@ -456,7 +456,7 @@ TEST(watchdog, broken_playback_timeout_frame_overlaps_with_breakage_window) {
         meta_reader.set_flags(Frame::HasSignal);
         expect_read(status::StatusOK, watchdog, BrokenPlaybackTimeout - BreakageWindow);
 
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
         expect_read(status::StatusOK, watchdog, BreakageWindow + 1);
 
         meta_reader.set_flags(Frame::HasSignal);
@@ -475,13 +475,13 @@ TEST(watchdog, broken_playback_timeout_frame_overlaps_with_breakage_window) {
         meta_reader.set_flags(Frame::HasSignal);
         expect_read(status::StatusOK, watchdog, BrokenPlaybackTimeout - BreakageWindow);
 
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
         expect_read(status::StatusOK, watchdog, BreakageWindow + 1);
 
         meta_reader.set_flags(Frame::HasSignal);
         expect_read(status::StatusOK, watchdog, BreakageWindow - 1);
 
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
         expect_read(status::StatusAbort, watchdog,
                     BrokenPlaybackTimeout - BreakageWindow);
     }
@@ -497,12 +497,11 @@ TEST(watchdog, broken_playback_timeout_enabled_disabled) {
 
         for (packet::stream_timestamp_t n = 0;
              n < (BrokenPlaybackTimeout / SamplesPerFrame) - 1; n++) {
-            meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles
-                                  | Frame::HasPacketDrops);
+            meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
             expect_read(status::StatusOK, watchdog, SamplesPerFrame);
         }
 
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
         expect_read(status::StatusAbort, watchdog, SamplesPerFrame);
     }
     { // disabled
@@ -513,12 +512,11 @@ TEST(watchdog, broken_playback_timeout_enabled_disabled) {
 
         for (packet::stream_timestamp_t n = 0;
              n < (BrokenPlaybackTimeout / SamplesPerFrame) - 1; n++) {
-            meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles
-                                  | Frame::HasPacketDrops);
+            meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
             expect_read(status::StatusOK, watchdog, SamplesPerFrame);
         }
 
-        meta_reader.set_flags(Frame::HasSignal | Frame::HasHoles | Frame::HasPacketDrops);
+        meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
         expect_read(status::StatusOK, watchdog, SamplesPerFrame);
     }
 }

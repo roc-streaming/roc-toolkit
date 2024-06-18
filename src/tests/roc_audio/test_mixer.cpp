@@ -211,13 +211,13 @@ TEST(mixer, flags) {
     reader1.add_samples(BigBatch, 0.1f, Frame::HasSignal);
     reader1.add_samples(BigBatch, 0.1f, 0);
 
-    reader2.add_samples(BigBatch, 0.1f, Frame::HasHoles);
+    reader2.add_samples(BigBatch, 0.1f, Frame::HasGaps);
     reader2.add_samples(BigBatch / 2, 0.1f, 0);
-    reader2.add_samples(BigBatch / 2, 0.1f, Frame::HasPacketDrops);
+    reader2.add_samples(BigBatch / 2, 0.1f, Frame::HasDrops);
     reader2.add_samples(BigBatch, 0.1f, 0);
 
-    expect_output(mixer, BigBatch, 0.2f, Frame::HasHoles);
-    expect_output(mixer, BigBatch, 0.2f, Frame::HasSignal | Frame::HasPacketDrops);
+    expect_output(mixer, BigBatch, 0.2f, Frame::HasGaps);
+    expect_output(mixer, BigBatch, 0.2f, Frame::HasSignal | Frame::HasDrops);
     expect_output(mixer, BigBatch, 0.2f, 0);
 
     LONGS_EQUAL(0, reader1.num_unread());

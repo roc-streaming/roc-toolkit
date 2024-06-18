@@ -448,7 +448,7 @@ TEST(pcm_mapper_reader, forward_flags) {
 
     meta_reader.flags[0] = 0;
     meta_reader.flags[1] = Frame::HasSignal;
-    meta_reader.flags[2] = Frame::HasHoles;
+    meta_reader.flags[2] = Frame::HasGaps;
 
     for (int iter = 0; iter < 3; iter++) {
         FramePtr frame = expect_raw_frame(status::StatusPart, mapper_reader, out_spec,

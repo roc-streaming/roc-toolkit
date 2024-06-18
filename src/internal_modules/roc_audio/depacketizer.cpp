@@ -321,11 +321,11 @@ void Depacketizer::commit_frame_(Frame& frame, const FrameStats& frame_stats) {
     }
 
     if (frame_stats.n_decoded_samples < frame.num_raw_samples()) {
-        flags |= Frame::HasHoles;
+        flags |= Frame::HasGaps;
     }
 
     if (frame_stats.n_dropped_packets != 0) {
-        flags |= Frame::HasPacketDrops;
+        flags |= Frame::HasDrops;
     }
 
     frame.set_flags(flags);

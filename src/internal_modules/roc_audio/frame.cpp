@@ -153,9 +153,9 @@ void Frame::set_capture_timestamp(core::nanoseconds_t capture_ts) {
 
 void Frame::print() const {
     char flags_str[] = {
-        !(flags_ & HasSignal) ? 'b' : '.',     // b=blank
-        (flags_ & HasHoles) ? 'i' : '.',       // i=incomplete
-        (flags_ & HasPacketDrops) ? 'd' : '.', // d=drops
+        !(flags_ & HasSignal) ? 'b' : '.', // b=blank
+        (flags_ & HasGaps) ? 'i' : '.',    // i=incomplete
+        (flags_ & HasDrops) ? 'd' : '.',   // d=drops
         '\0',
     };
 

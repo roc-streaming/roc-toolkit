@@ -556,13 +556,13 @@ TEST(depacketizer, frame_flags_incompltete_blank) {
 
     unsigned frame_flags[] = {
         Frame::HasSignal,
-        Frame::HasHoles | Frame::HasSignal,
-        Frame::HasHoles | Frame::HasSignal,
-        Frame::HasHoles | Frame::HasSignal,
-        Frame::HasHoles | Frame::HasSignal,
-        Frame::HasHoles,
+        Frame::HasGaps | Frame::HasSignal,
+        Frame::HasGaps | Frame::HasSignal,
+        Frame::HasGaps | Frame::HasSignal,
+        Frame::HasGaps | Frame::HasSignal,
+        Frame::HasGaps,
         Frame::HasSignal,
-        Frame::HasHoles,
+        Frame::HasGaps,
     };
 
     core::nanoseconds_t capt_ts[] = {
@@ -605,11 +605,11 @@ TEST(depacketizer, frame_flags_drops) {
     };
 
     unsigned frame_flags[] = {
-        Frame::HasSignal,                         //
-        Frame::HasSignal | Frame::HasPacketDrops, //
-        Frame::HasSignal,                         //
-        Frame::HasHoles | Frame::HasPacketDrops,  //
-        Frame::HasSignal,                         //
+        Frame::HasSignal,                   //
+        Frame::HasSignal | Frame::HasDrops, //
+        Frame::HasSignal,                   //
+        Frame::HasGaps | Frame::HasDrops,   //
+        Frame::HasSignal,                   //
     };
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(packets); n++) {
