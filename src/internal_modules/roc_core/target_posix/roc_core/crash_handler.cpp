@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "roc_core/backtrace.h"
 #include "roc_core/crash_handler.h"
 #include "roc_core/die.h"
 #include "roc_core/errno_to_str.h"
@@ -29,6 +30,9 @@ const char* signal_string(int sig, siginfo_t* si) {
         return "caught SIGSEGV";
     case SIGILL:
         return "caught SIGILL";
+    case SIGQUIT:
+        print_backtrace_safe();
+        _exit(SIGQUIT);
 #ifdef SIGBUS
     case SIGBUS:
         return "caught SIGBUS";
