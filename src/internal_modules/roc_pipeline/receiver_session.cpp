@@ -379,20 +379,25 @@ ReceiverParticipantMetrics ReceiverSession::get_metrics() const {
 }
 
 status::StatusCode ReceiverSession::read(audio::Frame& frame,
-                                         packet::stream_timestamp_t duration) {
+                                         packet::stream_timestamp_t duration,
+                                         audio::FrameReadMode mode) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (fail_status_ != status::NoStatus) {
-        return status::StatusDrain;
+        // Failure happened, and session will be removed soon. Until that,
+        // always return StatusEnd to be excluded from mixing.
+        return status::StatusEnd;
     }
 
-    const status::StatusCode code = frame_reader_->read(frame, duration);
+    const status::StatusCode code = frame_reader_->read(frame, duration, mode);
 
-    // If error happens, save it to return later from refresh(), which allows
-    // ReceiverSessionGroup to handle it.
-    if (code != status::StatusOK && code != status::StatusDrain) {
+    // Failure happened. Remember error to return it from next refresh() call.
+    // Return StatusEnd to be excluded from mixing.
+    // We don't return error from read() because we don't want the whole
+    // receiver to fail, we just need to remove one session.
+    if (code != status::StatusOK && code != status::StatusEnd) {
         fail_status_ = code;
-        return status::StatusDrain;
+        return status::StatusEnd;
     }
 
     return code;

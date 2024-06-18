@@ -16,6 +16,7 @@
 #include "roc_audio/iframe_reader.h"
 #include "roc_audio/sample.h"
 #include "roc_audio/sample_spec.h"
+#include "roc_core/iarena.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
@@ -50,6 +51,7 @@ public:
     //! Initialize.
     //! @p enable_timestamps defines whether to enable calculation of capture timestamps.
     Mixer(FrameFactory& frame_factory,
+          core::IArena& arena,
           const SampleSpec& sample_spec,
           bool enable_timestamps);
 
@@ -57,7 +59,7 @@ public:
     status::StatusCode init_status() const;
 
     //! Add input reader.
-    void add_input(IFrameReader&);
+    ROC_ATTR_NODISCARD status::StatusCode add_input(IFrameReader&);
 
     //! Remove input reader.
     void remove_input(IFrameReader&);
@@ -70,27 +72,48 @@ public:
     //!  Requested @p duration is allowed to be larger than maximum buffer
     //!  size, but only if @p frame has pre-allocated buffer big enough.
     virtual ROC_ATTR_NODISCARD status::StatusCode
-    read(Frame& frame, packet::stream_timestamp_t duration);
+    read(Frame& frame, packet::stream_timestamp_t duration, FrameReadMode mode);
 
 private:
-    status::StatusCode mix_all_(sample_t* out_data,
-                                size_t out_size,
-                                unsigned& out_flags,
-                                core::nanoseconds_t& out_cts);
+    struct Input {
+        // from where to get samples, typically receiver session
+        IFrameReader* reader;
+        // how much samples already mixed into mix_frame_
+        size_t n_mixed;
+        // capture timestamp of first sample in mix_frame_
+        core::nanoseconds_t cts;
 
-    status::StatusCode mix_one_(IFrameReader& frame_reader,
-                                sample_t* out_data,
-                                size_t out_size,
-                                unsigned& out_flags,
-                                core::nanoseconds_t& out_cts);
+        Input()
+            : reader(NULL)
+            , n_mixed(0)
+            , cts(0) {
+        }
+    };
+
+    status::StatusCode mix_all_repeat_(sample_t* out_data,
+                                       size_t& out_size,
+                                       core::nanoseconds_t& out_cts,
+                                       FrameReadMode mode);
+
+    status::StatusCode mix_all_(sample_t* out_data,
+                                size_t& out_size,
+                                core::nanoseconds_t& out_cts,
+                                FrameReadMode mode);
+
+    status::StatusCode
+    mix_one_(Input& input, sample_t* mix_data, size_t mix_size, FrameReadMode mode);
 
     FrameFactory& frame_factory_;
-    core::List<IFrameReader, core::NoOwnership> frame_readers_;
 
+    core::Array<Input, 8> inputs_;
+
+    // intermediate frame for reading
     FramePtr in_frame_;
 
+    // intermediate buffer for mixing
+    core::Slice<sample_t> mix_buffer_;
+
     const SampleSpec sample_spec_;
-    const size_t max_read_;
     const bool enable_timestamps_;
 
     status::StatusCode init_status_;

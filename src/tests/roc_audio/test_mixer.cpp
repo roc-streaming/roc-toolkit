@@ -31,24 +31,27 @@ core::HeapArena arena;
 FrameFactory frame_factory(arena, MaxBufSz * sizeof(sample_t));
 FrameFactory big_frame_factory(arena, MaxBufSz * 10 * sizeof(sample_t));
 
-void expect_output(Mixer& mixer,
-                   size_t samples_per_chan,
+void expect_output(status::StatusCode expected_code,
+                   Mixer& mixer,
+                   size_t requested_samples,
+                   size_t expected_samples,
                    sample_t value,
                    unsigned flags = 0,
-                   core::nanoseconds_t capture_ts = -1) {
+                   core::nanoseconds_t capture_ts = -1,
+                   FrameReadMode mode = ModeHard) {
     CHECK(sample_spec.num_channels() == 1);
 
     FramePtr frame = big_frame_factory.allocate_frame(0);
     CHECK(frame);
 
-    LONGS_EQUAL(status::StatusOK, mixer.read(*frame, samples_per_chan));
+    LONGS_EQUAL(expected_code, mixer.read(*frame, requested_samples, mode));
 
     CHECK(frame->is_raw());
 
-    UNSIGNED_LONGS_EQUAL(samples_per_chan, frame->num_raw_samples());
-    UNSIGNED_LONGS_EQUAL(samples_per_chan, frame->duration());
+    UNSIGNED_LONGS_EQUAL(expected_samples, frame->num_raw_samples());
+    UNSIGNED_LONGS_EQUAL(expected_samples, frame->duration());
 
-    for (size_t n = 0; n < samples_per_chan; n++) {
+    for (size_t n = 0; n < expected_samples; n++) {
         DOUBLES_EQUAL((double)value, (double)frame->raw_samples()[n], 0.0001);
     }
 
@@ -62,13 +65,16 @@ void expect_output(Mixer& mixer,
     }
 }
 
-void expect_error(Mixer& mixer, size_t samples_per_chan, status::StatusCode status) {
+void expect_error(status::StatusCode expected_code,
+                  Mixer& mixer,
+                  size_t requested_samples,
+                  FrameReadMode mode = ModeHard) {
     CHECK(sample_spec.num_channels() == 1);
 
     FramePtr frame = big_frame_factory.allocate_frame(0);
     CHECK(frame);
 
-    LONGS_EQUAL(status, mixer.read(*frame, samples_per_chan));
+    LONGS_EQUAL(expected_code, mixer.read(*frame, requested_samples, mode));
 }
 
 } // namespace
@@ -76,22 +82,22 @@ void expect_error(Mixer& mixer, size_t samples_per_chan, status::StatusCode stat
 TEST_GROUP(mixer) {};
 
 TEST(mixer, no_readers) {
-    Mixer mixer(frame_factory, sample_spec, true);
+    Mixer mixer(frame_factory, arena, sample_spec, true);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
-    expect_output(mixer, BufSz, 0);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0);
 }
 
 TEST(mixer, one_reader) {
     test::MockReader reader(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, sample_spec, true);
+    Mixer mixer(frame_factory, arena, sample_spec, true);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
-    mixer.add_input(reader);
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader));
 
     reader.add_samples(BufSz, 0.11f);
-    expect_output(mixer, BufSz, 0.11f);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.11f);
 
     LONGS_EQUAL(0, reader.num_unread());
     LONGS_EQUAL(1, reader.total_reads());
@@ -102,13 +108,13 @@ TEST(mixer, one_reader_big_frame) {
 
     test::MockReader reader(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, sample_spec, true);
+    Mixer mixer(frame_factory, arena, sample_spec, true);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
-    mixer.add_input(reader);
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader));
 
     reader.add_samples(MaxBufSz * Factor, 0.11f);
-    expect_output(mixer, MaxBufSz * Factor, 0.11f);
+    expect_output(status::StatusOK, mixer, MaxBufSz * Factor, MaxBufSz * Factor, 0.11f);
 
     LONGS_EQUAL(0, reader.num_unread());
     LONGS_EQUAL(Factor, reader.total_reads());
@@ -118,16 +124,16 @@ TEST(mixer, two_readers) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, sample_spec, true);
+    Mixer mixer(frame_factory, arena, sample_spec, true);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
-    mixer.add_input(reader1);
-    mixer.add_input(reader2);
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader2));
 
     reader1.add_samples(BufSz, 0.11f);
     reader2.add_samples(BufSz, 0.22f);
 
-    expect_output(mixer, BufSz, 0.33f);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.33f);
 
     LONGS_EQUAL(0, reader1.num_unread());
     LONGS_EQUAL(0, reader2.num_unread());
@@ -140,91 +146,165 @@ TEST(mixer, remove_reader) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, sample_spec, true);
+    Mixer mixer(frame_factory, arena, sample_spec, true);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
-    mixer.add_input(reader1);
-    mixer.add_input(reader2);
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader2));
 
     reader1.add_samples(BufSz, 0.11f);
     reader2.add_samples(BufSz, 0.22f);
-    expect_output(mixer, BufSz, 0.33f);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.33f);
 
     mixer.remove_input(reader2);
 
     reader1.add_samples(BufSz, 0.44f);
     reader2.add_samples(BufSz, 0.55f);
-    expect_output(mixer, BufSz, 0.44f);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.44f);
 
     mixer.remove_input(reader1);
 
     reader1.add_samples(BufSz, 0.77f);
     reader2.add_samples(BufSz, 0.88f);
-    expect_output(mixer, BufSz, 0.0f);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.0f);
 
     LONGS_EQUAL(BufSz, reader1.num_unread());
     LONGS_EQUAL(BufSz * 2, reader2.num_unread());
+}
+
+// If reader returns StreamEnd, mixer skips it.
+TEST(mixer, end) {
+    test::MockReader reader1(frame_factory, sample_spec);
+    test::MockReader reader2(frame_factory, sample_spec);
+
+    Mixer mixer(frame_factory, arena, sample_spec, true);
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
+
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader2));
+
+    reader1.add_samples(BufSz, 0.11f);
+    reader2.add_samples(BufSz, 0.22f);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.33f);
+
+    reader2.set_status(status::StatusEnd);
+
+    reader1.add_samples(BufSz, 0.44f);
+    reader2.add_samples(BufSz, 0.55f);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.44f);
+
+    reader1.set_status(status::StatusEnd);
+
+    reader1.add_samples(BufSz, 0.77f);
+    reader2.add_samples(BufSz, 0.88f);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.0f);
+
+    LONGS_EQUAL(BufSz, reader1.num_unread());
+    LONGS_EQUAL(BufSz * 2, reader2.num_unread());
+}
+
+// If input reader returns StatusPart, mixer repeats read
+// until it gathers complete frame.
+TEST(mixer, partial) {
+    enum { Factor1 = 2, Factor2 = 4 };
+
+    test::MockReader reader1(frame_factory, sample_spec);
+    test::MockReader reader2(frame_factory, sample_spec);
+
+    Mixer mixer(frame_factory, arena, sample_spec, true);
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
+
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader2));
+
+    reader1.add_samples(BufSz * 2, 0.11f);
+    reader2.add_samples(BufSz * 2, 0.22f);
+
+    reader1.set_limit(BufSz / Factor1);
+    reader2.set_limit(BufSz / Factor2);
+
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.33f, 0, 0);
+
+    LONGS_EQUAL(BufSz, reader1.num_unread());
+    LONGS_EQUAL(BufSz, reader2.num_unread());
+
+    LONGS_EQUAL(Factor1, reader1.total_reads());
+    LONGS_EQUAL(Factor2, reader2.total_reads());
+
+    reader1.set_limit(BufSz / Factor2);
+    reader2.set_limit(BufSz / Factor1);
+
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.33f, 0, 0);
+
+    LONGS_EQUAL(0, reader1.num_unread());
+    LONGS_EQUAL(0, reader2.num_unread());
+
+    LONGS_EQUAL(Factor1 + Factor2, reader1.total_reads());
+    LONGS_EQUAL(Factor1 + Factor2, reader2.total_reads());
+}
+
+// Reader returns StreamEnd in the middle of repeating partial.
+TEST(mixer, partial_end) {
+    test::MockReader reader1(frame_factory, sample_spec);
+    test::MockReader reader2(frame_factory, sample_spec);
+
+    Mixer mixer(frame_factory, arena, sample_spec, true);
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
+
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader2));
+
+    reader1.add_samples(BufSz * 2, 0.11f);
+    reader2.add_samples(BufSz * 2, 0.22f);
+    reader2.add_samples(BufSz * 2, 0.33f);
+
+    reader1.set_limit(BufSz);
+    reader2.set_limit(BufSz);
+
+    reader1.set_no_samples_status(status::StatusEnd);
+
+    expect_output(status::StatusOK, mixer, BufSz * 4, BufSz * 4, 0.33f, 0, 0);
+
+    LONGS_EQUAL(0, reader1.num_unread());
+    LONGS_EQUAL(0, reader2.num_unread());
+
+    LONGS_EQUAL(3, reader1.total_reads());
+    LONGS_EQUAL(4, reader2.total_reads());
+
+    LONGS_EQUAL(status::StatusEnd, reader1.last_status());
+    LONGS_EQUAL(status::StatusOK, reader2.last_status());
 }
 
 TEST(mixer, clamp) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, sample_spec, true);
+    Mixer mixer(frame_factory, arena, sample_spec, true);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
-    mixer.add_input(reader1);
-    mixer.add_input(reader2);
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader2));
 
     reader1.add_samples(BufSz, 0.900f);
     reader2.add_samples(BufSz, 0.101f);
 
-    expect_output(mixer, BufSz, 1.0f);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 1.0f);
 
     reader1.add_samples(BufSz, 0.2f);
     reader2.add_samples(BufSz, 1.1f);
 
-    expect_output(mixer, BufSz, 1.0f);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 1.0f);
 
     reader1.add_samples(BufSz, -0.2f);
     reader2.add_samples(BufSz, -0.81f);
 
-    expect_output(mixer, BufSz, -1.0f);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, -1.0f);
 
     LONGS_EQUAL(0, reader1.num_unread());
     LONGS_EQUAL(0, reader2.num_unread());
 }
 
-TEST(mixer, flags) {
-    enum { BigBatch = MaxBufSz * 2 };
-
-    test::MockReader reader1(frame_factory, sample_spec);
-    test::MockReader reader2(frame_factory, sample_spec);
-
-    Mixer mixer(frame_factory, sample_spec, true);
-    LONGS_EQUAL(status::StatusOK, mixer.init_status());
-
-    mixer.add_input(reader1);
-    mixer.add_input(reader2);
-
-    reader1.add_samples(BigBatch, 0.1f, 0);
-    reader1.add_samples(BigBatch, 0.1f, Frame::HasSignal);
-    reader1.add_samples(BigBatch, 0.1f, 0);
-
-    reader2.add_samples(BigBatch, 0.1f, Frame::HasGaps);
-    reader2.add_samples(BigBatch / 2, 0.1f, 0);
-    reader2.add_samples(BigBatch / 2, 0.1f, Frame::HasDrops);
-    reader2.add_samples(BigBatch, 0.1f, 0);
-
-    expect_output(mixer, BigBatch, 0.2f, Frame::HasGaps);
-    expect_output(mixer, BigBatch, 0.2f, Frame::HasSignal | Frame::HasDrops);
-    expect_output(mixer, BigBatch, 0.2f, 0);
-
-    LONGS_EQUAL(0, reader1.num_unread());
-    LONGS_EQUAL(0, reader2.num_unread());
-}
-
-TEST(mixer, timestamps_one_reader) {
+TEST(mixer, cts_one_reader) {
     // BufSz samples per second
     const SampleSpec sample_spec(BufSz, Sample_RawFormat, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
@@ -232,26 +312,28 @@ TEST(mixer, timestamps_one_reader) {
 
     test::MockReader reader(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, sample_spec, true);
+    Mixer mixer(frame_factory, arena, sample_spec, true);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
-    mixer.add_input(reader);
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader));
 
     reader.enable_timestamps(start_ts);
 
     reader.add_samples(BufSz, 0.11f);
-    expect_output(mixer, BufSz, 0.11f, 0, start_ts);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.11f, 0, start_ts);
 
     reader.add_samples(BufSz, 0.22f);
-    expect_output(mixer, BufSz, 0.22f, 0, start_ts + core::Second);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.22f, 0,
+                  start_ts + core::Second);
 
     reader.add_samples(BufSz, 0.33f);
-    expect_output(mixer, BufSz, 0.33f, 0, start_ts + core::Second * 2);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.33f, 0,
+                  start_ts + core::Second * 2);
 
     LONGS_EQUAL(0, reader.num_unread());
 }
 
-TEST(mixer, timestamps_two_readers) {
+TEST(mixer, cts_two_readers) {
     // BufSz samples per second
     const SampleSpec sample_spec(BufSz, Sample_RawFormat, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
@@ -261,34 +343,35 @@ TEST(mixer, timestamps_two_readers) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, sample_spec, true);
+    Mixer mixer(frame_factory, arena, sample_spec, true);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
-    mixer.add_input(reader1);
-    mixer.add_input(reader2);
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader2));
 
     reader1.enable_timestamps(start_ts1);
     reader2.enable_timestamps(start_ts2);
 
     reader1.add_samples(BufSz, 0.11f);
     reader2.add_samples(BufSz, 0.11f);
-    expect_output(mixer, BufSz, 0.11f * 2, 0, (start_ts1 + start_ts2) / 2);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.11f * 2, 0,
+                  (start_ts1 + start_ts2) / 2);
 
     reader1.add_samples(BufSz, 0.22f);
     reader2.add_samples(BufSz, 0.22f);
-    expect_output(mixer, BufSz, 0.22f * 2, 0,
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.22f * 2, 0,
                   ((start_ts1 + core::Second) + (start_ts2 + core::Second)) / 2);
 
     reader1.add_samples(BufSz, 0.33f);
     reader2.add_samples(BufSz, 0.33f);
-    expect_output(mixer, BufSz, 0.33f * 2, 0,
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.33f * 2, 0,
                   ((start_ts1 + core::Second * 2) + (start_ts2 + core::Second * 2)) / 2);
 
     LONGS_EQUAL(0, reader1.num_unread());
     LONGS_EQUAL(0, reader2.num_unread());
 }
 
-TEST(mixer, timestamps_partial) {
+TEST(mixer, cts_partial) {
     // BufSz samples per second
     const SampleSpec sample_spec(BufSz, Sample_RawFormat, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
@@ -299,12 +382,12 @@ TEST(mixer, timestamps_partial) {
     test::MockReader reader2(frame_factory, sample_spec);
     test::MockReader reader3(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, sample_spec, true);
+    Mixer mixer(frame_factory, arena, sample_spec, true);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
-    mixer.add_input(reader1);
-    mixer.add_input(reader2);
-    mixer.add_input(reader3);
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader2));
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader3));
 
     reader1.enable_timestamps(start_ts1);
     reader2.enable_timestamps(start_ts2);
@@ -313,26 +396,27 @@ TEST(mixer, timestamps_partial) {
     reader1.add_samples(BufSz, 0.11f);
     reader2.add_samples(BufSz, 0.11f);
     reader3.add_samples(BufSz, 0.11f);
-    expect_output(mixer, BufSz, 0.11f * 3, 0, (start_ts1 + start_ts2) / 3);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.11f * 3, 0,
+                  (start_ts1 + start_ts2) / 3);
 
     reader1.add_samples(BufSz, 0.22f);
     reader2.add_samples(BufSz, 0.22f);
     reader3.add_samples(BufSz, 0.22f);
-    expect_output(mixer, BufSz, 0.22f * 3, 0,
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.22f * 3, 0,
                   ((start_ts1 + core::Second) + (start_ts2 + core::Second)) / 3);
 
     reader1.add_samples(BufSz, 0.33f);
     reader2.add_samples(BufSz, 0.33f);
     reader3.add_samples(BufSz, 0.33f);
-    expect_output(mixer, BufSz, 0.33f * 3, 0,
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.33f * 3, 0,
                   ((start_ts1 + core::Second * 2) + (start_ts2 + core::Second * 2)) / 3);
 
     LONGS_EQUAL(0, reader1.num_unread());
     LONGS_EQUAL(0, reader2.num_unread());
-    CHECK(reader3.num_unread() == 0);
+    LONGS_EQUAL(0, reader3.num_unread());
 }
 
-TEST(mixer, timestamps_overflow_handling) {
+TEST(mixer, cts_no_overflow) {
     // BufSz samples per second
     const SampleSpec sample_spec(BufSz, Sample_RawFormat, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
@@ -346,27 +430,28 @@ TEST(mixer, timestamps_overflow_handling) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, sample_spec, true);
+    Mixer mixer(frame_factory, arena, sample_spec, true);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
-    mixer.add_input(reader1);
-    mixer.add_input(reader2);
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader2));
 
     reader1.enable_timestamps(start_ts1);
     reader2.enable_timestamps(start_ts2);
 
     reader1.add_samples(BufSz, 0.11f);
     reader2.add_samples(BufSz, 0.11f);
-    expect_output(mixer, BufSz, 0.11f * 2, 0, start_ts1 / 2 + start_ts2 / 2);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.11f * 2, 0,
+                  start_ts1 / 2 + start_ts2 / 2);
 
     reader1.add_samples(BufSz, 0.22f);
     reader2.add_samples(BufSz, 0.22f);
-    expect_output(mixer, BufSz, 0.22f * 2, 0,
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.22f * 2, 0,
                   (start_ts1 + core::Second) / 2 + (start_ts2 + core::Second) / 2);
 
     reader1.add_samples(BufSz, 0.33f);
     reader2.add_samples(BufSz, 0.33f);
-    expect_output(mixer, BufSz, 0.33f * 2, 0,
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.33f * 2, 0,
                   (start_ts1 + core::Second * 2) / 2
                       + (start_ts2 + core::Second * 2) / 2);
 
@@ -374,7 +459,7 @@ TEST(mixer, timestamps_overflow_handling) {
     LONGS_EQUAL(0, reader2.num_unread());
 }
 
-TEST(mixer, timestamps_disabled) {
+TEST(mixer, cts_disabled) {
     const SampleSpec sample_spec(BufSz, Sample_RawFormat, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
     const core::nanoseconds_t start_ts = 1000000000000;
@@ -382,82 +467,77 @@ TEST(mixer, timestamps_disabled) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, sample_spec, false);
+    Mixer mixer(frame_factory, arena, sample_spec, false);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     reader1.enable_timestamps(start_ts);
     reader2.enable_timestamps(start_ts);
 
-    mixer.add_input(reader1);
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
 
     reader1.add_samples(BufSz, 0.11f);
-    expect_output(mixer, BufSz, 0.11f, 0, 0);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.11f, 0, 0);
 
-    mixer.add_input(reader2);
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader2));
 
     reader1.add_samples(BufSz, 0.22f);
     reader2.add_samples(BufSz, 0.22f);
-    expect_output(mixer, BufSz, 0.44f, 0, 0);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.44f, 0, 0);
 
     LONGS_EQUAL(0, reader1.num_unread());
     LONGS_EQUAL(0, reader2.num_unread());
 }
 
-// If input reader returns StatusDrain, mixer skips it.
-TEST(mixer, process_drained) {
-    test::MockReader reader1(frame_factory, sample_spec);
-    test::MockReader reader2(frame_factory, sample_spec);
-
-    Mixer mixer(frame_factory, sample_spec, true);
-    LONGS_EQUAL(status::StatusOK, mixer.init_status());
-
-    mixer.add_input(reader1);
-    mixer.add_input(reader2);
-
-    reader1.add_samples(BufSz * 4, 0.11f);
-    reader2.add_samples(BufSz * 4, 0.22f);
-
-    reader1.set_status(status::StatusOK);
-    reader2.set_status(status::StatusOK);
-
-    expect_output(mixer, BufSz, 0.33f, 0, 0);
-
-    reader1.set_status(status::StatusDrain);
-    reader2.set_status(status::StatusOK);
-
-    expect_output(mixer, BufSz, 0.22f, 0, 0);
-
-    reader1.set_status(status::StatusOK);
-    reader2.set_status(status::StatusDrain);
-
-    expect_output(mixer, BufSz, 0.11f, 0, 0);
-
-    reader1.set_status(status::StatusOK);
-    reader2.set_status(status::StatusOK);
-
-    expect_output(mixer, BufSz, 0.33f, 0, 0);
-    expect_output(mixer, BufSz, 0.33f, 0, 0);
-
-    LONGS_EQUAL(0, reader1.num_unread());
-    LONGS_EQUAL(0, reader2.num_unread());
-
-    LONGS_EQUAL(4, reader1.total_reads());
-    LONGS_EQUAL(4, reader2.total_reads());
-}
-
-// If input reader returns StatusPart, mixer repeats read
-// until it gathers complete frame.
-TEST(mixer, process_partial) {
+// In soft read mode, input returns StatusDrain.
+TEST(mixer, soft_read_drain) {
     enum { Factor1 = 2, Factor2 = 4 };
 
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, sample_spec, true);
+    Mixer mixer(frame_factory, arena, sample_spec, true);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
-    mixer.add_input(reader1);
-    mixer.add_input(reader2);
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader2));
+
+    // both readers return StatusDrain
+    expect_error(status::StatusDrain, mixer, BufSz, ModeSoft);
+
+    LONGS_EQUAL(1, reader1.total_reads());
+    LONGS_EQUAL(1, reader2.total_reads());
+
+    // reader1 returns StatusDrain
+    // reader2 returns StatusOK
+    reader2.add_samples(BufSz, 0.11f);
+
+    expect_error(status::StatusDrain, mixer, BufSz, ModeSoft);
+
+    LONGS_EQUAL(2, reader1.total_reads());
+    LONGS_EQUAL(2, reader2.total_reads());
+
+    // reader1 returns StatusOK
+    reader1.add_samples(BufSz, 0.22f);
+
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.33f, 0, 0, ModeSoft);
+
+    LONGS_EQUAL(3, reader1.total_reads());
+    LONGS_EQUAL(2, reader2.total_reads());
+}
+
+// In soft read mode, if input reader returns StatusPartial,
+// mixer repeats read.
+TEST(mixer, soft_read_partial) {
+    enum { Factor1 = 2, Factor2 = 4 };
+
+    test::MockReader reader1(frame_factory, sample_spec);
+    test::MockReader reader2(frame_factory, sample_spec);
+
+    Mixer mixer(frame_factory, arena, sample_spec, true);
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
+
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader2));
 
     reader1.add_samples(BufSz * 2, 0.11f);
     reader2.add_samples(BufSz * 2, 0.22f);
@@ -465,7 +545,7 @@ TEST(mixer, process_partial) {
     reader1.set_limit(BufSz / Factor1);
     reader2.set_limit(BufSz / Factor2);
 
-    expect_output(mixer, BufSz, 0.33f, 0, 0);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.33f, 0, 0, ModeSoft);
 
     LONGS_EQUAL(BufSz, reader1.num_unread());
     LONGS_EQUAL(BufSz, reader2.num_unread());
@@ -476,7 +556,7 @@ TEST(mixer, process_partial) {
     reader1.set_limit(BufSz / Factor2);
     reader2.set_limit(BufSz / Factor1);
 
-    expect_output(mixer, BufSz, 0.33f, 0, 0);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.33f, 0, 0, ModeSoft);
 
     LONGS_EQUAL(0, reader1.num_unread());
     LONGS_EQUAL(0, reader2.num_unread());
@@ -485,34 +565,447 @@ TEST(mixer, process_partial) {
     LONGS_EQUAL(Factor1 + Factor2, reader2.total_reads());
 }
 
+// In soft read mode, if input reader returns StatusDrain,
+// mixer generates partial read.
+TEST(mixer, soft_read_partial_drain) {
+    test::MockReader reader(frame_factory, sample_spec);
+
+    Mixer mixer(frame_factory, arena, sample_spec, true);
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
+
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader));
+
+    // mock reader returns StatusPart, then StatusDrain
+    reader.add_samples(BufSz, 0.11f);
+    expect_output(status::StatusPart, mixer, BufSz * 2, BufSz, 0.11f, 0, 0, ModeSoft);
+
+    LONGS_EQUAL(0, reader.num_unread());
+    LONGS_EQUAL(2, reader.total_reads());
+
+    LONGS_EQUAL(status::StatusDrain, reader.last_status());
+
+    // mock reader returns StatusDrain
+    expect_error(status::StatusDrain, mixer, BufSz, ModeSoft);
+
+    LONGS_EQUAL(0, reader.num_unread());
+    LONGS_EQUAL(3, reader.total_reads());
+
+    LONGS_EQUAL(status::StatusDrain, reader.last_status());
+
+    // mock reader returns StatusOK
+    reader.add_samples(BufSz, 0.22f);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.22f, 0, 0, ModeSoft);
+
+    LONGS_EQUAL(0, reader.num_unread());
+    LONGS_EQUAL(4, reader.total_reads());
+
+    LONGS_EQUAL(status::StatusOK, reader.last_status());
+}
+
+// Same as above, but there are two readers.
+TEST(mixer, soft_read_partial_drain_two_readers) {
+    test::MockReader reader1(frame_factory, sample_spec);
+    test::MockReader reader2(frame_factory, sample_spec);
+
+    Mixer mixer(frame_factory, arena, sample_spec, true);
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
+
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader2));
+
+    // reader1 returns StatusOK
+    // reader2 returns StatusPart, then StatusDrain
+    reader1.add_samples(BufSz * 2, 0.11f);
+    reader2.add_samples(BufSz, 0.22f);
+
+    expect_output(status::StatusPart, mixer, BufSz * 2, BufSz, 0.33f, 0, 0, ModeSoft);
+
+    LONGS_EQUAL(0, reader1.num_unread());
+    LONGS_EQUAL(0, reader2.num_unread());
+
+    LONGS_EQUAL(1, reader1.total_reads());
+    LONGS_EQUAL(2, reader2.total_reads());
+
+    LONGS_EQUAL(status::StatusOK, reader1.last_status());
+    LONGS_EQUAL(status::StatusDrain, reader2.last_status());
+
+    // reader2 returns StatusDrain
+    expect_error(status::StatusDrain, mixer, BufSz, ModeSoft);
+
+    LONGS_EQUAL(0, reader1.num_unread());
+    LONGS_EQUAL(0, reader2.num_unread());
+
+    LONGS_EQUAL(1, reader1.total_reads());
+    LONGS_EQUAL(3, reader2.total_reads());
+
+    LONGS_EQUAL(status::NoStatus, reader1.last_status());
+    LONGS_EQUAL(status::StatusDrain, reader2.last_status());
+
+    // reader1 returns StatusOK
+    // reader2 returns StatusDrain
+    reader1.add_samples(BufSz, 0.11f);
+
+    expect_error(status::StatusDrain, mixer, BufSz * 2, ModeSoft);
+
+    LONGS_EQUAL(0, reader1.num_unread());
+    LONGS_EQUAL(0, reader2.num_unread());
+
+    LONGS_EQUAL(2, reader1.total_reads());
+    LONGS_EQUAL(4, reader2.total_reads());
+
+    LONGS_EQUAL(status::StatusOK, reader1.last_status());
+    LONGS_EQUAL(status::StatusDrain, reader2.last_status());
+
+    // reader2 returns StatusOK
+    reader2.add_samples(BufSz * 2, 0.22f);
+
+    expect_output(status::StatusOK, mixer, BufSz * 2, BufSz * 2, 0.33f, 0, 0, ModeSoft);
+
+    LONGS_EQUAL(0, reader1.num_unread());
+    LONGS_EQUAL(0, reader2.num_unread());
+
+    LONGS_EQUAL(2, reader1.total_reads());
+    LONGS_EQUAL(5, reader2.total_reads());
+
+    LONGS_EQUAL(status::NoStatus, reader1.last_status());
+    LONGS_EQUAL(status::StatusOK, reader2.last_status());
+}
+
+// One reader returns StreamEnd during soft read.
+TEST(mixer, soft_read_partial_end_two_readers) {
+    test::MockReader reader1(frame_factory, sample_spec);
+    test::MockReader reader2(frame_factory, sample_spec);
+
+    Mixer mixer(frame_factory, arena, sample_spec, true);
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
+
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader2));
+
+    // reader1 returns StatusOK
+    // reader2 returns StatusPart, then StatusEnd
+    reader1.add_samples(BufSz, 0.11f);
+    reader2.add_samples(BufSz, 0.22f);
+    reader2.add_samples(BufSz, 0.33f);
+
+    reader1.set_no_samples_status(status::StatusEnd);
+
+    reader1.set_limit(BufSz / 2);
+    reader2.set_limit(BufSz / 2);
+
+    expect_output(status::StatusOK, mixer, BufSz * 2, BufSz * 2, 0.33f, 0, 0, ModeSoft);
+
+    LONGS_EQUAL(0, reader1.num_unread());
+    LONGS_EQUAL(0, reader2.num_unread());
+
+    LONGS_EQUAL(3, reader1.total_reads());
+    LONGS_EQUAL(4, reader2.total_reads());
+
+    LONGS_EQUAL(status::StatusEnd, reader1.last_status());
+    LONGS_EQUAL(status::StatusOK, reader2.last_status());
+}
+
+// Soft reads and capture timestamps.
+TEST(mixer, soft_read_cts) {
+    // BufSz samples per second
+    const SampleSpec sample_spec(BufSz, Sample_RawFormat, ChanLayout_Surround,
+                                 ChanOrder_Smpte, ChanMask_Surround_Mono);
+    const core::nanoseconds_t start_ts = 1000000000000;
+
+    test::MockReader reader(frame_factory, sample_spec);
+
+    Mixer mixer(frame_factory, arena, sample_spec, true);
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
+
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader));
+
+    reader.enable_timestamps(start_ts);
+
+    reader.add_samples(BufSz, 0.11f);
+    expect_output(status::StatusPart, mixer, BufSz * 2, BufSz, 0.11f, 0, start_ts,
+                  ModeSoft);
+
+    LONGS_EQUAL(0, reader.num_unread());
+    LONGS_EQUAL(2, reader.total_reads());
+
+    reader.add_samples(BufSz, 0.22f);
+    expect_output(status::StatusPart, mixer, BufSz * 2, BufSz, 0.22f, 0,
+                  start_ts + core::Second, ModeSoft);
+
+    LONGS_EQUAL(0, reader.num_unread());
+    LONGS_EQUAL(4, reader.total_reads());
+}
+
+// Soft reads and capture timestamps.
+TEST(mixer, soft_read_cts_partial) {
+    // BufSz samples per second
+    const SampleSpec sample_spec(BufSz, Sample_RawFormat, ChanLayout_Surround,
+                                 ChanOrder_Smpte, ChanMask_Surround_Mono);
+    const core::nanoseconds_t start_ts = 1000000000000;
+
+    test::MockReader reader(frame_factory, sample_spec);
+
+    Mixer mixer(frame_factory, arena, sample_spec, true);
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
+
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader));
+
+    reader.enable_timestamps(start_ts);
+    reader.set_limit(BufSz / 2);
+
+    reader.add_samples(BufSz, 0.11f);
+    expect_output(status::StatusPart, mixer, BufSz * 2, BufSz, 0.11f, 0, start_ts,
+                  ModeSoft);
+
+    LONGS_EQUAL(0, reader.num_unread());
+    LONGS_EQUAL(3, reader.total_reads());
+
+    reader.add_samples(BufSz, 0.22f);
+    expect_output(status::StatusPart, mixer, BufSz * 2, BufSz, 0.22f, 0,
+                  start_ts + core::Second, ModeSoft);
+
+    LONGS_EQUAL(0, reader.num_unread());
+    LONGS_EQUAL(6, reader.total_reads());
+}
+
+// Same as above, but there are two readers, and one returns StatusDrain.
+TEST(mixer, soft_read_cts_two_readers) {
+    // BufSz samples per second
+    const SampleSpec sample_spec(BufSz, Sample_RawFormat, ChanLayout_Surround,
+                                 ChanOrder_Smpte, ChanMask_Surround_Mono);
+    const core::nanoseconds_t start_ts1 = 2000000000000;
+    const core::nanoseconds_t start_ts2 = 1000000000000;
+
+    test::MockReader reader1(frame_factory, sample_spec);
+    test::MockReader reader2(frame_factory, sample_spec);
+
+    Mixer mixer(frame_factory, arena, sample_spec, true);
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
+
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader2));
+
+    reader1.enable_timestamps(start_ts1);
+    reader2.enable_timestamps(start_ts2);
+
+    // reader1 returns StatusDrain
+    // output from reader2 is buffered
+    reader1.add_samples(BufSz, 0.11f);
+    reader2.add_samples(BufSz * 2, 0.22f);
+
+    expect_output(status::StatusPart, mixer, BufSz * 2, BufSz, 0.33f, 0,
+                  (start_ts1 + start_ts2) / 2, ModeSoft);
+
+    LONGS_EQUAL(0, reader1.num_unread());
+    LONGS_EQUAL(0, reader2.num_unread());
+
+    LONGS_EQUAL(2, reader1.total_reads());
+    LONGS_EQUAL(1, reader2.total_reads());
+
+    // reader1 returns StatusOK
+    // CTS for buffered output of reader2 is interpolated
+    reader1.add_samples(BufSz, 0.11f);
+
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.33f, 0,
+                  (start_ts1 + start_ts2) / 2 + core::Second, ModeSoft);
+
+    LONGS_EQUAL(0, reader1.num_unread());
+    LONGS_EQUAL(0, reader2.num_unread());
+
+    LONGS_EQUAL(3, reader1.total_reads());
+    LONGS_EQUAL(1, reader2.total_reads());
+}
+
+// Add new reader when there are buffered samples from a soft read.
+TEST(mixer, soft_read_add_reader) {
+    test::MockReader reader1(frame_factory, sample_spec);
+    test::MockReader reader2(frame_factory, sample_spec);
+    test::MockReader reader3(frame_factory, sample_spec);
+
+    Mixer mixer(frame_factory, arena, sample_spec, true);
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
+
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader2));
+
+    // reader1 returns StatusDrain
+    // output from reader2 is buffered
+    reader1.add_samples(BufSz, 0.11f);
+    reader2.add_samples(BufSz * 2, 0.22f);
+
+    expect_output(status::StatusPart, mixer, BufSz * 2, BufSz, 0.33f, 0, 0, ModeSoft);
+
+    LONGS_EQUAL(0, reader1.num_unread());
+    LONGS_EQUAL(0, reader2.num_unread());
+
+    LONGS_EQUAL(2, reader1.total_reads());
+    LONGS_EQUAL(1, reader2.total_reads());
+
+    // add reader3
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader3));
+
+    // reader1 and reader3 return StatusOK
+    reader1.add_samples(BufSz, 0.11f);
+    reader3.add_samples(BufSz, 0.33f);
+
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.66f, 0, 0, ModeSoft);
+
+    LONGS_EQUAL(0, reader1.num_unread());
+    LONGS_EQUAL(0, reader2.num_unread());
+    LONGS_EQUAL(0, reader3.num_unread());
+
+    LONGS_EQUAL(3, reader1.total_reads());
+    LONGS_EQUAL(1, reader2.total_reads());
+    LONGS_EQUAL(1, reader3.total_reads());
+}
+
+// Remove reader when there are buffered samples from a soft read.
+TEST(mixer, soft_read_remove_reader) {
+    test::MockReader reader1(frame_factory, sample_spec);
+    test::MockReader reader2(frame_factory, sample_spec);
+    test::MockReader reader3(frame_factory, sample_spec);
+
+    Mixer mixer(frame_factory, arena, sample_spec, true);
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
+
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader2));
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader3));
+
+    // mixer buffer after this read:
+    //  reader1: 0
+    //  reader2: BufSz*2
+    //  reader3: BufSz*3
+    reader1.add_samples(BufSz * 1, 0.11f);
+    reader2.add_samples(BufSz * 3, 0.22f);
+    reader3.add_samples(BufSz * 4, 0.33f);
+
+    expect_output(status::StatusPart, mixer, BufSz * 4, BufSz, 0.66f, 0, 0, ModeSoft);
+
+    LONGS_EQUAL(2, reader1.total_reads());
+    LONGS_EQUAL(2, reader2.total_reads());
+    LONGS_EQUAL(1, reader3.total_reads());
+
+    // remove reader3
+    mixer.remove_input(reader3);
+
+    // mixer buffer after this read:
+    //  reader1: 0
+    //  reader2: BufSz
+    //  reader3: BufSz (part beyond reader2 zeroized)
+    reader1.add_samples(BufSz, 0.11f);
+
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.66f, 0, 0, ModeSoft);
+
+    LONGS_EQUAL(3, reader1.total_reads());
+    LONGS_EQUAL(2, reader2.total_reads());
+    LONGS_EQUAL(1, reader3.total_reads());
+
+    // mixer buffer after this read:
+    //  reader1: 0
+    //  reader2: 0
+    //  reader3: 0
+    reader1.add_samples(BufSz, 0.11f);
+
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.66f, 0, 0, ModeSoft);
+
+    LONGS_EQUAL(4, reader1.total_reads());
+    LONGS_EQUAL(2, reader2.total_reads());
+    LONGS_EQUAL(1, reader3.total_reads());
+
+    // mixer buffer after this read:
+    //  reader1: 0
+    //  reader2: 0
+    //  reader3: 0
+    reader1.add_samples(BufSz * 4, 0.11f);
+    reader2.add_samples(BufSz * 4, 0.22f);
+
+    expect_output(status::StatusOK, mixer, BufSz * 4, BufSz * 4, 0.33f, 0, 0, ModeSoft);
+
+    LONGS_EQUAL(5, reader1.total_reads());
+    LONGS_EQUAL(3, reader2.total_reads());
+    LONGS_EQUAL(1, reader3.total_reads());
+
+    // remove reader2
+    mixer.remove_input(reader2);
+
+    // mixer buffer after this read:
+    //  reader1: 0
+    //  reader2: 0
+    //  reader3: 0
+    reader1.add_samples(BufSz * 4, 0.11f);
+
+    expect_output(status::StatusOK, mixer, BufSz * 4, BufSz * 4, 0.11f, 0, 0, ModeSoft);
+
+    LONGS_EQUAL(6, reader1.total_reads());
+    LONGS_EQUAL(3, reader2.total_reads());
+    LONGS_EQUAL(1, reader3.total_reads());
+}
+
+// Mixer forwards reading mode to underlying reader.
+TEST(mixer, forward_mode) {
+    test::MockReader reader(frame_factory, sample_spec);
+
+    Mixer mixer(frame_factory, arena, sample_spec, true);
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
+
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader));
+
+    reader.add_zero_samples();
+
+    const FrameReadMode mode_list[] = {
+        ModeHard,
+        ModeSoft,
+    };
+
+    for (size_t md_n = 0; md_n < ROC_ARRAY_SIZE(mode_list); md_n++) {
+        expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.00f, 0, 0,
+                      mode_list[md_n]);
+
+        LONGS_EQUAL(mode_list[md_n], reader.last_mode());
+    }
+}
+
 // If any of input readers returns error, mixer forwards it.
 TEST(mixer, forward_error) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, sample_spec, true);
+    Mixer mixer(frame_factory, arena, sample_spec, true);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
-    mixer.add_input(reader1);
-    mixer.add_input(reader2);
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader2));
 
     reader1.add_zero_samples();
     reader2.add_zero_samples();
 
+    // reader1 fails
     reader1.set_status(status::StatusAbort);
     reader2.set_status(status::StatusOK);
 
-    expect_error(mixer, BufSz, status::StatusAbort);
+    expect_error(status::StatusAbort, mixer, BufSz);
 
+    LONGS_EQUAL(1, reader1.total_reads());
+    LONGS_EQUAL(0, reader2.total_reads());
+
+    // reader2 fails
     reader1.set_status(status::StatusOK);
     reader2.set_status(status::StatusAbort);
 
-    expect_error(mixer, BufSz, status::StatusAbort);
+    expect_error(status::StatusAbort, mixer, BufSz);
 
+    LONGS_EQUAL(2, reader1.total_reads());
+    LONGS_EQUAL(1, reader2.total_reads());
+
+    // both readers work
     reader1.set_status(status::StatusOK);
     reader2.set_status(status::StatusOK);
 
-    expect_output(mixer, BufSz, 0, 0, 0);
+    expect_output(status::StatusOK, mixer, BufSz, BufSz, 0, 0, 0);
+
+    LONGS_EQUAL(2, reader1.total_reads());
+    LONGS_EQUAL(2, reader2.total_reads());
 }
 
 // Attach to frame pre-allocated buffers of different sizes before reading.
@@ -530,14 +1023,14 @@ TEST(mixer, preallocated_buffer) {
         test::MockReader reader1(frame_factory, sample_spec);
         test::MockReader reader2(frame_factory, sample_spec);
 
-        Mixer mixer(frame_factory, sample_spec, true);
+        Mixer mixer(frame_factory, arena, sample_spec, true);
         LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
         reader1.add_zero_samples();
         reader2.add_zero_samples();
 
-        mixer.add_input(reader1);
-        mixer.add_input(reader2);
+        LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
+        LONGS_EQUAL(status::StatusOK, mixer.add_input(reader2));
 
         FrameFactory mock_factory(arena, orig_buf_sz * sizeof(sample_t));
         FramePtr frame = orig_buf_sz > 0 ? mock_factory.allocate_frame(0)
@@ -545,7 +1038,7 @@ TEST(mixer, preallocated_buffer) {
 
         core::Slice<uint8_t> orig_buf = frame->buffer();
 
-        LONGS_EQUAL(status::StatusOK, mixer.read(*frame, BufSz));
+        LONGS_EQUAL(status::StatusOK, mixer.read(*frame, BufSz, ModeHard));
 
         CHECK(frame->buffer());
 

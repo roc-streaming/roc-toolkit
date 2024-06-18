@@ -122,14 +122,15 @@ bool Watchdog::is_alive() const {
     return alive_;
 }
 
-status::StatusCode Watchdog::read(Frame& frame, packet::stream_timestamp_t duration) {
+status::StatusCode
+Watchdog::read(Frame& frame, packet::stream_timestamp_t duration, FrameReadMode mode) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (!alive_) {
         return status::StatusAbort;
     }
 
-    const status::StatusCode code = reader_.read(frame, duration);
+    const status::StatusCode code = reader_.read(frame, duration, mode);
     if (code != status::StatusOK && code != status::StatusPart) {
         return code;
     }

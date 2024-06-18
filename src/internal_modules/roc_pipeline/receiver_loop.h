@@ -155,13 +155,15 @@ private:
     virtual status::StatusCode rewind();
     virtual void reclock(core::nanoseconds_t timestamp);
     virtual status::StatusCode read(audio::Frame& frame,
-                                    packet::stream_timestamp_t duration);
+                                    packet::stream_timestamp_t duration,
+                                    audio::FrameReadMode mode);
 
     // Methods of PipelineLoop
     virtual core::nanoseconds_t timestamp_imp() const;
     virtual uint64_t tid_imp() const;
     virtual status::StatusCode process_subframe_imp(audio::Frame& frame,
-                                                    packet::stream_timestamp_t duration);
+                                                    packet::stream_timestamp_t duration,
+                                                    audio::FrameReadMode mode);
     virtual bool process_task_imp(PipelineTask& task);
 
     // Methods for tasks

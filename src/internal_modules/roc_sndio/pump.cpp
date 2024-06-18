@@ -223,7 +223,7 @@ status::StatusCode Pump::transfer_frame_(ISource& source, ISink& sink) {
 
     // Fill frame from source.
     // If source has clock, here we block on it.
-    frame_status = source.read(*frame_, frame_duration_);
+    frame_status = source.read(*frame_, frame_duration_, audio::ModeHard);
     if (frame_status != status::StatusOK && frame_status != status::StatusPart) {
         return frame_status;
     }

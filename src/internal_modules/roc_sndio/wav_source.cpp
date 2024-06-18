@@ -101,7 +101,8 @@ void WavSource::reclock(core::nanoseconds_t timestamp) {
 }
 
 status::StatusCode WavSource::read(audio::Frame& frame,
-                                   packet::stream_timestamp_t duration) {
+                                   packet::stream_timestamp_t duration,
+                                   audio::FrameReadMode mode) {
     if (!file_opened_) {
         roc_panic("wav source: not opened");
     }

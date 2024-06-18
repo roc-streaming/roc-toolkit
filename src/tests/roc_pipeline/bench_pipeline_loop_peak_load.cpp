@@ -340,7 +340,8 @@ private:
     }
 
     virtual status::StatusCode process_subframe_imp(audio::Frame& frame,
-                                                    packet::stream_timestamp_t duration) {
+                                                    packet::stream_timestamp_t duration,
+                                                    audio::FrameReadMode mode) {
         stats_.frame_processing_started();
         busy_wait(FrameProcessingDuration);
         stats_.frame_processing_finished();
@@ -432,7 +433,8 @@ public:
 
             stats_.frame_started();
 
-            (void)pipeline_.process_subframes_and_tasks(*frame, frame->duration());
+            (void)pipeline_.process_subframes_and_tasks(*frame, frame->duration(),
+                                                        audio::ModeHard);
 
             stats_.frame_finished();
 

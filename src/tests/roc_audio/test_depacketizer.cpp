@@ -105,7 +105,8 @@ void expect_output(Depacketizer& depacketizer,
     CHECK(frame);
 
     LONGS_EQUAL(status::StatusOK,
-                depacketizer.read(*frame, (packet::stream_timestamp_t)samples_per_chan));
+                depacketizer.read(*frame, (packet::stream_timestamp_t)samples_per_chan,
+                                  ModeHard));
 
     CHECK(frame->is_raw());
 
@@ -128,8 +129,9 @@ void expect_partial(Depacketizer& depacketizer,
     CHECK(frame);
 
     LONGS_EQUAL(status::StatusPart,
-                depacketizer.read(
-                    *frame, (packet::stream_timestamp_t)requested_samples_per_chan));
+                depacketizer.read(*frame,
+                                  (packet::stream_timestamp_t)requested_samples_per_chan,
+                                  ModeHard));
 
     CHECK(frame->is_raw());
 
@@ -153,7 +155,8 @@ void expect_flags(Depacketizer& depacketizer,
     CHECK(frame);
 
     LONGS_EQUAL(status::StatusOK,
-                depacketizer.read(*frame, (packet::stream_timestamp_t)samples_per_chan));
+                depacketizer.read(*frame, (packet::stream_timestamp_t)samples_per_chan,
+                                  ModeHard));
 
     UNSIGNED_LONGS_EQUAL(flags, frame->flags());
     if (capt_ts >= 0) {
@@ -168,7 +171,8 @@ void expect_error(Depacketizer& depacketizer,
     CHECK(frame);
 
     LONGS_EQUAL(expected_status,
-                depacketizer.read(*frame, (packet::stream_timestamp_t)samples_per_chan));
+                depacketizer.read(*frame, (packet::stream_timestamp_t)samples_per_chan,
+                                  ModeHard));
 }
 
 class StatusReader : public packet::IReader {
@@ -450,8 +454,8 @@ TEST(depacketizer, zeros_after_packet) {
     FramePtr f1 = frame_factory.allocate_frame_no_buffer();
     FramePtr f2 = frame_factory.allocate_frame_no_buffer();
 
-    LONGS_EQUAL(status::StatusOK, dp.read(*f1, sz1));
-    LONGS_EQUAL(status::StatusOK, dp.read(*f2, sz2));
+    LONGS_EQUAL(status::StatusOK, dp.read(*f1, sz1, ModeHard));
+    LONGS_EQUAL(status::StatusOK, dp.read(*f2, sz2, ModeHard));
 
     UNSIGNED_LONGS_EQUAL(sz1 * frame_ch, f1->num_raw_samples());
     UNSIGNED_LONGS_EQUAL(sz2 * frame_ch, f2->num_raw_samples());
@@ -839,7 +843,7 @@ TEST(depacketizer, preallocated_buffer) {
         core::Slice<uint8_t> orig_buf = frame->buffer();
 
         LONGS_EQUAL(status::StatusOK,
-                    dp.read(*frame, FrameSz / frame_spec.num_channels()));
+                    dp.read(*frame, FrameSz / frame_spec.num_channels(), ModeHard));
 
         CHECK(frame->buffer());
 

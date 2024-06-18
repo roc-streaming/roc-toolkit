@@ -211,7 +211,7 @@ status::StatusCode SenderLoop::write(audio::Frame& frame) {
     }
 
     // invokes process_subframe_imp() and process_task_imp()
-    return process_subframes_and_tasks(frame, frame.duration());
+    return process_subframes_and_tasks(frame, frame.duration(), audio::ModeHard);
 }
 
 core::nanoseconds_t SenderLoop::timestamp_imp() const {
@@ -223,7 +223,8 @@ uint64_t SenderLoop::tid_imp() const {
 }
 
 status::StatusCode SenderLoop::process_subframe_imp(audio::Frame& frame,
-                                                    packet::stream_timestamp_t duration) {
+                                                    packet::stream_timestamp_t,
+                                                    audio::FrameReadMode) {
     status::StatusCode code = status::NoStatus;
 
     if ((code = sink_.write(frame)) != status::StatusOK) {

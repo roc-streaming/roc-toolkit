@@ -27,9 +27,10 @@ status::StatusCode ProfilingReader::init_status() const {
 }
 
 status::StatusCode ProfilingReader::read(Frame& frame,
-                                         packet::stream_timestamp_t duration) {
+                                         packet::stream_timestamp_t duration,
+                                         audio::FrameReadMode mode) {
     const core::nanoseconds_t started = core::timestamp(core::ClockMonotonic);
-    const status::StatusCode code = reader_.read(frame, duration);
+    const status::StatusCode code = reader_.read(frame, duration, mode);
     const core::nanoseconds_t elapsed = core::timestamp(core::ClockMonotonic) - started;
 
     if (code == status::StatusOK || code == status::StatusPart) {

@@ -74,7 +74,8 @@ bool ResamplerReader::set_scaling(float multiplier) {
 }
 
 status::StatusCode ResamplerReader::read(Frame& out_frame,
-                                         packet::stream_timestamp_t requested_duration) {
+                                         packet::stream_timestamp_t requested_duration,
+                                         FrameReadMode mode) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     const packet::stream_timestamp_t capped_duration = out_spec_.cap_frame_duration(
@@ -96,7 +97,7 @@ status::StatusCode ResamplerReader::read(Frame& out_frame,
             resampler_.pop_output(out_frame.raw_samples() + out_pos, out_remain);
 
         if (num_popped < out_remain) {
-            const status::StatusCode code = push_input_();
+            const status::StatusCode code = push_input_(mode);
             if (code != status::StatusOK) {
                 return code;
             }
@@ -111,7 +112,7 @@ status::StatusCode ResamplerReader::read(Frame& out_frame,
     return capped_duration == requested_duration ? status::StatusOK : status::StatusPart;
 }
 
-status::StatusCode ResamplerReader::push_input_() {
+status::StatusCode ResamplerReader::push_input_(FrameReadMode mode) {
     // Resampler returns buffer where we should write input samples.
     if (!in_buf_) {
         in_buf_ = resampler_.begin_push_input();
@@ -130,7 +131,7 @@ status::StatusCode ResamplerReader::push_input_() {
         // If we got StatusPart, we repeat reading until resampler input buffer is full.
         // If we got StatusDrain, we exit, but remember buffer state and can continue
         // next time when read() is called.
-        const status::StatusCode code = frame_reader_.read(*in_frame_, duration);
+        const status::StatusCode code = frame_reader_.read(*in_frame_, duration, mode);
         if (code != status::StatusOK && code != status::StatusPart) {
             return code;
         }

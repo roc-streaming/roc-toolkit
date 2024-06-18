@@ -45,10 +45,10 @@ public:
 
     //! Read audio frame.
     virtual ROC_ATTR_NODISCARD status::StatusCode
-    read(Frame& frame, packet::stream_timestamp_t duration);
+    read(Frame& frame, packet::stream_timestamp_t duration, FrameReadMode mode);
 
 private:
-    status::StatusCode push_input_();
+    status::StatusCode push_input_(FrameReadMode mode);
     core::nanoseconds_t capture_ts_(const Frame& out_frame);
 
     FrameFactory& frame_factory_;

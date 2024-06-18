@@ -53,9 +53,8 @@ status::StatusCode ChannelMapperReader::init_status() const {
     return init_status_;
 }
 
-status::StatusCode
-ChannelMapperReader::read(Frame& out_frame,
-                          packet::stream_timestamp_t requested_duration) {
+status::StatusCode ChannelMapperReader::read(
+    Frame& out_frame, packet::stream_timestamp_t requested_duration, FrameReadMode mode) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     packet::stream_timestamp_t capped_duration = out_spec_.cap_frame_duration(
@@ -69,7 +68,7 @@ ChannelMapperReader::read(Frame& out_frame,
         return status::StatusNoMem;
     }
 
-    const status::StatusCode code = frame_reader_.read(*in_frame_, capped_duration);
+    const status::StatusCode code = frame_reader_.read(*in_frame_, capped_duration, mode);
     if (code != status::StatusOK && code != status::StatusPart) {
         return code;
     }

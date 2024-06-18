@@ -30,23 +30,27 @@ FramePtr expect_raw_frame(status::StatusCode expected_code,
                           IFrameReader& reader,
                           const SampleSpec& sample_spec,
                           size_t requested_samples,
-                          size_t expected_samples) {
+                          size_t expected_samples,
+                          FrameReadMode mode = ModeHard) {
     CHECK(requested_samples % sample_spec.num_channels() == 0);
 
     FramePtr frame = frame_factory.allocate_frame_no_buffer();
     CHECK(frame);
 
-    LONGS_EQUAL(expected_code,
-                reader.read(*frame, requested_samples / sample_spec.num_channels()));
+    LONGS_EQUAL(
+        expected_code,
+        reader.read(*frame, requested_samples / sample_spec.num_channels(), mode));
 
-    CHECK(frame->is_raw());
-    CHECK(frame->raw_samples());
-    CHECK(frame->bytes());
+    if (expected_code == status::StatusOK || expected_code == status::StatusPart) {
+        CHECK(frame->is_raw());
+        CHECK(frame->raw_samples());
+        CHECK(frame->bytes());
 
-    UNSIGNED_LONGS_EQUAL(expected_samples / sample_spec.num_channels(),
-                         frame->duration());
-    UNSIGNED_LONGS_EQUAL(expected_samples, frame->num_raw_samples());
-    UNSIGNED_LONGS_EQUAL(expected_samples * sizeof(sample_t), frame->num_bytes());
+        UNSIGNED_LONGS_EQUAL(expected_samples / sample_spec.num_channels(),
+                             frame->duration());
+        UNSIGNED_LONGS_EQUAL(expected_samples, frame->num_raw_samples());
+        UNSIGNED_LONGS_EQUAL(expected_samples * sizeof(sample_t), frame->num_bytes());
+    }
 
     return frame;
 }
@@ -55,23 +59,28 @@ FramePtr expect_byte_frame(status::StatusCode expected_code,
                            IFrameReader& reader,
                            const SampleSpec& sample_spec,
                            size_t requested_samples,
-                           size_t expected_samples) {
+                           size_t expected_samples,
+                           FrameReadMode mode = ModeHard) {
     CHECK(requested_samples % sample_spec.num_channels() == 0);
 
     FramePtr frame = frame_factory.allocate_frame_no_buffer();
     CHECK(frame);
 
-    LONGS_EQUAL(expected_code,
-                reader.read(*frame, requested_samples / sample_spec.num_channels()));
+    LONGS_EQUAL(
+        expected_code,
+        reader.read(*frame, requested_samples / sample_spec.num_channels(), mode));
 
-    CHECK(!frame->is_raw());
-    CHECK(frame->bytes());
+    if (expected_samples != 0) {
+        CHECK(!frame->is_raw());
+        CHECK(frame->bytes());
 
-    UNSIGNED_LONGS_EQUAL(expected_samples / sample_spec.num_channels(),
-                         frame->duration());
-    UNSIGNED_LONGS_EQUAL(sample_spec.stream_timestamp_2_bytes(packet::stream_timestamp_t(
-                             expected_samples / sample_spec.num_channels())),
-                         frame->num_bytes());
+        UNSIGNED_LONGS_EQUAL(expected_samples / sample_spec.num_channels(),
+                             frame->duration());
+        UNSIGNED_LONGS_EQUAL(
+            sample_spec.stream_timestamp_2_bytes(packet::stream_timestamp_t(
+                expected_samples / sample_spec.num_channels())),
+            frame->num_bytes());
+    }
 
     return frame;
 }
@@ -106,7 +115,8 @@ template <class T> struct CountReader : IFrameReader {
     }
 
     virtual status::StatusCode read(Frame& frame,
-                                    packet::stream_timestamp_t requested_duration) {
+                                    packet::stream_timestamp_t requested_duration,
+                                    FrameReadMode mode) {
         n_calls++;
 
         packet::stream_timestamp_t duration = requested_duration;
@@ -147,6 +157,7 @@ struct MetaReader : IFrameReader {
     unsigned pos;
 
     int n_calls;
+    FrameReadMode last_mode;
 
     status::StatusCode status;
 
@@ -155,13 +166,15 @@ struct MetaReader : IFrameReader {
     MetaReader(const SampleSpec& sample_spec)
         : pos(0)
         , n_calls(0)
+        , last_mode((FrameReadMode)-1)
         , status(status::NoStatus)
         , sample_spec(sample_spec) {
         memset(flags, 0, sizeof(flags));
         memset(cts, 0, sizeof(cts));
     }
 
-    virtual status::StatusCode read(Frame& frame, packet::stream_timestamp_t duration) {
+    virtual status::StatusCode
+    read(Frame& frame, packet::stream_timestamp_t duration, FrameReadMode mode) {
         if (status != status::NoStatus) {
             return status;
         }
@@ -180,6 +193,7 @@ struct MetaReader : IFrameReader {
 
         pos++;
         n_calls++;
+        last_mode = mode;
 
         return status::StatusOK;
     }
@@ -487,6 +501,32 @@ TEST(pcm_mapper_reader, forward_capture_timestamp) {
     }
 }
 
+// Forwarding mode to underlying reader.
+TEST(pcm_mapper_reader, forward_mode) {
+    enum { FrameSz = MaxBytes / 10 };
+
+    const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
+                             ChanMask_Surround_Mono);
+    const SampleSpec out_spec(Rate, Sample_RawFormat, ChanLayout_Surround,
+                              ChanOrder_Smpte, ChanMask_Surround_Mono);
+
+    MetaReader meta_reader(in_spec);
+    PcmMapperReader mapper_reader(meta_reader, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
+
+    const FrameReadMode mode_list[] = {
+        ModeHard,
+        ModeSoft,
+    };
+
+    for (size_t md_n = 0; md_n < ROC_ARRAY_SIZE(mode_list); md_n++) {
+        FramePtr frame = expect_raw_frame(status::StatusOK, mapper_reader, out_spec,
+                                          FrameSz, FrameSz, mode_list[md_n]);
+
+        LONGS_EQUAL(mode_list[md_n], meta_reader.last_mode);
+    }
+}
+
 // Forwarding error from underlying reader.
 TEST(pcm_mapper_reader, forward_error) {
     enum { FrameSz = MaxBytes / 10 };
@@ -508,11 +548,8 @@ TEST(pcm_mapper_reader, forward_error) {
     for (size_t st_n = 0; st_n < ROC_ARRAY_SIZE(status_list); st_n++) {
         meta_reader.status = status_list[st_n];
 
-        FramePtr frame = frame_factory.allocate_frame_no_buffer();
-        CHECK(frame);
-
-        LONGS_EQUAL(status_list[st_n],
-                    mapper_reader.read(*frame, FrameSz / out_spec.num_channels()));
+        FramePtr frame =
+            expect_raw_frame(status_list[st_n], mapper_reader, out_spec, FrameSz, 0);
     }
 }
 
@@ -569,8 +606,9 @@ TEST(pcm_mapper_reader, preallocated_buffer) {
 
         core::Slice<uint8_t> orig_buf = frame->buffer();
 
-        LONGS_EQUAL(status::StatusOK,
-                    mapper_reader.read(*frame, FrameSz / out_spec.num_channels()));
+        LONGS_EQUAL(
+            status::StatusOK,
+            mapper_reader.read(*frame, FrameSz / out_spec.num_channels(), ModeHard));
 
         CHECK(frame->buffer());
 

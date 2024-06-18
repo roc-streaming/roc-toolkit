@@ -145,10 +145,11 @@ void TranscoderSource::reclock(core::nanoseconds_t timestamp) {
 }
 
 status::StatusCode TranscoderSource::read(audio::Frame& frame,
-                                          packet::stream_timestamp_t duration) {
+                                          packet::stream_timestamp_t duration,
+                                          audio::FrameReadMode mode) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    return frame_reader_->read(frame, duration);
+    return frame_reader_->read(frame, duration, mode);
 }
 
 } // namespace pipeline

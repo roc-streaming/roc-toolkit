@@ -83,7 +83,7 @@ public:
     //! @remarks
     //!  Forwards frame from underlying reader as-is.
     virtual ROC_ATTR_NODISCARD status::StatusCode
-    read(Frame& frame, packet::stream_timestamp_t duration);
+    read(Frame& frame, packet::stream_timestamp_t duration, FrameReadMode mode);
 
     //! Report playback timestamp of last frame returned by read.
     //! @remarks

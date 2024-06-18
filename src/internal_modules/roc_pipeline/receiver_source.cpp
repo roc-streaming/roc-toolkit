@@ -33,7 +33,7 @@ ReceiverSource::ReceiverSource(const ReceiverSourceConfig& source_config,
     audio::IFrameReader* frm_reader = NULL;
 
     mixer_.reset(new (mixer_) audio::Mixer(
-        frame_factory_, source_config.common.output_sample_spec, true));
+        frame_factory_, arena, source_config.common.output_sample_spec, true));
     if ((init_status_ = mixer_->init_status()) != status::StatusOK) {
         return;
     }
@@ -202,10 +202,11 @@ void ReceiverSource::reclock(core::nanoseconds_t playback_time) {
 }
 
 status::StatusCode ReceiverSource::read(audio::Frame& frame,
-                                        packet::stream_timestamp_t duration) {
+                                        packet::stream_timestamp_t duration,
+                                        audio::FrameReadMode mode) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    return frame_reader_->read(frame, duration);
+    return frame_reader_->read(frame, duration, mode);
 }
 
 } // namespace pipeline

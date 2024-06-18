@@ -419,9 +419,16 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
         return code;
     }
 
-    mixer_.add_input(sess->frame_reader());
-    sessions_.push_back(*sess);
+    code = mixer_.add_input(sess->frame_reader());
+    if (code != status::StatusOK) {
+        roc_log(LogError,
+                "session group: can't create session, can't add input: status=%s",
+                status::code_to_str(code));
+        session_router_.remove_session(sess);
+        return code;
+    }
 
+    sessions_.push_back(*sess);
     state_tracker_.add_active_sessions(+1);
 
     return status::StatusOK;

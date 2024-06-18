@@ -199,22 +199,26 @@ bool PipelineLoop::maybe_process_tasks_() {
 
 status::StatusCode
 PipelineLoop::process_subframes_and_tasks(audio::Frame& frame,
-                                          packet::stream_timestamp_t frame_duration) {
+                                          packet::stream_timestamp_t frame_duration,
+                                          audio::FrameReadMode frame_mode) {
     if (config_.enable_precise_task_scheduling) {
-        return process_subframes_and_tasks_precise_(frame, frame_duration);
+        return process_subframes_and_tasks_precise_(frame, frame_duration, frame_mode);
     }
-    return process_subframes_and_tasks_simple_(frame, frame_duration);
+    return process_subframes_and_tasks_simple_(frame, frame_duration, frame_mode);
 }
 
 status::StatusCode PipelineLoop::process_subframes_and_tasks_simple_(
-    audio::Frame& frame, packet::stream_timestamp_t frame_duration) {
+    audio::Frame& frame,
+    packet::stream_timestamp_t frame_duration,
+    audio::FrameReadMode frame_mode) {
     ++pending_frames_;
 
     cancel_async_task_processing_();
 
     pipeline_mutex_.lock();
 
-    const status::StatusCode frame_status = process_subframe_imp(frame, frame_duration);
+    const status::StatusCode frame_status =
+        process_subframe_imp(frame, frame_duration, frame_mode);
 
     pipeline_mutex_.unlock();
 
@@ -226,7 +230,9 @@ status::StatusCode PipelineLoop::process_subframes_and_tasks_simple_(
 }
 
 status::StatusCode PipelineLoop::process_subframes_and_tasks_precise_(
-    audio::Frame& frame, packet::stream_timestamp_t frame_duration) {
+    audio::Frame& frame,
+    packet::stream_timestamp_t frame_duration,
+    audio::FrameReadMode frame_mode) {
     ++pending_frames_;
 
     const core::nanoseconds_t frame_start_time = timestamp_imp();
@@ -243,7 +249,8 @@ status::StatusCode PipelineLoop::process_subframes_and_tasks_precise_(
     for (;;) {
         const bool first_iteration = (frame_pos == 0);
 
-        frame_status = next_subframe_(frame, &frame_pos, frame_duration);
+        frame_status =
+            process_next_subframe_(frame, &frame_pos, frame_duration, frame_mode);
 
         if (first_iteration) {
             next_frame_deadline =
@@ -349,19 +356,21 @@ void PipelineLoop::process_task_(PipelineTask& task, bool notify) {
 }
 
 status::StatusCode
-PipelineLoop::next_subframe_(audio::Frame& frame,
-                             packet::stream_timestamp_t* frame_pos,
-                             packet::stream_timestamp_t frame_duration) {
+PipelineLoop::process_next_subframe_(audio::Frame& frame,
+                                     packet::stream_timestamp_t* frame_pos,
+                                     packet::stream_timestamp_t frame_duration,
+                                     audio::FrameReadMode frame_mode) {
     const size_t subframe_duration = max_samples_between_tasks_
         ? std::min(frame_duration - *frame_pos, max_samples_between_tasks_)
         : frame_duration;
 
     const status::StatusCode code = subframe_duration == frame_duration
-        // Happy path: process whole frame.
-        ? process_subframe_imp(frame, frame_duration)
+        // Happy path: subframe = whole frame.
+        ? process_subframe_imp(frame, frame_duration, frame_mode)
         // Heavy path: subsequently process parts of frame (sub-frames), to
         // allow processing tasks in-between.
-        : process_subframe_(frame, frame_duration, *frame_pos, subframe_duration);
+        : make_and_process_subframe_(frame, frame_duration, *frame_pos, subframe_duration,
+                                     frame_mode);
 
     *frame_pos += subframe_duration;
 
@@ -379,12 +388,13 @@ PipelineLoop::next_subframe_(audio::Frame& frame,
 }
 
 status::StatusCode
-PipelineLoop::process_subframe_(audio::Frame& frame,
-                                packet::stream_timestamp_t frame_duration,
-                                packet::stream_timestamp_t subframe_pos,
-                                packet::stream_timestamp_t subframe_duration) {
+PipelineLoop::make_and_process_subframe_(audio::Frame& frame,
+                                         packet::stream_timestamp_t frame_duration,
+                                         packet::stream_timestamp_t subframe_pos,
+                                         packet::stream_timestamp_t subframe_duration,
+                                         audio::FrameReadMode subframe_mode) {
     if (direction_ == Dir_ReadFrames && subframe_pos == 0) {
-        // Allocate buffer for outer frame if not allocated yet.
+        // Allocate buffer for outer frame if there is no suitable pre-allocated buffer.
         if (!frame_factory_.reallocate_frame(frame, frame_duration)) {
             return status::StatusNoMem;
         }
@@ -421,7 +431,8 @@ PipelineLoop::process_subframe_(audio::Frame& frame,
     }
 
     // Perform read or write.
-    const status::StatusCode code = process_subframe_imp(*subframe_, subframe_duration);
+    const status::StatusCode code =
+        process_subframe_imp(*subframe_, subframe_duration, subframe_mode);
 
     if (direction_ == Dir_ReadFrames && code == status::StatusOK) {
         // Propagate meta-data and data of sub-frame to outer frame.

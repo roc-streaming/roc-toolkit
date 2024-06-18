@@ -70,7 +70,8 @@ const LatencyMetrics& LatencyMonitor::metrics() const {
 }
 
 status::StatusCode LatencyMonitor::read(Frame& frame,
-                                        packet::stream_timestamp_t duration) {
+                                        packet::stream_timestamp_t duration,
+                                        FrameReadMode mode) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (!alive_) {
@@ -85,7 +86,7 @@ status::StatusCode LatencyMonitor::read(Frame& frame,
         return status::StatusAbort;
     }
 
-    const status::StatusCode code = frame_reader_.read(frame, duration);
+    const status::StatusCode code = frame_reader_.read(frame, duration, mode);
     if (code != status::StatusOK && code != status::StatusPart) {
         return code;
     }

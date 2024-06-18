@@ -85,7 +85,10 @@ public:
     }
 
     virtual status::StatusCode read(audio::Frame& frame,
-                                    packet::stream_timestamp_t duration) {
+                                    packet::stream_timestamp_t duration,
+                                    audio::FrameReadMode mode) {
+        LONGS_EQUAL(audio::ModeHard, mode);
+
         CHECK(frame_factory_.reallocate_frame(
             frame, sample_spec_.stream_timestamp_2_bytes(duration)));
 

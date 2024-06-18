@@ -128,8 +128,9 @@ audio::FramePtr read_frame(audio::IFrameReader& reader,
     audio::FramePtr frame = frame_factory.allocate_frame_no_buffer();
     CHECK(frame);
 
-    LONGS_EQUAL(status::StatusOK,
-                reader.read(*frame, n_samples / sample_spec.num_channels()));
+    LONGS_EQUAL(
+        status::StatusOK,
+        reader.read(*frame, n_samples / sample_spec.num_channels(), audio::ModeHard));
 
     CHECK(frame->is_raw());
 

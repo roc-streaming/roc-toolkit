@@ -31,11 +31,17 @@ public:
         , timestamp_(-1)
         , max_duration_(0)
         , status_(status::NoStatus)
-        , last_status_(status::NoStatus) {
+        , drain_status_(status::NoStatus)
+        , last_status_(status::NoStatus)
+        , last_mode_((FrameReadMode)-1) {
     }
 
     virtual status::StatusCode read(Frame& frame,
-                                    packet::stream_timestamp_t requested_duration) {
+                                    packet::stream_timestamp_t requested_duration,
+                                    FrameReadMode mode) {
+        total_reads_++;
+        last_mode_ = mode;
+
         if (status_ != status::NoStatus && status_ != status::StatusOK) {
             return (last_status_ = status_);
         }
@@ -49,10 +55,11 @@ public:
         }
 
         if (duration == 0) {
-            return (last_status_ = status::StatusEnd);
+            if (drain_status_ != status::NoStatus) {
+                return (last_status_ = drain_status_);
+            }
+            return (last_status_ = status::StatusDrain);
         }
-
-        total_reads_++;
 
         CHECK(frame_factory_.reallocate_frame(
             frame, sample_spec_.stream_timestamp_2_bytes(duration)));
@@ -82,6 +89,10 @@ public:
 
     void set_status(status::StatusCode status) {
         status_ = status;
+    }
+
+    void set_no_samples_status(status::StatusCode status) {
+        drain_status_ = status;
     }
 
     void set_limit(packet::stream_timestamp_t max_duration) {
@@ -118,8 +129,16 @@ public:
         return size_ - pos_;
     }
 
-    status::StatusCode last_status() const {
-        return last_status_;
+    status::StatusCode last_status() {
+        const status::StatusCode code = last_status_;
+        last_status_ = status::NoStatus;
+        return code;
+    }
+
+    FrameReadMode last_mode() {
+        const FrameReadMode mode = last_mode_;
+        last_mode_ = (FrameReadMode)-1;
+        return mode;
     }
 
 private:
@@ -140,7 +159,10 @@ private:
     packet::stream_timestamp_t max_duration_;
 
     status::StatusCode status_;
+    status::StatusCode drain_status_;
     status::StatusCode last_status_;
+
+    FrameReadMode last_mode_;
 };
 
 } // namespace test

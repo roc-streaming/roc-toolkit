@@ -58,7 +58,8 @@ make_config(int no_playback_timeout, int broken_playback_timeout, int warmup_dur
 void expect_read(status::StatusCode expected_status,
                  Watchdog& watchdog,
                  size_t requested_duration,
-                 size_t expected_duration = 0) {
+                 size_t expected_duration = 0,
+                 FrameReadMode mode = ModeHard) {
     if (expected_duration == 0) {
         expected_duration = requested_duration;
     }
@@ -66,7 +67,7 @@ void expect_read(status::StatusCode expected_status,
     FramePtr frame = frame_factory.allocate_frame_no_buffer();
     CHECK(frame);
 
-    LONGS_EQUAL(expected_status, watchdog.read(*frame, requested_duration));
+    LONGS_EQUAL(expected_status, watchdog.read(*frame, requested_duration, mode));
 
     if (expected_status == status::StatusOK || expected_status == status::StatusPart) {
         CHECK(frame->is_raw());
@@ -98,11 +99,15 @@ public:
         : flags_(0)
         , max_duration_(0)
         , status_(status::NoStatus)
-        , last_status_(status::NoStatus) {
+        , last_status_(status::NoStatus)
+        , last_mode_((FrameReadMode)-1) {
     }
 
     virtual status::StatusCode read(Frame& frame,
-                                    packet::stream_timestamp_t requested_duration) {
+                                    packet::stream_timestamp_t requested_duration,
+                                    FrameReadMode mode) {
+        last_mode_ = mode;
+
         if (status_ != status::NoStatus) {
             return (last_status_ = status_);
         }
@@ -144,11 +149,16 @@ public:
         return last_status_;
     }
 
+    FrameReadMode last_mode() const {
+        return last_mode_;
+    }
+
 private:
     unsigned flags_;
     packet::stream_timestamp_t max_duration_;
     status::StatusCode status_;
     status::StatusCode last_status_;
+    FrameReadMode last_mode_;
 };
 
 } // namespace
@@ -599,6 +609,29 @@ TEST(watchdog, warmup_early_nonblank) {
     expect_read(status::StatusAbort, watchdog, SamplesPerFrame);
 }
 
+// Forwarding mode to underlying reader.
+TEST(watchdog, forward_mode) {
+    MetaReader meta_reader;
+    Watchdog watchdog(meta_reader, sample_spec,
+                      make_config(NoPlaybackTimeout, BrokenPlaybackTimeout, -1), arena);
+    LONGS_EQUAL(status::StatusOK, watchdog.init_status());
+
+    const FrameReadMode mode_list[] = {
+        ModeHard,
+        ModeSoft,
+    };
+
+    for (size_t md_n = 0; md_n < ROC_ARRAY_SIZE(mode_list); md_n++) {
+        FramePtr frame = frame_factory.allocate_frame_no_buffer();
+        CHECK(frame);
+
+        LONGS_EQUAL(status::StatusOK,
+                    watchdog.read(*frame, SamplesPerFrame, mode_list[md_n]));
+
+        LONGS_EQUAL(mode_list[md_n], meta_reader.last_mode());
+    }
+}
+
 // Forwarding error from underlying reader.
 TEST(watchdog, forward_error) {
     MetaReader meta_reader;
@@ -617,7 +650,7 @@ TEST(watchdog, forward_error) {
         FramePtr frame = frame_factory.allocate_frame_no_buffer();
         CHECK(frame);
 
-        LONGS_EQUAL(status_list[st_n], watchdog.read(*frame, SamplesPerFrame));
+        LONGS_EQUAL(status_list[st_n], watchdog.read(*frame, SamplesPerFrame, ModeHard));
         LONGS_EQUAL(status_list[st_n], meta_reader.last_status());
     }
 }

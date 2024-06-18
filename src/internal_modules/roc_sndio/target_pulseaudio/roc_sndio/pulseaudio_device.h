@@ -94,7 +94,9 @@ public:
     //! @note
     //!  Used if device is source.
     virtual ROC_ATTR_NODISCARD status::StatusCode
-    read(audio::Frame& frame, packet::stream_timestamp_t duration);
+    read(audio::Frame& frame,
+         packet::stream_timestamp_t duration,
+         audio::FrameReadMode mode);
 
 private:
     static void context_state_cb_(pa_context* context, void* userdata);

@@ -55,7 +55,8 @@ FramePtr expect_frame(status::StatusCode expected_code,
                       IFrameReader& reader,
                       const SampleSpec& sample_spec,
                       size_t requested_samples,
-                      size_t expected_samples) {
+                      size_t expected_samples,
+                      FrameReadMode mode = ModeHard) {
     CHECK(requested_samples % sample_spec.num_channels() == 0);
     CHECK(expected_samples % sample_spec.num_channels() == 0);
 
@@ -63,18 +64,20 @@ FramePtr expect_frame(status::StatusCode expected_code,
     CHECK(frame);
 
     const status::StatusCode code =
-        reader.read(*frame, requested_samples / sample_spec.num_channels());
+        reader.read(*frame, requested_samples / sample_spec.num_channels(), mode);
 
     LONGS_EQUAL(expected_code, code);
 
-    CHECK(frame->is_raw());
+    if (expected_code == status::StatusOK || expected_code == status::StatusPart) {
+        CHECK(frame->is_raw());
 
-    CHECK(frame->raw_samples());
-    CHECK(frame->bytes());
+        CHECK(frame->raw_samples());
+        CHECK(frame->bytes());
 
-    LONGS_EQUAL(expected_samples / sample_spec.num_channels(), frame->duration());
-    LONGS_EQUAL(expected_samples, frame->num_raw_samples());
-    LONGS_EQUAL(expected_samples * sizeof(sample_t), frame->num_bytes());
+        LONGS_EQUAL(expected_samples / sample_spec.num_channels(), frame->duration());
+        LONGS_EQUAL(expected_samples, frame->num_raw_samples());
+        LONGS_EQUAL(expected_samples * sizeof(sample_t), frame->num_bytes());
+    }
 
     return frame;
 }
@@ -317,6 +320,34 @@ TEST(channel_mapper_reader, big_read_no_cts) {
     LONGS_EQUAL(0, mock_reader.num_unread());
 }
 
+// Forwarding mode to underlying reader.
+TEST(channel_mapper_reader, forward_mode) {
+    enum { FrameSz = MaxSz / 2 };
+
+    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+                             ChanOrder_Smpte, ChanMask_Surround_Mono);
+    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+                              ChanOrder_Smpte, ChanMask_Surround_Stereo);
+
+    test::MockReader mock_reader(frame_factory, in_spec);
+    ChannelMapperReader mapper_reader(mock_reader, frame_factory, in_spec, out_spec);
+    LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
+
+    mock_reader.add_zero_samples();
+
+    const FrameReadMode mode_list[] = {
+        ModeHard,
+        ModeSoft,
+    };
+
+    for (size_t md_n = 0; md_n < ROC_ARRAY_SIZE(mode_list); md_n++) {
+        FramePtr frame = expect_frame(status::StatusOK, mapper_reader, out_spec, FrameSz,
+                                      FrameSz, mode_list[md_n]);
+
+        LONGS_EQUAL(mode_list[md_n], mock_reader.last_mode());
+    }
+}
+
 // Forwarding error from underlying reader.
 TEST(channel_mapper_reader, forward_error) {
     enum { FrameSz = MaxSz / 2 };
@@ -338,11 +369,8 @@ TEST(channel_mapper_reader, forward_error) {
     for (size_t st_n = 0; st_n < ROC_ARRAY_SIZE(status_list); st_n++) {
         mock_reader.set_status(status_list[st_n]);
 
-        FramePtr frame = frame_factory.allocate_frame_no_buffer();
-        CHECK(frame);
-
-        LONGS_EQUAL(status_list[st_n],
-                    mapper_reader.read(*frame, FrameSz / out_spec.num_channels()));
+        FramePtr frame =
+            expect_frame(status_list[st_n], mapper_reader, out_spec, FrameSz, 0);
     }
 }
 
@@ -401,8 +429,9 @@ TEST(channel_mapper_reader, preallocated_buffer) {
 
         core::Slice<uint8_t> orig_buf = frame->buffer();
 
-        LONGS_EQUAL(status::StatusOK,
-                    mapper_reader.read(*frame, FrameSz / out_spec.num_channels()));
+        LONGS_EQUAL(
+            status::StatusOK,
+            mapper_reader.read(*frame, FrameSz / out_spec.num_channels(), ModeHard));
 
         CHECK(frame->buffer());
 

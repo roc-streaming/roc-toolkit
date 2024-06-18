@@ -97,7 +97,8 @@ private:
     }
 
     virtual status::StatusCode process_subframe_imp(audio::Frame& frame,
-                                                    packet::stream_timestamp_t duration) {
+                                                    packet::stream_timestamp_t duration,
+                                                    audio::FrameReadMode mode) {
         return status::StatusOK;
     }
 

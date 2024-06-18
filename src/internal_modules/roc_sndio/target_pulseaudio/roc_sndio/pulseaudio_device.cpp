@@ -229,7 +229,8 @@ status::StatusCode PulseaudioDevice::write(audio::Frame& frame) {
 }
 
 status::StatusCode PulseaudioDevice::read(audio::Frame& frame,
-                                          packet::stream_timestamp_t duration) {
+                                          packet::stream_timestamp_t duration,
+                                          audio::FrameReadMode mode) {
     roc_panic_if(device_type_ != DeviceType_Source);
 
     if (!frame_factory_.reallocate_frame(

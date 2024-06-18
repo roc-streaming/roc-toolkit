@@ -51,7 +51,7 @@ public:
 
     //! Read audio frame.
     virtual ROC_ATTR_NODISCARD status::StatusCode
-    read(Frame& frame, packet::stream_timestamp_t duration);
+    read(Frame& frame, packet::stream_timestamp_t duration, FrameReadMode mode);
 
     //! Get next timestamp to be rendered.
     //! @pre

@@ -364,8 +364,8 @@ status::StatusCode Receiver::read_frame(void* bytes, size_t n_bytes) {
     core::BufferView frame_buffer(bytes, n_bytes);
     frame_->set_buffer(frame_buffer);
 
-    const status::StatusCode code =
-        pipeline_.source().read(*frame_, sample_spec_.bytes_2_stream_timestamp(n_bytes));
+    const status::StatusCode code = pipeline_.source().read(
+        *frame_, sample_spec_.bytes_2_stream_timestamp(n_bytes), audio::ModeHard);
 
     if (code == status::StatusOK && frame_->bytes() != bytes) {
         // If source used another buffer, copy result from it.

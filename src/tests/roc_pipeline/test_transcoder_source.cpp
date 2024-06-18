@@ -42,6 +42,18 @@ core::SlabPool<core::Buffer>
 
 audio::FrameFactory frame_factory(frame_pool, frame_buffer_pool);
 
+void read_frame(status::StatusCode expected_code,
+                audio::IFrameReader& reader,
+                size_t samples_per_chan) {
+    audio::FramePtr frame = frame_factory.allocate_frame_no_buffer();
+    CHECK(frame);
+
+    const status::StatusCode code =
+        reader.read(*frame, samples_per_chan, audio::ModeHard);
+
+    LONGS_EQUAL(expected_code, code);
+}
+
 } // namespace
 
 TEST_GROUP(transcoder_source) {
@@ -166,12 +178,10 @@ TEST(transcoder_source, eof) {
                                 arena);
     LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
-    audio::FramePtr frame = frame_factory.allocate_frame_no_buffer();
-    CHECK(frame);
-
     mock_source.add(SamplesPerFrame, input_sample_spec);
-    LONGS_EQUAL(status::StatusOK, transcoder.read(*frame, SamplesPerFrame));
-    LONGS_EQUAL(status::StatusEnd, transcoder.read(*frame, SamplesPerFrame));
+
+    read_frame(status::StatusOK, transcoder, SamplesPerFrame);
+    read_frame(status::StatusEnd, transcoder, SamplesPerFrame);
 }
 
 TEST(transcoder_source, frame_size_small) {

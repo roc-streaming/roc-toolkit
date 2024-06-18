@@ -83,7 +83,8 @@ packet::stream_timestamp_t Depacketizer::next_timestamp() const {
 }
 
 status::StatusCode Depacketizer::read(Frame& frame,
-                                      packet::stream_timestamp_t requested_duration) {
+                                      packet::stream_timestamp_t requested_duration,
+                                      FrameReadMode mode) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     const packet::stream_timestamp_t capped_duration = sample_spec_.cap_frame_duration(

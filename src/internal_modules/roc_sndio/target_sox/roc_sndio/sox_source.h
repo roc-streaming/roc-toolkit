@@ -84,7 +84,9 @@ public:
 
     //! Read frame.
     virtual ROC_ATTR_NODISCARD status::StatusCode
-    read(audio::Frame& frame, packet::stream_timestamp_t duration);
+    read(audio::Frame& frame,
+         packet::stream_timestamp_t duration,
+         audio::FrameReadMode mode);
 
 private:
     status::StatusCode init_names_(const char* driver, const char* path);

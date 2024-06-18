@@ -219,7 +219,8 @@ void SoxSource::reclock(core::nanoseconds_t timestamp) {
 }
 
 status::StatusCode SoxSource::read(audio::Frame& frame,
-                                   packet::stream_timestamp_t duration) {
+                                   packet::stream_timestamp_t duration,
+                                   audio::FrameReadMode mode) {
     if (!input_ && !paused_) {
         roc_panic("sox source: read: non-open input file or device");
     }

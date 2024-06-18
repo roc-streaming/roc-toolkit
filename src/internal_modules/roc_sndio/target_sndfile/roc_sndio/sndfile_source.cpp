@@ -117,7 +117,8 @@ void SndfileSource::reclock(core::nanoseconds_t timestamp) {
 }
 
 status::StatusCode SndfileSource::read(audio::Frame& frame,
-                                       packet::stream_timestamp_t duration) {
+                                       packet::stream_timestamp_t duration,
+                                       audio::FrameReadMode mode) {
     if (!file_) {
         roc_panic("sndfile source: not opened");
     }

@@ -211,7 +211,8 @@ void ReceiverLoop::reclock(core::nanoseconds_t timestamp) {
 }
 
 status::StatusCode ReceiverLoop::read(audio::Frame& frame,
-                                      packet::stream_timestamp_t duration) {
+                                      packet::stream_timestamp_t duration,
+                                      audio::FrameReadMode mode) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     core::Mutex::Lock lock(source_mutex_);
@@ -221,8 +222,9 @@ status::StatusCode ReceiverLoop::read(audio::Frame& frame,
     }
 
     // invokes process_subframe_imp() and process_task_imp()
-    const status::StatusCode code = process_subframes_and_tasks(frame, duration);
-    if (code != status::StatusOK) {
+    const status::StatusCode code = process_subframes_and_tasks(frame, duration, mode);
+
+    if (code != status::StatusOK && code != status::StatusPart) {
         return code;
     }
 
@@ -232,7 +234,7 @@ status::StatusCode ReceiverLoop::read(audio::Frame& frame,
         source_.reclock(core::timestamp(core::ClockUnix));
     }
 
-    return status::StatusOK;
+    return code;
 }
 
 core::nanoseconds_t ReceiverLoop::timestamp_imp() const {
@@ -243,9 +245,9 @@ uint64_t ReceiverLoop::tid_imp() const {
     return core::Thread::get_tid();
 }
 
-status::StatusCode
-ReceiverLoop::process_subframe_imp(audio::Frame& frame,
-                                   packet::stream_timestamp_t duration) {
+status::StatusCode ReceiverLoop::process_subframe_imp(audio::Frame& frame,
+                                                      packet::stream_timestamp_t duration,
+                                                      audio::FrameReadMode mode) {
     status::StatusCode code = status::NoStatus;
 
     // TODO(gh-674): handle returned deadline and schedule refresh
@@ -256,7 +258,7 @@ ReceiverLoop::process_subframe_imp(audio::Frame& frame,
         return code;
     }
 
-    if ((code = source_.read(frame, duration)) != status::StatusOK) {
+    if ((code = source_.read(frame, duration, mode)) != status::StatusOK) {
         return code;
     }
 

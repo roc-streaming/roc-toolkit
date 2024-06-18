@@ -89,7 +89,10 @@ public:
     }
 
     virtual status::StatusCode read(audio::Frame& frame,
-                                    packet::stream_timestamp_t duration) {
+                                    packet::stream_timestamp_t duration,
+                                    audio::FrameReadMode mode) {
+        LONGS_EQUAL(audio::ModeHard, mode);
+
         if (pos_ == size_) {
             return status::StatusEnd;
         }

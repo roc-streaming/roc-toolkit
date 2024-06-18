@@ -37,7 +37,7 @@ rtp::EncodingMap encoding_map(arena);
 TEST_GROUP(receiver_endpoint) {};
 
 TEST(receiver_endpoint, valid) {
-    audio::Mixer mixer(frame_factory, DefaultSampleSpec, false);
+    audio::Mixer mixer(frame_factory, arena, DefaultSampleSpec, false);
 
     StateTracker state_tracker;
     ReceiverSourceConfig source_config;
@@ -52,7 +52,7 @@ TEST(receiver_endpoint, valid) {
 }
 
 TEST(receiver_endpoint, invalid_proto) {
-    audio::Mixer mixer(frame_factory, DefaultSampleSpec, false);
+    audio::Mixer mixer(frame_factory, arena, DefaultSampleSpec, false);
 
     StateTracker state_tracker;
     ReceiverSourceConfig source_config;
@@ -75,7 +75,7 @@ TEST(receiver_endpoint, no_memory) {
     };
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(protos); ++n) {
-        audio::Mixer mixer(frame_factory, DefaultSampleSpec, false);
+        audio::Mixer mixer(frame_factory, arena, DefaultSampleSpec, false);
 
         StateTracker state_tracker;
         ReceiverSourceConfig source_config;

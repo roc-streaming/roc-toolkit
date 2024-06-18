@@ -89,7 +89,7 @@ read_frame(IFrameReader& reader, const SampleSpec& sample_spec, size_t n_samples
     CHECK(frame);
 
     LONGS_EQUAL(status::StatusOK,
-                reader.read(*frame, n_samples / sample_spec.num_channels()));
+                reader.read(*frame, n_samples / sample_spec.num_channels(), ModeHard));
 
     check_frame(*frame, sample_spec, n_samples);
 
@@ -1117,7 +1117,8 @@ TEST(resampler, reader_big_frame) {
         FramePtr frame = frame_factory.allocate_frame(0);
         CHECK(frame);
 
-        LONGS_EQUAL(status::StatusPart, rreader.read(*frame, MaxFrameSize * 3 / NumCh));
+        LONGS_EQUAL(status::StatusPart,
+                    rreader.read(*frame, MaxFrameSize * 3 / NumCh, ModeHard));
 
         check_frame(*frame, sample_spec, MaxFrameSize);
     }
@@ -1166,6 +1167,51 @@ TEST(resampler, writer_big_frame) {
     }
 }
 
+// Forward mode to underlying reader.
+TEST(resampler, reader_forward_mode) {
+    enum {
+        SampleRate = 44100,
+        NumCh = 2,
+        ChMask = 0x3,
+    };
+
+    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
+        const ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
+        const ResamplerProfile profile = ResamplerProfile_High;
+
+        const SampleSpec sample_spec(SampleRate, Sample_RawFormat, ChanLayout_Surround,
+                                     ChanOrder_Smpte, ChMask);
+
+        test::MockReader input_reader(frame_factory, sample_spec);
+        input_reader.add_zero_samples();
+
+        core::SharedPtr<IResampler> resampler = ResamplerMap::instance().new_resampler(
+            arena, frame_factory, make_config(backend, profile), sample_spec,
+            sample_spec);
+        CHECK(resampler);
+        LONGS_EQUAL(status::StatusOK, resampler->init_status());
+
+        ResamplerReader rreader(input_reader, frame_factory, *resampler, sample_spec,
+                                sample_spec);
+        LONGS_EQUAL(status::StatusOK, rreader.init_status());
+
+        const FrameReadMode mode_list[] = {
+            ModeHard,
+            ModeSoft,
+        };
+
+        for (size_t md_n = 0; md_n < ROC_ARRAY_SIZE(mode_list); md_n++) {
+            FramePtr frame = frame_factory.allocate_frame(0);
+            CHECK(frame);
+
+            LONGS_EQUAL(status::StatusOK,
+                        rreader.read(*frame, OutFrameSize / NumCh, mode_list[md_n]));
+
+            LONGS_EQUAL(mode_list[md_n], input_reader.last_mode());
+        }
+    }
+}
+
 // Forward error from underlying reader.
 TEST(resampler, reader_forward_error) {
     enum {
@@ -1204,7 +1250,8 @@ TEST(resampler, reader_forward_error) {
             FramePtr frame = frame_factory.allocate_frame(0);
             CHECK(frame);
 
-            LONGS_EQUAL(status_list[st_n], rreader.read(*frame, OutFrameSize / NumCh));
+            LONGS_EQUAL(status_list[st_n],
+                        rreader.read(*frame, OutFrameSize / NumCh, ModeHard));
         }
     }
 }
@@ -1335,7 +1382,8 @@ TEST(resampler, reader_preallocated_buffer) {
 
             core::Slice<uint8_t> orig_buf = frame->buffer();
 
-            LONGS_EQUAL(status::StatusOK, rreader.read(*frame, OutFrameSize / NumCh));
+            LONGS_EQUAL(status::StatusOK,
+                        rreader.read(*frame, OutFrameSize / NumCh, ModeHard));
 
             CHECK(frame->buffer());
 

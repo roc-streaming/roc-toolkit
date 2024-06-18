@@ -14,6 +14,7 @@
 
 #include "roc_audio/frame.h"
 #include "roc_audio/frame_factory.h"
+#include "roc_audio/iframe_reader.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/atomic.h"
 #include "roc_core/mpsc_queue.h"
@@ -307,7 +308,8 @@ protected:
     //! Split frame and process subframes and some of the enqueued tasks.
     ROC_ATTR_NODISCARD status::StatusCode
     process_subframes_and_tasks(audio::Frame& frame,
-                                packet::stream_timestamp_t frame_duration);
+                                packet::stream_timestamp_t frame_duration,
+                                audio::FrameReadMode mode);
 
     //! Get current time.
     virtual core::nanoseconds_t timestamp_imp() const = 0;
@@ -315,10 +317,11 @@ protected:
     //! Get current thread id.
     virtual uint64_t tid_imp() const = 0;
 
-    //! Process subframe.
+    //! Read or write subframe.
     virtual status::StatusCode
     process_subframe_imp(audio::Frame& frame,
-                         packet::stream_timestamp_t frame_duration) = 0;
+                         packet::stream_timestamp_t frame_duration,
+                         audio::FrameReadMode frame_mode) = 0;
 
     //! Process task.
     virtual bool process_task_imp(PipelineTask& task) = 0;
@@ -328,10 +331,12 @@ private:
 
     status::StatusCode
     process_subframes_and_tasks_simple_(audio::Frame& frame,
-                                        packet::stream_timestamp_t frame_duration);
+                                        packet::stream_timestamp_t frame_duration,
+                                        audio::FrameReadMode frame_mode);
     status::StatusCode
     process_subframes_and_tasks_precise_(audio::Frame& frame,
-                                         packet::stream_timestamp_t frame_duration);
+                                         packet::stream_timestamp_t frame_duration,
+                                         audio::FrameReadMode frame_mode);
 
     bool schedule_and_maybe_process_task_(PipelineTask& task);
     bool maybe_process_tasks_();
@@ -340,13 +345,16 @@ private:
     void cancel_async_task_processing_();
 
     void process_task_(PipelineTask& task, bool notify);
-    status::StatusCode next_subframe_(audio::Frame& frame,
-                                      packet::stream_timestamp_t* frame_pos,
-                                      packet::stream_timestamp_t frame_duration);
-    status::StatusCode process_subframe_(audio::Frame& frame,
-                                         packet::stream_timestamp_t frame_duration,
-                                         packet::stream_timestamp_t subframe_pos,
-                                         packet::stream_timestamp_t subframe_duration);
+    status::StatusCode process_next_subframe_(audio::Frame& frame,
+                                              packet::stream_timestamp_t* frame_pos,
+                                              packet::stream_timestamp_t frame_duration,
+                                              audio::FrameReadMode frame_mode);
+    status::StatusCode
+    make_and_process_subframe_(audio::Frame& frame,
+                               packet::stream_timestamp_t frame_duration,
+                               packet::stream_timestamp_t subframe_pos,
+                               packet::stream_timestamp_t subframe_duration,
+                               audio::FrameReadMode subframe_mode);
 
     bool start_subframe_task_processing_();
     bool subframe_task_processing_allowed_(core::nanoseconds_t next_frame_deadline) const;

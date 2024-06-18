@@ -37,7 +37,8 @@ public:
         // provides specific value for base_capture_ts, default value is overwritten.
         , base_cts_(core::Second)
         , refresh_ts_offset_(0)
-        , last_capture_ts_(0) {
+        , last_capture_ts_(0)
+        , read_mode_(audio::ModeHard) {
     }
 
     // Read num_samples samples.
@@ -164,6 +165,11 @@ public:
         abs_offset_ = offset;
     }
 
+    // Set reading mode.
+    void set_mode(audio::FrameReadMode mode) {
+        read_mode_ = mode;
+    }
+
 private:
     audio::FramePtr read_frame_(size_t num_samples,
                                 const audio::SampleSpec& sample_spec) {
@@ -172,7 +178,7 @@ private:
 
         packet::stream_timestamp_t duration = packet::stream_timestamp_t(num_samples);
 
-        LONGS_EQUAL(status::StatusOK, source_.read(*frame, duration));
+        LONGS_EQUAL(status::StatusOK, source_.read(*frame, duration, read_mode_));
 
         CHECK(frame->is_raw());
         CHECK(frame->raw_samples());
@@ -212,6 +218,8 @@ private:
     core::nanoseconds_t base_cts_;
     core::nanoseconds_t refresh_ts_offset_;
     core::nanoseconds_t last_capture_ts_;
+
+    audio::FrameReadMode read_mode_;
 };
 
 } // namespace test

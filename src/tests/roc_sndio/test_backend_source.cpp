@@ -65,6 +65,16 @@ void write_wav(IBackend& backend,
     LONGS_EQUAL(status::StatusOK, pump.run());
 }
 
+void expect_read(status::StatusCode expected_code,
+                 ISource& source,
+                 audio::Frame& frame,
+                 packet::stream_timestamp_t requested_samples) {
+    const status::StatusCode code =
+        source.read(frame, requested_samples, audio::ModeHard);
+
+    LONGS_EQUAL(expected_code, code);
+}
+
 } // namespace
 
 TEST_GROUP(backend_source) {
@@ -162,14 +172,14 @@ TEST(backend_source, rewind) {
 
         audio::FramePtr frame1 = frame_factory.allocate_frame_no_buffer();
         CHECK(frame1);
-        LONGS_EQUAL(status::StatusOK, backend_source->read(*frame1, FrameSize));
+        expect_read(status::StatusOK, *backend_source, *frame1, FrameSize);
 
         // rewind
         LONGS_EQUAL(status::StatusOK, backend_source->rewind());
 
         audio::FramePtr frame2 = frame_factory.allocate_frame_no_buffer();
         CHECK(frame2);
-        LONGS_EQUAL(status::StatusOK, backend_source->read(*frame2, FrameSize));
+        expect_read(status::StatusOK, *backend_source, *frame2, FrameSize);
 
         LONGS_EQUAL(FrameSize * sample_spec.num_channels(), frame1->num_raw_samples());
         LONGS_EQUAL(FrameSize * sample_spec.num_channels(), frame2->num_raw_samples());
@@ -203,9 +213,9 @@ TEST(backend_source, rewind_after_eof) {
         CHECK(frame);
 
         for (int i = 0; i < 10; i++) {
-            LONGS_EQUAL(status::StatusOK, backend_source->read(*frame, FrameSize));
-            LONGS_EQUAL(status::StatusOK, backend_source->read(*frame, FrameSize));
-            LONGS_EQUAL(status::StatusEnd, backend_source->read(*frame, FrameSize));
+            expect_read(status::StatusOK, *backend_source, *frame, FrameSize);
+            expect_read(status::StatusOK, *backend_source, *frame, FrameSize);
+            expect_read(status::StatusEnd, *backend_source, *frame, FrameSize);
 
             // rewind
             LONGS_EQUAL(status::StatusOK, backend_source->rewind());

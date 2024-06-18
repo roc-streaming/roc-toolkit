@@ -21,12 +21,43 @@
 namespace roc {
 namespace audio {
 
+//! Frame reading mode.
+enum FrameReadMode {
+    //! Read as much samples as possible.
+    //!
+    //! @remarks
+    //!  If read encounters packet loss, returned frame will have gaps.
+    //!  Gaps can be filled with zeros or something else, e.g. PLC can
+    //!  fill gaps with interpolated data.
+    //!
+    //! @note
+    //!  Returned size can be also capped by maximum buffer size or other
+    //!  implementation-specific limitations.
+    ModeHard,
+
+    //! Stop reading when encountered a loss.
+    //!
+    //! @remarks
+    //!  If read encounters packet loss, it stops and returns only samples
+    //!  before the loss (if any).
+    //!
+    //! @note
+    //!  Returned size can be also capped by maximum buffer size or other
+    //!  implementation-specific limitations.
+    ModeSoft
+};
+
 //! Frame reader interface.
 class IFrameReader : public core::ListNode<> {
 public:
     virtual ~IFrameReader();
 
     //! Read frame.
+    //!
+    //! Parameters:
+    //!  - @p frame defines output frame, probably with pre-allocated buffer
+    //!  - @p duration defines requested duration of output frame
+    //!  - @p mode defines what to do in case of packet loss (see ReadMode)
     //!
     //! @note
     //!  - If frame does not have larger enough buffer, reader must allocate it
@@ -40,11 +71,13 @@ public:
     //!    and sets @p frame duration to requested @p duration.
     //!  - If frame was partially read, returns status::StatusPart and sets @p frame
     //!    duration to a smaller value than requested @p duration.
+    //!  - If @p ModeSoft is used, and there is no more samples before next loss,
+    //!    returns status::StatusDrain.
     //!  - Otherwise, returns an error.
     //!
     //! @see status::StatusCode.
     virtual ROC_ATTR_NODISCARD status::StatusCode
-    read(Frame& frame, packet::stream_timestamp_t duration) = 0;
+    read(Frame& frame, packet::stream_timestamp_t duration, FrameReadMode mode) = 0;
 };
 
 } // namespace audio
