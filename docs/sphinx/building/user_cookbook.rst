@@ -195,9 +195,7 @@ NixOS
 .. code::
 
     # for Roc and 3rd-parties
-    $ nix-shell -p gcc autoconf automake cmake gengetopt gnumake intltool libtool meson \
-        pkg-config scons ragel \
-        libuv libunwind speexdsp sox libsndfile openssl libpulseaudio
+    $ nix-shell
 
     # clone repo
     $ git clone https://github.com/roc-streaming/roc-toolkit.git
