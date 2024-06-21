@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_fec/reader.h
-//! @brief FEC reader.
+//! @file roc_fec/block_reader.h
+//! @brief FEC reader for block codes.
 
-#ifndef ROC_FEC_READER_H_
-#define ROC_FEC_READER_H_
+#ifndef ROC_FEC_BLOCK_READER_H_
+#define ROC_FEC_BLOCK_READER_H_
 
 #include "roc_core/array.h"
 #include "roc_core/iarena.h"
@@ -27,11 +27,11 @@ namespace roc {
 namespace fec {
 
 //! FEC reader parameters.
-struct ReaderConfig {
+struct BlockReaderConfig {
     //! Maximum allowed source block number jump.
     size_t max_sbn_jump;
 
-    ReaderConfig()
+    BlockReaderConfig()
         : max_sbn_jump(100) {
     }
 };
@@ -39,16 +39,16 @@ struct ReaderConfig {
 //! FEC reader for block codes.
 //! Works on top of fec::IBlockDecoder, which performs codec-specific operations.
 //! @remarks
-//!  You read packets from fec::Reader.
-//!  fec::Reader fetches packets streams from two readers:
+//!  You read packets from fec::BlockReader.
+//!  fec::BlockReader fetches packets streams from two readers:
 //!   - stream of source packets - media packets + FEC meta-data
 //!   - stream of repair packets - packets with redundancy
-//!  If there are no losses, fec::Reader just returns source (media)
+//!  If there are no losses, fec::BlockReader just returns source (media)
 //!  packets and ignores repair packets.
-//!  If there are losses, fec::Reader tries to repair missing media packets
+//!  If there are losses, fec::BlockReader tries to repair missing media packets
 //!  and insert them into the returned stream.
 //!  Losses are detected by gaps in seqnums.
-class Reader : public packet::IReader, public core::NonCopyable<> {
+class BlockReader : public packet::IReader, public core::NonCopyable<> {
 public:
     //! Initialize.
     //!
@@ -61,14 +61,14 @@ public:
     //!  - @p parser specifies packet parser for restored packets
     //!  - @p packet_factory is used to allocate restored packets
     //!  - @p arena is used to initialize a packet array
-    Reader(const ReaderConfig& config,
-           packet::FecScheme fec_scheme,
-           IBlockDecoder& block_decoder,
-           packet::IReader& source_reader,
-           packet::IReader& repair_reader,
-           packet::IParser& parser,
-           packet::PacketFactory& packet_factory,
-           core::IArena& arena);
+    BlockReader(const BlockReaderConfig& config,
+                packet::FecScheme fec_scheme,
+                IBlockDecoder& block_decoder,
+                packet::IReader& source_reader,
+                packet::IReader& repair_reader,
+                packet::IParser& parser,
+                packet::PacketFactory& packet_factory,
+                core::IArena& arena);
 
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
@@ -167,4 +167,4 @@ private:
 } // namespace fec
 } // namespace roc
 
-#endif // ROC_FEC_READER_H_
+#endif // ROC_FEC_BLOCK_READER_H_

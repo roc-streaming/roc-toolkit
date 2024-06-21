@@ -82,7 +82,7 @@ size_t OpenfecDecoder::max_block_length() const {
     return max_block_length_;
 }
 
-bool OpenfecDecoder::begin(size_t sblen, size_t rblen, size_t payload_size) {
+bool OpenfecDecoder::begin_block(size_t sblen, size_t rblen, size_t payload_size) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (!resize_tabs_(sblen + rblen)) {
@@ -100,7 +100,7 @@ bool OpenfecDecoder::begin(size_t sblen, size_t rblen, size_t payload_size) {
     return true;
 }
 
-void OpenfecDecoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
+void OpenfecDecoder::set_buffer(size_t index, const core::Slice<uint8_t>& buffer) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (index >= sblen_ + rblen_) {
@@ -142,7 +142,7 @@ void OpenfecDecoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
     }
 }
 
-core::Slice<uint8_t> OpenfecDecoder::repair(size_t index) {
+core::Slice<uint8_t> OpenfecDecoder::repair_buffer(size_t index) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (!buff_tab_[index]) {
@@ -153,7 +153,9 @@ core::Slice<uint8_t> OpenfecDecoder::repair(size_t index) {
     return buff_tab_[index];
 }
 
-void OpenfecDecoder::end() {
+void OpenfecDecoder::end_block() {
+    roc_panic_if(init_status_ != status::StatusOK);
+
     if (of_sess_ != NULL) {
         report_();
         destroy_session_();

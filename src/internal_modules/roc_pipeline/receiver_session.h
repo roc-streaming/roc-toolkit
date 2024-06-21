@@ -27,8 +27,8 @@
 #include "roc_core/optional.h"
 #include "roc_core/ref_counted.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_fec/block_reader.h"
 #include "roc_fec/iblock_decoder.h"
-#include "roc_fec/reader.h"
 #include "roc_packet/delayed_reader.h"
 #include "roc_packet/iparser.h"
 #include "roc_packet/ireader.h"
@@ -138,7 +138,7 @@ private:
 
     core::Optional<rtp::Parser> fec_parser_;
     core::ScopedPtr<fec::IBlockDecoder> fec_decoder_;
-    core::Optional<fec::Reader> fec_reader_;
+    core::Optional<fec::BlockReader> fec_reader_;
     core::Optional<rtp::Filter> fec_filter_;
 
     core::Optional<rtp::TimestampInjector> timestamp_injector_;

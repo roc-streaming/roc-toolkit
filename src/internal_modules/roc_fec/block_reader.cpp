@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_fec/reader.h"
+#include "roc_fec/block_reader.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_packet/fec_scheme_to_str.h"
@@ -15,14 +15,14 @@
 namespace roc {
 namespace fec {
 
-Reader::Reader(const ReaderConfig& config,
-               packet::FecScheme fec_scheme,
-               IBlockDecoder& block_decoder,
-               packet::IReader& source_reader,
-               packet::IReader& repair_reader,
-               packet::IParser& parser,
-               packet::PacketFactory& packet_factory,
-               core::IArena& arena)
+BlockReader::BlockReader(const BlockReaderConfig& config,
+                         packet::FecScheme fec_scheme,
+                         IBlockDecoder& block_decoder,
+                         packet::IReader& source_reader,
+                         packet::IReader& repair_reader,
+                         packet::IParser& parser,
+                         packet::PacketFactory& packet_factory,
+                         core::IArena& arena)
     : block_decoder_(block_decoder)
     , source_reader_(source_reader)
     , repair_reader_(repair_reader)
@@ -53,25 +53,25 @@ Reader::Reader(const ReaderConfig& config,
     init_status_ = status::StatusOK;
 }
 
-status::StatusCode Reader::init_status() const {
+status::StatusCode BlockReader::init_status() const {
     return init_status_;
 }
 
-bool Reader::is_started() const {
+bool BlockReader::is_started() const {
     return started_;
 }
 
-bool Reader::is_alive() const {
+bool BlockReader::is_alive() const {
     return alive_;
 }
 
-packet::stream_timestamp_t Reader::max_block_duration() const {
+packet::stream_timestamp_t BlockReader::max_block_duration() const {
     roc_panic_if(init_status_ != status::StatusOK);
 
     return (packet::stream_timestamp_t)block_max_duration_;
 }
 
-status::StatusCode Reader::read(packet::PacketPtr& pp) {
+status::StatusCode BlockReader::read(packet::PacketPtr& pp) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (!alive_) {
@@ -92,7 +92,7 @@ status::StatusCode Reader::read(packet::PacketPtr& pp) {
     return code;
 }
 
-status::StatusCode Reader::read_(packet::PacketPtr& ptr) {
+status::StatusCode BlockReader::read_(packet::PacketPtr& ptr) {
     const status::StatusCode code = fetch_all_packets_();
     if (code != status::StatusOK) {
         return code;
@@ -110,7 +110,7 @@ status::StatusCode Reader::read_(packet::PacketPtr& ptr) {
     return get_next_packet_(ptr);
 }
 
-bool Reader::try_start_() {
+bool BlockReader::try_start_() {
     packet::PacketPtr pp = source_queue_.head();
     if (!pp) {
         return false;
@@ -120,7 +120,7 @@ bool Reader::try_start_() {
 
     if (!process_source_packet_(pp)) {
         roc_log(LogTrace,
-                "fec reader: dropping leading source packet:"
+                "fec block reader: dropping leading source packet:"
                 " esi=%lu sblen=%lu blen=%lu payload_size=%lu",
                 (unsigned long)fec.encoding_symbol_id,
                 (unsigned long)fec.source_block_length, (unsigned long)fec.block_length,
@@ -137,7 +137,7 @@ bool Reader::try_start_() {
     }
 
     roc_log(LogDebug,
-            "fec reader: got first packet in a block, start decoding:"
+            "fec block reader: got first packet in a block, start decoding:"
             " n_packets_before=%u sbn=%lu",
             n_packets_, (unsigned long)cur_sbn_);
 
@@ -146,7 +146,7 @@ bool Reader::try_start_() {
     return true;
 }
 
-status::StatusCode Reader::get_next_packet_(packet::PacketPtr& ptr) {
+status::StatusCode BlockReader::get_next_packet_(packet::PacketPtr& ptr) {
     fill_block_();
 
     packet::PacketPtr pp = source_block_[next_packet_];
@@ -188,8 +188,8 @@ status::StatusCode Reader::get_next_packet_(packet::PacketPtr& ptr) {
     return status::StatusOK;
 }
 
-void Reader::next_block_() {
-    roc_log(LogTrace, "fec reader: next block: sbn=%lu", (unsigned long)cur_sbn_);
+void BlockReader::next_block_() {
+    roc_log(LogTrace, "fec block reader: next block: sbn=%lu", (unsigned long)cur_sbn_);
 
     if (source_block_[0]) {
         update_block_duration_(source_block_[0]);
@@ -217,7 +217,7 @@ void Reader::next_block_() {
     fill_block_();
 }
 
-void Reader::try_repair_() {
+void BlockReader::try_repair_() {
     if (!can_repair_) {
         return;
     }
@@ -226,10 +226,10 @@ void Reader::try_repair_() {
         return;
     }
 
-    if (!block_decoder_.begin(source_block_.size(), repair_block_.size(),
-                              payload_size_)) {
+    if (!block_decoder_.begin_block(source_block_.size(), repair_block_.size(),
+                                    payload_size_)) {
         roc_log(LogDebug,
-                "fec reader: can't begin decoder block, shutting down:"
+                "fec block reader: can't begin decoder block, shutting down:"
                 " sbl=%lu rbl=%lu payload_size=%lu",
                 (unsigned long)source_block_.size(), (unsigned long)repair_block_.size(),
                 (unsigned long)payload_size_);
@@ -241,14 +241,15 @@ void Reader::try_repair_() {
         if (!source_block_[n]) {
             continue;
         }
-        block_decoder_.set(n, source_block_[n]->fec()->payload);
+        block_decoder_.set_buffer(n, source_block_[n]->fec()->payload);
     }
 
     for (size_t n = 0; n < repair_block_.size(); n++) {
         if (!repair_block_[n]) {
             continue;
         }
-        block_decoder_.set(source_block_.size() + n, repair_block_[n]->fec()->payload);
+        block_decoder_.set_buffer(source_block_.size() + n,
+                                  repair_block_[n]->fec()->payload);
     }
 
     for (size_t n = 0; n < source_block_.size(); n++) {
@@ -256,7 +257,7 @@ void Reader::try_repair_() {
             continue;
         }
 
-        core::Slice<uint8_t> buffer = block_decoder_.repair(n);
+        core::Slice<uint8_t> buffer = block_decoder_.repair_buffer(n);
         if (!buffer) {
             continue;
         }
@@ -269,19 +270,20 @@ void Reader::try_repair_() {
         source_block_[n] = pp;
     }
 
-    block_decoder_.end();
+    block_decoder_.end_block();
     can_repair_ = false;
 }
 
-packet::PacketPtr Reader::parse_repaired_packet_(const core::Slice<uint8_t>& buffer) {
+packet::PacketPtr
+BlockReader::parse_repaired_packet_(const core::Slice<uint8_t>& buffer) {
     packet::PacketPtr pp = packet_factory_.new_packet();
     if (!pp) {
-        roc_log(LogError, "fec reader: can't allocate packet");
+        roc_log(LogError, "fec block reader: can't allocate packet");
         return NULL;
     }
 
     if (!parser_.parse(*pp, buffer)) {
-        roc_log(LogDebug, "fec reader: can't parse repaired packet");
+        roc_log(LogDebug, "fec block reader: can't parse repaired packet");
         return NULL;
     }
 
@@ -291,7 +293,7 @@ packet::PacketPtr Reader::parse_repaired_packet_(const core::Slice<uint8_t>& buf
     return pp;
 }
 
-status::StatusCode Reader::fetch_all_packets_() {
+status::StatusCode BlockReader::fetch_all_packets_() {
     status::StatusCode code = fetch_packets_(source_reader_, source_queue_);
     if (code == status::StatusOK) {
         code = fetch_packets_(repair_reader_, repair_queue_);
@@ -300,8 +302,8 @@ status::StatusCode Reader::fetch_all_packets_() {
     return code;
 }
 
-status::StatusCode Reader::fetch_packets_(packet::IReader& reader,
-                                          packet::IWriter& writer) {
+status::StatusCode BlockReader::fetch_packets_(packet::IReader& reader,
+                                               packet::IWriter& writer) {
     for (;;) {
         packet::PacketPtr pp;
 
@@ -325,12 +327,12 @@ status::StatusCode Reader::fetch_packets_(packet::IReader& reader,
     return status::StatusOK;
 }
 
-void Reader::fill_block_() {
+void BlockReader::fill_block_() {
     fill_source_block_();
     fill_repair_block_();
 }
 
-void Reader::fill_source_block_() {
+void BlockReader::fill_source_block_() {
     unsigned n_fetched = 0, n_added = 0, n_dropped = 0;
 
     for (;;) {
@@ -358,7 +360,7 @@ void Reader::fill_source_block_() {
 
         if (packet::blknum_lt(fec.source_block_number, cur_sbn_)) {
             roc_log(LogTrace,
-                    "fec reader: dropping source packet from previous block:"
+                    "fec block reader: dropping source packet from previous block:"
                     " cur_sbn=%lu pkt_sbn=%lu pkt_esi=%lu",
                     (unsigned long)cur_sbn_, (unsigned long)fec.source_block_number,
                     (unsigned long)fec.encoding_symbol_id);
@@ -371,7 +373,7 @@ void Reader::fill_source_block_() {
 
         if (!process_source_packet_(pp)) {
             roc_log(LogTrace,
-                    "fec reader: dropping source packet from current block:"
+                    "fec block reader: dropping source packet from current block:"
                     " esi=%lu sblen=%lu blen=%lu payload_size=%lu",
                     (unsigned long)fec.encoding_symbol_id,
                     (unsigned long)fec.source_block_length,
@@ -394,12 +396,13 @@ void Reader::fill_source_block_() {
     }
 
     if (n_dropped != 0 || n_fetched != n_added) {
-        roc_log(LogDebug, "fec reader: source queue: fetched=%u added=%u dropped=%u",
+        roc_log(LogDebug,
+                "fec block reader: source queue: fetched=%u added=%u dropped=%u",
                 n_fetched, n_added, n_dropped);
     }
 }
 
-void Reader::fill_repair_block_() {
+void BlockReader::fill_repair_block_() {
     unsigned n_fetched = 0, n_added = 0, n_dropped = 0;
 
     for (;;) {
@@ -427,7 +430,7 @@ void Reader::fill_repair_block_() {
 
         if (packet::blknum_lt(fec.source_block_number, cur_sbn_)) {
             roc_log(LogTrace,
-                    "fec reader: dropping repair packet from previous block:"
+                    "fec block reader: dropping repair packet from previous block:"
                     " cur_sbn=%lu pkt_sbn=%lu",
                     (unsigned long)cur_sbn_, (unsigned long)fec.source_block_number);
             n_dropped++;
@@ -439,7 +442,7 @@ void Reader::fill_repair_block_() {
 
         if (!process_repair_packet_(pp)) {
             roc_log(LogTrace,
-                    "fec reader: dropping repair packet from current block:"
+                    "fec block reader: dropping repair packet from current block:"
                     " esi=%lu sblen=%lu blen=%lu payload_size=%lu",
                     (unsigned long)fec.encoding_symbol_id,
                     (unsigned long)fec.source_block_length,
@@ -464,12 +467,13 @@ void Reader::fill_repair_block_() {
     }
 
     if (n_dropped != 0 || n_fetched != n_added) {
-        roc_log(LogDebug, "fec reader: repair queue: fetched=%u added=%u dropped=%u",
+        roc_log(LogDebug,
+                "fec block reader: repair queue: fetched=%u added=%u dropped=%u",
                 n_fetched, n_added, n_dropped);
     }
 }
 
-bool Reader::process_source_packet_(const packet::PacketPtr& pp) {
+bool BlockReader::process_source_packet_(const packet::PacketPtr& pp) {
     const packet::FEC& fec = *pp->fec();
 
     if (!validate_incoming_source_packet_(pp)) {
@@ -495,7 +499,7 @@ bool Reader::process_source_packet_(const packet::PacketPtr& pp) {
     return true;
 }
 
-bool Reader::process_repair_packet_(const packet::PacketPtr& pp) {
+bool BlockReader::process_repair_packet_(const packet::PacketPtr& pp) {
     const packet::FEC& fec = *pp->fec();
 
     if (!validate_incoming_repair_packet_(pp)) {
@@ -529,16 +533,16 @@ bool Reader::process_repair_packet_(const packet::PacketPtr& pp) {
     return true;
 }
 
-bool Reader::validate_fec_packet_(const packet::PacketPtr& pp) {
+bool BlockReader::validate_fec_packet_(const packet::PacketPtr& pp) {
     const packet::FEC* fec = pp->fec();
 
     if (!fec) {
-        roc_panic("fec reader: unexpected non-fec source packet");
+        roc_panic("fec block reader: unexpected non-fec source packet");
     }
 
     if (fec->fec_scheme != fec_scheme_) {
         roc_log(LogDebug,
-                "fec reader: unexpected packet fec scheme, shutting down:"
+                "fec block reader: unexpected packet fec scheme, shutting down:"
                 " packet_scheme=%s session_scheme=%s",
                 packet::fec_scheme_to_str(fec->fec_scheme),
                 packet::fec_scheme_to_str(fec_scheme_));
@@ -548,7 +552,7 @@ bool Reader::validate_fec_packet_(const packet::PacketPtr& pp) {
     return true;
 }
 
-bool Reader::validate_sbn_sequence_(const packet::PacketPtr& pp) {
+bool BlockReader::validate_sbn_sequence_(const packet::PacketPtr& pp) {
     const packet::FEC& fec = *pp->fec();
 
     packet::blknum_diff_t blk_dist =
@@ -560,7 +564,7 @@ bool Reader::validate_sbn_sequence_(const packet::PacketPtr& pp) {
 
     if ((size_t)blk_dist > max_sbn_jump_) {
         roc_log(LogDebug,
-                "fec reader: too long source block number jump, shutting down:"
+                "fec block reader: too long source block number jump, shutting down:"
                 " cur_sbn=%lu pkt_sbn=%lu dist=%lu max=%lu",
                 (unsigned long)cur_sbn_, (unsigned long)fec.source_block_number,
                 (unsigned long)blk_dist, (unsigned long)max_sbn_jump_);
@@ -570,7 +574,7 @@ bool Reader::validate_sbn_sequence_(const packet::PacketPtr& pp) {
     return true;
 }
 
-bool Reader::validate_incoming_source_packet_(const packet::PacketPtr& pp) {
+bool BlockReader::validate_incoming_source_packet_(const packet::PacketPtr& pp) {
     const packet::FEC& fec = *pp->fec();
 
     if (!(fec.encoding_symbol_id < fec.source_block_length)) {
@@ -594,7 +598,7 @@ bool Reader::validate_incoming_source_packet_(const packet::PacketPtr& pp) {
     return true;
 }
 
-bool Reader::validate_incoming_repair_packet_(const packet::PacketPtr& pp) {
+bool BlockReader::validate_incoming_repair_packet_(const packet::PacketPtr& pp) {
     const packet::FEC& fec = *pp->fec();
 
     if (!(fec.encoding_symbol_id >= fec.source_block_length)) {
@@ -622,14 +626,14 @@ bool Reader::validate_incoming_repair_packet_(const packet::PacketPtr& pp) {
     return true;
 }
 
-bool Reader::can_update_payload_size_(size_t new_payload_size) {
+bool BlockReader::can_update_payload_size_(size_t new_payload_size) {
     if (payload_size_ == new_payload_size) {
         return true;
     }
 
     if (payload_resized_) {
         roc_log(LogDebug,
-                "fec reader: can't change payload size in the middle of a block:"
+                "fec block reader: can't change payload size in the middle of a block:"
                 " next_esi=%lu cur_size=%lu new_size=%lu",
                 (unsigned long)next_packet_, (unsigned long)payload_size_,
                 (unsigned long)new_payload_size);
@@ -639,16 +643,17 @@ bool Reader::can_update_payload_size_(size_t new_payload_size) {
     return true;
 }
 
-bool Reader::update_payload_size_(size_t new_payload_size) {
+bool BlockReader::update_payload_size_(size_t new_payload_size) {
     if (payload_size_ == new_payload_size) {
         payload_resized_ = true;
         return true;
     }
 
-    roc_log(LogDebug,
-            "fec reader: update payload size: next_esi=%lu cur_size=%lu new_size=%lu",
-            (unsigned long)next_packet_, (unsigned long)payload_size_,
-            (unsigned long)new_payload_size);
+    roc_log(
+        LogDebug,
+        "fec block reader: update payload size: next_esi=%lu cur_size=%lu new_size=%lu",
+        (unsigned long)next_packet_, (unsigned long)payload_size_,
+        (unsigned long)new_payload_size);
 
     payload_size_ = new_payload_size;
     payload_resized_ = true;
@@ -656,7 +661,7 @@ bool Reader::update_payload_size_(size_t new_payload_size) {
     return true;
 }
 
-bool Reader::can_update_source_block_size_(size_t new_sblen) {
+bool BlockReader::can_update_source_block_size_(size_t new_sblen) {
     const size_t cur_sblen = source_block_.size();
 
     if (cur_sblen == new_sblen) {
@@ -664,17 +669,19 @@ bool Reader::can_update_source_block_size_(size_t new_sblen) {
     }
 
     if (source_block_resized_) {
-        roc_log(LogDebug,
-                "fec reader: can't change source block size in the middle of a block:"
-                " next_esi=%lu cur_sblen=%lu new_sblen=%lu",
-                (unsigned long)next_packet_, (unsigned long)cur_sblen,
-                (unsigned long)new_sblen);
+        roc_log(
+            LogDebug,
+            "fec block reader: can't change source block size in the middle of a block:"
+            " next_esi=%lu cur_sblen=%lu new_sblen=%lu",
+            (unsigned long)next_packet_, (unsigned long)cur_sblen,
+            (unsigned long)new_sblen);
         return false;
     }
 
     if (new_sblen > block_decoder_.max_block_length()) {
         roc_log(LogDebug,
-                "fec reader: can't change source block size above maximum, shutting down:"
+                "fec block reader: can't change source block size above maximum, "
+                "shutting down:"
                 " cur_sblen=%lu new_sblen=%lu max_blen=%lu",
                 (unsigned long)cur_sblen, (unsigned long)new_sblen,
                 (unsigned long)block_decoder_.max_block_length());
@@ -684,7 +691,7 @@ bool Reader::can_update_source_block_size_(size_t new_sblen) {
     return true;
 }
 
-bool Reader::update_source_block_size_(size_t new_sblen) {
+bool BlockReader::update_source_block_size_(size_t new_sblen) {
     const size_t cur_sblen = source_block_.size();
 
     if (cur_sblen == new_sblen) {
@@ -699,14 +706,14 @@ bool Reader::update_source_block_size_(size_t new_sblen) {
 
     if (!source_block_.resize(new_sblen)) {
         roc_log(LogDebug,
-                "fec reader: can't allocate source block memory, shutting down:"
+                "fec block reader: can't allocate source block memory, shutting down:"
                 " cur_sblen=%lu new_sblen=%lu",
                 (unsigned long)cur_sblen, (unsigned long)new_sblen);
         return (alive_ = false);
     }
 
     roc_log(LogDebug,
-            "fec reader: update source block size:"
+            "fec block reader: update source block size:"
             " cur_sblen=%lu cur_rblen=%lu new_sblen=%lu",
             (unsigned long)cur_sblen, (unsigned long)repair_block_.size(),
             (unsigned long)new_sblen);
@@ -716,7 +723,7 @@ bool Reader::update_source_block_size_(size_t new_sblen) {
     return true;
 }
 
-bool Reader::can_update_repair_block_size_(size_t new_blen) {
+bool BlockReader::can_update_repair_block_size_(size_t new_blen) {
     const size_t cur_blen = source_block_.size() + repair_block_.size();
 
     if (new_blen == cur_blen) {
@@ -724,17 +731,19 @@ bool Reader::can_update_repair_block_size_(size_t new_blen) {
     }
 
     if (repair_block_resized_) {
-        roc_log(LogDebug,
-                "fec reader: can't change repair block size in the middle of a block:"
-                " next_esi=%lu cur_blen=%lu new_blen=%lu",
-                (unsigned long)next_packet_, (unsigned long)cur_blen,
-                (unsigned long)new_blen);
+        roc_log(
+            LogDebug,
+            "fec block reader: can't change repair block size in the middle of a block:"
+            " next_esi=%lu cur_blen=%lu new_blen=%lu",
+            (unsigned long)next_packet_, (unsigned long)cur_blen,
+            (unsigned long)new_blen);
         return false;
     }
 
     if (new_blen > block_decoder_.max_block_length()) {
         roc_log(LogDebug,
-                "fec reader: can't change repair block size above maximum, shutting down:"
+                "fec block reader: can't change repair block size above maximum, "
+                "shutting down:"
                 " cur_blen=%lu new_blen=%lu max_blen=%lu",
                 (unsigned long)cur_blen, (unsigned long)new_blen,
                 (unsigned long)block_decoder_.max_block_length());
@@ -744,7 +753,7 @@ bool Reader::can_update_repair_block_size_(size_t new_blen) {
     return true;
 }
 
-bool Reader::update_repair_block_size_(size_t new_blen) {
+bool BlockReader::update_repair_block_size_(size_t new_blen) {
     const size_t cur_sblen = source_block_.size();
     const size_t cur_rblen = repair_block_.size();
 
@@ -767,14 +776,14 @@ bool Reader::update_repair_block_size_(size_t new_blen) {
 
     if (!repair_block_.resize(new_rblen)) {
         roc_log(LogDebug,
-                "fec reader: can't allocate repair block memory, shutting down:"
+                "fec block reader: can't allocate repair block memory, shutting down:"
                 " cur_rblen=%lu new_rblen=%lu",
                 (unsigned long)cur_rblen, (unsigned long)new_rblen);
         return (alive_ = false);
     }
 
     roc_log(LogDebug,
-            "fec reader: update repair block size:"
+            "fec block reader: update repair block size:"
             " cur_sblen=%lu cur_rblen=%lu new_rblen=%lu",
             (unsigned long)cur_sblen, (unsigned long)cur_rblen, (unsigned long)new_rblen);
 
@@ -783,7 +792,7 @@ bool Reader::update_repair_block_size_(size_t new_blen) {
     return true;
 }
 
-void Reader::drop_repair_packets_from_prev_blocks_() {
+void BlockReader::drop_repair_packets_from_prev_blocks_() {
     unsigned n_dropped = 0;
 
     for (;;) {
@@ -799,7 +808,7 @@ void Reader::drop_repair_packets_from_prev_blocks_() {
         }
 
         roc_log(LogTrace,
-                "fec reader: dropping repair packet from previous blocks,"
+                "fec block reader: dropping repair packet from previous blocks,"
                 " decoding not started: cur_sbn=%lu pkt_sbn=%lu",
                 (unsigned long)cur_sbn_, (unsigned long)fec.source_block_number);
 
@@ -812,18 +821,19 @@ void Reader::drop_repair_packets_from_prev_blocks_() {
     }
 
     if (n_dropped != 0) {
-        roc_log(LogDebug, "fec reader: repair queue: dropped=%u", n_dropped);
+        roc_log(LogDebug, "fec block reader: repair queue: dropped=%u", n_dropped);
     }
 }
 
-void Reader::update_block_duration_(const packet::PacketPtr& curr_block_pkt) {
+void BlockReader::update_block_duration_(const packet::PacketPtr& curr_block_pkt) {
     packet::stream_timestamp_diff_t block_dur = 0;
     if (prev_block_timestamp_valid_) {
         block_dur = packet::stream_timestamp_diff(curr_block_pkt->stream_timestamp(),
                                                   prev_block_timestamp_);
     }
     if (block_dur < 0) {
-        roc_log(LogTrace, "fec reader: negative block duration: prev_ts=%lu curr_ts=%lu",
+        roc_log(LogTrace,
+                "fec block reader: negative block duration: prev_ts=%lu curr_ts=%lu",
                 (unsigned long)prev_block_timestamp_,
                 (unsigned long)curr_block_pkt->stream_timestamp());
         prev_block_timestamp_valid_ = false;

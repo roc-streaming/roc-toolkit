@@ -49,31 +49,23 @@ public:
     //! Check if the object was successfully constructed.
     virtual status::StatusCode init_status() const;
 
-    //! Get buffer alignment requirement.
-    virtual size_t alignment() const;
-
     //! Get the maximum number of encoding symbols for the scheme being used.
     virtual size_t max_block_length() const;
 
+    //! Get buffer alignment requirement.
+    virtual size_t buffer_alignment() const;
+
     //! Start block.
-    //!
-    //! @remarks
-    //!  Performs an initial setup for a block. Should be called before
-    //!  any operations for the block.
-    virtual bool begin(size_t sblen, size_t rblen, size_t payload_size);
+    virtual bool begin_block(size_t sblen, size_t rblen, size_t payload_size);
 
     //! Store packet data for current block.
-    virtual void set(size_t index, const core::Slice<uint8_t>& buffer);
+    virtual void set_buffer(size_t index, const core::Slice<uint8_t>& buffer);
 
     //! Fill repair packets.
-    virtual void fill();
+    virtual void fill_buffers();
 
     //! Finish block.
-    //!
-    //! @remarks
-    //!  Cleanups the resources allocated for the block. Should be called after
-    //!  all operations for the block.
-    virtual void end();
+    virtual void end_block();
 
 private:
     bool resize_tabs_(size_t size);

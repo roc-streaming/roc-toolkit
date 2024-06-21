@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_fec/writer.h
-//! @brief FEC writer.
+//! @file roc_fec/block_writer.h
+//! @brief FEC writer for block codes.
 
-#ifndef ROC_FEC_WRITER_H_
-#define ROC_FEC_WRITER_H_
+#ifndef ROC_FEC_BLOCK_WRITER_H_
+#define ROC_FEC_BLOCK_WRITER_H_
 
 #include "roc_core/array.h"
 #include "roc_core/iarena.h"
@@ -26,14 +26,14 @@ namespace roc {
 namespace fec {
 
 //! FEC writer parameters.
-struct WriterConfig {
+struct BlockWriterConfig {
     //! Number of data packets in block.
     size_t n_source_packets;
 
     //! Number of FEC packets in block.
     size_t n_repair_packets;
 
-    WriterConfig()
+    BlockWriterConfig()
         : n_source_packets(18)
         , n_repair_packets(10) {
     }
@@ -42,33 +42,33 @@ struct WriterConfig {
 //! FEC writer for block codes.
 //! Works on top of fec::IBlockEncoder, which performs codec-specific operations.
 //! @remarks
-//!  You write audio packets to fec::Writer.
-//!  fec::Writer produces to interleaved streams:
+//!  You write audio packets to fec::BlockWriter.
+//!  fec::BlockWriter produces to interleaved streams:
 //!   - stream of source packets - original media packets + FEC meta-data
 //!   - stream of repair packets - packets with redundancy
 //!  Interleaved stream of source + repair packets is written to output writer.
-class Writer : public packet::IWriter, public core::NonCopyable<> {
+class BlockWriter : public packet::IWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
     //!
     //! @b Parameters
     //!  - @p config contains FEC scheme parameters
     //!  - @p fec_scheme is FEC codec ID
-    //!  - @p encoder is FEC codec implementation
+    //!  - @p block_encoder is FEC codec implementation
     //!  - @p writer is used to write coded source and repair packets
     //!  - @p source_composer is used to format source packets
     //!  - @p repair_composer is used to format repair packets
     //!  - @p packet_factory is used to allocate repair packets
     //!  - @p buffer_factory is used to allocate buffers for repair packets
     //!  - @p arena is used to initialize a packet array
-    Writer(const WriterConfig& config,
-           packet::FecScheme fec_scheme,
-           IBlockEncoder& encoder,
-           packet::IWriter& writer,
-           packet::IComposer& source_composer,
-           packet::IComposer& repair_composer,
-           packet::PacketFactory& packet_factory,
-           core::IArena& arena);
+    BlockWriter(const BlockWriterConfig& config,
+                packet::FecScheme fec_scheme,
+                IBlockEncoder& block_encoder,
+                packet::IWriter& writer,
+                packet::IComposer& source_composer,
+                packet::IComposer& repair_composer,
+                packet::PacketFactory& packet_factory,
+                core::IArena& arena);
 
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
@@ -116,7 +116,7 @@ private:
 
     size_t cur_payload_size_;
 
-    IBlockEncoder& encoder_;
+    IBlockEncoder& block_encoder_;
     packet::IWriter& writer_;
 
     packet::IComposer& source_composer_;
@@ -146,4 +146,4 @@ private:
 } // namespace fec
 } // namespace roc
 
-#endif // ROC_FEC_WRITER_H_
+#endif // ROC_FEC_BLOCK_WRITER_H_

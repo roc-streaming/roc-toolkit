@@ -21,9 +21,9 @@
 #include "roc_audio/watchdog.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/time.h"
+#include "roc_fec/block_reader.h"
+#include "roc_fec/block_writer.h"
 #include "roc_fec/codec_config.h"
-#include "roc_fec/reader.h"
-#include "roc_fec/writer.h"
 #include "roc_packet/units.h"
 #include "roc_pipeline/pipeline_loop.h"
 #include "roc_rtcp/config.h"
@@ -69,7 +69,7 @@ struct SenderSinkConfig {
     core::nanoseconds_t packet_length;
 
     //! FEC writer parameters.
-    fec::WriterConfig fec_writer;
+    fec::BlockWriterConfig fec_writer;
 
     //! FEC encoder parameters.
     fec::CodecConfig fec_encoder;
@@ -153,7 +153,7 @@ struct ReceiverSessionConfig {
     unsigned int payload_type;
 
     //! FEC reader parameters.
-    fec::ReaderConfig fec_reader;
+    fec::BlockReaderConfig fec_reader;
 
     //! FEC decoder parameters.
     fec::CodecConfig fec_decoder;

@@ -43,19 +43,19 @@ public:
     void encode(size_t n_source, size_t n_repair, size_t p_size) {
         CHECK(buffers_.resize(n_source + n_repair));
 
-        CHECK(encoder_->begin(n_source, n_repair, p_size));
+        CHECK(encoder_->begin_block(n_source, n_repair, p_size));
 
         for (size_t i = 0; i < n_source + n_repair; ++i) {
             buffers_[i] = make_buffer_(p_size);
-            encoder_->set(i, buffers_[i]);
+            encoder_->set_buffer(i, buffers_[i]);
         }
-        encoder_->fill();
-        encoder_->end();
+        encoder_->fill_buffers();
+        encoder_->end_block();
     }
 
     bool decode(size_t n_source, size_t p_size) {
         for (size_t i = 0; i < n_source; ++i) {
-            core::Slice<uint8_t> decoded = decoder_->repair(i);
+            core::Slice<uint8_t> decoded = decoder_->repair_buffer(i);
             if (!decoded) {
                 return false;
             }
@@ -109,14 +109,15 @@ TEST(encoder_decoder, without_loss) {
         Codec code(config);
         code.encode(NumSourcePackets, NumRepairPackets, PayloadSize);
 
-        CHECK(code.decoder().begin(NumSourcePackets, NumRepairPackets, PayloadSize));
+        CHECK(
+            code.decoder().begin_block(NumSourcePackets, NumRepairPackets, PayloadSize));
 
         for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
-            code.decoder().set(i, code.get_buffer(i));
+            code.decoder().set_buffer(i, code.get_buffer(i));
         }
         CHECK(code.decode(NumSourcePackets, PayloadSize));
 
-        code.decoder().end();
+        code.decoder().end_block();
     }
 }
 
@@ -130,17 +131,18 @@ TEST(encoder_decoder, lost_1) {
         Codec code(config);
         code.encode(NumSourcePackets, NumRepairPackets, PayloadSize);
 
-        CHECK(code.decoder().begin(NumSourcePackets, NumRepairPackets, PayloadSize));
+        CHECK(
+            code.decoder().begin_block(NumSourcePackets, NumRepairPackets, PayloadSize));
 
         for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
             if (i == 5) {
                 continue;
             }
-            code.decoder().set(i, code.get_buffer(i));
+            code.decoder().set_buffer(i, code.get_buffer(i));
         }
         CHECK(code.decode(NumSourcePackets, PayloadSize));
 
-        code.decoder().end();
+        code.decoder().end_block();
     }
 }
 
@@ -168,7 +170,8 @@ TEST(encoder_decoder, random_losses) {
         for (size_t test_num = 0; test_num < NumIterations; ++test_num) {
             code.encode(NumSourcePackets, NumRepairPackets, PayloadSize);
 
-            CHECK(code.decoder().begin(NumSourcePackets, NumRepairPackets, PayloadSize));
+            CHECK(code.decoder().begin_block(NumSourcePackets, NumRepairPackets,
+                                             PayloadSize));
 
             size_t curr_loss = 0;
             for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
@@ -177,7 +180,7 @@ TEST(encoder_decoder, random_losses) {
                     total_loss++;
                     curr_loss++;
                 } else {
-                    code.decoder().set(i, code.get_buffer(i));
+                    code.decoder().set_buffer(i, code.get_buffer(i));
                 }
             }
             max_loss = std::max(max_loss, curr_loss);
@@ -185,7 +188,7 @@ TEST(encoder_decoder, random_losses) {
                 total_fails++;
             }
 
-            code.decoder().end();
+            code.decoder().end_block();
         }
 
         roc_log(LogInfo, "max losses in block: %u", (unsigned)max_loss);
@@ -209,15 +212,15 @@ TEST(encoder_decoder, full_repair_payload_sizes) {
             Codec code(config);
             code.encode(NumSourcePackets, NumRepairPackets, p_size);
 
-            CHECK(code.decoder().begin(NumSourcePackets, NumRepairPackets, p_size));
+            CHECK(code.decoder().begin_block(NumSourcePackets, NumRepairPackets, p_size));
 
             for (size_t i = NumSourcePackets; i < NumSourcePackets + NumRepairPackets;
                  ++i) {
-                code.decoder().set(i, code.get_buffer(i));
+                code.decoder().set_buffer(i, code.get_buffer(i));
             }
             CHECK(code.decode(NumSourcePackets, p_size));
 
-            code.decoder().end();
+            code.decoder().end_block();
         }
     }
 }

@@ -24,8 +24,8 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_fec/block_writer.h"
 #include "roc_fec/iblock_encoder.h"
-#include "roc_fec/writer.h"
 #include "roc_packet/interleaver.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/router.h"
@@ -149,7 +149,7 @@ private:
     core::Optional<packet::Interleaver> interleaver_;
 
     core::ScopedPtr<fec::IBlockEncoder> fec_encoder_;
-    core::Optional<fec::Writer> fec_writer_;
+    core::Optional<fec::BlockWriter> fec_writer_;
 
     core::Optional<rtp::TimestampExtractor> timestamp_extractor_;
 

@@ -31,30 +31,26 @@ public:
     virtual size_t max_block_length() const = 0;
 
     //! Start block.
-    //!
     //! @remarks
     //!  Performs an initial setup for a block. Should be called before
     //!  any operations for the block.
-    virtual bool begin(size_t sblen, size_t rblen, size_t payload_size) = 0;
+    virtual bool begin_block(size_t sblen, size_t rblen, size_t payload_size) = 0;
 
     //! Store source or repair packet buffer for current block.
-    //!
     //! @pre
     //!  This method may be called only between begin() and end() calls.
-    virtual void set(size_t index, const core::Slice<uint8_t>& buffer) = 0;
+    virtual void set_buffer(size_t index, const core::Slice<uint8_t>& buffer) = 0;
 
     //! Repair source packet buffer.
-    //!
     //! @pre
     //!  This method may be called only between begin() and end() calls.
-    virtual core::Slice<uint8_t> repair(size_t index) = 0;
+    virtual core::Slice<uint8_t> repair_buffer(size_t index) = 0;
 
     //! Finish block.
-    //!
     //! @remarks
     //!  Cleanups the resources allocated for the block. Should be called after
     //!  all operations for the block.
-    virtual void end() = 0;
+    virtual void end_block() = 0;
 };
 
 } // namespace fec

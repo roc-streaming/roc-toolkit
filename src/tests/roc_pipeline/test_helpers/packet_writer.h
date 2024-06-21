@@ -16,10 +16,10 @@
 #include "roc_audio/iframe_encoder.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_fec/block_writer.h"
 #include "roc_fec/codec_map.h"
 #include "roc_fec/composer.h"
 #include "roc_fec/iblock_encoder.h"
-#include "roc_fec/writer.h"
 #include "roc_packet/fec.h"
 #include "roc_packet/icomposer.h"
 #include "roc_packet/iwriter.h"
@@ -58,7 +58,7 @@ public:
         , offset_(0)
         , corrupt_(false) {
         construct_(arena, packet_factory, encoding_map, pt, packet::FEC_None,
-                   fec::WriterConfig());
+                   fec::BlockWriterConfig());
     }
 
     // Initialize with FEC (produce source + repair packets)
@@ -73,7 +73,7 @@ public:
                  const address::SocketAddr& repair_dst_addr,
                  rtp::PayloadType pt,
                  packet::FecScheme fec_scheme,
-                 fec::WriterConfig fec_config)
+                 fec::BlockWriterConfig fec_config)
         : source_writer_(&source_dst_writer)
         , repair_writer_(&repair_dst_writer)
         , packet_factory_(packet_factory)
@@ -151,7 +151,7 @@ private:
                     rtp::EncodingMap& encoding_map,
                     rtp::PayloadType pt,
                     packet::FecScheme fec_scheme,
-                    fec::WriterConfig fec_config) {
+                    fec::BlockWriterConfig fec_config) {
         // payload encoder
         const rtp::Encoding* enc = encoding_map.find_by_pt(pt);
         CHECK(enc);
@@ -202,11 +202,11 @@ private:
             LONGS_EQUAL(status::StatusOK, fec_encoder_->init_status());
 
             // fec writer
-            fec_writer_.reset(new (arena)
-                                  fec::Writer(fec_config, fec_scheme, *fec_encoder_,
-                                              fec_queue_, *source_composer_,
-                                              *repair_composer_, packet_factory, arena),
-                              arena);
+            fec_writer_.reset(
+                new (arena) fec::BlockWriter(fec_config, fec_scheme, *fec_encoder_,
+                                             fec_queue_, *source_composer_,
+                                             *repair_composer_, packet_factory, arena),
+                arena);
             CHECK(fec_writer_);
             LONGS_EQUAL(status::StatusOK, fec_writer_->init_status());
         }
@@ -313,7 +313,7 @@ private:
     core::ScopedPtr<packet::IComposer> repair_composer_;
 
     core::ScopedPtr<fec::IBlockEncoder> fec_encoder_;
-    core::ScopedPtr<fec::Writer> fec_writer_;
+    core::ScopedPtr<fec::BlockWriter> fec_writer_;
     packet::Queue fec_queue_;
 
     core::ScopedPtr<audio::IFrameEncoder> payload_encoder_;

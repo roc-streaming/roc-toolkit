@@ -63,17 +63,19 @@ status::StatusCode OpenfecEncoder::init_status() const {
     return init_status_;
 }
 
-size_t OpenfecEncoder::alignment() const {
-    return Alignment;
-}
-
 size_t OpenfecEncoder::max_block_length() const {
     roc_panic_if(init_status_ != status::StatusOK);
 
     return max_block_length_;
 }
 
-bool OpenfecEncoder::begin(size_t sblen, size_t rblen, size_t payload_size) {
+size_t OpenfecEncoder::buffer_alignment() const {
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    return Alignment;
+}
+
+bool OpenfecEncoder::begin_block(size_t sblen, size_t rblen, size_t payload_size) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (sblen_ == sblen && rblen_ == rblen && payload_size_ == payload_size) {
@@ -94,7 +96,7 @@ bool OpenfecEncoder::begin(size_t sblen, size_t rblen, size_t payload_size) {
     return true;
 }
 
-void OpenfecEncoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
+void OpenfecEncoder::set_buffer(size_t index, const core::Slice<uint8_t>& buffer) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (index >= sblen_ + rblen_) {
@@ -120,7 +122,7 @@ void OpenfecEncoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
     buff_tab_[index] = buffer;
 }
 
-void OpenfecEncoder::fill() {
+void OpenfecEncoder::fill_buffers() {
     roc_panic_if(init_status_ != status::StatusOK);
 
     for (size_t i = sblen_; i < sblen_ + rblen_; ++i) {
@@ -134,7 +136,7 @@ void OpenfecEncoder::fill() {
     }
 }
 
-void OpenfecEncoder::end() {
+void OpenfecEncoder::end_block() {
     roc_panic_if(init_status_ != status::StatusOK);
 
     for (size_t i = 0; i < buff_tab_.size(); ++i) {

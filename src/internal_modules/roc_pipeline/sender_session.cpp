@@ -104,7 +104,7 @@ SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
             return status;
         }
 
-        fec_writer_.reset(new (fec_writer_) fec::Writer(
+        fec_writer_.reset(new (fec_writer_) fec::BlockWriter(
             sink_config_.fec_writer, sink_config_.fec_encoder.scheme, *fec_encoder_,
             *pkt_writer, source_endpoint->outbound_composer(),
             repair_endpoint->outbound_composer(), packet_factory_, arena_));

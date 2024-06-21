@@ -130,7 +130,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
             return;
         }
 
-        fec_reader_.reset(new (fec_reader_) fec::Reader(
+        fec_reader_.reset(new (fec_reader_) fec::BlockReader(
             session_config.fec_reader, session_config.fec_decoder.scheme, *fec_decoder_,
             *pkt_reader, *repair_queue_, *fec_parser_, packet_factory, arena));
         if ((init_status_ = fec_reader_->init_status()) != status::StatusOK) {

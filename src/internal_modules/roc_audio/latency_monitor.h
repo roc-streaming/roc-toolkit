@@ -22,7 +22,7 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
 #include "roc_core/time.h"
-#include "roc_fec/reader.h"
+#include "roc_fec/block_reader.h"
 #include "roc_packet/sorted_queue.h"
 #include "roc_packet/units.h"
 
@@ -64,7 +64,7 @@ public:
                    const packet::SortedQueue& incoming_queue,
                    const Depacketizer& depacketizer,
                    const packet::ILinkMeter& link_meter,
-                   const fec::Reader* fec_reader,
+                   const fec::BlockReader* fec_reader,
                    ResamplerReader* resampler,
                    const LatencyConfig& config,
                    const SampleSpec& packet_sample_spec,
@@ -112,7 +112,7 @@ private:
     const packet::SortedQueue& incoming_queue_;
     const Depacketizer& depacketizer_;
     const packet::ILinkMeter& link_meter_;
-    const fec::Reader* fec_reader_;
+    const fec::BlockReader* fec_reader_;
 
     ResamplerReader* resampler_;
     const bool enable_scaling_;

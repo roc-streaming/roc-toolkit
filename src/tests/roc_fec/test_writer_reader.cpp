@@ -14,12 +14,12 @@
 #include "roc_core/heap_arena.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_fec/block_reader.h"
+#include "roc_fec/block_writer.h"
 #include "roc_fec/codec_map.h"
 #include "roc_fec/composer.h"
 #include "roc_fec/headers.h"
 #include "roc_fec/parser.h"
-#include "roc_fec/reader.h"
-#include "roc_fec/writer.h"
 #include "roc_packet/interleaver.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
@@ -80,8 +80,8 @@ TEST_GROUP(writer_reader) {
     packet::PacketPtr source_packets[NumSourcePackets];
 
     CodecConfig codec_config;
-    WriterConfig writer_config;
-    ReaderConfig reader_config;
+    BlockWriterConfig writer_config;
+    BlockReaderConfig reader_config;
 
     void setup() {
         writer_config.n_source_packets = NumSourcePackets;
@@ -237,12 +237,12 @@ TEST(writer_reader, no_losses) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -284,12 +284,12 @@ TEST(writer_reader, 1_loss) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -333,12 +333,12 @@ TEST(writer_reader, lost_first_packet_in_first_block) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -391,12 +391,12 @@ TEST(writer_reader, lost_one_source_and_all_repair_packets) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -463,12 +463,12 @@ TEST(writer_reader, multiple_blocks_1_loss) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -537,12 +537,12 @@ TEST(writer_reader, multiple_blocks_in_queue) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -595,12 +595,12 @@ TEST(writer_reader, interleaved_packets) {
         packet::Interleaver intrlvr(dispatcher, arena, 10);
         LONGS_EQUAL(status::StatusOK, intrlvr.init_status());
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, intrlvr,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, intrlvr,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -647,12 +647,12 @@ TEST(writer_reader, delayed_packets) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -721,12 +721,12 @@ TEST(writer_reader, late_out_of_order_packets) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -801,12 +801,12 @@ TEST(writer_reader, repair_packets_before_source_packets) {
                                           packet_factory, writer_config.n_source_packets,
                                           writer_config.n_repair_packets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -888,12 +888,12 @@ TEST(writer_reader, repair_packets_mixed_with_source_packets) {
                                           packet_factory, writer_config.n_source_packets,
                                           writer_config.n_repair_packets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -989,12 +989,12 @@ TEST(writer_reader, multiple_repair_attempts) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -1070,12 +1070,12 @@ TEST(writer_reader, drop_outdated_block) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -1143,12 +1143,12 @@ TEST(writer_reader, repaired_block_numbering) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -1233,12 +1233,12 @@ TEST(writer_reader, invalid_esi) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, queue,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, queue,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -1315,12 +1315,12 @@ TEST(writer_reader, invalid_sbl) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, queue,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, queue,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -1392,12 +1392,12 @@ TEST(writer_reader, invalid_nes) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, queue,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, queue,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -1466,11 +1466,11 @@ TEST(writer_reader, invalid_payload_size) {
         packet::Queue source_queue;
         packet::Queue repair_queue;
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, writer_queue,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, writer_queue,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder, source_queue,
-                      repair_queue, rtp_parser, packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder, source_queue,
+                           repair_queue, rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -1554,12 +1554,12 @@ TEST(writer_reader, zero_source_packets) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, queue,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, queue,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -1640,12 +1640,13 @@ TEST(writer_reader, zero_repair_packets) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, packet::FEC_LDPC_Staircase, *encoder, queue,
-                      ldpc_source_composer, ldpc_repair_composer, packet_factory, arena);
+        BlockWriter writer(writer_config, packet::FEC_LDPC_Staircase, *encoder, queue,
+                           ldpc_source_composer, ldpc_repair_composer, packet_factory,
+                           arena);
 
-        Reader reader(reader_config, packet::FEC_LDPC_Staircase, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, packet::FEC_LDPC_Staircase, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -1721,11 +1722,11 @@ TEST(writer_reader, zero_payload_size) {
         packet::Queue source_queue;
         packet::Queue repair_queue;
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, writer_queue,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, writer_queue,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder, source_queue,
-                      repair_queue, rtp_parser, packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder, source_queue,
+                           repair_queue, rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -1811,12 +1812,12 @@ TEST(writer_reader, sbn_jump) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, queue,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, queue,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -1929,8 +1930,9 @@ TEST(writer_reader, writer_encode_blocks) {
                                               packet_factory, NumSourcePackets,
                                               NumRepairPackets);
 
-            Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                          source_composer(), repair_composer(), packet_factory, arena);
+            BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                               source_composer(), repair_composer(), packet_factory,
+                               arena);
 
             LONGS_EQUAL(status::StatusOK, writer.init_status());
 
@@ -2018,8 +2020,8 @@ TEST(writer_reader, writer_resize_blocks) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
 
@@ -2084,11 +2086,11 @@ TEST(writer_reader, resize_block_begin) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, arena);
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, reader.init_status());
         LONGS_EQUAL(status::StatusOK, writer.init_status());
@@ -2157,11 +2159,11 @@ TEST(writer_reader, resize_block_middle) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, arena);
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, reader.init_status());
         LONGS_EQUAL(status::StatusOK, writer.init_status());
@@ -2253,11 +2255,11 @@ TEST(writer_reader, resize_block_losses) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, arena);
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, reader.init_status());
         LONGS_EQUAL(status::StatusOK, writer.init_status());
@@ -2328,12 +2330,12 @@ TEST(writer_reader, resize_block_repair_first) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -2419,8 +2421,9 @@ TEST(writer_reader, error_writer_resize_block) {
 
         test::MockArena mock_arena;
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, mock_arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory,
+                           mock_arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
 
@@ -2471,8 +2474,8 @@ TEST(writer_reader, error_writer_encode_packet) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
 
@@ -2521,14 +2524,14 @@ TEST(writer_reader, error_reader_resize_block) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
         test::MockArena mock_arena;
 
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, mock_arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, mock_arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -2595,12 +2598,12 @@ TEST(writer_reader, error_reader_decode_packet) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -2679,12 +2682,12 @@ TEST(writer_reader, writer_oversized_block) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -2750,12 +2753,13 @@ TEST(writer_reader, reader_oversized_source_block) {
         // We are going to spoil source_block_length field of a FEC packet,
         // but Reed-Solomon does not allow us to set this field above 255,
         // so LDPC composer is used for all schemes.
-        Writer writer(writer_config, packet::FEC_LDPC_Staircase, *encoder, queue,
-                      ldpc_source_composer, ldpc_repair_composer, packet_factory, arena);
+        BlockWriter writer(writer_config, packet::FEC_LDPC_Staircase, *encoder, queue,
+                           ldpc_source_composer, ldpc_repair_composer, packet_factory,
+                           arena);
 
-        Reader reader(reader_config, packet::FEC_LDPC_Staircase, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, packet::FEC_LDPC_Staircase, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -2821,12 +2825,13 @@ TEST(writer_reader, reader_oversized_repair_block) {
         // We are going to spoil source_block_length field of a FEC packet,
         // but Reed-Solomon does not allow us to set this field above 255,
         // so LDPC composer is used for all schemes.
-        Writer writer(writer_config, packet::FEC_LDPC_Staircase, *encoder, queue,
-                      ldpc_source_composer, ldpc_repair_composer, packet_factory, arena);
+        BlockWriter writer(writer_config, packet::FEC_LDPC_Staircase, *encoder, queue,
+                           ldpc_source_composer, ldpc_repair_composer, packet_factory,
+                           arena);
 
-        Reader reader(reader_config, packet::FEC_LDPC_Staircase, *decoder,
-                      dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                      packet_factory, arena);
+        BlockReader reader(reader_config, packet::FEC_LDPC_Staircase, *decoder,
+                           dispatcher.source_reader(), dispatcher.repair_reader(),
+                           rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -2880,8 +2885,8 @@ TEST(writer_reader, writer_invalid_payload_size_change) {
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                           source_composer(), repair_composer(), packet_factory, arena);
         LONGS_EQUAL(status::StatusOK, writer.init_status());
 
         size_t sn = 0;
@@ -2936,11 +2941,11 @@ TEST(writer_reader, reader_invalid_fec_scheme_source_packet) {
         packet::Queue source_queue;
         packet::Queue repair_queue;
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, writer_queue,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, writer_queue,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder, source_queue,
-                      repair_queue, rtp_parser, packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder, source_queue,
+                           repair_queue, rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -3007,11 +3012,11 @@ TEST(writer_reader, reader_invalid_fec_scheme_repair_packet) {
         packet::Queue source_queue;
         packet::Queue repair_queue;
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, writer_queue,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, writer_queue,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder, source_queue,
-                      repair_queue, rtp_parser, packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder, source_queue,
+                           repair_queue, rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
@@ -3109,11 +3114,11 @@ TEST(writer_reader, failed_to_read_source_packet) {
         StatusReader source_reader(status::StatusAbort);
         packet::Queue repair_reader;
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, writer_queue,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, writer_queue,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder, source_reader,
-                      repair_reader, rtp_parser, packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder, source_reader,
+                           repair_reader, rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, reader.init_status());
 
@@ -3157,11 +3162,11 @@ TEST(writer_reader, failed_to_read_repair_packet) {
         packet::Queue source_reader;
         StatusReader repair_reader(status::StatusAbort);
 
-        Writer writer(writer_config, codec_config.scheme, *encoder, writer_queue,
-                      source_composer(), repair_composer(), packet_factory, arena);
+        BlockWriter writer(writer_config, codec_config.scheme, *encoder, writer_queue,
+                           source_composer(), repair_composer(), packet_factory, arena);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder, source_reader,
-                      repair_reader, rtp_parser, packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder, source_reader,
+                           repair_reader, rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, reader.init_status());
 
@@ -3200,8 +3205,8 @@ TEST(writer_reader, failed_to_read_source_and_repair_packets) {
         StatusReader source_reader(status::StatusAbort);
         StatusReader repair_reader(status::StatusAbort);
 
-        Reader reader(reader_config, codec_config.scheme, *decoder, source_reader,
-                      repair_reader, rtp_parser, packet_factory, arena);
+        BlockReader reader(reader_config, codec_config.scheme, *decoder, source_reader,
+                           repair_reader, rtp_parser, packet_factory, arena);
 
         LONGS_EQUAL(status::StatusOK, reader.init_status());
 

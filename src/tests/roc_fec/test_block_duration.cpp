@@ -14,12 +14,12 @@
 #include "roc_core/heap_arena.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_fec/block_reader.h"
+#include "roc_fec/block_writer.h"
 #include "roc_fec/codec_map.h"
 #include "roc_fec/composer.h"
 #include "roc_fec/headers.h"
 #include "roc_fec/parser.h"
-#include "roc_fec/reader.h"
-#include "roc_fec/writer.h"
 #include "roc_packet/interleaver.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
@@ -66,8 +66,8 @@ TEST_GROUP(block_duration) {
     packet::PacketPtr source_packets[NumSourcePackets];
 
     CodecConfig codec_config;
-    WriterConfig writer_config;
-    ReaderConfig reader_config;
+    BlockWriterConfig writer_config;
+    BlockReaderConfig reader_config;
 
     void setup() {
         writer_config.n_source_packets = NumSourcePackets;
@@ -223,12 +223,12 @@ TEST(block_duration, no_losses) {
     test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                       NumSourcePackets, NumRepairPackets);
 
-    Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                  source_composer(), repair_composer(), packet_factory, arena);
+    BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                       source_composer(), repair_composer(), packet_factory, arena);
 
-    Reader reader(reader_config, codec_config.scheme, *decoder,
-                  dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                  packet_factory, arena);
+    BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
+                       packet_factory, arena);
 
     for (size_t i_block = 0; i_block < n_blocks; ++i_block) {
         fill_all_packets(i_block * NumSourcePackets);
@@ -273,12 +273,12 @@ TEST(block_duration, lost_first_packet_in_first_block) {
     test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                       NumSourcePackets, NumRepairPackets);
 
-    Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                  source_composer(), repair_composer(), packet_factory, arena);
+    BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                       source_composer(), repair_composer(), packet_factory, arena);
 
-    Reader reader(reader_config, codec_config.scheme, *decoder,
-                  dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                  packet_factory, arena);
+    BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
+                       packet_factory, arena);
 
     // Sending first block except first packet.
     fill_all_packets(0);
@@ -328,12 +328,12 @@ TEST(block_duration, lost_first_packet_in_third_block) {
     test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                       NumSourcePackets, NumRepairPackets);
 
-    Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                  source_composer(), repair_composer(), packet_factory, arena);
+    BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                       source_composer(), repair_composer(), packet_factory, arena);
 
-    Reader reader(reader_config, codec_config.scheme, *decoder,
-                  dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                  packet_factory, arena);
+    BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
+                       packet_factory, arena);
 
     // Sending first block except first packet.
     UNSIGNED_LONGS_EQUAL(0, writer.max_block_duration());
@@ -383,12 +383,12 @@ TEST(block_duration, lost_almost_every_packet) {
     test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                       NumSourcePackets, NumRepairPackets);
 
-    Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                  source_composer(), repair_composer(), packet_factory, arena);
+    BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                       source_composer(), repair_composer(), packet_factory, arena);
 
-    Reader reader(reader_config, codec_config.scheme, *decoder,
-                  dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                  packet_factory, arena);
+    BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
+                       packet_factory, arena);
 
     // Sending first block except first packet.
     UNSIGNED_LONGS_EQUAL(0, writer.max_block_duration());
@@ -439,12 +439,12 @@ TEST(block_duration, lost_single_block) {
     test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                       NumSourcePackets, NumRepairPackets);
 
-    Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                  source_composer(), repair_composer(), packet_factory, arena);
+    BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                       source_composer(), repair_composer(), packet_factory, arena);
 
-    Reader reader(reader_config, codec_config.scheme, *decoder,
-                  dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                  packet_factory, arena);
+    BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
+                       packet_factory, arena);
 
     // Sending first block except first packet.
     UNSIGNED_LONGS_EQUAL(0, writer.max_block_duration());
@@ -499,12 +499,12 @@ TEST(block_duration, resize_block_middle) {
     test::PacketDispatcher dispatcher(source_parser(), repair_parser(), packet_factory,
                                       NumSourcePackets, NumRepairPackets);
 
-    Writer writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                  source_composer(), repair_composer(), packet_factory, arena);
+    BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
+                       source_composer(), repair_composer(), packet_factory, arena);
 
-    Reader reader(reader_config, codec_config.scheme, *decoder,
-                  dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
-                  packet_factory, arena);
+    BlockReader reader(reader_config, codec_config.scheme, *decoder,
+                       dispatcher.source_reader(), dispatcher.repair_reader(), rtp_parser,
+                       packet_factory, arena);
 
     packet::seqnum_t wr_sn = 0;
     size_t sb_len[10] = { NumSourcePackets,     NumSourcePackets,
