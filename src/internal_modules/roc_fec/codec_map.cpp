@@ -62,9 +62,9 @@ packet::FecScheme CodecMap::nth_scheme(size_t n) const {
     return codecs_[n].scheme;
 }
 
-IBlockEncoder* CodecMap::new_encoder(const CodecConfig& config,
-                                     packet::PacketFactory& packet_factory,
-                                     core::IArena& arena) const {
+IBlockEncoder* CodecMap::new_block_encoder(const CodecConfig& config,
+                                           packet::PacketFactory& packet_factory,
+                                           core::IArena& arena) const {
     const Codec* codec = find_codec_(config.scheme);
     if (!codec) {
         return NULL;
@@ -72,9 +72,9 @@ IBlockEncoder* CodecMap::new_encoder(const CodecConfig& config,
     return codec->encoder_ctor(config, packet_factory, arena);
 }
 
-IBlockDecoder* CodecMap::new_decoder(const CodecConfig& config,
-                                     packet::PacketFactory& packet_factory,
-                                     core::IArena& arena) const {
+IBlockDecoder* CodecMap::new_block_decoder(const CodecConfig& config,
+                                           packet::PacketFactory& packet_factory,
+                                           core::IArena& arena) const {
     const Codec* codec = find_codec_(config.scheme);
     if (!codec) {
         return NULL;

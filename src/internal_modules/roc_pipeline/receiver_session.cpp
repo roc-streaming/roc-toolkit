@@ -114,7 +114,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
             return;
         }
 
-        fec_decoder_.reset(fec::CodecMap::instance().new_decoder(
+        fec_decoder_.reset(fec::CodecMap::instance().new_block_decoder(
                                session_config.fec_decoder, packet_factory, arena),
                            arena);
         if (!fec_decoder_) {

@@ -85,13 +85,15 @@ public:
     //! Read packet.
     //! @remarks
     //!  When a packet loss is detected, try to restore it from repair packets.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(packet::PacketPtr&);
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(packet::PacketPtr& packet,
+                                                       packet::PacketReadMode mode);
 
 private:
-    status::StatusCode read_(packet::PacketPtr&);
+    status::StatusCode read_(packet::PacketPtr& packet, packet::PacketReadMode mode);
 
     bool try_start_();
-    status::StatusCode get_next_packet_(packet::PacketPtr&);
+    status::StatusCode get_next_packet_(packet::PacketPtr& packet,
+                                        packet::PacketReadMode mode);
 
     void next_block_();
     void try_repair_();
@@ -143,7 +145,7 @@ private:
     bool started_;
     bool can_repair_;
 
-    size_t next_packet_;
+    size_t head_index_;
     packet::blknum_t cur_sbn_;
 
     size_t payload_size_;

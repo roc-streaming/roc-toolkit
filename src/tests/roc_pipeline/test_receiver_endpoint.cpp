@@ -13,7 +13,6 @@
 #include "roc_audio/sample.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/noop_arena.h"
-#include "roc_packet/queue.h"
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/receiver_endpoint.h"
 #include "roc_pipeline/receiver_session_group.h"

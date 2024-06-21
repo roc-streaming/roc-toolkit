@@ -10,8 +10,8 @@
 
 #include "test_helpers/status_writer.h"
 
-#include "roc_audio/channel_defs.h"
 #include "roc_core/heap_arena.h"
+#include "roc_core/macro_helpers.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
 #include "roc_rtp/encoding_map.h"
@@ -115,11 +115,18 @@ TEST(link_meter, last_seqnum_wrap) {
 }
 
 TEST(link_meter, forward_error) {
-    test::StatusWriter writer(status::StatusNoMem);
-    LinkMeter meter(encoding_map);
-    meter.set_writer(writer);
+    const status::StatusCode status_list[] = {
+        status::StatusErrDevice,
+        status::StatusErrFile,
+    };
 
-    LONGS_EQUAL(status::StatusNoMem, meter.write(new_packet(100)));
+    for (size_t st_n = 0; st_n < ROC_ARRAY_SIZE(status_list); st_n++) {
+        test::StatusWriter writer(status_list[st_n]);
+        LinkMeter meter(encoding_map);
+        meter.set_writer(writer);
+
+        LONGS_EQUAL(status_list[st_n], meter.write(new_packet(100)));
+    }
 }
 
 } // namespace rtp

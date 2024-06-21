@@ -6,24 +6,23 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_RTP_TEST_HELPERS_STATUS_READER_H_
-#define ROC_RTP_TEST_HELPERS_STATUS_READER_H_
+#ifndef ROC_FEC_TEST_HELPERS_STATUS_WRITER_H_
+#define ROC_FEC_TEST_HELPERS_STATUS_WRITER_H_
 
-#include "roc_packet/ireader.h"
+#include "roc_packet/iwriter.h"
 #include "roc_status/status_code.h"
 
 namespace roc {
-namespace rtp {
+namespace fec {
 namespace test {
 
-class StatusReader : public packet::IReader {
+class StatusWriter : public packet::IWriter {
 public:
-    explicit StatusReader(status::StatusCode code)
+    explicit StatusWriter(status::StatusCode code)
         : code_(code) {
     }
 
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(packet::PacketPtr& pp,
-                                                       packet::PacketReadMode mode) {
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr&) {
         return code_;
     }
 
@@ -32,7 +31,7 @@ private:
 };
 
 } // namespace test
-} // namespace rtp
+} // namespace fec
 } // namespace roc
 
-#endif // ROC_RTP_TEST_HELPERS_STATUS_READER_H_
+#endif // ROC_FEC_TEST_HELPERS_STATUS_WRITER_H_

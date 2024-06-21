@@ -195,7 +195,7 @@ SenderEncoder::read_packet(address::Interface iface, void* bytes, size_t* n_byte
     }
 
     packet::PacketPtr packet;
-    const status::StatusCode code = reader->read(packet);
+    const status::StatusCode code = reader->read(packet, packet::ModeFetch);
     if (code != status::StatusOK) {
         return code;
     }

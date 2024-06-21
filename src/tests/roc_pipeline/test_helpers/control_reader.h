@@ -31,7 +31,7 @@ public:
     }
 
     void read_report() {
-        LONGS_EQUAL(status::StatusOK, reader_.read(packet_));
+        LONGS_EQUAL(status::StatusOK, reader_.read(packet_, packet::ModeFetch));
         CHECK(packet_);
 
         CHECK(packet_->flags() & packet::Packet::FlagUDP);

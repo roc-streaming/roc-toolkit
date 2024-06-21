@@ -7,7 +7,7 @@
  */
 
 //! @file roc_packet/concurrent_queue.h
-//! @brief Concurrent blocking packet queue.
+//! @brief Thread-safe packet queue.
 
 #ifndef ROC_PACKET_CONCURRENT_QUEUE_H_
 #define ROC_PACKET_CONCURRENT_QUEUE_H_
@@ -24,8 +24,10 @@
 namespace roc {
 namespace packet {
 
-//! Concurrent blocking packet queue.
-class ConcurrentQueue : public IReader, public IWriter, public core::NonCopyable<> {
+//! Thread-safe packet queue.
+//! @remarks
+//!  May be blocking or non-blocking depending on mode.
+class ConcurrentQueue : public IWriter, public IReader, public core::NonCopyable<> {
 public:
     //! Queue mode.
     enum Mode {
@@ -40,19 +42,21 @@ public:
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
 
-    //! Read next packet.
-    //! If reads are not concurrent, and queue is non-blocking, then
-    //! reads are wait-free. Otherwise they may block.
-    //! @see Mode.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr& packet);
-
     //! Add packet to the queue.
     //! Wait-free operation.
     virtual ROC_ATTR_NODISCARD status::StatusCode write(const PacketPtr& packet);
 
+    //! Read next packet.
+    //! If queue is blocking, blocks until queue is non-empty.
+    //! If queue is non-blocking, and there are no concurrent read calls,
+    //! then read is a lock-free and wait-free operation.
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr& packet,
+                                                       PacketReadMode mode);
+
 private:
     core::Optional<core::Semaphore> write_sem_;
     core::Mutex read_mutex_;
+    PacketPtr read_pkt_;
     core::MpscQueue<Packet> queue_;
 };
 

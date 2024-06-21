@@ -30,8 +30,10 @@ packet::PacketFactory packet_factory(arena, MaxPayloadSize);
 class Codec {
 public:
     Codec(const CodecConfig& config)
-        : encoder_(CodecMap::instance().new_encoder(config, packet_factory, arena), arena)
-        , decoder_(CodecMap::instance().new_decoder(config, packet_factory, arena), arena)
+        : encoder_(CodecMap::instance().new_block_encoder(config, packet_factory, arena),
+                   arena)
+        , decoder_(CodecMap::instance().new_block_decoder(config, packet_factory, arena),
+                   arena)
         , buffers_(arena) {
         CHECK(encoder_);
         CHECK(decoder_);
@@ -97,9 +99,9 @@ private:
     core::Array<core::Slice<uint8_t> > buffers_;
 };
 
-TEST_GROUP(encoder_decoder) {};
+TEST_GROUP(block_encoder_decoder) {};
 
-TEST(encoder_decoder, without_loss) {
+TEST(block_encoder_decoder, without_loss) {
     enum { NumSourcePackets = 20, NumRepairPackets = 10, PayloadSize = 251 };
 
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
@@ -121,7 +123,7 @@ TEST(encoder_decoder, without_loss) {
     }
 }
 
-TEST(encoder_decoder, lost_1) {
+TEST(block_encoder_decoder, lost_1) {
     enum { NumSourcePackets = 20, NumRepairPackets = 10, PayloadSize = 251 };
 
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
@@ -146,7 +148,7 @@ TEST(encoder_decoder, lost_1) {
     }
 }
 
-TEST(encoder_decoder, random_losses) {
+TEST(block_encoder_decoder, random_losses) {
     enum {
         NumSourcePackets = 20,
         NumRepairPackets = 10,
@@ -199,7 +201,7 @@ TEST(encoder_decoder, random_losses) {
     }
 }
 
-TEST(encoder_decoder, full_repair_payload_sizes) {
+TEST(block_encoder_decoder, full_repair_payload_sizes) {
     enum { NumSourcePackets = 10, NumRepairPackets = 20 };
 
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
@@ -225,7 +227,7 @@ TEST(encoder_decoder, full_repair_payload_sizes) {
     }
 }
 
-TEST(encoder_decoder, max_source_block) {
+TEST(block_encoder_decoder, max_source_block) {
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); ++n_scheme) {
         CodecConfig config;
         config.scheme = CodecMap::instance().nth_scheme(n_scheme);

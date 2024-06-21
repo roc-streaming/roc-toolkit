@@ -12,16 +12,9 @@
 
 #include "roc_core/heap_arena.h"
 #include "roc_core/macro_helpers.h"
-#include "roc_core/scoped_ptr.h"
-#include "roc_core/stddefs.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
-#include "roc_packet/units.h"
-#include "roc_rtp/composer.h"
-#include "roc_rtp/encoding_map.h"
-#include "roc_rtp/parser.h"
 #include "roc_rtp/timestamp_injector.h"
-#include "roc_status/status_code.h"
 
 namespace roc {
 namespace rtp {
@@ -44,6 +37,24 @@ packet::PacketPtr new_packet(packet::seqnum_t sn, packet::stream_timestamp_t ts)
     return packet;
 }
 
+void write_packet(packet::IWriter& writer, const packet::PacketPtr& pp) {
+    CHECK(pp);
+    LONGS_EQUAL(status::StatusOK, writer.write(pp));
+}
+
+packet::PacketPtr expect_read(status::StatusCode expect_code,
+                              packet::IReader& reader,
+                              packet::PacketReadMode mode) {
+    packet::PacketPtr pp;
+    LONGS_EQUAL(expect_code, reader.read(pp, mode));
+    if (expect_code == status::StatusOK) {
+        CHECK(pp);
+    } else {
+        CHECK(!pp);
+    }
+    return pp;
+}
+
 } // namespace
 
 TEST_GROUP(timestamp_injector) {};
@@ -51,9 +62,9 @@ TEST_GROUP(timestamp_injector) {};
 TEST(timestamp_injector, negative_and_positive_dn) {
     enum {
         NumCh = 2,
-        ChMask = 3,
+        ChMask = 0x3,
         PacketSz = 128,
-        NPackets = 128,
+        NumPackets = 128,
     };
 
     const float sample_rate = 48000.;
@@ -75,21 +86,23 @@ TEST(timestamp_injector, negative_and_positive_dn) {
 
     packet::Queue queue;
     TimestampInjector injector(queue, sample_spec);
+    LONGS_EQUAL(status::StatusOK, injector.init_status());
+
     injector.update_mapping(reference_capt_ts, rtp_ts);
 
     LONGS_EQUAL(0, queue.size());
-    for (size_t i = 0; i < NPackets; i++) {
-        LONGS_EQUAL(status::StatusOK,
-                    queue.write(new_packet(
-                        (packet::seqnum_t)i,
-                        (packet::stream_timestamp_t)(packet_rtp_ts + i * PacketSz))));
+    for (size_t i = 0; i < NumPackets; i++) {
+        write_packet(
+            queue,
+            new_packet((packet::seqnum_t)i,
+                       (packet::stream_timestamp_t)(packet_rtp_ts + i * PacketSz)));
     }
-    LONGS_EQUAL(NPackets, queue.size());
+    LONGS_EQUAL(NumPackets, queue.size());
 
     core::nanoseconds_t ts_step = sample_spec.samples_per_chan_2_ns(PacketSz);
-    for (size_t i = 0; i < NPackets; i++) {
-        packet::PacketPtr packet;
-        LONGS_EQUAL(status::StatusOK, injector.read(packet));
+    for (size_t i = 0; i < NumPackets; i++) {
+        packet::PacketPtr packet =
+            expect_read(status::StatusOK, injector, packet::ModeFetch);
         CHECK(packet);
         const core::nanoseconds_t pkt_capt_ts = packet->rtp()->capture_timestamp;
 
@@ -99,9 +112,57 @@ TEST(timestamp_injector, negative_and_positive_dn) {
     }
 }
 
+TEST(timestamp_injector, fetch_peek) {
+    enum {
+        ChMask = 0x3,
+        SampleRate = 10000,
+        PacketSz = 128,
+    };
+
+    const audio::SampleSpec sample_spec =
+        audio::SampleSpec(SampleRate, audio::Sample_RawFormat, audio::ChanLayout_Surround,
+                          audio::ChanOrder_Smpte, ChMask);
+
+    packet::Queue queue;
+    TimestampInjector injector(queue, sample_spec);
+    LONGS_EQUAL(status::StatusOK, injector.init_status());
+
+    packet::PacketPtr wp1 = new_packet(1, PacketSz * 1);
+    packet::PacketPtr wp2 = new_packet(2, PacketSz * 2);
+
+    write_packet(queue, wp1);
+    write_packet(queue, wp2);
+
+    packet::PacketPtr rp;
+
+    {
+        rp = expect_read(status::StatusOK, injector, packet::ModePeek);
+        CHECK(rp == wp1);
+
+        rp = expect_read(status::StatusOK, injector, packet::ModeFetch);
+        CHECK(rp == wp1);
+    }
+
+    {
+        rp = expect_read(status::StatusOK, injector, packet::ModePeek);
+        CHECK(rp == wp2);
+
+        rp = expect_read(status::StatusOK, injector, packet::ModeFetch);
+        CHECK(rp == wp2);
+    }
+
+    {
+        rp = expect_read(status::StatusDrain, injector, packet::ModePeek);
+        CHECK(!rp);
+
+        rp = expect_read(status::StatusDrain, injector, packet::ModeFetch);
+        CHECK(!rp);
+    }
+}
+
 TEST(timestamp_injector, forward_error) {
     enum {
-        ChMask = 3,
+        ChMask = 0x3,
         SampleRate = 10000,
     };
 
@@ -109,17 +170,18 @@ TEST(timestamp_injector, forward_error) {
         audio::SampleSpec(SampleRate, audio::Sample_RawFormat, audio::ChanLayout_Surround,
                           audio::ChanOrder_Smpte, ChMask);
 
-    const status::StatusCode codes[] = {
+    const status::StatusCode status_list[] = {
         status::StatusDrain,
         status::StatusAbort,
     };
 
-    for (unsigned n = 0; n < ROC_ARRAY_SIZE(codes); ++n) {
-        test::StatusReader reader(codes[n]);
+    for (unsigned st_n = 0; st_n < ROC_ARRAY_SIZE(status_list); ++st_n) {
+        test::StatusReader reader(status_list[st_n]);
         TimestampInjector injector(reader, sample_spec);
+        LONGS_EQUAL(status::StatusOK, injector.init_status());
 
-        packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(codes[n], injector.read(pp));
+        packet::PacketPtr pp =
+            expect_read(status_list[st_n], injector, packet::ModeFetch);
         CHECK(!pp);
     }
 }

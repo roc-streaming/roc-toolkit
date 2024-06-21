@@ -78,7 +78,8 @@ public:
     //! Read packet and update metrics.
     //! @remarks
     //!  Invoked late in pipeline right before the packet is decoded.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(packet::PacketPtr& packet);
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(packet::PacketPtr& packet,
+                                                       packet::PacketReadMode mode);
 
     //! Set nested packet writer.
     //! @remarks

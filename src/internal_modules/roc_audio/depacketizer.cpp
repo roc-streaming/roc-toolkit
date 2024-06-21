@@ -248,7 +248,7 @@ status::StatusCode Depacketizer::update_packet_(FrameStats& frame_stats) {
 
 status::StatusCode Depacketizer::fetch_packet_() {
     packet::PacketPtr pp;
-    const status::StatusCode code = packet_reader_.read(pp);
+    const status::StatusCode code = packet_reader_.read(pp, packet::ModeFetch);
 
     if (code != status::StatusOK) {
         if (code != status::StatusDrain) {

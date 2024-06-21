@@ -85,25 +85,6 @@ struct MockComposer : public IComposer, public core::NonCopyable<> {
 
 TEST_GROUP(shipper) {};
 
-TEST(shipper, write_error) {
-    const status::StatusCode codes[] = {
-        status::StatusOK,
-        status::StatusDrain,
-        status::StatusAbort,
-    };
-
-    for (size_t n = 0; n < ROC_ARRAY_SIZE(codes); ++n) {
-        address::SocketAddr address;
-        MockComposer composer;
-        MockWriter writer(codes[n]);
-
-        Shipper shipper(composer, writer, &address);
-
-        PacketPtr pp = new_packet();
-        LONGS_EQUAL(codes[n], shipper.write(pp));
-    }
-}
-
 TEST(shipper, without_address) {
     MockComposer composer;
     Queue queue;
@@ -121,7 +102,7 @@ TEST(shipper, without_address) {
     CHECK(!wp->udp());
 
     packet::PacketPtr rp;
-    LONGS_EQUAL(status::StatusOK, queue.read(rp));
+    LONGS_EQUAL(status::StatusOK, queue.read(rp, ModeFetch));
     CHECK(wp == rp);
 }
 
@@ -145,7 +126,7 @@ TEST(shipper, with_address) {
     CHECK(address == wp->udp()->dst_addr);
 
     packet::PacketPtr rp;
-    LONGS_EQUAL(status::StatusOK, queue.read(rp));
+    LONGS_EQUAL(status::StatusOK, queue.read(rp, ModeFetch));
     CHECK(wp == rp);
 }
 
@@ -168,7 +149,7 @@ TEST(shipper, packet_already_composed) {
     LONGS_EQUAL(0, composer.compose_call_count);
 
     packet::PacketPtr rp;
-    LONGS_EQUAL(status::StatusOK, queue.read(rp));
+    LONGS_EQUAL(status::StatusOK, queue.read(rp, ModeFetch));
     CHECK(wp == rp);
 }
 
@@ -190,8 +171,26 @@ TEST(shipper, packet_not_composed) {
     CHECK(wp->flags() & Packet::FlagComposed);
 
     packet::PacketPtr rp;
-    LONGS_EQUAL(status::StatusOK, queue.read(rp));
+    LONGS_EQUAL(status::StatusOK, queue.read(rp, ModeFetch));
     CHECK(wp == rp);
+}
+
+TEST(shipper, forward_error) {
+    const status::StatusCode status_codes[] = {
+        status::StatusOK,
+        status::StatusAbort,
+    };
+
+    for (size_t st_n = 0; st_n < ROC_ARRAY_SIZE(status_codes); ++st_n) {
+        address::SocketAddr address;
+        MockComposer composer;
+        MockWriter writer(status_codes[st_n]);
+
+        Shipper shipper(composer, writer, &address);
+
+        PacketPtr pp = new_packet();
+        LONGS_EQUAL(status_codes[st_n], shipper.write(pp));
+    }
 }
 
 } // namespace packet

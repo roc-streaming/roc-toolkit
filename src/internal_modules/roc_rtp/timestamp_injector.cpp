@@ -35,8 +35,9 @@ status::StatusCode TimestampInjector::init_status() const {
     return status::StatusOK;
 }
 
-status::StatusCode TimestampInjector::read(packet::PacketPtr& pkt) {
-    const status::StatusCode code = reader_.read(pkt);
+status::StatusCode TimestampInjector::read(packet::PacketPtr& pkt,
+                                           packet::PacketReadMode mode) {
+    const status::StatusCode code = reader_.read(pkt, mode);
     if (code != status::StatusOK) {
         return code;
     }

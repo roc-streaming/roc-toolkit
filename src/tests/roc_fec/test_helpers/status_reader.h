@@ -6,14 +6,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef ROC_RTP_TEST_HELPERS_STATUS_READER_H_
-#define ROC_RTP_TEST_HELPERS_STATUS_READER_H_
+#ifndef ROC_FEC_TEST_HELPERS_STATUS_READER_H_
+#define ROC_FEC_TEST_HELPERS_STATUS_READER_H_
 
 #include "roc_packet/ireader.h"
 #include "roc_status/status_code.h"
 
 namespace roc {
-namespace rtp {
+namespace fec {
 namespace test {
 
 class StatusReader : public packet::IReader {
@@ -32,7 +32,7 @@ private:
 };
 
 } // namespace test
-} // namespace rtp
+} // namespace fec
 } // namespace roc
 
-#endif // ROC_RTP_TEST_HELPERS_STATUS_READER_H_
+#endif // ROC_FEC_TEST_HELPERS_STATUS_READER_H_

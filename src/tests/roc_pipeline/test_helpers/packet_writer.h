@@ -195,7 +195,7 @@ private:
             // fec encoder
             fec::CodecConfig codec_config;
             codec_config.scheme = fec_scheme;
-            fec_encoder_.reset(fec::CodecMap::instance().new_encoder(
+            fec_encoder_.reset(fec::CodecMap::instance().new_block_encoder(
                                    codec_config, packet_factory, arena),
                                arena);
             CHECK(fec_encoder_);
@@ -222,7 +222,7 @@ private:
 
             // compose and "deliver" source and repair packets produced by fec_writer
             packet::PacketPtr fp;
-            while (fec_queue_.read(fp) == status::StatusOK) {
+            while (fec_queue_.read(fp, packet::ModeFetch) == status::StatusOK) {
                 if (fp->has_flags(packet::Packet::FlagAudio)) {
                     CHECK(source_composer_->compose(*fp));
                     LONGS_EQUAL(status::StatusOK,

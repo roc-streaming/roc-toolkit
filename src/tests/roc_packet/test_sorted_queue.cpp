@@ -32,6 +32,25 @@ PacketPtr new_packet(seqnum_t sn) {
     return packet;
 }
 
+void expect_write(status::StatusCode expect_code,
+                  SortedQueue& queue,
+                  const PacketPtr& pp) {
+    CHECK(pp);
+    LONGS_EQUAL(expect_code, queue.write(pp));
+}
+
+PacketPtr
+expect_read(status::StatusCode expect_code, IReader& queue, PacketReadMode mode) {
+    PacketPtr pp;
+    LONGS_EQUAL(expect_code, queue.read(pp, mode));
+    if (expect_code == status::StatusOK) {
+        CHECK(pp);
+    } else {
+        CHECK(!pp);
+    }
+    return pp;
+}
+
 } // namespace
 
 TEST_GROUP(sorted_queue) {};
@@ -39,11 +58,10 @@ TEST_GROUP(sorted_queue) {};
 TEST(sorted_queue, empty) {
     SortedQueue queue(0);
 
-    CHECK(!queue.tail());
     CHECK(!queue.head());
+    CHECK(!queue.tail());
 
-    PacketPtr pp;
-    LONGS_EQUAL(status::StatusDrain, queue.read(pp));
+    PacketPtr pp = expect_read(status::StatusDrain, queue, ModeFetch);
     CHECK(!pp);
 
     LONGS_EQUAL(0, queue.size());
@@ -55,34 +73,31 @@ TEST(sorted_queue, two_packets) {
     PacketPtr wp1 = new_packet(1);
     PacketPtr wp2 = new_packet(2);
 
-    LONGS_EQUAL(status::StatusOK, queue.write(wp2));
-    LONGS_EQUAL(status::StatusOK, queue.write(wp1));
+    expect_write(status::StatusOK, queue, wp2);
+    expect_write(status::StatusOK, queue, wp1);
 
     LONGS_EQUAL(2, queue.size());
 
-    CHECK(queue.tail() == wp2);
     CHECK(queue.head() == wp1);
+    CHECK(queue.tail() == wp2);
 
-    PacketPtr rp1;
-    LONGS_EQUAL(status::StatusOK, queue.read(rp1));
+    PacketPtr rp1 = expect_read(status::StatusOK, queue, ModeFetch);
     CHECK(wp1 == rp1);
 
     LONGS_EQUAL(1, queue.size());
 
-    CHECK(queue.tail() == wp2);
     CHECK(queue.head() == wp2);
+    CHECK(queue.tail() == wp2);
 
-    PacketPtr rp2;
-    LONGS_EQUAL(status::StatusOK, queue.read(rp2));
+    PacketPtr rp2 = expect_read(status::StatusOK, queue, ModeFetch);
     CHECK(wp2 == rp2);
 
     LONGS_EQUAL(0, queue.size());
 
-    CHECK(!queue.tail());
     CHECK(!queue.head());
+    CHECK(!queue.tail());
 
-    PacketPtr pp;
-    LONGS_EQUAL(status::StatusDrain, queue.read(pp));
+    PacketPtr pp = expect_read(status::StatusDrain, queue, ModeFetch);
     CHECK(!pp);
 
     LONGS_EQUAL(0, queue.size());
@@ -100,8 +115,7 @@ TEST(sorted_queue, many_packets) {
     }
 
     for (ssize_t n = 0; n < NumPackets; n++) {
-        LONGS_EQUAL(status::StatusOK,
-                    queue.write(packets[(n + NumPackets / 2) % NumPackets]));
+        expect_write(status::StatusOK, queue, packets[(n + NumPackets / 2) % NumPackets]);
     }
 
     LONGS_EQUAL(NumPackets, queue.size());
@@ -110,12 +124,59 @@ TEST(sorted_queue, many_packets) {
     CHECK(queue.tail() == packets[NumPackets - 1]);
 
     for (size_t n = 0; n < NumPackets; n++) {
-        PacketPtr pp;
-        LONGS_EQUAL(status::StatusOK, queue.read(pp));
+        CHECK(queue.head() == packets[n]);
+        CHECK(queue.tail() == packets[NumPackets - 1]);
+
+        PacketPtr pp = expect_read(status::StatusOK, queue, ModeFetch);
         CHECK(pp == packets[n]);
     }
 
     LONGS_EQUAL(0, queue.size());
+}
+
+TEST(sorted_queue, fetch_peek) {
+    SortedQueue queue(0);
+
+    {
+        expect_read(status::StatusDrain, queue, ModePeek);
+        expect_read(status::StatusDrain, queue, ModeFetch);
+    }
+
+    PacketPtr wp1 = new_packet(1);
+    PacketPtr wp2 = new_packet(2);
+
+    expect_write(status::StatusOK, queue, wp1);
+    expect_write(status::StatusOK, queue, wp2);
+
+    LONGS_EQUAL(2, queue.size());
+
+    CHECK(queue.head() == wp1);
+    CHECK(queue.tail() == wp2);
+
+    {
+        PacketPtr rp = expect_read(status::StatusOK, queue, ModePeek);
+        CHECK(wp1 == rp);
+    }
+
+    {
+        PacketPtr rp = expect_read(status::StatusOK, queue, ModePeek);
+        CHECK(wp1 == rp);
+    }
+
+    LONGS_EQUAL(2, queue.size());
+
+    CHECK(queue.head() == wp1);
+    CHECK(queue.tail() == wp2);
+
+    {
+        PacketPtr rp = expect_read(status::StatusOK, queue, ModeFetch);
+        CHECK(wp1 == rp);
+    }
+
+    LONGS_EQUAL(1, queue.size());
+
+    CHECK(queue.head() == wp2);
+    CHECK(queue.tail() == wp2);
 }
 
 TEST(sorted_queue, out_of_order) {
@@ -124,35 +185,32 @@ TEST(sorted_queue, out_of_order) {
     PacketPtr wp1 = new_packet(1);
     PacketPtr wp2 = new_packet(2);
 
-    LONGS_EQUAL(status::StatusOK, queue.write(wp2));
+    expect_write(status::StatusOK, queue, wp2);
 
     LONGS_EQUAL(1, queue.size());
 
-    CHECK(queue.tail() == wp2);
     CHECK(queue.head() == wp2);
+    CHECK(queue.tail() == wp2);
 
-    PacketPtr rp2;
-    LONGS_EQUAL(status::StatusOK, queue.read(rp2));
+    PacketPtr rp2 = expect_read(status::StatusOK, queue, ModeFetch);
     CHECK(wp2 == rp2);
 
     LONGS_EQUAL(0, queue.size());
 
-    LONGS_EQUAL(status::StatusOK, queue.write(wp1));
+    expect_write(status::StatusOK, queue, wp1);
 
     LONGS_EQUAL(1, queue.size());
 
-    CHECK(queue.tail() == wp1);
     CHECK(queue.head() == wp1);
+    CHECK(queue.tail() == wp1);
 
-    PacketPtr rp1;
-    LONGS_EQUAL(status::StatusOK, queue.read(rp1));
+    PacketPtr rp1 = expect_read(status::StatusOK, queue, ModeFetch);
     CHECK(wp1 == rp1);
 
-    CHECK(!queue.tail());
     CHECK(!queue.head());
+    CHECK(!queue.tail());
 
-    PacketPtr pp;
-    LONGS_EQUAL(status::StatusDrain, queue.read(pp));
+    PacketPtr pp = expect_read(status::StatusDrain, queue, ModeFetch);
     CHECK(!pp);
 }
 
@@ -162,39 +220,37 @@ TEST(sorted_queue, out_of_order_many_packets) {
     SortedQueue queue(0);
 
     for (packet::seqnum_t n = 0; n < 7; ++n) {
-        LONGS_EQUAL(status::StatusOK, queue.write(new_packet(n)));
+        expect_write(status::StatusOK, queue, new_packet(n));
     }
 
     for (packet::seqnum_t n = 11; n < NumPackets; ++n) {
-        LONGS_EQUAL(status::StatusOK, queue.write(new_packet(n)));
+        expect_write(status::StatusOK, queue, new_packet(n));
     }
 
     for (packet::seqnum_t n = 0; n < 7; ++n) {
-        packet::PacketPtr p;
-        LONGS_EQUAL(status::StatusOK, queue.read(p));
+        packet::PacketPtr pp = expect_read(status::StatusOK, queue, ModeFetch);
 
-        CHECK(p);
-        CHECK(p->rtp()->seqnum == n);
+        CHECK(pp);
+        LONGS_EQUAL(n, pp->rtp()->seqnum);
     }
 
-    LONGS_EQUAL(status::StatusOK, queue.write(new_packet(9)));
-    LONGS_EQUAL(status::StatusOK, queue.write(new_packet(10)));
+    expect_write(status::StatusOK, queue, new_packet(9));
+    expect_write(status::StatusOK, queue, new_packet(10));
 
     for (packet::seqnum_t n = 9; n < NumPackets; ++n) {
-        packet::PacketPtr p;
-        LONGS_EQUAL(status::StatusOK, queue.read(p));
+        packet::PacketPtr pp = expect_read(status::StatusOK, queue, ModeFetch);
 
-        CHECK(p->rtp()->seqnum == n);
+        LONGS_EQUAL(n, pp->rtp()->seqnum);
 
         if (n == 10) {
-            LONGS_EQUAL(status::StatusOK, queue.write(new_packet(8)));
-            LONGS_EQUAL(status::StatusOK, queue.write(new_packet(7)));
+            expect_write(status::StatusOK, queue, new_packet(8));
+            expect_write(status::StatusOK, queue, new_packet(7));
 
-            LONGS_EQUAL(status::StatusOK, queue.read(p));
-            LONGS_EQUAL(7, p->rtp()->seqnum);
+            pp = expect_read(status::StatusOK, queue, ModeFetch);
+            LONGS_EQUAL(7, pp->rtp()->seqnum);
 
-            LONGS_EQUAL(status::StatusOK, queue.read(p));
-            LONGS_EQUAL(8, p->rtp()->seqnum);
+            pp = expect_read(status::StatusOK, queue, ModeFetch);
+            LONGS_EQUAL(8, pp->rtp()->seqnum);
         }
     }
 }
@@ -205,25 +261,23 @@ TEST(sorted_queue, one_duplicate) {
     PacketPtr wp1 = new_packet(1);
     PacketPtr wp2 = new_packet(1);
 
-    LONGS_EQUAL(status::StatusOK, queue.write(wp1));
-    LONGS_EQUAL(status::StatusOK, queue.write(wp2));
+    expect_write(status::StatusOK, queue, wp1);
+    expect_write(status::StatusOK, queue, wp2);
 
     LONGS_EQUAL(1, queue.size());
 
-    CHECK(queue.tail() == wp1);
     CHECK(queue.head() == wp1);
+    CHECK(queue.tail() == wp1);
 
-    PacketPtr rp1;
-    LONGS_EQUAL(status::StatusOK, queue.read(rp1));
+    PacketPtr rp1 = expect_read(status::StatusOK, queue, ModeFetch);
     CHECK(wp1 == rp1);
 
     LONGS_EQUAL(0, queue.size());
 
-    CHECK(!queue.tail());
     CHECK(!queue.head());
+    CHECK(!queue.tail());
 
-    PacketPtr pp;
-    LONGS_EQUAL(status::StatusDrain, queue.read(pp));
+    PacketPtr pp = expect_read(status::StatusDrain, queue, ModeFetch);
     CHECK(!pp);
 }
 
@@ -233,21 +287,20 @@ TEST(sorted_queue, many_duplicates) {
     SortedQueue queue(0);
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
-        LONGS_EQUAL(status::StatusOK, queue.write(new_packet(n)));
+        expect_write(status::StatusOK, queue, new_packet(n));
     }
 
     LONGS_EQUAL(NumPackets, queue.size());
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
-        LONGS_EQUAL(status::StatusOK, queue.write(new_packet(n)));
+        expect_write(status::StatusOK, queue, new_packet(n));
     }
 
     LONGS_EQUAL(NumPackets, queue.size());
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
-        PacketPtr p;
-        LONGS_EQUAL(status::StatusOK, queue.read(p));
-        LONGS_EQUAL(n, p->rtp()->seqnum);
+        PacketPtr pp = expect_read(status::StatusOK, queue, ModeFetch);
+        LONGS_EQUAL(n, pp->rtp()->seqnum);
     }
 
     LONGS_EQUAL(0, queue.size());
@@ -260,22 +313,21 @@ TEST(sorted_queue, max_size) {
     PacketPtr wp2 = new_packet(2);
     PacketPtr wp3 = new_packet(3);
 
-    LONGS_EQUAL(status::StatusOK, queue.write(wp1));
-    LONGS_EQUAL(status::StatusOK, queue.write(wp2));
-    LONGS_EQUAL(status::StatusOK, queue.write(wp3));
+    expect_write(status::StatusOK, queue, wp1);
+    expect_write(status::StatusOK, queue, wp2);
+    expect_write(status::StatusOK, queue, wp3);
 
     LONGS_EQUAL(2, queue.size());
 
     CHECK(queue.head() == wp1);
     CHECK(queue.tail() == wp2);
 
-    PacketPtr rp1;
-    LONGS_EQUAL(status::StatusOK, queue.read(rp1));
+    PacketPtr rp1 = expect_read(status::StatusOK, queue, ModeFetch);
     CHECK(wp1 == rp1);
 
     LONGS_EQUAL(1, queue.size());
 
-    LONGS_EQUAL(status::StatusOK, queue.write(wp3));
+    expect_write(status::StatusOK, queue, wp3);
 
     LONGS_EQUAL(2, queue.size());
 
@@ -292,26 +344,22 @@ TEST(sorted_queue, overflow_ordered1) {
     PacketPtr wp2 = new_packet(sn);
     PacketPtr wp3 = new_packet(seqnum_t(sn + 10));
 
-    LONGS_EQUAL(status::StatusOK, queue.write(wp1));
-    LONGS_EQUAL(status::StatusOK, queue.write(wp2));
-    LONGS_EQUAL(status::StatusOK, queue.write(wp3));
+    expect_write(status::StatusOK, queue, wp1);
+    expect_write(status::StatusOK, queue, wp2);
+    expect_write(status::StatusOK, queue, wp3);
 
     LONGS_EQUAL(3, queue.size());
 
-    PacketPtr rp1;
-    PacketPtr rp2;
-    PacketPtr rp3;
-    LONGS_EQUAL(status::StatusOK, queue.read(rp1));
-    LONGS_EQUAL(status::StatusOK, queue.read(rp2));
-    LONGS_EQUAL(status::StatusOK, queue.read(rp3));
+    PacketPtr rp1 = expect_read(status::StatusOK, queue, ModeFetch);
+    PacketPtr rp2 = expect_read(status::StatusOK, queue, ModeFetch);
+    PacketPtr rp3 = expect_read(status::StatusOK, queue, ModeFetch);
     CHECK(wp1 == rp1);
     CHECK(wp2 == rp2);
     CHECK(wp3 == rp3);
 
     LONGS_EQUAL(0, queue.size());
 
-    PacketPtr pp;
-    LONGS_EQUAL(status::StatusDrain, queue.read(pp));
+    PacketPtr pp = expect_read(status::StatusDrain, queue, ModeFetch);
     CHECK(!pp);
 }
 
@@ -324,26 +372,22 @@ TEST(sorted_queue, overflow_ordered2) {
     PacketPtr wp2 = new_packet(sn);
     PacketPtr wp3 = new_packet(seqnum_t(sn + 10));
 
-    LONGS_EQUAL(status::StatusOK, queue.write(wp1));
-    LONGS_EQUAL(status::StatusOK, queue.write(wp2));
-    LONGS_EQUAL(status::StatusOK, queue.write(wp3));
+    expect_write(status::StatusOK, queue, wp1);
+    expect_write(status::StatusOK, queue, wp2);
+    expect_write(status::StatusOK, queue, wp3);
 
     LONGS_EQUAL(3, queue.size());
 
-    PacketPtr rp1;
-    PacketPtr rp2;
-    PacketPtr rp3;
-    LONGS_EQUAL(status::StatusOK, queue.read(rp1));
-    LONGS_EQUAL(status::StatusOK, queue.read(rp2));
-    LONGS_EQUAL(status::StatusOK, queue.read(rp3));
+    PacketPtr rp1 = expect_read(status::StatusOK, queue, ModeFetch);
+    PacketPtr rp2 = expect_read(status::StatusOK, queue, ModeFetch);
+    PacketPtr rp3 = expect_read(status::StatusOK, queue, ModeFetch);
     CHECK(wp1 == rp1);
     CHECK(wp2 == rp2);
     CHECK(wp3 == rp3);
 
     LONGS_EQUAL(0, queue.size());
 
-    PacketPtr pp;
-    LONGS_EQUAL(status::StatusDrain, queue.read(pp));
+    PacketPtr pp = expect_read(status::StatusDrain, queue, ModeFetch);
     CHECK(!pp);
 }
 
@@ -356,26 +400,22 @@ TEST(sorted_queue, overflow_sorting) {
     PacketPtr wp2 = new_packet(sn);
     PacketPtr wp3 = new_packet(seqnum_t(sn + 10));
 
-    LONGS_EQUAL(status::StatusOK, queue.write(wp2));
-    LONGS_EQUAL(status::StatusOK, queue.write(wp1));
-    LONGS_EQUAL(status::StatusOK, queue.write(wp3));
+    expect_write(status::StatusOK, queue, wp2);
+    expect_write(status::StatusOK, queue, wp1);
+    expect_write(status::StatusOK, queue, wp3);
 
     LONGS_EQUAL(3, queue.size());
 
-    PacketPtr rp1;
-    PacketPtr rp2;
-    PacketPtr rp3;
-    LONGS_EQUAL(status::StatusOK, queue.read(rp1));
-    LONGS_EQUAL(status::StatusOK, queue.read(rp2));
-    LONGS_EQUAL(status::StatusOK, queue.read(rp3));
+    PacketPtr rp1 = expect_read(status::StatusOK, queue, ModeFetch);
+    PacketPtr rp2 = expect_read(status::StatusOK, queue, ModeFetch);
+    PacketPtr rp3 = expect_read(status::StatusOK, queue, ModeFetch);
     CHECK(wp1 == rp1);
     CHECK(wp2 == rp2);
     CHECK(wp3 == rp3);
 
     LONGS_EQUAL(0, queue.size());
 
-    PacketPtr pp;
-    LONGS_EQUAL(status::StatusDrain, queue.read(pp));
+    PacketPtr pp = expect_read(status::StatusDrain, queue, ModeFetch);
     CHECK(!pp);
 }
 
@@ -388,32 +428,28 @@ TEST(sorted_queue, overflow_out_of_order) {
     PacketPtr wp2 = new_packet(sn);
     PacketPtr wp3 = new_packet(sn / 2);
 
-    LONGS_EQUAL(status::StatusOK, queue.write(wp1));
+    expect_write(status::StatusOK, queue, wp1);
 
     LONGS_EQUAL(1, queue.size());
-    PacketPtr rp1;
-    LONGS_EQUAL(status::StatusOK, queue.read(rp1));
+    PacketPtr rp1 = expect_read(status::StatusOK, queue, ModeFetch);
     CHECK(wp1 == rp1);
     LONGS_EQUAL(0, queue.size());
 
-    LONGS_EQUAL(status::StatusOK, queue.write(wp2));
+    expect_write(status::StatusOK, queue, wp2);
 
     LONGS_EQUAL(1, queue.size());
-    PacketPtr rp2;
-    LONGS_EQUAL(status::StatusOK, queue.read(rp2));
+    PacketPtr rp2 = expect_read(status::StatusOK, queue, ModeFetch);
     CHECK(wp2 == rp2);
     LONGS_EQUAL(0, queue.size());
 
-    LONGS_EQUAL(status::StatusOK, queue.write(wp3));
+    expect_write(status::StatusOK, queue, wp3);
 
     LONGS_EQUAL(1, queue.size());
-    PacketPtr rp3;
-    LONGS_EQUAL(status::StatusOK, queue.read(rp3));
+    PacketPtr rp3 = expect_read(status::StatusOK, queue, ModeFetch);
     CHECK(wp3 == rp3);
     LONGS_EQUAL(0, queue.size());
 
-    PacketPtr pp;
-    LONGS_EQUAL(status::StatusDrain, queue.read(pp));
+    PacketPtr pp = expect_read(status::StatusDrain, queue, ModeFetch);
     CHECK(!pp);
 }
 
@@ -428,21 +464,20 @@ TEST(sorted_queue, latest) {
     LONGS_EQUAL(0, queue.size());
     CHECK(!queue.latest());
 
-    LONGS_EQUAL(status::StatusOK, queue.write(wp1));
+    expect_write(status::StatusOK, queue, wp1);
     LONGS_EQUAL(1, queue.size());
     CHECK(queue.latest() == wp1);
 
-    LONGS_EQUAL(status::StatusOK, queue.write(wp2));
+    expect_write(status::StatusOK, queue, wp2);
     LONGS_EQUAL(2, queue.size());
     CHECK(queue.latest() == wp2);
 
-    LONGS_EQUAL(status::StatusOK, queue.write(wp3));
+    expect_write(status::StatusOK, queue, wp3);
     LONGS_EQUAL(3, queue.size());
     CHECK(queue.latest() == wp2);
 
     {
-        PacketPtr pp;
-        LONGS_EQUAL(status::StatusOK, queue.read(pp));
+        PacketPtr pp = expect_read(status::StatusOK, queue, ModeFetch);
         CHECK(pp);
     }
 
@@ -450,8 +485,7 @@ TEST(sorted_queue, latest) {
     CHECK(queue.latest() == wp2);
 
     {
-        PacketPtr pp;
-        LONGS_EQUAL(status::StatusOK, queue.read(pp));
+        PacketPtr pp = expect_read(status::StatusOK, queue, ModeFetch);
         CHECK(pp);
     }
 
@@ -459,15 +493,14 @@ TEST(sorted_queue, latest) {
     CHECK(queue.latest() == wp2);
 
     {
-        PacketPtr pp;
-        LONGS_EQUAL(status::StatusOK, queue.read(pp));
+        PacketPtr pp = expect_read(status::StatusOK, queue, ModeFetch);
         CHECK(pp);
     }
 
     LONGS_EQUAL(0, queue.size());
     CHECK(queue.latest() == wp2);
 
-    LONGS_EQUAL(status::StatusOK, queue.write(wp4));
+    expect_write(status::StatusOK, queue, wp4);
     LONGS_EQUAL(1, queue.size());
     CHECK(queue.latest() == wp4);
 }

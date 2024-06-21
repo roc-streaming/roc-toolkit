@@ -183,11 +183,11 @@ public:
         , code_(status::NoStatus) {
     }
 
-    virtual status::StatusCode read(packet::PacketPtr& pp) {
+    virtual status::StatusCode read(packet::PacketPtr& pp, packet::PacketReadMode mode) {
         if (code_ != status::NoStatus && code_ != status::StatusOK) {
             return code_;
         }
-        return reader_.read(pp);
+        return reader_.read(pp, mode);
     }
 
     void set_status(status::StatusCode code) {

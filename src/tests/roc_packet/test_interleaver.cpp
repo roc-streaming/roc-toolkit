@@ -114,12 +114,12 @@ TEST(interleaver, read_write) {
 
     // Check that packets have different seqnums.
     for (size_t i = 0; i < num_packets; i++) {
-        PacketPtr p;
-        LONGS_EQUAL(status::StatusOK, queue.read(p));
-        CHECK(p);
-        CHECK(p->rtp()->seqnum < num_packets);
-        CHECK(!packets_ctr[p->rtp()->seqnum]);
-        packets_ctr[p->rtp()->seqnum] = true;
+        PacketPtr pp;
+        LONGS_EQUAL(status::StatusOK, queue.read(pp, ModeFetch));
+        CHECK(pp);
+        CHECK(pp->rtp()->seqnum < num_packets);
+        CHECK(!packets_ctr[pp->rtp()->seqnum]);
+        packets_ctr[pp->rtp()->seqnum] = true;
     }
 
     // Nothing left in queue.
@@ -150,29 +150,29 @@ TEST(interleaver, flush) {
         LONGS_EQUAL(1, queue.size());
 
         PacketPtr rp;
-        LONGS_EQUAL(status::StatusOK, queue.read(rp));
+        LONGS_EQUAL(status::StatusOK, queue.read(rp, ModeFetch));
         CHECK(wp == rp);
         LONGS_EQUAL(0, queue.size());
     }
 }
 
 TEST(interleaver, write_error) {
-    const status::StatusCode codes[] = {
+    const status::StatusCode status_codes[] = {
         status::StatusDrain,
         status::StatusAbort,
     };
 
-    for (size_t n = 0; n < ROC_ARRAY_SIZE(codes); ++n) {
+    for (size_t st_n = 0; st_n < ROC_ARRAY_SIZE(status_codes); ++st_n) {
         Queue queue;
         MockWriter writer(queue);
         Interleaver intrlvr(writer, arena, 1);
         LONGS_EQUAL(status::StatusOK, intrlvr.init_status());
 
-        writer.enable_status_code(codes[n]);
+        writer.enable_status_code(status_codes[st_n]);
 
         PacketPtr wp = new_packet(seqnum_t(1));
 
-        UNSIGNED_LONGS_EQUAL(codes[n], intrlvr.write(wp));
+        UNSIGNED_LONGS_EQUAL(status_codes[st_n], intrlvr.write(wp));
         UNSIGNED_LONGS_EQUAL(1, writer.call_count());
         UNSIGNED_LONGS_EQUAL(0, queue.size());
 
@@ -182,7 +182,7 @@ TEST(interleaver, write_error) {
         UNSIGNED_LONGS_EQUAL(1, queue.size());
 
         PacketPtr rp;
-        LONGS_EQUAL(status::StatusOK, queue.read(rp));
+        LONGS_EQUAL(status::StatusOK, queue.read(rp, ModeFetch));
         CHECK(wp == rp);
     }
 }
@@ -225,7 +225,7 @@ TEST(interleaver, flush_error) {
 
     for (size_t n = 0; n < seqnum; ++n) {
         PacketPtr pp;
-        LONGS_EQUAL(status::StatusOK, queue.read(pp));
+        LONGS_EQUAL(status::StatusOK, queue.read(pp, ModeFetch));
         UNSIGNED_LONGS_EQUAL(seqnum_t(n), pp->rtp()->seqnum);
     }
 }

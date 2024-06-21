@@ -23,14 +23,35 @@ namespace roc {
 namespace packet {
 
 //! Delayed reader.
-//! @remarks
-//!  Delays audio packet reader for given amount of samples.
+//!
+//! Delays read of the first packet in stream for the configured duration.
+//!
+//! Assumes that packets arrive at constant rate, and pipeline performs read
+//! from delayed reader at the same rate (in average).
+//!
+//! Operation is split into three stages:
+//!
+//!   1. Loading: reads packets from incoming queue and accumulates them in
+//!      delay queue. Doesn't return packets to pipeline. This stage lasts
+//!      until target delay is accumulated. By the end of this stage,
+//!      incoming queue length is zero, delay queue length is target delay,
+//!      and pipeline is ahead of the last packet in queue by target delay.
+//!
+//!   2. Unloading: returns packets from delay queue until it becomes empty.
+//!      Doesn't read packets from incoming queue. By the end of this stage,
+//!      incoming queue length is target delay, delay queue length is zero,
+//!      and pipeline is ahead of the last packet in queue by target delay.
+//!
+//!   3. Forwarding: just forwards packets from incoming queue and doesn't
+//!      use delay queue anymore. Incoming queue length remains equal to
+//!      target delay, given that packets packets are arriving and read
+//!      at the same rate.
 class DelayedReader : public IReader, public core::NonCopyable<> {
 public:
     //! Initialize.
     //!
     //! @b Parameters
-    //!  - @p reader is used to read packets
+    //!  - @p reader is used to read packets from incoming queue
     //!  - @p target_delay is the delay to insert before first packet
     //!  - @p sample_spec is the specifications of incoming packets
     DelayedReader(IReader& reader,
@@ -41,19 +62,20 @@ public:
     status::StatusCode init_status() const;
 
     //! Read packet.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr&);
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr& packet,
+                                                       PacketReadMode mode);
 
 private:
-    status::StatusCode fetch_packets_();
-    status::StatusCode read_queued_packet_(PacketPtr&);
-
-    stream_timestamp_t queue_size_() const;
+    status::StatusCode load_queue_();
+    stream_timestamp_t calc_queue_duration_() const;
 
     IReader& reader_;
-    SortedQueue queue_;
 
+    SortedQueue delay_queue_;
     stream_timestamp_t delay_;
-    bool started_;
+
+    bool loaded_;
+    bool unloaded_;
 
     const audio::SampleSpec sample_spec_;
 

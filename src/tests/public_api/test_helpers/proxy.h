@@ -156,7 +156,7 @@ private:
 
     bool send_packet_(packet::IReader& reader, bool drop) {
         packet::PacketPtr pp;
-        status::StatusCode code = reader.read(pp);
+        status::StatusCode code = reader.read(pp, packet::ModeFetch);
         if (code != status::StatusOK) {
             LONGS_EQUAL(status::StatusDrain, code);
             CHECK(!pp);

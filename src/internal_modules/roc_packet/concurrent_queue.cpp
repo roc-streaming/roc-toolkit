@@ -23,21 +23,6 @@ status::StatusCode ConcurrentQueue::init_status() const {
     return status::StatusOK;
 }
 
-status::StatusCode ConcurrentQueue::read(PacketPtr& ptr) {
-    core::Mutex::Lock lock(read_mutex_);
-
-    if (write_sem_) {
-        write_sem_->wait();
-    }
-
-    ptr = queue_.pop_front_exclusive();
-    if (!ptr) {
-        return status::StatusDrain;
-    }
-
-    return status::StatusOK;
-}
-
 status::StatusCode ConcurrentQueue::write(const PacketPtr& packet) {
     if (!packet) {
         roc_panic("concurrent queue: packet is null");
@@ -47,6 +32,27 @@ status::StatusCode ConcurrentQueue::write(const PacketPtr& packet) {
 
     if (write_sem_) {
         write_sem_->post();
+    }
+
+    return status::StatusOK;
+}
+
+status::StatusCode ConcurrentQueue::read(PacketPtr& packet, PacketReadMode mode) {
+    core::Mutex::Lock lock(read_mutex_);
+
+    if (!read_pkt_) {
+        if (write_sem_) {
+            write_sem_->wait();
+        }
+
+        if (!(read_pkt_ = queue_.pop_front_exclusive())) {
+            return status::StatusDrain;
+        }
+    }
+
+    packet = read_pkt_;
+    if (mode == ModeFetch) {
+        read_pkt_.reset();
     }
 
     return status::StatusOK;

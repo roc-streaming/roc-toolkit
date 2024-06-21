@@ -79,8 +79,8 @@ TEST(router, one_route) {
 
     PacketPtr rpa1;
     PacketPtr rpa2;
-    LONGS_EQUAL(status::StatusOK, queue.read(rpa1));
-    LONGS_EQUAL(status::StatusOK, queue.read(rpa2));
+    LONGS_EQUAL(status::StatusOK, queue.read(rpa1, ModeFetch));
+    LONGS_EQUAL(status::StatusOK, queue.read(rpa2, ModeFetch));
     CHECK(wpa1 == rpa1);
     CHECK(wpa2 == rpa2);
 
@@ -115,15 +115,15 @@ TEST(router, two_routes) {
 
     PacketPtr rpa1;
     PacketPtr rpa2;
-    LONGS_EQUAL(status::StatusOK, queue_a.read(rpa1));
-    LONGS_EQUAL(status::StatusOK, queue_a.read(rpa2));
+    LONGS_EQUAL(status::StatusOK, queue_a.read(rpa1, ModeFetch));
+    LONGS_EQUAL(status::StatusOK, queue_a.read(rpa2, ModeFetch));
     CHECK(wpa1 == rpa1);
     CHECK(wpa2 == rpa2);
 
     PacketPtr rpr1;
     PacketPtr rpr2;
-    LONGS_EQUAL(status::StatusOK, queue_r.read(rpr1));
-    LONGS_EQUAL(status::StatusOK, queue_r.read(rpr2));
+    LONGS_EQUAL(status::StatusOK, queue_r.read(rpr1, ModeFetch));
+    LONGS_EQUAL(status::StatusOK, queue_r.read(rpr2, ModeFetch));
     CHECK(wpr1 == rpr1);
     CHECK(wpr2 == rpr2);
 
@@ -159,15 +159,15 @@ TEST(router, two_routes_two_sources) {
 
     PacketPtr rpa1;
     PacketPtr rpa2;
-    LONGS_EQUAL(status::StatusOK, queue_a.read(rpa1));
-    LONGS_EQUAL(status::StatusOK, queue_a.read(rpa2));
+    LONGS_EQUAL(status::StatusOK, queue_a.read(rpa1, ModeFetch));
+    LONGS_EQUAL(status::StatusOK, queue_a.read(rpa2, ModeFetch));
     CHECK(wpa1 == rpa1);
     CHECK(wpa2 == rpa2);
 
     PacketPtr rpr1;
     PacketPtr rpr2;
-    LONGS_EQUAL(status::StatusOK, queue_r.read(rpr1));
-    LONGS_EQUAL(status::StatusOK, queue_r.read(rpr2));
+    LONGS_EQUAL(status::StatusOK, queue_r.read(rpr1, ModeFetch));
+    LONGS_EQUAL(status::StatusOK, queue_r.read(rpr2, ModeFetch));
     CHECK(wpr1 == rpr1);
     CHECK(wpr2 == rpr2);
 

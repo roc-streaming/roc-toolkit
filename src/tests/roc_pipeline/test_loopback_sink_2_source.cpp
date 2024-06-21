@@ -157,7 +157,7 @@ public:
     void deliver_from(packet::IReader& reader) {
         for (;;) {
             packet::PacketPtr pp;
-            const status::StatusCode code = reader.read(pp);
+            const status::StatusCode code = reader.read(pp, packet::ModeFetch);
             if (code != status::StatusOK) {
                 LONGS_EQUAL(status::StatusDrain, code);
                 break;

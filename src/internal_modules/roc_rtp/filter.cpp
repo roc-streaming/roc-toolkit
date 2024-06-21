@@ -28,15 +28,19 @@ status::StatusCode Filter::init_status() const {
     return status::StatusOK;
 }
 
-status::StatusCode Filter::read(packet::PacketPtr& result_packet) {
+status::StatusCode Filter::read(packet::PacketPtr& result_packet,
+                                packet::PacketReadMode mode) {
     for (;;) {
         packet::PacketPtr next_packet;
-        const status::StatusCode code = reader_.read(next_packet);
+        const status::StatusCode code = reader_.read(next_packet, mode);
         if (code != status::StatusOK) {
             return code;
         }
 
         if (!validate_(next_packet)) {
+            if (mode == packet::ModePeek) {
+                return status::StatusDrain;
+            }
             continue;
         }
 

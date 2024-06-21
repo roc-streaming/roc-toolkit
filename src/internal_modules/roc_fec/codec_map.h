@@ -47,9 +47,9 @@ public:
     //!
     //! @returns
     //!  NULL if parameters are invalid or given codec support is not enabled.
-    IBlockEncoder* new_encoder(const CodecConfig& config,
-                               packet::PacketFactory& packet_factory,
-                               core::IArena& arena) const;
+    IBlockEncoder* new_block_encoder(const CodecConfig& config,
+                                     packet::PacketFactory& packet_factory,
+                                     core::IArena& arena) const;
 
     //! Create a new block decoder.
     //!
@@ -58,9 +58,9 @@ public:
     //!
     //! @returns
     //!  NULL if parameters are invalid or given codec support is not enabled.
-    IBlockDecoder* new_decoder(const CodecConfig& config,
-                               packet::PacketFactory& packet_factory,
-                               core::IArena& arena) const;
+    IBlockDecoder* new_block_decoder(const CodecConfig& config,
+                                     packet::PacketFactory& packet_factory,
+                                     core::IArena& arena) const;
 
 private:
     friend class core::Singleton<CodecMap>;

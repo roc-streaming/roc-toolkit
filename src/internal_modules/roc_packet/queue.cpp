@@ -16,25 +16,37 @@ status::StatusCode Queue::init_status() const {
     return status::StatusOK;
 }
 
-status::StatusCode Queue::read(PacketPtr& packet) {
-    packet = list_.front();
-    if (!packet) {
-        return status::StatusDrain;
-    }
-    list_.remove(*packet);
-    return status::StatusOK;
+size_t Queue::size() const {
+    return list_.size();
+}
+
+PacketPtr Queue::head() const {
+    return list_.front();
+}
+
+PacketPtr Queue::tail() const {
+    return list_.back();
 }
 
 status::StatusCode Queue::write(const PacketPtr& packet) {
     if (!packet) {
-        roc_panic("queue: null packet");
+        roc_panic("fifo queue: null packet");
     }
+
     list_.push_back(*packet);
     return status::StatusOK;
 }
 
-size_t Queue::size() const {
-    return list_.size();
+status::StatusCode Queue::read(PacketPtr& packet, PacketReadMode mode) {
+    packet = list_.front();
+    if (!packet) {
+        return status::StatusDrain;
+    }
+
+    if (mode == ModeFetch) {
+        list_.remove(*packet);
+    }
+    return status::StatusOK;
 }
 
 } // namespace packet

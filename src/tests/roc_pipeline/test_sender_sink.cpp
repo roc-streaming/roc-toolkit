@@ -468,7 +468,7 @@ TEST(sender_sink, timestamp_mapping_remixing) {
     core::nanoseconds_t cts = 0;
     for (size_t np = 0; np < ManyFrames / FramesPerPacket - 5; np++) {
         packet::PacketPtr pp;
-        LONGS_EQUAL(status::StatusOK, queue.read(pp));
+        LONGS_EQUAL(status::StatusOK, queue.read(pp, packet::ModeFetch));
         CHECK(pp);
 
         if (np == 0) {

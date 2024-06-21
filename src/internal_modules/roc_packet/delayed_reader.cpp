@@ -20,9 +20,10 @@ DelayedReader::DelayedReader(IReader& reader,
                              core::nanoseconds_t target_delay,
                              const audio::SampleSpec& sample_spec)
     : reader_(reader)
-    , queue_(0)
+    , delay_queue_(0)
     , delay_(0)
-    , started_(false)
+    , loaded_(false)
+    , unloaded_(false)
     , sample_spec_(sample_spec)
     , init_status_(status::NoStatus) {
     if (target_delay > 0) {
@@ -39,94 +40,87 @@ status::StatusCode DelayedReader::init_status() const {
     return init_status_;
 }
 
-status::StatusCode DelayedReader::read(PacketPtr& ptr) {
+status::StatusCode DelayedReader::read(PacketPtr& packet, PacketReadMode mode) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    if (!started_) {
-        const status::StatusCode code = fetch_packets_();
+    if (!loaded_) {
+        const status::StatusCode code = load_queue_();
         if (code != status::StatusOK) {
             return code;
         }
-
-        started_ = true;
+        loaded_ = true;
     }
 
-    if (queue_.size() != 0) {
-        return read_queued_packet_(ptr);
+    if (!unloaded_) {
+        if (delay_queue_.size() != 0) {
+            return delay_queue_.read(packet, mode);
+        }
+        unloaded_ = true;
     }
 
-    return reader_.read(ptr);
+    return reader_.read(packet, mode);
 }
 
-status::StatusCode DelayedReader::fetch_packets_() {
+status::StatusCode DelayedReader::load_queue_() {
+    // fetch all available packets into queue
     PacketPtr pp;
     for (;;) {
         status::StatusCode code = status::NoStatus;
 
-        if ((code = reader_.read(pp)) != status::StatusOK) {
+        if ((code = reader_.read(pp, ModeFetch)) != status::StatusOK) {
             if (code == status::StatusDrain) {
                 break;
             }
             return code;
         }
 
-        if ((code = queue_.write(pp)) != status::StatusOK) {
+        if ((code = delay_queue_.write(pp)) != status::StatusOK) {
             return code;
         }
     }
 
-    const stream_timestamp_t qs = queue_size_();
-    if (qs < delay_) {
+    stream_timestamp_t init_qs = calc_queue_duration_();
+    if (init_qs < delay_) {
+        // return drain until queue is large enough
         return status::StatusDrain;
     }
 
-    roc_log(LogDebug,
-            "delayed reader: initial queue:"
-            " delay=%lu(%.3fms) queue=%lu(%.3fms) packets=%lu",
-            (unsigned long)delay_, sample_spec_.stream_timestamp_2_ms(delay_),
-            (unsigned long)qs, sample_spec_.stream_timestamp_2_ms(qs),
-            (unsigned long)queue_.size());
+    // trim queue if it's too big
+    stream_timestamp_t trim_qs = init_qs;
+    size_t n_dropped = 0;
 
-    return status::StatusOK;
-}
-
-status::StatusCode DelayedReader::read_queued_packet_(PacketPtr& pp) {
-    stream_timestamp_t qs = 0;
-
-    for (;;) {
-        const status::StatusCode code = queue_.read(pp);
+    while (trim_qs > delay_) {
+        const status::StatusCode code = delay_queue_.read(pp, ModeFetch);
         if (code != status::StatusOK) {
+            if (code == status::StatusDrain) {
+                break;
+            }
             return code;
         }
-
-        const stream_timestamp_t new_qs = queue_size_();
-        if (new_qs < delay_) {
-            break;
-        }
-
-        qs = new_qs;
+        trim_qs = calc_queue_duration_();
+        n_dropped++;
     }
 
-    if (qs != 0) {
-        roc_log(LogDebug,
-                "delayed reader: trimmed queue:"
-                " delay=%lu(%.3fms) queue=%lu(%.3fms) packets=%lu",
-                (unsigned long)delay_, sample_spec_.stream_timestamp_2_ms(delay_),
-                (unsigned long)qs, sample_spec_.stream_timestamp_2_ms(qs),
-                (unsigned long)(queue_.size() + 1));
-    }
+    roc_log(LogDebug,
+            "delayed reader: starting:"
+            " delay=%lu(%.3fms) init_qs=%lu(%.3fms) trim_qs=%lu(%.3fms)"
+            " n_drop=%lu n_keep=%lu",
+            (unsigned long)delay_, sample_spec_.stream_timestamp_2_ms(delay_),
+            (unsigned long)init_qs, sample_spec_.stream_timestamp_2_ms(init_qs),
+            (unsigned long)trim_qs, sample_spec_.stream_timestamp_2_ms(trim_qs),
+            (unsigned long)n_dropped, (unsigned long)delay_queue_.size());
 
     return status::StatusOK;
 }
 
-stream_timestamp_t DelayedReader::queue_size_() const {
-    if (queue_.size() == 0) {
+stream_timestamp_t DelayedReader::calc_queue_duration_() const {
+    if (delay_queue_.size() == 0) {
         return 0;
     }
 
     const stream_timestamp_diff_t qs = stream_timestamp_diff(
-        queue_.tail()->stream_timestamp() + queue_.tail()->duration(),
-        queue_.head()->stream_timestamp());
+        delay_queue_.tail()->stream_timestamp() + delay_queue_.tail()->duration(),
+        delay_queue_.head()->stream_timestamp());
 
     if (qs < 0) {
         roc_log(LogError, "delayed reader: unexpected negative queue size: %ld",

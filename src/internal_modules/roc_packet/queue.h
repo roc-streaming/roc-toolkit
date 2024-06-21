@@ -7,7 +7,7 @@
  */
 
 //! @file roc_packet/queue.h
-//! @brief Packet queue.
+//! @brief Packet FIFO queue.
 
 #ifndef ROC_PACKET_QUEUE_H_
 #define ROC_PACKET_QUEUE_H_
@@ -21,22 +21,41 @@
 namespace roc {
 namespace packet {
 
-//! Packet queue.
-class Queue : public IReader, public IWriter, public core::NonCopyable<> {
+//! Packet FIFO queue.
+//! @remarks
+//!  Packets order is not changed.
+//! @note
+//!  Not thread safe.
+class Queue : public IWriter, public IReader, public core::NonCopyable<> {
 public:
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
 
-    //! Read next packet.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr& packet);
+    //! Get number of packets in queue.
+    size_t size() const;
+
+    //! Get first packet in the queue.
+    //! @returns
+    //!  the first packet in the queue or null if there are no packets
+    //! @remarks
+    //!  Returned packet is not removed from the queue.
+    PacketPtr head() const;
+
+    //! Get last packet in the queue.
+    //! @returns
+    //!  the last packet in the queue or null if there are no packets
+    //! @remarks
+    //!  Returned packet is not removed from the queue.
+    PacketPtr tail() const;
 
     //! Add packet to the queue.
     //! @remarks
     //!  Adds packet to the end of the queue.
     virtual ROC_ATTR_NODISCARD status::StatusCode write(const PacketPtr& packet);
 
-    //! Get number of packets in queue.
-    size_t size() const;
+    //! Read next packet.
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr& packet,
+                                                       PacketReadMode mode);
 
 private:
     core::List<Packet> list_;

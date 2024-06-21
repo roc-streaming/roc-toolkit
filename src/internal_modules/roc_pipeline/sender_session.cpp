@@ -94,8 +94,8 @@ SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
             pkt_writer = interleaver_.get();
         }
 
-        fec_encoder_.reset(fec::CodecMap::instance().new_encoder(sink_config_.fec_encoder,
-                                                                 packet_factory_, arena_),
+        fec_encoder_.reset(fec::CodecMap::instance().new_block_encoder(
+                               sink_config_.fec_encoder, packet_factory_, arena_),
                            arena_);
         if (!fec_encoder_) {
             return status::StatusNoMem;

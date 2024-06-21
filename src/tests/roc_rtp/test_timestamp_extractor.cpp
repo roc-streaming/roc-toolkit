@@ -11,15 +11,8 @@
 #include "test_helpers/status_writer.h"
 
 #include "roc_core/heap_arena.h"
-#include "roc_core/scoped_ptr.h"
-#include "roc_core/stddefs.h"
-#include "roc_packet/iwriter.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/queue.h"
-#include "roc_packet/units.h"
-#include "roc_rtp/composer.h"
-#include "roc_rtp/encoding_map.h"
-#include "roc_rtp/parser.h"
 #include "roc_rtp/timestamp_extractor.h"
 
 namespace roc {
@@ -72,7 +65,7 @@ TEST(timestamp_extractor, single_write) {
     // ensure packet was passed to inner writer
     UNSIGNED_LONGS_EQUAL(1, queue.size());
     packet::PacketPtr rp;
-    LONGS_EQUAL(status::StatusOK, queue.read(rp));
+    LONGS_EQUAL(status::StatusOK, queue.read(rp, packet::ModeFetch));
     CHECK_EQUAL(wp, rp);
 
     // get mapping for exact time
@@ -94,17 +87,17 @@ TEST(timestamp_extractor, forward_error) {
         audio::SampleSpec(1000, audio::Sample_RawFormat, audio::ChanLayout_Surround,
                           audio::ChanOrder_Smpte, 0x1);
 
-    const status::StatusCode codes[] = {
+    const status::StatusCode status_list[] = {
         status::StatusDrain,
         status::StatusAbort,
     };
 
-    for (size_t n = 0; n < ROC_ARRAY_SIZE(codes); ++n) {
-        test::StatusWriter writer(codes[n]);
+    for (size_t st_n = 0; st_n < ROC_ARRAY_SIZE(status_list); st_n++) {
+        test::StatusWriter writer(status_list[st_n]);
         TimestampExtractor extractor(writer, sample_spec);
 
         packet::PacketPtr pp = new_packet(555, 0, 0);
-        LONGS_EQUAL(codes[n], extractor.write(pp));
+        LONGS_EQUAL(status_list[st_n], extractor.write(pp));
     }
 }
 

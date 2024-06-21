@@ -441,7 +441,7 @@ void expect_recv_report(const RecvReport& report,
 packet::PacketPtr read_packet(packet::Queue& source) {
     CHECK(source.size() != 0);
     packet::PacketPtr pp;
-    LONGS_EQUAL(status::StatusOK, source.read(pp));
+    LONGS_EQUAL(status::StatusOK, source.read(pp, packet::ModeFetch));
     CHECK(pp);
     CHECK(pp->rtcp());
     CHECK(pp->rtcp()->payload);

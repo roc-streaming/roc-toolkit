@@ -88,13 +88,13 @@ public:
 
         for (size_t i = 0; i < n_source_packets; ++i) {
             packet::PacketPtr pp;
-            LONGS_EQUAL(status::StatusOK, source_queue_.read(pp));
+            LONGS_EQUAL(status::StatusOK, source_queue_.read(pp, packet::ModeFetch));
             CHECK(pp);
         }
 
         for (size_t i = 0; i < n_repair_packets; ++i) {
             packet::PacketPtr pp;
-            LONGS_EQUAL(status::StatusOK, repair_queue_.read(pp));
+            LONGS_EQUAL(status::StatusOK, repair_queue_.read(pp, packet::ModeFetch));
             CHECK(pp);
         }
 
@@ -127,30 +127,30 @@ public:
 
     void push_stocks() {
         while (source_stock_.head()) {
-            packet::PacketPtr p;
-            LONGS_EQUAL(status::StatusOK, source_stock_.read(p));
-            deliver_(p);
+            packet::PacketPtr pp;
+            LONGS_EQUAL(status::StatusOK, source_stock_.read(pp, packet::ModeFetch));
+            deliver_(pp);
         }
         while (repair_stock_.head()) {
-            packet::PacketPtr p;
-            LONGS_EQUAL(status::StatusOK, repair_stock_.read(p));
-            deliver_(p);
+            packet::PacketPtr pp;
+            LONGS_EQUAL(status::StatusOK, repair_stock_.read(pp, packet::ModeFetch));
+            deliver_(pp);
         }
     }
 
     void push_source_stock(size_t limit) {
         for (size_t n = 0; n < limit; n++) {
-            packet::PacketPtr p;
-            LONGS_EQUAL(status::StatusOK, source_stock_.read(p));
-            deliver_(p);
+            packet::PacketPtr pp;
+            LONGS_EQUAL(status::StatusOK, source_stock_.read(pp, packet::ModeFetch));
+            deliver_(pp);
         }
     }
 
     void push_repair_stock(size_t limit) {
         for (size_t n = 0; n < limit; n++) {
-            packet::PacketPtr p;
-            LONGS_EQUAL(status::StatusOK, repair_stock_.read(p));
-            deliver_(p);
+            packet::PacketPtr pp;
+            LONGS_EQUAL(status::StatusOK, repair_stock_.read(pp, packet::ModeFetch));
+            deliver_(pp);
         }
     }
 

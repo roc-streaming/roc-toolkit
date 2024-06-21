@@ -80,12 +80,13 @@ status::StatusCode LinkMeter::write(const packet::PacketPtr& packet) {
     return writer_->write(packet);
 }
 
-status::StatusCode LinkMeter::read(packet::PacketPtr& packet) {
+status::StatusCode LinkMeter::read(packet::PacketPtr& packet,
+                                   packet::PacketReadMode mode) {
     if (!reader_) {
         roc_panic("link meter: forgot to call set_reader()");
     }
 
-    const status::StatusCode code = reader_->read(packet);
+    const status::StatusCode code = reader_->read(packet, mode);
     if (code != status::StatusOK) {
         return code;
     }

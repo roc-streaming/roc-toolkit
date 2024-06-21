@@ -15,7 +15,6 @@
 
 #include "roc_core/heap_arena.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_core/stddefs.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_rtp/composer.h"
 #include "roc_rtp/encoding_map.h"

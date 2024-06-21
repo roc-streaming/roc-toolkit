@@ -8,7 +8,6 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "test_helpers/mock_arena.h"
 #include "test_helpers/packet_dispatcher.h"
 
 #include "roc_core/heap_arena.h"
@@ -60,23 +59,9 @@ Composer<RS8M_PayloadID, Repair, Header> rs8m_repair_composer(NULL);
 Composer<LDPC_Source_PayloadID, Source, Footer> ldpc_source_composer(&rtp_composer);
 Composer<LDPC_Repair_PayloadID, Repair, Header> ldpc_repair_composer(NULL);
 
-class StatusReader : public packet::IReader {
-public:
-    explicit StatusReader(status::StatusCode code)
-        : code_(code) {
-    }
-
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(packet::PacketPtr&) {
-        return code_;
-    }
-
-private:
-    status::StatusCode code_;
-};
-
 } // namespace
 
-TEST_GROUP(writer_reader) {
+TEST_GROUP(block_writer_reader) {
     packet::PacketPtr source_packets[NumSourcePackets];
 
     CodecConfig codec_config;
@@ -140,13 +125,13 @@ TEST_GROUP(writer_reader) {
         }
     }
 
-    void fill_all_packets(size_t sn) {
+    void generate_packet_block(size_t start_sn) {
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            source_packets[i] = fill_one_packet(sn + i);
+            source_packets[i] = generate_packet(start_sn + i);
         }
     }
 
-    packet::PacketPtr fill_one_packet(size_t sn, size_t fec_payload_size = FECPayloadSize,
+    packet::PacketPtr generate_packet(size_t sn, size_t fec_payload_size = FECPayloadSize,
                                       packet::IComposer* composer = NULL) {
         CHECK(fec_payload_size > sizeof(rtp::Header));
         const size_t rtp_payload_size = fec_payload_size - sizeof(rtp::Header);
@@ -181,8 +166,8 @@ TEST_GROUP(writer_reader) {
         return pp;
     }
 
-    void check_audio_packet(packet::PacketPtr pp, size_t sn,
-                            size_t fec_payload_size = FECPayloadSize) {
+    void check_packet(packet::PacketPtr pp, size_t sn,
+                      size_t fec_payload_size = FECPayloadSize) {
         CHECK(fec_payload_size > sizeof(rtp::Header));
         const size_t rtp_payload_size = fec_payload_size - sizeof(rtp::Header);
 
@@ -220,15 +205,17 @@ TEST_GROUP(writer_reader) {
     }
 };
 
-TEST(writer_reader, no_losses) {
+TEST(block_writer_reader, no_losses) {
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -247,10 +234,10 @@ TEST(writer_reader, no_losses) {
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
 
-        fill_all_packets(0);
+        generate_packet_block(0);
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
+            LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
         }
         dispatcher.push_stocks();
 
@@ -259,23 +246,25 @@ TEST(writer_reader, no_losses) {
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
             CHECK(p);
-            check_audio_packet(p, i);
+            check_packet(p, i);
             check_restored(p, false);
         }
     }
 }
 
-TEST(writer_reader, 1_loss) {
+TEST(block_writer_reader, 1_loss) {
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -294,12 +283,12 @@ TEST(writer_reader, 1_loss) {
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
 
-        fill_all_packets(0);
+        generate_packet_block(0);
 
         dispatcher.lose(11);
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
+            LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
         }
         dispatcher.push_stocks();
 
@@ -308,23 +297,25 @@ TEST(writer_reader, 1_loss) {
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
             CHECK(p);
-            check_audio_packet(p, i);
+            check_packet(p, i);
             check_restored(p, i == 11);
         }
     }
 }
 
-TEST(writer_reader, lost_first_packet_in_first_block) {
+TEST(block_writer_reader, lost_first_packet_in_first_block) {
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -344,45 +335,47 @@ TEST(writer_reader, lost_first_packet_in_first_block) {
         LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         // Sending first block except first packet.
-        fill_all_packets(0);
+        generate_packet_block(0);
         dispatcher.lose(0);
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
+            LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
         }
 
         // Sending second block lossless.
         dispatcher.clear_losses();
-        fill_all_packets(NumSourcePackets);
+        generate_packet_block(NumSourcePackets);
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
+            LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
         }
         dispatcher.push_stocks();
 
         // Receive every sent packet except the first one.
         for (size_t i = 1; i < NumSourcePackets * 2; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
             if (i < NumSourcePackets) {
                 CHECK(!reader.is_started());
             } else {
                 CHECK(reader.is_started());
             }
-            check_audio_packet(p, i);
+            check_packet(p, i);
             check_restored(p, false);
         }
         UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
     }
 }
 
-TEST(writer_reader, lost_one_source_and_all_repair_packets) {
+TEST(block_writer_reader, lost_one_source_and_all_repair_packets) {
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -406,18 +399,18 @@ TEST(writer_reader, lost_one_source_and_all_repair_packets) {
         for (size_t i = 0; i < NumRepairPackets; ++i) {
             dispatcher.lose(NumSourcePackets + i);
         }
-        fill_all_packets(0);
+        generate_packet_block(0);
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
+            LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
         }
         dispatcher.push_stocks();
 
         // Send second block without one source packet.
         dispatcher.clear_losses();
         dispatcher.lose(5);
-        fill_all_packets(NumSourcePackets);
+        generate_packet_block(NumSourcePackets);
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
+            LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
         }
         dispatcher.push_stocks();
 
@@ -427,15 +420,15 @@ TEST(writer_reader, lost_one_source_and_all_repair_packets) {
                 // nop
             } else if (i == NumSourcePackets + 5) {
                 packet::PacketPtr p;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+                LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
                 CHECK(p);
-                check_audio_packet(p, i);
+                check_packet(p, i);
                 check_restored(p, true);
             } else {
                 packet::PacketPtr p;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+                LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
                 CHECK(p);
-                check_audio_packet(p, i);
+                check_packet(p, i);
                 check_restored(p, false);
             }
         }
@@ -444,17 +437,19 @@ TEST(writer_reader, lost_one_source_and_all_repair_packets) {
     }
 }
 
-TEST(writer_reader, multiple_blocks_1_loss) {
+TEST(block_writer_reader, multiple_blocks_1_loss) {
     enum { NumBlocks = 40 };
 
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -480,10 +475,10 @@ TEST(writer_reader, multiple_blocks_1_loss) {
                 dispatcher.lose(lost_sq);
             }
 
-            fill_all_packets(NumSourcePackets * block_num);
+            generate_packet_block(NumSourcePackets * block_num);
 
             for (size_t i = 0; i < NumSourcePackets; ++i) {
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
+                LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             }
             dispatcher.push_stocks();
 
@@ -500,10 +495,10 @@ TEST(writer_reader, multiple_blocks_1_loss) {
 
             for (size_t i = 0; i < NumSourcePackets; ++i) {
                 packet::PacketPtr p;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+                LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
                 CHECK(p);
 
-                check_audio_packet(p, NumSourcePackets * block_num + i);
+                check_packet(p, NumSourcePackets * block_num + i);
 
                 if (lost_sq == size_t(-1)) {
                     check_restored(p, false);
@@ -518,17 +513,19 @@ TEST(writer_reader, multiple_blocks_1_loss) {
     }
 }
 
-TEST(writer_reader, multiple_blocks_in_queue) {
+TEST(block_writer_reader, multiple_blocks_in_queue) {
     enum { NumBlocks = 3 };
 
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -548,10 +545,10 @@ TEST(writer_reader, multiple_blocks_in_queue) {
         LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         for (size_t block_num = 0; block_num < NumBlocks; ++block_num) {
-            fill_all_packets(NumSourcePackets * block_num);
+            generate_packet_block(NumSourcePackets * block_num);
 
             for (size_t i = 0; i < NumSourcePackets; ++i) {
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
+                LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             }
         }
         dispatcher.push_stocks();
@@ -562,9 +559,9 @@ TEST(writer_reader, multiple_blocks_in_queue) {
         for (size_t block_num = 0; block_num < NumBlocks; ++block_num) {
             for (size_t i = 0; i < NumSourcePackets; ++i) {
                 packet::PacketPtr p;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+                LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
                 CHECK(p);
-                check_audio_packet(p, NumSourcePackets * block_num + i);
+                check_packet(p, NumSourcePackets * block_num + i);
                 check_restored(p, false);
             }
 
@@ -573,17 +570,19 @@ TEST(writer_reader, multiple_blocks_in_queue) {
     }
 }
 
-TEST(writer_reader, interleaved_packets) {
+TEST(block_writer_reader, interleaved_packets) {
     enum { NumPackets = NumSourcePackets * 30 };
 
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -608,24 +607,24 @@ TEST(writer_reader, interleaved_packets) {
         packet::PacketPtr many_packets[NumPackets];
 
         for (size_t i = 0; i < NumPackets; ++i) {
-            many_packets[i] = fill_one_packet(i);
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(many_packets[i]));
+            many_packets[i] = generate_packet(i);
+            LONGS_EQUAL(status::StatusOK, writer.write(many_packets[i]));
         }
         dispatcher.push_stocks();
 
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, intrlvr.flush());
+        LONGS_EQUAL(status::StatusOK, intrlvr.flush());
 
         for (size_t i = 0; i < NumPackets; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
             CHECK(p);
-            check_audio_packet(p, i);
+            check_packet(p, i);
             check_restored(p, false);
         }
     }
 }
 
-TEST(writer_reader, delayed_packets) {
+TEST(block_writer_reader, delayed_packets) {
     // 1. Deliver first half of block.
     // 2. Read first half of block.
     // 3. Try to read more and get NULL.
@@ -635,10 +634,12 @@ TEST(writer_reader, delayed_packets) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -657,10 +658,10 @@ TEST(writer_reader, delayed_packets) {
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
 
-        fill_all_packets(0);
+        generate_packet_block(0);
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
+            LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
         }
 
         CHECK(NumSourcePackets > 10);
@@ -673,16 +674,16 @@ TEST(writer_reader, delayed_packets) {
         // read 10 packets
         for (size_t i = 0; i < 10; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
             CHECK(p);
-            check_audio_packet(p, i);
+            check_packet(p, i);
             check_restored(p, false);
         }
 
         // the rest packets are "delayed" and were not delivered to reader
         // try to read 11th packet and get NULL
         packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusDrain, reader.read(pp));
+        LONGS_EQUAL(status::StatusDrain, reader.read(pp, packet::ModeFetch));
         CHECK(!pp);
 
         // deliver "delayed" packets
@@ -691,15 +692,15 @@ TEST(writer_reader, delayed_packets) {
         // successfully read packets starting from the 11th packet
         for (size_t i = 10; i < NumSourcePackets; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
             CHECK(p);
-            check_audio_packet(p, i);
+            check_packet(p, i);
             check_restored(p, false);
         }
     }
 }
 
-TEST(writer_reader, late_out_of_order_packets) {
+TEST(block_writer_reader, late_out_of_order_packets) {
     // 1. Send a block, but delay some packets in the middle of the block.
     // 2. Read first part of the block before delayed packets.
     // 3. Deliver all delayed packets except one.
@@ -709,10 +710,12 @@ TEST(writer_reader, late_out_of_order_packets) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -731,7 +734,7 @@ TEST(writer_reader, late_out_of_order_packets) {
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
 
-        fill_all_packets(0);
+        generate_packet_block(0);
 
         // Mark packets 7-10 as delayed
         dispatcher.clear_delays();
@@ -740,7 +743,7 @@ TEST(writer_reader, late_out_of_order_packets) {
         }
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
+            LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
         }
 
         // Deliver packets 0-6 and 11-20
@@ -750,9 +753,9 @@ TEST(writer_reader, late_out_of_order_packets) {
         // Read packets 0-6
         for (size_t i = 0; i < 7; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
             CHECK(p);
-            check_audio_packet(p, i);
+            check_packet(p, i);
             check_restored(p, false);
         }
 
@@ -763,9 +766,9 @@ TEST(writer_reader, late_out_of_order_packets) {
 
         for (size_t i = 7; i < NumSourcePackets; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
             CHECK(p);
-            check_audio_packet(p, i);
+            check_packet(p, i);
 
             // packets 7-9 were out of order but not late and should be read
             // packet 10 was out of order and late and should be repaired
@@ -781,7 +784,7 @@ TEST(writer_reader, late_out_of_order_packets) {
     }
 }
 
-TEST(writer_reader, repair_packets_before_source_packets) {
+TEST(block_writer_reader, repair_packets_before_source_packets) {
     writer_config.n_source_packets = 30;
     writer_config.n_repair_packets = 40;
 
@@ -789,10 +792,12 @@ TEST(writer_reader, repair_packets_before_source_packets) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -816,7 +821,7 @@ TEST(writer_reader, repair_packets_before_source_packets) {
 
         // Encode first block.
         for (size_t i = 0; i < writer_config.n_source_packets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(wr_sn)));
+            LONGS_EQUAL(status::StatusOK, writer.write(generate_packet(wr_sn)));
             wr_sn++;
         }
 
@@ -826,16 +831,16 @@ TEST(writer_reader, repair_packets_before_source_packets) {
         // Read first block.
         for (size_t i = 0; i < writer_config.n_source_packets; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
             CHECK(p);
-            check_audio_packet(p, rd_sn);
+            check_packet(p, rd_sn);
             check_restored(p, false);
             rd_sn++;
         }
 
         // Encode second block.
         for (size_t i = 0; i < writer_config.n_source_packets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(wr_sn)));
+            LONGS_EQUAL(status::StatusOK, writer.write(generate_packet(wr_sn)));
             wr_sn++;
         }
 
@@ -845,11 +850,11 @@ TEST(writer_reader, repair_packets_before_source_packets) {
         // Read second block.
         for (size_t i = 0; i < writer_config.n_source_packets; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
             CHECK(p);
 
             // All packets should be restored.
-            check_audio_packet(p, rd_sn);
+            check_packet(p, rd_sn);
             check_restored(p, true);
 
             rd_sn++;
@@ -868,7 +873,7 @@ TEST(writer_reader, repair_packets_before_source_packets) {
     }
 }
 
-TEST(writer_reader, repair_packets_mixed_with_source_packets) {
+TEST(block_writer_reader, repair_packets_mixed_with_source_packets) {
     writer_config.n_source_packets = 30;
     writer_config.n_repair_packets = 40;
 
@@ -876,10 +881,12 @@ TEST(writer_reader, repair_packets_mixed_with_source_packets) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -903,7 +910,7 @@ TEST(writer_reader, repair_packets_mixed_with_source_packets) {
 
         // Encode first block.
         for (size_t i = 0; i < writer_config.n_source_packets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(wr_sn)));
+            LONGS_EQUAL(status::StatusOK, writer.write(generate_packet(wr_sn)));
             wr_sn++;
         }
 
@@ -913,9 +920,9 @@ TEST(writer_reader, repair_packets_mixed_with_source_packets) {
         // Read first block.
         for (size_t i = 0; i < writer_config.n_source_packets; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
             CHECK(p);
-            check_audio_packet(p, rd_sn);
+            check_packet(p, rd_sn);
             check_restored(p, false);
             rd_sn++;
         }
@@ -927,7 +934,7 @@ TEST(writer_reader, repair_packets_mixed_with_source_packets) {
 
         // Encode second block.
         for (size_t i = 0; i < writer_config.n_source_packets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(wr_sn)));
+            LONGS_EQUAL(status::StatusOK, writer.write(generate_packet(wr_sn)));
             wr_sn++;
         }
 
@@ -936,7 +943,7 @@ TEST(writer_reader, repair_packets_mixed_with_source_packets) {
 
         // Delivered repair packets should not be enough for restore.
         packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusDrain, reader.read(pp));
+        LONGS_EQUAL(status::StatusDrain, reader.read(pp, packet::ModeFetch));
         CHECK(!pp);
 
         // Deliver first and last 5 source packets.
@@ -945,11 +952,11 @@ TEST(writer_reader, repair_packets_mixed_with_source_packets) {
         // Read second block.
         for (size_t i = 0; i < writer_config.n_source_packets; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
             CHECK(p);
 
             // All packets except first and last 5 should be restored.
-            check_audio_packet(p, rd_sn);
+            check_packet(p, rd_sn);
             check_restored(p, i >= 5 && i < writer_config.n_source_packets - 5);
 
             rd_sn++;
@@ -967,7 +974,7 @@ TEST(writer_reader, repair_packets_mixed_with_source_packets) {
     }
 }
 
-TEST(writer_reader, multiple_repair_attempts) {
+TEST(block_writer_reader, multiple_repair_attempts) {
     // 1. Lose two distant packets and hold every fec packets in first block,
     //    receive second full block.
     // 2. Detect first loss.
@@ -977,10 +984,12 @@ TEST(writer_reader, multiple_repair_attempts) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -999,13 +1008,13 @@ TEST(writer_reader, multiple_repair_attempts) {
         LONGS_EQUAL(status::StatusOK, writer.init_status());
         LONGS_EQUAL(status::StatusOK, reader.init_status());
 
-        fill_all_packets(0);
+        generate_packet_block(0);
 
         dispatcher.lose(5);
         dispatcher.lose(15);
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
+            LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             if (i != 5 && i != 15) {
                 dispatcher.push_source_stock(1);
             }
@@ -1013,18 +1022,18 @@ TEST(writer_reader, multiple_repair_attempts) {
 
         dispatcher.clear_losses();
 
-        fill_all_packets(NumSourcePackets);
+        generate_packet_block(NumSourcePackets);
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
+            LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             dispatcher.push_source_stock(1);
         }
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             if (i != 5 && i != 15) {
                 packet::PacketPtr p;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+                LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
                 CHECK(p);
-                check_audio_packet(p, i);
+                check_packet(p, i);
                 check_restored(p, false);
             } else if (i == 15) {
                 // The moment of truth. Deliver FEC packets accumulated in dispatcher.
@@ -1032,9 +1041,9 @@ TEST(writer_reader, multiple_repair_attempts) {
                 dispatcher.push_stocks();
 
                 packet::PacketPtr p;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+                LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
                 CHECK(p);
-                check_audio_packet(p, i);
+                check_packet(p, i);
                 check_restored(p, true);
             } else if (i == 5) {
                 // nop
@@ -1043,9 +1052,9 @@ TEST(writer_reader, multiple_repair_attempts) {
 
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
             CHECK(p);
-            check_audio_packet(p, i + NumSourcePackets);
+            check_packet(p, i + NumSourcePackets);
             check_restored(p, false);
         }
 
@@ -1053,15 +1062,17 @@ TEST(writer_reader, multiple_repair_attempts) {
     }
 }
 
-TEST(writer_reader, drop_outdated_block) {
+TEST(block_writer_reader, drop_outdated_block) {
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1081,35 +1092,35 @@ TEST(writer_reader, drop_outdated_block) {
         LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         // Send first block.
-        fill_all_packets(NumSourcePackets);
+        generate_packet_block(NumSourcePackets);
         for (size_t n = 0; n < NumSourcePackets; ++n) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[n]));
+            LONGS_EQUAL(status::StatusOK, writer.write(source_packets[n]));
         }
 
         // Send outdated block.
-        fill_all_packets(0);
+        generate_packet_block(0);
         for (size_t n = 0; n < NumSourcePackets; ++n) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[n]));
+            LONGS_EQUAL(status::StatusOK, writer.write(source_packets[n]));
         }
 
         // Send next block.
-        fill_all_packets(NumSourcePackets * 2);
+        generate_packet_block(NumSourcePackets * 2);
         for (size_t n = 0; n < NumSourcePackets; ++n) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[n]));
+            LONGS_EQUAL(status::StatusOK, writer.write(source_packets[n]));
         }
 
         dispatcher.push_stocks();
 
         // Read first block.
         packet::PacketPtr first_packet;
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(first_packet));
+        LONGS_EQUAL(status::StatusOK, reader.read(first_packet, packet::ModeFetch));
         CHECK(first_packet);
 
         const packet::blknum_t sbn = first_packet->fec()->source_block_number;
 
         for (size_t n = 1; n < NumSourcePackets; ++n) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
             CHECK(p);
 
             UNSIGNED_LONGS_EQUAL(sbn, p->fec()->source_block_number);
@@ -1118,7 +1129,7 @@ TEST(writer_reader, drop_outdated_block) {
         // Read second block.
         for (size_t n = 0; n < NumSourcePackets; ++n) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
             CHECK(p);
 
             UNSIGNED_LONGS_EQUAL(sbn + 1, p->fec()->source_block_number);
@@ -1126,15 +1137,17 @@ TEST(writer_reader, drop_outdated_block) {
     }
 }
 
-TEST(writer_reader, repaired_block_numbering) {
+TEST(block_writer_reader, repaired_block_numbering) {
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1156,37 +1169,37 @@ TEST(writer_reader, repaired_block_numbering) {
         const size_t lost_packet_n = 7;
 
         // Write first block lossy.
-        fill_all_packets(0);
+        generate_packet_block(0);
         dispatcher.lose(lost_packet_n);
 
         for (size_t n = 0; n < NumSourcePackets; ++n) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[n]));
+            LONGS_EQUAL(status::StatusOK, writer.write(source_packets[n]));
         }
 
         dispatcher.clear_losses();
 
         // Write second block lossless.
-        fill_all_packets(NumSourcePackets);
+        generate_packet_block(NumSourcePackets);
 
         for (size_t n = 0; n < NumSourcePackets; ++n) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[n]));
+            LONGS_EQUAL(status::StatusOK, writer.write(source_packets[n]));
         }
 
         dispatcher.push_stocks();
 
         // Read first block.
         packet::PacketPtr first_packet;
-        UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(first_packet));
+        LONGS_EQUAL(status::StatusOK, reader.read(first_packet, packet::ModeFetch));
         CHECK(first_packet);
 
         const packet::blknum_t sbn = first_packet->fec()->source_block_number;
 
         for (size_t n = 1; n < NumSourcePackets; ++n) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
             CHECK(p);
 
-            check_audio_packet(p, n);
+            check_packet(p, n);
             check_restored(p, n == lost_packet_n);
 
             if (n != lost_packet_n) {
@@ -1200,10 +1213,10 @@ TEST(writer_reader, repaired_block_numbering) {
         // Read second block.
         for (size_t n = 0; n < NumSourcePackets; ++n) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
             CHECK(p);
 
-            check_audio_packet(p, NumSourcePackets + n);
+            check_packet(p, NumSourcePackets + n);
             check_restored(p, false);
 
             CHECK(p->fec());
@@ -1212,17 +1225,19 @@ TEST(writer_reader, repaired_block_numbering) {
     }
 }
 
-TEST(writer_reader, invalid_esi) {
+TEST(block_writer_reader, invalid_esi) {
     enum { NumBlocks = 5 };
 
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1244,17 +1259,17 @@ TEST(writer_reader, invalid_esi) {
         LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
-            fill_all_packets(0);
+            generate_packet_block(0);
 
             // encode packets and write to queue
             for (size_t i = 0; i < NumSourcePackets; ++i) {
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
+                LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             }
 
             // write packets from queue to dispatcher
             for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
                 packet::PacketPtr p;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(p));
+                LONGS_EQUAL(status::StatusOK, queue.read(p, packet::ModeFetch));
                 CHECK(p);
                 if (i == 5) {
                     // violates: ESI < SBL (for source packets)
@@ -1271,7 +1286,7 @@ TEST(writer_reader, invalid_esi) {
                     p->fec()->encoding_symbol_id = NumSourcePackets + NumRepairPackets;
                     recompose_packet(p);
                 }
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
+                LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
             }
 
             // deliver packets from dispatcher to reader
@@ -1280,9 +1295,9 @@ TEST(writer_reader, invalid_esi) {
             // read packets
             for (size_t i = 0; i < NumSourcePackets; ++i) {
                 packet::PacketPtr p;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+                LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
                 CHECK(p);
-                check_audio_packet(p, i);
+                check_packet(p, i);
                 // packet #5 should be dropped and repaired
                 check_restored(p, i == 5);
             }
@@ -1294,17 +1309,19 @@ TEST(writer_reader, invalid_esi) {
     }
 }
 
-TEST(writer_reader, invalid_sbl) {
+TEST(block_writer_reader, invalid_sbl) {
     enum { NumBlocks = 5 };
 
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1326,17 +1343,17 @@ TEST(writer_reader, invalid_sbl) {
         LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
-            fill_all_packets(0);
+            generate_packet_block(0);
 
             // encode packets and write to queue
             for (size_t i = 0; i < NumSourcePackets; ++i) {
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
+                LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             }
 
             // write packets from queue to dispatcher
             for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
                 packet::PacketPtr p;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(p));
+                LONGS_EQUAL(status::StatusOK, queue.read(p, packet::ModeFetch));
                 CHECK(p);
                 if (i == 5) {
                     // violates: SBL can't change in the middle of a block (source packet)
@@ -1348,7 +1365,7 @@ TEST(writer_reader, invalid_sbl) {
                     p->fec()->source_block_length = NumSourcePackets + 1;
                     recompose_packet(p);
                 }
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
+                LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
             }
 
             // deliver packets from dispatcher to reader
@@ -1357,9 +1374,9 @@ TEST(writer_reader, invalid_sbl) {
             // read packets
             for (size_t i = 0; i < NumSourcePackets; ++i) {
                 packet::PacketPtr p;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+                LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
                 CHECK(p);
-                check_audio_packet(p, i);
+                check_packet(p, i);
                 // packet #5 should be dropped and repaired
                 check_restored(p, i == 5);
             }
@@ -1371,17 +1388,19 @@ TEST(writer_reader, invalid_sbl) {
     }
 }
 
-TEST(writer_reader, invalid_nes) {
+TEST(block_writer_reader, invalid_nes) {
     enum { NumBlocks = 5 };
 
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1403,17 +1422,17 @@ TEST(writer_reader, invalid_nes) {
         LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
-            fill_all_packets(0);
+            generate_packet_block(0);
 
             // encode packets and write to queue
             for (size_t i = 0; i < NumSourcePackets; ++i) {
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
+                LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             }
 
             // write packets from queue to dispatcher
             for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
                 packet::PacketPtr p;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(p));
+                LONGS_EQUAL(status::StatusOK, queue.read(p, packet::ModeFetch));
                 CHECK(p);
                 if (i == NumSourcePackets) {
                     // violates: SBL <= NES
@@ -1425,7 +1444,7 @@ TEST(writer_reader, invalid_nes) {
                     p->fec()->block_length = NumSourcePackets + NumRepairPackets + 1;
                     recompose_packet(p);
                 }
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
+                LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
             }
 
             // deliver packets from dispatcher to reader
@@ -1434,9 +1453,9 @@ TEST(writer_reader, invalid_nes) {
             // read packets
             for (size_t i = 0; i < NumSourcePackets; ++i) {
                 packet::PacketPtr p;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+                LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
                 CHECK(p);
-                check_audio_packet(p, i);
+                check_packet(p, i);
                 check_restored(p, false);
             }
 
@@ -1447,17 +1466,19 @@ TEST(writer_reader, invalid_nes) {
     }
 }
 
-TEST(writer_reader, invalid_payload_size) {
+TEST(block_writer_reader, invalid_payload_size) {
     enum { NumBlocks = 5 };
 
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1476,52 +1497,52 @@ TEST(writer_reader, invalid_payload_size) {
         LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
-            fill_all_packets(0);
+            generate_packet_block(0);
 
             // encode packets and write to writer_queue
             for (size_t i = 0; i < NumSourcePackets; ++i) {
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
+                LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             }
 
             // read packets from writer_queue queue, spoil some packets, and
             // write them to source_queue and repair_queue
             for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
                 packet::PacketPtr p;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer_queue.read(p));
+                LONGS_EQUAL(status::StatusOK, writer_queue.read(p, packet::ModeFetch));
                 CHECK(p);
 
                 if (i == 5) {
-                    // violates: psize can't change in the middle of a block (source
-                    // packet)
+                    // violates: payload size can't change in the middle of a block
+                    // (source packet)
                     p->fec()->payload.reslice(0, FECPayloadSize - 1);
                 }
                 if (i == NumSourcePackets + 3) {
-                    // violates: psize can't change in the middle of a block (repair
-                    // packet)
+                    // violates: payload size can't change in the middle of a block
+                    // (repair packet)
                     p->fec()->payload.reslice(0, FECPayloadSize - 1);
                 }
                 if (n_block == 3 && i == 0) {
-                    // violates: psize can't be zero (source packet)
+                    // violates: payload size can't be zero (source packet)
                     p->fec()->payload.reslice(0, 0);
                 }
                 if (n_block == 4 && i == NumSourcePackets) {
-                    // violates: psize can't be zero (repair packet)
+                    // violates: payload size can't be zero (repair packet)
                     p->fec()->payload.reslice(0, 0);
                 }
 
                 if (p->flags() & packet::Packet::FlagRepair) {
-                    UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_queue.write(p));
+                    LONGS_EQUAL(status::StatusOK, repair_queue.write(p));
                 } else {
-                    UNSIGNED_LONGS_EQUAL(status::StatusOK, source_queue.write(p));
+                    LONGS_EQUAL(status::StatusOK, source_queue.write(p));
                 }
             }
 
             // read packets
             for (size_t i = 0; i < NumSourcePackets; ++i) {
                 packet::PacketPtr p;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+                LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
                 CHECK(p);
-                check_audio_packet(p, i);
+                check_packet(p, i);
                 // invalid packets should be dropped and repaired
                 check_restored(p, i == 5 || (n_block == 3 && i == 0));
             }
@@ -1533,17 +1554,19 @@ TEST(writer_reader, invalid_payload_size) {
     }
 }
 
-TEST(writer_reader, zero_source_packets) {
+TEST(block_writer_reader, zero_source_packets) {
     enum { NumBlocks = 5 };
 
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1565,11 +1588,11 @@ TEST(writer_reader, zero_source_packets) {
         LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
-            fill_all_packets(0);
+            generate_packet_block(0);
 
             // encode packets and write to queue
             for (size_t i = 0; i < NumSourcePackets; ++i) {
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
+                LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             }
 
             // lose source packet #5
@@ -1578,7 +1601,7 @@ TEST(writer_reader, zero_source_packets) {
             // write packets from queue to dispatcher
             for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
                 packet::PacketPtr p;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(p));
+                LONGS_EQUAL(status::StatusOK, queue.read(p, packet::ModeFetch));
                 CHECK(p);
 
                 // two blocks with SBL == 0
@@ -1587,7 +1610,7 @@ TEST(writer_reader, zero_source_packets) {
                     recompose_packet(p);
                 }
 
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
+                LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
             }
 
             // check we have processed all packets
@@ -1599,15 +1622,15 @@ TEST(writer_reader, zero_source_packets) {
             // read packets
             for (size_t i = 0; i < NumSourcePackets; ++i) {
                 packet::PacketPtr p;
-                const status::StatusCode code = reader.read(p);
+                const status::StatusCode code = reader.read(p, packet::ModeFetch);
 
                 if (n_block == 2 || n_block == 4) {
-                    UNSIGNED_LONGS_EQUAL(status::StatusDrain, code);
+                    LONGS_EQUAL(status::StatusDrain, code);
                     CHECK(!p);
                 } else {
-                    UNSIGNED_LONGS_EQUAL(status::StatusOK, code);
+                    LONGS_EQUAL(status::StatusOK, code);
                     CHECK(p);
-                    check_audio_packet(p, i);
+                    check_packet(p, i);
                     check_restored(p, i == 5);
                 }
             }
@@ -1619,17 +1642,19 @@ TEST(writer_reader, zero_source_packets) {
     }
 }
 
-TEST(writer_reader, zero_repair_packets) {
+TEST(block_writer_reader, zero_repair_packets) {
     enum { NumBlocks = 5 };
 
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1654,9 +1679,9 @@ TEST(writer_reader, zero_repair_packets) {
         for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
             // encode packets and write to queue
             for (size_t i = 0; i < NumSourcePackets; ++i) {
-                UNSIGNED_LONGS_EQUAL(status::StatusOK,
-                                     writer.write(fill_one_packet(
-                                         i, FECPayloadSize, &ldpc_source_composer)));
+                LONGS_EQUAL(status::StatusOK,
+                            writer.write(generate_packet(i, FECPayloadSize,
+                                                         &ldpc_source_composer)));
             }
 
             // lose source packet #5
@@ -1665,7 +1690,7 @@ TEST(writer_reader, zero_repair_packets) {
             // write packets from queue to dispatcher
             for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
                 packet::PacketPtr p;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(p));
+                LONGS_EQUAL(status::StatusOK, queue.read(p, packet::ModeFetch));
                 CHECK(p);
 
                 // two blocks with NES == SBL
@@ -1674,7 +1699,7 @@ TEST(writer_reader, zero_repair_packets) {
                     ldpc_repair_composer.compose(*p);
                 }
 
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
+                LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
             }
 
             // check we have processed all packets
@@ -1689,9 +1714,9 @@ TEST(writer_reader, zero_repair_packets) {
                     // nop
                 } else {
                     packet::PacketPtr p;
-                    UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+                    LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
                     CHECK(p);
-                    check_audio_packet(p, i);
+                    check_packet(p, i);
                     check_restored(p, i == 5);
                 }
             }
@@ -1703,17 +1728,19 @@ TEST(writer_reader, zero_repair_packets) {
     }
 }
 
-TEST(writer_reader, zero_payload_size) {
+TEST(block_writer_reader, zero_payload_size) {
     enum { NumBlocks = 5 };
 
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1732,18 +1759,18 @@ TEST(writer_reader, zero_payload_size) {
         LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         for (size_t n_block = 0; n_block < NumBlocks; n_block++) {
-            fill_all_packets(0);
+            generate_packet_block(0);
 
             // encode packets and write to writer_queue
             for (size_t i = 0; i < NumSourcePackets; ++i) {
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
+                LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             }
 
             // read packets from writer_queue queue, spoil some packets, and
             // write them to source_queue and repair_queue
             for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
                 packet::PacketPtr p;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer_queue.read(p));
+                LONGS_EQUAL(status::StatusOK, writer_queue.read(p, packet::ModeFetch));
                 CHECK(p);
 
                 // loss packet #5
@@ -1757,9 +1784,9 @@ TEST(writer_reader, zero_payload_size) {
                 }
 
                 if (p->flags() & packet::Packet::FlagRepair) {
-                    UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_queue.write(p));
+                    LONGS_EQUAL(status::StatusOK, repair_queue.write(p));
                 } else {
-                    UNSIGNED_LONGS_EQUAL(status::StatusOK, source_queue.write(p));
+                    LONGS_EQUAL(status::StatusOK, source_queue.write(p));
                 }
             }
 
@@ -1769,15 +1796,15 @@ TEST(writer_reader, zero_payload_size) {
             // read packets
             for (size_t i = 0; i < NumSourcePackets; ++i) {
                 packet::PacketPtr p;
-                const status::StatusCode code = reader.read(p);
+                const status::StatusCode code = reader.read(p, packet::ModeFetch);
 
                 if (n_block == 2 || n_block == 4) {
-                    UNSIGNED_LONGS_EQUAL(status::StatusDrain, code);
+                    LONGS_EQUAL(status::StatusDrain, code);
                     CHECK(!p);
                 } else {
-                    UNSIGNED_LONGS_EQUAL(status::StatusOK, code);
+                    LONGS_EQUAL(status::StatusOK, code);
                     CHECK(p);
-                    check_audio_packet(p, i);
+                    check_packet(p, i);
                     check_restored(p, i == 5);
                 }
             }
@@ -1789,7 +1816,7 @@ TEST(writer_reader, zero_payload_size) {
     }
 }
 
-TEST(writer_reader, sbn_jump) {
+TEST(block_writer_reader, sbn_jump) {
     enum { MaxSbnJump = 30 };
 
     reader_config.max_sbn_jump = MaxSbnJump;
@@ -1798,10 +1825,12 @@ TEST(writer_reader, sbn_jump) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1824,19 +1853,19 @@ TEST(writer_reader, sbn_jump) {
 
         // write three blocks to the queue
         for (size_t n = 0; n < 3; n++) {
-            fill_all_packets(NumSourcePackets * n);
+            generate_packet_block(NumSourcePackets * n);
 
             for (size_t i = 0; i < NumSourcePackets; ++i) {
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
+                LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             }
         }
 
         // write first block to the dispatcher
         for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(p));
+            LONGS_EQUAL(status::StatusOK, queue.read(p, packet::ModeFetch));
             CHECK(p);
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
+            LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
         }
 
         // deliver packets from dispatcher to reader
@@ -1845,9 +1874,9 @@ TEST(writer_reader, sbn_jump) {
         // read first block
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
             CHECK(p);
-            check_audio_packet(p, i);
+            check_packet(p, i);
             check_restored(p, false);
         }
 
@@ -1857,13 +1886,13 @@ TEST(writer_reader, sbn_jump) {
         // shift it ahead but in the allowed range
         for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(p));
+            LONGS_EQUAL(status::StatusOK, queue.read(p, packet::ModeFetch));
             CHECK(p);
 
             p->fec()->source_block_number += MaxSbnJump;
             recompose_packet(p);
 
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
+            LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
         }
 
         // deliver packets from dispatcher to reader
@@ -1872,9 +1901,9 @@ TEST(writer_reader, sbn_jump) {
         // read second block
         for (size_t i = NumSourcePackets; i < NumSourcePackets * 2; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
             CHECK(p);
-            check_audio_packet(p, i);
+            check_packet(p, i);
             check_restored(p, false);
         }
 
@@ -1884,13 +1913,13 @@ TEST(writer_reader, sbn_jump) {
         // shift it ahead too far
         for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(p));
+            LONGS_EQUAL(status::StatusOK, queue.read(p, packet::ModeFetch));
             CHECK(p);
 
             p->fec()->source_block_number += MaxSbnJump * 2 + 1;
             recompose_packet(p);
 
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
+            LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
         }
 
         // deliver packets from dispatcher to reader
@@ -1898,20 +1927,18 @@ TEST(writer_reader, sbn_jump) {
 
         // the reader should detect sbn jump and shutdown
         packet::PacketPtr pp;
-        // TODO(gh-183): compare with StatusDead
-        UNSIGNED_LONGS_EQUAL(status::StatusDrain, reader.read(pp));
+        LONGS_EQUAL(status::StatusAbort, reader.read(pp, packet::ModeFetch));
         CHECK(!pp);
         CHECK(!reader.is_alive());
 
         UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
         UNSIGNED_LONGS_EQUAL(0, dispatcher.repair_size());
 
-        // TODO(gh-183): compare with StatusDead
-        UNSIGNED_LONGS_EQUAL(status::StatusDrain, reader.read(pp));
+        LONGS_EQUAL(status::StatusAbort, reader.read(pp, packet::ModeFetch));
     }
 }
 
-TEST(writer_reader, writer_encode_blocks) {
+TEST(block_writer_reader, writer_encode_blocks) {
     enum { NumBlocks = 3 };
 
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
@@ -1921,7 +1948,8 @@ TEST(writer_reader, writer_encode_blocks) {
 
         for (size_t n = 0; n < 5; n++) {
             core::ScopedPtr<IBlockEncoder> encoder(
-                CodecMap::instance().new_encoder(codec_config, packet_factory, arena),
+                CodecMap::instance().new_block_encoder(codec_config, packet_factory,
+                                                       arena),
                 arena);
 
             CHECK(encoder);
@@ -1941,15 +1969,14 @@ TEST(writer_reader, writer_encode_blocks) {
             for (size_t block_num = 0; block_num < NumBlocks; ++block_num) {
                 size_t encoding_symbol_id = 0;
 
-                fill_all_packets(NumSourcePackets * block_num);
+                generate_packet_block(NumSourcePackets * block_num);
 
                 for (size_t i = 0; i < NumSourcePackets; ++i) {
                     source_packets[i]->rtp()->source_id = data_source;
                 }
 
                 for (size_t i = 0; i < NumSourcePackets; ++i) {
-                    UNSIGNED_LONGS_EQUAL(status::StatusOK,
-                                         writer.write(source_packets[i]));
+                    LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
                 }
                 dispatcher.push_stocks();
 
@@ -1962,8 +1989,9 @@ TEST(writer_reader, writer_encode_blocks) {
 
                 for (size_t i = 0; i < NumSourcePackets; ++i) {
                     packet::PacketPtr p;
-                    UNSIGNED_LONGS_EQUAL(status::StatusOK,
-                                         dispatcher.source_reader().read(p));
+                    UNSIGNED_LONGS_EQUAL(
+                        status::StatusOK,
+                        dispatcher.source_reader().read(p, packet::ModeFetch));
                     CHECK(p);
 
                     const packet::RTP* rtp = p->rtp();
@@ -1983,8 +2011,9 @@ TEST(writer_reader, writer_encode_blocks) {
 
                 for (size_t i = 0; i < NumRepairPackets; ++i) {
                     packet::PacketPtr p;
-                    UNSIGNED_LONGS_EQUAL(status::StatusOK,
-                                         dispatcher.repair_reader().read(p));
+                    UNSIGNED_LONGS_EQUAL(
+                        status::StatusOK,
+                        dispatcher.repair_reader().read(p, packet::ModeFetch));
                     CHECK(p);
 
                     const packet::RTP* rtp = p->rtp();
@@ -2008,12 +2037,13 @@ TEST(writer_reader, writer_encode_blocks) {
     }
 }
 
-TEST(writer_reader, writer_resize_blocks) {
+TEST(block_writer_reader, writer_resize_blocks) {
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
         CHECK(encoder);
 
         test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
@@ -2043,9 +2073,9 @@ TEST(writer_reader, writer_resize_blocks) {
             CHECK(writer.resize(source_sizes[n], repair_sizes[n]));
 
             for (size_t i = 0; i < source_sizes[n]; ++i) {
-                packet::PacketPtr p = fill_one_packet(wr_sn, payload_sizes[n]);
+                packet::PacketPtr p = generate_packet(wr_sn, payload_sizes[n]);
                 wr_sn++;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(p));
+                LONGS_EQUAL(status::StatusOK, writer.write(p));
             }
 
             UNSIGNED_LONGS_EQUAL(source_sizes[n], dispatcher.source_size());
@@ -2055,10 +2085,11 @@ TEST(writer_reader, writer_resize_blocks) {
 
             for (size_t i = 0; i < source_sizes[n]; ++i) {
                 packet::PacketPtr p;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK,
-                                     dispatcher.source_reader().read(p));
+                UNSIGNED_LONGS_EQUAL(
+                    status::StatusOK,
+                    dispatcher.source_reader().read(p, packet::ModeFetch));
                 CHECK(p);
-                check_audio_packet(p, rd_sn, payload_sizes[n]);
+                check_packet(p, rd_sn, payload_sizes[n]);
                 rd_sn++;
             }
 
@@ -2069,15 +2100,17 @@ TEST(writer_reader, writer_resize_blocks) {
     }
 }
 
-TEST(writer_reader, resize_block_begin) {
+TEST(block_writer_reader, resize_block_begin) {
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(decoder);
         CHECK(encoder);
@@ -2113,9 +2146,9 @@ TEST(writer_reader, resize_block_begin) {
             CHECK(writer.resize(source_sizes[n], repair_sizes[n]));
 
             for (size_t i = 0; i < source_sizes[n]; ++i) {
-                packet::PacketPtr p = fill_one_packet(wr_sn, payload_sizes[n]);
+                packet::PacketPtr p = generate_packet(wr_sn, payload_sizes[n]);
                 wr_sn++;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(p));
+                LONGS_EQUAL(status::StatusOK, writer.write(p));
             }
 
             UNSIGNED_LONGS_EQUAL(source_sizes[n], dispatcher.source_size());
@@ -2125,13 +2158,13 @@ TEST(writer_reader, resize_block_begin) {
 
             for (size_t i = 0; i < source_sizes[n]; ++i) {
                 packet::PacketPtr p;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+                LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
 
                 CHECK(p);
                 CHECK(p->fec());
                 UNSIGNED_LONGS_EQUAL(source_sizes[n], p->fec()->source_block_length);
 
-                check_audio_packet(p, rd_sn, payload_sizes[n]);
+                check_packet(p, rd_sn, payload_sizes[n]);
                 check_restored(p, false);
 
                 rd_sn++;
@@ -2142,15 +2175,17 @@ TEST(writer_reader, resize_block_begin) {
     }
 }
 
-TEST(writer_reader, resize_block_middle) {
+TEST(block_writer_reader, resize_block_middle) {
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(decoder);
         CHECK(encoder);
@@ -2193,13 +2228,13 @@ TEST(writer_reader, resize_block_middle) {
             }
 
             for (size_t i = 0; i < prev_sblen; ++i) {
-                packets[i] = fill_one_packet(wr_sn, prev_psize);
+                packets[i] = generate_packet(wr_sn, prev_psize);
                 wr_sn++;
             }
 
             // Write first half of the packets.
             for (size_t i = 0; i < prev_sblen / 2; ++i) {
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(packets[i]));
+                LONGS_EQUAL(status::StatusOK, writer.write(packets[i]));
             }
 
             // Update source block size.
@@ -2207,7 +2242,7 @@ TEST(writer_reader, resize_block_middle) {
 
             // Write the remaining packets.
             for (size_t i = prev_sblen / 2; i < prev_sblen; ++i) {
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(packets[i]));
+                LONGS_EQUAL(status::StatusOK, writer.write(packets[i]));
             }
 
             UNSIGNED_LONGS_EQUAL(prev_sblen, dispatcher.source_size());
@@ -2217,13 +2252,13 @@ TEST(writer_reader, resize_block_middle) {
 
             for (size_t i = 0; i < prev_sblen; ++i) {
                 packet::PacketPtr p;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+                LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
 
                 CHECK(p);
                 CHECK(p->fec());
                 UNSIGNED_LONGS_EQUAL(prev_sblen, p->fec()->source_block_length);
 
-                check_audio_packet(p, rd_sn, prev_psize);
+                check_packet(p, rd_sn, prev_psize);
                 check_restored(p, false);
 
                 rd_sn++;
@@ -2238,15 +2273,17 @@ TEST(writer_reader, resize_block_middle) {
     }
 }
 
-TEST(writer_reader, resize_block_losses) {
+TEST(block_writer_reader, resize_block_losses) {
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(decoder);
         CHECK(encoder);
@@ -2287,9 +2324,9 @@ TEST(writer_reader, resize_block_losses) {
             dispatcher.lose(source_sizes[n] / 2);
 
             for (size_t i = 0; i < source_sizes[n]; ++i) {
-                packet::PacketPtr p = fill_one_packet(wr_sn, payload_sizes[n]);
+                packet::PacketPtr p = generate_packet(wr_sn, payload_sizes[n]);
                 wr_sn++;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(p));
+                LONGS_EQUAL(status::StatusOK, writer.write(p));
             }
 
             UNSIGNED_LONGS_EQUAL(source_sizes[n] - 1, dispatcher.source_size());
@@ -2299,10 +2336,10 @@ TEST(writer_reader, resize_block_losses) {
 
             for (size_t i = 0; i < source_sizes[n]; ++i) {
                 packet::PacketPtr p;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+                LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
                 CHECK(p);
 
-                check_audio_packet(p, rd_sn, payload_sizes[n]);
+                check_packet(p, rd_sn, payload_sizes[n]);
                 check_restored(p, i == source_sizes[n] / 2);
 
                 rd_sn++;
@@ -2313,15 +2350,17 @@ TEST(writer_reader, resize_block_losses) {
     }
 }
 
-TEST(writer_reader, resize_block_repair_first) {
+TEST(block_writer_reader, resize_block_repair_first) {
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -2345,7 +2384,7 @@ TEST(writer_reader, resize_block_repair_first) {
 
         // Encode first block.
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(wr_sn)));
+            LONGS_EQUAL(status::StatusOK, writer.write(generate_packet(wr_sn)));
             wr_sn++;
         }
 
@@ -2355,9 +2394,9 @@ TEST(writer_reader, resize_block_repair_first) {
         // Read first block.
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
             CHECK(p);
-            check_audio_packet(p, rd_sn);
+            check_packet(p, rd_sn);
             check_restored(p, false);
             rd_sn++;
         }
@@ -2373,7 +2412,7 @@ TEST(writer_reader, resize_block_repair_first) {
         for (size_t i = 0; i < NumSourcePackets * 2; ++i) {
             UNSIGNED_LONGS_EQUAL(
                 status::StatusOK,
-                writer.write(fill_one_packet(wr_sn, FECPayloadSize * 2)));
+                writer.write(generate_packet(wr_sn, FECPayloadSize * 2)));
             wr_sn++;
         }
 
@@ -2382,7 +2421,7 @@ TEST(writer_reader, resize_block_repair_first) {
 
         // Try and fail to read first packet from second block.
         packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusDrain, reader.read(pp));
+        LONGS_EQUAL(status::StatusDrain, reader.read(pp, packet::ModeFetch));
         CHECK(!pp);
 
         // Deliver source packets from second block.
@@ -2391,9 +2430,9 @@ TEST(writer_reader, resize_block_repair_first) {
         // Read second block.
         for (size_t i = 0; i < NumSourcePackets * 2; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
             CHECK(p);
-            check_audio_packet(p, rd_sn, FECPayloadSize * 2);
+            check_packet(p, rd_sn, FECPayloadSize * 2);
             check_restored(p, i == NumSourcePackets + 3);
             rd_sn++;
         }
@@ -2405,272 +2444,17 @@ TEST(writer_reader, resize_block_repair_first) {
     }
 }
 
-TEST(writer_reader, error_writer_resize_block) {
-    enum { BlockSize1 = 50, BlockSize2 = 60 };
-
-    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
-        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
-
-        core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
-        CHECK(encoder);
-
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                          packet_factory, NumSourcePackets,
-                                          NumRepairPackets);
-
-        test::MockArena mock_arena;
-
-        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                           source_composer(), repair_composer(), packet_factory,
-                           mock_arena);
-
-        LONGS_EQUAL(status::StatusOK, writer.init_status());
-
-        size_t sn = 0;
-
-        CHECK(writer.resize(NumSourcePackets, BlockSize1));
-
-        for (size_t i = 0; i < NumSourcePackets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(sn++)));
-        }
-
-        CHECK(writer.is_alive());
-        UNSIGNED_LONGS_EQUAL(NumSourcePackets, dispatcher.source_size());
-        UNSIGNED_LONGS_EQUAL(BlockSize1, dispatcher.repair_size());
-
-        dispatcher.push_stocks();
-        dispatcher.reset();
-
-        mock_arena.set_fail(true);
-
-        CHECK(writer.resize(NumSourcePackets, BlockSize2));
-
-        for (size_t i = 0; i < NumSourcePackets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(sn++)));
-
-            CHECK(!writer.is_alive());
-        }
-
-        UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
-        UNSIGNED_LONGS_EQUAL(0, dispatcher.repair_size());
-    }
-}
-
-TEST(writer_reader, error_writer_encode_packet) {
-    enum { BlockSize1 = 50, BlockSize2 = 60 };
-
-    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
-        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
-
-        test::MockArena mock_arena;
-
-        core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, mock_arena),
-            mock_arena);
-        CHECK(encoder);
-
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                          packet_factory, NumSourcePackets,
-                                          NumRepairPackets);
-
-        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                           source_composer(), repair_composer(), packet_factory, arena);
-
-        LONGS_EQUAL(status::StatusOK, writer.init_status());
-
-        size_t sn = 0;
-
-        CHECK(writer.resize(BlockSize1, NumRepairPackets));
-
-        for (size_t i = 0; i < BlockSize1; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(sn++)));
-        }
-
-        CHECK(writer.is_alive());
-        UNSIGNED_LONGS_EQUAL(BlockSize1, dispatcher.source_size());
-        UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
-
-        mock_arena.set_fail(true);
-        CHECK(writer.resize(BlockSize2, NumRepairPackets));
-
-        for (size_t i = 0; i < BlockSize2; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(sn++)));
-
-            CHECK(!writer.is_alive());
-        }
-
-        UNSIGNED_LONGS_EQUAL(BlockSize1, dispatcher.source_size());
-        UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
-    }
-}
-
-TEST(writer_reader, error_reader_resize_block) {
-    enum { BlockSize1 = 50, BlockSize2 = 60 };
-
-    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
-        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
-
-        core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
-
-        core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
-
-        CHECK(encoder);
-        CHECK(decoder);
-
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                          packet_factory, NumSourcePackets,
-                                          NumRepairPackets);
-
-        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                           source_composer(), repair_composer(), packet_factory, arena);
-
-        test::MockArena mock_arena;
-
-        BlockReader reader(reader_config, codec_config.scheme, *decoder,
-                           dispatcher.source_reader(), dispatcher.repair_reader(),
-                           rtp_parser, packet_factory, mock_arena);
-
-        LONGS_EQUAL(status::StatusOK, writer.init_status());
-        LONGS_EQUAL(status::StatusOK, reader.init_status());
-
-        size_t sn = 0;
-
-        // write first block
-        CHECK(writer.resize(BlockSize1, NumRepairPackets));
-        for (size_t i = 0; i < BlockSize1; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(sn++)));
-        }
-
-        // deliver first block
-        dispatcher.push_stocks();
-
-        // read first block
-        for (size_t i = 0; i < BlockSize1; ++i) {
-            packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
-            CHECK(p);
-            check_audio_packet(p, i);
-            check_restored(p, false);
-        }
-
-        // write second block
-        CHECK(writer.resize(BlockSize2, NumRepairPackets));
-        for (size_t i = 0; i < BlockSize2; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(sn++)));
-        }
-
-        // deliver second block
-        dispatcher.push_stocks();
-
-        // configure arena to return errors
-        mock_arena.set_fail(true);
-
-        // reader should get an error from arena when trying
-        // to resize the block and shut down
-        packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusDrain, reader.read(pp));
-        CHECK(!pp);
-        CHECK(!reader.is_alive());
-    }
-}
-
-TEST(writer_reader, error_reader_decode_packet) {
-    enum { BlockSize1 = 50, BlockSize2 = 60 };
-
-    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
-        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
-
-        core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
-        CHECK(encoder);
-
-        test::MockArena mock_arena;
-
-        core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, mock_arena),
-            mock_arena);
-        CHECK(decoder);
-
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                          packet_factory, NumSourcePackets,
-                                          NumRepairPackets);
-
-        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                           source_composer(), repair_composer(), packet_factory, arena);
-
-        BlockReader reader(reader_config, codec_config.scheme, *decoder,
-                           dispatcher.source_reader(), dispatcher.repair_reader(),
-                           rtp_parser, packet_factory, arena);
-
-        LONGS_EQUAL(status::StatusOK, writer.init_status());
-        LONGS_EQUAL(status::StatusOK, reader.init_status());
-
-        size_t sn = 0;
-
-        // write first block
-        CHECK(writer.resize(BlockSize1, NumRepairPackets));
-        for (size_t i = 0; i < BlockSize1; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(sn++)));
-        }
-
-        // deliver first block
-        dispatcher.push_stocks();
-
-        // read first block
-        for (size_t i = 0; i < BlockSize1; ++i) {
-            packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
-            CHECK(p);
-            check_audio_packet(p, i);
-            check_restored(p, false);
-        }
-
-        // lose one packet in second block
-        dispatcher.reset();
-        dispatcher.lose(10);
-
-        // write second block
-        CHECK(writer.resize(BlockSize2, NumRepairPackets));
-        for (size_t i = 0; i < BlockSize2; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(sn++)));
-        }
-
-        // deliver second block
-        dispatcher.push_stocks();
-
-        // read second block packets before loss
-        for (size_t i = 0; i < 10; ++i) {
-            packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
-            CHECK(p);
-            check_audio_packet(p, BlockSize1 + i);
-            check_restored(p, false);
-        }
-
-        // configure arena to return errors
-        mock_arena.set_fail(true);
-
-        // reader should get an error from arena when trying
-        // to repair lost packet and shut down
-        packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusDrain, reader.read(pp));
-        CHECK(!pp);
-        CHECK(!reader.is_alive());
-    }
-}
-
-TEST(writer_reader, writer_oversized_block) {
+TEST(block_writer_reader, writer_oversized_block) {
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); ++n_scheme) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -2697,11 +2481,11 @@ TEST(writer_reader, writer_oversized_block) {
 
         // ensure that the block size was not updated
         for (size_t n = 0; n < 10; ++n) {
-            fill_all_packets(0);
+            generate_packet_block(0);
 
             // write packets to dispatcher
             for (size_t i = 0; i < NumSourcePackets; ++i) {
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
+                LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
             }
 
             // deliver packets from dispatcher to reader
@@ -2713,10 +2497,10 @@ TEST(writer_reader, writer_oversized_block) {
             // read packets
             for (size_t i = 0; i < NumSourcePackets; ++i) {
                 packet::PacketPtr p;
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+                LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
                 CHECK(p);
 
-                check_audio_packet(p, i);
+                check_packet(p, i);
                 check_restored(p, false);
 
                 UNSIGNED_LONGS_EQUAL(NumSourcePackets, p->fec()->source_block_length);
@@ -2729,15 +2513,17 @@ TEST(writer_reader, writer_oversized_block) {
     }
 }
 
-TEST(writer_reader, reader_oversized_source_block) {
+TEST(block_writer_reader, reader_oversized_source_block) {
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); ++n_scheme) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -2768,13 +2554,13 @@ TEST(writer_reader, reader_oversized_source_block) {
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             UNSIGNED_LONGS_EQUAL(
                 status::StatusOK,
-                writer.write(fill_one_packet(i, FECPayloadSize, &ldpc_source_composer)));
+                writer.write(generate_packet(i, FECPayloadSize, &ldpc_source_composer)));
         }
 
         // write packets from queue to dispatcher
         for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(p));
+            LONGS_EQUAL(status::StatusOK, queue.read(p, packet::ModeFetch));
             CHECK(p);
 
             // update block size at the beginning of the block
@@ -2784,7 +2570,7 @@ TEST(writer_reader, reader_oversized_source_block) {
                 ldpc_source_composer.compose(*p);
             }
 
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
+            LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
         }
 
         // deliver packets from dispatcher to reader
@@ -2795,21 +2581,23 @@ TEST(writer_reader, reader_oversized_source_block) {
 
         // reader should get an error because maximum block size was exceeded
         packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusDrain, reader.read(pp));
+        LONGS_EQUAL(status::StatusAbort, reader.read(pp, packet::ModeFetch));
         CHECK(!pp);
         CHECK(!reader.is_alive());
     }
 }
 
-TEST(writer_reader, reader_oversized_repair_block) {
+TEST(block_writer_reader, reader_oversized_repair_block) {
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); ++n_scheme) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -2840,13 +2628,13 @@ TEST(writer_reader, reader_oversized_repair_block) {
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             UNSIGNED_LONGS_EQUAL(
                 status::StatusOK,
-                writer.write(fill_one_packet(i, FECPayloadSize, &ldpc_source_composer)));
+                writer.write(generate_packet(i, FECPayloadSize, &ldpc_source_composer)));
         }
 
         // write packets from queue to dispatcher
         for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, queue.read(p));
+            LONGS_EQUAL(status::StatusOK, queue.read(p, packet::ModeFetch));
             CHECK(p);
 
             // update block size at the beginning of the block
@@ -2856,7 +2644,7 @@ TEST(writer_reader, reader_oversized_repair_block) {
                 ldpc_repair_composer.compose(*p);
             }
 
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
+            LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
         }
 
         // deliver packets from dispatcher to reader
@@ -2867,18 +2655,19 @@ TEST(writer_reader, reader_oversized_repair_block) {
 
         // reader should get an error because maximum block size was exceeded
         packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusDrain, reader.read(pp));
+        LONGS_EQUAL(status::StatusAbort, reader.read(pp, packet::ModeFetch));
         CHECK(!pp);
         CHECK(!reader.is_alive());
     }
 }
 
-TEST(writer_reader, writer_invalid_payload_size_change) {
+TEST(block_writer_reader, writer_invalid_payload_size_change) {
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); ++n_scheme) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
         CHECK(encoder);
 
         test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
@@ -2893,8 +2682,8 @@ TEST(writer_reader, writer_invalid_payload_size_change) {
 
         // write the first block with the same payload size
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK,
-                                 writer.write(fill_one_packet(sn++, FECPayloadSize)));
+            LONGS_EQUAL(status::StatusOK,
+                        writer.write(generate_packet(sn++, FECPayloadSize)));
         }
 
         CHECK(writer.is_alive());
@@ -2903,8 +2692,8 @@ TEST(writer_reader, writer_invalid_payload_size_change) {
 
         // write a half of the second block with another payload size
         for (size_t i = 0; i < NumSourcePackets / 2; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK,
-                                 writer.write(fill_one_packet(sn++, FECPayloadSize - 1)));
+            LONGS_EQUAL(status::StatusOK,
+                        writer.write(generate_packet(sn++, FECPayloadSize - 1)));
         }
 
         CHECK(writer.is_alive());
@@ -2913,8 +2702,7 @@ TEST(writer_reader, writer_invalid_payload_size_change) {
         UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
 
         // write a packet with different payload size
-        UNSIGNED_LONGS_EQUAL(status::StatusOK,
-                             writer.write(fill_one_packet(sn, FECPayloadSize)));
+        LONGS_EQUAL(status::StatusOK, writer.write(generate_packet(sn, FECPayloadSize)));
 
         // writer should be terminated
         CHECK(!writer.is_alive());
@@ -2924,15 +2712,17 @@ TEST(writer_reader, writer_invalid_payload_size_change) {
     }
 }
 
-TEST(writer_reader, reader_invalid_fec_scheme_source_packet) {
+TEST(block_writer_reader, reader_invalid_fec_scheme_source_packet) {
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); ++n_scheme) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -2952,24 +2742,24 @@ TEST(writer_reader, reader_invalid_fec_scheme_source_packet) {
 
         // encode packets and write to queue
         for (size_t i = 0; i < NumSourcePackets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(i)));
+            LONGS_EQUAL(status::StatusOK, writer.write(generate_packet(i)));
         }
         UNSIGNED_LONGS_EQUAL(NumSourcePackets + NumRepairPackets, writer_queue.size());
 
         // deliver some of these packets
         for (size_t i = 0; i < NumSourcePackets / 2; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer_queue.read(p));
+            LONGS_EQUAL(status::StatusOK, writer_queue.read(p, packet::ModeFetch));
             CHECK(p);
             CHECK((p->flags() & packet::Packet::FlagRepair) == 0);
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, source_queue.write(p));
+            LONGS_EQUAL(status::StatusOK, source_queue.write(p));
         }
         UNSIGNED_LONGS_EQUAL(NumSourcePackets / 2, source_queue.size());
 
         // read delivered packets
         for (size_t i = 0; i < NumSourcePackets / 2; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
             CHECK(reader.is_alive());
         }
         UNSIGNED_LONGS_EQUAL(0, source_queue.size());
@@ -2977,33 +2767,35 @@ TEST(writer_reader, reader_invalid_fec_scheme_source_packet) {
         // deliver one more source packet but with spoiled fec scheme
         {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer_queue.read(p));
+            LONGS_EQUAL(status::StatusOK, writer_queue.read(p, packet::ModeFetch));
             CHECK(p);
             CHECK((p->flags() & packet::Packet::FlagRepair) == 0);
             p->fec()->fec_scheme = CodecMap::instance().nth_scheme(
                 (n_scheme + 1) % CodecMap::instance().num_schemes());
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, source_queue.write(p));
+            LONGS_EQUAL(status::StatusOK, source_queue.write(p));
             UNSIGNED_LONGS_EQUAL(1, source_queue.size());
         }
 
         // reader should shut down
         packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusDrain, reader.read(pp));
+        LONGS_EQUAL(status::StatusAbort, reader.read(pp, packet::ModeFetch));
         CHECK(!pp);
         CHECK(!reader.is_alive());
         UNSIGNED_LONGS_EQUAL(0, source_queue.size());
     }
 }
 
-TEST(writer_reader, reader_invalid_fec_scheme_repair_packet) {
+TEST(block_writer_reader, reader_invalid_fec_scheme_repair_packet) {
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); ++n_scheme) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
+            arena);
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
+            arena);
 
         CHECK(encoder);
         CHECK(decoder);
@@ -3023,7 +2815,7 @@ TEST(writer_reader, reader_invalid_fec_scheme_repair_packet) {
 
         // encode packets and write to queue
         for (size_t i = 0; i < NumSourcePackets * 2; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(fill_one_packet(i)));
+            LONGS_EQUAL(status::StatusOK, writer.write(generate_packet(i)));
         }
         UNSIGNED_LONGS_EQUAL((NumSourcePackets + NumRepairPackets) * 2,
                              writer_queue.size());
@@ -3031,27 +2823,27 @@ TEST(writer_reader, reader_invalid_fec_scheme_repair_packet) {
         // deliver some of the source packets
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer_queue.read(p));
+            LONGS_EQUAL(status::StatusOK, writer_queue.read(p, packet::ModeFetch));
             CHECK(p);
             CHECK((p->flags() & packet::Packet::FlagRepair) == 0);
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, source_queue.write(p));
+            LONGS_EQUAL(status::StatusOK, source_queue.write(p));
         }
         UNSIGNED_LONGS_EQUAL(NumSourcePackets, source_queue.size());
 
         // deliver some of the repair packets
         for (size_t i = 0; i < NumRepairPackets / 2; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer_queue.read(p));
+            LONGS_EQUAL(status::StatusOK, writer_queue.read(p, packet::ModeFetch));
             CHECK(p);
             CHECK((p->flags() & packet::Packet::FlagRepair) != 0);
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_queue.write(p));
+            LONGS_EQUAL(status::StatusOK, repair_queue.write(p));
         }
         UNSIGNED_LONGS_EQUAL(NumRepairPackets / 2, repair_queue.size());
 
         // read delivered packets
         for (size_t i = 0; i < NumSourcePackets / 2; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, reader.read(p));
+            LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
             CHECK(reader.is_alive());
         }
         UNSIGNED_LONGS_EQUAL(0, source_queue.size());
@@ -3060,19 +2852,19 @@ TEST(writer_reader, reader_invalid_fec_scheme_repair_packet) {
         // deliver one repair packet but with spoiled fec scheme
         {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer_queue.read(p));
+            LONGS_EQUAL(status::StatusOK, writer_queue.read(p, packet::ModeFetch));
             CHECK(p);
             CHECK((p->flags() & packet::Packet::FlagRepair) != 0);
             p->fec()->fec_scheme = CodecMap::instance().nth_scheme(
                 (n_scheme + 1) % CodecMap::instance().num_schemes());
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_queue.write(p));
+            LONGS_EQUAL(status::StatusOK, repair_queue.write(p));
             UNSIGNED_LONGS_EQUAL(1, repair_queue.size());
         }
 
         // drop other repair packets
         for (size_t i = 0; i < NumRepairPackets - NumRepairPackets / 2 - 1; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer_queue.read(p));
+            LONGS_EQUAL(status::StatusOK, writer_queue.read(p, packet::ModeFetch));
             CHECK(p);
             CHECK((p->flags() & packet::Packet::FlagRepair) != 0);
         }
@@ -3080,141 +2872,20 @@ TEST(writer_reader, reader_invalid_fec_scheme_repair_packet) {
         // deliver more source packets
         for (size_t i = 0; i < NumSourcePackets; ++i) {
             packet::PacketPtr p;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer_queue.read(p));
+            LONGS_EQUAL(status::StatusOK, writer_queue.read(p, packet::ModeFetch));
             CHECK(p);
             CHECK((p->flags() & packet::Packet::FlagRepair) == 0);
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, source_queue.write(p));
+            LONGS_EQUAL(status::StatusOK, source_queue.write(p));
         }
         UNSIGNED_LONGS_EQUAL(NumSourcePackets, source_queue.size());
 
         // reader should shut down
         packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusDrain, reader.read(pp));
+        LONGS_EQUAL(status::StatusAbort, reader.read(pp, packet::ModeFetch));
         CHECK(!pp);
         CHECK(!reader.is_alive());
         UNSIGNED_LONGS_EQUAL(0, source_queue.size());
         UNSIGNED_LONGS_EQUAL(0, repair_queue.size());
-    }
-}
-
-TEST(writer_reader, failed_to_read_source_packet) {
-    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); ++n_scheme) {
-        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
-
-        core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
-
-        core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
-
-        CHECK(encoder);
-        CHECK(decoder);
-
-        packet::Queue writer_queue;
-        StatusReader source_reader(status::StatusAbort);
-        packet::Queue repair_reader;
-
-        BlockWriter writer(writer_config, codec_config.scheme, *encoder, writer_queue,
-                           source_composer(), repair_composer(), packet_factory, arena);
-
-        BlockReader reader(reader_config, codec_config.scheme, *decoder, source_reader,
-                           repair_reader, rtp_parser, packet_factory, arena);
-
-        LONGS_EQUAL(status::StatusOK, reader.init_status());
-
-        fill_all_packets(0);
-        for (size_t i = 0; i < NumSourcePackets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
-        }
-
-        for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
-            packet::PacketPtr pp;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer_queue.read(pp));
-            CHECK(pp);
-
-            if (pp->flags() & packet::Packet::FlagRepair) {
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_reader.write(pp));
-            }
-        }
-
-        packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusAbort, reader.read(pp));
-        CHECK(!pp);
-
-        LONGS_EQUAL(status::StatusOK, reader.init_status());
-    }
-}
-
-TEST(writer_reader, failed_to_read_repair_packet) {
-    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); ++n_scheme) {
-        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
-
-        core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_encoder(codec_config, packet_factory, arena), arena);
-
-        core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
-
-        CHECK(encoder);
-        CHECK(decoder);
-
-        packet::Queue writer_queue;
-        packet::Queue source_reader;
-        StatusReader repair_reader(status::StatusAbort);
-
-        BlockWriter writer(writer_config, codec_config.scheme, *encoder, writer_queue,
-                           source_composer(), repair_composer(), packet_factory, arena);
-
-        BlockReader reader(reader_config, codec_config.scheme, *decoder, source_reader,
-                           repair_reader, rtp_parser, packet_factory, arena);
-
-        LONGS_EQUAL(status::StatusOK, reader.init_status());
-
-        fill_all_packets(0);
-        for (size_t i = 0; i < NumSourcePackets; ++i) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer.write(source_packets[i]));
-        }
-
-        for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
-            packet::PacketPtr pp;
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, writer_queue.read(pp));
-            CHECK(pp);
-
-            if (pp->flags() & packet::Packet::FlagAudio) {
-                UNSIGNED_LONGS_EQUAL(status::StatusOK, source_reader.write(pp));
-            }
-        }
-
-        packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusAbort, reader.read(pp));
-        CHECK(!pp);
-
-        LONGS_EQUAL(status::StatusOK, reader.init_status());
-    }
-}
-
-TEST(writer_reader, failed_to_read_source_and_repair_packets) {
-    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); ++n_scheme) {
-        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
-
-        core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_decoder(codec_config, packet_factory, arena), arena);
-
-        CHECK(decoder);
-
-        StatusReader source_reader(status::StatusAbort);
-        StatusReader repair_reader(status::StatusAbort);
-
-        BlockReader reader(reader_config, codec_config.scheme, *decoder, source_reader,
-                           repair_reader, rtp_parser, packet_factory, arena);
-
-        LONGS_EQUAL(status::StatusOK, reader.init_status());
-
-        packet::PacketPtr pp;
-        UNSIGNED_LONGS_EQUAL(status::StatusAbort, reader.read(pp));
-        CHECK(!pp);
-
-        LONGS_EQUAL(status::StatusOK, reader.init_status());
     }
 }
 

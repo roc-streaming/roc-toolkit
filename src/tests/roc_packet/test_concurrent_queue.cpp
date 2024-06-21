@@ -59,7 +59,7 @@ TEST(concurrent_queue, blocking_queue_write_one_read_one) {
         LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         PacketPtr rp;
-        LONGS_EQUAL(status::StatusOK, queue.read(rp));
+        LONGS_EQUAL(status::StatusOK, queue.read(rp, ModeFetch));
         CHECK(wp == rp);
     }
 }
@@ -80,7 +80,7 @@ TEST(concurrent_queue, blocking_queue_write_many_read_many) {
 
         for (size_t j = 0; j < ROC_ARRAY_SIZE(packets); j++) {
             PacketPtr pp;
-            LONGS_EQUAL(status::StatusOK, queue.read(pp));
+            LONGS_EQUAL(status::StatusOK, queue.read(pp, ModeFetch));
             CHECK(pp == packets[j]);
         }
     }
@@ -97,7 +97,26 @@ TEST(concurrent_queue, blocking_queue_read_empty) {
         writer.join();
 
         PacketPtr rp;
-        LONGS_EQUAL(status::StatusOK, queue.read(rp));
+        LONGS_EQUAL(status::StatusOK, queue.read(rp, ModeFetch));
+        CHECK(wp == rp);
+    }
+}
+
+TEST(concurrent_queue, blocking_queue_fetch_peek) {
+    ConcurrentQueue queue(ConcurrentQueue::Blocking);
+
+    for (size_t i = 0; i < 100; i++) {
+        PacketPtr wp = new_packet();
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
+
+        for (size_t j = 0; j < 5; j++) {
+            PacketPtr rp;
+            LONGS_EQUAL(status::StatusOK, queue.read(rp, ModePeek));
+            CHECK(wp == rp);
+        }
+
+        PacketPtr rp;
+        LONGS_EQUAL(status::StatusOK, queue.read(rp, ModeFetch));
         CHECK(wp == rp);
     }
 }
@@ -110,7 +129,7 @@ TEST(concurrent_queue, nonblocking_queue_write_one_read_one) {
         LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         PacketPtr rp;
-        LONGS_EQUAL(status::StatusOK, queue.read(rp));
+        LONGS_EQUAL(status::StatusOK, queue.read(rp, ModeFetch));
         CHECK(wp == rp);
     }
 }
@@ -131,7 +150,7 @@ TEST(concurrent_queue, nonblocking_queue_write_many_read_many) {
 
         for (size_t j = 0; j < ROC_ARRAY_SIZE(packets); j++) {
             PacketPtr pp;
-            LONGS_EQUAL(status::StatusOK, queue.read(pp));
+            LONGS_EQUAL(status::StatusOK, queue.read(pp, ModeFetch));
             CHECK(pp == packets[j]);
         }
     }
@@ -145,11 +164,34 @@ TEST(concurrent_queue, nonblocking_queue_read_empty) {
         LONGS_EQUAL(status::StatusOK, queue.write(wp));
 
         PacketPtr rp;
-        LONGS_EQUAL(status::StatusOK, queue.read(rp));
+        LONGS_EQUAL(status::StatusOK, queue.read(rp, ModeFetch));
         CHECK(wp == rp);
 
         PacketPtr pp;
-        LONGS_EQUAL(status::StatusDrain, queue.read(pp));
+        LONGS_EQUAL(status::StatusDrain, queue.read(pp, ModeFetch));
+        CHECK(!pp);
+    }
+}
+
+TEST(concurrent_queue, nonblocking_queue_fetch_peek) {
+    ConcurrentQueue queue(ConcurrentQueue::NonBlocking);
+
+    for (size_t i = 0; i < 100; i++) {
+        PacketPtr wp = new_packet();
+        LONGS_EQUAL(status::StatusOK, queue.write(wp));
+
+        for (size_t j = 0; j < 5; j++) {
+            PacketPtr rp;
+            LONGS_EQUAL(status::StatusOK, queue.read(rp, ModePeek));
+            CHECK(wp == rp);
+        }
+
+        PacketPtr rp;
+        LONGS_EQUAL(status::StatusOK, queue.read(rp, ModeFetch));
+        CHECK(wp == rp);
+
+        PacketPtr pp;
+        LONGS_EQUAL(status::StatusDrain, queue.read(pp, ModeFetch));
         CHECK(!pp);
     }
 }
