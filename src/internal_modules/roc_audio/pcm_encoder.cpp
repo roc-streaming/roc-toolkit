@@ -32,7 +32,7 @@ size_t PcmEncoder::encoded_byte_count(size_t num_samples) const {
     return pcm_mapper_.output_byte_count(num_samples * n_chans_);
 }
 
-void PcmEncoder::begin(void* frame_data, size_t frame_size) {
+void PcmEncoder::begin_frame(void* frame_data, size_t frame_size) {
     roc_panic_if_not(frame_data);
 
     if (frame_data_) {
@@ -43,7 +43,7 @@ void PcmEncoder::begin(void* frame_data, size_t frame_size) {
     frame_byte_size_ = frame_size;
 }
 
-size_t PcmEncoder::write(const sample_t* samples, size_t n_samples) {
+size_t PcmEncoder::write_samples(const sample_t* samples, size_t n_samples) {
     if (!frame_data_) {
         roc_panic("pcm encoder: write should be called only between begin/end");
     }
@@ -62,7 +62,7 @@ size_t PcmEncoder::write(const sample_t* samples, size_t n_samples) {
     return n_mapped_samples;
 }
 
-void PcmEncoder::end() {
+void PcmEncoder::end_frame() {
     if (!frame_data_) {
         roc_panic("pcm encoder: unpaired begin/end");
     }

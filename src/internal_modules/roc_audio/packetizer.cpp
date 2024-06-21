@@ -98,7 +98,7 @@ status::StatusCode Packetizer::write(Frame& in_frame) {
         const size_t n_requested =
             std::min(buffer_samples, samples_per_packet_ - packet_pos_);
 
-        const size_t n_encoded = payload_encoder_.write(buffer_ptr, n_requested);
+        const size_t n_encoded = payload_encoder_.write_samples(buffer_ptr, n_requested);
         roc_panic_if_not(n_encoded == n_requested);
 
         buffer_ptr += n_encoded * sample_spec_.num_channels();
@@ -145,7 +145,7 @@ status::StatusCode Packetizer::begin_packet_() {
     packet_cts_ = capture_ts_;
 
     // Begin encoding samples into packet.
-    payload_encoder_.begin(packet_->payload().data(), packet_->payload().size());
+    payload_encoder_.begin_frame(packet_->payload().data(), packet_->payload().size());
 
     return status::StatusOK;
 }
@@ -156,7 +156,7 @@ status::StatusCode Packetizer::end_packet_() {
     roc_panic_if_not(written_payload_size <= payload_size_);
 
     // Finish encoding samples into packet.
-    payload_encoder_.end();
+    payload_encoder_.end_frame();
 
     // Fill protocol-specific fields.
     sequencer_.next(*packet_, packet_cts_, (packet::stream_timestamp_t)packet_pos_);

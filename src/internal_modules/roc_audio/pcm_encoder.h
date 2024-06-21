@@ -36,13 +36,13 @@ public:
     virtual size_t encoded_byte_count(size_t num_samples) const;
 
     //! Start encoding a new frame.
-    virtual void begin(void* frame, size_t frame_size);
+    virtual void begin_frame(void* frame, size_t frame_size);
 
     //! Encode samples.
-    virtual size_t write(const sample_t* samples, size_t n_samples);
+    virtual size_t write_samples(const sample_t* samples, size_t n_samples);
 
     //! Finish encoding frame.
-    virtual void end();
+    virtual void end_frame();
 
 private:
     PcmMapper pcm_mapper_;

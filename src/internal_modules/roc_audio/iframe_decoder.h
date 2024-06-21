@@ -69,9 +69,9 @@ public:
     //!  Decoder updates the decoded stream position according to @p frame_position,
     //!  but not necessary to the same value. Encoded and decoded stream positions
     //!  may be slightly different, depending on the codec implementation.
-    virtual void begin(packet::stream_timestamp_t frame_position,
-                       const void* frame_data,
-                       size_t frame_size) = 0;
+    virtual void begin_frame(packet::stream_timestamp_t frame_position,
+                             const void* frame_data,
+                             size_t frame_size) = 0;
 
     //! Read samples from current frame.
     //!
@@ -88,7 +88,7 @@ public:
     //!
     //! @pre
     //!  This method may be called only between begin() and end() calls.
-    virtual size_t read(sample_t* samples, size_t n_samples) = 0;
+    virtual size_t read_samples(sample_t* samples, size_t n_samples) = 0;
 
     //! Shift samples from current frame.
     //!
@@ -105,14 +105,14 @@ public:
     //!
     //! @pre
     //!  This method may be called only between begin() and end() calls.
-    virtual size_t shift(size_t n_samples) = 0;
+    virtual size_t drop_samples(size_t n_samples) = 0;
 
     //! Finish decoding current frame.
     //!
     //! @remarks
     //!  After this call, the frame can't be read or shifted anymore. A new frame
     //!  should be started by calling begin().
-    virtual void end() = 0;
+    virtual void end_frame() = 0;
 };
 
 } // namespace audio

@@ -186,13 +186,14 @@ sample_t* Depacketizer::read_packet_samples_(sample_t* buff_ptr, sample_t* buff_
     const size_t requested_samples =
         size_t(buff_end - buff_ptr) / sample_spec_.num_channels();
 
-    const size_t decoded_samples = payload_decoder_.read(buff_ptr, requested_samples);
+    const size_t decoded_samples =
+        payload_decoder_.read_samples(buff_ptr, requested_samples);
 
     stream_ts_ += (packet::stream_timestamp_t)decoded_samples;
     decoded_samples_ += (packet::stream_timestamp_t)decoded_samples;
 
     if (decoded_samples < requested_samples) {
-        payload_decoder_.end();
+        payload_decoder_.end_frame();
         packet_ = NULL;
     }
 
@@ -266,8 +267,8 @@ status::StatusCode Depacketizer::fetch_packet_() {
 bool Depacketizer::start_packet_() {
     roc_panic_if(!packet_);
 
-    payload_decoder_.begin(packet_->stream_timestamp(), packet_->payload().data(),
-                           packet_->payload().size());
+    payload_decoder_.begin_frame(packet_->stream_timestamp(), packet_->payload().data(),
+                                 packet_->payload().size());
 
     const packet::stream_timestamp_t pkt_begin = payload_decoder_.position();
     const packet::stream_timestamp_t pkt_end = pkt_begin + payload_decoder_.available();
@@ -278,7 +279,7 @@ bool Depacketizer::start_packet_() {
 
         dropped_packets_++;
 
-        payload_decoder_.end();
+        payload_decoder_.end_frame();
         packet_ = NULL;
 
         return false;
@@ -306,7 +307,7 @@ bool Depacketizer::start_packet_() {
             next_capture_ts_ += sample_spec_.samples_per_chan_2_ns(diff_samples);
         }
 
-        if (payload_decoder_.shift(diff_samples) != diff_samples) {
+        if (payload_decoder_.drop_samples(diff_samples) != diff_samples) {
             roc_panic("depacketizer: can't shift packet");
         }
     }

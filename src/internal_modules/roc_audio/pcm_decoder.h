@@ -42,18 +42,18 @@ public:
     virtual size_t decoded_sample_count(const void* frame_data, size_t frame_size) const;
 
     //! Start decoding a new frame.
-    virtual void begin(packet::stream_timestamp_t frame_position,
-                       const void* frame_data,
-                       size_t frame_size);
+    virtual void begin_frame(packet::stream_timestamp_t frame_position,
+                             const void* frame_data,
+                             size_t frame_size);
 
     //! Read samples from current frame.
-    virtual size_t read(sample_t* samples, size_t n_samples);
+    virtual size_t read_samples(sample_t* samples, size_t n_samples);
 
     //! Shift samples from current frame.
-    virtual size_t shift(size_t n_samples);
+    virtual size_t drop_samples(size_t n_samples);
 
     //! Finish decoding current frame.
-    virtual void end();
+    virtual void end_frame();
 
 private:
     PcmMapper pcm_mapper_;

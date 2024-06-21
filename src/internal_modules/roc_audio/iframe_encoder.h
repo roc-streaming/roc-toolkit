@@ -37,7 +37,7 @@ public:
     //! @remarks
     //!  After this call, write() will store samples to the given @p frame_data
     //!  until @p frame_size bytes are written or end() is called.
-    virtual void begin(void* frame_data, size_t frame_size) = 0;
+    virtual void begin_frame(void* frame_data, size_t frame_size) = 0;
 
     //! Write samples into current frame.
     //!
@@ -54,14 +54,14 @@ public:
     //!
     //! @pre
     //!  This method may be called only between begin() and end() calls.
-    virtual size_t write(const sample_t* samples, size_t n_samples) = 0;
+    virtual size_t write_samples(const sample_t* samples, size_t n_samples) = 0;
 
     //! Finish encoding current frame.
     //!
     //! @remarks
     //!  After this call, the frame is fully encoded and no more samples will be
     //!  written to the frame. A new frame should be started by calling begin().
-    virtual void end() = 0;
+    virtual void end_frame() = 0;
 };
 
 } // namespace audio

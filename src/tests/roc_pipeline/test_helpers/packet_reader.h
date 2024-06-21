@@ -162,13 +162,14 @@ private:
         seqnum_++;
         timestamp_ += samples_per_packet;
 
-        payload_decoder_->begin(pp->rtp()->stream_timestamp, pp->rtp()->payload.data(),
-                                pp->rtp()->payload.size());
+        payload_decoder_->begin_frame(pp->rtp()->stream_timestamp,
+                                      pp->rtp()->payload.data(),
+                                      pp->rtp()->payload.size());
 
         UNSIGNED_LONGS_EQUAL(samples_per_packet,
-                             payload_decoder_->read(samples, samples_per_packet));
+                             payload_decoder_->read_samples(samples, samples_per_packet));
 
-        payload_decoder_->end();
+        payload_decoder_->end_frame();
     }
 
     void check_capture_timestamp_(const packet::Packet& pkt,
