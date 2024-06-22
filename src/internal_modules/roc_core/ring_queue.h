@@ -38,18 +38,21 @@ template <class T, size_t EmbeddedCapacity = 0> class RingQueue : public NonCopy
 public:
     //! Initialize.
     //! @remarks
-    //!  Preallocate buffer in @p arena with @p max_len number of elements.
+    //!  Preallocate buffer in @p arena for a queue with a capacity of `max_len` elements.
+    //!  In this implementation, an empty slot needs to be reserved in the buffer to be
+    //!  able to distinguish between the queue's empty and full states, so `max_len + 1`
+    //!  elements are allocated for the buffer.
     RingQueue(core::IArena& arena, size_t max_len)
         : buff_(NULL)
-        , buff_len_(max_len)
+        , buff_len_(max_len + 1)
         , begin_(0)
         , end_(0)
         , arena_(arena) {
-        if (max_len == 0) {
+        if (max_len <= 0) {
             roc_panic("ring queue: the length must be greater than 0");
         }
 
-        buff_ = allocate_(max_len);
+        buff_ = allocate_(buff_len_);
     }
 
     ~RingQueue() {
@@ -63,9 +66,9 @@ public:
         return buff_ != NULL;
     }
 
-    //! Get maximum number of elements in queue/
+    //! Get maximum number of elements in queue.
     size_t capacity() const {
-        return buff_len_;
+        return buff_len_ - 1;
     }
 
     //! Get current number of elements in the queue.
@@ -80,7 +83,7 @@ public:
 
     //! Is the queue full.
     bool is_full() {
-        return size() == capacity();
+        return begin_ == (end_ + 1) % buff_len_;
     }
 
     //! Get reference of the front element.
@@ -168,20 +171,24 @@ public:
     }
 
 private:
-    T* allocate_(size_t n_elems) {
+    T* allocate_(size_t n_buff_elems) {
         T* data = NULL;
 
-        if (n_elems <= EmbeddedCapacity) {
+        // n_buff_elems - 1 = max_len = queue capacity; EmbeddedCapacity specifies the max
+        // queue capacity that's allowed in order to have an embedded buffer. Embedding
+        // will not be used when EmbeddedCapacity = 0 since max_len = buff_len_ - 1 will
+        // always be strictly greater than 0; this is enforced in the constructor.
+        if (n_buff_elems - 1 <= EmbeddedCapacity) {
             data = (T*)embedded_data_.memory();
         } else {
-            data = (T*)arena_.allocate(n_elems * sizeof(T));
+            data = (T*)arena_.allocate(n_buff_elems * sizeof(T));
         }
 
         if (!data) {
             roc_log(LogError,
                     "ring queue: can't allocate memory:"
                     " requested_cap=%lu embedded_cap=%lu",
-                    (unsigned long)n_elems, (unsigned long)EmbeddedCapacity);
+                    (unsigned long)n_buff_elems, (unsigned long)EmbeddedCapacity);
         }
 
         return data;
@@ -198,7 +205,8 @@ private:
     size_t begin_;
     size_t end_;
 
-    AlignedStorage<EmbeddedCapacity * sizeof(T)> embedded_data_;
+    AlignedStorage<(EmbeddedCapacity != 0 ? EmbeddedCapacity + 1 : 0) * sizeof(T)>
+        embedded_data_;
     IArena& arena_;
 };
 
