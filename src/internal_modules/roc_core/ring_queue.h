@@ -65,7 +65,7 @@ public:
 
     //! Get maximum number of elements in queue/
     size_t capacity() const {
-        return buff_len_;
+        return buff_len_ - 1;
     }
 
     //! Get current number of elements in the queue.
