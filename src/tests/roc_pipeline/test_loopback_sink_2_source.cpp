@@ -14,8 +14,8 @@
 #include "roc_core/heap_arena.h"
 #include "roc_core/slab_pool.h"
 #include "roc_fec/codec_map.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_packet/ireader.h"
-#include "roc_packet/queue.h"
 #include "roc_pipeline/receiver_source.h"
 #include "roc_pipeline/sender_sink.h"
 #include "roc_rtcp/print_packet.h"
@@ -417,8 +417,8 @@ void send_receive(int flags,
                   size_t num_sessions,
                   audio::ChannelMask frame_channels,
                   audio::ChannelMask packet_channels) {
-    packet::Queue sender_outbound_queue;
-    packet::Queue receiver_outbound_queue;
+    packet::FifoQueue sender_outbound_queue;
+    packet::FifoQueue receiver_outbound_queue;
 
     address::Protocol source_proto = select_source_proto(flags);
     address::Protocol repair_proto = select_repair_proto(flags);

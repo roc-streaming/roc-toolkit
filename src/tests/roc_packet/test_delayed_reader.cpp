@@ -11,8 +11,8 @@
 #include "roc_core/heap_arena.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_packet/delayed_reader.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_packet/packet_factory.h"
-#include "roc_packet/queue.h"
 #include "roc_status/status_code.h"
 
 namespace roc {
@@ -82,7 +82,7 @@ private:
 TEST_GROUP(delayed_reader) {};
 
 TEST(delayed_reader, no_delay) {
-    Queue queue;
+    FifoQueue queue;
     DelayedReader dr(queue, 0, sample_spec);
     LONGS_EQUAL(status::StatusOK, dr.init_status());
 
@@ -99,7 +99,7 @@ TEST(delayed_reader, no_delay) {
 }
 
 TEST(delayed_reader, delay) {
-    Queue queue;
+    FifoQueue queue;
     DelayedReader dr(queue, NumSamples * NumPackets * NsPerSample, sample_spec);
     LONGS_EQUAL(status::StatusOK, dr.init_status());
 
@@ -134,7 +134,7 @@ TEST(delayed_reader, delay) {
 }
 
 TEST(delayed_reader, instant) {
-    Queue queue;
+    FifoQueue queue;
     DelayedReader dr(queue, NumSamples * NumPackets * NsPerSample, sample_spec);
     LONGS_EQUAL(status::StatusOK, dr.init_status());
 
@@ -155,7 +155,7 @@ TEST(delayed_reader, instant) {
 }
 
 TEST(delayed_reader, trim) {
-    Queue queue;
+    FifoQueue queue;
     DelayedReader dr(queue, NumSamples * NumPackets * NsPerSample, sample_spec);
     LONGS_EQUAL(status::StatusOK, dr.init_status());
 
@@ -176,7 +176,7 @@ TEST(delayed_reader, trim) {
 }
 
 TEST(delayed_reader, late_duplicates) {
-    Queue queue;
+    FifoQueue queue;
     DelayedReader dr(queue, NumSamples * NumPackets * NsPerSample, sample_spec);
     LONGS_EQUAL(status::StatusOK, dr.init_status());
 
@@ -205,7 +205,7 @@ TEST(delayed_reader, late_duplicates) {
 }
 
 TEST(delayed_reader, fetch_peek) {
-    Queue queue;
+    FifoQueue queue;
     DelayedReader dr(queue, NumSamples * NumPackets * NsPerSample, sample_spec);
     LONGS_EQUAL(status::StatusOK, dr.init_status());
 

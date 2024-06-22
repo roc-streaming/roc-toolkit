@@ -12,7 +12,7 @@
 
 #include "roc_core/heap_arena.h"
 #include "roc_core/slab_pool.h"
-#include "roc_packet/queue.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_pipeline/sender_loop.h"
 #include "roc_rtp/encoding_map.h"
 
@@ -100,7 +100,7 @@ private:
     SenderLoop::SlotHandle slot_;
 
     address::SocketAddr outbound_address_;
-    packet::Queue outbound_writer_;
+    packet::FifoQueue outbound_writer_;
 
     SenderLoop::Tasks::CreateSlot* task_create_slot_;
     SenderLoop::Tasks::AddEndpoint* task_add_endpoint_;
@@ -130,7 +130,7 @@ TEST(sender_loop, endpoints_sync) {
     SenderLoop::SlotHandle slot = NULL;
 
     address::SocketAddr outbound_address;
-    packet::Queue outbound_writer;
+    packet::FifoQueue outbound_writer;
 
     {
         SenderSlotConfig config;

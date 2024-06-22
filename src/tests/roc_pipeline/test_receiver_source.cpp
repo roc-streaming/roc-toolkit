@@ -1917,7 +1917,7 @@ TEST(receiver_source, timestamp_mapping_no_control_packets) {
         slot, address::Iface_AudioSource, address::Proto_RTP, dst_addr1);
     CHECK(transport_endpoint);
 
-    packet::Queue control_outbound_queue;
+    packet::FifoQueue control_outbound_queue;
     packet::IWriter* control_endpoint =
         create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
                                 dst_addr2, control_outbound_queue);
@@ -1970,7 +1970,7 @@ TEST(receiver_source, timestamp_mapping_one_control_packet) {
         slot, address::Iface_AudioSource, address::Proto_RTP, dst_addr1);
     CHECK(transport_endpoint);
 
-    packet::Queue control_outbound_queue;
+    packet::FifoQueue control_outbound_queue;
     packet::IWriter* control_endpoint =
         create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
                                 dst_addr2, control_outbound_queue);
@@ -2040,7 +2040,7 @@ TEST(receiver_source, timestamp_mapping_periodic_control_packets) {
         slot, address::Iface_AudioSource, address::Proto_RTP, dst_addr1);
     CHECK(transport_endpoint);
 
-    packet::Queue control_outbound_queue;
+    packet::FifoQueue control_outbound_queue;
     packet::IWriter* control_endpoint =
         create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
                                 dst_addr2, control_outbound_queue);
@@ -2115,7 +2115,7 @@ TEST(receiver_source, timestamp_mapping_remixing) {
         slot, address::Iface_AudioSource, address::Proto_RTP, dst_addr1);
     CHECK(transport_endpoint);
 
-    packet::Queue control_outbound_queue;
+    packet::FifoQueue control_outbound_queue;
     packet::IWriter* control_endpoint =
         create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
                                 dst_addr2, control_outbound_queue);
@@ -2484,7 +2484,7 @@ TEST(receiver_source, metrics_e2e_latency) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(transport_endpoint);
 
-    packet::Queue control_outbound_queue;
+    packet::FifoQueue control_outbound_queue;
     packet::IWriter* control_endpoint =
         create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
                                 dst_addr2, control_outbound_queue);
@@ -2574,7 +2574,7 @@ TEST(receiver_source, reports_no_senders) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(transport_endpoint);
 
-    packet::Queue control_outbound_queue;
+    packet::FifoQueue control_outbound_queue;
     packet::IWriter* control_endpoint =
         create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
                                 dst_addr2, control_outbound_queue);
@@ -2622,7 +2622,7 @@ TEST(receiver_source, reports_one_sender) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(transport_endpoint);
 
-    packet::Queue control_outbound_queue;
+    packet::FifoQueue control_outbound_queue;
     packet::IWriter* control_endpoint =
         create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
                                 dst_addr2, control_outbound_queue);
@@ -2720,7 +2720,7 @@ TEST(receiver_source, reports_two_senders_unicast) {
         create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
     CHECK(transport_endpoint);
 
-    packet::Queue control_outbound_queue;
+    packet::FifoQueue control_outbound_queue;
     packet::IWriter* control_endpoint =
         create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
                                 dst_addr2, control_outbound_queue);
@@ -2855,7 +2855,7 @@ TEST(receiver_source, reports_two_senders_multicast) {
         slot, address::Iface_AudioSource, proto1, multicast_addr1);
     CHECK(transport_endpoint);
 
-    packet::Queue control_outbound_queue;
+    packet::FifoQueue control_outbound_queue;
     packet::IWriter* control_endpoint =
         create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
                                 multicast_addr2, control_outbound_queue);

@@ -6,29 +6,29 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_packet/queue.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_status/status_code.h"
 
 namespace roc {
 namespace packet {
 
-status::StatusCode Queue::init_status() const {
+status::StatusCode FifoQueue::init_status() const {
     return status::StatusOK;
 }
 
-size_t Queue::size() const {
+size_t FifoQueue::size() const {
     return list_.size();
 }
 
-PacketPtr Queue::head() const {
+PacketPtr FifoQueue::head() const {
     return list_.front();
 }
 
-PacketPtr Queue::tail() const {
+PacketPtr FifoQueue::tail() const {
     return list_.back();
 }
 
-status::StatusCode Queue::write(const PacketPtr& packet) {
+status::StatusCode FifoQueue::write(const PacketPtr& packet) {
     if (!packet) {
         roc_panic("fifo queue: null packet");
     }
@@ -37,7 +37,7 @@ status::StatusCode Queue::write(const PacketPtr& packet) {
     return status::StatusOK;
 }
 
-status::StatusCode Queue::read(PacketPtr& packet, PacketReadMode mode) {
+status::StatusCode FifoQueue::read(PacketPtr& packet, PacketReadMode mode) {
     packet = list_.front();
     if (!packet) {
         return status::StatusDrain;

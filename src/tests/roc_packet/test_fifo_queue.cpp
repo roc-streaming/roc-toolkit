@@ -9,8 +9,8 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/heap_arena.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_packet/packet_factory.h"
-#include "roc_packet/queue.h"
 
 namespace roc {
 namespace packet {
@@ -31,7 +31,7 @@ PacketPtr new_packet() {
     return packet;
 }
 
-void expect_write(status::StatusCode expect_code, Queue& queue, const PacketPtr& pp) {
+void expect_write(status::StatusCode expect_code, FifoQueue& queue, const PacketPtr& pp) {
     CHECK(pp);
     LONGS_EQUAL(expect_code, queue.write(pp));
 }
@@ -50,10 +50,10 @@ expect_read(status::StatusCode expect_code, IReader& queue, PacketReadMode mode)
 
 } // namespace
 
-TEST_GROUP(queue) {};
+TEST_GROUP(fifo_queue) {};
 
-TEST(queue, empty) {
-    Queue queue;
+TEST(fifo_queue, empty) {
+    FifoQueue queue;
 
     CHECK(!queue.head());
     CHECK(!queue.tail());
@@ -64,8 +64,8 @@ TEST(queue, empty) {
     LONGS_EQUAL(0, queue.size());
 }
 
-TEST(queue, two_packets) {
-    Queue queue;
+TEST(fifo_queue, two_packets) {
+    FifoQueue queue;
 
     PacketPtr wp1 = new_packet();
     PacketPtr wp2 = new_packet();
@@ -100,10 +100,10 @@ TEST(queue, two_packets) {
     LONGS_EQUAL(0, queue.size());
 }
 
-TEST(queue, many_packets) {
+TEST(fifo_queue, many_packets) {
     enum { NumPackets = 10 };
 
-    Queue queue;
+    FifoQueue queue;
 
     PacketPtr packets[NumPackets];
 
@@ -128,8 +128,8 @@ TEST(queue, many_packets) {
     LONGS_EQUAL(0, queue.size());
 }
 
-TEST(queue, fetch_peek) {
-    Queue queue;
+TEST(fifo_queue, fetch_peek) {
+    FifoQueue queue;
 
     {
         expect_read(status::StatusDrain, queue, ModePeek);

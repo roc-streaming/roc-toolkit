@@ -12,8 +12,8 @@
 
 #include "roc_core/heap_arena.h"
 #include "roc_core/macro_helpers.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_packet/packet_factory.h"
-#include "roc_packet/queue.h"
 #include "roc_rtp/encoding_map.h"
 #include "roc_rtp/headers.h"
 #include "roc_rtp/link_meter.h"
@@ -47,7 +47,7 @@ packet::PacketPtr new_packet(packet::seqnum_t sn) {
 TEST_GROUP(link_meter) {};
 
 TEST(link_meter, has_metrics) {
-    packet::Queue queue;
+    packet::FifoQueue queue;
     LinkMeter meter(encoding_map);
     meter.set_writer(queue);
 
@@ -60,7 +60,7 @@ TEST(link_meter, has_metrics) {
 }
 
 TEST(link_meter, last_seqnum) {
-    packet::Queue queue;
+    packet::FifoQueue queue;
     LinkMeter meter(encoding_map);
     meter.set_writer(queue);
 
@@ -85,7 +85,7 @@ TEST(link_meter, last_seqnum) {
 }
 
 TEST(link_meter, last_seqnum_wrap) {
-    packet::Queue queue;
+    packet::FifoQueue queue;
     LinkMeter meter(encoding_map);
     meter.set_writer(queue);
 

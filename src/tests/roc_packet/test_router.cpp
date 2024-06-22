@@ -9,8 +9,8 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/heap_arena.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_packet/packet_factory.h"
-#include "roc_packet/queue.h"
 #include "roc_packet/router.h"
 #include "roc_status/status_code.h"
 
@@ -56,7 +56,7 @@ TEST(router, no_routes) {
 TEST(router, one_route) {
     Router router(arena);
 
-    Queue queue;
+    FifoQueue queue;
     LONGS_EQUAL(status::StatusOK, router.add_route(queue, Packet::FlagAudio));
 
     PacketPtr wpa1 = new_rtp_packet(11, Packet::FlagAudio);
@@ -90,8 +90,8 @@ TEST(router, one_route) {
 TEST(router, two_routes) {
     Router router(arena);
 
-    Queue queue_a;
-    Queue queue_r;
+    FifoQueue queue_a;
+    FifoQueue queue_r;
     LONGS_EQUAL(status::StatusOK, router.add_route(queue_a, Packet::FlagAudio));
     LONGS_EQUAL(status::StatusOK, router.add_route(queue_r, Packet::FlagRepair));
 
@@ -134,8 +134,8 @@ TEST(router, two_routes) {
 TEST(router, two_routes_two_sources) {
     Router router(arena);
 
-    Queue queue_a;
-    Queue queue_r;
+    FifoQueue queue_a;
+    FifoQueue queue_r;
     LONGS_EQUAL(status::StatusOK, router.add_route(queue_a, Packet::FlagAudio));
     LONGS_EQUAL(status::StatusOK, router.add_route(queue_r, Packet::FlagRepair));
 
@@ -178,7 +178,7 @@ TEST(router, two_routes_two_sources) {
 TEST(router, same_route_different_sources) {
     Router router(arena);
 
-    Queue queue;
+    FifoQueue queue;
     LONGS_EQUAL(status::StatusOK, router.add_route(queue, Packet::FlagAudio));
 
     LONGS_EQUAL(status::StatusOK, router.write(new_rtp_packet(11, Packet::FlagAudio)));
@@ -196,10 +196,10 @@ TEST(router, same_route_different_sources) {
 TEST(router, different_routes_same_source) {
     Router router(arena);
 
-    Queue queue_a;
+    FifoQueue queue_a;
     LONGS_EQUAL(status::StatusOK, router.add_route(queue_a, Packet::FlagAudio));
 
-    Queue queue_r;
+    FifoQueue queue_r;
     LONGS_EQUAL(status::StatusOK, router.add_route(queue_r, Packet::FlagRepair));
 
     LONGS_EQUAL(status::StatusOK, router.write(new_rtp_packet(11, Packet::FlagAudio)));
@@ -212,10 +212,10 @@ TEST(router, different_routes_same_source) {
 TEST(router, different_routes_different_sources) {
     Router router(arena);
 
-    Queue queue_a;
+    FifoQueue queue_a;
     LONGS_EQUAL(status::StatusOK, router.add_route(queue_a, Packet::FlagAudio));
 
-    Queue queue_r;
+    FifoQueue queue_r;
     LONGS_EQUAL(status::StatusOK, router.add_route(queue_r, Packet::FlagRepair));
 
     LONGS_EQUAL(status::StatusOK, router.write(new_rtp_packet(11, Packet::FlagAudio)));
@@ -228,7 +228,7 @@ TEST(router, different_routes_different_sources) {
 TEST(router, same_route_first_without_source_then_with_source) {
     Router router(arena);
 
-    Queue queue;
+    FifoQueue queue;
     LONGS_EQUAL(status::StatusOK, router.add_route(queue, Packet::FlagRepair));
 
     LONGS_EQUAL(status::StatusOK, router.write(new_rtp_packet(11, Packet::FlagRepair)));
@@ -245,7 +245,7 @@ TEST(router, same_route_first_without_source_then_with_source) {
 TEST(router, same_route_first_with_source_then_without_source) {
     Router router(arena);
 
-    Queue queue;
+    FifoQueue queue;
     LONGS_EQUAL(status::StatusOK, router.add_route(queue, Packet::FlagRepair));
 
     LONGS_EQUAL(status::StatusOK, router.write(new_fec_packet(Packet::FlagRepair)));
@@ -268,7 +268,7 @@ TEST(router, source_id_one_source) {
     LONGS_EQUAL(0, router.get_source_id(Packet::FlagAudio));
     LONGS_EQUAL(0, router.get_source_id(Packet::FlagRepair));
 
-    Queue queue;
+    FifoQueue queue;
     LONGS_EQUAL(status::StatusOK, router.add_route(queue, Packet::FlagAudio));
     LONGS_EQUAL(status::StatusOK, router.add_route(queue, Packet::FlagRepair));
 
@@ -297,7 +297,7 @@ TEST(router, source_id_two_sources) {
     LONGS_EQUAL(0, router.get_source_id(Packet::FlagAudio));
     LONGS_EQUAL(0, router.get_source_id(Packet::FlagRepair));
 
-    Queue queue;
+    FifoQueue queue;
     LONGS_EQUAL(status::StatusOK, router.add_route(queue, Packet::FlagAudio));
     LONGS_EQUAL(status::StatusOK, router.add_route(queue, Packet::FlagRepair));
 

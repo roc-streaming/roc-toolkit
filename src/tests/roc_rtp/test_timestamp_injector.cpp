@@ -12,8 +12,8 @@
 
 #include "roc_core/heap_arena.h"
 #include "roc_core/macro_helpers.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_packet/packet_factory.h"
-#include "roc_packet/queue.h"
 #include "roc_rtp/timestamp_injector.h"
 
 namespace roc {
@@ -84,7 +84,7 @@ TEST(timestamp_injector, negative_and_positive_dn) {
     DOUBLES_EQUAL((reference_capt_ts - cur_packet_capt_ts) * 1e-9f * sample_rate,
                   rtp_ts - packet_rtp_ts, 1e-3);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     TimestampInjector injector(queue, sample_spec);
     LONGS_EQUAL(status::StatusOK, injector.init_status());
 
@@ -123,7 +123,7 @@ TEST(timestamp_injector, fetch_peek) {
         audio::SampleSpec(SampleRate, audio::Sample_RawFormat, audio::ChanLayout_Surround,
                           audio::ChanOrder_Smpte, ChMask);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     TimestampInjector injector(queue, sample_spec);
     LONGS_EQUAL(status::StatusOK, injector.init_status());
 

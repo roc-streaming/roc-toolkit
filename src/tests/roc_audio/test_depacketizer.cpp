@@ -16,8 +16,8 @@
 #include "roc_audio/pcm_encoder.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/macro_helpers.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_packet/packet_factory.h"
-#include "roc_packet/queue.h"
 #include "roc_rtp/composer.h"
 #include "roc_status/status_code.h"
 
@@ -207,7 +207,7 @@ TEST(depacketizer, one_packet_one_read) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
@@ -220,7 +220,7 @@ TEST(depacketizer, one_packet_multiple_reads) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
@@ -239,7 +239,7 @@ TEST(depacketizer, multiple_packets_one_read) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
@@ -260,7 +260,7 @@ TEST(depacketizer, multiple_packets_multiple_reads) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
@@ -299,7 +299,7 @@ TEST(depacketizer, timestamp_overflow) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
@@ -326,7 +326,7 @@ TEST(depacketizer, drop_late_packets) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
@@ -349,7 +349,7 @@ TEST(depacketizer, drop_late_packets_timestamp_overflow) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
@@ -372,7 +372,7 @@ TEST(depacketizer, zeros_no_packets) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
@@ -383,7 +383,7 @@ TEST(depacketizer, zeros_no_next_packet) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
@@ -397,7 +397,7 @@ TEST(depacketizer, zeros_between_packets) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
@@ -416,7 +416,7 @@ TEST(depacketizer, zeros_between_packets_timestamp_overflow) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
@@ -441,7 +441,7 @@ TEST(depacketizer, zeros_after_packet) {
 
     CHECK(SamplesPerPacket % 2 == 0);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
@@ -471,7 +471,7 @@ TEST(depacketizer, packet_after_zeros) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
@@ -488,7 +488,7 @@ TEST(depacketizer, overlapping_packets) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
@@ -514,7 +514,7 @@ TEST(depacketizer, frame_flags_incompltete_blank) {
 
     PcmEncoder encoder(packet_spec);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
 
     packet::PacketPtr packets[][PacketsPerFrame] = {
         {
@@ -595,7 +595,7 @@ TEST(depacketizer, frame_flags_drops) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
@@ -639,7 +639,7 @@ TEST(depacketizer, timestamp) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
@@ -694,7 +694,7 @@ TEST(depacketizer, timestamp_fract_frame_per_packet) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
@@ -718,7 +718,7 @@ TEST(depacketizer, timestamp_small_non_zero_cts) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
@@ -770,7 +770,7 @@ TEST(depacketizer, partial_on_big_read) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
@@ -792,7 +792,7 @@ TEST(depacketizer, forward_error) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     StatusReader reader(queue);
     Depacketizer dp(reader, decoder, frame_factory, frame_spec, false);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
@@ -832,7 +832,7 @@ TEST(depacketizer, preallocated_buffer) {
     for (size_t bn = 0; bn < ROC_ARRAY_SIZE(buffer_list); bn++) {
         const size_t orig_buf_sz = buffer_list[bn];
 
-        packet::Queue queue;
+        packet::FifoQueue queue;
         StatusReader reader(queue);
         Depacketizer dp(reader, decoder, frame_factory, frame_spec, false);
         LONGS_EQUAL(status::StatusOK, dp.init_status());

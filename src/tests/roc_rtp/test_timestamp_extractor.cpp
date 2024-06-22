@@ -11,8 +11,8 @@
 #include "test_helpers/status_writer.h"
 
 #include "roc_core/heap_arena.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_packet/packet_factory.h"
-#include "roc_packet/queue.h"
 #include "roc_rtp/timestamp_extractor.h"
 
 namespace roc {
@@ -52,7 +52,7 @@ TEST(timestamp_extractor, single_write) {
     const core::nanoseconds_t cts = 1691499037871419405;
     const packet::stream_timestamp_t rts = 2222;
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     TimestampExtractor extractor(queue, sample_spec);
 
     // no mapping yet

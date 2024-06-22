@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_packet/queue.h
+//! @file roc_packet/fifo_queue.h
 //! @brief Packet FIFO queue.
 
-#ifndef ROC_PACKET_QUEUE_H_
-#define ROC_PACKET_QUEUE_H_
+#ifndef ROC_PACKET_FIFO_QUEUE_H_
+#define ROC_PACKET_FIFO_QUEUE_H_
 
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
@@ -26,7 +26,7 @@ namespace packet {
 //!  Packets order is not changed.
 //! @note
 //!  Not thread safe.
-class Queue : public IWriter, public IReader, public core::NonCopyable<> {
+class FifoQueue : public IWriter, public IReader, public core::NonCopyable<> {
 public:
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
@@ -64,4 +64,4 @@ private:
 } // namespace packet
 } // namespace roc
 
-#endif // ROC_PACKET_QUEUE_H_
+#endif // ROC_PACKET_FIFO_QUEUE_H_

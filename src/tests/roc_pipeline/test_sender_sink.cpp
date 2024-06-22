@@ -16,7 +16,7 @@
 #include "roc_core/heap_arena.h"
 #include "roc_core/slab_pool.h"
 #include "roc_core/time.h"
-#include "roc_packet/queue.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_pipeline/sender_sink.h"
 #include "roc_rtp/encoding_map.h"
 
@@ -189,7 +189,7 @@ TEST(sender_sink, basic) {
 
     init(Rate, Chans, Rate, Chans);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
                       frame_pool, frame_buffer_pool, arena);
@@ -228,7 +228,7 @@ TEST(sender_sink, frame_size_small) {
 
     init(Rate, Chans, Rate, Chans);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
                       frame_pool, frame_buffer_pool, arena);
@@ -267,7 +267,7 @@ TEST(sender_sink, frame_size_large) {
 
     init(Rate, Chans, Rate, Chans);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
                       frame_pool, frame_buffer_pool, arena);
@@ -300,7 +300,7 @@ TEST(sender_sink, channel_mapping_stereo_to_mono) {
 
     init(Rate, InputChans, Rate, PacketChans);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
                       frame_pool, frame_buffer_pool, arena);
@@ -333,7 +333,7 @@ TEST(sender_sink, channel_mapping_mono_to_stereo) {
 
     init(Rate, InputChans, Rate, PacketChans);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
                       frame_pool, frame_buffer_pool, arena);
@@ -366,7 +366,7 @@ TEST(sender_sink, sample_rate_mapping) {
 
     init(InputRate, Chans, PacketRate, Chans);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
                       frame_pool, frame_buffer_pool, arena);
@@ -401,7 +401,7 @@ TEST(sender_sink, timestamp_mapping) {
 
     init(Rate, Chans, Rate, Chans);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
                       frame_pool, frame_buffer_pool, arena);
@@ -440,7 +440,7 @@ TEST(sender_sink, timestamp_mapping_remixing) {
 
     init(InputRate, InputChans, PacketRate, PacketChans);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
                       frame_pool, frame_buffer_pool, arena);
@@ -501,7 +501,7 @@ TEST(sender_sink, metrics_feedback) {
 
     init(Rate, Chans, Rate, Chans);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
                       frame_pool, frame_buffer_pool, arena);
@@ -512,7 +512,7 @@ TEST(sender_sink, metrics_feedback) {
 
     create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
-    packet::Queue control_outbound_queue;
+    packet::FifoQueue control_outbound_queue;
     packet::IWriter* control_endpoint =
         create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
                                 dst_addr2, control_outbound_queue);
@@ -630,7 +630,7 @@ TEST(sender_sink, reports_no_receivers) {
 
     init(Rate, Chans, Rate, Chans);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
                       frame_pool, frame_buffer_pool, arena);
@@ -649,7 +649,7 @@ TEST(sender_sink, reports_no_receivers) {
 
     create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
-    packet::Queue control_outbound_queue;
+    packet::FifoQueue control_outbound_queue;
     packet::IWriter* control_endpoint =
         create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
                                 dst_addr2, control_outbound_queue);
@@ -700,7 +700,7 @@ TEST(sender_sink, reports_one_receiver) {
 
     init(Rate, Chans, Rate, Chans);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
                       frame_pool, frame_buffer_pool, arena);
@@ -721,7 +721,7 @@ TEST(sender_sink, reports_one_receiver) {
 
     create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
-    packet::Queue control_outbound_queue;
+    packet::FifoQueue control_outbound_queue;
     packet::IWriter* control_endpoint =
         create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
                                 dst_addr2, control_outbound_queue);
@@ -789,7 +789,7 @@ TEST(sender_sink, reports_two_receivers) {
 
     init(Rate, Chans, Rate, Chans);
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
 
     SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
                       frame_pool, frame_buffer_pool, arena);
@@ -812,7 +812,7 @@ TEST(sender_sink, reports_two_receivers) {
 
     create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
-    packet::Queue control_outbound_queue;
+    packet::FifoQueue control_outbound_queue;
     packet::IWriter* control_endpoint =
         create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
                                 dst_addr2, control_outbound_queue);

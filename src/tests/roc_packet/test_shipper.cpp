@@ -9,8 +9,8 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/heap_arena.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_packet/packet_factory.h"
-#include "roc_packet/queue.h"
 #include "roc_packet/shipper.h"
 #include "roc_rtp/headers.h"
 
@@ -87,7 +87,7 @@ TEST_GROUP(shipper) {};
 
 TEST(shipper, without_address) {
     MockComposer composer;
-    Queue queue;
+    FifoQueue queue;
 
     Shipper shipper(composer, queue, NULL);
 
@@ -111,7 +111,7 @@ TEST(shipper, with_address) {
     CHECK(address.set_host_port_auto("127.0.0.1", 123));
 
     MockComposer composer;
-    Queue queue;
+    FifoQueue queue;
 
     Shipper shipper(composer, queue, &address);
 
@@ -133,7 +133,7 @@ TEST(shipper, with_address) {
 TEST(shipper, packet_already_composed) {
     address::SocketAddr address;
     MockComposer composer;
-    Queue queue;
+    FifoQueue queue;
 
     Shipper shipper(composer, queue, &address);
 
@@ -156,7 +156,7 @@ TEST(shipper, packet_already_composed) {
 TEST(shipper, packet_not_composed) {
     address::SocketAddr address;
     MockComposer composer;
-    Queue queue;
+    FifoQueue queue;
 
     Shipper shipper(composer, queue, &address);
 

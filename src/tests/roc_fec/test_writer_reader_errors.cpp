@@ -20,8 +20,8 @@
 #include "roc_fec/composer.h"
 #include "roc_fec/headers.h"
 #include "roc_fec/parser.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_packet/packet_factory.h"
-#include "roc_packet/queue.h"
 #include "roc_rtp/composer.h"
 #include "roc_rtp/encoding_map.h"
 #include "roc_rtp/headers.h"
@@ -405,9 +405,9 @@ TEST(block_writer_reader_errors, reader_cant_read_source_packet) {
     CHECK(encoder);
     CHECK(decoder);
 
-    packet::Queue writer_queue;
+    packet::FifoQueue writer_queue;
     test::StatusReader source_reader(status::StatusAbort);
-    packet::Queue repair_reader;
+    packet::FifoQueue repair_reader;
 
     BlockWriter writer(writer_config, codec_config.scheme, *encoder, writer_queue,
                        source_composer, repair_composer, packet_factory, arena);
@@ -454,8 +454,8 @@ TEST(block_writer_reader_errors, reader_cant_read_repair_packet) {
     CHECK(encoder);
     CHECK(decoder);
 
-    packet::Queue writer_queue;
-    packet::Queue source_reader;
+    packet::FifoQueue writer_queue;
+    packet::FifoQueue source_reader;
     test::StatusReader repair_reader(status::StatusAbort);
 
     BlockWriter writer(writer_config, codec_config.scheme, *encoder, writer_queue,

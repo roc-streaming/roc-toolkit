@@ -21,10 +21,10 @@
 #include "roc_fec/composer.h"
 #include "roc_fec/iblock_encoder.h"
 #include "roc_packet/fec.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_packet/icomposer.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_factory.h"
-#include "roc_packet/queue.h"
 #include "roc_rtp/composer.h"
 #include "roc_rtp/encoding_map.h"
 #include "roc_status/status_code.h"
@@ -316,7 +316,7 @@ private:
 
     core::ScopedPtr<fec::IBlockEncoder> fec_encoder_;
     core::ScopedPtr<fec::BlockWriter> fec_writer_;
-    packet::Queue fec_queue_;
+    packet::FifoQueue fec_queue_;
 
     core::ScopedPtr<audio::IFrameEncoder> payload_encoder_;
 

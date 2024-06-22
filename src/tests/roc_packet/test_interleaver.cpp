@@ -10,9 +10,9 @@
 
 #include "roc_core/array.h"
 #include "roc_core/heap_arena.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_packet/interleaver.h"
 #include "roc_packet/packet_factory.h"
-#include "roc_packet/queue.h"
 
 namespace roc {
 namespace packet {
@@ -81,7 +81,7 @@ TEST_GROUP(interleaver) {};
 
 // Fill Interleaver with multiple of its internal memory size.
 TEST(interleaver, read_write) {
-    Queue queue;
+    FifoQueue queue;
     Interleaver intrlvr(queue, arena, 10);
     LONGS_EQUAL(status::StatusOK, intrlvr.init_status());
 
@@ -136,7 +136,7 @@ TEST(interleaver, read_write) {
 }
 
 TEST(interleaver, flush) {
-    Queue queue;
+    FifoQueue queue;
     Interleaver intrlvr(queue, arena, 10);
     LONGS_EQUAL(status::StatusOK, intrlvr.init_status());
 
@@ -163,7 +163,7 @@ TEST(interleaver, write_error) {
     };
 
     for (size_t st_n = 0; st_n < ROC_ARRAY_SIZE(status_codes); ++st_n) {
-        Queue queue;
+        FifoQueue queue;
         MockWriter writer(queue);
         Interleaver intrlvr(writer, arena, 1);
         LONGS_EQUAL(status::StatusOK, intrlvr.init_status());
@@ -190,7 +190,7 @@ TEST(interleaver, write_error) {
 TEST(interleaver, flush_error) {
     const size_t block_size = 10;
 
-    Queue queue;
+    FifoQueue queue;
     MockWriter writer(queue);
     Interleaver intrlvr(writer, arena, block_size);
     LONGS_EQUAL(status::StatusOK, intrlvr.init_status());

@@ -19,9 +19,9 @@
 #include "roc_fec/composer.h"
 #include "roc_fec/headers.h"
 #include "roc_fec/parser.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_packet/interleaver.h"
 #include "roc_packet/packet_factory.h"
-#include "roc_packet/queue.h"
 #include "roc_rtp/composer.h"
 #include "roc_rtp/encoding_map.h"
 #include "roc_rtp/headers.h"
@@ -1242,7 +1242,7 @@ TEST(block_writer_reader, invalid_esi) {
         CHECK(encoder);
         CHECK(decoder);
 
-        packet::Queue queue;
+        packet::FifoQueue queue;
 
         test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
                                           packet_factory, NumSourcePackets,
@@ -1326,7 +1326,7 @@ TEST(block_writer_reader, invalid_sbl) {
         CHECK(encoder);
         CHECK(decoder);
 
-        packet::Queue queue;
+        packet::FifoQueue queue;
 
         test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
                                           packet_factory, NumSourcePackets,
@@ -1405,7 +1405,7 @@ TEST(block_writer_reader, invalid_nes) {
         CHECK(encoder);
         CHECK(decoder);
 
-        packet::Queue queue;
+        packet::FifoQueue queue;
 
         test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
                                           packet_factory, NumSourcePackets,
@@ -1483,9 +1483,9 @@ TEST(block_writer_reader, invalid_payload_size) {
         CHECK(encoder);
         CHECK(decoder);
 
-        packet::Queue writer_queue;
-        packet::Queue source_queue;
-        packet::Queue repair_queue;
+        packet::FifoQueue writer_queue;
+        packet::FifoQueue source_queue;
+        packet::FifoQueue repair_queue;
 
         BlockWriter writer(writer_config, codec_config.scheme, *encoder, writer_queue,
                            source_composer(), repair_composer(), packet_factory, arena);
@@ -1571,7 +1571,7 @@ TEST(block_writer_reader, zero_source_packets) {
         CHECK(encoder);
         CHECK(decoder);
 
-        packet::Queue queue;
+        packet::FifoQueue queue;
 
         test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
                                           packet_factory, NumSourcePackets,
@@ -1659,7 +1659,7 @@ TEST(block_writer_reader, zero_repair_packets) {
         CHECK(encoder);
         CHECK(decoder);
 
-        packet::Queue queue;
+        packet::FifoQueue queue;
 
         test::PacketDispatcher dispatcher(ldpc_source_parser, ldpc_repair_parser,
                                           packet_factory, NumSourcePackets,
@@ -1745,9 +1745,9 @@ TEST(block_writer_reader, zero_payload_size) {
         CHECK(encoder);
         CHECK(decoder);
 
-        packet::Queue writer_queue;
-        packet::Queue source_queue;
-        packet::Queue repair_queue;
+        packet::FifoQueue writer_queue;
+        packet::FifoQueue source_queue;
+        packet::FifoQueue repair_queue;
 
         BlockWriter writer(writer_config, codec_config.scheme, *encoder, writer_queue,
                            source_composer(), repair_composer(), packet_factory, arena);
@@ -1835,7 +1835,7 @@ TEST(block_writer_reader, sbn_jump) {
         CHECK(encoder);
         CHECK(decoder);
 
-        packet::Queue queue;
+        packet::FifoQueue queue;
 
         test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
                                           packet_factory, NumSourcePackets,
@@ -2531,7 +2531,7 @@ TEST(block_writer_reader, reader_oversized_source_block) {
         UNSIGNED_LONGS_EQUAL(decoder->max_block_length(), encoder->max_block_length());
         CHECK((NumSourcePackets + NumRepairPackets) < encoder->max_block_length());
 
-        packet::Queue queue;
+        packet::FifoQueue queue;
         test::PacketDispatcher dispatcher(ldpc_source_parser, ldpc_repair_parser,
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
@@ -2605,7 +2605,7 @@ TEST(block_writer_reader, reader_oversized_repair_block) {
         UNSIGNED_LONGS_EQUAL(decoder->max_block_length(), encoder->max_block_length());
         CHECK((NumSourcePackets + NumRepairPackets) < encoder->max_block_length());
 
-        packet::Queue queue;
+        packet::FifoQueue queue;
         test::PacketDispatcher dispatcher(ldpc_source_parser, ldpc_repair_parser,
                                           packet_factory, NumSourcePackets,
                                           NumRepairPackets);
@@ -2727,9 +2727,9 @@ TEST(block_writer_reader, reader_invalid_fec_scheme_source_packet) {
         CHECK(encoder);
         CHECK(decoder);
 
-        packet::Queue writer_queue;
-        packet::Queue source_queue;
-        packet::Queue repair_queue;
+        packet::FifoQueue writer_queue;
+        packet::FifoQueue source_queue;
+        packet::FifoQueue repair_queue;
 
         BlockWriter writer(writer_config, codec_config.scheme, *encoder, writer_queue,
                            source_composer(), repair_composer(), packet_factory, arena);
@@ -2800,9 +2800,9 @@ TEST(block_writer_reader, reader_invalid_fec_scheme_repair_packet) {
         CHECK(encoder);
         CHECK(decoder);
 
-        packet::Queue writer_queue;
-        packet::Queue source_queue;
-        packet::Queue repair_queue;
+        packet::FifoQueue writer_queue;
+        packet::FifoQueue source_queue;
+        packet::FifoQueue repair_queue;
 
         BlockWriter writer(writer_config, codec_config.scheme, *encoder, writer_queue,
                            source_composer(), repair_composer(), packet_factory, arena);

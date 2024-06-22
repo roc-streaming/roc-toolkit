@@ -13,8 +13,8 @@
 #include "roc_audio/pcm_decoder.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/macro_helpers.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_packet/packet_factory.h"
-#include "roc_packet/queue.h"
 #include "roc_rtp/filter.h"
 #include "roc_rtp/headers.h"
 
@@ -107,7 +107,7 @@ TEST_GROUP(filter) {
 };
 
 TEST(filter, all_good) {
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Filter filter(queue, decoder, config, payload_spec);
     LONGS_EQUAL(status::StatusOK, filter.init_status());
 
@@ -137,7 +137,7 @@ TEST(filter, all_good) {
 }
 
 TEST(filter, payload_id_jump) {
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Filter filter(queue, decoder, config, payload_spec);
     LONGS_EQUAL(status::StatusOK, filter.init_status());
 
@@ -162,7 +162,7 @@ TEST(filter, payload_id_jump) {
 }
 
 TEST(filter, source_id_jump) {
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Filter filter(queue, decoder, config, payload_spec);
     LONGS_EQUAL(status::StatusOK, filter.init_status());
 
@@ -196,7 +196,7 @@ TEST(filter, seqnum_no_jump) {
         const packet::seqnum_t sn1 = sn_list[i];
         const packet::seqnum_t sn2 = packet::seqnum_t(sn1 + MaxSnJump);
 
-        packet::Queue queue;
+        packet::FifoQueue queue;
         Filter filter(queue, decoder, config, payload_spec);
         LONGS_EQUAL(status::StatusOK, filter.init_status());
 
@@ -232,7 +232,7 @@ TEST(filter, seqnum_jump_up) {
         const packet::seqnum_t sn1 = sn_list[i];
         const packet::seqnum_t sn2 = packet::seqnum_t(sn1 + MaxSnJump + 1);
 
-        packet::Queue queue;
+        packet::FifoQueue queue;
         Filter filter(queue, decoder, config, payload_spec);
         LONGS_EQUAL(status::StatusOK, filter.init_status());
 
@@ -268,7 +268,7 @@ TEST(filter, seqnum_jump_down) {
         const packet::seqnum_t sn1 = sn_list[i];
         const packet::seqnum_t sn2 = packet::seqnum_t(sn1 + MaxSnJump + 1);
 
-        packet::Queue queue;
+        packet::FifoQueue queue;
         Filter filter(queue, decoder, config, payload_spec);
         LONGS_EQUAL(status::StatusOK, filter.init_status());
 
@@ -299,7 +299,7 @@ TEST(filter, seqnum_late) {
     const packet::seqnum_t sn2 = 50;
     const packet::seqnum_t sn3 = sn2 + MaxSnJump + 1;
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Filter filter(queue, decoder, config, payload_spec);
     LONGS_EQUAL(status::StatusOK, filter.init_status());
 
@@ -340,7 +340,7 @@ TEST(filter, timestamp_no_jump) {
         const packet::stream_timestamp_t ts1 = ts_list[i];
         const packet::stream_timestamp_t ts2 = ts1 + MaxTsJump;
 
-        packet::Queue queue;
+        packet::FifoQueue queue;
         Filter filter(queue, decoder, config, payload_spec);
         LONGS_EQUAL(status::StatusOK, filter.init_status());
 
@@ -376,7 +376,7 @@ TEST(filter, timestamp_jump_up) {
         const packet::stream_timestamp_t ts1 = ts_list[i];
         const packet::stream_timestamp_t ts2 = ts1 + MaxTsJump + 10;
 
-        packet::Queue queue;
+        packet::FifoQueue queue;
         Filter filter(queue, decoder, config, payload_spec);
         LONGS_EQUAL(status::StatusOK, filter.init_status());
 
@@ -412,7 +412,7 @@ TEST(filter, timestamp_jump_down) {
         const packet::stream_timestamp_t ts1 = ts_list[i];
         const packet::stream_timestamp_t ts2 = ts1 + MaxTsJump + 10;
 
-        packet::Queue queue;
+        packet::FifoQueue queue;
         Filter filter(queue, decoder, config, payload_spec);
         LONGS_EQUAL(status::StatusOK, filter.init_status());
 
@@ -443,7 +443,7 @@ TEST(filter, timestamp_late) {
     const packet::stream_timestamp_t ts2 = 50;
     const packet::stream_timestamp_t ts3 = ts2 + MaxTsJump + 1;
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Filter filter(queue, decoder, config, payload_spec);
     LONGS_EQUAL(status::StatusOK, filter.init_status());
 
@@ -475,7 +475,7 @@ TEST(filter, timestamp_late) {
 }
 
 TEST(filter, cts_positive) {
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Filter filter(queue, decoder, config, payload_spec);
     LONGS_EQUAL(status::StatusOK, filter.init_status());
 
@@ -515,7 +515,7 @@ TEST(filter, cts_positive) {
 }
 
 TEST(filter, cts_negative) {
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Filter filter(queue, decoder, config, payload_spec);
     LONGS_EQUAL(status::StatusOK, filter.init_status());
 
@@ -557,7 +557,7 @@ TEST(filter, cts_negative) {
 }
 
 TEST(filter, cts_zero) {
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Filter filter(queue, decoder, config, payload_spec);
     LONGS_EQUAL(status::StatusOK, filter.init_status());
 
@@ -599,7 +599,7 @@ TEST(filter, cts_zero) {
 }
 
 TEST(filter, duration_zero) {
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Filter filter(queue, decoder, config, payload_spec);
     LONGS_EQUAL(status::StatusOK, filter.init_status());
 
@@ -617,7 +617,7 @@ TEST(filter, duration_zero) {
 }
 
 TEST(filter, duration_non_zero) {
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Filter filter(queue, decoder, config, payload_spec);
     LONGS_EQUAL(status::StatusOK, filter.init_status());
 
@@ -634,7 +634,7 @@ TEST(filter, duration_non_zero) {
 }
 
 TEST(filter, flags) {
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Filter filter(queue, decoder, config, payload_spec);
     LONGS_EQUAL(status::StatusOK, filter.init_status());
 
@@ -671,7 +671,7 @@ TEST(filter, flags) {
 }
 
 TEST(filter, skip_invalid) {
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Filter filter(queue, decoder, config, payload_spec);
     LONGS_EQUAL(status::StatusOK, filter.init_status());
 
@@ -696,7 +696,7 @@ TEST(filter, skip_invalid) {
 }
 
 TEST(filter, fetch_peek) {
-    packet::Queue queue;
+    packet::FifoQueue queue;
     Filter filter(queue, decoder, config, payload_spec);
     LONGS_EQUAL(status::StatusOK, filter.init_status());
 

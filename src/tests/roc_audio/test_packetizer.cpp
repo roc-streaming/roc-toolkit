@@ -15,7 +15,7 @@
 #include "roc_audio/pcm_decoder.h"
 #include "roc_audio/pcm_encoder.h"
 #include "roc_core/heap_arena.h"
-#include "roc_packet/queue.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_rtp/composer.h"
 #include "roc_rtp/identity.h"
 #include "roc_rtp/sequencer.h"
@@ -203,7 +203,7 @@ TEST(packetizer, one_buffer_one_packet) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue packet_queue;
+    packet::FifoQueue packet_queue;
 
     rtp::Identity identity;
     rtp::Sequencer sequencer(identity, PayloadType);
@@ -231,7 +231,7 @@ TEST(packetizer, one_buffer_multiple_packets) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue packet_queue;
+    packet::FifoQueue packet_queue;
 
     rtp::Identity identity;
     rtp::Sequencer sequencer(identity, PayloadType);
@@ -259,7 +259,7 @@ TEST(packetizer, multiple_buffers_one_packet) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue packet_queue;
+    packet::FifoQueue packet_queue;
 
     rtp::Identity identity;
     rtp::Sequencer sequencer(identity, PayloadType);
@@ -293,7 +293,7 @@ TEST(packetizer, multiple_buffers_multiple_packets) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue packet_queue;
+    packet::FifoQueue packet_queue;
 
     rtp::Identity identity;
     rtp::Sequencer sequencer(identity, PayloadType);
@@ -321,7 +321,7 @@ TEST(packetizer, flush) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue packet_queue;
+    packet::FifoQueue packet_queue;
 
     rtp::Identity identity;
     rtp::Sequencer sequencer(identity, PayloadType);
@@ -360,7 +360,7 @@ TEST(packetizer, timestamp_zero_cts) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
-    packet::Queue packet_queue;
+    packet::FifoQueue packet_queue;
 
     rtp::Identity identity;
     rtp::Sequencer sequencer(identity, PayloadType);
@@ -388,7 +388,7 @@ TEST(packetizer, metrics) {
     enum { NumPackets = 10 };
 
     PcmEncoder encoder(packet_spec);
-    packet::Queue packet_queue;
+    packet::FifoQueue packet_queue;
 
     rtp::Identity identity;
     rtp::Sequencer sequencer(identity, PayloadType);

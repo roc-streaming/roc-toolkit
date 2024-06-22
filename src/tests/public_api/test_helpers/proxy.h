@@ -16,8 +16,8 @@
 #include "roc_address/socket_addr.h"
 #include "roc_core/heap_arena.h"
 #include "roc_netio/network_loop.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_packet/packet_factory.h"
-#include "roc_packet/queue.h"
 #include "roc_status/status_code.h"
 
 #include "roc/endpoint.h"
@@ -185,8 +185,8 @@ private:
     address::SocketAddr receiver_source_endp_;
     address::SocketAddr receiver_repair_endp_;
 
-    packet::Queue source_queue_;
-    packet::Queue repair_queue_;
+    packet::FifoQueue source_queue_;
+    packet::FifoQueue repair_queue_;
 
     packet::IWriter* writer_;
 

@@ -11,8 +11,8 @@
 #include "roc_address/protocol.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/noop_arena.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_packet/packet_factory.h"
-#include "roc_packet/queue.h"
 #include "roc_pipeline/sender_endpoint.h"
 #include "roc_pipeline/sender_session.h"
 #include "roc_pipeline/state_tracker.h"
@@ -39,7 +39,7 @@ TEST_GROUP(sender_endpoint) {};
 
 TEST(sender_endpoint, valid) {
     address::SocketAddr addr;
-    packet::Queue queue;
+    packet::FifoQueue queue;
 
     SenderSinkConfig sink_config;
     StateTracker state_tracker;
@@ -53,7 +53,7 @@ TEST(sender_endpoint, valid) {
 
 TEST(sender_endpoint, invalid_proto) {
     address::SocketAddr addr;
-    packet::Queue queue;
+    packet::FifoQueue queue;
     core::HeapArena arena;
 
     SenderSinkConfig sink_config;
@@ -76,7 +76,7 @@ TEST(sender_endpoint, no_memory) {
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(protos); ++n) {
         address::SocketAddr addr;
-        packet::Queue queue;
+        packet::FifoQueue queue;
 
         SenderSinkConfig sink_config;
         StateTracker state_tracker;
