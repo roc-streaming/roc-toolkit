@@ -8,7 +8,7 @@ Maintainer notes
 Merging pull request
 ====================
 
-Pull requests should be merged using `pr.py <https://github.com/roc-streaming/roc-toolkit/blob/develop/scripts/pr.py>`_ script, which does the following:
+Pull requests should be merged using `rgh.py <https://github.com/roc-streaming/roc-toolkit/blob/develop/scripts/rgh.py>`_ script, which does the following:
 
 - Rebases PR on up-to-date develop branch.
 - If requested, squashes all commits into one.
@@ -22,19 +22,19 @@ Merge PR by rebasing:
 
 .. code::
 
-   scripts/pr.py merge --rebase 123
+   scripts/rgh.py merge --rebase 123
 
 Merge PR by rebasing and squashing all commits into one:
 
 .. code::
 
-   scripts/pr.py merge --squash 123
+   scripts/rgh.py merge --squash 123
 
 If PR description doesn't have a link to issue, the script will complain and fail. You can manually specify it:
 
 .. code::
 
-   scripts/pr.py merge --rebase 123 --issue 456
+   scripts/rgh.py merge --rebase 123 --issue 456
 
 The script will use given issue for commits and also will add it to PR description.
 
@@ -42,25 +42,25 @@ Show PR info before merging it:
 
 .. code::
 
-   scripts/pr.py show 123
+   scripts/rgh.py show 123
 
 Link PR commits to issue and force-push to PR's branch, but don't merge PR:
 
 .. code::
 
-   scripts/pr.py link 123
+   scripts/rgh.py link 123
 
 Revert that:
 
 .. code::
 
-   scripts/pr.py unlink 123
+   scripts/rgh.py unlink 123
 
 For the full list of available options, see:
 
 .. code::
 
-   scripts/pr.py [command] --help
+   scripts/rgh.py [command] --help
 
 Rebasing develop on master
 ==========================
@@ -78,7 +78,7 @@ Rebase ``develop`` on ``master``:
 
 .. code::
 
-   scripts/rebase.sh master
+   scripts/rgh.py stealth_rebase master
 
 Push to your fork:
 
