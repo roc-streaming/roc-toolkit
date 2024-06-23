@@ -162,7 +162,7 @@ def make_message(org, repo, issue_link, pr_title):
     pr_title = re.sub(r'\.$', '', pr_title)
 
     if issue_link:
-        return '{} {}'.format(
+        return '{}: {}'.format(
             make_prefix(org, repo, issue_link),
             pr_title)
     else:
@@ -542,16 +542,16 @@ def link_pr(org, repo, pr_number, action, no_issue):
 
     if no_issue:
         commit_prefix = ''
-    elif action == 'link':
-        commit_prefix = make_prefix(org, repo, pr_info['issue_link']) + ' '
-    elif action == 'unlink':
+    elif action == 'link_pr':
+        commit_prefix = make_prefix(org, repo, pr_info['issue_link']) + ': '
+    elif action == 'unlink_pr':
         commit_prefix = ''
 
     base_sha = pr_info['base_sha']
 
     run_cmd([
         'git', 'filter-branch', '-f', '--msg-filter',
-        f"sed -r -e '1s,^(gh-[0-9]+ +|{org}/[^ ]+ +|[Ii]ssue *[0-9]+:? +)?,{commit_prefix},'"+
+        f"sed -r -e '1s,^(gh-[0-9]+:? +|{org}/[^ ]+ +|[Ii]ssue *[0-9]+:? +)?,{commit_prefix},'"+
           " -e '1s,\s*\(#[0-9]+\)$,,'",
         f'{base_sha}..HEAD',
         ],
@@ -627,6 +627,22 @@ def merge_pr(org, repo, pr_number):
         ],
         retry_fn=retry_fn)
 
+def stealth_rebase(base_branch):
+    # like normal rebase, but preserves original committer name, email, and date
+    # used to do periodic rebase of "develop" branch on "master"
+    cmd='%s%nexec GIT_COMMITTER_DATE="%cD" GIT_COMMITTER_NAME="%cn" GIT_COMMITTER_EMAIL="%ce"'
+
+    run_cmd([
+        'git',
+        '-c' f'rebase.instructionFormat="{cmd} git commit --amend --no-edit"',
+        'rebase', '-i',
+        base_branch,
+    ],
+    env={
+        'GIT_EDITOR': ':',
+        'GIT_SEQUENCE_EDITOR': ':',
+    })
+
 parser = argparse.ArgumentParser(prog='pr.py')
 
 common_parser = argparse.ArgumentParser(add_help=False)
@@ -635,54 +651,59 @@ common_parser.add_argument('--org', default='roc-streaming',
 common_parser.add_argument('--repo', default='roc-toolkit',
                            help='github repo')
 
-action_parser = argparse.ArgumentParser(add_help=False)
-action_parser.add_argument('--issue', type=int, dest='issue_number',
+pr_action_parser = argparse.ArgumentParser(add_help=False)
+pr_action_parser.add_argument('--issue', type=int, dest='issue_number',
                     help="overwrite issue to link with")
-action_parser.add_argument('--no-issue', action='store_true', dest='no_issue',
+pr_action_parser.add_argument('--no-issue', action='store_true', dest='no_issue',
                     help="don't link issue")
-action_parser.add_argument('-m', '--milestone', type=str, dest='milestone_name',
+pr_action_parser.add_argument('-m', '--milestone', type=str, dest='milestone_name',
                     help="overwrite issue milestone")
-action_parser.add_argument('-M', '--no-milestone', action='store_true', dest='no_milestone',
+pr_action_parser.add_argument('-M', '--no-milestone', action='store_true', dest='no_milestone',
                     help="don't set issue milestone")
-action_parser.add_argument('--no-checks', action='store_true', dest='no_checks',
+pr_action_parser.add_argument('--no-checks', action='store_true', dest='no_checks',
                     help="proceed even if pr checks are failed")
-action_parser.add_argument('--no-push', action='store_true', dest='no_push',
+pr_action_parser.add_argument('--no-push', action='store_true', dest='no_push',
                     help="don't actually push anything")
-action_parser.add_argument('-n', '--dry-run', action='store_true', dest='dry_run',
+pr_action_parser.add_argument('-n', '--dry-run', action='store_true', dest='dry_run',
                     help="don't actually run commands, just print them")
 
 subparsers = parser.add_subparsers(dest='command')
 
-show_parser = subparsers.add_parser(
-    'show', parents=[common_parser],
+show_pr_parser = subparsers.add_parser(
+    'show_pr', parents=[common_parser],
     help="show pull request info")
-show_parser.add_argument('pr_number', type=int)
-show_parser.add_argument('--json', action='store_true', dest='json',
+show_pr_parser.add_argument('pr_number', type=int)
+show_pr_parser.add_argument('--json', action='store_true', dest='json',
                          help="output in json format")
 
-rebase_parser = subparsers.add_parser(
-    'rebase', parents=[common_parser, action_parser],
+rebase_pr_parser = subparsers.add_parser(
+    'rebase_pr', parents=[common_parser, pr_action_parser],
     help="rebase pull request on base branch (keeps it open)")
-rebase_parser.add_argument('pr_number', type=int)
+rebase_pr_parser.add_argument('pr_number', type=int)
 
-link_parser = subparsers.add_parser(
-    'link', parents=[common_parser, action_parser],
+link_pr_parser = subparsers.add_parser(
+    'link_pr', parents=[common_parser, pr_action_parser],
     help="link pull request description and commits to issue")
-link_parser.add_argument('pr_number', type=int)
+link_pr_parser.add_argument('pr_number', type=int)
 
-unlink_parser = subparsers.add_parser(
-    'unlink', parents=[common_parser, action_parser],
+unlink_pr_parser = subparsers.add_parser(
+    'unlink_pr', parents=[common_parser, pr_action_parser],
     help="unlink pull request commits from issue")
-unlink_parser.add_argument('pr_number', type=int)
+unlink_pr_parser.add_argument('pr_number', type=int)
 
-merge_parser = subparsers.add_parser(
-    'merge', parents=[common_parser, action_parser],
+merge_pr_parser = subparsers.add_parser(
+    'merge_pr', parents=[common_parser, pr_action_parser],
     help="link and merge pull request")
-merge_parser.add_argument('--rebase', action='store_true',
+merge_pr_parser.add_argument('--rebase', action='store_true',
                           help='merge using rebase')
-merge_parser.add_argument('--squash', action='store_true',
+merge_pr_parser.add_argument('--squash', action='store_true',
                           help='merge using squash')
-merge_parser.add_argument('pr_number', type=int)
+merge_pr_parser.add_argument('pr_number', type=int)
+
+stealth_rebase_parser = subparsers.add_parser(
+    'stealth_rebase', parents=[common_parser],
+    help="rebase local branch preserving author and date")
+stealth_rebase_parser.add_argument('base_branch', action='store_true')
 
 args = parser.parse_args()
 
@@ -691,11 +712,11 @@ if hasattr(args, 'dry_run'):
 
 colorama.init()
 
-if args.command == 'show':
+if args.command == 'show_pr':
     show_pr(args.org, args.repo, args.pr_number, args.json)
     exit(0)
 
-if args.command == 'rebase':
+if args.command == 'rebase_pr':
     orig_path = enter_worktree()
     pushed = False
     try:
@@ -713,7 +734,7 @@ if args.command == 'rebase':
             delete_ref(pr_ref)
     exit(0)
 
-if args.command == 'link' or args.command == 'unlink':
+if args.command == 'link_pr' or args.command == 'unlink_pr':
     verify_pr(args.org, args.repo, args.pr_number, args.issue_number,
               args.milestone_name, args.no_checks, args.no_issue, args.no_milestone)
     orig_path = enter_worktree()
@@ -736,7 +757,7 @@ if args.command == 'link' or args.command == 'unlink':
             delete_ref(pr_ref)
     exit(0)
 
-if args.command == 'merge':
+if args.command == 'merge_pr':
     if int(bool(args.rebase)) + int(bool(args.squash)) != 1:
         error("either --rebase or --squash should be specified")
     verify_pr(args.org, args.repo, args.pr_number, args.issue_number,
@@ -751,7 +772,7 @@ if args.command == 'merge':
         fetch_pr(args.org, args.repo, args.pr_number)
         rebase_pr(args.org, args.repo, args.pr_number)
         if args.rebase:
-            link_pr(args.org, args.repo, args.pr_number, 'link', args.no_issue)
+            link_pr(args.org, args.repo, args.pr_number, 'link_pr', args.no_issue)
         else:
             squash_pr(args.org, args.repo, args.pr_number, args.no_issue)
         log_pr(args.org, args.repo, args.pr_number)
@@ -764,4 +785,8 @@ if args.command == 'merge':
         leave_worktree(orig_path)
         if merged:
             delete_ref(pr_ref)
+    exit(0)
+
+if args.command == 'stealth_rebase':
+    stealth_rebase(args.base_branch)
     exit(0)
