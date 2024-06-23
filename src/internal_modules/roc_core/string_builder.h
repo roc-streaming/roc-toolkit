@@ -80,25 +80,25 @@ public:
 
     //! Overwrite result with given string.
     //! If there is not enough space, truncates the string and returns false.
-    bool assign_str(const char* str);
+    bool rewrite(const char* str);
 
-    //! Overwrite result with given range.
+    //! Append to result given range.
     //! If there is not enough space, truncates the string and returns false.
-    bool assign_str(const char* str_begin, const char* str_end);
+    bool append_range(const char* str_begin, const char* str_end);
 
     //! Append to result given string.
     //! If there is not enough space, truncates the string and returns false.
     bool append_str(const char* str);
 
-    //! Append to result given range.
-    //! If there is not enough space, truncates the string and returns false.
-    bool append_str(const char* str_begin, const char* str_end);
-
     //! Append to result given character.
     //! If there is not enough space, truncates the string and returns false.
     bool append_char(char ch);
 
-    //! Format and append to result given number.
+    //! Format and append to result given signed integer.
+    //! If there is not enough space, truncates the string and returns false.
+    bool append_sint(int64_t number, unsigned int base);
+
+    //! Format and append to result given unsigned integer.
     //! If there is not enough space, truncates the string and returns false.
     bool append_uint(uint64_t number, unsigned int base);
 

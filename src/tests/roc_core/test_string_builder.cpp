@@ -81,17 +81,17 @@ TEST(string_builder, init) {
     }
 }
 
-TEST(string_builder, assign) {
+TEST(string_builder, rewrite) {
     { // copy exact size
         enum { Size = 9 };
 
         char dst[] = "xxxxxxxx";
-        char src[] = "12345678";
+        char src[] = "12345678\0";
         char res[] = "12345678";
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.assign_str(src, src + strlen(src)));
+        CHECK(b.rewrite(src));
         CHECK(b.is_ok());
 
         UNSIGNED_LONGS_EQUAL(Size, b.needed_size());
@@ -103,12 +103,12 @@ TEST(string_builder, assign) {
         enum { Size = 9 };
 
         char dst[] = "xxxxxxxx";
-        char src[] = "123456789abcd";
+        char src[] = "1234\0";
         char res[] = "1234\0xxx";
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.assign_str(src, src + 4));
+        CHECK(b.rewrite(src));
         CHECK(b.is_ok());
 
         UNSIGNED_LONGS_EQUAL(5, b.needed_size());
@@ -120,12 +120,12 @@ TEST(string_builder, assign) {
         enum { Size = 9 };
 
         char dst[] = "xxxxxxxx";
-        char src[] = "123456789abcd";
+        char src[] = "123456789abcd\0";
         char res[] = "12345678";
 
         StringBuilder b(dst, Size);
 
-        CHECK(!b.assign_str(src, src + strlen(src)));
+        CHECK(!b.rewrite(src));
         CHECK(!b.is_ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src) + 1, b.needed_size());
@@ -137,12 +137,12 @@ TEST(string_builder, assign) {
         enum { Size = 1 };
 
         char dst[] = "xx";
-        char src[] = "12345678";
+        char src[] = "12345678\0";
         char res[] = "\0x";
 
         StringBuilder b(dst, Size);
 
-        CHECK(!b.assign_str(src, src + strlen(src)));
+        CHECK(!b.rewrite(src));
         CHECK(!b.is_ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src) + 1, b.needed_size());
@@ -154,12 +154,12 @@ TEST(string_builder, assign) {
         enum { Size = 0 };
 
         char dst[] = "xx";
-        char src[] = "12345678";
+        char src[] = "12345678\0";
         char res[] = "xx";
 
         StringBuilder b(dst, Size);
 
-        CHECK(!b.assign_str(src, src + strlen(src)));
+        CHECK(!b.rewrite(src));
         CHECK(!b.is_ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src) + 1, b.needed_size());
@@ -178,7 +178,7 @@ TEST(string_builder, assign) {
 
         STRCMP_EQUAL("123456", buf);
 
-        CHECK(b.assign_str("abc"));
+        CHECK(b.rewrite("abc"));
         CHECK(b.is_ok());
 
         STRCMP_EQUAL("abc", buf);
@@ -188,12 +188,12 @@ TEST(string_builder, assign) {
 
         StringBuilder b(buf, sizeof(buf));
 
-        CHECK(!b.assign_str("1235678"));
+        CHECK(!b.rewrite("1235678"));
         CHECK(!b.is_ok());
 
         STRCMP_EQUAL("123", buf);
 
-        CHECK(b.assign_str("abc"));
+        CHECK(b.rewrite("abc"));
         CHECK(b.is_ok());
 
         STRCMP_EQUAL("abc", buf);
@@ -214,7 +214,7 @@ TEST(string_builder, append_str) {
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.append_str(src1, src1 + strlen(src1)));
+        CHECK(b.append_range(src1, src1 + strlen(src1)));
         CHECK(b.is_ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src1) + 1, b.needed_size());
@@ -222,7 +222,7 @@ TEST(string_builder, append_str) {
 
         CHECK(memcmp(dst, res1, sizeof(res1)) == 0);
 
-        CHECK(b.append_str(src2, src2 + strlen(src2)));
+        CHECK(b.append_range(src2, src2 + strlen(src2)));
         CHECK(b.is_ok());
 
         UNSIGNED_LONGS_EQUAL(Size, b.needed_size());
@@ -243,7 +243,7 @@ TEST(string_builder, append_str) {
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.append_str(src1, src1 + strlen(src1)));
+        CHECK(b.append_range(src1, src1 + strlen(src1)));
         CHECK(b.is_ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src1) + 1, b.needed_size());
@@ -251,7 +251,7 @@ TEST(string_builder, append_str) {
 
         CHECK(memcmp(dst, res1, sizeof(res1)) == 0);
 
-        CHECK(b.append_str(src2, src2 + strlen(src2)));
+        CHECK(b.append_range(src2, src2 + strlen(src2)));
         CHECK(b.is_ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src1) + strlen(src2) + 1, b.needed_size());
@@ -272,7 +272,7 @@ TEST(string_builder, append_str) {
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.append_str(src1, src1 + strlen(src1)));
+        CHECK(b.append_range(src1, src1 + strlen(src1)));
         CHECK(b.is_ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src1) + 1, b.needed_size());
@@ -280,7 +280,7 @@ TEST(string_builder, append_str) {
 
         CHECK(memcmp(dst, res1, sizeof(res1)) == 0);
 
-        CHECK(!b.append_str(src2, src2 + strlen(src2)));
+        CHECK(!b.append_range(src2, src2 + strlen(src2)));
         CHECK(!b.is_ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src1) + strlen(src2) + 1, b.needed_size());
@@ -301,7 +301,7 @@ TEST(string_builder, append_str) {
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.append_str(src1, src1 + strlen(src1)));
+        CHECK(b.append_range(src1, src1 + strlen(src1)));
         CHECK(b.is_ok());
 
         UNSIGNED_LONGS_EQUAL(Size, b.needed_size());
@@ -309,7 +309,7 @@ TEST(string_builder, append_str) {
 
         CHECK(memcmp(dst, res1, sizeof(res1)) == 0);
 
-        CHECK(!b.append_str(src2, src2 + strlen(src2)));
+        CHECK(!b.append_range(src2, src2 + strlen(src2)));
         CHECK(!b.is_ok());
 
         UNSIGNED_LONGS_EQUAL(strlen(src1) + strlen(src2) + 1, b.needed_size());
@@ -319,16 +319,133 @@ TEST(string_builder, append_str) {
     }
 }
 
+TEST(string_builder, append_sint) {
+    { // append exact size (10 base)
+        enum { Size = 9 };
+
+        char dst[] = "xxxxxxxx";
+        char res[] = "...-1234";
+
+        StringBuilder b(dst, Size);
+
+        CHECK(b.append_str("..."));
+        CHECK(b.is_ok());
+
+        CHECK(b.append_sint(-1234, 10));
+        CHECK(b.is_ok());
+
+        UNSIGNED_LONGS_EQUAL(Size, b.needed_size());
+        UNSIGNED_LONGS_EQUAL(Size, b.actual_size());
+
+        CHECK(memcmp(dst, res, sizeof(res)) == 0);
+    }
+    { // append exact size (16 base)
+        enum { Size = 9 };
+
+        char dst[] = "xxxxxxxx";
+        char res[] = "...-DEAD";
+
+        StringBuilder b(dst, Size);
+
+        CHECK(b.append_str("..."));
+        CHECK(b.is_ok());
+
+        CHECK(b.append_sint(-0xdead, 16));
+        CHECK(b.is_ok());
+
+        UNSIGNED_LONGS_EQUAL(Size, b.needed_size());
+        UNSIGNED_LONGS_EQUAL(Size, b.actual_size());
+
+        CHECK(memcmp(dst, res, sizeof(res)) == 0);
+    }
+    { // append exact size (positive)
+        enum { Size = 9 };
+
+        char dst[] = "xxxxxxxx";
+        char res[] = "....1234";
+
+        StringBuilder b(dst, Size);
+
+        CHECK(b.append_str("...."));
+        CHECK(b.is_ok());
+
+        CHECK(b.append_sint(1234, 10));
+        CHECK(b.is_ok());
+
+        UNSIGNED_LONGS_EQUAL(Size, b.needed_size());
+        UNSIGNED_LONGS_EQUAL(Size, b.actual_size());
+
+        CHECK(memcmp(dst, res, sizeof(res)) == 0);
+    }
+    { // append smaller size
+        enum { Size = 9 };
+
+        char dst[] = "xxxxxxxx";
+        char res[] = "...-12\0x";
+
+        StringBuilder b(dst, Size);
+
+        CHECK(b.append_str("..."));
+        CHECK(b.is_ok());
+
+        CHECK(b.append_sint(-12, 10));
+        CHECK(b.is_ok());
+
+        UNSIGNED_LONGS_EQUAL(7, b.needed_size());
+        UNSIGNED_LONGS_EQUAL(7, b.actual_size());
+
+        CHECK(memcmp(dst, res, sizeof(res)) == 0);
+    }
+    { // append larger size (truncation)
+        enum { Size = 9 };
+
+        char dst[] = "xxxxxxxx";
+        char res[] = "...-1234";
+
+        StringBuilder b(dst, Size);
+
+        CHECK(b.append_str("..."));
+        CHECK(b.is_ok());
+
+        CHECK(!b.append_sint(-12345678, 10));
+        CHECK(!b.is_ok());
+
+        UNSIGNED_LONGS_EQUAL(Size + 4, b.needed_size());
+        UNSIGNED_LONGS_EQUAL(Size, b.actual_size());
+
+        CHECK(memcmp(dst, res, sizeof(res)) == 0);
+    }
+    { // zero bytes left
+        enum { Size = 9 };
+
+        char dst[] = "xxxxxxxx";
+        char res[] = "........";
+
+        StringBuilder b(dst, Size);
+
+        CHECK(b.append_str("........"));
+        CHECK(b.is_ok());
+
+        CHECK(!b.append_sint(-1234, 10));
+        CHECK(!b.is_ok());
+
+        UNSIGNED_LONGS_EQUAL(Size + 5, b.needed_size());
+        UNSIGNED_LONGS_EQUAL(Size, b.actual_size());
+
+        CHECK(memcmp(dst, res, sizeof(res)) == 0);
+    }
+}
+
 TEST(string_builder, append_uint) {
     { // append exact size (10 base)
         enum { Size = 9 };
 
         char dst[] = "xxxxxxxx";
-        char res[] = "----1234";
+        char res[] = "....1234";
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.append_str("----"));
+        CHECK(b.append_str("...."));
         CHECK(b.is_ok());
 
         CHECK(b.append_uint(1234, 10));
@@ -343,11 +460,11 @@ TEST(string_builder, append_uint) {
         enum { Size = 9 };
 
         char dst[] = "xxxxxxxx";
-        char res[] = "----DEAD";
+        char res[] = "....DEAD";
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.append_str("----"));
+        CHECK(b.append_str("...."));
         CHECK(b.is_ok());
 
         CHECK(b.append_uint(0xdead, 16));
@@ -362,11 +479,11 @@ TEST(string_builder, append_uint) {
         enum { Size = 9 };
 
         char dst[] = "xxxxxxxx";
-        char res[] = "----12\0x";
+        char res[] = "....12\0x";
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.append_str("----"));
+        CHECK(b.append_str("...."));
         CHECK(b.is_ok());
 
         CHECK(b.append_uint(12, 10));
@@ -381,11 +498,11 @@ TEST(string_builder, append_uint) {
         enum { Size = 9 };
 
         char dst[] = "xxxxxxxx";
-        char res[] = "----0\0xx";
+        char res[] = "....0\0xx";
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.append_str("----"));
+        CHECK(b.append_str("...."));
         CHECK(b.is_ok());
 
         CHECK(b.append_uint(0, 10));
@@ -400,11 +517,11 @@ TEST(string_builder, append_uint) {
         enum { Size = 9 };
 
         char dst[] = "xxxxxxxx";
-        char res[] = "----1234";
+        char res[] = "....1234";
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.append_str("----"));
+        CHECK(b.append_str("...."));
         CHECK(b.is_ok());
 
         CHECK(!b.append_uint(12345678, 10));
@@ -419,11 +536,11 @@ TEST(string_builder, append_uint) {
         enum { Size = 9 };
 
         char dst[] = "xxxxxxxx";
-        char res[] = "--------";
+        char res[] = "........";
 
         StringBuilder b(dst, Size);
 
-        CHECK(b.append_str("--------"));
+        CHECK(b.append_str("........"));
         CHECK(b.is_ok());
 
         CHECK(!b.append_uint(1234, 10));
@@ -447,7 +564,7 @@ TEST(string_builder, resizing) {
         UNSIGNED_LONGS_EQUAL(0, buf.len());
         STRCMP_EQUAL("", buf.c_str());
 
-        CHECK(b.assign_str("1234"));
+        CHECK(b.rewrite("1234"));
         CHECK(b.is_ok());
 
         UNSIGNED_LONGS_EQUAL(5, b.needed_size());
@@ -456,7 +573,7 @@ TEST(string_builder, resizing) {
         UNSIGNED_LONGS_EQUAL(4, buf.len());
         STRCMP_EQUAL("1234", buf.c_str());
 
-        CHECK(b.assign_str("1234abcd"));
+        CHECK(b.rewrite("1234abcd"));
         CHECK(b.is_ok());
 
         UNSIGNED_LONGS_EQUAL(9, b.needed_size());

@@ -16,12 +16,12 @@ endpoint_uri_to_str::endpoint_uri_to_str(const EndpointUri& u) {
     core::StringBuilder b(buf_, sizeof(buf_));
 
     if (!u.verify(EndpointUri::Subset_Full)) {
-        b.assign_str("<bad>");
+        b.rewrite("<bad>");
         return;
     }
 
     if (!format_endpoint_uri(u, EndpointUri::Subset_Full, b)) {
-        b.assign_str("<bad>");
+        b.rewrite("<bad>");
         return;
     }
 }
