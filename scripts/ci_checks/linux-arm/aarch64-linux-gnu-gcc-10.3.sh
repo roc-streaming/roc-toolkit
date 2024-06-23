@@ -2,8 +2,8 @@
 
 set -eux -o pipefail
 
-toolchain="aarch64-linux-gnu"
-compiler="gcc-7.4.1-release"
+toolchain="aarch64-none-linux-gnu"
+compiler="gcc-10.3.1-release"
 cpu="cortex-a53" # armv8
 
 scons -Q \

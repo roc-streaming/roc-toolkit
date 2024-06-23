@@ -86,8 +86,17 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - script: linux-arm/aarch64-linux-gnu-gcc-10.3
+            image: rocstreaming/toolchain-aarch64-linux-gnu:gcc-10.3
+
           - script: linux-arm/aarch64-linux-gnu-gcc-7.4
             image: rocstreaming/toolchain-aarch64-linux-gnu:gcc-7.4
+
+          - script: linux-arm/arm-linux-gnueabihf-gcc-10.3
+            image: rocstreaming/toolchain-arm-linux-gnueabihf:gcc-10.3
+
+          - script: linux-arm/arm-linux-gnueabihf-gcc-7.4
+            image: rocstreaming/toolchain-arm-linux-gnueabihf:gcc-7.4
 
           - script: linux-arm/arm-linux-gnueabihf-gcc-4.9
             image: rocstreaming/toolchain-arm-linux-gnueabihf:gcc-4.9

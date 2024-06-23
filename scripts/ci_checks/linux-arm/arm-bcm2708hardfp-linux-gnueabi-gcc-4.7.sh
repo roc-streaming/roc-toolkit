@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -euxo pipefail
+set -eux -o pipefail
 
 toolchain="arm-bcm2708hardfp-linux-gnueabi"
 compiler="gcc-4.7.1-release"
@@ -13,11 +13,4 @@ scons -Q \
     --build-3rdparty=all,pulseaudio:5.0 \
     --host=${toolchain}
 
-find bin/${toolchain} -name 'roc-test-*' | \
-    while read tst
-    do
-        LD_LIBRARY_PATH="/opt/sysroot/lib:$(echo \
-          "${PWD}"/build/3rdparty/${toolchain}/${compiler}/*/rpath | tr ' ' ':')" \
-            python3 scripts/scons_helpers/timeout-run.py 300 \
-              qemu-arm -L "/opt/sysroot" -cpu ${cpu} ${tst}
-    done
+"$( dirname "$0" )"/run-tests-in-qemu.sh "$toolchain" "$compiler" "$cpu"
