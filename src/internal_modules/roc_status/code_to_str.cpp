@@ -51,6 +51,8 @@ const char* code_to_str(StatusCode code) {
         return "BadProtocol";
     case StatusBadConfig:
         return "BadConfig";
+    case StatusBadPacket:
+        return "BadPacket";
     case StatusBadBuffer:
         return "BadBuffer";
     case StatusBadArg:

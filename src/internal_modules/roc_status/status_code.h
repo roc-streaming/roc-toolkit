@@ -155,6 +155,15 @@ enum StatusCode {
     //!  with each other.
     StatusBadConfig,
 
+    //! Malformed packet.
+    //! @remarks
+    //!  Indicates the provided packet has invalid or unsupported format
+    //!  and can't be parsed.
+    //! @note
+    //!  Example: RTP packet doesn't have proper version in corresponding
+    //!  header field.
+    StatusBadPacket,
+
     //! Provided buffer has inappropriate size.
     //! @remarks
     //!  Indicates the output buffer provided by user is insufficient to hold
