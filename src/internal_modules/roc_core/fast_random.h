@@ -18,18 +18,18 @@ namespace roc {
 namespace core {
 
 //! Get a random integer from a non cryptographically secure, but fast PRNG.
-//! Thread-safe.
+//! Thread-safe and lock-free.
 //! @returns random value between 0 and UINT32_MAX.
 uint32_t fast_random();
 
 //! Get a random integer from a non cryptographically secure, but fast PRNG.
-//! Thread-safe.
+//! Thread-safe and lock-free.
 //! @returns random value in inclusive range [from; to].
 uint32_t fast_random_range(uint32_t from, uint32_t to);
 
 //! Get a random double from a non cryptographically secure, but fast PRNG.
-//! Thread-safe.
-//! @returns normally distibure random value with 1 variance.
+//! Thread-safe and lock-free.
+//! @returns normally distributed random value with 1 variance.
 double fast_random_gaussian();
 
 } // namespace core

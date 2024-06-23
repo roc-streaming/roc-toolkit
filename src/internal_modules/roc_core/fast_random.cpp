@@ -22,8 +22,6 @@ uint32_t rng_state;
 
 // PRNG implementation is a lock-free adaptation of splitmix32 by Tommy Ettinger:
 // https://gist.github.com/tommyettinger/46a874533244883189143505d203312c
-//
-// This implementation is not a cryptographically secure PRNG.
 uint32_t fast_random() {
     if (AtomicOps::load_relaxed(rng_state) == 0) {
         uint32_t expected_state = 0;
@@ -44,8 +42,6 @@ uint32_t fast_random() {
 
 // Bounded PRNG implementation is based on "Debiased Modulo (Once) — Java's Method"
 // algorithm: https://www.pcg-random.org/posts/bounded-rands.html
-//
-// This implementation is not a cryptographically secure PRNG.
 uint32_t fast_random_range(uint32_t from, uint32_t to) {
     roc_panic_if_not(from <= to);
 

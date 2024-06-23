@@ -32,26 +32,27 @@ public:
     //! Get decoded stream position.
     //!
     //! @returns
-    //!  the position of the next sample that will be retrieved by read().
+    //!  the position of the next sample that will be retrieved by read_samples().
     //!
     //! @remarks
-    //!  The decoded stream position is affected by begin(), read(), and shift() methods.
-    //!  begin() changes it according to the provided frame position, however it depends
-    //!  on the implementation how exactly. read() and shift() increase it by the number
-    //!  of samples they returned.
+    //!  The decoded stream position is affected by begin_frame(), read_samples(), and
+    //!  drop_samples() methods. begin_frame() changes it according to the provided frame
+    //!  position, however it depends on the implementation how exactly. read_samples()
+    //!  and drop_samples() increase it by the number of samples they returned.
     virtual packet::stream_timestamp_t position() const = 0;
 
     //! Get number of samples available for decoding.
     //!
     //! @returns
     //!  number of available samples per channel, or zero if there are no more
-    //!  samples in the current frame, or if begin() was not called yet.
+    //!  samples in the current frame, or if begin_frame() was not called yet.
     //!
     //! @remarks
-    //!  The number of samples available is affected by begin(), read(), and shift(),
-    //!  and end() methods. begin() resets it according to the provided frame size,
-    //!  however it depends on the implementation how exactly. end() resets it to zero.
-    //!  read() and shift() decrease it by the number of samples they returned.
+    //!  The number of samples available is affected by begin_frame(), read_samples(), and
+    //!  drop_samples(), and end_frame() methods. begin_frame() resets it according to the
+    //!  provided frame size, however it depends on the implementation how exactly.
+    //!  end_frame() resets it to zero. read_samples() and drop_samples() decrease it by
+    //!  the number of samples they returned.
     virtual packet::stream_timestamp_t available() const = 0;
 
     //! Get number of samples per channel that can be decoded from given frame.
@@ -61,8 +62,9 @@ public:
     //! Start decoding a new frame.
     //!
     //! @remarks
-    //!  After this call, read() will retrieve samples from given @p frame_data, until
-    //!  @p frame_size bytes are read or end() is called.
+    //!  After this call, read_samples() will retrieve samples from given @p frame_data,
+    //!  until
+    //!  @p frame_size bytes are read or end_frame() is called.
     //!
     //! @note
     //!  @p frame_position defines the position of the frame in the encoded stream.
@@ -87,7 +89,7 @@ public:
     //!  @p n_samples if there are no more samples in the current frame.
     //!
     //! @pre
-    //!  This method may be called only between begin() and end() calls.
+    //!  This method may be called only between begin_frame() and end_frame().
     virtual size_t read_samples(sample_t* samples, size_t n_samples) = 0;
 
     //! Shift samples from current frame.
@@ -96,7 +98,7 @@ public:
     //!  - @p n_samples - number of samples to shift per channel
     //!
     //! @remarks
-    //!  Shifts the given number of samples from the left, as if read() was called
+    //!  Shifts the given number of samples from the left, as if read_samples() was called
     //!  and the result was dropped.
     //!
     //! @returns
@@ -104,14 +106,14 @@ public:
     //!  @p n_samples if there are no more samples in the current frame.
     //!
     //! @pre
-    //!  This method may be called only between begin() and end() calls.
+    //!  This method may be called only between begin_frame() and end_frame().
     virtual size_t drop_samples(size_t n_samples) = 0;
 
     //! Finish decoding current frame.
     //!
     //! @remarks
     //!  After this call, the frame can't be read or shifted anymore. A new frame
-    //!  should be started by calling begin().
+    //!  should be started by calling begin_frame().
     virtual void end_frame() = 0;
 };
 

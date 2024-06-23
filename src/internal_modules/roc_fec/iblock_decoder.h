@@ -38,12 +38,12 @@ public:
 
     //! Store source or repair packet buffer for current block.
     //! @pre
-    //!  This method may be called only between begin() and end() calls.
+    //!  This method may be called only between begin_block() and end_block().
     virtual void set_buffer(size_t index, const core::Slice<uint8_t>& buffer) = 0;
 
     //! Repair source packet buffer.
     //! @pre
-    //!  This method may be called only between begin() and end() calls.
+    //!  This method may be called only between begin_block() and end_block().
     virtual core::Slice<uint8_t> repair_buffer(size_t index) = 0;
 
     //! Finish block.
