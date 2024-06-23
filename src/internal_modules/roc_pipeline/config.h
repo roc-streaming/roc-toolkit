@@ -167,9 +167,6 @@ struct ReceiverSessionConfig {
     //! Resampler parameters.
     audio::ResamplerConfig resampler;
 
-    //! Insert weird beeps instead of silence on packet loss.
-    bool enable_beeping;
-
     //! Initialize config.
     ReceiverSessionConfig();
 

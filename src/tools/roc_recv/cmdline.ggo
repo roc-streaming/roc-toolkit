@@ -73,8 +73,6 @@ section "Options"
 
     option "profiling" - "Enable self-profiling" flag off
 
-    option "beep" - "Enable beeping on packet loss" flag off
-
     option "color" - "Set colored logging mode for stderr output"
         values="auto","always","never" default="auto" enum optional
 

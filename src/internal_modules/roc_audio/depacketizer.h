@@ -25,9 +25,31 @@ namespace roc {
 namespace audio {
 
 //! Depacketizer.
-//! @remarks
-//!  Reads packets from a packet reader, decodes samples from packets using a
-//!  decoder, and produces an audio stream.
+//!
+//! Reads packets from a packet reader, decodes samples from packets using a
+//! frame decoder, and produces an audio stream of frames.
+//!
+//! Notes:
+//!
+//!  - Depacketizer assume that packets from packet reader come in correct
+//!    order, i.e. next packet has higher timestamp that previous one.
+//!
+//!  - If this assumption breaks and a outdated packet is fetched from packet
+//!    reader, it's dropped.
+//!
+//!  - Depacketizer uses ModePeek to see what is the next available packet in
+//!    packet reader. It doesn't use ModeFetch until next packet is actually
+//!    used, to give late packets more time to arrive.
+//!
+//!  - In ModeHard, depacketizer fills gaps caused by packet losses with zeros.
+//!
+//!  - In ModeSoft, depacketizer stops reading at the first gap and returns
+//!    either StatusPart or StatusDrain.
+//!
+//!  - Depacketizer never mixes decoded samples and gaps in same frame. E.g. if
+//!    100 samples are requested, and first 20 samples are missing, depacketizer
+//!    generates two partial reads: first with 20 zeroized samples, second with
+//!    80 decoded samples.
 class Depacketizer : public IFrameReader, public core::NonCopyable<> {
 public:
     //! Initialization.
@@ -36,12 +58,10 @@ public:
     //!  - @p packet_reader is used to read packets
     //!  - @p payload_decoder is used to extract samples from packets
     //!  - @p sample_spec describes output frames
-    //!  - @p beep enables weird beeps instead of silence on packet loss
     Depacketizer(packet::IReader& packet_reader,
                  IFrameDecoder& payload_decoder,
                  FrameFactory& frame_factory,
-                 const SampleSpec& sample_spec,
-                 bool beep);
+                 const SampleSpec& sample_spec);
 
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
@@ -49,49 +69,58 @@ public:
     //! Did depacketizer catch first packet?
     bool is_started() const;
 
-    //! Read audio frame.
-    virtual ROC_ATTR_NODISCARD status::StatusCode
-    read(Frame& frame, packet::stream_timestamp_t duration, FrameReadMode mode);
-
     //! Get next timestamp to be rendered.
     //! @pre
     //!  is_started() should return true
     packet::stream_timestamp_t next_timestamp() const;
 
+    //! Read audio frame.
+    virtual ROC_ATTR_NODISCARD status::StatusCode
+    read(Frame& frame, packet::stream_timestamp_t duration, FrameReadMode mode);
+
 private:
+    // Statistics collected during decoding of one frame.
     struct FrameStats {
-        // Number of samples decoded from packets into the frame.
+        // Total number of samples written to frame.
+        size_t n_written_samples;
+
+        // How much of all samples written to frame were decoded from packets.
         size_t n_decoded_samples;
 
-        // Number of samples filled out in the frame.
-        size_t n_filled_samples;
+        // How much of all samples written to frame were missing and zeroized.
+        size_t n_missing_samples;
 
-        // Number of packets dropped during frame construction.
+        // Number of packets dropped during decoding of this frame.
         size_t n_dropped_packets;
 
         // This frame first sample timestamp.
         core::nanoseconds_t capture_ts;
 
         FrameStats()
-            : n_decoded_samples(0)
-            , n_filled_samples(0)
+            : n_written_samples(0)
+            , n_decoded_samples(0)
+            , n_missing_samples(0)
             , n_dropped_packets(0)
             , capture_ts(0) {
         }
     };
 
-    sample_t* read_samples_(sample_t* buff_ptr, sample_t* buff_end, FrameStats& stats);
+    sample_t* read_samples_(sample_t* buff_ptr,
+                            sample_t* buff_end,
+                            FrameReadMode mode,
+                            FrameStats& stats);
 
-    sample_t* read_packet_samples_(sample_t* buff_ptr, sample_t* buff_end);
+    sample_t* read_decoded_samples_(sample_t* buff_ptr, sample_t* buff_end);
     sample_t* read_missing_samples_(sample_t* buff_ptr, sample_t* buff_end);
 
-    status::StatusCode update_packet_(FrameStats& frame_stats);
-    status::StatusCode fetch_packet_();
-    bool start_packet_();
+    status::StatusCode
+    update_packet_(size_t requested_samples, FrameReadMode mode, FrameStats& stats);
+    status::StatusCode fetch_packet_(size_t requested_samples, FrameReadMode mode);
+    status::StatusCode start_packet_();
 
-    void commit_frame_(Frame& frame, const FrameStats& stats);
+    void commit_frame_(Frame& frame, size_t frame_samples, const FrameStats& stats);
 
-    void report_stats_();
+    void periodic_report_();
 
     FrameFactory& frame_factory_;
     packet::IReader& packet_reader_;
@@ -106,17 +135,15 @@ private:
     bool valid_capture_ts_;
 
     size_t padding_samples_;
-    size_t missing_samples_;
     size_t decoded_samples_;
+    size_t missing_samples_;
 
     size_t fetched_packets_;
     size_t dropped_packets_;
 
+    bool is_started_;
+
     core::RateLimiter rate_limiter_;
-
-    const bool beep_;
-
-    bool first_packet_;
 
     status::StatusCode init_status_;
 };

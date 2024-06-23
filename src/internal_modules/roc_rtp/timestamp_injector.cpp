@@ -46,11 +46,6 @@ status::StatusCode TimestampInjector::read(packet::PacketPtr& pkt,
         roc_panic("timestamp injector: unexpected non-rtp packet");
     }
 
-    if (pkt->rtp()->capture_timestamp != 0) {
-        roc_panic("timestamp injector: unexpected non-zero cts in packet: %lld",
-                  (long long)pkt->rtp()->capture_timestamp);
-    }
-
     if (has_ts_) {
         const packet::stream_timestamp_diff_t rtp_dn =
             packet::stream_timestamp_diff(pkt->rtp()->stream_timestamp, rtp_ts_);

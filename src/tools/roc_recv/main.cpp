@@ -223,7 +223,6 @@ int main(int argc, char** argv) {
         break;
     }
 
-    receiver_config.session_defaults.enable_beeping = args.beep_flag;
     receiver_config.common.enable_profiling = args.profiling_flag;
 
     node::ContextConfig context_config;

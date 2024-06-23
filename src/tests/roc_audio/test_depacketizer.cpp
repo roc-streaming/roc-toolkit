@@ -55,7 +55,7 @@ rtp::Composer rtp_composer(NULL);
 packet::PacketPtr new_packet(IFrameEncoder& encoder,
                              packet::stream_timestamp_t ts,
                              sample_t value,
-                             core::nanoseconds_t capt_ts) {
+                             core::nanoseconds_t capt_ts = 0) {
     packet::PacketPtr pp = packet_factory.new_packet();
     CHECK(pp);
 
@@ -98,41 +98,21 @@ void expect_values(const sample_t* samples, size_t num_samples, sample_t value) 
     }
 }
 
-void expect_output(Depacketizer& depacketizer,
-                   size_t samples_per_chan,
+void expect_output(status::StatusCode expected_code,
+                   Depacketizer& depacketizer,
+                   size_t requested_samples_per_chan,
+                   size_t expected_samples_per_chan,
                    sample_t value,
-                   core::nanoseconds_t capt_ts) {
+                   core::nanoseconds_t capt_ts = -1,
+                   int flags = -1,
+                   FrameReadMode mode = ModeHard) {
     FramePtr frame = frame_factory.allocate_frame_no_buffer();
     CHECK(frame);
 
-    LONGS_EQUAL(status::StatusOK,
-                depacketizer.read(*frame, (packet::stream_timestamp_t)samples_per_chan,
-                                  ModeHard));
-
-    CHECK(frame->is_raw());
-
-    UNSIGNED_LONGS_EQUAL(samples_per_chan, frame->duration());
-    UNSIGNED_LONGS_EQUAL(samples_per_chan * frame_spec.num_channels(),
-                         frame->num_raw_samples());
-
-    CHECK(core::ns_equal_delta(frame->capture_timestamp(), capt_ts, core::Microsecond));
-
-    expect_values(frame->raw_samples(), samples_per_chan * frame_spec.num_channels(),
-                  value);
-}
-
-void expect_partial(Depacketizer& depacketizer,
-                    size_t requested_samples_per_chan,
-                    size_t expected_samples_per_chan,
-                    sample_t value,
-                    core::nanoseconds_t capt_ts) {
-    FramePtr frame = frame_factory.allocate_frame_no_buffer();
-    CHECK(frame);
-
-    LONGS_EQUAL(status::StatusPart,
+    LONGS_EQUAL(expected_code,
                 depacketizer.read(*frame,
                                   (packet::stream_timestamp_t)requested_samples_per_chan,
-                                  ModeHard));
+                                  mode));
 
     CHECK(frame->is_raw());
 
@@ -140,41 +120,73 @@ void expect_partial(Depacketizer& depacketizer,
     UNSIGNED_LONGS_EQUAL(expected_samples_per_chan * frame_spec.num_channels(),
                          frame->num_raw_samples());
 
-    CHECK(core::ns_equal_delta(frame->capture_timestamp(), capt_ts, core::Microsecond));
+    if (flags != -1) {
+        LONGS_EQUAL(flags, frame->flags());
+    }
+
+    if (capt_ts != -1) {
+        CHECK(
+            core::ns_equal_delta(frame->capture_timestamp(), capt_ts, core::Microsecond));
+    }
 
     expect_values(frame->raw_samples(),
                   expected_samples_per_chan * frame_spec.num_channels(), value);
 }
 
-void expect_flags(Depacketizer& depacketizer,
-                  size_t samples_per_chan,
-                  unsigned int flags,
-                  core::nanoseconds_t capt_ts = -1) {
-    const core::nanoseconds_t epsilon = 100 * core::Microsecond;
-
-    FramePtr frame = frame_factory.allocate_frame_no_buffer();
-    CHECK(frame);
-
-    LONGS_EQUAL(status::StatusOK,
-                depacketizer.read(*frame, (packet::stream_timestamp_t)samples_per_chan,
-                                  ModeHard));
-
-    UNSIGNED_LONGS_EQUAL(flags, frame->flags());
-    if (capt_ts >= 0) {
-        CHECK(core::ns_equal_delta(frame->capture_timestamp(), capt_ts, epsilon));
-    }
-}
-
-void expect_error(Depacketizer& depacketizer,
-                  size_t samples_per_chan,
-                  status::StatusCode expected_status) {
+void expect_error(status::StatusCode expected_status,
+                  Depacketizer& depacketizer,
+                  size_t requested_samples_per_chan,
+                  FrameReadMode mode = ModeHard) {
     FramePtr frame = frame_factory.allocate_frame_no_buffer();
     CHECK(frame);
 
     LONGS_EQUAL(expected_status,
-                depacketizer.read(*frame, (packet::stream_timestamp_t)samples_per_chan,
-                                  ModeHard));
+                depacketizer.read(*frame,
+                                  (packet::stream_timestamp_t)requested_samples_per_chan,
+                                  mode));
 }
+
+class ArrayReader : public packet::IReader {
+public:
+    ArrayReader()
+        : next_index_(0) {
+    }
+
+    virtual status::StatusCode read(packet::PacketPtr& pp, packet::PacketReadMode mode) {
+        for (size_t index = next_index_; index < MaxPackets; index++) {
+            pp = packets_[index];
+            if (pp) {
+                if (mode == packet::ModeFetch) {
+                    next_index_ = index + 1;
+                }
+                return status::StatusOK;
+            }
+        }
+        return status::StatusDrain;
+    }
+
+    size_t num_packets() {
+        size_t count = 0;
+        for (size_t index = next_index_; index < MaxPackets; index++) {
+            if (packets_[index]) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    void set_packet(size_t index, const packet::PacketPtr& packet) {
+        CHECK(index < MaxPackets);
+        CHECK(index >= next_index_);
+        packets_[index] = packet;
+    }
+
+private:
+    enum { MaxPackets = 20 };
+
+    packet::PacketPtr packets_[MaxPackets];
+    size_t next_index_;
+};
 
 class StatusReader : public packet::IReader {
 public:
@@ -203,36 +215,43 @@ private:
 
 TEST_GROUP(depacketizer) {};
 
+// Frame size same as packet size.
 TEST(depacketizer, one_packet_one_read) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
     packet::FifoQueue queue;
-    Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
+    Depacketizer dp(queue, decoder, frame_factory, frame_spec);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     write_packet(queue, new_packet(encoder, 0, 0.11f, Now));
 
-    expect_output(dp, SamplesPerPacket, 0.11f, Now);
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.11f, Now);
 }
 
+// Small frame, big packet.
 TEST(depacketizer, one_packet_multiple_reads) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
     packet::FifoQueue queue;
-    Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
+    Depacketizer dp(queue, decoder, frame_factory, frame_spec);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     write_packet(queue, new_packet(encoder, 0, 0.11f, Now));
 
-    core::nanoseconds_t ts = Now;
+    LONGS_EQUAL(1, queue.size());
+
+    core::nanoseconds_t cts = Now;
     for (size_t n = 0; n < SamplesPerPacket; n++) {
-        expect_output(dp, 1, 0.11f, ts);
-        ts += frame_spec.samples_per_chan_2_ns(1);
+        expect_output(status::StatusOK, dp, 1, 1, 0.11f, cts);
+        cts += frame_spec.samples_per_chan_2_ns(1);
+
+        LONGS_EQUAL(0, queue.size());
     }
 }
 
+// Big frame, small packets.
 TEST(depacketizer, multiple_packets_one_read) {
     enum { NumPackets = 10 };
 
@@ -240,16 +259,21 @@ TEST(depacketizer, multiple_packets_one_read) {
     PcmDecoder decoder(packet_spec);
 
     packet::FifoQueue queue;
-    Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
+    Depacketizer dp(queue, decoder, frame_factory, frame_spec);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
-    core::nanoseconds_t ts = Now;
+    core::nanoseconds_t cts = Now;
     for (packet::stream_timestamp_t n = 0; n < NumPackets; n++) {
-        write_packet(queue, new_packet(encoder, n * SamplesPerPacket, 0.11f, ts));
-        ts += NsPerPacket;
+        write_packet(queue, new_packet(encoder, n * SamplesPerPacket, 0.11f, cts));
+        cts += NsPerPacket;
+
+        LONGS_EQUAL(n + 1, queue.size());
     }
 
-    expect_output(dp, NumPackets * SamplesPerPacket, 0.11f, Now);
+    expect_output(status::StatusOK, dp, NumPackets * SamplesPerPacket,
+                  NumPackets * SamplesPerPacket, 0.11f, Now);
+
+    LONGS_EQUAL(0, queue.size());
 }
 
 TEST(depacketizer, multiple_packets_multiple_reads) {
@@ -261,65 +285,82 @@ TEST(depacketizer, multiple_packets_multiple_reads) {
     PcmDecoder decoder(packet_spec);
 
     packet::FifoQueue queue;
-    Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
+    Depacketizer dp(queue, decoder, frame_factory, frame_spec);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     // Start with a packet with zero capture timestamp.
     write_packet(queue, new_packet(encoder, 0, 0.01f, 0));
     const size_t samples_per_frame = SamplesPerPacket / FramesPerPacket;
     for (size_t n = 0; n < FramesPerPacket; n++) {
-        expect_output(dp, samples_per_frame, 0.01f, 0);
+        expect_output(status::StatusOK, dp, samples_per_frame, samples_per_frame, 0.01f,
+                      0);
+    }
+    LONGS_EQUAL(0, queue.size());
+
+    {
+        core::nanoseconds_t cts = Now;
+        write_packet(queue, new_packet(encoder, 1 * SamplesPerPacket, 0.11f, cts));
+        cts += NsPerPacket;
+        write_packet(queue, new_packet(encoder, 2 * SamplesPerPacket, 0.22f, cts));
+        cts += NsPerPacket;
+        write_packet(queue, new_packet(encoder, 3 * SamplesPerPacket, 0.33f, cts));
+        LONGS_EQUAL(3, queue.size());
     }
 
-    core::nanoseconds_t ts = Now;
-    write_packet(queue, new_packet(encoder, 1 * SamplesPerPacket, 0.11f, ts));
-    ts += NsPerPacket;
-    write_packet(queue, new_packet(encoder, 2 * SamplesPerPacket, 0.22f, ts));
-    ts += NsPerPacket;
-    write_packet(queue, new_packet(encoder, 3 * SamplesPerPacket, 0.33f, ts));
-
-    ts = Now;
-    for (size_t n = 0; n < FramesPerPacket; n++) {
-        expect_output(dp, samples_per_frame, 0.11f, ts);
-        ts += frame_spec.samples_per_chan_2_ns(samples_per_frame);
-    }
-
-    for (size_t n = 0; n < FramesPerPacket; n++) {
-        expect_output(dp, samples_per_frame, 0.22f, ts);
-        ts += frame_spec.samples_per_chan_2_ns(samples_per_frame);
-    }
+    core::nanoseconds_t cts = Now;
 
     for (size_t n = 0; n < FramesPerPacket; n++) {
-        expect_output(dp, samples_per_frame, 0.33f, ts);
-        ts += frame_spec.samples_per_chan_2_ns(samples_per_frame);
+        expect_output(status::StatusOK, dp, samples_per_frame, samples_per_frame, 0.11f,
+                      cts);
+        cts += frame_spec.samples_per_chan_2_ns(samples_per_frame);
     }
+    LONGS_EQUAL(2, queue.size());
+
+    for (size_t n = 0; n < FramesPerPacket; n++) {
+        expect_output(status::StatusOK, dp, samples_per_frame, samples_per_frame, 0.22f,
+                      cts);
+        cts += frame_spec.samples_per_chan_2_ns(samples_per_frame);
+    }
+    LONGS_EQUAL(1, queue.size());
+
+    for (size_t n = 0; n < FramesPerPacket; n++) {
+        expect_output(status::StatusOK, dp, samples_per_frame, samples_per_frame, 0.33f,
+                      cts);
+        cts += frame_spec.samples_per_chan_2_ns(samples_per_frame);
+    }
+    LONGS_EQUAL(0, queue.size());
 }
 
-TEST(depacketizer, timestamp_overflow) {
+// Wrapping of 32-bit packet stream timestamp (STS).
+TEST(depacketizer, timestamp_wrap) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
     packet::FifoQueue queue;
-    Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
+    Depacketizer dp(queue, decoder, frame_factory, frame_spec);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     const packet::stream_timestamp_t ts2 = 0;
     const packet::stream_timestamp_t ts1 = ts2 - SamplesPerPacket;
     const packet::stream_timestamp_t ts3 = ts2 + SamplesPerPacket;
 
-    core::nanoseconds_t ts = Now;
-    write_packet(queue, new_packet(encoder, ts1, 0.11f, ts));
-    ts += NsPerPacket;
-    write_packet(queue, new_packet(encoder, ts2, 0.22f, ts));
-    ts += NsPerPacket;
-    write_packet(queue, new_packet(encoder, ts3, 0.33f, ts));
+    {
+        core::nanoseconds_t cts = Now;
+        write_packet(queue, new_packet(encoder, ts1, 0.11f, cts));
+        cts += NsPerPacket;
+        write_packet(queue, new_packet(encoder, ts2, 0.22f, cts));
+        cts += NsPerPacket;
+        write_packet(queue, new_packet(encoder, ts3, 0.33f, cts));
+        LONGS_EQUAL(3, queue.size());
+    }
 
-    ts = Now;
-    expect_output(dp, SamplesPerPacket, 0.11f, ts);
-    ts += NsPerPacket;
-    expect_output(dp, SamplesPerPacket, 0.22f, ts);
-    ts += NsPerPacket;
-    expect_output(dp, SamplesPerPacket, 0.33f, ts);
+    core::nanoseconds_t cts = Now;
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.11f, cts);
+    cts += NsPerPacket;
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.22f, cts);
+    cts += NsPerPacket;
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.33f, cts);
+    LONGS_EQUAL(0, queue.size());
 }
 
 TEST(depacketizer, drop_late_packets) {
@@ -327,7 +368,7 @@ TEST(depacketizer, drop_late_packets) {
     PcmDecoder decoder(packet_spec);
 
     packet::FifoQueue queue;
-    Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
+    Depacketizer dp(queue, decoder, frame_factory, frame_spec);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     const packet::stream_timestamp_t ts1 = SamplesPerPacket * 2;
@@ -340,17 +381,21 @@ TEST(depacketizer, drop_late_packets) {
     write_packet(queue, new_packet(encoder, ts1, 0.11f, capt_ts1));
     write_packet(queue, new_packet(encoder, ts2, 0.22f, capt_ts2));
     write_packet(queue, new_packet(encoder, ts3, 0.33f, capt_ts3));
+    LONGS_EQUAL(3, queue.size());
 
-    expect_output(dp, SamplesPerPacket, 0.11f, capt_ts1);
-    expect_output(dp, SamplesPerPacket, 0.33f, capt_ts3);
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.11f,
+                  capt_ts1);
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.33f,
+                  capt_ts3);
+    LONGS_EQUAL(0, queue.size());
 }
 
-TEST(depacketizer, drop_late_packets_timestamp_overflow) {
+TEST(depacketizer, drop_late_packets_timestamp_wrap) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
     packet::FifoQueue queue;
-    Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
+    Depacketizer dp(queue, decoder, frame_factory, frame_spec);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     const packet::stream_timestamp_t ts1 = 0;
@@ -363,20 +408,24 @@ TEST(depacketizer, drop_late_packets_timestamp_overflow) {
     write_packet(queue, new_packet(encoder, ts1, 0.11f, capt_ts1));
     write_packet(queue, new_packet(encoder, ts2, 0.22f, capt_ts2));
     write_packet(queue, new_packet(encoder, ts3, 0.33f, capt_ts3));
+    LONGS_EQUAL(3, queue.size());
 
-    expect_output(dp, SamplesPerPacket, 0.11f, capt_ts1);
-    expect_output(dp, SamplesPerPacket, 0.33f, capt_ts3);
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.11f,
+                  capt_ts1);
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.33f,
+                  capt_ts3);
+    LONGS_EQUAL(0, queue.size());
 }
 
-TEST(depacketizer, zeros_no_packets) {
+TEST(depacketizer, zeros_no_first_packet) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
     packet::FifoQueue queue;
-    Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
+    Depacketizer dp(queue, decoder, frame_factory, frame_spec);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
-    expect_output(dp, SamplesPerPacket, 0.00f, 0);
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.00f, 0);
 }
 
 TEST(depacketizer, zeros_no_next_packet) {
@@ -384,13 +433,16 @@ TEST(depacketizer, zeros_no_next_packet) {
     PcmDecoder decoder(packet_spec);
 
     packet::FifoQueue queue;
-    Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
+    Depacketizer dp(queue, decoder, frame_factory, frame_spec);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     write_packet(queue, new_packet(encoder, 0, 0.11f, 0));
+    LONGS_EQUAL(1, queue.size());
 
-    expect_output(dp, SamplesPerPacket, 0.11f, 0);
-    expect_output(dp, SamplesPerPacket, 0.00f, 0); // no packet -- no ts
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.11f, 0);
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.00f,
+                  0); // no packet -- no cts
+    LONGS_EQUAL(0, queue.size());
 }
 
 TEST(depacketizer, zeros_between_packets) {
@@ -398,7 +450,7 @@ TEST(depacketizer, zeros_between_packets) {
     PcmDecoder decoder(packet_spec);
 
     packet::FifoQueue queue;
-    Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
+    Depacketizer dp(queue, decoder, frame_factory, frame_spec);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     const core::nanoseconds_t capt_ts1 = Now;
@@ -406,18 +458,22 @@ TEST(depacketizer, zeros_between_packets) {
 
     write_packet(queue, new_packet(encoder, 1 * SamplesPerPacket, 0.11f, capt_ts1));
     write_packet(queue, new_packet(encoder, 3 * SamplesPerPacket, 0.33f, capt_ts2));
+    LONGS_EQUAL(2, queue.size());
 
-    expect_output(dp, SamplesPerPacket, 0.11f, Now);
-    expect_output(dp, SamplesPerPacket, 0.00f, Now + NsPerPacket);
-    expect_output(dp, SamplesPerPacket, 0.33f, Now + 2 * NsPerPacket);
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.11f, Now);
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.00f,
+                  Now + NsPerPacket);
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.33f,
+                  Now + 2 * NsPerPacket);
+    LONGS_EQUAL(0, queue.size());
 }
 
-TEST(depacketizer, zeros_between_packets_timestamp_overflow) {
+TEST(depacketizer, zeros_between_packets_timestamp_wrap) {
     PcmEncoder encoder(packet_spec);
     PcmDecoder decoder(packet_spec);
 
     packet::FifoQueue queue;
-    Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
+    Depacketizer dp(queue, decoder, frame_factory, frame_spec);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     const packet::stream_timestamp_t ts2 = 0;
@@ -429,10 +485,15 @@ TEST(depacketizer, zeros_between_packets_timestamp_overflow) {
 
     write_packet(queue, new_packet(encoder, ts1, 0.11f, capt_ts1));
     write_packet(queue, new_packet(encoder, ts3, 0.33f, capt_ts3));
+    LONGS_EQUAL(2, queue.size());
 
-    expect_output(dp, SamplesPerPacket, 0.11f, capt_ts1);
-    expect_output(dp, SamplesPerPacket, 0.000f, capt_ts2);
-    expect_output(dp, SamplesPerPacket, 0.33f, capt_ts3);
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.11f,
+                  capt_ts1);
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.00f,
+                  capt_ts2);
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.33f,
+                  capt_ts3);
+    LONGS_EQUAL(0, queue.size());
 }
 
 TEST(depacketizer, zeros_after_packet) {
@@ -442,29 +503,19 @@ TEST(depacketizer, zeros_after_packet) {
     CHECK(SamplesPerPacket % 2 == 0);
 
     packet::FifoQueue queue;
-    Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
+    Depacketizer dp(queue, decoder, frame_factory, frame_spec);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     write_packet(queue, new_packet(encoder, 0, 0.11f, Now));
+    LONGS_EQUAL(1, queue.size());
 
-    const size_t frame_ch = frame_spec.num_channels();
-
-    const size_t sz1 = SamplesPerPacket / 2;
-    const size_t sz2 = SamplesPerPacket;
-
-    FramePtr f1 = frame_factory.allocate_frame_no_buffer();
-    FramePtr f2 = frame_factory.allocate_frame_no_buffer();
-
-    LONGS_EQUAL(status::StatusOK, dp.read(*f1, sz1, ModeHard));
-    LONGS_EQUAL(status::StatusOK, dp.read(*f2, sz2, ModeHard));
-
-    UNSIGNED_LONGS_EQUAL(sz1 * frame_ch, f1->num_raw_samples());
-    UNSIGNED_LONGS_EQUAL(sz2 * frame_ch, f2->num_raw_samples());
-
-    expect_values(f1->raw_samples(), SamplesPerPacket / 2 * frame_ch, 0.11f);
-    expect_values(f2->raw_samples(), SamplesPerPacket / 2 * frame_ch, 0.11f);
-    expect_values(f2->raw_samples() + SamplesPerPacket / 2 * frame_ch,
-                  SamplesPerPacket / 2 * frame_ch, 0.00f);
+    expect_output(status::StatusOK, dp, SamplesPerPacket / 2, SamplesPerPacket / 2, 0.11f,
+                  Now);
+    expect_output(status::StatusPart, dp, SamplesPerPacket, SamplesPerPacket / 2, 0.11f,
+                  Now + NsPerPacket / 2);
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.00f,
+                  Now + NsPerPacket);
+    LONGS_EQUAL(0, queue.size());
 }
 
 TEST(depacketizer, packet_after_zeros) {
@@ -472,16 +523,20 @@ TEST(depacketizer, packet_after_zeros) {
     PcmDecoder decoder(packet_spec);
 
     packet::FifoQueue queue;
-    Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
+    Depacketizer dp(queue, decoder, frame_factory, frame_spec);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
-    expect_output(dp, SamplesPerPacket, 0.00f, 0);
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.00f, 0);
 
     write_packet(queue, new_packet(encoder, 0, 0.11f, Now));
+    LONGS_EQUAL(1, queue.size());
 
-    expect_output(dp, SamplesPerPacket, 0.11f, Now);
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.11f, Now);
+    LONGS_EQUAL(0, queue.size());
 }
 
+// Depacketizer should handle the case when new packet partially overlaps with
+// previous packets. It should drop unneeded parts.
 TEST(depacketizer, overlapping_packets) {
     CHECK(SamplesPerPacket % 2 == 0);
 
@@ -489,7 +544,7 @@ TEST(depacketizer, overlapping_packets) {
     PcmDecoder decoder(packet_spec);
 
     packet::FifoQueue queue;
-    Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
+    Depacketizer dp(queue, decoder, frame_factory, frame_spec);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     const packet::stream_timestamp_t ts1 = 0;
@@ -503,54 +558,356 @@ TEST(depacketizer, overlapping_packets) {
     write_packet(queue, new_packet(encoder, ts1, 0.11f, capt_ts1));
     write_packet(queue, new_packet(encoder, ts2, 0.22f, capt_ts2));
     write_packet(queue, new_packet(encoder, ts3, 0.33f, capt_ts3));
+    LONGS_EQUAL(3, queue.size());
 
-    expect_output(dp, SamplesPerPacket, 0.11f, Now);
-    expect_output(dp, SamplesPerPacket / 2, 0.22f, Now + NsPerPacket);
-    expect_output(dp, SamplesPerPacket / 2, 0.33f, Now + NsPerPacket * 3 / 2);
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.11f, Now);
+    expect_output(status::StatusOK, dp, SamplesPerPacket / 2, SamplesPerPacket / 2, 0.22f,
+                  Now + NsPerPacket);
+    expect_output(status::StatusOK, dp, SamplesPerPacket / 2, SamplesPerPacket / 2, 0.33f,
+                  Now + NsPerPacket * 3 / 2);
+    LONGS_EQUAL(0, queue.size());
 }
 
-TEST(depacketizer, frame_flags_incompltete_blank) {
+// Scenario described in gh-54 and gh-210.
+// Depacketizer should check what is next packet using ModePeek and don't fetch
+// packet if it's not needed yet.
+TEST(depacketizer, late_reordered) {
+    PcmEncoder encoder(packet_spec);
+    PcmDecoder decoder(packet_spec);
+
+    CHECK(SamplesPerPacket % 2 == 0);
+
+    ArrayReader reader;
+    Depacketizer dp(reader, decoder, frame_factory, frame_spec);
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
+
+    packet::PacketPtr p1 =
+        new_packet(encoder, 1 * SamplesPerPacket, 0.11f, Now + NsPerPacket * 1);
+    packet::PacketPtr p2 =
+        new_packet(encoder, 2 * SamplesPerPacket, 0.22f, Now + NsPerPacket * 2);
+    packet::PacketPtr p3 =
+        new_packet(encoder, 3 * SamplesPerPacket, 0.33f, Now + NsPerPacket * 3);
+    packet::PacketPtr p4 =
+        new_packet(encoder, 4 * SamplesPerPacket, 0.44f, Now + NsPerPacket * 4);
+
+    reader.set_packet(1, p1);
+    reader.set_packet(4, p4);
+    LONGS_EQUAL(2, reader.num_packets());
+
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.11f,
+                  Now + NsPerPacket * 1);
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.00f,
+                  Now + NsPerPacket * 2);
+    LONGS_EQUAL(1, reader.num_packets()); // p4 not fetched
+
+    reader.set_packet(2, p2);
+    reader.set_packet(3, p3);
+    LONGS_EQUAL(3, reader.num_packets());
+
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.33f,
+                  Now + NsPerPacket * 3);
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.44f,
+                  Now + NsPerPacket * 4);
+    LONGS_EQUAL(0, reader.num_packets());
+}
+
+// In hard read mode, depacketizer should fill packet losses with zeros and generate
+// partial reads to avoid mixing losses and normal samples in a same frame.
+TEST(depacketizer, frequent_losses_hard_read) {
+    PcmEncoder encoder(packet_spec);
+    PcmDecoder decoder(packet_spec);
+
+    packet::FifoQueue queue;
+    Depacketizer dp(queue, decoder, frame_factory, frame_spec);
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
+
+    core::nanoseconds_t pkt_cts = Now;
+    core::nanoseconds_t frm_cts = Now;
+
+    // write 1, write 2, write 3
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 1, 0.11f, pkt_cts));
+    pkt_cts += NsPerPacket;
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 2, 0.11f, pkt_cts));
+    pkt_cts += NsPerPacket;
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 3, 0.11f, pkt_cts));
+    pkt_cts += NsPerPacket;
+
+    // read 1+2+3(signal)
+    expect_output(status::StatusOK, dp, SamplesPerPacket * 3, SamplesPerPacket * 3, 0.11f,
+                  frm_cts, -1, ModeHard);
+    frm_cts += NsPerPacket * 3;
+    LONGS_EQUAL(0, queue.size());
+
+    // lose 4, write 5, write 6
+    pkt_cts += NsPerPacket;
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 5, 0.22f, pkt_cts));
+    pkt_cts += NsPerPacket;
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 6, 0.22f, pkt_cts));
+    pkt_cts += NsPerPacket;
+
+    // read 4(gap)
+    expect_output(status::StatusPart, dp, SamplesPerPacket * 3, SamplesPerPacket, 0.00f,
+                  frm_cts, -1, ModeHard);
+    frm_cts += NsPerPacket;
+    // read 5+6(signal)
+    expect_output(status::StatusOK, dp, SamplesPerPacket * 2, SamplesPerPacket * 2, 0.22f,
+                  frm_cts, -1, ModeHard);
+    frm_cts += NsPerPacket * 2;
+    LONGS_EQUAL(0, queue.size());
+
+    // write 7, lose 8, write 9
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 7, 0.33f, pkt_cts));
+    pkt_cts += NsPerPacket;
+    pkt_cts += NsPerPacket;
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 9, 0.33f, pkt_cts));
+    pkt_cts += NsPerPacket;
+
+    // read 7(signal)
+    expect_output(status::StatusPart, dp, SamplesPerPacket * 3, SamplesPerPacket, 0.33f,
+                  frm_cts, -1, ModeHard);
+    frm_cts += NsPerPacket;
+    // read 8(gap)
+    expect_output(status::StatusPart, dp, SamplesPerPacket * 2, SamplesPerPacket, 0.00f,
+                  frm_cts, -1, ModeHard);
+    frm_cts += NsPerPacket;
+    // read 9(signal)
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.33f,
+                  frm_cts, -1, ModeHard);
+    frm_cts += NsPerPacket;
+    LONGS_EQUAL(0, queue.size());
+
+    // write 10, write 11, lose 12
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 10, 0.44f, pkt_cts));
+    pkt_cts += NsPerPacket;
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 11, 0.44f, pkt_cts));
+    pkt_cts += NsPerPacket;
+    pkt_cts += NsPerPacket;
+
+    // read 10+11(signal)
+    expect_output(status::StatusPart, dp, SamplesPerPacket * 3, SamplesPerPacket * 2,
+                  0.44f, frm_cts, -1, ModeHard);
+    frm_cts += NsPerPacket * 2;
+    // read 12(gap)
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.00f,
+                  frm_cts, -1, ModeHard);
+    frm_cts += NsPerPacket;
+    LONGS_EQUAL(0, queue.size());
+
+    // lose 13, write 14, lose 15
+    pkt_cts += NsPerPacket;
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 14, 0.55f, pkt_cts));
+    pkt_cts += NsPerPacket;
+    pkt_cts += NsPerPacket;
+
+    // read 13(gap)
+    expect_output(status::StatusPart, dp, SamplesPerPacket * 3, SamplesPerPacket, 0.00f,
+                  frm_cts, -1, ModeHard);
+    frm_cts += NsPerPacket;
+    // read 14(signal)
+    expect_output(status::StatusPart, dp, SamplesPerPacket * 2, SamplesPerPacket, 0.55f,
+                  frm_cts, -1, ModeHard);
+    frm_cts += NsPerPacket;
+    // read 15(gap)
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.00f,
+                  frm_cts, -1, ModeHard);
+    frm_cts += NsPerPacket;
+    LONGS_EQUAL(0, queue.size());
+
+    // write 16, write 17, write 18
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 16, 0.66f, pkt_cts));
+    pkt_cts += NsPerPacket;
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 17, 0.66f, pkt_cts));
+    pkt_cts += NsPerPacket;
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 18, 0.66f, pkt_cts));
+    pkt_cts += NsPerPacket;
+
+    // read 16+17+18(signal)
+    expect_output(status::StatusOK, dp, SamplesPerPacket * 3, SamplesPerPacket * 3, 0.66f,
+                  frm_cts, -1, ModeHard);
+    frm_cts += NsPerPacket * 3;
+    LONGS_EQUAL(0, queue.size());
+
+    // self check
+    LONGLONGS_EQUAL(pkt_cts, frm_cts);
+}
+
+// In soft read mode, depacketizer should stop reading on packet loss and
+// generate partial read or drain.
+TEST(depacketizer, frequent_losses_soft_read) {
+    PcmEncoder encoder(packet_spec);
+    PcmDecoder decoder(packet_spec);
+
+    packet::FifoQueue queue;
+    Depacketizer dp(queue, decoder, frame_factory, frame_spec);
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
+
+    core::nanoseconds_t pkt_cts = Now;
+    core::nanoseconds_t frm_cts = Now;
+
+    // write 1, write 2, write 3
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 1, 0.11f, pkt_cts));
+    pkt_cts += NsPerPacket;
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 2, 0.11f, pkt_cts));
+    pkt_cts += NsPerPacket;
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 3, 0.11f, pkt_cts));
+    pkt_cts += NsPerPacket;
+
+    // soft read drain(not started)
+    expect_error(status::StatusDrain, dp, SamplesPerPacket * 3, ModeSoft);
+    // hard read 1+2+3(signal)
+    expect_output(status::StatusOK, dp, SamplesPerPacket * 3, SamplesPerPacket * 3, 0.11f,
+                  frm_cts, -1, ModeHard);
+    frm_cts += NsPerPacket * 3;
+    LONGS_EQUAL(0, queue.size());
+
+    // lose 4, write 5, write 6
+    pkt_cts += NsPerPacket;
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 5, 0.22f, pkt_cts));
+    pkt_cts += NsPerPacket;
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 6, 0.22f, pkt_cts));
+    pkt_cts += NsPerPacket;
+
+    // soft read drain(gap)
+    expect_error(status::StatusDrain, dp, SamplesPerPacket * 3, ModeSoft);
+    // hard read 4(gap)
+    expect_output(status::StatusPart, dp, SamplesPerPacket * 3, SamplesPerPacket, 0.00f,
+                  frm_cts, -1, ModeHard);
+    frm_cts += NsPerPacket;
+    // soft read 5+6(signal)
+    expect_output(status::StatusPart, dp, SamplesPerPacket * 3, SamplesPerPacket * 2,
+                  0.22f, frm_cts, -1, ModeSoft);
+    frm_cts += NsPerPacket * 2;
+    LONGS_EQUAL(0, queue.size());
+
+    // write 7, lose 8, write 9
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 7, 0.33f, pkt_cts));
+    pkt_cts += NsPerPacket;
+    pkt_cts += NsPerPacket;
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 9, 0.33f, pkt_cts));
+    pkt_cts += NsPerPacket;
+
+    // soft read 7(signal)
+    expect_output(status::StatusPart, dp, SamplesPerPacket * 3, SamplesPerPacket, 0.33f,
+                  frm_cts, -1, ModeSoft);
+    frm_cts += NsPerPacket;
+    // soft read drain(gap)
+    expect_error(status::StatusDrain, dp, SamplesPerPacket * 2, ModeSoft);
+    // hard read 8(gap)
+    expect_output(status::StatusPart, dp, SamplesPerPacket * 2, SamplesPerPacket, 0.00f,
+                  frm_cts);
+    frm_cts += NsPerPacket;
+    // soft read 9(signal)
+    expect_output(status::StatusPart, dp, SamplesPerPacket * 2, SamplesPerPacket, 0.33f,
+                  frm_cts, -1, ModeSoft);
+    frm_cts += NsPerPacket;
+    LONGS_EQUAL(0, queue.size());
+
+    // write 10, write 11, lose 12
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 10, 0.44f, pkt_cts));
+    pkt_cts += NsPerPacket;
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 11, 0.44f, pkt_cts));
+    pkt_cts += NsPerPacket;
+    pkt_cts += NsPerPacket;
+
+    // soft read 10+11(signal)
+    expect_output(status::StatusPart, dp, SamplesPerPacket * 3, SamplesPerPacket * 2,
+                  0.44f, frm_cts, -1, ModeSoft);
+    frm_cts += NsPerPacket * 2;
+    // soft read drain(gap)
+    expect_error(status::StatusDrain, dp, SamplesPerPacket, ModeSoft);
+    // read 12(gap)
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.00f,
+                  frm_cts, -1, ModeHard);
+    frm_cts += NsPerPacket;
+    LONGS_EQUAL(0, queue.size());
+
+    // lose 13, write 14, lose 15
+    pkt_cts += NsPerPacket;
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 14, 0.55f, pkt_cts));
+    pkt_cts += NsPerPacket;
+    pkt_cts += NsPerPacket;
+
+    // soft read drain(gap)
+    expect_error(status::StatusDrain, dp, SamplesPerPacket, ModeSoft);
+    // hard read 13(gap)
+    expect_output(status::StatusPart, dp, SamplesPerPacket * 3, SamplesPerPacket, 0.00f,
+                  frm_cts);
+    frm_cts += NsPerPacket;
+    // soft read 14(signal)
+    expect_output(status::StatusPart, dp, SamplesPerPacket * 2, SamplesPerPacket, 0.55f,
+                  frm_cts, -1, ModeSoft);
+    frm_cts += NsPerPacket;
+    // soft read drain(gap)
+    expect_error(status::StatusDrain, dp, SamplesPerPacket, ModeSoft);
+    // hard read 15(gap)
+    expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.00f,
+                  frm_cts, -1, ModeHard);
+    frm_cts += NsPerPacket;
+    LONGS_EQUAL(0, queue.size());
+
+    // write 16, write 17, write 18
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 16, 0.66f, pkt_cts));
+    pkt_cts += NsPerPacket;
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 17, 0.66f, pkt_cts));
+    pkt_cts += NsPerPacket;
+    write_packet(queue, new_packet(encoder, SamplesPerPacket * 18, 0.66f, pkt_cts));
+    pkt_cts += NsPerPacket;
+
+    // read 16+17+18(signal)
+    expect_output(status::StatusOK, dp, SamplesPerPacket * 3, SamplesPerPacket * 3, 0.66f,
+                  frm_cts, -1, ModeSoft);
+    frm_cts += NsPerPacket * 3;
+    LONGS_EQUAL(0, queue.size());
+
+    // self check
+    LONGLONGS_EQUAL(pkt_cts, frm_cts);
+}
+
+TEST(depacketizer, frame_flags_signal_gaps) {
     enum { PacketsPerFrame = 3 };
 
     PcmEncoder encoder(packet_spec);
+    PcmDecoder decoder(packet_spec);
 
     packet::FifoQueue queue;
+    Depacketizer dp(queue, decoder, frame_factory, frame_spec);
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     packet::PacketPtr packets[][PacketsPerFrame] = {
         {
-            new_packet(encoder, SamplesPerPacket * 1, 0.11f, Now),
-            new_packet(encoder, SamplesPerPacket * 2, 0.11f, Now + NsPerPacket),
-            new_packet(encoder, SamplesPerPacket * 3, 0.11f, Now + 2 * NsPerPacket),
+            new_packet(encoder, SamplesPerPacket * 1, 0.11f),
+            new_packet(encoder, SamplesPerPacket * 2, 0.11f),
+            new_packet(encoder, SamplesPerPacket * 3, 0.11f),
         },
         {
             NULL,
-            new_packet(encoder, SamplesPerPacket * 5, 0.11f, Now + NsPerPacket),
-            new_packet(encoder, SamplesPerPacket * 6, 0.11f, Now + 2 * NsPerPacket),
+            new_packet(encoder, SamplesPerPacket * 5, 0.11f),
+            new_packet(encoder, SamplesPerPacket * 6, 0.11f),
         },
         {
-            new_packet(encoder, SamplesPerPacket * 7, 0.11f, Now),
+            new_packet(encoder, SamplesPerPacket * 7, 0.11f),
             NULL,
-            new_packet(encoder, SamplesPerPacket * 9, 0.11f, Now + 2 * NsPerPacket),
+            new_packet(encoder, SamplesPerPacket * 9, 0.11f),
         },
         {
-            new_packet(encoder, SamplesPerPacket * 10, 0.11f, Now),
-            new_packet(encoder, SamplesPerPacket * 11, 0.11f, Now + NsPerPacket),
-            NULL,
-        },
-        {
-            NULL,
-            new_packet(encoder, SamplesPerPacket * 14, 0.11f, Now + NsPerPacket),
+            new_packet(encoder, SamplesPerPacket * 10, 0.11f),
+            new_packet(encoder, SamplesPerPacket * 11, 0.11f),
             NULL,
         },
         {
             NULL,
+            new_packet(encoder, SamplesPerPacket * 14, 0.11f),
+            NULL,
+        },
+        {
+            NULL,
             NULL,
             NULL,
         },
         {
-            new_packet(encoder, SamplesPerPacket * 22, 0.11f, Now),
-            new_packet(encoder, SamplesPerPacket * 23, 0.11f, Now + NsPerPacket),
-            new_packet(encoder, SamplesPerPacket * 24, 0.11f, Now + 2 * NsPerPacket),
+            new_packet(encoder, SamplesPerPacket * 19, 0.11f),
+            new_packet(encoder, SamplesPerPacket * 20, 0.11f),
+            new_packet(encoder, SamplesPerPacket * 21, 0.11f),
         },
         {
             NULL,
@@ -559,35 +916,73 @@ TEST(depacketizer, frame_flags_incompltete_blank) {
         },
     };
 
-    unsigned frame_flags[] = {
-        Frame::HasSignal,
-        Frame::HasGaps | Frame::HasSignal,
-        Frame::HasGaps | Frame::HasSignal,
-        Frame::HasGaps | Frame::HasSignal,
-        Frame::HasGaps | Frame::HasSignal,
-        Frame::HasGaps,
-        Frame::HasSignal,
-        Frame::HasGaps,
+    unsigned frames[][PacketsPerFrame][2] = {
+        {
+            { SamplesPerPacket * 3, Frame::HasSignal },
+        },
+        {
+            { SamplesPerPacket * 1, Frame::HasGaps },
+            { SamplesPerPacket * 2, Frame::HasSignal },
+        },
+        {
+            { SamplesPerPacket * 1, Frame::HasSignal },
+            { SamplesPerPacket * 1, Frame::HasGaps },
+            { SamplesPerPacket * 1, Frame::HasSignal },
+        },
+        {
+            { SamplesPerPacket * 2, Frame::HasSignal },
+            { SamplesPerPacket * 1, Frame::HasGaps },
+        },
+        {
+            { SamplesPerPacket * 1, Frame::HasGaps },
+            { SamplesPerPacket * 1, Frame::HasSignal },
+            { SamplesPerPacket * 1, Frame::HasGaps },
+        },
+        {
+            { SamplesPerPacket * 3, Frame::HasGaps },
+        },
+        {
+            { SamplesPerPacket * 3, Frame::HasSignal },
+        },
+        {
+            { SamplesPerPacket * 3, Frame::HasGaps },
+        },
     };
 
-    core::nanoseconds_t capt_ts[] = {
-        Now, Now + NsPerPacket, Now, Now, Now + NsPerPacket, 0, Now, 0,
-    };
+    CHECK(ROC_ARRAY_SIZE(packets) == ROC_ARRAY_SIZE(frames));
 
-    CHECK(ROC_ARRAY_SIZE(packets) == ROC_ARRAY_SIZE(frame_flags));
-
-    for (size_t n = 0; n < ROC_ARRAY_SIZE(packets); n++) {
-        PcmDecoder decoder(packet_spec);
-        Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
-        LONGS_EQUAL(status::StatusOK, dp.init_status());
-
-        for (size_t p = 0; p < PacketsPerFrame; p++) {
-            if (packets[n][p] != NULL) {
-                write_packet(queue, packets[n][p]);
+    for (size_t i = 0; i < ROC_ARRAY_SIZE(packets); i++) {
+        for (size_t np = 0; np < PacketsPerFrame; np++) {
+            if (packets[i][np] == NULL) {
+                continue;
             }
+
+            write_packet(queue, packets[i][np]);
         }
 
-        expect_flags(dp, SamplesPerPacket * PacketsPerFrame, frame_flags[n], capt_ts[n]);
+        size_t remain_samples = SamplesPerPacket * PacketsPerFrame;
+
+        for (size_t nf = 0; nf < PacketsPerFrame; nf++) {
+            const size_t expected_samples = frames[i][nf][0];
+            if (expected_samples == 0) {
+                continue;
+            }
+
+            const int expected_flags = (int)frames[i][nf][1];
+            const sample_t expected_value =
+                expected_flags & Frame::HasSignal ? 0.11f : 0.00f;
+
+            const status::StatusCode expected_status = expected_samples == remain_samples
+                ? status::StatusOK
+                : status::StatusPart;
+
+            expect_output(expected_status, dp, remain_samples, expected_samples,
+                          expected_value, -1, expected_flags);
+
+            remain_samples -= expected_samples;
+        }
+
+        LONGS_EQUAL(0, remain_samples);
     }
 }
 
@@ -596,20 +991,20 @@ TEST(depacketizer, frame_flags_drops) {
     PcmDecoder decoder(packet_spec);
 
     packet::FifoQueue queue;
-    Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
+    Depacketizer dp(queue, decoder, frame_factory, frame_spec);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     packet::PacketPtr packets[] = {
-        new_packet(encoder, SamplesPerPacket * 4, 0.11f, 0),
-        new_packet(encoder, SamplesPerPacket * 1, 0.11f, 0),
-        new_packet(encoder, SamplesPerPacket * 2, 0.11f, 0),
-        new_packet(encoder, SamplesPerPacket * 5, 0.11f, 0),
-        new_packet(encoder, SamplesPerPacket * 6, 0.11f, 0),
-        new_packet(encoder, SamplesPerPacket * 3, 0.11f, 0),
-        new_packet(encoder, SamplesPerPacket * 8, 0.11f, 0),
+        new_packet(encoder, SamplesPerPacket * 4, 0.11f),
+        new_packet(encoder, SamplesPerPacket * 1, 0.11f),
+        new_packet(encoder, SamplesPerPacket * 2, 0.11f),
+        new_packet(encoder, SamplesPerPacket * 5, 0.11f),
+        new_packet(encoder, SamplesPerPacket * 6, 0.11f),
+        new_packet(encoder, SamplesPerPacket * 3, 0.11f),
+        new_packet(encoder, SamplesPerPacket * 8, 0.11f),
     };
 
-    unsigned frame_flags[] = {
+    int frames[] = {
         Frame::HasSignal,                   //
         Frame::HasSignal | Frame::HasDrops, //
         Frame::HasSignal,                   //
@@ -621,12 +1016,16 @@ TEST(depacketizer, frame_flags_drops) {
         write_packet(queue, packets[n]);
     }
 
-    for (size_t n = 0; n < ROC_ARRAY_SIZE(frame_flags); n++) {
-        expect_flags(dp, SamplesPerPacket, frame_flags[n]);
+    for (size_t n = 0; n < ROC_ARRAY_SIZE(frames); n++) {
+        const int frame_flags = frames[n];
+        const sample_t frame_value = frame_flags & Frame::HasGaps ? 0.00f : 0.11f;
+
+        expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket,
+                      frame_value, -1, frame_flags);
     }
 }
 
-TEST(depacketizer, timestamp) {
+TEST(depacketizer, capture_timestamp) {
     enum {
         StartTimestamp = 1000,
         NumPackets = 3,
@@ -640,12 +1039,12 @@ TEST(depacketizer, timestamp) {
     PcmDecoder decoder(packet_spec);
 
     packet::FifoQueue queue;
-    Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
+    Depacketizer dp(queue, decoder, frame_factory, frame_spec);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     core::nanoseconds_t capt_ts = 0;
     for (size_t n = 0; n < NumPackets * FramesPerPacket; n++) {
-        expect_output(dp, SamplesPerFrame, 0.0f, 0);
+        expect_output(status::StatusOK, dp, SamplesPerFrame, SamplesPerFrame, 0.0f, 0);
         capt_ts += frame_spec.samples_per_chan_2_ns(SamplesPerFrame);
 
         CHECK(!dp.is_started());
@@ -664,7 +1063,8 @@ TEST(depacketizer, timestamp) {
 
     capt_ts = Now;
     for (size_t n = 0; n < NumPackets * FramesPerPacket; n++) {
-        expect_output(dp, SamplesPerFrame, 0.1f, capt_ts);
+        expect_output(status::StatusOK, dp, SamplesPerFrame, SamplesPerFrame, 0.1f,
+                      capt_ts);
         capt_ts += frame_spec.samples_per_chan_2_ns(SamplesPerFrame);
 
         ts += SamplesPerFrame;
@@ -674,7 +1074,8 @@ TEST(depacketizer, timestamp) {
     }
 
     for (size_t n = 0; n < NumPackets * FramesPerPacket; n++) {
-        expect_output(dp, SamplesPerFrame, 0.0f, capt_ts);
+        expect_output(status::StatusOK, dp, SamplesPerFrame, SamplesPerFrame, 0.0f,
+                      capt_ts);
         capt_ts += frame_spec.samples_per_chan_2_ns(SamplesPerFrame);
 
         ts += SamplesPerFrame;
@@ -684,7 +1085,7 @@ TEST(depacketizer, timestamp) {
     }
 }
 
-TEST(depacketizer, timestamp_fract_frame_per_packet) {
+TEST(depacketizer, capture_timestamp_fract_frame_per_packet) {
     enum {
         StartTimestamp = 1000,
         NumPackets = 3,
@@ -695,7 +1096,7 @@ TEST(depacketizer, timestamp_fract_frame_per_packet) {
     PcmDecoder decoder(packet_spec);
 
     packet::FifoQueue queue;
-    Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
+    Depacketizer dp(queue, decoder, frame_factory, frame_spec);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     core::nanoseconds_t capt_ts =
@@ -705,10 +1106,10 @@ TEST(depacketizer, timestamp_fract_frame_per_packet) {
     write_packet(queue,
                  new_packet(encoder, StartTimestamp + SamplesPerPacket, 0.1f, capt_ts));
 
-    expect_output(dp, SamplesPerFrame, 0.1f, Now);
+    expect_output(status::StatusOK, dp, SamplesPerFrame, SamplesPerFrame, 0.1f, Now);
 }
 
-TEST(depacketizer, timestamp_small_non_zero_cts) {
+TEST(depacketizer, capture_timestamp_small_non_zero) {
     enum {
         StartTimestamp = 1000,
         StartCts = 5, // very close to unix epoch
@@ -719,7 +1120,7 @@ TEST(depacketizer, timestamp_small_non_zero_cts) {
     PcmDecoder decoder(packet_spec);
 
     packet::FifoQueue queue;
-    Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
+    Depacketizer dp(queue, decoder, frame_factory, frame_spec);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     // 1st packet in frame has 0 capture ts
@@ -749,10 +1150,12 @@ TEST(depacketizer, timestamp_small_non_zero_cts) {
     // first frame has zero cts
     // if depacketizer couldn't handle small cts properly, it would
     // produce negative cts instead
-    expect_output(dp, SamplesPerPacket * PacketsPerFrame, 0.1f, 0);
+    expect_output(status::StatusOK, dp, SamplesPerPacket * PacketsPerFrame,
+                  SamplesPerPacket * PacketsPerFrame, 0.1f, 0);
 
     // second frame has non-zero cts
-    expect_output(dp, SamplesPerPacket * PacketsPerFrame, 0.2f, second_frame_capt_ts);
+    expect_output(status::StatusOK, dp, SamplesPerPacket * PacketsPerFrame,
+                  SamplesPerPacket * PacketsPerFrame, 0.2f, second_frame_capt_ts);
 }
 
 // Request big frame.
@@ -771,7 +1174,7 @@ TEST(depacketizer, partial_on_big_read) {
     PcmDecoder decoder(packet_spec);
 
     packet::FifoQueue queue;
-    Depacketizer dp(queue, decoder, frame_factory, frame_spec, false);
+    Depacketizer dp(queue, decoder, frame_factory, frame_spec);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     core::nanoseconds_t pkt_cts = Now;
@@ -782,7 +1185,8 @@ TEST(depacketizer, partial_on_big_read) {
 
     core::nanoseconds_t frm_cts = Now;
     for (int n = 0; n < 1; n++) {
-        expect_partial(dp, MaxFrameSamples * NumFrames, MaxFrameSamples, 0.11f, frm_cts);
+        expect_output(status::StatusPart, dp, MaxFrameSamples * NumFrames,
+                      MaxFrameSamples, 0.11f, frm_cts);
         frm_cts += frame_spec.samples_per_chan_2_ns(MaxFrameSamples);
     }
 }
@@ -794,25 +1198,27 @@ TEST(depacketizer, forward_error) {
 
     packet::FifoQueue queue;
     StatusReader reader(queue);
-    Depacketizer dp(reader, decoder, frame_factory, frame_spec, false);
+    Depacketizer dp(reader, decoder, frame_factory, frame_spec);
     LONGS_EQUAL(status::StatusOK, dp.init_status());
 
     // push one packet
     write_packet(queue, new_packet(encoder, 0, 0.11f, 0));
 
     // read first half of packet
-    expect_output(dp, SamplesPerPacket / 2, 0.11f, 0);
+    expect_output(status::StatusOK, dp, SamplesPerPacket / 2, SamplesPerPacket / 2, 0.11f,
+                  0);
 
     // packet reader will now return error
     reader.set_status(status::StatusAbort);
 
     // read second half of packet
     // no error because depacketizer still has buffered packet
-    expect_output(dp, SamplesPerPacket / 2, 0.11f, 0);
+    expect_output(status::StatusOK, dp, SamplesPerPacket / 2, SamplesPerPacket / 2, 0.11f,
+                  0);
 
     // try to read more
     // get error because depacketizer tries to read packet
-    expect_error(dp, SamplesPerPacket, status::StatusAbort);
+    expect_error(status::StatusAbort, dp, SamplesPerPacket);
 }
 
 // Attach to frame pre-allocated buffers of different sizes before reading.
@@ -834,7 +1240,7 @@ TEST(depacketizer, preallocated_buffer) {
 
         packet::FifoQueue queue;
         StatusReader reader(queue);
-        Depacketizer dp(reader, decoder, frame_factory, frame_spec, false);
+        Depacketizer dp(reader, decoder, frame_factory, frame_spec);
         LONGS_EQUAL(status::StatusOK, dp.init_status());
 
         FrameFactory mock_factory(arena, orig_buf_sz * sizeof(sample_t));

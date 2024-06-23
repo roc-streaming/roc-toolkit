@@ -44,8 +44,7 @@ void ReceiverCommonConfig::deduce_defaults() {
 }
 
 ReceiverSessionConfig::ReceiverSessionConfig()
-    : payload_type(0)
-    , enable_beeping(false) {
+    : payload_type(0) {
 }
 
 void ReceiverSessionConfig::deduce_defaults() {

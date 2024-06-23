@@ -104,7 +104,7 @@ status::StatusCode BlockReader::read_(packet::PacketPtr& pp,
     }
 
     if (!started_) {
-        // until started, just forward all source packets
+        // Until started, just forward all source packets.
         return source_queue_.read(pp, mode);
     }
 
@@ -159,10 +159,10 @@ status::StatusCode BlockReader::get_next_packet_(packet::PacketPtr& result_pkt,
         if (pkt) {
             next_index = head_index_ + 1;
         } else {
-            // try repairing as much as possible and store in block
+            // Try repairing as much as possible and store in block.
             try_repair_();
 
-            // find first present packet in block, starting from head
+            // Find first present packet in block, starting from head.
             for (next_index = head_index_; next_index < source_block_.size();
                  next_index++) {
                 if (source_block_[next_index]) {
@@ -174,21 +174,24 @@ status::StatusCode BlockReader::get_next_packet_(packet::PacketPtr& result_pkt,
         }
 
         if (!pkt && source_queue_.size() == 0) {
-            // no head packet, no queued packets, give up
+            // No head packet, no queued packets, give up.
             break;
         }
         if (mode == packet::ModePeek) {
-            // in peek mode, we just return what we've found, but don't move forward
+            // In peek mode, we just return what we've found, but don't move forward.
+            // We could do a better job if we were decoding two blocks simultaneously:
+            // current block and next block, to be able to use next block for ModePeek.
+            // However, this would significantly complicate implementation.
             break;
         }
 
-        // switch to next packet and maybe next block
+        // Switch to next packet and maybe next block.
         head_index_ = next_index;
         if (head_index_ == source_block_.size()) {
             next_block_();
         }
 
-        if (pkt) { // found packet
+        if (pkt) { // Found packet.
             break;
         }
     }
@@ -382,7 +385,7 @@ void BlockReader::fill_source_block_() {
             continue;
         }
 
-        // should not happen: we have handled preceding and following blocks above
+        // Should not happen: we have handled preceding and following blocks above.
         roc_panic_if_not(fec.source_block_number == cur_sbn_);
 
         if (!process_source_packet_(pp)) {
@@ -396,7 +399,7 @@ void BlockReader::fill_source_block_() {
             continue;
         }
 
-        // should not happen: we have handled validation and block size above
+        // Should not happen: we have handled validation and block size above.
         roc_panic_if_not(fec.source_block_length == source_block_.size());
         roc_panic_if_not(fec.encoding_symbol_id < source_block_.size());
 
@@ -451,7 +454,7 @@ void BlockReader::fill_repair_block_() {
             continue;
         }
 
-        // should not happen: we have handled preceding and following blocks above
+        // Should not happen: we have handled preceding and following blocks above.
         roc_panic_if(fec.source_block_number != cur_sbn_);
 
         if (!process_repair_packet_(pp)) {
@@ -465,7 +468,7 @@ void BlockReader::fill_repair_block_() {
             continue;
         }
 
-        // should not happen: we have handled validation and block size above
+        // Should not happen: we have handled validation and block size above.
         roc_panic_if_not(fec.source_block_length == source_block_.size());
         roc_panic_if_not(fec.encoding_symbol_id >= source_block_.size());
         roc_panic_if_not(fec.encoding_symbol_id
@@ -782,7 +785,7 @@ bool BlockReader::update_repair_block_size_(size_t new_blen) {
     prev_block_timestamp_valid_ = false;
     block_max_duration_ = 0;
 
-    // should not happen: sblen should be validated in upper code
+    // Should not happen: sblen should be validated in upper code
     roc_panic_if_not(new_blen > cur_sblen);
 
     const size_t new_rblen = new_blen - cur_sblen;

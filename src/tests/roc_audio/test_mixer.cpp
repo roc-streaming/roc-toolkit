@@ -416,7 +416,7 @@ TEST(mixer, cts_partial) {
     LONGS_EQUAL(0, reader3.num_unread());
 }
 
-TEST(mixer, cts_no_overflow) {
+TEST(mixer, cts_prevent_overflow) {
     // BufSz samples per second
     const SampleSpec sample_spec(BufSz, Sample_RawFormat, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
