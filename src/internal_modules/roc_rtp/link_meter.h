@@ -12,7 +12,7 @@
 #ifndef ROC_RTP_LINK_METER_H_
 #define ROC_RTP_LINK_METER_H_
 
-#include "roc_audio/latency_monitor.h"
+#include "roc_audio/latency_tuner.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/csv_dumper.h"
 #include "roc_core/iarena.h"
@@ -39,7 +39,7 @@ namespace rtp {
 //!    that should be updated as early as possible.
 //!
 //!  - As a reader, right before decoding packet. Here LinkMeter
-//!   1 computes metrics that can be updated only when packets
+//!    computes metrics that can be updated only when packets
 //!    are going to be played.
 //!
 //! In both cases, LinkMeter passes through packets to/from nested

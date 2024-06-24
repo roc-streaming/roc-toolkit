@@ -172,7 +172,7 @@ double FreqEstimator::run_controller_(double current) {
             " current latency error: %.0f",
             error);
 
-    if (abs(error) > target_ * config_.stable_criteria && stable_) {
+    if (std::abs(error) > target_ * config_.stable_criteria && stable_) {
         stable_ = false;
         accum_ = 0;
         last_unstable_time_ = core::timestamp(core::ClockMonotonic);
@@ -180,7 +180,7 @@ double FreqEstimator::run_controller_(double current) {
                 "Freq Estimator: "
                 " unstable, %0.f > %.0f / %0.f",
                 config_.stable_criteria, error, target_);
-    } else if (abs(error) < target_ * config_.stable_criteria && !stable_
+    } else if (std::abs(error) < target_ * config_.stable_criteria && !stable_
                && core::timestamp(core::ClockMonotonic) - last_unstable_time_
                    > 15 * core::Second) {
         stable_ = true;
@@ -198,8 +198,8 @@ double FreqEstimator::run_controller_(double current) {
     } else {
         res += config_.P * error;
     }
-    if (abs(res) > 1e-2) {
-        res = res / abs(res) * 1e-2;
+    if (std::abs(res) > 1e-2) {
+        res = res / std::abs(res) * 1e-2;
     }
     res += 1.;
 

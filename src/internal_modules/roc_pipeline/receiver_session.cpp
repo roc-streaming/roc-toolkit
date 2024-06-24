@@ -263,7 +263,6 @@ audio::IFrameReader& ReceiverSession::frame_reader() {
 status::StatusCode ReceiverSession::route_packet(const packet::PacketPtr& packet) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    packet->udp()->queue_timestamp = core::timestamp(core::ClockUnix);
     return packet_router_->write(packet);
 }
 
