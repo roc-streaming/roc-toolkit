@@ -7,10 +7,14 @@ RECURSIVE               = YES
 
 INPUT                   = .
 STRIP_FROM_PATH         = .
+STRIP_FROM_INC_PATH     = .
 FILE_PATTERNS           = *.h *.dox
 
-EXCLUDE                 =                         \
+EXCLUDE = \
     roc_core/target_posix/roc_core/cpu_traits.h
+
+EXCLUDE_SYMBOLS = \
+    AllocationPolicy
 
 FULL_PATH_NAMES         = YES
 
@@ -24,8 +28,8 @@ REPEAT_BRIEF            = YES
 
 HIDE_UNDOC_CLASSES      = NO
 HIDE_UNDOC_MEMBERS      = NO
+HIDE_UNDOC_RELATIONS    = NO
 STRIP_CODE_COMMENTS     = NO
-
 EXTRACT_ALL             = NO
 EXTRACT_PRIVATE         = NO
 
@@ -39,6 +43,7 @@ EXPAND_ONLY_PREDEF      = YES
 
 PREDEFINED              =      \
     ROC_ATTR_NORETURN=         \
+    ROC_ATTR_NODISCARD=        \
     ROC_ATTR_PRINTF(x,y)=      \
     ROC_ATTR_PACKED_BEGIN=     \
     ROC_ATTR_PACKED_END=
@@ -47,7 +52,15 @@ OUTPUT_DIRECTORY        = ../../build/docs/internal_modules
 HTML_OUTPUT             = ../../../docs/html/doxygen
 HTML_EXTRA_STYLESHEET   = ../../docs/doxygen_extras.css
 
+CLASS_GRAPH             = YES
+COLLABORATION_GRAPH     = NO
+HAVE_DOT                = YES
+DOT_GRAPH_MAX_NODES     = 1000
+
 HTML_DYNAMIC_SECTIONS   = NO
+HTML_COLORSTYLE_HUE     = 215
+HTML_COLORSTYLE_SAT     = 80
+HTML_COLORSTYLE_GAMMA   = 80
 DISABLE_INDEX           = NO
 GENERATE_TREEVIEW       = YES
 SEARCHENGINE            = YES
