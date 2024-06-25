@@ -12,6 +12,9 @@
 #ifndef ROC_SNDIO_SNDFILE_EXTENSION_TABLE_H_
 #define ROC_SNDIO_SNDFILE_EXTENSION_TABLE_H_
 
+namespace roc {
+namespace sndio {
+
 //! Sndfile driver map.
 struct FileMap {
     //! SF_FORMAT ID corresponding to the enum value in sndfile.h
@@ -24,5 +27,8 @@ struct FileMap {
 
 //! Declare the file_type_map as extern
 extern FileMap file_type_map[5];
+
+} // namespace sndio
+} // namespace roc
 
 #endif // ROC_SNDIO_SNDFILE_EXTENSION_TABLE_H_

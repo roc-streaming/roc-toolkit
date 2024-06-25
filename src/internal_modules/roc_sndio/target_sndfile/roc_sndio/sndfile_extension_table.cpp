@@ -11,6 +11,9 @@
 
 #include <sndfile.h>
 
+namespace roc {
+namespace sndio {
+
 FileMap file_type_map[ROC_ARRAY_SIZE(file_type_map)] = {
     { SF_FORMAT_MAT4, "mat4", NULL },   //
     { SF_FORMAT_MAT5, "mat5", NULL },   //
@@ -18,3 +21,6 @@ FileMap file_type_map[ROC_ARRAY_SIZE(file_type_map)] = {
     { SF_FORMAT_NIST, "nist", NULL },   //
     { SF_FORMAT_WAVEX, "wavex", NULL }, //
 };
+
+} // namespace sndio
+} // namespace roc
