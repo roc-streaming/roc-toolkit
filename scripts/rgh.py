@@ -64,7 +64,7 @@ def run_cmd(cmd, input=None, env=None, retry_fn=None):
 
 def random_worktree():
     while True:
-        path = '/tmp/prpy_' + ''.join(random.choice(string.ascii_lowercase + string.digits)
+        path = '/tmp/rgh_' + ''.join(random.choice(string.ascii_lowercase + string.digits)
             for _ in range(8))
         if not os.path.exists(path):
             return path
@@ -643,7 +643,7 @@ def stealth_rebase(base_branch):
         'GIT_SEQUENCE_EDITOR': ':',
     })
 
-parser = argparse.ArgumentParser(prog='pr.py')
+parser = argparse.ArgumentParser(prog='rgh.py')
 
 common_parser = argparse.ArgumentParser(add_help=False)
 common_parser.add_argument('--org', default='roc-streaming',
