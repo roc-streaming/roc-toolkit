@@ -31,7 +31,7 @@ jobs:
       - name: Check issue
         id: issue
         run: |
-          echo url=$(scripts/pr.py show ${{ github.event.pull_request.number }} --json \
+          echo url=$(scripts/rgh.py show ${{ github.event.pull_request.number }} --json \
             | jq -r .issue.url) >> "$GITHUB_OUTPUT"
         env:
          GH_TOKEN: ${{ secrets.github_token }}
