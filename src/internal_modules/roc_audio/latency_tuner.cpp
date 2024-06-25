@@ -27,8 +27,8 @@ void LatencyConfig::deduce_defaults(core::nanoseconds_t default_target_latency,
         tuner_backend = LatencyTunerBackend_Niq;
     }
 
-    const bool auto_tune_latency = target_latency == 0 && start_latency > 0;
-    const core::nanoseconds_t latency = std::max(target_latency, start_latency);
+    bool auto_tune_latency = target_latency == 0 && start_latency > 0;
+    core::nanoseconds_t latency = std::max(target_latency, start_latency);
 
     if (tuner_profile == LatencyTunerProfile_Default) {
         if (is_receiver) {
@@ -61,7 +61,9 @@ void LatencyConfig::deduce_defaults(core::nanoseconds_t default_target_latency,
             if (tuner_profile != LatencyTunerProfile_Intact) {
                 // Latency tuning is enabled on receiver.
                 // Use default if target latency is not specified.
-                target_latency = default_target_latency;
+                start_latency = default_target_latency;
+                auto_tune_latency = true;
+                latency = std::max(target_latency, start_latency);
             } else {
                 // Latency tuning is disabled on receiver.
                 // Most likely, it is enabled on sender. To make tuning work on sender,
@@ -88,7 +90,7 @@ void LatencyConfig::deduce_defaults(core::nanoseconds_t default_target_latency,
             if (min_latency == 0 && max_latency == 0) {
                 // Out formula doesn't work well on latencies close to zero.
                 const core::nanoseconds_t floored_target_latency =
-                    std::max(std::max(start_latency, target_latency), core::Millisecond);
+                    std::max(latency, core::Millisecond);
 
                 // On sender, apply multiplier to make default tolerance a bit higher than
                 // on receiver. This way, if bounding is enabled on both sides, receiver
@@ -265,7 +267,7 @@ LatencyTuner::LatencyTuner(const LatencyConfig& config,
         target_latency_ = sample_spec_.ns_2_stream_timestamp_delta(
             auto_tune_ ? config.start_latency : config.target_latency);
 
-        if (config.target_latency <= 0 || target_latency_ <= 0) {
+        if (target_latency_ <= 0) {
             roc_log(LogError,
                     "latency tuner: invalid config: target_latency is invalid:"
                     " target_latency=%ld(%.3fms)",
