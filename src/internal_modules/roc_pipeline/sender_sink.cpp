@@ -33,11 +33,17 @@ SenderSink::SenderSink(const SenderSinkConfig& sink_config,
 
     audio::IFrameWriter* frm_writer = NULL;
 
-    fanout_.reset(new (fanout_) audio::Fanout(sink_config_.input_sample_spec));
-    if ((init_status_ = fanout_->init_status()) != status::StatusOK) {
-        return;
+    {
+        const audio::SampleSpec inout_spec(sink_config_.input_sample_spec.sample_rate(),
+                                           audio::Sample_RawFormat,
+                                           sink_config_.input_sample_spec.channel_set());
+
+        fanout_.reset(new (fanout_) audio::Fanout(inout_spec));
+        if ((init_status_ = fanout_->init_status()) != status::StatusOK) {
+            return;
+        }
+        frm_writer = fanout_.get();
     }
-    frm_writer = fanout_.get();
 
     if (!sink_config_.input_sample_spec.is_raw()) {
         const audio::SampleSpec out_spec(sink_config_.input_sample_spec.sample_rate(),

@@ -21,7 +21,7 @@
 #include "roc_rtp/encoding_map.h"
 
 // This file contains tests for SenderSink. SenderSink can be seen as a big
-// composite processor (consisting of chanined smaller processors) that transforms
+// composite processor (consisting of chained smaller processors) that transforms
 // audio frames into network packets. Typically, sound card thread writes frames
 // to SenderSink, and it in turn writes packets to network thread.
 //
@@ -43,6 +43,11 @@ namespace {
 
 const audio::ChannelMask Chans_Mono = audio::ChanMask_Surround_Mono;
 const audio::ChannelMask Chans_Stereo = audio::ChanMask_Surround_Stereo;
+
+const audio::PcmFormat Format_Raw = audio::Sample_RawFormat;
+const audio::PcmFormat Format_S16_Be = audio::PcmFormat_SInt16_Be;
+const audio::PcmFormat Format_S16_Ne = audio::PcmFormat_SInt16;
+const audio::PcmFormat Format_S32_Ne = audio::PcmFormat_SInt32;
 
 const rtp::PayloadType PayloadType_Ch1 = rtp::PayloadType_L16_Mono;
 const rtp::PayloadType PayloadType_Ch2 = rtp::PayloadType_L16_Stereo;
@@ -109,7 +114,13 @@ packet::IWriter* create_control_endpoint(SenderSlot* slot,
         slot->add_endpoint(iface, proto, outbound_address, outbound_writer);
     CHECK(endpoint);
     CHECK(endpoint->inbound_writer());
-    return endpoint->inbound_writer();
+    packet::IWriter* writer = endpoint->inbound_writer();
+    CHECK(writer);
+    return writer;
+}
+
+void refresh_sink(SenderSink& sender_sink, core::nanoseconds_t refresh_ts) {
+    LONGS_EQUAL(status::StatusOK, sender_sink.refresh(refresh_ts, NULL));
 }
 
 } // namespace
@@ -159,17 +170,18 @@ TEST_GROUP(sender_sink) {
     }
 
     void init(int input_sample_rate, audio::ChannelMask input_channels,
-              int packet_sample_rate, audio::ChannelMask packet_channels) {
+              audio::PcmFormat input_format, int packet_sample_rate,
+              audio::ChannelMask packet_channels, audio::PcmFormat packet_format) {
         input_sample_spec.set_sample_rate((size_t)input_sample_rate);
         input_sample_spec.set_sample_format(audio::SampleFormat_Pcm);
-        input_sample_spec.set_pcm_format(audio::Sample_RawFormat);
+        input_sample_spec.set_pcm_format(input_format);
         input_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
         input_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
         input_sample_spec.channel_set().set_mask(input_channels);
 
         packet_sample_spec.set_sample_rate((size_t)packet_sample_rate);
         packet_sample_spec.set_sample_format(audio::SampleFormat_Pcm);
-        packet_sample_spec.set_pcm_format(audio::PcmFormat_SInt16_Be);
+        packet_sample_spec.set_pcm_format(packet_format);
         packet_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
         packet_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
         packet_sample_spec.channel_set().set_mask(packet_channels);
@@ -182,12 +194,15 @@ TEST_GROUP(sender_sink) {
         dst_addr1 = test::new_address(21);
         dst_addr2 = test::new_address(22);
     }
+
+    void init_default() {
+        init(SampleRate, Chans_Stereo, Format_Raw, SampleRate, Chans_Stereo,
+             Format_S16_Be);
+    }
 };
 
 TEST(sender_sink, basic) {
-    enum { Rate = SampleRate, Chans = Chans_Stereo };
-
-    init(Rate, Chans, Rate, Chans);
+    init_default();
 
     packet::FifoQueue queue;
 
@@ -196,14 +211,13 @@ TEST(sender_sink, basic) {
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
-    CHECK(slot);
     create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
     test::FrameWriter frame_writer(sender, frame_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
-        LONGS_EQUAL(status::StatusOK, sender.refresh(frame_writer.refresh_ts(), NULL));
+        refresh_sink(sender, frame_writer.refresh_ts());
     }
 
     test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
@@ -219,14 +233,12 @@ TEST(sender_sink, basic) {
 // Frames smaller than packets.
 TEST(sender_sink, frame_size_small) {
     enum {
-        Rate = SampleRate,
-        Chans = Chans_Stereo,
         SamplesPerSmallFrame = SamplesPerFrame / 2,
         SmallFramesPerPacket = SamplesPerPacket / SamplesPerSmallFrame,
         ManySmallFrames = SmallFramesPerPacket * 20
     };
 
-    init(Rate, Chans, Rate, Chans);
+    init_default();
 
     packet::FifoQueue queue;
 
@@ -235,14 +247,13 @@ TEST(sender_sink, frame_size_small) {
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
-    CHECK(slot);
     create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
     test::FrameWriter frame_writer(sender, frame_factory);
 
     for (size_t nf = 0; nf < ManySmallFrames; nf++) {
         frame_writer.write_samples(SamplesPerSmallFrame, input_sample_spec);
-        LONGS_EQUAL(status::StatusOK, sender.refresh(frame_writer.refresh_ts(), NULL));
+        refresh_sink(sender, frame_writer.refresh_ts());
     }
 
     test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
@@ -258,14 +269,12 @@ TEST(sender_sink, frame_size_small) {
 // Frames larger than packets.
 TEST(sender_sink, frame_size_large) {
     enum {
-        Rate = SampleRate,
-        Chans = Chans_Stereo,
         SamplesPerLargeFrame = SamplesPerPacket * 4,
         PacketsPerLargeFrame = SamplesPerLargeFrame / SamplesPerPacket,
         ManyLargeFrames = 20
     };
 
-    init(Rate, Chans, Rate, Chans);
+    init_default();
 
     packet::FifoQueue queue;
 
@@ -274,14 +283,13 @@ TEST(sender_sink, frame_size_large) {
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
-    CHECK(slot);
     create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
     test::FrameWriter frame_writer(sender, frame_factory);
 
     for (size_t nf = 0; nf < ManyLargeFrames; nf++) {
         frame_writer.write_samples(SamplesPerLargeFrame, input_sample_spec);
-        LONGS_EQUAL(status::StatusOK, sender.refresh(frame_writer.refresh_ts(), NULL));
+        refresh_sink(sender, frame_writer.refresh_ts());
     }
 
     test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
@@ -298,7 +306,10 @@ TEST(sender_sink, frame_size_large) {
 TEST(sender_sink, channel_mapping_stereo_to_mono) {
     enum { Rate = SampleRate, InputChans = Chans_Stereo, PacketChans = Chans_Mono };
 
-    init(Rate, InputChans, Rate, PacketChans);
+    const audio::PcmFormat InputFormat = Format_Raw;
+    const audio::PcmFormat PacketFormat = Format_S16_Be;
+
+    init(Rate, InputChans, InputFormat, Rate, PacketChans, PacketFormat);
 
     packet::FifoQueue queue;
 
@@ -307,14 +318,13 @@ TEST(sender_sink, channel_mapping_stereo_to_mono) {
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
-    CHECK(slot);
     create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
     test::FrameWriter frame_writer(sender, frame_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
-        LONGS_EQUAL(status::StatusOK, sender.refresh(frame_writer.refresh_ts(), NULL));
+        refresh_sink(sender, frame_writer.refresh_ts());
     }
 
     test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
@@ -331,7 +341,10 @@ TEST(sender_sink, channel_mapping_stereo_to_mono) {
 TEST(sender_sink, channel_mapping_mono_to_stereo) {
     enum { Rate = SampleRate, InputChans = Chans_Mono, PacketChans = Chans_Stereo };
 
-    init(Rate, InputChans, Rate, PacketChans);
+    const audio::PcmFormat InputFormat = Format_Raw;
+    const audio::PcmFormat PacketFormat = Format_S16_Be;
+
+    init(Rate, InputChans, InputFormat, Rate, PacketChans, PacketFormat);
 
     packet::FifoQueue queue;
 
@@ -340,14 +353,13 @@ TEST(sender_sink, channel_mapping_mono_to_stereo) {
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
-    CHECK(slot);
     create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
     test::FrameWriter frame_writer(sender, frame_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
-        LONGS_EQUAL(status::StatusOK, sender.refresh(frame_writer.refresh_ts(), NULL));
+        refresh_sink(sender, frame_writer.refresh_ts());
     }
 
     test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
@@ -364,7 +376,10 @@ TEST(sender_sink, channel_mapping_mono_to_stereo) {
 TEST(sender_sink, sample_rate_mapping) {
     enum { InputRate = 48000, PacketRate = 44100, Chans = Chans_Stereo };
 
-    init(InputRate, Chans, PacketRate, Chans);
+    const audio::PcmFormat InputFormat = Format_Raw;
+    const audio::PcmFormat PacketFormat = Format_S16_Be;
+
+    init(InputRate, Chans, InputFormat, PacketRate, Chans, PacketFormat);
 
     packet::FifoQueue queue;
 
@@ -373,7 +388,6 @@ TEST(sender_sink, sample_rate_mapping) {
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
-    CHECK(slot);
     create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
     test::FrameWriter frame_writer(sender, frame_factory);
@@ -383,7 +397,7 @@ TEST(sender_sink, sample_rate_mapping) {
                                        / input_sample_spec.num_channels()
                                        * input_sample_spec.num_channels(),
                                    input_sample_spec);
-        LONGS_EQUAL(status::StatusOK, sender.refresh(frame_writer.refresh_ts(), NULL));
+        refresh_sink(sender, frame_writer.refresh_ts());
     }
 
     test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
@@ -394,12 +408,77 @@ TEST(sender_sink, sample_rate_mapping) {
     }
 }
 
-// Check how sender sets CTS of packets based on CTS of frames
-// written to it.
-TEST(sender_sink, timestamp_mapping) {
+TEST(sender_sink, format_mapping_s16) {
     enum { Rate = SampleRate, Chans = Chans_Stereo };
 
-    init(Rate, Chans, Rate, Chans);
+    const audio::PcmFormat InputFormat = Format_S16_Ne;
+    const audio::PcmFormat PacketFormat = Format_S16_Be;
+
+    init(Rate, Chans, InputFormat, Rate, Chans, PacketFormat);
+
+    packet::FifoQueue queue;
+
+    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
+                      frame_pool, frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, sender.init_status());
+
+    SenderSlot* slot = create_slot(sender);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
+
+    test::FrameWriter frame_writer(sender, frame_factory);
+
+    for (size_t nf = 0; nf < ManyFrames; nf++) {
+        frame_writer.write_s16_samples(SamplesPerFrame, input_sample_spec);
+        refresh_sink(sender, frame_writer.refresh_ts());
+    }
+
+    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
+                                     dst_addr1, PayloadType_Ch2);
+
+    for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
+        packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
+    }
+
+    packet_reader.read_eof();
+}
+
+TEST(sender_sink, format_mapping_s32) {
+    enum { Rate = SampleRate, Chans = Chans_Stereo };
+
+    const audio::PcmFormat InputFormat = Format_S32_Ne;
+    const audio::PcmFormat PacketFormat = Format_S16_Be;
+
+    init(Rate, Chans, InputFormat, Rate, Chans, PacketFormat);
+
+    packet::FifoQueue queue;
+
+    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
+                      frame_pool, frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, sender.init_status());
+
+    SenderSlot* slot = create_slot(sender);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
+
+    test::FrameWriter frame_writer(sender, frame_factory);
+
+    for (size_t nf = 0; nf < ManyFrames; nf++) {
+        frame_writer.write_s32_samples(SamplesPerFrame, input_sample_spec);
+        refresh_sink(sender, frame_writer.refresh_ts());
+    }
+
+    test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
+                                     dst_addr1, PayloadType_Ch2);
+
+    for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
+        packet_reader.read_packet(SamplesPerPacket, packet_sample_spec);
+    }
+
+    packet_reader.read_eof();
+}
+
+// Check how sender sets CTS of packets based on CTS of frames written to it.
+TEST(sender_sink, timestamp_mapping) {
+    init_default();
 
     packet::FifoQueue queue;
 
@@ -416,7 +495,7 @@ TEST(sender_sink, timestamp_mapping) {
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec, unix_base);
-        LONGS_EQUAL(status::StatusOK, sender.refresh(frame_writer.refresh_ts(), NULL));
+        refresh_sink(sender, frame_writer.refresh_ts());
     }
 
     test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
@@ -429,7 +508,7 @@ TEST(sender_sink, timestamp_mapping) {
     packet_reader.read_eof();
 }
 
-// Same as above, but there is also channel conversion and sample rate conversion.
+// Same as above, but there is also channel mapping, sample rate, and format mapping.
 TEST(sender_sink, timestamp_mapping_remixing) {
     enum {
         InputRate = 48000,
@@ -438,7 +517,10 @@ TEST(sender_sink, timestamp_mapping_remixing) {
         PacketChans = Chans_Mono
     };
 
-    init(InputRate, InputChans, PacketRate, PacketChans);
+    const audio::PcmFormat InputFormat = Format_S16_Ne;
+    const audio::PcmFormat PacketFormat = Format_S16_Be;
+
+    init(InputRate, InputChans, InputFormat, PacketRate, PacketChans, PacketFormat);
 
     packet::FifoQueue queue;
 
@@ -447,7 +529,6 @@ TEST(sender_sink, timestamp_mapping_remixing) {
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
-    CHECK(slot);
     create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
     test::FrameWriter frame_writer(sender, frame_factory);
@@ -455,11 +536,11 @@ TEST(sender_sink, timestamp_mapping_remixing) {
     const core::nanoseconds_t unix_base = 1000000000000000;
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
-        frame_writer.write_samples(SamplesPerFrame * InputRate / PacketRate
-                                       / input_sample_spec.num_channels()
-                                       * input_sample_spec.num_channels(),
-                                   input_sample_spec, unix_base);
-        LONGS_EQUAL(status::StatusOK, sender.refresh(frame_writer.refresh_ts(), NULL));
+        frame_writer.write_s16_samples(SamplesPerFrame * InputRate / PacketRate
+                                           / input_sample_spec.num_channels()
+                                           * input_sample_spec.num_channels(),
+                                       input_sample_spec, unix_base);
+        refresh_sink(sender, frame_writer.refresh_ts());
     }
 
     test::PacketReader packet_reader(arena, queue, encoding_map, packet_factory,
@@ -497,9 +578,9 @@ IGNORE_TEST(sender_sink, metrics_truncation) {
 
 // Check how sender fills metrics from feedback reports of remote receiver.
 TEST(sender_sink, metrics_feedback) {
-    enum { Rate = SampleRate, Chans = Chans_Stereo, MaxParties = 10 };
+    enum { MaxParties = 10 };
 
-    init(Rate, Chans, Rate, Chans);
+    init_default();
 
     packet::FifoQueue queue;
 
@@ -508,15 +589,12 @@ TEST(sender_sink, metrics_feedback) {
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
-    CHECK(slot);
-
     create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
     packet::FifoQueue control_outbound_queue;
     packet::IWriter* control_endpoint =
         create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
                                 dst_addr2, control_outbound_queue);
-    CHECK(control_endpoint);
 
     test::FrameWriter frame_writer(sender, frame_factory);
 
@@ -527,7 +605,7 @@ TEST(sender_sink, metrics_feedback) {
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
         frame_writer.write_samples(SamplesPerFrame, input_sample_spec, unix_base);
-        LONGS_EQUAL(status::StatusOK, sender.refresh(frame_writer.refresh_ts(), NULL));
+        refresh_sink(sender, frame_writer.refresh_ts());
     }
 
     for (size_t np = 0; np < ManyFrames / FramesPerPacket; np++) {
@@ -584,8 +662,7 @@ TEST(sender_sink, metrics_feedback) {
 
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_writer.write_samples(SamplesPerFrame, input_sample_spec, unix_base);
-            LONGS_EQUAL(status::StatusOK,
-                        sender.refresh(frame_writer.refresh_ts(), NULL));
+            refresh_sink(sender, frame_writer.refresh_ts());
         }
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec, unix_base);
 
@@ -626,9 +703,9 @@ TEST(sender_sink, metrics_feedback) {
 // Check reports generated by sender when there are no discovered receivers.
 // Generated reports should not have blocks dedicated for specific receivers.
 TEST(sender_sink, reports_no_receivers) {
-    enum { Rate = SampleRate, Chans = Chans_Stereo, MaxParties = 10 };
+    enum { MaxParties = 10 };
 
-    init(Rate, Chans, Rate, Chans);
+    init_default();
 
     packet::FifoQueue queue;
 
@@ -637,7 +714,6 @@ TEST(sender_sink, reports_no_receivers) {
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
-    CHECK(slot);
 
     packet::stream_source_t send_src_id = 0;
 
@@ -650,10 +726,8 @@ TEST(sender_sink, reports_no_receivers) {
     create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
 
     packet::FifoQueue control_outbound_queue;
-    packet::IWriter* control_endpoint =
-        create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
-                                dst_addr2, control_outbound_queue);
-    CHECK(control_endpoint);
+    create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
+                            dst_addr2, control_outbound_queue);
 
     test::FrameWriter frame_writer(sender, frame_factory);
 
@@ -669,8 +743,7 @@ TEST(sender_sink, reports_no_receivers) {
     for (size_t np = 0; np < (ReportInterval / SamplesPerPacket) * ManyReports; np++) {
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_writer.write_samples(SamplesPerFrame, input_sample_spec, unix_base);
-            LONGS_EQUAL(status::StatusOK,
-                        sender.refresh(frame_writer.refresh_ts(), NULL));
+            refresh_sink(sender, frame_writer.refresh_ts());
         }
 
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec, unix_base);
@@ -696,9 +769,9 @@ TEST(sender_sink, reports_no_receivers) {
 // Check reports generated by sender when there is one discovered receiver.
 // Generated reports should have blocks dedicated for receiver.
 TEST(sender_sink, reports_one_receiver) {
-    enum { Rate = SampleRate, Chans = Chans_Stereo, MaxParties = 10 };
+    enum { MaxParties = 10 };
 
-    init(Rate, Chans, Rate, Chans);
+    init_default();
 
     packet::FifoQueue queue;
 
@@ -707,7 +780,6 @@ TEST(sender_sink, reports_one_receiver) {
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
-    CHECK(slot);
 
     packet::stream_source_t send_src_id = 0;
     packet::stream_source_t recv_src_id = 0;
@@ -725,7 +797,6 @@ TEST(sender_sink, reports_one_receiver) {
     packet::IWriter* control_endpoint =
         create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
                                 dst_addr2, control_outbound_queue);
-    CHECK(control_endpoint);
 
     test::FrameWriter frame_writer(sender, frame_factory);
 
@@ -753,8 +824,7 @@ TEST(sender_sink, reports_one_receiver) {
 
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_writer.write_samples(SamplesPerFrame, input_sample_spec, unix_base);
-            LONGS_EQUAL(status::StatusOK,
-                        sender.refresh(frame_writer.refresh_ts(), NULL));
+            refresh_sink(sender, frame_writer.refresh_ts());
         }
 
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec, unix_base);
@@ -785,9 +855,9 @@ TEST(sender_sink, reports_one_receiver) {
 // Check reports generated by sender when there are two discovered receivers.
 // Generated reports should have blocks dedicated for both receivers.
 TEST(sender_sink, reports_two_receivers) {
-    enum { Rate = SampleRate, Chans = Chans_Stereo, MaxParties = 10 };
+    enum { MaxParties = 10 };
 
-    init(Rate, Chans, Rate, Chans);
+    init_default();
 
     packet::FifoQueue queue;
 
@@ -796,7 +866,6 @@ TEST(sender_sink, reports_two_receivers) {
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
-    CHECK(slot);
 
     packet::stream_source_t send_src_id = 0;
     packet::stream_source_t recv_src_id1 = 0;
@@ -816,7 +885,6 @@ TEST(sender_sink, reports_two_receivers) {
     packet::IWriter* control_endpoint =
         create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
                                 dst_addr2, control_outbound_queue);
-    CHECK(control_endpoint);
 
     test::FrameWriter frame_writer(sender, frame_factory);
 
@@ -852,8 +920,7 @@ TEST(sender_sink, reports_two_receivers) {
 
         for (size_t nf = 0; nf < FramesPerPacket; nf++) {
             frame_writer.write_samples(SamplesPerFrame, input_sample_spec, unix_base);
-            LONGS_EQUAL(status::StatusOK,
-                        sender.refresh(frame_writer.refresh_ts(), NULL));
+            refresh_sink(sender, frame_writer.refresh_ts());
         }
 
         packet_reader.read_packet(SamplesPerPacket, packet_sample_spec, unix_base);

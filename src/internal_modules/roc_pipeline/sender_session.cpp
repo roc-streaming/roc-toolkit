@@ -203,13 +203,19 @@ SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         frm_writer = resampler_writer_.get();
     }
 
-    feedback_monitor_.reset(new (feedback_monitor_) audio::FeedbackMonitor(
-        *frm_writer, *packetizer_, resampler_writer_.get(), sink_config_.feedback,
-        sink_config_.latency, sink_config_.input_sample_spec));
-    if ((status = feedback_monitor_->init_status()) != status::StatusOK) {
-        return status;
+    {
+        const audio::SampleSpec inout_spec(sink_config_.input_sample_spec.sample_rate(),
+                                           audio::Sample_RawFormat,
+                                           sink_config_.input_sample_spec.channel_set());
+
+        feedback_monitor_.reset(new (feedback_monitor_) audio::FeedbackMonitor(
+            *frm_writer, *packetizer_, resampler_writer_.get(), sink_config_.feedback,
+            sink_config_.latency, inout_spec));
+        if ((status = feedback_monitor_->init_status()) != status::StatusOK) {
+            return status;
+        }
+        frm_writer = feedback_monitor_.get();
     }
-    frm_writer = feedback_monitor_.get();
 
     // Top-level frame writer that is added to fanout.
     frame_writer_ = frm_writer;

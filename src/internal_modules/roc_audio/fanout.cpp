@@ -17,8 +17,7 @@ namespace audio {
 Fanout::Fanout(const SampleSpec& sample_spec)
     : sample_spec_(sample_spec)
     , init_status_(status::NoStatus) {
-    roc_panic_if_msg(!sample_spec_.is_valid() || !sample_spec_.is_raw(),
-                     "fanout: required valid sample spec with raw format: %s",
+    roc_panic_if_msg(!sample_spec_.is_valid(), "fanout: required valid sample spec: %s",
                      sample_spec_to_str(sample_spec_).c_str());
 
     init_status_ = status::StatusOK;

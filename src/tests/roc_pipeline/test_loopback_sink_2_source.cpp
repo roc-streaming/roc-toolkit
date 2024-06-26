@@ -50,6 +50,11 @@ namespace {
 const audio::ChannelMask Chans_Mono = audio::ChanMask_Surround_Mono;
 const audio::ChannelMask Chans_Stereo = audio::ChanMask_Surround_Stereo;
 
+const audio::PcmFormat Format_Raw = audio::Sample_RawFormat;
+const audio::PcmFormat Format_S16_Be = audio::PcmFormat_SInt16_Be;
+const audio::PcmFormat Format_S16_Ne = audio::PcmFormat_SInt16;
+const audio::PcmFormat Format_S32_Ne = audio::PcmFormat_SInt32;
+
 const rtp::PayloadType PayloadType_Ch1 = rtp::PayloadType_L16_Mono;
 const rtp::PayloadType PayloadType_Ch2 = rtp::PayloadType_L16_Stereo;
 
@@ -62,10 +67,10 @@ enum {
     SamplesPerPacket = 40,
     FramesPerPacket = SamplesPerPacket / SamplesPerFrame,
 
-    SourcePackets = 20,
-    RepairPackets = 10,
+    SourcePacketsInBlock = 20,
+    RepairPacketsInBlock = 10,
 
-    Latency = SamplesPerPacket * SourcePackets,
+    Latency = SamplesPerPacket * SourcePacketsInBlock,
     Timeout = Latency * 20,
     Warmup = SamplesPerPacket * 3,
 
@@ -164,7 +169,7 @@ public:
             }
 
             if ((flags_ & FlagLosses)
-                && counter_++ % (SourcePackets + RepairPackets) == 1) {
+                && counter_++ % (SourcePacketsInBlock + RepairPacketsInBlock) == 1) {
                 continue;
             }
 
@@ -238,13 +243,14 @@ private:
 };
 
 SenderSinkConfig make_sender_config(int flags,
+                                    audio::PcmFormat frame_format,
                                     audio::ChannelMask frame_channels,
                                     audio::ChannelMask packet_channels) {
     SenderSinkConfig config;
 
     config.input_sample_spec.set_sample_rate(SampleRate);
     config.input_sample_spec.set_sample_format(audio::SampleFormat_Pcm);
-    config.input_sample_spec.set_pcm_format(audio::Sample_RawFormat);
+    config.input_sample_spec.set_pcm_format(frame_format);
     config.input_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
     config.input_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
     config.input_sample_spec.channel_set().set_mask(frame_channels);
@@ -268,8 +274,8 @@ SenderSinkConfig make_sender_config(int flags,
         config.fec_encoder.scheme = packet::FEC_LDPC_Staircase;
     }
 
-    config.fec_writer.n_source_packets = SourcePackets;
-    config.fec_writer.n_repair_packets = RepairPackets;
+    config.fec_writer.n_source_packets = SourcePacketsInBlock;
+    config.fec_writer.n_repair_packets = RepairPacketsInBlock;
 
     config.enable_interleaving = (flags & FlagInterleaving);
     config.enable_cpu_clock = false;
@@ -284,13 +290,14 @@ SenderSinkConfig make_sender_config(int flags,
     return config;
 }
 
-ReceiverSourceConfig make_receiver_config(audio::ChannelMask frame_channels,
+ReceiverSourceConfig make_receiver_config(audio::PcmFormat frame_format,
+                                          audio::ChannelMask frame_channels,
                                           audio::ChannelMask packet_channels) {
     ReceiverSourceConfig config;
 
     config.common.output_sample_spec.set_sample_rate(SampleRate);
     config.common.output_sample_spec.set_sample_format(audio::SampleFormat_Pcm);
-    config.common.output_sample_spec.set_pcm_format(audio::Sample_RawFormat);
+    config.common.output_sample_spec.set_pcm_format(frame_format);
     config.common.output_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
     config.common.output_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
     config.common.output_sample_spec.channel_set().set_mask(frame_channels);
@@ -344,6 +351,39 @@ bool is_fec_supported(int flags) {
         return fec::CodecMap::instance().is_supported(packet::FEC_LDPC_Staircase);
     }
     return true;
+}
+
+void write_samples(test::FrameWriter& frame_writer,
+                   size_t n_samples,
+                   audio::PcmFormat frame_format,
+                   const audio::SampleSpec& sample_spec,
+                   core::nanoseconds_t base_cts) {
+    if (frame_format == Format_Raw) {
+        frame_writer.write_samples(n_samples, sample_spec, base_cts);
+    } else if (frame_format == Format_S16_Ne) {
+        frame_writer.write_s16_samples(n_samples, sample_spec, base_cts);
+    } else if (frame_format == Format_S32_Ne) {
+        frame_writer.write_s32_samples(n_samples, sample_spec, base_cts);
+    } else {
+        FAIL("bad format");
+    }
+}
+
+void read_samples(test::FrameReader& frame_reader,
+                  size_t n_samples,
+                  size_t n_sessions,
+                  audio::PcmFormat frame_format,
+                  const audio::SampleSpec& sample_spec,
+                  core::nanoseconds_t base_cts) {
+    if (frame_format == Format_Raw) {
+        frame_reader.read_samples(n_samples, n_sessions, sample_spec, base_cts);
+    } else if (frame_format == Format_S16_Ne) {
+        frame_reader.read_s16_samples(n_samples, n_sessions, sample_spec, base_cts);
+    } else if (frame_format == Format_S32_Ne) {
+        frame_reader.read_s32_samples(n_samples, n_sessions, sample_spec, base_cts);
+    } else {
+        FAIL("bad format");
+    }
 }
 
 void check_metrics(ReceiverSlot& receiver, SenderSlot& sender, int flags) {
@@ -415,6 +455,7 @@ void check_metrics(ReceiverSlot& receiver, SenderSlot& sender, int flags) {
 
 void send_receive(int flags,
                   size_t num_sessions,
+                  audio::PcmFormat frame_format,
                   audio::ChannelMask frame_channels,
                   audio::ChannelMask packet_channels) {
     packet::FifoQueue sender_outbound_queue;
@@ -431,7 +472,7 @@ void send_receive(int flags,
     address::SocketAddr sender_addr = test::new_address(44);
 
     SenderSinkConfig sender_config =
-        make_sender_config(flags, frame_channels, packet_channels);
+        make_sender_config(flags, frame_format, frame_channels, packet_channels);
 
     SenderSink sender(sender_config, encoding_map, packet_pool, packet_buffer_pool,
                       frame_pool, frame_buffer_pool, arena);
@@ -468,7 +509,7 @@ void send_receive(int flags,
     }
 
     ReceiverSourceConfig receiver_config =
-        make_receiver_config(frame_channels, packet_channels);
+        make_receiver_config(frame_format, frame_channels, packet_channels);
 
     ReceiverSource receiver(receiver_config, encoding_map, packet_pool,
                             packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
@@ -526,8 +567,9 @@ void send_receive(int flags,
     test::FrameReader frame_reader(receiver, frame_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
-        frame_writer.write_samples(SamplesPerFrame, sender_config.input_sample_spec,
-                                   send_base_cts);
+        write_samples(frame_writer, SamplesPerFrame, frame_format,
+                      sender_config.input_sample_spec, send_base_cts);
+
         LONGS_EQUAL(status::StatusOK,
                     sender.refresh(frame_writer.refresh_ts(send_base_cts), NULL));
 
@@ -542,9 +584,8 @@ void send_receive(int flags,
             LONGS_EQUAL(status::StatusOK,
                         receiver.refresh(frame_reader.refresh_ts(recv_base_cts), NULL));
 
-            frame_reader.read_samples(SamplesPerFrame, num_sessions,
-                                      receiver_config.common.output_sample_spec,
-                                      recv_base_cts);
+            read_samples(frame_reader, SamplesPerFrame, num_sessions, frame_format,
+                         receiver_config.common.output_sample_spec, recv_base_cts);
 
             if (flags & FlagCTS) {
                 receiver.reclock(frame_reader.last_capture_ts() + virtual_e2e_latency);
@@ -586,20 +627,20 @@ TEST_GROUP(loopback_sink_2_source) {};
 TEST(loopback_sink_2_source, bare_rtp) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
-    send_receive(FlagNone, NumSess, Chans, Chans);
+    send_receive(FlagNone, NumSess, Format_Raw, Chans, Chans);
 }
 
 TEST(loopback_sink_2_source, interleaving) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
-    send_receive(FlagInterleaving, NumSess, Chans, Chans);
+    send_receive(FlagInterleaving, NumSess, Format_Raw, Chans, Chans);
 }
 
 TEST(loopback_sink_2_source, fec_rs) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
     if (is_fec_supported(FlagReedSolomon)) {
-        send_receive(FlagReedSolomon, NumSess, Chans, Chans);
+        send_receive(FlagReedSolomon, NumSess, Format_Raw, Chans, Chans);
     }
 }
 
@@ -607,7 +648,7 @@ TEST(loopback_sink_2_source, fec_ldpc) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
     if (is_fec_supported(FlagLDPC)) {
-        send_receive(FlagLDPC, NumSess, Chans, Chans);
+        send_receive(FlagLDPC, NumSess, Format_Raw, Chans, Chans);
     }
 }
 
@@ -615,7 +656,8 @@ TEST(loopback_sink_2_source, fec_interleaving) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
     if (is_fec_supported(FlagReedSolomon)) {
-        send_receive(FlagReedSolomon | FlagInterleaving, NumSess, Chans, Chans);
+        send_receive(FlagReedSolomon | FlagInterleaving, NumSess, Format_Raw, Chans,
+                     Chans);
     }
 }
 
@@ -623,7 +665,7 @@ TEST(loopback_sink_2_source, fec_loss) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
     if (is_fec_supported(FlagReedSolomon)) {
-        send_receive(FlagReedSolomon | FlagLosses, NumSess, Chans, Chans);
+        send_receive(FlagReedSolomon | FlagLosses, NumSess, Format_Raw, Chans, Chans);
     }
 }
 
@@ -631,7 +673,7 @@ TEST(loopback_sink_2_source, fec_drop_source) {
     enum { Chans = Chans_Stereo, NumSess = 0 };
 
     if (is_fec_supported(FlagReedSolomon)) {
-        send_receive(FlagReedSolomon | FlagDropSource, NumSess, Chans, Chans);
+        send_receive(FlagReedSolomon | FlagDropSource, NumSess, Format_Raw, Chans, Chans);
     }
 }
 
@@ -639,32 +681,44 @@ TEST(loopback_sink_2_source, fec_drop_repair) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
     if (is_fec_supported(FlagReedSolomon)) {
-        send_receive(FlagReedSolomon | FlagDropRepair, NumSess, Chans, Chans);
+        send_receive(FlagReedSolomon | FlagDropRepair, NumSess, Format_Raw, Chans, Chans);
     }
 }
 
 TEST(loopback_sink_2_source, channel_mapping_stereo_to_mono) {
     enum { FrameChans = Chans_Stereo, PacketChans = Chans_Mono, NumSess = 1 };
 
-    send_receive(FlagNone, NumSess, FrameChans, PacketChans);
+    send_receive(FlagNone, NumSess, Format_Raw, FrameChans, PacketChans);
 }
 
 TEST(loopback_sink_2_source, channel_mapping_mono_to_stereo) {
     enum { FrameChans = Chans_Mono, PacketChans = Chans_Stereo, NumSess = 1 };
 
-    send_receive(FlagNone, NumSess, FrameChans, PacketChans);
+    send_receive(FlagNone, NumSess, Format_Raw, FrameChans, PacketChans);
+}
+
+TEST(loopback_sink_2_source, format_mapping_s16) {
+    enum { FrameChans = Chans_Stereo, PacketChans = Chans_Mono, NumSess = 1 };
+
+    send_receive(FlagNone, NumSess, Format_S16_Ne, FrameChans, PacketChans);
+}
+
+TEST(loopback_sink_2_source, format_mapping_s32) {
+    enum { FrameChans = Chans_Stereo, PacketChans = Chans_Mono, NumSess = 1 };
+
+    send_receive(FlagNone, NumSess, Format_S32_Ne, FrameChans, PacketChans);
 }
 
 TEST(loopback_sink_2_source, timestamp_mapping) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
-    send_receive(FlagRTCP | FlagCTS, NumSess, Chans, Chans);
+    send_receive(FlagRTCP | FlagCTS, NumSess, Format_Raw, Chans, Chans);
 }
 
 TEST(loopback_sink_2_source, timestamp_mapping_remixing) {
     enum { FrameChans = Chans_Mono, PacketChans = Chans_Stereo, NumSess = 1 };
 
-    send_receive(FlagRTCP | FlagCTS, NumSess, FrameChans, PacketChans);
+    send_receive(FlagRTCP | FlagCTS, NumSess, Format_S16_Ne, FrameChans, PacketChans);
 }
 
 } // namespace pipeline

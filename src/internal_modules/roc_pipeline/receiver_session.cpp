@@ -233,14 +233,20 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         frm_reader = resampler_reader_.get();
     }
 
-    latency_monitor_.reset(new (latency_monitor_) audio::LatencyMonitor(
-        *frm_reader, *source_queue_, *depacketizer_, *source_meter_, fec_reader_.get(),
-        resampler_reader_.get(), session_config.latency, pkt_encoding->sample_spec,
-        common_config.output_sample_spec));
-    if ((init_status_ = latency_monitor_->init_status()) != status::StatusOK) {
-        return;
+    {
+        const audio::SampleSpec inout_spec(
+            common_config.output_sample_spec.sample_rate(), audio::Sample_RawFormat,
+            common_config.output_sample_spec.channel_set());
+
+        latency_monitor_.reset(new (latency_monitor_) audio::LatencyMonitor(
+            *frm_reader, *source_queue_, *depacketizer_, *source_meter_,
+            fec_reader_.get(), resampler_reader_.get(), session_config.latency,
+            pkt_encoding->sample_spec, inout_spec));
+        if ((init_status_ = latency_monitor_->init_status()) != status::StatusOK) {
+            return;
+        }
+        frm_reader = latency_monitor_.get();
     }
-    frm_reader = latency_monitor_.get();
 
     // Top-level frame reader that is added to mixer.
     frame_reader_ = frm_reader;
@@ -398,7 +404,8 @@ status::StatusCode ReceiverSession::read(audio::Frame& frame,
     // Return StatusEnd to be excluded from mixing.
     // We don't return error from read() because we don't want the whole
     // receiver to fail, we just need to remove one session.
-    if (code != status::StatusOK && code != status::StatusEnd) {
+    if (code != status::StatusOK && code != status::StatusPart
+        && code != status::StatusDrain) {
         fail_status_ = code;
         return status::StatusEnd;
     }

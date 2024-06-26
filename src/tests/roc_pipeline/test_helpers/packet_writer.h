@@ -55,8 +55,8 @@ public:
         , seqnum_(0)
         , timestamp_(0)
         , pt_(pt)
-        , offset_(0)
-        , corrupt_(false) {
+        , sample_offset_(0)
+        , corrupt_flag_(false) {
         construct_(arena, packet_factory, encoding_map, pt, packet::FEC_None,
                    fec::BlockWriterConfig());
     }
@@ -84,8 +84,8 @@ public:
         , seqnum_(0)
         , timestamp_(0)
         , pt_(pt)
-        , offset_(0)
-        , corrupt_(false) {
+        , sample_offset_(0)
+        , corrupt_flag_(false) {
         construct_(arena, packet_factory, encoding_map, pt, fec_scheme, fec_config);
     }
 
@@ -101,18 +101,29 @@ public:
         }
     }
 
+    void skip_packets(size_t num_packets,
+                      size_t samples_per_packet,
+                      const audio::SampleSpec& sample_spec) {
+        CHECK(num_packets > 0);
+
+        for (size_t np = 0; np < num_packets; np++) {
+            packet::PacketPtr pp = create_packet_(samples_per_packet, sample_spec);
+            CHECK(pp);
+        }
+    }
+
     void shift_to(size_t num_packets, size_t samples_per_packet) {
         seqnum_ = packet::seqnum_t(num_packets);
         timestamp_ = packet::stream_timestamp_t(num_packets * samples_per_packet);
-        offset_ = uint8_t(num_packets * samples_per_packet);
+        sample_offset_ = uint8_t(num_packets * samples_per_packet);
     }
 
     uint8_t offset() const {
-        return offset_;
+        return sample_offset_;
     }
 
     void set_offset(size_t offset) {
-        offset_ = uint8_t(offset);
+        sample_offset_ = uint8_t(offset);
     }
 
     packet::stream_source_t source() const {
@@ -139,8 +150,8 @@ public:
         timestamp_ = timestamp;
     }
 
-    void set_corrupt(bool corrupt) {
-        corrupt_ = corrupt;
+    void corrupt_packets(bool corrupt) {
+        corrupt_flag_ = corrupt;
     }
 
 private:
@@ -212,6 +223,54 @@ private:
         }
     }
 
+    // creates next source packet
+    packet::PacketPtr create_packet_(size_t samples_per_packet,
+                                     const audio::SampleSpec& sample_spec) {
+        CHECK(samples_per_packet * sample_spec.num_channels() < MaxSamples);
+
+        packet::PacketPtr pp = packet_factory_.new_packet();
+        CHECK(pp);
+
+        pp->add_flags(packet::Packet::FlagAudio);
+        pp->add_flags(packet::Packet::FlagPrepared);
+
+        core::Slice<uint8_t> bp = packet_factory_.new_packet_buffer();
+        CHECK(bp);
+
+        CHECK(source_composer_->prepare(
+            *pp, bp, payload_encoder_->encoded_byte_count(samples_per_packet)));
+
+        pp->set_buffer(bp);
+
+        pp->rtp()->source_id = source_;
+        pp->rtp()->seqnum = seqnum_;
+        pp->rtp()->stream_timestamp = timestamp_;
+        pp->rtp()->payload_type = pt_;
+
+        seqnum_++;
+        timestamp_ += samples_per_packet;
+
+        audio::sample_t samples[MaxSamples];
+        for (size_t ns = 0; ns < samples_per_packet; ns++) {
+            for (size_t nc = 0; nc < sample_spec.num_channels(); nc++) {
+                samples[ns * sample_spec.num_channels() + nc] =
+                    nth_sample(sample_offset_);
+            }
+            sample_offset_++;
+        }
+
+        payload_encoder_->begin_frame(pp->rtp()->payload.data(),
+                                      pp->rtp()->payload.size());
+
+        UNSIGNED_LONGS_EQUAL(
+            samples_per_packet,
+            payload_encoder_->write_samples(samples, samples_per_packet));
+
+        payload_encoder_->end_frame();
+
+        return pp;
+    }
+
     void deliver_packet_(const packet::PacketPtr& pp) {
         if (fec_writer_) {
             // fec_writer will produce source and repair packets and store in fec_queue
@@ -254,57 +313,11 @@ private:
 
         pb->set_buffer(pa->buffer());
 
-        if (corrupt_) {
+        if (corrupt_flag_) {
             pb->buffer().data()[0] = 0;
         }
 
         return pb;
-    }
-
-    // creates next source packet
-    packet::PacketPtr create_packet_(size_t samples_per_packet,
-                                     const audio::SampleSpec& sample_spec) {
-        CHECK(samples_per_packet * sample_spec.num_channels() < MaxSamples);
-
-        packet::PacketPtr pp = packet_factory_.new_packet();
-        CHECK(pp);
-
-        pp->add_flags(packet::Packet::FlagAudio);
-
-        core::Slice<uint8_t> bp = packet_factory_.new_packet_buffer();
-        CHECK(bp);
-
-        CHECK(source_composer_->prepare(
-            *pp, bp, payload_encoder_->encoded_byte_count(samples_per_packet)));
-
-        pp->set_buffer(bp);
-
-        pp->rtp()->source_id = source_;
-        pp->rtp()->seqnum = seqnum_;
-        pp->rtp()->stream_timestamp = timestamp_;
-        pp->rtp()->payload_type = pt_;
-
-        seqnum_++;
-        timestamp_ += samples_per_packet;
-
-        audio::sample_t samples[MaxSamples];
-        for (size_t ns = 0; ns < samples_per_packet; ns++) {
-            for (size_t nc = 0; nc < sample_spec.num_channels(); nc++) {
-                samples[ns * sample_spec.num_channels() + nc] = nth_sample(offset_);
-            }
-            offset_++;
-        }
-
-        payload_encoder_->begin_frame(pp->rtp()->payload.data(),
-                                      pp->rtp()->payload.size());
-
-        UNSIGNED_LONGS_EQUAL(
-            samples_per_packet,
-            payload_encoder_->write_samples(samples, samples_per_packet));
-
-        payload_encoder_->end_frame();
-
-        return pp;
     }
 
     packet::IWriter* source_writer_;
@@ -332,9 +345,9 @@ private:
 
     rtp::PayloadType pt_;
 
-    uint8_t offset_;
+    uint8_t sample_offset_;
 
-    bool corrupt_;
+    bool corrupt_flag_;
 };
 
 } // namespace test

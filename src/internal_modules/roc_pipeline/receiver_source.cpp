@@ -32,12 +32,18 @@ ReceiverSource::ReceiverSource(const ReceiverSourceConfig& source_config,
 
     audio::IFrameReader* frm_reader = NULL;
 
-    mixer_.reset(new (mixer_) audio::Mixer(
-        frame_factory_, arena, source_config.common.output_sample_spec, true));
-    if ((init_status_ = mixer_->init_status()) != status::StatusOK) {
-        return;
+    {
+        const audio::SampleSpec inout_spec(
+            source_config_.common.output_sample_spec.sample_rate(),
+            audio::Sample_RawFormat,
+            source_config_.common.output_sample_spec.channel_set());
+
+        mixer_.reset(new (mixer_) audio::Mixer(frame_factory_, arena, inout_spec, true));
+        if ((init_status_ = mixer_->init_status()) != status::StatusOK) {
+            return;
+        }
+        frm_reader = mixer_.get();
     }
-    frm_reader = mixer_.get();
 
     if (!source_config_.common.output_sample_spec.is_raw()) {
         const audio::SampleSpec in_spec(
