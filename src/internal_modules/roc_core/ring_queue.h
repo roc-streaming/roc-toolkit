@@ -38,7 +38,11 @@ template <class T, size_t EmbeddedCapacity = 0> class RingQueue : public NonCopy
 public:
     //! Initialize.
     //! @remarks
-    //!  Preallocate buffer in @p arena with @p max_len number of elements.
+    //!  Preallocate buffer in @p arena with @p max_len number of elements. In this
+    //!  implementation, an empty slot needs to be reserved in the buffer to be able to
+    //!  distinguish between empty and full states, so queue's working capacity is
+    //!  `max_len - 1` (the queue is full when the buffer is filled with `max_len - 1`
+    //!  elements).
     RingQueue(core::IArena& arena, size_t max_len)
         : buff_(NULL)
         , buff_len_(max_len)
@@ -63,7 +67,7 @@ public:
         return buff_ != NULL;
     }
 
-    //! Get maximum number of elements in queue/
+    //! Get maximum number of elements in queue.
     size_t capacity() const {
         return buff_len_ - 1;
     }
@@ -80,7 +84,7 @@ public:
 
     //! Is the queue full.
     bool is_full() {
-        return size() == capacity();
+        return begin_ == (end_ + 1) % buff_len_;
     }
 
     //! Get reference of the front element.
