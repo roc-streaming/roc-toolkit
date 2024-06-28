@@ -380,7 +380,8 @@ int main(int argc, char** argv) {
                               receiver_config.common.output_sample_spec.channel_set());
 
         backup_pipeline.reset(new (context.arena()) pipeline::TranscoderSource(
-                                  transcoder_config, *backup_source, context.frame_pool(),
+                                  transcoder_config, *backup_source,
+                                  context.processor_map(), context.frame_pool(),
                                   context.frame_buffer_pool(), context.arena()),
                               context.arena());
         if (!backup_pipeline) {

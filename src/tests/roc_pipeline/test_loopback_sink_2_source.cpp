@@ -121,6 +121,7 @@ core::SlabPool<core::Buffer>
 packet::PacketFactory packet_factory(packet_pool, packet_buffer_pool);
 audio::FrameFactory frame_factory(frame_pool, frame_buffer_pool);
 
+audio::ProcessorMap processor_map(arena);
 rtp::EncodingMap encoding_map(arena);
 
 // Copy sequence of packets to multiple writers.
@@ -345,10 +346,10 @@ address::Protocol select_control_proto(int flags) {
 
 bool is_fec_supported(int flags) {
     if (flags & FlagReedSolomon) {
-        return fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8);
+        return fec::CodecMap::instance().has_scheme(packet::FEC_ReedSolomon_M8);
     }
     if (flags & FlagLDPC) {
-        return fec::CodecMap::instance().is_supported(packet::FEC_LDPC_Staircase);
+        return fec::CodecMap::instance().has_scheme(packet::FEC_LDPC_Staircase);
     }
     return true;
 }
@@ -474,8 +475,8 @@ void send_receive(int flags,
     SenderSinkConfig sender_config =
         make_sender_config(flags, frame_format, frame_channels, packet_channels);
 
-    SenderSink sender(sender_config, encoding_map, packet_pool, packet_buffer_pool,
-                      frame_pool, frame_buffer_pool, arena);
+    SenderSink sender(sender_config, processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlotConfig sender_slot_config;
@@ -511,7 +512,7 @@ void send_receive(int flags,
     ReceiverSourceConfig receiver_config =
         make_receiver_config(frame_format, frame_channels, packet_channels);
 
-    ReceiverSource receiver(receiver_config, encoding_map, packet_pool,
+    ReceiverSource receiver(receiver_config, processor_map, encoding_map, packet_pool,
                             packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, receiver.init_status());
 

@@ -16,6 +16,7 @@
 #include "roc_audio/iframe_reader.h"
 #include "roc_audio/mixer.h"
 #include "roc_audio/pcm_mapper_reader.h"
+#include "roc_audio/processor_map.h"
 #include "roc_audio/profiling_reader.h"
 #include "roc_core/iarena.h"
 #include "roc_core/optional.h"
@@ -44,7 +45,8 @@ class ReceiverSource : public sndio::ISource, public core::NonCopyable<> {
 public:
     //! Initialize.
     ReceiverSource(const ReceiverSourceConfig& source_config,
-                   const rtp::EncodingMap& encoding_map,
+                   audio::ProcessorMap& processor_map,
+                   rtp::EncodingMap& encoding_map,
                    core::IPool& packet_pool,
                    core::IPool& packet_buffer_pool,
                    core::IPool& frame_pool,
@@ -121,7 +123,8 @@ public:
 private:
     ReceiverSourceConfig source_config_;
 
-    const rtp::EncodingMap& encoding_map_;
+    audio::ProcessorMap& processor_map_;
+    rtp::EncodingMap& encoding_map_;
 
     packet::PacketFactory packet_factory_;
     audio::FrameFactory frame_factory_;

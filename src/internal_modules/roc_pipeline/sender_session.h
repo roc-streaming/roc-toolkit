@@ -19,6 +19,7 @@
 #include "roc_audio/iframe_encoder.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/packetizer.h"
+#include "roc_audio/processor_map.h"
 #include "roc_audio/resampler_writer.h"
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
@@ -55,7 +56,8 @@ class SenderSession : public core::NonCopyable<>,
 public:
     //! Initialize.
     SenderSession(const SenderSinkConfig& sink_config,
-                  const rtp::EncodingMap& encoding_map,
+                  audio::ProcessorMap& processor_map,
+                  rtp::EncodingMap& encoding_map,
                   packet::PacketFactory& packet_factory,
                   audio::FrameFactory& frame_factory,
                   core::IArena& arena);
@@ -136,7 +138,8 @@ private:
 
     const SenderSinkConfig sink_config_;
 
-    const rtp::EncodingMap& encoding_map_;
+    audio::ProcessorMap& processor_map_;
+    rtp::EncodingMap& encoding_map_;
 
     packet::PacketFactory& packet_factory_;
     audio::FrameFactory& frame_factory_;

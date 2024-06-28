@@ -31,14 +31,14 @@ public:
         return core::Singleton<CodecMap>::instance();
     }
 
-    //! Check whether given FEC scheme is supported.
-    bool is_supported(packet::FecScheme scheme) const;
-
     //! Get number of supported FEC schemes.
     size_t num_schemes() const;
 
     //! Get FEC scheme ID by index.
     packet::FecScheme nth_scheme(size_t n) const;
+
+    //! Check whether given FEC scheme is supported.
+    bool has_scheme(packet::FecScheme scheme) const;
 
     //! Create a new block encoder.
     //!

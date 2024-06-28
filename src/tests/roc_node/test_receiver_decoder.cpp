@@ -112,7 +112,7 @@ TEST(receiver_decoder, activate_fec) {
     ReceiverDecoder receiver_decoder(context, receiver_config);
     LONGS_EQUAL(status::StatusOK, receiver_decoder.init_status());
 
-    if (fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
+    if (fec::CodecMap::instance().has_scheme(packet::FEC_ReedSolomon_M8)) {
         CHECK(receiver_decoder.activate(address::Iface_AudioSource,
                                         address::Proto_RTP_RS8M_Source));
         CHECK(receiver_decoder.activate(address::Iface_AudioRepair,

@@ -42,6 +42,8 @@ core::SlabPool<core::Buffer>
 
 audio::FrameFactory frame_factory(frame_pool, frame_buffer_pool);
 
+audio::ProcessorMap processor_map(arena);
+
 } // namespace
 
 TEST_GROUP(transcoder_sink) {
@@ -82,7 +84,8 @@ TEST(transcoder_sink, null) {
 
     init(Rate, Chans, Rate, Chans);
 
-    TranscoderSink transcoder(make_config(), NULL, frame_pool, frame_buffer_pool, arena);
+    TranscoderSink transcoder(make_config(), NULL, processor_map, frame_pool,
+                              frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     test::FrameWriter frame_writer(transcoder, frame_factory);
@@ -99,8 +102,8 @@ TEST(transcoder_sink, write) {
 
     test::MockSink mock_sink(output_sample_spec);
 
-    TranscoderSink transcoder(make_config(), &mock_sink, frame_pool, frame_buffer_pool,
-                              arena);
+    TranscoderSink transcoder(make_config(), &mock_sink, processor_map, frame_pool,
+                              frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     test::FrameWriter frame_writer(transcoder, frame_factory);
@@ -124,8 +127,8 @@ TEST(transcoder_sink, frame_size_small) {
 
     test::MockSink mock_sink(output_sample_spec);
 
-    TranscoderSink transcoder(make_config(), &mock_sink, frame_pool, frame_buffer_pool,
-                              arena);
+    TranscoderSink transcoder(make_config(), &mock_sink, processor_map, frame_pool,
+                              frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     test::FrameWriter frame_writer(transcoder, frame_factory);
@@ -149,8 +152,8 @@ TEST(transcoder_sink, frame_size_large) {
 
     test::MockSink mock_sink(output_sample_spec);
 
-    TranscoderSink transcoder(make_config(), &mock_sink, frame_pool, frame_buffer_pool,
-                              arena);
+    TranscoderSink transcoder(make_config(), &mock_sink, processor_map, frame_pool,
+                              frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     test::FrameWriter frame_writer(transcoder, frame_factory);
@@ -170,8 +173,8 @@ TEST(transcoder_sink, channel_mapping_stereo_to_mono) {
 
     test::MockSink mock_sink(output_sample_spec);
 
-    TranscoderSink transcoder(make_config(), &mock_sink, frame_pool, frame_buffer_pool,
-                              arena);
+    TranscoderSink transcoder(make_config(), &mock_sink, processor_map, frame_pool,
+                              frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     test::FrameWriter frame_writer(transcoder, frame_factory);
@@ -191,8 +194,8 @@ TEST(transcoder_sink, channel_mapping_mono_to_stereo) {
 
     test::MockSink mock_sink(output_sample_spec);
 
-    TranscoderSink transcoder(make_config(), &mock_sink, frame_pool, frame_buffer_pool,
-                              arena);
+    TranscoderSink transcoder(make_config(), &mock_sink, processor_map, frame_pool,
+                              frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     test::FrameWriter frame_writer(transcoder, frame_factory);

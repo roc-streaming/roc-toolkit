@@ -20,6 +20,7 @@
 #include "roc_audio/iframe_reader.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/latency_monitor.h"
+#include "roc_audio/processor_map.h"
 #include "roc_audio/resampler_reader.h"
 #include "roc_audio/watchdog.h"
 #include "roc_core/iarena.h"
@@ -62,7 +63,8 @@ public:
     //! Initialize.
     ReceiverSession(const ReceiverSessionConfig& session_config,
                     const ReceiverCommonConfig& common_config,
-                    const rtp::EncodingMap& encoding_map,
+                    audio::ProcessorMap& processor_map,
+                    rtp::EncodingMap& encoding_map,
                     packet::PacketFactory& packet_factory,
                     audio::FrameFactory& frame_factory,
                     core::IArena& arena);

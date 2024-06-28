@@ -15,6 +15,7 @@
 #include "roc_audio/channel_mapper_reader.h"
 #include "roc_audio/frame_factory.h"
 #include "roc_audio/iresampler.h"
+#include "roc_audio/processor_map.h"
 #include "roc_audio/profiling_reader.h"
 #include "roc_audio/resampler_reader.h"
 #include "roc_core/ipool.h"
@@ -35,6 +36,7 @@ public:
     //! Initialize.
     TranscoderSource(const TranscoderConfig& config,
                      sndio::ISource& input_source,
+                     audio::ProcessorMap& processor_map,
                      core::IPool& frame_pool,
                      core::IPool& frame_buffer_pool,
                      core::IArena& arena);

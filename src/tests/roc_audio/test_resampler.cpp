@@ -12,7 +12,7 @@
 #include "test_helpers/mock_writer.h"
 
 #include "roc_audio/iresampler.h"
-#include "roc_audio/resampler_map.h"
+#include "roc_audio/processor_map.h"
 #include "roc_audio/resampler_reader.h"
 #include "roc_audio/resampler_writer.h"
 #include "roc_core/heap_arena.h"
@@ -46,6 +46,7 @@ const float supported_scalings[] = { 0.99f, 0.999f, 1.000f, 1.001f, 1.01f };
 
 core::HeapArena arena;
 FrameFactory frame_factory(arena, MaxFrameSize * sizeof(sample_t));
+ProcessorMap processor_map(arena);
 
 FramePtr new_frame(const SampleSpec& sample_spec,
                    size_t n_samples,
@@ -351,7 +352,7 @@ void resample(ResamplerBackend backend,
               size_t num_samples,
               const SampleSpec& sample_spec,
               float scaling) {
-    core::SharedPtr<IResampler> resampler = ResamplerMap::instance().new_resampler(
+    core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
         arena, frame_factory, make_config(backend, profile), sample_spec, sample_spec);
     CHECK(resampler);
     LONGS_EQUAL(status::StatusOK, resampler->init_status());
@@ -365,14 +366,33 @@ void resample(ResamplerBackend backend,
 
 } // namespace
 
-TEST_GROUP(resampler) {};
+TEST_GROUP(resampler) {
+    ResamplerBackend supported_backends[ResamplerBackend_Max];
+    size_t n_supported_backends;
+
+    void setup() {
+        n_supported_backends = 0;
+
+        for (int n = 0; n < ResamplerBackend_Max; n++) {
+            const ResamplerBackend backend = (ResamplerBackend)n;
+            if (backend == ResamplerBackend_Default) {
+                continue;
+            }
+            if (!processor_map.has_resampler_backend(backend)) {
+                continue;
+            }
+
+            supported_backends[n_supported_backends++] = backend;
+        }
+    }
+};
 
 // Check that supported combinations of rates and scaling
 // are accepted by resampler.
 TEST(resampler, supported_scalings) {
     enum { ChMask = 0x1, NumIterations = 5 };
 
-    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
+    for (size_t n_back = 0; n_back < n_supported_backends; n_back++) {
         for (size_t n_prof = 0; n_prof < ROC_ARRAY_SIZE(supported_profiles); n_prof++) {
             for (size_t n_irate = 0; n_irate < ROC_ARRAY_SIZE(supported_rates);
                  n_irate++) {
@@ -380,8 +400,7 @@ TEST(resampler, supported_scalings) {
                      n_orate++) {
                     for (size_t n_scale = 0; n_scale < ROC_ARRAY_SIZE(supported_scalings);
                          n_scale++) {
-                        const ResamplerBackend backend =
-                            ResamplerMap::instance().nth_backend(n_back);
+                        const ResamplerBackend backend = supported_backends[n_back];
 
                         const SampleSpec in_spec =
                             SampleSpec(supported_rates[n_irate], Sample_RawFormat,
@@ -391,7 +410,7 @@ TEST(resampler, supported_scalings) {
                                        ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
                         core::SharedPtr<IResampler> resampler =
-                            ResamplerMap::instance().new_resampler(
+                            processor_map.new_resampler(
                                 arena, frame_factory,
                                 make_config(backend, supported_profiles[n_prof]), in_spec,
                                 out_spec);
@@ -433,14 +452,13 @@ TEST(resampler, supported_scalings) {
 TEST(resampler, invalid_scalings) {
     enum { ChMask = 0x1 };
 
-    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
+    for (size_t n_back = 0; n_back < n_supported_backends; n_back++) {
         for (size_t n_prof = 0; n_prof < ROC_ARRAY_SIZE(supported_profiles); n_prof++) {
             for (size_t n_irate = 0; n_irate < ROC_ARRAY_SIZE(supported_rates);
                  n_irate++) {
                 for (size_t n_orate = 0; n_orate < ROC_ARRAY_SIZE(supported_rates);
                      n_orate++) {
-                    const ResamplerBackend backend =
-                        ResamplerMap::instance().nth_backend(n_back);
+                    const ResamplerBackend backend = supported_backends[n_back];
 
                     const SampleSpec in_spec =
                         SampleSpec(supported_rates[n_irate], Sample_RawFormat,
@@ -449,11 +467,10 @@ TEST(resampler, invalid_scalings) {
                         SampleSpec(supported_rates[n_orate], Sample_RawFormat,
                                    ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
-                    core::SharedPtr<IResampler> resampler =
-                        ResamplerMap::instance().new_resampler(
-                            arena, frame_factory,
-                            make_config(backend, supported_profiles[n_prof]), in_spec,
-                            out_spec);
+                    core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
+                        arena, frame_factory,
+                        make_config(backend, supported_profiles[n_prof]), in_spec,
+                        out_spec);
                     CHECK(resampler);
                     LONGS_EQUAL(status::StatusOK, resampler->init_status());
 
@@ -485,14 +502,13 @@ TEST(resampler, invalid_scalings) {
 TEST(resampler, scaling_trend) {
     enum { ChMask = 0x1, WaitSamples = 3000 };
 
-    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
+    for (size_t n_back = 0; n_back < n_supported_backends; n_back++) {
         for (size_t n_irate = 0; n_irate < ROC_ARRAY_SIZE(supported_rates); n_irate++) {
             for (size_t n_orate = 0; n_orate < ROC_ARRAY_SIZE(supported_rates);
                  n_orate++) {
                 for (size_t n_scale = 0; n_scale < ROC_ARRAY_SIZE(supported_scalings);
                      n_scale++) {
-                    const ResamplerBackend backend =
-                        ResamplerMap::instance().nth_backend(n_back);
+                    const ResamplerBackend backend = supported_backends[n_back];
 
                     const SampleSpec in_spec =
                         SampleSpec(supported_rates[n_irate], Sample_RawFormat,
@@ -503,11 +519,9 @@ TEST(resampler, scaling_trend) {
 
                     const float scaling = supported_scalings[n_scale];
 
-                    core::SharedPtr<IResampler> resampler =
-                        ResamplerMap::instance().new_resampler(
-                            arena, frame_factory,
-                            make_config(backend, ResamplerProfile_Low), in_spec,
-                            out_spec);
+                    core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
+                        arena, frame_factory, make_config(backend, ResamplerProfile_Low),
+                        in_spec, out_spec);
                     CHECK(resampler);
                     LONGS_EQUAL(status::StatusOK, resampler->init_status());
 
@@ -571,8 +585,8 @@ TEST(resampler, upscale_downscale_mono) {
     const float Threshold99 = 0.001f; // threshold for 99% of samples
     const float Threshold100 = 0.01f; // threshold for 100% of samples
 
-    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
-        const ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
+    for (size_t n_back = 0; n_back < n_supported_backends; n_back++) {
+        const ResamplerBackend backend = supported_backends[n_back];
         const ResamplerProfile profile = ResamplerProfile_High;
 
         const SampleSpec sample_spec(SampleRate, Sample_RawFormat, ChanLayout_Surround,
@@ -639,8 +653,8 @@ TEST(resampler, upscale_downscale_stereo) {
     const float Threshold99 = 0.001f; // threshold for 99% of samples
     const float Threshold100 = 0.01f; // threshold for 100% of samples
 
-    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
-        const ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
+    for (size_t n_back = 0; n_back < n_supported_backends; n_back++) {
+        const ResamplerBackend backend = supported_backends[n_back];
         const ResamplerProfile profile = ResamplerProfile_High;
 
         const SampleSpec sample_spec(SampleRate, Sample_RawFormat, ChanLayout_Surround,
@@ -712,14 +726,13 @@ TEST(resampler, upscale_downscale_stereo) {
 TEST(resampler, reader_timestamp_passthrough) {
     enum { NumCh = 2, ChMask = 0x3, FrameLen = 178, NumIterations = 20 };
 
-    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
+    for (size_t n_back = 0; n_back < n_supported_backends; n_back++) {
         for (size_t n_prof = 0; n_prof < ROC_ARRAY_SIZE(supported_profiles); n_prof++) {
             for (size_t n_irate = 0; n_irate < ROC_ARRAY_SIZE(supported_rates);
                  n_irate++) {
                 for (size_t n_orate = 0; n_orate < ROC_ARRAY_SIZE(supported_rates);
                      n_orate++) {
-                    const ResamplerBackend backend =
-                        ResamplerMap::instance().nth_backend(n_back);
+                    const ResamplerBackend backend = supported_backends[n_back];
 
                     const SampleSpec in_spec =
                         SampleSpec(supported_rates[n_irate], Sample_RawFormat,
@@ -728,11 +741,10 @@ TEST(resampler, reader_timestamp_passthrough) {
                         SampleSpec(supported_rates[n_orate], Sample_RawFormat,
                                    ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
-                    core::SharedPtr<IResampler> resampler =
-                        ResamplerMap::instance().new_resampler(
-                            arena, frame_factory,
-                            make_config(backend, supported_profiles[n_prof]), in_spec,
-                            out_spec);
+                    core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
+                        arena, frame_factory,
+                        make_config(backend, supported_profiles[n_prof]), in_spec,
+                        out_spec);
 
                     const core::nanoseconds_t start_ts = 1691499037871419405;
                     core::nanoseconds_t cur_ts = start_ts;
@@ -827,14 +839,13 @@ TEST(resampler, writer_timestamp_passthrough) {
         MaxZeroCtsFrames = 3
     };
 
-    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
+    for (size_t n_back = 0; n_back < n_supported_backends; n_back++) {
         for (size_t n_prof = 0; n_prof < ROC_ARRAY_SIZE(supported_profiles); n_prof++) {
             for (size_t n_irate = 0; n_irate < ROC_ARRAY_SIZE(supported_rates);
                  n_irate++) {
                 for (size_t n_orate = 0; n_orate < ROC_ARRAY_SIZE(supported_rates);
                      n_orate++) {
-                    const ResamplerBackend backend =
-                        ResamplerMap::instance().nth_backend(n_back);
+                    const ResamplerBackend backend = supported_backends[n_back];
 
                     const SampleSpec in_spec =
                         SampleSpec(supported_rates[n_irate], Sample_RawFormat,
@@ -843,11 +854,10 @@ TEST(resampler, writer_timestamp_passthrough) {
                         SampleSpec(supported_rates[n_orate], Sample_RawFormat,
                                    ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
-                    core::SharedPtr<IResampler> resampler =
-                        ResamplerMap::instance().new_resampler(
-                            arena, frame_factory,
-                            make_config(backend, supported_profiles[n_prof]), in_spec,
-                            out_spec);
+                    core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
+                        arena, frame_factory,
+                        make_config(backend, supported_profiles[n_prof]), in_spec,
+                        out_spec);
 
                     const core::nanoseconds_t start_ts = 1691499037871419405;
                     core::nanoseconds_t cur_ts = start_ts;
@@ -940,14 +950,13 @@ TEST(resampler, reader_timestamp_zero_or_small) {
         NumIterations = 20
     };
 
-    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
+    for (size_t n_back = 0; n_back < n_supported_backends; n_back++) {
         for (size_t n_prof = 0; n_prof < ROC_ARRAY_SIZE(supported_profiles); n_prof++) {
             for (size_t n_irate = 0; n_irate < ROC_ARRAY_SIZE(supported_rates);
                  n_irate++) {
                 for (size_t n_orate = 0; n_orate < ROC_ARRAY_SIZE(supported_rates);
                      n_orate++) {
-                    const ResamplerBackend backend =
-                        ResamplerMap::instance().nth_backend(n_back);
+                    const ResamplerBackend backend = supported_backends[n_back];
 
                     const SampleSpec in_spec =
                         SampleSpec(supported_rates[n_irate], Sample_RawFormat,
@@ -956,11 +965,10 @@ TEST(resampler, reader_timestamp_zero_or_small) {
                         SampleSpec(supported_rates[n_orate], Sample_RawFormat,
                                    ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
-                    core::SharedPtr<IResampler> resampler =
-                        ResamplerMap::instance().new_resampler(
-                            arena, frame_factory,
-                            make_config(backend, supported_profiles[n_prof]), in_spec,
-                            out_spec);
+                    core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
+                        arena, frame_factory,
+                        make_config(backend, supported_profiles[n_prof]), in_spec,
+                        out_spec);
 
                     test::MockReader input_reader(frame_factory, in_spec);
                     input_reader.add_zero_samples();
@@ -1021,14 +1029,13 @@ TEST(resampler, writer_timestamp_zero_or_small) {
         MaxZeroCtsFrames = 3,
     };
 
-    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
+    for (size_t n_back = 0; n_back < n_supported_backends; n_back++) {
         for (size_t n_prof = 0; n_prof < ROC_ARRAY_SIZE(supported_profiles); n_prof++) {
             for (size_t n_irate = 0; n_irate < ROC_ARRAY_SIZE(supported_rates);
                  n_irate++) {
                 for (size_t n_orate = 0; n_orate < ROC_ARRAY_SIZE(supported_rates);
                      n_orate++) {
-                    const ResamplerBackend backend =
-                        ResamplerMap::instance().nth_backend(n_back);
+                    const ResamplerBackend backend = supported_backends[n_back];
 
                     const SampleSpec in_spec =
                         SampleSpec(supported_rates[n_irate], Sample_RawFormat,
@@ -1037,11 +1044,10 @@ TEST(resampler, writer_timestamp_zero_or_small) {
                         SampleSpec(supported_rates[n_orate], Sample_RawFormat,
                                    ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
-                    core::SharedPtr<IResampler> resampler =
-                        ResamplerMap::instance().new_resampler(
-                            arena, frame_factory,
-                            make_config(backend, supported_profiles[n_prof]), in_spec,
-                            out_spec);
+                    core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
+                        arena, frame_factory,
+                        make_config(backend, supported_profiles[n_prof]), in_spec,
+                        out_spec);
 
                     const core::nanoseconds_t epsilon =
                         core::nanoseconds_t(1. / in_spec.sample_rate() * core::Second
@@ -1094,8 +1100,8 @@ TEST(resampler, reader_big_frame) {
         ChMask = 0x3,
     };
 
-    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
-        const ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
+    for (size_t n_back = 0; n_back < n_supported_backends; n_back++) {
+        const ResamplerBackend backend = supported_backends[n_back];
         const ResamplerProfile profile = ResamplerProfile_High;
 
         const SampleSpec sample_spec(SampleRate, Sample_RawFormat, ChanLayout_Surround,
@@ -1104,7 +1110,7 @@ TEST(resampler, reader_big_frame) {
         test::MockReader input_reader(frame_factory, sample_spec);
         input_reader.add_zero_samples();
 
-        core::SharedPtr<IResampler> resampler = ResamplerMap::instance().new_resampler(
+        core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
             arena, frame_factory, make_config(backend, profile), sample_spec,
             sample_spec);
         CHECK(resampler);
@@ -1133,8 +1139,8 @@ TEST(resampler, writer_big_frame) {
         Factor = 10,
     };
 
-    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
-        const ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
+    for (size_t n_back = 0; n_back < n_supported_backends; n_back++) {
+        const ResamplerBackend backend = supported_backends[n_back];
         const ResamplerProfile profile = ResamplerProfile_High;
 
         const SampleSpec sample_spec(SampleRate, Sample_RawFormat, ChanLayout_Surround,
@@ -1142,7 +1148,7 @@ TEST(resampler, writer_big_frame) {
 
         test::MockWriter output_writer;
 
-        core::SharedPtr<IResampler> resampler = ResamplerMap::instance().new_resampler(
+        core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
             arena, frame_factory, make_config(backend, profile), sample_spec,
             sample_spec);
         CHECK(resampler);
@@ -1175,8 +1181,8 @@ TEST(resampler, reader_forward_mode) {
         ChMask = 0x3,
     };
 
-    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
-        const ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
+    for (size_t n_back = 0; n_back < n_supported_backends; n_back++) {
+        const ResamplerBackend backend = supported_backends[n_back];
         const ResamplerProfile profile = ResamplerProfile_High;
 
         const SampleSpec sample_spec(SampleRate, Sample_RawFormat, ChanLayout_Surround,
@@ -1185,7 +1191,7 @@ TEST(resampler, reader_forward_mode) {
         test::MockReader input_reader(frame_factory, sample_spec);
         input_reader.add_zero_samples();
 
-        core::SharedPtr<IResampler> resampler = ResamplerMap::instance().new_resampler(
+        core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
             arena, frame_factory, make_config(backend, profile), sample_spec,
             sample_spec);
         CHECK(resampler);
@@ -1220,8 +1226,8 @@ TEST(resampler, reader_forward_error) {
         ChMask = 0x3,
     };
 
-    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
-        const ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
+    for (size_t n_back = 0; n_back < n_supported_backends; n_back++) {
+        const ResamplerBackend backend = supported_backends[n_back];
         const ResamplerProfile profile = ResamplerProfile_High;
 
         const SampleSpec sample_spec(SampleRate, Sample_RawFormat, ChanLayout_Surround,
@@ -1229,7 +1235,7 @@ TEST(resampler, reader_forward_error) {
 
         test::MockReader input_reader(frame_factory, sample_spec);
 
-        core::SharedPtr<IResampler> resampler = ResamplerMap::instance().new_resampler(
+        core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
             arena, frame_factory, make_config(backend, profile), sample_spec,
             sample_spec);
         CHECK(resampler);
@@ -1264,8 +1270,8 @@ TEST(resampler, writer_forward_error) {
         ChMask = 0x3,
     };
 
-    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
-        const ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
+    for (size_t n_back = 0; n_back < n_supported_backends; n_back++) {
+        const ResamplerBackend backend = supported_backends[n_back];
         const ResamplerProfile profile = ResamplerProfile_High;
 
         const SampleSpec sample_spec(SampleRate, Sample_RawFormat, ChanLayout_Surround,
@@ -1273,7 +1279,7 @@ TEST(resampler, writer_forward_error) {
 
         test::MockWriter output_writer;
 
-        core::SharedPtr<IResampler> resampler = ResamplerMap::instance().new_resampler(
+        core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
             arena, frame_factory, make_config(backend, profile), sample_spec,
             sample_spec);
         CHECK(resampler);
@@ -1307,8 +1313,8 @@ TEST(resampler, reader_process_partial) {
         NumIters = 50,
     };
 
-    for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends(); n_back++) {
-        const ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
+    for (size_t n_back = 0; n_back < n_supported_backends; n_back++) {
+        const ResamplerBackend backend = supported_backends[n_back];
         const ResamplerProfile profile = ResamplerProfile_High;
 
         const SampleSpec sample_spec(SampleRate, Sample_RawFormat, ChanLayout_Surround,
@@ -1316,7 +1322,7 @@ TEST(resampler, reader_process_partial) {
 
         test::MockReader input_reader(frame_factory, sample_spec);
 
-        core::SharedPtr<IResampler> resampler = ResamplerMap::instance().new_resampler(
+        core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
             arena, frame_factory, make_config(backend, profile), sample_spec,
             sample_spec);
         CHECK(resampler);
@@ -1354,9 +1360,8 @@ TEST(resampler, reader_preallocated_buffer) {
     for (size_t n_buf = 0; n_buf < ROC_ARRAY_SIZE(buffer_list); n_buf++) {
         const size_t orig_buf_sz = buffer_list[n_buf];
 
-        for (size_t n_back = 0; n_back < ResamplerMap::instance().num_backends();
-             n_back++) {
-            const ResamplerBackend backend = ResamplerMap::instance().nth_backend(n_back);
+        for (size_t n_back = 0; n_back < n_supported_backends; n_back++) {
+            const ResamplerBackend backend = supported_backends[n_back];
             const ResamplerProfile profile = ResamplerProfile_High;
 
             const SampleSpec sample_spec(SampleRate, Sample_RawFormat,
@@ -1365,10 +1370,9 @@ TEST(resampler, reader_preallocated_buffer) {
             test::MockReader input_reader(frame_factory, sample_spec);
             input_reader.add_zero_samples();
 
-            core::SharedPtr<IResampler> resampler =
-                ResamplerMap::instance().new_resampler(arena, frame_factory,
-                                                       make_config(backend, profile),
-                                                       sample_spec, sample_spec);
+            core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
+                arena, frame_factory, make_config(backend, profile), sample_spec,
+                sample_spec);
             CHECK(resampler);
             LONGS_EQUAL(status::StatusOK, resampler->init_status());
 

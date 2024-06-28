@@ -119,7 +119,7 @@ inline size_t get_frame_size(size_t window_size,
 
 BuiltinResampler::BuiltinResampler(core::IArena& arena,
                                    FrameFactory& frame_factory,
-                                   ResamplerProfile profile,
+                                   const ResamplerConfig& config,
                                    const SampleSpec& in_spec,
                                    const SampleSpec& out_spec)
     : IResampler(arena)
@@ -130,9 +130,9 @@ BuiltinResampler::BuiltinResampler(core::IArena& arena,
     , curr_frame_(NULL)
     , next_frame_(NULL)
     , scaling_(1.0)
-    , window_size_(get_window_size(profile))
+    , window_size_(get_window_size(config.profile))
     , qt_half_sinc_window_size_(float_to_fixedpoint(window_size_))
-    , window_interp_(get_window_interp(profile))
+    , window_interp_(get_window_interp(config.profile))
     , window_interp_bits_(calc_bits(window_interp_))
     , frame_size_ch_(get_frame_size(window_size_, in_spec, out_spec))
     , frame_size_(frame_size_ch_ * in_spec.num_channels())
@@ -164,7 +164,7 @@ BuiltinResampler::BuiltinResampler(core::IArena& arena,
         LogDebug,
         "builtin resampler: initializing:"
         " profile=%s window_interp=%lu window_size=%lu frame_size=%lu channels_num=%lu",
-        resampler_profile_to_str(profile), (unsigned long)window_interp_,
+        resampler_profile_to_str(config.profile), (unsigned long)window_interp_,
         (unsigned long)window_size_, (unsigned long)frame_size_,
         (unsigned long)in_spec_.num_channels());
 

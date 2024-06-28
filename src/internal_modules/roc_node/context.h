@@ -12,6 +12,7 @@
 #ifndef ROC_NODE_CONTEXT_H_
 #define ROC_NODE_CONTEXT_H_
 
+#include "roc_audio/processor_map.h"
 #include "roc_audio/sample.h"
 #include "roc_core/allocation_policy.h"
 #include "roc_core/atomic.h"
@@ -67,6 +68,9 @@ public:
     //! Get frame buffer pool.
     core::IPool& frame_buffer_pool();
 
+    //! Get processor map.
+    audio::ProcessorMap& processor_map();
+
     //! Get encoding map.
     rtp::EncodingMap& encoding_map();
 
@@ -85,6 +89,7 @@ private:
     core::SlabPool<audio::Frame> frame_pool_;
     core::SlabPool<core::Buffer> frame_buffer_pool_;
 
+    audio::ProcessorMap processor_map_;
     rtp::EncodingMap encoding_map_;
 
     netio::NetworkLoop network_loop_;

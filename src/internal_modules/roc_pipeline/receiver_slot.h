@@ -16,6 +16,7 @@
 #include "roc_address/protocol.h"
 #include "roc_audio/frame_factory.h"
 #include "roc_audio/mixer.h"
+#include "roc_audio/processor_map.h"
 #include "roc_core/iarena.h"
 #include "roc_core/list_node.h"
 #include "roc_core/ref_counted.h"
@@ -42,7 +43,8 @@ public:
                  const ReceiverSlotConfig& slot_config,
                  StateTracker& state_tracker,
                  audio::Mixer& mixer,
-                 const rtp::EncodingMap& encoding_map,
+                 audio::ProcessorMap& processor_map,
+                 rtp::EncodingMap& encoding_map,
                  packet::PacketFactory& packet_factory,
                  audio::FrameFactory& frame_factory,
                  core::IArena& arena);
@@ -89,7 +91,7 @@ private:
                                                const address::SocketAddr& inbound_address,
                                                packet::IWriter* outbound_writer);
 
-    const rtp::EncodingMap& encoding_map_;
+    rtp::EncodingMap& encoding_map_;
 
     StateTracker& state_tracker_;
     ReceiverSessionGroup session_group_;

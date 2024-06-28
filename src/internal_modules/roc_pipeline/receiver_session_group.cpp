@@ -20,7 +20,8 @@ ReceiverSessionGroup::ReceiverSessionGroup(const ReceiverSourceConfig& source_co
                                            const ReceiverSlotConfig& slot_config,
                                            StateTracker& state_tracker,
                                            audio::Mixer& mixer,
-                                           const rtp::EncodingMap& encoding_map,
+                                           audio::ProcessorMap& processor_map,
+                                           rtp::EncodingMap& encoding_map,
                                            packet::PacketFactory& packet_factory,
                                            audio::FrameFactory& frame_factory,
                                            core::IArena& arena)
@@ -28,6 +29,7 @@ ReceiverSessionGroup::ReceiverSessionGroup(const ReceiverSourceConfig& source_co
     , slot_config_(slot_config)
     , state_tracker_(state_tracker)
     , mixer_(mixer)
+    , processor_map_(processor_map)
     , encoding_map_(encoding_map)
     , arena_(arena)
     , packet_factory_(packet_factory)
@@ -386,9 +388,9 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
             address::socket_addr_to_str(src_address).c_str(),
             address::socket_addr_to_str(dst_address).c_str());
 
-    core::SharedPtr<ReceiverSession> sess =
-        new (arena_) ReceiverSession(sess_config, source_config_.common, encoding_map_,
-                                     packet_factory_, frame_factory_, arena_);
+    core::SharedPtr<ReceiverSession> sess = new (arena_)
+        ReceiverSession(sess_config, source_config_.common, processor_map_, encoding_map_,
+                        packet_factory_, frame_factory_, arena_);
 
     if (!sess) {
         roc_log(LogError, "session group: can't create session, allocation failed");

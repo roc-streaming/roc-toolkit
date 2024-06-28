@@ -7,7 +7,6 @@
  */
 
 #include "roc_pipeline/receiver_session.h"
-#include "roc_audio/resampler_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_fec/codec_map.h"
@@ -17,7 +16,8 @@ namespace pipeline {
 
 ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
                                  const ReceiverCommonConfig& common_config,
-                                 const rtp::EncodingMap& encoding_map,
+                                 audio::ProcessorMap& processor_map,
+                                 rtp::EncodingMap& encoding_map,
                                  packet::PacketFactory& packet_factory,
                                  audio::FrameFactory& frame_factory,
                                  core::IArena& arena)
@@ -215,7 +215,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
                                          audio::Sample_RawFormat,
                                          common_config.output_sample_spec.channel_set());
 
-        resampler_.reset(audio::ResamplerMap::instance().new_resampler(
+        resampler_.reset(processor_map.new_resampler(
             arena, frame_factory, session_config.resampler, in_spec, out_spec));
         if (!resampler_) {
             init_status_ = status::StatusNoMem;

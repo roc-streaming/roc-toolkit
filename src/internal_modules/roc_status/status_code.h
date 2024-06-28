@@ -67,6 +67,14 @@ enum StatusCode {
     //!  stream when reading from network.
     StatusEnd,
 
+    //! Conflicting identifier.
+    //! @remarks
+    //!  Operation can't be completed because of conflicting name or id.
+    //! @note
+    //!  Example: encoding can't be registered because another one already
+    //!  exists with the same numeric id.
+    StatusConflict,
+
     //! Insufficient memory.
     //! @remarks
     //!  Indicates low memory or reached memory limit.

@@ -27,6 +27,7 @@ core::HeapArena arena;
 packet::PacketFactory packet_factory(arena, MaxBufSize);
 audio::FrameFactory frame_factory(arena, MaxBufSize * sizeof(audio::sample_t));
 
+audio::ProcessorMap processor_map(arena);
 rtp::EncodingMap encoding_map(arena);
 
 } // namespace
@@ -60,12 +61,12 @@ TEST_GROUP(session_router) {
             ReceiverSessionConfig session_config;
             ReceiverCommonConfig common_config;
 
-            sess1 =
-                new (arena) ReceiverSession(session_config, common_config, encoding_map,
-                                            packet_factory, frame_factory, arena);
-            sess2 =
-                new (arena) ReceiverSession(session_config, common_config, encoding_map,
-                                            packet_factory, frame_factory, arena);
+            sess1 = new (arena)
+                ReceiverSession(session_config, common_config, processor_map,
+                                encoding_map, packet_factory, frame_factory, arena);
+            sess2 = new (arena)
+                ReceiverSession(session_config, common_config, processor_map,
+                                encoding_map, packet_factory, frame_factory, arena);
         }
     }
 };

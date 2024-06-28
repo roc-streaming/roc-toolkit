@@ -29,6 +29,7 @@ core::HeapArena arena;
 packet::PacketFactory packet_factory(arena, PacketSz);
 audio::FrameFactory frame_factory(arena, PacketSz * sizeof(audio::sample_t));
 
+audio::ProcessorMap processor_map(arena);
 rtp::EncodingMap encoding_map(arena);
 
 } // namespace
@@ -42,8 +43,8 @@ TEST(receiver_endpoint, valid) {
     ReceiverSourceConfig source_config;
     ReceiverSlotConfig slot_config;
     ReceiverSessionGroup session_group(source_config, slot_config, state_tracker, mixer,
-                                       encoding_map, packet_factory, frame_factory,
-                                       arena);
+                                       processor_map, encoding_map, packet_factory,
+                                       frame_factory, arena);
 
     ReceiverEndpoint endpoint(address::Proto_RTP, state_tracker, session_group,
                               encoding_map, address::SocketAddr(), NULL, arena);
@@ -57,8 +58,8 @@ TEST(receiver_endpoint, invalid_proto) {
     ReceiverSourceConfig source_config;
     ReceiverSlotConfig slot_config;
     ReceiverSessionGroup session_group(source_config, slot_config, state_tracker, mixer,
-                                       encoding_map, packet_factory, frame_factory,
-                                       arena);
+                                       processor_map, encoding_map, packet_factory,
+                                       frame_factory, arena);
 
     ReceiverEndpoint endpoint(address::Proto_None, state_tracker, session_group,
                               encoding_map, address::SocketAddr(), NULL, arena);
@@ -79,9 +80,9 @@ TEST(receiver_endpoint, no_memory) {
         StateTracker state_tracker;
         ReceiverSourceConfig source_config;
         ReceiverSlotConfig slot_config;
-        ReceiverSessionGroup session_group(source_config, slot_config, state_tracker,
-                                           mixer, encoding_map, packet_factory,
-                                           frame_factory, core::NoopArena);
+        ReceiverSessionGroup session_group(
+            source_config, slot_config, state_tracker, mixer, processor_map, encoding_map,
+            packet_factory, frame_factory, core::NoopArena);
 
         ReceiverEndpoint endpoint(protos[n], state_tracker, session_group, encoding_map,
                                   address::SocketAddr(), NULL, core::NoopArena);

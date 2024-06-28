@@ -16,6 +16,7 @@
 #include "roc_audio/frame_factory.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/null_writer.h"
+#include "roc_audio/processor_map.h"
 #include "roc_audio/profiling_writer.h"
 #include "roc_audio/resampler_writer.h"
 #include "roc_core/ipool.h"
@@ -36,6 +37,7 @@ public:
     //! Initialize.
     TranscoderSink(const TranscoderConfig& config,
                    audio::IFrameWriter* output_writer,
+                   audio::ProcessorMap& processor_map,
                    core::IPool& frame_pool,
                    core::IPool& frame_buffer_pool,
                    core::IArena& arena);

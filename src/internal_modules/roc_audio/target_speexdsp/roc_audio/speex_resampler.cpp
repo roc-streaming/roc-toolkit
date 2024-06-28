@@ -47,7 +47,7 @@ inline int get_quality(ResamplerProfile profile) {
 
 SpeexResampler::SpeexResampler(core::IArena& arena,
                                FrameFactory& frame_factory,
-                               ResamplerProfile profile,
+                               const ResamplerConfig& config,
                                const SampleSpec& in_spec,
                                const SampleSpec& out_spec)
     : IResampler(arena)
@@ -75,7 +75,7 @@ SpeexResampler::SpeexResampler(core::IArena& arena,
                   sample_spec_to_str(out_spec).c_str());
     }
 
-    const int quality = get_quality(profile);
+    const int quality = get_quality(config.profile);
 
     int err = 0;
     speex_state_ =
@@ -98,8 +98,8 @@ SpeexResampler::SpeexResampler(core::IArena& arena,
     roc_log(LogDebug,
             "speex resampler: initializing:"
             " profile=%s quality=%d frame_size=%lu channels_num=%lu",
-            resampler_profile_to_str(profile), quality, (unsigned long)in_frame_size_,
-            (unsigned long)num_ch_);
+            resampler_profile_to_str(config.profile), quality,
+            (unsigned long)in_frame_size_, (unsigned long)num_ch_);
 
     if (!(in_frame_ = frame_factory.new_raw_buffer())) {
         roc_log(LogError, "speex resampler: can't allocate frame buffer");

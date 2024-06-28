@@ -22,18 +22,23 @@
 #include "roc_core/ref_counted.h"
 #include "roc_core/slab_pool.h"
 #include "roc_rtp/encoding.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace rtp {
 
 //! RTP encoding map.
+//! Holds all registered encodings and their properties and codecs.
 //! Thread-safe.
 //! Returned encodings are immutable and can be safely used from
 //! any thread.
 class EncodingMap : public core::NonCopyable<> {
 public:
     //! Initialize.
-    EncodingMap(core::IArena& arena);
+    explicit EncodingMap(core::IArena& arena);
+
+    //! Add encoding to the map.
+    ROC_ATTR_NODISCARD status::StatusCode register_encoding(Encoding enc);
 
     //! Find encoding by payload type.
     //! @returns
@@ -46,12 +51,6 @@ public:
     //!  pointer to the encoding structure or null if there is no encoding
     //!  with matching specification.
     const Encoding* find_by_spec(const audio::SampleSpec& spec) const;
-
-    //! Add encoding to the map.
-    //! @returns
-    //!  true if successfully added or false if another encoding with the same
-    //!  payload type already exists.
-    ROC_ATTR_NODISCARD bool add_encoding(Encoding enc);
 
 private:
     enum { PreallocatedNodes = 16 };
@@ -77,8 +76,8 @@ private:
         }
     };
 
-    void add_builtin_(const Encoding& enc);
-    void find_codecs_(Encoding& enc);
+    void register_builtin_encoding_(const Encoding& enc);
+    void resolve_codecs_(Encoding& enc);
 
     core::Mutex mutex_;
 

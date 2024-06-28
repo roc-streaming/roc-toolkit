@@ -42,7 +42,7 @@ public:
     //! Initialize.
     SpeexResampler(core::IArena& arena,
                    FrameFactory& frame_factory,
-                   ResamplerProfile profile,
+                   const ResamplerConfig& config,
                    const SampleSpec& in_spec,
                    const SampleSpec& out_spec);
 

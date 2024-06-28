@@ -20,6 +20,7 @@ ReceiverDecoder::ReceiverDecoder(Context& context,
     : Node(context)
     , pipeline_(*this,
                 pipeline_config,
+                context.processor_map(),
                 context.encoding_map(),
                 context.packet_pool(),
                 context.packet_buffer_pool(),

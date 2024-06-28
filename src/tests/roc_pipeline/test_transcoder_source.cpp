@@ -42,6 +42,8 @@ core::SlabPool<core::Buffer>
 
 audio::FrameFactory frame_factory(frame_pool, frame_buffer_pool);
 
+audio::ProcessorMap processor_map(arena);
+
 void read_frame(status::StatusCode expected_code,
                 audio::IFrameReader& reader,
                 size_t samples_per_chan) {
@@ -95,8 +97,8 @@ TEST(transcoder_source, state) {
 
     test::MockSource mock_source(frame_factory, input_sample_spec);
 
-    TranscoderSource transcoder(make_config(), mock_source, frame_pool, frame_buffer_pool,
-                                arena);
+    TranscoderSource transcoder(make_config(), mock_source, processor_map, frame_pool,
+                                frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     mock_source.set_state(sndio::DeviceState_Active);
@@ -113,8 +115,8 @@ TEST(transcoder_source, pause_resume) {
 
     test::MockSource mock_source(frame_factory, input_sample_spec);
 
-    TranscoderSource transcoder(make_config(), mock_source, frame_pool, frame_buffer_pool,
-                                arena);
+    TranscoderSource transcoder(make_config(), mock_source, processor_map, frame_pool,
+                                frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     LONGS_EQUAL(status::StatusOK, transcoder.pause());
@@ -133,8 +135,8 @@ TEST(transcoder_source, pause_restart) {
 
     test::MockSource mock_source(frame_factory, input_sample_spec);
 
-    TranscoderSource transcoder(make_config(), mock_source, frame_pool, frame_buffer_pool,
-                                arena);
+    TranscoderSource transcoder(make_config(), mock_source, processor_map, frame_pool,
+                                frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     LONGS_EQUAL(status::StatusOK, transcoder.pause());
@@ -154,8 +156,8 @@ TEST(transcoder_source, read) {
     test::MockSource mock_source(frame_factory, input_sample_spec);
     mock_source.add(ManyFrames * SamplesPerFrame, input_sample_spec);
 
-    TranscoderSource transcoder(make_config(), mock_source, frame_pool, frame_buffer_pool,
-                                arena);
+    TranscoderSource transcoder(make_config(), mock_source, processor_map, frame_pool,
+                                frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     test::FrameReader frame_reader(transcoder, frame_factory);
@@ -174,8 +176,8 @@ TEST(transcoder_source, eof) {
 
     test::MockSource mock_source(frame_factory, input_sample_spec);
 
-    TranscoderSource transcoder(make_config(), mock_source, frame_pool, frame_buffer_pool,
-                                arena);
+    TranscoderSource transcoder(make_config(), mock_source, processor_map, frame_pool,
+                                frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     mock_source.add(SamplesPerFrame, input_sample_spec);
@@ -192,8 +194,8 @@ TEST(transcoder_source, frame_size_small) {
     test::MockSource mock_source(frame_factory, input_sample_spec);
     mock_source.add(ManyFrames * SamplesPerSmallFrame, input_sample_spec);
 
-    TranscoderSource transcoder(make_config(), mock_source, frame_pool, frame_buffer_pool,
-                                arena);
+    TranscoderSource transcoder(make_config(), mock_source, processor_map, frame_pool,
+                                frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     test::FrameReader frame_reader(transcoder, frame_factory);
@@ -213,8 +215,8 @@ TEST(transcoder_source, frame_size_large) {
     test::MockSource mock_source(frame_factory, input_sample_spec);
     mock_source.add(ManyFrames * SamplesPerLargeFrame, input_sample_spec);
 
-    TranscoderSource transcoder(make_config(), mock_source, frame_pool, frame_buffer_pool,
-                                arena);
+    TranscoderSource transcoder(make_config(), mock_source, processor_map, frame_pool,
+                                frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     test::FrameReader frame_reader(transcoder, frame_factory);
@@ -234,8 +236,8 @@ TEST(transcoder_source, channel_mapping_stereo_to_mono) {
     test::MockSource mock_source(frame_factory, input_sample_spec);
     mock_source.add(ManyFrames * SamplesPerFrame, input_sample_spec);
 
-    TranscoderSource transcoder(make_config(), mock_source, frame_pool, frame_buffer_pool,
-                                arena);
+    TranscoderSource transcoder(make_config(), mock_source, processor_map, frame_pool,
+                                frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     test::FrameReader frame_reader(transcoder, frame_factory);
@@ -255,8 +257,8 @@ TEST(transcoder_source, channel_mapping_mono_to_stereo) {
     test::MockSource mock_source(frame_factory, input_sample_spec);
     mock_source.add(ManyFrames * SamplesPerFrame, input_sample_spec);
 
-    TranscoderSource transcoder(make_config(), mock_source, frame_pool, frame_buffer_pool,
-                                arena);
+    TranscoderSource transcoder(make_config(), mock_source, processor_map, frame_pool,
+                                frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, transcoder.init_status());
 
     test::FrameReader frame_reader(transcoder, frame_factory);

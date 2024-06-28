@@ -72,7 +72,7 @@ TEST_GROUP(block_writer_reader_errors) {
     }
 
     bool fec_supported() {
-        return CodecMap::instance().is_supported(codec_config.scheme);
+        return CodecMap::instance().has_scheme(codec_config.scheme);
     }
 
     void generate_packet_block(size_t sn) {

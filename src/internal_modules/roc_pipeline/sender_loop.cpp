@@ -7,7 +7,6 @@
  */
 
 #include "roc_pipeline/sender_loop.h"
-#include "roc_audio/resampler_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/thread.h"
@@ -88,7 +87,8 @@ packet::IWriter* SenderLoop::Tasks::AddEndpoint::get_inbound_writer() const {
 
 SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
                        const SenderSinkConfig& sink_config,
-                       const rtp::EncodingMap& encoding_map,
+                       audio::ProcessorMap& processor_map,
+                       rtp::EncodingMap& encoding_map,
                        core::IPool& packet_pool,
                        core::IPool& packet_buffer_pool,
                        core::IPool& frame_pool,
@@ -101,6 +101,7 @@ SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
                    frame_buffer_pool,
                    Dir_WriteFrames)
     , sink_(sink_config,
+            processor_map,
             encoding_map,
             packet_pool,
             packet_buffer_pool,

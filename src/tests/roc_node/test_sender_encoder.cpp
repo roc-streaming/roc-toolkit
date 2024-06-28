@@ -120,7 +120,7 @@ TEST(sender_encoder, activate_fec) {
     LONGS_EQUAL(status::StatusOK, sender_encoder.init_status());
     CHECK(!sender_encoder.is_complete());
 
-    if (fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
+    if (fec::CodecMap::instance().has_scheme(packet::FEC_ReedSolomon_M8)) {
         CHECK(sender_encoder.activate(address::Iface_AudioSource,
                                       address::Proto_RTP_RS8M_Source));
         CHECK(!sender_encoder.is_complete());

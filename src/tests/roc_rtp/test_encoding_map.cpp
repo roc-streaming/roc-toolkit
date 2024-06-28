@@ -111,7 +111,7 @@ TEST(encoding_map, add_encoding) {
         enc.new_encoder = &audio::PcmEncoder::construct;
         enc.new_decoder = &audio::PcmDecoder::construct;
 
-        CHECK(enc_map.add_encoding(enc));
+        LONGS_EQUAL(status::StatusOK, enc_map.register_encoding(enc));
     }
 
     {

@@ -223,8 +223,10 @@ int main(int argc, char** argv) {
         output_writer = output_sink.get();
     }
 
-    pipeline::TranscoderSink transcoder(transcoder_config, output_writer, frame_pool,
-                                        frame_buffer_pool, arena);
+    audio::ProcessorMap processor_map(arena);
+
+    pipeline::TranscoderSink transcoder(transcoder_config, output_writer, processor_map,
+                                        frame_pool, frame_buffer_pool, arena);
     if (transcoder.init_status() != status::StatusOK) {
         roc_log(LogError, "can't create transcoder pipeline: status=%s",
                 status::code_to_str(transcoder.init_status()));

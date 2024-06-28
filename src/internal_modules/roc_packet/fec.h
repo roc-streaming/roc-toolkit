@@ -35,7 +35,7 @@ enum FecScheme {
 struct FEC {
     //! The FEC scheme to which the packet belongs to.
     //! @remarks
-    //!  Defines both FEC header or footer format and FEC payalod format.
+    //!  Defines both FEC header or footer format and FEC payload format.
     FecScheme fec_scheme;
 
     //! The index number of packet in a block ("esi").

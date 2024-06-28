@@ -250,7 +250,7 @@ TEST(receiver, unlink) {
         CHECK(receiver.unlink(DefaultSlot));
     }
     // slot with 3 endpoints
-    if (fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
+    if (fec::CodecMap::instance().has_scheme(packet::FEC_ReedSolomon_M8)) {
         Context context(context_config, arena);
         LONGS_EQUAL(status::StatusOK, context.init_status());
 
@@ -297,7 +297,7 @@ TEST(receiver, endpoints_no_fec) {
 
 TEST(receiver, endpoints_fec) {
     // fec not supported
-    if (!fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
+    if (!fec::CodecMap::instance().has_scheme(packet::FEC_ReedSolomon_M8)) {
         Context context(context_config, arena);
         LONGS_EQUAL(status::StatusOK, context.init_status());
 
@@ -428,7 +428,7 @@ TEST(receiver, endpoints_control) {
         LONGS_EQUAL(2, context.network_loop().num_ports());
     }
     // source + repair + control
-    if (fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
+    if (fec::CodecMap::instance().has_scheme(packet::FEC_ReedSolomon_M8)) {
         Context context(context_config, arena);
         LONGS_EQUAL(status::StatusOK, context.init_status());
 

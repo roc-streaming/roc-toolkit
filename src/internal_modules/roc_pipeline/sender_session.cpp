@@ -7,7 +7,6 @@
  */
 
 #include "roc_pipeline/sender_session.h"
-#include "roc_audio/resampler_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_fec/codec_map.h"
@@ -16,12 +15,14 @@ namespace roc {
 namespace pipeline {
 
 SenderSession::SenderSession(const SenderSinkConfig& sink_config,
-                             const rtp::EncodingMap& encoding_map,
+                             audio::ProcessorMap& processor_map,
+                             rtp::EncodingMap& encoding_map,
                              packet::PacketFactory& packet_factory,
                              audio::FrameFactory& frame_factory,
                              core::IArena& arena)
     : arena_(arena)
     , sink_config_(sink_config)
+    , processor_map_(processor_map)
     , encoding_map_(encoding_map)
     , packet_factory_(packet_factory)
     , frame_factory_(frame_factory)
@@ -185,7 +186,7 @@ SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
                                          audio::Sample_RawFormat,
                                          sink_config_.input_sample_spec.channel_set());
 
-        resampler_.reset(audio::ResamplerMap::instance().new_resampler(
+        resampler_.reset(processor_map_.new_resampler(
             arena_, frame_factory_, sink_config_.resampler, in_spec, out_spec));
         if (!resampler_) {
             return status::StatusNoMem;

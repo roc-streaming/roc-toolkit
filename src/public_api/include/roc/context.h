@@ -80,7 +80,7 @@ ROC_API int roc_context_open(const roc_context_config* config, roc_context** res
  *
  * **Parameters**
  *  - \p context should point to an opened context
- *  - \p encoding_id should be encoding identifier in range [1; 127]
+ *  - \p encoding_id should be in range [ROC_ENCODING_ID_MIN; ROC_ENCODING_ID_MAX]
  *  - \p encoding should point to valid encoding specification
  *
  * **Returns**

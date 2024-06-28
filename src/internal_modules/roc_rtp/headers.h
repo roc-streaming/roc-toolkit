@@ -32,6 +32,11 @@ enum PayloadType {
     PayloadType_L16_Mono = 11    //!< Audio, 16-bit PCM, 1 channel, 44100 Hz.
 };
 
+enum {
+    MinPayloadType = 1,   //!< Minimum payload type number.
+    MaxPayloadType = 127, //!< Maximum payload type number.
+};
+
 //! RTP header.
 //!
 //! Contains fixed size part of 12 bytes and variable size CSRC array.

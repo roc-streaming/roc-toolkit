@@ -16,6 +16,7 @@
 #include "roc_address/protocol.h"
 #include "roc_audio/fanout.h"
 #include "roc_audio/frame_factory.h"
+#include "roc_audio/processor_map.h"
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
@@ -42,7 +43,8 @@ public:
     SenderSlot(const SenderSinkConfig& sink_config,
                const SenderSlotConfig& slot_config,
                StateTracker& state_tracker,
-               const rtp::EncodingMap& encoding_map,
+               audio::ProcessorMap& processor_map,
+               rtp::EncodingMap& encoding_map,
                audio::Fanout& fanout,
                packet::PacketFactory& packet_factory,
                audio::FrameFactory& frame_factory,

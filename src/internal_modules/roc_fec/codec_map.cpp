@@ -32,26 +32,27 @@ ROC_ATTR_UNUSED I* ctor_func(const CodecConfig& config,
 
 } // namespace
 
+// clang-format off
 CodecMap::CodecMap()
     : n_codecs_(0) {
 #ifdef ROC_TARGET_OPENFEC
     {
         Codec codec;
+        codec.scheme = packet::FEC_ReedSolomon_M8;
         codec.encoder_ctor = ctor_func<IBlockEncoder, OpenfecEncoder>;
         codec.decoder_ctor = ctor_func<IBlockDecoder, OpenfecDecoder>;
-
-        codec.scheme = packet::FEC_ReedSolomon_M8;
         add_codec_(codec);
-
+    }
+    {
+        Codec codec;
         codec.scheme = packet::FEC_LDPC_Staircase;
+        codec.encoder_ctor = ctor_func<IBlockEncoder, OpenfecEncoder>;
+        codec.decoder_ctor = ctor_func<IBlockDecoder, OpenfecDecoder>;
         add_codec_(codec);
     }
 #endif // ROC_TARGET_OPENFEC
 }
-
-bool CodecMap::is_supported(packet::FecScheme scheme) const {
-    return find_codec_(scheme);
-}
+// clang-format on
 
 size_t CodecMap::num_schemes() const {
     return n_codecs_;
@@ -60,6 +61,10 @@ size_t CodecMap::num_schemes() const {
 packet::FecScheme CodecMap::nth_scheme(size_t n) const {
     roc_panic_if(n >= n_codecs_);
     return codecs_[n].scheme;
+}
+
+bool CodecMap::has_scheme(packet::FecScheme scheme) const {
+    return find_codec_(scheme);
 }
 
 IBlockEncoder* CodecMap::new_block_encoder(const CodecConfig& config,

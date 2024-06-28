@@ -28,6 +28,8 @@ const char* code_to_str(StatusCode code) {
         return "Abort";
     case StatusEnd:
         return "End";
+    case StatusConflict:
+        return "Conflict";
     case StatusNoMem:
         return "NoMem";
     case StatusNoRoute:

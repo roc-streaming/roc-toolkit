@@ -17,7 +17,8 @@ namespace pipeline {
 SenderSlot::SenderSlot(const SenderSinkConfig& sink_config,
                        const SenderSlotConfig& slot_config,
                        StateTracker& state_tracker,
-                       const rtp::EncodingMap& encoding_map,
+                       audio::ProcessorMap& processor_map,
+                       rtp::EncodingMap& encoding_map,
                        audio::Fanout& fanout,
                        packet::PacketFactory& packet_factory,
                        audio::FrameFactory& frame_factory,
@@ -26,7 +27,8 @@ SenderSlot::SenderSlot(const SenderSinkConfig& sink_config,
     , sink_config_(sink_config)
     , fanout_(fanout)
     , state_tracker_(state_tracker)
-    , session_(sink_config, encoding_map, packet_factory, frame_factory, arena)
+    , session_(
+          sink_config, processor_map, encoding_map, packet_factory, frame_factory, arena)
     , init_status_(status::NoStatus) {
     roc_log(LogDebug, "sender slot: initializing");
 

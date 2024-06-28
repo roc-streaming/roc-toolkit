@@ -83,6 +83,7 @@ core::SlabPool<core::Buffer>
 packet::PacketFactory packet_factory(packet_pool, packet_buffer_pool);
 audio::FrameFactory frame_factory(frame_pool, frame_buffer_pool);
 
+audio::ProcessorMap processor_map(arena);
 rtp::EncodingMap encoding_map(arena);
 
 SenderSlot* create_slot(SenderSink& sink) {
@@ -206,8 +207,8 @@ TEST(sender_sink, basic) {
 
     packet::FifoQueue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_pool, frame_buffer_pool, arena);
+    SenderSink sender(make_config(), processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -242,8 +243,8 @@ TEST(sender_sink, frame_size_small) {
 
     packet::FifoQueue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_pool, frame_buffer_pool, arena);
+    SenderSink sender(make_config(), processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -278,8 +279,8 @@ TEST(sender_sink, frame_size_large) {
 
     packet::FifoQueue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_pool, frame_buffer_pool, arena);
+    SenderSink sender(make_config(), processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -313,8 +314,8 @@ TEST(sender_sink, channel_mapping_stereo_to_mono) {
 
     packet::FifoQueue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_pool, frame_buffer_pool, arena);
+    SenderSink sender(make_config(), processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -348,8 +349,8 @@ TEST(sender_sink, channel_mapping_mono_to_stereo) {
 
     packet::FifoQueue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_pool, frame_buffer_pool, arena);
+    SenderSink sender(make_config(), processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -383,8 +384,8 @@ TEST(sender_sink, sample_rate_mapping) {
 
     packet::FifoQueue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_pool, frame_buffer_pool, arena);
+    SenderSink sender(make_config(), processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -418,8 +419,8 @@ TEST(sender_sink, format_mapping_s16) {
 
     packet::FifoQueue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_pool, frame_buffer_pool, arena);
+    SenderSink sender(make_config(), processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -452,8 +453,8 @@ TEST(sender_sink, format_mapping_s32) {
 
     packet::FifoQueue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_pool, frame_buffer_pool, arena);
+    SenderSink sender(make_config(), processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -482,8 +483,8 @@ TEST(sender_sink, timestamp_mapping) {
 
     packet::FifoQueue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_pool, frame_buffer_pool, arena);
+    SenderSink sender(make_config(), processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -524,8 +525,8 @@ TEST(sender_sink, timestamp_mapping_remixing) {
 
     packet::FifoQueue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_pool, frame_buffer_pool, arena);
+    SenderSink sender(make_config(), processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -584,8 +585,8 @@ TEST(sender_sink, metrics_feedback) {
 
     packet::FifoQueue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_pool, frame_buffer_pool, arena);
+    SenderSink sender(make_config(), processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -709,8 +710,8 @@ TEST(sender_sink, reports_no_receivers) {
 
     packet::FifoQueue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_pool, frame_buffer_pool, arena);
+    SenderSink sender(make_config(), processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -775,8 +776,8 @@ TEST(sender_sink, reports_one_receiver) {
 
     packet::FifoQueue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_pool, frame_buffer_pool, arena);
+    SenderSink sender(make_config(), processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);
@@ -861,8 +862,8 @@ TEST(sender_sink, reports_two_receivers) {
 
     packet::FifoQueue queue;
 
-    SenderSink sender(make_config(), encoding_map, packet_pool, packet_buffer_pool,
-                      frame_pool, frame_buffer_pool, arena);
+    SenderSink sender(make_config(), processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
     LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlot* slot = create_slot(sender);

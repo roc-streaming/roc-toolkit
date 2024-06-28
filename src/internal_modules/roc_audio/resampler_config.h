@@ -36,7 +36,10 @@ enum ResamplerBackend {
     //! Combined SpeexDSP + decimating resampler.
     //! Tolerable precision, tolerable quality, fast.
     //! May be disabled at build time.
-    ResamplerBackend_SpeexDec
+    ResamplerBackend_SpeexDec,
+
+    //! Maximum enum value.
+    ResamplerBackend_Max
 };
 
 //! Resampler parameters presets.
@@ -65,7 +68,8 @@ struct ResamplerConfig {
     }
 
     //! Automatically fill missing settings.
-    void deduce_defaults(LatencyTunerBackend latency_backend,
+    void deduce_defaults(class ProcessorMap& processor_map,
+                         LatencyTunerBackend latency_backend,
                          LatencyTunerProfile latency_tuner);
 };
 

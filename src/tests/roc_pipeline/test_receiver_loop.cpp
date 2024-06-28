@@ -38,6 +38,7 @@ core::SlabPool<core::Buffer>
 packet::PacketFactory packet_factory(packet_pool, packet_buffer_pool);
 audio::FrameFactory frame_factory(frame_pool, frame_buffer_pool);
 
+audio::ProcessorMap processor_map(arena);
 rtp::EncodingMap encoding_map(arena);
 
 class TaskIssuer : public IPipelineTaskCompleter {
@@ -122,7 +123,7 @@ TEST_GROUP(receiver_loop) {
 };
 
 TEST(receiver_loop, endpoints_sync) {
-    ReceiverLoop receiver(scheduler, config, encoding_map, packet_pool,
+    ReceiverLoop receiver(scheduler, config, processor_map, encoding_map, packet_pool,
                           packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
 
     LONGS_EQUAL(status::StatusOK, receiver.init_status());
@@ -156,7 +157,7 @@ TEST(receiver_loop, endpoints_sync) {
 }
 
 TEST(receiver_loop, endpoints_async) {
-    ReceiverLoop receiver(scheduler, config, encoding_map, packet_pool,
+    ReceiverLoop receiver(scheduler, config, processor_map, encoding_map, packet_pool,
                           packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
 
     LONGS_EQUAL(status::StatusOK, receiver.init_status());

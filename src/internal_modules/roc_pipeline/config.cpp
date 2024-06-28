@@ -22,9 +22,10 @@ SenderSinkConfig::SenderSinkConfig()
     , enable_interleaving(false) {
 }
 
-void SenderSinkConfig::deduce_defaults() {
+void SenderSinkConfig::deduce_defaults(audio::ProcessorMap& processor_map) {
     latency.deduce_defaults(DefaultLatency, false);
-    resampler.deduce_defaults(latency.tuner_backend, latency.tuner_profile);
+    resampler.deduce_defaults(processor_map, latency.tuner_backend,
+                              latency.tuner_profile);
 }
 
 SenderSlotConfig::SenderSlotConfig() {
@@ -40,25 +41,26 @@ ReceiverCommonConfig::ReceiverCommonConfig()
     , enable_profiling(false) {
 }
 
-void ReceiverCommonConfig::deduce_defaults() {
+void ReceiverCommonConfig::deduce_defaults(audio::ProcessorMap& processor_map) {
 }
 
 ReceiverSessionConfig::ReceiverSessionConfig()
     : payload_type(0) {
 }
 
-void ReceiverSessionConfig::deduce_defaults() {
+void ReceiverSessionConfig::deduce_defaults(audio::ProcessorMap& processor_map) {
     latency.deduce_defaults(DefaultLatency, true);
     watchdog.deduce_defaults(latency.target_latency);
-    resampler.deduce_defaults(latency.tuner_backend, latency.tuner_profile);
+    resampler.deduce_defaults(processor_map, latency.tuner_backend,
+                              latency.tuner_profile);
 }
 
 ReceiverSourceConfig::ReceiverSourceConfig() {
 }
 
-void ReceiverSourceConfig::deduce_defaults() {
-    common.deduce_defaults();
-    session_defaults.deduce_defaults();
+void ReceiverSourceConfig::deduce_defaults(audio::ProcessorMap& processor_map) {
+    common.deduce_defaults(processor_map);
+    session_defaults.deduce_defaults(processor_map);
 }
 
 ReceiverSlotConfig::ReceiverSlotConfig()
@@ -74,8 +76,8 @@ TranscoderConfig::TranscoderConfig()
     , enable_profiling(false) {
 }
 
-void TranscoderConfig::deduce_defaults() {
-    resampler.deduce_defaults(audio::LatencyTunerBackend_Default,
+void TranscoderConfig::deduce_defaults(audio::ProcessorMap& processor_map) {
+    resampler.deduce_defaults(processor_map, audio::LatencyTunerBackend_Default,
                               audio::LatencyTunerProfile_Default);
 }
 

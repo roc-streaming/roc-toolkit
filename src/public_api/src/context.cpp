@@ -62,22 +62,23 @@ int roc_context_register_encoding(roc_context* context,
                                   const roc_media_encoding* encoding) {
     if (!context) {
         roc_log(LogError,
-                "roc_context_register_encoding(): invalid arguments: context is null");
+                "roc_context_register_encoding(): invalid arguments:"
+                " context is null");
         return -1;
     }
 
-    if (encoding_id < 1 || encoding_id > 127) {
-        roc_log(
-            LogError,
-            "roc_context_register_encoding(): invalid arguments: encoding_id is invalid:"
-            " got=%d expected=[1; 127]",
-            encoding_id);
+    if (encoding_id < ROC_ENCODING_ID_MIN || encoding_id > ROC_ENCODING_ID_MAX) {
+        roc_log(LogError,
+                "roc_context_register_encoding(): invalid arguments:"
+                " encoding_id out of range: value=%d range=[%d; %d]",
+                encoding_id, ROC_ENCODING_ID_MIN, ROC_ENCODING_ID_MAX);
         return -1;
     }
 
     if (!encoding) {
         roc_log(LogError,
-                "roc_context_register_encoding(): invalid arguments: encoding is null");
+                "roc_context_register_encoding(): invalid arguments:"
+                " encoding is null");
         return -1;
     }
 
@@ -85,7 +86,7 @@ int roc_context_register_encoding(roc_context* context,
 
     rtp::Encoding enc;
 
-    enc.payload_type = (unsigned)encoding_id;
+    enc.payload_type = (unsigned int)encoding_id;
     enc.packet_flags = packet::Packet::FlagAudio;
 
     if (!api::sample_spec_from_user(enc.sample_spec, *encoding, true)) {
@@ -95,8 +96,12 @@ int roc_context_register_encoding(roc_context* context,
         return -1;
     }
 
-    if (!imp_context->encoding_map().add_encoding(enc)) {
-        roc_log(LogError, "roc_context_register_encoding(): failed to register encoding");
+    const status::StatusCode code = imp_context->encoding_map().register_encoding(enc);
+
+    if (code != status::StatusOK) {
+        roc_log(LogError,
+                "roc_context_register_encoding(): failed to register encoding: status=%s",
+                status::code_to_str(code));
         return -1;
     }
 

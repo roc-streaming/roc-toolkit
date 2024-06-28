@@ -7,7 +7,6 @@
  */
 
 #include "roc_pipeline/sender_sink.h"
-#include "roc_audio/resampler_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_status/code_to_str.h"
@@ -16,20 +15,22 @@ namespace roc {
 namespace pipeline {
 
 SenderSink::SenderSink(const SenderSinkConfig& sink_config,
-                       const rtp::EncodingMap& encoding_map,
+                       audio::ProcessorMap& processor_map,
+                       rtp::EncodingMap& encoding_map,
                        core::IPool& packet_pool,
                        core::IPool& packet_buffer_pool,
                        core::IPool& frame_pool,
                        core::IPool& frame_buffer_pool,
                        core::IArena& arena)
     : sink_config_(sink_config)
+    , processor_map_(processor_map)
     , encoding_map_(encoding_map)
     , packet_factory_(packet_pool, packet_buffer_pool)
     , frame_factory_(frame_pool, frame_buffer_pool)
     , arena_(arena)
     , frame_writer_(NULL)
     , init_status_(status::NoStatus) {
-    sink_config_.deduce_defaults();
+    sink_config_.deduce_defaults(processor_map);
 
     audio::IFrameWriter* frm_writer = NULL;
 
@@ -80,9 +81,9 @@ SenderSlot* SenderSink::create_slot(const SenderSlotConfig& slot_config) {
 
     roc_log(LogInfo, "sender sink: adding slot");
 
-    core::SharedPtr<SenderSlot> slot =
-        new (arena_) SenderSlot(sink_config_, slot_config, state_tracker_, encoding_map_,
-                                *fanout_, packet_factory_, frame_factory_, arena_);
+    core::SharedPtr<SenderSlot> slot = new (arena_)
+        SenderSlot(sink_config_, slot_config, state_tracker_, processor_map_,
+                   encoding_map_, *fanout_, packet_factory_, frame_factory_, arena_);
 
     if (!slot) {
         roc_log(LogError, "sender sink: can't create slot, allocation failed");

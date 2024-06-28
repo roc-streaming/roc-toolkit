@@ -31,6 +31,7 @@ core::HeapArena arena;
 packet::PacketFactory packet_factory(arena, PacketSz);
 audio::FrameFactory frame_factory(arena, PacketSz * sizeof(audio::sample_t));
 
+audio::ProcessorMap processor_map(arena);
 rtp::EncodingMap encoding_map(arena);
 
 } // namespace
@@ -43,8 +44,8 @@ TEST(sender_endpoint, valid) {
 
     SenderSinkConfig sink_config;
     StateTracker state_tracker;
-    SenderSession session(sink_config, encoding_map, packet_factory, frame_factory,
-                          arena);
+    SenderSession session(sink_config, processor_map, encoding_map, packet_factory,
+                          frame_factory, arena);
 
     SenderEndpoint endpoint(address::Proto_RTP, state_tracker, session, addr, queue,
                             arena);
@@ -58,8 +59,8 @@ TEST(sender_endpoint, invalid_proto) {
 
     SenderSinkConfig sink_config;
     StateTracker state_tracker;
-    SenderSession session(sink_config, encoding_map, packet_factory, frame_factory,
-                          arena);
+    SenderSession session(sink_config, processor_map, encoding_map, packet_factory,
+                          frame_factory, arena);
 
     SenderEndpoint endpoint(address::Proto_None, state_tracker, session, addr, queue,
                             arena);
@@ -80,8 +81,8 @@ TEST(sender_endpoint, no_memory) {
 
         SenderSinkConfig sink_config;
         StateTracker state_tracker;
-        SenderSession session(sink_config, encoding_map, packet_factory, frame_factory,
-                              arena);
+        SenderSession session(sink_config, processor_map, encoding_map, packet_factory,
+                              frame_factory, arena);
 
         SenderEndpoint endpoint(protos[n], state_tracker, session, addr, queue,
                                 core::NoopArena);

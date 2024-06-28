@@ -124,7 +124,8 @@ public:
     //! Initialize.
     ReceiverLoop(IPipelineTaskScheduler& scheduler,
                  const ReceiverSourceConfig& source_config,
-                 const rtp::EncodingMap& encoding_map,
+                 audio::ProcessorMap& processor_map,
+                 rtp::EncodingMap& encoding_map,
                  core::IPool& packet_pool,
                  core::IPool& packet_buffer_pool,
                  core::IPool& frame_pool,

@@ -21,7 +21,7 @@ namespace pipeline {
 ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
                                    StateTracker& state_tracker,
                                    ReceiverSessionGroup& session_group,
-                                   const rtp::EncodingMap& encoding_map,
+                                   rtp::EncodingMap& encoding_map,
                                    const address::SocketAddr& inbound_address,
                                    packet::IWriter* outbound_writer,
                                    core::IArena& arena)

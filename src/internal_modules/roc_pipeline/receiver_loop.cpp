@@ -88,7 +88,8 @@ packet::IWriter* ReceiverLoop::Tasks::AddEndpoint::get_inbound_writer() const {
 
 ReceiverLoop::ReceiverLoop(IPipelineTaskScheduler& scheduler,
                            const ReceiverSourceConfig& source_config,
-                           const rtp::EncodingMap& encoding_map,
+                           audio::ProcessorMap& processor_map,
+                           rtp::EncodingMap& encoding_map,
                            core::IPool& packet_pool,
                            core::IPool& packet_buffer_pool,
                            core::IPool& frame_pool,
@@ -101,6 +102,7 @@ ReceiverLoop::ReceiverLoop(IPipelineTaskScheduler& scheduler,
                    frame_buffer_pool,
                    Dir_ReadFrames)
     , source_(source_config,
+              processor_map,
               encoding_map,
               packet_pool,
               packet_buffer_pool,

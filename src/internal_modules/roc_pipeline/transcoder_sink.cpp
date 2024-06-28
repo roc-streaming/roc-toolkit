@@ -7,7 +7,7 @@
  */
 
 #include "roc_pipeline/transcoder_sink.h"
-#include "roc_audio/resampler_map.h"
+#include "roc_audio/processor_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 
@@ -16,6 +16,7 @@ namespace pipeline {
 
 TranscoderSink::TranscoderSink(const TranscoderConfig& config,
                                audio::IFrameWriter* output_writer,
+                               audio::ProcessorMap& processor_map,
                                core::IPool& frame_pool,
                                core::IPool& frame_buffer_pool,
                                core::IArena& arena)
@@ -23,7 +24,7 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
     , frame_writer_(NULL)
     , config_(config)
     , init_status_(status::NoStatus) {
-    config_.deduce_defaults();
+    config_.deduce_defaults(processor_map);
 
     audio::IFrameWriter* frm_writer = output_writer;
     if (!frm_writer) {
@@ -59,7 +60,7 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
                                         audio::Sample_RawFormat,
                                         config_.input_sample_spec.channel_set());
 
-        resampler_.reset(audio::ResamplerMap::instance().new_resampler(
+        resampler_.reset(processor_map.new_resampler(
             arena, frame_factory_, config_.resampler, from_spec, to_spec));
         if (!resampler_) {
             init_status_ = status::StatusNoMem;

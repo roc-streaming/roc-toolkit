@@ -15,6 +15,7 @@
 #include "roc_audio/fanout.h"
 #include "roc_audio/frame_factory.h"
 #include "roc_audio/pcm_mapper_writer.h"
+#include "roc_audio/processor_map.h"
 #include "roc_audio/profiling_writer.h"
 #include "roc_core/iarena.h"
 #include "roc_core/ipool.h"
@@ -44,7 +45,8 @@ class SenderSink : public sndio::ISink, public core::NonCopyable<> {
 public:
     //! Initialize.
     SenderSink(const SenderSinkConfig& sink_config,
-               const rtp::EncodingMap& encoding_map,
+               audio::ProcessorMap& processor_map,
+               rtp::EncodingMap& encoding_map,
                core::IPool& packet_pool,
                core::IPool& packet_buffer_pool,
                core::IPool& frame_pool,
@@ -110,7 +112,8 @@ public:
 private:
     SenderSinkConfig sink_config_;
 
-    const rtp::EncodingMap& encoding_map_;
+    audio::ProcessorMap& processor_map_;
+    rtp::EncodingMap& encoding_map_;
 
     packet::PacketFactory packet_factory_;
     audio::FrameFactory frame_factory_;

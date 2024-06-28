@@ -21,6 +21,7 @@ Context::Context(const ContextConfig& config, core::IArena& arena)
     , frame_pool_("frame_pool", arena_)
     , frame_buffer_pool_(
           "frame_buffer_pool", arena_, sizeof(core::Buffer) + config.max_frame_size)
+    , processor_map_(arena_)
     , encoding_map_(arena_)
     , network_loop_(packet_pool_, packet_buffer_pool_, arena_)
     , control_loop_(network_loop_, arena_)
@@ -68,6 +69,10 @@ core::IPool& Context::frame_pool() {
 
 core::IPool& Context::frame_buffer_pool() {
     return frame_buffer_pool_;
+}
+
+audio::ProcessorMap& Context::processor_map() {
+    return processor_map_;
 }
 
 rtp::EncodingMap& Context::encoding_map() {

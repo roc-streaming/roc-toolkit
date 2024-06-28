@@ -15,20 +15,22 @@ namespace roc {
 namespace pipeline {
 
 ReceiverSource::ReceiverSource(const ReceiverSourceConfig& source_config,
-                               const rtp::EncodingMap& encoding_map,
+                               audio::ProcessorMap& processor_map,
+                               rtp::EncodingMap& encoding_map,
                                core::IPool& packet_pool,
                                core::IPool& packet_buffer_pool,
                                core::IPool& frame_pool,
                                core::IPool& frame_buffer_pool,
                                core::IArena& arena)
     : source_config_(source_config)
+    , processor_map_(processor_map)
     , encoding_map_(encoding_map)
     , packet_factory_(packet_pool, packet_buffer_pool)
     , frame_factory_(frame_pool, frame_buffer_pool)
     , arena_(arena)
     , frame_reader_(NULL)
     , init_status_(status::NoStatus) {
-    source_config_.deduce_defaults();
+    source_config_.deduce_defaults(processor_map);
 
     audio::IFrameReader* frm_reader = NULL;
 
@@ -83,9 +85,9 @@ ReceiverSlot* ReceiverSource::create_slot(const ReceiverSlotConfig& slot_config)
 
     roc_log(LogInfo, "receiver source: adding slot");
 
-    core::SharedPtr<ReceiverSlot> slot =
-        new (arena_) ReceiverSlot(source_config_, slot_config, state_tracker_, *mixer_,
-                                  encoding_map_, packet_factory_, frame_factory_, arena_);
+    core::SharedPtr<ReceiverSlot> slot = new (arena_)
+        ReceiverSlot(source_config_, slot_config, state_tracker_, *mixer_, processor_map_,
+                     encoding_map_, packet_factory_, frame_factory_, arena_);
 
     if (!slot) {
         roc_log(LogError, "receiver source: can't create slot, allocation failed");

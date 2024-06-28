@@ -105,7 +105,7 @@ struct SenderSinkConfig {
     SenderSinkConfig();
 
     //! Fill unset values with defaults.
-    void deduce_defaults();
+    void deduce_defaults(audio::ProcessorMap& processor_map);
 };
 
 //! Parameters of sender slot.
@@ -144,7 +144,7 @@ struct ReceiverCommonConfig {
     ReceiverCommonConfig();
 
     //! Fill unset values with defaults.
-    void deduce_defaults();
+    void deduce_defaults(audio::ProcessorMap& processor_map);
 };
 
 //! Parameters of receiver session.
@@ -171,7 +171,7 @@ struct ReceiverSessionConfig {
     ReceiverSessionConfig();
 
     //! Fill unset values with defaults.
-    void deduce_defaults();
+    void deduce_defaults(audio::ProcessorMap& processor_map);
 };
 
 //! Parameters of receiver session.
@@ -189,7 +189,7 @@ struct ReceiverSourceConfig {
     ReceiverSourceConfig();
 
     //! Fill unset values with defaults.
-    void deduce_defaults();
+    void deduce_defaults(audio::ProcessorMap& processor_map);
 };
 
 //! Parameters of receiver slot.
@@ -225,7 +225,7 @@ struct TranscoderConfig {
     TranscoderConfig();
 
     //! Fill unset values with defaults.
-    void deduce_defaults();
+    void deduce_defaults(audio::ProcessorMap& processor_map);
 };
 
 } // namespace pipeline

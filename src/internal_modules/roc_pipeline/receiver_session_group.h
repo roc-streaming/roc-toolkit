@@ -14,6 +14,7 @@
 
 #include "roc_audio/frame_factory.h"
 #include "roc_audio/mixer.h"
+#include "roc_audio/processor_map.h"
 #include "roc_core/iarena.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
@@ -52,7 +53,8 @@ public:
                          const ReceiverSlotConfig& slot_config,
                          StateTracker& state_tracker,
                          audio::Mixer& mixer,
-                         const rtp::EncodingMap& encoding_map,
+                         audio::ProcessorMap& processor_map,
+                         rtp::EncodingMap& encoding_map,
                          packet::PacketFactory& packet_factory,
                          audio::FrameFactory& frame_factory,
                          core::IArena& arena);
@@ -143,7 +145,8 @@ private:
     StateTracker& state_tracker_;
     audio::Mixer& mixer_;
 
-    const rtp::EncodingMap& encoding_map_;
+    audio::ProcessorMap& processor_map_;
+    rtp::EncodingMap& encoding_map_;
 
     core::IArena& arena_;
     packet::PacketFactory& packet_factory_;

@@ -111,11 +111,11 @@ TEST_GROUP(loopback_sender_2_receiver) {
     }
 
     bool is_rs8m_supported() {
-        return fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8);
+        return fec::CodecMap::instance().has_scheme(packet::FEC_ReedSolomon_M8);
     }
 
     bool is_ldpc_supported() {
-        return fec::CodecMap::instance().is_supported(packet::FEC_LDPC_Staircase);
+        return fec::CodecMap::instance().has_scheme(packet::FEC_LDPC_Staircase);
     }
 };
 
