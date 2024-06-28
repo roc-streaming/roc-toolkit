@@ -82,11 +82,14 @@ private:
         size_t n_mixed;
         // capture timestamp of first sample in mix_frame_
         core::nanoseconds_t cts;
+        // if true, input returned StatusEnd and should not be used
+        bool ended;
 
         Input()
             : reader(NULL)
             , n_mixed(0)
-            , cts(0) {
+            , cts(0)
+            , ended(false) {
         }
     };
 

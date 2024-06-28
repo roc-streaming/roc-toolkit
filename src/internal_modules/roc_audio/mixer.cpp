@@ -135,7 +135,7 @@ status::StatusCode Mixer::mix_all_repeat_(sample_t* out_data,
                                           core::nanoseconds_t& out_cts,
                                           FrameReadMode mode) {
     // Requested output frame size may be bigger than maximum size of mix buffer,
-    // so we need to repeat reading and mixing until output is fully filled.
+    // so we may need to repeat reading and mixing until output is fully filled.
     size_t out_pos = 0;
 
     while (out_pos < out_size) {
@@ -193,13 +193,12 @@ status::StatusCode Mixer::mix_all_(sample_t* out_data,
     roc_panic_if(!out_data);
     roc_panic_if(out_size > mix_buffer_.size());
 
-    // When there is no inputs, produce silence.
+    // When there are no inputs, produce silence.
     if (n_inputs == 0) {
-        switch (mode) {
-        case ModeHard:
+        if (mode == ModeHard) {
             memset(out_data, 0, out_size * sizeof(sample_t));
             return status::StatusOK;
-        case ModeSoft:
+        } else {
             return status::StatusDrain;
         }
     }
@@ -307,13 +306,18 @@ Mixer::mix_one_(Input& input, sample_t* mix_data, size_t mix_size, FrameReadMode
     roc_panic_if(input.n_mixed % sample_spec_.num_channels() != 0);
     roc_panic_if(mix_size % sample_spec_.num_channels() != 0);
 
+    // If input returned StatusEnd, don't call it anymore.
+    if (input.ended && input.n_mixed < mix_size) {
+        input.n_mixed = mix_size;
+    }
+
     // Pipeline elements are allowed to return less samples than requested. In case
     // of partial read (StatusPart), we automatically repeat read for remaining samples.
     // We stop when one of the following happens:
     //   - we have fully filled requested buffer
     //   - we got StatusDrain, which means that soft read stopped early
     //   - we got StatusEnd, which means that reader is terminating
-    //   - we got an error (any other status)
+    //   - we got an error (any other status), which means that the whole mixer fails
     while (input.n_mixed < mix_size) {
         const packet::stream_timestamp_t remained_duration = packet::stream_timestamp_t(
             (mix_size - input.n_mixed) / sample_spec_.num_channels());
@@ -333,6 +337,7 @@ Mixer::mix_one_(Input& input, sample_t* mix_data, size_t mix_size, FrameReadMode
         if (code == status::StatusEnd) {
             // Stream ended and will be removed soon, pad it with zeros until that.
             input.n_mixed = mix_size;
+            input.ended = true;
             break;
         }
 
