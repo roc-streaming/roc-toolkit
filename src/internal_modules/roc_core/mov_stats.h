@@ -40,9 +40,9 @@ public:
         , mov_max_cntr_(0)
         , full_(false)
         , first_(true)
-        , queue_max_(arena, win_len + 1)
+        , queue_max_(arena, win_len)
         , curr_max_(T(0))
-        , queue_min_(arena, win_len + 1)
+        , queue_min_(arena, win_len)
         , curr_min_(T(0))
         , valid_(false) {
         if (win_len == 0) {
