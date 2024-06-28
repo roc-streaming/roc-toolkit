@@ -224,6 +224,9 @@ status::StatusCode ReceiverLoop::read(audio::Frame& frame,
     // invokes process_subframe_imp() and process_task_imp()
     const status::StatusCode code = process_subframes_and_tasks(frame, duration, mode);
 
+    roc_panic_if_msg(code <= status::NoStatus || code >= status::MaxStatus,
+                     "receiver loop: invalid status code %d", code);
+
     if (code != status::StatusOK && code != status::StatusPart) {
         return code;
     }

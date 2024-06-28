@@ -65,6 +65,9 @@ status::StatusCode Pump::run() {
         }
     }
 
+    roc_panic_if_msg(code <= status::NoStatus || code >= status::MaxStatus,
+                     "pump: invalid status code %d", code);
+
     if (code == status::StatusEnd) {
         code = status::StatusOK; // EOF is fine
     }

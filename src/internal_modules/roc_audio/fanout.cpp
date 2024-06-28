@@ -9,6 +9,7 @@
 #include "roc_audio/fanout.h"
 #include "roc_audio/sample_spec_to_str.h"
 #include "roc_core/panic.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace audio {
@@ -53,7 +54,14 @@ status::StatusCode Fanout::write(Frame& in_frame) {
     for (IFrameWriter* writer = frame_writers_.front(); writer != NULL;
          writer = frame_writers_.nextof(*writer)) {
         const status::StatusCode code = writer->write(in_frame);
+
         if (code != status::StatusOK) {
+            // These codes can be returned only from read().
+            roc_panic_if_msg(
+                code == status::StatusPart || code == status::StatusDrain,
+                "fanout loop: unexpected status from write operation: status=%s",
+                status::code_to_str(code));
+
             return code;
         }
     }

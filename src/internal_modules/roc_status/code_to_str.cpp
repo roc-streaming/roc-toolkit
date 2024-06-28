@@ -16,6 +16,7 @@ namespace status {
 const char* code_to_str(StatusCode code) {
     switch (code) {
     case NoStatus:
+    case MaxStatus:
         break;
     case StatusOK:
         return "OK";

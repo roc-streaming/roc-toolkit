@@ -391,6 +391,9 @@ status::StatusCode ReceiverSession::read(audio::Frame& frame,
 
     const status::StatusCode code = frame_reader_->read(frame, duration, mode);
 
+    roc_panic_if_msg(code <= status::NoStatus || code >= status::MaxStatus,
+                     "receiver session: invalid status code %d", code);
+
     // Failure happened. Remember error to return it from next refresh() call.
     // Return StatusEnd to be excluded from mixing.
     // We don't return error from read() because we don't want the whole

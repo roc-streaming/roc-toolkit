@@ -126,6 +126,8 @@ status::StatusCode ReceiverSource::refresh(core::nanoseconds_t current_time,
 
         const status::StatusCode code = slot->refresh(current_time, slot_deadline);
         if (code != status::StatusOK) {
+            roc_log(LogError, "receiver source: failed to refresh slot: status=%s",
+                    status::code_to_str(code));
             return code;
         }
 
@@ -206,7 +208,15 @@ status::StatusCode ReceiverSource::read(audio::Frame& frame,
                                         audio::FrameReadMode mode) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    return frame_reader_->read(frame, duration, mode);
+    const status::StatusCode code = frame_reader_->read(frame, duration, mode);
+
+    if (code != status::StatusOK && code != status::StatusPart
+        && code != status::StatusDrain) {
+        roc_log(LogError, "receiver source: failed to read frame: status=%s",
+                status::code_to_str(code));
+    }
+
+    return code;
 }
 
 } // namespace pipeline

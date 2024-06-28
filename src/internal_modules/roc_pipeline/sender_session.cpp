@@ -422,6 +422,9 @@ status::StatusCode SenderSession::write(audio::Frame& frame) {
 
     const status::StatusCode code = frame_writer_->write(frame);
 
+    roc_panic_if_msg(code <= status::NoStatus || code >= status::MaxStatus,
+                     "sender session: invalid status code %d", code);
+
     // If error happens, save it to return later from refresh(), which allows
     // SenderSlot to handle it.
     if (code != status::StatusOK) {

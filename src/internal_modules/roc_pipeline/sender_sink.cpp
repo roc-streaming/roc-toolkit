@@ -126,6 +126,8 @@ status::StatusCode SenderSink::refresh(core::nanoseconds_t current_time,
 
         const status::StatusCode code = slot->refresh(current_time, slot_deadline);
         if (code != status::StatusOK) {
+            roc_log(LogError, "sender sink: failed to refresh slot: status=%s",
+                    status::code_to_str(code));
             return code;
         }
 
@@ -186,7 +188,14 @@ bool SenderSink::has_clock() const {
 status::StatusCode SenderSink::write(audio::Frame& frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    return frame_writer_->write(frame);
+    const status::StatusCode code = frame_writer_->write(frame);
+
+    if (code != status::StatusOK) {
+        roc_log(LogError, "sender sink: failed to write frame: status=%s",
+                status::code_to_str(code));
+    }
+
+    return code;
 }
 
 } // namespace pipeline

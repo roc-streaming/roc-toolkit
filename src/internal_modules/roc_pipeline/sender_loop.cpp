@@ -211,7 +211,13 @@ status::StatusCode SenderLoop::write(audio::Frame& frame) {
     }
 
     // invokes process_subframe_imp() and process_task_imp()
-    return process_subframes_and_tasks(frame, frame.duration(), audio::ModeHard);
+    const status::StatusCode code =
+        process_subframes_and_tasks(frame, frame.duration(), audio::ModeHard);
+
+    roc_panic_if_msg(code <= status::NoStatus || code >= status::MaxStatus,
+                     "sender loop: invalid status code %d", code);
+
+    return code;
 }
 
 core::nanoseconds_t SenderLoop::timestamp_imp() const {

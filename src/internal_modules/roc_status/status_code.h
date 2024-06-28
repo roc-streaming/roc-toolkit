@@ -190,6 +190,9 @@ enum StatusCode {
     //!  Example: trying to push packet for an interface that does not support
     //!  it, trying to connect using a protocol that doesn't support it.
     StatusBadOperation,
+
+    //! Maximum enum value.
+    MaxStatus,
 };
 
 } // namespace status
