@@ -14,6 +14,7 @@
 
 #include "roc_audio/frame_factory.h"
 #include "roc_audio/mixer.h"
+#include "roc_core/csv_dumper.h"
 #include "roc_core/iarena.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
@@ -55,6 +56,7 @@ public:
                          const rtp::EncodingMap& encoding_map,
                          packet::PacketFactory& packet_factory,
                          audio::FrameFactory& frame_factory,
+                         core::CsvDumper* dumper,
                          core::IArena& arena);
 
     ~ReceiverSessionGroup();
@@ -158,6 +160,8 @@ private:
         List<ReceiverSession, core::RefCountedOwnership, core::ListNode<ReceiverSession> >
             sessions_;
     ReceiverSessionRouter session_router_;
+
+    core::CsvDumper* dumper_;
 
     status::StatusCode init_status_;
 };

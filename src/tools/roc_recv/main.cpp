@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --target-latency: bad format");
             return 1;
         }
-        if (receiver_config.session_defaults.latency.target_latency <= 0) {
+        if (receiver_config.session_defaults.latency.target_latency < 0) {
             roc_log(LogError, "invalid --target-latency: should be > 0");
             return 1;
         }
@@ -124,8 +124,45 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --latency-tolerance: bad format");
             return 1;
         }
-        if (receiver_config.session_defaults.latency.latency_tolerance <= 0) {
+        if (receiver_config.session_defaults.latency.latency_tolerance < 0) {
             roc_log(LogError, "invalid --latency-tolerance: should be > 0");
+            return 1;
+        }
+    }
+
+    if (args.start_latency_given) {
+        if (!core::parse_duration(
+                args.start_latency_arg,
+                receiver_config.session_defaults.latency.start_latency)) {
+            roc_log(LogError, "invalid --start-latency: bad format");
+            return 1;
+        }
+        if (receiver_config.session_defaults.latency.start_latency < 0) {
+            roc_log(LogError, "invalid --start-latency: should be >= 0");
+            return 1;
+        }
+    }
+
+    if (args.min_latency_given || args.max_latency_given) {
+        if (!args.min_latency_given || !args.max_latency_given) {
+            roc_log(LogError,
+                    "--min-latency and --max-latency should be specified together");
+            return 1;
+        }
+
+        if (!core::parse_duration(args.min_latency_arg,
+                                  receiver_config.session_defaults.latency.min_latency)) {
+            roc_log(LogError, "invalid --min-latency: bad format");
+            return 1;
+        }
+
+        if (!core::parse_duration(args.max_latency_arg,
+                                  receiver_config.session_defaults.latency.max_latency)) {
+            roc_log(LogError, "invalid --max-latency: bad format");
+            return 1;
+        }
+        if (receiver_config.session_defaults.latency.max_latency <= 0) {
+            roc_log(LogError, "invalid --max-latency: should be > 0");
             return 1;
         }
     }
@@ -393,6 +430,10 @@ int main(int argc, char** argv) {
                     status::code_to_str(backup_pipeline->init_status()));
             return 1;
         }
+    }
+
+    if (args.dump_given) {
+        receiver_config.dump_file = args.dump_arg;
     }
 
     node::Receiver receiver(context, receiver_config);

@@ -101,6 +101,12 @@ public:
         }
     }
 
+    void skip_packets(size_t num_packets, size_t samples_per_packet) {
+        seqnum_ += num_packets;
+        timestamp_ += samples_per_packet * num_packets;
+        offset_ += samples_per_packet * num_packets;
+    }
+
     void shift_to(size_t num_packets, size_t samples_per_packet) {
         seqnum_ = packet::seqnum_t(num_packets);
         timestamp_ = packet::stream_timestamp_t(num_packets * samples_per_packet);

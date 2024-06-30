@@ -27,6 +27,7 @@ ReceiverSource::ReceiverSource(const ReceiverSourceConfig& source_config,
     , frame_factory_(frame_pool, frame_buffer_pool)
     , arena_(arena)
     , frame_reader_(NULL)
+    , dumper_config_()
     , init_status_(status::NoStatus) {
     source_config_.deduce_defaults();
 
@@ -64,6 +65,14 @@ ReceiverSource::ReceiverSource(const ReceiverSourceConfig& source_config,
         frm_reader = profiler_.get();
     }
 
+    if (source_config.dump_file) {
+        dumper_.reset(new (dumper_) core::CsvDumper(source_config.dump_file,
+                                                    dumper_config_, arena));
+        if (!dumper_->start()) {
+            return;
+        }
+    }
+
     frame_reader_ = frm_reader;
     init_status_ = status::StatusOK;
 }
@@ -77,9 +86,9 @@ ReceiverSlot* ReceiverSource::create_slot(const ReceiverSlotConfig& slot_config)
 
     roc_log(LogInfo, "receiver source: adding slot");
 
-    core::SharedPtr<ReceiverSlot> slot =
-        new (arena_) ReceiverSlot(source_config_, slot_config, state_tracker_, *mixer_,
-                                  encoding_map_, packet_factory_, frame_factory_, arena_);
+    core::SharedPtr<ReceiverSlot> slot = new (arena_)
+        ReceiverSlot(source_config_, slot_config, state_tracker_, *mixer_, encoding_map_,
+                     packet_factory_, frame_factory_, dumper_.get(), arena_);
 
     if (!slot) {
         roc_log(LogError, "receiver source: can't create slot, allocation failed");

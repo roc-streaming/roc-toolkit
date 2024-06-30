@@ -188,6 +188,9 @@ struct ReceiverSourceConfig {
     //! Default parameters for a session.
     ReceiverSessionConfig session_defaults;
 
+    //! File to a dump file in csv format with some run-time metrics.
+    const char* dump_file;
+
     //! Initialize config.
     ReceiverSourceConfig();
 

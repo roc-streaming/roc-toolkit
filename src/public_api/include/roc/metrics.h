@@ -43,6 +43,50 @@ typedef struct roc_connection_metrics {
      * May be zero initially, until enough statistics is accumulated.
      */
     unsigned long long e2e_latency;
+
+    /** Estimated interarrival jitter, in nanoseconds.
+     *
+     * Determines expected variance of inter-packet arrival period.
+     *
+     * Estimated on receiver.
+     */
+    unsigned long long mean_jitter;
+
+    /** Minimal recent interarrival jitter, in nanoseconds.
+     *
+     * Estimated on receiver.
+     */
+    unsigned long long min_jitter;
+
+    /** Maximal recent interarrival jitter, in nanoseconds.
+     *
+     * Estimated on receiver.
+     */
+    unsigned long long max_jitter;
+
+    /** Total amount of packets sent or expected to be received.
+     *
+     *  On sender, this counter is just incremented every packet.
+     *  On receiver, it is derived from seqnums.
+     */
+    unsigned long long total_packets;
+
+    /** Cumulative count of lost packets.
+     *
+     *  The total number of RTP data packets that have been lost since the beginning
+     *  of reception. Defined to be the number of packets expected minus the number of
+     *  packets actually received, where the number of packets received includes any
+     *  which are late or duplicates. Packets that arrive late are not counted as lost,
+     *  and the loss may be negative if there are duplicates.
+     */
+    long long lost_packets;
+
+    /** Cumulate count of recovered packets.
+     *
+     *  How many packets lost packets receiver was able to recover
+     *  by FEC. The sender is not getting this metric so far.
+     */
+    unsigned long long restored_packets;
 } roc_connection_metrics;
 
 /** Receiver metrics.
