@@ -46,6 +46,11 @@ struct LinkMetrics {
     //! and the loss may be negative if there are duplicates.
     int64_t lost_packets;
 
+    //! Cumulate count of recovered packets.
+    //! How many packets lost packets receiver was able to recover
+    //! by FEC. The sender is not getting this metric so far.
+    uint64_t recovered_packets;
+
     //! Estimated interarrival jitter.
     //! An estimate of the statistical variance of the RTP data packet
     //! interarrival time.
@@ -68,6 +73,7 @@ struct LinkMetrics {
         , ext_last_seqnum(0)
         , total_packets(0)
         , lost_packets(0)
+        , recovered_packets(0)
         , jitter(0)
         , max_jitter(0)
         , min_jitter(0)

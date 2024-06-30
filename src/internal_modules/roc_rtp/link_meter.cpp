@@ -21,6 +21,7 @@ LinkMeter::LinkMeter(core::IArena& arena,
     : encoding_map_(encoding_map)
     , encoding_(NULL)
     , writer_(NULL)
+    , reader_(NULL)
     , sample_spec_(sample_spec)
     , first_packet_jitter_(true)
     , win_len_(latency_config.tuner_profile == audio::LatencyTunerProfile_Responsive
@@ -92,8 +93,25 @@ status::StatusCode LinkMeter::write(const packet::PacketPtr& packet) {
     return writer_->write(packet);
 }
 
+status::StatusCode LinkMeter::read(packet::PacketPtr& packet, packet::PacketReadMode mode) {
+    if (!reader_) {
+        roc_panic ("link meter: forgot to call set_reader()");
+    }
+
+    status::StatusCode result = reader_->read(packet, mode);
+    if (packet && packet->has_flags(packet::Packet::FlagRestored)) {
+        metrics_.recovered_packets++;
+    }
+
+    return result;
+}
+
 void LinkMeter::set_writer(packet::IWriter& writer) {
     writer_ = &writer;
+}
+
+void LinkMeter::set_reader(packet::IReader& reader) {
+    reader_ = &reader;
 }
 
 void LinkMeter::update_jitter_(const packet::Packet& packet) {

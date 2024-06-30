@@ -159,6 +159,9 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     }
     pkt_reader = timestamp_injector_.get();
 
+    source_meter_->set_reader(*pkt_reader);
+    pkt_reader = source_meter_.get();
+
     // Third part of pipeline: chained frame readers from depacketizer to mixer.
     // Mixed reads frames from this pipeline, and in the end it requests packets
     // from packet readers pipeline.

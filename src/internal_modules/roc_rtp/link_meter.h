@@ -46,6 +46,7 @@ namespace rtp {
 //! writer/reader, and updates metrics.
 class LinkMeter : public packet::ILinkMeter,
                   public packet::IWriter,
+                  public packet::IReader,
                   public core::NonCopyable<> {
 public:
     //! Initialize.
@@ -82,10 +83,18 @@ public:
     //!  Invoked early in pipeline right after the packet is received.
     virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr& packet);
 
+    //! Read packet and update restored packet counter.
+    //! @remarks
+    //!  Invoked near the end of pipeline so as to be aware of recovered packets.
+    virtual ROC_ATTR_NODISCARD status::StatusCode read(packet::PacketPtr& packet,
+                                                   packet::PacketReadMode mode);
+
     //! Set nested packet writer.
     //! @remarks
     //!  Should be called before first write() call.
     void set_writer(packet::IWriter& writer);
+
+    void set_reader(packet::IReader& reader);
 
     //! Get metrics.
     core::nanoseconds_t mean_jitter() const;
@@ -100,6 +109,7 @@ private:
     const Encoding* encoding_;
 
     packet::IWriter* writer_;
+    packet::IReader* reader_;
 
     const audio::SampleSpec sample_spec_;
 

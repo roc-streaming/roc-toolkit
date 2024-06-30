@@ -644,6 +644,18 @@ void receiver_participant_metrics_to_user(
     if (party_metrics.latency.e2e_latency > 0) {
         out.e2e_latency = (unsigned long long)party_metrics.latency.e2e_latency;
     }
+
+    if (party_metrics.link.jitter > 0) {
+        out.mean_jitter = (unsigned long long)party_metrics.link.jitter;
+        out.max_jitter = (unsigned long long)party_metrics.link.max_jitter;
+        out.min_jitter = (unsigned long long)party_metrics.link.min_jitter;
+    }
+
+    if (party_metrics.link.total_packets > 0) {
+        out.total_packets = (unsigned long long)party_metrics.link.total_packets;
+        out.lost_packets = (long long)party_metrics.link.lost_packets;
+        out.restored_packets = (unsigned long long )party_metrics.link.recovered_packets;
+    }
 }
 
 ROC_ATTR_NO_SANITIZE_UB
@@ -667,6 +679,18 @@ void sender_participant_metrics_to_user(
 
     if (party_metrics.latency.e2e_latency > 0) {
         out.e2e_latency = (unsigned long long)party_metrics.latency.e2e_latency;
+    }
+
+    if (party_metrics.link.jitter > 0) {
+        out.mean_jitter = (unsigned long long)party_metrics.link.jitter;
+        out.max_jitter = (unsigned long long)party_metrics.link.max_jitter;
+        out.min_jitter = (unsigned long long)party_metrics.link.min_jitter;
+    }
+
+    if (party_metrics.link.total_packets > 0) {
+        out.total_packets = (unsigned long long)party_metrics.link.total_packets;
+        out.lost_packets = (long long)party_metrics.link.lost_packets;
+        out.restored_packets = (unsigned long long )party_metrics.link.recovered_packets;
     }
 }
 
