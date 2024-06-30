@@ -87,7 +87,7 @@ public:
     //! @remarks
     //!  Invoked near the end of pipeline so as to be aware of recovered packets.
     virtual ROC_ATTR_NODISCARD status::StatusCode read(packet::PacketPtr& packet,
-                                                   packet::PacketReadMode mode);
+                                                       packet::PacketReadMode mode);
 
     //! Set nested packet writer.
     //! @remarks

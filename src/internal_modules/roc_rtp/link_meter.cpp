@@ -93,9 +93,10 @@ status::StatusCode LinkMeter::write(const packet::PacketPtr& packet) {
     return writer_->write(packet);
 }
 
-status::StatusCode LinkMeter::read(packet::PacketPtr& packet, packet::PacketReadMode mode) {
+status::StatusCode LinkMeter::read(packet::PacketPtr& packet,
+                                   packet::PacketReadMode mode) {
     if (!reader_) {
-        roc_panic ("link meter: forgot to call set_reader()");
+        roc_panic("link meter: forgot to call set_reader()");
     }
 
     status::StatusCode result = reader_->read(packet, mode);

@@ -144,8 +144,7 @@ TEST_GROUP(loopback_encoder_2_decoder) {
 
                         const bool loss = (flags & FlagLosses)
                             && (ifaces[n_if] == ROC_INTERFACE_AUDIO_SOURCE)
-                            && ((n_pkt + 3) % LossRatio == 0)
-                            && nf < last_frame;
+                            && ((n_pkt + 3) % LossRatio == 0) && nf < last_frame;
 
                         if (!loss) {
                             CHECK(roc_receiver_decoder_push_packet(decoder, ifaces[n_if],
@@ -238,7 +237,7 @@ TEST_GROUP(loopback_encoder_2_decoder) {
                                                     (size_t)conn_metrics.total_packets);
                 recv_lost_packets_stats = (int64_t)conn_metrics.lost_packets;
                 recovered_packets_stats = std::max(recovered_packets_stats,
-                                                    (size_t)conn_metrics.restored_packets);
+                                                   (size_t)conn_metrics.restored_packets);
             }
             { // check sender metrics
                 roc_sender_metrics send_metrics;
@@ -255,9 +254,8 @@ TEST_GROUP(loopback_encoder_2_decoder) {
                     max_send_e2e_latency =
                         std::max(max_send_e2e_latency, conn_metrics.e2e_latency);
 
-                    iface_sent_packets_stats = std::max(iface_sent_packets_stats,
-                                                        (size_t)conn_metrics.total_packets);
-
+                    iface_sent_packets_stats = std::max(
+                        iface_sent_packets_stats, (size_t)conn_metrics.total_packets);
                 }
             }
 

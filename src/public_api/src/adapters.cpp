@@ -654,7 +654,7 @@ void receiver_participant_metrics_to_user(
     if (party_metrics.link.total_packets > 0) {
         out.total_packets = (unsigned long long)party_metrics.link.total_packets;
         out.lost_packets = (long long)party_metrics.link.lost_packets;
-        out.restored_packets = (unsigned long long )party_metrics.link.recovered_packets;
+        out.restored_packets = (unsigned long long)party_metrics.link.recovered_packets;
     }
 }
 
@@ -690,7 +690,7 @@ void sender_participant_metrics_to_user(
     if (party_metrics.link.total_packets > 0) {
         out.total_packets = (unsigned long long)party_metrics.link.total_packets;
         out.lost_packets = (long long)party_metrics.link.lost_packets;
-        out.restored_packets = (unsigned long long )party_metrics.link.recovered_packets;
+        out.restored_packets = (unsigned long long)party_metrics.link.recovered_packets;
     }
 }
 
