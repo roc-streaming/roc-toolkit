@@ -80,6 +80,11 @@ public:
     //!  false if allocation failed.
     ROC_ATTR_NODISCARD bool push_back(const char* str);
 
+    //! Remove string from end of the list.
+    //! @returns
+    //!  false if deallocation failed.
+    ROC_ATTR_NODISCARD bool pop_back();
+
     //! Append string from a range to the list.
     //! @remarks
     //!  Reallocates memory if necessary.

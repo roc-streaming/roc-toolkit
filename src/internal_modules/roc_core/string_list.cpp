@@ -130,6 +130,28 @@ bool StringList::push_back(const char* str_begin, const char* str_end) {
     return true;
 }
 
+bool StringList::pop_back() {
+    if (size_ == 0) {
+        roc_panic("stringlist: list is empty");
+    }
+
+    const size_t blk_sz = back_->len;
+    if (!data_.resize(data_.size() - blk_sz)) {
+        return false;
+    }
+
+    size_--;
+    if (size_ > 0) {
+        back_ = (Header*)(data_.data() + data_.size() - blk_sz);
+    }
+
+    else {
+        clear();
+    }
+
+    return true;
+}
+
 const char* StringList::find(const char* str) {
     if (str == NULL) {
         roc_panic("stringlist: string is null");
