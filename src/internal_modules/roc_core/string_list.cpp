@@ -130,6 +130,32 @@ bool StringList::push_back(const char* str_begin, const char* str_end) {
     return true;
 }
 
+bool StringList::pop_back() {
+    if (size_ == 0) {
+        roc_panic("stringlist: list is empty");
+    }
+
+    const size_t blk_sz = back_->len;
+    const Footer* prev_footer = NULL;
+    if (size_ > 1) {
+        prev_footer = (const Footer*)((const char*)back_ - sizeof(Footer));
+    }
+
+    if (!data_.resize(data_.size() - blk_sz)) {
+        return false;
+    }
+
+    size_--;
+    if (size_) {
+        back_ = (Header*)(data_.data() + data_.size() - prev_footer->len);
+    } else {
+        front_ = NULL;
+        back_ = NULL;
+    }
+
+    return true;
+}
+
 const char* StringList::find(const char* str) {
     if (str == NULL) {
         roc_panic("stringlist: string is null");

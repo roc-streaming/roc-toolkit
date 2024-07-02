@@ -47,6 +47,29 @@ TEST(string_list, push_back) {
     STRCMP_EQUAL("bar", sl.back());
 }
 
+TEST(string_list, pop_back) {
+    StringList sl(arena);
+
+    LONGS_EQUAL(0, sl.size());
+    CHECK(sl.push_back("foo"));
+    CHECK(sl.pop_back());
+    LONGS_EQUAL(0, sl.size());
+
+    CHECK(sl.push_back("foo"));
+    CHECK(sl.push_back("barbaz"));
+    CHECK(sl.pop_back());
+    LONGS_EQUAL(1, sl.size());
+    STRCMP_EQUAL("foo", sl.front());
+    STRCMP_EQUAL("foo", sl.back());
+
+    CHECK(sl.push_back("foobarbaz"));
+    CHECK(sl.push_back("baz"));
+    CHECK(sl.pop_back());
+    LONGS_EQUAL(2, sl.size());
+    STRCMP_EQUAL("foo", sl.front());
+    STRCMP_EQUAL("foobarbaz", sl.back());
+}
+
 TEST(string_list, push_back_range) {
     StringList sl(arena);
 

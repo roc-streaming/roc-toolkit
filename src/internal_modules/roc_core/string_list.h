@@ -87,6 +87,11 @@ public:
     //!  false if allocation failed.
     ROC_ATTR_NODISCARD bool push_back(const char* str_begin, const char* str_end);
 
+    //! Remove string from end of the list.
+    //! @returns
+    //!  false if deallocation failed.
+    ROC_ATTR_NODISCARD bool pop_back();
+
     //! Find string in the list.
     //! @returns
     //!  the string in the list or NULL if it is not found.
