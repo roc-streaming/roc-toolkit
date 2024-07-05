@@ -257,15 +257,15 @@ TEST(pcm_mapper_writer, mono_raw_to_s16) {
     }
 }
 
-TEST(pcm_mapper_writer, mono_s16_to_s32) {
+TEST(pcm_mapper_writer, stereo_s16_to_raw) {
     enum { FrameSz = MaxBytes / 10 };
 
     const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Mono);
-    const SampleSpec out_spec(Rate, PcmFormat_SInt32, ChanLayout_Surround,
-                              ChanOrder_Smpte, ChanMask_Surround_Mono);
+                             ChanMask_Surround_Stereo);
+    const SampleSpec out_spec(Rate, Sample_RawFormat, ChanLayout_Surround,
+                              ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
-    BufferWriter<int32_t> buf_writer(out_spec);
+    BufferWriter<sample_t> buf_writer(out_spec);
     PcmMapperWriter mapper_writer(buf_writer, frame_factory, in_spec, out_spec);
     CountGenerator<int16_t> count_generator(mapper_writer, in_spec, 100);
     LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
@@ -276,67 +276,21 @@ TEST(pcm_mapper_writer, mono_s16_to_s32) {
     LONGS_EQUAL(FrameSz, buf_writer.n_values);
 
     for (size_t i = 0; i < FrameSz; i++) {
-        DOUBLES_EQUAL(i * 100 / 32768., buf_writer.samples[i] / 2147483648., Epsilon);
+        DOUBLES_EQUAL(i * 100 / 32768., buf_writer.samples[i], Epsilon);
     }
 }
 
-TEST(pcm_mapper_writer, mono_s32_to_s16) {
+TEST(pcm_mapper_writer, stereo_raw_to_s16) {
     enum { FrameSz = MaxBytes / 10 };
 
-    const SampleSpec in_spec(Rate, PcmFormat_SInt32, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Mono);
-    const SampleSpec out_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround,
-                              ChanOrder_Smpte, ChanMask_Surround_Mono);
-
-    BufferWriter<int16_t> buf_writer(out_spec);
-    PcmMapperWriter mapper_writer(buf_writer, frame_factory, in_spec, out_spec);
-    CountGenerator<int32_t> count_generator(mapper_writer, in_spec, 1000);
-    LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
-
-    count_generator.generate(FrameSz);
-
-    LONGS_EQUAL(1, buf_writer.n_calls);
-    LONGS_EQUAL(FrameSz, buf_writer.n_values);
-
-    for (size_t i = 0; i < FrameSz; i++) {
-        DOUBLES_EQUAL(i * 1000 / 2147483648., buf_writer.samples[i] / 32768., Epsilon);
-    }
-}
-
-TEST(pcm_mapper_writer, stereo_s16_to_s32) {
-    enum { FrameSz = MaxBytes / 10 };
-
-    const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Stereo);
-    const SampleSpec out_spec(Rate, PcmFormat_SInt32, ChanLayout_Surround,
-                              ChanOrder_Smpte, ChanMask_Surround_Stereo);
-
-    BufferWriter<int32_t> buf_writer(out_spec);
-    PcmMapperWriter mapper_writer(buf_writer, frame_factory, in_spec, out_spec);
-    CountGenerator<int16_t> count_generator(mapper_writer, in_spec, 100);
-    LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
-
-    count_generator.generate(FrameSz);
-
-    LONGS_EQUAL(1, buf_writer.n_calls);
-    LONGS_EQUAL(FrameSz, buf_writer.n_values);
-
-    for (size_t i = 0; i < FrameSz; i++) {
-        DOUBLES_EQUAL(i * 100 / 32768., buf_writer.samples[i] / 2147483648., Epsilon);
-    }
-}
-
-TEST(pcm_mapper_writer, stereo_s32_to_s16) {
-    enum { FrameSz = MaxBytes / 10 };
-
-    const SampleSpec in_spec(Rate, PcmFormat_SInt32, ChanLayout_Surround, ChanOrder_Smpte,
+    const SampleSpec in_spec(Rate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte,
                              ChanMask_Surround_Stereo);
     const SampleSpec out_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
     BufferWriter<int16_t> buf_writer(out_spec);
     PcmMapperWriter mapper_writer(buf_writer, frame_factory, in_spec, out_spec);
-    CountGenerator<int32_t> count_generator(mapper_writer, in_spec, 1000);
+    CountGenerator<sample_t> count_generator(mapper_writer, in_spec, 0.001f);
     LONGS_EQUAL(status::StatusOK, mapper_writer.init_status());
 
     count_generator.generate(FrameSz);
@@ -345,7 +299,7 @@ TEST(pcm_mapper_writer, stereo_s32_to_s16) {
     LONGS_EQUAL(FrameSz, buf_writer.n_values);
 
     for (size_t i = 0; i < FrameSz; i++) {
-        DOUBLES_EQUAL(i * 1000 / 2147483648., buf_writer.samples[i] / 32768., Epsilon);
+        DOUBLES_EQUAL(i * 0.001, buf_writer.samples[i] / 32768., Epsilon);
     }
 }
 

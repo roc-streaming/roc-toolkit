@@ -278,40 +278,40 @@ TEST(pcm_mapper_reader, mono_raw_to_s16) {
     }
 }
 
-TEST(pcm_mapper_reader, mono_s16_to_s32) {
+TEST(pcm_mapper_reader, stereo_s16_to_raw) {
     enum { FrameSz = MaxBytes / 10 };
 
     const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Mono);
-    const SampleSpec out_spec(Rate, PcmFormat_SInt32, ChanLayout_Surround,
-                              ChanOrder_Smpte, ChanMask_Surround_Mono);
+                             ChanMask_Surround_Stereo);
+    const SampleSpec out_spec(Rate, Sample_RawFormat, ChanLayout_Surround,
+                              ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
     CountReader<int16_t> count_reader(in_spec, 100);
     PcmMapperReader mapper_reader(count_reader, frame_factory, in_spec, out_spec);
     LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
     FramePtr frame =
-        expect_byte_frame(status::StatusOK, mapper_reader, out_spec, FrameSz, FrameSz);
+        expect_raw_frame(status::StatusOK, mapper_reader, out_spec, FrameSz, FrameSz);
 
     LONGS_EQUAL(1, count_reader.n_calls);
     LONGS_EQUAL(FrameSz, count_reader.n_values);
 
-    const int32_t* samples = (const int32_t*)frame->bytes();
+    const sample_t* samples = frame->raw_samples();
 
     for (size_t i = 0; i < FrameSz; i++) {
-        DOUBLES_EQUAL(i * 100 / 32768., samples[i] / 2147483648., Epsilon);
+        DOUBLES_EQUAL(i * 100 / 32768., samples[i], Epsilon);
     }
 }
 
-TEST(pcm_mapper_reader, mono_s32_to_s16) {
+TEST(pcm_mapper_reader, stereo_raw_to_s16) {
     enum { FrameSz = MaxBytes / 10 };
 
-    const SampleSpec in_spec(Rate, PcmFormat_SInt32, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Mono);
+    const SampleSpec in_spec(Rate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte,
+                             ChanMask_Surround_Stereo);
     const SampleSpec out_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround,
-                              ChanOrder_Smpte, ChanMask_Surround_Mono);
+                              ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
-    CountReader<int32_t> count_reader(in_spec, 1000);
+    CountReader<sample_t> count_reader(in_spec, 0.001f);
     PcmMapperReader mapper_reader(count_reader, frame_factory, in_spec, out_spec);
     LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
 
@@ -324,57 +324,7 @@ TEST(pcm_mapper_reader, mono_s32_to_s16) {
     const int16_t* samples = (const int16_t*)frame->bytes();
 
     for (size_t i = 0; i < FrameSz; i++) {
-        DOUBLES_EQUAL(i * 1000 / 2147483648., samples[i] / 32768., Epsilon);
-    }
-}
-
-TEST(pcm_mapper_reader, stereo_s16_to_s32) {
-    enum { FrameSz = MaxBytes / 10 };
-
-    const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Stereo);
-    const SampleSpec out_spec(Rate, PcmFormat_SInt32, ChanLayout_Surround,
-                              ChanOrder_Smpte, ChanMask_Surround_Stereo);
-
-    CountReader<int16_t> count_reader(in_spec, 100);
-    PcmMapperReader mapper_reader(count_reader, frame_factory, in_spec, out_spec);
-    LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
-
-    FramePtr frame =
-        expect_byte_frame(status::StatusOK, mapper_reader, out_spec, FrameSz, FrameSz);
-
-    LONGS_EQUAL(1, count_reader.n_calls);
-    LONGS_EQUAL(FrameSz, count_reader.n_values);
-
-    const int32_t* samples = (const int32_t*)frame->bytes();
-
-    for (size_t i = 0; i < FrameSz; i++) {
-        DOUBLES_EQUAL(i * 100 / 32768., samples[i] / 2147483648., Epsilon);
-    }
-}
-
-TEST(pcm_mapper_reader, stereo_s32_to_s16) {
-    enum { FrameSz = MaxBytes / 10 };
-
-    const SampleSpec in_spec(Rate, PcmFormat_SInt32, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Stereo);
-    const SampleSpec out_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround,
-                              ChanOrder_Smpte, ChanMask_Surround_Stereo);
-
-    CountReader<int32_t> count_reader(in_spec, 1000);
-    PcmMapperReader mapper_reader(count_reader, frame_factory, in_spec, out_spec);
-    LONGS_EQUAL(status::StatusOK, mapper_reader.init_status());
-
-    FramePtr frame =
-        expect_byte_frame(status::StatusOK, mapper_reader, out_spec, FrameSz, FrameSz);
-
-    LONGS_EQUAL(1, count_reader.n_calls);
-    LONGS_EQUAL(FrameSz, count_reader.n_values);
-
-    const int16_t* samples = (const int16_t*)frame->bytes();
-
-    for (size_t i = 0; i < FrameSz; i++) {
-        DOUBLES_EQUAL(i * 1000 / 2147483648., samples[i] / 32768., Epsilon);
+        DOUBLES_EQUAL(i * 0.001, samples[i] / 32768., Epsilon);
     }
 }
 

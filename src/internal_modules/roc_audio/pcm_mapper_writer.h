@@ -7,7 +7,7 @@
  */
 
 //! @file roc_audio/pcm_mapper_writer.h
-//! @brief Pcm mapper writer.
+//! @brief PCM mapper writer.
 
 #ifndef ROC_AUDIO_PCM_MAPPER_WRITER_H_
 #define ROC_AUDIO_PCM_MAPPER_WRITER_H_
@@ -17,16 +17,17 @@
 #include "roc_audio/pcm_mapper.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/slice.h"
-#include "roc_core/stddefs.h"
-#include "roc_core/time.h"
+#include "roc_core/optional.h"
 #include "roc_status/status_code.h"
 
 namespace roc {
 namespace audio {
 
-//! Pcm mapper writer.
-//! Reads frames from nested writer and maps them to another pcm mask.
+//! PCM mapper writer.
+//! Maps frames to another PCM format and writes them to nested writer.
+//! @remarks
+//!  - Either input or output format must be raw samples (Sample_RawFormat).
+//!  - Both input and output formats must be byte-aligned.
 class PcmMapperWriter : public IFrameWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
@@ -47,7 +48,7 @@ private:
 
     FramePtr out_frame_;
 
-    PcmMapper mapper_;
+    core::Optional<PcmMapper> mapper_;
 
     const SampleSpec in_spec_;
     const SampleSpec out_spec_;

@@ -89,7 +89,7 @@ void print_number_t(Printer& p, int64_t v) {
 }
 
 void print_number_t(Printer& p, float v) {
-    p.writef("%.4f", (double)v);
+    p.writef("%.6f", (double)v);
 }
 
 void print_number_t(Printer& p, double v) {

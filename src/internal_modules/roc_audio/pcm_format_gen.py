@@ -47,7 +47,7 @@ def compute_minmax(code):
 #  lsb_mask: masks all bits to the left of the sign bit
 #
 # e.g. for sint18_3:
-#  value_masks: masks first 18 bits (0x3ffff)
+#  value_mask: masks first 18 bits (0x3ffff)
 #  sign_mask: masks 18th bit (0x20000)
 #  lsb_mask: masks bits after 18th (0xfffc0000)
 def compute_masks(code):
@@ -103,12 +103,12 @@ def make_enum_name(code, endian):
 
     return 'PcmFormat_' + name
 
-# generate string name for pcm code + endian
+# generate short string name for pcm code + endian
 # e.g.:
 #  SInt18_3, Native => s18_3
 #  SInt18_3, Little => s18_3le
 #  SInt18_3, Big => s18_3be
-def make_str_name(code, endian):
+def make_short_name(code, endian):
     name = code['short_name']
 
     if endian != 'Native':
@@ -146,6 +146,7 @@ CODES = [
         'short_name': 's8',
         'is_integer': True,
         'is_signed': True,
+        'is_raw': False,
         'depth': 8,
         'width': 8,
         'packed_width': 8,
@@ -160,6 +161,7 @@ CODES = [
         'short_name': 'u8',
         'is_integer': True,
         'is_signed': False,
+        'is_raw': False,
         'depth': 8,
         'width': 8,
         'packed_width': 8,
@@ -174,6 +176,7 @@ CODES = [
         'short_name': 's16',
         'is_integer': True,
         'is_signed': True,
+        'is_raw': False,
         'depth': 16,
         'width': 16,
         'packed_width': 16,
@@ -188,6 +191,7 @@ CODES = [
         'short_name': 'u16',
         'is_integer': True,
         'is_signed': False,
+        'is_raw': False,
         'depth': 16,
         'width': 16,
         'packed_width': 16,
@@ -202,6 +206,7 @@ CODES = [
         'short_name': 's18',
         'is_integer': True,
         'is_signed': True,
+        'is_raw': False,
         'depth': 18,
         'width': 18,
         'packed_width': 18,
@@ -216,6 +221,7 @@ CODES = [
         'short_name': 'u18',
         'is_integer': True,
         'is_signed': False,
+        'is_raw': False,
         'depth': 18,
         'width': 18,
         'packed_width': 18,
@@ -230,6 +236,7 @@ CODES = [
         'short_name': 's18_3',
         'is_integer': True,
         'is_signed': True,
+        'is_raw': False,
         'depth': 18,
         'width': 18,
         'packed_width': 24,
@@ -244,6 +251,7 @@ CODES = [
         'short_name': 'u18_3',
         'is_integer': True,
         'is_signed': False,
+        'is_raw': False,
         'depth': 18,
         'width': 18,
         'packed_width': 24,
@@ -258,6 +266,7 @@ CODES = [
         'short_name': 's18_4',
         'is_integer': True,
         'is_signed': True,
+        'is_raw': False,
         'depth': 18,
         'width': 18,
         'packed_width': 32,
@@ -272,6 +281,7 @@ CODES = [
         'short_name': 'u18_4',
         'is_integer': True,
         'is_signed': False,
+        'is_raw': False,
         'depth': 18,
         'width': 18,
         'packed_width': 32,
@@ -286,6 +296,7 @@ CODES = [
         'short_name': 's20',
         'is_integer': True,
         'is_signed': True,
+        'is_raw': False,
         'depth': 20,
         'width': 20,
         'packed_width': 20,
@@ -300,6 +311,7 @@ CODES = [
         'short_name': 'u20',
         'is_integer': True,
         'is_signed': False,
+        'is_raw': False,
         'depth': 20,
         'width': 20,
         'packed_width': 20,
@@ -314,6 +326,7 @@ CODES = [
         'short_name': 's20_3',
         'is_integer': True,
         'is_signed': True,
+        'is_raw': False,
         'depth': 20,
         'width': 20,
         'packed_width': 24,
@@ -328,6 +341,7 @@ CODES = [
         'short_name': 'u20_3',
         'is_integer': True,
         'is_signed': False,
+        'is_raw': False,
         'depth': 20,
         'width': 20,
         'packed_width': 24,
@@ -342,6 +356,7 @@ CODES = [
         'short_name': 's20_4',
         'is_integer': True,
         'is_signed': True,
+        'is_raw': False,
         'depth': 20,
         'width': 20,
         'packed_width': 32,
@@ -356,6 +371,7 @@ CODES = [
         'short_name': 'u20_4',
         'is_integer': True,
         'is_signed': False,
+        'is_raw': False,
         'depth': 20,
         'width': 20,
         'packed_width': 32,
@@ -370,6 +386,7 @@ CODES = [
         'short_name': 's24',
         'is_integer': True,
         'is_signed': True,
+        'is_raw': False,
         'depth': 24,
         'width': 24,
         'packed_width': 24,
@@ -384,6 +401,7 @@ CODES = [
         'short_name': 'u24',
         'is_integer': True,
         'is_signed': False,
+        'is_raw': False,
         'depth': 24,
         'width': 24,
         'packed_width': 24,
@@ -398,6 +416,7 @@ CODES = [
         'short_name': 's24_4',
         'is_integer': True,
         'is_signed': True,
+        'is_raw': False,
         'depth': 24,
         'width': 24,
         'packed_width': 32,
@@ -412,6 +431,7 @@ CODES = [
         'short_name': 'u24_4',
         'is_integer': True,
         'is_signed': False,
+        'is_raw': False,
         'depth': 24,
         'width': 24,
         'packed_width': 32,
@@ -426,6 +446,7 @@ CODES = [
         'short_name': 's32',
         'is_integer': True,
         'is_signed': True,
+        'is_raw': False,
         'depth': 32,
         'width': 32,
         'packed_width': 32,
@@ -440,6 +461,7 @@ CODES = [
         'short_name': 'u32',
         'is_integer': True,
         'is_signed': False,
+        'is_raw': False,
         'depth': 32,
         'width': 32,
         'packed_width': 32,
@@ -454,6 +476,7 @@ CODES = [
         'short_name': 's64',
         'is_integer': True,
         'is_signed': True,
+        'is_raw': False,
         'depth': 64,
         'width': 64,
         'packed_width': 64,
@@ -468,6 +491,7 @@ CODES = [
         'short_name': 'u64',
         'is_integer': True,
         'is_signed': False,
+        'is_raw': False,
         'depth': 64,
         'width': 64,
         'packed_width': 64,
@@ -481,6 +505,7 @@ CODES = [
         'short_name': 'f32',
         'is_integer': False,
         'is_signed': True,
+        'is_raw': True,
         'depth': 25,
         'width': 32,
         'packed_width': 32,
@@ -494,6 +519,7 @@ CODES = [
         'short_name': 'f64',
         'is_integer': False,
         'is_signed': True,
+        'is_raw': False,
         'depth': 53,
         'width': 64,
         'packed_width': 64,
@@ -560,15 +586,20 @@ enum PcmCode {
 {% for code in CODES %}
     PcmCode_{{ code.code }},
 {% endfor %}
-    PcmCode_Max
 };
 
 // PCM endians.
 enum PcmEndian {
 {% for endian in ENDIANS %}
+{% if endian != 'Native' %}
     PcmEndian_{{ endian }},
+{% endif %}
 {% endfor %}
-    PcmEndian_Max
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+    PcmEndian_Native = PcmEndian_Big,
+#else
+    PcmEndian_Native = PcmEndian_Little,
+#endif
 };
 
 {% for code in CODES %}
@@ -583,26 +614,9 @@ const {{ code.type }} {{ code.max }} = {{ code.max_value }};
 template <PcmCode> struct pcm_sign_converter;
 
 {% for code in CODES %}
-{% if code.is_integer %}
+{% if code.is_integer and not code.is_signed %}
 // Convert {{ code.code }} from/to signed/unsigned
 template <> struct pcm_sign_converter<PcmCode_{{ code.code }}> {
-{% if code.is_signed %}
-    // {{ code.code }} from unsigned value
-    static inline {{ code.signed_type }} from_unsigned({{ code.unsigned_type }} arg) {
-        if (arg < {{ code.unsigned_type }}({{ code.signed_max }}) + 1) {
-            return {{ code.signed_type }}(arg) - {{ code.signed_max }} - 1;
-        }
-        return {{ code.signed_type }}(arg - {{ code.unsigned_type }}({{ code.signed_max }}) - 1);
-    }
-
-    // {{ code.code }} to unsigned value
-    static inline {{ code.unsigned_type }} to_unsigned({{ code.signed_type }} arg) {
-        if (arg >= 0) {
-            return {{ code.unsigned_type }}(arg) + {{ code.signed_max }} + 1;
-        }
-        return {{ code.unsigned_type }}(arg + {{ code.signed_max }} + 1);
-    }
-{% else %}
     // {{ code.code }} from signed value
     static inline {{ code.unsigned_type }} from_signed({{ code.signed_type }} arg) {
         if (arg >= 0) {
@@ -619,81 +633,55 @@ template <> struct pcm_sign_converter<PcmCode_{{ code.code }}> {
         }
         return {{ code.signed_type }}(arg - {{ code.unsigned_type }}({{ code.signed_max }}) - 1);
     }
-{% endif %}
 };
 
 {% endif %}
 {% endfor %}
-// Convert between unpacked CODES
+// Convert between unpacked codes
 template <PcmCode InCode, PcmCode OutCode> struct pcm_code_converter;
 
-{% for out in CODES %}
-{% for in in CODES %}
-{% set both_unsigned = not in.is_signed and not out.is_signed %}
-// Convert {{ in.code }} to {{ out.code }}
-template <> struct pcm_code_converter<PcmCode_{{ in.code }}, \
-PcmCode_{{ out.code }}> {
-    static inline {{ out.type }} convert({{ in.type }} arg) {
-{% if in.code == out.code %}
+{% for ocode in CODES %}
+{% for icode in CODES %}
+{% if not icode.is_integer or not ocode.is_integer %}
+// Convert {{ icode.code }} to {{ ocode.code }}
+template <> struct pcm_code_converter<PcmCode_{{ icode.code }}, \
+PcmCode_{{ ocode.code }}> {
+    static inline {{ ocode.type }} convert({{ icode.type }} arg) {
+{% if icode.code == ocode.code %}
         return arg;
 {% else %}
-{% if not in.is_signed and not both_unsigned %}
+{% if not icode.is_signed %}
         // convert to signed
-        {{ in.signed_type }} in = \
-pcm_sign_converter<PcmCode_{{ in.code }}>::to_signed(arg);
+        {{ icode.signed_type }} in = \
+pcm_sign_converter<PcmCode_{{ icode.code }}>::to_signed(arg);
 {% else %}
-        {{ in.type }} in = arg;
+        {{ icode.type }} in = arg;
 {% endif %}
 
-{% if both_unsigned %}
-        {{ out.type }} out;
-{% else %}
-        {{ out.signed_type }} out;
-{% endif %}
-{% if not out.is_integer and not in.is_integer %}
+        {{ ocode.signed_type }} out;
+{% if not ocode.is_integer and not icode.is_integer %}
         // float to float
-        out = {{ out.type }}(in);
-{% elif not out.is_integer and in.is_integer %}
+        out = {{ ocode.type }}(in);
+{% elif not ocode.is_integer and icode.is_integer %}
         // integer to float
-        out = {{ out.type }}(in * (1.0 / ((double){{ in.signed_max }} + 1.0)));
-{% elif out.is_integer and not in.is_integer %}
+        out = {{ ocode.type }}(in * (1.0 / ((double){{ icode.signed_max }} + 1.0)));
+{% elif ocode.is_integer and not icode.is_integer %}
         // float to integer
-        const double d = double(in) * ((double){{ out.signed_max }} + 1.0);
-        if (d < {{ out.signed_min }}) {
+        const double d = double(in) * ((double){{ ocode.signed_max }} + 1.0);
+        if (d < {{ ocode.signed_min }}) {
             // clip
-            out = {{ out.signed_min }};
-        } else if (d >= (double){{ out.signed_max }} + 1.0) {
+            out = {{ ocode.signed_min }};
+        } else if (d >= (double){{ ocode.signed_max }} + 1.0) {
             // clip
-            out = {{ out.signed_max }};
+            out = {{ ocode.signed_max }};
         } else {
-            out = {{ out.signed_type }}(d);
+            out = {{ ocode.signed_type }}(d);
         }
-{% elif out.width == in.width %}
-        out = in;
-{% elif out.width < in.width and both_unsigned %}
-        // downscale unsigned integer
-        out = {{ out.type }}(in >> {{ in.width - out.width }});
-{% elif out.width < in.width and not both_unsigned %}
-        // downscale signed integer
-        if (in > {{ in.signed_type }}({{ in.signed_max }} - \
-({{ in.signed_type }}(1) << {{ in.width - out.width - 1 }}))) {
-            // clip
-            out = {{ out.signed_max }};
-        } else {
-            out = {{ out.signed_type }}({{ in.unsigned_type }}(in + \
-({{ in.signed_type }}(1) << {{ in.width - out.width - 1 }})) >> {{ in.width - out.width }});
-        }
-{% elif out.width > in.width and both_unsigned %}
-        // upscale unsigned integer
-        out = {{ out.type }}({{ out.type }}(in) << {{ out.width - in.width }});
-{% elif out.width > in.width and not both_unsigned %}
-        // upscale signed integer
-        out = {{ out.signed_type }}({{ out.unsigned_type }}(in) << {{ out.width - in.width }});
 {% endif %}
 
-{% if not out.is_signed and not both_unsigned %}
+{% if not ocode.is_signed %}
         // convert to unsigned
-        return pcm_sign_converter<PcmCode_{{ out.code }}>::from_signed(out);
+        return pcm_sign_converter<PcmCode_{{ ocode.code }}>::from_signed(out);
 {% else %}
         return out;
 {% endif %}
@@ -701,26 +689,10 @@ pcm_sign_converter<PcmCode_{{ in.code }}>::to_signed(arg);
     }
 };
 
+{% endif %}
 {% endfor %}
 {% endfor %}
-// N-byte native-endian packed octet array
-template <size_t N> struct pcm_octets;
 
-{% for size in [1, 2, 4, 8] %}
-// {{ size }}-byte native-endian packed octet array
-template <> ROC_ATTR_PACKED_BEGIN struct pcm_octets<{{ size }}> {
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-{% for n in reversed(range(size)) %}
-    uint8_t octet{{ n }};
-{% endfor %}
-#else
-{% for n in range(size) %}
-    uint8_t octet{{ n }};
-{% endfor %}
-#endif
-} ROC_ATTR_PACKED_END;
-
-{% endfor %}
 // N-byte native-endian sample
 template <class T> struct pcm_sample;
 
@@ -729,7 +701,17 @@ template <class T> struct pcm_sample;
 template <> struct pcm_sample<{{ type }}> {
     union {
         {{ type }} value;
-        pcm_octets<{{ size }}> octets;
+        ROC_ATTR_PACKED_BEGIN struct {
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+{% for n in reversed(range(size)) %}
+            uint8_t octet{{ n }};
+{% endfor %}
+#else
+{% for n in range(size) %}
+            uint8_t octet{{ n }};
+{% endfor %}
+#endif
+        } ROC_ATTR_PACKED_END octets;
     };
 };
 
@@ -870,28 +852,42 @@ struct pcm_mapper {
 };
 
 // Select mapping function
-template <PcmCode InCode, PcmEndian InEndian, PcmCode OutCode, PcmEndian OutEndian>
-PcmMapFn pcm_format_mapfn() {
-    return &pcm_mapper<InCode, InEndian, OutCode, OutEndian>::map;
+template <PcmCode InCode, PcmEndian InEndian>
+PcmMapFn pcm_map_to_raw(PcmFormat raw_format) {
+    switch (raw_format) {
+{% for ocode in CODES %}
+{% if ocode.is_raw: %}
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+    case {{ make_enum_name(ocode, 'Native') }}:
+    case {{ make_enum_name(ocode, 'Big') }}:
+#else
+    case {{ make_enum_name(ocode, 'Native') }}:
+    case {{ make_enum_name(ocode, 'Little') }}:
+#endif
+        return &pcm_mapper<InCode, InEndian, PcmCode_{{ ocode.code }}, PcmEndian_Native>::map;
+{% endif %}
+{% endfor %}
+    default:
+        break;
+    }
+    return NULL;
 }
 
 // Select mapping function
-template <PcmCode InCode, PcmEndian InEndian>
-PcmMapFn pcm_format_mapfn(PcmFormat out_format) {
-    switch (out_format) {
-{% for code in CODES %}
-{% for endian in ENDIANS %}
-    case {{ make_enum_name(code, endian) }}:
-{% if endian == 'Native' %}
+template <PcmCode OutCode, PcmEndian OutEndian>
+PcmMapFn pcm_map_from_raw(PcmFormat raw_format) {
+    switch (raw_format) {
+{% for icode in CODES %}
+{% if icode.is_raw: %}
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        return pcm_format_mapfn<InCode, InEndian, PcmCode_{{ code.code }}, PcmEndian_Big>();
+    case {{ make_enum_name(icode, 'Native') }}:
+    case {{ make_enum_name(icode, 'Big') }}:
 #else
-        return pcm_format_mapfn<InCode, InEndian, PcmCode_{{ code.code }}, PcmEndian_Little>();
+    case {{ make_enum_name(icode, 'Native') }}:
+    case {{ make_enum_name(icode, 'Little') }}:
 #endif
-{% else %}
-        return pcm_format_mapfn<InCode, InEndian, PcmCode_{{ code.code }}, PcmEndian_{{ endian }}>();
+        return &pcm_mapper<PcmCode_{{ icode.code }}, PcmEndian_Native, OutCode, OutEndian>::map;
 {% endif %}
-{% endfor %}
 {% endfor %}
     default:
         break;
@@ -903,24 +899,69 @@ PcmMapFn pcm_format_mapfn(PcmFormat out_format) {
 
 // Select mapping function
 PcmMapFn pcm_format_mapfn(PcmFormat in_format, PcmFormat out_format) {
+    // non-raw to raw
     switch (in_format) {
-{% for code in CODES %}
-{% for endian in ENDIANS %}
-    case {{ make_enum_name(code, endian) }}:
-{% if endian == 'Native' %}
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        return pcm_format_mapfn<PcmCode_{{ code.code }}, PcmEndian_Big>(out_format);
+{% for icode in CODES %}
+{% if icode.is_raw %}
+#if ROC_CPU_ENDIAN != ROC_CPU_BE
+    case {{ make_enum_name(icode, 'Big') }}:
+        return pcm_map_to_raw<PcmCode_{{ icode.code }}, PcmEndian_Big>(out_format);
 #else
-        return pcm_format_mapfn<PcmCode_{{ code.code }}, PcmEndian_Little>(out_format);
+    case {{ make_enum_name(icode, 'Little') }}:
+        return pcm_map_to_raw<PcmCode_{{ icode.code }}, PcmEndian_Little>(out_format);
 #endif
 {% else %}
-        return pcm_format_mapfn<PcmCode_{{ code.code }}, PcmEndian_{{ endian }}>(out_format);
-{% endif %}
+{% for iendian in ENDIANS %}
+    case {{ make_enum_name(icode, iendian) }}:
+        return pcm_map_to_raw<PcmCode_{{ icode.code }}, PcmEndian_{{ iendian }}>(out_format);
 {% endfor %}
+{% endif %}
 {% endfor %}
     default:
         break;
     }
+
+    // raw to non-raw
+    switch (out_format) {
+{% for ocode in CODES %}
+{% if ocode.is_raw %}
+#if ROC_CPU_ENDIAN != ROC_CPU_BE
+    case {{ make_enum_name(ocode, 'Big') }}:
+        return pcm_map_from_raw<PcmCode_{{ ocode.code }}, PcmEndian_Big>(in_format);
+#else
+    case {{ make_enum_name(ocode, 'Little') }}:
+        return pcm_map_from_raw<PcmCode_{{ ocode.code }}, PcmEndian_Little>(in_format);
+#endif
+{% else %}
+{% for oendian in ENDIANS %}
+    case {{ make_enum_name(ocode, oendian) }}:
+        return pcm_map_from_raw<PcmCode_{{ ocode.code }}, PcmEndian_{{ oendian }}>(in_format);
+{% endfor %}
+{% endif %}
+{% endfor %}
+    default:
+        break;
+    }
+
+    // raw to raw
+    switch (out_format) {
+{% for ocode in CODES %}
+{% if ocode.is_raw %}
+    case {{ make_enum_name(ocode, 'Native') }}:
+        return pcm_map_from_raw<PcmCode_{{ ocode.code }}, PcmEndian_Native>(in_format);
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+    case {{ make_enum_name(ocode, 'Big') }}:
+        return pcm_map_from_raw<PcmCode_{{ ocode.code }}, PcmEndian_Native>(in_format);
+#else
+    case {{ make_enum_name(ocode, 'Little') }}:
+        return pcm_map_from_raw<PcmCode_{{ ocode.code }}, PcmEndian_Native>(in_format);
+#endif
+{% endif %}
+{% endfor %}
+    default:
+        break;
+    }
+
     return NULL;
 }
 
@@ -965,7 +1006,7 @@ const char* pcm_format_to_str(PcmFormat format) {
 {% for code in CODES %}
 {% for endian in ENDIANS %}
     case {{ make_enum_name(code, endian) }}:
-        return "{{ make_str_name(code, endian) }}";
+        return "{{ make_short_name(code, endian) }}";
 {% endfor %}
 {% endfor %}
     default:
@@ -987,7 +1028,7 @@ PcmFormat pcm_format_from_str(const char* str) {
 {% for code in CODES %}
 {% if tuple(code.short_name[:3]) == (c0, c1, c2) %}
 {% for endian in ENDIANS %}
-                if (strcmp(str, "{{ make_str_name(code, endian) }}") == 0) {
+                if (strcmp(str, "{{ make_short_name(code, endian) }}") == 0) {
                     return {{ make_enum_name(code, endian) }};
                 }
 {% endfor %}
@@ -999,7 +1040,7 @@ PcmFormat pcm_format_from_str(const char* str) {
 {% for code in CODES %}
 {% if tuple(code.short_name) == (c0, c1) %}
 {% for endian in ENDIANS %}
-            if (strcmp(str, "{{ make_str_name(code, endian) }}") == 0) {
+            if (strcmp(str, "{{ make_short_name(code, endian) }}") == 0) {
                 return {{ make_enum_name(code, endian) }};
             }
 {% endfor %}

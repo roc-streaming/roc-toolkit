@@ -24,7 +24,7 @@ struct SampleInfo {
     PcmFormat format;
 
     size_t num_samples;
-    double samples[MaxSamples];
+    float samples[MaxSamples];
 
     size_t num_bytes;
     uint8_t bytes[MaxBytes];

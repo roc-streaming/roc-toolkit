@@ -21,7 +21,6 @@ PcmMapperReader::PcmMapperReader(IFrameReader& frame_reader,
                                  const SampleSpec& out_spec)
     : frame_factory_(frame_factory)
     , frame_reader_(frame_reader)
-    , mapper_(in_spec.pcm_format(), out_spec.pcm_format())
     , in_spec_(in_spec)
     , out_spec_(out_spec)
     , num_ch_(out_spec.num_channels())
@@ -35,15 +34,24 @@ PcmMapperReader::PcmMapperReader(IFrameReader& frame_reader,
                   sample_spec_to_str(out_spec_).c_str());
     }
 
+    if (!in_spec_.is_raw() && !out_spec_.is_raw()) {
+        roc_panic(
+            "pcm mapper reader: required either input our output spec to have raw format:"
+            " in_spec=%s out_spec=%s",
+            sample_spec_to_str(in_spec_).c_str(), sample_spec_to_str(out_spec_).c_str());
+    }
+
     if (in_spec_.sample_rate() != out_spec_.sample_rate()
         || in_spec_.channel_set() != out_spec_.channel_set()) {
         roc_panic(
             "pcm mapper reader: required identical input and output rates and channels:"
             " in_spec=%s out_spec=%s",
-            sample_spec_to_str(in_spec).c_str(), sample_spec_to_str(out_spec).c_str());
+            sample_spec_to_str(in_spec_).c_str(), sample_spec_to_str(out_spec_).c_str());
     }
 
-    if (mapper_.input_bit_count(1) % 8 != 0 || mapper_.output_bit_count(1) % 8 != 0) {
+    mapper_.reset(new (mapper_) PcmMapper(in_spec_.pcm_format(), out_spec_.pcm_format()));
+
+    if (mapper_->input_bit_count(1) % 8 != 0 || mapper_->output_bit_count(1) % 8 != 0) {
         roc_panic("pcm mapper reader: unsupported not byte-aligned encoding:"
                   " in_spec=%s out_spec=%s",
                   sample_spec_to_str(in_spec_).c_str(),
@@ -98,14 +106,14 @@ status::StatusCode PcmMapperReader::read(Frame& out_frame,
     out_frame.set_duration(resulted_duration);
     out_frame.set_capture_timestamp(in_frame_->capture_timestamp());
 
-    const size_t out_byte_count = mapper_.output_byte_count(resulted_duration * num_ch_);
+    const size_t out_byte_count = mapper_->output_byte_count(resulted_duration * num_ch_);
     size_t out_bit_offset = 0;
 
-    const size_t in_byte_count = mapper_.input_byte_count(resulted_duration * num_ch_);
+    const size_t in_byte_count = mapper_->input_byte_count(resulted_duration * num_ch_);
     size_t in_bit_offset = 0;
 
-    mapper_.map(in_frame_->bytes(), in_byte_count, in_bit_offset, out_frame.bytes(),
-                out_byte_count, out_bit_offset, resulted_duration * num_ch_);
+    mapper_->map(in_frame_->bytes(), in_byte_count, in_bit_offset, out_frame.bytes(),
+                 out_byte_count, out_bit_offset, resulted_duration * num_ch_);
 
     roc_panic_if(out_bit_offset != out_byte_count * 8);
     roc_panic_if(in_bit_offset != in_byte_count * 8);

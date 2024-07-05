@@ -29,7 +29,7 @@ def format_blob(blob):
     return format_array(["0x%02x" % b for b in blob], maxlen=12)
 
 def format_samples(samples):
-    return format_array(["%+.16f" % s for s in samples], maxlen=4)
+    return format_array(["%+.8ff" % s for s in samples], maxlen=4)
 
 def read_samples(datfile):
     samples = []

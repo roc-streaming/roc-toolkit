@@ -20,12 +20,11 @@ namespace roc {
 namespace audio {
 
 //! PCM format mapper.
-//! Convert between PCM formats.
+//! Converts between two PCM formats.
+//! Either input or output format must be raw samples (Sample_RawFormat).
 class PcmMapper : public core::NonCopyable<> {
 public:
     //! Initialize.
-    //! @pre
-    //!  @p input_fmt and @p output_fmt should be PCM formats.
     PcmMapper(PcmFormat input_fmt, PcmFormat output_fmt);
 
     //! Get input format.
@@ -34,22 +33,22 @@ public:
     //! Get output format.
     PcmFormat output_format() const;
 
-    //! Get number of input samples per channel for given number of bytes.
+    //! Get number of input samples (total for all channels) for given number of bytes.
     size_t input_sample_count(size_t input_bytes) const;
 
-    //! Get number of input samples per channel for given number of bytes.
+    //! Get number of input samples (total for all channels) for given number of bytes.
     size_t output_sample_count(size_t output_bytes) const;
 
-    //! Get number of input bytes for given number of samples per channel.
+    //! Get number of input bytes for given number of samples (total for all channels).
     size_t input_byte_count(size_t input_samples) const;
 
-    //! Get number of output bytes for given number of samples per channel.
+    //! Get number of output bytes for given number of samples (total for all channels).
     size_t output_byte_count(size_t output_samples) const;
 
-    //! Get number of input bits for given number of samples per channel.
+    //! Get number of input bits for given number of samples (total for all channels).
     size_t input_bit_count(size_t input_samples) const;
 
-    //! Get number of output bits for given number of samples per channel.
+    //! Get number of output bits for given number of samples (total for all channels).
     size_t output_bit_count(size_t output_samples) const;
 
     //! Map samples from input to output format.
@@ -60,12 +59,14 @@ public:
     //!  @p out_data is a pointer to output buffer
     //!  @p out_byte_size is size of output buffer in bytes
     //!  @p out_bit_off is an offset in output buffer in bits
-    //!  @p n_samples is number of input and output samples for all channels
+    //!  @p n_samples is number of input and output samples
+    //!  (total for all channels) to be mapped
     //! @returns
     //!  number of samples actually mapped, which may be truncated if
     //!  input or output buffer is smaller than requested
     //! @note
-    //!  updates @p in_bit_off and @p out_bit_off
+    //!  increments @p in_bit_off and @p out_bit_off by the number
+    //!  of mapped bits
     size_t map(const void* in_data,
                size_t in_byte_size,
                size_t& in_bit_off,
