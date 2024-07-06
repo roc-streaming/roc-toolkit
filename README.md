@@ -73,7 +73,7 @@ Plans
 
 See here:
 
-* [Project board](https://github.com/roc-streaming/roc-toolkit/projects/2)
+* [Project board](https://github.com/orgs/roc-streaming/projects/5)
 * [Roadmap](https://roc-streaming.org/toolkit/docs/development/roadmap.html)
 
 Donations
