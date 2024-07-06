@@ -82,8 +82,12 @@ TEST(ring_queue, push_back) {
 
     for (size_t n = 0; n < NumObjects; n++) {
         queue.push_back(Object(n));
+
         LONGS_EQUAL(n + 1, queue.size());
         LONGS_EQUAL(n + 1, Object::n_objects);
+
+        LONGS_EQUAL(0, queue.front().value);
+        LONGS_EQUAL(n, queue.back().value);
     }
 }
 
@@ -92,8 +96,12 @@ TEST(ring_queue, push_front) {
 
     for (size_t n = 0; n < NumObjects; n++) {
         queue.push_front(Object(n));
+
         LONGS_EQUAL(n + 1, queue.size());
         LONGS_EQUAL(n + 1, Object::n_objects);
+
+        LONGS_EQUAL(n, queue.front().value);
+        LONGS_EQUAL(0, queue.back().value);
     }
 }
 
@@ -105,6 +113,9 @@ TEST(ring_queue, pop_back) {
     }
 
     for (size_t n = 0; n < NumObjects; n++) {
+        LONGS_EQUAL(0, queue.front().value);
+        LONGS_EQUAL(NumObjects - n - 1, queue.back().value);
+
         LONGS_EQUAL(NumObjects - n, queue.size());
         queue.pop_back();
         LONGS_EQUAL(NumObjects - 1 - n, Object::n_objects);
@@ -119,6 +130,9 @@ TEST(ring_queue, pop_front) {
     }
 
     for (size_t n = 0; n < NumObjects; n++) {
+        LONGS_EQUAL(n, queue.front().value);
+        LONGS_EQUAL(NumObjects - 1, queue.back().value);
+
         LONGS_EQUAL(NumObjects - n, queue.size());
         queue.pop_front();
         LONGS_EQUAL(NumObjects - 1 - n, Object::n_objects);
@@ -167,6 +181,35 @@ TEST(ring_queue, wrap_around) {
     LONGS_EQUAL(NumObjects, queue.size());
     LONGS_EQUAL(5, queue.front().value);
     LONGS_EQUAL(NumObjects + 4, queue.back().value);
+}
+
+TEST(ring_queue, wrap_around_loop) {
+    RingQueue<Object, EmbeddedCap> queue(arena, NumObjects);
+
+    size_t head = 0;
+    size_t tail = 0;
+
+    for (size_t n = 0; n < NumObjects; n++) {
+        queue.push_back(Object(tail));
+        tail++;
+    }
+
+    for (int it = 0; it < NumObjects * 10; it++) {
+        for (size_t n = 0; n < 5; n++) {
+            queue.pop_front();
+            head++;
+        }
+
+        for (size_t n = 0; n < 5; n++) {
+            queue.push_back(Object(tail));
+            tail++;
+        }
+
+        LONGS_EQUAL(NumObjects, queue.size());
+
+        LONGS_EQUAL(head, queue.front().value);
+        LONGS_EQUAL(tail - 1, queue.back().value);
+    }
 }
 
 TEST(ring_queue, single_element) {
