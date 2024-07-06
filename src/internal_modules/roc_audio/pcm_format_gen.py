@@ -739,7 +739,7 @@ pcm_unaligned_write(uint8_t* buffer, size_t& bit_offset, size_t bit_length, uint
         buffer[byte_index] = 0;
     }
 
-    buffer[byte_index] |= uint8_t(arg << (8 - bit_length) >> bit_index);
+    buffer[byte_index] |= uint8_t(uint8_t(arg << (8 - bit_length)) >> bit_index);
 
     if (bit_index + bit_length > 8) {
         buffer[byte_index + 1] = uint8_t(arg << bit_index);
@@ -754,10 +754,10 @@ pcm_unaligned_read(const uint8_t* buffer, size_t& bit_offset, size_t bit_length)
     size_t byte_index = (bit_offset >> 3);
     size_t bit_index = (bit_offset & 0x7u);
 
-    uint8_t ret = uint8_t(buffer[byte_index] << bit_index >> (8 - bit_length));
+    uint8_t ret = uint8_t(uint8_t(buffer[byte_index] << bit_index) >> (8 - bit_length));
 
     if (bit_index + bit_length > 8) {
-        ret |= uint8_t(buffer[byte_index + 1] >> (8 - bit_index) >> (8 - bit_length));
+        ret |= uint8_t(buffer[byte_index + 1] >> ((8 - bit_index) + (8 - bit_length)));
     }
 
     bit_offset += bit_length;
