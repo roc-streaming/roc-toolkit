@@ -557,13 +557,13 @@ def link_pr(org, repo, pr_number, action, no_issue):
         ],
         env={'FILTER_BRANCH_SQUELCH_WARNING':'1'})
 
-def squash_pr(org, repo, pr_number, no_issue):
+def squash_pr(org, repo, pr_number, title, no_issue):
     pr_info = query_pr_info(org, repo, pr_number)
 
     commit_message = make_message(
         org, repo,
         pr_info['issue_link'] if not no_issue else None,
-        pr_info['pr_title'])
+        title or pr_info['pr_title'])
 
     run_cmd([
         'git', 'rebase', '-i', pr_info['base_sha'],
@@ -698,6 +698,8 @@ merge_pr_parser.add_argument('--rebase', action='store_true',
                           help='merge using rebase')
 merge_pr_parser.add_argument('--squash', action='store_true',
                           help='merge using squash')
+merge_pr_parser.add_argument('-t', '--title', dest='title',
+                          help='overwrite commit message title')
 merge_pr_parser.add_argument('pr_number', type=int)
 
 stealth_rebase_parser = subparsers.add_parser(
@@ -774,7 +776,7 @@ if args.command == 'merge_pr':
         if args.rebase:
             link_pr(args.org, args.repo, args.pr_number, 'link_pr', args.no_issue)
         else:
-            squash_pr(args.org, args.repo, args.pr_number, args.no_issue)
+            squash_pr(args.org, args.repo, args.pr_number, args.title, args.no_issue)
         log_pr(args.org, args.repo, args.pr_number)
         if not args.no_push:
             push_pr(args.org, args.repo, args.pr_number)
