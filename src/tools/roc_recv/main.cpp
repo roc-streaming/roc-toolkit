@@ -218,7 +218,17 @@ int main(int argc, char** argv) {
     case resampler_profile_arg_high:
         receiver_config.session_defaults.resampler.profile = audio::ResamplerProfile_High;
         break;
+    default:
+        break;
+    }
 
+    switch (args.plc_arg) {
+    case plc_arg_none:
+        receiver_config.session_defaults.plc.backend = audio::PlcBackend_None;
+        break;
+    case plc_arg_beep:
+        receiver_config.session_defaults.plc.backend = audio::PlcBackend_Beep;
+        break;
     default:
         break;
     }

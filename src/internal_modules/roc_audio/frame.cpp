@@ -31,6 +31,10 @@ unsigned Frame::flags() const {
     return flags_;
 }
 
+bool Frame::has_flags(unsigned flags) const {
+    return (flags_ & flags) != 0;
+}
+
 void Frame::set_flags(unsigned flags) {
     flags_ = (uint16_t)flags;
 }
@@ -153,9 +157,9 @@ void Frame::set_capture_timestamp(core::nanoseconds_t capture_ts) {
 
 void Frame::print() const {
     char flags_str[] = {
-        !(flags_ & HasSignal) ? 'b' : '.', // b=blank
-        (flags_ & HasGaps) ? 'i' : '.',    // i=incomplete
-        (flags_ & HasDrops) ? 'd' : '.',   // d=drops
+        (flags_ & HasSignal) ? 's' : '-',
+        (flags_ & HasGaps) ? 'g' : '-',
+        (flags_ & HasDrops) ? 'd' : '-',
         '\0',
     };
 

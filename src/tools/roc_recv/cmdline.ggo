@@ -68,6 +68,9 @@ section "Options"
     option "resampler-profile" - "Resampler profile"
         values="low","medium","high" default="medium" enum optional
 
+    option "plc" - "Which PLC algorithm to use"
+        values="none","beep" default="none" enum optional
+
     option "oneshot" 1 "Exit when last connected client disconnects"
         flag off
 

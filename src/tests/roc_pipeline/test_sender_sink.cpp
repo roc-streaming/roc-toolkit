@@ -170,9 +170,10 @@ TEST_GROUP(sender_sink) {
         return config;
     }
 
-    void init(int input_sample_rate, audio::ChannelMask input_channels,
-              audio::PcmFormat input_format, int packet_sample_rate,
-              audio::ChannelMask packet_channels, audio::PcmFormat packet_format) {
+    void init_with_specs(int input_sample_rate, audio::ChannelMask input_channels,
+                         audio::PcmFormat input_format, int packet_sample_rate,
+                         audio::ChannelMask packet_channels,
+                         audio::PcmFormat packet_format) {
         input_sample_spec.set_sample_rate((size_t)input_sample_rate);
         input_sample_spec.set_sample_format(audio::SampleFormat_Pcm);
         input_sample_spec.set_pcm_format(input_format);
@@ -196,14 +197,14 @@ TEST_GROUP(sender_sink) {
         dst_addr2 = test::new_address(22);
     }
 
-    void init_default() {
-        init(SampleRate, Chans_Stereo, Format_Raw, SampleRate, Chans_Stereo,
-             Format_S16_Be);
+    void init_with_defaults() {
+        init_with_specs(SampleRate, Chans_Stereo, Format_Raw, SampleRate, Chans_Stereo,
+                        Format_S16_Be);
     }
 };
 
 TEST(sender_sink, basic) {
-    init_default();
+    init_with_defaults();
 
     packet::FifoQueue queue;
 
@@ -239,7 +240,7 @@ TEST(sender_sink, frame_size_small) {
         ManySmallFrames = SmallFramesPerPacket * 20
     };
 
-    init_default();
+    init_with_defaults();
 
     packet::FifoQueue queue;
 
@@ -275,7 +276,7 @@ TEST(sender_sink, frame_size_large) {
         ManyLargeFrames = 20
     };
 
-    init_default();
+    init_with_defaults();
 
     packet::FifoQueue queue;
 
@@ -310,7 +311,7 @@ TEST(sender_sink, channel_mapping_stereo_to_mono) {
     const audio::PcmFormat InputFormat = Format_Raw;
     const audio::PcmFormat PacketFormat = Format_S16_Be;
 
-    init(Rate, InputChans, InputFormat, Rate, PacketChans, PacketFormat);
+    init_with_specs(Rate, InputChans, InputFormat, Rate, PacketChans, PacketFormat);
 
     packet::FifoQueue queue;
 
@@ -345,7 +346,7 @@ TEST(sender_sink, channel_mapping_mono_to_stereo) {
     const audio::PcmFormat InputFormat = Format_Raw;
     const audio::PcmFormat PacketFormat = Format_S16_Be;
 
-    init(Rate, InputChans, InputFormat, Rate, PacketChans, PacketFormat);
+    init_with_specs(Rate, InputChans, InputFormat, Rate, PacketChans, PacketFormat);
 
     packet::FifoQueue queue;
 
@@ -380,7 +381,7 @@ TEST(sender_sink, sample_rate_mapping) {
     const audio::PcmFormat InputFormat = Format_Raw;
     const audio::PcmFormat PacketFormat = Format_S16_Be;
 
-    init(InputRate, Chans, InputFormat, PacketRate, Chans, PacketFormat);
+    init_with_specs(InputRate, Chans, InputFormat, PacketRate, Chans, PacketFormat);
 
     packet::FifoQueue queue;
 
@@ -415,7 +416,7 @@ TEST(sender_sink, format_mapping_s16) {
     const audio::PcmFormat InputFormat = Format_S16_Ne;
     const audio::PcmFormat PacketFormat = Format_S16_Be;
 
-    init(Rate, Chans, InputFormat, Rate, Chans, PacketFormat);
+    init_with_specs(Rate, Chans, InputFormat, Rate, Chans, PacketFormat);
 
     packet::FifoQueue queue;
 
@@ -449,7 +450,7 @@ TEST(sender_sink, format_mapping_s32) {
     const audio::PcmFormat InputFormat = Format_S32_Ne;
     const audio::PcmFormat PacketFormat = Format_S16_Be;
 
-    init(Rate, Chans, InputFormat, Rate, Chans, PacketFormat);
+    init_with_specs(Rate, Chans, InputFormat, Rate, Chans, PacketFormat);
 
     packet::FifoQueue queue;
 
@@ -479,7 +480,7 @@ TEST(sender_sink, format_mapping_s32) {
 
 // Check how sender sets CTS of packets based on CTS of frames written to it.
 TEST(sender_sink, timestamp_mapping) {
-    init_default();
+    init_with_defaults();
 
     packet::FifoQueue queue;
 
@@ -521,7 +522,8 @@ TEST(sender_sink, timestamp_mapping_remixing) {
     const audio::PcmFormat InputFormat = Format_S16_Ne;
     const audio::PcmFormat PacketFormat = Format_S16_Be;
 
-    init(InputRate, InputChans, InputFormat, PacketRate, PacketChans, PacketFormat);
+    init_with_specs(InputRate, InputChans, InputFormat, PacketRate, PacketChans,
+                    PacketFormat);
 
     packet::FifoQueue queue;
 
@@ -581,7 +583,7 @@ IGNORE_TEST(sender_sink, metrics_truncation) {
 TEST(sender_sink, metrics_feedback) {
     enum { MaxParties = 10 };
 
-    init_default();
+    init_with_defaults();
 
     packet::FifoQueue queue;
 
@@ -706,7 +708,7 @@ TEST(sender_sink, metrics_feedback) {
 TEST(sender_sink, reports_no_receivers) {
     enum { MaxParties = 10 };
 
-    init_default();
+    init_with_defaults();
 
     packet::FifoQueue queue;
 
@@ -772,7 +774,7 @@ TEST(sender_sink, reports_no_receivers) {
 TEST(sender_sink, reports_one_receiver) {
     enum { MaxParties = 10 };
 
-    init_default();
+    init_with_defaults();
 
     packet::FifoQueue queue;
 
@@ -858,7 +860,7 @@ TEST(sender_sink, reports_one_receiver) {
 TEST(sender_sink, reports_two_receivers) {
     enum { MaxParties = 10 };
 
-    init_default();
+    init_with_defaults();
 
     packet::FifoQueue queue;
 

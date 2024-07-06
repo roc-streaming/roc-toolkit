@@ -216,6 +216,8 @@ TEST_GROUP(receiver_source) {
     packet::FecScheme fec_scheme;
     fec::BlockWriterConfig fec_config;
 
+    audio::PlcBackend plc_backend;
+
     ReceiverSourceConfig make_custom_config(int target_latency, int latency_tolerance,
                                             int watchdog_timeout, int watchdog_warmup) {
         ReceiverSourceConfig config;
@@ -237,6 +239,8 @@ TEST_GROUP(receiver_source) {
         config.session_defaults.watchdog.warmup_duration =
             watchdog_warmup * core::Second / (int)output_sample_spec.sample_rate();
 
+        config.session_defaults.plc.backend = plc_backend;
+
         config.common.rtcp.report_interval = ReportInterval * core::Second / SampleRate;
         config.common.rtcp.inactivity_timeout = ReportTimeout * core::Second / SampleRate;
 
@@ -251,9 +255,10 @@ TEST_GROUP(receiver_source) {
         return make_custom_config(Latency, LatencyTolerance, Timeout, Warmup);
     }
 
-    void init(int output_sample_rate, audio::ChannelMask output_channels,
-              audio::PcmFormat output_format, int packet_sample_rate,
-              audio::ChannelMask packet_channels, audio::PcmFormat packet_format) {
+    void init_with_specs(int output_sample_rate, audio::ChannelMask output_channels,
+                         audio::PcmFormat output_format, int packet_sample_rate,
+                         audio::ChannelMask packet_channels,
+                         audio::PcmFormat packet_format) {
         output_sample_spec.set_sample_rate((size_t)output_sample_rate);
         output_sample_spec.set_sample_format(audio::SampleFormat_Pcm);
         output_sample_spec.set_pcm_format(output_format);
@@ -290,11 +295,19 @@ TEST_GROUP(receiver_source) {
 
         fec_config.n_source_packets = SourcePacketsInBlock;
         fec_config.n_repair_packets = RepairPacketsInBlock;
+
+        plc_backend = audio::PlcBackend_None;
     }
 
-    void init_default() {
-        init(SampleRate, Chans_Stereo, Format_Raw, SampleRate, Chans_Stereo,
-             Format_S16_Be);
+    void init_with_defaults() {
+        init_with_specs(SampleRate, Chans_Stereo, Format_Raw, SampleRate, Chans_Stereo,
+                        Format_S16_Be);
+    }
+
+    void init_with_plc(audio::PlcBackend backend) {
+        init_with_defaults();
+
+        plc_backend = backend;
     }
 
     bool fec_supported() {
@@ -303,7 +316,7 @@ TEST_GROUP(receiver_source) {
 };
 
 TEST(receiver_source, no_sessions) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -321,7 +334,7 @@ TEST(receiver_source, no_sessions) {
 }
 
 TEST(receiver_source, one_session) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -356,7 +369,7 @@ TEST(receiver_source, one_session) {
 TEST(receiver_source, one_session_long_run) {
     enum { NumIterations = 10 };
 
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -393,7 +406,7 @@ TEST(receiver_source, one_session_long_run) {
 // Check how receiver accumulates packets in jitter buffer
 // before starting playback.
 TEST(receiver_source, initial_latency) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -436,7 +449,7 @@ TEST(receiver_source, initial_latency) {
 
 // Timeout expires during initial latency accumulation.
 TEST(receiver_source, initial_latency_timeout) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -472,7 +485,7 @@ TEST(receiver_source, initial_latency_timeout) {
 
 // Timeout expires during playback.
 TEST(receiver_source, no_playback_timeout) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -514,7 +527,7 @@ TEST(receiver_source, no_playback_timeout_smaller_than_latency) {
         LargeWarmup = LargeLatency,
     };
 
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(
         make_custom_config(LargeLatency, LatencyTolerance, Timeout, LargeWarmup),
@@ -587,7 +600,7 @@ TEST(receiver_source, latency_lower_bound) {
         LargeTimeout = Latency * 100,
     };
 
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(
         make_custom_config(Latency, SmallTolerance, LargeTimeout, Warmup), processor_map,
@@ -643,7 +656,7 @@ TEST(receiver_source, latency_upper_bound) {
         LargeTimeout = Latency * 100,
     };
 
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(
         make_custom_config(Latency, SmallTolerance, LargeTimeout, Warmup), processor_map,
@@ -708,7 +721,7 @@ TEST(receiver_source, latency_upper_bound) {
 // Check how receiver trims incoming queue if initially it receives more
 // packets than configured jitter buffer size.
 TEST(receiver_source, initial_trim) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -743,7 +756,7 @@ TEST(receiver_source, initial_trim) {
 }
 
 TEST(receiver_source, two_sessions_synchronous) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -783,7 +796,7 @@ TEST(receiver_source, two_sessions_synchronous) {
 }
 
 TEST(receiver_source, two_sessions_overlapping) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -836,7 +849,7 @@ TEST(receiver_source, two_sessions_overlapping) {
 }
 
 TEST(receiver_source, two_sessions_two_endpoints) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -880,7 +893,7 @@ TEST(receiver_source, two_sessions_two_endpoints) {
 }
 
 TEST(receiver_source, two_sessions_same_address_same_stream) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -925,7 +938,7 @@ TEST(receiver_source, two_sessions_same_address_same_stream) {
 }
 
 TEST(receiver_source, two_sessions_same_address_different_streams) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -972,7 +985,7 @@ TEST(receiver_source, two_sessions_same_address_different_streams) {
 }
 
 TEST(receiver_source, seqnum_wrap) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -1005,7 +1018,7 @@ TEST(receiver_source, seqnum_wrap) {
 TEST(receiver_source, seqnum_small_jump) {
     enum { SmallJump = 5 };
 
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -1046,7 +1059,7 @@ TEST(receiver_source, seqnum_small_jump) {
 
 // Receiver should terminate session if seqnum jumped too far.
 TEST(receiver_source, seqnum_large_jump) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -1093,7 +1106,7 @@ TEST(receiver_source, seqnum_large_jump) {
 TEST(receiver_source, seqnum_reorder) {
     enum { ReorderWindow = Latency / SamplesPerPacket };
 
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -1132,7 +1145,7 @@ TEST(receiver_source, seqnum_reorder) {
 TEST(receiver_source, seqnum_late) {
     enum { DelayedPackets = 5 };
 
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -1191,7 +1204,7 @@ TEST(receiver_source, seqnum_late) {
 }
 
 TEST(receiver_source, timestamp_wrap) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -1226,7 +1239,7 @@ TEST(receiver_source, timestamp_wrap) {
 TEST(receiver_source, timestamp_small_jump) {
     enum { ShiftedPackets = 5 };
 
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -1276,7 +1289,7 @@ TEST(receiver_source, timestamp_small_jump) {
 
 // Receiver should terminate session if RTP timestamp jumped too far.
 TEST(receiver_source, timestamp_large_jump) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -1318,7 +1331,7 @@ TEST(receiver_source, timestamp_large_jump) {
 TEST(receiver_source, timestamp_overlap) {
     enum { OverlappedSamples = SamplesPerPacket / 2 };
 
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -1351,7 +1364,7 @@ TEST(receiver_source, timestamp_overlap) {
 }
 
 TEST(receiver_source, timestamp_reorder) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -1408,7 +1421,7 @@ TEST(receiver_source, timestamp_reorder) {
 TEST(receiver_source, timestamp_late) {
     enum { DelayedPackets = 5 };
 
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -1478,7 +1491,7 @@ TEST(receiver_source, packet_size_small) {
         ManySmallPackets = Latency / SamplesPerSmallPacket * 10,
     };
 
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -1515,7 +1528,7 @@ TEST(receiver_source, packet_size_large) {
         ManyLargePackets = Latency / SamplesPerLargePacket * 10,
     };
 
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -1557,7 +1570,7 @@ TEST(receiver_source, packet_size_variable) {
         NumIterations = Latency / SamplesPerTwoPackets * 10,
     };
 
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -1600,7 +1613,7 @@ TEST(receiver_source, variable_size_frames_and_packets) {
         NumFrames = 100
     };
 
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -1652,7 +1665,7 @@ TEST(receiver_source, frequent_losses_small_packets) {
         LossFreq = 3,
     };
 
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -1723,7 +1736,7 @@ TEST(receiver_source, frequent_losses_variable_size_packets) {
         NumFrames = 100
     };
 
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -1801,7 +1814,7 @@ TEST(receiver_source, frequent_losses_variable_size_packets) {
 
 // Receiver should ignore corrupted packets and don't create session.
 TEST(receiver_source, corrupted_packets_new_session) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -1837,7 +1850,7 @@ TEST(receiver_source, corrupted_packets_new_session) {
 
 // Receiver should ignore corrupted packets and don't pass them to session.
 TEST(receiver_source, corrupted_packets_existing_session) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -1906,7 +1919,7 @@ TEST(receiver_source, delayed_reordered_packets) {
         P4 = LatencyPackets + 3,
     };
 
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -1964,9 +1977,57 @@ TEST(receiver_source, delayed_reordered_packets) {
     frame_reader.read_samples(SamplesPerPacket, 1, output_sample_spec);
 }
 
+// Check how PLC fills gaps caused by packet losses.
+TEST(receiver_source, losses_plc) {
+    enum {
+        LatencyPackets = Latency / SamplesPerPacket,
+        LossFreq = 3,
+    };
+
+    init_with_plc(audio::PlcBackend_Beep);
+
+    ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
+                            packet_pool, packet_buffer_pool, frame_pool,
+                            frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
+
+    ReceiverSlot* slot = create_slot(receiver);
+    packet::IWriter* endpoint_writer =
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
+
+    test::FrameReader frame_reader(receiver, frame_factory);
+
+    test::PacketWriter packet_writer(arena, *endpoint_writer, encoding_map,
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
+
+    packet_writer.write_packets(LatencyPackets, SamplesPerPacket, packet_sample_spec);
+
+    for (size_t np = 0; np < ManyPackets; np++) {
+        for (size_t nf = 0; nf < FramesPerPacket; nf++) {
+            refresh_source(receiver, frame_reader.refresh_ts());
+
+            if (np > LatencyPackets && (np - LatencyPackets) % LossFreq != 0) {
+                frame_reader.read_samples(SamplesPerFrame, 1, output_sample_spec);
+            } else {
+                // there are always non-zero samples because PLC fills losses
+                frame_reader.read_nonzero_samples(SamplesPerFrame, output_sample_spec);
+            }
+
+            UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
+        }
+
+        if (np % LossFreq != 0) {
+            packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
+        } else {
+            packet_writer.skip_packets(1, SamplesPerPacket, packet_sample_spec);
+        }
+    }
+}
+
 // Enable FEC, deliver all packets without losses.
 TEST(receiver_source, fec_no_losses) {
-    init_default();
+    init_with_defaults();
 
     if (!fec_supported()) {
         return;
@@ -2012,7 +2073,7 @@ TEST(receiver_source, fec_lose_source_packets) {
         LossFreq = 3
     };
 
-    init_default();
+    init_with_defaults();
 
     if (!fec_supported()) {
         return;
@@ -2072,7 +2133,7 @@ TEST(receiver_source, fec_lose_source_packets) {
 
 // Enable FEC and lose all repair packets.
 TEST(receiver_source, fec_lose_repair_packets) {
-    init_default();
+    init_with_defaults();
 
     if (!fec_supported()) {
         return;
@@ -2120,7 +2181,7 @@ TEST(receiver_source, fec_delay_source_packets) {
     CHECK((InitialBlocks - 1) * SourcePacketsInBlock * SamplesPerPacket < Latency);
     CHECK(InitialBlocks * SourcePacketsInBlock * SamplesPerPacket > Latency);
 
-    init_default();
+    init_with_defaults();
 
     if (!fec_supported()) {
         return;
@@ -2237,7 +2298,7 @@ TEST(receiver_source, fec_delay_repair_packets) {
     CHECK((InitialBlocks - 1) * SourcePacketsInBlock * SamplesPerPacket < Latency);
     CHECK(InitialBlocks * SourcePacketsInBlock * SamplesPerPacket > Latency);
 
-    init_default();
+    init_with_defaults();
 
     if (!fec_supported()) {
         return;
@@ -2343,7 +2404,7 @@ TEST(receiver_source, fec_delay_repair_packets) {
 }
 
 TEST(receiver_source, soft_read_one_session) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -2398,7 +2459,7 @@ TEST(receiver_source, soft_read_one_session) {
 }
 
 TEST(receiver_source, soft_read_two_sessions) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -2468,7 +2529,7 @@ TEST(receiver_source, soft_read_two_sessions) {
 }
 
 TEST(receiver_source, soft_read_before_after) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -2529,7 +2590,7 @@ TEST(receiver_source, soft_read_before_after) {
 }
 
 TEST(receiver_source, soft_read_fec) {
-    init_default();
+    init_with_defaults();
 
     if (!fec_supported()) {
         return;
@@ -2591,7 +2652,7 @@ TEST(receiver_source, soft_read_fec) {
 }
 
 TEST(receiver_source, soft_read_delays) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -2663,7 +2724,7 @@ TEST(receiver_source, soft_read_delays_fec) {
     CHECK((InitialBlocks - 1) * SourcePacketsInBlock * SamplesPerPacket < Latency);
     CHECK(InitialBlocks * SourcePacketsInBlock * SamplesPerPacket > Latency);
 
-    init_default();
+    init_with_defaults();
 
     if (!fec_supported()) {
         return;
@@ -2774,7 +2835,7 @@ TEST(receiver_source, big_read) {
 
     CHECK(SamplesPerBigFrame > frame_factory.raw_buffer_size());
 
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(
         make_custom_config(Latency, LatencyTolerance * 100, Timeout * 100, Warmup),
@@ -2829,7 +2890,7 @@ TEST(receiver_source, channel_mapping_stereo_to_mono) {
     const audio::PcmFormat OutputFormat = Format_Raw;
     const audio::PcmFormat PacketFormat = Format_S16_Be;
 
-    init(Rate, OutputChans, OutputFormat, Rate, PacketChans, PacketFormat);
+    init_with_specs(Rate, OutputChans, OutputFormat, Rate, PacketChans, PacketFormat);
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -2868,7 +2929,7 @@ TEST(receiver_source, channel_mapping_mono_to_stereo) {
     const audio::PcmFormat OutputFormat = Format_Raw;
     const audio::PcmFormat PacketFormat = Format_S16_Be;
 
-    init(Rate, OutputChans, OutputFormat, Rate, PacketChans, PacketFormat);
+    init_with_specs(Rate, OutputChans, OutputFormat, Rate, PacketChans, PacketFormat);
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -2907,7 +2968,7 @@ TEST(receiver_source, sample_rate_mapping) {
     const audio::PcmFormat OutputFormat = Format_Raw;
     const audio::PcmFormat PacketFormat = Format_S16_Be;
 
-    init(OutputRate, Chans, OutputFormat, PacketRate, Chans, PacketFormat);
+    init_with_specs(OutputRate, Chans, OutputFormat, PacketRate, Chans, PacketFormat);
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -2948,7 +3009,7 @@ TEST(receiver_source, format_mapping_s16) {
     const audio::PcmFormat OutputFormat = Format_S16_Ne;
     const audio::PcmFormat PacketFormat = Format_S16_Be;
 
-    init(Rate, Chans, OutputFormat, Rate, Chans, PacketFormat);
+    init_with_specs(Rate, Chans, OutputFormat, Rate, Chans, PacketFormat);
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -2986,7 +3047,7 @@ TEST(receiver_source, format_mapping_s32) {
     const audio::PcmFormat OutputFormat = Format_S32_Ne;
     const audio::PcmFormat PacketFormat = Format_S16_Be;
 
-    init(Rate, Chans, OutputFormat, Rate, Chans, PacketFormat);
+    init_with_specs(Rate, Chans, OutputFormat, Rate, Chans, PacketFormat);
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -3020,7 +3081,7 @@ TEST(receiver_source, format_mapping_s32) {
 
 // When there are no control packets, receiver always sets CTS of frames to zero.
 TEST(receiver_source, timestamp_mapping_no_control_packets) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -3067,7 +3128,7 @@ TEST(receiver_source, timestamp_mapping_no_control_packets) {
 // When there is one control packet, receiver sets CTS of frames according
 // to received mapping.
 TEST(receiver_source, timestamp_mapping_one_control_packet) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -3132,7 +3193,7 @@ TEST(receiver_source, timestamp_mapping_one_control_packet) {
 // When there are regular control packets, receiver updates CTS of frames according
 // to received mapping.
 TEST(receiver_source, timestamp_mapping_periodic_control_packets) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -3207,7 +3268,8 @@ TEST(receiver_source, timestamp_mapping_remixing) {
     const audio::PcmFormat OutputFormat = Format_S16_Ne;
     const audio::PcmFormat PacketFormat = Format_S16_Be;
 
-    init(OutputRate, OutputChans, OutputFormat, PacketRate, PacketChans, PacketFormat);
+    init_with_specs(OutputRate, OutputChans, OutputFormat, PacketRate, PacketChans,
+                    PacketFormat);
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -3288,7 +3350,7 @@ TEST(receiver_source, timestamp_mapping_remixing) {
 TEST(receiver_source, metrics_participants) {
     enum { MaxParties = 10 };
 
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -3403,7 +3465,7 @@ TEST(receiver_source, metrics_participants) {
 TEST(receiver_source, metrics_truncation) {
     enum { MaxParties = 10 };
 
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -3511,7 +3573,7 @@ IGNORE_TEST(receiver_source, metrics_jitter) {
 TEST(receiver_source, metrics_niq_latency) {
     enum { MaxParties = 10 };
 
-    init_default();
+    init_with_defaults();
 
     const core::nanoseconds_t virtual_niq_latency =
         output_sample_spec.samples_per_chan_2_ns(Latency);
@@ -3566,7 +3628,7 @@ TEST(receiver_source, metrics_niq_latency) {
 TEST(receiver_source, metrics_e2e_latency) {
     enum { MaxParties = 10 };
 
-    init_default();
+    init_with_defaults();
 
     const core::nanoseconds_t virtual_e2e_latency = core::Millisecond * 555;
 
@@ -3653,7 +3715,7 @@ TEST(receiver_source, metrics_e2e_latency) {
 
 // Check that no reports are generated by receiver when there are no senders.
 TEST(receiver_source, reports_no_senders) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -3683,7 +3745,7 @@ TEST(receiver_source, reports_no_senders) {
 
 // Check reports generated by receiver when there is one sender.
 TEST(receiver_source, reports_one_sender) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -3774,7 +3836,7 @@ TEST(receiver_source, reports_one_sender) {
 // Check reports generated by receiver when there are two unicast senders.
 // Receiver should generate separate report for each sender.
 TEST(receiver_source, reports_two_senders_unicast) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -3905,7 +3967,7 @@ TEST(receiver_source, reports_two_senders_unicast) {
 // Check reports generated by receiver when there are two senders in multicast session.
 // Receiver should generate single combined report for all senders.
 TEST(receiver_source, reports_two_senders_multicast) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -4013,7 +4075,7 @@ TEST(receiver_source, reports_two_senders_multicast) {
 }
 
 TEST(receiver_source, pipeline_state) {
-    init_default();
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,

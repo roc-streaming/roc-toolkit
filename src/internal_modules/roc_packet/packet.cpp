@@ -17,15 +17,15 @@ Packet::Packet(core::IPool& packet_pool)
     , flags_(0) {
 }
 
-void Packet::add_flags(unsigned fl) {
-    if (flags_ & fl) {
+void Packet::add_flags(unsigned flags) {
+    if (flags_ & flags) {
         roc_panic("packet: can't add flag more than once");
     }
-    flags_ |= fl;
+    flags_ |= flags;
 }
 
-bool Packet::has_flags(unsigned fl) const {
-    return (flags_ & fl) != 0;
+bool Packet::has_flags(unsigned flags) const {
+    return (flags_ & flags) != 0;
 }
 
 unsigned Packet::flags() const {

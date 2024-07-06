@@ -29,7 +29,8 @@ public:
         , pos_(0)
         , size_(0)
         , timestamp_(-1)
-        , max_duration_(0)
+        , limit_duration_hard_(0)
+        , limit_duration_soft_(0)
         , status_(status::NoStatus)
         , drain_status_(status::NoStatus)
         , last_status_(status::NoStatus)
@@ -50,8 +51,10 @@ public:
             requested_duration,
             packet::stream_timestamp_t((size_ - pos_) / sample_spec_.num_channels()));
 
-        if (max_duration_ != 0) {
-            duration = std::min(duration, max_duration_);
+        const packet::stream_timestamp_t limit_duration =
+            mode == ModeHard ? limit_duration_hard_ : limit_duration_soft_;
+        if (limit_duration != 0) {
+            duration = std::min(duration, limit_duration);
         }
 
         if (duration == 0) {
@@ -95,8 +98,18 @@ public:
         drain_status_ = status;
     }
 
-    void set_limit(packet::stream_timestamp_t max_duration) {
-        max_duration_ = max_duration;
+    void set_limit(packet::stream_timestamp_t limit_duration) {
+        limit_duration_hard_ = limit_duration;
+        limit_duration_soft_ = limit_duration;
+    }
+
+    void set_limit_for_mode(packet::stream_timestamp_t limit_duration,
+                            FrameReadMode mode) {
+        if (mode == ModeHard) {
+            limit_duration_hard_ = limit_duration;
+        } else {
+            limit_duration_soft_ = limit_duration;
+        }
     }
 
     void enable_timestamps(const core::nanoseconds_t base_timestamp) {
@@ -156,7 +169,8 @@ private:
 
     core::nanoseconds_t timestamp_;
 
-    packet::stream_timestamp_t max_duration_;
+    packet::stream_timestamp_t limit_duration_hard_;
+    packet::stream_timestamp_t limit_duration_soft_;
 
     status::StatusCode status_;
     status::StatusCode drain_status_;

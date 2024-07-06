@@ -158,9 +158,7 @@ private:
 
     core::ScopedPtr<audio::IFrameEncoder> payload_encoder_;
     core::Optional<audio::Packetizer> packetizer_;
-
     core::Optional<audio::ChannelMapperWriter> channel_mapper_writer_;
-
     core::Optional<audio::ResamplerWriter> resampler_writer_;
     core::SharedPtr<audio::IResampler> resampler_;
 

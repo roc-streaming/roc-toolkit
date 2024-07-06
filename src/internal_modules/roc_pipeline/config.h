@@ -15,6 +15,7 @@
 #include "roc_address/protocol.h"
 #include "roc_audio/feedback_monitor.h"
 #include "roc_audio/latency_tuner.h"
+#include "roc_audio/plc_config.h"
 #include "roc_audio/profiler.h"
 #include "roc_audio/resampler_config.h"
 #include "roc_audio/sample_spec.h"
@@ -157,6 +158,9 @@ struct ReceiverSessionConfig {
 
     //! FEC decoder parameters.
     fec::CodecConfig fec_decoder;
+
+    //! PLC parameters.
+    audio::PlcConfig plc;
 
     //! Latency parameters.
     audio::LatencyConfig latency;

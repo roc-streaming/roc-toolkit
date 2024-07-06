@@ -117,14 +117,14 @@ Resampler backend  (possible values=\(dqdefault\(dq, \(dqbuiltin\(dq, \(dqspeex\
 .BI \-\-resampler\-profile\fB= ENUM
 Resampler profile  (possible values=\(dqlow\(dq, \(dqmedium\(dq, \(dqhigh\(dq default=\(gamedium\(aq)
 .TP
+.BI \-\-plc\fB= ENUM
+Which PLC algorithm to use  (possible values=\(dqnone\(dq, \(dqbeep\(dq default=\(ganone\(aq)
+.TP
 .B  \-1\fP,\fB  \-\-oneshot
 Exit when last connected client disconnects (default=off)
 .TP
 .B  \-\-profiling
 Enable self\-profiling  (default=off)
-.TP
-.B  \-\-beep
-Enable beeping on packet loss  (default=off)
 .TP
 .BI \-\-color\fB= ENUM
 Set colored logging mode for stderr output (possible values=\(dqauto\(dq, \(dqalways\(dq, \(dqnever\(dq default=\(gaauto\(aq)
@@ -155,7 +155,7 @@ The list of supported protocols can be retrieved using \fB\-\-list\-supported\fP
 .sp
 The host field should be either FQDN (domain name), or IPv4 address, or IPv6 address in square brackets. It may be \fB0.0.0.0\fP (for IPv4) or \fB[::]\fP (for IPv6) to bind endpoint to all network interfaces.
 .sp
-The port field can be omitted if the protocol defines standard port. Otherwise, it is mandatory. It may be set to zero to bind endpoint to a radomly chosen ephemeral port.
+The port field can be omitted if the protocol defines standard port. Otherwise, it is mandatory. It may be set to zero to bind endpoint to a randomly chosen ephemeral port.
 .sp
 The path and query fields are allowed only for protocols that support them, e.g. for RTSP.
 .sp

@@ -49,6 +49,7 @@ ReceiverSessionConfig::ReceiverSessionConfig()
 }
 
 void ReceiverSessionConfig::deduce_defaults(audio::ProcessorMap& processor_map) {
+    plc.deduce_defaults();
     latency.deduce_defaults(DefaultLatency, true);
     watchdog.deduce_defaults(latency.target_latency);
     resampler.deduce_defaults(processor_map, latency.tuner_backend,

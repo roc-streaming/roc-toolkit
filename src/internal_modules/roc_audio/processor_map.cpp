@@ -7,6 +7,7 @@
  */
 
 #include "roc_audio/processor_map.h"
+#include "roc_audio/beep_plc.h"
 #include "roc_audio/builtin_resampler.h"
 #include "roc_audio/decimation_resampler.h"
 #include "roc_core/log.h"
@@ -45,11 +46,21 @@ IResampler* decim_resampler_ctor_fn(void* backend_owner,
         DecimationResampler(inner_resampler, arena, frame_factory, in_spec, out_spec);
 }
 
+template <class T>
+IPlc* plc_ctor_fn(void* backend_owner,
+                  core::IArena& arena,
+                  FrameFactory& frame_factory,
+                  const PlcConfig& config,
+                  const SampleSpec& sample_spec) {
+    return new (arena) T(arena, frame_factory, config, sample_spec);
+}
+
 } // namespace
 
 ProcessorMap::ProcessorMap(core::IArena& arena)
     : node_pool_("processor_node_pool", arena)
     , node_map_(arena) {
+    // resampler
 #ifdef ROC_TARGET_SPEEXDSP
     {
         Node* node = allocate_builtin_node_();
@@ -71,6 +82,15 @@ ProcessorMap::ProcessorMap(core::IArena& arena)
         node->type = NodeType_Resampler;
         node->id = ResamplerBackend_Builtin;
         node->ctor_fn = (void*)(ResamplerFunc)&resampler_ctor_fn<BuiltinResampler>;
+        register_builtin_node_(node);
+    }
+
+    // plc
+    {
+        Node* node = allocate_builtin_node_();
+        node->type = NodeType_Plc;
+        node->id = PlcBackend_Beep;
+        node->ctor_fn = (void*)(PlcFunc)&plc_ctor_fn<BeepPlc>;
         register_builtin_node_(node);
     }
 }
@@ -101,6 +121,93 @@ IResampler* ProcessorMap::new_resampler(core::IArena& arena,
     roc_panic_if(!node->ctor_fn);
     return ((ResamplerFunc)node->ctor_fn)(node->owner, arena, frame_factory, config,
                                           in_spec, out_spec);
+}
+
+bool ProcessorMap::has_plc_backend(PlcBackend backend_id) const {
+    core::Mutex::Lock lock(mutex_);
+
+    return find_node_(NodeType_Plc, backend_id) != NULL;
+}
+
+status::StatusCode
+ProcessorMap::register_plc(int backend_id, void* backend_owner, PlcFunc ctor_fn) {
+    core::Mutex::Lock lock(mutex_);
+
+    roc_log(LogDebug, "processor map: registering plc backend: backend_id=%d",
+            backend_id);
+
+    if (backend_id < MinBackendId || backend_id > MaxBackendId) {
+        roc_log(LogError,
+                "processor map: failed to register plc backend:"
+                " invalid backend id: must be in range [%d; %d]",
+                MinBackendId, MaxBackendId);
+        return status::StatusBadArg;
+    }
+
+    if (find_node_(NodeType_Plc, backend_id)) {
+        roc_log(LogError,
+                "processor map: failed to register plc backend:"
+                " backend id %d already exists",
+                backend_id);
+        return status::StatusConflict;
+    }
+
+    if (!backend_owner) {
+        roc_log(LogError,
+                "processor map: failed to register plc backend:"
+                " backend owner is null");
+        return status::StatusBadArg;
+    }
+
+    if (!ctor_fn) {
+        roc_log(LogError,
+                "processor map: failed to register plc backend:"
+                " ctor function is null");
+        return status::StatusBadArg;
+    }
+
+    core::SharedPtr<Node> node = new (node_pool_) Node(node_pool_);
+    if (!node) {
+        roc_log(LogError,
+                "processor map: failed to register plc backend:"
+                " pool allocation failed");
+        return status::StatusNoMem;
+    }
+
+    node->type = NodeType_Plc;
+    node->id = backend_id;
+    node->owner = backend_owner;
+    node->ctor_fn = (void*)ctor_fn;
+
+    if (!node_map_.insert(*node)) {
+        roc_log(LogError,
+                "processor map: failed to register plc backend:"
+                " hashmap allocation failed");
+        return status::StatusNoMem;
+    }
+
+    return status::StatusOK;
+}
+
+IPlc* ProcessorMap::new_plc(core::IArena& arena,
+                            FrameFactory& frame_factory,
+                            const PlcConfig& config,
+                            const SampleSpec& sample_spec) {
+    core::SharedPtr<Node> node;
+
+    {
+        core::Mutex::Lock lock(mutex_);
+
+        if (!(node = find_node_(NodeType_Plc, config.backend))) {
+            roc_log(LogError, "processor map: unsupported plc backend: [%d] %s",
+                    config.backend, plc_backend_to_str((PlcBackend)config.backend));
+            return NULL;
+        }
+    }
+
+    roc_panic_if(!node->ctor_fn);
+    return ((PlcFunc)node->ctor_fn)(node->owner, arena, frame_factory, config,
+                                    sample_spec);
 }
 
 core::SharedPtr<ProcessorMap::Node> ProcessorMap::find_node_(NodeType type,

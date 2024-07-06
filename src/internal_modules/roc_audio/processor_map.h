@@ -13,7 +13,9 @@
 #define ROC_AUDIO_PROCESSOR_MAP_H_
 
 #include "roc_audio/frame_factory.h"
+#include "roc_audio/iplc.h"
 #include "roc_audio/iresampler.h"
+#include "roc_audio/plc_config.h"
 #include "roc_audio/resampler_config.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/allocation_policy.h"
@@ -58,15 +60,41 @@ public:
                               const SampleSpec& in_spec,
                               const SampleSpec& out_spec);
 
+    //! PLC factory function.
+    typedef IPlc* (*PlcFunc)(void* backend_owner,
+                             core::IArena& arena,
+                             FrameFactory& frame_factory,
+                             const PlcConfig& config,
+                             const SampleSpec& sample_spec);
+
+    //! Register custom PLC backend.
+    ROC_ATTR_NODISCARD status::StatusCode
+    register_plc(int backend_id, void* backend_owner, PlcFunc ctor_fn);
+
+    //! Check if given backend is supported.
+    bool has_plc_backend(PlcBackend backend_id) const;
+
+    //! Instantiate IPlc for given configuration.
+    //! The type depends on backend specified in @p config.
+    IPlc* new_plc(core::IArena& arena,
+                  FrameFactory& frame_factory,
+                  const PlcConfig& config,
+                  const SampleSpec& sample_spec);
+
 private:
     friend class core::Singleton<ProcessorMap>;
 
+    enum {
+        MinBackendId = 1000,
+        MaxBackendId = 9999,
+    };
 
     enum { PreallocatedNodes = 16 };
 
     enum NodeType {
         NodeType_Invalid,
         NodeType_Resampler,
+        NodeType_Plc,
     };
 
     struct NodeKey {

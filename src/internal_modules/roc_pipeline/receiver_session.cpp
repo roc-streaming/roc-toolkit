@@ -174,6 +174,45 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         }
         frm_reader = depacketizer_.get();
 
+        if (session_config.plc.backend != audio::PlcBackend_None) {
+            plc_.reset(
+                processor_map.new_plc(arena, frame_factory, session_config.plc, out_spec),
+                arena);
+            if (!plc_) {
+                init_status_ = status::StatusNoMem;
+                return;
+            }
+            if ((init_status_ = plc_->init_status()) != status::StatusOK) {
+                return;
+            }
+
+            if (plc_->sample_spec() != out_spec) {
+                plc_pre_mapper_.reset(new (plc_pre_mapper_) audio::PcmMapperReader(
+                    *frm_reader, frame_factory, out_spec, plc_->sample_spec()));
+                if ((init_status_ = plc_pre_mapper_->init_status()) != status::StatusOK) {
+                    return;
+                }
+                frm_reader = plc_pre_mapper_.get();
+            }
+
+            plc_reader_.reset(new (plc_reader_) audio::PlcReader(
+                *frm_reader, frame_factory, *plc_, plc_->sample_spec()));
+            if ((init_status_ = plc_reader_->init_status()) != status::StatusOK) {
+                return;
+            }
+            frm_reader = plc_reader_.get();
+
+            if (plc_->sample_spec() != out_spec) {
+                plc_post_mapper_.reset(new (plc_post_mapper_) audio::PcmMapperReader(
+                    *frm_reader, frame_factory, plc_->sample_spec(), out_spec));
+                if ((init_status_ = plc_post_mapper_->init_status())
+                    != status::StatusOK) {
+                    return;
+                }
+                frm_reader = plc_post_mapper_.get();
+            }
+        }
+
         if (session_config.watchdog.no_playback_timeout >= 0
             || session_config.watchdog.choppy_playback_timeout >= 0) {
             watchdog_.reset(new (watchdog_) audio::Watchdog(

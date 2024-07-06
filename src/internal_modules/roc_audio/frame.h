@@ -61,6 +61,9 @@ public:
     //! Get flags.
     unsigned flags() const;
 
+    //! Check if frame has all of the given flags.
+    bool has_flags(unsigned flags) const;
+
     //! Set flags.
     void set_flags(unsigned flags);
 

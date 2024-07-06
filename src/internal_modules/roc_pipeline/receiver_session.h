@@ -20,6 +20,8 @@
 #include "roc_audio/iframe_reader.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/latency_monitor.h"
+#include "roc_audio/pcm_mapper_reader.h"
+#include "roc_audio/plc_reader.h"
 #include "roc_audio/processor_map.h"
 #include "roc_audio/resampler_reader.h"
 #include "roc_audio/watchdog.h"
@@ -136,7 +138,6 @@ private:
 
     core::Optional<rtp::Filter> filter_;
     core::Optional<packet::DelayedReader> delayed_reader_;
-    core::Optional<audio::Watchdog> watchdog_;
 
     core::Optional<rtp::Parser> fec_parser_;
     core::ScopedPtr<fec::IBlockDecoder> fec_decoder_;
@@ -146,11 +147,14 @@ private:
     core::Optional<rtp::TimestampInjector> timestamp_injector_;
 
     core::Optional<audio::Depacketizer> depacketizer_;
-
+    core::Optional<audio::PcmMapperReader> plc_pre_mapper_;
+    core::ScopedPtr<audio::IPlc> plc_;
+    core::Optional<audio::PlcReader> plc_reader_;
+    core::Optional<audio::PcmMapperReader> plc_post_mapper_;
+    core::Optional<audio::Watchdog> watchdog_;
     core::Optional<audio::ChannelMapperReader> channel_mapper_reader_;
-
-    core::Optional<audio::ResamplerReader> resampler_reader_;
     core::SharedPtr<audio::IResampler> resampler_;
+    core::Optional<audio::ResamplerReader> resampler_reader_;
 
     core::Optional<audio::LatencyMonitor> latency_monitor_;
 

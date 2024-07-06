@@ -40,9 +40,9 @@ Options
 --latency-profile=ENUM        Latency tuning profile  (possible values="default", "responsive", "gradual", "intact" default=`default')
 --resampler-backend=ENUM      Resampler backend  (possible values="default", "builtin", "speex", "speexdec" default=`default')
 --resampler-profile=ENUM      Resampler profile  (possible values="low", "medium", "high" default=`medium')
+--plc=ENUM                    Which PLC algorithm to use  (possible values="none", "beep" default=`none')
 -1, --oneshot                 Exit when last connected client disconnects (default=off)
 --profiling                   Enable self-profiling  (default=off)
---beep                        Enable beeping on packet loss  (default=off)
 --color=ENUM                  Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
 
 Endpoint URI
@@ -66,7 +66,7 @@ The list of supported protocols can be retrieved using ``--list-supported`` opti
 
 The host field should be either FQDN (domain name), or IPv4 address, or IPv6 address in square brackets. It may be ``0.0.0.0`` (for IPv4) or ``[::]`` (for IPv6) to bind endpoint to all network interfaces.
 
-The port field can be omitted if the protocol defines standard port. Otherwise, it is mandatory. It may be set to zero to bind endpoint to a radomly chosen ephemeral port.
+The port field can be omitted if the protocol defines standard port. Otherwise, it is mandatory. It may be set to zero to bind endpoint to a randomly chosen ephemeral port.
 
 The path and query fields are allowed only for protocols that support them, e.g. for RTSP.
 

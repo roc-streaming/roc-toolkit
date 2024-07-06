@@ -58,7 +58,7 @@ public:
     //! Add flags.
     void add_flags(unsigned flags);
 
-    //! Check specific flag.
+    //! Check if packet has all of the given flags.
     bool has_flags(unsigned flags) const;
 
     //! Get flags.
