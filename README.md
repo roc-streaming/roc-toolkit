@@ -1,4 +1,4 @@
-![](docs/images/logo.png)
+![](docs/images/readme_logo.png)
 
 # Roc Toolkit: real-time audio streaming
 

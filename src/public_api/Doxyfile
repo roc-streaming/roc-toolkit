@@ -31,6 +31,7 @@ WARN_NO_PARAMDOC        = NO
 ENABLE_PREPROCESSING    = YES
 MACRO_EXPANSION         = YES
 EXPAND_ONLY_PREDEF      = YES
+
 PREDEFINED              = ROC_API= ROC_DOXYGEN=
 
 OUTPUT_DIRECTORY        = ../../build/docs/public_api

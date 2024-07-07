@@ -25,7 +25,8 @@ if GetOption('enable_doxygen'):
             build_dir='#build/docs/internal_modules',
             config='#src/internal_modules/Doxyfile',
             sources=(doc_env.GlobRecursive('#src/internal_modules', ['*.h', '*.dox']) +
-                doc_env.GlobRecursive('#docs/images', ['*'])),
+                     doc_env.GlobRecursive('#docs/images', ['*']) +
+                     [doc_env.File('#docs/doxygen_extras.css')]),
             werror=GetOption('enable_werror')),
         doc_env.Doxygen(
             build_dir='#build/docs/public_api',

@@ -60,7 +60,7 @@ html_title = '{} {}'.format(project, release)
 
 html_theme = 'nature'
 
-html_logo = '../images/logo80.png'
+html_logo = '../images/sphinx_logo.png'
 
 html_sidebars = {
    '**': ['globaltoc.html', 'searchbox.html'],
@@ -69,7 +69,7 @@ html_sidebars = {
 html_static_path = ['_static']
 
 html_css_files = [
-    'roc.css',
+    'sphinx_extras.css',
 ]
 
 html_js_files = [
