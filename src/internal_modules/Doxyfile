@@ -1,6 +1,6 @@
 PROJECT_NAME            = "Roc Toolkit internal modules"
 PROJECT_BRIEF           = "Roc Toolkit: real-time audio streaming"
-PROJECT_LOGO            = ../../docs/images/icon80.png
+PROJECT_LOGO            = ../../docs/images/doxygen_logo.png
 
 QUIET                   = YES
 RECURSIVE               = YES
@@ -13,7 +13,6 @@ EXCLUDE                 =                         \
     roc_core/target_posix/roc_core/cpu_traits.h
 
 FULL_PATH_NAMES         = YES
-SOURCE_BROWSER          = YES
 
 JAVADOC_AUTOBRIEF       = YES
 QT_AUTOBRIEF            = YES
@@ -46,14 +45,18 @@ PREDEFINED              =      \
 
 OUTPUT_DIRECTORY        = ../../build/docs/internal_modules
 HTML_OUTPUT             = ../../../docs/html/doxygen
-
-GENERATE_LATEX          = NO
-DOT_GRAPH_MAX_NODES     = 1000
+HTML_EXTRA_STYLESHEET   = ../../docs/doxygen_extras.css
 
 HTML_DYNAMIC_SECTIONS   = NO
 DISABLE_INDEX           = NO
 GENERATE_TREEVIEW       = YES
 SEARCHENGINE            = YES
+SOURCE_BROWSER          = YES
+DOT_GRAPH_MAX_NODES     = 1000
+
+GENERATE_XML            = NO
+GENERATE_HTML           = YES
+GENERATE_LATEX          = NO
 
 OUTPUT_LANGUAGE         = English
 DOXYFILE_ENCODING       = UTF-8

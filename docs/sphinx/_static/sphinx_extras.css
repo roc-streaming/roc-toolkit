@@ -72,3 +72,8 @@ table.align-default {
 table.align-center {
     margin-left: 0;
 }
+
+.logo {
+    width: 180px;
+    height: 90px;
+}
