@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
         return code;
     }
 
-    core::ScopedPtr<gengetopt_args_info, core::CustomAllocation> args_holder(
+    core::ScopedPtr<gengetopt_args_info, core::FuncAllocation> args_holder(
         &args, &cmdline_parser_free);
 
     core::Logger::instance().set_verbosity(args.verbose_given);

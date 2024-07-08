@@ -22,13 +22,13 @@
 namespace roc {
 namespace core {
 
-//! Unique ownrship pointer.
+//! Lexical scoped ownership pointer.
 //!
 //! @tparam T defines pointee type. It may be const.
 //! @tparam AllocationPolicy defies (de)allocation policy.
 //!
-//! When ScopedPtr is destroyed or reset, it invokes AllocationPolicy::destroy()
-//! to destroy the owned object.
+//! ScopedPtr holds an instance of AllocationPolicy. When ScopedPtr is
+//! destroyed or reset, it invokes AllocationPolicy::destroy().
 template <class T, class AllocationPolicy = ArenaAllocation>
 class ScopedPtr : public NonCopyable<> {
 public:
@@ -38,9 +38,9 @@ public:
     }
 
     //! Initialize from a raw pointer.
-    ScopedPtr(T* ptr, const AllocationPolicy& policy)
+    ScopedPtr(T* ptr, const AllocationPolicy& alloc)
         : ptr_(ptr) {
-        policy_.reset(new (policy_) AllocationPolicy(policy));
+        policy_.reset(new (policy_) AllocationPolicy(alloc));
     }
 
     //! Destroy object.
@@ -58,12 +58,13 @@ public:
     }
 
     //! Reset pointer to a new value.
-    void reset(T* new_ptr, const AllocationPolicy& new_policy) {
+    //! @p alloc defines an argument for AllocationPolicy constructor.
+    void reset(T* new_ptr, const AllocationPolicy& new_alloc) {
         if (new_ptr != ptr_) {
             reset();
 
             ptr_ = new_ptr;
-            policy_.reset(new (policy_) AllocationPolicy(new_policy));
+            policy_.reset(new (policy_) AllocationPolicy(new_alloc));
         }
     }
 
@@ -107,6 +108,18 @@ private:
     T* ptr_;
     Optional<AllocationPolicy> policy_;
 };
+
+//! Equality check.
+template <class T1, class T2, class P>
+inline bool operator==(const ScopedPtr<T1, P>& a, const ScopedPtr<T2, P>& b) {
+    return a.get() == b.get();
+}
+
+//! Equality check.
+template <class T1, class T2, class P>
+inline bool operator!=(const ScopedPtr<T1, P>& a, const ScopedPtr<T2, P>& b) {
+    return a.get() != b.get();
+}
 
 } // namespace core
 } // namespace roc

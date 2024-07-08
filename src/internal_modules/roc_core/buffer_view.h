@@ -43,7 +43,7 @@ typedef SharedPtr<BufferView> BufferViewPtr;
 //!  (i.e. if there are still slices referring to it).
 //!
 //! @see Buffer, Slice.
-class BufferView : public RefCounted<BufferView, ManualAllocation> {
+class BufferView : public RefCounted<BufferView, NoopAllocation> {
 public:
     //! Initialize view referring to memory region.
     //! Memory should remain valid until view in destroyed.

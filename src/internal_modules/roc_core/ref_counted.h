@@ -45,8 +45,8 @@ public:
     }
 
     //! Initialize.
-    explicit RefCounted(const AllocationPolicy& policy)
-        : AllocationPolicy(policy) {
+    explicit RefCounted(const AllocationPolicy& alloc)
+        : AllocationPolicy(alloc) {
     }
 
     //! Get reference counter.

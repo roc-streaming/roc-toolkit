@@ -66,13 +66,13 @@ private:
 };
 
 //! Allocation policy for objects with custom deallocation function.
-class CustomAllocation {
+class FuncAllocation {
     typedef void (*DestroyFunc)(void*);
 
 public:
     //! Initialize.
     template <class T>
-    CustomAllocation(void (*destroy_func)(T*))
+    FuncAllocation(void (*destroy_func)(T*))
         : destroy_func_((DestroyFunc)destroy_func) {
         if (!destroy_func_) {
             roc_panic("allocation policy: null function");
@@ -88,12 +88,12 @@ private:
     DestroyFunc destroy_func_;
 };
 
-//! Allocation policy for objects that does not have automatic deallocation.
-class ManualAllocation {
+//! Allocation policy for objects that don't have automatic deallocation.
+class NoopAllocation {
 public:
     //! No-op.
     //! When SharedPtr or ScopedPtr "destroys" object, nothing happens.
-    //! The user is responsible for destroying it manually.
+    //! The user is responsible for destroying object.
     template <class T> void destroy(T&) {
     }
 };

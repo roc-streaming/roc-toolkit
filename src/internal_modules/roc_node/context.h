@@ -41,10 +41,10 @@ struct ContextConfig {
 };
 
 //! Node context.
-class Context : public core::RefCounted<Context, core::ManualAllocation> {
+class Context : public core::RefCounted<Context, core::NoopAllocation> {
 public:
     //! Initialize.
-    explicit Context(const ContextConfig& config, core::IArena& arena);
+    Context(const ContextConfig& config, core::IArena& arena);
 
     //! Deinitialize.
     ~Context();
