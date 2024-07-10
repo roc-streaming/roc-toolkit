@@ -75,15 +75,20 @@ size_t OpenfecEncoder::buffer_alignment() const {
     return Alignment;
 }
 
-bool OpenfecEncoder::begin_block(size_t sblen, size_t rblen, size_t payload_size) {
+status::StatusCode
+OpenfecEncoder::begin_block(size_t sblen, size_t rblen, size_t payload_size) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (sblen_ == sblen && rblen_ == rblen && payload_size_ == payload_size) {
-        return true;
+        return status::StatusOK;
     }
 
     if (!resize_tabs_(sblen + rblen)) {
-        return false;
+        roc_log(
+            LogError,
+            "openfec encoder: failed to resize tabs in begin_block, sblen=%lu, rblen=%lu",
+            (unsigned long)sblen, (unsigned long)rblen);
+        return status::StatusNoMem;
     }
 
     sblen_ = sblen;
@@ -93,7 +98,7 @@ bool OpenfecEncoder::begin_block(size_t sblen, size_t rblen, size_t payload_size
     update_session_params_(sblen, rblen, payload_size);
     reset_session_();
 
-    return true;
+    return status::StatusOK;
 }
 
 void OpenfecEncoder::set_buffer(size_t index, const core::Slice<uint8_t>& buffer) {

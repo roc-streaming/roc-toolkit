@@ -10,10 +10,10 @@
 
 #include "roc_core/array.h"
 #include "roc_core/fast_random.h"
-#include "roc_core/heap_arena.h"
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_fec/codec_map.h"
+#include "test_helpers/mock_arena.h"
 
 namespace roc {
 namespace fec {
@@ -22,19 +22,22 @@ namespace {
 
 const size_t MaxPayloadSize = 1024;
 
-core::HeapArena arena;
-packet::PacketFactory packet_factory(arena, MaxPayloadSize);
-
 } // namespace
 
 class Codec {
 public:
     Codec(const CodecConfig& config)
-        : encoder_(CodecMap::instance().new_block_encoder(config, packet_factory, arena),
-                   arena)
-        , decoder_(CodecMap::instance().new_block_decoder(config, packet_factory, arena),
-                   arena)
-        , buffers_(arena) {
+        : arena_()
+        , packet_factory_(arena_, MaxPayloadSize)
+        , encoder_(
+              CodecMap::instance().new_block_encoder(config, packet_factory_, arena_),
+              arena_)
+        , decoder_(
+              CodecMap::instance().new_block_decoder(config, packet_factory_, arena_),
+              arena_)
+        , buffers_(arena_) {
+        set_fail(false);
+
         CHECK(encoder_);
         CHECK(decoder_);
 
@@ -45,7 +48,7 @@ public:
     void encode(size_t n_source, size_t n_repair, size_t p_size) {
         CHECK(buffers_.resize(n_source + n_repair));
 
-        CHECK(encoder_->begin_block(n_source, n_repair, p_size));
+        LONGS_EQUAL(status::StatusOK, encoder_->begin_block(n_source, n_repair, p_size));
 
         for (size_t i = 0; i < n_source + n_repair; ++i) {
             buffers_[i] = make_buffer_(p_size);
@@ -83,9 +86,13 @@ public:
         return buffers_[i];
     }
 
+    void set_fail(bool fail) {
+        arena_.set_fail(fail);
+    }
+
 private:
     core::Slice<uint8_t> make_buffer_(size_t p_size) {
-        core::Slice<uint8_t> buf = packet_factory.new_packet_buffer();
+        core::Slice<uint8_t> buf = packet_factory_.new_packet_buffer();
         buf.reslice(0, p_size);
         for (size_t j = 0; j < buf.size(); ++j) {
             buf.data()[j] = (uint8_t)core::fast_random_range(0, 0xff);
@@ -93,9 +100,10 @@ private:
         return buf;
     }
 
+    test::MockArena arena_;
+    packet::PacketFactory packet_factory_;
     core::ScopedPtr<IBlockEncoder> encoder_;
     core::ScopedPtr<IBlockDecoder> decoder_;
-
     core::Array<core::Slice<uint8_t> > buffers_;
 };
 
@@ -111,7 +119,8 @@ TEST(block_encoder_decoder, without_loss) {
         Codec code(config);
         code.encode(NumSourcePackets, NumRepairPackets, PayloadSize);
 
-        CHECK(
+        LONGS_EQUAL(
+            status::StatusOK,
             code.decoder().begin_block(NumSourcePackets, NumRepairPackets, PayloadSize));
 
         for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
@@ -120,6 +129,32 @@ TEST(block_encoder_decoder, without_loss) {
         CHECK(code.decode(NumSourcePackets, PayloadSize));
 
         code.decoder().end_block();
+    }
+}
+
+TEST(block_encoder_decoder, no_memory) {
+    enum { NumSourcePackets = 20, NumRepairPackets = 10, PayloadSize = 251 };
+
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        CodecConfig config;
+        config.scheme = CodecMap::instance().nth_scheme(n_scheme);
+
+        { // test encoder
+            Codec code(config);
+            code.set_fail(true);
+            LONGS_EQUAL(status::StatusNoMem,
+                        code.encoder().begin_block(NumSourcePackets, NumRepairPackets,
+                                                   PayloadSize));
+        }
+
+        { // test decoder
+            Codec code(config);
+            code.encode(NumSourcePackets, NumRepairPackets, PayloadSize);
+            code.set_fail(true);
+            LONGS_EQUAL(status::StatusNoMem,
+                        code.decoder().begin_block(NumSourcePackets, NumRepairPackets,
+                                                   PayloadSize));
+        }
     }
 }
 
@@ -133,7 +168,8 @@ TEST(block_encoder_decoder, lost_1) {
         Codec code(config);
         code.encode(NumSourcePackets, NumRepairPackets, PayloadSize);
 
-        CHECK(
+        LONGS_EQUAL(
+            status::StatusOK,
             code.decoder().begin_block(NumSourcePackets, NumRepairPackets, PayloadSize));
 
         for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
@@ -172,8 +208,9 @@ TEST(block_encoder_decoder, random_losses) {
         for (size_t test_num = 0; test_num < NumIterations; ++test_num) {
             code.encode(NumSourcePackets, NumRepairPackets, PayloadSize);
 
-            CHECK(code.decoder().begin_block(NumSourcePackets, NumRepairPackets,
-                                             PayloadSize));
+            LONGS_EQUAL(status::StatusOK,
+                        code.decoder().begin_block(NumSourcePackets, NumRepairPackets,
+                                                   PayloadSize));
 
             size_t curr_loss = 0;
             for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
@@ -214,7 +251,9 @@ TEST(block_encoder_decoder, full_repair_payload_sizes) {
             Codec code(config);
             code.encode(NumSourcePackets, NumRepairPackets, p_size);
 
-            CHECK(code.decoder().begin_block(NumSourcePackets, NumRepairPackets, p_size));
+            LONGS_EQUAL(
+                status::StatusOK,
+                code.decoder().begin_block(NumSourcePackets, NumRepairPackets, p_size));
 
             for (size_t i = NumSourcePackets; i < NumSourcePackets + NumRepairPackets;
                  ++i) {

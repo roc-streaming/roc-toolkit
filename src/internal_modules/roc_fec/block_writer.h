@@ -89,7 +89,7 @@ public:
     virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr&);
 
 private:
-    bool begin_block_(const packet::PacketPtr& pp);
+    status::StatusCode begin_block_(const packet::PacketPtr& pp);
     void end_block_();
     void next_block_();
 

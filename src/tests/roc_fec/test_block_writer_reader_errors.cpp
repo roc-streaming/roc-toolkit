@@ -175,7 +175,9 @@ TEST(block_writer_reader_errors, writer_cant_resize_block) {
     CHECK(writer.resize(NumSourcePackets, BlockSize2));
 
     for (size_t i = 0; i < NumSourcePackets; ++i) {
-        LONGS_EQUAL(status::StatusOK, writer.write(generate_packet(sn++)));
+        const status::StatusCode expected_status =
+            (i == 0) ? status::StatusNoMem : status::StatusAbort;
+        LONGS_EQUAL(expected_status, writer.write(generate_packet(sn++)));
 
         CHECK(!writer.is_alive());
     }
@@ -222,7 +224,9 @@ TEST(block_writer_reader_errors, writer_cant_encode_packet) {
     CHECK(writer.resize(BlockSize2, NumRepairPackets));
 
     for (size_t i = 0; i < BlockSize2; ++i) {
-        LONGS_EQUAL(status::StatusOK, writer.write(generate_packet(sn++)));
+        const status::StatusCode expected_status =
+            (i == 0) ? status::StatusNoMem : status::StatusAbort;
+        LONGS_EQUAL(expected_status, writer.write(generate_packet(sn++)));
 
         CHECK(!writer.is_alive());
     }
@@ -384,9 +388,12 @@ TEST(block_writer_reader_errors, reader_cant_decode_packet) {
     // reader should get an error from arena when trying
     // to repair lost packet and shut down
     packet::PacketPtr pp;
-    LONGS_EQUAL(status::StatusAbort, reader.read(pp, packet::ModeFetch));
+    LONGS_EQUAL(status::StatusNoMem, reader.read(pp, packet::ModeFetch));
     CHECK(!pp);
     CHECK(!reader.is_alive());
+
+    // reader should get an abort error if it is not alive
+    LONGS_EQUAL(status::StatusAbort, reader.read(pp, packet::ModeFetch));
 }
 
 TEST(block_writer_reader_errors, reader_cant_read_source_packet) {

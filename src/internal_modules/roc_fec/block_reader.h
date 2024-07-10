@@ -96,7 +96,7 @@ private:
                                         packet::PacketReadMode mode);
 
     void next_block_();
-    void try_repair_();
+    status::StatusCode try_repair_();
 
     packet::PacketPtr parse_repaired_packet_(const core::Slice<uint8_t>& buffer);
 
@@ -127,6 +127,8 @@ private:
     void drop_repair_packets_from_prev_blocks_();
 
     void update_block_duration_(const packet::PacketPtr& curr_block_pkt);
+
+    bool is_block_resized_() const;
 
     IBlockDecoder& block_decoder_;
 

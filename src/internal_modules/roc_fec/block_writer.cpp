@@ -120,8 +120,7 @@ status::StatusCode BlockWriter::write(const packet::PacketPtr& pp) {
     roc_panic_if(!pp);
 
     if (!alive_) {
-        // TODO(gh-183): return StatusDead
-        return status::StatusOK;
+        return status::StatusAbort;
     }
 
     validate_fec_packet_(pp);
@@ -131,9 +130,9 @@ status::StatusCode BlockWriter::write(const packet::PacketPtr& pp) {
     }
 
     if (cur_packet_ == 0) {
-        if (!begin_block_(pp)) {
-            // TODO(gh-183): return status
-            return status::StatusOK;
+        const status::StatusCode status_code = begin_block_(pp);
+        if (status_code != status::StatusOK) {
+            return status_code;
         }
     }
 
@@ -156,11 +155,13 @@ status::StatusCode BlockWriter::write(const packet::PacketPtr& pp) {
     return status::StatusOK;
 }
 
-bool BlockWriter::begin_block_(const packet::PacketPtr& pp) {
+status::StatusCode BlockWriter::begin_block_(const packet::PacketPtr& pp) {
     update_block_duration_(pp);
 
     if (!apply_sizes_(next_sblen_, next_rblen_, pp->fec()->payload.size())) {
-        return false;
+        roc_log(LogError,
+                "fec block writer: apply_sizes in begin_block_ failed with StatusNoMem");
+        return status::StatusNoMem;
     }
 
     roc_log(LogTrace,
@@ -168,15 +169,18 @@ bool BlockWriter::begin_block_(const packet::PacketPtr& pp) {
             (unsigned long)cur_sbn_, (unsigned long)cur_sblen_, (unsigned long)cur_rblen_,
             (unsigned long)cur_payload_size_);
 
-    if (!block_encoder_.begin_block(cur_sblen_, cur_rblen_, cur_payload_size_)) {
+    const status::StatusCode status_code =
+        block_encoder_.begin_block(cur_sblen_, cur_rblen_, cur_payload_size_);
+
+    if (status_code != status::StatusOK) {
         roc_log(LogError,
                 "fec block writer: can't begin encoder block, shutting down:"
                 " sblen=%lu rblen=%lu",
                 (unsigned long)cur_sblen_, (unsigned long)cur_rblen_);
-        return (alive_ = false);
+        alive_ = false;
     }
 
-    return true;
+    return status_code;
 }
 
 void BlockWriter::end_block_() {

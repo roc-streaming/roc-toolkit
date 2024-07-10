@@ -82,11 +82,16 @@ size_t OpenfecDecoder::max_block_length() const {
     return max_block_length_;
 }
 
-bool OpenfecDecoder::begin_block(size_t sblen, size_t rblen, size_t payload_size) {
+status::StatusCode
+OpenfecDecoder::begin_block(size_t sblen, size_t rblen, size_t payload_size) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (!resize_tabs_(sblen + rblen)) {
-        return false;
+        roc_log(
+            LogError,
+            "openfec decoder: failed to resize tabs in begin_block, sblen=%lu, rblen=%lu",
+            (unsigned long)sblen, (unsigned long)rblen);
+        return status::StatusNoMem;
     }
 
     sblen_ = sblen;
@@ -97,7 +102,7 @@ bool OpenfecDecoder::begin_block(size_t sblen, size_t rblen, size_t payload_size
     update_session_params_(sblen, rblen, payload_size);
     reset_session_();
 
-    return true;
+    return status::StatusOK;
 }
 
 void OpenfecDecoder::set_buffer(size_t index, const core::Slice<uint8_t>& buffer) {
