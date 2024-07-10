@@ -35,9 +35,12 @@ public:
 
     //! Start block.
     //! @remarks
-    //!  Performs an initial setup for a block. Should be called before
-    //!  any operations for the block.
-    virtual bool begin_block(size_t sblen, size_t rblen, size_t payload_size) = 0;
+    //! Performs an initial setup for a block. Should be called before any operations for
+    //! the block.
+    //! @returns status::StatusOK on success, or a specific error code on failure (e.g.,
+    //! status::StatusNoMem if memory allocation fails).
+    virtual ROC_ATTR_NODISCARD status::StatusCode
+    begin_block(size_t sblen, size_t rblen, size_t payload_size) = 0;
 
     //! Store source or repair packet buffer for current block.
     //! @pre

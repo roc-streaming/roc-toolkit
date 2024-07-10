@@ -56,7 +56,8 @@ public:
     virtual size_t buffer_alignment() const;
 
     //! Start block.
-    virtual bool begin_block(size_t sblen, size_t rblen, size_t payload_size);
+    virtual ROC_ATTR_NODISCARD status::StatusCode
+    begin_block(size_t sblen, size_t rblen, size_t payload_size);
 
     //! Store packet data for current block.
     virtual void set_buffer(size_t index, const core::Slice<uint8_t>& buffer);

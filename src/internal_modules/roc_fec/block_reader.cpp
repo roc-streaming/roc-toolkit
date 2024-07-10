@@ -80,6 +80,11 @@ status::StatusCode BlockReader::read(packet::PacketPtr& pp, packet::PacketReadMo
 
     const status::StatusCode code = read_(pp, mode);
 
+    if (code != status::StatusOK && code != status::StatusDrain) {
+        pp = NULL;
+        return code;
+    }
+
     if (!alive_) {
         pp = NULL;
         return status::StatusAbort;
@@ -88,10 +93,8 @@ status::StatusCode BlockReader::read(packet::PacketPtr& pp, packet::PacketReadMo
     if (code == status::StatusOK && mode == packet::ModeFetch) {
         n_packets_++;
     }
-
     return code;
 }
-
 status::StatusCode BlockReader::read_(packet::PacketPtr& pp,
                                       packet::PacketReadMode mode) {
     const status::StatusCode code = fetch_all_packets_();
@@ -159,8 +162,12 @@ status::StatusCode BlockReader::get_next_packet_(packet::PacketPtr& result_pkt,
         if (pkt) {
             next_index = head_index_ + 1;
         } else {
-            // Try repairing as much as possible and store in block.
-            try_repair_();
+            // try repairing as much as possible and store in block
+            const status::StatusCode status_code = try_repair_();
+            if (status_code != status::StatusOK) {
+                roc_panic_if(status_code == status::StatusDrain);
+                return status_code;
+            }
 
             // Find first present packet in block, starting from head.
             for (next_index = head_index_; next_index < source_block_.size();
@@ -229,24 +236,26 @@ void BlockReader::next_block_() {
     fill_block_();
 }
 
-void BlockReader::try_repair_() {
-    if (!can_repair_) {
-        return;
+bool BlockReader::is_block_resized_() const {
+    return source_block_resized_ && repair_block_resized_ && payload_resized_;
+}
+
+status::StatusCode BlockReader::try_repair_() {
+    if (!can_repair_ || !is_block_resized_()) {
+        return status::StatusOK;
     }
 
-    if (!source_block_resized_ || !repair_block_resized_ || !payload_resized_) {
-        return;
-    }
+    const status::StatusCode status_code = block_decoder_.begin_block(
+        source_block_.size(), repair_block_.size(), payload_size_);
 
-    if (!block_decoder_.begin_block(source_block_.size(), repair_block_.size(),
-                                    payload_size_)) {
+    if (status_code != status::StatusOK) {
         roc_log(LogDebug,
                 "fec block reader: can't begin decoder block, shutting down:"
                 " sbl=%lu rbl=%lu payload_size=%lu",
                 (unsigned long)source_block_.size(), (unsigned long)repair_block_.size(),
                 (unsigned long)payload_size_);
         alive_ = false;
-        return;
+        return status_code;
     }
 
     for (size_t n = 0; n < source_block_.size(); n++) {
@@ -284,6 +293,7 @@ void BlockReader::try_repair_() {
 
     block_decoder_.end_block();
     can_repair_ = false;
+    return status::StatusOK;
 }
 
 packet::PacketPtr
