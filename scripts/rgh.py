@@ -62,16 +62,17 @@ def run_cmd(cmd, input=None, env=None, retry_fn=None):
             error('command failed')
         return
 
-def random_worktree():
-    while True:
-        path = '/tmp/rgh_' + ''.join(random.choice(string.ascii_lowercase + string.digits)
-            for _ in range(8))
-        if not os.path.exists(path):
-            return path
-
+# create worktree with unique name and path and chdir to it
 def enter_worktree():
+    def random_dir():
+        while True:
+            path = '/tmp/rgh_' + ''.join(random.choice(string.ascii_lowercase + string.digits)
+                for _ in range(8))
+            if not os.path.exists(path):
+                return path
+
     old_path = os.path.abspath(os.getcwd())
-    new_path = random_worktree()
+    new_path = random_dir()
 
     run_cmd([
         'git', 'worktree', 'add', '--no-checkout', new_path
@@ -83,6 +84,7 @@ def enter_worktree():
 
     return old_path
 
+# remove worktree and chdir back to repo
 def leave_worktree(old_path):
     new_path = os.path.abspath(os.getcwd())
 
@@ -93,6 +95,7 @@ def leave_worktree(old_path):
         'git', 'worktree', 'remove', '-f', os.path.basename(new_path)
         ])
 
+# return current head
 def remember_ref():
     if DRY_RUN:
         return 'none'
@@ -106,15 +109,18 @@ def remember_ref():
             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=True).stdout
     return output.decode().strip()
 
+# restore remembered head
 def restore_ref(ref):
     if os.path.exists('.git/index.lock'):
         run_cmd(['git', 'rebase', '--abort'])
 
     run_cmd(['git', 'checkout', ref])
 
+# delete remembered head
 def delete_ref(ref):
     run_cmd(['git', 'branch', '-D', ref])
 
+# detect issue number from PR text
 def guess_issue(org, repo, text):
     if not text:
         return None
@@ -145,6 +151,7 @@ def guess_issue(org, repo, text):
 
     return None
 
+# format prefix for commit message
 def make_prefix(org, repo, issue_link):
     if not issue_link:
         error("can't determine issue associated with pr\n"
@@ -157,6 +164,7 @@ def make_prefix(org, repo, issue_link):
     else:
         return f'{issue_org}/{issue_repo}#{issue_number}'
 
+# format commit message
 def make_message(org, repo, issue_link, pr_title):
     pr_title = re.sub(r'\s*\(#\d+\)$', '', pr_title)
     pr_title = re.sub(r'\.$', '', pr_title)
@@ -294,6 +302,7 @@ def query_pr_commits(org, repo, pr_number, no_git=False):
 
     return results
 
+# print info about PR and linked issue
 def show_pr(org, repo, pr_number, show_json):
     pr_info = query_pr_info(org, repo, pr_number, no_git=True)
     pr_actions = query_pr_actions(org, repo, pr_number, no_git=True)
@@ -302,7 +311,7 @@ def show_pr(org, repo, pr_number, show_json):
     json_result = OrderedDict()
     json_section = {}
 
-    def section(name, ctor=OrderedDict):
+    def start_section(name, ctor=OrderedDict):
         if show_json:
             nonlocal json_result, json_section
             json_section = ctor()
@@ -310,7 +319,7 @@ def show_pr(org, repo, pr_number, show_json):
         else:
             print(f'{Fore.GREEN}{Style.BRIGHT}{name}:{Style.RESET_ALL}')
 
-    def keyval(key, val, color=None):
+    def add_field(key, val, color=None):
         if show_json:
             nonlocal json_section
             json_section[key] = val
@@ -320,7 +329,7 @@ def show_pr(org, repo, pr_number, show_json):
             else:
                 print(f'    {key}: {val}')
 
-    def empty(val, color=None):
+    def add_line(val, color=None):
         if show_json:
             pass
         else:
@@ -329,7 +338,7 @@ def show_pr(org, repo, pr_number, show_json):
             else:
                 print(f'  {val}')
 
-    def commit(sha, msg, author, email):
+    def add_commit(sha, msg, author, email):
         if show_json:
             nonlocal json_section
             json_section.append({
@@ -344,56 +353,54 @@ def show_pr(org, repo, pr_number, show_json):
             print(f'  {sha[:8]} {Fore.BLUE}{Style.BRIGHT}{msg}{Style.RESET_ALL}'+
                 f' ({author} <{email}>)')
 
-    def end():
-        if show_json:
-            print(json.dumps(json_result, indent=2))
-
-    section('pull request')
-    keyval('title', pr_info['pr_title'], Fore.BLUE)
-    keyval('url', pr_info['pr_url'])
-    keyval('milestone', str(pr_info['pr_milestone']).lower(),
+    start_section('pull request')
+    add_field('title', pr_info['pr_title'], Fore.BLUE)
+    add_field('url', pr_info['pr_url'])
+    add_field('milestone', str(pr_info['pr_milestone']).lower(),
            Fore.MAGENTA if pr_info['pr_milestone'] is not None else Fore.RED)
-    keyval('source', pr_info['source_branch'], Fore.CYAN)
-    keyval('target', pr_info['target_branch'], Fore.CYAN)
-    keyval('state', pr_info['pr_state'],
+    add_field('source', pr_info['source_branch'], Fore.CYAN)
+    add_field('target', pr_info['target_branch'], Fore.CYAN)
+    add_field('state', pr_info['pr_state'],
           Fore.MAGENTA if pr_info['pr_state'] == 'open' else Fore.RED)
-    keyval('draft', str(pr_info['pr_draft']).lower(),
+    add_field('draft', str(pr_info['pr_draft']).lower(),
           Fore.MAGENTA if not pr_info['pr_draft'] else Fore.RED)
-    keyval('mergeable', str(pr_info['pr_mergeable'] \
+    add_field('mergeable', str(pr_info['pr_mergeable'] \
                             if pr_info['pr_mergeable'] is not None else 'unknown').lower(),
           Fore.MAGENTA if pr_info['pr_mergeable'] == True else Fore.RED)
-    keyval('rebaseable', str(pr_info['pr_rebaseable'] \
+    add_field('rebaseable', str(pr_info['pr_rebaseable'] \
                             if pr_info['pr_rebaseable'] is not None else 'unknown').lower(),
           Fore.MAGENTA if pr_info['pr_rebaseable'] == True else Fore.RED)
 
-    section('issue')
+    start_section('issue')
     if pr_info['issue_link']:
-        keyval('title', pr_info['issue_title'], Fore.BLUE)
-        keyval('url', pr_info['issue_url'])
-        keyval('milestone', str(pr_info['issue_milestone']).lower(),
+        add_field('title', pr_info['issue_title'], Fore.BLUE)
+        add_field('url', pr_info['issue_url'])
+        add_field('milestone', str(pr_info['issue_milestone']).lower(),
                Fore.MAGENTA if pr_info['issue_milestone'] is not None else Fore.RED)
     else:
-        empty('not found', Fore.RED)
+        add_line('not found', Fore.RED)
 
-    section('actions')
+    start_section('actions')
     has_actions = False
     for action_name, action_result in pr_actions:
         has_actions = True
-        keyval(action_name, action_result,
+        add_field(action_name, action_result,
               Fore.MAGENTA if action_result == 'success' else Fore.RED)
     if not has_actions:
-        empty('not found', Fore.RED)
+        add_line('not found', Fore.RED)
 
-    section('commits', list)
+    start_section('commits', list)
     has_commits = False
     for commit_sha, commit_msg, commit_author, commit_email in pr_commits:
         has_commits = True
-        commit(commit_sha, commit_msg, commit_author, commit_email)
+        add_commit(commit_sha, commit_msg, commit_author, commit_email)
     if not has_commits:
-        empty('not found', Fore.RED)
+        add_line('not found', Fore.RED)
 
-    end()
+    if show_json:
+        print(json.dumps(json_result, indent=2))
 
+# die if PR does not fulfill all requirements
 def verify_pr(org, repo, pr_number, issue_number, issue_miletsone, no_checks,
               no_issue, no_milestone):
     pr_info = query_pr_info(org, repo, pr_number)
@@ -425,6 +432,7 @@ def verify_pr(org, repo, pr_number, issue_number, issue_miletsone, no_checks,
                 error("can't proceed on pr with failed checks\n"
                       "use --no-checks to proceed anyway")
 
+# checkout PR's branch
 def checkout_pr(org, repo, pr_number):
     pr_info = query_pr_info(org, repo, pr_number)
 
@@ -439,8 +447,10 @@ def checkout_pr(org, repo, pr_number):
         pr_number,
         ])
 
-def update_pr(org, repo, pr_number, issue_number, issue_milestone,
-              no_issue, no_milestone):
+# update PR meta-data on github
+# (link issue to PR, set milestone of PR and issue, etc)
+def update_pr_metadata(org, repo, pr_number, issue_number, issue_milestone,
+                       no_issue, no_milestone):
     def update_link_to_issue():
         pr_info = query_pr_info(org, repo, pr_number)
 
@@ -523,13 +533,15 @@ def update_pr(org, repo, pr_number, issue_number, issue_milestone,
             update_milestone_of_issue()
             update_milestone_of_pr()
 
-def fetch_pr(org, repo, pr_number):
+# fetch PR's base branch
+def fetch_pr_base(org, repo, pr_number):
     pr_info = query_pr_info(org, repo, pr_number)
 
     run_cmd([
         'git', 'fetch', pr_info['target_remote'], pr_info['base_sha'],
         ])
 
+# rebase PR's local branch on its base branch
 def rebase_pr(org, repo, pr_number):
     pr_info = query_pr_info(org, repo, pr_number)
 
@@ -537,15 +549,14 @@ def rebase_pr(org, repo, pr_number):
         'git', 'rebase', '--onto', pr_info['base_sha'], pr_info['target_sha'],
         ])
 
-def link_pr(org, repo, pr_number, action, title, no_issue):
+# add issue prefix to every commit in PR's local branch
+def reword_pr_commits(org, repo, pr_number, title, no_issue):
     pr_info = query_pr_info(org, repo, pr_number)
 
     if no_issue:
         commit_prefix = ''
-    elif action == 'link_pr':
+    else:
         commit_prefix = make_prefix(org, repo, pr_info['issue_link']) + ': '
-    elif action == 'unlink_pr':
-        commit_prefix = ''
 
     base_sha = pr_info['base_sha']
 
@@ -564,7 +575,8 @@ def link_pr(org, repo, pr_number, action, title, no_issue):
         ],
         env={'FILTER_BRANCH_SQUELCH_WARNING':'1'})
 
-def squash_pr(org, repo, pr_number, title, no_issue):
+# squash all commits in PR's local branch into one
+def squash_pr_commits(org, repo, pr_number, title, no_issue):
     pr_info = query_pr_info(org, repo, pr_number)
 
     commit_message = make_message(
@@ -584,7 +596,8 @@ def squash_pr(org, repo, pr_number, title, no_issue):
         'git', 'commit', '--amend', '--no-edit', '-m', commit_message,
         ])
 
-def log_pr(org, repo, pr_number):
+# print commits from local PR's branch
+def print_pr_commits(org, repo, pr_number):
     pr_info = query_pr_info(org, repo, pr_number)
 
     base_sha = pr_info['base_sha']
@@ -594,7 +607,8 @@ def log_pr(org, repo, pr_number):
         f'{base_sha}..HEAD',
         ])
 
-def push_pr(org, repo, pr_number):
+# force-push PR's local branch to upstream
+def force_push_pr(org, repo, pr_number):
     pr_info = query_pr_info(org, repo, pr_number)
 
     local_branch = os.path.basename(os.getcwd())
@@ -607,7 +621,9 @@ def push_pr(org, repo, pr_number):
         f'{local_branch}:{source_branch}'
         ])
 
-def wait_pr(org, repo, pr_number):
+# tell github to merge PR
+def merge_pr(org, repo, pr_number):
+    # wait until PR is mereable
     while True:
         query_pr_info.cache_clear()
 
@@ -618,13 +634,14 @@ def wait_pr(org, repo, pr_number):
 
         time.sleep(0.1)
 
-def merge_pr(org, repo, pr_number):
+    # wait more
+    time.sleep(1)
+
     def retry_fn(output):
         return 'GraphQL: Base branch was modified' in output or \
             'GraphQL: Pull Request is not mergeable' in output
 
-    time.sleep(1)
-
+    # tell to merge, retry if needed
     run_cmd([
         'gh', 'pr', 'merge',
         '--repo', f'{org}/{repo}',
@@ -634,9 +651,9 @@ def merge_pr(org, repo, pr_number):
         ],
         retry_fn=retry_fn)
 
+# rebase local branch
+# like normal rebase, but preserves original committer name, email, and date
 def stealth_rebase(base_branch):
-    # like normal rebase, but preserves original committer name, email, and date
-    # used to do periodic rebase of "develop" branch on "master"
     cmd='%s%nexec GIT_COMMITTER_DATE="%cD" GIT_COMMITTER_NAME="%cn" GIT_COMMITTER_EMAIL="%ce"'
 
     run_cmd([
@@ -688,16 +705,6 @@ rebase_pr_parser = subparsers.add_parser(
     help="rebase pull request on base branch (keeps it open)")
 rebase_pr_parser.add_argument('pr_number', type=int)
 
-link_pr_parser = subparsers.add_parser(
-    'link_pr', parents=[common_parser, pr_action_parser],
-    help="link pull request description and commits to issue")
-link_pr_parser.add_argument('pr_number', type=int)
-
-unlink_pr_parser = subparsers.add_parser(
-    'unlink_pr', parents=[common_parser, pr_action_parser],
-    help="unlink pull request commits from issue")
-unlink_pr_parser.add_argument('pr_number', type=int)
-
 merge_pr_parser = subparsers.add_parser(
     'merge_pr', parents=[common_parser, pr_action_parser],
     help="link and merge pull request")
@@ -731,34 +738,11 @@ if args.command == 'rebase_pr':
     try:
         checkout_pr(args.org, args.repo, args.pr_number)
         pr_ref = remember_ref()
-        fetch_pr(args.org, args.repo, args.pr_number)
+        fetch_pr_base(args.org, args.repo, args.pr_number)
         rebase_pr(args.org, args.repo, args.pr_number)
-        log_pr(args.org, args.repo, args.pr_number)
+        print_pr_commits(args.org, args.repo, args.pr_number)
         if not args.no_push:
-            push_pr(args.org, args.repo, args.pr_number)
-            pushed = True
-    finally:
-        leave_worktree(orig_path)
-        if pushed:
-            delete_ref(pr_ref)
-    exit(0)
-
-if args.command == 'link_pr' or args.command == 'unlink_pr':
-    verify_pr(args.org, args.repo, args.pr_number, args.issue_number,
-              args.milestone_name, args.no_checks, args.no_issue, args.no_milestone)
-    orig_path = enter_worktree()
-    pushed = False
-    try:
-        checkout_pr(args.org, args.repo, args.pr_number)
-        pr_ref = remember_ref()
-        update_pr(args.org, args.repo, args.pr_number, args.issue_number,
-                  args.milestone_name, args.no_issue, args.no_milestone)
-        fetch_pr(args.org, args.repo, args.pr_number)
-        rebase_pr(args.org, args.repo, args.pr_number)
-        link_pr(args.org, args.repo, args.pr_number, args.command, None, args.no_issue)
-        log_pr(args.org, args.repo, args.pr_number)
-        if not args.no_push:
-            push_pr(args.org, args.repo, args.pr_number)
+            force_push_pr(args.org, args.repo, args.pr_number)
             pushed = True
     finally:
         leave_worktree(orig_path)
@@ -776,18 +760,17 @@ if args.command == 'merge_pr':
     try:
         checkout_pr(args.org, args.repo, args.pr_number)
         pr_ref = remember_ref()
-        update_pr(args.org, args.repo, args.pr_number, args.issue_number,
-                  args.milestone_name, args.no_issue, args.no_milestone)
-        fetch_pr(args.org, args.repo, args.pr_number)
+        update_pr_metadata(args.org, args.repo, args.pr_number, args.issue_number,
+                           args.milestone_name, args.no_issue, args.no_milestone)
+        fetch_pr_base(args.org, args.repo, args.pr_number)
         rebase_pr(args.org, args.repo, args.pr_number)
         if args.rebase:
-            link_pr(args.org, args.repo, args.pr_number, 'link_pr', args.title, args.no_issue)
+            reword_pr_commits(args.org, args.repo, args.pr_number, args.title, args.no_issue)
         else:
-            squash_pr(args.org, args.repo, args.pr_number, args.title, args.no_issue)
-        log_pr(args.org, args.repo, args.pr_number)
+            squash_pr_commits(args.org, args.repo, args.pr_number, args.title, args.no_issue)
+        print_pr_commits(args.org, args.repo, args.pr_number)
         if not args.no_push:
-            push_pr(args.org, args.repo, args.pr_number)
-            wait_pr(args.org, args.repo, args.pr_number)
+            force_push_pr(args.org, args.repo, args.pr_number)
             merge_pr(args.org, args.repo, args.pr_number)
             merged = True
     finally:
