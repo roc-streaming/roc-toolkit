@@ -9,10 +9,16 @@ jobs:
   main:
     runs-on: ubuntu-latest
     steps:
-    - uses: konradpabjan/move-labeled-or-milestoned-issue@v2.0
-      continue-on-error: true
-      with:
-        action-token: "${{ secrets.REPO_MANAGEMENT }}"
-        project-url: "https://github.com/roc-streaming/roc-toolkit/projects/2"
-        column-name: "Help wanted"
-        label-name: "help wanted"
+      - uses: actions/add-to-project@v1.0.2
+        id: addItem
+        with:
+          project-url: "https://github.com/orgs/roc-streaming/projects/5"
+          github-token: "${{ secrets.REPO_MANAGEMENT }}"
+          labeled: "help wanted"
+
+      - uses: kalgurn/update-project-item-status@v0.0.1
+        with:
+          project-url: "https://github.com/orgs/roc-streaming/projects/5"
+          github-token: "${{ secrets.REPO_MANAGEMENT }}"
+          item-id: ${{ steps.addItem.outputs.itemId }}
+          status: "Help wanted"
