@@ -23,7 +23,7 @@ namespace core {
 
 //! Dynamic list of strings.
 //!
-//! Strings are stored in a countinous dynamically-growing array.
+//! Strings are stored in a continuous dynamically-growing array.
 //! Each string is stored in a block with a header and footer,
 //! which both store block length. This allow fast iteration
 //! in both directions.

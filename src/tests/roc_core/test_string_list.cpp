@@ -40,11 +40,11 @@ TEST(string_list, push_back) {
     STRCMP_EQUAL("foo", sl.front());
     STRCMP_EQUAL("foo", sl.back());
 
-    CHECK(sl.push_back("bar"));
+    CHECK(sl.push_back("barbaz"));
 
     LONGS_EQUAL(2, sl.size());
     STRCMP_EQUAL("foo", sl.front());
-    STRCMP_EQUAL("bar", sl.back());
+    STRCMP_EQUAL("barbaz", sl.back());
 }
 
 TEST(string_list, pop_back) {
@@ -95,8 +95,8 @@ TEST(string_list, nextof) {
     StringList sl(arena);
 
     CHECK(sl.push_back("foo"));
-    CHECK(sl.push_back("bar"));
-    CHECK(sl.push_back("baz"));
+    CHECK(sl.push_back("barbaz"));
+    CHECK(sl.push_back("foobarbaz"));
 
     LONGS_EQUAL(3, sl.size());
 
@@ -106,10 +106,10 @@ TEST(string_list, nextof) {
     STRCMP_EQUAL("foo", str);
 
     str = sl.nextof(str);
-    STRCMP_EQUAL("bar", str);
+    STRCMP_EQUAL("barbaz", str);
 
     str = sl.nextof(str);
-    STRCMP_EQUAL("baz", str);
+    STRCMP_EQUAL("foobarbaz", str);
 
     str = sl.nextof(str);
     CHECK(str == NULL);
@@ -119,18 +119,18 @@ TEST(string_list, prevof) {
     StringList sl(arena);
 
     CHECK(sl.push_back("foo"));
-    CHECK(sl.push_back("bar"));
-    CHECK(sl.push_back("baz"));
+    CHECK(sl.push_back("barbaz"));
+    CHECK(sl.push_back("foobarbaz"));
 
     LONGS_EQUAL(3, sl.size());
 
     const char* str = NULL;
 
     str = sl.back();
-    STRCMP_EQUAL("baz", str);
+    STRCMP_EQUAL("foobarbaz", str);
 
     str = sl.prevof(str);
-    STRCMP_EQUAL("bar", str);
+    STRCMP_EQUAL("barbaz", str);
 
     str = sl.prevof(str);
     STRCMP_EQUAL("foo", str);
@@ -188,12 +188,12 @@ TEST(string_list, find) {
     StringList sl(arena);
 
     CHECK(sl.push_back("foo"));
-    CHECK(sl.push_back("bar"));
-    CHECK(sl.push_back("baz"));
+    CHECK(sl.push_back("barbaz"));
+    CHECK(sl.push_back("foobarbaz"));
 
     LONGS_EQUAL(3, sl.size());
 
-    CHECK(sl.find("bar"));
+    CHECK(sl.find("barbaz"));
     CHECK(!sl.find("qux"));
 
     LONGS_EQUAL(3, sl.size());
@@ -204,10 +204,10 @@ TEST(string_list, find) {
     STRCMP_EQUAL("foo", str);
 
     str = sl.nextof(str);
-    STRCMP_EQUAL("bar", str);
+    STRCMP_EQUAL("barbaz", str);
 
     str = sl.nextof(str);
-    STRCMP_EQUAL("baz", str);
+    STRCMP_EQUAL("foobarbaz", str);
 
     str = sl.nextof(str);
     CHECK(str == NULL);
