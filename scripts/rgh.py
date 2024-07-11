@@ -537,7 +537,7 @@ def rebase_pr(org, repo, pr_number):
         'git', 'rebase', '--onto', pr_info['base_sha'], pr_info['target_sha'],
         ])
 
-def link_pr(org, repo, pr_number, action, no_issue):
+def link_pr(org, repo, pr_number, action, title, no_issue):
     pr_info = query_pr_info(org, repo, pr_number)
 
     if no_issue:
@@ -549,10 +549,17 @@ def link_pr(org, repo, pr_number, action, no_issue):
 
     base_sha = pr_info['base_sha']
 
+    if title:
+        title = title.replace(r',', r'\,')
+        sed = f"sed -r"+\
+            f" -e '1s,^.*$,{commit_prefix}{title},'"
+    else:
+        sed = f"sed -r"+\
+            f" -e '1s,^(gh-[0-9]+:? +|{org}/[^ ]+ +|[Ii]ssue *[0-9]+:? +)?,{commit_prefix},'"+\
+            f" -e '1s,\s*\(#[0-9]+\)$,,'",
+
     run_cmd([
-        'git', 'filter-branch', '-f', '--msg-filter',
-        f"sed -r -e '1s,^(gh-[0-9]+:? +|{org}/[^ ]+ +|[Ii]ssue *[0-9]+:? +)?,{commit_prefix},'"+
-          " -e '1s,\s*\(#[0-9]+\)$,,'",
+        'git', 'filter-branch', '-f', '--msg-filter', sed,
         f'{base_sha}..HEAD',
         ],
         env={'FILTER_BRANCH_SQUELCH_WARNING':'1'})
@@ -748,7 +755,7 @@ if args.command == 'link_pr' or args.command == 'unlink_pr':
                   args.milestone_name, args.no_issue, args.no_milestone)
         fetch_pr(args.org, args.repo, args.pr_number)
         rebase_pr(args.org, args.repo, args.pr_number)
-        link_pr(args.org, args.repo, args.pr_number, args.command, args.no_issue)
+        link_pr(args.org, args.repo, args.pr_number, args.command, None, args.no_issue)
         log_pr(args.org, args.repo, args.pr_number)
         if not args.no_push:
             push_pr(args.org, args.repo, args.pr_number)
@@ -774,7 +781,7 @@ if args.command == 'merge_pr':
         fetch_pr(args.org, args.repo, args.pr_number)
         rebase_pr(args.org, args.repo, args.pr_number)
         if args.rebase:
-            link_pr(args.org, args.repo, args.pr_number, 'link_pr', args.no_issue)
+            link_pr(args.org, args.repo, args.pr_number, 'link_pr', args.title, args.no_issue)
         else:
             squash_pr(args.org, args.repo, args.pr_number, args.title, args.no_issue)
         log_pr(args.org, args.repo, args.pr_number)
