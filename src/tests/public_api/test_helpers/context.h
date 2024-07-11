@@ -55,6 +55,10 @@ public:
         CHECK(roc_context_register_encoding(ctx_, encoding_id, &encoding) == 0);
     }
 
+    void register_plc_plugin(int plugin_id, roc_plugin_plc* plugin) {
+        CHECK(roc_context_register_plc(ctx_, plugin_id, plugin) == 0);
+    }
+
 private:
     roc_context* ctx_;
 };

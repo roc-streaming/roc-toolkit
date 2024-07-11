@@ -569,8 +569,8 @@ typedef enum roc_resampler_backend {
      * stage is needed, and this becomes fastest possible backend working almost as fast
      * as memcpy().
      *
-     * When frame and packet rates are different, usage of this backend compared to
-     * \c ROC_RESAMPLER_BACKEND_SPEEX allows to sacrify some quality, but somewhat
+     * When frame and packet rates are different, usage of this backend, compared to
+     * \c ROC_RESAMPLER_BACKEND_SPEEX, allows to sacrify some quality, but somewhat
      * improve scaling precision and CPU usage in return.
      *
      * This backend is available only when SpeexDSP was enabled at build time.
@@ -599,6 +599,25 @@ typedef enum roc_resampler_profile {
     /** Low quality, lower CPU usage. */
     ROC_RESAMPLER_PROFILE_LOW = 3
 } roc_resampler_profile;
+
+/** PLC backend.
+ *
+ * Packet loss concealment (PLC), is used to reduce distortion caused by lost
+ * packets by filling gaps with interpolated or extrapolated data.
+ *
+ * PLC is used when a packet was lost and FEC was not able to recover it.
+ */
+typedef enum roc_plc_backend {
+    /** No PLC.
+     * Gaps are filled with zeros (silence).
+     */
+    ROC_PLC_BACKEND_DISABLE = -1,
+
+    /** Default backend.
+     * Current default is \c ROC_PLC_BACKEND_DISABLE.
+     */
+    ROC_PLC_BACKEND_DEFAULT = 0,
+} roc_plc_backend;
 
 /** Context configuration.
  *
@@ -652,15 +671,14 @@ typedef struct roc_sender_config {
      * automatically.
      *
      * If zero, sender selects packet encoding automatically based on \c frame_encoding.
-     * This automatic selection matches only encodings that have exact same sample rate
-     * and channel layout, and hence don't require conversions. If you need conversions,
-     * you should set packet encoding explicitly.
+     * This automatic selection matches only encodings that have exact same sample rate,
+     * channel layout, and format, hence don't require conversions. If you need
+     * conversions, you should set packet encoding explicitly.
      *
-     * If you want to force specific packet encoding, and built-in set of encodings is
-     * not enough, you can use \ref roc_context_register_encoding() to register custom
-     * encoding, and set \c packet_encoding to registered identifier. If you use signaling
-     * protocol like RTSP, it's enough to register in just on sender; otherwise, you
-     * need to do the same on receiver as well.
+     * You can use \ref roc_context_register_encoding() to register custom encoding, and
+     * set \c packet_encoding to registered identifier. If you use signaling protocol like
+     * RTSP, it's enough to register in just on sender; otherwise, you need to do the same
+     * on receiver as well.
      */
     roc_packet_encoding packet_encoding;
 
@@ -853,6 +871,16 @@ typedef struct roc_receiver_config {
      * If zero, default profile is used (\ref ROC_RESAMPLER_PROFILE_DEFAULT).
      */
     roc_resampler_profile resampler_profile;
+
+    /** PLC backend.
+     * Allows to reduce distortion cased by packet loss.
+     *
+     * If zero, default backend is used (\ref ROC_PLC_BACKEND_DEFAULT).
+     *
+     * You can use \ref roc_context_register_plc() to register custom PLC implementation,
+     * and set \c plc_backend to registered identifier.
+     */
+    roc_plc_backend plc_backend;
 
     /** Target latency, in nanoseconds.
      *

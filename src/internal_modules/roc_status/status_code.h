@@ -98,6 +98,14 @@ enum StatusCode {
     //!  supports only wav files.
     StatusNoDriver,
 
+    //! No plugin found.
+    //! @remarks
+    //!  Indicates that plugin lookup or initialization failed.
+    //! @note
+    //!  Example: we're trying to create PLC plugin, but use-provided callback
+    //!  failed to allocate it.
+    StatusNoPlugin,
+
     //! Failure with audio device.
     //! @remarks
     //!  Indicates that error occurred when working with audio device.

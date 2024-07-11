@@ -6,6 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include "roc/plugin.h"
+
 #include "adapters.h"
 
 #include "roc_address/interface.h"
@@ -65,7 +67,8 @@ bool sender_config_from_user(node::Context& context,
         if (!packet_encoding_from_user(out.payload_type, in.packet_encoding)) {
             roc_log(LogError,
                     "bad configuration: invalid roc_sender_config.packet_encoding:"
-                    " should be zero or valid encoding id");
+                    " should be either zero, or valid enum value,"
+                    " or belong to the range [ROC_ENCODING_ID_MIN; ROC_ENCODING_ID_MAX]");
             return false;
         }
         const rtp::Encoding* encoding =
@@ -227,6 +230,14 @@ bool receiver_config_from_user(node::Context&,
         roc_log(LogError,
                 "bad configuration: invalid roc_receiver_config.resampler_profile:"
                 " should be valid enum value");
+        return false;
+    }
+
+    if (!plc_backend_from_user(out.session_defaults.plc.backend, in.plc_backend)) {
+        roc_log(LogError,
+                "bad configuration: invalid roc_receiver_config.plc_backend:"
+                " should be either valid enum value, "
+                " or belong to the range [ROC_PLUGIN_ID_MIN; ROC_PLUGIN_ID_MAX]");
         return false;
     }
 
@@ -473,19 +484,43 @@ bool resampler_profile_from_user(audio::ResamplerProfile& out, roc_resampler_pro
 }
 
 ROC_ATTR_NO_SANITIZE_UB
-bool packet_encoding_from_user(unsigned& out_pt, roc_packet_encoding in) {
+bool plc_backend_from_user(int& out_id, roc_plc_backend in) {
     switch (enum_from_user(in)) {
-    case ROC_PACKET_ENCODING_AVP_L16_MONO:
-        out_pt = rtp::PayloadType_L16_Mono;
+    case ROC_PLC_BACKEND_DISABLE:
+        out_id = audio::PlcBackend_None;
         return true;
 
-    case ROC_PACKET_ENCODING_AVP_L16_STEREO:
-        out_pt = rtp::PayloadType_L16_Stereo;
+    case ROC_PLC_BACKEND_DEFAULT:
+        out_id = audio::PlcBackend_Default;
         return true;
     }
 
-    out_pt = in;
-    return true;
+    if ((int)in >= (int)ROC_PLUGIN_ID_MIN && (int)in <= (int)ROC_PLUGIN_ID_MAX) {
+        out_id = (int)in;
+        return true;
+    }
+
+    return false;
+}
+
+ROC_ATTR_NO_SANITIZE_UB
+bool packet_encoding_from_user(unsigned& out_id, roc_packet_encoding in) {
+    switch (enum_from_user(in)) {
+    case ROC_PACKET_ENCODING_AVP_L16_MONO:
+        out_id = rtp::PayloadType_L16_Mono;
+        return true;
+
+    case ROC_PACKET_ENCODING_AVP_L16_STEREO:
+        out_id = rtp::PayloadType_L16_Stereo;
+        return true;
+    }
+
+    if ((int)in >= (int)ROC_ENCODING_ID_MIN && (int)in <= (int)ROC_ENCODING_ID_MAX) {
+        out_id = (unsigned)in;
+        return true;
+    }
+
+    return false;
 }
 
 ROC_ATTR_NO_SANITIZE_UB

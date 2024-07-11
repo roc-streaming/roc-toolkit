@@ -10,6 +10,7 @@
 
 #include "adapters.h"
 #include "arena.h"
+#include "plugin_plc.h"
 
 #include "roc_audio/pcm_decoder.h"
 #include "roc_audio/pcm_encoder.h"
@@ -101,6 +102,46 @@ int roc_context_register_encoding(roc_context* context,
     if (code != status::StatusOK) {
         roc_log(LogError,
                 "roc_context_register_encoding(): failed to register encoding: status=%s",
+                status::code_to_str(code));
+        return -1;
+    }
+
+    return 0;
+}
+
+int roc_context_register_plc(roc_context* context,
+                             int plugin_id,
+                             roc_plugin_plc* plugin) {
+    if (!context) {
+        roc_log(LogError,
+                "roc_context_register_plc(): invalid arguments:"
+                " context is null");
+        return -1;
+    }
+
+    if (plugin_id < ROC_PLUGIN_ID_MIN || plugin_id > ROC_PLUGIN_ID_MAX) {
+        roc_log(LogError,
+                "roc_context_register_plc(): invalid arguments:"
+                " plugin_id out of range: value=%d range=[%d; %d]",
+                plugin_id, ROC_PLUGIN_ID_MIN, ROC_PLUGIN_ID_MAX);
+        return -1;
+    }
+
+    if (!api::PluginPlc::validate(plugin)) {
+        roc_log(LogError,
+                "roc_context_register_plc(): invalid arguments:"
+                " invalid function table");
+        return -1;
+    }
+
+    node::Context* imp_context = (node::Context*)context;
+
+    const status::StatusCode code = imp_context->processor_map().register_plc(
+        plugin_id, plugin, &api::PluginPlc::construct);
+
+    if (code != status::StatusOK) {
+        roc_log(LogError,
+                "roc_context_register_plc(): failed to register encoding: status=%s",
                 status::code_to_str(code));
         return -1;
     }

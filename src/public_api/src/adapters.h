@@ -53,6 +53,8 @@ bool latency_tuner_profile_from_user(audio::LatencyTunerProfile& out,
 bool resampler_backend_from_user(audio::ResamplerBackend& out, roc_resampler_backend in);
 bool resampler_profile_from_user(audio::ResamplerProfile& out, roc_resampler_profile in);
 
+bool plc_backend_from_user(int& out, roc_plc_backend in);
+
 bool packet_encoding_from_user(unsigned& out_pt, roc_packet_encoding in);
 bool fec_encoding_from_user(packet::FecScheme& out, roc_fec_encoding in);
 
