@@ -9,9 +9,8 @@ jobs:
   main:
     runs-on: ubuntu-latest
     steps:
-      - uses: alex-page/github-project-automation-plus@v0.8.1
-        continue-on-error: true
+      - uses: actions/add-to-project@v1.0.2
+        id: addItem
         with:
-          repo-token: "${{ secrets.REPO_MANAGEMENT }}"
-          project: "kanban board"
-          column: "Frontlog"
+          project-url: "https://github.com/orgs/roc-streaming/projects/5"
+          github-token: "${{ secrets.REPO_MANAGEMENT }}"
