@@ -19,15 +19,15 @@ namespace sndio {
 enum DeviceState {
     //! Device is running and active.
     //! It is producing some sound.
-    DeviceState_Active,
+    DeviceState_Active = (1 << 0),
 
     //! Device is running but is inactive.
     //! It is producing silence. It may be safely paused.
-    DeviceState_Idle,
+    DeviceState_Idle = (1 << 1),
 
     //! Device is paused.
     //! It's not producing anything.
-    DeviceState_Paused
+    DeviceState_Paused = (1 << 2)
 };
 
 //! Convert device state to string.

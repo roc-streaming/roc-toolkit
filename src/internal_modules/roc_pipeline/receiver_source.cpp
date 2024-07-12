@@ -108,7 +108,7 @@ void ReceiverSource::delete_slot(ReceiverSlot* slot) {
 }
 
 size_t ReceiverSource::num_sessions() const {
-    return state_tracker_.num_active_sessions();
+    return state_tracker_.num_sessions();
 }
 
 status::StatusCode ReceiverSource::refresh(core::nanoseconds_t current_time,

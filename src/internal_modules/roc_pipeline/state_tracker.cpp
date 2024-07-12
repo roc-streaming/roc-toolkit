@@ -32,22 +32,28 @@ sndio::DeviceState StateTracker::get_state() const {
     return sndio::DeviceState_Idle;
 }
 
-size_t StateTracker::num_active_sessions() const {
+size_t StateTracker::num_sessions() const {
     return (size_t)active_sessions_;
 }
 
-void StateTracker::add_active_sessions(int increment) {
-    const long result = active_sessions_ += increment;
-    roc_panic_if(result < 0);
+void StateTracker::register_session() {
+    active_sessions_++;
 }
 
-size_t StateTracker::num_pending_packets() const {
-    return (size_t)pending_packets_;
+void StateTracker::unregister_session() {
+    if (--active_sessions_ < 0) {
+        roc_panic("state tracker: unpaired register/unregister session");
+    }
 }
 
-void StateTracker::add_pending_packets(int increment) {
-    const long result = pending_packets_ += increment;
-    roc_panic_if(result < 0);
+void StateTracker::register_packet() {
+    pending_packets_++;
+}
+
+void StateTracker::unregister_packet() {
+    if (--pending_packets_ < 0) {
+        roc_panic("state tracker: unpaired register/unregister packet");
+    }
 }
 
 } // namespace pipeline

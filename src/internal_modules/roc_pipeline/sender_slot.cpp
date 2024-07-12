@@ -40,7 +40,7 @@ SenderSlot::SenderSlot(const SenderSinkConfig& sink_config,
 SenderSlot::~SenderSlot() {
     if (session_.frame_writer() && fanout_.has_output(*session_.frame_writer())) {
         fanout_.remove_output(*session_.frame_writer());
-        state_tracker_.add_active_sessions(-1);
+        state_tracker_.unregister_session();
     }
 }
 
@@ -102,7 +102,7 @@ SenderEndpoint* SenderSlot::add_endpoint(address::Interface iface,
         if (session_.frame_writer()) {
             if (!fanout_.has_output(*session_.frame_writer())) {
                 fanout_.add_output(*session_.frame_writer());
-                state_tracker_.add_active_sessions(+1);
+                state_tracker_.register_session();
             }
         }
         break;

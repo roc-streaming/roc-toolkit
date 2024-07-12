@@ -108,7 +108,7 @@ void SenderSink::delete_slot(SenderSlot* slot) {
 size_t SenderSink::num_sessions() const {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    return state_tracker_.num_active_sessions();
+    return state_tracker_.num_sessions();
 }
 
 status::StatusCode SenderSink::refresh(core::nanoseconds_t current_time,

@@ -36,16 +36,19 @@ public:
     sndio::DeviceState get_state() const;
 
     //! Get active sessions counter.
-    size_t num_active_sessions() const;
+    size_t num_sessions() const;
 
-    //! Add/subtract to active sessions counter.
-    void add_active_sessions(int increment);
+    //! Increment active sessions counter.
+    void register_session();
 
-    //! Get pending packets counter.
-    size_t num_pending_packets() const;
+    //! Decrement active sessions counter.
+    void unregister_session();
 
-    //! Add/subtract to pending packets counter.
-    void add_pending_packets(int increment);
+    //! Increment pending packets counter.
+    void register_packet();
+
+    //! Decrement pending packets counter.
+    void unregister_packet();
 
 private:
     core::Atomic<int> active_sessions_;

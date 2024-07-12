@@ -429,7 +429,7 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
     }
 
     sessions_.push_back(*sess);
-    state_tracker_.add_active_sessions(+1);
+    state_tracker_.register_session();
 
     return status::StatusOK;
 }
@@ -447,7 +447,7 @@ void ReceiverSessionGroup::remove_session_(core::SharedPtr<ReceiverSession> sess
     sessions_.remove(*sess);
 
     session_router_.remove_session(sess);
-    state_tracker_.add_active_sessions(-1);
+    state_tracker_.unregister_session();
 }
 
 void ReceiverSessionGroup::remove_all_sessions_() {

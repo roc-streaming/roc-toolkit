@@ -214,7 +214,7 @@ status::StatusCode ReceiverEndpoint::pull_packets(core::nanoseconds_t current_ti
     // acceptable to consider such packets late and pull them next time.
     while (packet::PacketPtr packet = inbound_queue_.try_pop_front_exclusive()) {
         const status::StatusCode code = handle_packet_(packet, current_time);
-        state_tracker_.add_pending_packets(-1);
+        state_tracker_.unregister_packet();
 
         if (code != status::StatusOK) {
             return code;
@@ -254,7 +254,7 @@ status::StatusCode ReceiverEndpoint::write(const packet::PacketPtr& packet) {
     roc_panic_if(!packet);
     roc_panic_if(!parser_);
 
-    state_tracker_.add_pending_packets(+1);
+    state_tracker_.register_packet();
     inbound_queue_.push_back(*packet);
 
     return status::StatusOK;
