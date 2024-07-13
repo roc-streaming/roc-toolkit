@@ -162,10 +162,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - script: linux-checks/conditional-build
+          - script: linux-checks/static-shared
             image: rocstreaming/env-ubuntu:nolibs
 
-          - script: linux-checks/static-shared
+          - script: linux-checks/conditional-build
             image: rocstreaming/env-ubuntu:nolibs
 
           - script: linux-checks/debug-build
@@ -178,6 +178,9 @@ jobs:
             image: rocstreaming/env-ubuntu
 
           - script: linux-checks/check-formatting
+            image: rocstreaming/env-ubuntu
+
+          - script: linux-checks/check-scons
             image: rocstreaming/env-ubuntu
 
           - script: linux-checks/pulseaudio-versions

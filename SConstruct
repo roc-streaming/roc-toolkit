@@ -439,8 +439,13 @@ doc_env = env.DeepClone()
 doc_env.SConscript('docs/SConscript',
                    duplicate=0, exports='doc_env')
 
+# run scons self-test
+env.AlwaysBuild(env.Alias('selftest', [], [
+    env.SelfTest(),
+]))
+
 # exit early if there is nothing to build
-non_build_targets = ['fmt', 'docs', 'sphinx', 'doxygen']
+non_build_targets = ['fmt', 'docs', 'sphinx', 'doxygen', 'selftest']
 if set(COMMAND_LINE_TARGETS) \
   and set(COMMAND_LINE_TARGETS).intersection(non_build_targets) == set(COMMAND_LINE_TARGETS):
     Return()
