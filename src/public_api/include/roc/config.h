@@ -383,7 +383,7 @@ typedef struct roc_media_encoding {
 } roc_media_encoding;
 
 /** Clock source for sender or receiver.
- * Defines wo is responsible to invoke read or write in proper time.
+ * Defines who is responsible to invoke read or write in proper time.
  */
 typedef enum roc_clock_source {
     /** Default clock source.
@@ -469,7 +469,7 @@ typedef enum roc_latency_tuner_profile {
      * In this mode, clock speed is not adjusted. Default on sender.
      *
      * You can set this mode on receiver, and set some other mode on sender, to
-     * do latency tuning on sender side instead of recever side. It's useful
+     * do latency tuning on sender side instead of receiver side. It's useful
      * when receiver is CPU-constrained and sender is not, because latency tuner
      * relies on resampling, which is CPU-demanding.
      *
@@ -570,8 +570,8 @@ typedef enum roc_resampler_backend {
      * as memcpy().
      *
      * When frame and packet rates are different, usage of this backend, compared to
-     * \c ROC_RESAMPLER_BACKEND_SPEEX, allows to sacrify some quality, but somewhat
-     * improve scaling precision and CPU usage in return.
+     * \c ROC_RESAMPLER_BACKEND_SPEEX, allows to sacrifice some quality and improve
+     * scaling precision and CPU usage in return.
      *
      * This backend is available only when SpeexDSP was enabled at build time.
      *
@@ -692,13 +692,6 @@ typedef struct roc_sender_config {
      * If zero, default value is used.
      */
     unsigned long long packet_length;
-
-    /** Enable packet interleaving.
-     *
-     * If non-zero, the sender shuffles packets before sending them. This
-     * may increase robustness but also increases latency.
-     */
-    unsigned int packet_interleaving;
 
     /** FEC encoding to use.
      *
@@ -1006,7 +999,7 @@ typedef struct roc_interface_config {
      *
      * By default, false.
      */
-    int reuse_address;
+    unsigned int reuse_address;
 } roc_interface_config;
 
 #ifdef __cplusplus

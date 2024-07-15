@@ -8,7 +8,7 @@
 
 /**
  * \file roc/version.h
- * \brief Roc version.
+ * \brief Version numbers.
  */
 
 #ifndef ROC_VERSION_H_
@@ -20,20 +20,20 @@
 extern "C" {
 #endif
 
-/** Major version component.
+/** First component of library version triple.
  */
 #define ROC_VERSION_MAJOR 0
 
-/** Minor version component.
+/** Second component of library version triple.
  */
 #define ROC_VERSION_MINOR 4
 
-/** Patch version component.
+/** Third component of library version triple.
  */
 #define ROC_VERSION_PATCH 0
 
 /** Convert version triple to numeric version code.
- * Version codes can be compared direcrly, e.g.:
+ * Version codes can be compared directly, e.g.:
  * \code
  *   #if ROC_VERSION < ROC_VERSION_CODE(1, 2, 3)
  *   ...
@@ -42,7 +42,7 @@ extern "C" {
  */
 #define ROC_VERSION_CODE(major, minor, patch) ((major)*1000000 + (minor)*1000 + (patch))
 
-/** Numeric version code.
+/** Numeric version code that corresponds to library version.
  * \see ROC_VERSION_CODE
  */
 #define ROC_VERSION                                                                      \
@@ -51,15 +51,15 @@ extern "C" {
 /** Version components.
  */
 typedef struct roc_version {
-    /** Major version component.
+    /** First component of library version triple.
      */
     unsigned int major;
 
-    /** Minor version component.
+    /** Second component of library version triple.
      */
     unsigned int minor;
 
-    /** Patch version component.
+    /** Third component of library version triple.
      */
     unsigned int patch;
 

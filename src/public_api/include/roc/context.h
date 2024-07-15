@@ -50,7 +50,7 @@ typedef struct roc_context roc_context;
  *
  * **Parameters**
  *  - \p config should point to an initialized config
- *  - \p result should point to an unitialized roc_context pointer
+ *  - \p result should point to an uninitialized roc_context pointer
  *
  * **Returns**
  *  - returns zero if the context was successfully created
@@ -72,7 +72,7 @@ ROC_API int roc_context_open(const roc_context_config* config, roc_context** res
  * specify packet encoding, you can use both built-in and registered encodings.
  *
  * On sender, you should register custom encoding and set to \c packet_encoding field
- * of \c roc_sender_config, if you need to force specific encoding of packets.
+ * of \ref roc_sender_config, if you need to force specific encoding of packets.
  *
  * On receiver, you should register custom encoding with same id and specification,
  * if you did so on sender, and you're not using any signaling protocol (like RTSP)

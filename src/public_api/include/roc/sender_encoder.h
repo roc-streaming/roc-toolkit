@@ -8,7 +8,7 @@
 
 /**
  * \file roc/sender_encoder.h
- * \brief Roc sender encoder.
+ * \brief Sender encoder.
  */
 
 #ifndef ROC_SENDER_ENCODER_H_
@@ -99,7 +99,7 @@ typedef struct roc_sender_encoder roc_sender_encoder;
  * **Parameters**
  *  - \p context should point to an opened context
  *  - \p config should point to an initialized config
- *  - \p result should point to an unitialized roc_sender_encoder pointer
+ *  - \p result should point to an uninitialized roc_sender_encoder pointer
  *
  * **Returns**
  *  - returns zero if the encoder was successfully created

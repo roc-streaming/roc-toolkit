@@ -22,7 +22,7 @@ extern "C" {
 #endif
 
 enum {
-    /** Minumum allowed packet encoding id.
+    /** Minimum allowed packet encoding id.
      *
      * \ref ROC_ENCODING_ID_MIN and \ref ROC_ENCODING_ID_MAX define allowed
      * range for encoding identifiers registered by user.
@@ -42,7 +42,7 @@ enum {
 };
 
 enum {
-    /** Minumum allowed plugin id.
+    /** Minimum allowed plugin id.
      *
      * \ref ROC_PLUGIN_ID_MIN and \ref ROC_PLUGIN_ID_MAX define allowed
      * range for plugin identifiers registered by user.

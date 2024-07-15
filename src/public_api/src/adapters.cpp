@@ -108,8 +108,6 @@ bool sender_config_from_user(node::Context& context,
     out.enable_cpu_clock = false;
     out.enable_auto_cts = true;
 
-    out.enable_interleaving = in.packet_interleaving;
-
     if (!fec_encoding_from_user(out.fec_encoder.scheme, in.fec_encoding)) {
         roc_log(LogError,
                 "bad configuration: invalid roc_sender_config.fec_encoding:"

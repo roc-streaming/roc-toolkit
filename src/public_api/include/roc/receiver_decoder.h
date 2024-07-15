@@ -8,7 +8,7 @@
 
 /**
  * \file roc/receiver_decoder.h
- * \brief Roc receiver decoder.
+ * \brief Receiver decoder.
  */
 
 #ifndef ROC_RECEIVER_DECODER_H_
@@ -33,7 +33,7 @@ extern "C" {
  * Receiver decoder is a networkless version of \ref roc_receiver. It implements the same
  * pipeline, but instead of receiving packets from network, it gets them from the user.
  * The user is responsible for carrying packets over network. Unlike \ref roc_receiver,
- * it doesn't support multiple slots and conenctions. It consumes traffic from a single
+ * it doesn't support multiple slots and connections. It consumes traffic from a single
  * remote peer.
  *
  * For detailed description of receiver pipeline, see documentation for \ref roc_receiver.
@@ -68,7 +68,7 @@ extern "C" {
  *
  * **Interfaces and protocols**
  *
- * Receiver decoder may have one or several *interfaces*, as defined in \c
+ * Receiver decoder may have one or several *interfaces*, as defined in \ref
  * roc_interface. The interface defines the type of the communication with the remote peer
  * and the set of the protocols supported by it.
  *
@@ -99,7 +99,7 @@ typedef struct roc_receiver_decoder roc_receiver_decoder;
  * **Parameters**
  *  - \p context should point to an opened context
  *  - \p config should point to an initialized config
- *  - \p result should point to an unitialized roc_receiver_decoder pointer
+ *  - \p result should point to an uninitialized roc_receiver_decoder pointer
  *
  * **Returns**
  *  - returns zero if the decoder was successfully created

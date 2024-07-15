@@ -8,7 +8,7 @@
 
 /**
  * \file roc/receiver.h
- * \brief Roc receiver.
+ * \brief Receiver peer.
  */
 
 #ifndef ROC_RECEIVER_H_
@@ -121,7 +121,7 @@ extern "C" {
  *
  * Connection is created automatically on the reception of the first packet from a new
  * sender, and terminated when there are no packets during a timeout. Connection can also
- * be terminated on other events like a large latency underrun or overrun or continous
+ * be terminated on other events like a large latency underrun or overrun or continuous
  * stuttering, but if the sender continues to send packets, connection will be created
  * again shortly.
  *
@@ -194,7 +194,7 @@ typedef struct roc_receiver roc_receiver;
  * **Parameters**
  *  - \p context should point to an opened context
  *  - \p config should point to an initialized config
- *  - \p result should point to an unitialized roc_receiver pointer
+ *  - \p result should point to an uninitialized roc_receiver pointer
  *
  * **Returns**
  *  - returns zero if the receiver was successfully created
@@ -293,7 +293,7 @@ ROC_API int roc_receiver_bind(roc_receiver* receiver,
  *
  * To retrieve metrics of specific connections of the slot, set \c conn_metrics to point
  * to an array of \ref roc_connection_metrics structs, and \c conn_metrics_count to the
- * number of elements in the array. The function will write metrcis to the array (no more
+ * number of elements in the array. The function will write metrics to the array (no more
  * than array size) and update \c conn_metrics_count with the number of elements written.
  *
  * Actual number of connections (regardless of the array size) is also written to
