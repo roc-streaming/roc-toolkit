@@ -30,6 +30,92 @@ const core::nanoseconds_t DefaultLatency = core::Millisecond * 60;
 const core::nanoseconds_t MinTimeout = core::Millisecond * 50;
 const core::nanoseconds_t MaxTimeout = core::Second * 2;
 
+audio::PcmFormat from_pulse_format(pa_sample_format fmt) {
+    switch (fmt) {
+    case PA_SAMPLE_U8:
+        return audio::PcmFormat_UInt8;
+
+    case PA_SAMPLE_S16LE:
+        return audio::PcmFormat_SInt16_Le;
+    case PA_SAMPLE_S16BE:
+        return audio::PcmFormat_SInt16_Be;
+
+    case PA_SAMPLE_S24LE:
+        return audio::PcmFormat_SInt24_Le;
+    case PA_SAMPLE_S24BE:
+        return audio::PcmFormat_SInt24_Be;
+
+    case PA_SAMPLE_S24_32LE:
+        return audio::PcmFormat_SInt24_4_Le;
+    case PA_SAMPLE_S24_32BE:
+        return audio::PcmFormat_SInt24_4_Be;
+
+    case PA_SAMPLE_S32LE:
+        return audio::PcmFormat_SInt32_Le;
+    case PA_SAMPLE_S32BE:
+        return audio::PcmFormat_SInt32_Be;
+
+    case PA_SAMPLE_FLOAT32LE:
+        return audio::PcmFormat_Float32_Le;
+    case PA_SAMPLE_FLOAT32BE:
+        return audio::PcmFormat_Float32_Be;
+
+    default:
+        break;
+    }
+
+    return audio::PcmFormat_Invalid;
+}
+
+pa_sample_format to_pulse_format(audio::PcmFormat fmt) {
+    switch (fmt) {
+    case audio::PcmFormat_UInt8:
+    case audio::PcmFormat_UInt8_Le:
+    case audio::PcmFormat_UInt8_Be:
+        return PA_SAMPLE_U8;
+
+    case audio::PcmFormat_SInt16:
+        return PA_SAMPLE_S16NE;
+    case audio::PcmFormat_SInt16_Le:
+        return PA_SAMPLE_S16LE;
+    case audio::PcmFormat_SInt16_Be:
+        return PA_SAMPLE_S16BE;
+
+    case audio::PcmFormat_SInt24:
+        return PA_SAMPLE_S24NE;
+    case audio::PcmFormat_SInt24_Le:
+        return PA_SAMPLE_S24LE;
+    case audio::PcmFormat_SInt24_Be:
+        return PA_SAMPLE_S24BE;
+
+    case audio::PcmFormat_SInt24_4:
+        return PA_SAMPLE_S24_32NE;
+    case audio::PcmFormat_SInt24_4_Le:
+        return PA_SAMPLE_S24_32LE;
+    case audio::PcmFormat_SInt24_4_Be:
+        return PA_SAMPLE_S24_32BE;
+
+    case audio::PcmFormat_SInt32:
+        return PA_SAMPLE_S32NE;
+    case audio::PcmFormat_SInt32_Le:
+        return PA_SAMPLE_S32LE;
+    case audio::PcmFormat_SInt32_Be:
+        return PA_SAMPLE_S32BE;
+
+    case audio::PcmFormat_Float32:
+        return PA_SAMPLE_FLOAT32NE;
+    case audio::PcmFormat_Float32_Le:
+        return PA_SAMPLE_FLOAT32LE;
+    case audio::PcmFormat_Float32_Be:
+        return PA_SAMPLE_FLOAT32BE;
+
+    default:
+        break;
+    }
+
+    return PA_SAMPLE_INVALID;
+}
+
 } // namespace
 
 PulseaudioDevice::PulseaudioDevice(audio::FrameFactory& frame_factory,
@@ -59,6 +145,18 @@ PulseaudioDevice::PulseaudioDevice(audio::FrameFactory& frame_factory,
     , timer_deadline_ns_(0)
     , rate_limiter_(ReportInterval)
     , init_status_(status::NoStatus) {
+    if (sample_spec_.sample_format() != audio::SampleFormat_Invalid
+        && (sample_spec_.sample_format() != audio::SampleFormat_Pcm
+            || to_pulse_format(sample_spec_.pcm_format()) == PA_SAMPLE_INVALID)) {
+        roc_log(LogError,
+                "pulseaudio %s: requested sample format not supported by backend:"
+                " sample_spec=%s",
+                device_type_to_str(device_type_),
+                audio::sample_spec_to_str(sample_spec_).c_str());
+        init_status_ = status::StatusBadConfig;
+        return;
+    }
+
     if (frame_len_ns_ == 0) {
         frame_len_ns_ = DefaultFrameLength;
     }
@@ -225,7 +323,7 @@ void PulseaudioDevice::reclock(core::nanoseconds_t timestamp) {
 status::StatusCode PulseaudioDevice::write(audio::Frame& frame) {
     roc_panic_if(device_type_ != DeviceType_Sink);
 
-    return handle_request_(frame.raw_samples(), frame.num_raw_samples());
+    return handle_request_(frame.bytes(), frame.num_bytes());
 }
 
 status::StatusCode PulseaudioDevice::read(audio::Frame& frame,
@@ -238,13 +336,13 @@ status::StatusCode PulseaudioDevice::read(audio::Frame& frame,
         return status::StatusNoMem;
     }
 
-    frame.set_raw(true);
+    frame.set_raw(sample_spec_.is_raw());
     frame.set_duration(duration);
 
-    return handle_request_(frame.raw_samples(), frame.num_raw_samples());
+    return handle_request_(frame.bytes(), frame.num_bytes());
 }
 
-status::StatusCode PulseaudioDevice::handle_request_(audio::sample_t* data, size_t size) {
+status::StatusCode PulseaudioDevice::handle_request_(uint8_t* data, size_t size) {
     want_mainloop_();
 
     while (size > 0) {
@@ -504,7 +602,10 @@ void PulseaudioDevice::device_info_cb_(pa_context*,
             self.set_open_status_(status::StatusErrDevice);
             return;
         }
-        self.init_stream_params_((*(const pa_sink_info*)info).sample_spec);
+        if (!self.init_stream_params_((*(const pa_sink_info*)info).sample_spec)) {
+            self.set_open_status_(status::StatusErrDevice);
+            return;
+        }
         break;
 
     case DeviceType_Source:
@@ -512,7 +613,10 @@ void PulseaudioDevice::device_info_cb_(pa_context*,
             self.set_open_status_(status::StatusErrDevice);
             return;
         }
-        self.init_stream_params_((*(const pa_source_info*)info).sample_spec);
+        if (!self.init_stream_params_((*(const pa_source_info*)info).sample_spec)) {
+            self.set_open_status_(status::StatusErrDevice);
+            return;
+        }
         break;
     }
 
@@ -524,8 +628,16 @@ void PulseaudioDevice::device_info_cb_(pa_context*,
 
 bool PulseaudioDevice::load_device_params_(const pa_sample_spec& device_spec) {
     if (sample_spec_.sample_format() == audio::SampleFormat_Invalid) {
+        audio::PcmFormat fmt = from_pulse_format(device_spec.format);
+
+        if (fmt == audio::PcmFormat_Invalid) {
+            // We don't support device's native format, so ask pulseaudio
+            // to do conversion for our native format.
+            fmt = audio::Sample_RawFormat;
+        }
+
         sample_spec_.set_sample_format(audio::SampleFormat_Pcm);
-        sample_spec_.set_pcm_format(audio::Sample_RawFormat);
+        sample_spec_.set_pcm_format(fmt);
     }
 
     if (sample_spec_.sample_rate() == 0) {
@@ -583,17 +695,19 @@ bool PulseaudioDevice::load_device_params_(const pa_sample_spec& device_spec) {
     return true;
 }
 
-void PulseaudioDevice::init_stream_params_(const pa_sample_spec& device_spec) {
-    stream_spec_.format = PA_SAMPLE_FLOAT32LE;
+bool PulseaudioDevice::init_stream_params_(const pa_sample_spec& device_spec) {
+    stream_spec_.format = to_pulse_format(sample_spec_.pcm_format());
     stream_spec_.rate = (uint32_t)sample_spec_.sample_rate();
     stream_spec_.channels = (uint8_t)sample_spec_.num_channels();
 
-    roc_panic_if(sizeof(audio::sample_t) != sizeof(float));
+    roc_panic_if(stream_spec_.format == PA_SAMPLE_INVALID);
+    roc_panic_if(stream_spec_.rate == 0);
+    roc_panic_if(stream_spec_.channels == 0);
 
-    const size_t frame_len_bytes = (size_t)frame_len_samples_
-        * sample_spec_.num_channels() * sizeof(audio::sample_t);
-    const size_t target_latency_bytes = (size_t)target_latency_samples_
-        * sample_spec_.num_channels() * sizeof(audio::sample_t);
+    const size_t frame_len_bytes = sample_spec_.stream_timestamp_2_bytes(
+        (packet::stream_timestamp_t)frame_len_samples_);
+    const size_t target_latency_bytes = sample_spec_.stream_timestamp_2_bytes(
+        (packet::stream_timestamp_t)target_latency_samples_);
 
     switch (device_type_) {
     case DeviceType_Sink:
@@ -612,6 +726,8 @@ void PulseaudioDevice::init_stream_params_(const pa_sample_spec& device_spec) {
         buff_attrs_.fragsize = (uint32_t)target_latency_bytes;
         break;
     }
+
+    return true;
 }
 
 bool PulseaudioDevice::open_stream_() {
@@ -682,7 +798,7 @@ void PulseaudioDevice::close_stream_() {
     stream_ = NULL;
 }
 
-ssize_t PulseaudioDevice::request_stream_(audio::sample_t* data, size_t size) {
+ssize_t PulseaudioDevice::request_stream_(uint8_t* data, size_t size) {
     ssize_t ret = 0;
 
     switch (device_type_) {
@@ -698,7 +814,7 @@ ssize_t PulseaudioDevice::request_stream_(audio::sample_t* data, size_t size) {
     return ret;
 }
 
-ssize_t PulseaudioDevice::write_stream_(const audio::sample_t* data, size_t size) {
+ssize_t PulseaudioDevice::write_stream_(const uint8_t* data, size_t size) {
     ssize_t avail_size = wait_stream_();
 
     if (avail_size == -1) {
@@ -713,8 +829,7 @@ ssize_t PulseaudioDevice::write_stream_(const audio::sample_t* data, size_t size
         size = (size_t)avail_size;
     }
 
-    const int err = pa_stream_write(stream_, data, size * sizeof(audio::sample_t), NULL,
-                                    0, PA_SEEK_RELATIVE);
+    const int err = pa_stream_write(stream_, data, size, NULL, 0, PA_SEEK_RELATIVE);
     if (err != 0) {
         roc_log(LogError, "pulseaudio %s: pa_stream_write(): %s",
                 device_type_to_str(device_type_), pa_strerror(err));
@@ -724,7 +839,7 @@ ssize_t PulseaudioDevice::write_stream_(const audio::sample_t* data, size_t size
     return (ssize_t)size;
 }
 
-ssize_t PulseaudioDevice::read_stream_(audio::sample_t* data, size_t size) {
+ssize_t PulseaudioDevice::read_stream_(uint8_t* data, size_t size) {
     if (record_frag_size_ == 0) {
         wait_stream_();
 
@@ -738,10 +853,8 @@ ssize_t PulseaudioDevice::read_stream_(audio::sample_t* data, size_t size) {
             return -1;
         }
 
-        roc_panic_if_not(fragment_size % sizeof(audio::sample_t) == 0);
-
-        record_frag_data_ = (const audio::sample_t*)fragment;
-        record_frag_size_ = fragment_size / sizeof(audio::sample_t);
+        record_frag_data_ = (const uint8_t*)fragment;
+        record_frag_size_ = fragment_size;
         record_frag_flag_ = fragment_size != 0; // whether we need to call drop
     }
 
@@ -752,10 +865,10 @@ ssize_t PulseaudioDevice::read_stream_(audio::sample_t* data, size_t size) {
     if (size > 0) {
         if (record_frag_data_ != NULL) {
             // data is non-null, size is non-zero, we got samples from buffer
-            memcpy(data, record_frag_data_, size * sizeof(audio::sample_t));
+            memcpy(data, record_frag_data_, size);
         } else {
             // data is null, size is non-zero, we got hole
-            memset(data, 0, size * sizeof(audio::sample_t));
+            memset(data, 0, size);
         }
     }
 
@@ -885,8 +998,8 @@ bool PulseaudioDevice::get_latency_(core::nanoseconds_t& result) const {
         return false;
     }
 
-    ssize_t latency = ssize_t(pa_usec_to_bytes(latency_us, &stream_spec_)
-                              / sizeof(audio::sample_t) / sample_spec_.num_channels());
+    ssize_t latency = (ssize_t)sample_spec_.bytes_2_stream_timestamp(
+        pa_usec_to_bytes(latency_us, &stream_spec_));
 
     if (negative) {
         latency = -latency;

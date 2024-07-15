@@ -112,7 +112,7 @@ private:
                           const struct timeval* tv,
                           void* userdata);
 
-    status::StatusCode handle_request_(audio::sample_t* data, size_t size);
+    status::StatusCode handle_request_(uint8_t* data, size_t size);
 
     void want_mainloop_() const;
     status::StatusCode start_mainloop_();
@@ -129,12 +129,12 @@ private:
     void cancel_device_info_op_();
 
     bool load_device_params_(const pa_sample_spec& device_spec);
-    void init_stream_params_(const pa_sample_spec& device_spec);
+    bool init_stream_params_(const pa_sample_spec& device_spec);
     bool open_stream_();
     void close_stream_();
-    ssize_t request_stream_(audio::sample_t* data, size_t size);
-    ssize_t write_stream_(const audio::sample_t* data, size_t size);
-    ssize_t read_stream_(audio::sample_t* data, size_t size);
+    ssize_t request_stream_(uint8_t* data, size_t size);
+    ssize_t write_stream_(const uint8_t* data, size_t size);
+    ssize_t read_stream_(uint8_t* data, size_t size);
     ssize_t wait_stream_();
 
     bool get_latency_(core::nanoseconds_t& latency) const;
@@ -158,7 +158,7 @@ private:
     core::nanoseconds_t timeout_ns_;
     packet::stream_timestamp_diff_t timeout_samples_;
 
-    const audio::sample_t* record_frag_data_;
+    const uint8_t* record_frag_data_;
     size_t record_frag_size_;
     bool record_frag_flag_;
 
