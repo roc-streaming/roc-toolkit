@@ -142,7 +142,8 @@ bool SampleSpec::is_empty() const {
 }
 
 bool SampleSpec::is_raw() const {
-    return sample_fmt_ == SampleFormat_Pcm && pcm_fmt_ == Sample_RawFormat;
+    return sample_fmt_ == SampleFormat_Pcm
+        && get_pcm_canon_format(pcm_fmt_) == get_pcm_canon_format(Sample_RawFormat);
 }
 
 void SampleSpec::clear() {

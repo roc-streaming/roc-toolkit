@@ -236,6 +236,8 @@ void ChannelSet::set_count(size_t count) {
         set_range(0, count - 1);
         break;
     }
+
+    roc_panic_if(num_channels() != count);
 }
 
 void ChannelSet::toggle_channel(const size_t n, const bool enabled) {
