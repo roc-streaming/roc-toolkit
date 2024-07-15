@@ -60,14 +60,14 @@ static const roc_slot ROC_SLOT_DEFAULT = 0;
  * The interface defines the type of the communication with the remote peer and the
  * set of protocols (URI schemes) that can be used with this particular interface.
  *
- * \c ROC_INTERFACE_CONSOLIDATED is an interface for high-level protocols which
+ * \c ROC_INTERFACE_AGGREGATE is an interface for high-level protocols which
  * automatically manage all necessary communication: transport streams, control messages,
- * parameter negotiation, etc. When a consolidated connection is established, peers may
+ * parameter negotiation, etc. When an aggregate connection is established, peers may
  * automatically setup lower-level interfaces like \c ROC_INTERFACE_AUDIO_SOURCE, \c
  * ROC_INTERFACE_AUDIO_REPAIR, and \c ROC_INTERFACE_AUDIO_CONTROL.
  *
- * \c ROC_INTERFACE_CONSOLIDATED is mutually exclusive with lower-level interfaces.
- * In most cases, the user needs only \c ROC_INTERFACE_CONSOLIDATED. However, the
+ * \c ROC_INTERFACE_AGGREGATE is mutually exclusive with lower-level interfaces.
+ * In most cases, the user needs only \c ROC_INTERFACE_AGGREGATE. However, the
  * lower-level interfaces may be useful if an external signaling mechanism is used or for
  * compatibility with third-party software.
  *
@@ -81,7 +81,7 @@ static const roc_slot ROC_SLOT_DEFAULT = 0;
  * additional non-transport information.
  */
 typedef enum roc_interface {
-    /** Interface that consolidates all types of streams (source, repair, control).
+    /** Interface that aggregates multiple types of streams (source, repair, control).
      *
      * Allowed operations:
      *  - bind    (sender, receiver)
@@ -90,7 +90,7 @@ typedef enum roc_interface {
      * Allowed protocols:
      *  - \ref ROC_PROTO_RTSP
      */
-    ROC_INTERFACE_CONSOLIDATED = 1,
+    ROC_INTERFACE_AGGREGATE = 1,
 
     /** Interface for audio stream source data.
      *
@@ -137,7 +137,7 @@ typedef enum roc_protocol {
     /** RTSP 1.0 (RFC 2326) or RTSP 2.0 (RFC 7826).
      *
      * Interfaces:
-     *  - \ref ROC_INTERFACE_CONSOLIDATED
+     *  - \ref ROC_INTERFACE_AGGREGATE
      *
      * Transports:
      *   - for signaling: TCP

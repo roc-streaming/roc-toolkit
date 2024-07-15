@@ -76,8 +76,8 @@ extern "C" {
  *
  * Supported interface configurations:
  *
- *   - Bind \ref ROC_INTERFACE_CONSOLIDATED to a local endpoint (e.g. be an RTSP server).
- *   - Connect \ref ROC_INTERFACE_CONSOLIDATED to a remote endpoint (e.g. be an RTSP
+ *   - Bind \ref ROC_INTERFACE_AGGREGATE to a local endpoint (e.g. be an RTSP server).
+ *   - Connect \ref ROC_INTERFACE_AGGREGATE to a remote endpoint (e.g. be an RTSP
  *     client).
  *   - Bind \ref ROC_INTERFACE_AUDIO_SOURCE, \ref ROC_INTERFACE_AUDIO_REPAIR (optionally,
  *     for FEC), and \ref ROC_INTERFACE_AUDIO_CONTROL (optionally, for control messages)
@@ -92,7 +92,7 @@ extern "C" {
  *
  * **FEC schemes**
  *
- * If \ref ROC_INTERFACE_CONSOLIDATED is used, it automatically creates all necessary
+ * If \ref ROC_INTERFACE_AGGREGATE is used, it automatically creates all necessary
  * transport interfaces and the user should not bother about them.
  *
  * Otherwise, the user should manually configure \ref ROC_INTERFACE_AUDIO_SOURCE and

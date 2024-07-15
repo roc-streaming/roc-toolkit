@@ -544,8 +544,8 @@ bool fec_encoding_from_user(packet::FecScheme& out, roc_fec_encoding in) {
 ROC_ATTR_NO_SANITIZE_UB
 bool interface_from_user(address::Interface& out, const roc_interface& in) {
     switch (enum_from_user(in)) {
-    case ROC_INTERFACE_CONSOLIDATED:
-        out = address::Iface_Consolidated;
+    case ROC_INTERFACE_AGGREGATE:
+        out = address::Iface_Aggregate;
         return true;
 
     case ROC_INTERFACE_AUDIO_SOURCE:
