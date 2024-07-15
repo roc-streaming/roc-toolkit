@@ -1,13 +1,15 @@
-/* Basic sender example.
+/*
+ * This example implements minimal sender that captures from PulseAudio.
  *
- * This example creates a sender and connects it to remote receiver.
- * Then it records audio stream from PulseAudio and writes it to the sender.
+ * Flow:
+ *   - creates a sender and connects it to remote address
+ *   - captures audio stream from PulseAudio and writes it to the sender
  *
  * Building:
- *   cc basic_sender_sine_wave.c -lroc
+ *   cc -o basic_sender_pulseaudio basic_sender_pulseaudio.c -lroc -lpulse-simple
  *
  * Running:
- *   ./a.out
+ *   ./basic_sender_pulseaudio
  *
  * License:
  *   public domain
@@ -19,20 +21,20 @@
 #include <string.h>
 
 #include <roc/context.h>
-#include <roc/endpoint.h>
 #include <roc/log.h>
 #include <roc/sender.h>
 
 #include <pulse/simple.h>
 
-/* Receiver parameters. */
+/* Network parameters. */
 #define MY_RECEIVER_IP "127.0.0.1"
 #define MY_RECEIVER_SOURCE_PORT 10101
 #define MY_RECEIVER_REPAIR_PORT 10102
+#define MY_RECEIVER_CONTROL_PORT 10103
 
-/* Signal parameters */
+/* Audio parameters. */
 #define MY_SAMPLE_RATE 44100
-#define MY_NUM_CHANNELS 2
+#define MY_CHANNEL_COUNT 2
 #define MY_BUFFER_SIZE 1000
 
 #define oops()                                                                           \
@@ -43,8 +45,8 @@
     } while (0)
 
 int main() {
-    /* Enable verbose logging. */
-    roc_log_set_level(ROC_LOG_DEBUG);
+    /* Enable more verbose logging. */
+    roc_log_set_level(ROC_LOG_INFO);
 
     /* Initialize context config.
      * Initialize to zero to use default values for all fields. */
@@ -52,7 +54,7 @@ int main() {
     memset(&context_config, 0, sizeof(context_config));
 
     /* Create context.
-     * Context contains memory pools and the network worker thread(s).
+     * Context contains memory pools and the worker thread(s).
      * We need a context to create a sender. */
     roc_context* context = NULL;
     if (roc_context_open(&context_config, &context) != 0) {
@@ -60,18 +62,21 @@ int main() {
     }
 
     /* Initialize sender config.
-     * Initialize to zero to use default values for unset fields. */
+     * We keep most fields zero to use default values. */
     roc_sender_config sender_config;
     memset(&sender_config, 0, sizeof(sender_config));
 
-    /* Setup input frame format. */
+    /* Setup frame format that we want to write to sender. */
     sender_config.frame_encoding.rate = MY_SAMPLE_RATE;
     sender_config.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
     sender_config.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
 
+    /* Setup network packets format that sender should generate. */
+    sender_config.packet_encoding = ROC_PACKET_ENCODING_AVP_L16_STEREO;
+
     /* Use user-provided clock.
-     * Sender will be clocked by PulseAudio source. Writer operation will be non-blocking.
-     */
+     * Sender will be clocked by PulseAudio source. Sender write operation will be
+     * non-blocking, instead we will block on PulseAudio. */
     sender_config.clock_source = ROC_CLOCK_SOURCE_EXTERNAL;
 
     /* Create sender. */
@@ -124,12 +129,32 @@ int main() {
         oops();
     }
 
+    /* Connect sender to the receiver control (RTCP) packets endpoint. */
+    roc_endpoint* control_endp = NULL;
+    if (roc_endpoint_allocate(&control_endp) != 0) {
+        oops();
+    }
+
+    roc_endpoint_set_protocol(control_endp, ROC_PROTO_RTCP);
+    roc_endpoint_set_host(control_endp, MY_RECEIVER_IP);
+    roc_endpoint_set_port(control_endp, MY_RECEIVER_CONTROL_PORT);
+
+    if (roc_sender_connect(sender, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_CONTROL,
+                           control_endp)
+        != 0) {
+        oops();
+    }
+
+    if (roc_endpoint_deallocate(control_endp) != 0) {
+        oops();
+    }
+
     /* Initialize PulseAudio parameters. */
     pa_sample_spec sample_spec;
     memset(&sample_spec, 0, sizeof(sample_spec));
     sample_spec.format = PA_SAMPLE_FLOAT32LE;
     sample_spec.rate = MY_SAMPLE_RATE;
-    sample_spec.channels = MY_NUM_CHANNELS;
+    sample_spec.channels = MY_CHANNEL_COUNT;
 
     /* Open PulseAudio stream. */
     pa_simple* simple = pa_simple_new(NULL, "example app", PA_STREAM_RECORD, NULL,
@@ -150,7 +175,6 @@ int main() {
         /* Write samples to the sender. */
         roc_frame frame;
         memset(&frame, 0, sizeof(frame));
-
         frame.samples = samples;
         frame.samples_size = sizeof(samples);
 

@@ -77,3 +77,7 @@ table.align-center {
     width: 180px;
     height: 90px;
 }
+
+.api-examples li a {
+    background-color: #d0dcdf36;
+}

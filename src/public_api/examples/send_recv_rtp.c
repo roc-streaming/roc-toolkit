@@ -1,14 +1,17 @@
-/* Send and receive samples using bare RTP.
+/*
+ * This example does sending and receiving using bare RTP without extensions.
  *
- * This example creates a receiver and binds it to an RTP endpoint.
- * Then it creates a sender and connects it to the receiver endpoint.
- * Then it starts writing audio stream to the sender and reading it from receiver.
+ * Flow:
+ *   - creates a receiver and binds it to a single RTP endpoint
+ *   - creates a sender and connects it to the receiver endpoint
+ *   - one thread writes audio stream to the sender
+ *   - another thread reads audio stream from receiver
  *
  * Building:
- *   cc send_receive_rtp.c -lroc
+ *   cc -o send_recv_rtp send_recv_rtp.c -lroc
  *
  * Running:
- *   ./a.out
+ *   ./send_recv_rtp
  *
  * License:
  *   public domain
@@ -20,17 +23,14 @@
 #include <string.h>
 
 #include <roc/context.h>
-#include <roc/endpoint.h>
 #include <roc/log.h>
 #include <roc/receiver.h>
 #include <roc/sender.h>
 
-/* Receiver parameters. */
-#define MY_RECEIVER_IP "127.0.0.1"
-#define MY_RECEIVER_SOURCE_PORT 10201
-#define MY_RECEIVER_REPAIR_PORT 10202
+/* Network parameters. */
+#define MY_RECEIVER_SOURCE_ENDPOINT "rtp://127.0.0.1:10201"
 
-/* Signal parameters */
+/* Audio parameters. */
 #define MY_SAMPLE_RATE 44100
 #define MY_BUFFER_SIZE 2000
 
@@ -51,7 +51,7 @@ static void* receiver_loop(void* arg) {
     receiver_config.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
     receiver_config.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
 
-    /* Receiver should clock itself. */
+    /* Make read operation blocking as we don't have our own clock. */
     receiver_config.clock_source = ROC_CLOCK_SOURCE_INTERNAL;
 
     roc_receiver* receiver = NULL;
@@ -62,32 +62,22 @@ static void* receiver_loop(void* arg) {
     /* Bind receiver to the source (audio) packets endpoint.
      * The receiver will expect packets with RTP header on this port. */
     roc_endpoint* source_endp = NULL;
-    if (roc_endpoint_allocate(&source_endp) != 0) {
-        oops();
-    }
-
-    roc_endpoint_set_protocol(source_endp, ROC_PROTO_RTP);
-    roc_endpoint_set_host(source_endp, MY_RECEIVER_IP);
-    roc_endpoint_set_port(source_endp, MY_RECEIVER_SOURCE_PORT);
+    roc_endpoint_allocate(&source_endp);
+    roc_endpoint_set_uri(source_endp, MY_RECEIVER_SOURCE_ENDPOINT);
 
     if (roc_receiver_bind(receiver, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
                           source_endp)
         != 0) {
         oops();
     }
-
-    if (roc_endpoint_deallocate(source_endp) != 0) {
-        oops();
-    }
+    roc_endpoint_deallocate(source_endp);
 
     /* Read samples from the receiver. */
-    for (;;) {
+    for (unsigned long nf = 0;; nf++) {
         float samples[MY_BUFFER_SIZE];
-        memset(samples, 0, sizeof(samples));
 
         roc_frame frame;
         memset(&frame, 0, sizeof(frame));
-
         frame.samples = samples;
         frame.samples_size = sizeof(samples);
 
@@ -95,20 +85,10 @@ static void* receiver_loop(void* arg) {
             break;
         }
 
-        /* Check whether the frame has zero samples.
-         * Since the sender in this example produces only non-zero samples, a zero
-         * means that the sender is either not (yet) connected or a packet was lost. */
-        int frame_has_zeros = 0;
-        int i;
-        for (i = 0; i < MY_BUFFER_SIZE; i++) {
-            if (samples[i] < 1e9f) {
-                frame_has_zeros = 1;
-                break;
-            }
+        /* Here we can process received samples */
+        if (nf % 100 == 0) {
+            printf(">>> receiver frame counter: %lu\n", nf);
         }
-
-        printf("%c", frame_has_zeros ? 'z' : '.');
-        fflush(stdout);
     }
 
     if (roc_receiver_close(receiver) != 0) {
@@ -118,9 +98,7 @@ static void* receiver_loop(void* arg) {
     return NULL;
 }
 
-static void* sender_loop(void* arg) {
-    roc_context* context = (roc_context*)arg;
-
+static void sender_loop(roc_context* context) {
     roc_sender_config sender_config;
     memset(&sender_config, 0, sizeof(sender_config));
 
@@ -128,10 +106,11 @@ static void* sender_loop(void* arg) {
     sender_config.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
     sender_config.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
 
-    /* Sender should not use any FEC scheme. */
+    /* Disable FEC as we want to use bare RTP.  */
     sender_config.fec_encoding = ROC_FEC_ENCODING_DISABLE;
+    sender_config.packet_encoding = ROC_PACKET_ENCODING_AVP_L16_STEREO;
 
-    /* Sender should clock itself. */
+    /* Make write operation blocking as we don't have our own clock. */
     sender_config.clock_source = ROC_CLOCK_SOURCE_INTERNAL;
 
     roc_sender* sender = NULL;
@@ -142,49 +121,39 @@ static void* sender_loop(void* arg) {
     /* Connect sender to the receiver source (audio) packets endpoint.
      * The receiver should expect packets with RTP header on that port. */
     roc_endpoint* source_endp = NULL;
-    if (roc_endpoint_allocate(&source_endp) != 0) {
-        oops();
-    }
-
-    roc_endpoint_set_protocol(source_endp, ROC_PROTO_RTP);
-    roc_endpoint_set_host(source_endp, MY_RECEIVER_IP);
-    roc_endpoint_set_port(source_endp, MY_RECEIVER_SOURCE_PORT);
+    roc_endpoint_allocate(&source_endp);
+    roc_endpoint_set_uri(source_endp, MY_RECEIVER_SOURCE_ENDPOINT);
 
     if (roc_sender_connect(sender, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
                            source_endp)
         != 0) {
         oops();
     }
-
-    if (roc_endpoint_deallocate(source_endp) != 0) {
-        oops();
-    }
-
-    /* Prepare some non-zero samples. */
-    float samples[MY_BUFFER_SIZE];
-    int i;
-    for (i = 0; i < MY_BUFFER_SIZE; i++) {
-        samples[i] = 0.5f;
-    }
+    roc_endpoint_deallocate(source_endp);
 
     /* Write samples to the sender. */
-    for (;;) {
+    for (unsigned long nf = 0;; nf++) {
+        /* Here we can fill samples to be sent */
+        float samples[MY_BUFFER_SIZE];
+        memset(samples, 0xff, sizeof(samples));
+
         roc_frame frame;
         memset(&frame, 0, sizeof(frame));
-
         frame.samples = samples;
         frame.samples_size = sizeof(samples);
 
         if (roc_sender_write(sender, &frame) != 0) {
             break;
         }
+
+        if (nf % 100 == 0) {
+            printf(">>> sender frame counter: %lu\n", nf);
+        }
     }
 
     if (roc_sender_close(sender) != 0) {
         oops();
     }
-
-    return NULL;
 }
 
 int main() {
@@ -209,7 +178,7 @@ int main() {
     /* Run sender in main thread. */
     sender_loop(context);
 
-    /* Wont happen. */
+    /* Destroy context. */
     if (roc_context_close(context) != 0) {
         oops();
     }

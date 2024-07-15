@@ -1,12 +1,11 @@
-/* URI manipulation example.
- *
+/*
  * This example demonstrates how to build endpoint URI and access its individual parts.
  *
  * Building:
- *   cc uri_manipulation.c -lroc
+ *   cc -o uri_manipulation uri_manipulation.c -lroc
  *
  * Running:
- *   ./a.out
+ *   ./uri_manipulation
  *
  * License:
  *   public domain

@@ -6,10 +6,10 @@
  * repair lost packets.
  *
  * Building:
- *   cc plugin_plc.c -lroc
+ *   cc -o plugin_plc plugin_plc.c -lroc
  *
  * Running:
- *   ./a.out
+ *   ./plugin_plc
  *
  * License:
  *   public domain
@@ -26,8 +26,11 @@
 /* Any number in range [ROC_PLUGIN_ID_MIN; ROC_PLUGIN_ID_MAX] */
 #define MY_PLC_PLUGIN_ID ROC_PLUGIN_ID_MIN + 1
 
+/* Audio parameters. */
 #define MY_SAMPLE_RATE 44100
 #define MY_CHANNEL_COUNT 2
+
+/* How much sample after a gap PLC needs for interpolation. */
 #define MY_LOOKAHEAD_SIZE 4410 /* 100 ms */
 
 #define oops()                                                                           \
@@ -162,7 +165,8 @@ int main() {
         oops();
     }
 
-    /* Destroy context. */
+    /* Destroy context.
+     * Note that registered plugin must remain valid until this point. */
     if (roc_context_close(context) != 0) {
         oops();
     }
