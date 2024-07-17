@@ -125,9 +125,6 @@ private:
         }
     };
 
-    bool check_compatibility_(address::Interface iface, const address::EndpointUri& uri);
-    void update_compatibility_(address::Interface iface, const address::EndpointUri& uri);
-
     core::SharedPtr<Slot> get_slot_(slot_index_t slot_index, bool auto_create);
     void cleanup_slot_(Slot& slot);
     void break_slot_(Slot& slot);
@@ -143,9 +140,6 @@ private:
 
     core::SlabPool<Slot> slot_pool_;
     core::Hashmap<Slot> slot_map_;
-
-    bool used_interfaces_[address::Iface_Max];
-    address::Protocol used_protocols_[address::Iface_Max];
 
     pipeline::ReceiverSlotMetrics slot_metrics_;
     core::Array<pipeline::ReceiverParticipantMetrics, 8> party_metrics_;

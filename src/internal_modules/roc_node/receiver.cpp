@@ -41,9 +41,6 @@ Receiver::Receiver(Context& context,
 
     sample_spec_ = pipeline_.source().sample_spec();
 
-    memset(used_interfaces_, 0, sizeof(used_interfaces_));
-    memset(used_protocols_, 0, sizeof(used_protocols_));
-
     init_status_ = status::StatusOK;
 }
 
@@ -155,16 +152,6 @@ bool Receiver::bind(slot_index_t slot_index,
         return false;
     }
 
-    if (!check_compatibility_(iface, uri)) {
-        roc_log(LogError,
-                "receiver node:"
-                " can't bind %s interface of slot %lu:"
-                " incompatible with other slots",
-                address::interface_to_str(iface), (unsigned long)slot_index);
-        break_slot_(*slot);
-        return false;
-    }
-
     Port& port = slot->ports[iface];
 
     address::SocketAddr address;
@@ -242,8 +229,6 @@ bool Receiver::bind(slot_index_t slot_index,
             roc_panic("receiver node: can't set endpoint port");
         }
     }
-
-    update_compatibility_(iface, uri);
 
     return true;
 }
@@ -381,26 +366,6 @@ status::StatusCode Receiver::read_frame(void* bytes, size_t n_bytes) {
 
 sndio::ISource& Receiver::source() {
     return pipeline_.source();
-}
-
-bool Receiver::check_compatibility_(address::Interface iface,
-                                    const address::EndpointUri& uri) {
-    if (used_interfaces_[iface] && used_protocols_[iface] != uri.proto()) {
-        roc_log(LogError,
-                "receiver node: same interface of all slots should use same protocols:"
-                " other slot uses %s, but this slot tries to use %s",
-                address::proto_to_str(used_protocols_[iface]),
-                address::proto_to_str(uri.proto()));
-        return false;
-    }
-
-    return true;
-}
-
-void Receiver::update_compatibility_(address::Interface iface,
-                                     const address::EndpointUri& uri) {
-    used_interfaces_[iface] = true;
-    used_protocols_[iface] = uri.proto();
 }
 
 core::SharedPtr<Receiver::Slot> Receiver::get_slot_(slot_index_t slot_index,
