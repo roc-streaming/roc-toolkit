@@ -910,6 +910,9 @@ if meta.compiler in ['gcc', 'clang']:
         env.Append(CXXFLAGS=[
             '-std=c++98',
         ])
+        env.Append(CFLAGS=[
+            '-std=c99',
+        ])
 
     env.Append(CXXFLAGS=[
         '-fno-exceptions',
