@@ -171,8 +171,8 @@ status::StatusCode Packetizer::end_packet_() {
         return code;
     }
 
-    metrics_.packet_count++;
-    metrics_.payload_count += written_payload_size;
+    metrics_.encoded_packet_count++;
+    metrics_.payload_byte_count += written_payload_size;
 
     packet_ = NULL;
     packet_pos_ = 0;

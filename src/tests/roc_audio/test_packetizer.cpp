@@ -403,9 +403,9 @@ TEST(packetizer, metrics) {
 
         const PacketizerMetrics metrics = packetizer.metrics();
 
-        UNSIGNED_LONGS_EQUAL(pn + 1, metrics.packet_count);
+        UNSIGNED_LONGS_EQUAL(pn + 1, metrics.encoded_packet_count);
         UNSIGNED_LONGS_EQUAL((pn + 1) * SamplesPerPacket * NumCh * sizeof(int16_t),
-                             metrics.payload_count);
+                             metrics.payload_byte_count);
     }
 }
 
