@@ -62,6 +62,12 @@ bool Depacketizer::is_started() const {
     return is_started_;
 }
 
+const DepacketizerMetrics& Depacketizer::metrics() const {
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    return metrics_;
+}
+
 packet::stream_timestamp_t Depacketizer::next_timestamp() const {
     roc_panic_if(init_status_ != status::StatusOK);
 
@@ -392,6 +398,7 @@ status::StatusCode Depacketizer::start_packet_() {
                 (unsigned long)stream_ts_, (unsigned long)pkt_begin);
 
         dropped_packets_++;
+        metrics_.late_packet_count++;
 
         payload_decoder_.end_frame();
         packet_ = NULL;
@@ -437,6 +444,11 @@ status::StatusCode Depacketizer::start_packet_() {
         if (payload_decoder_.drop_samples(diff_samples) != diff_samples) {
             roc_panic("depacketizer: can't drop samples from decoder");
         }
+    }
+
+    metrics_.decoded_packet_count++;
+    if (packet_->has_flags(packet::Packet::FlagRestored)) {
+        metrics_.recovered_packet_count++;
     }
 
     return status::StatusOK;

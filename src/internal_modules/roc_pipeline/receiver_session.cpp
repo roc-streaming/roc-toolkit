@@ -373,6 +373,7 @@ ReceiverParticipantMetrics ReceiverSession::get_metrics() const {
     ReceiverParticipantMetrics metrics;
     metrics.link = source_meter_->metrics();
     metrics.latency = latency_monitor_->metrics();
+    metrics.depacketizer = depacketizer_->metrics();
 
     return metrics;
 }

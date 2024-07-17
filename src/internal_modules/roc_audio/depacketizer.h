@@ -24,6 +24,28 @@
 namespace roc {
 namespace audio {
 
+//! Metrics of depacketizer.
+struct DepacketizerMetrics {
+    //! Cumulative count of packets from which we decoded samples.
+    //! Incremented each time depacketizer starts decoding a packet.
+    uint64_t decoded_packet_count;
+
+    //! Cumulative count of packets dropped because they were late.
+    //! Incremented each time depacketizer drops a packet.
+    uint64_t late_packet_count;
+
+    //! Cumulative count of packets repaired by FEC.
+    //! Incremented each time depacketizer reads a packet with FlagRestored.
+    //! This metric excludes late packets that were repaired but then dropped.
+    uint64_t recovered_packet_count;
+
+    DepacketizerMetrics()
+        : decoded_packet_count(0)
+        , late_packet_count(0)
+        , recovered_packet_count(0) {
+    }
+};
+
 //! Depacketizer.
 //!
 //! Reads packets from a packet reader, decodes samples from packets using a
@@ -68,6 +90,9 @@ public:
 
     //! Did depacketizer catch first packet?
     bool is_started() const;
+
+    //! Get metrics.
+    const DepacketizerMetrics& metrics() const;
 
     //! Get next timestamp to be rendered.
     //! @pre
@@ -140,6 +165,8 @@ private:
 
     size_t fetched_packets_;
     size_t dropped_packets_;
+
+    DepacketizerMetrics metrics_;
 
     bool is_started_;
 

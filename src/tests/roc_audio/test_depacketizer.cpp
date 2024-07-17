@@ -146,6 +146,14 @@ void expect_error(status::StatusCode expected_status,
                                   mode));
 }
 
+void expect_n_decoded(int packet_count, Depacketizer& depacketizer) {
+    LONGS_EQUAL(packet_count, depacketizer.metrics().decoded_packet_count);
+}
+
+void expect_n_late(int packet_count, Depacketizer& depacketizer) {
+    LONGS_EQUAL(packet_count, depacketizer.metrics().late_packet_count);
+}
+
 class ArrayReader : public packet::IReader {
 public:
     ArrayReader()
@@ -227,6 +235,9 @@ TEST(depacketizer, one_packet_one_read) {
     write_packet(queue, new_packet(encoder, 0, 0.11f, Now));
 
     expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.11f, Now);
+
+    expect_n_decoded(1, dp);
+    expect_n_late(0, dp);
 }
 
 // Small frame, big packet.
@@ -249,6 +260,9 @@ TEST(depacketizer, one_packet_multiple_reads) {
 
         LONGS_EQUAL(0, queue.size());
     }
+
+    expect_n_decoded(1, dp);
+    expect_n_late(0, dp);
 }
 
 // Big frame, small packets.
@@ -274,6 +288,9 @@ TEST(depacketizer, multiple_packets_one_read) {
                   NumPackets * SamplesPerPacket, 0.11f, Now);
 
     LONGS_EQUAL(0, queue.size());
+
+    expect_n_decoded(NumPackets, dp);
+    expect_n_late(0, dp);
 }
 
 TEST(depacketizer, multiple_packets_multiple_reads) {
@@ -388,6 +405,10 @@ TEST(depacketizer, drop_late_packets) {
     expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.33f,
                   capt_ts3);
     LONGS_EQUAL(0, queue.size());
+
+    // 2 packets decoded, 1 dropped
+    expect_n_decoded(2, dp);
+    expect_n_late(1, dp);
 }
 
 TEST(depacketizer, drop_late_packets_timestamp_wrap) {
@@ -415,6 +436,10 @@ TEST(depacketizer, drop_late_packets_timestamp_wrap) {
     expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.33f,
                   capt_ts3);
     LONGS_EQUAL(0, queue.size());
+
+    // 2 packets decoded, 1 dropped
+    expect_n_decoded(2, dp);
+    expect_n_late(1, dp);
 }
 
 TEST(depacketizer, zeros_no_first_packet) {
@@ -609,6 +634,10 @@ TEST(depacketizer, late_reordered) {
     expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket, 0.44f,
                   Now + NsPerPacket * 4);
     LONGS_EQUAL(0, reader.num_packets());
+
+    // 3 packets decoded, 1 dropped
+    expect_n_decoded(3, dp);
+    expect_n_late(1, dp);
 }
 
 // In hard read mode, depacketizer should fill packet losses with zeros and generate
@@ -1023,6 +1052,9 @@ TEST(depacketizer, frame_flags_drops) {
         expect_output(status::StatusOK, dp, SamplesPerPacket, SamplesPerPacket,
                       frame_value, -1, frame_flags);
     }
+
+    // 3 packets were late and dropped
+    expect_n_late(3, dp);
 }
 
 TEST(depacketizer, capture_timestamp) {
