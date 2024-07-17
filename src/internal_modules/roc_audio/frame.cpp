@@ -32,7 +32,7 @@ unsigned Frame::flags() const {
 }
 
 bool Frame::has_flags(unsigned flags) const {
-    return (flags_ & flags) != 0;
+    return (flags_ & flags) == flags;
 }
 
 void Frame::set_flags(unsigned flags) {

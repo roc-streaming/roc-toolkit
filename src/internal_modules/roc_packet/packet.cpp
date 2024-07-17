@@ -25,7 +25,7 @@ void Packet::add_flags(unsigned flags) {
 }
 
 bool Packet::has_flags(unsigned flags) const {
-    return (flags_ & flags) != 0;
+    return (flags_ & flags) == flags;
 }
 
 unsigned Packet::flags() const {
