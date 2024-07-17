@@ -203,8 +203,10 @@ TEST_GROUP(plugin_plc) {
 
         receiver_conf.latency_tuner_profile = ROC_LATENCY_TUNER_PROFILE_INTACT;
         receiver_conf.target_latency = test::Latency * 1000000000ull / test::SampleRate;
+        receiver_conf.latency_tolerance =
+            test::Latency * 1000000000ull / test::SampleRate * 10000;
         receiver_conf.no_playback_timeout =
-            test::Timeout * 1000000000ull / test::SampleRate;
+            test::Timeout * 1000000000ull / test::SampleRate * 10000;
     }
 
     bool is_rs8m_supported() {
