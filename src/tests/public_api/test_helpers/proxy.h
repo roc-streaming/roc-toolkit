@@ -14,6 +14,7 @@
 #include "test_helpers/utils.h"
 
 #include "roc_address/socket_addr.h"
+#include "roc_core/atomic.h"
 #include "roc_core/heap_arena.h"
 #include "roc_netio/network_loop.h"
 #include "roc_packet/fifo_queue.h"
@@ -31,12 +32,14 @@ public:
     Proxy(const roc_endpoint* receiver_source_endp,
           const roc_endpoint* receiver_repair_endp,
           size_t n_source_packets,
-          size_t n_repair_packets)
+          size_t n_repair_packets,
+          unsigned flags)
         : packet_pool_("proxy_packet_pool", arena_)
         , buffer_pool_("proxy_buffer_pool", arena_, 2000)
         , net_loop_(packet_pool_, buffer_pool_, arena_)
         , n_source_packets_(n_source_packets)
         , n_repair_packets_(n_repair_packets)
+        , flags_(flags)
         , pos_(0) {
         LONGS_EQUAL(status::StatusOK, net_loop_.init_status());
 
@@ -125,6 +128,10 @@ public:
         return input_repair_endp_;
     }
 
+    size_t n_dropped_packets() const {
+        return n_dropped_packets_;
+    }
+
 private:
     virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr& pp) {
         pp->udp()->src_addr = send_config_.bind_address;
@@ -141,11 +148,15 @@ private:
             const size_t block_pos = pos_ % (n_source_packets_ + n_repair_packets_);
 
             if (block_pos < n_source_packets_) {
-                if (!send_packet_(source_queue_, block_pos == 1)) {
+                const bool drop_packet = (flags_ & FlagLoseSomePkts) && (block_pos == 1);
+
+                if (!send_packet_(source_queue_, drop_packet)) {
                     break;
                 }
             } else {
-                if (!send_packet_(repair_queue_, false)) {
+                const bool drop_packet = (flags_ & FlagLoseAllRepairPkts);
+
+                if (!send_packet_(repair_queue_, drop_packet)) {
                     break;
                 }
             }
@@ -164,7 +175,9 @@ private:
         }
         CHECK(pp);
         pos_++;
-        if (!drop) {
+        if (drop) {
+            n_dropped_packets_++;
+        } else {
             LONGS_EQUAL(status::StatusOK, writer_->write(pp));
         }
         return true;
@@ -194,7 +207,9 @@ private:
 
     const size_t n_source_packets_;
     const size_t n_repair_packets_;
+    core::Atomic<size_t> n_dropped_packets_;
 
+    const unsigned flags_;
     size_t pos_;
 };
 

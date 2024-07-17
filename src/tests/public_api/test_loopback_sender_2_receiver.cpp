@@ -134,7 +134,7 @@ TEST(loopback_sender_2_receiver, bare_rtp) {
     test::Sender sender(context, sender_conf, sample_step, FrameChans, test::FrameSamples,
                         Flags);
 
-    sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), NULL);
+    sender.connect(receiver.source_endpoint(), NULL, NULL);
 
     CHECK(sender.start());
     receiver.receive();
@@ -157,8 +157,7 @@ TEST(loopback_sender_2_receiver, rtp_rtcp) {
     test::Sender sender(context, sender_conf, sample_step, FrameChans, test::FrameSamples,
                         Flags);
 
-    sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(),
-                   receiver.control_endpoint());
+    sender.connect(receiver.source_endpoint(), NULL, receiver.control_endpoint());
 
     CHECK(sender.start());
     receiver.receive();
@@ -198,7 +197,11 @@ TEST(loopback_sender_2_receiver, rs8m_with_losses) {
         return;
     }
 
-    enum { Flags = test::FlagRS8M, FrameChans = 2, PacketChans = 2 };
+    enum {
+        Flags = test::FlagRS8M | test::FlagLoseSomePkts,
+        FrameChans = 2,
+        PacketChans = 2
+    };
 
     init_config(Flags, FrameChans, PacketChans);
 
@@ -210,7 +213,7 @@ TEST(loopback_sender_2_receiver, rs8m_with_losses) {
     receiver.bind();
 
     test::Proxy proxy(receiver.source_endpoint(), receiver.repair_endpoint(),
-                      test::SourcePackets, test::RepairPackets);
+                      test::SourcePackets, test::RepairPackets, Flags);
 
     test::Sender sender(context, sender_conf, sample_step, FrameChans, test::FrameSamples,
                         Flags);
@@ -221,6 +224,8 @@ TEST(loopback_sender_2_receiver, rs8m_with_losses) {
     receiver.receive();
     sender.stop();
     sender.join();
+
+    CHECK(proxy.n_dropped_packets() > 0);
 }
 
 TEST(loopback_sender_2_receiver, ldpc_without_losses) {
@@ -255,7 +260,11 @@ TEST(loopback_sender_2_receiver, ldpc_with_losses) {
         return;
     }
 
-    enum { Flags = test::FlagLDPC, FrameChans = 2, PacketChans = 2 };
+    enum {
+        Flags = test::FlagLDPC | test::FlagLoseSomePkts,
+        FrameChans = 2,
+        PacketChans = 2
+    };
 
     init_config(Flags, FrameChans, PacketChans);
 
@@ -267,7 +276,7 @@ TEST(loopback_sender_2_receiver, ldpc_with_losses) {
     receiver.bind();
 
     test::Proxy proxy(receiver.source_endpoint(), receiver.repair_endpoint(),
-                      test::SourcePackets, test::RepairPackets);
+                      test::SourcePackets, test::RepairPackets, Flags);
 
     test::Sender sender(context, sender_conf, sample_step, FrameChans, test::FrameSamples,
                         Flags);
@@ -278,6 +287,8 @@ TEST(loopback_sender_2_receiver, ldpc_with_losses) {
     receiver.receive();
     sender.stop();
     sender.join();
+
+    CHECK(proxy.n_dropped_packets() > 0);
 }
 
 TEST(loopback_sender_2_receiver, separate_context) {
@@ -295,7 +306,7 @@ TEST(loopback_sender_2_receiver, separate_context) {
     test::Sender sender(send_context, sender_conf, sample_step, FrameChans,
                         test::FrameSamples, Flags);
 
-    sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), NULL);
+    sender.connect(receiver.source_endpoint(), NULL, NULL);
 
     CHECK(sender.start());
     receiver.receive();
@@ -318,7 +329,7 @@ TEST(loopback_sender_2_receiver, multiple_senders_one_receiver_sequential) {
     test::Sender sender_1(context, sender_conf, sample_step, FrameChans,
                           test::FrameSamples, Flags);
 
-    sender_1.connect(receiver.source_endpoint(), receiver.repair_endpoint(), NULL);
+    sender_1.connect(receiver.source_endpoint(), NULL, NULL);
 
     CHECK(sender_1.start());
     receiver.receive();
@@ -330,7 +341,7 @@ TEST(loopback_sender_2_receiver, multiple_senders_one_receiver_sequential) {
     test::Sender sender_2(context, sender_conf, sample_step, FrameChans,
                           test::FrameSamples, Flags);
 
-    sender_2.connect(receiver.source_endpoint(), receiver.repair_endpoint(), NULL);
+    sender_2.connect(receiver.source_endpoint(), NULL, NULL);
 
     CHECK(sender_2.start());
     receiver.receive();
@@ -358,10 +369,8 @@ TEST(loopback_sender_2_receiver, sender_slots) {
     test::Sender sender(context, sender_conf, sample_step, FrameChans, test::FrameSamples,
                         Flags);
 
-    sender.connect(receiver_1.source_endpoint(), receiver_1.repair_endpoint(), NULL,
-                   Slot1);
-    sender.connect(receiver_2.source_endpoint(), receiver_2.repair_endpoint(), NULL,
-                   Slot2);
+    sender.connect(receiver_1.source_endpoint(), NULL, NULL, Slot1);
+    sender.connect(receiver_2.source_endpoint(), NULL, NULL, Slot2);
 
     CHECK(sender.start());
 
@@ -390,8 +399,7 @@ TEST(loopback_sender_2_receiver, receiver_slots_sequential) {
     test::Sender sender_1(context, sender_conf, sample_step, FrameChans,
                           test::FrameSamples, Flags);
 
-    sender_1.connect(receiver.source_endpoint(Slot1), receiver.repair_endpoint(Slot1),
-                     NULL);
+    sender_1.connect(receiver.source_endpoint(Slot1), NULL, NULL);
 
     CHECK(sender_1.start());
     receiver.receive();
@@ -403,8 +411,7 @@ TEST(loopback_sender_2_receiver, receiver_slots_sequential) {
     test::Sender sender_2(context, sender_conf, sample_step, FrameChans,
                           test::FrameSamples, Flags);
 
-    sender_2.connect(receiver.source_endpoint(Slot2), receiver.repair_endpoint(Slot2),
-                     NULL);
+    sender_2.connect(receiver.source_endpoint(Slot2), NULL, NULL);
 
     CHECK(sender_2.start());
     receiver.receive();
@@ -427,7 +434,7 @@ TEST(loopback_sender_2_receiver, mono) {
     test::Sender sender(context, sender_conf, sample_step, FrameChans, test::FrameSamples,
                         Flags);
 
-    sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), NULL);
+    sender.connect(receiver.source_endpoint(), NULL, NULL);
 
     CHECK(sender.start());
     receiver.receive();
@@ -450,7 +457,7 @@ TEST(loopback_sender_2_receiver, stereo_mono_stereo) {
     test::Sender sender(context, sender_conf, sample_step, FrameChans, test::FrameSamples,
                         Flags);
 
-    sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), NULL);
+    sender.connect(receiver.source_endpoint(), NULL, NULL);
 
     CHECK(sender.start());
     receiver.receive();
@@ -473,7 +480,7 @@ TEST(loopback_sender_2_receiver, mono_stereo_mono) {
     test::Sender sender(context, sender_conf, sample_step, FrameChans, test::FrameSamples,
                         Flags);
 
-    sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), NULL);
+    sender.connect(receiver.source_endpoint(), NULL, NULL);
 
     CHECK(sender.start());
     receiver.receive();
@@ -503,7 +510,7 @@ TEST(loopback_sender_2_receiver, multitrack) {
     test::Sender sender(context, sender_conf, sample_step, FrameChans, test::FrameSamples,
                         Flags);
 
-    sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), NULL);
+    sender.connect(receiver.source_endpoint(), NULL, NULL);
 
     CHECK(sender.start());
     receiver.receive();
@@ -534,7 +541,7 @@ TEST(loopback_sender_2_receiver, multitrack_separate_contexts) {
     test::Sender sender(send_context, sender_conf, sample_step, FrameChans,
                         test::FrameSamples, Flags);
 
-    sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(), NULL);
+    sender.connect(receiver.source_endpoint(), NULL, NULL);
 
     CHECK(sender.start());
     receiver.receive();
@@ -562,8 +569,7 @@ TEST(loopback_sender_2_receiver, metrics_measurements) {
     test::Sender sender(context, sender_conf, sample_step, FrameChans, test::FrameSamples,
                         Flags);
 
-    sender.connect(receiver.source_endpoint(), receiver.repair_endpoint(),
-                   receiver.control_endpoint());
+    sender.connect(receiver.source_endpoint(), NULL, receiver.control_endpoint());
 
     {
         receiver.query_metrics(MaxSess);
@@ -633,14 +639,12 @@ TEST(loopback_sender_2_receiver, metrics_connections) {
     test::Sender sender_1(context, sender_conf, sample_step, FrameChans,
                           test::FrameSamples, Flags);
 
-    sender_1.connect(receiver.source_endpoint(), receiver.repair_endpoint(),
-                     receiver.control_endpoint());
+    sender_1.connect(receiver.source_endpoint(), NULL, receiver.control_endpoint());
 
     test::Sender sender_2(context, sender_conf, sample_step, FrameChans,
                           test::FrameSamples, Flags);
 
-    sender_2.connect(receiver.source_endpoint(), receiver.repair_endpoint(),
-                     receiver.control_endpoint());
+    sender_2.connect(receiver.source_endpoint(), NULL, receiver.control_endpoint());
 
     {
         receiver.query_metrics(MaxSess);
@@ -743,10 +747,10 @@ TEST(loopback_sender_2_receiver, metrics_slots) {
     test::Sender sender(context, sender_conf, sample_step, FrameChans, test::FrameSamples,
                         Flags);
 
-    sender.connect(receiver.source_endpoint(Slot1), receiver.repair_endpoint(Slot1),
+    sender.connect(receiver.source_endpoint(Slot1), NULL,
                    receiver.control_endpoint(Slot1), Slot1);
 
-    sender.connect(receiver.source_endpoint(Slot2), receiver.repair_endpoint(Slot2),
+    sender.connect(receiver.source_endpoint(Slot2), NULL,
                    receiver.control_endpoint(Slot2), Slot2);
 
     {

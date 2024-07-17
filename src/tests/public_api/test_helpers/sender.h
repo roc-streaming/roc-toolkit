@@ -56,6 +56,8 @@ public:
                  const roc_endpoint* receiver_control_endp,
                  roc_slot slot = ROC_SLOT_DEFAULT) {
         if ((flags_ & FlagRS8M) || (flags_ & FlagLDPC)) {
+            CHECK(receiver_source_endp);
+            CHECK(receiver_repair_endp);
             CHECK(roc_sender_connect(sndr_, slot, ROC_INTERFACE_AUDIO_SOURCE,
                                      receiver_source_endp)
                   == 0);
@@ -63,15 +65,20 @@ public:
                                      receiver_repair_endp)
                   == 0);
         } else {
+            CHECK(receiver_source_endp);
+            CHECK(!receiver_repair_endp);
             CHECK(roc_sender_connect(sndr_, slot, ROC_INTERFACE_AUDIO_SOURCE,
                                      receiver_source_endp)
                   == 0);
         }
 
         if (flags_ & FlagRTCP) {
+            CHECK(receiver_control_endp);
             CHECK(roc_sender_connect(sndr_, slot, ROC_INTERFACE_AUDIO_CONTROL,
                                      receiver_control_endp)
                   == 0);
+        } else {
+            CHECK(!receiver_control_endp);
         }
     }
 

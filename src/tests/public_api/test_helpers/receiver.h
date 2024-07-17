@@ -135,14 +135,17 @@ public:
     }
 
     const roc_endpoint* source_endpoint(roc_slot slot = ROC_SLOT_DEFAULT) const {
+        CHECK(source_endp_[slot]);
         return source_endp_[slot];
     }
 
     const roc_endpoint* repair_endpoint(roc_slot slot = ROC_SLOT_DEFAULT) const {
+        CHECK(repair_endp_[slot]);
         return repair_endp_[slot];
     }
 
     const roc_endpoint* control_endpoint(roc_slot slot = ROC_SLOT_DEFAULT) const {
+        CHECK(control_endp_[slot]);
         return control_endp_[slot];
     }
 

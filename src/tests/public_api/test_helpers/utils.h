@@ -38,6 +38,8 @@ enum {
     FlagMultitrack = (1 << 3),
     FlagNonStrict = (1 << 4),
     FlagInfinite = (1 << 5),
+    FlagLoseSomePkts = (1 << 6),
+    FlagLoseAllRepairPkts = (1 << 7),
 };
 
 inline float increment_sample_value(float sample_value, float sample_step) {
