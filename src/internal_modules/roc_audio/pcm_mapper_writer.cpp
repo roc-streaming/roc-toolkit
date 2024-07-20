@@ -58,6 +58,9 @@ PcmMapperWriter::PcmMapperWriter(IFrameWriter& frame_writer,
                   sample_spec_to_str(out_spec_).c_str());
     }
 
+    roc_log(LogDebug, "pcm mapper writer: initializing: in_spec=%s out_spec=%s",
+            sample_spec_to_str(in_spec_).c_str(), sample_spec_to_str(out_spec_).c_str());
+
     out_frame_ = frame_factory_.allocate_frame(0);
     if (!out_frame_) {
         init_status_ = status::StatusNoMem;

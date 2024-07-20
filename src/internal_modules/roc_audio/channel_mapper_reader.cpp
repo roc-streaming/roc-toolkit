@@ -36,9 +36,12 @@ ChannelMapperReader::ChannelMapperReader(IFrameReader& frame_reader,
     if (in_spec_.sample_rate() != out_spec_.sample_rate()) {
         roc_panic("channel mapper reader: required identical input and output rates:"
                   " in_spec=%s out_spec=%s",
-                  sample_spec_to_str(in_spec).c_str(),
-                  sample_spec_to_str(out_spec).c_str());
+                  sample_spec_to_str(in_spec_).c_str(),
+                  sample_spec_to_str(out_spec_).c_str());
     }
+
+    roc_log(LogDebug, "channel mapper reader: initializing: in_spec=%s out_spec=%s",
+            sample_spec_to_str(in_spec_).c_str(), sample_spec_to_str(out_spec_).c_str());
 
     in_frame_ = frame_factory_.allocate_frame(0);
     if (!in_frame_) {
