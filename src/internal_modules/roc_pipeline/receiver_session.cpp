@@ -186,31 +186,12 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
                 return;
             }
 
-            if (plc_->sample_spec() != out_spec) {
-                plc_pre_mapper_.reset(new (plc_pre_mapper_) audio::PcmMapperReader(
-                    *frm_reader, frame_factory, out_spec, plc_->sample_spec()));
-                if ((init_status_ = plc_pre_mapper_->init_status()) != status::StatusOK) {
-                    return;
-                }
-                frm_reader = plc_pre_mapper_.get();
-            }
-
             plc_reader_.reset(new (plc_reader_) audio::PlcReader(
-                *frm_reader, frame_factory, *plc_, plc_->sample_spec()));
+                *frm_reader, frame_factory, *plc_, out_spec));
             if ((init_status_ = plc_reader_->init_status()) != status::StatusOK) {
                 return;
             }
             frm_reader = plc_reader_.get();
-
-            if (plc_->sample_spec() != out_spec) {
-                plc_post_mapper_.reset(new (plc_post_mapper_) audio::PcmMapperReader(
-                    *frm_reader, frame_factory, plc_->sample_spec(), out_spec));
-                if ((init_status_ = plc_post_mapper_->init_status())
-                    != status::StatusOK) {
-                    return;
-                }
-                frm_reader = plc_post_mapper_.get();
-            }
         }
 
         if (session_config.watchdog.no_playback_timeout >= 0

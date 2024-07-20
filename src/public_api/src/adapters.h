@@ -36,12 +36,17 @@ bool interface_config_from_user(netio::UdpConfig& out, const roc_interface_confi
 bool sample_spec_from_user(audio::SampleSpec& out,
                            const roc_media_encoding& in,
                            bool is_network);
+bool sample_spec_to_user(roc_media_encoding& out, const audio::SampleSpec& in);
 
 bool sample_format_from_user(audio::SampleSpec& out, roc_format in, bool is_network);
+bool sample_format_to_user(roc_format& out, const audio::SampleSpec& in);
 
 bool channel_set_from_user(audio::ChannelSet& out,
-                           roc_channel_layout in,
+                           roc_channel_layout in_layout,
                            unsigned int in_tracks);
+bool channel_set_to_user(roc_channel_layout& out_layout,
+                         unsigned int& out_tracks,
+                         const audio::ChannelSet& in);
 
 bool clock_source_from_user(bool& out_timing, roc_clock_source in);
 

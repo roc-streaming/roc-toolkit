@@ -339,6 +339,26 @@ bool sample_spec_from_user(audio::SampleSpec& out,
     return true;
 }
 
+bool sample_spec_to_user(roc_media_encoding& out, const audio::SampleSpec& in) {
+    memset(&out, 0, sizeof(out));
+
+    if (!in.is_valid()) {
+        return false;
+    }
+
+    out.rate = (unsigned int)in.sample_rate();
+
+    if (!sample_format_to_user(out.format, in)) {
+        return false;
+    }
+
+    if (!channel_set_to_user(out.channels, out.tracks, in.channel_set())) {
+        return false;
+    }
+
+    return true;
+}
+
 ROC_ATTR_NO_SANITIZE_UB
 bool sample_format_from_user(audio::SampleSpec& out, roc_format in, bool is_network) {
     switch (enum_from_user(in)) {
@@ -353,13 +373,35 @@ bool sample_format_from_user(audio::SampleSpec& out, roc_format in, bool is_netw
     return false;
 }
 
+bool sample_format_to_user(roc_format& out, const audio::SampleSpec& in) {
+    if (in.sample_format() != audio::SampleFormat_Pcm) {
+        return false;
+    }
+
+    const audio::PcmTraits traits = audio::pcm_format_traits(in.pcm_format());
+    if (!traits.is_valid || !traits.is_native) {
+        return false;
+    }
+
+    switch (traits.native_alias) {
+    case audio::PcmFormat_Float32:
+        out = ROC_FORMAT_PCM_FLOAT32;
+        return true;
+
+    default:
+        break;
+    }
+
+    return false;
+}
+
 ROC_ATTR_NO_SANITIZE_UB
 bool channel_set_from_user(audio::ChannelSet& out,
-                           roc_channel_layout in,
+                           roc_channel_layout in_layout,
                            unsigned int in_tracks) {
     out.clear();
 
-    switch (enum_from_user(in)) {
+    switch (enum_from_user(in_layout)) {
     case ROC_CHANNEL_LAYOUT_MULTITRACK:
         out.set_layout(audio::ChanLayout_Multitrack);
         out.set_order(audio::ChanOrder_None);
@@ -377,6 +419,37 @@ bool channel_set_from_user(audio::ChannelSet& out,
         out.set_order(audio::ChanOrder_Smpte);
         out.set_mask(audio::ChanMask_Surround_Stereo);
         return true;
+    }
+
+    return false;
+}
+
+bool channel_set_to_user(roc_channel_layout& out_layout,
+                         unsigned int& out_tracks,
+                         const audio::ChannelSet& in) {
+    switch (in.layout()) {
+    case audio::ChanLayout_Surround:
+        if (in.order() == audio::ChanOrder_Smpte) {
+            if (in.is_equal(audio::ChanMask_Surround_Mono)) {
+                out_layout = ROC_CHANNEL_LAYOUT_MONO;
+                out_tracks = 0;
+                return true;
+            }
+            if (in.is_equal(audio::ChanMask_Surround_Stereo)) {
+                out_layout = ROC_CHANNEL_LAYOUT_STEREO;
+                out_tracks = 0;
+                return true;
+            }
+        }
+        break;
+
+    case audio::ChanLayout_Multitrack:
+        out_layout = ROC_CHANNEL_LAYOUT_MULTITRACK;
+        out_tracks = (unsigned int)in.num_channels();
+        return true;
+
+    case audio::ChanLayout_None:
+        break;
     }
 
     return false;

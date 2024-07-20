@@ -6,7 +6,7 @@
  * repair lost packets.
  *
  * Building:
- *   cc -o plugin_plc plugin_plc.c -lroc
+ *   cc -o plugin_plc plugin_plc.c -lroc -lm
  *
  * Running:
  *   ./plugin_plc
@@ -15,6 +15,7 @@
  *   public domain
  */
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,9 +30,10 @@
 /* Audio parameters. */
 #define MY_SAMPLE_RATE 44100
 #define MY_CHANNEL_COUNT 2
+#define MY_SINE_RATE 440
 
 /* How much sample after a gap PLC needs for interpolation. */
-#define MY_LOOKAHEAD_SIZE 4410 /* 100 ms */
+#define MY_LOOKAHEAD_LEN_MS 100
 
 #define oops()                                                                           \
     do {                                                                                 \
@@ -46,15 +48,49 @@ struct my_plc {
     /* Here we could put state needed for interpolation. */
     unsigned int history_frame_counter;
     unsigned int lost_frame_counter;
+    unsigned int sample_rate;
+    unsigned int channel_count;
 };
 
 /* Create plugin instance. */
-static void* my_plc_new(roc_plugin_plc* plugin) {
-    return calloc(1, sizeof(struct my_plc));
+static void* my_plc_new(roc_plugin_plc* plugin, const roc_media_encoding* encoding) {
+    printf("creating plc plugin instance\n");
+
+    /* Note that sample rate and channel layout may have arbitrary values,
+     * depending on the encoding used by the connection for which this
+     * instance is created.
+     *
+     * Sample format is, however, always ROC_FORMAT_PCM_FLOAT32.
+     */
+    printf("using encoding:\n");
+    printf(" sample_format = %u\n", encoding->format);
+    printf(" sample_rate = %u\n", encoding->rate);
+    printf(" channel_layout = %u\n", encoding->channels);
+
+    struct my_plc* plc = calloc(1, sizeof(struct my_plc));
+
+    plc->sample_rate = encoding->rate;
+
+    switch (encoding->channels) {
+    case ROC_CHANNEL_LAYOUT_MONO:
+        plc->channel_count = 1;
+        break;
+    case ROC_CHANNEL_LAYOUT_STEREO:
+        plc->channel_count = 2;
+        break;
+    default:
+        printf("unsupported channel layout");
+        free(plc);
+        return NULL;
+    }
+
+    return plc;
 }
 
 /* Delete plugin instance. */
 static void my_plc_delete(void* plugin_instance) {
+    printf("deleting plc plugin instance\n");
+
     struct my_plc* plc = (struct my_plc*)plugin_instance;
 
     free(plc);
@@ -65,7 +101,10 @@ static void my_plc_delete(void* plugin_instance) {
  * Returned value is measured as the number of samples per channel,
  * e.g. if sample rate is 44100Hz, length 4410 is 100ms */
 static unsigned int my_plc_lookahead_len(void* plugin_instance) {
-    return MY_LOOKAHEAD_SIZE;
+    struct my_plc* plc = (struct my_plc*)plugin_instance;
+
+    /* Convert milliseconds to number of samples. */
+    return (unsigned int)(plc->sample_rate / 1000.0f * MY_LOOKAHEAD_LEN_MS);
 }
 
 /* Called when next frame is good (no loss). */
@@ -73,9 +112,24 @@ static void my_plc_process_history(void* plugin_instance,
                                    const roc_frame* history_frame) {
     struct my_plc* plc = (struct my_plc*)plugin_instance;
 
-    /* Here we can copy samples from history_frame to ring buffer.
-     * In this example we just ignore frame. */
+    /* Here we can copy samples from history_frame to a ring buffer.
+     * In this example we just history ignore frame.
+     * Remember that history_frame will be invalidated after the callback
+     * returns, so we'd need to do a deep copy if we want to use it later.
+     */
     plc->history_frame_counter++;
+
+#if 0
+    /* Debug logs. In production code, it's not recommended to call functions like
+     * printf() from processing callbacks, because they may block real-time
+     * pipeline thread and cause priority inversion problems. You can either avoid
+     * logging in processing callbacks or use a lock-free logger if you have one.
+     */
+    if (plc->history_frame_counter % 100 == 0) {
+        printf("plc: history_frame_counter=%u lost_frame_counter=%u\n",
+               plc->history_frame_counter, plc->lost_frame_counter);
+    }
+#endif
 }
 
 /* Called when next frame is lost and we must fill it with interpolated data.
@@ -91,20 +145,26 @@ static void my_plc_process_loss(void* plugin_instance,
                                 const roc_frame* lookahead_frame) {
     struct my_plc* plc = (struct my_plc*)plugin_instance;
 
-    /* Here we can implement interpolation.
-     * In this example we just fill frame with constants.
-     * Samples are float because we use ROC_FORMAT_PCM_FLOAT32.
-     * There are two channels because we use ROC_CHANNEL_LAYOUT_STEREO. */
+    /* Here we can implement interpolation. In this example we just fill lost frame
+     * with a sine wave, thus we turn a loss into a beep.
+     *
+     * PLC plugin always uses ROC_FORMAT_PCM_FLOAT32, so we cast samples to float.
+     *
+     * PLC plugin may be asked to use arbitrary sample rate and channel layout,
+     * so we use plc->sample_rate and plc->channel_count instead of
+     * MY_SAMPLE_RATE and MY_CHANNEL_COUNT.
+     */
     float* lost_samples = lost_frame->samples;
     size_t lost_sample_count =
-        lost_frame->samples_size / sizeof(float) / MY_CHANNEL_COUNT;
+        lost_frame->samples_size / sizeof(float) / plc->channel_count;
 
     for (unsigned ns = 0; ns < lost_sample_count; ns++) {
-        for (unsigned c = 0; c < MY_CHANNEL_COUNT; c++) {
-            lost_samples[0] = 0.123f; /* left channel */
-            lost_samples[1] = 0.456f; /* right channel */
+        const float s =
+            (float)sin(2 * 3.14159265359 * MY_SINE_RATE / plc->sample_rate * ns) * 0.1f;
+
+        for (unsigned nc = 0; nc < plc->channel_count; nc++) {
+            *lost_samples++ = s;
         }
-        lost_samples += MY_CHANNEL_COUNT;
     }
 
     plc->lost_frame_counter++;
@@ -140,9 +200,8 @@ int main() {
     roc_receiver_config receiver_config;
     memset(&receiver_config, 0, sizeof(receiver_config));
 
-    /* Setup frame format.
-     * This format applies to frames that we read from receiver, as well as to
-     * the frames passed to PLC plugin. */
+    /* Setup frame encoding that we read from receiver.
+     * Note that this encoding is different from the encoding used by PLC plugin. */
     receiver_config.frame_encoding.rate = MY_SAMPLE_RATE;
     receiver_config.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
     receiver_config.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;

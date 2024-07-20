@@ -7,6 +7,7 @@
  */
 
 #include "plugin_plc.h"
+#include "adapters.h"
 
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
@@ -63,11 +64,20 @@ PluginPlc::PluginPlc(roc_plugin_plc* plugin, const audio::SampleSpec& sample_spe
     roc_panic_if(!plugin_);
     roc_panic_if(!validate(plugin_));
 
-    plugin_instance_ = plugin_->new_cb(plugin_);
+    roc_media_encoding encoding;
+    if (!api::sample_spec_to_user(encoding, sample_spec_)) {
+        roc_log(
+            LogError,
+            "roc_plugin_plc: failed to create plugin instance: unsupported sample spec");
+        return;
+    }
+
+    plugin_instance_ = plugin_->new_cb(plugin_, &encoding);
     if (!plugin_instance_) {
         roc_log(
             LogError,
             "roc_plugin_plc: failed to create plugin instance: new_cb() returned null");
+        return;
     }
 }
 

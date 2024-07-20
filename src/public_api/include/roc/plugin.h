@@ -14,6 +14,7 @@
 #ifndef ROC_PLUGIN_H_
 #define ROC_PLUGIN_H_
 
+#include "roc/config.h"
 #include "roc/frame.h"
 #include "roc/platform.h"
 
@@ -93,6 +94,19 @@ enum {
  * If lookahead_len_cb() returns non-zero, process_loss_cb() will be provided
  * with the frame following the lost one, if it is available.
  *
+ * **Encoding**
+ *
+ * Media encoding used for frames passed to PLC plugin is determined dynamically.
+ * When new_cb() is invoked, \c encoding argument defines what to use:
+ *
+ *  - \c rate and \c channels are the same as used in network packets of
+ *    this particular connection; PLC plugin must be ready to work with
+ *    arbitrary values, unless it's known that only certain packet encoding
+ *    may be used by sender
+ *
+ *  - \c format is always \ref ROC_FORMAT_PCM_FLOAT32, PLC plugin doesn't
+ *    need to support other formats
+ *
  * **Registration**
  *
  * PLC plugin should be registered using roc_context_register_plc() and then
@@ -118,8 +132,10 @@ typedef struct roc_plugin_plc {
      * **Parameters**
      *  - \p plugin is a pointer to plugin callback table passed to
      *    roc_context_register_plc()
+     *  - \p encoding defines encoding of the frames that will be passed to
+     *    plugin callbacks
      */
-    void* (*new_cb)(struct roc_plugin_plc* plugin);
+    void* (*new_cb)(struct roc_plugin_plc* plugin, const roc_media_encoding* encoding);
 
     /** Callback to delete plugin instance.
      *
@@ -130,7 +146,7 @@ typedef struct roc_plugin_plc {
      */
     void (*delete_cb)(void* plugin_instance);
 
-    /** Obtain PLC look-ahead length, as number of samples per channel.
+    /** Callback to obtain PLC look-ahead length, as number of samples per channel.
      *
      * Returned value defines how many samples following immediately after the lost frame
      * PLC wants to use for interpolation. See process_loss_cb() for details.
@@ -146,11 +162,11 @@ typedef struct roc_plugin_plc {
      * If plugin wants to store frame for later use, it should copy its samples.
      *
      * The size of \p history_frame is arbitrary and may vary each call. The format of
-     * the frame is defined by \c frame_encoding field of \ref roc_receiver_config.
+     * the frame is defined by \c encoding argument of new_cb().
      *
      * **Parameters**
      *  - \p plugin_instance is a pointer to the instance returned by new_cb()
-     *  - \p history_frame is a pointer to a read-only frame with decoded data
+     *  - \p history_frame points to read-only frame with decoded data
      *
      * **Ownership**
      *  - frame and its data can't be used after the callback returns
@@ -170,14 +186,12 @@ typedef struct roc_plugin_plc {
      * It's present only if packets following the loss happened to arrive early enough.
      *
      * The size of both frames is arbitrary and may vary each call. The format of the
-     * frames is defined by \c frame_encoding field of \ref roc_receiver_config.
+     * frames is defined by \c encoding argument of new_cb().
      *
      * **Parameters**
      *  - \p plugin_instance is a pointer to the instance returned by new_cb()
-     *  - \p lost_frame is a pointer to a writable frame to be filled with the
-     *    interpolated data
-     *  - \p lookahead_frame is a pointer to a read-only frame following the
-     *    lost one
+     *  - \p lost_frame points to writable frame to be filled with the interpolation
+     *  - \p lookahead_frame points to read-only frame following the lost one
      *
      * **Ownership**
      *  - frames and their data can't be used after the callback returns

@@ -147,10 +147,8 @@ private:
     core::Optional<rtp::TimestampInjector> timestamp_injector_;
 
     core::Optional<audio::Depacketizer> depacketizer_;
-    core::Optional<audio::PcmMapperReader> plc_pre_mapper_;
     core::ScopedPtr<audio::IPlc> plc_;
     core::Optional<audio::PlcReader> plc_reader_;
-    core::Optional<audio::PcmMapperReader> plc_post_mapper_;
     core::Optional<audio::Watchdog> watchdog_;
     core::Optional<audio::ChannelMapperReader> channel_mapper_reader_;
     core::SharedPtr<audio::IResampler> resampler_;

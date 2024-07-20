@@ -71,8 +71,13 @@ struct TestPlc {
     }
 };
 
-void* test_plc_new(roc_plugin_plc* plugin) {
+void* test_plc_new(roc_plugin_plc* plugin, const roc_media_encoding* encoding) {
     roc_panic_if_not(plugin);
+    roc_panic_if_not(encoding);
+
+    roc_panic_if_not(encoding->format == ROC_FORMAT_PCM_FLOAT32);
+    roc_panic_if_not(encoding->rate == test::SampleRate);
+    roc_panic_if_not(encoding->channels == ROC_CHANNEL_LAYOUT_STEREO);
 
     return new TestPlc((TestPlugin*)plugin);
 }
