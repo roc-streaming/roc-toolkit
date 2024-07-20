@@ -250,7 +250,7 @@ public:
 
     //! Check if frame size is multiple of sample size and channel count.
     //! Returns false if size is invalid.
-    ROC_ATTR_NODISCARD bool validate_frame_size(size_t n_bytes);
+    bool is_valid_frame_size(size_t n_bytes);
 
     //! Cap duration to fit given buffer size in bytes.
     //! Returns @p duration or smaller value.

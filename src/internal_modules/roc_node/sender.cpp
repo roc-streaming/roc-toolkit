@@ -381,7 +381,7 @@ status::StatusCode Sender::write_frame(const void* bytes, size_t n_bytes) {
     roc_panic_if(!bytes);
     roc_panic_if(n_bytes == 0);
 
-    if (!sample_spec_.validate_frame_size(n_bytes)) {
+    if (!sample_spec_.is_valid_frame_size(n_bytes)) {
         return status::StatusBadBuffer;
     }
 

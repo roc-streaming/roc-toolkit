@@ -62,13 +62,13 @@ core::nanoseconds_t nsamples_2_ns(const float n_samples, const size_t sample_rat
     return (core::nanoseconds_t)val;
 }
 
-PcmFormat get_pcm_canon_format(PcmFormat fmt) {
+PcmFormat get_pcm_portable_format(PcmFormat fmt) {
     if (fmt == PcmFormat_Invalid) {
         return PcmFormat_Invalid;
     }
 
     const PcmTraits traits = pcm_format_traits(fmt);
-    return traits.canon_id;
+    return traits.portable_alias;
 }
 
 size_t get_pcm_sample_width(PcmFormat fmt) {
@@ -86,21 +86,24 @@ SampleSpec::SampleSpec()
     : sample_rate_(0)
     , sample_fmt_(SampleFormat_Invalid)
     , pcm_fmt_(PcmFormat_Invalid)
-    , pcm_width_(0) {
+    , pcm_width_(0)
+    , channel_set_() {
 }
 
 SampleSpec::SampleSpec(const size_t sample_rate,
                        const PcmFormat pcm_fmt,
                        const ChannelSet& channel_set)
-    : sample_rate_(sample_rate)
-    , sample_fmt_(SampleFormat_Pcm)
-    , pcm_fmt_(pcm_fmt)
-    , pcm_width_(get_pcm_sample_width(pcm_fmt))
+    : sample_rate_(0)
+    , sample_fmt_(SampleFormat_Invalid)
+    , pcm_fmt_(PcmFormat_Invalid)
+    , pcm_width_(0)
     , channel_set_(channel_set) {
-    roc_panic_if_msg(sample_rate_ == 0, "sample spec: invalid sample rate");
-    roc_panic_if_msg(pcm_fmt_ == PcmFormat_Invalid || pcm_width_ == 0,
-                     "sample spec: invalid pcm format");
-    roc_panic_if_msg(!channel_set_.is_valid(), "sample spec: invalid channel set");
+    set_sample_format(SampleFormat_Pcm);
+    set_pcm_format(pcm_fmt);
+    set_sample_rate(sample_rate);
+
+    roc_panic_if_msg(!is_valid(), "sample spec: attempt to construct invalid spec: %s",
+                     sample_spec_to_str(*this).c_str());
 }
 
 SampleSpec::SampleSpec(const size_t sample_rate,
@@ -108,21 +111,24 @@ SampleSpec::SampleSpec(const size_t sample_rate,
                        const ChannelLayout channel_layout,
                        ChannelOrder channel_order,
                        const ChannelMask channel_mask)
-    : sample_rate_(sample_rate)
-    , sample_fmt_(SampleFormat_Pcm)
-    , pcm_fmt_(pcm_fmt)
-    , pcm_width_(get_pcm_sample_width(pcm_fmt))
+    : sample_rate_(0)
+    , sample_fmt_(SampleFormat_Invalid)
+    , pcm_fmt_(PcmFormat_Invalid)
+    , pcm_width_(0)
     , channel_set_(channel_layout, channel_order, channel_mask) {
-    roc_panic_if_msg(sample_rate_ == 0, "sample spec: invalid sample rate");
-    roc_panic_if_msg(pcm_fmt_ == PcmFormat_Invalid || pcm_width_ == 0,
-                     "sample spec: invalid pcm format");
-    roc_panic_if_msg(!channel_set_.is_valid(), "sample spec: invalid channel set");
+    set_sample_format(SampleFormat_Pcm);
+    set_pcm_format(pcm_fmt);
+    set_sample_rate(sample_rate);
+
+    roc_panic_if_msg(!is_valid(), "sample spec: attempt to construct invalid spec: %s",
+                     sample_spec_to_str(*this).c_str());
 }
 
 bool SampleSpec::operator==(const SampleSpec& other) const {
     return sample_fmt_ == other.sample_fmt_
-        && (sample_fmt_ != SampleFormat_Pcm || pcm_fmt_ == other.pcm_fmt_
-            || get_pcm_canon_format(pcm_fmt_) == get_pcm_canon_format(other.pcm_fmt_))
+        && (sample_fmt_ != SampleFormat_Pcm
+            || get_pcm_portable_format(pcm_fmt_)
+                == get_pcm_portable_format(other.pcm_fmt_))
         && sample_rate_ == other.sample_rate_ && channel_set_ == other.channel_set_;
 }
 
@@ -132,7 +138,7 @@ bool SampleSpec::operator!=(const SampleSpec& other) const {
 
 bool SampleSpec::is_valid() const {
     return sample_fmt_ != SampleFormat_Invalid
-        && ((sample_fmt_ == SampleFormat_Pcm) == (pcm_fmt_ != PcmFormat_Invalid))
+        && (sample_fmt_ != SampleFormat_Pcm || pcm_fmt_ != PcmFormat_Invalid)
         && sample_rate_ != 0 && channel_set_.is_valid();
 }
 
@@ -143,7 +149,7 @@ bool SampleSpec::is_empty() const {
 
 bool SampleSpec::is_raw() const {
     return sample_fmt_ == SampleFormat_Pcm
-        && get_pcm_canon_format(pcm_fmt_) == get_pcm_canon_format(Sample_RawFormat);
+        && get_pcm_portable_format(pcm_fmt_) == get_pcm_portable_format(Sample_RawFormat);
 }
 
 void SampleSpec::clear() {
@@ -388,7 +394,7 @@ void SampleSpec::validate_frame(Frame& frame) const {
     }
 }
 
-bool SampleSpec::validate_frame_size(size_t n_bytes) {
+bool SampleSpec::is_valid_frame_size(size_t n_bytes) {
     roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
                      sample_spec_to_str(*this).c_str());
 

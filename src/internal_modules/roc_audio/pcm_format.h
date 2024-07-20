@@ -211,8 +211,18 @@ struct PcmTraits {
     //! True for little-endian formats.
     bool is_little;
 
-    //! Canonical identifier of the same format.
-    PcmFormat canon_id;
+    //! True if format has same endian as current CPU.
+    bool is_native;
+
+    //! Same format, but with removed _Be or _Le suffix.
+    //! Value depends on current CPU.
+    //! Set only if format's endian matches current CPU's endian.
+    PcmFormat native_alias;
+
+    //! Same format, but with added _Be or _Le suffix.
+    //! Value depends on current CPU.
+    //! Always set. If format already had suffix, set to the same format.
+    PcmFormat portable_alias;
 
     //! Number of significant bits per sample.
     size_t bit_depth;
@@ -225,7 +235,9 @@ struct PcmTraits {
         , is_integer(false)
         , is_signed(false)
         , is_little(false)
-        , canon_id(PcmFormat_Invalid)
+        , is_native(false)
+        , native_alias(PcmFormat_Invalid)
+        , portable_alias(PcmFormat_Invalid)
         , bit_depth(0)
         , bit_width(0) {
     }
