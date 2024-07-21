@@ -232,6 +232,12 @@ status::StatusCode SenderLoop::write(audio::Frame& frame) {
     return code;
 }
 
+status::StatusCode SenderLoop::flush() {
+    core::Mutex::Lock lock(sink_mutex_);
+
+    return sink_.flush();
+}
+
 core::nanoseconds_t SenderLoop::timestamp_imp() const {
     return core::timestamp(core::ClockMonotonic);
 }

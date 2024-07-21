@@ -79,6 +79,10 @@ public:
         return status::StatusOK;
     }
 
+    virtual ROC_ATTR_NODISCARD status::StatusCode flush() {
+        return status::StatusOK;
+    }
+
     void expect_frames(size_t total) {
         UNSIGNED_LONGS_EQUAL(total, n_frames_);
     }

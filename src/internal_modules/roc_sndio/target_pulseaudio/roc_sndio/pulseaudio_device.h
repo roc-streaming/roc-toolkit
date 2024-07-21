@@ -101,6 +101,9 @@ public:
          packet::stream_timestamp_t duration,
          audio::FrameReadMode mode);
 
+    //! Flush buffered data, if any.
+    virtual ROC_ATTR_NODISCARD status::StatusCode flush();
+
 private:
     static void context_state_cb_(pa_context* context, void* userdata);
 

@@ -144,6 +144,10 @@ status::StatusCode WavSink::write(audio::Frame& frame) {
     return status::StatusOK;
 }
 
+status::StatusCode WavSink::flush() {
+    return status::StatusOK;
+}
+
 status::StatusCode WavSink::open_(const char* path) {
     if (output_file_) {
         roc_panic("wav sink: already opened");

@@ -86,6 +86,10 @@ public:
         }
     }
 
+    virtual ROC_ATTR_NODISCARD status::StatusCode flush() {
+        return status::StatusOK;
+    }
+
 private:
     enum { MaxSz = 256 * 1024 };
 

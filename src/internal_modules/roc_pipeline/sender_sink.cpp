@@ -260,5 +260,9 @@ status::StatusCode SenderSink::write(audio::Frame& frame) {
     return code;
 }
 
+status::StatusCode SenderSink::flush() {
+    return status::StatusOK;
+}
+
 } // namespace pipeline
 } // namespace roc

@@ -72,6 +72,9 @@ public:
     //! Write frame.
     virtual ROC_ATTR_NODISCARD status::StatusCode write(audio::Frame& frame);
 
+    //! Flush buffered data, if any.
+    virtual ROC_ATTR_NODISCARD status::StatusCode flush();
+
 private:
     audio::FrameFactory frame_factory_;
 

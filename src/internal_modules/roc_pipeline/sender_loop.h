@@ -153,6 +153,7 @@ private:
     virtual bool has_clock() const;
     virtual status::StatusCode close();
     virtual status::StatusCode write(audio::Frame& frame);
+    virtual ROC_ATTR_NODISCARD status::StatusCode flush();
 
     // Methods of PipelineLoop
     virtual core::nanoseconds_t timestamp_imp() const;

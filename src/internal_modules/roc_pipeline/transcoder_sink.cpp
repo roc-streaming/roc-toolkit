@@ -136,5 +136,9 @@ status::StatusCode TranscoderSink::write(audio::Frame& frame) {
     return frame_writer_->write(frame);
 }
 
+status::StatusCode TranscoderSink::flush() {
+    return status::StatusOK;
+}
+
 } // namespace pipeline
 } // namespace roc
