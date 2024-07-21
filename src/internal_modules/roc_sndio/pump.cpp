@@ -71,6 +71,13 @@ status::StatusCode Pump::run() {
     if (code == status::StatusFinish) {
         code = status::StatusOK; // EOF is fine
     }
+    if (code == status::StatusOK) {
+        code = sink_.flush();
+        if (code != status::StatusOK) {
+            roc_log(LogError, "pump: got error when flushing sink: status=%s",
+                    status::code_to_str(code));
+        }
+    }
 
     status::StatusCode close_code = close_all_devices_();
 

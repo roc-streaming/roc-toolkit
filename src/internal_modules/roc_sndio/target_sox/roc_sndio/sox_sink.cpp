@@ -219,9 +219,21 @@ status::StatusCode SoxSink::write(audio::Frame& frame) {
         }
     }
 
-    const status::StatusCode code = write_(buffer_data, buffer_pos);
-    if (code != status::StatusOK) {
-        return code;
+    if (buffer_pos > 0) {
+        const status::StatusCode code = write_(buffer_data, buffer_pos);
+        if (code != status::StatusOK) {
+            return code;
+        }
+    }
+
+    return status::StatusOK;
+}
+
+status::StatusCode SoxSink::flush() {
+    if (output_ != NULL && driver_type_ == DriverType_File && output_->fp != NULL) {
+        if (fflush((FILE*)output_->fp) != 0) {
+            return status::StatusErrFile;
+        }
     }
 
     return status::StatusOK;

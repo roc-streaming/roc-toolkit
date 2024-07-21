@@ -69,6 +69,9 @@ public:
     //! Write frame.
     virtual ROC_ATTR_NODISCARD status::StatusCode write(audio::Frame& frame);
 
+    //! Flush buffered data, if any.
+    virtual ROC_ATTR_NODISCARD status::StatusCode flush();
+
 private:
     status::StatusCode open_(const char* driver, const char* path);
     status::StatusCode close_();

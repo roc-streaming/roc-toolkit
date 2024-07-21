@@ -334,6 +334,10 @@ status::StatusCode PulseaudioDevice::write(audio::Frame& frame) {
     return handle_request_(frame.bytes(), frame.num_bytes());
 }
 
+status::StatusCode PulseaudioDevice::flush() {
+    return status::StatusOK;
+}
+
 status::StatusCode PulseaudioDevice::read(audio::Frame& frame,
                                           packet::stream_timestamp_t duration,
                                           audio::FrameReadMode mode) {

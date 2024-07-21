@@ -250,6 +250,10 @@ status::StatusCode SndfileSink::write(audio::Frame& frame) {
     return status::StatusOK;
 }
 
+status::StatusCode SndfileSink::flush() {
+    return status::StatusOK;
+}
+
 status::StatusCode SndfileSink::open_(const char* driver, const char* path) {
     if (!map_to_sndfile(&driver, path, file_info_)) {
         roc_log(LogDebug,
