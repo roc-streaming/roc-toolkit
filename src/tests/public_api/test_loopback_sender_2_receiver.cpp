@@ -549,6 +549,7 @@ TEST(loopback_sender_2_receiver, multitrack_separate_contexts) {
     sender.join();
 }
 
+// Smoke test for various counters, durations, etc.
 TEST(loopback_sender_2_receiver, metrics_measurements) {
     enum {
         Flags = test::FlagNonStrict | test::FlagInfinite | test::FlagRTCP,
@@ -594,8 +595,8 @@ TEST(loopback_sender_2_receiver, metrics_measurements) {
         UNSIGNED_LONGS_EQUAL(1, recv_metrics.connection_count);
         UNSIGNED_LONGS_EQUAL(1, receiver.conn_metrics_count());
 
-        const roc_connection_metrics& recv_conn_metric = receiver.conn_metrics(0);
-        if (recv_conn_metric.e2e_latency == 0) {
+        const roc_connection_metrics& recv_conn_metrics = receiver.conn_metrics(0);
+        if (recv_conn_metrics.e2e_latency == 0 || recv_conn_metrics.mean_jitter == 0) {
             continue;
         }
 
@@ -610,13 +611,22 @@ TEST(loopback_sender_2_receiver, metrics_measurements) {
         UNSIGNED_LONGS_EQUAL(1, sender.conn_metrics_count());
         const roc_connection_metrics& send_conn_metrics = sender.conn_metrics(0);
 
-        if (send_conn_metrics.e2e_latency == 0) {
+        if (send_conn_metrics.e2e_latency == 0 || send_conn_metrics.mean_jitter == 0) {
             continue;
         }
 
-        UNSIGNED_LONGS_EQUAL(0, recv_conn_metric.lost_packets);
+        CHECK(send_conn_metrics.e2e_latency > 0);
+        CHECK(recv_conn_metrics.e2e_latency > 0);
+
         CHECK(send_conn_metrics.expected_packets > 0);
-        CHECK(recv_conn_metric.expected_packets >= send_conn_metrics.expected_packets);
+        CHECK(recv_conn_metrics.expected_packets > 0);
+
+        CHECK(send_conn_metrics.lost_packets == 0);
+        CHECK(recv_conn_metrics.lost_packets == 0);
+
+        CHECK(send_conn_metrics.mean_jitter > 0);
+        CHECK(recv_conn_metrics.mean_jitter > 0);
+
         break;
     }
 
@@ -626,6 +636,7 @@ TEST(loopback_sender_2_receiver, metrics_measurements) {
     sender.join();
 }
 
+// Check how connection counts are reported.
 TEST(loopback_sender_2_receiver, metrics_connections) {
     enum {
         Flags = test::FlagNonStrict | test::FlagInfinite | test::FlagRTCP,
@@ -731,7 +742,8 @@ TEST(loopback_sender_2_receiver, metrics_connections) {
     sender_2.join();
 }
 
-TEST(loopback_sender_2_receiver, metrics_slots) {
+// Check how connection counters work for multiple slots.
+TEST(loopback_sender_2_receiver, metrics_connections_slots) {
     enum {
         Flags = test::FlagNonStrict | test::FlagInfinite | test::FlagRTCP,
         FrameChans = 2,
@@ -802,10 +814,6 @@ TEST(loopback_sender_2_receiver, metrics_slots) {
             continue;
         }
 
-        if (receiver.conn_metrics(0).mean_jitter == 0) {
-            continue;
-        }
-
         break;
     }
 
@@ -819,9 +827,6 @@ TEST(loopback_sender_2_receiver, metrics_slots) {
 
         UNSIGNED_LONGS_EQUAL(1, receiver.recv_metrics().connection_count);
         UNSIGNED_LONGS_EQUAL(1, receiver.conn_metrics_count());
-
-        CHECK(receiver.conn_metrics(0).expected_packets > 0);
-        CHECK(receiver.conn_metrics(0).mean_jitter > 0);
     }
 
     for (;;) {
@@ -839,10 +844,6 @@ TEST(loopback_sender_2_receiver, metrics_slots) {
             continue;
         }
 
-        if (sender.conn_metrics(0).mean_jitter == 0) {
-            continue;
-        }
-
         break;
     }
 
@@ -856,9 +857,6 @@ TEST(loopback_sender_2_receiver, metrics_slots) {
 
         UNSIGNED_LONGS_EQUAL(1, sender.send_metrics().connection_count);
         UNSIGNED_LONGS_EQUAL(1, sender.conn_metrics_count());
-
-        CHECK(sender.conn_metrics(0).expected_packets > 0);
-        CHECK(sender.conn_metrics(0).mean_jitter > 0);
     }
 
     receiver.stop();
