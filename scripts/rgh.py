@@ -166,7 +166,9 @@ def make_prefix(org, repo, issue_link):
 
 # format commit message
 def make_message(org, repo, issue_link, pr_title):
+    pr_title = re.sub(r'^([Ii]ssue\s+\d+(:\s*)?)', '', pr_title)
     pr_title = re.sub(r'\s*\(#\d+\)$', '', pr_title)
+    pr_title = re.sub(r'\s*#\d+$', '', pr_title)
     pr_title = re.sub(r'\.$', '', pr_title)
 
     if issue_link:
@@ -567,7 +569,7 @@ def squash_pr_commits(org, repo, pr_number, title, no_issue):
         title or pr_info['pr_title'])
 
     run_cmd([
-        'git', 'rebase ', '-i', pr_info['target_sha'],
+        'git', 'rebase', '-i', pr_info['target_sha'],
         ],
         env={
             'GIT_EDITOR': ':',
