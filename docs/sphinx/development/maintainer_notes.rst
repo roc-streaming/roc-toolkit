@@ -12,8 +12,8 @@ Pull requests should be merged using `rgh.py <https://github.com/roc-streaming/r
 
 - Rebases PR on up-to-date develop branch.
 - If requested, squashes all commits into one.
-- Overwrites commit messages to add a link to related issue to each commit (e.g. "Implement feature" becomes "gh-123 Implement feature"). The issue number should be present is PR description or passed as command-line flag.
--  Force-pushes updated commits to PR's branch.
+- Overwrites commit messages to add a link to related issue to each commit (e.g. "Implement feature" becomes "gh-123: Implement feature"). The issue number should be present is PR description or passed as command-line flag.
+- Force-pushes updated commits to PR's branch.
 - Asks GitHub to merge PR.
 
 You should choose whether to merge by rebasing or squashing.
@@ -22,45 +22,32 @@ Merge PR by rebasing:
 
 .. code::
 
-   scripts/rgh.py merge --rebase 123
+   scripts/rgh.py merge_pr --rebase 123
 
 Merge PR by rebasing and squashing all commits into one:
 
 .. code::
 
-   scripts/rgh.py merge --squash 123
+   scripts/rgh.py merge_pr --squash 123
 
-If PR description doesn't have a link to issue, the script will complain and fail. You can manually specify it:
-
-.. code::
-
-   scripts/rgh.py merge --rebase 123 --issue 456
-
-The script will use given issue for commits and also will add it to PR description.
-
-Show PR info before merging it:
+If PR description doesn't have a link to issue, the script will complain and fail. It will also fail if the issue does not have a milestone assigned. You can manually specify it:
 
 .. code::
 
-   scripts/rgh.py show 123
+   scripts/rgh.py merge_pr --rebase 123 --issue 456 --milestone 0.9.9
 
-Link PR commits to issue and force-push to PR's branch, but don't merge PR:
+The script will use given issue for commits and also will update PR and issue.
 
-.. code::
+When squashing, you can overwrite commit message using ``--title`` option.
 
-   scripts/rgh.py link 123
+Showing pull request info
+=========================
 
-Revert that:
-
-.. code::
-
-   scripts/rgh.py unlink 123
-
-For the full list of available options, see:
+Show PR information, useful to do before running ``merge_pr``:
 
 .. code::
 
-   scripts/rgh.py [command] --help
+   scripts/rgh.py show_pr 123
 
 Rebasing develop on master
 ==========================
@@ -74,11 +61,11 @@ Update branches:
    git switch master && git pull origin master
    git switch develop && git pull origin develop
 
-Rebase ``develop`` on ``master``:
+Rebase ``develop`` on ``master``, preserving git authors and committers:
 
 .. code::
 
-   scripts/rgh.py stealth_rebase master
+   scripts/rgh.py stb_rebase master
 
 Push to your fork:
 
