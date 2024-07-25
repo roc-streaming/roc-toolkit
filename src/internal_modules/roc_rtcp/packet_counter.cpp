@@ -31,7 +31,7 @@ uint64_t PacketCounter::update(const uint32_t begin, const uint32_t end) {
     // Update end.
     if (int32_t(end - end64_lo_) > 0) {
         if (end < end64_lo_) {
-            end64_hi_ += (uint32_t)-1;
+            end64_hi_ += (uint64_t)1 << 32;
         }
         end64_lo_ = end;
     }
