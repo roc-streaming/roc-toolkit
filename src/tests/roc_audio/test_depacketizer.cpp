@@ -147,11 +147,11 @@ void expect_error(status::StatusCode expected_status,
 }
 
 void expect_n_decoded(int packet_count, Depacketizer& depacketizer) {
-    LONGS_EQUAL(packet_count, depacketizer.metrics().decoded_packet_count);
+    LONGS_EQUAL(packet_count, depacketizer.metrics().decoded_packets);
 }
 
 void expect_n_late(int packet_count, Depacketizer& depacketizer) {
-    LONGS_EQUAL(packet_count, depacketizer.metrics().late_packet_count);
+    LONGS_EQUAL(packet_count, depacketizer.metrics().late_packets);
 }
 
 class ArrayReader : public packet::IReader {

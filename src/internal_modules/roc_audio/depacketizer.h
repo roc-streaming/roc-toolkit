@@ -28,21 +28,21 @@ namespace audio {
 struct DepacketizerMetrics {
     //! Cumulative count of packets from which we decoded samples.
     //! Incremented each time depacketizer starts decoding a packet.
-    uint64_t decoded_packet_count;
+    uint64_t decoded_packets;
 
     //! Cumulative count of packets dropped because they were late.
     //! Incremented each time depacketizer drops a packet.
-    uint64_t late_packet_count;
+    uint64_t late_packets;
 
     //! Cumulative count of packets repaired by FEC.
     //! Incremented each time depacketizer reads a packet with FlagRestored.
     //! This metric excludes late packets that were repaired but then dropped.
-    uint64_t recovered_packet_count;
+    uint64_t recovered_packets;
 
     DepacketizerMetrics()
-        : decoded_packet_count(0)
-        , late_packet_count(0)
-        , recovered_packet_count(0) {
+        : decoded_packets(0)
+        , late_packets(0)
+        , recovered_packets(0) {
     }
 };
 

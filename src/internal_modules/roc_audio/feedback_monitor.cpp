@@ -108,7 +108,7 @@ void FeedbackMonitor::process_feedback(packet::stream_source_t source_id,
     if (link_metrics_.expected_packets == 0 || use_packetizer_) {
         // If packet counter is not reported from receiver, fallback to
         // counter from sender.
-        link_metrics_.expected_packets = packetizer_.metrics().encoded_packet_count;
+        link_metrics_.expected_packets = packetizer_.metrics().encoded_packets;
         use_packetizer_ = true;
     }
 

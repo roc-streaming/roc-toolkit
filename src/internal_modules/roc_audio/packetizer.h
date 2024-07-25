@@ -31,15 +31,15 @@ namespace audio {
 struct PacketizerMetrics {
     //! Cumulative count of produced packets.
     //! Incremented each time packetizer starts encoding a packet.
-    uint64_t encoded_packet_count;
+    uint64_t encoded_packets;
 
     //! Cumulative count of encoded payload bytes.
     //! This excludes packet headers and padding.
-    uint64_t payload_byte_count;
+    uint64_t payload_bytes;
 
     PacketizerMetrics()
-        : encoded_packet_count(0)
-        , payload_byte_count(0) {
+        : encoded_packets(0)
+        , payload_bytes(0) {
     }
 };
 

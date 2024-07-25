@@ -25,15 +25,25 @@ struct LinkMetrics {
     //! The low 16 bits contain the lowest sequence number received in an RTP data
     //! packet, and the rest bits extend that sequence number with the corresponding
     //! count of seqnum cycles.
+    //! @note
+    //!  Available on both receiver and sender.
+    //!  Calculated by rtp::LinkMeter on receiver, reported via RTCP to sender.
     packet::ext_seqnum_t ext_first_seqnum;
 
     //! Extended highest RTP seqnum received.
     //! The low 16 bits contain the highest sequence number received in an RTP data
     //! packet, and the rest bits extend that sequence number with the corresponding
     //! count of seqnum cycles.
+    //! @note
+    //!  Available on both receiver and sender.
+    //!  Calculated by rtp::LinkMeter on receiver, reported via RTCP to sender.
     packet::ext_seqnum_t ext_last_seqnum;
 
     //! Total amount of packets that receiver expects to be delivered.
+    //! Calculated based on seqnums of oldest and newest packets.
+    //! @note
+    //!  Available on both receiver and sender.
+    //!  Calculated by rtp::LinkMeter on receiver, reported via RTCP to sender.
     uint64_t expected_packets;
 
     //! Cumulative count of lost packets.
@@ -42,37 +52,38 @@ struct LinkMetrics {
     //! packets actually received, where the number of packets received includes any
     //! which are late or duplicates. Packets that arrive late are not counted as lost,
     //! and the loss may be negative if there are duplicates.
+    //! @note
+    //!  Available on both receiver and sender.
+    //!  Calculated by rtp::LinkMeter on receiver, reported via RTCP to sender.
     int64_t lost_packets;
 
-    //! Cumulate count of recovered packets.
-    //! How many packets lost packets receiver was able to recover
-    //! by FEC. The sender is not getting this metric so far.
-    uint64_t recovered_packets;
-
     //! Estimated interarrival jitter.
-    //! An estimate of the statistical variance of the RTP data packet
-    //! interarrival time.
+    //! An estimate of the statistical variance of the RTP data packet interarrival time.
+    //! Calculated based on a sliding window.
     //! @note
     //!  This value is calculated on sliding window on a receiver side and sender
     //!  side gets this value via RTCP.
     core::nanoseconds_t jitter;
 
     //! Running max of jitter.
+    //! Calculated based on a sliding window.
     //! @note
-    //!  This value is calculated on sliding window on a receiver side and it is not
-    //!  available on sender.
+    //!  Available only on receiver.
+    //!  Calculated by rtp::LinkMeter.
     core::nanoseconds_t max_jitter;
 
     //! Running min of jitter.
+    //! Calculated based on a sliding window.
     //! @note
-    //!  This value is calculated on sliding window on a receiver side and it is not
-    //!  available on sender.
+    //!  Available only on receiver.
+    //!  Calculated by rtp::LinkMeter.
     core::nanoseconds_t min_jitter;
 
     //! Estimated round-trip time between sender and receiver.
-    //! Computed based on NTP-like timestamp exchange implemennted by RTCP protocol.
-    //! Read-only field. You can read it on sender, but you should not set
-    //! it on receiver.
+    //! Calculated based on NTP-like timestamp exchange implemented by RTCP protocol.
+    //! @note
+    //!  Available on both receiver and sender.
+    //!  Calculated by rtcp::Communicator independently on receiver and sender.
     core::nanoseconds_t rtt;
 
     LinkMetrics()
@@ -80,7 +91,6 @@ struct LinkMetrics {
         , ext_last_seqnum(0)
         , expected_packets(0)
         , lost_packets(0)
-        , recovered_packets(0)
         , jitter(0)
         , max_jitter(0)
         , min_jitter(0)

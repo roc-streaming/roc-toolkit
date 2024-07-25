@@ -354,8 +354,8 @@ rtcp::SendReport SenderSession::query_send_stream(core::nanoseconds_t report_tim
     report.report_timestamp = report_time;
     report.stream_timestamp = timestamp_extractor_->get_mapping(report_time);
     report.sample_rate = packetizer_->sample_rate();
-    report.packet_count = packet_metrics.encoded_packet_count;
-    report.byte_count = packet_metrics.payload_byte_count;
+    report.packet_count = packet_metrics.encoded_packets;
+    report.byte_count = packet_metrics.payload_bytes;
 
     return report;
 }

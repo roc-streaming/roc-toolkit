@@ -398,7 +398,7 @@ status::StatusCode Depacketizer::start_packet_() {
                 (unsigned long)stream_ts_, (unsigned long)pkt_begin);
 
         dropped_packets_++;
-        metrics_.late_packet_count++;
+        metrics_.late_packets++;
 
         payload_decoder_.end_frame();
         packet_ = NULL;
@@ -446,9 +446,9 @@ status::StatusCode Depacketizer::start_packet_() {
         }
     }
 
-    metrics_.decoded_packet_count++;
+    metrics_.decoded_packets++;
     if (packet_->has_flags(packet::Packet::FlagRestored)) {
-        metrics_.recovered_packet_count++;
+        metrics_.recovered_packets++;
     }
 
     return status::StatusOK;
