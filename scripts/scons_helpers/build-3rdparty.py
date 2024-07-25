@@ -1292,7 +1292,7 @@ elif ctx.pkg_name == 'sox':
     execute(ctx, './configure --host={host} {vars} {flags} {opts}'.format(
         host=ctx.toolchain,
         vars=format_vars(ctx),
-        flags=format_flags(ctx),
+        flags=format_flags(ctx, cflags='-w -Wno-incompatible-function-pointer-types'),
         opts=' '.join([
             '--disable-openmp',
             '--disable-shared',
