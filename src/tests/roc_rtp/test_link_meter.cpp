@@ -27,7 +27,7 @@ namespace rtp {
 
 namespace {
 
-enum { ChMask = 3, PacketSz = 100, SampleRate = 10000, Duration = 100 };
+enum { ChMask = 3, PacketSz = 100, SampleRate = 44100, Duration = 44 };
 
 core::HeapArena arena;
 packet::PacketFactory packet_factory(arena, PacketSz);
@@ -46,7 +46,7 @@ const packet::stream_timestamp_t stream_start_ts = 6134803;
 const packet::stream_timestamp_t stream_step_ts = Duration;
 
 packet::PacketPtr new_packet(packet::seqnum_t sn,
-                             const core::nanoseconds_t ts,
+                             const core::nanoseconds_t queue_ts,
                              const packet::stream_timestamp_t stream_ts) {
     packet::PacketPtr packet = packet_factory.new_packet();
     CHECK(packet);
@@ -56,7 +56,7 @@ packet::PacketPtr new_packet(packet::seqnum_t sn,
     packet->rtp()->seqnum = sn;
     packet->rtp()->duration = Duration;
     packet->rtp()->stream_timestamp = stream_ts;
-    packet->udp()->queue_timestamp = ts;
+    packet->udp()->queue_timestamp = queue_ts;
 
     return packet;
 }
@@ -73,8 +73,7 @@ TEST_GROUP(link_meter) {};
 
 TEST(link_meter, has_metrics) {
     packet::FifoQueue queue;
-    LinkMeter meter(arena, encoding_map, sample_spec, make_config(), NULL);
-    meter.set_writer(queue);
+    LinkMeter meter(queue, make_config(), encoding_map, arena, NULL);
 
     CHECK(!meter.has_metrics());
 
@@ -87,8 +86,8 @@ TEST(link_meter, has_metrics) {
 
 TEST(link_meter, last_seqnum) {
     packet::FifoQueue queue;
-    LinkMeter meter(arena, encoding_map, sample_spec, make_config(), NULL);
-    meter.set_writer(queue);
+    LinkMeter meter(queue, make_config(), encoding_map, arena, NULL);
+
     core::nanoseconds_t ts = start_ts;
     packet::stream_timestamp_t sts = stream_start_ts;
 
@@ -124,8 +123,8 @@ TEST(link_meter, last_seqnum) {
 
 TEST(link_meter, last_seqnum_wrap) {
     packet::FifoQueue queue;
-    LinkMeter meter(arena, encoding_map, sample_spec, make_config(), NULL);
-    meter.set_writer(queue);
+    LinkMeter meter(queue, make_config(), encoding_map, arena, NULL);
+
     core::nanoseconds_t ts = start_ts;
     packet::stream_timestamp_t sts = stream_start_ts;
 
@@ -166,9 +165,9 @@ TEST(link_meter, last_seqnum_wrap) {
 
 TEST(link_meter, jitter_test) {
     packet::FifoQueue queue;
-    LinkMeter meter(arena, encoding_map, sample_spec, make_config(), NULL);
-    const ssize_t RunningWinLen = (ssize_t)meter.running_window_len();
-    meter.set_writer(queue);
+    LinkMeter meter(queue, make_config(), encoding_map, arena, NULL);
+
+    const ssize_t running_win_len = (ssize_t)meter.running_window_len();
     const size_t num_packets = Duration * 100;
     core::nanoseconds_t ts_store[num_packets];
 
@@ -183,12 +182,12 @@ TEST(link_meter, jitter_test) {
         ts += step_ts + jitter_ns;
         sts += stream_step_ts;
 
-        if (i > (size_t)RunningWinLen) {
+        if (i > (size_t)running_win_len) {
             // Check meter metrics running max in min jitter in last Duration number
             // of packets in ts_store.
             core::nanoseconds_t min_jitter = core::Second;
             core::nanoseconds_t max_jitter = 0;
-            for (size_t j = 0; j < (size_t)RunningWinLen; j++) {
+            for (size_t j = 0; j < (size_t)running_win_len; j++) {
                 core::nanoseconds_t jitter =
                     std::abs(ts_store[i - j] - ts_store[i - j - 1] - step_ts);
                 min_jitter = std::min(min_jitter, jitter);
@@ -199,13 +198,13 @@ TEST(link_meter, jitter_test) {
 
             // Reference average  and variance of jitter from ts_store values.
             core::nanoseconds_t sum = 0;
-            for (size_t j = 0; j < (size_t)RunningWinLen; j++) {
+            for (size_t j = 0; j < (size_t)running_win_len; j++) {
                 sum += std::abs(ts_store[i - j] - ts_store[i - j - 1] - step_ts);
             }
-            const core::nanoseconds_t mean = sum / RunningWinLen;
+            const core::nanoseconds_t mean = sum / running_win_len;
 
             sum = 0;
-            for (size_t j = 0; j < (size_t)RunningWinLen; j++) {
+            for (size_t j = 0; j < (size_t)running_win_len; j++) {
                 core::nanoseconds_t jitter =
                     std::abs(ts_store[i - j] - ts_store[i - j - 1] - step_ts);
                 sum += (jitter - mean) * (jitter - mean);
@@ -219,9 +218,9 @@ TEST(link_meter, jitter_test) {
 
 TEST(link_meter, ascending_test) {
     packet::FifoQueue queue;
-    LinkMeter meter(arena, encoding_map, sample_spec, make_config(), NULL);
+    LinkMeter meter(queue, make_config(), encoding_map, arena, NULL);
     const ssize_t running_win_len = (ssize_t)meter.running_window_len();
-    meter.set_writer(queue);
+
     const size_t num_packets = Duration * 100;
     core::nanoseconds_t ts_store[num_packets];
 
@@ -256,9 +255,9 @@ TEST(link_meter, ascending_test) {
 
 TEST(link_meter, descending_test) {
     packet::FifoQueue queue;
-    LinkMeter meter(arena, encoding_map, sample_spec, make_config(), NULL);
+    LinkMeter meter(queue, make_config(), encoding_map, arena, NULL);
     const ssize_t RunningWinLen = (ssize_t)meter.running_window_len();
-    meter.set_writer(queue);
+
     const size_t num_packets = Duration * 100;
     core::nanoseconds_t ts_store[num_packets];
 
@@ -268,12 +267,8 @@ TEST(link_meter, descending_test) {
         packet::seqnum_t seqnum = 65500 + i;
         ts_store[i] = ts;
         UNSIGNED_LONGS_EQUAL(status::StatusOK, meter.write(new_packet(seqnum, ts, sts)));
-        ts += step_ts - (core::nanoseconds_t)i * core::Nanosecond * 10; // Removed the
-                                                                        // random
-                                                                        // component to
-                                                                        // create an
-                                                                        // decreasing
-                                                                        // sequence
+        // Removed the random component to create an decreasing sequence
+        ts += step_ts - (core::nanoseconds_t)i * core::Nanosecond * 10;
         sts += stream_step_ts;
 
         if (i > (size_t)RunningWinLen) {
@@ -295,9 +290,9 @@ TEST(link_meter, descending_test) {
 
 TEST(link_meter, saw_test) {
     packet::FifoQueue queue;
-    LinkMeter meter(arena, encoding_map, sample_spec, make_config(), NULL);
-    const ssize_t RunningWinLen = (ssize_t)meter.running_window_len();
-    meter.set_writer(queue);
+    LinkMeter meter(queue, make_config(), encoding_map, arena, NULL);
+    const ssize_t running_win_len = (ssize_t)meter.running_window_len();
+
     const size_t num_packets = Duration * 100;
     core::nanoseconds_t ts_store[num_packets];
     core::nanoseconds_t step_ts_inc = core::Nanosecond * 10;
@@ -312,16 +307,16 @@ TEST(link_meter, saw_test) {
         ts += step_ts_;
         sts += stream_step_ts;
         step_ts_ += step_ts_inc;
-        if (i > 0 && i % (size_t)RunningWinLen == 0) {
+        if (i > 0 && i % (size_t)running_win_len == 0) {
             step_ts_inc = -step_ts_inc;
         }
 
-        if (i > (size_t)RunningWinLen) {
+        if (i > (size_t)running_win_len) {
             // Check meter metrics running max in min jitter in last Duration number
             // of packets in ts_store.
             core::nanoseconds_t min_jitter = core::Second;
             core::nanoseconds_t max_jitter = 0;
-            for (size_t j = 0; j < (size_t)RunningWinLen; j++) {
+            for (size_t j = 0; j < (size_t)running_win_len; j++) {
                 core::nanoseconds_t jitter =
                     std::abs(ts_store[i - j] - ts_store[i - j - 1] - step_ts);
                 min_jitter = std::min(min_jitter, jitter);
@@ -335,8 +330,8 @@ TEST(link_meter, saw_test) {
 
 TEST(link_meter, losses_test) {
     packet::FifoQueue queue;
-    LinkMeter meter(arena, encoding_map, sample_spec, make_config(), NULL);
-    meter.set_writer(queue);
+    LinkMeter meter(queue, make_config(), encoding_map, arena, NULL);
+
     const size_t num_packets = Duration * 2 * (1 << 16);
     int64_t total_losses = 0;
 
@@ -370,8 +365,8 @@ TEST(link_meter, losses_test) {
 
 TEST(link_meter, total_counter) {
     packet::FifoQueue queue;
-    LinkMeter meter(arena, encoding_map, sample_spec, make_config(), NULL);
-    meter.set_writer(queue);
+    LinkMeter meter(queue, make_config(), encoding_map, arena, NULL);
+
     core::nanoseconds_t ts = start_ts;
     packet::stream_timestamp_t sts = stream_start_ts;
     uint16_t seqnum = 65500;
@@ -402,8 +397,7 @@ TEST(link_meter, forward_error) {
 
     for (size_t st_n = 0; st_n < ROC_ARRAY_SIZE(status_list); st_n++) {
         test::StatusWriter writer(status_list[st_n]);
-        LinkMeter meter(arena, encoding_map, sample_spec, make_config(), NULL);
-        meter.set_writer(writer);
+        LinkMeter meter(writer, make_config(), encoding_map, arena, NULL);
 
         LONGS_EQUAL(status_list[st_n],
                     meter.write(new_packet(100, start_ts, stream_start_ts)));

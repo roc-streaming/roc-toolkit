@@ -13,16 +13,14 @@
 namespace roc {
 namespace rtp {
 
-LinkMeter::LinkMeter(core::IArena& arena,
-                     const EncodingMap& encoding_map,
-                     const audio::SampleSpec& sample_spec,
+LinkMeter::LinkMeter(packet::IWriter& writer,
                      const audio::LatencyConfig& latency_config,
+                     const EncodingMap& encoding_map,
+                     core::IArena& arena,
                      core::CsvDumper* dumper)
     : encoding_map_(encoding_map)
     , encoding_(NULL)
-    , writer_(NULL)
-    , reader_(NULL)
-    , sample_spec_(sample_spec)
+    , writer_(writer)
     , first_packet_(true)
     , win_len_(latency_config.sliding_stat_window_length)
     , has_metrics_(false)
@@ -67,20 +65,13 @@ void LinkMeter::process_report(const rtcp::SendReport& report) {
 }
 
 status::StatusCode LinkMeter::write(const packet::PacketPtr& packet) {
-    if (!writer_) {
-        roc_panic("link meter: forgot to call set_writer()");
-    }
-
     if (!packet) {
         roc_panic("link meter: null packet");
     }
 
     // When we create LinkMeter, we don't know yet if RTP is used (e.g.
     // for repair packets), so we should be ready for non-rtp packets.
-    if (packet->has_flags(packet::Packet::FlagRTP)) {
-        if (!packet->has_flags(packet::Packet::FlagUDP)) {
-            roc_panic("Non-udp rtp packet");
-        }
+    if (packet->has_flags(packet::Packet::FlagRTP | packet::Packet::FlagUDP)) {
         // Since we don't know packet type in-before, we also determine
         // encoding dynamically.
         if (!encoding_ || encoding_->payload_type != packet->rtp()->payload_type) {
@@ -91,30 +82,7 @@ status::StatusCode LinkMeter::write(const packet::PacketPtr& packet) {
         }
     }
 
-    return writer_->write(packet);
-}
-
-status::StatusCode LinkMeter::read(packet::PacketPtr& packet,
-                                   packet::PacketReadMode mode) {
-    if (!reader_) {
-        roc_panic("link meter: forgot to call set_reader()");
-    }
-
-    status::StatusCode result = reader_->read(packet, mode);
-    if (packet && packet->has_flags(packet::Packet::FlagRestored)
-        && mode == packet::ModeFetch) {
-        metrics_.recovered_packets++;
-    }
-
-    return result;
-}
-
-void LinkMeter::set_writer(packet::IWriter& writer) {
-    writer_ = &writer;
-}
-
-void LinkMeter::set_reader(packet::IReader& reader) {
-    reader_ = &reader;
+    return writer_.write(packet);
 }
 
 void LinkMeter::update_metrics_(const packet::Packet& packet) {
@@ -131,7 +99,6 @@ void LinkMeter::update_metrics_(const packet::Packet& packet) {
     if (first_packet_) {
         last_seqnum_hi_ = 0;
         last_seqnum_lo_ = pkt_seqnum;
-
     } else if (packet::seqnum_diff(pkt_seqnum, last_seqnum_lo_) > 0) {
         // If packet seqnum is after last seqnum, update last seqnum, and
         // also counts possible wraps.
@@ -168,7 +135,8 @@ void LinkMeter::update_jitter_(const packet::Packet& packet) {
         packet.udp()->queue_timestamp - prev_queue_timestamp_;
     const packet::stream_timestamp_diff_t d_s_ts = packet::stream_timestamp_diff(
         packet.rtp()->stream_timestamp, prev_stream_timestamp_);
-    const core::nanoseconds_t d_s_ns = sample_spec_.stream_timestamp_delta_2_ns(d_s_ts);
+    const core::nanoseconds_t d_s_ns =
+        encoding_->sample_spec.stream_timestamp_delta_2_ns(d_s_ts);
 
     packet_jitter_stats_.add(std::abs(d_enq_ns - d_s_ns));
     metrics_.max_jitter = (core::nanoseconds_t)packet_jitter_stats_.mov_max();
@@ -178,6 +146,14 @@ void LinkMeter::update_jitter_(const packet::Packet& packet) {
     if (dumper_) {
         dump_(packet, d_enq_ns, d_s_ns);
     }
+}
+
+core::nanoseconds_t rtp::LinkMeter::mean_jitter() const {
+    return (core::nanoseconds_t)packet_jitter_stats_.mov_avg();
+}
+
+size_t LinkMeter::running_window_len() const {
+    return win_len_;
 }
 
 void LinkMeter::dump_(const packet::Packet& packet,
@@ -192,14 +168,6 @@ void LinkMeter::dump_(const packet::Packet& packet,
     e.fields[3] = packet_jitter_stats_.mov_max();
     e.fields[4] = packet_jitter_stats_.mov_min();
     dumper_->write(e);
-}
-
-core::nanoseconds_t rtp::LinkMeter::mean_jitter() const {
-    return (core::nanoseconds_t)packet_jitter_stats_.mov_avg();
-}
-
-size_t LinkMeter::running_window_len() const {
-    return win_len_;
 }
 
 } // namespace rtp
