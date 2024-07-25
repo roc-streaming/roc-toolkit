@@ -12,15 +12,37 @@ jobs:
   check-ready:
     runs-on: ubuntu-latest
     steps:
-      - uses: andymckay/labeler@1.0.4
+      - name: Add label
+        uses: andymckay/labeler@1.0.4
         if: github.event.pull_request.draft == true
         with:
           add-labels: 'work in progress'
 
-      - uses: andymckay/labeler@1.0.4
+      - name: Add label
+        uses: andymckay/labeler@1.0.4
         if: tojson(github.event.pull_request.requested_reviewers) != '[]'
         with:
           add-labels: 'ready for review'
+
+  check-contrib:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check contrib
+        id: contrib
+        run: |
+          echo flag=$(scripts/rgh.py show_pr ${{ github.event.pull_request.number }} --json \
+            | jq -r .pull_request.contrib) >> "$GITHUB_OUTPUT"
+        env:
+         GH_TOKEN: ${{ secrets.github_token }}
+
+      - name: Add label
+        if: steps.contrib.outputs.flag == 'true'
+        uses: andymckay/labeler@1.0.4
+        with:
+          add-labels: 'contribution'
 
   check-issue:
     runs-on: ubuntu-latest
