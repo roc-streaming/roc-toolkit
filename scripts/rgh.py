@@ -212,6 +212,7 @@ def query_pr_info(org, repo, pr_number, no_git=False):
         'pr_link': (org, repo, pr_number),
         'pr_title': response['title'],
         'pr_url': response['html_url'],
+        'pr_author': response['user']['login'],
         'pr_state': response['state'],
         'pr_draft': response['draft'],
         'pr_mergeable': response['mergeable'],
@@ -246,6 +247,14 @@ def query_pr_info(org, repo, pr_number, no_git=False):
     if pr_info['issue_link']:
         issue_info = query_issue_info(*pr_info['issue_link'])
         pr_info.update(issue_info)
+
+    try:
+        subprocess.run(
+            ['gh', 'api', f'/orgs/{org}/members/'+pr_info['pr_author']],
+            capture_output=True, text=True, check=True)
+        pr_info['pr_contrib'] = False
+    except subprocess.CalledProcessError as e:
+        pr_info['pr_contrib'] = True
 
     if not no_git:
         try:
@@ -360,6 +369,7 @@ def show_pr(org, repo, pr_number, show_json):
     start_section('pull request')
     add_field('title', pr_info['pr_title'], Fore.BLUE)
     add_field('url', pr_info['pr_url'])
+    add_field('author', pr_info['pr_author'])
     add_field('milestone', str(pr_info['pr_milestone']).lower(),
            Fore.MAGENTA if pr_info['pr_milestone'] is not None else Fore.RED)
     add_field('source', pr_info['source_branch'], Fore.CYAN)
@@ -368,6 +378,7 @@ def show_pr(org, repo, pr_number, show_json):
           Fore.MAGENTA if pr_info['pr_state'] == 'open' else Fore.RED)
     add_field('draft', str(pr_info['pr_draft']).lower(),
           Fore.MAGENTA if not pr_info['pr_draft'] else Fore.RED)
+    add_field('contrib', str(pr_info['pr_contrib']).lower(), Fore.CYAN)
     add_field('mergeable', str(pr_info['pr_mergeable'] \
                             if pr_info['pr_mergeable'] is not None else 'unknown').lower(),
           Fore.MAGENTA if pr_info['pr_mergeable'] == True else Fore.RED)
