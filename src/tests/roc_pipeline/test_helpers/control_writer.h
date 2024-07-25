@@ -13,7 +13,7 @@
 
 #include "test_helpers/utils.h"
 
-#include "roc_audio/latency_tuner.h"
+#include "roc_audio/latency_config.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
 #include "roc_packet/ilink_meter.h"

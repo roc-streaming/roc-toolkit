@@ -21,7 +21,7 @@
 namespace roc {
 namespace audio {
 
-//! FreqEstimator paremeter preset.
+//! FreqEstimator parameters preset.
 enum FreqEstimatorProfile {
     //! Fast and responsive tuning.
     //! Good for lower network latency and jitter.
@@ -68,9 +68,9 @@ struct FreqEstimatorConfig {
     }
 };
 
-//! Evaluates sender's frequency to receivers's frequency ratio.
+//! Evaluates sender's frequency to receiver's frequency ratio.
 //! @remarks
-//!  We provide FreqEstimator with traget latency and periodically update it with
+//!  We provide FreqEstimator with target latency and periodically update it with
 //!  the actual latency. In response, FreqEstimator computes frequency coefficient,
 //!  the ratio of sender to receiver frequency. This coefficient is then set as
 //!  the scaling factor of the resampler, which in result compensates the frequency
@@ -86,7 +86,7 @@ public:
                   packet::stream_timestamp_t target_latency,
                   dbgio::CsvDumper* dumper);
 
-    //! Get current frequecy coefficient.
+    //! Get current frequency coefficient.
     float freq_coeff() const;
 
     //! Compute new value of frequency coefficient.

@@ -12,7 +12,7 @@
 #ifndef ROC_RTP_LINK_METER_H_
 #define ROC_RTP_LINK_METER_H_
 
-#include "roc_audio/latency_tuner.h"
+#include "roc_audio/latency_config.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/iarena.h"
 #include "roc_core/mov_stats.h"

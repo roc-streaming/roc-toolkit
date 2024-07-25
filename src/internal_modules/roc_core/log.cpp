@@ -134,7 +134,7 @@ void Logger::writef(LogLevel level,
         return;
     }
 
-    char text[256] = {};
+    char text[512] = {};
     va_list args;
     va_start(args, format);
     if (vsnprintf(text, sizeof(text) - 1, format, args) < 0) {

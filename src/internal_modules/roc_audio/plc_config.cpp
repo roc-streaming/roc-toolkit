@@ -11,10 +11,12 @@
 namespace roc {
 namespace audio {
 
-void PlcConfig::deduce_defaults() {
+bool PlcConfig::deduce_defaults() {
     if (backend == PlcBackend_Default) {
         backend = PlcBackend_None;
     }
+
+    return true;
 }
 
 const char* plc_backend_to_str(PlcBackend backend) {

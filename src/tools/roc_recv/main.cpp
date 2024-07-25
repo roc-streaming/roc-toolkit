@@ -134,13 +134,14 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (args.start_latency_given && args.target_latency_given
-        && receiver_config.session_defaults.latency.target_latency != 0) {
-        roc_log(LogError,
-                "--start-latency must be > 0 if --target-latency='auto'"
-                " or unset");
-        return 1;
-    } else if (args.start_latency_given) {
+    if (args.start_latency_given) {
+        if (receiver_config.session_defaults.latency.target_latency != 0) {
+            roc_log(
+                LogError,
+                "--start-latency can be specified only in"
+                " adaptive latency mode (i.e. --target-latency is 'auto' or omitted)");
+            return 1;
+        }
         if (!core::parse_duration(
                 args.start_latency_arg,
                 receiver_config.session_defaults.latency.start_latency)) {
@@ -154,39 +155,43 @@ int main(int argc, char** argv) {
     }
 
     if (args.min_latency_given || args.max_latency_given) {
+        if (receiver_config.session_defaults.latency.target_latency != 0) {
+            roc_log(
+                LogError,
+                "--min-latency and --max-latency can be specified only in"
+                " adaptive latency mode (i.e. --target-latency is 'auto' or omitted)");
+            return 1;
+        }
         if (!args.min_latency_given || !args.max_latency_given) {
             roc_log(LogError,
                     "--min-latency and --max-latency should be specified together");
             return 1;
         }
-
         if (!core::parse_duration(args.min_latency_arg,
                                   receiver_config.session_defaults.latency.min_latency)) {
             roc_log(LogError, "invalid --min-latency: bad format");
             return 1;
         }
-
+        if (receiver_config.session_defaults.latency.min_latency <= 0) {
+            roc_log(LogError, "invalid --min-latency: should be > 0");
+            return 1;
+        }
         if (!core::parse_duration(args.max_latency_arg,
                                   receiver_config.session_defaults.latency.max_latency)) {
             roc_log(LogError, "invalid --max-latency: bad format");
             return 1;
         }
-        if (receiver_config.session_defaults.latency.min_latency <= 0) {
-            roc_log(LogError, "invalid --min-latency: should be > 0");
-            return 1;
-        } else if (receiver_config.session_defaults.latency.min_latency
-                   > receiver_config.session_defaults.latency.max_latency) {
-            roc_log(LogError,
-                    "incorrect --max-latency: must be greate or equal to"
-                    " --min-latency");
+        if (receiver_config.session_defaults.latency.max_latency <= 0) {
+            roc_log(LogError, "invalid --max-latency: should be > 0");
             return 1;
         }
-    } else if ((!args.min_latency_given || !args.max_latency_given)
-               && receiver_config.session_defaults.latency.target_latency == 0) {
-        roc_log(LogError,
-                "--min-latency and --max-latency must be > 0 "
-                " if --target-latency=auto");
-        return 1;
+        if (receiver_config.session_defaults.latency.min_latency
+            > receiver_config.session_defaults.latency.max_latency) {
+            roc_log(
+                LogError,
+                "incorrect --max-latency: should be greater or equal to --min-latency");
+            return 1;
+        }
     }
 
     if (args.no_play_timeout_given) {

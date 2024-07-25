@@ -23,7 +23,7 @@ LinkMeter::LinkMeter(packet::IWriter& writer,
     , writer_(writer)
     , first_packet_(true)
     , first_non_recovered_packet_(true)
-    , win_len_(latency_config.sliding_stat_window_length)
+    , win_len_(latency_config.sliding_window_length)
     , has_metrics_(false)
     , first_seqnum_(0)
     , last_seqnum_hi_(0)

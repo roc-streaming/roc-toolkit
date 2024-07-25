@@ -12,13 +12,14 @@
 namespace roc {
 namespace audio {
 
-void ResamplerConfig::deduce_defaults(ProcessorMap& processor_map,
+bool ResamplerConfig::deduce_defaults(ProcessorMap& processor_map,
                                       LatencyTunerBackend latency_backend,
-                                      LatencyTunerProfile latency_tuner) {
+                                      LatencyTunerProfile latency_profile) {
     if (backend == ResamplerBackend_Default) {
         // If responsive profile is set, use builtin backend instead of speex,
         // since it has higher scaling precision.
-        const bool need_builtin_backend = latency_tuner == LatencyTunerProfile_Responsive;
+        const bool need_builtin_backend =
+            latency_profile == LatencyTunerProfile_Responsive;
 
         // If speex backend is not available, fallback to builtin backend.
         const bool force_builtin_backend =
@@ -30,6 +31,8 @@ void ResamplerConfig::deduce_defaults(ProcessorMap& processor_map,
             backend = ResamplerBackend_Speex;
         }
     }
+
+    return true;
 }
 
 const char* resampler_backend_to_str(ResamplerBackend backend) {

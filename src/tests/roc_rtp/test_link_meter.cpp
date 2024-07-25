@@ -64,9 +64,10 @@ packet::PacketPtr new_packet(packet::seqnum_t sn,
 audio::LatencyConfig make_config() {
     audio::LatencyConfig latency_config;
     latency_config.tuner_profile = audio::LatencyTunerProfile_Responsive;
-    latency_config.deduce_defaults(pipeline::DefaultLatency, true);
+    CHECK(latency_config.deduce_defaults(pipeline::DefaultLatency, true));
     return latency_config;
 }
+
 } // namespace
 
 TEST_GROUP(link_meter) {};

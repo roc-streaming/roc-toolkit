@@ -12,7 +12,8 @@
 #ifndef ROC_AUDIO_RESAMPLER_CONFIG_H_
 #define ROC_AUDIO_RESAMPLER_CONFIG_H_
 
-#include "roc_audio/latency_tuner.h"
+#include "roc_audio/latency_config.h"
+#include "roc_core/attributes.h"
 
 namespace roc {
 namespace audio {
@@ -68,9 +69,9 @@ struct ResamplerConfig {
     }
 
     //! Automatically fill missing settings.
-    void deduce_defaults(class ProcessorMap& processor_map,
-                         LatencyTunerBackend latency_backend,
-                         LatencyTunerProfile latency_tuner);
+    ROC_ATTR_NODISCARD bool deduce_defaults(class ProcessorMap& processor_map,
+                                            LatencyTunerBackend latency_backend,
+                                            LatencyTunerProfile latency_profile);
 };
 
 //! Get string name of resampler backend.

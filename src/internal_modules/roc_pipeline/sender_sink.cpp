@@ -30,7 +30,10 @@ SenderSink::SenderSink(const SenderSinkConfig& sink_config,
     , arena_(arena)
     , frame_writer_(NULL)
     , init_status_(status::NoStatus) {
-    sink_config_.deduce_defaults(processor_map);
+    if (!sink_config_.deduce_defaults(processor_map)) {
+        init_status_ = status::StatusBadConfig;
+        return;
+    }
 
     if (sink_config_.dumper.dump_file) {
         dumper_.reset(new (dumper_) dbgio::CsvDumper(sink_config_.dumper, arena));

@@ -25,7 +25,10 @@ TranscoderSource::TranscoderSource(const TranscoderConfig& config,
     , frame_reader_(NULL)
     , config_(config)
     , init_status_(status::NoStatus) {
-    config_.deduce_defaults(processor_map);
+    if (!config_.deduce_defaults(processor_map)) {
+        init_status_ = status::StatusBadConfig;
+        return;
+    }
 
     audio::IFrameReader* frm_reader = &input_source_;
 

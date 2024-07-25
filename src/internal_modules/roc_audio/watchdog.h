@@ -81,11 +81,12 @@ struct WatchdogConfig {
         , choppy_playback_timeout(0)
         , choppy_playback_window(0)
         , warmup_duration(0)
-        , frame_status_window(0) {
+        , frame_status_window(20) {
     }
 
     //! Automatically fill missing settings.
-    void deduce_defaults(const core::nanoseconds_t target_latency);
+    ROC_ATTR_NODISCARD bool deduce_defaults(const core::nanoseconds_t default_latency,
+                                            const core::nanoseconds_t target_latency);
 };
 
 //! Watchdog.

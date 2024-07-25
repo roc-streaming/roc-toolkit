@@ -13,13 +13,13 @@
 namespace roc {
 namespace audio {
 
-void WatchdogConfig::deduce_defaults(core::nanoseconds_t target_latency) {
-    if (target_latency <= 0) {
-        target_latency = 200 * core::Millisecond;
-    }
+bool WatchdogConfig::deduce_defaults(const core::nanoseconds_t default_latency,
+                                     const core::nanoseconds_t target_latency) {
+    const core::nanoseconds_t configured_latency =
+        target_latency != 0 ? target_latency : default_latency;
 
     if (no_playback_timeout == 0) {
-        no_playback_timeout = target_latency * 4 / 3;
+        no_playback_timeout = configured_latency * 4 / 3;
     }
 
     if (choppy_playback_timeout == 0) {
@@ -32,12 +32,10 @@ void WatchdogConfig::deduce_defaults(core::nanoseconds_t target_latency) {
     }
 
     if (warmup_duration == 0) {
-        warmup_duration = target_latency;
+        warmup_duration = configured_latency;
     }
 
-    if (frame_status_window == 0) {
-        frame_status_window = 20;
-    }
+    return true;
 }
 
 Watchdog::Watchdog(IFrameReader& reader,

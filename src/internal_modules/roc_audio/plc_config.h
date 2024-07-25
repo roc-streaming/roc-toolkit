@@ -12,6 +12,8 @@
 #ifndef ROC_AUDIO_PLC_CONFIG_H_
 #define ROC_AUDIO_PLC_CONFIG_H_
 
+#include "roc_core/attributes.h"
+
 namespace roc {
 namespace audio {
 
@@ -42,7 +44,7 @@ struct PlcConfig {
     }
 
     //! Automatically fill missing settings.
-    void deduce_defaults();
+    ROC_ATTR_NODISCARD bool deduce_defaults();
 };
 
 //! Get string name of PLC backend.

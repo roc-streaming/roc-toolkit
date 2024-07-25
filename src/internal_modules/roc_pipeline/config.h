@@ -14,12 +14,13 @@
 
 #include "roc_address/protocol.h"
 #include "roc_audio/feedback_monitor.h"
-#include "roc_audio/latency_tuner.h"
+#include "roc_audio/latency_config.h"
 #include "roc_audio/plc_config.h"
 #include "roc_audio/profiler.h"
 #include "roc_audio/resampler_config.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_audio/watchdog.h"
+#include "roc_core/attributes.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/time.h"
 #include "roc_dbgio/csv_dumper.h"
@@ -110,7 +111,7 @@ struct SenderSinkConfig {
     SenderSinkConfig();
 
     //! Fill unset values with defaults.
-    void deduce_defaults(audio::ProcessorMap& processor_map);
+    ROC_ATTR_NODISCARD bool deduce_defaults(audio::ProcessorMap& processor_map);
 };
 
 //! Parameters of sender slot.
@@ -119,7 +120,7 @@ struct SenderSlotConfig {
     SenderSlotConfig();
 
     //! Fill unset values with defaults.
-    void deduce_defaults();
+    ROC_ATTR_NODISCARD bool deduce_defaults();
 };
 
 //! Parameters common for all receiver sessions.
@@ -152,7 +153,7 @@ struct ReceiverCommonConfig {
     ReceiverCommonConfig();
 
     //! Fill unset values with defaults.
-    void deduce_defaults(audio::ProcessorMap& processor_map);
+    ROC_ATTR_NODISCARD bool deduce_defaults(audio::ProcessorMap& processor_map);
 };
 
 //! Parameters of receiver session.
@@ -182,7 +183,7 @@ struct ReceiverSessionConfig {
     ReceiverSessionConfig();
 
     //! Fill unset values with defaults.
-    void deduce_defaults(audio::ProcessorMap& processor_map);
+    ROC_ATTR_NODISCARD bool deduce_defaults(audio::ProcessorMap& processor_map);
 };
 
 //! Parameters of receiver session.
@@ -201,7 +202,7 @@ struct ReceiverSourceConfig {
     ReceiverSourceConfig();
 
     //! Fill unset values with defaults.
-    void deduce_defaults(audio::ProcessorMap& processor_map);
+    ROC_ATTR_NODISCARD bool deduce_defaults(audio::ProcessorMap& processor_map);
 };
 
 //! Parameters of receiver slot.
@@ -213,7 +214,7 @@ struct ReceiverSlotConfig {
     ReceiverSlotConfig();
 
     //! Fill unset values with defaults.
-    void deduce_defaults();
+    ROC_ATTR_NODISCARD bool deduce_defaults();
 };
 
 //! Converter parameters.
@@ -237,7 +238,7 @@ struct TranscoderConfig {
     TranscoderConfig();
 
     //! Fill unset values with defaults.
-    void deduce_defaults(audio::ProcessorMap& processor_map);
+    ROC_ATTR_NODISCARD bool deduce_defaults(audio::ProcessorMap& processor_map);
 };
 
 } // namespace pipeline

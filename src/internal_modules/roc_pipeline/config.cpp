@@ -12,6 +12,8 @@
 namespace roc {
 namespace pipeline {
 
+// SenderSinkConfig
+
 SenderSinkConfig::SenderSinkConfig()
     : input_sample_spec(DefaultSampleSpec)
     , payload_type(rtp::PayloadType_L16_Stereo)
@@ -22,17 +24,29 @@ SenderSinkConfig::SenderSinkConfig()
     , enable_profiling(false) {
 }
 
-void SenderSinkConfig::deduce_defaults(audio::ProcessorMap& processor_map) {
-    latency.deduce_defaults(DefaultLatency, false);
-    resampler.deduce_defaults(processor_map, latency.tuner_backend,
-                              latency.tuner_profile);
+bool SenderSinkConfig::deduce_defaults(audio::ProcessorMap& processor_map) {
+    if (!latency.deduce_defaults(DefaultLatency, false)) {
+        return false;
+    }
+
+    if (!resampler.deduce_defaults(processor_map, latency.tuner_backend,
+                                   latency.tuner_profile)) {
+        return false;
+    }
+
+    return true;
 }
+
+// SenderSlotConfig
 
 SenderSlotConfig::SenderSlotConfig() {
 }
 
-void SenderSlotConfig::deduce_defaults() {
+bool SenderSlotConfig::deduce_defaults() {
+    return true;
 }
+
+// ReceiverCommonConfig
 
 ReceiverCommonConfig::ReceiverCommonConfig()
     : output_sample_spec(DefaultSampleSpec)
@@ -41,35 +55,65 @@ ReceiverCommonConfig::ReceiverCommonConfig()
     , enable_profiling(false) {
 }
 
-void ReceiverCommonConfig::deduce_defaults(audio::ProcessorMap& processor_map) {
+bool ReceiverCommonConfig::deduce_defaults(audio::ProcessorMap& processor_map) {
+    return true;
 }
+
+// ReceiverSessionConfig
 
 ReceiverSessionConfig::ReceiverSessionConfig()
     : payload_type(0) {
 }
 
-void ReceiverSessionConfig::deduce_defaults(audio::ProcessorMap& processor_map) {
-    plc.deduce_defaults();
-    latency.deduce_defaults(DefaultLatency, true);
-    watchdog.deduce_defaults(latency.target_latency);
-    resampler.deduce_defaults(processor_map, latency.tuner_backend,
-                              latency.tuner_profile);
+bool ReceiverSessionConfig::deduce_defaults(audio::ProcessorMap& processor_map) {
+    if (!plc.deduce_defaults()) {
+        return false;
+    }
+
+    if (!latency.deduce_defaults(DefaultLatency, true)) {
+        return false;
+    }
+
+    if (!watchdog.deduce_defaults(DefaultLatency, latency.target_latency)) {
+        return false;
+    }
+
+    if (!resampler.deduce_defaults(processor_map, latency.tuner_backend,
+                                   latency.tuner_profile)) {
+        return false;
+    }
+
+    return true;
 }
+
+// ReceiverSourceConfig
 
 ReceiverSourceConfig::ReceiverSourceConfig() {
 }
 
-void ReceiverSourceConfig::deduce_defaults(audio::ProcessorMap& processor_map) {
-    common.deduce_defaults(processor_map);
-    session_defaults.deduce_defaults(processor_map);
+bool ReceiverSourceConfig::deduce_defaults(audio::ProcessorMap& processor_map) {
+    if (!common.deduce_defaults(processor_map)) {
+        return false;
+    }
+
+    if (!session_defaults.deduce_defaults(processor_map)) {
+        return false;
+    }
+
+    return true;
 }
+
+// ReceiverSlotConfig
 
 ReceiverSlotConfig::ReceiverSlotConfig()
     : enable_routing(true) {
 }
 
-void ReceiverSlotConfig::deduce_defaults() {
+bool ReceiverSlotConfig::deduce_defaults() {
+    return true;
 }
+
+// TranscoderConfig
 
 TranscoderConfig::TranscoderConfig()
     : input_sample_spec(DefaultSampleSpec)
@@ -77,9 +121,13 @@ TranscoderConfig::TranscoderConfig()
     , enable_profiling(false) {
 }
 
-void TranscoderConfig::deduce_defaults(audio::ProcessorMap& processor_map) {
-    resampler.deduce_defaults(processor_map, audio::LatencyTunerBackend_Default,
-                              audio::LatencyTunerProfile_Default);
+bool TranscoderConfig::deduce_defaults(audio::ProcessorMap& processor_map) {
+    if (!resampler.deduce_defaults(processor_map, audio::LatencyTunerBackend_Default,
+                                   audio::LatencyTunerProfile_Default)) {
+        return false;
+    }
+
+    return true;
 }
 
 } // namespace pipeline

@@ -30,7 +30,10 @@ ReceiverSource::ReceiverSource(const ReceiverSourceConfig& source_config,
     , arena_(arena)
     , frame_reader_(NULL)
     , init_status_(status::NoStatus) {
-    source_config_.deduce_defaults(processor_map);
+    if (!source_config_.deduce_defaults(processor_map)) {
+        init_status_ = status::StatusBadConfig;
+        return;
+    }
 
     if (source_config.common.dumper.dump_file) {
         dumper_.reset(new (dumper_) dbgio::CsvDumper(source_config.common.dumper, arena));

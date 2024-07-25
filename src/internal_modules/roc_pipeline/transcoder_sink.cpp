@@ -24,7 +24,10 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
     , frame_writer_(NULL)
     , config_(config)
     , init_status_(status::NoStatus) {
-    config_.deduce_defaults(processor_map);
+    if (!config_.deduce_defaults(processor_map)) {
+        init_status_ = status::StatusBadConfig;
+        return;
+    }
 
     audio::IFrameWriter* frm_writer = output_writer;
     if (!frm_writer) {
