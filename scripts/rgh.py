@@ -216,9 +216,11 @@ def query_pr_info(org, repo, pr_number, no_git=False):
         'pr_draft': response['draft'],
         'pr_mergeable': response['mergeable'],
         'pr_rebaseable': response['rebaseable'],
+        # branch in pr author's repo
         'source_branch': response['head']['ref'],
         'source_sha': response['head']['sha'],
         'source_remote': response['head']['repo']['ssh_url'],
+        # branch in upstream repo
         'target_branch': response['base']['ref'],
         'target_sha': response['base']['sha'],
         'target_remote': response['base']['repo']['ssh_url'],
@@ -247,13 +249,15 @@ def query_pr_info(org, repo, pr_number, no_git=False):
 
     if not no_git:
         try:
-            pr_info['base_sha'], pr_info['base_ref'] = subprocess.run(
-                ['git', 'ls-remote', pr_info['target_remote'], pr_info['target_branch']],
+            # commit in upstream from which pr branch was forked
+            pr_commits = query_pr_commits(org, repo, pr_number, no_git)
+            pr_info['fork_point_sha'] = subprocess.run(
+                ['git', 'rev-parse', pr_commits[0][0]+'^'],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                check=True).stdout.decode().strip().split()
+                check=True).stdout.decode().strip()
         except subprocess.CalledProcessError as e:
-            error(f'failed to retrieve git remote info: {e.stderr.decode().strip()}')
+            error(f'failed to determine git fork point: {e.stderr.decode().strip()}')
 
     return pr_info
 
@@ -533,23 +537,38 @@ def update_pr_metadata(org, repo, pr_number, issue_number, issue_milestone,
             update_milestone_of_issue()
             update_milestone_of_pr()
 
-# fetch PR's base branch
-def fetch_pr_base(org, repo, pr_number):
+# rebase PR's local branch on its target branch
+def rebase_pr_commits(org, repo, pr_number):
     pr_info = query_pr_info(org, repo, pr_number)
 
     run_cmd([
-        'git', 'fetch', pr_info['target_remote'], pr_info['base_sha'],
+        'git', 'rebase', '--onto', pr_info['target_sha'], pr_info['fork_point_sha'],
         ])
 
-# rebase PR's local branch on its base branch
-def rebase_pr(org, repo, pr_number):
+# squash all commits in PR's local branch into one
+# invoked after rebase
+def squash_pr_commits(org, repo, pr_number, title, no_issue):
     pr_info = query_pr_info(org, repo, pr_number)
 
+    commit_message = make_message(
+        org, repo,
+        pr_info['issue_link'] if not no_issue else None,
+        title or pr_info['pr_title'])
+
     run_cmd([
-        'git', 'rebase', '--onto', pr_info['base_sha'], pr_info['target_sha'],
+        'git', 'rebase ', '-i', pr_info['target_sha'],
+        ],
+        env={
+            'GIT_EDITOR': ':',
+            'GIT_SEQUENCE_EDITOR': "sed -i '1 ! s,^pick,fixup,g'",
+        })
+
+    run_cmd([
+        'git', 'commit', '--amend', '--no-edit', '-m', commit_message,
         ])
 
 # add issue prefix to every commit in PR's local branch
+# invoked after rebase
 def reword_pr_commits(org, repo, pr_number, title, no_issue):
     pr_info = query_pr_info(org, repo, pr_number)
 
@@ -558,7 +577,7 @@ def reword_pr_commits(org, repo, pr_number, title, no_issue):
     else:
         commit_prefix = make_prefix(org, repo, pr_info['issue_link']) + ': '
 
-    base_sha = pr_info['base_sha']
+    target_sha = pr_info['target_sha']
 
     if title:
         title = title.replace(r',', r'\,')
@@ -571,40 +590,20 @@ def reword_pr_commits(org, repo, pr_number, title, no_issue):
 
     run_cmd([
         'git', 'filter-branch', '-f', '--msg-filter', sed,
-        f'{base_sha}..HEAD',
+        f'{target_sha}..HEAD',
         ],
         env={'FILTER_BRANCH_SQUELCH_WARNING':'1'})
 
-# squash all commits in PR's local branch into one
-def squash_pr_commits(org, repo, pr_number, title, no_issue):
-    pr_info = query_pr_info(org, repo, pr_number)
-
-    commit_message = make_message(
-        org, repo,
-        pr_info['issue_link'] if not no_issue else None,
-        title or pr_info['pr_title'])
-
-    run_cmd([
-        'git', 'rebase', '-i', pr_info['base_sha'],
-        ],
-        env={
-            'GIT_EDITOR': ':',
-            'GIT_SEQUENCE_EDITOR': "sed -i '1 ! s,^pick,fixup,g'",
-        })
-
-    run_cmd([
-        'git', 'commit', '--amend', '--no-edit', '-m', commit_message,
-        ])
-
 # print commits from local PR's branch
+# invoked after rebase
 def print_pr_commits(org, repo, pr_number):
     pr_info = query_pr_info(org, repo, pr_number)
 
-    base_sha = pr_info['base_sha']
+    target_sha = pr_info['target_sha']
 
     run_cmd([
         'git', 'log', '--format=%h %s (%an <%ae>)',
-        f'{base_sha}..HEAD',
+        f'{target_sha}..HEAD',
         ])
 
 # force-push PR's local branch to upstream
@@ -651,9 +650,9 @@ def merge_pr(org, repo, pr_number):
         ],
         retry_fn=retry_fn)
 
-# rebase local branch
+# rebase current branch on base branch
 # like normal rebase, but preserves original committer name, email, and date
-def stealth_rebase(base_branch):
+def stb_rebase(base_branch):
     cmd='%s%nexec GIT_COMMITTER_DATE="%cD" GIT_COMMITTER_NAME="%cn" GIT_COMMITTER_EMAIL="%ce"'
 
     run_cmd([
@@ -700,11 +699,6 @@ show_pr_parser.add_argument('pr_number', type=int)
 show_pr_parser.add_argument('--json', action='store_true', dest='json',
                          help="output in json format")
 
-rebase_pr_parser = subparsers.add_parser(
-    'rebase_pr', parents=[common_parser, pr_action_parser],
-    help="rebase pull request on base branch (keeps it open)")
-rebase_pr_parser.add_argument('pr_number', type=int)
-
 merge_pr_parser = subparsers.add_parser(
     'merge_pr', parents=[common_parser, pr_action_parser],
     help="link and merge pull request")
@@ -716,10 +710,10 @@ merge_pr_parser.add_argument('-t', '--title', dest='title',
                           help='overwrite commit message title')
 merge_pr_parser.add_argument('pr_number', type=int)
 
-stealth_rebase_parser = subparsers.add_parser(
-    'stealth_rebase', parents=[common_parser],
+stb_rebase_parser = subparsers.add_parser(
+    'stb_rebase', parents=[common_parser],
     help="rebase local branch preserving author and date")
-stealth_rebase_parser.add_argument('base_branch', action='store_true')
+stb_rebase_parser.add_argument('base_branch', action='store_true')
 
 args = parser.parse_args()
 
@@ -730,24 +724,6 @@ colorama.init()
 
 if args.command == 'show_pr':
     show_pr(args.org, args.repo, args.pr_number, args.json)
-    exit(0)
-
-if args.command == 'rebase_pr':
-    orig_path = enter_worktree()
-    pushed = False
-    try:
-        checkout_pr(args.org, args.repo, args.pr_number)
-        pr_ref = remember_ref()
-        fetch_pr_base(args.org, args.repo, args.pr_number)
-        rebase_pr(args.org, args.repo, args.pr_number)
-        print_pr_commits(args.org, args.repo, args.pr_number)
-        if not args.no_push:
-            force_push_pr(args.org, args.repo, args.pr_number)
-            pushed = True
-    finally:
-        leave_worktree(orig_path)
-        if pushed:
-            delete_ref(pr_ref)
     exit(0)
 
 if args.command == 'merge_pr':
@@ -762,8 +738,7 @@ if args.command == 'merge_pr':
         pr_ref = remember_ref()
         update_pr_metadata(args.org, args.repo, args.pr_number, args.issue_number,
                            args.milestone_name, args.no_issue, args.no_milestone)
-        fetch_pr_base(args.org, args.repo, args.pr_number)
-        rebase_pr(args.org, args.repo, args.pr_number)
+        rebase_pr_commits(args.org, args.repo, args.pr_number)
         if args.rebase:
             reword_pr_commits(args.org, args.repo, args.pr_number, args.title, args.no_issue)
         else:
@@ -779,6 +754,6 @@ if args.command == 'merge_pr':
             delete_ref(pr_ref)
     exit(0)
 
-if args.command == 'stealth_rebase':
-    stealth_rebase(args.base_branch)
+if args.command == 'stb_rebase':
+    stb_rebase(args.base_branch)
     exit(0)
