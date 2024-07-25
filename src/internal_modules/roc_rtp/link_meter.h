@@ -90,6 +90,8 @@ private:
     packet::IWriter& writer_;
 
     bool first_packet_;
+    bool first_non_recovered_packet_;
+
     // Number of packets we use to calculate sliding statistics.
     const size_t win_len_;
 

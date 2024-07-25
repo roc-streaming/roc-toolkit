@@ -22,6 +22,7 @@ LinkMeter::LinkMeter(packet::IWriter& writer,
     , encoding_(NULL)
     , writer_(writer)
     , first_packet_(true)
+    , first_non_recovered_packet_(true)
     , win_len_(latency_config.sliding_stat_window_length)
     , has_metrics_(false)
     , first_seqnum_(0)
@@ -109,7 +110,7 @@ void LinkMeter::update_metrics_(const packet::Packet& packet) {
     }
 
     if (!first_packet_) {
-        if (!recovered) {
+        if (!first_non_recovered_packet_ && !recovered) {
             update_jitter_(packet);
         }
     } else {
@@ -119,6 +120,7 @@ void LinkMeter::update_metrics_(const packet::Packet& packet) {
     if (!recovered) {
         prev_queue_timestamp_ = packet.udp()->queue_timestamp;
         prev_stream_timestamp_ = packet.rtp()->stream_timestamp;
+        first_non_recovered_packet_ = false;
     }
     processed_packets_++;
 
@@ -131,6 +133,9 @@ void LinkMeter::update_metrics_(const packet::Packet& packet) {
 }
 
 void LinkMeter::update_jitter_(const packet::Packet& packet) {
+    roc_panic_if(!encoding_);
+    roc_panic_if(prev_queue_timestamp_ <= 0);
+
     const core::nanoseconds_t d_enq_ns =
         packet.udp()->queue_timestamp - prev_queue_timestamp_;
     const packet::stream_timestamp_diff_t d_s_ts = packet::stream_timestamp_diff(
