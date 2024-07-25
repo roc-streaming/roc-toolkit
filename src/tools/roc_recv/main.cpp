@@ -294,6 +294,10 @@ int main(int argc, char** argv) {
 
     receiver_config.common.enable_profiling = args.profile_flag;
 
+    if (args.dump_given) {
+        receiver_config.common.dumper.dump_file = args.dump_arg;
+    }
+
     node::ContextConfig context_config;
 
     if (args.max_packet_size_given) {
@@ -462,10 +466,6 @@ int main(int argc, char** argv) {
                     status::code_to_str(backup_pipeline->init_status()));
             return 1;
         }
-    }
-
-    if (args.dump_given) {
-        receiver_config.common.dumper.dump_file = args.dump_arg;
     }
 
     node::Receiver receiver(context, receiver_config);

@@ -34,8 +34,7 @@ ReceiverSource::ReceiverSource(const ReceiverSourceConfig& source_config,
 
     if (source_config.common.dumper.dump_file) {
         dumper_.reset(new (dumper_) core::CsvDumper(source_config.common.dumper, arena));
-        if (!dumper_->start()) {
-            init_status_ = status::StatusErrFile;
+        if ((init_status_ = dumper_->open()) != status::StatusOK) {
             return;
         }
     }
@@ -85,9 +84,8 @@ ReceiverSource::ReceiverSource(const ReceiverSourceConfig& source_config,
 }
 
 ReceiverSource::~ReceiverSource() {
-    if (dumper_ && dumper_->is_valid() && dumper_->is_joinable()) {
-        dumper_->stop();
-        dumper_->join();
+    if (dumper_) {
+        dumper_->close();
     }
 }
 

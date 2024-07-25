@@ -18,9 +18,8 @@ SenderSinkConfig::SenderSinkConfig()
     , packet_length(DefaultPacketLength)
     , enable_cpu_clock(false)
     , enable_auto_cts(false)
-    , enable_profiling(false)
     , enable_interleaving(false)
-    , dump_file(NULL) {
+    , enable_profiling(false) {
 }
 
 void SenderSinkConfig::deduce_defaults(audio::ProcessorMap& processor_map) {

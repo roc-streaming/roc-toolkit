@@ -21,6 +21,7 @@
 #include "roc_core/stddefs.h"
 #include "roc_core/thread.h"
 #include "roc_core/time.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace core {
@@ -66,18 +67,17 @@ struct CsvConfig {
 //! Asynchronous CSV dumper.
 //! Writes entries to CSV file from background thread.
 //! Recommended to be used from a single thread.
-class CsvDumper : public Thread {
+class CsvDumper : private Thread {
 public:
-    //! Open file.
-    //! @p path - output file.
-    //! @p max_interval - maximum number of writes per second for each entry type.
+    //! Initialize.
     CsvDumper(const CsvConfig& config, IArena& arena);
-
-    //! Close file.
     ~CsvDumper();
 
-    //! Check if opened without errors.
-    bool is_valid() const;
+    //! Open file and start background thread.
+    ROC_ATTR_NODISCARD status::StatusCode open();
+
+    //! Stop background thread and close file.
+    void close();
 
     //! Check whether write() would enqueue or drop entry.
     //! Lock-free operation.
@@ -88,9 +88,6 @@ public:
     //! If buffer size limit or rate limit is exceeded, entry is dropped.
     //! Lock-free operation.
     void write(const CsvEntry& entry);
-
-    //! Stop background thread.
-    void stop();
 
 private:
     virtual void run();
@@ -103,6 +100,9 @@ private:
 
     const CsvConfig config_;
 
+    Mutex open_mutex_;
+    Atomic<int> open_flag_;
+    Atomic<int> stop_flag_;
     FILE* file_;
 
     Mutex write_mutex_;
@@ -110,9 +110,6 @@ private:
     SpscRingBuffer<CsvEntry> ringbuf_;
 
     Optional<RateLimiter> rate_lims_[128];
-
-    Atomic<int> stop_;
-    bool valid_;
 };
 
 } // namespace core

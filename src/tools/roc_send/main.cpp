@@ -232,6 +232,10 @@ int main(int argc, char** argv) {
 
     sender_config.enable_profiling = args.profile_flag;
 
+    if (args.dump_given) {
+        sender_config.dumper.dump_file = args.dump_arg;
+    }
+
     node::ContextConfig context_config;
 
     if (args.max_packet_size_given) {
@@ -440,10 +444,6 @@ int main(int argc, char** argv) {
             "incomplete sender configuration:"
             " FEC is implied by protocol, but matching --source or --repair is missing");
         return 1;
-    }
-
-    if (args.dump_given) {
-        sender_config.dump_file = args.dump_arg;
     }
 
     sndio::Config pump_config;

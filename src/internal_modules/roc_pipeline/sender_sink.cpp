@@ -29,9 +29,15 @@ SenderSink::SenderSink(const SenderSinkConfig& sink_config,
     , frame_factory_(frame_pool, frame_buffer_pool)
     , arena_(arena)
     , frame_writer_(NULL)
-    , dumper_config_()
     , init_status_(status::NoStatus) {
     sink_config_.deduce_defaults(processor_map);
+
+    if (sink_config_.dumper.dump_file) {
+        dumper_.reset(new (dumper_) core::CsvDumper(sink_config_.dumper, arena));
+        if ((init_status_ = dumper_->open()) != status::StatusOK) {
+            return;
+        }
+    }
 
     audio::IFrameWriter* frm_writer = NULL;
 
@@ -69,15 +75,14 @@ SenderSink::SenderSink(const SenderSinkConfig& sink_config,
         frm_writer = profiler_.get();
     }
 
-    if (sink_config_.dump_file) {
-        dumper_.reset(new (dumper_) core::CsvDumper(dumper_config_, arena));
-        if (!dumper_->start()) {
-            return;
-        }
-    }
-
     frame_writer_ = frm_writer;
     init_status_ = status::StatusOK;
+}
+
+SenderSink::~SenderSink() {
+    if (dumper_) {
+        dumper_->close();
+    }
 }
 
 status::StatusCode SenderSink::init_status() const {

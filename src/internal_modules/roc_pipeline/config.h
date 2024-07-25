@@ -96,16 +96,16 @@ struct SenderSinkConfig {
     //! Automatically fill capture timestamps of input frames with invocation time.
     bool enable_auto_cts;
 
-    //! Profile moving average of frames being written.
-    bool enable_profiling;
-
     //! Interleave packets.
     bool enable_interleaving;
 
-    //! File to a dump file in csv format with some run-time metrics.
-    const char* dump_file;
+    //! Profile moving average of frames being written.
+    bool enable_profiling;
 
-    //    Initialize config.
+    //! Parameters for a logger in csv format with some run-time metrics.
+    core::CsvConfig dumper;
+
+    //! Initialize config.
     SenderSinkConfig();
 
     //! Fill unset values with defaults.

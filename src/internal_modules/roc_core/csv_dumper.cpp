@@ -16,27 +16,56 @@ namespace core {
 
 CsvDumper::CsvDumper(const CsvConfig& config, IArena& arena)
     : config_(config)
-    , ringbuf_(arena, config.max_queued)
-    , valid_(false) {
-    if (!config.dump_file || !open_(config.dump_file)) {
-        return;
+    , open_flag_(false)
+    , stop_flag_(false)
+    , file_(NULL)
+    , ringbuf_(arena, config.max_queued) {
+    if (!config.dump_file) {
+        roc_panic("csv dumper: dump file is null");
     }
-    valid_ = true;
 }
 
 CsvDumper::~CsvDumper() {
-    if (is_joinable()) {
-        roc_panic("csv dumper: attempt to call destructor"
-                  " before calling stop() and join()");
+    if (open_flag_ && !stop_flag_) {
+        roc_panic("csv dumper: close() not called before destructor");
     }
+}
+
+status::StatusCode CsvDumper::open() {
+    Mutex::Lock lock(open_mutex_);
+
+    if (open_flag_) {
+        roc_panic("csv dumper: open() already called");
+    }
+
+    open_flag_ = true;
+
+    if (!open_(config_.dump_file)) {
+        return status::StatusErrFile;
+    }
+
+    if (!Thread::start()) {
+        return status::StatusErrThread;
+    }
+
+    return status::StatusOK;
+}
+
+void CsvDumper::close() {
+    Mutex::Lock lock(open_mutex_);
+
+    stop_flag_ = true;
+    write_sem_.post();
+
+    Thread::join();
 
     close_();
 }
 
 bool CsvDumper::would_write(char type) {
-    roc_panic_if(!valid_);
+    roc_panic_if(!open_flag_);
 
-    if (stop_) {
+    if (stop_flag_) {
         return false;
     }
 
@@ -52,9 +81,9 @@ bool CsvDumper::would_write(char type) {
 }
 
 void CsvDumper::write(const CsvEntry& entry) {
-    roc_panic_if(!valid_);
+    roc_panic_if(!open_flag_);
 
-    if (stop_) {
+    if (stop_flag_) {
         return;
     }
 
@@ -73,17 +102,10 @@ void CsvDumper::write(const CsvEntry& entry) {
     write_sem_.post();
 }
 
-void CsvDumper::stop() {
-    stop_ = true;
-    write_sem_.post();
-}
-
 void CsvDumper::run() {
-    roc_panic_if(!valid_);
-
     roc_log(LogDebug, "csv dumper: running background thread");
 
-    while (!stop_ || !ringbuf_.is_empty()) {
+    while (!stop_flag_ || !ringbuf_.is_empty()) {
         if (ringbuf_.is_empty()) {
             write_sem_.wait();
         }
@@ -97,8 +119,6 @@ void CsvDumper::run() {
     }
 
     roc_log(LogDebug, "csv dumper: exiting background thread");
-
-    close_();
 }
 
 RateLimiter& CsvDumper::limiter_(char type) {
@@ -165,10 +185,6 @@ bool CsvDumper::dump_(const CsvEntry& entry) {
     }
 
     return true;
-}
-
-bool CsvDumper::is_valid() const {
-    return valid_;
 }
 
 } // namespace core

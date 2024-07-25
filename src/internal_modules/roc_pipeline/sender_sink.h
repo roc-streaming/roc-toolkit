@@ -53,6 +53,8 @@ public:
                core::IPool& frame_buffer_pool,
                core::IArena& arena);
 
+    ~SenderSink();
+
     //! Check if the pipeline was successfully constructed.
     status::StatusCode init_status() const;
 
@@ -124,6 +126,8 @@ private:
 
     StateTracker state_tracker_;
 
+    core::Optional<core::CsvDumper> dumper_;
+
     core::Optional<audio::Fanout> fanout_;
     core::Optional<audio::ProfilingWriter> profiler_;
     core::Optional<audio::PcmMapperWriter> pcm_mapper_;
@@ -131,9 +135,6 @@ private:
     core::List<SenderSlot> slots_;
 
     audio::IFrameWriter* frame_writer_;
-
-    const core::CsvConfig dumper_config_;
-    core::Optional<core::CsvDumper> dumper_;
 
     status::StatusCode init_status_;
 };
