@@ -77,10 +77,6 @@ void expect_read(status::StatusCode expected_status,
         for (size_t n = 0; n < frame->num_raw_samples(); n++) {
             DOUBLES_EQUAL(magic_sample, (double)frame->raw_samples()[n], 0);
         }
-
-        CHECK(watchdog.is_alive());
-    } else {
-        CHECK(!watchdog.is_alive());
     }
 }
 
@@ -178,9 +174,6 @@ TEST(watchdog, no_playback_timeout_blank_frames) {
     }
 
     meta_reader.set_flags(0);
-    expect_read(status::StatusAbort, watchdog, SamplesPerFrame);
-
-    meta_reader.set_flags(Frame::HasSignal);
     expect_read(status::StatusAbort, watchdog, SamplesPerFrame);
 }
 
@@ -340,9 +333,6 @@ TEST(watchdog, broken_playback_timeout_equal_frame_sizes) {
                        BreakageWindowsPerTimeout - 1);
 
         meta_reader.set_flags(Frame::HasSignal | Frame::HasGaps | Frame::HasDrops);
-        expect_read(status::StatusAbort, watchdog, BreakageWindow);
-
-        meta_reader.set_flags(Frame::HasSignal);
         expect_read(status::StatusAbort, watchdog, BreakageWindow);
     }
 }
@@ -603,9 +593,6 @@ TEST(watchdog, warmup_early_nonblank) {
     }
 
     meta_reader.set_flags(0);
-    expect_read(status::StatusAbort, watchdog, SamplesPerFrame);
-
-    meta_reader.set_flags(Frame::HasSignal);
     expect_read(status::StatusAbort, watchdog, SamplesPerFrame);
 }
 

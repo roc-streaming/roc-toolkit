@@ -102,9 +102,6 @@ public:
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
 
-    //! Check if the stream was not aborted.
-    bool is_alive() const;
-
     //! Read audio frame.
     //! @remarks
     //!  Updates stream state and reads frame from the input reader.
@@ -148,7 +145,6 @@ private:
     size_t status_pos_;
     bool show_status_;
 
-    bool alive_;
     status::StatusCode init_status_;
 };
 

@@ -36,7 +36,6 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
     , capture_ts_(0)
     , packet_sample_spec_(packet_sample_spec)
     , frame_sample_spec_(frame_sample_spec)
-    , alive_(true)
     , init_status_(status::NoStatus) {
     if ((init_status_ = tuner_.init_status()) != status::StatusOK) {
         return;
@@ -56,12 +55,6 @@ status::StatusCode LatencyMonitor::init_status() const {
     return init_status_;
 }
 
-bool LatencyMonitor::is_alive() const {
-    roc_panic_if(init_status_ != status::StatusOK);
-
-    return alive_;
-}
-
 const LatencyMetrics& LatencyMonitor::metrics() const {
     roc_panic_if(init_status_ != status::StatusOK);
 
@@ -73,15 +66,10 @@ status::StatusCode LatencyMonitor::read(Frame& frame,
                                         FrameReadMode mode) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    if (!alive_) {
-        return status::StatusAbort;
-    }
-
     compute_niq_latency_();
     query_metrics_();
 
     if (!pre_read_()) {
-        alive_ = false;
         return status::StatusAbort;
     }
 

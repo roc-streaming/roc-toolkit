@@ -75,9 +75,6 @@ public:
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
 
-    //! Check if the stream was not aborted.
-    bool is_alive() const;
-
     //! Get metrics.
     const LatencyMetrics& metrics() const;
 
@@ -123,8 +120,6 @@ private:
 
     const SampleSpec packet_sample_spec_;
     const SampleSpec frame_sample_spec_;
-
-    bool alive_;
 
     status::StatusCode init_status_;
 };

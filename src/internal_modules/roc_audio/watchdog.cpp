@@ -58,7 +58,6 @@ Watchdog::Watchdog(IFrameReader& reader,
     , status_(arena)
     , status_pos_(0)
     , show_status_(false)
-    , alive_(true)
     , init_status_(status::NoStatus) {
     if (config.no_playback_timeout >= 0) {
         max_blank_duration_ =
@@ -116,19 +115,9 @@ status::StatusCode Watchdog::init_status() const {
     return init_status_;
 }
 
-bool Watchdog::is_alive() const {
-    roc_panic_if(init_status_ != status::StatusOK);
-
-    return alive_;
-}
-
 status::StatusCode
 Watchdog::read(Frame& frame, packet::stream_timestamp_t duration, FrameReadMode mode) {
     roc_panic_if(init_status_ != status::StatusOK);
-
-    if (!alive_) {
-        return status::StatusAbort;
-    }
 
     const status::StatusCode code = reader_.read(frame, duration, mode);
     if (code != status::StatusOK && code != status::StatusPart) {
@@ -138,7 +127,6 @@ Watchdog::read(Frame& frame, packet::stream_timestamp_t duration, FrameReadMode 
     sample_spec_.validate_frame(frame);
 
     if (!update_(frame)) {
-        alive_ = false;
         return status::StatusAbort;
     }
 
