@@ -426,6 +426,8 @@ status::StatusCode SenderSession::write(audio::Frame& frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (fail_status_ != status::NoStatus) {
+        // Failure happened, and session will be removed soon. Until that,
+        // always return StatusOK and do nothing.
         return status::StatusOK;
     }
 

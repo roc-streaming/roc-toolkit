@@ -102,7 +102,7 @@ enum StatusCode {
     //! @remarks
     //!  Indicates that plugin lookup or initialization failed.
     //! @note
-    //!  Example: we're trying to create PLC plugin, but use-provided callback
+    //!  Example: we're trying to create PLC plugin, but user-provided callback
     //!  failed to allocate it.
     StatusNoPlugin,
 
