@@ -167,8 +167,7 @@ def make_prefix(org, repo, issue_link):
 # format commit message
 def make_message(org, repo, issue_link, pr_title):
     pr_title = re.sub(r'^([Ii]ssue\s+\d+(:\s*)?)', '', pr_title)
-    pr_title = re.sub(r'\s*\(#\d+\)$', '', pr_title)
-    pr_title = re.sub(r'\s*#\d+$', '', pr_title)
+    pr_title = re.sub(r'\s*\(?#\d+\)?$', '', pr_title)
     pr_title = re.sub(r'\.$', '', pr_title)
 
     if issue_link:
@@ -257,18 +256,6 @@ def query_pr_info(org, repo, pr_number, no_git=False):
         pr_info['pr_contrib'] = False
     except subprocess.CalledProcessError as e:
         pr_info['pr_contrib'] = True
-
-    if not no_git:
-        try:
-            # commit in upstream from which pr branch was forked
-            pr_commits = query_pr_commits(org, repo, pr_number, no_git)
-            pr_info['fork_point_sha'] = subprocess.run(
-                ['git', 'rev-parse', pr_commits[0][0]+'^'],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                check=True).stdout.decode().strip()
-        except subprocess.CalledProcessError as e:
-            error(f'failed to determine git fork point: {e.stderr.decode().strip()}')
 
     return pr_info
 
@@ -554,8 +541,12 @@ def update_pr_metadata(org, repo, pr_number, issue_number, issue_milestone,
 def rebase_pr_commits(org, repo, pr_number):
     pr_info = query_pr_info(org, repo, pr_number)
 
+    # find where PR's branch forked from target branch
+    pr_commits = query_pr_commits(org, repo, pr_number)
+    fork_point = pr_commits[0][0]
+
     run_cmd([
-        'git', 'rebase', '--onto', pr_info['target_sha'], pr_info['fork_point_sha'],
+        'git', 'rebase', '--onto', pr_info['target_sha'], f'{fork_point}^'
         ])
 
 # squash all commits in PR's local branch into one
@@ -567,6 +558,9 @@ def squash_pr_commits(org, repo, pr_number, title, no_issue):
         org, repo,
         pr_info['issue_link'] if not no_issue else None,
         title or pr_info['pr_title'])
+
+    if len(commit_message) > 72:
+        error("commit message too long, use --title to overwrite")
 
     run_cmd([
         'git', 'rebase', '-i', pr_info['target_sha'],
@@ -599,7 +593,7 @@ def reword_pr_commits(org, repo, pr_number, title, no_issue):
     else:
         sed = f"sed -r"+\
             f" -e '1s,^(gh-[0-9]+:? +|{org}/[^ ]+ +|[Ii]ssue *[0-9]+:? +)?,{commit_prefix},'"+\
-            f" -e '1s,\s*\(#[0-9]+\)$,,'",
+            f" -e '1s,\s*\(?#[0-9]+\)?$,,'",
 
     run_cmd([
         'git', 'filter-branch', '-f', '--msg-filter', sed,
